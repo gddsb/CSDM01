@@ -1,14 +1,14 @@
 import React, { useState } from 'react'
-import { Table, Tag, Button, Modal, Form, InputNumber, DatePicker, Input, Space, Row, Col, Select, Alert, List, message, Drawer, Descriptions } from 'antd'
+import { Table, Tag, Button, Modal, Form, InputNumber, DatePicker, Input, Space, Row, Col, Select, Alert, List, message, Drawer, Descriptions, Empty } from 'antd'
 import {
   ToolOutlined, ExportOutlined, SearchOutlined, ReloadOutlined,
-  PlayCircleOutlined, CheckCircleOutlined, ClockCircleOutlined, StopOutlined,
-  CheckCircleFilled, CloseCircleFilled, EditOutlined
+  PlayCircleOutlined, CheckCircleOutlined, ClockCircleOutlined,
+  CheckCircleFilled, CloseCircleFilled, DownOutlined, UpOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import {
-  workOrders, orders, productionLines,
+  workOrders, orders, productionLines, materials,
   manpowerRecords, processReports, exceptionRecords
 } from '../../mock/data'
 
@@ -36,11 +36,24 @@ const orderOptions = orders
   .filter(o => o.status === '已下达')
   .map(o => ({ label: `${o.order_no} (${o.material_name})`, value: o.order_id }))
 
+// 获取工单关联的料号和规格
+const getMaterialInfo = (w) => {
+  if (w.material_code && w.specification) return { material_code: w.material_code, specification: w.specification }
+  const order = orders.find(o => o.order_id === w.order_id)
+  if (order) return { material_code: order.material_code, specification: order.specification }
+  const mat = materials.find(m => m.material_id === w.material_id)
+  if (mat) return { material_code: mat.material_code, specification: mat.specification }
+  return { material_code: '-', specification: '-' }
+}
+
 export default function WorkOrderManagement() {
   const [data, setData] = useState(workOrders)
-  const [search, setSearch] = useState('')
+  const [searchWO, setSearchWO] = useState('')
+  const [searchMaterial, setSearchMaterial] = useState('')
   const [status, setStatus] = useState(undefined)
   const [lineId, setLineId] = useState(undefined)
+  const [dateRange, setDateRange] = useState([])
+  const [showAdvanced, setShowAdvanced] = useState(false)
   const [finishOpen, setFinishOpen] = useState(false)
   const [finishTarget, setFinishTarget] = useState(null)
   const [finishTime, setFinishTime] = useState(null)
@@ -55,10 +68,19 @@ export default function WorkOrderManagement() {
   const selectedOrder = orders.find(o => o.order_id === selectedOrderId)
 
   const filtered = data.filter(w => {
-    const matchSearch = !search || w.work_order_no.toLowerCase().includes(search.toLowerCase())
+    const matchWO = !searchWO || w.work_order_no.toLowerCase().includes(searchWO.toLowerCase())
+    const matInfo = getMaterialInfo(w)
+    const matchMaterial = !searchMaterial ||
+      matInfo.material_code.toLowerCase().includes(searchMaterial.toLowerCase()) ||
+      w.material_name?.toLowerCase().includes(searchMaterial.toLowerCase())
     const matchStatus = !status || w.status === status
     const matchLine = !lineId || w.line_id === lineId
-    return matchSearch && matchStatus && matchLine
+    let matchDate = true
+    if (dateRange && dateRange.length === 2) {
+      const woDate = dayjs(w.start_time)
+      matchDate = woDate.isAfter(dateRange[0].startOf('day')) && woDate.isBefore(dateRange[1].endOf('day'))
+    }
+    return matchWO && matchMaterial && matchStatus && matchLine && matchDate
   })
 
   const stats = [
@@ -209,7 +231,9 @@ export default function WorkOrderManagement() {
         line_id: line.line_id,
         line_name: line.line_name,
         material_id: order.material_id,
+        material_code: order.material_code,
         material_name: order.material_name,
+        specification: order.specification,
         target_qty: values.target_qty,
         start_time: values.start_time.format('YYYY-MM-DD HH:mm'),
         finish_time: null,
@@ -229,6 +253,14 @@ export default function WorkOrderManagement() {
     setDetailOpen(true)
   }
 
+  const handleReset = () => {
+    setSearchWO('')
+    setSearchMaterial('')
+    setStatus(undefined)
+    setLineId(undefined)
+    setDateRange([])
+  }
+
   const renderActions = (w) => {
     if (w.status === '开立') {
       return (
@@ -243,23 +275,40 @@ export default function WorkOrderManagement() {
       return (
         <Space size="small">
           <Button type="link" size="small" danger onClick={() => handleClose(w)}>关闭</Button>
+          <Button type="link" size="small" onClick={() => handleView(w)}>查看</Button>
         </Space>
       )
     }
     if (w.status === '关闭') {
-      return <Button type="link" size="small" onClick={() => openFinish(w)}>完工</Button>
+      return (
+        <Space size="small">
+          <Button type="link" size="small" onClick={() => openFinish(w)}>完工</Button>
+          <Button type="link" size="small" onClick={() => handleView(w)}>查看</Button>
+        </Space>
+      )
     }
     return <Button type="link" size="small" onClick={() => handleView(w)}>查看</Button>
   }
 
   const columns = [
-    { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 140, fixed: 'left' },
-    { title: '关联订单', dataIndex: 'order_no', key: 'order_no', width: 150 },
-    { title: '产线', dataIndex: 'line_name', key: 'line_name', width: 70 },
-    { title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 100 },
-    { title: '目标数量', dataIndex: 'target_qty', key: 'target_qty', width: 90, render: v => v.toLocaleString() },
+    { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 100, fixed: 'left', sorter: (a, b) => a.work_order_no.localeCompare(b.work_order_no), defaultSortOrder: 'descend' },
     {
-      title: '完工数量', key: 'finished_qty', width: 90,
+      title: '料号', key: 'material_code', width: 80, fixed: 'left',
+      sorter: (a, b) => getMaterialInfo(a).material_code.localeCompare(getMaterialInfo(b).material_code),
+      defaultSortOrder: 'ascend',
+      render: (_, w) => getMaterialInfo(w).material_code,
+    },
+    {
+      title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 110, fixed: 'left',
+      render: v => v || '-',
+    },
+    {
+      title: '规格', key: 'specification', width: 60,
+      render: (_, w) => getMaterialInfo(w).specification,
+    },
+    { title: '目标数量', dataIndex: 'target_qty', key: 'target_qty', width: 60, align: 'right', render: v => v.toLocaleString() },
+    {
+      title: '完工数量', key: 'finished_qty', width: 60, align: 'right',
       render: (_, w) => {
         const reports = processReports.filter(r => r.work_order_id === w.work_order_id)
         if (reports.length === 0) return 0
@@ -268,32 +317,23 @@ export default function WorkOrderManagement() {
       },
     },
     {
-      title: '人数', key: 'worker_count', width: 65,
+      title: '不良数量', key: 'defect_qty', width: 60, align: 'right',
+      render: (_, w) => {
+        const reports = processReports.filter(r => r.work_order_id === w.work_order_id)
+        const total = reports.reduce((sum, r) => sum + (r.defect_material || 0) + (r.defect_process || 0) + (r.defect_scrap || 0), 0)
+        return total > 0 ? total.toLocaleString() : 0
+      },
+    },
+    { title: '产线', dataIndex: 'line_name', key: 'line_name', width: 40 },
+    {
+      title: '生产人数', key: 'worker_count', width: 60, align: 'right',
       render: (_, w) => {
         const records = manpowerRecords.filter(m => m.work_order_id === w.work_order_id)
         return records.reduce((sum, r) => sum + (r.skilled_workers || 0) + (r.general_workers || 0) + (r.contract_workers || 0) + (r.auxiliary_workers || 0), 0)
       },
     },
     {
-      title: '开工时长', key: 'duration_hours', width: 90,
-      render: (_, w) => {
-        if (!w.start_time) return '-'
-        const start = dayjs(w.start_time)
-        const end = w.finish_time ? dayjs(w.finish_time) : dayjs()
-        const hours = roundHalf(end.diff(start, 'hour', true))
-        return `${hours.toFixed(1)}h`
-      },
-    },
-    {
-      title: '故障时间', key: 'fault_hours', width: 90,
-      render: (_, w) => {
-        const excs = exceptionRecords.filter(e => e.work_order_id === w.work_order_id)
-        const totalMinutes = excs.reduce((sum, e) => sum + (e.duration || 0), 0)
-        return totalMinutes > 0 ? `${roundHalf(totalMinutes / 60).toFixed(1)}h` : '0h'
-      },
-    },
-    {
-      title: '人工工时', key: 'labor_hours_calc', width: 90,
+      title: '生产工时', key: 'labor_hours_calc', width: 60, align: 'right',
       render: (_, w) => {
         const records = manpowerRecords.filter(m => m.work_order_id === w.work_order_id)
         const workerCount = records.reduce((sum, r) => sum + (r.skilled_workers || 0) + (r.general_workers || 0) + (r.contract_workers || 0) + (r.auxiliary_workers || 0), 0)
@@ -305,24 +345,30 @@ export default function WorkOrderManagement() {
       },
     },
     {
-      title: '有效工时', key: 'effective_hours_calc', width: 90,
+      title: '停机时间', key: 'fault_hours', width: 60, align: 'right',
       render: (_, w) => {
-        const records = manpowerRecords.filter(m => m.work_order_id === w.work_order_id)
-        const workerCount = records.reduce((sum, r) => sum + (r.skilled_workers || 0) + (r.general_workers || 0) + (r.contract_workers || 0) + (r.auxiliary_workers || 0), 0)
-        if (!w.start_time) return '-'
-        const start = dayjs(w.start_time)
-        const end = w.finish_time ? dayjs(w.finish_time) : dayjs()
-        const hours = end.diff(start, 'hour', true)
         const excs = exceptionRecords.filter(e => e.work_order_id === w.work_order_id)
-        const faultHours = excs.reduce((sum, e) => sum + (e.duration || 0), 0) / 60
-        return `${roundHalf(workerCount * (hours - faultHours)).toFixed(1)}h`
+        const totalMinutes = excs.reduce((sum, e) => sum + (e.duration || 0), 0)
+        return totalMinutes > 0 ? `${roundHalf(totalMinutes / 60).toFixed(1)}h` : '0h'
       },
     },
-    { title: '开工时间', dataIndex: 'start_time', key: 'start_time', width: 150 },
-    { title: '完工时间', dataIndex: 'finish_time', key: 'finish_time', width: 150, render: v => v || '-' },
-    { title: '状态', dataIndex: 'status', key: 'status', width: 80, render: v => <Tag color={statusColorMap[v]}>{v}</Tag> },
-    { title: '操作', key: 'action', width: 150, fixed: 'right', render: (_, r) => renderActions(r) },
+    {
+      title: '工单时间', key: 'wo_time', width: 120,
+      render: (_, w) => (
+        <div style={{ lineHeight: 1.6, fontSize: 12 }}>
+          <div>开工：{w.start_time || '-'}</div>
+          <div>完工：{w.finish_time || '-'}</div>
+        </div>
+      ),
+    },
+    { title: '状态', dataIndex: 'status', key: 'status', width: 80, align: 'center', render: v => <Tag color={statusColorMap[v]}>{v}</Tag> },
+    { title: '操作', key: 'action', width: 100, fixed: 'right', render: (_, r) => renderActions(r) },
   ]
+
+  // 工单详情：关联数据
+  const getRelatedManpower = (wo) => manpowerRecords.filter(m => m.work_order_id === wo?.work_order_id)
+  const getRelatedExceptions = (wo) => exceptionRecords.filter(e => e.work_order_id === wo?.work_order_id)
+  const getRelatedDefects = (wo) => processReports.filter(r => r.work_order_id === wo?.work_order_id && (r.defect_material + r.defect_process + r.defect_scrap) > 0)
 
   return (
     <>
@@ -333,19 +379,27 @@ export default function WorkOrderManagement() {
         actions={<ActionButtons hasAdd={true} onAdd={handleAdd} addText="新增工单" />}
         table={
           <div>
-            <Row gutter={[12, 8]} style={{ marginBottom: 12 }}>
-              <Col span={6}>
+            <Row gutter={[12, 8]} style={{ marginBottom: 12 }} align="middle">
+              <Col flex="160px">
                 <Input
-                  placeholder="搜索工单编号"
+                  placeholder="工单号"
                   allowClear
                   prefix={<SearchOutlined />}
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
+                  value={searchWO}
+                  onChange={e => setSearchWO(e.target.value)}
                 />
               </Col>
-              <Col span={6}>
+              <Col flex="200px">
+                <Input
+                  placeholder="料号 / 料品名称"
+                  allowClear
+                  value={searchMaterial}
+                  onChange={e => setSearchMaterial(e.target.value)}
+                />
+              </Col>
+              <Col flex="100px">
                 <Select
-                  placeholder="状态筛选"
+                  placeholder="状态"
                   allowClear
                   style={{ width: '100%' }}
                   options={statusOptions}
@@ -353,9 +407,9 @@ export default function WorkOrderManagement() {
                   onChange={setStatus}
                 />
               </Col>
-              <Col span={6}>
+              <Col flex="100px">
                 <Select
-                  placeholder="产线筛选"
+                  placeholder="产线"
                   allowClear
                   style={{ width: '100%' }}
                   options={lineOptions}
@@ -366,17 +420,32 @@ export default function WorkOrderManagement() {
               <Col>
                 <Space>
                   <Button type="primary" icon={<SearchOutlined />}>查询</Button>
-                  <Button icon={<ReloadOutlined />} onClick={() => { setSearch(''); setStatus(undefined); setLineId(undefined) }}>重置</Button>
+                  <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
+                  <Button type="link" size="small" onClick={() => setShowAdvanced(!showAdvanced)}>
+                    {showAdvanced ? '收起' : '展开'} {showAdvanced ? <UpOutlined /> : <DownOutlined />}
+                  </Button>
                 </Space>
               </Col>
             </Row>
+            {showAdvanced && (
+              <Row gutter={[12, 8]} style={{ marginBottom: 12 }}>
+                <Col>
+                  <DatePicker.RangePicker
+                    value={dateRange}
+                    onChange={setDateRange}
+                    format="YYYY-MM-DD"
+                  />
+                </Col>
+              </Row>
+            )}
             <Table
               columns={columns}
               dataSource={filtered}
               rowKey="work_order_id"
               size="small"
-              scroll={{ x: 1700 }}
+              scroll={{ x: 1060 }}
               pagination={{ pageSize: 10, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
+              onChange={(pagination, filters, sorter) => {}}
             />
           </div>
         }
@@ -398,7 +467,6 @@ export default function WorkOrderManagement() {
           className="compact-form"
           preserve={false}
           onValuesChange={(changed) => {
-            // 选择订单后自动带入料品名称与目标数量（默认取订单计划数量）
             if ('order_id' in changed) {
               const order = orders.find(o => o.order_id === changed.order_id)
               if (order) {
@@ -506,23 +574,84 @@ export default function WorkOrderManagement() {
         title="工单详情"
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
-        width={560}
+        width="40%"
       >
-        {currentWO && (
-          <Descriptions column={2} bordered size="small">
-            <Descriptions.Item label="工单编号">{currentWO.work_order_no}</Descriptions.Item>
-            <Descriptions.Item label="关联订单">{currentWO.order_no}</Descriptions.Item>
-            <Descriptions.Item label="产线">{currentWO.line_name}</Descriptions.Item>
-            <Descriptions.Item label="料品名称">{currentWO.material_name}</Descriptions.Item>
-            <Descriptions.Item label="目标数量">{currentWO.target_qty?.toLocaleString()}</Descriptions.Item>
-            <Descriptions.Item label="状态"><Tag color={statusColorMap[currentWO.status]}>{currentWO.status}</Tag></Descriptions.Item>
-            <Descriptions.Item label="开工时间">{currentWO.start_time}</Descriptions.Item>
-            <Descriptions.Item label="完工时间">{currentWO.finish_time || '-'}</Descriptions.Item>
-            <Descriptions.Item label="总工时">{currentWO.total_hours != null ? `${currentWO.total_hours}h` : '-'}</Descriptions.Item>
-            <Descriptions.Item label="有效工时">{currentWO.effective_hours != null ? `${currentWO.effective_hours}h` : '-'}</Descriptions.Item>
-            <Descriptions.Item label="人工工时">{currentWO.labor_hours != null ? `${currentWO.labor_hours}h` : '-'}</Descriptions.Item>
-          </Descriptions>
-        )}
+        {currentWO && (() => {
+          const matInfo = getMaterialInfo(currentWO)
+          const relatedManpower = getRelatedManpower(currentWO)
+          const relatedExc = getRelatedExceptions(currentWO)
+          const relatedDefects = getRelatedDefects(currentWO)
+          return (
+            <>
+              <Descriptions column={2} bordered size="small" style={{ marginBottom: 16 }}>
+                <Descriptions.Item label="工单编号">{currentWO.work_order_no}</Descriptions.Item>
+                <Descriptions.Item label="关联订单">{currentWO.order_no}</Descriptions.Item>
+                <Descriptions.Item label="料号">{matInfo.material_code}</Descriptions.Item>
+                <Descriptions.Item label="料品名称">{currentWO.material_name}</Descriptions.Item>
+                <Descriptions.Item label="规格">{matInfo.specification}</Descriptions.Item>
+                <Descriptions.Item label="产线">{currentWO.line_name}</Descriptions.Item>
+                <Descriptions.Item label="目标数量">{currentWO.target_qty?.toLocaleString()}</Descriptions.Item>
+                <Descriptions.Item label="状态"><Tag color={statusColorMap[currentWO.status]}>{currentWO.status}</Tag></Descriptions.Item>
+                <Descriptions.Item label="开工时间">{currentWO.start_time}</Descriptions.Item>
+                <Descriptions.Item label="完工时间">{currentWO.finish_time || '-'}</Descriptions.Item>
+              </Descriptions>
+
+              <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 14 }}>人员记录</div>
+              {relatedManpower.length > 0 ? (
+                <Table
+                  size="small"
+                  rowKey="record_id"
+                  dataSource={relatedManpower}
+                  pagination={false}
+                  style={{ marginBottom: 16 }}
+                  columns={[
+                    { title: '技工', dataIndex: 'skilled_workers', key: 'skilled_workers', width: 60 },
+                    { title: '普工', dataIndex: 'general_workers', key: 'general_workers', width: 60 },
+                    { title: '劳务', dataIndex: 'contract_workers', key: 'contract_workers', width: 60 },
+                    { title: '辅助', dataIndex: 'auxiliary_workers', key: 'auxiliary_workers', width: 60 },
+                    { title: '备注', dataIndex: 'remarks', key: 'remarks', width: 80 },
+                  ]}
+                />
+              ) : <Empty description="暂无人员记录" style={{ marginBottom: 16 }} />}
+
+              <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 14 }}>停机记录</div>
+              {relatedExc.length > 0 ? (
+                <Table
+                  size="small"
+                  rowKey="record_id"
+                  dataSource={relatedExc}
+                  pagination={false}
+                  style={{ marginBottom: 16 }}
+                  columns={[
+                    { title: '异常类型', dataIndex: 'exception_type_name', key: 'exception_type_name', width: 80 },
+                    { title: '设备', dataIndex: 'device_name', key: 'device_name', width: 100 },
+                    { title: '开始', dataIndex: 'start_time', key: 'start_time', width: 130 },
+                    { title: '结束', dataIndex: 'end_time', key: 'end_time', width: 130 },
+                    { title: '时长(分)', dataIndex: 'duration', key: 'duration', width: 70 },
+                    { title: '原因', dataIndex: 'reason', key: 'reason', width: 150 },
+                  ]}
+                />
+              ) : <Empty description="暂无停机记录" style={{ marginBottom: 16 }} />}
+
+              <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 14 }}>不良记录</div>
+              {relatedDefects.length > 0 ? (
+                <Table
+                  size="small"
+                  rowKey="report_id"
+                  dataSource={relatedDefects}
+                  pagination={false}
+                  columns={[
+                    { title: '工序', dataIndex: 'process_name', key: 'process_name', width: 80 },
+                    { title: '来料不良', dataIndex: 'defect_material', key: 'defect_material', width: 70 },
+                    { title: '制程不良', dataIndex: 'defect_process', key: 'defect_process', width: 70 },
+                    { title: '检验报废', dataIndex: 'defect_scrap', key: 'defect_scrap', width: 70 },
+                    { title: '设备', dataIndex: 'device_name', key: 'device_name', width: 100 },
+                  ]}
+                />
+              ) : <Empty description="暂无不良记录" />}
+            </>
+          )
+        })()}
       </Drawer>
     </>
   )

@@ -23,6 +23,7 @@ import DefectManagement from './pages/basic/DefectManagement'
 import OrderManagement from './pages/production/OrderManagement'
 import WorkOrderManagement from './pages/production/WorkOrderManagement'
 import ProcessReporting from './pages/production/ProcessReporting'
+import ProductionReportByOrder from './pages/production/ProductionReportByOrder'
 import ManpowerRecord from './pages/production/ManpowerRecord'
 import ExceptionRecord from './pages/production/ExceptionRecord'
 import InspectionStandard from './pages/quality/InspectionStandard'
@@ -83,6 +84,7 @@ function AppRoutes() {
         <Route path="/production/orders" element={<OrderManagement />} />
         <Route path="/production/workorders" element={<WorkOrderManagement />} />
         <Route path="/production/reporting" element={<ProcessReporting />} />
+        <Route path="/production/reporting-by-order" element={<ProductionReportByOrder />} />
         <Route path="/production/manpower" element={<ManpowerRecord />} />
         <Route path="/production/exceptions" element={<ExceptionRecord />} />
         <Route path="/quality/standards" element={<InspectionStandard />} />

@@ -5,7 +5,7 @@ import React from 'react'
 const { RangePicker } = DatePicker
 
 // 三段式页面通用组件
-export default function ThreeSectionPage({ title, breadcrumbs, stats, filters, actions, table, compact = true }) {
+export default function ThreeSectionPage({ title, breadcrumbs, stats, filters, actions, table, compact = true, onSearch, onReset }) {
   return (
     <div className="three-section-page">
       {/* 上部：页面信息区 */}
@@ -43,20 +43,20 @@ export default function ThreeSectionPage({ title, breadcrumbs, stats, filters, a
             {filters.map((f, i) => (
               <Col key={i} {...(f.col || { span: 6 })}>
                 {f.type === 'input' && (
-                  <Input placeholder={f.placeholder} allowClear prefix={f.icon} />
+                  <Input placeholder={f.placeholder} allowClear prefix={f.icon} value={f.value} onChange={f.onChange} />
                 )}
                 {f.type === 'select' && (
-                  <Select placeholder={f.placeholder} allowClear style={{ width: '100%' }} options={f.options} />
+                  <Select placeholder={f.placeholder} allowClear style={{ width: '100%' }} options={f.options} value={f.value} onChange={f.onChange} />
                 )}
                 {f.type === 'rangepicker' && (
-                  <RangePicker style={{ width: '100%' }} />
+                  <RangePicker style={{ width: '100%' }} value={f.value} onChange={f.onChange} />
                 )}
               </Col>
             ))}
             <Col>
               <Space>
-                <Button type="primary" icon={<SearchOutlined />}>查询</Button>
-                <Button icon={<ReloadOutlined />}>重置</Button>
+                <Button type="primary" icon={<SearchOutlined />} onClick={onSearch}>查询</Button>
+                <Button icon={<ReloadOutlined />} onClick={onReset}>重置</Button>
               </Space>
             </Col>
           </Row>

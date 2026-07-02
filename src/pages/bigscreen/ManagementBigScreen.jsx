@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
+import * as echarts from 'echarts'
 import { Row, Col, Table, Tag, Button } from 'antd'
 import { ArrowLeftOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -10,9 +11,36 @@ import {
 import logoRect from '../../assets/logo-rect.png'
 import '../../styles/bigscreen.css'
 
+// 暗色主题通用配置
+const AXIS_LABEL = '#C9D1D9'
+const SPLIT_LINE = 'rgba(255,255,255,0.06)'
+const AXIS_LINE = 'rgba(255,255,255,0.2)'
+// 大屏图表配色
+const CHART_COLORS = {
+  cyan: '#00d4ff',
+  green: '#00ff88',
+  red: '#ff6b6b',
+  yellow: '#ffd93d',
+  purple: '#a78bfa',
+}
+// 设备状态 -> 颜色映射
+const DEVICE_STATUS_COLOR = {
+  '运行中': CHART_COLORS.green,
+  '待机': CHART_COLORS.cyan,
+  '维修': CHART_COLORS.yellow,
+  '停机': CHART_COLORS.red,
+}
+
 export default function ManagementBigScreen() {
   const navigate = useNavigate()
   const [currentTime, setCurrentTime] = useState(new Date())
+
+  // ECharts 图表容器引用
+  const orderTrendRef = useRef(null)
+  const lineUtilRef = useRef(null)
+  const qualityTrendRef = useRef(null)
+  const deviceStatusRef = useRef(null)
+  const lineOutputRef = useRef(null)
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
@@ -96,6 +124,228 @@ export default function ManagementBigScreen() {
     { title: '状态', dataIndex: 'status', key: 'status', width: 80, render: v => <Tag color={v === '已关闭' ? 'success' : 'processing'} style={{ fontSize: 11 }}>{v}</Tag> },
   ]
 
+  // ============ 图表数据准备 ============
+  // 订单完成趋势 - 基于现有订单生成 6 个月的目标/完工数据
+  const orderTrendMonths = ['1月', '2月', '3月', '4月', '5月', '6月']
+  const orderTrendTarget = [10000, 12000, 15000, 13000, 16000, 17000]
+  const orderTrendActual = [9800, 11500, 14800, 12600, 15800, 14948]
+
+  // 产线利用率 - 各产线 75-95% 区间模拟数据
+  const lineNames = productionLines.map(l => l.line_name)
+  const lineUtilData = [88, 85, 78]
+
+  // 质量合格率趋势 - 4 周，4 类检验
+  const qualityTrendWeeks = ['第1周', '第2周', '第3周', '第4周']
+  const qualityTrendSeries = {
+    '来料': [95, 96, 94, 97],
+    '成品': [98, 99, 97, 99],
+    '微生物': [100, 100, 98, 100],
+    '环境': [92, 94, 96, 95],
+  }
+
+  // 设备运行状态分布 - 基于设备 mock 数据
+  const deviceStatusData = [
+    { value: devices.filter(d => d.status === '运行').length, name: '运行中' },
+    { value: devices.filter(d => d.status === '待机').length, name: '待机' },
+    { value: devices.filter(d => d.status === '故障').length, name: '维修' },
+    { value: 0, name: '停机' },
+  ].filter(d => d.value > 0)
+
+  // 各产线产出对比 - 按产品类型堆叠
+  const lineOutputProducts = ['900g奶粉罐', '400g奶粉罐', '800g奶粉罐']
+  const lineOutputSeries = [
+    { name: '900g奶粉罐', data: [4983, 0, 2500] },
+    { name: '400g奶粉罐', data: [0, 1500, 3200] },
+    { name: '800g奶粉罐', data: [0, 9965, 0] },
+  ]
+
+  // ============ 图表初始化 ============
+  useEffect(() => {
+    if (!orderTrendRef.current) return
+    const chart = echarts.init(orderTrendRef.current)
+    chart.setOption({
+      backgroundColor: 'transparent',
+      tooltip: { trigger: 'axis' },
+      legend: { data: ['目标数量', '完工数量'], textStyle: { color: AXIS_LABEL }, top: 0 },
+      grid: { left: '3%', right: '4%', bottom: '3%', top: 36, containLabel: true },
+      xAxis: {
+        type: 'category',
+        boundaryGap: false,
+        data: orderTrendMonths,
+        axisLine: { lineStyle: { color: AXIS_LINE } },
+        axisLabel: { color: AXIS_LABEL },
+      },
+      yAxis: {
+        type: 'value',
+        axisLine: { show: false },
+        axisLabel: { color: AXIS_LABEL },
+        splitLine: { lineStyle: { color: SPLIT_LINE } },
+      },
+      series: [
+        {
+          name: '目标数量', type: 'line', smooth: true, symbol: 'circle', symbolSize: 7,
+          data: orderTrendTarget,
+          itemStyle: { color: CHART_COLORS.cyan },
+          lineStyle: { width: 3, color: CHART_COLORS.cyan },
+          areaStyle: { color: 'rgba(0,212,255,0.15)' },
+        },
+        {
+          name: '完工数量', type: 'line', smooth: true, symbol: 'circle', symbolSize: 7,
+          data: orderTrendActual,
+          itemStyle: { color: CHART_COLORS.green },
+          lineStyle: { width: 3, color: CHART_COLORS.green },
+          areaStyle: { color: 'rgba(0,255,136,0.15)' },
+        },
+      ],
+    })
+    const handleResize = () => chart.resize()
+    window.addEventListener('resize', handleResize)
+    return () => { chart.dispose(); window.removeEventListener('resize', handleResize) }
+  }, [])
+
+  useEffect(() => {
+    if (!lineUtilRef.current) return
+    const chart = echarts.init(lineUtilRef.current)
+    chart.setOption({
+      backgroundColor: 'transparent',
+      tooltip: { trigger: 'axis', formatter: '{b}: {c}%' },
+      grid: { left: '3%', right: '6%', bottom: '3%', top: 30, containLabel: true },
+      xAxis: {
+        type: 'category',
+        data: lineNames,
+        axisLine: { lineStyle: { color: AXIS_LINE } },
+        axisLabel: { color: AXIS_LABEL },
+      },
+      yAxis: {
+        type: 'value', min: 0, max: 100,
+        axisLine: { show: false },
+        axisLabel: { color: AXIS_LABEL, formatter: '{value}%' },
+        splitLine: { lineStyle: { color: SPLIT_LINE } },
+      },
+      series: [{
+        type: 'bar',
+        barWidth: '42%',
+        data: lineUtilData,
+        label: { show: true, position: 'top', color: AXIS_LABEL, formatter: '{c}%' },
+        itemStyle: {
+          borderRadius: [4, 4, 0, 0],
+          color: {
+            type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              { offset: 0, color: CHART_COLORS.cyan },
+              { offset: 1, color: CHART_COLORS.green },
+            ],
+          },
+        },
+      }],
+    })
+    const handleResize = () => chart.resize()
+    window.addEventListener('resize', handleResize)
+    return () => { chart.dispose(); window.removeEventListener('resize', handleResize) }
+  }, [])
+
+  useEffect(() => {
+    if (!qualityTrendRef.current) return
+    const chart = echarts.init(qualityTrendRef.current)
+    const colorMap = {
+      '来料': CHART_COLORS.cyan,
+      '成品': CHART_COLORS.green,
+      '微生物': CHART_COLORS.yellow,
+      '环境': CHART_COLORS.purple,
+    }
+    chart.setOption({
+      backgroundColor: 'transparent',
+      tooltip: { trigger: 'axis', formatter: (p) => p.map(i => `${i.marker}${i.seriesName}: ${i.value}%`).join('<br/>') },
+      legend: { data: Object.keys(qualityTrendSeries), textStyle: { color: AXIS_LABEL }, top: 0 },
+      grid: { left: '3%', right: '4%', bottom: '3%', top: 36, containLabel: true },
+      xAxis: {
+        type: 'category',
+        boundaryGap: false,
+        data: qualityTrendWeeks,
+        axisLine: { lineStyle: { color: AXIS_LINE } },
+        axisLabel: { color: AXIS_LABEL },
+      },
+      yAxis: {
+        type: 'value', min: 85, max: 100,
+        axisLine: { show: false },
+        axisLabel: { color: AXIS_LABEL, formatter: '{value}%' },
+        splitLine: { lineStyle: { color: SPLIT_LINE } },
+      },
+      series: Object.entries(qualityTrendSeries).map(([name, data]) => ({
+        name, type: 'line', smooth: true, symbol: 'circle', symbolSize: 6,
+        data,
+        itemStyle: { color: colorMap[name] },
+        lineStyle: { width: 2.5, color: colorMap[name] },
+      })),
+    })
+    const handleResize = () => chart.resize()
+    window.addEventListener('resize', handleResize)
+    return () => { chart.dispose(); window.removeEventListener('resize', handleResize) }
+  }, [])
+
+  useEffect(() => {
+    if (!deviceStatusRef.current) return
+    const chart = echarts.init(deviceStatusRef.current)
+    chart.setOption({
+      backgroundColor: 'transparent',
+      tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+      legend: { orient: 'vertical', right: 8, top: 'center', textStyle: { color: AXIS_LABEL } },
+      series: [{
+        name: '设备状态',
+        type: 'pie',
+        radius: ['45%', '70%'],
+        center: ['38%', '50%'],
+        avoidLabelOverlap: true,
+        label: { color: AXIS_LABEL, formatter: '{b}\n{d}%' },
+        labelLine: { lineStyle: { color: 'rgba(255,255,255,0.3)' } },
+        data: deviceStatusData.map(d => ({
+          value: d.value,
+          name: d.name,
+          itemStyle: { color: DEVICE_STATUS_COLOR[d.name] },
+        })),
+      }],
+    })
+    const handleResize = () => chart.resize()
+    window.addEventListener('resize', handleResize)
+    return () => { chart.dispose(); window.removeEventListener('resize', handleResize) }
+  }, [])
+
+  useEffect(() => {
+    if (!lineOutputRef.current) return
+    const chart = echarts.init(lineOutputRef.current)
+    const productColors = [CHART_COLORS.cyan, CHART_COLORS.green, CHART_COLORS.yellow]
+    chart.setOption({
+      backgroundColor: 'transparent',
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      legend: { data: lineOutputProducts, textStyle: { color: AXIS_LABEL }, top: 0 },
+      grid: { left: '3%', right: '4%', bottom: '3%', top: 36, containLabel: true },
+      xAxis: {
+        type: 'category',
+        data: lineNames,
+        axisLine: { lineStyle: { color: AXIS_LINE } },
+        axisLabel: { color: AXIS_LABEL },
+      },
+      yAxis: {
+        type: 'value',
+        axisLine: { show: false },
+        axisLabel: { color: AXIS_LABEL },
+        splitLine: { lineStyle: { color: SPLIT_LINE } },
+      },
+      series: lineOutputSeries.map((s, i) => ({
+        name: s.name,
+        type: 'bar',
+        stack: 'total',
+        data: s.data,
+        barWidth: '40%',
+        itemStyle: { color: productColors[i] },
+        emphasis: { focus: 'series' },
+      })),
+    })
+    const handleResize = () => chart.resize()
+    window.addEventListener('resize', handleResize)
+    return () => { chart.dispose(); window.removeEventListener('resize', handleResize) }
+  }, [])
+
   return (
     <div className="bigscreen-container">
       {/* 顶部标题栏 */}
@@ -136,6 +386,44 @@ export default function ManagementBigScreen() {
             </div>
           </Col>
         ))}
+      </Row>
+
+      {/* ECharts 图表区 - 第一行 */}
+      <Row gutter={[10, 10]} style={{ marginBottom: 10 }}>
+        <Col span={12}>
+          <div className="bs-panel">
+            <div className="bs-panel-title">订单完成趋势</div>
+            <div ref={orderTrendRef} style={{ width: '100%', height: 260 }} />
+          </div>
+        </Col>
+        <Col span={6}>
+          <div className="bs-panel">
+            <div className="bs-panel-title">设备运行状态分布</div>
+            <div ref={deviceStatusRef} style={{ width: '100%', height: 260 }} />
+          </div>
+        </Col>
+        <Col span={6}>
+          <div className="bs-panel">
+            <div className="bs-panel-title">产线利用率</div>
+            <div ref={lineUtilRef} style={{ width: '100%', height: 260 }} />
+          </div>
+        </Col>
+      </Row>
+
+      {/* ECharts 图表区 - 第二行 */}
+      <Row gutter={[10, 10]} style={{ marginBottom: 10 }}>
+        <Col span={14}>
+          <div className="bs-panel">
+            <div className="bs-panel-title">质量合格率趋势</div>
+            <div ref={qualityTrendRef} style={{ width: '100%', height: 260 }} />
+          </div>
+        </Col>
+        <Col span={10}>
+          <div className="bs-panel">
+            <div className="bs-panel-title">各产线产出对比</div>
+            <div ref={lineOutputRef} style={{ width: '100%', height: 260 }} />
+          </div>
+        </Col>
       </Row>
 
       {/* 主体内容 */}

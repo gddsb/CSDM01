@@ -6,7 +6,7 @@ import {
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
-import { orders, materials, workOrders, manpowerRecords, exceptionRecords } from '../../mock/data'
+import { orders, materials, workOrders, manpowerRecords, exceptionRecords, processReports } from '../../mock/data'
 
 const statusColorMap = {
   '待下达': 'default',
@@ -25,7 +25,9 @@ const statusOptions = [
 export default function OrderManagement() {
   const [data, setData] = useState(orders)
   const [search, setSearch] = useState('')
+  const [searchMaterial, setSearchMaterial] = useState('')
   const [status, setStatus] = useState(undefined)
+  const [dateRange, setDateRange] = useState([])
   const [addOpen, setAddOpen] = useState(false)
   const [detailOpen, setDetailOpen] = useState(false)
   const [currentOrder, setCurrentOrder] = useState(null)
@@ -41,8 +43,16 @@ export default function OrderManagement() {
 
   const filtered = data.filter(o => {
     const matchSearch = !search || o.order_no.toLowerCase().includes(search.toLowerCase())
+    const matchMaterial = !searchMaterial ||
+      o.material_code?.toLowerCase().includes(searchMaterial.toLowerCase()) ||
+      o.material_name?.toLowerCase().includes(searchMaterial.toLowerCase())
     const matchStatus = !status || o.status === status
-    return matchSearch && matchStatus
+    let matchDate = true
+    if (dateRange && dateRange.length === 2) {
+      const od = dayjs(o.plan_start_time)
+      matchDate = od.isAfter(dateRange[0].startOf('day')) && od.isBefore(dateRange[1].endOf('day'))
+    }
+    return matchSearch && matchMaterial && matchStatus && matchDate
   })
 
   const stats = [
@@ -172,23 +182,33 @@ export default function OrderManagement() {
   }
 
   const columns = [
-    { title: '订单编号', dataIndex: 'order_no', key: 'order_no', width: 160, fixed: 'left' },
-    { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 110 },
-    { title: '品名', dataIndex: 'material_name', key: 'material_name', width: 130 },
-    { title: '规格', dataIndex: 'specification', key: 'specification', width: 120 },
-    { title: '菲林编号', dataIndex: 'film_version', key: 'film_version', width: 120 },
-    { title: '菲林版本', dataIndex: 'version_no', key: 'version_no', width: 80 },
-    { title: '计划数量', dataIndex: 'planned_qty', key: 'planned_qty', width: 100, render: v => v.toLocaleString() },
-    { title: '完工数量', dataIndex: 'finished_qty', key: 'finished_qty', width: 100, render: v => {
+    { title: '订单编号', dataIndex: 'order_no', key: 'order_no', width: 100, fixed: 'left' },
+    { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 80, fixed: 'left' },
+    { title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 120, fixed: 'left' },
+    { title: '规格', dataIndex: 'specification', key: 'specification', width: 60 },
+    { title: '菲林编号', dataIndex: 'film_version', key: 'film_version', width: 80 },
+    { title: '版本', dataIndex: 'version_no', key: 'version_no', width: 40 },
+    { title: '计划数量', dataIndex: 'planned_qty', key: 'planned_qty', width: 80, align: 'right', render: v => v.toLocaleString() },
+    { title: '完工数量', dataIndex: 'finished_qty', key: 'finished_qty', width: 80, align: 'right', render: v => {
       const val = v || 0
       return <span style={{ color: val > 0 ? 'var(--color-success)' : 'var(--text-secondary)' }}>{val.toLocaleString()}</span>
     }},
     {
-      title: '计划时间', key: 'plan_time', width: 200,
-      render: (_, r) => <span style={{ fontSize: 12 }}>{r.plan_start_time}<br />~ {r.plan_end_time}</span>,
+      title: '合格品', key: 'qualified_qty', width: 80, align: 'right',
+      render: (_, r) => {
+        const relatedWOs = workOrders.filter(w => w.order_id === r.order_id)
+        const reports = processReports.filter(rp => relatedWOs.some(w => w.work_order_id === rp.work_order_id))
+        const lastReport = reports.length > 0 ? reports[reports.length - 1] : null
+        const qualified = lastReport ? lastReport.output_qty : 0
+        return <span style={{ color: qualified > 0 ? 'var(--color-success)' : 'var(--text-secondary)' }}>{qualified.toLocaleString()}</span>
+      },
     },
-    { title: '状态', dataIndex: 'status', key: 'status', width: 90, render: v => <Tag color={statusColorMap[v]}>{v}</Tag> },
-    { title: '操作', key: 'action', width: 150, fixed: 'right', render: (_, r) => renderActions(r) },
+    {
+      title: '计划时间', key: 'plan_time', width: 100,
+      render: (_, r) => <span style={{ fontSize: 12 }}>{r.plan_start_time?.substring(0, 10)}<br />~ {r.plan_end_time?.substring(0, 10)}</span>,
+    },
+    { title: '状态', dataIndex: 'status', key: 'status', width: 40, render: v => <Tag color={statusColorMap[v]}>{v}</Tag> },
+    { title: '操作', key: 'action', width: 100, render: (_, r) => renderActions(r) },
   ]
 
   return (
@@ -205,19 +225,27 @@ export default function OrderManagement() {
         }
         table={
           <div>
-            <Row gutter={[12, 8]} style={{ marginBottom: 12 }}>
-              <Col span={6}>
+            <Row gutter={[12, 8]} style={{ marginBottom: 12 }} align="middle">
+              <Col flex="200px">
                 <Input
-                  placeholder="搜索订单编号"
+                  placeholder="订单号"
                   allowClear
                   prefix={<SearchOutlined />}
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                 />
               </Col>
-              <Col span={6}>
+              <Col flex="200px">
+                <Input
+                  placeholder="料号 / 品名"
+                  allowClear
+                  value={searchMaterial}
+                  onChange={e => setSearchMaterial(e.target.value)}
+                />
+              </Col>
+              <Col flex="120px">
                 <Select
-                  placeholder="状态筛选"
+                  placeholder="状态"
                   allowClear
                   style={{ width: '100%' }}
                   options={statusOptions}
@@ -226,9 +254,16 @@ export default function OrderManagement() {
                 />
               </Col>
               <Col>
+                <DatePicker.RangePicker
+                  value={dateRange}
+                  onChange={setDateRange}
+                  format="YYYY-MM-DD"
+                />
+              </Col>
+              <Col>
                 <Space>
                   <Button type="primary" icon={<SearchOutlined />}>查询</Button>
-                  <Button icon={<ReloadOutlined />} onClick={() => { setSearch(''); setStatus(undefined) }}>重置</Button>
+                  <Button icon={<ReloadOutlined />} onClick={() => { setSearch(''); setSearchMaterial(''); setStatus(undefined); setDateRange([]) }}>重置</Button>
                 </Space>
               </Col>
             </Row>
@@ -237,7 +272,7 @@ export default function OrderManagement() {
               dataSource={filtered}
               rowKey="order_id"
               size="small"
-              scroll={{ x: 1700 }}
+              scroll={{ x: 980 }}
               pagination={{ pageSize: 10, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
             />
           </div>
@@ -291,7 +326,7 @@ export default function OrderManagement() {
         title="订单详情"
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
-        width={720}
+        width="40%"
       >
         {currentOrder && (
           <>
