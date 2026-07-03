@@ -110,11 +110,16 @@ export default function OrderManagement() {
   const handleAdd = () => {
     setEditing(null)
     form.resetFields()
+    setSelectedMaterial(null)
     setAddOpen(true)
   }
 
+  const [selectedMaterial, setSelectedMaterial] = useState(null)
+
   const handleEdit = (r) => {
     setEditing(r)
+    const m = materials.find(mat => mat.material_id === r.material_id)
+    setSelectedMaterial(m || null)
     form.setFieldsValue({
       material_id: r.material_id,
       planned_qty: r.planned_qty,
@@ -145,8 +150,8 @@ export default function OrderManagement() {
         version_no: material.version_no,
         planned_qty: values.planned_qty,
         finished_qty: 0,
-        plan_start_time: values.plan_start_time.format('YYYY-MM-DD HH:mm'),
-        plan_end_time: values.plan_end_time.format('YYYY-MM-DD HH:mm'),
+        plan_start_time: values.plan_start_time.format('YYYY-MM-DD'),
+        plan_end_time: values.plan_end_time.format('YYYY-MM-DD'),
         status: '待下达',
         release_time: null,
         created_by: 'u3',
@@ -175,10 +180,13 @@ export default function OrderManagement() {
     }
     if (r.status === '已下达') {
       return (
-        <Button type="link" size="small" danger onClick={() => handleClose(r)}>关闭</Button>
+        <Space size={0}>
+          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(r)}>查看</Button>
+          <Button type="link" size="small" danger onClick={() => handleClose(r)}>关闭</Button>
+        </Space>
       )
     }
-    return <Button type="link" size="small" onClick={() => handleView(r)}>查看</Button>
+    return <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(r)}>查看</Button>
   }
 
   const columns = [
@@ -273,7 +281,7 @@ export default function OrderManagement() {
               rowKey="order_id"
               size="small"
               scroll={{ x: 980 }}
-              pagination={{ pageSize: 10, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
+              pagination={{ pageSize: 20, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
             />
           </div>
         }
@@ -293,13 +301,53 @@ export default function OrderManagement() {
           <Form.Item label="订单编号">
             <Input value={editing ? editing.order_no : genOrderNo()} disabled />
           </Form.Item>
-          <Form.Item label="料品" name="material_id" rules={[{ required: true, message: '请选择料品' }]}>
-            <Select
-              placeholder="请选择料品"
-              disabled={!!editing}
-              options={materials.map(m => ({ label: `${m.material_code} | ${m.material_name} | ${m.specification}`, value: m.material_id }))}
-            />
-          </Form.Item>
+          <Row gutter={12}>
+            <Col span={24}>
+              <Form.Item label="料号" name="material_id" rules={[{ required: true, message: '请选择料号' }]}>
+                <Select
+                  placeholder="请输入或选择料号"
+                  disabled={!!editing}
+                  showSearch
+                  allowClear
+                  filterOption={(input, option) => {
+                    const m = materials.find(mat => mat.material_id === option.value)
+                    if (!m) return false
+                    return m.material_code.toLowerCase().includes(input.toLowerCase()) ||
+                      m.material_name.includes(input)
+                  }}
+                  onChange={v => {
+                    const m = materials.find(mat => mat.material_id === v)
+                    setSelectedMaterial(m || null)
+                  }}
+                  options={materials.map(m => ({ label: `${m.material_code} | ${m.material_name} | ${m.specification}`, value: m.material_id }))}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item label="料品名称">
+                <Input value={selectedMaterial?.material_name || '-'} disabled />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="规格">
+                <Input value={selectedMaterial?.specification || '-'} disabled />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item label="菲林编号">
+                <Input value={selectedMaterial?.film_version || '-'} disabled />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="版本号">
+                <Input value={selectedMaterial?.version_no || '-'} disabled />
+              </Form.Item>
+            </Col>
+          </Row>
           <Row gutter={12}>
             <Col span={12}>
               <Form.Item label="计划数量" name="planned_qty" rules={[{ required: true, message: '请输入计划数量' }]}>
@@ -309,13 +357,33 @@ export default function OrderManagement() {
           </Row>
           <Row gutter={12}>
             <Col span={12}>
-              <Form.Item label="计划开始时间" name="plan_start_time" rules={[{ required: true, message: '请选择计划开始时间' }]}>
-                <DatePicker showTime format="YYYY-MM-DD HH:mm" style={{ width: '100%' }} disabled={!!editing} />
+              <Form.Item label="计划开始日期" name="plan_start_time" rules={[{ required: true, message: '请选择计划开始日期' }]}>
+                <DatePicker
+                  format="YYYY-MM-DD"
+                  style={{ width: '100%' }}
+                  disabled={!!editing}
+                  disabledDate={current => {
+                    const today = dayjs().startOf('day')
+                    const maxDate = today.add(15, 'day')
+                    return current && (current < today || current > maxDate)
+                  }}
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="计划完成时间" name="plan_end_time" rules={[{ required: true, message: '请选择计划完成时间' }]}>
-                <DatePicker showTime format="YYYY-MM-DD HH:mm" style={{ width: '100%' }} disabled={!!editing} />
+              <Form.Item label="计划完成日期" name="plan_end_time" rules={[{ required: true, message: '请选择计划完成日期' }]}>
+                <DatePicker
+                  format="YYYY-MM-DD"
+                  style={{ width: '100%' }}
+                  disabled={!!editing}
+                  disabledDate={current => {
+                    const today = dayjs().startOf('day')
+                    const maxDate = today.add(30, 'day')
+                    const startVal = form.getFieldValue('plan_start_time')
+                    const minDate = startVal ? dayjs(startVal).startOf('day') : today
+                    return current && (current < minDate || current > maxDate)
+                  }}
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -355,12 +423,23 @@ export default function OrderManagement() {
                 pagination={false}
                 style={{ marginBottom: 16 }}
                 columns={[
-                  { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 150 },
-                  { title: '产线', dataIndex: 'line_name', key: 'line_name', width: 80 },
-                  { title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 120 },
-                  { title: '目标数量', dataIndex: 'target_qty', key: 'target_qty', width: 100, render: v => v.toLocaleString() },
-                  { title: '开工时间', dataIndex: 'start_time', key: 'start_time', width: 150 },
-                  { title: '状态', dataIndex: 'status', key: 'status', width: 80, render: v => <Tag color={woStatusColor[v]}>{v}</Tag> },
+                  { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 130 },
+                  { title: '总工时', key: 'total_hours', width: 80, align: 'center',
+                    render: (_, r) => {
+                      const records = manpowerRecords.filter(m => m.work_order_id === r.work_order_id)
+                      const workerCount = records.reduce((sum, m) => sum + (m.skilled_workers || 0) + (m.general_workers || 0) + (m.contract_workers || 0) + (m.auxiliary_workers || 0), 0)
+                      if (!r.start_time || workerCount === 0) return '-'
+                      const start = dayjs(r.start_time)
+                      const end = r.finish_time ? dayjs(r.finish_time) : dayjs()
+                      const hours = end.diff(start, 'hour', true)
+                      return (workerCount * hours).toFixed(1) + 'h'
+                    },
+                  },
+                  { title: '产线', dataIndex: 'line_name', key: 'line_name', width: 60 },
+                  { title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 100 },
+                  { title: '目标数量', dataIndex: 'target_qty', key: 'target_qty', width: 80, render: v => v.toLocaleString() },
+                  { title: '开工时间', dataIndex: 'start_time', key: 'start_time', width: 130 },
+                  { title: '状态', dataIndex: 'status', key: 'status', width: 60, render: v => <Tag color={woStatusColor[v]}>{v}</Tag> },
                 ]}
               />
             ) : <Empty description="暂无关联工单" style={{ marginBottom: 16 }} />}

@@ -9,6 +9,15 @@ import { processes as processesData } from '../../mock/data'
 
 const { Text } = Typography
 
+// 自动生成工序编码 P-##
+const genProcessCode = (existingData) => {
+  const maxNo = existingData.reduce((max, p) => {
+    const match = p.process_code?.match(/P-(\d+)$/)
+    return match ? Math.max(max, parseInt(match[1])) : max
+  }, 0)
+  return 'P-' + String(maxNo + 1).padStart(2, '0')
+}
+
 export default function ProcessManagement() {
   const [data, setData] = useState(processesData)
   const [editing, setEditing] = useState(null)
@@ -74,6 +83,7 @@ export default function ProcessManagement() {
       } else {
         const newProcess = {
           process_id: 'p' + Date.now(),
+          process_code: genProcessCode(data),
           sort_order: data.length + 1,
           status: '启用',
           ...values,
@@ -152,8 +162,8 @@ export default function ProcessManagement() {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="process_code" label="工序编码" rules={[{ required: true, message: '请输入工序编码' }]}>
-                <Input placeholder="请输入工序编码" />
+              <Form.Item name="process_code" label="工序编码">
+                <Input placeholder="自动生成" disabled />
               </Form.Item>
             </Col>
           </Row>

@@ -52,9 +52,30 @@ export const materials = [
 
 // 产线
 export const productionLines = [
-  { line_id: 'l1', line_code: 'LINE-A', line_name: 'A线', status: '运行中', workshop: '一号车间', line_leader: 'u6', sort_order: 1 },
-  { line_id: 'l2', line_code: 'LINE-B', line_name: 'B线', status: '运行中', workshop: '一号车间', line_leader: 'u6', sort_order: 2 },
-  { line_id: 'l3', line_code: 'LINE-C', line_name: 'C线', status: '维护中', workshop: '二号车间', line_leader: 'u6', sort_order: 3 },
+  { line_id: 'l1', line_code: 'LINE-A', line_name: 'A线', status: '运行中', workshop: '一号车间', line_leader: 'u6', sort_order: 1,
+    line_processes: [
+      { process_id: 'p1', device_id: 'd3' },
+      { process_id: 'p2', device_id: 'd1' },
+      { process_id: 'p3', device_id: 'd1' },
+      { process_id: 'p4', device_id: 'd2' },
+      { process_id: 'p5', device_id: 'd2' },
+    ] },
+  { line_id: 'l2', line_code: 'LINE-B', line_name: 'B线', status: '运行中', workshop: '一号车间', line_leader: 'u6', sort_order: 2,
+    line_processes: [
+      { process_id: 'p1', device_id: 'd3' },
+      { process_id: 'p2', device_id: 'd1' },
+      { process_id: 'p3', device_id: 'd4' },
+      { process_id: 'p4', device_id: 'd2' },
+      { process_id: 'p5', device_id: 'd2' },
+    ] },
+  { line_id: 'l3', line_code: 'LINE-C', line_name: 'C线', status: '维护中', workshop: '二号车间', line_leader: 'u6', sort_order: 3,
+    line_processes: [
+      { process_id: 'p1', device_id: 'd3' },
+      { process_id: 'p2', device_id: 'd1' },
+      { process_id: 'p3', device_id: 'd1' },
+      { process_id: 'p4', device_id: 'd2' },
+      { process_id: 'p5', device_id: 'd2' },
+    ] },
 ]
 
 // 设备档案
@@ -67,13 +88,13 @@ export const devices = [
 
 // 不良分类
 export const defectTypes = [
-  { defect_id: 'df1', defect_code: 'D-MAT-01', defect_name: '材料划伤', defect_type: '来料不良', defect_unit: '个', available_units: ['个','片'], display: true, sort_order: 1, status: '启用' },
-  { defect_id: 'df2', defect_code: 'D-MAT-02', defect_name: '材料变形', defect_type: '来料不良', defect_unit: '个', available_units: ['个','片'], display: true, sort_order: 2, status: '启用' },
-  { defect_id: 'df3', defect_code: 'D-PRC-01', defect_name: '焊接不良', defect_type: '制程不良', defect_unit: '个', available_units: ['个','处'], display: true, sort_order: 3, status: '启用' },
-  { defect_id: 'df4', defect_code: 'D-PRC-02', defect_name: '补涂漏涂', defect_type: '制程不良', defect_unit: '个', available_units: ['个','处'], display: true, sort_order: 4, status: '启用' },
-  { defect_id: 'df5', defect_code: 'D-PRC-03', defect_name: '封口不良', defect_type: '制程不良', defect_unit: '个', available_units: ['个'], display: false, sort_order: 5, status: '启用' },
-  { defect_id: 'df6', defect_code: 'D-SCP-01', defect_name: '尺寸超差', defect_type: '检验报废', defect_unit: '个', available_units: ['个'], display: true, sort_order: 6, status: '启用' },
-  { defect_id: 'df7', defect_code: 'D-SCP-02', defect_name: '测漏不合格', defect_type: '检验报废', defect_unit: '个', available_units: ['个'], display: true, sort_order: 7, status: '启用' },
+  { defect_id: 'df1', defect_code: 'D-MAT-01', defect_name: '材料划伤', defect_type: '来料不良', defect_unit: '个', available_units: ['个','片'], display: true, sort_order: 1, status: '启用', related_processes: ['p1'], defect_description: '材料表面有划痕', defect_images: [] },
+  { defect_id: 'df2', defect_code: 'D-MAT-02', defect_name: '材料变形', defect_type: '来料不良', defect_unit: '个', available_units: ['个','片'], display: true, sort_order: 2, status: '启用', related_processes: ['p1'], defect_description: '材料形状变形', defect_images: [] },
+  { defect_id: 'df3', defect_code: 'D-PRC-01', defect_name: '焊接不良', defect_type: '制程不良', defect_unit: '个', available_units: ['个','处'], display: true, sort_order: 3, status: '启用', related_processes: ['p3'], defect_description: '焊接处有气孔、虚焊等', defect_images: [] },
+  { defect_id: 'df4', defect_code: 'D-PRC-02', defect_name: '补涂漏涂', defect_type: '制程不良', defect_unit: '个', available_units: ['个','处'], display: true, sort_order: 4, status: '启用', related_processes: ['p4'], defect_description: '补涂区域有漏涂', defect_images: [] },
+  { defect_id: 'df5', defect_code: 'D-PRC-03', defect_name: '封口不良', defect_type: '制程不良', defect_unit: '个', available_units: ['个'], display: false, sort_order: 5, status: '启用', related_processes: ['p6'], defect_description: '封口不严密', defect_images: [] },
+  { defect_id: 'df6', defect_code: 'D-SCP-01', defect_name: '尺寸超差', defect_type: '检验报废', defect_unit: '个', available_units: ['个'], display: true, sort_order: 6, status: '启用', related_processes: ['p2','p5'], defect_description: '成品尺寸超出公差范围', defect_images: [] },
+  { defect_id: 'df7', defect_code: 'D-SCP-02', defect_name: '测漏不合格', defect_type: '检验报废', defect_unit: '个', available_units: ['个'], display: true, sort_order: 7, status: '启用', related_processes: ['p5'], defect_description: '正压测漏不合格', defect_images: [] },
 ]
 
 // 生产订单

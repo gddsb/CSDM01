@@ -209,7 +209,6 @@ export default function ProcessReporting() {
       title: '不良合计', key: 'defect_total', width: 90,
       render: (_, r) => <Tag color={r.defect_material + r.defect_process + r.defect_scrap > 0 ? 'error' : 'default'}>{r.defect_material + r.defect_process + r.defect_scrap}</Tag>,
     },
-    { title: '使用设备', dataIndex: 'device_name', key: 'device_name', width: 130, render: v => v || '-' },
     { title: '报工人', dataIndex: 'report_user_name', key: 'report_user_name', width: 100 },
     { title: '报工时间', dataIndex: 'report_time', key: 'report_time', width: 160 },
     {

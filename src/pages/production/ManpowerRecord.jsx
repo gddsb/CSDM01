@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { Table, Button, Modal, Form, Input, InputNumber, Select, Space, Row, Col, message, Drawer, Descriptions } from 'antd'
 import {
   TeamOutlined, ToolOutlined, UserOutlined, SolutionOutlined,
@@ -35,6 +35,15 @@ export default function ManpowerRecord() {
     form.resetFields()
     setAddOpen(true)
   }
+
+  // 工单选择：过滤掉已有人员记录的工单
+  const workOrderOptions = useMemo(() => {
+    const existingIds = new Set(data.map(r => r.work_order_id))
+    return workOrders.filter(w => !existingIds.has(w.work_order_id)).map(w => ({
+      label: w.work_order_no,
+      value: w.work_order_id,
+    }))
+  }, [data, workOrders])
 
   const handleView = (r) => {
     setCurrentRecord(r)
@@ -204,7 +213,11 @@ export default function ManpowerRecord() {
           <Form.Item label="工单" name="work_order_id" rules={[{ required: true, message: '请选择工单' }]}>
             <Select
               placeholder="请选择工单"
-              options={workOrders.map(w => ({ label: w.work_order_no, value: w.work_order_id }))}
+              disabled={!!editing}
+              options={editing
+                ? workOrders.map(w => ({ label: w.work_order_no, value: w.work_order_id }))
+                : workOrderOptions
+              }
             />
           </Form.Item>
           <Row gutter={12}>

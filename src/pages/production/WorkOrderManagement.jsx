@@ -475,8 +475,9 @@ export default function WorkOrderManagement() {
             }
           }}
         >
+          {/* 第一行：关联订单 */}
           <Row gutter={12}>
-            <Col span={12}>
+            <Col span={24}>
               <Form.Item label="关联生产订单" name="order_id" rules={[{ required: true, message: '请选择关联生产订单' }]}>
                 <Select
                   placeholder="请选择关联生产订单"
@@ -485,35 +486,40 @@ export default function WorkOrderManagement() {
                 />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item label="料品名称">
-                <Input value={selectedOrder?.material_name || '-'} disabled />
-              </Form.Item>
-            </Col>
           </Row>
+          {/* 第二行：料号、产品名称 */}
           <Row gutter={12}>
-            <Col span={6}>
+            <Col span={12}>
               <Form.Item label="料号">
                 <Input value={selectedOrder?.material_code || '-'} disabled />
               </Form.Item>
             </Col>
-            <Col span={6}>
-              <Form.Item label="规格">
-                <Input value={selectedOrder?.specification || '-'} disabled />
+            <Col span={12}>
+              <Form.Item label="产品名称">
+                <Input value={selectedOrder?.material_name || '-'} disabled />
               </Form.Item>
             </Col>
-            <Col span={6}>
+          </Row>
+          {/* 第三行：菲林编号、版本号 */}
+          <Row gutter={12}>
+            <Col span={12}>
               <Form.Item label="菲林编号">
                 <Input value={selectedOrder?.film_version || '-'} disabled />
               </Form.Item>
             </Col>
-            <Col span={6}>
+            <Col span={12}>
               <Form.Item label="版本号">
                 <Input value={selectedOrder?.version_no || '-'} disabled />
               </Form.Item>
             </Col>
           </Row>
+          {/* 第四行：目标数量、产线 */}
           <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item label="目标数量" name="target_qty" rules={[{ required: true, message: '请输入目标数量' }]}>
+                <InputNumber min={1} style={{ width: '100%' }} placeholder="请输入目标数量" />
+              </Form.Item>
+            </Col>
             <Col span={12}>
               <Form.Item label="产线" name="line_id" rules={[{ required: true, message: '请选择产线' }]}>
                 <Select
@@ -523,16 +529,47 @@ export default function WorkOrderManagement() {
                 />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item label="目标数量" name="target_qty" rules={[{ required: true, message: '请输入目标数量' }]}>
-                <InputNumber min={1} style={{ width: '100%' }} placeholder="请输入目标数量" />
-              </Form.Item>
-            </Col>
           </Row>
+          {/* 第五行：计划开工时间 */}
           <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item label="开工时间" name="start_time" rules={[{ required: true, message: '请选择开工时间' }]}>
-                <DatePicker showTime format="YYYY-MM-DD HH:mm" style={{ width: '100%' }} placeholder="请选择开工时间" />
+            <Col span={24}>
+              <Form.Item label="计划开工时间" name="start_time" rules={[{ required: true, message: '请选择计划开工时间' }]}>
+                <DatePicker
+                  showTime={{ minuteStep: 10 }}
+                  format="YYYY-MM-DD HH:mm"
+                  style={{ width: '100%' }}
+                  placeholder="请选择计划开工时间"
+                  disabledDate={current => current && current < dayjs().startOf('day')}
+                  disabledTime={date => {
+                    if (!date) return {}
+                    const now = dayjs()
+                    const minTime = now
+                    const maxTime = now.add(48, 'hour')
+                    if (date.isSame(now, 'day')) {
+                      return {
+                        disabledHours: () => Array.from({ length: 24 }, (_, i) => i).filter(h => h < now.hour()),
+                        disabledMinutes: () => {
+                          if (date.hour() === now.hour()) {
+                            return Array.from({ length: 60 }, (_, i) => i).filter(m => m < now.minute())
+                          }
+                          return []
+                        },
+                      }
+                    }
+                    if (date.isSame(maxTime, 'day')) {
+                      return {
+                        disabledHours: () => Array.from({ length: 24 }, (_, i) => i).filter(h => h > maxTime.hour()),
+                        disabledMinutes: () => {
+                          if (date.hour() === maxTime.hour()) {
+                            return Array.from({ length: 60 }, (_, i) => i).filter(m => m > maxTime.minute())
+                          }
+                          return []
+                        },
+                      }
+                    }
+                    return {}
+                  }}
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -627,11 +664,29 @@ export default function WorkOrderManagement() {
                   pagination={false}
                   style={{ marginBottom: 16 }}
                   columns={[
-                    { title: '技工', dataIndex: 'skilled_workers', key: 'skilled_workers', width: 60 },
-                    { title: '普工', dataIndex: 'general_workers', key: 'general_workers', width: 60 },
-                    { title: '劳务', dataIndex: 'contract_workers', key: 'contract_workers', width: 60 },
-                    { title: '辅助', dataIndex: 'auxiliary_workers', key: 'auxiliary_workers', width: 60 },
-                    { title: '备注', dataIndex: 'remarks', key: 'remarks', width: 80 },
+                    { title: '技工人数', dataIndex: 'skilled_workers', key: 'skilled_workers', width: 90, render: v => v || 0 },
+                    { title: '普工人数', dataIndex: 'general_workers', key: 'general_workers', width: 90, render: v => v || 0 },
+                    { title: '劳务工人数', dataIndex: 'contract_workers', key: 'contract_workers', width: 100, render: v => v || 0 },
+                    { title: '其他辅助', dataIndex: 'auxiliary_workers', key: 'auxiliary_workers', width: 90, render: v => v || 0 },
+                    {
+                      title: '合计人数', key: 'total', width: 90,
+                      render: (_, r) => (r.skilled_workers || 0) + (r.general_workers || 0) + (r.contract_workers || 0) + (r.auxiliary_workers || 0),
+                    },
+                    {
+                      title: '总工时(小时)', key: 'total_hours', width: 110,
+                      render: (_, r) => {
+                        const totalWorkers = (r.skilled_workers || 0) + (r.general_workers || 0) + (r.contract_workers || 0) + (r.auxiliary_workers || 0)
+                        const wo = workOrders.find(w => w.work_order_id === r.work_order_id)
+                        if (!wo || !wo.start_time) return '-'
+                        const start = dayjs(wo.start_time)
+                        const end = wo.finish_time ? dayjs(wo.finish_time) : dayjs()
+                        const hours = end.diff(start, 'hour', true)
+                        return (totalWorkers * hours).toFixed(1)
+                      },
+                    },
+                    { title: '备注', dataIndex: 'remarks', key: 'remarks', width: 120, render: v => v || '-' },
+                    { title: '记录人', dataIndex: 'record_user_name', key: 'record_user_name', width: 100 },
+                    { title: '记录时间', dataIndex: 'created_at', key: 'created_at', width: 160 },
                   ]}
                 />
               ) : <Empty description="暂无人员记录" style={{ marginBottom: 16 }} />}
