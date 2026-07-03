@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, Select, message, Row, Col } from 'antd'
+import { Table, Tag, Button, Modal, Form, Input, Select, message, Row, Col, Switch, Drawer, Descriptions, Space } from 'antd'
 import {
   ImportOutlined, ToolOutlined, DeleteOutlined,
-  EditOutlined, PlusOutlined,
+  EditOutlined, PlusOutlined, EyeOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import { defectTypes as defectData } from '../../mock/data'
@@ -17,6 +17,7 @@ export default function DefectManagement() {
   const [data, setData] = useState(defectData)
   const [editing, setEditing] = useState(null)
   const [modalVisible, setModalVisible] = useState(false)
+  const [viewRecord, setViewRecord] = useState(null)
   const [form] = Form.useForm()
 
   const incomingCount = data.filter(d => d.defect_type === '来料不良').length
@@ -49,13 +50,17 @@ export default function DefectManagement() {
     try {
       const values = await form.validateFields()
       if (editing) {
-        setData(prev => prev.map(d => d.defect_id === editing.defect_id ? {
+        setData(prev => prev.map(d => editing.defect_id === d.defect_id ? {
           ...d,
           defect_code: values.defect_code,
           defect_name: values.defect_name,
           defect_type: values.defect_category,
           severity: values.severity,
           description: values.description,
+          defect_unit: values.defect_unit || d.defect_unit,
+          available_units: values.available_units ? values.available_units.split(',').map(u => u.trim()) : d.available_units,
+          display: !!values.display,
+          sort_order: values.sort_order ? parseInt(values.sort_order) : d.sort_order,
         } : d))
         message.success('不良项编辑成功')
       } else {
@@ -66,9 +71,10 @@ export default function DefectManagement() {
           defect_type: values.defect_category,
           severity: values.severity,
           description: values.description,
-          defect_unit: '个',
-          available_units: ['个'],
-          sort_order: data.length + 1,
+          defect_unit: values.defect_unit || '个',
+          available_units: values.available_units ? values.available_units.split(',').map(u => u.trim()) : ['个'],
+          display: !!values.display,
+          sort_order: values.sort_order ? parseInt(values.sort_order) : data.length + 1,
           status: '启用',
         }
         setData(prev => [newDefect, ...prev])
@@ -100,7 +106,10 @@ export default function DefectManagement() {
     {
       title: '操作', key: 'action', width: 150,
       render: (_, record) => (
-        <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
+        <Space size="small">
+          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => setViewRecord(record)}>查看</Button>
+          <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
+        </Space>
       ),
     },
   ]
@@ -157,11 +166,60 @@ export default function DefectManagement() {
               </Form.Item>
             </Col>
           </Row>
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item name="defect_unit" label="默认单位" rules={[{ required: true, message: '请输入默认单位' }]}>
+                <Input placeholder="如：个、处、片" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="available_units" label="可选单位（逗号分隔）" rules={[{ required: true, message: '请输入可选单位' }]}>
+                <Input placeholder="如：个,处 或 个" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item name="display" label="默认显示" valuePropName="checked">
+                <Switch checkedChildren="是" unCheckedChildren="否" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="sort_order" label="排序号">
+                <Input placeholder="数字越小越靠前" />
+              </Form.Item>
+            </Col>
+          </Row>
           <Form.Item name="description" label="描述">
             <Input.TextArea placeholder="请输入描述" rows={3} />
           </Form.Item>
         </Form>
       </Modal>
+      <Drawer
+        title="查看不良项"
+        open={!!viewRecord}
+        onClose={() => setViewRecord(null)}
+        width={480}
+      >
+        {viewRecord && (
+          <Descriptions column={2} size="small" bordered>
+            <Descriptions.Item label="不良编码">{viewRecord.defect_code}</Descriptions.Item>
+            <Descriptions.Item label="不良名称">{viewRecord.defect_name}</Descriptions.Item>
+            <Descriptions.Item label="所属大类">
+              <Tag color={typeColorMap[viewRecord.defect_type]}>{viewRecord.defect_type}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="严重等级">{viewRecord.severity || '-'}</Descriptions.Item>
+            <Descriptions.Item label="默认单位">{viewRecord.defect_unit}</Descriptions.Item>
+            <Descriptions.Item label="可选单位">{Array.isArray(viewRecord.available_units) ? viewRecord.available_units.join('、') : viewRecord.available_units}</Descriptions.Item>
+            <Descriptions.Item label="默认显示">{viewRecord.display ? '是' : '否'}</Descriptions.Item>
+            <Descriptions.Item label="排序号">{viewRecord.sort_order}</Descriptions.Item>
+            <Descriptions.Item label="状态">
+              <Tag color={viewRecord.status === '启用' ? 'green' : 'red'}>{viewRecord.status}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="描述" span={2}>{viewRecord.description || '-'}</Descriptions.Item>
+          </Descriptions>
+        )}
+      </Drawer>
     </>
   )
 }

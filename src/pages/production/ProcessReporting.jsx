@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
 import {
   Table, Tag, Button, Modal, Form, Input, InputNumber, Select, Space, Row, Col,
-  Checkbox, Alert, Descriptions, message
+  Checkbox, Alert, Descriptions, message, Drawer
 } from 'antd'
 import {
   ProfileOutlined, ClockCircleOutlined, ArrowDownOutlined, WarningOutlined,
-  PlusOutlined, ExportOutlined, SearchOutlined, ReloadOutlined, EditOutlined
+  PlusOutlined, ExportOutlined, SearchOutlined, ReloadOutlined, EditOutlined, EyeOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
@@ -25,6 +25,7 @@ const orderFilterOptions = [...new Set(workOrders.map(w => w.order_id))].map(oid
 
 export default function ProcessReporting() {
   const [data, setData] = useState(processReports)
+  const [viewRecord, setViewRecord] = useState(null)
   const [search, setSearch] = useState('')
   const [processFilter, setProcessFilter] = useState(undefined)
   const [orderFilter, setOrderFilter] = useState(undefined)
@@ -35,6 +36,8 @@ export default function ProcessReporting() {
   const [selProcess, setSelProcess] = useState(null)
   const [inputQty, setInputQty] = useState(0)
   const [defects, setDefects] = useState({})
+  const [defectUnits, setDefectUnits] = useState({})
+  const [showMoreDefects, setShowMoreDefects] = useState(false)
 
   const today = dayjs().format('YYYY-MM-DD')
   const filtered = data.filter(r => {
@@ -89,7 +92,18 @@ export default function ProcessReporting() {
     setSelWorkOrder(null)
     setSelProcess(null)
     setInputQty(0)
-    setDefects({})
+    // 默认将全部来料不良、制程不良中 display=true 的项、全部检验报废添加到不良列表
+    const defaultDefects = {}
+    const defaultUnits = {}
+    defectTypes.forEach(d => {
+      if (d.defect_type === '来料不良' || d.defect_type === '检验报废' || (d.defect_type === '制程不良' && d.display)) {
+        defaultDefects[d.defect_id] = 0
+        defaultUnits[d.defect_id] = d.defect_unit
+      }
+    })
+    setDefects(defaultDefects)
+    setDefectUnits(defaultUnits)
+    setShowMoreDefects(false)
     setAddOpen(true)
   }
 
@@ -111,6 +125,21 @@ export default function ProcessReporting() {
       if (first && map[g] > 0) next[first.defect_id] = map[g]
     })
     setDefects(next)
+    // 编辑时补充初始化所有默认可见项（来料不良全部、制程不良 display=true、检验报废全部）
+    const unitNext = {}
+    defectTypes.forEach(d => {
+      if (d.defect_type === '来料不良' || d.defect_type === '检验报废' || (d.defect_type === '制程不良' && d.display)) {
+        if (next[d.defect_id] == null) next[d.defect_id] = 0
+        unitNext[d.defect_id] = d.defect_unit
+      }
+    })
+    Object.keys(next).forEach(id => {
+      const d = defectMap[id]
+      if (d && !unitNext[id]) unitNext[id] = d.defect_unit
+    })
+    setDefects(next)
+    setDefectUnits(unitNext)
+    setShowMoreDefects(false)
     setAddOpen(true)
   }
 
@@ -168,14 +197,11 @@ export default function ProcessReporting() {
       title: '关联订单', key: 'order_no', width: 150,
       render: (_, r) => workOrderMap[r.work_order_id]?.order_no || '-',
     },
+    { title: '投入数量', dataIndex: 'input_qty', key: 'input_qty', width: 90, render: v => v?.toLocaleString() },
     {
-      title: '工序', key: 'process', width: 140,
-      render: (_, r) => {
-        const p = processMap[r.process_id]
-        return p ? `${p.process_code} ${p.process_name}` : r.process_name
-      },
+      title: '合格数量', dataIndex: 'output_qty', key: 'output_qty', width: 90,
+      render: v => v?.toLocaleString(),
     },
-    { title: '投入数量', dataIndex: 'input_qty', key: 'input_qty', width: 90, render: v => v.toLocaleString() },
     { title: '来料不良', dataIndex: 'defect_material', key: 'defect_material', width: 90, render: v => v || 0 },
     { title: '制程不良', dataIndex: 'defect_process', key: 'defect_process', width: 90, render: v => v || 0 },
     { title: '检验报废', dataIndex: 'defect_scrap', key: 'defect_scrap', width: 90, render: v => v || 0 },
@@ -183,13 +209,17 @@ export default function ProcessReporting() {
       title: '不良合计', key: 'defect_total', width: 90,
       render: (_, r) => <Tag color={r.defect_material + r.defect_process + r.defect_scrap > 0 ? 'error' : 'default'}>{r.defect_material + r.defect_process + r.defect_scrap}</Tag>,
     },
-    { title: '产出数量', dataIndex: 'output_qty', key: 'output_qty', width: 90, render: v => v.toLocaleString() },
     { title: '使用设备', dataIndex: 'device_name', key: 'device_name', width: 130, render: v => v || '-' },
     { title: '报工人', dataIndex: 'report_user_name', key: 'report_user_name', width: 100 },
     { title: '报工时间', dataIndex: 'report_time', key: 'report_time', width: 160 },
     {
-      title: '操作', key: 'action', width: 150,
-      render: (_, r) => <Button type="link" size="small" onClick={() => handleEdit(r)}>修改</Button>,
+      title: '操作', key: 'action', width: 120,
+      render: (_, r) => (
+        <Space size="small">
+          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => setViewRecord(r)}>查看</Button>
+          <Button type="link" size="small" onClick={() => handleEdit(r)}>修改</Button>
+        </Space>
+      ),
     },
   ]
 
@@ -284,7 +314,7 @@ export default function ProcessReporting() {
         onCancel={() => setAddOpen(false)}
         okText="保存"
         cancelText="取消"
-        width={760}
+        width={1000}
         destroyOnClose
       >
         <Alert
@@ -382,88 +412,154 @@ export default function ProcessReporting() {
             </Col>
           </Row>
 
-          {/* 不良项登记：三列 */}
+          {/* 不良项登记：来料不良/制程不良左右两侧，检验报废下方 */}
           <Form.Item label="不良项登记" style={{ marginBottom: 8 }}>
-            <Row gutter={12}>
-              {defectGroups.map(group => {
-                const groupDefects = defectTypes.filter(d => d.defect_type === group)
-                const groupTotal = groupDefects.reduce((s, d) => s + (defects[d.defect_id] || 0), 0)
-                const groupColor = group === '来料不良' ? '#FF9800' : group === '制程不良' ? '#F44336' : '#9E9E9E'
-                return (
-                  <Col key={group} span={8}>
-                    <div style={{
-                      border: `1px solid ${groupColor}40`,
-                      borderRadius: 6,
-                      padding: 10,
-                      height: '100%',
-                      background: `${groupColor}08`,
-                    }}>
-                      <div style={{
-                        fontWeight: 600, marginBottom: 8, fontSize: 13,
-                        color: groupColor, borderBottom: `1px solid ${groupColor}30`,
-                        paddingBottom: 6, display: 'flex', justifyContent: 'space-between',
-                      }}>
-                        <span>{group}</span>
-                        <span>合计: {groupTotal}</span>
-                      </div>
-                      {groupDefects.map(d => (
-                        <div key={d.defect_id} style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <Checkbox
-                            checked={defects[d.defect_id] != null}
-                            onChange={e => {
-                              setDefects(prev => {
-                                const next = { ...prev }
-                                if (e.target.checked) next[d.defect_id] = 0
-                                else delete next[d.defect_id]
-                                return next
-                              })
-                            }}
-                          >
-                            <span style={{ fontSize: 12 }}>{d.defect_name}</span>
-                          </Checkbox>
-                          {defects[d.defect_id] != null && (
-                            <InputNumber
-                              size="small"
-                              min={0}
-                              style={{ width: 70 }}
-                              value={defects[d.defect_id]}
-                              onChange={v => setDefects(prev => ({ ...prev, [d.defect_id]: v || 0 }))}
-                            />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </Col>
-                )
-              })}
-            </Row>
-          </Form.Item>
+            {(() => {
+              // 各分组当前已显示的缺陷项
+              const matItems = defectTypes.filter(d => d.defect_type === '来料不良' && defects[d.defect_id] != null)
+              const procItems = defectTypes.filter(d => d.defect_type === '制程不良' && defects[d.defect_id] != null)
+              const scrapItems = defectTypes.filter(d => d.defect_type === '检验报废' && defects[d.defect_id] != null)
+              // 制程不良中尚未添加的隐藏项
+              const procHidden = defectTypes.filter(d => d.defect_type === '制程不良' && defects[d.defect_id] == null)
 
-          {/* 底部数量汇总条 */}
-          <div style={{
-            display: 'flex', gap: 0, borderRadius: 6, overflow: 'hidden',
-            border: '1px solid var(--border-color)',
-          }}>
-            {[
-              { label: '来料不良', value: defectMat, color: '#FF9800' },
-              { label: '制程不良', value: defectProc, color: '#F44336' },
-              { label: '检验报废', value: defectScrap, color: '#9E9E9E' },
-              { label: '不良合计', value: totalDefect, color: '#E91E63' },
-              { label: '投入数量', value: inputQty, color: '#2196F3' },
-              { label: '产出数量', value: outputQty, color: '#4CAF50' },
-            ].map((item, i, arr) => (
-              <div key={item.label} style={{
-                flex: 1, textAlign: 'center', padding: '8px 4px',
-                borderRight: i < arr.length - 1 ? '1px solid var(--border-color)' : 'none',
-                background: 'var(--bg-card)',
-              }}>
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 2 }}>{item.label}</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: item.color }}>{item.value}</div>
-              </div>
-            ))}
-          </div>
+              const renderDefectRow = (d) => (
+                <div key={d.defect_id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--border-color)' }}>
+                  <span style={{ flex: 1, fontSize: 12 }}>{d.defect_name}</span>
+                  <InputNumber
+                    size="small"
+                    min={0}
+                    style={{ width: 70 }}
+                    value={defects[d.defect_id]}
+                    onChange={v => setDefects(prev => ({ ...prev, [d.defect_id]: v || 0 }))}
+                  />
+                  {d.available_units.length > 1 ? (
+                    <Select
+                      size="small"
+                      style={{ width: 55 }}
+                      value={defectUnits[d.defect_id] || d.defect_unit}
+                      options={d.available_units.map(u => ({ label: u, value: u }))}
+                      onChange={u => setDefectUnits(prev => ({ ...prev, [d.defect_id]: u }))}
+                    />
+                  ) : (
+                    <span style={{ fontSize: 11, color: 'var(--text-secondary)', width: 30, textAlign: 'center' }}>{d.defect_unit}</span>
+                  )}
+                </div>
+              )
+
+              return (
+                <>
+                  {/* 上排：来料不良 + 制程不良 */}
+                  <Row gutter={12} style={{ marginBottom: 12 }}>
+                    <Col span={12}>
+                      <div style={{ border: '1px solid #FF980040', borderRadius: 6, padding: '8px 12px', background: '#FF980008' }}>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: '#FF9800', borderBottom: '1px solid #FF980030', paddingBottom: 6, marginBottom: 6, display: 'flex', justifyContent: 'space-between' }}>
+                          <span>来料不良</span>
+                          <span>合计: {matItems.reduce((s, d) => s + (defects[d.defect_id] || 0), 0)}</span>
+                        </div>
+                        {matItems.map(renderDefectRow)}
+                      </div>
+                    </Col>
+                    <Col span={12}>
+                      <div style={{ border: '1px solid #F4433640', borderRadius: 6, padding: '8px 12px', background: '#F4433608' }}>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: '#F44336', borderBottom: '1px solid #F4433630', paddingBottom: 6, marginBottom: 6, display: 'flex', justifyContent: 'space-between' }}>
+                          <span>制程不良</span>
+                          <span>合计: {procItems.reduce((s, d) => s + (defects[d.defect_id] || 0), 0)}</span>
+                        </div>
+                        {procItems.map(renderDefectRow)}
+                        {/* 添加其他项：下拉框放在最后一行 */}
+                        {procHidden.length > 0 && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--border-color)' }}>
+                            <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>添加其他项：</span>
+                            <Select
+                              size="small"
+                              style={{ flex: 1 }}
+                              placeholder="请选择"
+                              value={undefined}
+                              options={procHidden.map(d => ({ label: d.defect_name, value: d.defect_id }))}
+                              onChange={id => {
+                                const d = defectMap[id]
+                                if (d) {
+                                  setDefects(prev => ({ ...prev, [id]: 0 }))
+                                  setDefectUnits(u => ({ ...u, [id]: d.defect_unit }))
+                                }
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </Col>
+                  </Row>
+                  {/* 下排：检验报废 */}
+                  <Row gutter={12}>
+                    <Col span={24}>
+                      <div style={{ border: '1px solid #9E9E9E40', borderRadius: 6, padding: '8px 12px', background: '#9E9E9E08' }}>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: '#9E9E9E', borderBottom: '1px solid #9E9E9E30', paddingBottom: 6, marginBottom: 6, display: 'flex', justifyContent: 'space-between' }}>
+                          <span>检验报废</span>
+                          <span>合计: {scrapItems.reduce((s, d) => s + (defects[d.defect_id] || 0), 0)}</span>
+                        </div>
+                        <Row gutter={12}>
+                          {scrapItems.map(d => (
+                            <Col span={6} key={d.defect_id}>
+                              {renderDefectRow(d)}
+                            </Col>
+                          ))}
+                        </Row>
+                      </div>
+                    </Col>
+                  </Row>
+                </>
+              )
+            })()}
+          </Form.Item>
         </Form>
       </Modal>
+      {/* 查看报工详情 */}
+      <Drawer
+        title="报工详情"
+        open={!!viewRecord}
+        onClose={() => setViewRecord(null)}
+        width={700}
+      >
+        {viewRecord && (() => {
+          const wo = workOrders.find(w => w.work_order_id === viewRecord.work_order_id)
+          const proc = processMap[viewRecord.process_id]
+          const relatedReports = data.filter(r => r.work_order_id === viewRecord.work_order_id)
+          return (
+            <>
+              <Descriptions column={3} size="small" bordered style={{ marginBottom: 24 }}>
+                <Descriptions.Item label="工单编号">{viewRecord.work_order_no}</Descriptions.Item>
+                <Descriptions.Item label="工序">{proc ? `${proc.process_code} ${proc.process_name}` : viewRecord.process_name}</Descriptions.Item>
+                <Descriptions.Item label="报工人">{viewRecord.report_user_name}</Descriptions.Item>
+                <Descriptions.Item label="投入数量">{viewRecord.input_qty?.toLocaleString()}</Descriptions.Item>
+                <Descriptions.Item label="合格数量">{viewRecord.output_qty?.toLocaleString()}</Descriptions.Item>
+                <Descriptions.Item label="使用设备">{viewRecord.device_name || '-'}</Descriptions.Item>
+                <Descriptions.Item label="来料不良">{viewRecord.defect_material || 0}</Descriptions.Item>
+                <Descriptions.Item label="制程不良">{viewRecord.defect_process || 0}</Descriptions.Item>
+                <Descriptions.Item label="检验报废">{viewRecord.defect_scrap || 0}</Descriptions.Item>
+                <Descriptions.Item label="报工时间" span={3}>{viewRecord.report_time}</Descriptions.Item>
+              </Descriptions>
+              <h5 style={{ marginBottom: 12 }}>该工单各工序报工情况</h5>
+              <Table
+                size="small"
+                dataSource={relatedReports}
+                rowKey="report_id"
+                pagination={false}
+                bordered
+                columns={[
+                  { title: '工序', render: (_, r) => { const p = processMap[r.process_id]; return p ? `${p.process_code} ${p.process_name}` : r.process_name } },
+                  { title: '投入数量', dataIndex: 'input_qty', render: v => v?.toLocaleString() },
+                  { title: '合格数量', dataIndex: 'output_qty', render: v => v?.toLocaleString() },
+                  { title: '来料不良', dataIndex: 'defect_material', render: v => v || 0 },
+                  { title: '制程不良', dataIndex: 'defect_process', render: v => v || 0 },
+                  { title: '检验报废', dataIndex: 'defect_scrap', render: v => v || 0 },
+                  { title: '报工人', dataIndex: 'report_user_name' },
+                  { title: '报工时间', dataIndex: 'report_time' },
+                ]}
+              />
+            </>
+          )
+        })()}
+      </Drawer>
     </>
   )
 }

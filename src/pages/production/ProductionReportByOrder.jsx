@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { Table, Tag, Select, Space, Row, Col, Empty } from 'antd'
 import { ProfileOutlined, SearchOutlined } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
@@ -84,14 +84,25 @@ export default function ProductionReportByOrder() {
   const [selectedWOId, setSelectedWOId] = useState(null)
 
   // 工单搜索选项 - 按工单编号倒序
+  const woMap = useMemo(() => {
+    const map = {}
+    workOrders.forEach(w => { map[w.work_order_id] = w })
+    return map
+  }, [])
   const woOptions = useMemo(() => {
     return [...workOrders]
       .sort((a, b) => b.work_order_no.localeCompare(a.work_order_no))
       .map(w => {
         return {
           value: w.work_order_id,
-          label: `${w.work_order_no} | ${w.material_name || '-'}`,
-          wo: w,
+          label: (
+            <div style={{ display: 'flex', gap: 12, fontSize: 12, alignItems: 'center' }}>
+              <span style={{ width: 140, color: 'var(--text-primary)', fontWeight: 500 }}>{w.work_order_no}</span>
+              <span style={{ width: 100, color: 'var(--text-secondary)' }}>{w.material_name || '-'}</span>
+              <span style={{ width: 80, textAlign: 'right', color: 'var(--text-primary)' }}>{w.target_qty?.toLocaleString()}</span>
+              <span style={{ width: 60 }}><Tag color={woStatusColor[w.status]} style={{ margin: 0 }}>{w.status}</Tag></span>
+            </div>
+          ),
         }
       })
   }, [])
@@ -151,6 +162,14 @@ export default function ProductionReportByOrder() {
     // 存储总数供列计算使用
     return { tree: processData, grandTotal }
   }, [relatedReports])
+
+  // 默认只展开一级（工序行），折叠二级（不良分类下的明细）
+  const [defectExpandedKeys, setDefectExpandedKeys] = useState([])
+  useEffect(() => {
+    const tree = defectTreeData.tree || []
+    // 只取一级 key（以 "proc_" 开头）
+    setDefectExpandedKeys(tree.map(item => item.key))
+  }, [defectTreeData.tree])
 
   const totalDefect = defectTreeData.grandTotal || 0
 
@@ -333,7 +352,7 @@ export default function ProductionReportByOrder() {
                 value={selectedWOId}
                 onChange={setSelectedWOId}
                 filterOption={(input, option) => {
-                  const wo = option.wo
+                  const wo = woMap[option.value]
                   if (!wo) return false
                   const search = input.toLowerCase()
                   return wo.work_order_no?.toLowerCase().includes(search) ||
@@ -341,18 +360,7 @@ export default function ProductionReportByOrder() {
                     wo.order_no?.toLowerCase().includes(search)
                 }}
                 options={woOptions}
-                optionRender={(option) => {
-                  const wo = option.wo
-                  if (!wo) return null
-                  return (
-                    <div style={{ display: 'flex', gap: 12, fontSize: 12 }}>
-                      <span style={{ width: 130 }}>{wo.work_order_no}</span>
-                      <span style={{ width: 100 }}>{wo.material_name || '-'}</span>
-                      <span style={{ width: 80, textAlign: 'right' }}>{wo.target_qty?.toLocaleString()}</span>
-                      <span style={{ width: 60 }}><Tag color={woStatusColor[wo.status]} style={{ margin: 0 }}>{wo.status}</Tag></span>
-                    </div>
-                  )
-                }}
+                popupMatchSelectWidth={500}
               />
             </Col>
           </Row>
@@ -372,7 +380,8 @@ export default function ProductionReportByOrder() {
                   dataSource={defectTreeData.tree || []}
                   pagination={false}
                   expandable={{
-                    defaultExpandAllRows: true,
+                    expandedRowKeys: defectExpandedKeys,
+                    onExpandedRowsChange: setDefectExpandedKeys,
                     childrenColumnName: 'children',
                   }}
                   scroll={{ x: 380 }}

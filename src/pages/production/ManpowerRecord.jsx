@@ -114,6 +114,18 @@ export default function ManpowerRecord() {
       title: '合计人数', key: 'total', width: 100,
       render: (_, r) => (r.skilled_workers || 0) + (r.general_workers || 0) + (r.contract_workers || 0) + (r.auxiliary_workers || 0),
     },
+    {
+      title: '总工时(小时)', key: 'total_hours', width: 120,
+      render: (_, r) => {
+        const totalWorkers = (r.skilled_workers || 0) + (r.general_workers || 0) + (r.contract_workers || 0) + (r.auxiliary_workers || 0)
+        const wo = workOrders.find(w => w.work_order_id === r.work_order_id)
+        if (!wo || !wo.start_time) return '-'
+        const start = dayjs(wo.start_time)
+        const end = wo.finish_time ? dayjs(wo.finish_time) : dayjs()
+        const hours = end.diff(start, 'hour', true)
+        return (totalWorkers * hours).toFixed(1)
+      },
+    },
     { title: '备注', dataIndex: 'remarks', key: 'remarks', width: 120, render: v => v || '-' },
     { title: '记录人', dataIndex: 'record_user_name', key: 'record_user_name', width: 100 },
     { title: '记录时间', dataIndex: 'created_at', key: 'created_at', width: 160 },

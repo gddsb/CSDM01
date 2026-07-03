@@ -354,3 +354,24 @@ body {
 .ant-modal .ant-form-item {
   margin-bottom: 12px !important;
 }
+
+/* Select 下拉列表样式优化 - 增强可读性 */
+.ant-select-dropdown .ant-select-item {
+  padding: 8px 12px !important;
+  height: auto !important;
+  min-height: 36px;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.15s;
+}
+.ant-select-dropdown .ant-select-item:last-child {
+  border-bottom: none;
+}
+.ant-select-dropdown .ant-select-item-option-selected {
+  background: var(--color-primary) !important;
+}
+.ant-select-dropdown .ant-select-item-option-selected .ant-select-item-option-content {
+  color: #FFFFFF !important;
+}
+.ant-select-dropdown .ant-select-item:hover:not(.ant-select-item-option-selected) {
+  background: rgba(0, 0, 0, 0.06);
+}

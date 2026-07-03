@@ -492,6 +492,28 @@ export default function WorkOrderManagement() {
             </Col>
           </Row>
           <Row gutter={12}>
+            <Col span={6}>
+              <Form.Item label="料号">
+                <Input value={selectedOrder?.material_code || '-'} disabled />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item label="规格">
+                <Input value={selectedOrder?.specification || '-'} disabled />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item label="菲林编号">
+                <Input value={selectedOrder?.film_version || '-'} disabled />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item label="版本号">
+                <Input value={selectedOrder?.version_no || '-'} disabled />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
             <Col span={12}>
               <Form.Item label="产线" name="line_id" rules={[{ required: true, message: '请选择产线' }]}>
                 <Select

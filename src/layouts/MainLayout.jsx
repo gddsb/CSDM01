@@ -36,7 +36,7 @@ const menuItems = [
       { key: '/basic/materials', icon: <ProfileOutlined />, label: '料品档案' },
       { key: '/basic/lines', icon: <DeploymentUnitOutlined />, label: '产线管理' },
       { key: '/basic/processes', icon: <DeploymentUnitOutlined />, label: '工序管理' },
-      { key: '/basic/defects', icon: <AlertOutlined />, label: '制程检验不良分类' },
+      { key: '/basic/defects', icon: <AlertOutlined />, label: '制程不良分类' },
     ]
   },
   {
