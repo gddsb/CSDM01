@@ -133,7 +133,7 @@ export default function EnvironmentInspection() {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         width={820}
-        destroyOnClose
+        destroyOnHidden
       >
         {current && (
           <>

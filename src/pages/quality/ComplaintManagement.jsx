@@ -110,7 +110,7 @@ export default function ComplaintManagement() {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         width={760}
-        destroyOnClose
+        destroyOnHidden
       >
         {current && (
           <>

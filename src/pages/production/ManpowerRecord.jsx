@@ -207,7 +207,7 @@ export default function ManpowerRecord() {
         okText="保存"
         cancelText="取消"
         width={520}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" className="compact-form" preserve={false}>
           <Form.Item label="工单" name="work_order_id" rules={[{ required: true, message: '请选择工单' }]}>

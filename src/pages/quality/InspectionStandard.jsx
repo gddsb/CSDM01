@@ -203,7 +203,7 @@ export default function InspectionStandard() {
         okText="保存"
         cancelText="取消"
         width={560}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" className="compact-form" preserve={false}>
           <Row gutter={12}>
@@ -251,7 +251,7 @@ export default function InspectionStandard() {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         width={960}
-        destroyOnClose
+        destroyOnHidden
       >
         {currentStandard && (
           <>

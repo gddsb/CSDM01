@@ -314,7 +314,7 @@ export default function ProcessReporting() {
         okText="保存"
         cancelText="取消"
         width={1000}
-        destroyOnClose
+        destroyOnHidden
       >
         <Alert
           message="首道工序投入 = 手工录入；后续工序投入 = 上道产出。产出 = 投入 - 不良合计。"

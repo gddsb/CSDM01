@@ -119,7 +119,7 @@ export default function InstrumentManagement() {
         onCancel={() => setModalOpen(false)}
         footer={null}
         width={720}
-        destroyOnClose
+        destroyOnHidden
       >
         {current && (
           <>

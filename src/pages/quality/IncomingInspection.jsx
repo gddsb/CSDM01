@@ -138,7 +138,7 @@ export default function IncomingInspection() {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         width={820}
-        destroyOnClose
+        destroyOnHidden
       >
         {current && (
           <>

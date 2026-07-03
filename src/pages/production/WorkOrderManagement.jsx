@@ -459,7 +459,7 @@ export default function WorkOrderManagement() {
         okText="保存"
         cancelText="取消"
         width={560}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form
           form={form}

@@ -215,7 +215,7 @@ export default function ProductionLine() {
         okText="保存"
         cancelText="取消"
         width={680}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" className="compact-form" preserve={false}>
           <Row gutter={12}>

@@ -295,7 +295,7 @@ export default function OrderManagement() {
         okText="保存"
         cancelText="取消"
         width={560}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" className="compact-form" preserve={false}>
           <Form.Item label="订单编号">

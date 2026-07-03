@@ -141,7 +141,7 @@ export default function DeviceManagement() {
         okText="保存"
         cancelText="取消"
         width={520}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" className="compact-form" preserve={false}>
           <Row gutter={12}>

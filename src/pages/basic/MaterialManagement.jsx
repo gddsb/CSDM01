@@ -135,7 +135,7 @@ export default function MaterialManagement() {
         okText="保存"
         cancelText="取消"
         width={720}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" className="compact-form" preserve={false}>
           <Row gutter={12}>

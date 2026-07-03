@@ -279,7 +279,7 @@ export default function MainLayout() {
         okText="保存"
         cancelText="取消"
         width={480}
-        destroyOnClose
+        destroyOnHidden
       >
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
           <Avatar size={64} icon={<UserOutlined />} style={{ background: 'var(--color-primary)' }} />
@@ -309,7 +309,7 @@ export default function MainLayout() {
         okText="确认修改"
         cancelText="取消"
         width={420}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={pwdForm} layout="vertical" className="compact-form" preserve={false}>
           <Form.Item label="原密码" name="old_password" rules={[{ required: true, message: '请输入原密码' }]}>

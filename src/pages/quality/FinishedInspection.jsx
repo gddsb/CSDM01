@@ -125,7 +125,7 @@ export default function FinishedInspection() {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         width={820}
-        destroyOnClose
+        destroyOnHidden
       >
         {current && (
           <>

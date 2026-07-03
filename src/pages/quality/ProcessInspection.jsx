@@ -188,7 +188,7 @@ export default function ProcessInspection() {
         okText="保存"
         cancelText="取消"
         width={620}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical" className="compact-form" preserve={false}>
           <Row gutter={12}>

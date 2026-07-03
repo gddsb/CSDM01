@@ -231,7 +231,7 @@ export default function ExceptionRecord() {
         okText="保存"
         cancelText="取消"
         width={560}
-        destroyOnClose
+        destroyOnHidden
       >
         <Alert
           message="异常类型说明"
