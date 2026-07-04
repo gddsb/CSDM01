@@ -1,17 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, Select, Drawer, Space, Popconfirm, message, Descriptions, Row, Col } from 'antd'
 import {
-  ProfileOutlined, CheckCircleOutlined, ExperimentOutlined, StopOutlined,
+  ProfileOutlined, CheckCircleOutlined, CloseCircleOutlined,
   PlusOutlined, EyeOutlined, ReloadOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 
-// 状态标签颜色映射
-const statusColorMap = { '启用': 'green', '试产': 'orange', '停产': 'red' }
-const statusOptions = ['启用', '试产', '停产'].map(s => ({ label: s, value: s }))
-
-export default function MaterialManagement() {
+const MaterialManagement = () => {
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)
@@ -22,27 +18,22 @@ export default function MaterialManagement() {
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
 
-  // 筛选输入态
   const [keywordInput, setKeywordInput] = useState('')
-  const [statusInput, setStatusInput] = useState(undefined)
+  const [isActiveInput, setIsActiveInput] = useState(undefined)
   const [categoryInput, setCategoryInput] = useState(undefined)
-  // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 10, keyword: '', status: undefined, category_code: undefined })
+  const [query, setQuery] = useState({ page: 1, pageSize: 10, keyword: '', is_active: undefined, category_name: undefined })
 
-  const enabledCount = data.filter(m => m.status === '启用').length
-  const trialCount = data.filter(m => m.status === '试产').length
-  const stoppedCount = data.filter(m => m.status === '停产').length
+  const activeCount = data.filter(m => m.is_active).length
+  const inactiveCount = data.filter(m => !m.is_active).length
 
   const stats = [
     { label: '料品总数', value: total, icon: <ProfileOutlined />, color: '#2196F3' },
-    { label: '启用', value: enabledCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
-    { label: '试产', value: trialCount, icon: <ExperimentOutlined />, color: '#FF9800' },
-    { label: '停产', value: stoppedCount, icon: <StopOutlined />, color: '#F44336' },
+    { label: '生效', value: activeCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
+    { label: '失效', value: inactiveCount, icon: <CloseCircleOutlined />, color: '#F44336' },
   ]
 
-  const categoryOptions = [...new Set(data.map(m => m.category_code).filter(Boolean))].map(c => ({ label: c, value: c }))
+  const categoryOptions = [...new Set(data.map(m => m.category_name).filter(Boolean))].map(c => ({ label: c, value: c }))
 
-  // 获取列表
   useEffect(() => {
     let cancelled = false
     const run = async () => {
@@ -50,8 +41,8 @@ export default function MaterialManagement() {
       try {
         const params = { page: query.page, pageSize: query.pageSize }
         if (query.keyword) params.keyword = query.keyword
-        if (query.status !== undefined && query.status !== null) params.status = query.status
-        if (query.category_code) params.category_code = query.category_code
+        if (query.is_active !== undefined && query.is_active !== null) params.is_active = query.is_active
+        if (query.category_name) params.category_name = query.category_name
         const res = await api.get('/basic/materials', { params })
         if (cancelled) return
         const list = res.data || []
@@ -74,14 +65,14 @@ export default function MaterialManagement() {
   const refresh = useCallback(() => setQuery(q => ({ ...q })), [])
 
   const handleSearch = () => {
-    setQuery(q => ({ ...q, page: 1, keyword: keywordInput, status: statusInput, category_code: categoryInput }))
+    setQuery(q => ({ ...q, page: 1, keyword: keywordInput, is_active: isActiveInput, category_name: categoryInput }))
   }
 
   const handleReset = () => {
     setKeywordInput('')
-    setStatusInput(undefined)
+    setIsActiveInput(undefined)
     setCategoryInput(undefined)
-    setQuery(q => ({ ...q, page: 1, keyword: '', status: undefined, category_code: undefined }))
+    setQuery(q => ({ ...q, page: 1, keyword: '', is_active: undefined, category_name: undefined }))
   }
 
   const handleAdd = () => {
@@ -94,28 +85,38 @@ export default function MaterialManagement() {
     setModalOpen(true)
   }
 
-  // Modal 打开动画结束后再设置表单值（配合 destroyOnHidden + preserve={false}）
   const handleAfterOpenChange = (open) => {
     if (!open) return
     if (editing) {
       form.setFieldsValue({
+        category_name: editing.category_name,
         material_code: editing.material_code,
         material_name: editing.material_name,
         specification: editing.specification,
-        film_version: editing.film_version,
+        unit_name: editing.unit_name,
+        film_no: editing.film_no,
         version_no: editing.version_no,
-        category_code: editing.category_code,
-        category_name: editing.category_name,
-        customer_code: editing.customer_code,
-        customer_name: editing.customer_name,
-        unit: editing.unit,
-        min_safety_stock: editing.min_safety_stock,
-        max_safety_stock: editing.max_safety_stock,
-        status: editing.status,
+        cutting_size: editing.cutting_size,
+        printing_process: editing.printing_process,
+        color_separation: editing.color_separation,
+        blanking_diameter: editing.blanking_diameter,
+        material_thickness: editing.material_thickness,
+        material_width: editing.material_width,
+        material_height: editing.material_height,
+        scrap_weight: editing.scrap_weight,
+        unit_weight: editing.unit_weight,
+        unit_volume: editing.unit_volume,
+        weight_unit: editing.weight_unit,
+        volume_unit: editing.volume_unit,
+        inventory_category: editing.inventory_category,
+        unit_code: editing.unit_code,
+        is_active: editing.is_active,
+        effective_date: editing.effective_date ? editing.effective_date.substring(0, 16) : '',
+        expiry_date: editing.expiry_date ? editing.expiry_date.substring(0, 16) : '',
       })
     } else {
       form.resetFields()
-      form.setFieldsValue({ status: '启用', min_safety_stock: 0, max_safety_stock: 0 })
+      form.setFieldsValue({ is_active: true })
     }
   }
 
@@ -157,28 +158,19 @@ export default function MaterialManagement() {
   }
 
   const columns = [
+    { title: '分类名称', dataIndex: 'category_name', key: 'category_name', width: 100 },
     { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 130 },
     { title: '品名', dataIndex: 'material_name', key: 'material_name' },
-    { title: '规格', dataIndex: 'specification', key: 'specification' },
-    { title: '菲林版本', dataIndex: 'film_version', key: 'film_version', width: 120 },
+    { title: '规格', dataIndex: 'specification', key: 'specification', width: 120 },
+    { title: '单位名称', dataIndex: 'unit_name', key: 'unit_name', width: 80 },
+    { title: '菲林编号', dataIndex: 'film_no', key: 'film_no', width: 100 },
     { title: '版本号', dataIndex: 'version_no', key: 'version_no', width: 80 },
-    { title: '分类', dataIndex: 'category_name', key: 'category_name', width: 90 },
-    { title: '客户名称', dataIndex: 'customer_name', key: 'customer_name', width: 110 },
-    { title: '单位', dataIndex: 'unit', key: 'unit', width: 60 },
     {
-      title: '安全库存', key: 'safety_stock', width: 150,
-      render: (_, r) => {
-        const min = Number(r.min_safety_stock || 0)
-        const max = Number(r.max_safety_stock || 0)
-        return `${min.toLocaleString()} - ${max.toLocaleString()}`
-      },
+      title: '是否生效', dataIndex: 'is_active', key: 'is_active', width: 80,
+      render: v => <Tag color={v ? 'green' : 'red'}>{v ? '生效' : '失效'}</Tag>,
     },
     {
-      title: '状态', dataIndex: 'status', key: 'status', width: 80,
-      render: v => <Tag color={statusColorMap[v]}>{v}</Tag>,
-    },
-    {
-      title: '操作', key: 'action', width: 200,
+      title: '操作', key: 'action', width: 180,
       render: (_, record) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleDetail(record)}>查看</Button>
@@ -200,10 +192,10 @@ export default function MaterialManagement() {
     { type: 'input', placeholder: '搜索料号/品名/规格', col: { span: 6 }, value: keywordInput, onChange: e => setKeywordInput(e.target.value) },
     {
       type: 'select', placeholder: '状态筛选', col: { span: 6 },
-      options: [{ label: '启用', value: 1 }, { label: '试产', value: 2 }, { label: '停产', value: 0 }],
-      value: statusInput, onChange: v => setStatusInput(v),
+      options: [{ label: '生效', value: true }, { label: '失效', value: false }],
+      value: isActiveInput, onChange: v => setIsActiveInput(v),
     },
-    { type: 'select', placeholder: '分类编码筛选', options: categoryOptions, col: { span: 6 }, value: categoryInput, onChange: v => setCategoryInput(v) },
+    { type: 'select', placeholder: '分类名称筛选', options: categoryOptions, col: { span: 6 }, value: categoryInput, onChange: v => setCategoryInput(v) },
   ]
 
   return (
@@ -253,84 +245,143 @@ export default function MaterialManagement() {
         afterOpenChange={handleAfterOpenChange}
         okText="保存"
         cancelText="取消"
-        width={720}
+        width={800}
         destroyOnHidden
       >
         <Form form={form} layout="vertical" className="compact-form" preserve={false}>
           <Row gutter={12}>
-            <Col span={12}>
+            <Col span={8}>
+              <Form.Item name="category_name" label="分类名称" rules={[{ required: true, message: '请输入分类名称' }]}>
+                <Input placeholder="请输入分类名称" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
               <Form.Item name="material_code" label="料号" rules={[{ required: true, message: '请输入料号' }]}>
                 <Input placeholder="请输入料号" />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item name="material_name" label="品名" rules={[{ required: true, message: '请输入品名' }]}>
                 <Input placeholder="请输入品名" />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={12}>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item name="specification" label="规格">
                 <Input placeholder="请输入规格" />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item name="film_version" label="菲林版本">
-                <Input placeholder="请输入菲林版本" />
+            <Col span={8}>
+              <Form.Item name="unit_name" label="单位名称" rules={[{ required: true, message: '请输入单位名称' }]}>
+                <Input placeholder="请输入单位名称" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="film_no" label="菲林编号">
+                <Input placeholder="请输入菲林编号" />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={12}>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item name="version_no" label="版本号">
                 <Input placeholder="请输入版本号" />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item name="category_name" label="分类">
-                <Input placeholder="请输入分类" />
+            <Col span={8}>
+              <Form.Item name="cutting_size" label="开料尺寸">
+                <Input placeholder="请输入开料尺寸" />
               </Form.Item>
             </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item name="category_code" label="分类编码">
-                <Input placeholder="请输入分类编码" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="customer_code" label="客户编码">
-                <Input placeholder="请输入客户编码" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item name="customer_name" label="客户名称">
-                <Input placeholder="请输入客户名称" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="unit" label="单位" rules={[{ required: true, message: '请输入单位' }]}>
-                <Input placeholder="请输入单位" />
+            <Col span={8}>
+              <Form.Item name="printing_process" label="印刷工艺">
+                <Input placeholder="请输入印刷工艺" />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={12}>
             <Col span={8}>
-              <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
-                <Select placeholder="请选择状态" options={statusOptions} />
+              <Form.Item name="color_separation" label="分色信息">
+                <Input placeholder="请输入分色信息" />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="min_safety_stock" label="最小安全库存">
-                <Input placeholder="请输入最小安全库存" />
+              <Form.Item name="blanking_diameter" label="落料直径">
+                <Input placeholder="请输入落料直径" />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="max_safety_stock" label="最大安全库存">
-                <Input placeholder="请输入最大安全库存" />
+              <Form.Item name="material_thickness" label="材料厚度">
+                <Input placeholder="请输入材料厚度" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={8}>
+              <Form.Item name="material_width" label="材料宽度">
+                <Input placeholder="请输入材料宽度" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="material_height" label="材料高度">
+                <Input placeholder="请输入材料高度" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="scrap_weight" label="边角料重量">
+                <Input placeholder="请输入边角料重量" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={8}>
+              <Form.Item name="unit_weight" label="库存单位重量">
+                <Input placeholder="请输入库存单位重量" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="unit_volume" label="库存单位体积">
+                <Input placeholder="请输入库存单位体积" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="weight_unit" label="重量单位">
+                <Input placeholder="请输入重量单位" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={8}>
+              <Form.Item name="volume_unit" label="体积单位">
+                <Input placeholder="请输入体积单位" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="inventory_category" label="存货分类">
+                <Input placeholder="请输入存货分类" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="unit_code" label="单位编码">
+                <Input placeholder="请输入单位编码" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={8}>
+              <Form.Item name="is_active" label="是否生效" rules={[{ required: true, message: '请选择是否生效' }]}>
+                <Select placeholder="请选择" options={[{ label: '生效', value: true }, { label: '失效', value: false }]} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="effective_date" label="生效日期" rules={[{ required: true, message: '请选择生效日期' }]}>
+                <Input type="datetime-local" placeholder="请选择生效日期" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="expiry_date" label="失效日期" rules={[{ required: true, message: '请选择失效日期' }]}>
+                <Input type="datetime-local" placeholder="请选择失效日期" />
               </Form.Item>
             </Col>
           </Row>
@@ -344,22 +395,35 @@ export default function MaterialManagement() {
       >
         {current && (
           <Descriptions column={1} bordered size="small">
+            <Descriptions.Item label="分类名称">{current.category_name}</Descriptions.Item>
             <Descriptions.Item label="料号">{current.material_code}</Descriptions.Item>
             <Descriptions.Item label="品名">{current.material_name}</Descriptions.Item>
             <Descriptions.Item label="规格">{current.specification || '-'}</Descriptions.Item>
-            <Descriptions.Item label="菲林版本">{current.film_version || '-'}</Descriptions.Item>
+            <Descriptions.Item label="单位名称">{current.unit_name || '-'}</Descriptions.Item>
+            <Descriptions.Item label="菲林编号">{current.film_no || '-'}</Descriptions.Item>
             <Descriptions.Item label="版本号">{current.version_no || '-'}</Descriptions.Item>
-            <Descriptions.Item label="分类编码">{current.category_code || '-'}</Descriptions.Item>
-            <Descriptions.Item label="分类">{current.category_name || '-'}</Descriptions.Item>
-            <Descriptions.Item label="客户编码">{current.customer_code || '-'}</Descriptions.Item>
-            <Descriptions.Item label="客户名称">{current.customer_name || '-'}</Descriptions.Item>
-            <Descriptions.Item label="单位">{current.unit || '-'}</Descriptions.Item>
-            <Descriptions.Item label="最小安全库存">{Number(current.min_safety_stock || 0).toLocaleString()}</Descriptions.Item>
-            <Descriptions.Item label="最大安全库存">{Number(current.max_safety_stock || 0).toLocaleString()}</Descriptions.Item>
-            <Descriptions.Item label="状态"><Tag color={statusColorMap[current.status]}>{current.status}</Tag></Descriptions.Item>
+            <Descriptions.Item label="开料尺寸">{current.cutting_size || '-'}</Descriptions.Item>
+            <Descriptions.Item label="印刷工艺">{current.printing_process || '-'}</Descriptions.Item>
+            <Descriptions.Item label="分色信息">{current.color_separation || '-'}</Descriptions.Item>
+            <Descriptions.Item label="落料直径">{current.blanking_diameter || '-'}</Descriptions.Item>
+            <Descriptions.Item label="材料厚度">{current.material_thickness || '-'}</Descriptions.Item>
+            <Descriptions.Item label="材料宽度">{current.material_width || '-'}</Descriptions.Item>
+            <Descriptions.Item label="材料高度">{current.material_height || '-'}</Descriptions.Item>
+            <Descriptions.Item label="边角料重量">{current.scrap_weight || '-'}</Descriptions.Item>
+            <Descriptions.Item label="库存单位重量">{current.unit_weight || '-'}</Descriptions.Item>
+            <Descriptions.Item label="库存单位体积">{current.unit_volume || '-'}</Descriptions.Item>
+            <Descriptions.Item label="重量单位">{current.weight_unit || '-'}</Descriptions.Item>
+            <Descriptions.Item label="体积单位">{current.volume_unit || '-'}</Descriptions.Item>
+            <Descriptions.Item label="存货分类">{current.inventory_category || '-'}</Descriptions.Item>
+            <Descriptions.Item label="单位编码">{current.unit_code || '-'}</Descriptions.Item>
+            <Descriptions.Item label="是否生效"><Tag color={current.is_active ? 'green' : 'red'}>{current.is_active ? '生效' : '失效'}</Tag></Descriptions.Item>
+            <Descriptions.Item label="生效日期">{current.effective_date?.substring(0, 16) || '-'}</Descriptions.Item>
+            <Descriptions.Item label="失效日期">{current.expiry_date?.substring(0, 16) || '-'}</Descriptions.Item>
           </Descriptions>
         )}
       </Drawer>
     </>
   )
 }
+
+export default MaterialManagement

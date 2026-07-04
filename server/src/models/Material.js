@@ -3,9 +3,13 @@ import sequelize from '../config/database.js'
 
 const Material = sequelize.define('Material', {
   material_id: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.UUID,
     primaryKey: true,
-    autoIncrement: true,
+    defaultValue: DataTypes.UUIDV4,
+  },
+  category_name: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
   },
   material_code: {
     type: DataTypes.STRING(50),
@@ -13,60 +17,79 @@ const Material = sequelize.define('Material', {
     unique: true,
   },
   material_name: {
-    type: DataTypes.STRING(100),
+    type: DataTypes.STRING(200),
     allowNull: false,
   },
   specification: {
     type: DataTypes.STRING(200),
   },
-  film_version: {
+  unit_name: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+  },
+  film_no: {
     type: DataTypes.STRING(50),
   },
   version_no: {
     type: DataTypes.STRING(50),
   },
-  category_code: {
+  cutting_size: {
     type: DataTypes.STRING(50),
   },
-  category_name: {
-    type: DataTypes.STRING(100),
-  },
-  customer_code: {
+  printing_process: {
     type: DataTypes.STRING(50),
   },
-  customer_name: {
-    type: DataTypes.STRING(100),
+  color_separation: {
+    type: DataTypes.STRING(50),
   },
-  unit: {
+  blanking_diameter: {
+    type: DataTypes.DECIMAL(11, 2),
+  },
+  material_thickness: {
+    type: DataTypes.DECIMAL(11, 2),
+  },
+  material_width: {
+    type: DataTypes.DECIMAL(11, 2),
+  },
+  material_height: {
+    type: DataTypes.DECIMAL(11, 2),
+  },
+  scrap_weight: {
+    type: DataTypes.DECIMAL(11, 2),
+  },
+  unit_weight: {
+    type: DataTypes.DECIMAL(11, 2),
+  },
+  unit_volume: {
+    type: DataTypes.DECIMAL(11, 2),
+  },
+  weight_unit: {
     type: DataTypes.STRING(20),
   },
-  min_safety_stock: {
-    type: DataTypes.DECIMAL(12, 2),
-    defaultValue: 0,
+  volume_unit: {
+    type: DataTypes.STRING(20),
   },
-  max_safety_stock: {
-    type: DataTypes.DECIMAL(12, 2),
-    defaultValue: 0,
+  inventory_category: {
+    type: DataTypes.STRING(20),
   },
-  status: {
-    type: DataTypes.TINYINT,
-    defaultValue: 1,
-    get() {
-      const val = this.getDataValue('status')
-      const map = { 1: '启用', 2: '试产', 0: '停产' }
-      return map[val] !== undefined ? map[val] : val
-    },
-    set(val) {
-      if (typeof val === 'string') {
-        const map = { '启用': 1, '试产': 2, '停产': 0 }
-        this.setDataValue('status', map[val] !== undefined ? map[val] : 1)
-      } else {
-        this.setDataValue('status', val)
-      }
-    },
+  unit_code: {
+    type: DataTypes.STRING(20),
+  },
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
+  },
+  effective_date: {
+    type: DataTypes.DATE,
+    allowNull: false,
+  },
+  expiry_date: {
+    type: DataTypes.DATE,
+    allowNull: false,
   },
 }, {
-  tableName: 'master_material',
+  tableName: 'bas_material',
   timestamps: true,
   underscored: true,
 })

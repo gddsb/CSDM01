@@ -2,10 +2,9 @@ import { Op } from 'sequelize'
 import { Material } from '../models/index.js'
 import { success, fail } from '../utils/response.js'
 
-// 料品列表
 export const list = async (req, res) => {
   try {
-    const { keyword, status, category_code, customer_code, page = 1, pageSize = 20 } = req.query
+    const { keyword, is_active, category_name, page = 1, pageSize = 20 } = req.query
     const where = {}
     if (keyword) {
       where[Op.or] = [
@@ -14,9 +13,8 @@ export const list = async (req, res) => {
         { specification: { [Op.like]: `%${keyword}%` } },
       ]
     }
-    if (status !== undefined && status !== '') where.status = Number(status)
-    if (category_code) where.category_code = category_code
-    if (customer_code) where.customer_code = customer_code
+    if (is_active !== undefined && is_active !== '') where.is_active = is_active === 'true'
+    if (category_name) where.category_name = { [Op.like]: `%${category_name}%` }
 
     const limit = Number(pageSize)
     const offset = (Number(page) - 1) * limit
@@ -24,7 +22,7 @@ export const list = async (req, res) => {
       where,
       limit,
       offset,
-      order: [['material_id', 'DESC']],
+      order: [['created_at', 'DESC']],
     })
     return success(res, rows, '查询成功', count)
   } catch (err) {
@@ -33,7 +31,6 @@ export const list = async (req, res) => {
   }
 }
 
-// 料品详情
 export const detail = async (req, res) => {
   try {
     const { id } = req.params
@@ -46,15 +43,14 @@ export const detail = async (req, res) => {
   }
 }
 
-// 创建料品
 export const create = async (req, res) => {
   try {
-    const { material_code, material_name } = req.body
-    if (!material_code || !material_name) {
-      return fail(res, '料品编码和名称不能为空')
+    const { material_code, material_name, category_name, unit_name, effective_date, expiry_date } = req.body
+    if (!material_code || !material_name || !category_name || !unit_name || !effective_date || !expiry_date) {
+      return fail(res, '料号、品名、分类名称、单位名称、生效日期、失效日期不能为空')
     }
     const exists = await Material.findOne({ where: { material_code } })
-    if (exists) return fail(res, '料品编码已存在')
+    if (exists) return fail(res, '料号已存在')
     const material = await Material.create(req.body)
     return success(res, material, '创建成功')
   } catch (err) {
@@ -63,7 +59,6 @@ export const create = async (req, res) => {
   }
 }
 
-// 修改料品
 export const update = async (req, res) => {
   try {
     const { id } = req.params
@@ -73,7 +68,7 @@ export const update = async (req, res) => {
       const exists = await Material.findOne({
         where: { material_code: req.body.material_code, material_id: { [Op.ne]: id } },
       })
-      if (exists) return fail(res, '料品编码已存在')
+      if (exists) return fail(res, '料号已存在')
     }
     await material.update(req.body)
     return success(res, material, '修改成功')
@@ -83,7 +78,6 @@ export const update = async (req, res) => {
   }
 }
 
-// 删除料品
 export const remove = async (req, res) => {
   try {
     const { id } = req.params
