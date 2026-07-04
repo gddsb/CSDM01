@@ -49,12 +49,12 @@ const Order = sequelize.define('Order', {
     defaultValue: 0,
     get() {
       const val = this.getDataValue('status')
-      const map = { 0: '待下达', 1: '已下达', 2: '已关闭' }
+      const map = { 0: '开立', 1: '已下达', 2: '已关闭' }
       return map[val] !== undefined ? map[val] : val
     },
     set(val) {
       if (typeof val === 'string') {
-        const map = { '待下达': 0, '已下达': 1, '已关闭': 2 }
+        const map = { '开立': 0, '已下达': 1, '已关闭': 2 }
         this.setDataValue('status', map[val] !== undefined ? map[val] : 0)
       } else {
         this.setDataValue('status', val)

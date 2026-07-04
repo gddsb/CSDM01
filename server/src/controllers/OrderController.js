@@ -21,21 +21,28 @@ async function generateOrderNo() {
   return `${prefix}${seq}`
 }
 
-// 订单列表（支持 keyword/status 筛选）
+// 订单列表（支持 keyword/materialCode/status/planDateStart/planDateEnd 筛选）
 export const list = async (req, res) => {
   try {
-    const { keyword, status, page = 1, pageSize = 20 } = req.query
+    const { keyword, materialCode, status, planDateStart, planDateEnd, page = 1, pageSize = 20 } = req.query
     const where = {}
     if (keyword) {
       where[Op.or] = [
         { order_no: { [Op.like]: `%${keyword}%` } },
-        { material_code: { [Op.like]: `%${keyword}%` } },
         { material_name: { [Op.like]: `%${keyword}%` } },
       ]
     }
+    if (materialCode) {
+      where.material_code = { [Op.like]: `%${materialCode}%` }
+    }
     if (status !== undefined && status !== '') {
-      const statusMap = { '待下达': 0, '已下达': 1, '已关闭': 2 }
+      const statusMap = { '开立': 0, '已下达': 1, '已关闭': 2 }
       where.status = statusMap[status] !== undefined ? statusMap[status] : Number(status)
+    }
+    if (planDateStart || planDateEnd) {
+      where.plan_start_time = {}
+      if (planDateStart) where.plan_start_time[Op.gte] = new Date(planDateStart)
+      if (planDateEnd) where.plan_start_time[Op.lte] = new Date(planDateEnd)
     }
 
     const limit = Number(pageSize)
@@ -120,7 +127,7 @@ export const update = async (req, res) => {
     const order = await Order.findOne({ where: { order_id: id } })
     if (!order) return fail(res, '订单不存在', 404)
     // 已下发或已关闭的订单不允许修改关键字段
-    if (order.status !== '待下达') {
+    if (order.status !== '开立') {
       return fail(res, '当前订单状态不允许修改')
     }
     const { material_id, planned_qty, plan_start_time, plan_end_time, status } = req.body
@@ -150,7 +157,7 @@ export const remove = async (req, res) => {
     const { id } = req.params
     const order = await Order.findOne({ where: { order_id: id } })
     if (!order) return fail(res, '订单不存在', 404)
-    if (order.status !== '待下达') {
+    if (order.status !== '开立') {
       return fail(res, '当前订单状态不允许删除')
     }
     // 检查是否有关联工单
@@ -170,7 +177,7 @@ export const release = async (req, res) => {
     const { id } = req.params
     const order = await Order.findOne({ where: { order_id: id } })
     if (!order) return fail(res, '订单不存在', 404)
-    if (order.status !== '待下达') return fail(res, '当前订单状态不允许下发')
+    if (order.status !== '开立') return fail(res, '当前订单状态不允许下发')
     await order.update({ status: 1, release_time: new Date() })
     return success(res, order, '订单已下达')
   } catch (err) {

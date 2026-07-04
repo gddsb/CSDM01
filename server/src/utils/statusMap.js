@@ -11,7 +11,7 @@ export const STATUS_MAPS = {
     停产: 0,
   },
   order: {
-    待下达: 0,
+    开立: 0,
     已下达: 1,
     已关闭: 2,
   },

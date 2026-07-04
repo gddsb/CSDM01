@@ -8,14 +8,16 @@ import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 
+const { RangePicker } = DatePicker
+
 const statusColorMap = {
-  '待下达': 'default',
+  '开立': 'default',
   '已下达': 'processing',
   '已关闭': 'success',
 }
 
 const statusOptions = [
-  { label: '待下达', value: '待下达' },
+  { label: '开立', value: '开立' },
   { label: '已下达', value: '已下达' },
   { label: '已关闭', value: '已关闭' },
 ]
@@ -35,9 +37,11 @@ export default function OrderManagement() {
 
   // 筛选输入态
   const [keywordInput, setKeywordInput] = useState('')
+  const [materialCodeInput, setMaterialCodeInput] = useState('')
   const [statusInput, setStatusInput] = useState(undefined)
+  const [planDateRange, setPlanDateRange] = useState(null)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 20, keyword: '', status: undefined })
+  const [query, setQuery] = useState({ page: 1, pageSize: 20, keyword: '', materialCode: '', status: undefined, planDateStart: '', planDateEnd: '' })
 
   // 获取订单列表
   useEffect(() => {
@@ -47,7 +51,10 @@ export default function OrderManagement() {
       try {
         const params = { page: query.page, pageSize: query.pageSize }
         if (query.keyword) params.keyword = query.keyword
+        if (query.materialCode) params.materialCode = query.materialCode
         if (query.status) params.status = query.status
+        if (query.planDateStart) params.planDateStart = query.planDateStart
+        if (query.planDateEnd) params.planDateEnd = query.planDateEnd
         const res = await api.get('/production/orders', { params })
         if (cancelled) return
         const list = res.data || []
@@ -67,12 +74,12 @@ export default function OrderManagement() {
     return () => { cancelled = true }
   }, [query])
 
-  // 获取料品列表
+  // 获取料品列表（仅C开头成品罐）
   useEffect(() => {
     let cancelled = false
     const run = async () => {
       try {
-        const res = await api.get('/basic/materials', { params: { page: 1, pageSize: 1000 } })
+        const res = await api.get('/basic/materials', { params: { page: 1, pageSize: 500 } })
         if (cancelled) return
         setMaterials(res.data || [])
       } catch (err) {
@@ -85,13 +92,16 @@ export default function OrderManagement() {
 
   const refresh = useCallback(() => setQuery(q => ({ ...q })), [])
 
-  const pendingCount = data.filter(o => o.status === '待下达').length
+  // C开头的成品罐料品
+  const cMaterials = materials.filter(m => m.material_code?.toUpperCase().startsWith('C'))
+
+  const pendingCount = data.filter(o => o.status === '开立').length
   const releasedCount = data.filter(o => o.status === '已下达').length
   const closedCount = data.filter(o => o.status === '已关闭').length
 
   const stats = [
     { label: '总订单数', value: total, icon: <FileTextOutlined />, color: '#2196F3' },
-    { label: '待下达', value: pendingCount, icon: <ClockCircleOutlined />, color: '#9E9E9E' },
+    { label: '开立', value: pendingCount, icon: <ClockCircleOutlined />, color: '#9E9E9E' },
     { label: '已下达', value: releasedCount, icon: <SendOutlined />, color: '#FF9800' },
     { label: '已关闭', value: closedCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
   ]
@@ -105,7 +115,7 @@ export default function OrderManagement() {
       onOk: async () => {
         try {
           const res = await api.post(`/production/orders/${r.order_id}/release`)
-          message.success(res.message || `订单 ${r.order_no} 已下发`)
+          message.success(res.message || `订单 ${r.order_no} 已下达`)
           refresh()
         } catch (err) {
           message.error(err.message || '下发失败')
@@ -205,17 +215,27 @@ export default function OrderManagement() {
   }
 
   const handleSearch = () => {
-    setQuery(q => ({ ...q, page: 1, keyword: keywordInput, status: statusInput }))
+    setQuery(q => ({
+      ...q,
+      page: 1,
+      keyword: keywordInput,
+      materialCode: materialCodeInput,
+      status: statusInput,
+      planDateStart: planDateRange?.[0]?.format('YYYY-MM-DD') || '',
+      planDateEnd: planDateRange?.[1]?.format('YYYY-MM-DD') || '',
+    }))
   }
 
   const handleReset = () => {
     setKeywordInput('')
+    setMaterialCodeInput('')
     setStatusInput(undefined)
-    setQuery(q => ({ ...q, page: 1, keyword: '', status: undefined }))
+    setPlanDateRange(null)
+    setQuery(q => ({ ...q, page: 1, keyword: '', materialCode: '', status: undefined, planDateStart: '', planDateEnd: '' }))
   }
 
   const renderActions = (r) => {
-    if (r.status === '待下达') {
+    if (r.status === '开立') {
       return (
         <Space size={0}>
           <Button type="link" size="small" onClick={() => handleRelease(r)}>下发</Button>
@@ -244,10 +264,10 @@ export default function OrderManagement() {
 
   const columns = [
     { title: '订单编号', dataIndex: 'order_no', key: 'order_no', width: 160, fixed: 'left' },
-    { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 120, fixed: 'left' },
-    { title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 140, fixed: 'left' },
-    { title: '规格', dataIndex: 'specification', key: 'specification', width: 100 },
-    { title: '菲林编号', dataIndex: 'film_version', key: 'film_version', width: 130 },
+    { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 130, fixed: 'left' },
+    { title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 160, ellipsis: true },
+    { title: '规格', dataIndex: 'specification', key: 'specification', width: 120, ellipsis: true },
+    { title: '菲林版本', dataIndex: 'film_version', key: 'film_version', width: 120 },
     { title: '版本', dataIndex: 'version_no', key: 'version_no', width: 60 },
     { title: '计划数量', dataIndex: 'planned_qty', key: 'planned_qty', width: 100, align: 'right', render: v => (v || 0).toLocaleString() },
     {
@@ -283,9 +303,9 @@ export default function OrderManagement() {
         table={
           <div>
             <Row gutter={[12, 8]} style={{ marginBottom: 12 }} align="middle">
-              <Col flex="220px">
+              <Col flex="180px">
                 <Input
-                  placeholder="订单号搜索"
+                  placeholder="订单号"
                   allowClear
                   prefix={<SearchOutlined />}
                   value={keywordInput}
@@ -293,14 +313,31 @@ export default function OrderManagement() {
                   onPressEnter={handleSearch}
                 />
               </Col>
-              <Col flex="140px">
+              <Col flex="150px">
+                <Input
+                  placeholder="料号"
+                  allowClear
+                  value={materialCodeInput}
+                  onChange={e => setMaterialCodeInput(e.target.value)}
+                  onPressEnter={handleSearch}
+                />
+              </Col>
+              <Col flex="120px">
                 <Select
-                  placeholder="状态筛选"
+                  placeholder="状态"
                   allowClear
                   style={{ width: '100%' }}
                   options={statusOptions}
                   value={statusInput}
                   onChange={setStatusInput}
+                />
+              </Col>
+              <Col flex="260px">
+                <RangePicker
+                  placeholder={['计划开始', '计划结束']}
+                  style={{ width: '100%' }}
+                  value={planDateRange}
+                  onChange={setPlanDateRange}
                 />
               </Col>
               <Col>
@@ -316,7 +353,7 @@ export default function OrderManagement() {
               rowKey="order_id"
               size="small"
               loading={loading}
-              scroll={{ x: 1300 }}
+              scroll={{ x: 1400 }}
               pagination={{
                 current: query.page,
                 pageSize: query.pageSize,
@@ -354,16 +391,16 @@ export default function OrderManagement() {
                   showSearch
                   allowClear
                   filterOption={(input, option) => {
-                    const m = materials.find(mat => mat.material_id === option.value)
+                    const m = cMaterials.find(mat => mat.material_id === option.value)
                     if (!m) return false
                     return m.material_code.toLowerCase().includes(input.toLowerCase()) ||
                       (m.material_name || '').includes(input)
                   }}
                   onChange={v => {
-                    const m = materials.find(mat => mat.material_id === v)
+                    const m = cMaterials.find(mat => mat.material_id === v)
                     setSelectedMaterial(m || null)
                   }}
-                  options={materials.filter(m => m.material_code?.toUpperCase().startsWith('C')).map(m => ({ label: `${m.material_code} | ${m.material_name} | ${m.specification}`, value: m.material_id }))}
+                  options={cMaterials.map(m => ({ label: `${m.material_code} | ${m.material_name} | ${m.specification || ''}`, value: m.material_id }))}
                 />
               </Form.Item>
             </Col>
@@ -382,7 +419,7 @@ export default function OrderManagement() {
           </Row>
           <Row gutter={12}>
             <Col span={12}>
-              <Form.Item label="菲林编号">
+              <Form.Item label="菲林版本">
                 <Input value={selectedMaterial?.film_no || '-'} disabled />
               </Form.Item>
             </Col>
@@ -406,11 +443,6 @@ export default function OrderManagement() {
                   format="YYYY-MM-DD"
                   style={{ width: '100%' }}
                   disabled={!!editing}
-                  disabledDate={current => {
-                    const today = dayjs().startOf('day')
-                    const maxDate = today.add(15, 'day')
-                    return current && (current < today || current > maxDate)
-                  }}
                 />
               </Form.Item>
             </Col>
@@ -421,11 +453,8 @@ export default function OrderManagement() {
                   style={{ width: '100%' }}
                   disabled={!!editing}
                   disabledDate={current => {
-                    const today = dayjs().startOf('day')
-                    const maxDate = today.add(30, 'day')
                     const startVal = form.getFieldValue('plan_start_time')
-                    const minDate = startVal ? dayjs(startVal).startOf('day') : today
-                    return current && (current < minDate || current > maxDate)
+                    return startVal && current && current < dayjs(startVal).startOf('day')
                   }}
                 />
               </Form.Item>
@@ -447,8 +476,8 @@ export default function OrderManagement() {
             <Descriptions.Item label="料号">{currentOrder.material_code}</Descriptions.Item>
             <Descriptions.Item label="品名">{currentOrder.material_name}</Descriptions.Item>
             <Descriptions.Item label="规格">{currentOrder.specification}</Descriptions.Item>
-            <Descriptions.Item label="菲林编号">{currentOrder.film_version}</Descriptions.Item>
-            <Descriptions.Item label="菲林版本">{currentOrder.version_no}</Descriptions.Item>
+            <Descriptions.Item label="菲林版本">{currentOrder.film_version}</Descriptions.Item>
+            <Descriptions.Item label="版本号">{currentOrder.version_no}</Descriptions.Item>
             <Descriptions.Item label="计划数量">{(currentOrder.planned_qty || 0).toLocaleString()}</Descriptions.Item>
             <Descriptions.Item label="完工数量">{(currentOrder.finished_qty || 0).toLocaleString()}</Descriptions.Item>
             <Descriptions.Item label="计划开始">{currentOrder.plan_start_time || '-'}</Descriptions.Item>
