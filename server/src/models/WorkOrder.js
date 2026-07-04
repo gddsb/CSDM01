@@ -25,7 +25,7 @@ const WorkOrder = sequelize.define('WorkOrder', {
     type: DataTypes.STRING(100),
   },
   material_id: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.UUID,
   },
   material_name: {
     type: DataTypes.STRING(100),

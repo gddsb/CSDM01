@@ -13,7 +13,7 @@ const Order = sequelize.define('Order', {
     unique: true,
   },
   material_id: {
-    type: DataTypes.INTEGER,
+    type: DataTypes.UUID,
   },
   material_code: {
     type: DataTypes.STRING(50),
