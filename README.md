@@ -1,6 +1,6 @@
 # 奶粉罐生产管理系统 (Milk Can MES)
 
-基于 React + Ant Design + Vite 构建的奶粉罐生产制造执行系统，涵盖生产管理、质量管理、设备管理、数据大屏及报表中心等核心业务模块。
+基于 React + Ant Design + Vite + Node.js + SQLite 构建的奶粉罐生产制造执行系统，涵盖生产管理、质量管理、设备管理、数据大屏及报表中心等核心业务模块。
 
 ## 技术栈
 
@@ -12,8 +12,21 @@
 | Ant Design | 5.21 | UI 组件库 |
 | React Router | 6.26 | 路由管理 |
 | Vite | 5.4 | 构建工具 |
+| Axios | 1.7 | HTTP 客户端 |
 | Day.js | 1.11 | 日期处理 |
 | CSS Variables | - | 主题切换（data-theme 动态类名） |
+
+### 后端
+
+| 技术 | 版本 | 说明 |
+|------|------|------|
+| Node.js | 20+ | 运行环境 |
+| Express | 4.21 | Web 框架 |
+| Sequelize | 6.37 | ORM 框架 |
+| SQLite | - | 数据库（开发环境） |
+| MySQL | 8.0 | 数据库（生产环境） |
+| JWT | 9.0 | 身份认证 |
+| bcryptjs | 2.4 | 密码加密 |
 
 ### 规划技术栈
 
@@ -21,8 +34,7 @@
 |------|---------|------|
 | 大屏可视化 | ECharts / DataV | 待接入 |
 | 移动端 | UniApp / Flutter | 待开发 |
-| 后端框架 | Spring Boot / Node.js | 待开发 |
-| 数据库 | MySQL 8.0 + Redis | 待搭建 |
+| 缓存 | Redis | 待搭建 |
 | 主题切换 | CSS Variables + 动态类名切换 | ✅ 已完成 |
 
 ## 功能模块
@@ -35,9 +47,10 @@
 - 操作日志：用户操作行为审计
 
 ### 基础数据
-- 料品档案：料品基础信息及安全库存管理
+- 料品档案：料品基础信息（分类、规格、尺寸、重量、生效日期等）
 - 产线管理：生产线配置与状态管理
 - 工序管理：生产工序定义与顺序调整
+- 设备管理：设备档案与状态管理
 - 制程检验不良分类：不良类型与单位定义
 
 ### 生产管理
@@ -82,6 +95,8 @@
 
 ## 快速开始
 
+### 前端
+
 ```bash
 # 安装依赖
 npm install
@@ -96,29 +111,61 @@ npm run build
 npm run preview
 ```
 
-开发服务器默认运行在 `http://localhost:5173`
+前端开发服务器默认运行在 `http://localhost:5173`
+
+### 后端
+
+```bash
+# 进入后端目录
+cd server
+
+# 安装依赖
+npm install
+
+# 初始化数据库（创建表结构和默认数据）
+node src/seed.js
+
+# 启动后端服务
+node src/app.js
+```
+
+后端服务默认运行在 `http://localhost:3001`
+
+### 数据库操作
+
+```bash
+# 清空所有业务数据（保留角色和 admin 用户）
+cd server
+node src/clean-init.js
+
+# 重新初始化完整数据
+cd server
+node src/seed.js
+```
 
 ## 默认登录账号
 
 | 角色 | 用户名 | 密码 |
 |------|--------|------|
 | 超级管理员 | admin | 123456 |
+| 系统管理员 | sysadmin | 123456 |
 | 计划员 | planner | 123456 |
 | 质量管理员 | qm | 123456 |
-| 生产管理 | pm | 123456 |
 | 质量检验员 | qc | 123456 |
+| 生产管理 | pm | 123456 |
 | 工序操作人 | op | 123456 |
+| 设备维护员 | maint | 123456 |
+| 看板查看者 | viewer | 123456 |
 
 ## 项目结构
 
 ```
 milk-can-mes/
-├── src/
+├── src/                      # 前端源码
 │   ├── assets/              # 静态资源（Logo图片）
 │   ├── components/          # 公共组件（ThreeSectionPage等）
 │   ├── contexts/            # React Context（用户、主题）
 │   ├── layouts/             # 布局组件（MainLayout）
-│   ├── mock/                # Mock 数据
 │   ├── pages/               # 页面组件
 │   │   ├── basic/           # 基础数据
 │   │   ├── bigscreen/       # 数据大屏
@@ -129,10 +176,24 @@ milk-can-mes/
 │   │   └── system/          # 系统管理
 │   ├── styles/              # 全局样式
 │   ├── themes/              # 主题配置
+│   ├── utils/               # 工具函数（API 客户端）
 │   ├── AppContext.jsx       # 全局状态管理
 │   ├── Dashboard.jsx        # 工作台首页
 │   ├── Login.jsx            # 登录页
 │   └── main.jsx            # 应用入口与路由
+├── server/                   # 后端源码
+│   ├── src/
+│   │   ├── config/          # 配置文件
+│   │   ├── controllers/     # 控制器
+│   │   ├── middleware/      # 中间件（认证等）
+│   │   ├── models/          # 数据模型
+│   │   ├── routes/          # 路由定义
+│   │   ├── utils/           # 工具函数（响应处理等）
+│   │   ├── app.js           # 应用入口
+│   │   ├── seed.js          # 数据初始化脚本
+│   │   └── clean-init.js    # 数据清理脚本
+│   ├── data/                # SQLite 数据库文件
+│   └── package.json
 ├── index.html
 ├── vite.config.js
 └── package.json
@@ -147,3 +208,5 @@ milk-can-mes/
 - 工时按 0.5 小时取值计算
 - 工单完工后关联记录自动转为只读
 - 生产订单详情展示关联工单、人员、异常记录
+- 料品档案支持完整的尺寸、重量、印刷工艺等属性
+- JWT 认证，自动处理 token 过期重定向
