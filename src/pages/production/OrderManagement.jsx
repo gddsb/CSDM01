@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, InputNumber, Select, DatePicker, Space, Row, Col, message, Drawer, Descriptions, Popconfirm } from 'antd'
 import {
   FileTextOutlined, PlusOutlined, SearchOutlined, ReloadOutlined,
-  SendOutlined, ClockCircleOutlined, CheckCircleOutlined, EyeOutlined
+  SendOutlined, ClockCircleOutlined, CheckCircleOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
@@ -214,7 +214,7 @@ export default function OrderManagement() {
     setDetailOpen(true)
   }
 
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     setQuery(q => ({
       ...q,
       page: 1,
@@ -224,7 +224,7 @@ export default function OrderManagement() {
       planDateStart: planDateRange?.[0]?.format('YYYY-MM-DD') || '',
       planDateEnd: planDateRange?.[1]?.format('YYYY-MM-DD') || '',
     }))
-  }
+  }, [keywordInput, materialCodeInput, statusInput, planDateRange])
 
   const handleReset = () => {
     setKeywordInput('')
@@ -254,12 +254,12 @@ export default function OrderManagement() {
     if (r.status === '已下达') {
       return (
         <Space size={0}>
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(r)}>查看</Button>
+          <Button type="link" size="small" onClick={() => handleView(r)}>查看</Button>
           <Button type="link" size="small" danger onClick={() => handleClose(r)}>关闭</Button>
         </Space>
       )
     }
-    return <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(r)}>查看</Button>
+    return <Button type="link" size="small" onClick={() => handleView(r)}>查看</Button>
   }
 
   const columns = [
@@ -311,6 +311,7 @@ export default function OrderManagement() {
                   value={keywordInput}
                   onChange={e => setKeywordInput(e.target.value)}
                   onPressEnter={handleSearch}
+                  onBlur={handleSearch}
                 />
               </Col>
               <Col flex="150px">
@@ -320,6 +321,7 @@ export default function OrderManagement() {
                   value={materialCodeInput}
                   onChange={e => setMaterialCodeInput(e.target.value)}
                   onPressEnter={handleSearch}
+                  onBlur={handleSearch}
                 />
               </Col>
               <Col flex="120px">
@@ -329,7 +331,7 @@ export default function OrderManagement() {
                   style={{ width: '100%' }}
                   options={statusOptions}
                   value={statusInput}
-                  onChange={setStatusInput}
+                  onChange={(v) => { setStatusInput(v); setTimeout(handleSearch, 0) }}
                 />
               </Col>
               <Col flex="260px">
@@ -337,7 +339,17 @@ export default function OrderManagement() {
                   placeholder={['计划开始', '计划结束']}
                   style={{ width: '100%' }}
                   value={planDateRange}
-                  onChange={setPlanDateRange}
+                  onChange={(v) => { setPlanDateRange(v); setTimeout(() => {
+                    setQuery(q => ({
+                      ...q,
+                      page: 1,
+                      keyword: keywordInput,
+                      materialCode: materialCodeInput,
+                      status: statusInput,
+                      planDateStart: v?.[0]?.format('YYYY-MM-DD') || '',
+                      planDateEnd: v?.[1]?.format('YYYY-MM-DD') || '',
+                    }))
+                  }, 0) }}
                 />
               </Col>
               <Col>
