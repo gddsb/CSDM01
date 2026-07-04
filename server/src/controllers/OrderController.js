@@ -34,7 +34,7 @@ export const list = async (req, res) => {
       ]
     }
     if (status !== undefined && status !== '') {
-      const statusMap = { '待下达': 0, '已下发': 1, '已关闭': 2 }
+      const statusMap = { '待下达': 0, '已下达': 1, '已关闭': 2 }
       where.status = statusMap[status] !== undefined ? statusMap[status] : Number(status)
     }
 
@@ -98,12 +98,12 @@ export const create = async (req, res) => {
       material_code: material.material_code,
       material_name: material.material_name,
       specification: material.specification,
-      film_version: material.film_version,
+      film_version: material.film_no,
       version_no: material.version_no,
       planned_qty: planned_qty || 0,
       plan_start_time,
       plan_end_time,
-      status: '待下达',
+      status: 0,
       created_by: req.user?.username || null,
     })
     return success(res, order, '创建成功')
@@ -133,7 +133,7 @@ export const update = async (req, res) => {
       updateData.material_code = material.material_code
       updateData.material_name = material.material_name
       updateData.specification = material.specification
-      updateData.film_version = material.film_version
+      updateData.film_version = material.film_no
       updateData.version_no = material.version_no
     }
     await order.update(updateData)
@@ -171,8 +171,8 @@ export const release = async (req, res) => {
     const order = await Order.findOne({ where: { order_id: id } })
     if (!order) return fail(res, '订单不存在', 404)
     if (order.status !== '待下达') return fail(res, '当前订单状态不允许下发')
-    await order.update({ status: '已下发', release_time: new Date() })
-    return success(res, order, '订单已下发')
+    await order.update({ status: 1, release_time: new Date() })
+    return success(res, order, '订单已下达')
   } catch (err) {
     console.error('下发订单失败:', err)
     return fail(res, '服务器错误', 500)
@@ -185,8 +185,8 @@ export const close = async (req, res) => {
     const { id } = req.params
     const order = await Order.findOne({ where: { order_id: id } })
     if (!order) return fail(res, '订单不存在', 404)
-    if (order.status !== '已下发') return fail(res, '当前订单状态不允许关闭')
-    await order.update({ status: '已关闭', close_time: new Date() })
+    if (order.status !== '已下达') return fail(res, '当前订单状态不允许关闭')
+    await order.update({ status: 2, close_time: new Date() })
     return success(res, order, '订单已关闭')
   } catch (err) {
     console.error('关闭订单失败:', err)

@@ -12,7 +12,7 @@ export const STATUS_MAPS = {
   },
   order: {
     待下达: 0,
-    已下发: 1,
+    已下达: 1,
     已关闭: 2,
   },
   workOrder: {

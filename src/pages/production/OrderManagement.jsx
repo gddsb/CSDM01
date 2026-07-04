@@ -363,7 +363,7 @@ export default function OrderManagement() {
                     const m = materials.find(mat => mat.material_id === v)
                     setSelectedMaterial(m || null)
                   }}
-                  options={materials.map(m => ({ label: `${m.material_code} | ${m.material_name} | ${m.specification}`, value: m.material_id }))}
+                  options={materials.filter(m => m.material_code?.toUpperCase().startsWith('C')).map(m => ({ label: `${m.material_code} | ${m.material_name} | ${m.specification}`, value: m.material_id }))}
                 />
               </Form.Item>
             </Col>
@@ -383,7 +383,7 @@ export default function OrderManagement() {
           <Row gutter={12}>
             <Col span={12}>
               <Form.Item label="菲林编号">
-                <Input value={selectedMaterial?.film_version || '-'} disabled />
+                <Input value={selectedMaterial?.film_no || '-'} disabled />
               </Form.Item>
             </Col>
             <Col span={12}>
