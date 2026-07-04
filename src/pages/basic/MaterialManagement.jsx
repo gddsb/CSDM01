@@ -86,29 +86,37 @@ export default function MaterialManagement() {
 
   const handleAdd = () => {
     setEditing(null)
-    form.resetFields()
-    form.setFieldsValue({ status: '启用', min_safety_stock: 0, max_safety_stock: 0 })
     setModalOpen(true)
   }
 
   const handleEdit = (record) => {
     setEditing(record)
-    form.setFieldsValue({
-      material_code: record.material_code,
-      material_name: record.material_name,
-      specification: record.specification,
-      film_version: record.film_version,
-      version_no: record.version_no,
-      category_code: record.category_code,
-      category_name: record.category_name,
-      customer_code: record.customer_code,
-      customer_name: record.customer_name,
-      unit: record.unit,
-      min_safety_stock: record.min_safety_stock,
-      max_safety_stock: record.max_safety_stock,
-      status: record.status,
-    })
     setModalOpen(true)
+  }
+
+  // Modal 打开动画结束后再设置表单值（配合 destroyOnHidden + preserve={false}）
+  const handleAfterOpenChange = (open) => {
+    if (!open) return
+    if (editing) {
+      form.setFieldsValue({
+        material_code: editing.material_code,
+        material_name: editing.material_name,
+        specification: editing.specification,
+        film_version: editing.film_version,
+        version_no: editing.version_no,
+        category_code: editing.category_code,
+        category_name: editing.category_name,
+        customer_code: editing.customer_code,
+        customer_name: editing.customer_name,
+        unit: editing.unit,
+        min_safety_stock: editing.min_safety_stock,
+        max_safety_stock: editing.max_safety_stock,
+        status: editing.status,
+      })
+    } else {
+      form.resetFields()
+      form.setFieldsValue({ status: '启用', min_safety_stock: 0, max_safety_stock: 0 })
+    }
   }
 
   const handleDetail = (record) => {
@@ -242,6 +250,7 @@ export default function MaterialManagement() {
         onOk={handleSubmit}
         confirmLoading={submitting}
         onCancel={() => setModalOpen(false)}
+        afterOpenChange={handleAfterOpenChange}
         okText="保存"
         cancelText="取消"
         width={720}

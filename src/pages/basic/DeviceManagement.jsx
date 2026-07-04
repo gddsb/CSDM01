@@ -95,31 +95,39 @@ export default function DeviceManagement() {
 
   const handleAdd = () => {
     setEditing(null)
-    form.resetFields()
-    form.setFieldsValue({ status: '运行', is_special: 0 })
     setModalVisible(true)
   }
 
   const handleEdit = (record) => {
     setEditing(record)
-    form.setFieldsValue({
-      device_code: record.device_code,
-      device_name: record.device_name,
-      device_type: record.device_type,
-      device_model: record.device_model,
-      serial_no: record.serial_no,
-      location: record.location,
-      responsible_person: record.responsible_person,
-      is_special: record.is_special === true || record.is_special === 1 ? 1 : 0,
-      status: record.status,
-      last_inspection_date: record.last_inspection_date,
-      inspection_cycle: record.inspection_cycle,
-      next_inspection_date: record.next_inspection_date,
-      manufacturer: record.manufacturer,
-      purchase_date: record.purchase_date,
-      warranty_end: record.warranty_end,
-    })
     setModalVisible(true)
+  }
+
+  // Modal 打开动画结束后再设置表单值（配合 destroyOnHidden + preserve={false}）
+  const handleAfterOpenChange = (open) => {
+    if (!open) return
+    if (editing) {
+      form.setFieldsValue({
+        device_code: editing.device_code,
+        device_name: editing.device_name,
+        device_type: editing.device_type,
+        device_model: editing.device_model,
+        serial_no: editing.serial_no,
+        location: editing.location,
+        responsible_person: editing.responsible_person,
+        is_special: editing.is_special === true || editing.is_special === 1 ? 1 : 0,
+        status: editing.status,
+        last_inspection_date: editing.last_inspection_date,
+        inspection_cycle: editing.inspection_cycle,
+        next_inspection_date: editing.next_inspection_date,
+        manufacturer: editing.manufacturer,
+        purchase_date: editing.purchase_date,
+        warranty_end: editing.warranty_end,
+      })
+    } else {
+      form.resetFields()
+      form.setFieldsValue({ status: '运行', is_special: 0 })
+    }
   }
 
   const handleSubmit = async () => {
@@ -244,6 +252,7 @@ export default function DeviceManagement() {
         onOk={handleSubmit}
         confirmLoading={submitting}
         onCancel={() => setModalVisible(false)}
+        afterOpenChange={handleAfterOpenChange}
         okText="保存"
         cancelText="取消"
         width={680}

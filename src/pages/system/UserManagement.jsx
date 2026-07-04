@@ -93,25 +93,33 @@ export default function UserManagement() {
 
   const handleAdd = () => {
     setEditingUser(null)
-    form.resetFields()
-    form.setFieldsValue({ status: '启用' })
     setModalOpen(true)
   }
 
   const handleEdit = (record) => {
     setEditingUser(record)
-    form.setFieldsValue({
-      username: record.username,
-      real_name: record.real_name,
-      employee_no: record.employee_no,
-      department: record.department,
-      role_id: record.role_id,
-      phone: record.phone,
-      email: record.email,
-      status: record.status,
-      password: undefined,
-    })
     setModalOpen(true)
+  }
+
+  // Modal 打开动画结束后再设置表单值（配合 destroyOnHidden + preserve={false}）
+  // 使用 afterOpenChange 而非 useEffect，确保表单字段已挂载注册
+  const handleAfterOpenChange = (open) => {
+    if (!open) return
+    if (editingUser) {
+      form.setFieldsValue({
+        username: editingUser.username,
+        real_name: editingUser.real_name,
+        employee_no: editingUser.employee_no,
+        department: editingUser.department,
+        role_id: editingUser.role_id,
+        phone: editingUser.phone,
+        email: editingUser.email,
+        status: editingUser.status,
+      })
+    } else {
+      form.resetFields()
+      form.setFieldsValue({ status: '启用' })
+    }
   }
 
   const handleToggle = async (record) => {
@@ -257,6 +265,7 @@ export default function UserManagement() {
         onOk={handleSubmit}
         confirmLoading={submitting}
         onCancel={() => setModalOpen(false)}
+        afterOpenChange={handleAfterOpenChange}
         okText="保存"
         cancelText="取消"
         width={640}

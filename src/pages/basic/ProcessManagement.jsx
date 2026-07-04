@@ -74,20 +74,28 @@ export default function ProcessManagement() {
 
   const handleAdd = () => {
     setEditing(null)
-    form.resetFields()
-    form.setFieldsValue({ status: '启用', sort_order: total + 1 })
     setModalVisible(true)
   }
 
   const handleEdit = (record) => {
     setEditing(record)
-    form.setFieldsValue({
-      process_code: record.process_code,
-      process_name: record.process_name,
-      sort_order: record.sort_order,
-      status: record.status === '启用' ? '启用' : '停用',
-    })
     setModalVisible(true)
+  }
+
+  // Modal 打开动画结束后再设置表单值（配合 destroyOnHidden + preserve={false}）
+  const handleAfterOpenChange = (open) => {
+    if (!open) return
+    if (editing) {
+      form.setFieldsValue({
+        process_code: editing.process_code,
+        process_name: editing.process_name,
+        sort_order: editing.sort_order,
+        status: editing.status === '启用' ? '启用' : '停用',
+      })
+    } else {
+      form.resetFields()
+      form.setFieldsValue({ status: '启用', sort_order: total + 1 })
+    }
   }
 
   const handleMoveUp = async (record, index) => {
@@ -248,6 +256,7 @@ export default function ProcessManagement() {
         onOk={handleSubmit}
         confirmLoading={submitting}
         onCancel={() => setModalVisible(false)}
+        afterOpenChange={handleAfterOpenChange}
         okText="保存"
         cancelText="取消"
         width={520}

@@ -83,22 +83,30 @@ export default function ProductionLine() {
 
   const handleAdd = () => {
     setEditing(null)
-    form.resetFields()
-    form.setFieldsValue({ status: '运行中', sort_order: total + 1 })
     setModalVisible(true)
   }
 
   const handleEdit = (record) => {
     setEditing(record)
-    form.setFieldsValue({
-      line_code: record.line_code,
-      line_name: record.line_name,
-      workshop: record.workshop,
-      line_leader: record.line_leader,
-      sort_order: record.sort_order,
-      status: record.status,
-    })
     setModalVisible(true)
+  }
+
+  // Modal 打开动画结束后再设置表单值（配合 destroyOnHidden + preserve={false}）
+  const handleAfterOpenChange = (open) => {
+    if (!open) return
+    if (editing) {
+      form.setFieldsValue({
+        line_code: editing.line_code,
+        line_name: editing.line_name,
+        workshop: editing.workshop,
+        line_leader: editing.line_leader,
+        sort_order: editing.sort_order,
+        status: editing.status,
+      })
+    } else {
+      form.resetFields()
+      form.setFieldsValue({ status: '运行中', sort_order: total + 1 })
+    }
   }
 
   const handleSubmit = async () => {
@@ -215,6 +223,7 @@ export default function ProductionLine() {
         onOk={handleSubmit}
         confirmLoading={submitting}
         onCancel={() => setModalVisible(false)}
+        afterOpenChange={handleAfterOpenChange}
         okText="保存"
         cancelText="取消"
         width={680}

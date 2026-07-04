@@ -114,23 +114,31 @@ export default function RoleManagement() {
 
   const handleAdd = () => {
     setEditing(null)
-    form.resetFields()
-    form.setFieldsValue({ status: '启用', type: '可选', sort_order: 0 })
     setModalVisible(true)
   }
 
   const handleEdit = (record) => {
     setEditing(record)
-    form.setFieldsValue({
-      role_name: record.role_name,
-      role_code: record.role_code,
-      type: record.type,
-      scope: record.scope,
-      sort_order: record.sort_order,
-      status: record.status,
-      description: record.description,
-    })
     setModalVisible(true)
+  }
+
+  // Modal 打开动画结束后再设置表单值（配合 destroyOnHidden + preserve={false}）
+  const handleAfterOpenChange = (open) => {
+    if (!open) return
+    if (editing) {
+      form.setFieldsValue({
+        role_name: editing.role_name,
+        role_code: editing.role_code,
+        type: editing.type,
+        scope: editing.scope,
+        sort_order: editing.sort_order,
+        status: editing.status,
+        description: editing.description,
+      })
+    } else {
+      form.resetFields()
+      form.setFieldsValue({ status: '启用', type: '可选', sort_order: 0 })
+    }
   }
 
   const handleSubmit = async () => {
@@ -280,6 +288,7 @@ export default function RoleManagement() {
         onOk={handleSubmit}
         confirmLoading={submitting}
         onCancel={() => setModalVisible(false)}
+        afterOpenChange={handleAfterOpenChange}
         okText="保存"
         cancelText="取消"
         width={560}

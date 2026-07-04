@@ -85,18 +85,26 @@ export default function InspectionStandard() {
 
   const handleAdd = () => {
     setEditing(null)
-    form.resetFields()
     setModalVisible(true)
   }
 
   const handleEdit = (record) => {
     setEditing(record)
-    // 表单字段使用 version，数据字段为 version_no，此处做映射回填
-    form.setFieldsValue({
-      ...record,
-      version: record.version_no,
-    })
     setModalVisible(true)
+  }
+
+  // Modal 打开动画结束后再设置表单值（配合 destroyOnHidden + preserve={false}）
+  const handleAfterOpenChange = (open) => {
+    if (!open) return
+    if (editing) {
+      // 表单字段使用 version，数据字段为 version_no，此处做映射回填
+      form.setFieldsValue({
+        ...editing,
+        version: editing.version_no,
+      })
+    } else {
+      form.resetFields()
+    }
   }
 
   const handleSubmit = async () => {
@@ -200,6 +208,7 @@ export default function InspectionStandard() {
         open={modalVisible}
         onOk={handleSubmit}
         onCancel={() => setModalVisible(false)}
+        afterOpenChange={handleAfterOpenChange}
         okText="保存"
         cancelText="取消"
         width={560}

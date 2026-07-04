@@ -96,35 +96,43 @@ export default function DefectManagement() {
 
   const handleAdd = () => {
     setEditing(null)
-    form.resetFields()
-    form.setFieldsValue({
-      defect_type: '来料不良',
-      display: true,
-      status: '启用',
-      sort_order: total + 1,
-      available_units: [],
-      related_processes: [],
-    })
     setModalVisible(true)
   }
 
   const handleEdit = (record) => {
     setEditing(record)
-    const availableUnits = toArray(record.available_units)
-    const relatedProcesses = toArray(record.related_processes)
-    form.setFieldsValue({
-      defect_code: record.defect_code,
-      defect_name: record.defect_name,
-      defect_type: record.defect_type,
-      defect_unit: record.defect_unit,
-      available_units: availableUnits,
-      display: !!record.display,
-      sort_order: record.sort_order,
-      status: record.status === '启用' ? '启用' : '停用',
-      related_processes: relatedProcesses,
-      defect_description: record.defect_description,
-    })
     setModalVisible(true)
+  }
+
+  // Modal 打开动画结束后再设置表单值（配合 destroyOnHidden + preserve={false}）
+  const handleAfterOpenChange = (open) => {
+    if (!open) return
+    if (editing) {
+      const availableUnits = toArray(editing.available_units)
+      const relatedProcesses = toArray(editing.related_processes)
+      form.setFieldsValue({
+        defect_code: editing.defect_code,
+        defect_name: editing.defect_name,
+        defect_type: editing.defect_type,
+        defect_unit: editing.defect_unit,
+        available_units: availableUnits,
+        display: !!editing.display,
+        sort_order: editing.sort_order,
+        status: editing.status === '启用' ? '启用' : '停用',
+        related_processes: relatedProcesses,
+        defect_description: editing.defect_description,
+      })
+    } else {
+      form.resetFields()
+      form.setFieldsValue({
+        defect_type: '来料不良',
+        display: true,
+        status: '启用',
+        sort_order: total + 1,
+        available_units: [],
+        related_processes: [],
+      })
+    }
   }
 
   const handleSubmit = async () => {
@@ -297,6 +305,7 @@ export default function DefectManagement() {
         onOk={handleSubmit}
         confirmLoading={submitting}
         onCancel={() => setModalVisible(false)}
+        afterOpenChange={handleAfterOpenChange}
         okText="保存"
         cancelText="取消"
         width={780}
