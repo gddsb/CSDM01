@@ -1,122 +1,241 @@
-import React, { useState } from 'react'
-import { Table, Tag, Button, Drawer, Tree, Space, Modal, Form, Input, Select, message, Typography, Row, Col } from 'antd'
+import React, { useState, useEffect, useMemo } from 'react'
+import { Table, Tag, Button, Modal, Form, Input, Select, Space, Tree, InputNumber, Popconfirm, message, Row, Col, Typography, Spin } from 'antd'
 import {
-  SafetyCertificateOutlined, ApartmentOutlined, EyeOutlined,
-  EditOutlined, PlusOutlined,
+  SafetyCertificateOutlined, ApartmentOutlined,
+  PlusOutlined, ReloadOutlined, SafetyOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
-import { roles as rolesData } from '../../mock/data'
+import api from '../../utils/api'
 
 const { Text } = Typography
 
-const statusOptions = ['启用', '禁用'].map(s => ({ label: s, value: s }))
+const statusOptions = [{ label: '启用', value: '启用' }, { label: '禁用', value: '禁用' }]
+const typeOptions = [{ label: '系统默认', value: '系统默认' }, { label: '可选', value: '可选' }]
 
-// 角色层级关系树（文字树形展示）
-const roleTreeData = [
-  {
-    title: '超级管理员（SUPER_ADMIN）— 系统全部权限，用户管理、系统配置、数据库字典',
-    key: 'r1',
-    children: [
-      { title: '系统管理员（ADMIN）— 日常系统管理（权限低于超级管理员）', key: 'r7' },
-      { title: '计划员（PLANNER）— 生产计划制定、下达、调整，计划进度查看', key: 'r2' },
-      {
-        title: '质量管理员（QC_MANAGER）— 质量标准制定、抽检审批、不合格品处置审批',
-        key: 'r3',
-        children: [
-          { title: '质量检验员（QC_INSPECTOR）— 质量检测执行、数据录入、异常上报', key: 'r4' },
-        ],
-      },
-      {
-        title: '生产管理（PROD_MANAGER）— 生产任务管理、调度、人员管理、报表审批、班组管理',
-        key: 'r5',
-        children: [
-          { title: '工序操作人（OPERATOR）— 本工序生产操作、数据录入、设备点检', key: 'r6' },
-        ],
-      },
-      { title: '设备维护员（MAINTENANCE）— 设备维修、保养记录', key: 'r8' },
-      { title: '看板查看者（DASHBOARD_VIEWER）— 大屏/看板只读查看', key: 'r9' },
-    ],
-  },
-]
+// 根据扁平权限列表构建树形结构
+function buildPermissionTree(permissions) {
+  const map = new Map()
+  const roots = []
+  permissions.forEach(p => {
+    map.set(p.perm_id, { title: p.perm_name, key: p.perm_id, children: [], _raw: p })
+  })
+  permissions.forEach(p => {
+    const node = map.get(p.perm_id)
+    if (!p.parent_id || p.parent_id === 0) {
+      roots.push(node)
+    } else {
+      const parent = map.get(p.parent_id)
+      if (parent) parent.children.push(node)
+      else roots.push(node)
+    }
+  })
+  const sortNodes = (nodes) => {
+    nodes.sort((a, b) => (a._raw?.sort_order || 0) - (b._raw?.sort_order || 0))
+    nodes.forEach(n => sortNodes(n.children))
+    nodes.forEach(n => { delete n._raw })
+    return nodes
+  }
+  return sortNodes(roots)
+}
 
 export default function RoleManagement() {
-  const [data, setData] = useState(rolesData)
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const [currentRole, setCurrentRole] = useState(null)
+  const [data, setData] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [total, setTotal] = useState(0)
   const [editing, setEditing] = useState(null)
   const [modalVisible, setModalVisible] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
+
+  // 筛选输入态
+  const [keywordInput, setKeywordInput] = useState('')
+  const [statusInput, setStatusInput] = useState(undefined)
+  // 已应用的查询条件
+  const [query, setQuery] = useState({ page: 1, pageSize: 10, keyword: '', status: undefined })
+
+  // 权限配置
+  const [permModalVisible, setPermModalVisible] = useState(false)
+  const [permRole, setPermRole] = useState(null)
+  const [permissions, setPermissions] = useState([])
+  const [checkedKeys, setCheckedKeys] = useState([])
+  const [permLoading, setPermLoading] = useState(false)
+  const [permSaving, setPermSaving] = useState(false)
 
   const defaultCount = data.filter(r => r.type === '系统默认').length
   const optionalCount = data.filter(r => r.type === '可选').length
 
   const stats = [
-    { label: '系统默认角色', value: defaultCount, icon: <SafetyCertificateOutlined />, color: '#2196F3' },
-    { label: '可选角色', value: optionalCount, icon: <ApartmentOutlined />, color: '#FF9800' },
+    { label: '角色总数', value: total, icon: <SafetyCertificateOutlined />, color: '#2196F3' },
+    { label: '系统默认角色', value: defaultCount, icon: <ApartmentOutlined />, color: '#FF9800' },
+    { label: '可选角色', value: optionalCount, icon: <SafetyOutlined />, color: '#4CAF50' },
   ]
 
-  const handleViewHierarchy = (record) => {
-    setCurrentRole(record)
-    setDrawerOpen(true)
+  const treeData = useMemo(() => buildPermissionTree(permissions), [permissions])
+
+  // 获取角色列表
+  useEffect(() => {
+    let cancelled = false
+    const run = async () => {
+      setLoading(true)
+      try {
+        const params = { page: query.page, pageSize: query.pageSize }
+        if (query.keyword) params.keyword = query.keyword
+        if (query.status !== undefined && query.status !== null) params.status = query.status
+        const res = await api.get('/system/roles', { params })
+        if (cancelled) return
+        const list = res.data || []
+        setData(list)
+        setTotal(res.total || list.length)
+      } catch (err) {
+        if (!cancelled) {
+          message.error(err.message || '获取角色列表失败')
+          setData([])
+          setTotal(0)
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [query])
+
+  const refresh = () => setQuery(q => ({ ...q }))
+
+  const handleSearch = () => {
+    setQuery(q => ({ ...q, page: 1, keyword: keywordInput, status: statusInput }))
+  }
+
+  const handleReset = () => {
+    setKeywordInput('')
+    setStatusInput(undefined)
+    setQuery(q => ({ ...q, page: 1, keyword: '', status: undefined }))
   }
 
   const handleAdd = () => {
     setEditing(null)
     form.resetFields()
+    form.setFieldsValue({ status: '启用', type: '可选', sort_order: 0 })
     setModalVisible(true)
   }
 
   const handleEdit = (record) => {
     setEditing(record)
-    form.setFieldsValue(record)
+    form.setFieldsValue({
+      role_name: record.role_name,
+      role_code: record.role_code,
+      type: record.type,
+      scope: record.scope,
+      sort_order: record.sort_order,
+      status: record.status,
+      description: record.description,
+    })
     setModalVisible(true)
   }
 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields()
+      setSubmitting(true)
+      const payload = { ...values }
       if (editing) {
-        setData(prev => prev.map(r => r.role_id === editing.role_id ? {
-          ...r,
-          role_name: values.role_name,
-          role_code: values.role_code,
-          description: values.description,
-          status: values.status,
-        } : r))
-        message.success('角色编辑成功')
+        const res = await api.put(`/system/roles/${editing.role_id}`, payload)
+        message.success(res.message || '角色编辑成功')
       } else {
-        const newRole = {
-          role_id: 'r' + Date.now(),
-          role_name: values.role_name,
-          role_code: values.role_code,
-          type: '可选',
-          scope: '-',
-          description: values.description,
-          status: values.status || '启用',
-        }
-        setData(prev => [newRole, ...prev])
-        message.success('角色新增成功')
+        const res = await api.post('/system/roles', payload)
+        message.success(res.message || '角色新增成功')
       }
       setModalVisible(false)
+      refresh()
     } catch (e) {
-      // 校验未通过
+      if (e?.errorFields) return
+      message.error(e.message || '操作失败')
+    } finally {
+      setSubmitting(false)
     }
   }
+
+  const handleDelete = async (record) => {
+    try {
+      const res = await api.delete(`/system/roles/${record.role_id}`)
+      message.success(res.message || '删除成功')
+      refresh()
+    } catch (err) {
+      message.error(err.message || '删除失败')
+    }
+  }
+
+  // 打开权限配置 Modal
+  const handleConfigPerms = async (record) => {
+    setPermRole(record)
+    setPermModalVisible(true)
+    setCheckedKeys([])
+    setPermLoading(true)
+    try {
+      // 并行加载所有权限和当前角色已有权限
+      const [allRes, roleRes] = await Promise.all([
+        api.get('/system/permissions'),
+        api.get(`/system/roles/${record.role_id}/permissions`),
+      ])
+      setPermissions(allRes.data || [])
+      setCheckedKeys(roleRes.data || [])
+    } catch (err) {
+      message.error(err.message || '加载权限数据失败')
+    } finally {
+      setPermLoading(false)
+    }
+  }
+
+  const handleSavePerms = async () => {
+    if (!permRole) return
+    setPermSaving(true)
+    try {
+      const keys = Array.isArray(checkedKeys) ? checkedKeys : checkedKeys.checked
+      const res = await api.put(`/system/roles/${permRole.role_id}/permissions`, { perm_ids: keys })
+      message.success(res.message || '权限分配成功')
+      setPermModalVisible(false)
+    } catch (err) {
+      message.error(err.message || '权限保存失败')
+    } finally {
+      setPermSaving(false)
+    }
+  }
+
+  const filters = [
+    { type: 'input', placeholder: '搜索角色名称/编码', col: { span: 6 }, value: keywordInput, onChange: e => setKeywordInput(e.target.value) },
+    {
+      type: 'select', placeholder: '状态筛选', col: { span: 6 },
+      options: statusOptions, value: statusInput, onChange: v => setStatusInput(v),
+    },
+  ]
 
   const columns = [
     { title: '角色名称', dataIndex: 'role_name', key: 'role_name' },
     { title: '角色编码', dataIndex: 'role_code', key: 'role_code' },
     {
-      title: '类型', dataIndex: 'type', key: 'type',
+      title: '类型', dataIndex: 'type', key: 'type', width: 100,
       render: v => v === '系统默认' ? <Tag color="blue">{v}</Tag> : <Tag color="orange">{v}</Tag>,
     },
-    { title: '权限范围', dataIndex: 'scope', key: 'scope' },
+    { title: '权限范围', dataIndex: 'scope', key: 'scope', ellipsis: true },
     {
-      title: '操作', key: 'action', width: 150,
+      title: '状态', dataIndex: 'status', key: 'status', width: 80,
+      render: v => v === '启用' ? <Tag color="green">启用</Tag> : <Tag color="red">禁用</Tag>,
+    },
+    { title: '排序', dataIndex: 'sort_order', key: 'sort_order', width: 60 },
+    {
+      title: '操作', key: 'action', width: 220,
       render: (_, record) => (
         <Space size="small">
-          <Button type="link" size="small" onClick={() => handleViewHierarchy(record)}>查看层级</Button>
+          <Button type="link" size="small" onClick={() => handleConfigPerms(record)}>配置权限</Button>
           <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
+          <Popconfirm
+            title="确认删除该角色？"
+            onConfirm={() => handleDelete(record)}
+            okText="确认"
+            cancelText="取消"
+          >
+            <Button type="link" size="small" danger>删除</Button>
+          </Popconfirm>
         </Space>
       ),
     },
@@ -128,10 +247,13 @@ export default function RoleManagement() {
         title="角色权限"
         breadcrumbs="系统管理 / 角色权限"
         stats={stats}
+        filters={filters}
+        onSearch={handleSearch}
+        onReset={handleReset}
         actions={
           <Space>
+            <Button icon={<ReloadOutlined />} onClick={refresh}>刷新</Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增角色</Button>
-            <Button icon={<ApartmentOutlined />} onClick={() => { setCurrentRole(null); setDrawerOpen(true) }}>权限层级图</Button>
           </Space>
         }
         table={
@@ -140,7 +262,15 @@ export default function RoleManagement() {
             dataSource={data}
             rowKey="role_id"
             size="small"
-            pagination={{ pageSize: 10, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
+            loading={loading}
+            pagination={{
+              current: query.page,
+              pageSize: query.pageSize,
+              total,
+              showSizeChanger: true,
+              showTotal: t => `共 ${t} 条`,
+              onChange: (p, ps) => setQuery(q => ({ ...q, page: p, pageSize: ps })),
+            }}
           />
         }
       />
@@ -148,10 +278,11 @@ export default function RoleManagement() {
         title={editing ? '编辑角色' : '新增角色'}
         open={modalVisible}
         onOk={handleSubmit}
+        confirmLoading={submitting}
         onCancel={() => setModalVisible(false)}
         okText="保存"
         cancelText="取消"
-        width={520}
+        width={560}
         destroyOnHidden
       >
         <Form form={form} layout="vertical" className="compact-form" preserve={false}>
@@ -163,14 +294,31 @@ export default function RoleManagement() {
             </Col>
             <Col span={12}>
               <Form.Item name="role_code" label="角色编码" rules={[{ required: true, message: '请输入角色编码' }]}>
-                <Input placeholder="请输入角色编码" />
+                <Input placeholder="请输入角色编码" disabled={!!editing} />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={12}>
-            <Col span={12}>
+            <Col span={8}>
+              <Form.Item name="type" label="类型">
+                <Select placeholder="请选择类型" options={typeOptions} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
               <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
                 <Select placeholder="请选择状态" options={statusOptions} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="sort_order" label="排序号">
+                <InputNumber min={0} style={{ width: '100%' }} placeholder="排序号" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={24}>
+              <Form.Item name="scope" label="权限范围">
+                <Input placeholder="请输入权限范围说明" />
               </Form.Item>
             </Col>
           </Row>
@@ -183,28 +331,31 @@ export default function RoleManagement() {
           </Row>
         </Form>
       </Modal>
-      <Drawer
-        title={currentRole ? `角色层级关系 - ${currentRole.role_name}` : '角色权限层级关系图'}
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        width={520}
+      <Modal
+        title={`配置权限 - ${permRole?.role_name || ''}`}
+        open={permModalVisible}
+        onOk={handleSavePerms}
+        confirmLoading={permSaving}
+        onCancel={() => setPermModalVisible(false)}
+        okText="保存权限"
+        cancelText="取消"
+        width={560}
+        destroyOnHidden
       >
-        {currentRole && (
-          <div style={{ marginBottom: 16, padding: 12, background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 6 }}>
-            <div style={{ marginBottom: 4 }}><Text strong>当前角色：</Text>{currentRole.role_name}（{currentRole.role_code}）</div>
-            <div><Text strong>权限范围：</Text>{currentRole.scope}</div>
-          </div>
-        )}
-        <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-          系统角色按照权限范围形成上下级关系，下级角色的权限范围在上级角色权限之内。
-        </Text>
-        <Tree
-          treeData={roleTreeData}
-          defaultExpandAll
-          showLine
-          blockNode
-        />
-      </Drawer>
+        <Spin spinning={permLoading}>
+          <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+            勾选该角色拥有的权限，保存后立即生效。
+          </Text>
+          <Tree
+            checkable
+            defaultExpandAll
+            treeData={treeData}
+            checkedKeys={checkedKeys}
+            onCheck={(keys) => setCheckedKeys(keys)}
+            style={{ maxHeight: 480, overflow: 'auto' }}
+          />
+        </Spin>
+      </Modal>
     </>
   )
 }

@@ -1,158 +1,172 @@
-import React, { useState, useMemo } from 'react'
-import { Table, Button, Modal, Form, Input, InputNumber, Select, Space, Row, Col, message, Drawer, Descriptions } from 'antd'
+import React, { useState, useEffect, useCallback } from 'react'
+import { Table, Button, Modal, Form, Input, InputNumber, Select, DatePicker, Space, Row, Col, message, Drawer, Descriptions } from 'antd'
 import {
-  TeamOutlined, ToolOutlined, UserOutlined, SolutionOutlined,
-  PlusOutlined, ExportOutlined, SearchOutlined, ReloadOutlined,
-  EditOutlined, DeleteOutlined
+  TeamOutlined, PlusOutlined, SearchOutlined, ReloadOutlined, EyeOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
-import { manpowerRecords, workOrders } from '../../mock/data'
+import api from '../../utils/api'
+
+const shiftOptions = [
+  { label: '白班', value: '白班' },
+  { label: '夜班', value: '夜班' },
+]
 
 export default function ManpowerRecord() {
-  const [data, setData] = useState(manpowerRecords)
-  const [search, setSearch] = useState('')
+  const [data, setData] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [total, setTotal] = useState(0)
+  const [workOrders, setWorkOrders] = useState([])
+  const [lines, setLines] = useState([])
+  const [processes, setProcesses] = useState([])
+  const [submitting, setSubmitting] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
-  const [editing, setEditing] = useState(null)
   const [detailOpen, setDetailOpen] = useState(false)
   const [currentRecord, setCurrentRecord] = useState(null)
   const [form] = Form.useForm()
 
-  const filtered = data.filter(r => {
-    const matchSearch = !search || r.work_order_no.toLowerCase().includes(search.toLowerCase())
-    return matchSearch
-  })
+  // 筛选输入态
+  const [keywordInput, setKeywordInput] = useState('')
+  const [workOrderInput, setWorkOrderInput] = useState(undefined)
+  const [shiftInput, setShiftInput] = useState(undefined)
+  // 已应用的查询条件
+  const [query, setQuery] = useState({ page: 1, pageSize: 10, keyword: '', work_order_id: undefined, shift: undefined })
+
+  // 获取人员记录列表
+  useEffect(() => {
+    let cancelled = false
+    const run = async () => {
+      setLoading(true)
+      try {
+        const params = { page: query.page, pageSize: query.pageSize }
+        if (query.keyword) params.keyword = query.keyword
+        if (query.work_order_id) params.work_order_id = query.work_order_id
+        if (query.shift) params.shift = query.shift
+        const res = await api.get('/production/manpower-records', { params })
+        if (cancelled) return
+        const list = res.data || []
+        setData(list)
+        setTotal(res.total || list.length)
+      } catch (err) {
+        if (!cancelled) {
+          message.error(err.message || '获取人员记录失败')
+          setData([])
+          setTotal(0)
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [query])
+
+  // 获取工单、产线、工序
+  useEffect(() => {
+    let cancelled = false
+    const run = async () => {
+      try {
+        const [woRes, linesRes, procRes] = await Promise.all([
+          api.get('/production/work-orders', { params: { page: 1, pageSize: 1000 } }),
+          api.get('/basic/production-lines', { params: { page: 1, pageSize: 1000 } }),
+          api.get('/basic/processes', { params: { page: 1, pageSize: 1000 } }),
+        ])
+        if (cancelled) return
+        setWorkOrders(woRes.data || [])
+        setLines(linesRes.data || [])
+        setProcesses(procRes.data || [])
+      } catch (err) {
+        if (!cancelled) message.error(err.message || '获取关联数据失败')
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [])
+
+  const refresh = useCallback(() => setQuery(q => ({ ...q })), [])
+
+  const totalHours = data.reduce((s, r) => s + (Number(r.work_hours) || 0), 0)
+  const totalQty = data.reduce((s, r) => s + (Number(r.qty) || 0), 0)
 
   const stats = [
-    { label: '总记录数', value: data.length, icon: <TeamOutlined />, color: '#2196F3' },
-    { label: '累计技工', value: data.reduce((s, r) => s + (r.skilled_workers || 0), 0), icon: <ToolOutlined />, color: '#FF9800' },
-    { label: '累计普工', value: data.reduce((s, r) => s + (r.general_workers || 0), 0), icon: <UserOutlined />, color: '#00BCD4' },
-    { label: '累计劳务工', value: data.reduce((s, r) => s + (r.contract_workers || 0), 0), icon: <SolutionOutlined />, color: '#9C27B0' },
+    { label: '总记录数', value: total, icon: <TeamOutlined />, color: '#2196F3' },
+    { label: '累计工时', value: totalHours.toLocaleString(), icon: <TeamOutlined />, color: '#FF9800' },
+    { label: '累计产量', value: totalQty.toLocaleString(), icon: <TeamOutlined />, color: '#00BCD4' },
+    { label: '当前页人数', value: data.length, icon: <TeamOutlined />, color: '#9C27B0' },
   ]
 
   const handleAdd = () => {
-    setEditing(null)
     form.resetFields()
+    form.setFieldsValue({ shift: '白班', work_hours: 8, qty: 0, date: dayjs() })
     setAddOpen(true)
   }
-
-  // 工单选择：过滤掉已有人员记录的工单
-  const workOrderOptions = useMemo(() => {
-    const existingIds = new Set(data.map(r => r.work_order_id))
-    return workOrders.filter(w => !existingIds.has(w.work_order_id)).map(w => ({
-      label: w.work_order_no,
-      value: w.work_order_id,
-    }))
-  }, [data, workOrders])
 
   const handleView = (r) => {
     setCurrentRecord(r)
     setDetailOpen(true)
   }
 
-  const handleEdit = (r) => {
-    setEditing(r)
-    form.setFieldsValue({
-      work_order_id: r.work_order_id,
-      skilled_workers: r.skilled_workers,
-      general_workers: r.general_workers,
-      contract_workers: r.contract_workers,
-      auxiliary_workers: r.auxiliary_workers,
-      remarks: r.remarks,
-    })
-    setAddOpen(true)
-  }
-
-  const handleDelete = (r) => {
-    Modal.confirm({
-      title: '确认删除',
-      content: `确认删除工单 ${r.work_order_no} 的人员投入记录？`,
-      okText: '删除',
-      okType: 'danger',
-      cancelText: '取消',
-      onOk: () => {
-        setData(prev => prev.filter(x => x.record_id !== r.record_id))
-        message.success('记录已删除')
-      },
-    })
-  }
-
   const handleSubmit = async () => {
-    const values = await form.validateFields()
-    const w = workOrders.find(w => w.work_order_id === values.work_order_id)
-    if (editing) {
-      setData(prev => prev.map(r => r.record_id === editing.record_id ? {
-        ...r,
+    try {
+      const values = await form.validateFields()
+      setSubmitting(true)
+      const workOrder = workOrders.find(w => w.work_order_id === values.work_order_id)
+      const line = lines.find(l => l.line_id === values.line_id)
+      const process = processes.find(p => p.process_id === values.process_id)
+      const payload = {
         work_order_id: values.work_order_id,
-        work_order_no: w?.work_order_no || r.work_order_no,
-        skilled_workers: values.skilled_workers || 0,
-        general_workers: values.general_workers || 0,
-        contract_workers: values.contract_workers || 0,
-        auxiliary_workers: values.auxiliary_workers || 0,
-        remarks: values.remarks || '',
-        created_at: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-      } : r))
-      message.success('人员投入记录已更新')
-    } else {
-      const newRecord = {
-        record_id: 'mr' + Date.now(),
-        work_order_id: values.work_order_id,
-        work_order_no: w?.work_order_no || '-',
-        skilled_workers: values.skilled_workers || 0,
-        general_workers: values.general_workers || 0,
-        contract_workers: values.contract_workers || 0,
-        auxiliary_workers: values.auxiliary_workers || 0,
-        remarks: values.remarks || '',
-        record_user: 'u6',
-        record_user_name: '生产管理',
-        created_at: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+        work_order_no: workOrder?.work_order_no,
+        line_id: values.line_id,
+        line_name: line?.line_name,
+        employee_no: values.employee_no,
+        employee_name: values.employee_name,
+        process_id: values.process_id,
+        process_name: process?.process_name,
+        shift: values.shift,
+        work_hours: values.work_hours,
+        qty: values.qty || 0,
+        date: values.date ? values.date.format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD'),
+        remarks: values.remarks,
       }
-      setData(prev => [newRecord, ...prev])
-      message.success('人员投入记录已新增')
+      const res = await api.post('/production/manpower-records', payload)
+      message.success(res.message || '人员投入记录已新增')
+      setAddOpen(false)
+      refresh()
+    } catch (e) {
+      if (e?.errorFields) return
+      message.error(e.message || '操作失败')
+    } finally {
+      setSubmitting(false)
     }
-    setAddOpen(false)
+  }
+
+  const handleSearch = () => {
+    setQuery(q => ({ ...q, page: 1, keyword: keywordInput, work_order_id: workOrderInput, shift: shiftInput }))
+  }
+
+  const handleReset = () => {
+    setKeywordInput('')
+    setWorkOrderInput(undefined)
+    setShiftInput(undefined)
+    setQuery(q => ({ ...q, page: 1, keyword: '', work_order_id: undefined, shift: undefined }))
   }
 
   const columns = [
     { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 160, fixed: 'left' },
-    { title: '技工人数', dataIndex: 'skilled_workers', key: 'skilled_workers', width: 100, render: v => v || 0 },
-    { title: '普工人数', dataIndex: 'general_workers', key: 'general_workers', width: 100, render: v => v || 0 },
-    { title: '劳务工人数', dataIndex: 'contract_workers', key: 'contract_workers', width: 110, render: v => v || 0 },
-    { title: '其他辅助', dataIndex: 'auxiliary_workers', key: 'auxiliary_workers', width: 100, render: v => v || 0 },
+    { title: '员工工号', dataIndex: 'employee_no', key: 'employee_no', width: 100 },
+    { title: '员工姓名', dataIndex: 'employee_name', key: 'employee_name', width: 100 },
+    { title: '产线', dataIndex: 'line_name', key: 'line_name', width: 80 },
+    { title: '工序', dataIndex: 'process_name', key: 'process_name', width: 100, render: v => v || '-' },
+    { title: '班次', dataIndex: 'shift', key: 'shift', width: 80 },
+    { title: '工时(小时)', dataIndex: 'work_hours', key: 'work_hours', width: 100, align: 'right', render: v => v || 0 },
+    { title: '产量', dataIndex: 'qty', key: 'qty', width: 90, align: 'right', render: v => (v || 0).toLocaleString() },
+    { title: '日期', dataIndex: 'date', key: 'date', width: 110, render: v => v ? String(v).substring(0, 10) : '-' },
+    { title: '备注', dataIndex: 'remarks', key: 'remarks', width: 160, render: v => v || '-' },
     {
-      title: '合计人数', key: 'total', width: 100,
-      render: (_, r) => (r.skilled_workers || 0) + (r.general_workers || 0) + (r.contract_workers || 0) + (r.auxiliary_workers || 0),
-    },
-    {
-      title: '总工时(小时)', key: 'total_hours', width: 120,
-      render: (_, r) => {
-        const totalWorkers = (r.skilled_workers || 0) + (r.general_workers || 0) + (r.contract_workers || 0) + (r.auxiliary_workers || 0)
-        const wo = workOrders.find(w => w.work_order_id === r.work_order_id)
-        if (!wo || !wo.start_time) return '-'
-        const start = dayjs(wo.start_time)
-        const end = wo.finish_time ? dayjs(wo.finish_time) : dayjs()
-        const hours = end.diff(start, 'hour', true)
-        return (totalWorkers * hours).toFixed(1)
-      },
-    },
-    { title: '备注', dataIndex: 'remarks', key: 'remarks', width: 120, render: v => v || '-' },
-    { title: '记录人', dataIndex: 'record_user_name', key: 'record_user_name', width: 100 },
-    { title: '记录时间', dataIndex: 'created_at', key: 'created_at', width: 160 },
-    {
-      title: '操作', key: 'action', width: 150, fixed: 'right',
-      render: (_, r) => {
-        const wo = workOrders.find(w => w.work_order_id === r.work_order_id)
-        const isCompleted = wo && wo.status === '完工'
-        if (isCompleted) {
-          return <Button type="link" size="small" onClick={() => handleView(r)}>查看</Button>
-        }
-        return (
-          <Space size="small">
-            <Button type="link" size="small" onClick={() => handleEdit(r)}>编辑</Button>
-            <Button type="link" size="small" danger onClick={() => handleDelete(r)}>删除</Button>
-          </Space>
-        )
-      },
+      title: '操作', key: 'action', width: 100, fixed: 'right',
+      render: (_, r) => (
+        <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(r)}>查看</Button>
+      ),
     },
   ]
 
@@ -165,87 +179,154 @@ export default function ManpowerRecord() {
         actions={
           <ActionButtons
             hasAdd={false}
-            extra={<Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增记录</Button>}
+            hasExport={false}
+            extra={[
+              <Button key="reload" icon={<ReloadOutlined />} onClick={refresh}>刷新</Button>,
+              <Button key="add" type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增记录</Button>,
+            ]}
           />
         }
         table={
           <div>
             <Row gutter={[12, 8]} style={{ marginBottom: 12 }}>
-              <Col span={6}>
+              <Col flex="200px">
                 <Input
                   placeholder="搜索工单编号"
                   allowClear
                   prefix={<SearchOutlined />}
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
+                  value={keywordInput}
+                  onChange={e => setKeywordInput(e.target.value)}
+                  onPressEnter={handleSearch}
+                />
+              </Col>
+              <Col flex="180px">
+                <Select
+                  placeholder="工单筛选"
+                  allowClear
+                  style={{ width: '100%' }}
+                  options={workOrders.map(w => ({ label: w.work_order_no, value: w.work_order_id }))}
+                  value={workOrderInput}
+                  onChange={setWorkOrderInput}
+                />
+              </Col>
+              <Col flex="140px">
+                <Select
+                  placeholder="班次筛选"
+                  allowClear
+                  style={{ width: '100%' }}
+                  options={shiftOptions}
+                  value={shiftInput}
+                  onChange={setShiftInput}
                 />
               </Col>
               <Col>
                 <Space>
-                  <Button type="primary" icon={<SearchOutlined />}>查询</Button>
-                  <Button icon={<ReloadOutlined />} onClick={() => setSearch('')}>重置</Button>
+                  <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>查询</Button>
+                  <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
                 </Space>
               </Col>
             </Row>
             <Table
               columns={columns}
-              dataSource={filtered}
+              dataSource={data}
               rowKey="record_id"
               size="small"
+              loading={loading}
               scroll={{ x: 1300 }}
-              pagination={{ pageSize: 10, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
+              pagination={{
+                current: query.page,
+                pageSize: query.pageSize,
+                total,
+                showSizeChanger: true,
+                showTotal: t => `共 ${t} 条`,
+                onChange: (p, ps) => setQuery(q => ({ ...q, page: p, pageSize: ps })),
+              }}
             />
           </div>
         }
       />
 
       <Modal
-        title={editing ? '编辑人员投入' : '新增人员投入'}
+        title="新增人员投入"
         open={addOpen}
         onOk={handleSubmit}
+        confirmLoading={submitting}
         onCancel={() => setAddOpen(false)}
         okText="保存"
         cancelText="取消"
-        width={520}
+        width={640}
         destroyOnHidden
       >
         <Form form={form} layout="vertical" className="compact-form" preserve={false}>
-          <Form.Item label="工单" name="work_order_id" rules={[{ required: true, message: '请选择工单' }]}>
-            <Select
-              placeholder="请选择工单"
-              disabled={!!editing}
-              options={editing
-                ? workOrders.map(w => ({ label: w.work_order_no, value: w.work_order_id }))
-                : workOrderOptions
-              }
-            />
-          </Form.Item>
           <Row gutter={12}>
             <Col span={12}>
-              <Form.Item label="技工人数" name="skilled_workers" rules={[{ required: true, message: '请输入技工人数' }]}>
-                <InputNumber min={0} style={{ width: '100%' }} placeholder="技工人数" />
+              <Form.Item label="工单" name="work_order_id" rules={[{ required: true, message: '请选择工单' }]}>
+                <Select
+                  placeholder="请选择工单"
+                  showSearch
+                  optionFilterProp="label"
+                  options={workOrders.map(w => ({ label: w.work_order_no, value: w.work_order_id }))}
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="普工人数" name="general_workers" rules={[{ required: true, message: '请输入普工人数' }]}>
-                <InputNumber min={0} style={{ width: '100%' }} placeholder="普工人数" />
+              <Form.Item label="产线" name="line_id" rules={[{ required: true, message: '请选择产线' }]}>
+                <Select
+                  placeholder="请选择产线"
+                  options={lines.map(l => ({ label: l.line_name, value: l.line_id }))}
+                />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={12}>
             <Col span={12}>
-              <Form.Item label="劳务工人数" name="contract_workers" rules={[{ required: true, message: '请输入劳务工人数' }]}>
-                <InputNumber min={0} style={{ width: '100%' }} placeholder="劳务工人数" />
+              <Form.Item label="员工工号" name="employee_no" rules={[{ required: true, message: '请输入员工工号' }]}>
+                <Input placeholder="请输入员工工号" />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="其他辅助人数" name="auxiliary_workers">
-                <InputNumber min={0} style={{ width: '100%' }} placeholder="其他辅助人数" />
+              <Form.Item label="员工姓名" name="employee_name" rules={[{ required: true, message: '请输入员工姓名' }]}>
+                <Input placeholder="请输入员工姓名" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item label="工序" name="process_id">
+                <Select
+                  placeholder="请选择工序"
+                  allowClear
+                  options={processes.map(p => ({ label: `${p.process_code || ''} ${p.process_name || ''}`.trim(), value: p.process_id }))}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="班次" name="shift" rules={[{ required: true, message: '请选择班次' }]}>
+                <Select placeholder="请选择班次" options={shiftOptions} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item label="工时(小时)" name="work_hours" rules={[{ required: true, message: '请输入工时' }]}>
+                <InputNumber min={0} step={0.5} style={{ width: '100%' }} placeholder="请输入工时" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="产量" name="qty">
+                <InputNumber min={0} style={{ width: '100%' }} placeholder="请输入产量" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item label="日期" name="date" rules={[{ required: true, message: '请选择日期' }]}>
+                <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
               </Form.Item>
             </Col>
           </Row>
           <Form.Item label="备注" name="remarks">
-            <Input.TextArea rows={2} placeholder="请输入备注，如：白班/夜班" />
+            <Input.TextArea rows={2} placeholder="请输入备注" />
           </Form.Item>
         </Form>
       </Modal>
@@ -259,13 +340,15 @@ export default function ManpowerRecord() {
         {currentRecord && (
           <Descriptions column={1} bordered size="small">
             <Descriptions.Item label="工单编号">{currentRecord.work_order_no}</Descriptions.Item>
-            <Descriptions.Item label="技工人数">{currentRecord.skilled_workers}</Descriptions.Item>
-            <Descriptions.Item label="普工人数">{currentRecord.general_workers}</Descriptions.Item>
-            <Descriptions.Item label="劳务工人数">{currentRecord.contract_workers}</Descriptions.Item>
-            <Descriptions.Item label="辅助人数">{currentRecord.auxiliary_workers}</Descriptions.Item>
+            <Descriptions.Item label="员工工号">{currentRecord.employee_no}</Descriptions.Item>
+            <Descriptions.Item label="员工姓名">{currentRecord.employee_name}</Descriptions.Item>
+            <Descriptions.Item label="产线">{currentRecord.line_name || '-'}</Descriptions.Item>
+            <Descriptions.Item label="工序">{currentRecord.process_name || '-'}</Descriptions.Item>
+            <Descriptions.Item label="班次">{currentRecord.shift || '-'}</Descriptions.Item>
+            <Descriptions.Item label="工时(小时)">{currentRecord.work_hours || 0}</Descriptions.Item>
+            <Descriptions.Item label="产量">{(currentRecord.qty || 0).toLocaleString()}</Descriptions.Item>
+            <Descriptions.Item label="日期">{currentRecord.date ? String(currentRecord.date).substring(0, 10) : '-'}</Descriptions.Item>
             <Descriptions.Item label="备注">{currentRecord.remarks || '-'}</Descriptions.Item>
-            <Descriptions.Item label="记录人">{currentRecord.record_user_name}</Descriptions.Item>
-            <Descriptions.Item label="创建时间">{currentRecord.created_at}</Descriptions.Item>
           </Descriptions>
         )}
       </Drawer>

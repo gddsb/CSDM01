@@ -1,69 +1,119 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
-  Table, Tag, Button, Modal, Form, Input, Select, DatePicker, Space, Row, Col, Alert, message, Drawer, Descriptions
+  Table, Tag, Button, Modal, Form, Input, Select, DatePicker, Space, Row, Col, message, Drawer, Descriptions
 } from 'antd'
 import {
   BellOutlined, ToolOutlined, SyncOutlined, ClockCircleOutlined,
-  PlusOutlined, ExportOutlined, SearchOutlined, ReloadOutlined,
-  EditOutlined, DeleteOutlined
+  PlusOutlined, SearchOutlined, ReloadOutlined, EyeOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
-import { exceptionRecords, workOrders, devices } from '../../mock/data'
+import api from '../../utils/api'
 
 // 异常类型定义
 const exceptionTypes = [
-  { code: 'E01', name: '换型调机', needDevice: false },
-  { code: 'E02', name: '清场', needDevice: false },
-  { code: 'E03', name: '停机待料', needDevice: false },
-  { code: 'E04', name: '设备故障', needDevice: true },
+  { code: 'E01', name: '换型调机' },
+  { code: 'E02', name: '清场' },
+  { code: 'E03', name: '停机待料' },
+  { code: 'E04', name: '设备故障' },
 ]
-const excTypeMap = Object.fromEntries(exceptionTypes.map(e => [e.code, e]))
-
 const exceptionTypeColorMap = {
   'E01': 'warning',
   'E02': 'default',
   'E03': 'processing',
   'E04': 'error',
 }
-
 const exceptionTypeOptions = exceptionTypes.map(e => ({ label: `${e.code} ${e.name}`, value: e.code }))
 
+const statusColorMap = {
+  '待处理': 'default',
+  '处理中': 'processing',
+  '已处理': 'success',
+}
+
 export default function ExceptionRecord() {
-  const [data, setData] = useState(exceptionRecords)
-  const [search, setSearch] = useState('')
-  const [excType, setExcType] = useState(undefined)
+  const [data, setData] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [total, setTotal] = useState(0)
+  const [workOrders, setWorkOrders] = useState([])
+  const [lines, setLines] = useState([])
+  const [submitting, setSubmitting] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
-  const [editing, setEditing] = useState(null)
   const [detailOpen, setDetailOpen] = useState(false)
   const [currentRecord, setCurrentRecord] = useState(null)
   const [form] = Form.useForm()
-  const [selExcType, setSelExcType] = useState(null)
-  const [startTime, setStartTime] = useState(null)
-  const [endTime, setEndTime] = useState(null)
 
-  const filtered = data.filter(r => {
-    const matchSearch = !search || r.work_order_no.toLowerCase().includes(search.toLowerCase())
-    const matchType = !excType || r.exception_type === excType
-    return matchSearch && matchType
-  })
+  // 筛选输入态
+  const [keywordInput, setKeywordInput] = useState('')
+  const [excTypeInput, setExcTypeInput] = useState(undefined)
+  const [statusInput, setStatusInput] = useState(undefined)
+  // 已应用的查询条件
+  const [query, setQuery] = useState({ page: 1, pageSize: 10, keyword: '', exception_type: undefined, status: undefined })
+
+  // 获取异常列表
+  useEffect(() => {
+    let cancelled = false
+    const run = async () => {
+      setLoading(true)
+      try {
+        const params = { page: query.page, pageSize: query.pageSize }
+        if (query.keyword) params.keyword = query.keyword
+        if (query.exception_type) params.exception_type = query.exception_type
+        if (query.status) params.status = query.status
+        const res = await api.get('/production/exceptions', { params })
+        if (cancelled) return
+        const list = res.data || []
+        setData(list)
+        setTotal(res.total || list.length)
+      } catch (err) {
+        if (!cancelled) {
+          message.error(err.message || '获取异常记录失败')
+          setData([])
+          setTotal(0)
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [query])
+
+  // 获取工单和产线
+  useEffect(() => {
+    let cancelled = false
+    const run = async () => {
+      try {
+        const [woRes, linesRes] = await Promise.all([
+          api.get('/production/work-orders', { params: { page: 1, pageSize: 1000 } }),
+          api.get('/basic/production-lines', { params: { page: 1, pageSize: 1000 } }),
+        ])
+        if (cancelled) return
+        setWorkOrders(woRes.data || [])
+        setLines(linesRes.data || [])
+      } catch (err) {
+        if (!cancelled) message.error(err.message || '获取关联数据失败')
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [])
+
+  const refresh = useCallback(() => setQuery(q => ({ ...q })), [])
+
+  const deviceFaultCount = data.filter(r => r.exception_type === 'E04').length
+  const changeoverCount = data.filter(r => r.exception_type === 'E01').length
 
   const stats = [
-    { label: '总异常记录', value: data.length, icon: <BellOutlined />, color: '#2196F3' },
-    { label: '设备故障数', value: data.filter(r => r.exception_type === 'E04').length, icon: <ToolOutlined />, color: '#F44336' },
-    { label: '换型调机数', value: data.filter(r => r.exception_type === 'E01').length, icon: <SyncOutlined />, color: '#FF9800' },
-    { label: '累计异常时长(分钟)', value: data.reduce((s, r) => s + (r.duration || 0), 0), icon: <ClockCircleOutlined />, color: '#00BCD4' },
+    { label: '总异常记录', value: total, icon: <BellOutlined />, color: '#2196F3' },
+    { label: '设备故障数', value: deviceFaultCount, icon: <ToolOutlined />, color: '#F44336' },
+    { label: '换型调机数', value: changeoverCount, icon: <SyncOutlined />, color: '#FF9800' },
+    { label: '待处理数', value: data.filter(r => r.status === '待处理').length, icon: <ClockCircleOutlined />, color: '#00BCD4' },
   ]
 
-  // 自动计算时长（分钟）
-  const computedDuration = (startTime && endTime) ? Math.max(0, endTime.diff(startTime, 'minute')) : null
-
   const handleAdd = () => {
-    setEditing(null)
     form.resetFields()
-    setSelExcType(null)
-    setStartTime(null)
-    setEndTime(null)
+    form.setFieldsValue({ exception_type: 'E01', handle_time: dayjs() })
     setAddOpen(true)
   }
 
@@ -72,103 +122,74 @@ export default function ExceptionRecord() {
     setDetailOpen(true)
   }
 
-  const handleEdit = (r) => {
-    setEditing(r)
-    form.setFieldsValue({
-      work_order_id: r.work_order_id,
-      exception_type: r.exception_type,
-      device_id: r.device_id || undefined,
-      reason: r.reason,
-    })
-    setSelExcType(r.exception_type)
-    setStartTime(r.start_time ? dayjs(r.start_time) : null)
-    setEndTime(r.end_time ? dayjs(r.end_time) : null)
-    setAddOpen(true)
-  }
-
-  const handleDelete = (r) => {
-    Modal.confirm({
-      title: '确认删除',
-      content: `确认删除工单 ${r.work_order_no} 的异常记录？`,
-      okText: '删除',
-      okType: 'danger',
-      cancelText: '取消',
-      onOk: () => {
-        setData(prev => prev.filter(x => x.record_id !== r.record_id))
-        message.success('异常记录已删除')
-      },
-    })
-  }
-
   const handleSubmit = async () => {
-    const values = await form.validateFields()
-    if (!startTime || !endTime) {
-      message.warning('请选择开始时间和结束时间')
-      return
+    try {
+      const values = await form.validateFields()
+      setSubmitting(true)
+      const workOrder = workOrders.find(w => w.work_order_id === values.work_order_id)
+      const line = lines.find(l => l.line_id === values.line_id)
+      const excTypeObj = exceptionTypes.find(e => e.code === values.exception_type)
+      const payload = {
+        work_order_id: values.work_order_id,
+        work_order_no: workOrder?.work_order_no,
+        line_id: values.line_id,
+        line_name: line?.line_name,
+        exception_type: values.exception_type,
+        exception_desc: values.exception_desc,
+        handler: values.handler,
+        handle_time: values.handle_time ? values.handle_time.format('YYYY-MM-DD HH:mm') : dayjs().format('YYYY-MM-DD HH:mm'),
+        handle_result: values.handle_result,
+        remarks: values.remarks,
+      }
+      const res = await api.post('/production/exceptions', payload)
+      message.success(res.message || '异常记录已新增')
+      setAddOpen(false)
+      refresh()
+    } catch (e) {
+      if (e?.errorFields) return
+      message.error(e.message || '操作失败')
+    } finally {
+      setSubmitting(false)
     }
-    if (!endTime.isAfter(startTime)) {
-      message.warning('结束时间必须晚于开始时间')
-      return
-    }
-    const duration = Math.max(0, endTime.diff(startTime, 'minute'))
-    const w = workOrders.find(w => w.work_order_id === values.work_order_id)
-    const excTypeObj = excTypeMap[values.exception_type]
-    const device = devices.find(d => d.device_id === values.device_id)
-    const payload = {
-      work_order_id: values.work_order_id,
-      work_order_no: w?.work_order_no || '-',
-      exception_type: values.exception_type,
-      exception_type_name: excTypeObj?.name || '-',
-      device_id: excTypeObj?.needDevice ? (values.device_id || null) : null,
-      device_name: excTypeObj?.needDevice ? (device?.device_name || '-') : '-',
-      start_time: startTime.format('YYYY-MM-DD HH:mm'),
-      end_time: endTime.format('YYYY-MM-DD HH:mm'),
-      duration,
-      reason: values.reason || '',
-      record_user: 'u6',
-      record_user_name: '生产管理',
-    }
-    if (editing) {
-      setData(prev => prev.map(r => r.record_id === editing.record_id ? { ...r, ...payload } : r))
-      message.success('异常记录已更新')
-    } else {
-      setData(prev => [{ record_id: 'er' + Date.now(), ...payload }, ...prev])
-      message.success('异常记录已新增')
-    }
-    setAddOpen(false)
+  }
+
+  const handleSearch = () => {
+    setQuery(q => ({ ...q, page: 1, keyword: keywordInput, exception_type: excTypeInput, status: statusInput }))
+  }
+
+  const handleReset = () => {
+    setKeywordInput('')
+    setExcTypeInput(undefined)
+    setStatusInput(undefined)
+    setQuery(q => ({ ...q, page: 1, keyword: '', exception_type: undefined, status: undefined }))
   }
 
   const columns = [
     { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 150, fixed: 'left' },
+    { title: '产线', dataIndex: 'line_name', key: 'line_name', width: 80, render: v => v || '-' },
     {
       title: '异常类型', key: 'exc_type', width: 140,
-      render: (_, r) => <Tag color={exceptionTypeColorMap[r.exception_type]}>{r.exception_type} {r.exception_type_name}</Tag>,
-    },
-    { title: '关联设备', dataIndex: 'device_name', key: 'device_name', width: 140, render: v => v || '-' },
-    { title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 150 },
-    { title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 150 },
-    { title: '时长(分钟)', dataIndex: 'duration', key: 'duration', width: 100, render: v => v != null ? v : '-' },
-    { title: '原因描述', dataIndex: 'reason', key: 'reason', width: 220, render: v => v || '-' },
-    { title: '记录人', dataIndex: 'record_user_name', key: 'record_user_name', width: 100 },
-    {
-      title: '操作', key: 'action', width: 150, fixed: 'right',
       render: (_, r) => {
-        const wo = workOrders.find(w => w.work_order_id === r.work_order_id)
-        const isCompleted = wo && wo.status === '完工'
-        if (isCompleted) {
-          return <Button type="link" size="small" onClick={() => handleView(r)}>查看</Button>
-        }
-        return (
-          <Space size="small">
-            <Button type="link" size="small" onClick={() => handleEdit(r)}>编辑</Button>
-            <Button type="link" size="small" danger onClick={() => handleDelete(r)}>删除</Button>
-          </Space>
-        )
+        const t = exceptionTypes.find(e => e.code === r.exception_type)
+        return <Tag color={exceptionTypeColorMap[r.exception_type]}>{r.exception_type} {t?.name || ''}</Tag>
       },
     },
+    { title: '异常描述', dataIndex: 'exception_desc', key: 'exception_desc', width: 220, render: v => v || '-' },
+    { title: '处理人', dataIndex: 'handler', key: 'handler', width: 100, render: v => v || '-' },
+    { title: '处理时间', dataIndex: 'handle_time', key: 'handle_time', width: 150, render: v => v || '-' },
+    {
+      title: '状态', dataIndex: 'status', key: 'status', width: 100,
+      render: v => v ? <Tag color={statusColorMap[v] || 'default'}>{v}</Tag> : '-'
+    },
+    { title: '处理结果', dataIndex: 'handle_result', key: 'handle_result', width: 200, render: v => v || '-' },
+    { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 160, render: v => v || '-' },
+    {
+      title: '操作', key: 'action', width: 100, fixed: 'right',
+      render: (_, r) => (
+        <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(r)}>查看</Button>
+      ),
+    },
   ]
-
-  const needDevice = selExcType ? excTypeMap[selExcType]?.needDevice : false
 
   return (
     <>
@@ -179,130 +200,141 @@ export default function ExceptionRecord() {
         actions={
           <ActionButtons
             hasAdd={false}
-            extra={<Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增记录</Button>}
+            hasExport={false}
+            extra={[
+              <Button key="reload" icon={<ReloadOutlined />} onClick={refresh}>刷新</Button>,
+              <Button key="add" type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增记录</Button>,
+            ]}
           />
         }
         table={
           <div>
             <Row gutter={[12, 8]} style={{ marginBottom: 12 }}>
-              <Col span={6}>
+              <Col flex="200px">
                 <Input
                   placeholder="搜索工单编号"
                   allowClear
                   prefix={<SearchOutlined />}
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
+                  value={keywordInput}
+                  onChange={e => setKeywordInput(e.target.value)}
+                  onPressEnter={handleSearch}
                 />
               </Col>
-              <Col span={6}>
+              <Col flex="160px">
                 <Select
                   placeholder="异常类型筛选"
                   allowClear
                   style={{ width: '100%' }}
                   options={exceptionTypeOptions}
-                  value={excType}
-                  onChange={setExcType}
+                  value={excTypeInput}
+                  onChange={setExcTypeInput}
+                />
+              </Col>
+              <Col flex="140px">
+                <Select
+                  placeholder="状态筛选"
+                  allowClear
+                  style={{ width: '100%' }}
+                  options={[
+                    { label: '待处理', value: '待处理' },
+                    { label: '处理中', value: '处理中' },
+                    { label: '已处理', value: '已处理' },
+                  ]}
+                  value={statusInput}
+                  onChange={setStatusInput}
                 />
               </Col>
               <Col>
                 <Space>
-                  <Button type="primary" icon={<SearchOutlined />}>查询</Button>
-                  <Button icon={<ReloadOutlined />} onClick={() => { setSearch(''); setExcType(undefined) }}>重置</Button>
+                  <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>查询</Button>
+                  <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
                 </Space>
               </Col>
             </Row>
             <Table
               columns={columns}
-              dataSource={filtered}
-              rowKey="record_id"
+              dataSource={data}
+              rowKey="exception_id"
               size="small"
+              loading={loading}
               scroll={{ x: 1400 }}
-              pagination={{ pageSize: 10, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
+              pagination={{
+                current: query.page,
+                pageSize: query.pageSize,
+                total,
+                showSizeChanger: true,
+                showTotal: t => `共 ${t} 条`,
+                onChange: (p, ps) => setQuery(q => ({ ...q, page: p, pageSize: ps })),
+              }}
             />
           </div>
         }
       />
 
       <Modal
-        title={editing ? '编辑异常工时' : '新增异常工时'}
+        title="新增异常工时"
         open={addOpen}
         onOk={handleSubmit}
+        confirmLoading={submitting}
         onCancel={() => setAddOpen(false)}
         okText="保存"
         cancelText="取消"
-        width={560}
+        width={640}
         destroyOnHidden
       >
-        <Alert
-          message="异常类型说明"
-          description="E01 换型调机、E02 清场、E03 停机待料、E04 设备故障（需关联设备）。时长由系统根据结束时间-开始时间自动计算。"
-          type="info"
-          showIcon
-          style={{ marginBottom: 12 }}
-        />
         <Form form={form} layout="vertical" className="compact-form" preserve={false}>
           <Row gutter={12}>
             <Col span={12}>
               <Form.Item label="工单" name="work_order_id" rules={[{ required: true, message: '请选择工单' }]}>
                 <Select
                   placeholder="请选择工单"
+                  showSearch
+                  optionFilterProp="label"
                   options={workOrders.map(w => ({ label: w.work_order_no, value: w.work_order_id }))}
                 />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="异常类型" name="exception_type" rules={[{ required: true, message: '请选择异常类型' }]}>
+              <Form.Item label="产线" name="line_id" rules={[{ required: true, message: '请选择产线' }]}>
                 <Select
-                  placeholder="请选择异常类型"
-                  options={exceptionTypeOptions}
-                  onChange={v => setSelExcType(v)}
+                  placeholder="请选择产线"
+                  options={lines.map(l => ({ label: l.line_name, value: l.line_id }))}
                 />
               </Form.Item>
             </Col>
           </Row>
-
-          {needDevice && (
-            <Form.Item label="关联设备" name="device_id" rules={[{ required: true, message: '设备故障需选择关联设备' }]}>
-              <Select
-                placeholder="请选择关联设备"
-                options={devices.map(d => ({ label: `${d.device_code} ${d.device_name}`, value: d.device_id }))}
-              />
-            </Form.Item>
-          )}
-
           <Row gutter={12}>
             <Col span={12}>
-              <Form.Item label="开始时间" required>
-                <DatePicker
-                  showTime
-                  format="YYYY-MM-DD HH:mm"
-                  style={{ width: '100%' }}
-                  value={startTime}
-                  onChange={setStartTime}
-                  placeholder="开始时间"
-                />
+              <Form.Item label="异常类型" name="exception_type" rules={[{ required: true, message: '请选择异常类型' }]}>
+                <Select placeholder="请选择异常类型" options={exceptionTypeOptions} />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="结束时间" required>
+              <Form.Item label="处理人" name="handler">
+                <Input placeholder="请输入处理人姓名" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item label="异常描述" name="exception_desc" rules={[{ required: true, message: '请输入异常描述' }]}>
+            <Input.TextArea rows={3} placeholder="请输入异常描述" />
+          </Form.Item>
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item label="处理时间" name="handle_time">
                 <DatePicker
                   showTime
                   format="YYYY-MM-DD HH:mm"
                   style={{ width: '100%' }}
-                  value={endTime}
-                  onChange={setEndTime}
-                  placeholder="结束时间"
+                  placeholder="请选择处理时间"
                 />
               </Form.Item>
             </Col>
           </Row>
-
-          <Form.Item label="时长（分钟，系统自动计算）">
-            <Input value={computedDuration != null ? `${computedDuration} 分钟` : '请选择开始和结束时间'} disabled />
+          <Form.Item label="处理结果" name="handle_result">
+            <Input.TextArea rows={2} placeholder="请输入处理结果" />
           </Form.Item>
-
-          <Form.Item label="原因描述" name="reason" rules={[{ required: true, message: '请输入原因描述' }]}>
-            <Input.TextArea rows={3} placeholder="请输入异常原因描述" />
+          <Form.Item label="备注" name="remarks">
+            <Input.TextArea rows={2} placeholder="请输入备注" />
           </Form.Item>
         </Form>
       </Modal>
@@ -311,21 +343,25 @@ export default function ExceptionRecord() {
         title="异常记录详情"
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
-        width={480}
+        width={520}
       >
-        {currentRecord && (
-          <Descriptions column={1} bordered size="small">
-            <Descriptions.Item label="工单编号">{currentRecord.work_order_no}</Descriptions.Item>
-            <Descriptions.Item label="订单编号">{currentRecord.order_no || '-'}</Descriptions.Item>
-            <Descriptions.Item label="异常类型">{currentRecord.exception_type_name}</Descriptions.Item>
-            <Descriptions.Item label="关联设备">{currentRecord.device_name || '-'}</Descriptions.Item>
-            <Descriptions.Item label="开始时间">{currentRecord.start_time}</Descriptions.Item>
-            <Descriptions.Item label="结束时间">{currentRecord.end_time}</Descriptions.Item>
-            <Descriptions.Item label="时长(分钟)">{currentRecord.duration}</Descriptions.Item>
-            <Descriptions.Item label="异常原因">{currentRecord.reason}</Descriptions.Item>
-            <Descriptions.Item label="记录人">{currentRecord.record_user_name}</Descriptions.Item>
-          </Descriptions>
-        )}
+        {currentRecord && (() => {
+          const t = exceptionTypes.find(e => e.code === currentRecord.exception_type)
+          return (
+            <Descriptions column={1} bordered size="small">
+              <Descriptions.Item label="工单编号">{currentRecord.work_order_no}</Descriptions.Item>
+              <Descriptions.Item label="产线">{currentRecord.line_name || '-'}</Descriptions.Item>
+              <Descriptions.Item label="异常类型">{currentRecord.exception_type} {t?.name || ''}</Descriptions.Item>
+              <Descriptions.Item label="异常描述">{currentRecord.exception_desc || '-'}</Descriptions.Item>
+              <Descriptions.Item label="处理人">{currentRecord.handler || '-'}</Descriptions.Item>
+              <Descriptions.Item label="处理时间">{currentRecord.handle_time || '-'}</Descriptions.Item>
+              <Descriptions.Item label="状态">{currentRecord.status ? <Tag color={statusColorMap[currentRecord.status] || 'default'}>{currentRecord.status}</Tag> : '-'}</Descriptions.Item>
+              <Descriptions.Item label="处理结果">{currentRecord.handle_result || '-'}</Descriptions.Item>
+              <Descriptions.Item label="备注">{currentRecord.remarks || '-'}</Descriptions.Item>
+              <Descriptions.Item label="创建时间">{currentRecord.created_at || '-'}</Descriptions.Item>
+            </Descriptions>
+          )
+        })()}
       </Drawer>
     </>
   )

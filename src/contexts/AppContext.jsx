@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { users, roles } from '../mock/data'
+import api from '../utils/api'
 import { applyTheme } from '../themes'
 
 const AppContext = createContext(null)
@@ -11,7 +11,8 @@ export function AppProvider({ children }) {
 
   useEffect(() => {
     const savedUser = localStorage.getItem('mes_user')
-    if (savedUser) {
+    const savedToken = localStorage.getItem('mes_token')
+    if (savedUser && savedToken) {
       setCurrentUser(JSON.parse(savedUser))
     }
     const savedTheme = localStorage.getItem('mes_theme') || 'pureMilk'
@@ -20,19 +21,26 @@ export function AppProvider({ children }) {
     setInitialized(true)
   }, [])
 
-  const login = (username, password) => {
-    const user = users.find(u => u.username === username)
-    if (!user) return { success: false, message: '用户名不存在' }
-    if (password !== '123456') return { success: false, message: '密码错误' }
-    if (user.status !== 1) return { success: false, message: '账号已禁用' }
-    const userWithRole = { ...user, role: roles.find(r => r.role_id === user.role_id) }
-    setCurrentUser(userWithRole)
-    localStorage.setItem('mes_user', JSON.stringify(userWithRole))
-    return { success: true }
+  const login = async (username, password) => {
+    try {
+      const res = await api.post('/auth/login', { username, password })
+      if (res.success) {
+        const user = res.data.user
+        const token = res.data.token
+        localStorage.setItem('mes_token', token)
+        localStorage.setItem('mes_user', JSON.stringify(user))
+        setCurrentUser(user)
+        return { success: true }
+      }
+      return { success: false, message: res.message || '登录失败' }
+    } catch (err) {
+      return { success: false, message: err.message || '登录失败' }
+    }
   }
 
   const logout = () => {
     setCurrentUser(null)
+    localStorage.removeItem('mes_token')
     localStorage.removeItem('mes_user')
   }
 

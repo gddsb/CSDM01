@@ -1,153 +1,199 @@
-import React, { useState, useMemo } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, Select, message, Row, Col, Switch, Drawer, Descriptions, Space, Upload } from 'antd'
+import React, { useState, useEffect, useCallback } from 'react'
+import { Table, Tag, Button, Modal, Form, Input, Select, message, Row, Col, Switch, Drawer, Descriptions, Space, Popconfirm } from 'antd'
 import {
   ImportOutlined, ToolOutlined, DeleteOutlined,
-  EditOutlined, PlusOutlined, EyeOutlined, SearchOutlined, ReloadOutlined, PictureOutlined,
+  PlusOutlined, EyeOutlined, ReloadOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
-import { defectTypes as defectData, processes } from '../../mock/data'
+import api from '../../utils/api'
 
 // 所属大类标签颜色映射
 const typeColorMap = { '来料不良': 'blue', '制程不良': 'orange', '检验报废': 'red' }
 
 const categoryOptions = ['来料不良', '制程不良', '检验报废'].map(c => ({ label: c, value: c }))
-const severityOptions = ['轻微', '一般', '严重'].map(s => ({ label: s, value: s }))
 
-// 大类编码映射
-const typeCodeMap = { '来料不良': 'MAT', '制程不良': 'PRC', '检验报废': 'SCP' }
-
-// 工序选项
-const processOptions = processes.map(p => ({ label: `${p.process_code} ${p.process_name}`, value: p.process_id }))
-
-// 自动生成不良编码
-const genDefectCode = (defectType, existingData) => {
-  const prefix = 'D-' + typeCodeMap[defectType]
-  const sameType = existingData.filter(d => d.defect_type === defectType)
-  const maxNo = sameType.reduce((max, d) => {
-    const match = d.defect_code?.match(/-(\d+)$/)
-    return match ? Math.max(max, parseInt(match[1])) : max
-  }, 0)
-  const nextNo = String(maxNo + 1).padStart(2, '0')
-  return `${prefix}-${nextNo}`
-}
+// 安全获取数组的辅助函数
+const toArray = (v) => Array.isArray(v) ? v : []
 
 export default function DefectManagement() {
-  const [data, setData] = useState(defectData)
+  const [data, setData] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [total, setTotal] = useState(0)
   const [editing, setEditing] = useState(null)
   const [modalVisible, setModalVisible] = useState(false)
   const [viewRecord, setViewRecord] = useState(null)
+  const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
 
-  // 筛选状态
-  const [filterCode, setFilterCode] = useState('')
-  const [filterType, setFilterType] = useState('')
-  const [filterName, setFilterName] = useState('')
-  const [filterStatus, setFilterStatus] = useState('')
-  const [filterProcess, setFilterProcess] = useState('')
-  const [uploadImages, setUploadImages] = useState([])
+  // 工序列表（用于关联工序下拉）
+  const [processes, setProcesses] = useState([])
 
-  const incomingCount = data.filter(d => d.defect_type === '来料不良').length
-  const processCount = data.filter(d => d.defect_type === '制程不良').length
-  const scrapCount = data.filter(d => d.defect_type === '检验报废').length
+  // 筛选输入态
+  const [keywordInput, setKeywordInput] = useState('')
+  const [statusInput, setStatusInput] = useState(undefined)
+  const [typeInput, setTypeInput] = useState(undefined)
+  // 已应用的查询条件
+  const [query, setQuery] = useState({ page: 1, pageSize: 15, keyword: '', status: undefined, defect_type: undefined })
 
-  const stats = [
-    { label: '来料不良数', value: incomingCount, icon: <ImportOutlined />, color: '#2196F3' },
-    { label: '制程不良数', value: processCount, icon: <ToolOutlined />, color: '#FF9800' },
-    { label: '检验报废数', value: scrapCount, icon: <DeleteOutlined />, color: '#F44336' },
-  ]
+  const processOptions = processes.map(p => ({ label: `${p.process_code} ${p.process_name}`, value: p.process_id }))
 
-  // 筛选后的数据
-  const filteredData = useMemo(() => {
-    return data.filter(d => {
-      if (filterCode && !d.defect_code?.toLowerCase().includes(filterCode.toLowerCase())) return false
-      if (filterType && d.defect_type !== filterType) return false
-      if (filterName && !d.defect_name?.includes(filterName)) return false
-      if (filterStatus && d.status !== filterStatus) return false
-      if (filterProcess) {
-        const related = d.related_processes || []
-        if (!related.includes(filterProcess)) return false
+  // 拉取列表
+  useEffect(() => {
+    let cancelled = false
+    const run = async () => {
+      setLoading(true)
+      try {
+        const params = { page: query.page, pageSize: query.pageSize }
+        if (query.keyword) params.keyword = query.keyword
+        if (query.status !== undefined && query.status !== null) params.status = query.status
+        if (query.defect_type) params.defect_type = query.defect_type
+        const res = await api.get('/basic/defect-types', { params })
+        if (cancelled) return
+        const list = res.data || []
+        setData(list)
+        setTotal(res.total || list.length)
+      } catch (err) {
+        if (!cancelled) {
+          message.error(err.message || '获取不良分类列表失败')
+          setData([])
+          setTotal(0)
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
       }
-      return true
-    })
-  }, [data, filterCode, filterType, filterName, filterStatus, filterProcess])
+    }
+    run()
+    return () => { cancelled = true }
+  }, [query])
+
+  // 拉取工序列表（用于关联工序下拉）
+  useEffect(() => {
+    let cancelled = false
+    const run = async () => {
+      try {
+        const res = await api.get('/basic/processes', { params: { pageSize: 200 } })
+        if (!cancelled) setProcesses(res.data || [])
+      } catch (err) {
+        if (!cancelled) setProcesses([])
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [])
+
+  const refresh = useCallback(() => setQuery(q => ({ ...q })), [])
+
+  const handleSearch = () => {
+    setQuery(q => ({ ...q, page: 1, keyword: keywordInput, status: statusInput, defect_type: typeInput }))
+  }
+
+  const handleReset = () => {
+    setKeywordInput('')
+    setStatusInput(undefined)
+    setTypeInput(undefined)
+    setQuery(q => ({ ...q, page: 1, keyword: '', status: undefined, defect_type: undefined }))
+  }
 
   const handleAdd = () => {
     setEditing(null)
     form.resetFields()
-    setUploadImages([])
+    form.setFieldsValue({
+      defect_type: '来料不良',
+      display: true,
+      status: '启用',
+      sort_order: total + 1,
+      available_units: [],
+      related_processes: [],
+    })
     setModalVisible(true)
   }
 
   const handleEdit = (record) => {
     setEditing(record)
+    const availableUnits = toArray(record.available_units)
+    const relatedProcesses = toArray(record.related_processes)
     form.setFieldsValue({
-      ...record,
-      defect_category: record.defect_type,
-      related_processes: record.related_processes || [],
+      defect_code: record.defect_code,
+      defect_name: record.defect_name,
+      defect_type: record.defect_type,
+      defect_unit: record.defect_unit,
+      available_units: availableUnits,
+      display: !!record.display,
+      sort_order: record.sort_order,
+      status: record.status === '启用' ? '启用' : '停用',
+      related_processes: relatedProcesses,
+      defect_description: record.defect_description,
     })
-    setUploadImages(record.defect_images || [])
     setModalVisible(true)
   }
 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields()
+      setSubmitting(true)
+      const payload = {
+        defect_code: values.defect_code,
+        defect_name: values.defect_name,
+        defect_type: values.defect_type,
+        defect_unit: values.defect_unit,
+        available_units: toArray(values.available_units),
+        display: !!values.display,
+        sort_order: values.sort_order,
+        status: values.status,
+        related_processes: toArray(values.related_processes),
+        defect_description: values.defect_description || '',
+      }
       if (editing) {
-        setData(prev => prev.map(d => editing.defect_id === d.defect_id ? {
-          ...d,
-          defect_code: values.defect_code,
-          defect_name: values.defect_name,
-          defect_type: values.defect_category,
-          severity: values.severity,
-          description: values.description,
-          defect_unit: values.defect_unit || d.defect_unit,
-          available_units: values.available_units ? values.available_units.split(',').map(u => u.trim()) : d.available_units,
-          display: !!values.display,
-          sort_order: values.sort_order ? parseInt(values.sort_order) : d.sort_order,
-          related_processes: values.related_processes || [],
-          defect_description: values.defect_description || '',
-          defect_images: uploadImages,
-        } : d))
-        message.success('不良项编辑成功')
+        const res = await api.put(`/basic/defect-types/${editing.defect_id}`, payload)
+        message.success(res.message || '不良项编辑成功')
       } else {
-        const autoCode = genDefectCode(values.defect_category, data)
-        const newDefect = {
-          defect_id: 'df' + Date.now(),
-          defect_code: autoCode,
-          defect_name: values.defect_name,
-          defect_type: values.defect_category,
-          severity: values.severity,
-          description: values.description,
-          defect_unit: values.defect_unit || '个',
-          available_units: values.available_units ? values.available_units.split(',').map(u => u.trim()) : ['个'],
-          display: !!values.display,
-          sort_order: values.sort_order ? parseInt(values.sort_order) : data.length + 1,
-          status: values.status || '启用',
-          related_processes: values.related_processes || [],
-          defect_description: values.defect_description || '',
-          defect_images: uploadImages,
-        }
-        setData(prev => [newDefect, ...prev])
-        message.success('不良项新增成功')
+        const res = await api.post('/basic/defect-types', payload)
+        message.success(res.message || '不良项新增成功')
       }
       setModalVisible(false)
+      refresh()
     } catch (e) {
-      // 校验未通过
+      if (e?.errorFields) return
+      message.error(e.message || '操作失败')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleDelete = async (record) => {
+    try {
+      const res = await api.delete(`/basic/defect-types/${record.defect_id}`)
+      message.success(res.message || '删除成功')
+      refresh()
+    } catch (err) {
+      message.error(err.message || '删除失败')
     }
   }
 
   const columns = [
-    { title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 100, fixed: 'left' },
-    { title: '排序号', dataIndex: 'sort_order', key: 'sort_order', width: 60 },
-    { title: '不良名称', dataIndex: 'defect_name', key: 'defect_name', width: 100 },
-    { title: '默认单位', dataIndex: 'defect_unit', key: 'defect_unit', width: 60 },
+    { title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 110, fixed: 'left' },
+    { title: '排序号', dataIndex: 'sort_order', key: 'sort_order', width: 70 },
+    { title: '不良名称', dataIndex: 'defect_name', key: 'defect_name', width: 110 },
     {
-      title: '关联工序', dataIndex: 'related_processes', key: 'related_processes', width: 150,
+      title: '所属大类', dataIndex: 'defect_type', key: 'defect_type', width: 100,
+      render: v => v ? <Tag color={typeColorMap[v] || 'default'}>{v}</Tag> : '-',
+    },
+    { title: '默认单位', dataIndex: 'defect_unit', key: 'defect_unit', width: 80 },
+    {
+      title: '可选单位', dataIndex: 'available_units', key: 'available_units', width: 120,
       render: v => {
-        if (!v || v.length === 0) return <Tag color="default">全部工序</Tag>
+        const arr = toArray(v)
+        return arr.length > 0 ? arr.join('、') : '-'
+      },
+    },
+    {
+      title: '关联工序', dataIndex: 'related_processes', key: 'related_processes', width: 160,
+      render: v => {
+        const arr = toArray(v)
+        if (arr.length === 0) return <Tag color="default">全部工序</Tag>
         return (
           <Space size="small" wrap>
-            {v.map(pid => {
+            {arr.map(pid => {
               const p = processes.find(proc => proc.process_id === pid)
               return p ? <Tag key={pid} color="cyan">{p.process_name}</Tag> : null
             })}
@@ -160,27 +206,51 @@ export default function DefectManagement() {
       render: v => <div style={{ lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{v || '-'}</div>,
     },
     {
-      title: '展示图片', dataIndex: 'defect_images', key: 'defect_images', width: 80, align: 'center',
-      render: v => {
-        const count = (v || []).length
-        return count > 0 ? (
-          <Tag icon={<PictureOutlined />}>{count}张</Tag>
-        ) : '-'
-      },
-    },
-    {
-      title: '状态', dataIndex: 'status', key: 'status', width: 100, fixed: 'right',
+      title: '状态', dataIndex: 'status', key: 'status', width: 90, fixed: 'right',
       render: v => <Tag color={v === '启用' ? 'green' : 'red'}>{v}</Tag>,
     },
     {
-      title: '操作', key: 'action', width: 100, fixed: 'right',
+      title: '操作', key: 'action', width: 170, fixed: 'right',
       render: (_, record) => (
         <Space size="small">
           <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => setViewRecord(record)}>查看</Button>
           <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
+          <Popconfirm
+            title="确认删除该不良项？"
+            onConfirm={() => handleDelete(record)}
+            okText="确认"
+            cancelText="取消"
+          >
+            <Button type="link" size="small" danger>删除</Button>
+          </Popconfirm>
         </Space>
       ),
     },
+  ]
+
+  const filters = [
+    { type: 'input', placeholder: '搜索不良编码/名称', col: { span: 6 }, value: keywordInput, onChange: e => setKeywordInput(e.target.value) },
+    {
+      type: 'select', placeholder: '所属大类', col: { span: 6 },
+      options: categoryOptions, value: typeInput, onChange: v => setTypeInput(v),
+    },
+    {
+      type: 'select', placeholder: '状态筛选', col: { span: 6 },
+      options: [{ label: '启用', value: 1 }, { label: '停用', value: 0 }],
+      value: statusInput, onChange: v => setStatusInput(v),
+    },
+  ]
+
+  // 统计数据
+  const incomingCount = data.filter(d => d.defect_type === '来料不良').length
+  const processCount = data.filter(d => d.defect_type === '制程不良').length
+  const scrapCount = data.filter(d => d.defect_type === '检验报废').length
+
+  const stats = [
+    { label: '来料不良数', value: incomingCount, icon: <ImportOutlined />, color: '#2196F3' },
+    { label: '制程不良数', value: processCount, icon: <ToolOutlined />, color: '#FF9800' },
+    { label: '检验报废数', value: scrapCount, icon: <DeleteOutlined />, color: '#F44336' },
+    { label: '总数', value: total, icon: <PlusOutlined />, color: '#4CAF50' },
   ]
 
   return (
@@ -189,47 +259,42 @@ export default function DefectManagement() {
         title="制程不良分类"
         breadcrumbs="基础数据 / 制程不良分类"
         stats={stats}
-        actions={<ActionButtons onAdd={handleAdd} />}
+        filters={filters}
+        onSearch={handleSearch}
+        onReset={handleReset}
+        actions={
+          <ActionButtons
+            hasExport={false}
+            extra={[
+              <Button key="reload" icon={<ReloadOutlined />} onClick={refresh}>刷新</Button>,
+              <Button key="add" type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增不良项</Button>,
+            ]}
+          />
+        }
         table={
-          <>
-            {/* 筛选区域 */}
-            <Row gutter={[12, 8]} style={{ marginBottom: 12 }}>
-              <Col span={4}>
-                <Input placeholder="不良编码" allowClear value={filterCode} onChange={e => setFilterCode(e.target.value)} />
-              </Col>
-              <Col span={4}>
-                <Select placeholder="所属大类" allowClear style={{ width: '100%' }} value={filterType || undefined} onChange={v => setFilterType(v || '')} options={categoryOptions} />
-              </Col>
-              <Col span={4}>
-                <Input placeholder="不良名称" allowClear value={filterName} onChange={e => setFilterName(e.target.value)} />
-              </Col>
-              <Col span={4}>
-                <Select placeholder="状态" allowClear style={{ width: '100%' }} value={filterStatus || undefined} onChange={v => setFilterStatus(v || '')} options={[{ label: '启用', value: '启用' }, { label: '停用', value: '停用' }]} />
-              </Col>
-              <Col span={4}>
-                <Select placeholder="关联工序" allowClear style={{ width: '100%' }} value={filterProcess || undefined} onChange={v => setFilterProcess(v || '')} options={processOptions} />
-              </Col>
-              <Col span={4}>
-                <Space>
-                  <Button type="primary" icon={<SearchOutlined />} onClick={() => {}}>查询</Button>
-                  <Button icon={<ReloadOutlined />} onClick={() => { setFilterCode(''); setFilterType(''); setFilterName(''); setFilterStatus(''); setFilterProcess('') }}>重置</Button>
-                </Space>
-              </Col>
-            </Row>
-            <Table
-              columns={columns}
-              dataSource={filteredData}
-              rowKey="defect_id"
-              size="small"
-              pagination={{ pageSize: 15, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
-            />
-          </>
+          <Table
+            columns={columns}
+            dataSource={data}
+            rowKey="defect_id"
+            size="small"
+            loading={loading}
+            scroll={{ x: 1200 }}
+            pagination={{
+              current: query.page,
+              pageSize: query.pageSize,
+              total,
+              showSizeChanger: true,
+              showTotal: t => `共 ${t} 条`,
+              onChange: (p, ps) => setQuery(q => ({ ...q, page: p, pageSize: ps })),
+            }}
+          />
         }
       />
       <Modal
         title={editing ? '编辑不良项' : '新增不良项'}
         open={modalVisible}
         onOk={handleSubmit}
+        confirmLoading={submitting}
         onCancel={() => setModalVisible(false)}
         okText="保存"
         cancelText="取消"
@@ -239,8 +304,8 @@ export default function DefectManagement() {
         <Form form={form} layout="vertical" className="compact-form" preserve={false}>
           <Row gutter={12}>
             <Col span={8}>
-              <Form.Item name="defect_code" label="不良编码">
-                <Input placeholder="自动生成" disabled />
+              <Form.Item name="defect_code" label="不良编码" rules={[{ required: true, message: '请输入不良编码' }]}>
+                <Input placeholder="请输入不良编码" />
               </Form.Item>
             </Col>
             <Col span={8}>
@@ -249,25 +314,30 @@ export default function DefectManagement() {
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="defect_category" label="不良类别" rules={[{ required: true, message: '请选择不良类别' }]}>
+              <Form.Item name="defect_type" label="不良类别" rules={[{ required: true, message: '请选择不良类别' }]}>
                 <Select placeholder="请选择不良类别" options={categoryOptions} />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={12}>
             <Col span={8}>
-              <Form.Item name="severity" label="严重等级" rules={[{ required: true, message: '请选择严重等级' }]}>
-                <Select placeholder="请选择严重等级" options={severityOptions} />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
               <Form.Item name="defect_unit" label="默认单位" rules={[{ required: true, message: '请输入默认单位' }]}>
                 <Input placeholder="如：个、处、片" />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="available_units" label="可选单位（逗号分隔）" rules={[{ required: true, message: '请输入可选单位' }]}>
-                <Input placeholder="如：个,处 或 个" />
+              <Form.Item name="available_units" label="可选单位">
+                <Select
+                  mode="tags"
+                  placeholder="输入单位后回车，如：个、处、片"
+                  tokenSeparators={[',']}
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="sort_order" label="排序号">
+                <Input placeholder="数字越小越靠前" />
               </Form.Item>
             </Col>
           </Row>
@@ -278,12 +348,7 @@ export default function DefectManagement() {
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="sort_order" label="排序号">
-                <Input placeholder="数字越小越靠前" />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="status" label="状态">
+              <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
                 <Select placeholder="请选择状态" options={[{ label: '启用', value: '启用' }, { label: '停用', value: '停用' }]} />
               </Form.Item>
             </Col>
@@ -299,33 +364,6 @@ export default function DefectManagement() {
           <Form.Item name="defect_description" label="不良描述">
             <Input.TextArea placeholder="请输入不良描述" rows={3} />
           </Form.Item>
-          <Form.Item label="展示图片（最多10张）">
-            <Upload
-              listType="picture-card"
-              fileList={uploadImages}
-              onChange={({ fileList }) => {
-                if (fileList.length <= 10) setUploadImages(fileList)
-                else message.warning('最多上传10张图片')
-              }}
-              beforeUpload={(file) => {
-                // 自动重命名：不良编码-流水码
-                const code = form.getFieldValue('defect_code') || 'D-NEW'
-                const seq = String((uploadImages.length + 1)).padStart(2, '0')
-                const ext = file.name.split('.').pop()
-                Object.defineProperty(file, 'name', { value: `${code}-${seq}.${ext}` })
-                return false
-              }}
-              accept="image/*"
-            >
-              {uploadImages.length < 10 && <PlusOutlined />}
-            </Upload>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
-              上传后自动命名为：不良编码-两位流水码
-            </div>
-          </Form.Item>
-          <Form.Item name="description" label="描述">
-            <Input.TextArea placeholder="请输入描述" rows={3} />
-          </Form.Item>
         </Form>
       </Modal>
       <Drawer
@@ -339,33 +377,30 @@ export default function DefectManagement() {
             <Descriptions.Item label="不良编码">{viewRecord.defect_code}</Descriptions.Item>
             <Descriptions.Item label="不良名称">{viewRecord.defect_name}</Descriptions.Item>
             <Descriptions.Item label="所属大类">
-              <Tag color={typeColorMap[viewRecord.defect_type]}>{viewRecord.defect_type}</Tag>
+              <Tag color={typeColorMap[viewRecord.defect_type] || 'default'}>{viewRecord.defect_type}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="严重等级">{viewRecord.severity || '-'}</Descriptions.Item>
-            <Descriptions.Item label="默认单位">{viewRecord.defect_unit}</Descriptions.Item>
-            <Descriptions.Item label="可选单位">{Array.isArray(viewRecord.available_units) ? viewRecord.available_units.join('、') : viewRecord.available_units}</Descriptions.Item>
+            <Descriptions.Item label="默认单位">{viewRecord.defect_unit || '-'}</Descriptions.Item>
+            <Descriptions.Item label="可选单位" span={2}>
+              {toArray(viewRecord.available_units).join('、') || '-'}
+            </Descriptions.Item>
             <Descriptions.Item label="默认显示">{viewRecord.display ? '是' : '否'}</Descriptions.Item>
             <Descriptions.Item label="排序号">{viewRecord.sort_order}</Descriptions.Item>
             <Descriptions.Item label="关联工序" span={2}>
-              {(!viewRecord.related_processes || viewRecord.related_processes.length === 0)
-                ? <Tag color="default">全部工序</Tag>
-                : viewRecord.related_processes.map(pid => {
-                    const p = processes.find(proc => proc.process_id === pid)
-                    return p ? <Tag key={pid} color="cyan">{p.process_name}</Tag> : null
-                  })}
+              {(() => {
+                const arr = toArray(viewRecord.related_processes)
+                if (arr.length === 0) return <Tag color="default">全部工序</Tag>
+                return arr.map(pid => {
+                  const p = processes.find(proc => proc.process_id === pid)
+                  return p ? <Tag key={pid} color="cyan">{p.process_name}</Tag> : null
+                })
+              })()}
             </Descriptions.Item>
             <Descriptions.Item label="状态">
               <Tag color={viewRecord.status === '启用' ? 'green' : 'red'}>{viewRecord.status}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="展示图片">
-              {(viewRecord.defect_images || []).length > 0
-                ? <Tag icon={<PictureOutlined />}>{viewRecord.defect_images.length}张</Tag>
-                : '无'}
-            </Descriptions.Item>
             <Descriptions.Item label="不良描述" span={2}>
               <div style={{ lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{viewRecord.defect_description || '-'}</div>
             </Descriptions.Item>
-            <Descriptions.Item label="描述" span={2}>{viewRecord.description || '-'}</Descriptions.Item>
           </Descriptions>
         )}
       </Drawer>

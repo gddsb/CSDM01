@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Layout, Menu, Dropdown, Avatar, Space, Typography, Badge, Button, Modal, Form, Input, message } from 'antd'
 import {
   DashboardOutlined, TeamOutlined, DatabaseOutlined, SettingOutlined,
@@ -13,6 +13,7 @@ import {
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useApp } from '../contexts/AppContext'
 import { themeList } from '../themes'
+import api from '../utils/api'
 import logoSquare from '../assets/logo-square.png'
 
 const { Sider, Header, Content } = Layout
@@ -108,6 +109,33 @@ export default function MainLayout() {
   const [pwdOpen, setPwdOpen] = useState(false)
   const [profileForm] = Form.useForm()
   const [pwdForm] = Form.useForm()
+  const [systemConfig, setSystemConfig] = useState({ system_name: '', company_name: '' })
+
+  // 获取系统配置
+  useEffect(() => {
+    let cancelled = false
+    const run = async () => {
+      try {
+        const res = await api.get('/system/config')
+        if (cancelled) return
+        // 后端可能返回 { data: {...} } 或直接对象
+        const cfg = res.data || res
+        if (cfg && typeof cfg === 'object') {
+          setSystemConfig({
+            system_name: cfg.system_name || '',
+            company_name: cfg.company_name || '',
+          })
+        }
+      } catch (err) {
+        // 静默失败，保留默认空值
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [])
+
+  const systemName = systemConfig.system_name || '奶粉罐生产系统'
+  const companyName = systemConfig.company_name || ''
 
   const getOpenKeys = () => {
     const path = location.pathname
@@ -215,7 +243,7 @@ export default function MainLayout() {
       >
         <div className="logo" style={{ color: 'var(--nav-text)' }}>
           <img src={logoSquare} alt="logo" className="logo-img" style={{ height: 32, width: 'auto', objectFit: 'contain' }} />
-          {!collapsed && <span>奶粉罐生产系统</span>}
+          {!collapsed && <span>{systemName}</span>}
         </div>
         <Menu
           mode="inline"
@@ -238,6 +266,7 @@ export default function MainLayout() {
               onClick={() => setCollapsed(!collapsed)}
               icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             />
+            {companyName && <Text strong style={{ color: 'var(--color-primary)' }}>{companyName}</Text>}
             <Text strong>欢迎，{currentUser?.real_name}</Text>
             <Badge count={3} size="small">
               <BellOutlined style={{ fontSize: 18, cursor: 'pointer' }} />

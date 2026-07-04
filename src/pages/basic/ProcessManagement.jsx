@@ -1,99 +1,160 @@
-import React, { useState } from 'react'
-import { Table, Tag, Button, Space, Modal, Form, Input, InputNumber, message, Tooltip, Typography, Row, Col } from 'antd'
+import React, { useState, useEffect, useCallback } from 'react'
+import { Table, Tag, Button, Space, Modal, Form, Input, InputNumber, Switch, Popconfirm, message, Row, Col, Tooltip, Typography } from 'antd'
 import {
   OrderedListOutlined, CheckCircleOutlined,
-  EditOutlined, ArrowUpOutlined, ArrowDownOutlined, InfoCircleOutlined,
+  ArrowUpOutlined, ArrowDownOutlined, InfoCircleOutlined,
+  PlusOutlined, ReloadOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
-import { processes as processesData } from '../../mock/data'
+import api from '../../utils/api'
 
 const { Text } = Typography
 
-// 自动生成工序编码 P-##
-const genProcessCode = (existingData) => {
-  const maxNo = existingData.reduce((max, p) => {
-    const match = p.process_code?.match(/P-(\d+)$/)
-    return match ? Math.max(max, parseInt(match[1])) : max
-  }, 0)
-  return 'P-' + String(maxNo + 1).padStart(2, '0')
-}
-
 export default function ProcessManagement() {
-  const [data, setData] = useState(processesData)
+  const [data, setData] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [total, setTotal] = useState(0)
   const [editing, setEditing] = useState(null)
   const [modalVisible, setModalVisible] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
+
+  // 筛选输入态
+  const [keywordInput, setKeywordInput] = useState('')
+  const [statusInput, setStatusInput] = useState(undefined)
+  // 已应用的查询条件
+  const [query, setQuery] = useState({ page: 1, pageSize: 15, keyword: '', status: undefined })
 
   const enabledCount = data.filter(p => p.status === '启用').length
 
   const stats = [
-    { label: '总工序数', value: data.length, icon: <OrderedListOutlined />, color: '#2196F3' },
+    { label: '总工序数', value: total, icon: <OrderedListOutlined />, color: '#2196F3' },
     { label: '启用数', value: enabledCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
   ]
 
-  // 上移
-  const handleMoveUp = (record) => {
-    const index = data.findIndex(p => p.process_id === record.process_id)
-    if (index <= 0) {
-      message.warning('已是第一道工序，无法上移')
-      return
+  // 获取列表
+  useEffect(() => {
+    let cancelled = false
+    const run = async () => {
+      setLoading(true)
+      try {
+        const params = { page: query.page, pageSize: query.pageSize }
+        if (query.keyword) params.keyword = query.keyword
+        if (query.status !== undefined && query.status !== null) params.status = query.status
+        const res = await api.get('/basic/processes', { params })
+        if (cancelled) return
+        const list = res.data || []
+        setData(list)
+        setTotal(res.total || list.length)
+      } catch (err) {
+        if (!cancelled) {
+          message.error(err.message || '获取工序列表失败')
+          setData([])
+          setTotal(0)
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
     }
-    const newData = [...data]
-    const prev = newData[index - 1]
-    // 交换排序号
-    newData[index - 1] = { ...record, sort_order: prev.sort_order }
-    newData[index] = { ...prev, sort_order: record.sort_order }
-    setData(newData)
-    message.success('已上移')
+    run()
+    return () => { cancelled = true }
+  }, [query])
+
+  const refresh = useCallback(() => setQuery(q => ({ ...q })), [])
+
+  const handleSearch = () => {
+    setQuery(q => ({ ...q, page: 1, keyword: keywordInput, status: statusInput }))
   }
 
-  // 下移
-  const handleMoveDown = (record) => {
-    const index = data.findIndex(p => p.process_id === record.process_id)
-    if (index >= data.length - 1) {
-      message.warning('已是最后一道工序，无法下移')
-      return
-    }
-    const newData = [...data]
-    const next = newData[index + 1]
-    newData[index + 1] = { ...record, sort_order: next.sort_order }
-    newData[index] = { ...next, sort_order: record.sort_order }
-    setData(newData)
-    message.success('已下移')
+  const handleReset = () => {
+    setKeywordInput('')
+    setStatusInput(undefined)
+    setQuery(q => ({ ...q, page: 1, keyword: '', status: undefined }))
   }
 
   const handleAdd = () => {
     setEditing(null)
     form.resetFields()
+    form.setFieldsValue({ status: '启用', sort_order: total + 1 })
     setModalVisible(true)
   }
 
   const handleEdit = (record) => {
     setEditing(record)
-    form.setFieldsValue(record)
+    form.setFieldsValue({
+      process_code: record.process_code,
+      process_name: record.process_name,
+      sort_order: record.sort_order,
+      status: record.status === '启用' ? '启用' : '停用',
+    })
     setModalVisible(true)
+  }
+
+  const handleMoveUp = async (record, index) => {
+    if (index <= 0) {
+      message.warning('已是第一道工序，无法上移')
+      return
+    }
+    const prev = data[index - 1]
+    try {
+      await Promise.all([
+        api.put(`/basic/processes/${record.process_id}`, { sort_order: prev.sort_order }),
+        api.put(`/basic/processes/${prev.process_id}`, { sort_order: record.sort_order }),
+      ])
+      message.success('已上移')
+      refresh()
+    } catch (err) {
+      message.error(err.message || '上移失败')
+    }
+  }
+
+  const handleMoveDown = async (record, index) => {
+    if (index >= data.length - 1) {
+      message.warning('已是最后一道工序，无法下移')
+      return
+    }
+    const next = data[index + 1]
+    try {
+      await Promise.all([
+        api.put(`/basic/processes/${record.process_id}`, { sort_order: next.sort_order }),
+        api.put(`/basic/processes/${next.process_id}`, { sort_order: record.sort_order }),
+      ])
+      message.success('已下移')
+      refresh()
+    } catch (err) {
+      message.error(err.message || '下移失败')
+    }
   }
 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields()
+      setSubmitting(true)
+      const payload = { ...values }
       if (editing) {
-        setData(prev => prev.map(p => p.process_id === editing.process_id ? { ...p, ...values } : p))
-        message.success('工序编辑成功')
+        const res = await api.put(`/basic/processes/${editing.process_id}`, payload)
+        message.success(res.message || '工序编辑成功')
       } else {
-        const newProcess = {
-          process_id: 'p' + Date.now(),
-          process_code: genProcessCode(data),
-          sort_order: data.length + 1,
-          status: '启用',
-          ...values,
-        }
-        setData(prev => [newProcess, ...prev])
-        message.success('工序新增成功')
+        const res = await api.post('/basic/processes', payload)
+        message.success(res.message || '工序新增成功')
       }
       setModalVisible(false)
+      refresh()
     } catch (e) {
-      // 校验未通过
+      if (e?.errorFields) return
+      message.error(e.message || '操作失败')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleDelete = async (record) => {
+    try {
+      const res = await api.delete(`/basic/processes/${record.process_id}`)
+      message.success(res.message || '删除成功')
+      refresh()
+    } catch (err) {
+      message.error(err.message || '删除失败')
     }
   }
 
@@ -106,14 +167,31 @@ export default function ProcessManagement() {
       render: v => <Tag color={v === '启用' ? 'green' : 'red'}>{v}</Tag>,
     },
     {
-      title: '操作', key: 'action', width: 150,
+      title: '操作', key: 'action', width: 220,
       render: (_, record, index) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
-          <Button type="link" size="small" disabled={index === 0} onClick={() => handleMoveUp(record)}>上移</Button>
-          <Button type="link" size="small" disabled={index === data.length - 1} onClick={() => handleMoveDown(record)}>下移</Button>
+          <Button type="link" size="small" icon={<ArrowUpOutlined />} disabled={index === 0} onClick={() => handleMoveUp(record, index)}>上移</Button>
+          <Button type="link" size="small" icon={<ArrowDownOutlined />} disabled={index === data.length - 1} onClick={() => handleMoveDown(record, index)}>下移</Button>
+          <Popconfirm
+            title="确认删除该工序？"
+            onConfirm={() => handleDelete(record)}
+            okText="确认"
+            cancelText="取消"
+          >
+            <Button type="link" size="small" danger>删除</Button>
+          </Popconfirm>
         </Space>
       ),
+    },
+  ]
+
+  const filters = [
+    { type: 'input', placeholder: '搜索工序名称/编码', col: { span: 8 }, value: keywordInput, onChange: e => setKeywordInput(e.target.value) },
+    {
+      type: 'select', placeholder: '状态筛选', col: { span: 8 },
+      options: [{ label: '启用', value: 1 }, { label: '停用', value: 0 }],
+      value: statusInput, onChange: v => setStatusInput(v),
     },
   ]
 
@@ -123,14 +201,25 @@ export default function ProcessManagement() {
         title="工序管理"
         breadcrumbs="基础数据 / 工序管理"
         stats={stats}
-        actions={<ActionButtons onAdd={handleAdd} />}
+        filters={filters}
+        onSearch={handleSearch}
+        onReset={handleReset}
+        actions={
+          <ActionButtons
+            hasExport={false}
+            extra={[
+              <Button key="reload" icon={<ReloadOutlined />} onClick={refresh}>刷新</Button>,
+              <Button key="add" type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增工序</Button>,
+            ]}
+          />
+        }
         table={
           <>
             <div style={{ marginBottom: 8 }}>
-              <Tooltip title="可按住工序行拖动调整顺序，或使用操作列的上移/下移按钮调整工序先后顺序。">
+              <Tooltip title="可使用操作列的上移/下移按钮调整工序先后顺序。">
                 <Text type="secondary">
                   <InfoCircleOutlined style={{ marginRight: 4 }} />
-                  支持拖拽排序：可按住行拖动调整工序先后顺序，也可使用「上移/下移」按钮调整。
+                  支持使用「上移/下移」按钮调整工序先后顺序。
                 </Text>
               </Tooltip>
             </div>
@@ -139,7 +228,15 @@ export default function ProcessManagement() {
               dataSource={data}
               rowKey="process_id"
               size="small"
-              pagination={{ pageSize: 15, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
+              loading={loading}
+              pagination={{
+                current: query.page,
+                pageSize: query.pageSize,
+                total,
+                showSizeChanger: true,
+                showTotal: t => `共 ${t} 条`,
+                onChange: (p, ps) => setQuery(q => ({ ...q, page: p, pageSize: ps })),
+              }}
             />
           </>
         }
@@ -148,6 +245,7 @@ export default function ProcessManagement() {
         title={editing ? '编辑工序' : '新增工序'}
         open={modalVisible}
         onOk={handleSubmit}
+        confirmLoading={submitting}
         onCancel={() => setModalVisible(false)}
         okText="保存"
         cancelText="取消"
@@ -162,26 +260,23 @@ export default function ProcessManagement() {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="process_code" label="工序编码">
-                <Input placeholder="自动生成" disabled />
+              <Form.Item name="process_code" label="工序编码" rules={[{ required: true, message: '请输入工序编码' }]}>
+                <Input placeholder="请输入工序编码" />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={12}>
             <Col span={12}>
-              <Form.Item name="workshop" label="所属车间">
-                <Input placeholder="请输入所属车间" />
+              <Form.Item name="sort_order" label="排序号">
+                <InputNumber placeholder="数字越小越靠前" min={0} style={{ width: '100%' }} />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="standard_hours" label="标准工时">
-                <InputNumber placeholder="请输入标准工时" min={0} step={0.1} style={{ width: '100%' }} addonAfter="小时" />
+              <Form.Item name="status" label="工序状态" valuePropName="checked" getValueFromEvent={v => v ? '启用' : '停用'} getValueProps={v => ({ checked: v === '启用' })}>
+                <Switch checkedChildren="启用" unCheckedChildren="停用" />
               </Form.Item>
             </Col>
           </Row>
-          <Form.Item name="description" label="描述">
-            <Input.TextArea placeholder="请输入描述" rows={3} />
-          </Form.Item>
         </Form>
       </Modal>
     </>
