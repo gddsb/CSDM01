@@ -265,7 +265,7 @@ export default function OrderManagement() {
   const columns = [
     { title: '订单编号', dataIndex: 'order_no', key: 'order_no', width: 160, fixed: 'left' },
     { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 130, fixed: 'left' },
-    { title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 160, ellipsis: true },
+    { title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 200, render: (text) => <div style={{ wordBreak: 'break-word', whiteSpace: 'normal' }}>{text}</div> },
     { title: '规格', dataIndex: 'specification', key: 'specification', width: 120, ellipsis: true },
     { title: '菲林版本', dataIndex: 'film_version', key: 'film_version', width: 120 },
     { title: '版本', dataIndex: 'version_no', key: 'version_no', width: 60 },
@@ -454,7 +454,6 @@ export default function OrderManagement() {
                 <DatePicker
                   format="YYYY-MM-DD"
                   style={{ width: '100%' }}
-                  disabled={!!editing}
                 />
               </Form.Item>
             </Col>
@@ -463,7 +462,6 @@ export default function OrderManagement() {
                 <DatePicker
                   format="YYYY-MM-DD"
                   style={{ width: '100%' }}
-                  disabled={!!editing}
                   disabledDate={current => {
                     const startVal = form.getFieldValue('plan_start_time')
                     return startVal && current && current < dayjs(startVal).startOf('day')
