@@ -209,6 +209,7 @@ export default function MaterialManagement() {
         onReset={handleReset}
         actions={
           <ActionButtons
+            hasAdd={false}
             hasExport={false}
             extra={[
               <Button key="reload" icon={<ReloadOutlined />} onClick={refresh}>刷新</Button>,
