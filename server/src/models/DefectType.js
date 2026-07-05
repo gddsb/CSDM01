@@ -19,6 +19,9 @@ const DefectType = sequelize.define('DefectType', {
   defect_type: {
     type: DataTypes.STRING(50),
   },
+  category_name: {
+    type: DataTypes.STRING(50),
+  },
   // 上级分类 ID（设计文档 §2.2.10，支持树形结构，0=顶级）
   parent_id: {
     type: DataTypes.INTEGER,
@@ -82,7 +85,7 @@ const DefectType = sequelize.define('DefectType', {
       }
     },
   },
-  defect_description: {
+  category_desc: {
     type: DataTypes.STRING(500),
   },
 }, {

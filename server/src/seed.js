@@ -103,13 +103,13 @@ async function seed() {
     // available_units / related_processes 为 STRING，用逗号分隔存储
     console.log('📌 创建不良分类...')
     await DefectType.bulkCreate([
-      { defect_id: 1, defect_code: 'D-MAT-01', defect_name: '材料划伤', defect_type: '来料不良', defect_unit: '个', available_units: '个,片', display: true, sort_order: 1, status: 1, related_processes: '1', defect_description: '材料表面有划痕' },
-      { defect_id: 2, defect_code: 'D-MAT-02', defect_name: '材料变形', defect_type: '来料不良', defect_unit: '个', available_units: '个,片', display: true, sort_order: 2, status: 1, related_processes: '1', defect_description: '材料形状变形' },
-      { defect_id: 3, defect_code: 'D-PRC-01', defect_name: '焊接不良', defect_type: '制程不良', defect_unit: '个', available_units: '个,处', display: true, sort_order: 3, status: 1, related_processes: '3', defect_description: '焊接处有气孔、虚焊等' },
-      { defect_id: 4, defect_code: 'D-PRC-02', defect_name: '补涂漏涂', defect_type: '制程不良', defect_unit: '个', available_units: '个,处', display: true, sort_order: 4, status: 1, related_processes: '4', defect_description: '补涂区域有漏涂' },
-      { defect_id: 5, defect_code: 'D-PRC-03', defect_name: '封口不良', defect_type: '制程不良', defect_unit: '个', available_units: '个', display: false, sort_order: 5, status: 1, related_processes: '6', defect_description: '封口不严密' },
-      { defect_id: 6, defect_code: 'D-SCP-01', defect_name: '尺寸超差', defect_type: '检验报废', defect_unit: '个', available_units: '个', display: true, sort_order: 6, status: 1, related_processes: '2,5', defect_description: '成品尺寸超出公差范围' },
-      { defect_id: 7, defect_code: 'D-SCP-02', defect_name: '测漏不合格', defect_type: '检验报废', defect_unit: '个', available_units: '个', display: true, sort_order: 7, status: 1, related_processes: '5', defect_description: '正压测漏不合格' },
+      { defect_id: 1, defect_code: 'D-MAT-01', defect_name: '材料划伤', defect_type: '来料不良', category_name: '制程检验', defect_unit: '个', available_units: '个,片', display: true, sort_order: 1, status: 1, related_processes: '1', category_desc: '材料表面有划痕' },
+      { defect_id: 2, defect_code: 'D-MAT-02', defect_name: '材料变形', defect_type: '来料不良', category_name: '制程检验', defect_unit: '个', available_units: '个,片', display: true, sort_order: 2, status: 1, related_processes: '1', category_desc: '材料形状变形' },
+      { defect_id: 3, defect_code: 'D-PRC-01', defect_name: '焊接不良', defect_type: '制程不良', category_name: '制程检验', defect_unit: '个', available_units: '个,处', display: true, sort_order: 3, status: 1, related_processes: '3', category_desc: '焊接处有气孔、虚焊等' },
+      { defect_id: 4, defect_code: 'D-PRC-02', defect_name: '补涂漏涂', defect_type: '制程不良', category_name: '制程检验', defect_unit: '个', available_units: '个,处', display: true, sort_order: 4, status: 1, related_processes: '4', category_desc: '补涂区域有漏涂' },
+      { defect_id: 5, defect_code: 'D-PRC-03', defect_name: '封口不良', defect_type: '制程不良', category_name: '制程检验', defect_unit: '个', display: false, sort_order: 5, status: 1, related_processes: '6', category_desc: '封口不严密' },
+      { defect_id: 6, defect_code: 'D-SCP-01', defect_name: '尺寸超差', defect_type: '检验报废', category_name: '制程检验', defect_unit: '个', available_units: '个', display: true, sort_order: 6, status: 1, related_processes: '2,5', category_desc: '成品尺寸超出公差范围' },
+      { defect_id: 7, defect_code: 'D-SCP-02', defect_name: '测漏不合格', defect_type: '检验报废', category_name: '制程检验', defect_unit: '个', available_units: '个', display: true, sort_order: 7, status: 1, related_processes: '5', category_desc: '正压测漏不合格' },
     ])
     console.log('✅ 不良分类创建完成（7条）')
 

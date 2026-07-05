@@ -158,7 +158,8 @@ export default function DefectManagement() {
         sort_order: editing.sort_order,
         status: editing.status === '启用' ? '启用' : '停用',
         related_processes: relatedProcesses,
-        defect_description: editing.defect_description,
+        category_name: editing.category_name,
+        category_desc: editing.category_desc,
       })
     } else {
       form.resetFields()
@@ -189,7 +190,8 @@ export default function DefectManagement() {
         sort_order: values.sort_order,
         status: values.status,
         related_processes: toArray(values.related_processes),
-        defect_description: values.defect_description || '',
+        category_name: values.category_name || '',
+        category_desc: values.category_desc || '',
       }
       if (editing) {
         const res = await api.put(`/basic/defect-types/${editing.defect_id}`, payload)
@@ -254,7 +256,11 @@ export default function DefectManagement() {
       },
     },
     {
-      title: '不良描述', dataIndex: 'defect_description', key: 'defect_description', width: 200,
+      title: '大类名称', dataIndex: 'category_name', key: 'category_name', width: 110,
+      render: v => v || '-',
+    },
+    {
+      title: '分类名称', dataIndex: 'category_desc', key: 'category_desc', width: 200,
       render: v => <div style={{ lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{v || '-'}</div>,
     },
     {
@@ -428,8 +434,11 @@ export default function DefectManagement() {
               allowClear
             />
           </Form.Item>
-          <Form.Item name="defect_description" label="不良描述">
-            <Input.TextArea placeholder="请输入不良描述" rows={3} />
+          <Form.Item name="category_name" label="大类名称">
+            <Input placeholder="请输入大类名称" />
+          </Form.Item>
+          <Form.Item name="category_desc" label="分类名称">
+            <Input.TextArea placeholder="请输入分类名称" rows={3} />
           </Form.Item>
         </Form>
       </Modal>
@@ -465,11 +474,14 @@ export default function DefectManagement() {
                 })
               })()}
             </Descriptions.Item>
+            <Descriptions.Item label="大类名称">
+              {viewRecord.category_name || '-'}
+            </Descriptions.Item>
             <Descriptions.Item label="状态">
               <Tag color={viewRecord.status === '启用' ? 'green' : 'red'}>{viewRecord.status}</Tag>
             </Descriptions.Item>
-            <Descriptions.Item label="不良描述" span={2}>
-              <div style={{ lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{viewRecord.defect_description || '-'}</div>
+            <Descriptions.Item label="分类名称" span={2}>
+              <div style={{ lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{viewRecord.category_desc || '-'}</div>
             </Descriptions.Item>
           </Descriptions>
         )}
