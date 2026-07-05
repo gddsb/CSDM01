@@ -1,6 +1,14 @@
 import { Router } from 'express'
 import { list, detail, create, update, remove, toggle } from '../controllers/UserController.js'
-import { list as roleList, create as roleCreate, update as roleUpdate, remove as roleRemove, listPermissions, getRolePermissions, assignPermissions } from '../controllers/RoleController.js'
+import { list as roleList, create as roleCreate, update as roleUpdate, remove as roleRemove, getRolePermissions, assignPermissions } from '../controllers/RoleController.js'
+import {
+  list as permList,
+  detail as permDetail,
+  create as permCreate,
+  update as permUpdate,
+  remove as permRemove,
+  userMenu,
+} from '../controllers/PermissionController.js'
 import { list as logList } from '../controllers/OperationLogController.js'
 import { getConfig, saveConfig } from '../controllers/SystemConfigController.js'
 import { authRequired, logOperation } from '../middleware/auth.js'
@@ -24,8 +32,14 @@ router.post('/roles', logOperation('角色管理'), roleCreate)
 router.put('/roles/:id', logOperation('角色管理'), roleUpdate)
 router.delete('/roles/:id', logOperation('角色管理'), roleRemove)
 
-// 权限管理
-router.get('/permissions', listPermissions)
+// 权限/菜单管理
+router.get('/permissions', permList)
+router.get('/permissions/tree', permList)
+router.get('/permissions/menu', userMenu)
+router.get('/permissions/:id', permDetail)
+router.post('/permissions', logOperation('菜单管理'), permCreate)
+router.put('/permissions/:id', logOperation('菜单管理'), permUpdate)
+router.delete('/permissions/:id', logOperation('菜单管理'), permRemove)
 router.get('/roles/:id/permissions', getRolePermissions)
 router.put('/roles/:id/permissions', logOperation('角色权限分配'), assignPermissions)
 

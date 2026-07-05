@@ -1,7 +1,7 @@
 import {
   User, Role, Process, Material, ProductionLine, Device,
   DefectType, Order, WorkOrder, ProcessReport,
-  ManpowerRecord, ExceptionRecord,
+  ManpowerRecord, ExceptionRecord, Customer,
 } from './models/index.js'
 import sequelize from './config/database.js'
 import bcrypt from 'bcryptjs'
@@ -163,6 +163,36 @@ async function seed() {
     ])
     console.log('✅ 异常工时记录创建完成（3条）')
 
+    // 13. 创建客户档案（24条）
+    console.log('📌 创建客户档案...')
+    await Customer.bulkCreate([
+      { customer_id: 1, customer_code: 'C001', customer_name: '内蒙古伊利实业集团股份有限公司', short_name: '伊利', contact_person: '张明', phone: '0471-5358888', email: 'purchase@yili.com', address: '内蒙古呼和浩特市金山开发区伊利工业园', status: 1, sort_order: 1, remark: '战略客户' },
+      { customer_id: 2, customer_code: 'C002', customer_name: '内蒙古蒙牛乳业（集团）股份有限公司', short_name: '蒙牛', contact_person: '李刚', phone: '0471-7399999', email: 'buyer@mengniu.com', address: '内蒙古呼和浩特市和林格尔县盛乐经济园区', status: 1, sort_order: 2, remark: '战略客户' },
+      { customer_id: 3, customer_code: 'C003', customer_name: '黑龙江飞鹤乳业有限公司', short_name: '飞鹤', contact_person: '王伟', phone: '0452-5678888', email: 'pur@feihe.com', address: '黑龙江省齐齐哈尔市克东县克东镇', status: 1, sort_order: 3, remark: '' },
+      { customer_id: 4, customer_code: 'C004', customer_name: '光明乳业股份有限公司', short_name: '光明', contact_person: '陈强', phone: '021-63888888', email: 'buy@brightdairy.com', address: '上海市静安区江场三路255号', status: 1, sort_order: 4, remark: '' },
+      { customer_id: 5, customer_code: 'C005', customer_name: '北京三元食品股份有限公司', short_name: '三元', contact_person: '赵丽', phone: '010-62998888', email: 'sanyuan@sanyuan.com', address: '北京市大兴区瀛海镇三元工业园', status: 1, sort_order: 5, remark: '' },
+      { customer_id: 6, customer_code: 'C006', customer_name: '君乐宝乳业有限公司', short_name: '君乐宝', contact_person: '孙涛', phone: '0311-83928888', email: 'buyer@junlebao.com', address: '河北省石家庄市鹿泉区石铜路36号', status: 1, sort_order: 6, remark: '' },
+      { customer_id: 7, customer_code: 'C007', customer_name: '完达山乳业股份有限公司', short_name: '完达山', contact_person: '周强', phone: '0451-86308888', email: 'wds@wandashan.com', address: '黑龙江省哈尔滨市南岗区长江路382号', status: 1, sort_order: 7, remark: '' },
+      { customer_id: 8, customer_code: 'C008', customer_name: '陕西和氏乳业集团有限公司', short_name: '和氏', contact_person: '吴敏', phone: '0917-4508888', email: 'heshi@heshi.com', address: '陕西省宝鸡市陇县和氏乳业园区', status: 1, sort_order: 8, remark: '' },
+      { customer_id: 9, customer_code: 'C009', customer_name: '雅士利国际集团有限公司', short_name: '雅士利', contact_person: '郑华', phone: '0768-8899888', email: 'yashili@yashili.com', address: '广东省潮州市潮安区雅士利工业园', status: 1, sort_order: 9, remark: '' },
+      { customer_id: 10, customer_code: 'C010', customer_name: '杭州贝因美集团有限公司', short_name: '贝因美', contact_person: '黄玲', phone: '0571-8888888', email: 'buyer@beingmate.com', address: '浙江省杭州市滨江区江南大道588号', status: 1, sort_order: 10, remark: '' },
+      { customer_id: 11, customer_code: 'C011', customer_name: '圣元营养食品有限公司', short_name: '圣元', contact_person: '林峰', phone: '0532-8589888', email: 'shengyuan@shengyuan.com', address: '山东省青岛市黄岛区圣元路1号', status: 1, sort_order: 11, remark: '' },
+      { customer_id: 12, customer_code: 'C012', customer_name: '澳优乳业（中国）有限公司', short_name: '澳优', contact_person: '许文', phone: '0731-8998888', email: 'ausnutria@ausnutria.com', address: '湖南省长沙市望城区澳优乳业园', status: 1, sort_order: 12, remark: '' },
+      { customer_id: 13, customer_code: 'C013', customer_name: '黑龙江红星集团食品有限公司', short_name: '红星', contact_person: '蔡勇', phone: '0453-6598888', email: 'hongxing@hongxing.com', address: '黑龙江省牡丹江市阳明区裕民路1号', status: 1, sort_order: 13, remark: '' },
+      { customer_id: 14, customer_code: 'C014', customer_name: '西安银桥乳业（集团）有限公司', short_name: '银桥', contact_person: '邓军', phone: '029-83888888', email: 'yinqiao@yinqiao.com', address: '陕西省西安市临潼区银桥大道', status: 1, sort_order: 14, remark: '' },
+      { customer_id: 15, customer_code: 'C015', customer_name: '美赞臣营养品（中国）有限公司', short_name: '美赞臣', contact_person: 'Sara Liu', phone: '020-82198888', email: 'meadjohnson@mj.com', address: '广东省广州市黄埔区科丰路31号', status: 1, sort_order: 15, remark: '外资' },
+      { customer_id: 16, customer_code: 'C016', customer_name: '惠氏营养品（中国）有限公司', short_name: '惠氏', contact_person: 'Wang Lei', phone: '021-20898888', email: 'wyeth@wyeth.com', address: '上海市浦东新区张江高科技园区', status: 1, sort_order: 16, remark: '外资' },
+      { customer_id: 17, customer_code: 'C017', customer_name: '雅培（上海）贸易有限公司', short_name: '雅培', contact_person: 'Lily Chen', phone: '021-23298888', email: 'abbott@abbott.com', address: '上海市黄浦区南京西路128号', status: 1, sort_order: 17, remark: '外资' },
+      { customer_id: 18, customer_code: 'C018', customer_name: '雀巢（中国）有限公司', short_name: '雀巢', contact_person: 'Zhang Hua', phone: '010-85898888', email: 'nestle@nestle.com', address: '北京市朝阳区建国门外大街8号', status: 1, sort_order: 18, remark: '外资' },
+      { customer_id: 19, customer_code: 'C019', customer_name: '达能亚太（上海）投资有限公司', short_name: '达能', contact_person: 'Yang Min', phone: '021-60828888', email: 'danone@danone.com', address: '上海市静安区南京西路1601号', status: 1, sort_order: 19, remark: '外资' },
+      { customer_id: 20, customer_code: 'C020', customer_name: '高培（广州）乳业有限公司', short_name: '高培', contact_person: '冯刚', phone: '020-32288888', email: 'gaopei@gaopei.com', address: '广东省广州市黄埔区科丰路29号', status: 1, sort_order: 20, remark: '' },
+      { customer_id: 21, customer_code: 'C021', customer_name: '安吉兰德（中国）食品有限公司', short_name: '安吉兰德', contact_person: '苏静', phone: '0572-5888888', email: 'angiland@angiland.com', address: '浙江省湖州市安吉县递铺街道', status: 1, sort_order: 21, remark: '' },
+      { customer_id: 22, customer_code: 'C022', customer_name: '深圳市晨光乳业有限公司', short_name: '晨光', contact_person: '彭宇', phone: '0755-83398888', email: 'chenguang@chenguang.com', address: '深圳市光明区光明街道晨光大道', status: 1, sort_order: 22, remark: '' },
+      { customer_id: 23, customer_code: 'C023', customer_name: '广州燕塘乳业股份有限公司', short_name: '燕塘', contact_person: '胡海', phone: '020-87038888', email: 'yantang@yantang.com', address: '广东省广州市天河区燕岭路29号', status: 0, sort_order: 23, remark: '停用' },
+      { customer_id: 24, customer_code: 'C024', customer_name: '广州风行乳业股份有限公司', short_name: '风行', contact_person: '叶丹', phone: '020-83828888', email: 'fengxing@fengxing.com', address: '广东省广州市越秀区中山六路18号', status: 0, sort_order: 24, remark: '停用' },
+    ])
+    console.log('✅ 客户档案创建完成（24条）')
+
     console.log('\n🎉 种子数据初始化完成！')
     console.log('   - 角色：9 条')
     console.log('   - 用户：9 条（密码均为 123456）')
@@ -176,6 +206,7 @@ async function seed() {
     console.log('   - 工序报工：4 条')
     console.log('   - 人员记录：3 条')
     console.log('   - 异常记录：3 条')
+    console.log('   - 客户档案：24 条')
 
     await sequelize.close()
     process.exit(0)

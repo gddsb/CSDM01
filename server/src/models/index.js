@@ -17,6 +17,8 @@ import ManpowerRecord from './ManpowerRecord.js'
 import ExceptionRecord from './ExceptionRecord.js'
 import SystemConfig from './SystemConfig.js'
 import RolePermission from './RolePermission.js'
+import Sequence from './Sequence.js'
+import Customer from './Customer.js'
 
 // 建立模型关联关系
 // 用户 - 角色
@@ -66,6 +68,8 @@ const db = {
   ExceptionRecord,
   SystemConfig,
   RolePermission,
+  Sequence,
+  Customer,
 }
 
 // 具名导出，便于按需导入
@@ -86,6 +90,8 @@ export {
   ExceptionRecord,
   SystemConfig,
   RolePermission,
+  Sequence,
+  Customer,
 }
 
 export default db

@@ -2,24 +2,7 @@ import { Op } from 'sequelize'
 import { Order, WorkOrder, ManpowerRecord, ExceptionRecord, Material } from '../models/index.js'
 import { success, fail } from '../utils/response.js'
 import { statusToNumber, statusToString, convertStatusInList, convertStatusInItem } from '../utils/statusMap.js'
-
-// 生成订单号: MO-16 + YYMMDD + 3位序号
-async function generateOrderNo() {
-  const now = new Date()
-  const yy = String(now.getFullYear()).slice(2)
-  const mm = String(now.getMonth() + 1).padStart(2, '0')
-  const dd = String(now.getDate()).padStart(2, '0')
-  const dateStr = `${yy}${mm}${dd}`
-  const prefix = `MO-16${dateStr}`
-  // 查询今日已生成的同前缀订单数量
-  const count = await Order.count({
-    where: {
-      order_no: { [Op.like]: `${prefix}%` },
-    },
-  })
-  const seq = String(count + 1).padStart(3, '0')
-  return `${prefix}${seq}`
-}
+import { generateOrderNo } from '../utils/sequence.js'
 
 // 订单列表（支持 keyword/materialCode/status/planDateStart/planDateEnd 筛选）
 export const list = async (req, res) => {

@@ -28,6 +28,13 @@ import {
   update as defectUpdate,
   remove as defectRemove,
 } from '../controllers/DefectTypeController.js'
+import {
+  list as customerList,
+  detail as customerDetail,
+  create as customerCreate,
+  update as customerUpdate,
+  remove as customerRemove,
+} from '../controllers/CustomerController.js'
 import { authRequired } from '../middleware/auth.js'
 
 const router = Router()
@@ -69,5 +76,12 @@ router.get('/defect-types/:id', defectDetail)
 router.post('/defect-types', defectCreate)
 router.put('/defect-types/:id', defectUpdate)
 router.delete('/defect-types/:id', defectRemove)
+
+// 客户档案
+router.get('/customers', customerList)
+router.get('/customers/:id', customerDetail)
+router.post('/customers', customerCreate)
+router.put('/customers/:id', customerUpdate)
+router.delete('/customers/:id', customerRemove)
 
 export default router

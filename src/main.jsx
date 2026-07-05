@@ -20,6 +20,8 @@ import ProductionLine from './pages/basic/ProductionLine'
 import ProcessManagement from './pages/basic/ProcessManagement'
 import DeviceManagement from './pages/basic/DeviceManagement'
 import DefectManagement from './pages/basic/DefectManagement'
+import CustomerManagement from './pages/basic/CustomerManagement'
+import MenuManagement from './pages/system/MenuManagement'
 import OrderManagement from './pages/production/OrderManagement'
 import WorkOrderManagement from './pages/production/WorkOrderManagement'
 import ProcessReporting from './pages/production/ProcessReporting'
@@ -73,6 +75,7 @@ function AppRoutes() {
         <Route path="/dashboard-bigscreen" element={<Dashboard />} />
         <Route path="/system/users" element={<UserManagement />} />
         <Route path="/system/roles" element={<RoleManagement />} />
+        <Route path="/system/menus" element={<MenuManagement />} />
         <Route path="/system/dictionary" element={<DataDictionary />} />
         <Route path="/system/config" element={<SystemConfig />} />
         <Route path="/system/logs" element={<OperationLogs />} />
@@ -81,6 +84,7 @@ function AppRoutes() {
         <Route path="/basic/processes" element={<ProcessManagement />} />
         <Route path="/basic/devices" element={<DeviceManagement />} />
         <Route path="/basic/defects" element={<DefectManagement />} />
+        <Route path="/basic/customers" element={<CustomerManagement />} />
         <Route path="/production/orders" element={<OrderManagement />} />
         <Route path="/production/workorders" element={<WorkOrderManagement />} />
         <Route path="/production/reporting" element={<ProcessReporting />} />

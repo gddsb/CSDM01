@@ -8,7 +8,7 @@ import {
   PieChartOutlined, FileSearchOutlined, FundProjectionScreenOutlined,
   ControlOutlined, DesktopOutlined, LineChartOutlined, CalendarOutlined,
   RiseOutlined, AlertOutlined, ContainerOutlined,
-  LockOutlined, KeyOutlined
+  LockOutlined, KeyOutlined, MenuOutlined
 } from '@ant-design/icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useApp } from '../contexts/AppContext'
@@ -19,13 +19,32 @@ import logoSquare from '../assets/logo-square.png'
 const { Sider, Header, Content } = Layout
 const { Text } = Typography
 
-const menuItems = [
+// 图标名称 → 组件映射（用于动态菜单渲染）
+const iconMap = {
+  DashboardOutlined, TeamOutlined, DatabaseOutlined, SettingOutlined,
+  ProfileOutlined, DeploymentUnitOutlined, SafetyCertificateOutlined,
+  ExperimentOutlined, ToolOutlined, BarChartOutlined, FileTextOutlined,
+  LogoutOutlined, UserOutlined, BellOutlined, MenuFoldOutlined, MenuUnfoldOutlined,
+  PieChartOutlined, FileSearchOutlined, FundProjectionScreenOutlined,
+  ControlOutlined, DesktopOutlined, LineChartOutlined, CalendarOutlined,
+  RiseOutlined, AlertOutlined, ContainerOutlined,
+  LockOutlined, KeyOutlined, MenuOutlined,
+}
+function resolveIcon(name) {
+  if (!name) return undefined
+  const Comp = iconMap[name]
+  return Comp ? <Comp /> : undefined
+}
+
+// 默认菜单（兜底，当后端菜单接口不可用时使用）
+const defaultMenuItems = [
   { key: '/dashboard', icon: <DashboardOutlined />, label: '工作台' },
   {
     key: 'system', icon: <SettingOutlined />, label: '系统管理',
     children: [
       { key: '/system/users', icon: <TeamOutlined />, label: '用户管理' },
       { key: '/system/roles', icon: <SafetyCertificateOutlined />, label: '角色权限' },
+      { key: '/system/menus', icon: <MenuOutlined />, label: '菜单管理' },
       { key: '/system/dictionary', icon: <DatabaseOutlined />, label: '数据库字典' },
       { key: '/system/config', icon: <ControlOutlined />, label: '系统配置' },
       { key: '/system/logs', icon: <FileTextOutlined />, label: '操作日志' },
@@ -38,6 +57,7 @@ const menuItems = [
       { key: '/basic/lines', icon: <DeploymentUnitOutlined />, label: '产线管理' },
       { key: '/basic/processes', icon: <DeploymentUnitOutlined />, label: '工序管理' },
       { key: '/basic/defects', icon: <AlertOutlined />, label: '制程不良分类' },
+      { key: '/basic/customers', icon: <TeamOutlined />, label: '客户档案' },
     ]
   },
   {
@@ -110,6 +130,8 @@ export default function MainLayout() {
   const [profileForm] = Form.useForm()
   const [pwdForm] = Form.useForm()
   const [systemConfig, setSystemConfig] = useState({ system_name: '', company_name: '' })
+  // 动态菜单（从后端拉取；为 null 时使用默认 menuItems 兜底）
+  const [dynamicMenu, setDynamicMenu] = useState(null)
 
   // 获取系统配置
   useEffect(() => {
@@ -134,8 +156,50 @@ export default function MainLayout() {
     return () => { cancelled = true }
   }, [])
 
+  // 获取动态菜单（按当前用户角色权限）
+  useEffect(() => {
+    let cancelled = false
+    const run = async () => {
+      try {
+        const res = await api.get('/system/permissions/menu')
+        if (cancelled) return
+        const tree = res.data || []
+        if (Array.isArray(tree) && tree.length > 0) {
+          setDynamicMenu(tree)
+        }
+      } catch (err) {
+        // 静默失败，使用默认菜单兜底
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [])
+
   const systemName = systemConfig.system_name || '奶粉罐生产系统'
   const companyName = systemConfig.company_name || ''
+
+  // 将后端权限树转换为 Antd Menu items 格式
+  const buildMenuItems = (nodes) => {
+    return nodes
+      .filter(n => n.type === 'menu' || n.type === 'page')
+      .map(n => {
+        const item = {
+          key: n.path || n.perm_code,
+          icon: resolveIcon(n.icon),
+          label: n.perm_name,
+        }
+        if (n.children && n.children.length > 0) {
+          item.children = buildMenuItems(n.children)
+        }
+        return item
+      })
+  }
+
+  // 当前生效的菜单：优先使用后端菜单，否则使用默认菜单
+  // 后端菜单前置工作台入口（工作台不依赖权限分配，所有登录用户均可见）
+  const menuItems = dynamicMenu
+    ? [{ key: '/dashboard', icon: <DashboardOutlined />, label: '工作台' }, ...buildMenuItems(dynamicMenu)]
+    : defaultMenuItems
 
   const getOpenKeys = () => {
     const path = location.pathname

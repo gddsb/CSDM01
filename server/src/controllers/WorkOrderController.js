@@ -1,25 +1,9 @@
 import { Op } from 'sequelize'
 import { WorkOrder, Order, ProductionLine, Material, ProcessReport, ManpowerRecord, ExceptionRecord } from '../models/index.js'
 import { success, fail } from '../utils/response.js'
+import { generateWorkOrderNo } from '../utils/sequence.js'
 
 // 工单状态: 0=待开工, 1=已开工, 2=已完工, 3=已关闭
-
-// 生成工单号: WO + YYYYMMDD + 3位序号
-async function generateWorkOrderNo() {
-  const now = new Date()
-  const yyyy = String(now.getFullYear())
-  const mm = String(now.getMonth() + 1).padStart(2, '0')
-  const dd = String(now.getDate()).padStart(2, '0')
-  const dateStr = `${yyyy}${mm}${dd}`
-  const prefix = `WO${dateStr}`
-  const count = await WorkOrder.count({
-    where: {
-      work_order_no: { [Op.like]: `${prefix}%` },
-    },
-  })
-  const seq = String(count + 1).padStart(3, '0')
-  return `${prefix}${seq}`
-}
 
 // 工单列表
 export const list = async (req, res) => {
