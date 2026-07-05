@@ -216,8 +216,18 @@ export default function DefectManagement() {
     try {
       const values = await form.validateFields()
       setSubmitting(true)
+      // 新增时若编码未自动获取到，则实时获取
+      let defectCode = values.defect_code
+      if (!editing && !defectCode) {
+        try {
+          const codeRes = await api.get('/basic/defect-types/next-code')
+          defectCode = codeRes.data?.defect_code
+        } catch {
+          // 获取失败继续，后端会再次校验
+        }
+      }
       const payload = {
-        defect_code: values.defect_code,
+        defect_code: defectCode,
         defect_name: values.defect_name,
         defect_type: values.defect_type,
         category_name: values.category_name || '',
