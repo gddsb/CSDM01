@@ -189,39 +189,142 @@ body {
   margin-right: 8px;
 }
 
-/* 三段式页面 */
+/* ============================================================
+   三段式页面通用组件样式
+   规范：
+     上部页面信息区  15%-20%  主背景色  常规间距
+     中部筛选功能区  10%-15%  卡片背景  小行间距 4-8px 可折叠
+     下部列表区      65%-75%  卡片背景  小行间距 默认每页30条
+   ============================================================ */
 .three-section-page {
   display: flex;
   flex-direction: column;
+  gap: 8px;
+  min-height: calc(100vh - 110px);
+}
+
+/* —— 上部：页面信息区 —— 主背景色，常规间距 */
+.section-info {
+  background: var(--bg-main);
+  border-radius: 8px;
+  padding: 14px 20px;
+  border: 1px solid var(--border-color);
+  transition: background 0.3s, border 0.3s;
+  flex: 0 0 auto;
+}
+
+.section-info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
   gap: 12px;
 }
 
-.section-info {
-  background: var(--bg-card);
-  border-radius: 8px;
-  padding: 16px 20px;
-  border: 1px solid var(--border-color);
-  transition: background 0.3s, border 0.3s;
+.section-info-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
+.section-breadcrumbs {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.section-title-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.section-info-actions {
+  flex-shrink: 0;
+}
+
+/* 快速筛选条：今天/本周/本月/本年 */
+.quick-filter-bar {
+  margin-bottom: 12px;
+}
+
+.quick-filter-bar .ant-segmented {
+  background: var(--bg-card);
+}
+
+/* 统计卡片区 */
+.stats-row {
+  margin-top: 4px !important;
+}
+
+/* —— 中部：筛选功能区 —— 卡片背景色，小行间距 4-8px，可折叠 —— */
 .section-filter {
   background: var(--bg-card);
   border-radius: 8px;
-  padding: 12px 20px;
+  padding: 8px 12px;
   border: 1px solid var(--border-color);
   transition: background 0.3s, border 0.3s;
+  flex: 0 0 auto;
 }
 
 .section-filter .ant-form-item {
-  margin-bottom: 8px !important;
+  margin-bottom: 4px !important;
 }
 
+.section-filter .ant-row {
+  row-gap: 4px !important;
+}
+
+.section-filter .ant-col {
+  padding-inline: 4px !important;
+}
+
+.section-filter-body.filter-collapsed {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.2s ease, opacity 0.2s ease;
+}
+
+.section-filter-body:not(.filter-collapsed) {
+  max-height: 500px;
+  overflow: hidden;
+  opacity: 1;
+  transition: max-height 0.25s ease, opacity 0.25s ease;
+}
+
+/* —— 下部：列表区 —— 卡片背景色，小行间距，默认每页30条 —— */
 .section-table {
   background: var(--bg-card);
   border-radius: 8px;
-  padding: 12px 20px;
+  padding: 8px 12px;
   border: 1px solid var(--border-color);
   transition: background 0.3s, border 0.3s;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 列表区表格行小间距 */
+.section-table .ant-table-small .ant-table-cell {
+  padding: 4px 8px !important;
+}
+
+/* 料品名称列：默认最小200自动换行 */
+.section-table .ant-table-cell .material-name-cell {
+  word-break: break-word;
+  white-space: normal;
+  min-width: 200px;
+}
+
+/* 表头支持列宽拖拽的视觉提示 */
+.section-table .ant-table-resize-handle {
+  right: -5px;
+  width: 10px;
+  cursor: col-resize;
+}
+
+.section-table .ant-table-resize-handle:hover {
+  background: var(--color-primary);
 }
 
 /* 统计卡片 */
@@ -311,7 +414,7 @@ body {
   box-shadow: 0 0 0 2px var(--bg-card), 0 0 0 4px var(--color-primary);
 }
 
-/* 表格紧凑模式 */
+/* 表格紧凑模式（旧样式保留兼容，三段式页面使用更紧凑的 4px 规范） */
 .compact-table .ant-table-small .ant-table-cell {
   padding: 6px 8px !important;
 }

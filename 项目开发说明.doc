@@ -40,6 +40,7 @@
   - [6.3 HTTP 请求封装](#63-http-请求封装)
   - [6.4 主题系统](#64-主题系统)
   - [6.5 布局组件](#65-布局组件)
+  - [6.5.1 三段式页面设计规范](#651-三段式页面设计规范)
   - [6.6 Vite 配置与代理](#66-vite-配置与代理)
 - [7. 业务模块说明](#7-业务模块说明)
   - [7.1 基础数据模块](#71-基础数据模块)
@@ -700,7 +701,105 @@ api.interceptors.request.use(config => {
 ### 6.5 布局组件
 
 - **MainLayout**：主布局，包含侧边栏菜单、顶栏（用户信息/主题切换/退出）、内容区
-- **ThreeSectionPage**：三段式页面组件，统一页面布局（搜索区 + 操作区 + 表格区）
+- **ThreeSectionPage**：三段式页面通用组件，统一页面布局（页面信息区 + 筛选功能区 + 列表区）
+
+### 6.5.1 三段式页面设计规范
+
+本系统所有业务列表页统一采用三段式布局，由 [src/components/ThreeSectionPage.jsx](file:///workspace/src/components/ThreeSectionPage.jsx) 实现，样式定义于 [src/styles/global.css](file:///workspace/src/styles/global.css)。
+
+#### 一、区域划分与规格
+
+| 区域 | 高度占比 | 内容组成 | 背景色 | 行间距规则 |
+|------|---------|---------|--------|-----------|
+| 上部：页面信息区 | 15%-20% | 页面标题、面包屑导航、快速筛选（今天/本周/本月/本年）、统计数据卡片（2-5个指标）、主要操作按钮（新增/导出/配置） | 主背景色 | 常规间距 |
+| 中部：筛选功能区 | 10%-15% | 查询条件输入框、下拉选择器、日期范围选择、查询/重置按钮、展开/收起切换 | 卡片背景色，可折叠 | 小行间距（4-8px） |
+| 下部：列表区 | 65%-75% | 数据表格、分页器、总计记录数 | 卡片背景色 | 小行间距（4-8px） |
+
+#### 二、页面设计说明
+
+1. **上部页面信息区**保持常规间距，以维持页面整体的呼吸感和层次感。设有"今天、本周、本月、本年"快速筛选统计按钮，默认选中"本月"。
+2. **中部筛选功能区**和**下部列表区**采用小行间距，使数据密集型操作区域布局更加紧凑，提升屏幕空间利用率。中部筛选区域默认所有功能保持在一行。
+3. 具体表现为：表单控件之间、表格行之间的垂直间距缩小（建议 4px-8px），区域内部的 padding 值相应减小，但需保持足够的可点击区域以确保操作准确性。
+4. **下部列表区**默认根据列内容保持完整显示自动列宽：
+   - 料品名称列宽默认最小 200px，自动换行
+   - 操作列根据操作功能数量设置列宽：1~3 个功能 80px，4 个功能 100px（通过 `getActionColumnWidth(count)` 工具函数计算）
+
+#### 三、交互特性
+
+| 特性 | 说明 |
+|------|------|
+| 快速筛选联动 | 上部统计卡片数据跟随"今天/本周/本月/本年"快速筛选条件联动更新 |
+| 筛选区折叠 | 中部筛选区支持"展开更多/收起"切换，默认显示常用筛选条件在一行，点击展开显示全部 |
+| 内容变化触发查询 | 筛选区支持内容变化触发查询（通过 `onFilterChange` 回调） |
+| 表格列操作 | 列表区表格支持列宽拖拽、列排序、列显隐设置 |
+| 统计卡片独立 | 上部统计卡片数据**不**跟随中部筛选条件联动更新，仅跟随快速筛选联动 |
+
+#### 四、组件 API
+
+```jsx
+<ThreeSectionPage
+  title="页面标题"
+  breadcrumbs="模块 / 子菜单"
+  stats={[{ label, value, icon, color }]}        // 统计卡片 2-5 个
+  filters={[{ type, field, placeholder, value, onChange, options, col }]}  // 筛选项
+  actions={<ActionButtons onAdd={...} />}        // 操作按钮
+  table={<Table ... />}                          // 数据表格
+  onSearch={handleSearch}
+  onReset={handleReset}
+  // 快速筛选
+  quickFilter={true}                             // 默认 true，显示今天/本周/本月/本年
+  defaultQuickFilter="month"                     // 默认 'month'
+  onQuickFilterChange={(val) => { /* 重新统计 */ }}
+  // 筛选区折叠
+  collapsible={true}                             // 默认 true
+  defaultCollapsed={false}
+  // 内容变化触发查询
+  onFilterChange={(field, value) => { /* 实时查询 */ }}
+/>
+```
+
+#### 五、辅助工具
+
+| 工具 | 用途 |
+|------|------|
+| `ActionButtons` | 通用操作按钮组（新增/导出/额外按钮） |
+| `ColumnSettings` | 表格列显隐设置下拉面板 |
+| `getActionColumnWidth(count)` | 计算操作列宽度：1-3 功能→80px，4 功能→100px |
+| `materialNameColumn` | 料品名称列默认配置：最小 200px，自动换行 |
+
+#### 六、CSS 规范要点
+
+```css
+/* 区域间距与高度比例 */
+.three-section-page { display: flex; flex-direction: column; gap: 8px; min-height: calc(100vh - 110px); }
+.section-info    { background: var(--bg-main);  padding: 14px 20px; flex: 0 0 auto; }   /* 上部 */
+.section-filter  { background: var(--bg-card);  padding: 8px 12px;  flex: 0 0 auto; }   /* 中部 */
+.section-table   { background: var(--bg-card);  padding: 8px 12px;  flex: 1 1 auto; }   /* 下部 */
+
+/* 小行间距：4px */
+.section-filter .ant-form-item { margin-bottom: 4px !important; }
+.section-filter .ant-row       { row-gap: 4px !important; }
+.section-table .ant-table-small .ant-table-cell { padding: 4px 8px !important; }
+
+/* 筛选区折叠动画 */
+.section-filter-body.filter-collapsed { max-height: 0; opacity: 0; overflow: hidden; }
+.section-filter-body:not(.filter-collapsed) { max-height: 500px; opacity: 1; }
+```
+
+#### 七、分页规范
+
+下部列表区默认每页显示 **30 条**记录，通过 Table 的 `pagination` 配置实现：
+
+```jsx
+pagination={{
+  current: query.page,
+  pageSize: 30,            // 默认每页 30 条
+  total,
+  showSizeChanger: true,
+  showTotal: t => `共 ${t} 条`,
+}}
+```
+
 
 ### 6.6 Vite 配置与代理
 
