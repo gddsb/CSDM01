@@ -1,6 +1,6 @@
 import { Space, Button, Input, Select, DatePicker, Row, Col, Segmented, Checkbox } from 'antd'
 import {
-  SearchOutlined, ReloadOutlined, PlusOutlined, ExportOutlined,
+  SearchOutlined, ReloadOutlined, PlusOutlined, ExportOutlined, SettingOutlined,
   DownOutlined, UpOutlined
 } from '@ant-design/icons'
 import React, { useState } from 'react'
@@ -188,14 +188,19 @@ export default function ThreeSectionPage({
 
 /**
  * 通用操作按钮组
+ * 配色规范：
+ *   - 新增按钮 (btn-add)：主色渐变 (primary → secondary)
+ *   - 导出按钮 (btn-export)：成功色渐变
+ *   - 配置按钮 (btn-config)：强调色渐变
  */
-export function ActionButtons({ hasAdd = true, hasExport = true, extra = [], onAdd, addText = '新增' }) {
+export function ActionButtons({ hasAdd = true, hasExport = true, hasConfig = false, extra = [], onAdd, onExport, onConfig, addText = '新增' }) {
   return (
-    <>
-      {hasAdd && <Button type="primary" icon={<PlusOutlined />} onClick={onAdd}>{addText}</Button>}
-      {hasExport && <Button icon={<ExportOutlined />}>导出</Button>}
+    <div className="action-buttons-group">
+      {hasAdd && <Button type="primary" className="btn-add" icon={<PlusOutlined />} onClick={onAdd}>{addText}</Button>}
+      {hasExport && <Button className="btn-export" icon={<ExportOutlined />} onClick={onExport}>导出</Button>}
+      {hasConfig && <Button className="btn-config" icon={<SettingOutlined />} onClick={onConfig}>配置</Button>}
       {extra}
-    </>
+    </div>
   )
 }
 

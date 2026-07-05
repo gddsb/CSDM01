@@ -762,12 +762,47 @@ api.interceptors.request.use(config => {
 
 | 工具 | 用途 |
 |------|------|
-| `ActionButtons` | 通用操作按钮组（新增/导出/额外按钮） |
+| `ActionButtons` | 通用操作按钮组（新增/导出/配置/额外按钮，含配色 class） |
 | `ColumnSettings` | 表格列显隐设置下拉面板 |
 | `getActionColumnWidth(count)` | 计算操作列宽度：1-3 功能→80px，4 功能→100px |
 | `materialNameColumn` | 料品名称列默认配置：最小 200px，自动换行 |
 
-#### 六、CSS 规范要点
+```jsx
+// ActionButtons 用法
+<ActionButtons
+  hasAdd={true}      // 新增按钮（主色渐变）
+  hasExport={true}   // 导出按钮（成功色渐变）
+  hasConfig={false}  // 配置按钮（强调色渐变）
+  onAdd={handleAdd}
+  onExport={handleExport}
+  onConfig={handleConfig}
+  addText="新增订单"
+  extra={[/* 额外按钮 */]}
+/>
+```
+
+#### 六、主要操作按钮配色规范
+
+上部页面信息区的主要操作按钮采用语义化配色方案，基于 CSS 变量自动适配六套主题。
+
+| 按钮 | className | 配色方案 | 语义 |
+|------|-----------|---------|------|
+| 快速筛选选中态 | `.ant-segmented-item-selected` | 主色渐变 `linear-gradient(135deg, --color-primary, --color-secondary)` | 时间维度切换 |
+| 新增 | `.btn-add` | 主色渐变 `linear-gradient(135deg, --color-primary, --color-secondary)` | 主要操作 |
+| 导出 | `.btn-export` | 成功色渐变 `linear-gradient(135deg, --color-success, #66BB6A)` | 数据输出 |
+| 配置 | `.btn-config` | 强调色渐变 `linear-gradient(135deg, --color-accent, --color-warning)` | 设置/定制 |
+
+**视觉特性：**
+- 圆角 8px，按钮带有柔和阴影
+- Hover 态：渐变方向反转 + 阴影加深 + 上移 1px（微交互）
+- 选中态 Segmented 采用胶囊式 24px 圆角，背景渐变 + 白色文字 + 阴影
+- 所有颜色基于 CSS 变量（`--color-primary` / `--color-secondary` / `--color-success` / `--color-accent` / `--color-warning`），切换主题自动适配
+
+**布局规则：**
+- 快速筛选（今天/本周/本月/本年）在左侧，功能按钮（新增/导出/配置）在右侧
+- 功能按钮组用 `.action-buttons-group` 包裹，gap: 8px
+
+#### 七、CSS 规范要点
 
 ```css
 /* 区域间距与高度比例 */
@@ -784,9 +819,14 @@ api.interceptors.request.use(config => {
 /* 筛选区折叠动画 */
 .section-filter-body.filter-collapsed { max-height: 0; opacity: 0; overflow: hidden; }
 .section-filter-body:not(.filter-collapsed) { max-height: 500px; opacity: 1; }
+
+/* 操作按钮配色（节选） */
+.btn-add    { background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: #fff; }
+.btn-export { background: linear-gradient(135deg, var(--color-success), #66BB6A); color: #fff; }
+.btn-config { background: linear-gradient(135deg, var(--color-accent), var(--color-warning)); color: #fff; }
 ```
 
-#### 七、分页规范
+#### 八、分页规范
 
 下部列表区默认每页显示 **30 条**记录，通过 Table 的 `pagination` 配置实现：
 
@@ -800,7 +840,7 @@ pagination={{
 }}
 ```
 
-#### 八、已应用规范的页面清单
+#### 九、已应用规范的页面清单
 
 本次按规范统一改造，共修改 **28 个业务页面**（默认每页 30 条 + 三段式布局规范）：
 

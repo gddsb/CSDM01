@@ -241,6 +241,110 @@ body {
 
 .section-info-actions {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ============================================================
+   主要操作按钮配色规范
+   - 快速筛选（今天/本周/本月/本年）：胶囊式 Segmented，选中态主色
+   - 新增按钮：主色渐变（primary → secondary）
+   - 导出按钮：成功色渐变
+   - 配置按钮：强调色
+   ============================================================ */
+
+/* 快速筛选 Segmented 整体样式 */
+.section-info-actions .ant-segmented {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 2px;
+  border-radius: 24px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  transition: all 0.25s ease;
+}
+
+.section-info-actions .ant-segmented:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.12);
+}
+
+.section-info-actions .ant-segmented .ant-segmented-item {
+  color: var(--text-secondary);
+  border-radius: 20px;
+  transition: all 0.25s ease;
+  padding: 0 14px;
+}
+
+.section-info-actions .ant-segmented .ant-segmented-item:hover {
+  color: var(--color-primary);
+}
+
+/* 选中态：主色渐变背景 */
+.section-info-actions .ant-segmented .ant-segmented-item-selected {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(33, 150, 243, 0.25);
+}
+
+/* 操作按钮分隔区：快速筛选在左，功能按钮在右 */
+.section-info-actions .action-buttons-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 新增按钮：主色渐变 */
+.section-info-actions .btn-add.ant-btn-primary {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.25);
+  transition: all 0.25s ease;
+}
+
+.section-info-actions .btn-add.ant-btn-primary:hover {
+  background: linear-gradient(135deg, var(--color-secondary), var(--color-primary));
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.35);
+  transform: translateY(-1px);
+}
+
+/* 导出按钮：成功色渐变 */
+.section-info-actions .btn-export.ant-btn {
+  background: linear-gradient(135deg, var(--color-success), #66BB6A);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.25);
+  transition: all 0.25s ease;
+}
+
+.section-info-actions .btn-export.ant-btn:hover {
+  background: linear-gradient(135deg, #66BB6A, var(--color-success));
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.35);
+  transform: translateY(-1px);
+  color: #ffffff;
+}
+
+/* 配置按钮：强调色 */
+.section-info-actions .btn-config.ant-btn {
+  background: linear-gradient(135deg, var(--color-accent), var(--color-warning));
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(255, 111, 0, 0.25);
+  transition: all 0.25s ease;
+}
+
+.section-info-actions .btn-config.ant-btn:hover {
+  background: linear-gradient(135deg, var(--color-warning), var(--color-accent));
+  box-shadow: 0 4px 12px rgba(255, 111, 0, 0.35);
+  transform: translateY(-1px);
+  color: #ffffff;
 }
 
 /* 统计卡片区 */
