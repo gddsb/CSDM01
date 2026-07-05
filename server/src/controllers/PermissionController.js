@@ -174,6 +174,13 @@ export const userMenu = async (req, res) => {
         })
       }
     }
+    // 统一按 sort_order 排序（include 关联查询不会保留排序）
+    perms = perms.slice().sort((a, b) => {
+      const sa = Number(a.sort_order) || 0
+      const sb = Number(b.sort_order) || 0
+      if (sa !== sb) return sa - sb
+      return Number(a.perm_id) - Number(b.perm_id)
+    })
     // 构建树形结构
     const buildTree = (list, parentId = 0) => {
       return list

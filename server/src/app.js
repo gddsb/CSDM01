@@ -6,6 +6,8 @@ import routes from './routes/index.js'
 import sequelize from './config/database.js'
 import { initDefaultConfigs } from './controllers/SystemConfigController.js'
 import { initDefaultPermissions } from './controllers/RoleController.js'
+import { initDefaultRules } from './controllers/NumberRuleController.js'
+import { runMigrations } from './migrate.js'
 
 dotenv.config()
 
@@ -18,12 +20,18 @@ async function initDatabase() {
     // 只创建不存在的表，不修改已有表结构
     await sequelize.sync()
     console.log('✅ 数据库表同步完成')
+    // 补齐已有表缺失的列（ALTER TABLE ADD COLUMN）
+    await runMigrations()
+    console.log('✅ 数据库列迁移完成')
     // 初始化默认系统配置
     await initDefaultConfigs()
     console.log('✅ 系统配置初始化完成')
     // 初始化默认权限数据
     await initDefaultPermissions()
     console.log('✅ 默认权限初始化完成')
+    // 初始化默认编号规则
+    await initDefaultRules()
+    console.log('✅ 默认编号规则初始化完成')
   } catch (err) {
     console.error('❌ 数据库初始化失败:', err.message)
     if (err.errors) {

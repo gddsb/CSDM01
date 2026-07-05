@@ -75,6 +75,10 @@ const Material = sequelize.define('Material', {
   unit_code: {
     type: DataTypes.STRING(20),
   },
+  // 关联客户 ID（设计文档 §2.2.4，对应 bas_customer.customer_id）
+  customer_id: {
+    type: DataTypes.INTEGER,
+  },
   is_active: {
     type: DataTypes.BOOLEAN,
     allowNull: false,

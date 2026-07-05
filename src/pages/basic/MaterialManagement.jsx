@@ -16,12 +16,29 @@ const MaterialManagement = () => {
   const [detailOpen, setDetailOpen] = useState(false)
   const [current, setCurrent] = useState(null)
   const [submitting, setSubmitting] = useState(false)
+  const [customerOptions, setCustomerOptions] = useState([])
   const [form] = Form.useForm()
 
   const [keywordInput, setKeywordInput] = useState('')
   const [isActiveInput, setIsActiveInput] = useState(undefined)
   const [categoryInput, setCategoryInput] = useState(undefined)
   const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', is_active: undefined, category_name: undefined })
+
+  // 拉取客户列表用于关联客户选择器（设计文档 §2.2.4 料品档案关联客户）
+  const fetchCustomers = useCallback(async () => {
+    try {
+      const res = await api.get('/basic/customers', { params: { pageSize: 999 } })
+      const list = res.data || []
+      setCustomerOptions(list.map(c => ({ label: `${c.customer_name}${c.short_name ? '（' + c.short_name + '）' : ''}`, value: c.customer_id })))
+    } catch (err) {
+      // 静默失败，不阻塞页面
+      setCustomerOptions([])
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchCustomers()
+  }, [fetchCustomers])
 
   const activeCount = data.filter(m => m.is_active).length
   const inactiveCount = data.filter(m => !m.is_active).length
@@ -110,6 +127,7 @@ const MaterialManagement = () => {
         volume_unit: editing.volume_unit,
         inventory_category: editing.inventory_category,
         unit_code: editing.unit_code,
+        customer_id: editing.customer_id || undefined,
         is_active: editing.is_active,
         effective_date: editing.effective_date ? editing.effective_date.substring(0, 16) : '',
         expiry_date: editing.expiry_date ? editing.expiry_date.substring(0, 16) : '',
@@ -163,6 +181,14 @@ const MaterialManagement = () => {
     { title: '品名', dataIndex: 'material_name', key: 'material_name' },
     { title: '规格', dataIndex: 'specification', key: 'specification', width: 120 },
     { title: '单位名称', dataIndex: 'unit_name', key: 'unit_name', width: 80 },
+    {
+      title: '关联客户', dataIndex: 'customer_id', key: 'customer_id', width: 140,
+      render: (v) => {
+        if (!v) return '-'
+        const opt = customerOptions.find(c => c.value === v)
+        return opt ? opt.label : `#${v}`
+      },
+    },
     { title: '菲林编号', dataIndex: 'film_no', key: 'film_no', width: 100 },
     { title: '版本号', dataIndex: 'version_no', key: 'version_no', width: 80 },
     {
@@ -262,6 +288,19 @@ const MaterialManagement = () => {
             <Col span={8}>
               <Form.Item name="material_name" label="品名" rules={[{ required: true, message: '请输入品名' }]}>
                 <Input placeholder="请输入品名" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={16}>
+              <Form.Item name="customer_id" label="关联客户">
+                <Select
+                  placeholder="请选择关联客户"
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  options={customerOptions}
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -415,6 +454,11 @@ const MaterialManagement = () => {
             <Descriptions.Item label="体积单位">{current.volume_unit || '-'}</Descriptions.Item>
             <Descriptions.Item label="存货分类">{current.inventory_category || '-'}</Descriptions.Item>
             <Descriptions.Item label="单位编码">{current.unit_code || '-'}</Descriptions.Item>
+            <Descriptions.Item label="关联客户">{(() => {
+              if (!current.customer_id) return '-'
+              const opt = customerOptions.find(c => c.value === current.customer_id)
+              return opt ? opt.label : `#${current.customer_id}`
+            })()}</Descriptions.Item>
             <Descriptions.Item label="是否生效"><Tag color={current.is_active ? 'green' : 'red'}>{current.is_active ? '生效' : '失效'}</Tag></Descriptions.Item>
             <Descriptions.Item label="生效日期">{current.effective_date?.substring(0, 16) || '-'}</Descriptions.Item>
             <Descriptions.Item label="失效日期">{current.expiry_date?.substring(0, 16) || '-'}</Descriptions.Item>

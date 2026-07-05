@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, Select, Space, Popconfirm, message, Row, Col } from 'antd'
+import { Table, Tag, Button, Modal, Form, Input, Select, Space, Popconfirm, message, Row, Col, Switch } from 'antd'
 import {
   TeamOutlined, CheckCircleOutlined, StopOutlined, ApartmentOutlined,
   PlusOutlined, ReloadOutlined,
@@ -115,10 +115,13 @@ export default function UserManagement() {
         phone: editingUser.phone,
         email: editingUser.email,
         status: editingUser.status,
+        position: editingUser.position,
+        pwd_reset_required: !!editingUser.pwd_reset_required,
+        remarks: editingUser.remarks,
       })
     } else {
       form.resetFields()
-      form.setFieldsValue({ status: '启用' })
+      form.setFieldsValue({ status: '启用', pwd_reset_required: false })
     }
   }
 
@@ -148,6 +151,8 @@ export default function UserManagement() {
       setSubmitting(true)
       const payload = { ...values }
       if (editingUser && !payload.password) delete payload.password
+      // Switch 布尔值转 0/1
+      payload.pwd_reset_required = payload.pwd_reset_required ? 1 : 0
       if (editingUser) {
         const res = await api.put(`/system/users/${editingUser.user_id}`, payload)
         message.success(res.message || '用户编辑成功')
@@ -180,6 +185,7 @@ export default function UserManagement() {
     { title: '真实姓名', dataIndex: 'real_name', key: 'real_name' },
     { title: '工号', dataIndex: 'employee_no', key: 'employee_no' },
     { title: '部门', dataIndex: 'department', key: 'department' },
+    { title: '岗位', dataIndex: 'position', key: 'position' },
     {
       title: '角色', key: 'role',
       render: (_, record) => record.role?.role_name || '-',
@@ -331,6 +337,25 @@ export default function UserManagement() {
                   placeholder="请选择状态"
                   options={[{ label: '启用', value: '启用' }, { label: '禁用', value: '禁用' }]}
                 />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="position" label="岗位名称">
+                <Input placeholder="请输入岗位名称" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item name="pwd_reset_required" label="首次登录需改密" valuePropName="checked">
+                <Switch checkedChildren="是" unCheckedChildren="否" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={24}>
+              <Form.Item name="remarks" label="备注">
+                <Input.TextArea placeholder="请输入备注信息" rows={2} />
               </Form.Item>
             </Col>
           </Row>

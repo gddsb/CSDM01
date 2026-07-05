@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, Select, message, Row, Col, Switch, Drawer, Descriptions, Space, Popconfirm } from 'antd'
+import { Table, Tag, Button, Modal, Form, Input, Select, TreeSelect, message, Row, Col, Switch, Drawer, Descriptions, Space, Popconfirm } from 'antd'
 import {
   ImportOutlined, ToolOutlined, DeleteOutlined,
   PlusOutlined, EyeOutlined, ReloadOutlined,
@@ -36,6 +36,43 @@ export default function DefectManagement() {
   const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined, defect_type: undefined })
 
   const processOptions = processes.map(p => ({ label: `${p.process_code} ${p.process_name}`, value: p.process_id }))
+
+  // 构建上级分类树（设计文档 §2.2.10，支持树形结构）
+  // 编辑时排除自身及其子孙节点，避免循环引用
+  const buildParentTreeData = (excludeId) => {
+    const map = new Map()
+    data.forEach(item => {
+      map.set(item.defect_id, { ...item, children: [] })
+    })
+    const roots = []
+    map.forEach(node => {
+      if (!node.parent_id || node.parent_id === 0 || !map.has(node.parent_id)) {
+        roots.push(node)
+      } else {
+        map.get(node.parent_id).children.push(node)
+      }
+    })
+    const toTreeNode = (node) => {
+      const children = node.children || []
+      const isExcluded = excludeId != null && node.defect_id === excludeId
+      return {
+        title: `${node.defect_code} ${node.defect_name}`,
+        value: node.defect_id,
+        disabled: isExcluded,
+        children: children.map(toTreeNode).filter(n => !isExcluded),
+      }
+    }
+    return roots.map(toTreeNode)
+  }
+
+  // 根据 parent_id 查找上级分类名称
+  const findParentName = (parentId) => {
+    if (!parentId || parentId === 0) return null
+    const p = data.find(d => d.defect_id === parentId)
+    return p ? `${p.defect_code} ${p.defect_name}` : null
+  }
+
+  const parentTreeData = buildParentTreeData(editing?.defect_id)
 
   // 拉取列表
   useEffect(() => {
@@ -114,6 +151,7 @@ export default function DefectManagement() {
         defect_code: editing.defect_code,
         defect_name: editing.defect_name,
         defect_type: editing.defect_type,
+        parent_id: editing.parent_id || undefined,
         defect_unit: editing.defect_unit,
         available_units: availableUnits,
         display: !!editing.display,
@@ -126,6 +164,7 @@ export default function DefectManagement() {
       form.resetFields()
       form.setFieldsValue({
         defect_type: '来料不良',
+        parent_id: undefined,
         display: true,
         status: '启用',
         sort_order: total + 1,
@@ -143,6 +182,7 @@ export default function DefectManagement() {
         defect_code: values.defect_code,
         defect_name: values.defect_name,
         defect_type: values.defect_type,
+        parent_id: values.parent_id || 0,
         defect_unit: values.defect_unit,
         available_units: toArray(values.available_units),
         display: !!values.display,
@@ -182,6 +222,10 @@ export default function DefectManagement() {
     { title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 110, fixed: 'left' },
     { title: '排序号', dataIndex: 'sort_order', key: 'sort_order', width: 70 },
     { title: '不良名称', dataIndex: 'defect_name', key: 'defect_name', width: 110 },
+    {
+      title: '上级分类', dataIndex: 'parent_id', key: 'parent_id', width: 140,
+      render: v => findParentName(v) || <Tag color="default">顶级</Tag>,
+    },
     {
       title: '所属大类', dataIndex: 'defect_type', key: 'defect_type', width: 100,
       render: v => v ? <Tag color={typeColorMap[v] || 'default'}>{v}</Tag> : '-',
@@ -286,7 +330,7 @@ export default function DefectManagement() {
             rowKey="defect_id"
             size="small"
             loading={loading}
-            scroll={{ x: 1200 }}
+            scroll={{ x: 1350 }}
             pagination={{
               current: query.page,
               pageSize: query.pageSize,
@@ -325,6 +369,20 @@ export default function DefectManagement() {
             <Col span={8}>
               <Form.Item name="defect_type" label="不良类别" rules={[{ required: true, message: '请选择不良类别' }]}>
                 <Select placeholder="请选择不良类别" options={categoryOptions} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={24}>
+              <Form.Item name="parent_id" label="上级分类">
+                <TreeSelect
+                  placeholder="不选择则为顶级分类"
+                  treeData={parentTreeData}
+                  treeDefaultExpandAll
+                  allowClear
+                  treeNodeFilterProp="title"
+                  showSearch
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -385,6 +443,9 @@ export default function DefectManagement() {
           <Descriptions column={2} size="small" bordered>
             <Descriptions.Item label="不良编码">{viewRecord.defect_code}</Descriptions.Item>
             <Descriptions.Item label="不良名称">{viewRecord.defect_name}</Descriptions.Item>
+            <Descriptions.Item label="上级分类">
+              {findParentName(viewRecord.parent_id) || <Tag color="default">顶级</Tag>}
+            </Descriptions.Item>
             <Descriptions.Item label="所属大类">
               <Tag color={typeColorMap[viewRecord.defect_type] || 'default'}>{viewRecord.defect_type}</Tag>
             </Descriptions.Item>

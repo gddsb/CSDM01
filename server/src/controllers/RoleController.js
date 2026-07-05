@@ -102,13 +102,14 @@ const defaultPermissions = [
   { perm_id: 6, parent_id: 1, perm_name: '菜单管理', perm_code: 'system:menu', type: 'menu', icon: 'MenuOutlined', path: '/system/menus', sort_order: 3 },
   { perm_id: 4, parent_id: 1, perm_name: '系统配置', perm_code: 'system:config', type: 'menu', icon: 'ControlOutlined', path: '/system/config', sort_order: 4 },
   { perm_id: 5, parent_id: 1, perm_name: '操作日志', perm_code: 'system:log', type: 'menu', icon: 'FileTextOutlined', path: '/system/logs', sort_order: 5 },
-  // 基础数据
+  // 基础数据（菜单顺序：料品档案、客户档案、产线档案、工序档案、制程不良分类、编码管理）
   { perm_id: 10, parent_id: 0, perm_name: '基础数据', perm_code: 'basic', type: 'menu', icon: 'ProfileOutlined', path: '/basic', sort_order: 2 },
   { perm_id: 11, parent_id: 10, perm_name: '料品档案', perm_code: 'basic:material', type: 'menu', icon: 'ProfileOutlined', path: '/basic/materials', sort_order: 1 },
-  { perm_id: 12, parent_id: 10, perm_name: '产线管理', perm_code: 'basic:line', type: 'menu', icon: 'DeploymentUnitOutlined', path: '/basic/lines', sort_order: 2 },
-  { perm_id: 13, parent_id: 10, perm_name: '工序管理', perm_code: 'basic:process', type: 'menu', icon: 'DeploymentUnitOutlined', path: '/basic/processes', sort_order: 3 },
-  { perm_id: 14, parent_id: 10, perm_name: '制程不良分类', perm_code: 'basic:defect', type: 'menu', icon: 'AlertOutlined', path: '/basic/defects', sort_order: 4 },
-  { perm_id: 15, parent_id: 10, perm_name: '客户档案', perm_code: 'basic:customer', type: 'menu', icon: 'TeamOutlined', path: '/basic/customers', sort_order: 5 },
+  { perm_id: 15, parent_id: 10, perm_name: '客户档案', perm_code: 'basic:customer', type: 'menu', icon: 'TeamOutlined', path: '/basic/customers', sort_order: 2 },
+  { perm_id: 12, parent_id: 10, perm_name: '产线档案', perm_code: 'basic:line', type: 'menu', icon: 'DeploymentUnitOutlined', path: '/basic/lines', sort_order: 3 },
+  { perm_id: 13, parent_id: 10, perm_name: '工序档案', perm_code: 'basic:process', type: 'menu', icon: 'DeploymentUnitOutlined', path: '/basic/processes', sort_order: 4 },
+  { perm_id: 14, parent_id: 10, perm_name: '制程不良分类', perm_code: 'basic:defect', type: 'menu', icon: 'AlertOutlined', path: '/basic/defects', sort_order: 5 },
+  { perm_id: 16, parent_id: 10, perm_name: '编码管理', perm_code: 'basic:number-rule', type: 'menu', icon: 'KeyOutlined', path: '/basic/number-rules', sort_order: 6 },
   // 生产管理
   { perm_id: 20, parent_id: 0, perm_name: '生产管理', perm_code: 'production', type: 'menu', icon: 'ToolOutlined', path: '/production', sort_order: 3 },
   { perm_id: 21, parent_id: 20, perm_name: '生产订单', perm_code: 'production:order', type: 'menu', icon: 'FileTextOutlined', path: '/production/orders', sort_order: 1 },
@@ -142,10 +143,22 @@ const defaultPermissions = [
 
 export const initDefaultPermissions = async () => {
   for (const perm of defaultPermissions) {
-    await Permission.findOrCreate({
+    // findOrCreate 仅保证存在；同时同步 perm_name / parent_id / icon / path / sort_order
+    // 以便菜单顺序调整、名称变更等能对已有数据库生效
+    const [record, created] = await Permission.findOrCreate({
       where: { perm_code: perm.perm_code },
       defaults: perm,
     })
+    if (!created) {
+      await record.update({
+        perm_name: perm.perm_name,
+        parent_id: perm.parent_id,
+        icon: perm.icon,
+        path: perm.path,
+        sort_order: perm.sort_order,
+        type: perm.type,
+      })
+    }
   }
   // 给超级管理员角色分配所有权限
   const adminRole = await Role.findOne({ where: { role_code: 'SUPER_ADMIN' } })

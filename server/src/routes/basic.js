@@ -35,7 +35,17 @@ import {
   update as customerUpdate,
   remove as customerRemove,
 } from '../controllers/CustomerController.js'
-import { authRequired } from '../middleware/auth.js'
+import {
+  list as ruleList,
+  detail as ruleDetail,
+  create as ruleCreate,
+  update as ruleUpdate,
+  remove as ruleRemove,
+  toggle as ruleToggle,
+  audit as ruleAudit,
+  preview as rulePreview,
+} from '../controllers/NumberRuleController.js'
+import { authRequired, logOperation } from '../middleware/auth.js'
 
 const router = Router()
 
@@ -83,5 +93,15 @@ router.get('/customers/:id', customerDetail)
 router.post('/customers', customerCreate)
 router.put('/customers/:id', customerUpdate)
 router.delete('/customers/:id', customerRemove)
+
+// 编号规则（编码管理）
+router.get('/number-rules', ruleList)
+router.get('/number-rules/:id', ruleDetail)
+router.post('/number-rules', logOperation('编码管理'), ruleCreate)
+router.put('/number-rules/:id', logOperation('编码管理'), ruleUpdate)
+router.delete('/number-rules/:id', logOperation('编码管理'), ruleRemove)
+router.post('/number-rules/:id/toggle', logOperation('编码管理'), ruleToggle)
+router.post('/number-rules/:id/audit', logOperation('编码管理'), ruleAudit)
+router.get('/number-rules/:id/preview', rulePreview)
 
 export default router

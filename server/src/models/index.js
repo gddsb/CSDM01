@@ -19,6 +19,9 @@ import SystemConfig from './SystemConfig.js'
 import RolePermission from './RolePermission.js'
 import Sequence from './Sequence.js'
 import Customer from './Customer.js'
+import LineProcess from './LineProcess.js'
+import LineDevice from './LineDevice.js'
+import NumberRule from './NumberRule.js'
 
 // 建立模型关联关系
 // 用户 - 角色
@@ -49,6 +52,22 @@ ExceptionRecord.belongsTo(Order, { foreignKey: 'order_id', as: 'order' })
 Role.belongsToMany(Permission, { through: RolePermission, foreignKey: 'role_id', otherKey: 'perm_id', as: 'permissions' })
 Permission.belongsToMany(Role, { through: RolePermission, foreignKey: 'perm_id', otherKey: 'role_id', as: 'roles' })
 
+// 客户 - 料品（一对多）
+Customer.hasMany(Material, { foreignKey: 'customer_id', as: 'materials' })
+Material.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer' })
+
+// 产线 - 工序（多对多，通过 bas_line_process）
+ProductionLine.belongsToMany(Process, { through: LineProcess, foreignKey: 'line_id', otherKey: 'process_id', as: 'processes' })
+Process.belongsToMany(ProductionLine, { through: LineProcess, foreignKey: 'process_id', otherKey: 'line_id', as: 'lines' })
+
+// 产线 - 设备（多对多，通过 bas_line_device）
+ProductionLine.belongsToMany(Device, { through: LineDevice, foreignKey: 'line_id', otherKey: 'device_id', as: 'devices' })
+Device.belongsToMany(ProductionLine, { through: LineDevice, foreignKey: 'device_id', otherKey: 'line_id', as: 'lines' })
+
+// 不良分类 - 父级（自关联，树形）
+DefectType.hasMany(DefectType, { foreignKey: 'parent_id', as: 'children' })
+DefectType.belongsTo(DefectType, { foreignKey: 'parent_id', as: 'parent' })
+
 const db = {
   sequelize,
   DataTypes,
@@ -70,6 +89,9 @@ const db = {
   RolePermission,
   Sequence,
   Customer,
+  LineProcess,
+  LineDevice,
+  NumberRule,
 }
 
 // 具名导出，便于按需导入
@@ -92,6 +114,9 @@ export {
   RolePermission,
   Sequence,
   Customer,
+  LineProcess,
+  LineDevice,
+  NumberRule,
 }
 
 export default db

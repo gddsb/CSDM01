@@ -21,6 +21,7 @@ import ProcessManagement from './pages/basic/ProcessManagement'
 import DeviceManagement from './pages/basic/DeviceManagement'
 import DefectManagement from './pages/basic/DefectManagement'
 import CustomerManagement from './pages/basic/CustomerManagement'
+import NumberRuleManagement from './pages/basic/NumberRuleManagement'
 import MenuManagement from './pages/system/MenuManagement'
 import OrderManagement from './pages/production/OrderManagement'
 import WorkOrderManagement from './pages/production/WorkOrderManagement'
@@ -85,6 +86,7 @@ function AppRoutes() {
         <Route path="/basic/devices" element={<DeviceManagement />} />
         <Route path="/basic/defects" element={<DefectManagement />} />
         <Route path="/basic/customers" element={<CustomerManagement />} />
+        <Route path="/basic/number-rules" element={<NumberRuleManagement />} />
         <Route path="/production/orders" element={<OrderManagement />} />
         <Route path="/production/workorders" element={<WorkOrderManagement />} />
         <Route path="/production/reporting" element={<ProcessReporting />} />

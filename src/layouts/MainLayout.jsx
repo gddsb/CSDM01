@@ -54,10 +54,11 @@ const defaultMenuItems = [
     key: 'basic', icon: <ProfileOutlined />, label: '基础数据',
     children: [
       { key: '/basic/materials', icon: <ProfileOutlined />, label: '料品档案' },
-      { key: '/basic/lines', icon: <DeploymentUnitOutlined />, label: '产线管理' },
-      { key: '/basic/processes', icon: <DeploymentUnitOutlined />, label: '工序管理' },
-      { key: '/basic/defects', icon: <AlertOutlined />, label: '制程不良分类' },
       { key: '/basic/customers', icon: <TeamOutlined />, label: '客户档案' },
+      { key: '/basic/lines', icon: <DeploymentUnitOutlined />, label: '产线档案' },
+      { key: '/basic/processes', icon: <DeploymentUnitOutlined />, label: '工序档案' },
+      { key: '/basic/defects', icon: <AlertOutlined />, label: '制程不良分类' },
+      { key: '/basic/number-rules', icon: <KeyOutlined />, label: '编码管理' },
     ]
   },
   {
@@ -175,7 +176,7 @@ export default function MainLayout() {
     return () => { cancelled = true }
   }, [])
 
-  const systemName = systemConfig.system_name || '奶粉罐生产系统'
+  const systemName = systemConfig.system_name || '长沙大满生产制造系统'
   const companyName = systemConfig.company_name || ''
 
   // 将后端权限树转换为 Antd Menu items 格式

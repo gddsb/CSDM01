@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, Select, Space, Tree, InputNumber, Popconfirm, message, Row, Col, Typography, Spin } from 'antd'
+import { Table, Tag, Button, Modal, Form, Input, Select, Space, Tree, InputNumber, Popconfirm, message, Row, Col, Typography, Spin, Switch } from 'antd'
 import {
   SafetyCertificateOutlined, ApartmentOutlined,
   PlusOutlined, ReloadOutlined, SafetyOutlined,
@@ -134,10 +134,11 @@ export default function RoleManagement() {
         sort_order: editing.sort_order,
         status: editing.status,
         description: editing.description,
+        is_system_default: !!editing.is_system_default,
       })
     } else {
       form.resetFields()
-      form.setFieldsValue({ status: '启用', type: '可选', sort_order: 0 })
+      form.setFieldsValue({ status: '启用', type: '可选', sort_order: 0, is_system_default: false })
     }
   }
 
@@ -146,6 +147,8 @@ export default function RoleManagement() {
       const values = await form.validateFields()
       setSubmitting(true)
       const payload = { ...values }
+      // Switch 布尔值转 0/1
+      payload.is_system_default = payload.is_system_default ? 1 : 0
       if (editing) {
         const res = await api.put(`/system/roles/${editing.role_id}`, payload)
         message.success(res.message || '角色编辑成功')
@@ -223,6 +226,10 @@ export default function RoleManagement() {
     {
       title: '类型', dataIndex: 'type', key: 'type', width: 100,
       render: v => v === '系统默认' ? <Tag color="blue">{v}</Tag> : <Tag color="orange">{v}</Tag>,
+    },
+    {
+      title: '系统默认', dataIndex: 'is_system_default', key: 'is_system_default', width: 90,
+      render: v => v === 1 || v === true ? <Tag color="blue">是</Tag> : <Tag>否</Tag>,
     },
     { title: '权限范围', dataIndex: 'scope', key: 'scope', ellipsis: true },
     {
@@ -324,9 +331,18 @@ export default function RoleManagement() {
             </Col>
           </Row>
           <Row gutter={12}>
-            <Col span={24}>
+            <Col span={16}>
               <Form.Item name="scope" label="权限范围">
                 <Input placeholder="请输入权限范围说明" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="is_system_default" label="系统默认" valuePropName="checked">
+                <Switch
+                  checkedChildren="是"
+                  unCheckedChildren="否"
+                  disabled={!!editing && !!editing.is_system_default}
+                />
               </Form.Item>
             </Col>
           </Row>

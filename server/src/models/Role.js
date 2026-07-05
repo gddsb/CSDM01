@@ -19,6 +19,16 @@ const Role = sequelize.define('Role', {
   type: {
     type: DataTypes.STRING(20),
   },
+  // 是否系统默认角色：0-否 / 1-是（设计文档 §2.1.3，系统默认角色不可删除）
+  is_system_default: {
+    type: DataTypes.TINYINT,
+    allowNull: false,
+    defaultValue: 0,
+  },
+  // 角色描述（设计文档 §2.1.3）
+  description: {
+    type: DataTypes.STRING(200),
+  },
   scope: {
     type: DataTypes.STRING(50),
   },
