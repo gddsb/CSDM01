@@ -448,10 +448,10 @@ export default function WorkOrderManagement() {
             <Col span={12}>
               <Form.Item
                 label={
-                  <span style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                    <span>计划数量</span>
+                  <span>
+                    计划数量
                     {selectedOrder && (
-                      <span style={{ color: '#ff4d4f', fontSize: 12, fontWeight: 'normal' }}>
+                      <span style={{ color: '#ff4d4f', fontSize: 12, fontWeight: 'normal', marginLeft: '2em' }}>
                         未生成：{Math.max(0, (Number(selectedOrder.planned_qty) || 0) - (Number(selectedOrder.finished_qty) || 0)).toLocaleString()}
                       </span>
                     )}
