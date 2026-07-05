@@ -555,6 +555,7 @@ export const getDatabaseInfo = async (req, res) => {
         defect_code: '不良编码',
         defect_name: '不良名称',
         defect_type: '不良类型',
+        defect_description: '不良描述',
         category_name: '分类名称',
         parent_id: '父级分类ID',
         defect_unit: '默认单位',
