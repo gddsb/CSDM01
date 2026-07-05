@@ -711,13 +711,13 @@ api.interceptors.request.use(config => {
 
 | 区域 | 高度占比 | 内容组成 | 背景色 | 行间距规则 |
 |------|---------|---------|--------|-----------|
-| 上部：页面信息区 | 15%-20% | 页面标题、面包屑导航、快速筛选（今天/本周/本月/本年）、统计数据卡片（2-5个指标）、主要操作按钮（新增/导出/配置） | 主背景色 | 常规间距 |
+| 上部：页面信息区 | 15%-20% | 页面标题、面包屑导航、统计数据卡片（2-5个指标）、主要操作按钮（**今天/本周/本月/本年** + 新增/导出/配置） | 主背景色 | 常规间距 |
 | 中部：筛选功能区 | 10%-15% | 查询条件输入框、下拉选择器、日期范围选择、查询/重置按钮、展开/收起切换 | 卡片背景色，可折叠 | 小行间距（4-8px） |
-| 下部：列表区 | 65%-75% | 数据表格、分页器、总计记录数 | 卡片背景色 | 小行间距（4-8px） |
+| 下部：列表区 | 65%-75% | 数据表格、分页器、总计记录数，默认单页显示 30 条记录 | 卡片背景色 | 小行间距（4-8px） |
 
 #### 二、页面设计说明
 
-1. **上部页面信息区**保持常规间距，以维持页面整体的呼吸感和层次感。设有"今天、本周、本月、本年"快速筛选统计按钮，默认选中"本月"。
+1. **上部页面信息区**保持常规间距，以维持页面整体的呼吸感和层次感。"今天/本周/本月/本年"作为主要操作按钮的一部分，与新增/导出/配置按钮同组排列，默认选中"本月"。
 2. **中部筛选功能区**和**下部列表区**采用小行间距，使数据密集型操作区域布局更加紧凑，提升屏幕空间利用率。中部筛选区域默认所有功能保持在一行。
 3. 具体表现为：表单控件之间、表格行之间的垂直间距缩小（建议 4px-8px），区域内部的 padding 值相应减小，但需保持足够的可点击区域以确保操作准确性。
 4. **下部列表区**默认根据列内容保持完整显示自动列宽：
@@ -728,8 +728,8 @@ api.interceptors.request.use(config => {
 
 | 特性 | 说明 |
 |------|------|
-| 快速筛选联动 | 上部统计卡片数据跟随"今天/本周/本月/本年"快速筛选条件联动更新 |
-| 筛选区折叠 | 中部筛选区支持"展开更多/收起"切换，默认显示常用筛选条件在一行，点击展开显示全部 |
+| 快速筛选联动 | 所有业务操作页面上部统计卡片数据跟随"今天/本周/本月/本年"快速筛选条件联动更新 |
+| 筛选区折叠 | 中部筛选区默认显示 3-4 行常用筛选条件，点击"展开更多"显示全部条件 |
 | 内容变化触发查询 | 筛选区支持内容变化触发查询（通过 `onFilterChange` 回调） |
 | 表格列操作 | 列表区表格支持列宽拖拽、列排序、列显隐设置 |
 | 统计卡片独立 | 上部统计卡片数据**不**跟随中部筛选条件联动更新，仅跟随快速筛选联动 |
@@ -799,6 +799,22 @@ pagination={{
   showTotal: t => `共 ${t} 条`,
 }}
 ```
+
+#### 八、已应用规范的页面清单
+
+本次按规范统一改造，共修改 **28 个业务页面**（默认每页 30 条 + 三段式布局规范）：
+
+| 模块 | 页面 |
+|------|------|
+| 基础数据 basic | 料品档案 [MaterialManagement.jsx](file:///workspace/src/pages/basic/MaterialManagement.jsx)、产线 [ProductionLine.jsx](file:///workspace/src/pages/basic/ProductionLine.jsx)、工序 [ProcessManagement.jsx](file:///workspace/src/pages/basic/ProcessManagement.jsx)、设备 [DeviceManagement.jsx](file:///workspace/src/pages/basic/DeviceManagement.jsx)、不良分类 [DefectManagement.jsx](file:///workspace/src/pages/basic/DefectManagement.jsx) |
+| 生产管理 production | 生产订单 [OrderManagement.jsx](file:///workspace/src/pages/production/OrderManagement.jsx)、工单 [WorkOrderManagement.jsx](file:///workspace/src/pages/production/WorkOrderManagement.jsx)、工序报工 [ProcessReporting.jsx](file:///workspace/src/pages/production/ProcessReporting.jsx)、人员投入 [ManpowerRecord.jsx](file:///workspace/src/pages/production/ManpowerRecord.jsx)、异常记录 [ExceptionRecord.jsx](file:///workspace/src/pages/production/ExceptionRecord.jsx)、按订单报工 [ProductionReportByOrder.jsx](file:///workspace/src/pages/production/ProductionReportByOrder.jsx) |
+| 质量管理 quality | 过程检验 [ProcessInspection.jsx](file:///workspace/src/pages/quality/ProcessInspection.jsx)、成品检验 [FinishedInspection.jsx](file:///workspace/src/pages/quality/FinishedInspection.jsx)、来料检验 [IncomingInspection.jsx](file:///workspace/src/pages/quality/IncomingInspection.jsx)、微生物检验 [MicrobeInspection.jsx](file:///workspace/src/pages/quality/MicrobeInspection.jsx)、环境检测 [EnvironmentInspection.jsx](file:///workspace/src/pages/quality/EnvironmentInspection.jsx)、仪器管理 [InstrumentManagement.jsx](file:///workspace/src/pages/quality/InstrumentManagement.jsx)、检验标准 [InspectionStandard.jsx](file:///workspace/src/pages/quality/InspectionStandard.jsx)、客诉管理 [ComplaintManagement.jsx](file:///workspace/src/pages/quality/ComplaintManagement.jsx)、供应商客诉 [SupplierComplaint.jsx](file:///workspace/src/pages/quality/SupplierComplaint.jsx) |
+| 设备管理 device | 点检记录 [CheckRecord.jsx](file:///workspace/src/pages/device/CheckRecord.jsx)、维修保养 [Maintenance.jsx](file:///workspace/src/pages/device/Maintenance.jsx) |
+| 报表中心 report | 生产日报 [DailyReport.jsx](file:///workspace/src/pages/report/DailyReport.jsx)、质量月报 [QualityReport.jsx](file:///workspace/src/pages/report/QualityReport.jsx)、生产报表 [ProductionReport.jsx](file:///workspace/src/pages/report/ProductionReport.jsx)、异常报表 [ExceptionReport.jsx](file:///workspace/src/pages/report/ExceptionReport.jsx) |
+| 系统管理 system | 用户管理 [UserManagement.jsx](file:///workspace/src/pages/system/UserManagement.jsx)、角色管理 [RoleManagement.jsx](file:///workspace/src/pages/system/RoleManagement.jsx)、操作日志 [OperationLogs.jsx](file:///workspace/src/pages/system/OperationLogs.jsx)、数据字典 [DataDictionary.jsx](file:///workspace/src/pages/system/DataDictionary.jsx) |
+
+> 说明：以上页面统一将 `pageSize` 默认值改为 30；三段式布局（上部信息区/中部筛选区/下部列表区）、小行间距（4-8px）、可折叠筛选区、快速筛选联动等规范通过 [ThreeSectionPage.jsx](file:///workspace/src/components/ThreeSectionPage.jsx) 组件与 [global.css](file:///workspace/src/styles/global.css) 统一实现，业务页面无需重复编写布局代码。
+
 
 
 ### 6.6 Vite 配置与代理

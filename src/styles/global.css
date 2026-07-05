@@ -243,15 +243,6 @@ body {
   flex-shrink: 0;
 }
 
-/* 快速筛选条：今天/本周/本月/本年 */
-.quick-filter-bar {
-  margin-bottom: 12px;
-}
-
-.quick-filter-bar .ant-segmented {
-  background: var(--bg-card);
-}
-
 /* 统计卡片区 */
 .stats-row {
   margin-top: 4px !important;

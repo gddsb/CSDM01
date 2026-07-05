@@ -166,7 +166,7 @@ export default function ProductionReport() {
             rowKey="work_order_id"
             size="small"
             scroll={{ x: 1900 }}
-            pagination={{ pageSize: 10, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
+            pagination={{ pageSize: 30, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
             summary={() => (
               <Table.Summary fixed>
                 <Table.Summary.Row style={{ background: 'var(--bg-card)', fontWeight: 700 }}>

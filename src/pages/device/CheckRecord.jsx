@@ -119,7 +119,7 @@ export default function CheckRecord() {
           dataSource={filteredData}
           rowKey="check_id"
           size="small"
-          pagination={{ pageSize: 10, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
+          pagination={{ pageSize: 30, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
         />
       }
     />

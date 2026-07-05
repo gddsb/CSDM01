@@ -129,7 +129,7 @@ export default function IncomingInspection() {
             rowKey="inspection_id"
             size="small"
             scroll={{ x: 1500 }}
-            pagination={{ pageSize: 10, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
+            pagination={{ pageSize: 30, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
           />
         }
       />

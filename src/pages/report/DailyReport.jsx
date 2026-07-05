@@ -177,7 +177,7 @@ export default function DailyReport() {
             rowKey="work_order_id"
             size="small"
             scroll={{ x: 1000 }}
-            pagination={{ pageSize: 10, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
+            pagination={{ pageSize: 30, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
           />
         </div>
       }

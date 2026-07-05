@@ -117,22 +117,21 @@ export default function ThreeSectionPage({
             {breadcrumbs && <div className="section-breadcrumbs">{breadcrumbs}</div>}
             <div className="section-title-text">{title}</div>
           </div>
-          <Space className="section-info-actions">{actions}</Space>
+          <Space className="section-info-actions">
+            {/* 快速筛选：今天/本周/本月/本年，默认本月，作为主要操作按钮的一部分 */}
+            {quickFilter && (
+              <Segmented
+                options={QUICK_FILTER_OPTIONS}
+                value={quickValue}
+                onChange={handleQuickChange}
+                size="small"
+              />
+            )}
+            {actions}
+          </Space>
         </div>
 
-        {/* 快速筛选：今天/本周/本月/本年，默认本月 */}
-        {quickFilter && (
-          <div className="quick-filter-bar">
-            <Segmented
-              options={QUICK_FILTER_OPTIONS}
-              value={quickValue}
-              onChange={handleQuickChange}
-              size="small"
-            />
-          </div>
-        )}
-
-        {/* 统计卡片：跟随快速筛选联动 */}
+        {/* 统计卡片：跟随快速筛选联动，不跟随中部筛选条件 */}
         {stats && stats.length > 0 && (
           <Row gutter={12} className="stats-row">
             {stats.map((s, i) => (

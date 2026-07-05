@@ -41,7 +41,7 @@ export default function WorkOrderManagement() {
   const [statusInput, setStatusInput] = useState(undefined)
   const [lineInput, setLineInput] = useState(undefined)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 10, keyword: '', status: undefined, line_id: undefined })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined, line_id: undefined })
 
   // 获取工单列表
   useEffect(() => {

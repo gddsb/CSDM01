@@ -336,7 +336,7 @@ export default function DataDictionary() {
             dataSource={dbTables}
             rowKey="table_name"
             size="small"
-            pagination={{ pageSize: 15, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
+            pagination={{ pageSize: 30, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
           />
         }
       />

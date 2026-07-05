@@ -31,7 +31,7 @@ export default function ProcessReporting() {
   const [processInput, setProcessInput] = useState(undefined)
   const [workOrderInput, setWorkOrderInput] = useState(undefined)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 10, keyword: '', process_id: undefined, work_order_id: undefined })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', process_id: undefined, work_order_id: undefined })
 
   // 获取报工列表
   useEffect(() => {

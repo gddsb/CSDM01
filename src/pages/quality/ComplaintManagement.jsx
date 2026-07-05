@@ -101,7 +101,7 @@ export default function ComplaintManagement() {
             rowKey="complaint_id"
             size="small"
             scroll={{ x: 1700 }}
-            pagination={{ pageSize: 10, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
+            pagination={{ pageSize: 30, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
           />
         }
       />

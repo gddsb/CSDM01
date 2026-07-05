@@ -21,7 +21,7 @@ const MaterialManagement = () => {
   const [keywordInput, setKeywordInput] = useState('')
   const [isActiveInput, setIsActiveInput] = useState(undefined)
   const [categoryInput, setCategoryInput] = useState(undefined)
-  const [query, setQuery] = useState({ page: 1, pageSize: 10, keyword: '', is_active: undefined, category_name: undefined })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', is_active: undefined, category_name: undefined })
 
   const activeCount = data.filter(m => m.is_active).length
   const inactiveCount = data.filter(m => !m.is_active).length

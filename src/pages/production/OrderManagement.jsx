@@ -41,7 +41,7 @@ export default function OrderManagement() {
   const [statusInput, setStatusInput] = useState(undefined)
   const [planDateRange, setPlanDateRange] = useState(null)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 20, keyword: '', materialCode: '', status: undefined, planDateStart: '', planDateEnd: '' })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', materialCode: '', status: undefined, planDateStart: '', planDateEnd: '' })
 
   // 获取订单列表
   useEffect(() => {

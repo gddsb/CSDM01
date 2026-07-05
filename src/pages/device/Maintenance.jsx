@@ -132,7 +132,7 @@ export default function Maintenance() {
           dataSource={filteredData}
           rowKey="mt_id"
           size="small"
-          pagination={{ pageSize: 10, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
+          pagination={{ pageSize: 30, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
         />
       }
     />

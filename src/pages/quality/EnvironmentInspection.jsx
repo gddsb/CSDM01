@@ -124,7 +124,7 @@ export default function EnvironmentInspection() {
             rowKey="inspection_id"
             size="small"
             scroll={{ x: 1400 }}
-            pagination={{ pageSize: 10, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
+            pagination={{ pageSize: 30, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
           />
         }
       />

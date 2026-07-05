@@ -23,7 +23,7 @@ export default function ProcessManagement() {
   const [keywordInput, setKeywordInput] = useState('')
   const [statusInput, setStatusInput] = useState(undefined)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 15, keyword: '', status: undefined })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined })
 
   const enabledCount = data.filter(p => p.status === '启用').length
 

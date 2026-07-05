@@ -133,7 +133,7 @@ export default function ProductionReportByOrder() {
                 rowKey="order_id"
                 loading={loading}
                 pagination={{
-                  pageSize: 10,
+                  pageSize: 30,
                   showSizeChanger: true,
                   showTotal: t => `共 ${t} 条`,
                 }}

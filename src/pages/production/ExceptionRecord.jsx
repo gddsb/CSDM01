@@ -48,7 +48,7 @@ export default function ExceptionRecord() {
   const [excTypeInput, setExcTypeInput] = useState(undefined)
   const [statusInput, setStatusInput] = useState(undefined)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 10, keyword: '', exception_type: undefined, status: undefined })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', exception_type: undefined, status: undefined })
 
   // 获取异常列表
   useEffect(() => {

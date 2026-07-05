@@ -30,7 +30,7 @@ export default function ManpowerRecord() {
   const [workOrderInput, setWorkOrderInput] = useState(undefined)
   const [shiftInput, setShiftInput] = useState(undefined)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 10, keyword: '', work_order_id: undefined, shift: undefined })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', work_order_id: undefined, shift: undefined })
 
   // 获取人员记录列表
   useEffect(() => {

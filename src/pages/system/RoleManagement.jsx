@@ -51,7 +51,7 @@ export default function RoleManagement() {
   const [keywordInput, setKeywordInput] = useState('')
   const [statusInput, setStatusInput] = useState(undefined)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 10, keyword: '', status: undefined })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined })
 
   // 权限配置
   const [permModalVisible, setPermModalVisible] = useState(false)

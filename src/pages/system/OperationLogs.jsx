@@ -28,7 +28,7 @@ export default function OperationLogs() {
   // 输入态
   const [usernameInput, setUsernameInput] = useState('')
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 15, username: '' })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, username: '' })
 
   useEffect(() => {
     let cancelled = false

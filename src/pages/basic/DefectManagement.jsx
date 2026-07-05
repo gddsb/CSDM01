@@ -33,7 +33,7 @@ export default function DefectManagement() {
   const [statusInput, setStatusInput] = useState(undefined)
   const [typeInput, setTypeInput] = useState(undefined)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 15, keyword: '', status: undefined, defect_type: undefined })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined, defect_type: undefined })
 
   const processOptions = processes.map(p => ({ label: `${p.process_code} ${p.process_name}`, value: p.process_id }))
 

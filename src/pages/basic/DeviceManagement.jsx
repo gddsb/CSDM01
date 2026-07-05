@@ -29,7 +29,7 @@ export default function DeviceManagement() {
   const [typeInput, setTypeInput] = useState(undefined)
   const [specialInput, setSpecialInput] = useState(undefined)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 10, keyword: '', status: undefined, device_type: undefined, is_special: undefined })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined, device_type: undefined, is_special: undefined })
 
   const runningCount = data.filter(d => d.status === '运行').length
   const faultCount = data.filter(d => d.status === '维修').length

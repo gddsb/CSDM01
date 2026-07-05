@@ -209,7 +209,7 @@ export default function ExceptionReport() {
               rowKey="record_id"
               size="small"
               scroll={{ x: 1200 }}
-              pagination={{ pageSize: 5, showTotal: t => `共 ${t} 条` }}
+              pagination={{ pageSize: 30, showTotal: t => `共 ${t} 条` }}
             />
           </div>
 
@@ -233,7 +233,7 @@ export default function ExceptionReport() {
               dataSource={workOrderSummary}
               rowKey="work_order_no"
               size="small"
-              pagination={{ pageSize: 5, showTotal: t => `共 ${t} 条` }}
+              pagination={{ pageSize: 30, showTotal: t => `共 ${t} 条` }}
             />
           </div>
         </div>

@@ -26,7 +26,7 @@ export default function ProductionLine() {
   const [statusInput, setStatusInput] = useState(undefined)
   const [workshopInput, setWorkshopInput] = useState(undefined)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 10, keyword: '', status: undefined, workshop: undefined })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined, workshop: undefined })
 
   const runningCount = data.filter(l => l.status === '运行中').length
   const maintenanceCount = data.filter(l => l.status === '维护中').length

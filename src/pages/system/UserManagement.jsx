@@ -23,7 +23,7 @@ export default function UserManagement() {
   const [roleInput, setRoleInput] = useState(undefined)
 
   // 已应用的查询条件（变更会触发请求）
-  const [query, setQuery] = useState({ page: 1, pageSize: 10, keyword: '', status: undefined, role_id: undefined })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined, role_id: undefined })
 
   const stats = [
     { label: '总用户数', value: total, icon: <TeamOutlined />, color: '#2196F3' },
