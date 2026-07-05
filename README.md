@@ -104,7 +104,7 @@
 | 用户管理 | `/system/users` | 用户增删改查、角色分配、启用/禁用、搜索筛选 |
 | 角色权限 | `/system/roles` | 角色定义、权限分配、角色增删改 |
 | 菜单管理 | `/system/menus` | 菜单/权限树形结构管理，支持多级菜单 |
-| 数据字典 | `/system/dictionary` | 系统数据字典维护 |
+| 数据字典 | `/system/dictionary` | 系统数据字典维护（字典类型+字典项两级管理） |
 | 系统配置 | `/system/config` | 参数配置、项目环境、数据库配置、备份还原（多页签） |
 | 操作日志 | `/system/logs` | 用户操作行为审计，支持按模块/用户/时间筛选 |
 
@@ -319,6 +319,7 @@ milk-can-mes/
 │   │   │   ├── UserController.js     # 用户管理控制器
 │   │   │   ├── RoleController.js     # 角色管理控制器
 │   │   │   ├── PermissionController.js  # 权限/菜单控制器
+│   │   │   ├── DictController.js     # 数据字典控制器
 │   │   │   ├── SystemConfigController.js  # 系统配置控制器
 │   │   │   ├── OperationLogController.js  # 操作日志控制器
 │   │   │   ├── MaterialController.js # 料品档案控制器
@@ -341,6 +342,8 @@ milk-can-mes/
 │   │   │   ├── Role.js               # 角色模型
 │   │   │   ├── Permission.js         # 权限/菜单模型
 │   │   │   ├── RolePermission.js     # 角色-权限关联表
+│   │   │   ├── DictType.js           # 字典类型模型
+│   │   │   ├── DictData.js           # 字典项模型
 │   │   │   ├── OperationLog.js       # 操作日志模型
 │   │   │   ├── SystemConfig.js       # 系统配置模型
 │   │   │   ├── Material.js           # 料品档案模型
@@ -1021,7 +1024,66 @@ JWT_EXPIRES_IN=7d
 
 **页面路径**：`/system/dictionary`
 
-**功能**：维护系统各类枚举值、下拉选项数据
+**功能概述**：维护系统各类枚举值、下拉选项数据，采用「字典类型 + 字典项」两级维护模式。
+
+**页面布局**：左右分栏结构
+- **左侧**：字典类型列表（表格，支持新增/编辑/删除）
+- **右侧**：当前选中字典类型对应的字典项列表（表格，支持新增/编辑/删除）
+
+**字典类型列表列**：字典编号、字典名称、字典类型、状态、备注、操作
+
+**字典类型表单字段**：
+- 字典名称（必填）
+- 字典类型/编码（必填，唯一，如 `sys_user_status`）
+- 状态（启用/停用，默认启用）
+- 备注
+
+**字典项列表列**：字典编码、显示排序、字典标签、字典键值、状态、默认、操作
+
+**字典项表单字段**：
+- 显示排序（数字，越小越靠前）
+- 字典标签（必填，显示名称，如「启用」）
+- 字典键值（必填，存储值，如「1」）
+- 字典类型（自动带入当前选中类型）
+- 样式属性（CSS class，自定义样式）
+- 表格回显样式（Tag 颜色：default/success/processing/warning/error/blue/cyan/orange/purple/magenta/geekblue/gold/lime/green/red/volcano）
+- 是否默认（是/否）
+- 状态（启用/停用，默认启用）
+- 备注
+
+**预置字典类型（10种）**：
+
+| 字典名称 | 字典类型 | 字典项数 | 说明 |
+|---------|---------|---------|------|
+| 用户状态 | `sys_user_status` | 2 | 启用、禁用 |
+| 订单状态 | `prod_order_status` | 3 | 开立、已下达、已关闭 |
+| 工单状态 | `prod_work_order_status` | 4 | 开立、开工、关闭、完工 |
+| 产线状态 | `bas_line_status` | 3 | 运行中、维护中、停用 |
+| 班次 | `bas_shift_type` | 2 | 白班、夜班 |
+| 不良大类 | `bas_defect_category` | 2 | 来料检验类、制程检验类 |
+| 不良类型 | `bas_defect_type` | 3 | 来料不良、制程不良、检验报废 |
+| 异常类型 | `prod_exception_type` | 5 | 设备异常、物料异常、品质异常、人员异常、工艺异常 |
+| 设备状态 | `bas_device_status` | 3 | 运行、停用、维修 |
+| 性别 | `sys_user_sex` | 2 | 男、女 |
+
+**业务规则**：
+- 字典类型编码唯一，不可重复
+- 字典项按「显示排序 + 字典编码」升序排列
+- 停用的字典类型/字典项在业务下拉中不显示
+- 字典项「是否默认」用于标记默认选中项
+- 表格回显样式控制列表中 Tag 的颜色
+- 删除字典类型时会级联删除其下所有字典项
+
+**后端模型**：
+- `DictType` → `sys_dict_type` 表（字典类型）
+- `DictData` → `sys_dict_data` 表（字典项）
+- 关联关系：`DictType.hasMany(DictData, { foreignKey: 'dict_type', sourceKey: 'dict_type' })`
+
+**API 接口**：
+- 字典类型：`GET/POST/PUT/DELETE /api/system/dict/types`
+- 字典项列表：`GET /api/system/dict/datas?dictType=xxx`
+- 按类型查询字典项：`GET /api/system/dict/datas/type/:type`（仅启用项）
+- 字典项 CRUD：`POST/PUT/DELETE /api/system/dict/datas`
 
 #### 5.5 编码规则
 
@@ -1168,6 +1230,10 @@ JWT_EXPIRES_IN=7d
 | PUT | `/api/system/roles/:id/permissions` | 分配角色权限 |
 | GET/POST/PUT/DELETE | `/api/system/permissions` | 权限/菜单管理 |
 | GET | `/api/system/permissions/menu` | 获取用户菜单树 |
+| GET/POST/PUT/DELETE | `/api/system/dict/types` | 字典类型管理 |
+| GET | `/api/system/dict/datas` | 字典项列表（分页） |
+| GET | `/api/system/dict/datas/type/:type` | 按类型查询字典项（仅启用） |
+| POST/PUT/DELETE | `/api/system/dict/datas` | 字典项 CRUD |
 | GET | `/api/system/logs` | 操作日志列表 |
 | GET/PUT | `/api/system/config` | 系统配置获取/保存 |
 | GET | `/api/system/config/environment` | 获取项目环境信息 |
@@ -1216,7 +1282,7 @@ JWT_EXPIRES_IN=7d
 
 ## 数据库模型
 
-### 模型清单（24个）
+### 模型清单（26个）
 
 | 模型 | 表名 | 说明 |
 |------|------|------|
@@ -1226,6 +1292,8 @@ JWT_EXPIRES_IN=7d
 | RolePermission | `sys_role_permission` | 角色-权限关联表 |
 | OperationLog | `sys_operation_log` | 操作日志表 |
 | SystemConfig | `sys_config` | 系统配置表 |
+| DictType | `sys_dict_type` | 字典类型表 |
+| DictData | `sys_dict_data` | 字典项表 |
 | Material | `bas_material` | 料品档案表 |
 | Customer | `bas_customer` | 客户档案表 |
 | ProductionLine | `bas_production_line` | 产线档案表 |
@@ -1234,6 +1302,7 @@ JWT_EXPIRES_IN=7d
 | Device | `bas_device` | 设备档案表 |
 | LineDevice | `bas_line_device` | 产线-设备关联表 |
 | DefectType | `bas_defect_type` | 不良分类表（树形自关联） |
+| DefectImage | `bas_defect_image` | 不良图片表 |
 | NumberRule | `bas_number_rule` | 编码规则表 |
 | Sequence | `sys_sequence` | 序号流水号表 |
 | Order | `prod_order` | 生产订单表 |
@@ -1246,6 +1315,7 @@ JWT_EXPIRES_IN=7d
 
 - **用户 - 角色**：多对一（User.belongsTo(Role)）
 - **角色 - 权限**：多对多（Role.belongsToMany(Permission, through: RolePermission)）
+- **字典类型 - 字典项**：一对多（DictType.hasMany(DictData, { foreignKey: 'dict_type', sourceKey: 'dict_type' })）
 - **订单 - 工单**：一对多（Order.hasMany(WorkOrder)）
 - **工单 - 工序报工**：一对多（WorkOrder.hasMany(ProcessReport)）
 - **工单 - 人员记录**：一对多（WorkOrder.hasMany(ManpowerRecord)）

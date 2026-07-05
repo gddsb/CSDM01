@@ -69,7 +69,7 @@ const defaultMenuItems = [
       { key: '/system/users', icon: <TeamOutlined />, label: '用户管理' },
       { key: '/system/roles', icon: <SafetyCertificateOutlined />, label: '角色权限' },
       { key: '/system/menus', icon: <MenuOutlined />, label: '菜单管理' },
-      { key: '/system/dictionary', icon: <DatabaseOutlined />, label: '数据库字典' },
+      { key: '/system/dictionary', icon: <DatabaseOutlined />, label: '数据字典' },
       { key: '/system/config', icon: <ControlOutlined />, label: '系统配置' },
       { key: '/system/logs', icon: <FileTextOutlined />, label: '操作日志' },
     ]

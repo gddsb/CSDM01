@@ -23,6 +23,8 @@ import LineProcess from './LineProcess.js'
 import LineDevice from './LineDevice.js'
 import NumberRule from './NumberRule.js'
 import DefectImage from './DefectImage.js'
+import DictType from './DictType.js'
+import DictData from './DictData.js'
 
 // 建立模型关联关系
 // 用户 - 角色
@@ -73,6 +75,10 @@ DefectType.belongsTo(DefectType, { foreignKey: 'parent_id', as: 'parent' })
 DefectType.hasMany(DefectImage, { foreignKey: 'defect_id', as: 'images' })
 DefectImage.belongsTo(DefectType, { foreignKey: 'defect_id', as: 'defect' })
 
+// 字典类型 - 字典数据（一对多）
+DictType.hasMany(DictData, { foreignKey: 'dict_type', sourceKey: 'dict_type', as: 'datas' })
+DictData.belongsTo(DictType, { foreignKey: 'dict_type', targetKey: 'dict_type', as: 'dictType' })
+
 const db = {
   sequelize,
   DataTypes,
@@ -98,6 +104,8 @@ const db = {
   LineDevice,
   NumberRule,
   DefectImage,
+  DictType,
+  DictData,
 }
 
 // 具名导出，便于按需导入
@@ -124,6 +132,8 @@ export {
   LineDevice,
   NumberRule,
   DefectImage,
+  DictType,
+  DictData,
 }
 
 export default db

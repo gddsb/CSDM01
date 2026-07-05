@@ -13,6 +13,19 @@ import {
 import { list as logList } from '../controllers/OperationLogController.js'
 import { getConfig, saveConfig, getEnvironment, getDatabaseInfo, listBackups, createBackup, restoreBackup, deleteBackup, migrateDatabase, getMigrationTargets, restartServer } from '../controllers/SystemConfigController.js'
 import { authRequired, logOperation } from '../middleware/auth.js'
+import {
+  listType as dictTypeList,
+  getType as dictTypeGet,
+  createType as dictTypeCreate,
+  updateType as dictTypeUpdate,
+  removeType as dictTypeRemove,
+  listData as dictDataList,
+  listDataByType,
+  getData as dictDataGet,
+  createData as dictDataCreate,
+  updateData as dictDataUpdate,
+  removeData as dictDataRemove,
+} from '../controllers/DictController.js'
 
 const router = Router()
 
@@ -63,6 +76,21 @@ router.put('/roles/:id/permissions', logOperation('角色权限分配'), assignP
 
 // 操作日志
 router.get('/logs', logList)
+
+// 数据字典 - 字典类型
+router.get('/dict/types', dictTypeList)
+router.get('/dict/types/:id', dictTypeGet)
+router.post('/dict/types', logOperation('数据字典'), dictTypeCreate)
+router.put('/dict/types/:id', logOperation('数据字典'), dictTypeUpdate)
+router.delete('/dict/types/:id', logOperation('数据字典'), dictTypeRemove)
+
+// 数据字典 - 字典数据
+router.get('/dict/datas', dictDataList)
+router.get('/dict/datas/type/:type', listDataByType)
+router.get('/dict/datas/:code', dictDataGet)
+router.post('/dict/datas', logOperation('数据字典'), dictDataCreate)
+router.put('/dict/datas/:code', logOperation('数据字典'), dictDataUpdate)
+router.delete('/dict/datas/:code', logOperation('数据字典'), dictDataRemove)
 
 // 系统配置
 router.get('/config', getConfig)

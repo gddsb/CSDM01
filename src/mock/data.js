@@ -2,7 +2,7 @@
 
 // 9种角色
 export const roles = [
-  { role_id: 'r1', role_name: '超级管理员', role_code: 'SUPER_ADMIN', type: '系统默认', scope: '系统全部权限，用户管理，系统配置，数据库字典' },
+  { role_id: 'r1', role_name: '超级管理员', role_code: 'SUPER_ADMIN', type: '系统默认', scope: '系统全部权限，用户管理，系统配置，数据字典' },
   { role_id: 'r2', role_name: '计划员', role_code: 'PLANNER', type: '系统默认', scope: '生产计划制定、下达、调整，计划进度查看' },
   { role_id: 'r3', role_name: '质量管理员', role_code: 'QC_MANAGER', type: '系统默认', scope: '质量标准制定，质量抽检审批，不合格品处置审批' },
   { role_id: 'r4', role_name: '质量检验员', role_code: 'QC_INSPECTOR', type: '系统默认', scope: '质量检测执行，检测数据录入，异常上报' },

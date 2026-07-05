@@ -2,6 +2,7 @@ import {
   User, Role, Process, Material, ProductionLine, Device,
   DefectType, Order, WorkOrder, ProcessReport,
   ManpowerRecord, ExceptionRecord, Customer,
+  DictType, DictData,
 } from './models/index.js'
 import sequelize from './config/database.js'
 import bcrypt from 'bcryptjs'
@@ -193,6 +194,53 @@ async function seed() {
     ])
     console.log('✅ 客户档案创建完成（24条）')
 
+    // 13. 创建数据字典
+    console.log('📌 创建数据字典...')
+    await DictType.bulkCreate([
+      { dict_id: 1, dict_name: '用户状态', dict_type: 'sys_user_status', status: 1, remark: '系统用户状态列表', created_by: 'admin' },
+      { dict_id: 2, dict_name: '订单状态', dict_type: 'prod_order_status', status: 1, remark: '生产订单状态', created_by: 'admin' },
+      { dict_id: 3, dict_name: '工单状态', dict_type: 'prod_work_order_status', status: 1, remark: '工单状态列表', created_by: 'admin' },
+      { dict_id: 4, dict_name: '产线状态', dict_type: 'bas_line_status', status: 1, remark: '产线运行状态', created_by: 'admin' },
+      { dict_id: 5, dict_name: '班次', dict_type: 'bas_shift_type', status: 1, remark: '生产班次', created_by: 'admin' },
+      { dict_id: 6, dict_name: '不良大类', dict_type: 'bas_defect_category', status: 1, remark: '不良分类大类名称', created_by: 'admin' },
+      { dict_id: 7, dict_name: '不良类型', dict_type: 'bas_defect_type', status: 1, remark: '不良分类名称', created_by: 'admin' },
+      { dict_id: 8, dict_name: '异常类型', dict_type: 'prod_exception_type', status: 1, remark: '生产异常类型', created_by: 'admin' },
+      { dict_id: 9, dict_name: '设备状态', dict_type: 'bas_device_status', status: 1, remark: '设备运行状态', created_by: 'admin' },
+      { dict_id: 10, dict_name: '性别', dict_type: 'sys_user_sex', status: 1, remark: '用户性别', created_by: 'admin' },
+    ])
+    await DictData.bulkCreate([
+      { dict_code: 1, dict_sort: 1, dict_label: '启用', dict_value: '1', dict_type: 'sys_user_status', list_class: 'success', is_default: 1, status: 1 },
+      { dict_code: 2, dict_sort: 2, dict_label: '禁用', dict_value: '0', dict_type: 'sys_user_status', list_class: 'danger', is_default: 0, status: 1 },
+      { dict_code: 3, dict_sort: 1, dict_label: '开立', dict_value: '0', dict_type: 'prod_order_status', list_class: 'default', is_default: 1, status: 1 },
+      { dict_code: 4, dict_sort: 2, dict_label: '已下达', dict_value: '1', dict_type: 'prod_order_status', list_class: 'processing', is_default: 0, status: 1 },
+      { dict_code: 5, dict_sort: 3, dict_label: '已关闭', dict_value: '2', dict_type: 'prod_order_status', list_class: 'success', is_default: 0, status: 1 },
+      { dict_code: 6, dict_sort: 1, dict_label: '开立', dict_value: '开立', dict_type: 'prod_work_order_status', list_class: 'default', is_default: 1, status: 1 },
+      { dict_code: 7, dict_sort: 2, dict_label: '开工', dict_value: '开工', dict_type: 'prod_work_order_status', list_class: 'processing', is_default: 0, status: 1 },
+      { dict_code: 8, dict_sort: 3, dict_label: '关闭', dict_value: '关闭', dict_type: 'prod_work_order_status', list_class: 'warning', is_default: 0, status: 1 },
+      { dict_code: 9, dict_sort: 4, dict_label: '完工', dict_value: '完工', dict_type: 'prod_work_order_status', list_class: 'success', is_default: 0, status: 1 },
+      { dict_code: 10, dict_sort: 1, dict_label: '运行中', dict_value: '运行中', dict_type: 'bas_line_status', list_class: 'success', is_default: 0, status: 1 },
+      { dict_code: 11, dict_sort: 2, dict_label: '维护中', dict_value: '维护中', dict_type: 'bas_line_status', list_class: 'warning', is_default: 0, status: 1 },
+      { dict_code: 12, dict_sort: 3, dict_label: '停用', dict_value: '停用', dict_type: 'bas_line_status', list_class: 'danger', is_default: 0, status: 1 },
+      { dict_code: 13, dict_sort: 1, dict_label: '白班', dict_value: '白班', dict_type: 'bas_shift_type', list_class: 'blue', is_default: 1, status: 1 },
+      { dict_code: 14, dict_sort: 2, dict_label: '夜班', dict_value: '夜班', dict_type: 'bas_shift_type', list_class: 'purple', is_default: 0, status: 1 },
+      { dict_code: 15, dict_sort: 1, dict_label: '来料检验类', dict_value: '来料检验类', dict_type: 'bas_defect_category', list_class: 'blue', is_default: 0, status: 1 },
+      { dict_code: 16, dict_sort: 2, dict_label: '制程检验类', dict_value: '制程检验类', dict_type: 'bas_defect_category', list_class: 'orange', is_default: 1, status: 1 },
+      { dict_code: 17, dict_sort: 1, dict_label: '来料不良', dict_value: '来料不良', dict_type: 'bas_defect_type', list_class: 'blue', is_default: 0, status: 1 },
+      { dict_code: 18, dict_sort: 2, dict_label: '制程不良', dict_value: '制程不良', dict_type: 'bas_defect_type', list_class: 'orange', is_default: 1, status: 1 },
+      { dict_code: 19, dict_sort: 3, dict_label: '检验报废', dict_value: '检验报废', dict_type: 'bas_defect_type', list_class: 'red', is_default: 0, status: 1 },
+      { dict_code: 20, dict_sort: 1, dict_label: '设备异常', dict_value: '设备异常', dict_type: 'prod_exception_type', list_class: 'orange', is_default: 0, status: 1 },
+      { dict_code: 21, dict_sort: 2, dict_label: '物料异常', dict_value: '物料异常', dict_type: 'prod_exception_type', list_class: 'blue', is_default: 0, status: 1 },
+      { dict_code: 22, dict_sort: 3, dict_label: '品质异常', dict_value: '品质异常', dict_type: 'prod_exception_type', list_class: 'red', is_default: 0, status: 1 },
+      { dict_code: 23, dict_sort: 4, dict_label: '人员异常', dict_value: '人员异常', dict_type: 'prod_exception_type', list_class: 'purple', is_default: 0, status: 1 },
+      { dict_code: 24, dict_sort: 5, dict_label: '工艺异常', dict_value: '工艺异常', dict_type: 'prod_exception_type', list_class: 'cyan', is_default: 0, status: 1 },
+      { dict_code: 25, dict_sort: 1, dict_label: '运行', dict_value: '运行', dict_type: 'bas_device_status', list_class: 'success', is_default: 0, status: 1 },
+      { dict_code: 26, dict_sort: 2, dict_label: '停用', dict_value: '停用', dict_type: 'bas_device_status', list_class: 'danger', is_default: 0, status: 1 },
+      { dict_code: 27, dict_sort: 3, dict_label: '维修', dict_value: '维修', dict_type: 'bas_device_status', list_class: 'warning', is_default: 0, status: 1 },
+      { dict_code: 28, dict_sort: 1, dict_label: '男', dict_value: '1', dict_type: 'sys_user_sex', list_class: 'blue', is_default: 1, status: 1 },
+      { dict_code: 29, dict_sort: 2, dict_label: '女', dict_value: '2', dict_type: 'sys_user_sex', list_class: 'magenta', is_default: 0, status: 1 },
+    ])
+    console.log('✅ 数据字典创建完成（10种类型，29条数据）')
+
     console.log('\n🎉 种子数据初始化完成！')
     console.log('   - 角色：9 条')
     console.log('   - 用户：9 条（密码均为 123456）')
@@ -207,6 +255,8 @@ async function seed() {
     console.log('   - 人员记录：3 条')
     console.log('   - 异常记录：3 条')
     console.log('   - 客户档案：24 条')
+    console.log('   - 字典类型：10 条')
+    console.log('   - 字典数据：29 条')
 
     await sequelize.close()
     process.exit(0)
