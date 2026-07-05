@@ -452,7 +452,7 @@ export default function WorkOrderManagement() {
                     计划数量
                     {selectedOrder && (
                       <span style={{ color: 'var(--color-accent)', fontSize: 12, fontWeight: 500, marginLeft: '2em' }}>
-                        未生成：{Math.max(0, (Number(selectedOrder.planned_qty) || 0) - (Number(selectedOrder.finished_qty) || 0)).toLocaleString()}
+                        未生产数量：{Math.max(0, (Number(selectedOrder.planned_qty) || 0) - (Number(selectedOrder.finished_qty) || 0)).toLocaleString()}
                       </span>
                     )}
                   </span>
