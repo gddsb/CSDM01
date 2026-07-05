@@ -284,13 +284,6 @@ export default function DefectManagement() {
     { title: '不良名称', dataIndex: 'defect_name', key: 'defect_name', width: 120 },
     { title: '默认单位', dataIndex: 'defect_unit', key: 'defect_unit', width: 80 },
     {
-      title: '可选单位', dataIndex: 'available_units', key: 'available_units', width: 120,
-      render: v => {
-        const arr = toArray(v)
-        return arr.length > 0 ? arr.join('、') : '-'
-      },
-    },
-    {
       title: '关联工序', dataIndex: 'related_processes', key: 'related_processes', width: 160,
       render: v => {
         const arr = toArray(v)
@@ -304,6 +297,10 @@ export default function DefectManagement() {
           </Space>
         )
       },
+    },
+    {
+      title: '不良描述', dataIndex: 'category_desc', key: 'category_desc', width: 200,
+      render: v => <div style={{ lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{v || '-'}</div>,
     },
     {
       title: '状态', dataIndex: 'status', key: 'status', width: 90, fixed: 'right',
@@ -383,7 +380,7 @@ export default function DefectManagement() {
             rowKey="defect_id"
             size="small"
             loading={loading}
-            scroll={{ x: 1100 }}
+            scroll={{ x: 1150 }}
             pagination={{
               current: query.page,
               pageSize: query.pageSize,
