@@ -260,7 +260,6 @@ export default function RoleManagement() {
         onReset={handleReset}
         actions={
           <Space>
-            <Button icon={<ReloadOutlined />} onClick={refresh}>刷新</Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增角色</Button>
           </Space>
         }

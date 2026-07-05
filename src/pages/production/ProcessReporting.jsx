@@ -179,7 +179,6 @@ export default function ProcessReporting() {
             hasAdd={false}
             hasExport={false}
             extra={[
-              <Button key="reload" icon={<ReloadOutlined />} onClick={refresh}>刷新</Button>,
               <Button key="add" type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增报工</Button>,
             ]}
           />

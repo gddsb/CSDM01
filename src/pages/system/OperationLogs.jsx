@@ -104,7 +104,7 @@ export default function OperationLogs() {
       onSearch={handleSearch}
       onReset={handleReset}
       actions={
-        <Button icon={<ReloadOutlined />} onClick={refresh}>刷新</Button>
+        <></>
       }
       table={
         <Table

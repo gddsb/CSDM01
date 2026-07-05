@@ -138,7 +138,6 @@ export default function DailyReport() {
       actions={
         <>
           <Button icon={<ExportOutlined />}>导出</Button>
-          <Button icon={<ReloadOutlined />}>刷新</Button>
         </>
       }
       table={

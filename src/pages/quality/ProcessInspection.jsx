@@ -125,7 +125,6 @@ export default function ProcessInspection() {
           <>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增检验</Button>
             <Button icon={<ExportOutlined />}>导出</Button>
-            <Button icon={<ReloadOutlined />}>刷新</Button>
           </>
         }
         table={

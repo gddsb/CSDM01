@@ -111,7 +111,6 @@ export default function CheckRecord() {
       actions={
         <Space>
           <Button icon={<ExportOutlined />} onClick={handleExport}>导出</Button>
-          <Button icon={<ReloadOutlined />} onClick={handleRefresh}>刷新</Button>
         </Space>
       }
       table={

@@ -197,7 +197,6 @@ export default function EfficiencyReport() {
       actions={
         <>
           <Button icon={<ExportOutlined />}>导出</Button>
-          <Button icon={<ReloadOutlined />}>刷新</Button>
         </>
       }
       table={
