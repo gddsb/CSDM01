@@ -1,7 +1,6 @@
 // 六套主题配色方案 - 基于设计文档
 export const themes = {
   pureMilk: {
-    key: 'pureMilk',
     name: '纯净奶源',
     icon: '🥛',
     dark: false,
@@ -17,9 +16,9 @@ export const themes = {
       '--text-primary': '#212121',
       '--text-secondary': '#757575',
       '--border-color': '#E0E0E0',
-      '--nav-bg': '#1565C0',
-      '--nav-text': '#FFFFFF',
-    }
+      '--nav-bg': '#FFFFFF',
+      '--nav-text': '#212121',
+    },
   },
   darkFactory: {
     key: 'darkFactory',
@@ -38,7 +37,7 @@ export const themes = {
       '--text-primary': '#E6EDF3',
       '--text-secondary': '#8B949E',
       '--border-color': '#30363D',
-      '--nav-bg': '#010409',
+      '--nav-bg': '#0D1117',
       '--nav-text': '#E6EDF3',
     }
   },
@@ -59,8 +58,8 @@ export const themes = {
       '--text-primary': '#2C3E50',
       '--text-secondary': '#7F8C8D',
       '--border-color': '#D6E4F0',
-      '--nav-bg': '#2C5F8A',
-      '--nav-text': '#FFFFFF',
+      '--nav-bg': '#F0F7FF',
+      '--nav-text': '#2C3E50',
     }
   },
   metal: {
@@ -80,8 +79,8 @@ export const themes = {
       '--text-primary': '#37474F',
       '--text-secondary': '#78909C',
       '--border-color': '#CFD8DC',
-      '--nav-bg': '#455A64',
-      '--nav-text': '#FFFFFF',
+      '--nav-bg': '#F5F5F5',
+      '--nav-text': '#37474F',
     }
   },
   greenOasis: {
@@ -101,8 +100,8 @@ export const themes = {
       '--text-primary': '#33691E',
       '--text-secondary': '#689F38',
       '--border-color': '#C8E6C9',
-      '--nav-bg': '#1B5E20',
-      '--nav-text': '#FFFFFF',
+      '--nav-bg': '#F1F8E9',
+      '--nav-text': '#33691E',
     }
   },
   warmAmber: {
@@ -122,8 +121,8 @@ export const themes = {
       '--text-primary': '#3E2723',
       '--text-secondary': '#795548',
       '--border-color': '#FFE0B2',
-      '--nav-bg': '#BF360C',
-      '--nav-text': '#FFFFFF',
+      '--nav-bg': '#FFFBF5',
+      '--nav-text': '#3E2723',
     }
   }
 }
