@@ -72,6 +72,70 @@ export const saveConfig = async (req, res) => {
 export const getEnvironment = async (req, res) => {
   try {
     const mem = process.memoryUsage()
+    const path = await import('path')
+    const fs = await import('fs')
+
+    // 读取后端 package.json 获取版本
+    let backendPkg = {}
+    try {
+      const pkgPath = path.resolve(process.cwd(), 'package.json')
+      backendPkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
+    } catch (e) { /* ignore */ }
+
+    // 读取前端 package.json 获取版本
+    let frontendPkg = {}
+    try {
+      const pkgPath = path.resolve(process.cwd(), '..', 'package.json')
+      frontendPkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
+    } catch (e) {
+      try {
+        const pkgPath = path.resolve(process.cwd(), '../package.json')
+        frontendPkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
+      } catch (e2) { /* ignore */ }
+    }
+
+    const getDepVersion = (pkg, name) => {
+      if (!pkg) return 'unknown'
+      let v = pkg.dependencies?.[name]
+      if (!v) v = pkg.devDependencies?.[name]
+      return v ? v.replace(/^[\^~]/, '') : 'unknown'
+    }
+
+    // 技术栈信息
+    const tech_stack = {
+      frontend: {
+        name: '前端技术栈',
+        items: [
+          { key: 'React', version: getDepVersion(frontendPkg, 'react'), category: '框架' },
+          { key: 'Ant Design', version: getDepVersion(frontendPkg, 'antd'), category: 'UI组件库' },
+          { key: 'React Router', version: getDepVersion(frontendPkg, 'react-router-dom'), category: '路由' },
+          { key: 'Vite', version: getDepVersion(frontendPkg, 'vite'), category: '构建工具' },
+          { key: 'Axios', version: getDepVersion(frontendPkg, 'axios'), category: 'HTTP客户端' },
+          { key: 'Day.js', version: getDepVersion(frontendPkg, 'dayjs'), category: '日期处理' },
+          { key: 'ECharts', version: getDepVersion(frontendPkg, 'echarts'), category: '数据可视化' },
+          { key: '@ant-design/icons', version: getDepVersion(frontendPkg, '@ant-design/icons'), category: '图标库' },
+        ],
+        version: frontendPkg.version || 'unknown',
+      },
+      backend: {
+        name: '后端技术栈',
+        items: [
+          { key: 'Node.js', version: process.version.replace(/^v/, ''), category: '运行环境' },
+          { key: 'Express', version: getDepVersion(backendPkg, 'express'), category: 'Web框架' },
+          { key: 'Sequelize', version: Sequelize.version || getDepVersion(backendPkg, 'sequelize'), category: 'ORM框架' },
+          { key: 'SQLite', version: getDepVersion(backendPkg, 'sqlite3'), category: '数据库' },
+          { key: 'MySQL', version: getDepVersion(backendPkg, 'mysql2'), category: '数据库' },
+          { key: 'JWT (jsonwebtoken)', version: getDepVersion(backendPkg, 'jsonwebtoken'), category: '身份认证' },
+          { key: 'bcryptjs', version: getDepVersion(backendPkg, 'bcryptjs'), category: '密码加密' },
+          { key: 'Multer', version: getDepVersion(backendPkg, 'multer'), category: '文件上传' },
+          { key: 'CORS', version: getDepVersion(backendPkg, 'cors'), category: '跨域中间件' },
+          { key: 'dotenv', version: getDepVersion(backendPkg, 'dotenv'), category: '环境变量' },
+          { key: 'Morgan', version: getDepVersion(backendPkg, 'morgan'), category: '日志中间件' },
+        ],
+        version: backendPkg.version || 'unknown',
+      },
+    }
+
     // 操作系统版本
     let os_version = ''
     let os_hostname = ''
@@ -85,7 +149,6 @@ export const getEnvironment = async (req, res) => {
       os_release = os.release()
       os_hostname = os.hostname()
       os_uptime = Math.floor(os.uptime())
-      // 操作系统版本号字符串
       os_version = `${os.type()} ${os.release()} (${os.arch()})`
       cpus = os.cpus() || []
     } catch (e) {
@@ -94,13 +157,9 @@ export const getEnvironment = async (req, res) => {
     // 磁盘信息（当前工作目录所在分区）
     let disk_info = { total: 0, free: 0, used: 0, used_percent: 0, mount: '' }
     try {
-      const fs = await import('fs')
-      const os = await import('os')
       const targetPath = process.cwd()
       const isWin = process.platform === 'win32'
-      const execPath = isWin ? 'wmic' : 'df'
       const { execFile } = await import('child_process')
-      // 使用 df 获取磁盘信息（Linux/Mac），Windows 使用 wmic
       await new Promise((resolve) => {
         if (isWin) {
           execFile('wmic', ['logicaldisk', 'where', "DeviceID='C:'", 'get', 'Size,FreeSpace', '/format:csv'], { timeout: 3000 }, (err, stdout) => {
@@ -167,6 +226,7 @@ export const getEnvironment = async (req, res) => {
       disk_used_percent: disk_info.used_percent,
       disk_mount: disk_info.mount,
       sequelize_version: Sequelize.version || 'unknown',
+      tech_stack,
       server_time: new Date().toISOString(),
     }
     return success(res, info, '获取成功')
