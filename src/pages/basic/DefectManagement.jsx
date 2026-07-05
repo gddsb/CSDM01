@@ -12,6 +12,8 @@ const typeColorMap = { '来料不良': 'blue', '制程不良': 'orange', '检验
 
 const categoryOptions = ['来料不良', '制程不良', '检验报废'].map(c => ({ label: c, value: c }))
 
+const categoryNameOptions = ['来料检验类型', '制程检验类型'].map(c => ({ label: c, value: c }))
+
 // 安全获取数组的辅助函数
 const toArray = (v) => Array.isArray(v) ? v : []
 
@@ -165,6 +167,7 @@ export default function DefectManagement() {
       form.resetFields()
       form.setFieldsValue({
         defect_type: '来料不良',
+        category_name: '制程检验类型',
         parent_id: undefined,
         display: true,
         status: '启用',
@@ -434,8 +437,8 @@ export default function DefectManagement() {
               allowClear
             />
           </Form.Item>
-          <Form.Item name="category_name" label="大类名称">
-            <Input placeholder="请输入大类名称" />
+          <Form.Item name="category_name" label="大类名称" rules={[{ required: true, message: '请选择大类名称' }]}>
+            <Select placeholder="请选择大类名称" options={categoryNameOptions} />
           </Form.Item>
           <Form.Item name="category_desc" label="分类名称">
             <Input.TextArea placeholder="请输入分类名称" rows={3} />
