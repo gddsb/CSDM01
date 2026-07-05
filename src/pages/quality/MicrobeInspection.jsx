@@ -5,7 +5,7 @@ import {
   CheckCircleOutlined, EyeOutlined, SearchOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
-import ThreeSectionPage, { ActionButtons, getQuickFilterRange } from '../../components/ThreeSectionPage'
+import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import { microbeInspections, incomingInspections } from '../../mock/data'
 
 const { Text, Title } = Typography
@@ -40,24 +40,10 @@ const handleMap = {
 export default function MicrobeInspection() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [current, setCurrent] = useState(null)
-  const [quickFilter, setQuickFilter] = useState(() => {
-    const { dateStart, dateEnd } = getQuickFilterRange('month')
-    return { dateStart, dateEnd }
-  })
-
-  const handleQuickFilterChange = (val) => {
-    const { dateStart, dateEnd } = getQuickFilterRange(val)
-    setQuickFilter({ dateStart, dateEnd })
-  }
 
   const filteredData = useMemo(() => {
-    return microbeInspections.filter(item => {
-      if (!quickFilter.dateStart || !quickFilter.dateEnd) return true
-      if (!item.inspection_time) return false
-      const t = dayjs(item.inspection_time)
-      return t.isAfter(dayjs(quickFilter.dateStart).subtract(1, 'day')) && t.isBefore(dayjs(quickFilter.dateEnd).add(1, 'day'))
-    })
-  }, [quickFilter])
+    return microbeInspections
+  }, [])
 
   const normalCount = filteredData.filter(i => i.inspection_type === '正常').length
   const strictCount = filteredData.filter(i => i.inspection_type === '加严').length
@@ -162,7 +148,6 @@ export default function MicrobeInspection() {
         breadcrumbs="质量管理 / 微生物检验"
         stats={stats}
         filters={filters}
-        onQuickFilterChange={handleQuickFilterChange}
         actions={<ActionButtons />}
         table={
           <>

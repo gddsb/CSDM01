@@ -4,8 +4,7 @@ import {
   ExperimentOutlined, CheckCircleOutlined, CloseCircleOutlined,
   EyeOutlined, SearchOutlined
 } from '@ant-design/icons'
-import dayjs from 'dayjs'
-import ThreeSectionPage, { ActionButtons, getQuickFilterRange } from '../../components/ThreeSectionPage'
+import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import { finishedInspections } from '../../mock/data'
 
 const { Text, Title } = Typography
@@ -36,24 +35,10 @@ const statusColor = { '已完成': 'success', '检验中': 'processing' }
 export default function FinishedInspection() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [current, setCurrent] = useState(null)
-  const [quickFilter, setQuickFilter] = useState(() => {
-    const { dateStart, dateEnd } = getQuickFilterRange('month')
-    return { dateStart, dateEnd }
-  })
-
-  const handleQuickFilterChange = (val) => {
-    const { dateStart, dateEnd } = getQuickFilterRange(val)
-    setQuickFilter({ dateStart, dateEnd })
-  }
 
   const filteredData = useMemo(() => {
-    return finishedInspections.filter(item => {
-      if (!quickFilter.dateStart || !quickFilter.dateEnd) return true
-      if (!item.inspection_time) return false
-      const t = dayjs(item.inspection_time)
-      return t.isAfter(dayjs(quickFilter.dateStart).subtract(1, 'day')) && t.isBefore(dayjs(quickFilter.dateEnd).add(1, 'day'))
-    })
-  }, [quickFilter])
+    return finishedInspections
+  }, [])
 
   const passCount = filteredData.filter(i => i.result === '合格').length
   const failCount = filteredData.filter(i => i.result === '不合格').length
@@ -127,7 +112,6 @@ export default function FinishedInspection() {
         breadcrumbs="质量管理 / 成品检验"
         stats={stats}
         filters={filters}
-        onQuickFilterChange={handleQuickFilterChange}
         actions={<ActionButtons />}
         table={
           <Table

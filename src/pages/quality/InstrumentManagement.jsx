@@ -1,11 +1,10 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState } from 'react'
 import { Table, Tag, Button, Modal, Space, Typography } from 'antd'
 import {
   ToolOutlined, CheckCircleOutlined, WarningOutlined,
   ClockCircleOutlined, SearchOutlined, HistoryOutlined
 } from '@ant-design/icons'
-import dayjs from 'dayjs'
-import ThreeSectionPage, { ActionButtons, getQuickFilterRange } from '../../components/ThreeSectionPage'
+import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import { instruments } from '../../mock/data'
 
 const { Text, Title } = Typography

@@ -4,7 +4,7 @@ import {
   DeploymentUnitOutlined, PlayCircleOutlined, ToolOutlined,
   PlusOutlined, EyeOutlined, ReloadOutlined,
 } from '@ant-design/icons'
-import ThreeSectionPage, { ActionButtons, getQuickFilterRange } from '../../components/ThreeSectionPage'
+import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 
 // 产线状态标签颜色映射（与后端 ProductionLine 模型一致：运行中=1, 维护中=2, 停用=0）
@@ -26,15 +26,7 @@ export default function ProductionLine() {
   const [statusInput, setStatusInput] = useState(undefined)
   const [workshopInput, setWorkshopInput] = useState(undefined)
   // 已应用的查询条件
-  const [query, setQuery] = useState(() => {
-    const { dateStart, dateEnd } = getQuickFilterRange('month')
-    return { page: 1, pageSize: 30, keyword: '', status: undefined, workshop: undefined, dateStart, dateEnd }
-  })
-
-  const handleQuickFilterChange = (val) => {
-    const { dateStart, dateEnd } = getQuickFilterRange(val)
-    setQuery(q => ({ ...q, page: 1, dateStart, dateEnd }))
-  }
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined, workshop: undefined })
 
   const runningCount = data.filter(l => l.status === '运行中').length
   const maintenanceCount = data.filter(l => l.status === '维护中').length
@@ -57,8 +49,6 @@ export default function ProductionLine() {
         if (query.keyword) params.keyword = query.keyword
         if (query.status !== undefined && query.status !== null) params.status = query.status
         if (query.workshop) params.workshop = query.workshop
-        if (query.dateStart) params.dateStart = query.dateStart
-        if (query.dateEnd) params.dateEnd = query.dateEnd
         const res = await api.get('/basic/production-lines', { params })
         if (cancelled) return
         const list = res.data || []
@@ -199,7 +189,6 @@ export default function ProductionLine() {
         filters={filters}
         onSearch={handleSearch}
         onReset={handleReset}
-        onQuickFilterChange={handleQuickFilterChange}
         actions={
           <ActionButtons
             hasAdd={false}

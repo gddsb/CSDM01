@@ -4,7 +4,7 @@ import {
   ToolOutlined, PlayCircleOutlined, WarningOutlined, SafetyCertificateOutlined,
   PlusOutlined, EyeOutlined, ReloadOutlined,
 } from '@ant-design/icons'
-import ThreeSectionPage, { ActionButtons, getQuickFilterRange } from '../../components/ThreeSectionPage'
+import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 
 // 设备状态标签颜色映射（与后端 Device 模型一致：运行=1, 停用=0, 维修=2）
@@ -29,15 +29,7 @@ export default function DeviceManagement() {
   const [typeInput, setTypeInput] = useState(undefined)
   const [specialInput, setSpecialInput] = useState(undefined)
   // 已应用的查询条件
-  const [query, setQuery] = useState(() => {
-    const { dateStart, dateEnd } = getQuickFilterRange('month')
-    return { page: 1, pageSize: 30, keyword: '', status: undefined, device_type: undefined, is_special: undefined, dateStart, dateEnd }
-  })
-
-  const handleQuickFilterChange = (val) => {
-    const { dateStart, dateEnd } = getQuickFilterRange(val)
-    setQuery(q => ({ ...q, page: 1, dateStart, dateEnd }))
-  }
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined, device_type: undefined, is_special: undefined })
 
   const runningCount = data.filter(d => d.status === '运行').length
   const faultCount = data.filter(d => d.status === '维修').length
@@ -63,8 +55,6 @@ export default function DeviceManagement() {
         if (query.status !== undefined && query.status !== null) params.status = query.status
         if (query.device_type) params.device_type = query.device_type
         if (query.is_special !== undefined && query.is_special !== null) params.is_special = query.is_special
-        if (query.dateStart) params.dateStart = query.dateStart
-        if (query.dateEnd) params.dateEnd = query.dateEnd
         const res = await api.get('/basic/devices', { params })
         if (cancelled) return
         const list = res.data || []
@@ -227,7 +217,6 @@ export default function DeviceManagement() {
         filters={filters}
         onSearch={handleSearch}
         onReset={handleReset}
-        onQuickFilterChange={handleQuickFilterChange}
         actions={
           <ActionButtons
             hasAdd={false}

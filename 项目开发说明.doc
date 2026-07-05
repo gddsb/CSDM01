@@ -711,13 +711,13 @@ api.interceptors.request.use(config => {
 
 | 区域 | 高度占比 | 内容组成 | 背景色 | 行间距规则 |
 |------|---------|---------|--------|-----------|
-| 上部：页面信息区 | 15%-20% | 页面标题、面包屑导航、统计数据卡片（2-5个指标）、主要操作按钮（**今天/本周/本月/本年** + 新增/导出/配置） | 主背景色 | 常规间距 |
-| 中部：筛选功能区 | 10%-15% | 查询条件输入框、下拉选择器、日期范围选择、查询/重置按钮、展开/收起切换 | 卡片背景色，可折叠 | 小行间距（4-8px） |
+| 上部：页面信息区 | 15%-20% | 页面标题、面包屑导航、统计数据卡片（2-5个指标）、主要操作按钮（新增/导出/配置） | 主背景色 | 常规间距 |
+| 中部：筛选功能区 | 10%-15% | 查询条件输入框、下拉选择器、日期范围选择、查询/重置按钮 | 卡片背景色 | 小行间距（4-8px） |
 | 下部：列表区 | 65%-75% | 数据表格、分页器、总计记录数，默认单页显示 30 条记录 | 卡片背景色 | 小行间距（4-8px） |
 
 #### 二、页面设计说明
 
-1. **上部页面信息区**保持常规间距，以维持页面整体的呼吸感和层次感。"今天/本周/本月/本年"作为主要操作按钮的一部分，与新增/导出/配置按钮同组排列，默认选中"本月"。
+1. **上部页面信息区**保持常规间距，以维持页面整体的呼吸感和层次感。主要操作按钮仅包含"新增/导出/配置"三个按钮，通过 `ActionButtons` 组件统一渲染。
 2. **中部筛选功能区**和**下部列表区**采用小行间距，使数据密集型操作区域布局更加紧凑，提升屏幕空间利用率。中部筛选区域默认所有功能保持在一行。
 3. 具体表现为：表单控件之间、表格行之间的垂直间距缩小（建议 4px-8px），区域内部的 padding 值相应减小，但需保持足够的可点击区域以确保操作准确性。
 4. **下部列表区**默认根据列内容保持完整显示自动列宽：
@@ -728,11 +728,9 @@ api.interceptors.request.use(config => {
 
 | 特性 | 说明 |
 |------|------|
-| 快速筛选联动 | 所有业务操作页面上部统计卡片数据跟随"今天/本周/本月/本年"快速筛选条件联动更新 |
-| 筛选区折叠 | 中部筛选区默认显示 3-4 行常用筛选条件，点击"展开更多"显示全部条件 |
-| 内容变化触发查询 | 筛选区支持内容变化触发查询（通过 `onFilterChange` 回调） |
+| 统计卡片联动 | 上部统计卡片数据跟随中部筛选条件联动更新 |
+| 内容变化触发查询 | 中部筛选区默认显示 3-4 行常用筛选条件，支持编辑框、下拉框内容变化触发查询（通过 `onFilterChange` 回调） |
 | 表格列操作 | 列表区表格支持列宽拖拽、列排序、列显隐设置 |
-| 统计卡片独立 | 上部统计卡片数据**不**跟随中部筛选条件联动更新，仅跟随快速筛选联动 |
 
 #### 四、组件 API
 
@@ -740,21 +738,13 @@ api.interceptors.request.use(config => {
 <ThreeSectionPage
   title="页面标题"
   breadcrumbs="模块 / 子菜单"
-  stats={[{ label, value, icon, color }]}        // 统计卡片 2-5 个
+  stats={[{ label, value, icon, color }]}        // 统计卡片 2-5 个，跟随中部筛选条件联动
   filters={[{ type, field, placeholder, value, onChange, options, col }]}  // 筛选项
-  actions={<ActionButtons onAdd={...} />}        // 操作按钮
+  actions={<ActionButtons onAdd={...} />}        // 操作按钮（新增/导出/配置）
   table={<Table ... />}                          // 数据表格
-  onSearch={handleSearch}
-  onReset={handleReset}
-  // 快速筛选
-  quickFilter={true}                             // 默认 true，显示今天/本周/本月/本年
-  defaultQuickFilter="month"                     // 默认 'month'
-  onQuickFilterChange={(val) => { /* 重新统计 */ }}
-  // 筛选区折叠
-  collapsible={true}                             // 默认 true
-  defaultCollapsed={false}
-  // 内容变化触发查询
-  onFilterChange={(field, value) => { /* 实时查询 */ }}
+  onSearch={handleSearch}                        // 点击"查询"按钮触发
+  onReset={handleReset}                          // 点击"重置"按钮触发
+  onFilterChange={(field, value) => { /* 内容变化触发查询 */ }}
 />
 ```
 
@@ -787,7 +777,6 @@ api.interceptors.request.use(config => {
 
 | 按钮 | className | 配色方案 | 语义 |
 |------|-----------|---------|------|
-| 快速筛选选中态 | `.ant-segmented-item-selected` | 主色渐变 `linear-gradient(135deg, --color-primary, --color-secondary)` | 时间维度切换 |
 | 新增 | `.btn-add` | 主色渐变 `linear-gradient(135deg, --color-primary, --color-secondary)` | 主要操作 |
 | 导出 | `.btn-export` | 成功色渐变 `linear-gradient(135deg, --color-success, #66BB6A)` | 数据输出 |
 | 配置 | `.btn-config` | 强调色渐变 `linear-gradient(135deg, --color-accent, --color-warning)` | 设置/定制 |
@@ -795,11 +784,10 @@ api.interceptors.request.use(config => {
 **视觉特性：**
 - 圆角 8px，按钮带有柔和阴影
 - Hover 态：渐变方向反转 + 阴影加深 + 上移 1px（微交互）
-- 选中态 Segmented 采用胶囊式 24px 圆角，背景渐变 + 白色文字 + 阴影
 - 所有颜色基于 CSS 变量（`--color-primary` / `--color-secondary` / `--color-success` / `--color-accent` / `--color-warning`），切换主题自动适配
 
 **布局规则：**
-- 快速筛选（今天/本周/本月/本年）在左侧，功能按钮（新增/导出/配置）在右侧
+- 主要操作按钮（新增/导出/配置）位于上部信息区右侧
 - 功能按钮组用 `.action-buttons-group` 包裹，gap: 8px
 
 #### 七、CSS 规范要点
@@ -815,10 +803,6 @@ api.interceptors.request.use(config => {
 .section-filter .ant-form-item { margin-bottom: 4px !important; }
 .section-filter .ant-row       { row-gap: 4px !important; }
 .section-table .ant-table-small .ant-table-cell { padding: 4px 8px !important; }
-
-/* 筛选区折叠动画 */
-.section-filter-body.filter-collapsed { max-height: 0; opacity: 0; overflow: hidden; }
-.section-filter-body:not(.filter-collapsed) { max-height: 500px; opacity: 1; }
 
 /* 操作按钮配色（节选） */
 .btn-add    { background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: #fff; }
@@ -853,7 +837,7 @@ pagination={{
 | 报表中心 report | 生产日报 [DailyReport.jsx](file:///workspace/src/pages/report/DailyReport.jsx)、质量月报 [QualityReport.jsx](file:///workspace/src/pages/report/QualityReport.jsx)、生产报表 [ProductionReport.jsx](file:///workspace/src/pages/report/ProductionReport.jsx)、异常报表 [ExceptionReport.jsx](file:///workspace/src/pages/report/ExceptionReport.jsx) |
 | 系统管理 system | 用户管理 [UserManagement.jsx](file:///workspace/src/pages/system/UserManagement.jsx)、角色管理 [RoleManagement.jsx](file:///workspace/src/pages/system/RoleManagement.jsx)、操作日志 [OperationLogs.jsx](file:///workspace/src/pages/system/OperationLogs.jsx)、数据字典 [DataDictionary.jsx](file:///workspace/src/pages/system/DataDictionary.jsx) |
 
-> 说明：以上页面统一将 `pageSize` 默认值改为 30；三段式布局（上部信息区/中部筛选区/下部列表区）、小行间距（4-8px）、可折叠筛选区、快速筛选联动等规范通过 [ThreeSectionPage.jsx](file:///workspace/src/components/ThreeSectionPage.jsx) 组件与 [global.css](file:///workspace/src/styles/global.css) 统一实现，业务页面无需重复编写布局代码。
+> 说明：以上页面统一将 `pageSize` 默认值改为 30；三段式布局（上部信息区/中部筛选区/下部列表区）、小行间距（4-8px）、统计卡片跟随中部筛选条件联动等规范通过 [ThreeSectionPage.jsx](file:///workspace/src/components/ThreeSectionPage.jsx) 组件与 [global.css](file:///workspace/src/styles/global.css) 统一实现，业务页面无需重复编写布局代码。
 
 
 

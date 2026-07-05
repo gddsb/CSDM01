@@ -1,33 +1,27 @@
-import { Space, Button, Input, Select, DatePicker, Row, Col, Segmented, Checkbox } from 'antd'
+import { Space, Button, Input, Select, DatePicker, Row, Col, Checkbox } from 'antd'
 import {
-  SearchOutlined, ReloadOutlined, PlusOutlined, ExportOutlined, SettingOutlined,
-  DownOutlined, UpOutlined
+  SearchOutlined, ReloadOutlined, PlusOutlined, ExportOutlined, SettingOutlined
 } from '@ant-design/icons'
-import React, { useState } from 'react'
+import React from 'react'
 
 const { RangePicker } = DatePicker
 
-// 快速筛选项定义
-const QUICK_FILTER_OPTIONS = [
-  { label: '今天', value: 'today' },
-  { label: '本周', value: 'week' },
-  { label: '本月', value: 'month' },
-  { label: '本年', value: 'year' },
-]
-
 /**
  * 三段式页面通用组件
- * 规范：
- *   - 上部页面信息区 (15%-20%)：标题/面包屑/统计卡片/快速筛选/主要操作按钮，主背景色，常规间距
- *   - 中部筛选功能区 (10%-15%)：查询条件/查询重置按钮/展开收起，卡片背景色，小行间距，默认一行
- *   - 下部列表区     (65%-75%)：数据表格/分页器，卡片背景色，小行间距，默认每页30条
  *
- * 新增特性：
- *   - quickFilter / defaultQuickFilter / onQuickFilterChange：今天/本周/本月/本年快速筛选，统计卡片随之联动
- *   - collapsible / defaultCollapsed：筛选区可折叠
- *   - onFilterChange：筛选内容变化触发查询
- *   - 表格列宽拖拽（ResizeContext）、列显隐设置
- *   - defaultPageSize：默认每页 30 条
+ * 规范：
+ *   - 上部页面信息区 (15%-20%)：标题/面包屑/统计卡片/主要操作按钮(新增/导出/配置)，主背景色，常规间距
+ *   - 中部筛选功能区 (10%-15%)：查询条件/查询重置按钮，卡片背景色，小行间距(4-8px)，默认一行
+ *   - 下部列表区     (65%-75%)：数据表格/分页器/总计记录数，卡片背景色，小行间距，默认每页30条
+ *
+ * 交互特性：
+ *   - 中部筛选区默认显示3-4行常用筛选条件，支持编辑框、下拉框内容变化触发查询
+ *   - 列表区表格支持列宽拖拽、列排序、列显隐设置
+ *   - 上部统计卡片数据跟随中部筛选条件联动更新
+ *
+ * 列宽规范：
+ *   - 料品名称列宽默认最小200px，自动换行
+ *   - 操作列：1-3个功能 80px，4个功能 100px
  */
 export default function ThreeSectionPage({
   title,
@@ -36,30 +30,11 @@ export default function ThreeSectionPage({
   filters,
   actions,
   table,
-  compact = true,
   onSearch,
   onReset,
-  // 快速筛选
-  quickFilter = true,
-  defaultQuickFilter = 'month',
-  onQuickFilterChange,
-  // 筛选区折叠
-  collapsible = true,
-  defaultCollapsed = false,
   // 内容变化触发查询
   onFilterChange,
-  // 列显隐配置
-  columnsConfigurable = true,
 }) {
-  const [quickValue, setQuickValue] = useState(defaultQuickFilter)
-  const [collapsed, setCollapsed] = useState(defaultCollapsed)
-
-  // 处理快速筛选变化
-  const handleQuickChange = (val) => {
-    setQuickValue(val)
-    onQuickFilterChange?.(val)
-  }
-
   // 渲染单个筛选项
   const renderFilterItem = (f) => {
     if (!f) return null
@@ -117,21 +92,10 @@ export default function ThreeSectionPage({
             {breadcrumbs && <div className="section-breadcrumbs">{breadcrumbs}</div>}
             <div className="section-title-text">{title}</div>
           </div>
-          <Space className="section-info-actions">
-            {/* 快速筛选：今天/本周/本月/本年，默认本月，作为主要操作按钮的一部分 */}
-            {quickFilter && (
-              <Segmented
-                options={QUICK_FILTER_OPTIONS}
-                value={quickValue}
-                onChange={handleQuickChange}
-                size="small"
-              />
-            )}
-            {actions}
-          </Space>
+          <Space className="section-info-actions">{actions}</Space>
         </div>
 
-        {/* 统计卡片：跟随快速筛选联动，不跟随中部筛选条件 */}
+        {/* 统计卡片：跟随中部筛选条件联动更新 */}
         {stats && stats.length > 0 && (
           <Row gutter={12} className="stats-row">
             {stats.map((s, i) => (
@@ -154,7 +118,7 @@ export default function ThreeSectionPage({
       {/* ============ 中部：筛选功能区 ============ */}
       {filters && (
         <div className="section-filter">
-          <div className={`section-filter-body ${collapsed ? 'filter-collapsed' : ''}`}>
+          <div className="section-filter-body">
             <Row gutter={[8, 4]}>
               {filters.map((f, i) => (
                 <Col key={i} {...(f.col || { span: 6 })}>
@@ -165,12 +129,6 @@ export default function ThreeSectionPage({
                 <Space>
                   <Button type="primary" icon={<SearchOutlined />} onClick={onSearch}>查询</Button>
                   <Button icon={<ReloadOutlined />} onClick={onReset}>重置</Button>
-                  {collapsible && (
-                    <Button type="link" size="small" onClick={() => setCollapsed(c => !c)}>
-                      {collapsed ? '展开更多' : '收起'}
-                      {collapsed ? <DownOutlined /> : <UpOutlined />}
-                    </Button>
-                  )}
                 </Space>
               </Col>
             </Row>
@@ -249,48 +207,4 @@ export const materialNameColumn = {
       {text}
     </div>
   ),
-}
-
-/**
- * 快速筛选日期范围计算
- * 根据 "今天/本周/本月/本年" 返回对应的 YYYY-MM-DD 日期范围
- * @param {string} type - 'today' | 'week' | 'month' | 'year'
- * @returns {{ dateStart: string, dateEnd: string }}
- */
-export function getQuickFilterRange(type) {
-  const now = new Date()
-  const fmt = (d) => {
-    const y = d.getFullYear()
-    const m = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    return `${y}-${m}-${day}`
-  }
-
-  switch (type) {
-    case 'today': {
-      const date = fmt(now)
-      return { dateStart: date, dateEnd: date }
-    }
-    case 'week': {
-      const day = now.getDay()
-      const diff = day === 0 ? 6 : day - 1
-      const start = new Date(now)
-      start.setDate(now.getDate() - diff)
-      const end = new Date(start)
-      end.setDate(start.getDate() + 6)
-      return { dateStart: fmt(start), dateEnd: fmt(end) }
-    }
-    case 'month': {
-      const start = new Date(now.getFullYear(), now.getMonth(), 1)
-      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-      return { dateStart: fmt(start), dateEnd: fmt(end) }
-    }
-    case 'year': {
-      const start = new Date(now.getFullYear(), 0, 1)
-      const end = new Date(now.getFullYear(), 11, 31)
-      return { dateStart: fmt(start), dateEnd: fmt(end) }
-    }
-    default:
-      return { dateStart: '', dateEnd: '' }
-  }
 }

@@ -6,7 +6,7 @@ import {
   PlusOutlined, EyeOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
-import ThreeSectionPage, { ActionButtons, getQuickFilterRange } from '../../components/ThreeSectionPage'
+import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 
 const statusColorMap = {
@@ -41,16 +41,7 @@ export default function WorkOrderManagement() {
   const [statusInput, setStatusInput] = useState(undefined)
   const [lineInput, setLineInput] = useState(undefined)
   // 已应用的查询条件
-  const [query, setQuery] = useState(() => {
-    const { dateStart, dateEnd } = getQuickFilterRange('month')
-    return { page: 1, pageSize: 30, keyword: '', status: undefined, line_id: undefined, dateStart, dateEnd }
-  })
-
-  // 快速筛选变化时，更新日期范围并重置分页
-  const handleQuickFilterChange = (val) => {
-    const { dateStart, dateEnd } = getQuickFilterRange(val)
-    setQuery(q => ({ ...q, page: 1, dateStart, dateEnd }))
-  }
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined, line_id: undefined })
 
   // 获取工单列表
   useEffect(() => {
@@ -62,8 +53,6 @@ export default function WorkOrderManagement() {
         if (query.keyword) params.keyword = query.keyword
         if (query.status) params.status = query.status
         if (query.line_id) params.line_id = query.line_id
-        if (query.dateStart) params.dateStart = query.dateStart
-        if (query.dateEnd) params.dateEnd = query.dateEnd
         const res = await api.get('/production/work-orders', { params })
         if (cancelled) return
         const list = res.data || []
@@ -326,7 +315,6 @@ export default function WorkOrderManagement() {
         title="工单管理"
         breadcrumbs="生产管理 / 工单管理"
         stats={stats}
-        onQuickFilterChange={handleQuickFilterChange}
         actions={
           <ActionButtons
             hasAdd={false}

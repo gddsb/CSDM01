@@ -248,47 +248,12 @@ body {
 
 /* ============================================================
    主要操作按钮配色规范
-   - 快速筛选（今天/本周/本月/本年）：胶囊式 Segmented，选中态主色
    - 新增按钮：主色渐变（primary → secondary）
    - 导出按钮：成功色渐变
    - 配置按钮：强调色
    ============================================================ */
 
-/* 快速筛选 Segmented 整体样式 */
-.section-info-actions .ant-segmented {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  padding: 2px;
-  border-radius: 24px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-  transition: all 0.25s ease;
-}
-
-.section-info-actions .ant-segmented:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.12);
-}
-
-.section-info-actions .ant-segmented .ant-segmented-item {
-  color: var(--text-secondary);
-  border-radius: 20px;
-  transition: all 0.25s ease;
-  padding: 0 14px;
-}
-
-.section-info-actions .ant-segmented .ant-segmented-item:hover {
-  color: var(--color-primary);
-}
-
-/* 选中态：主色渐变背景 */
-.section-info-actions .ant-segmented .ant-segmented-item-selected {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-  color: #ffffff;
-  font-weight: 600;
-  box-shadow: 0 2px 6px rgba(33, 150, 243, 0.25);
-}
-
-/* 操作按钮分隔区：快速筛选在左，功能按钮在右 */
+/* 操作按钮组：新增/导出/配置 */
 .section-info-actions .action-buttons-group {
   display: flex;
   align-items: center;
@@ -352,7 +317,7 @@ body {
   margin-top: 4px !important;
 }
 
-/* —— 中部：筛选功能区 —— 卡片背景色，小行间距 4-8px，可折叠 —— */
+/* —— 中部：筛选功能区 —— 卡片背景色，小行间距 4-8px —— */
 .section-filter {
   background: var(--bg-card);
   border-radius: 8px;
@@ -372,20 +337,6 @@ body {
 
 .section-filter .ant-col {
   padding-inline: 4px !important;
-}
-
-.section-filter-body.filter-collapsed {
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  transition: max-height 0.2s ease, opacity 0.2s ease;
-}
-
-.section-filter-body:not(.filter-collapsed) {
-  max-height: 500px;
-  overflow: hidden;
-  opacity: 1;
-  transition: max-height 0.25s ease, opacity 0.25s ease;
 }
 
 /* —— 下部：列表区 —— 卡片背景色，小行间距，默认每页30条 —— */
