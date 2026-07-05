@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { useApp } from '../../contexts/AppContext'
 import {
   Form, Input, InputNumber, Select, Switch, Button, Row, Col, Typography, message, Spin,
   Tabs, Table, Tag, Descriptions, Space, Popconfirm, Card, Statistic, Modal, Alert,
@@ -57,6 +58,7 @@ function formValuesToConfig(values) {
 }
 
 export default function SystemConfig() {
+  const { updateSystemConfig } = useApp()
   const [activeTab, setActiveTab] = useState('params')
   const [form] = Form.useForm()
   const [saving, setSaving] = useState(false)
@@ -265,6 +267,11 @@ export default function SystemConfig() {
       const payload = formValuesToConfig(values)
       const res = await api.put('/system/config', payload)
       message.success(res.message || '系统配置保存成功')
+      // 更新全局系统配置（页签标题等会自动更新）
+      updateSystemConfig({
+        system_name: payload.system_name || '',
+        company_name: payload.company_name || '',
+      })
       // 保存后重新加载配置（system_version 等只读字段会回填）
       await loadConfig()
     } catch (e) {

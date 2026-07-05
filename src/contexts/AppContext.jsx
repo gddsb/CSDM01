@@ -8,6 +8,7 @@ export function AppProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null)
   const [themeKey, setThemeKey] = useState('pureMilk')
   const [initialized, setInitialized] = useState(false)
+  const [systemConfig, setSystemConfig] = useState({ system_name: '', company_name: '' })
 
   useEffect(() => {
     const savedUser = localStorage.getItem('mes_user')
@@ -56,6 +57,25 @@ export function AppProvider({ children }) {
     localStorage.setItem('mes_theme', key)
   }
 
+  const loadSystemConfig = async () => {
+    try {
+      const res = await api.get('/system/config')
+      const cfg = res.data || res
+      if (cfg && typeof cfg === 'object') {
+        setSystemConfig({
+          system_name: cfg.system_name || '',
+          company_name: cfg.company_name || '',
+        })
+      }
+    } catch (err) {
+      // 静默失败
+    }
+  }
+
+  const updateSystemConfig = (updates) => {
+    setSystemConfig(prev => ({ ...prev, ...updates }))
+  }
+
   // 切换到下一个主题（按主题顺序：纯净奶源→暗夜工厂→蓝天牧场→金属质感→自然绿洲→暖阳琥珀）
   const cycleTheme = () => {
     const order = ['pureMilk', 'darkFactory', 'blueSky', 'metal', 'greenOasis', 'warmAmber']
@@ -66,7 +86,7 @@ export function AppProvider({ children }) {
   }
 
   return (
-    <AppContext.Provider value={{ currentUser, login, logout, updateUser, themeKey, changeTheme, cycleTheme, initialized }}>
+    <AppContext.Provider value={{ currentUser, login, logout, updateUser, themeKey, changeTheme, cycleTheme, initialized, systemConfig, loadSystemConfig, updateSystemConfig }}>
       {children}
     </AppContext.Provider>
   )

@@ -146,7 +146,7 @@ const defaultMenuItems = [
 ]
 
 export default function MainLayout() {
-  const { currentUser, logout, updateUser, themeKey, changeTheme, cycleTheme } = useApp()
+  const { currentUser, logout, updateUser, themeKey, cycleTheme, systemConfig, loadSystemConfig } = useApp()
   const navigate = useNavigate()
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
@@ -156,7 +156,6 @@ export default function MainLayout() {
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [profileForm] = Form.useForm()
   const [pwdForm] = Form.useForm()
-  const [systemConfig, setSystemConfig] = useState({ system_name: '', company_name: '' })
   // 动态菜单（从后端拉取；为 null 时使用默认 menuItems 兜底）
   const [dynamicMenu, setDynamicMenu] = useState(null)
 
@@ -223,26 +222,8 @@ export default function MainLayout() {
 
   // 获取系统配置
   useEffect(() => {
-    let cancelled = false
-    const run = async () => {
-      try {
-        const res = await api.get('/system/config')
-        if (cancelled) return
-        // 后端可能返回 { data: {...} } 或直接对象
-        const cfg = res.data || res
-        if (cfg && typeof cfg === 'object') {
-          setSystemConfig({
-            system_name: cfg.system_name || '',
-            company_name: cfg.company_name || '',
-          })
-        }
-      } catch (err) {
-        // 静默失败，保留默认空值
-      }
-    }
-    run()
-    return () => { cancelled = true }
-  }, [])
+    loadSystemConfig()
+  }, [loadSystemConfig])
 
   // 获取动态菜单（按当前用户角色权限）
   const fetchMenu = useCallback(async () => {
@@ -269,6 +250,10 @@ export default function MainLayout() {
 
   const systemName = systemConfig.system_name || '长沙大满生产制造系统'
   const companyName = systemConfig.company_name || ''
+
+  useEffect(() => {
+    document.title = systemName
+  }, [systemName])
 
   // 将后端权限树转换为 Antd Menu items 格式
   const buildMenuItems = (nodes) => {
