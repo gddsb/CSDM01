@@ -104,7 +104,7 @@
 | 用户管理 | `/system/users` | 用户增删改查、角色分配、启用/禁用、搜索筛选 |
 | 角色权限 | `/system/roles` | 角色定义、权限分配、角色增删改 |
 | 菜单管理 | `/system/menus` | 菜单/权限树形结构管理，支持多级菜单 |
-| 数据字典 | `/system/dictionary` | 系统数据字典维护（字典类型+字典项两级管理） |
+| 数据字典 | `/system/dictionary` | 数据库表字典查看，展示所有数据表结构和字段详情 |
 | 系统配置 | `/system/config` | 参数配置、项目环境、数据库配置、备份还原（多页签） |
 | 操作日志 | `/system/logs` | 用户操作行为审计，支持按模块/用户/时间筛选 |
 
@@ -1024,66 +1024,33 @@ JWT_EXPIRES_IN=7d
 
 **页面路径**：`/system/dictionary`
 
-**功能概述**：维护系统各类枚举值、下拉选项数据，采用「字典类型 + 字典项」两级维护模式。
+**功能概述**：展示系统所有数据库表清单及其字段结构详情，用于快速查阅数据库字典信息。
 
-**页面布局**：左右分栏结构
-- **左侧**：字典类型列表（表格，支持新增/编辑/删除）
-- **右侧**：当前选中字典类型对应的字典项列表（表格，支持新增/编辑/删除）
+**页面布局**：
+- **顶部**：统计卡片（数据表总数、系统表数、业务表数）
+- **筛选区**：表名/说明搜索、表分类筛选（系统表/基础数据表/业务表）、重置、刷新
+- **主表格**：数据表列表
 
-**字典类型列表列**：字典编号、字典名称、字典类型、状态、备注、操作
+**列表列**：序号、表名、分类、字段数、记录数、说明、最后更新、操作（查看）
 
-**字典类型表单字段**：
-- 字典名称（必填）
-- 字典类型/编码（必填，唯一，如 `sys_user_status`）
-- 状态（启用/停用，默认启用）
-- 备注
+**表分类**：
+- **系统表**（蓝色 Tag）：`sys_` 前缀，包含用户、角色、权限、配置、日志等
+- **基础数据表**（绿色 Tag）：`bas_` / `master_` 前缀，包含料品、客户、产线、工序、设备、不良分类等
+- **业务表**（橙色 Tag）：`production_` / `prod_` 前缀，包含订单、工单、报工、异常记录等
 
-**字典项列表列**：字典编码、显示排序、字典标签、字典键值、状态、默认、操作
-
-**字典项表单字段**：
-- 显示排序（数字，越小越靠前）
-- 字典标签（必填，显示名称，如「启用」）
-- 字典键值（必填，存储值，如「1」）
-- 字典类型（自动带入当前选中类型）
-- 样式属性（CSS class，自定义样式）
-- 表格回显样式（Tag 颜色：default/success/processing/warning/error/blue/cyan/orange/purple/magenta/geekblue/gold/lime/green/red/volcano）
-- 是否默认（是/否）
-- 状态（启用/停用，默认启用）
-- 备注
-
-**预置字典类型（10种）**：
-
-| 字典名称 | 字典类型 | 字典项数 | 说明 |
-|---------|---------|---------|------|
-| 用户状态 | `sys_user_status` | 2 | 启用、禁用 |
-| 订单状态 | `prod_order_status` | 3 | 开立、已下达、已关闭 |
-| 工单状态 | `prod_work_order_status` | 4 | 开立、开工、关闭、完工 |
-| 产线状态 | `bas_line_status` | 3 | 运行中、维护中、停用 |
-| 班次 | `bas_shift_type` | 2 | 白班、夜班 |
-| 不良大类 | `bas_defect_category` | 2 | 来料检验类、制程检验类 |
-| 不良类型 | `bas_defect_type` | 3 | 来料不良、制程不良、检验报废 |
-| 异常类型 | `prod_exception_type` | 5 | 设备异常、物料异常、品质异常、人员异常、工艺异常 |
-| 设备状态 | `bas_device_status` | 3 | 运行、停用、维修 |
-| 性别 | `sys_user_sex` | 2 | 男、女 |
+**字段详情抽屉**（点击「查看」按钮打开）：
+- 表基本信息：表名、分类、字段数、记录数、最后更新、说明
+- 字段明细表格：序号、字段名、类型、可空、主键、默认值、说明
 
 **业务规则**：
-- 字典类型编码唯一，不可重复
-- 字典项按「显示排序 + 字典编码」升序排列
-- 停用的字典类型/字典项在业务下拉中不显示
-- 字典项「是否默认」用于标记默认选中项
-- 表格回显样式控制列表中 Tag 的颜色
-- 删除字典类型时会级联删除其下所有字典项
+- 表格按「分类排序（系统表→基础数据表→业务表） + 表名字母序」排序
+- 支持按表名和说明模糊搜索
+- 支持按表分类筛选
+- 字段详情通过数据库 `describeTable` 实时获取，确保与实际表结构一致
 
-**后端模型**：
-- `DictType` → `sys_dict_type` 表（字典类型）
-- `DictData` → `sys_dict_data` 表（字典项）
-- 关联关系：`DictType.hasMany(DictData, { foreignKey: 'dict_type', sourceKey: 'dict_type' })`
-
-**API 接口**：
-- 字典类型：`GET/POST/PUT/DELETE /api/system/dict/types`
-- 字典项列表：`GET /api/system/dict/datas?dictType=xxx`
-- 按类型查询字典项：`GET /api/system/dict/datas/type/:type`（仅启用项）
-- 字典项 CRUD：`POST/PUT/DELETE /api/system/dict/datas`
+**后端接口**：
+- 获取数据库信息及表清单：`GET /api/system/config/database`
+- 返回数据包含：数据库连接信息、表清单数组、各表字段详情对象
 
 #### 5.5 编码规则
 
@@ -1230,10 +1197,6 @@ JWT_EXPIRES_IN=7d
 | PUT | `/api/system/roles/:id/permissions` | 分配角色权限 |
 | GET/POST/PUT/DELETE | `/api/system/permissions` | 权限/菜单管理 |
 | GET | `/api/system/permissions/menu` | 获取用户菜单树 |
-| GET/POST/PUT/DELETE | `/api/system/dict/types` | 字典类型管理 |
-| GET | `/api/system/dict/datas` | 字典项列表（分页） |
-| GET | `/api/system/dict/datas/type/:type` | 按类型查询字典项（仅启用） |
-| POST/PUT/DELETE | `/api/system/dict/datas` | 字典项 CRUD |
 | GET | `/api/system/logs` | 操作日志列表 |
 | GET/PUT | `/api/system/config` | 系统配置获取/保存 |
 | GET | `/api/system/config/environment` | 获取项目环境信息 |

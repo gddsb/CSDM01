@@ -274,7 +274,7 @@ export const restartServer = async (req, res) => {
   }
 }
 
-// 数据库配置信息（密码脱敏）
+// 数据库配置信息（密码脱敏）+ 数据表清单
 export const getDatabaseInfo = async (req, res) => {
   try {
     const dialect = process.env.DB_DIALECT || 'sqlite'
@@ -287,7 +287,6 @@ export const getDatabaseInfo = async (req, res) => {
       password_set: !!(process.env.DB_PASSWORD && process.env.DB_PASSWORD.length > 0),
       storage: dialect === 'sqlite' ? (process.env.DB_STORAGE || './data/milk_can_mes.sqlite') : '-',
     }
-    // 测试连接
     try {
       await sequelize.authenticate()
       info.connection_status = 'connected'
@@ -295,6 +294,87 @@ export const getDatabaseInfo = async (req, res) => {
       info.connection_status = 'error'
       info.connection_error = e.message
     }
+
+    const tableCategoryMap = {
+      sys_user: { category: '系统表', purpose: '系统用户表，存储所有登录用户信息及权限关联' },
+      sys_role: { category: '系统表', purpose: '系统角色表，定义角色名称、编码及排序' },
+      sys_permission: { category: '系统表', purpose: '系统权限表，存储菜单、页面、按钮、API权限定义' },
+      sys_role_permission: { category: '系统表', purpose: '角色权限关联表，建立角色与权限的多对多关系' },
+      sys_operation_log: { category: '系统表', purpose: '操作日志表，记录用户所有关键操作行为' },
+      sys_config: { category: '系统表', purpose: '系统配置表，存储系统参数配置项' },
+      sys_sequence: { category: '系统表', purpose: '业务编号序列表，用于自动编号生成的原子计数' },
+      sys_dict_type: { category: '系统表', purpose: '数据字典类型表' },
+      sys_dict_data: { category: '系统表', purpose: '数据字典项表' },
+      bas_material: { category: '基础数据表', purpose: '料品档案表，存储奶粉罐料品基础信息及规格参数' },
+      bas_customer: { category: '基础数据表', purpose: '客户档案表，存储客户基本信息及信用等级' },
+      bas_production_line: { category: '基础数据表', purpose: '产线表，管理生产线的编号、名称及状态' },
+      master_production_line: { category: '基础数据表', purpose: '产线表，管理生产线的编号、名称及状态' },
+      bas_process: { category: '基础数据表', purpose: '工序表，定义奶粉罐生产工序名称及顺序' },
+      master_process: { category: '基础数据表', purpose: '工序表，定义奶粉罐生产工序名称及顺序' },
+      bas_device: { category: '基础数据表', purpose: '设备档案表，存储设备基础信息及特种设备检定日期' },
+      master_device: { category: '基础数据表', purpose: '设备档案表' },
+      bas_defect_type: { category: '基础数据表', purpose: '不良分类表，按大类名称和分类名称二级分类管理不良项及单位' },
+      master_defect_type: { category: '基础数据表', purpose: '不良分类表' },
+      bas_defect_image: { category: '基础数据表', purpose: '不良图片表' },
+      bas_line_process: { category: '基础数据表', purpose: '产线工序关联表，描述产线与工序多对多关系' },
+      bas_line_device: { category: '基础数据表', purpose: '产线设备关联表' },
+      bas_number_rule: { category: '基础数据表', purpose: '编码规则表，用于系统自动编号的可视化配置管理' },
+      production_order: { category: '业务表', purpose: '生产订单表，记录生产订单信息及计划数量' },
+      prod_order: { category: '业务表', purpose: '生产订单表' },
+      production_work_order: { category: '业务表', purpose: '工单表，记录生产工单及工时计算数据' },
+      prod_work_order: { category: '业务表', purpose: '工单表' },
+      production_process_report: { category: '业务表', purpose: '工序报工记录表，记录每道工序的产量和不良数据' },
+      prod_process_report: { category: '业务表', purpose: '工序报工表' },
+      production_manpower_record: { category: '业务表', purpose: '人员投入记录表，记录工单的人员配置及班次' },
+      prod_manpower_record: { category: '业务表', purpose: '人员投入记录表' },
+      production_exception_record: { category: '业务表', purpose: '异常工时记录表，记录生产异常及关联订单工单' },
+      prod_exception_record: { category: '业务表', purpose: '异常记录表' },
+    }
+
+    const queryInterface = sequelize.getQueryInterface()
+    const allTables = await queryInterface.showAllTables()
+    const tables = []
+    const columnsMap = {}
+
+    for (const tableName of allTables) {
+      let recordCount = 0
+      try {
+        const result = await sequelize.query(`SELECT COUNT(*) as count FROM "${tableName}"`, { type: sequelize.QueryTypes.SELECT })
+        recordCount = result[0]?.count || 0
+      } catch (e) {
+        // ignore
+      }
+      const cols = await queryInterface.describeTable(tableName)
+      const colList = Object.entries(cols).map(([name, col]) => ({
+        name,
+        type: col.type,
+        nullable: col.allowNull,
+        primaryKey: col.primaryKey,
+        defaultValue: col.defaultValue !== undefined && col.defaultValue !== null ? String(col.defaultValue).replace(/'/g, '') : null,
+        comment: col.comment || '',
+      }))
+      columnsMap[tableName] = colList
+
+      const meta = tableCategoryMap[tableName] || { category: '其他', purpose: '' }
+      tables.push({
+        table_name: tableName,
+        category: meta.category,
+        field_count: colList.length,
+        record_count: recordCount,
+        purpose: meta.purpose,
+        last_update: new Date().toISOString(),
+      })
+    }
+
+    tables.sort((a, b) => {
+      const catOrder = { '系统表': 0, '基础数据表': 1, '业务表': 2, '其他': 3 }
+      return (catOrder[a.category] - catOrder[b.category]) || a.table_name.localeCompare(b.table_name)
+    })
+
+    info.tables = tables
+    info.columns = columnsMap
+    info.table_count = tables.length
+
     return success(res, info, '获取成功')
   } catch (err) {
     console.error('获取数据库配置失败:', err)
