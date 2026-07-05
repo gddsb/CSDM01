@@ -24,7 +24,7 @@ async function generateWorkOrderNo() {
 // 工单列表
 export const list = async (req, res) => {
   try {
-    const { keyword, status, order_id, line_id, page = 1, pageSize = 20 } = req.query
+    const { keyword, status, order_id, line_id, dateStart, dateEnd, page = 1, pageSize = 20 } = req.query
     const where = {}
     if (keyword) {
       where[Op.or] = [
@@ -36,6 +36,11 @@ export const list = async (req, res) => {
     if (status !== undefined && status !== '') where.status = Number(status)
     if (order_id) where.order_id = Number(order_id)
     if (line_id) where.line_id = Number(line_id)
+    if (dateStart || dateEnd) {
+      where.start_time = {}
+      if (dateStart) where.start_time[Op.gte] = new Date(dateStart)
+      if (dateEnd) where.start_time[Op.lte] = new Date(dateEnd + ' 23:59:59')
+    }
 
     const limit = Number(pageSize)
     const offset = (Number(page) - 1) * limit

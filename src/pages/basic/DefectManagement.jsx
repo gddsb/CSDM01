@@ -4,7 +4,7 @@ import {
   ImportOutlined, ToolOutlined, DeleteOutlined,
   PlusOutlined, EyeOutlined, ReloadOutlined,
 } from '@ant-design/icons'
-import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import ThreeSectionPage, { ActionButtons, getQuickFilterRange } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 
 // 所属大类标签颜色映射
@@ -33,7 +33,15 @@ export default function DefectManagement() {
   const [statusInput, setStatusInput] = useState(undefined)
   const [typeInput, setTypeInput] = useState(undefined)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined, defect_type: undefined })
+  const [query, setQuery] = useState(() => {
+    const { dateStart, dateEnd } = getQuickFilterRange('month')
+    return { page: 1, pageSize: 30, keyword: '', status: undefined, defect_type: undefined, dateStart, dateEnd }
+  })
+
+  const handleQuickFilterChange = (val) => {
+    const { dateStart, dateEnd } = getQuickFilterRange(val)
+    setQuery(q => ({ ...q, page: 1, dateStart, dateEnd }))
+  }
 
   const processOptions = processes.map(p => ({ label: `${p.process_code} ${p.process_name}`, value: p.process_id }))
 
@@ -47,6 +55,8 @@ export default function DefectManagement() {
         if (query.keyword) params.keyword = query.keyword
         if (query.status !== undefined && query.status !== null) params.status = query.status
         if (query.defect_type) params.defect_type = query.defect_type
+        if (query.dateStart) params.dateStart = query.dateStart
+        if (query.dateEnd) params.dateEnd = query.dateEnd
         const res = await api.get('/basic/defect-types', { params })
         if (cancelled) return
         const list = res.data || []
@@ -270,6 +280,7 @@ export default function DefectManagement() {
         filters={filters}
         onSearch={handleSearch}
         onReset={handleReset}
+        onQuickFilterChange={handleQuickFilterChange}
         actions={
           <ActionButtons
             hasAdd={false}

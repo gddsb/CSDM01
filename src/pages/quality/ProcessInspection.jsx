@@ -5,7 +5,7 @@ import {
   PlusOutlined, ExportOutlined, ReloadOutlined, SearchOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
-import ThreeSectionPage from '../../components/ThreeSectionPage'
+import ThreeSectionPage, { getQuickFilterRange } from '../../components/ThreeSectionPage'
 import { workOrders, processes } from '../../mock/data'
 
 const { RangePicker } = DatePicker
@@ -34,6 +34,15 @@ export default function ProcessInspection() {
   const [dateRange, setDateRange] = useState(null)
   const [modalVisible, setModalVisible] = useState(false)
   const [form] = Form.useForm()
+  const [quickFilter, setQuickFilter] = useState(() => {
+    const { dateStart, dateEnd } = getQuickFilterRange('month')
+    return { dateStart, dateEnd }
+  })
+
+  const handleQuickFilterChange = (val) => {
+    const { dateStart, dateEnd } = getQuickFilterRange(val)
+    setQuickFilter({ dateStart, dateEnd })
+  }
 
   const selectedWorkOrderId = Form.useWatch('work_order_id', form)
   const selectedWorkOrder = workOrders.find(w => w.work_order_id === selectedWorkOrderId)
@@ -47,9 +56,14 @@ export default function ProcessInspection() {
         const t = dayjs(item.inspection_time)
         matchDate = t.isAfter(dayjs(dateRange[0]).subtract(1, 'day')) && t.isBefore(dayjs(dateRange[1]).add(1, 'day'))
       }
-      return matchWo && matchResult && matchDate
+      let matchQuickDate = true
+      if (quickFilter.dateStart && quickFilter.dateEnd) {
+        const t = dayjs(item.inspection_time)
+        matchQuickDate = t.isAfter(dayjs(quickFilter.dateStart).subtract(1, 'day')) && t.isBefore(dayjs(quickFilter.dateEnd).add(1, 'day'))
+      }
+      return matchWo && matchResult && matchDate && matchQuickDate
     })
-  }, [data, workOrderId, result, dateRange])
+  }, [data, workOrderId, result, dateRange, quickFilter])
 
   const totalCount = data.length
   const passCount = data.filter(i => i.result === '合格').length
@@ -121,6 +135,7 @@ export default function ProcessInspection() {
         title="过程检验"
         breadcrumbs="质量管理 / 过程检验"
         stats={stats}
+        onQuickFilterChange={handleQuickFilterChange}
         actions={
           <>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增检验</Button>

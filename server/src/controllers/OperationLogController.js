@@ -11,10 +11,10 @@ export const list = async (req, res) => {
     if (module) where.module = { [Op.like]: `%${module}%` }
     if (method) where.method = method
     if (status !== undefined && status !== '') where.status = Number(status)
-    if (startDate || endDate) {
+    if (startDate || endDate || dateStart || dateEnd) {
       where.created_at = {}
-      if (startDate) where.created_at[Op.gte] = new Date(startDate)
-      if (endDate) where.created_at[Op.lte] = new Date(endDate)
+      if (startDate || dateStart) where.created_at[Op.gte] = new Date(startDate || dateStart)
+      if (endDate || dateEnd) where.created_at[Op.lte] = new Date((endDate || dateEnd) + ' 23:59:59')
     }
 
     const limit = Number(pageSize)

@@ -5,7 +5,7 @@ import {
   ArrowUpOutlined, ArrowDownOutlined, InfoCircleOutlined,
   PlusOutlined, ReloadOutlined,
 } from '@ant-design/icons'
-import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import ThreeSectionPage, { ActionButtons, getQuickFilterRange } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 
 const { Text } = Typography
@@ -23,7 +23,15 @@ export default function ProcessManagement() {
   const [keywordInput, setKeywordInput] = useState('')
   const [statusInput, setStatusInput] = useState(undefined)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined })
+  const [query, setQuery] = useState(() => {
+    const { dateStart, dateEnd } = getQuickFilterRange('month')
+    return { page: 1, pageSize: 30, keyword: '', status: undefined, dateStart, dateEnd }
+  })
+
+  const handleQuickFilterChange = (val) => {
+    const { dateStart, dateEnd } = getQuickFilterRange(val)
+    setQuery(q => ({ ...q, page: 1, dateStart, dateEnd }))
+  }
 
   const enabledCount = data.filter(p => p.status === '启用').length
 
@@ -41,6 +49,8 @@ export default function ProcessManagement() {
         const params = { page: query.page, pageSize: query.pageSize }
         if (query.keyword) params.keyword = query.keyword
         if (query.status !== undefined && query.status !== null) params.status = query.status
+        if (query.dateStart) params.dateStart = query.dateStart
+        if (query.dateEnd) params.dateEnd = query.dateEnd
         const res = await api.get('/basic/processes', { params })
         if (cancelled) return
         const list = res.data || []
@@ -212,6 +222,7 @@ export default function ProcessManagement() {
         filters={filters}
         onSearch={handleSearch}
         onReset={handleReset}
+        onQuickFilterChange={handleQuickFilterChange}
         actions={
           <ActionButtons
             hasAdd={false}

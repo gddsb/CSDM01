@@ -5,10 +5,15 @@ import { success, fail } from '../utils/response.js'
 // 人员投入列表（支持 work_order_id 筛选）
 export const list = async (req, res) => {
   try {
-    const { work_order_id, record_user, page = 1, pageSize = 20 } = req.query
+    const { work_order_id, record_user, dateStart, dateEnd, page = 1, pageSize = 20 } = req.query
     const where = {}
     if (work_order_id) where.work_order_id = Number(work_order_id)
     if (record_user) where.record_user = { [Op.like]: `%${record_user}%` }
+    if (dateStart || dateEnd) {
+      where.created_at = {}
+      if (dateStart) where.created_at[Op.gte] = new Date(dateStart)
+      if (dateEnd) where.created_at[Op.lte] = new Date(dateEnd + ' 23:59:59')
+    }
 
     const limit = Number(pageSize)
     const offset = (Number(page) - 1) * limit

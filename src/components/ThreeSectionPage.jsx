@@ -250,3 +250,47 @@ export const materialNameColumn = {
     </div>
   ),
 }
+
+/**
+ * 快速筛选日期范围计算
+ * 根据 "今天/本周/本月/本年" 返回对应的 YYYY-MM-DD 日期范围
+ * @param {string} type - 'today' | 'week' | 'month' | 'year'
+ * @returns {{ dateStart: string, dateEnd: string }}
+ */
+export function getQuickFilterRange(type) {
+  const now = new Date()
+  const fmt = (d) => {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+
+  switch (type) {
+    case 'today': {
+      const date = fmt(now)
+      return { dateStart: date, dateEnd: date }
+    }
+    case 'week': {
+      const day = now.getDay()
+      const diff = day === 0 ? 6 : day - 1
+      const start = new Date(now)
+      start.setDate(now.getDate() - diff)
+      const end = new Date(start)
+      end.setDate(start.getDate() + 6)
+      return { dateStart: fmt(start), dateEnd: fmt(end) }
+    }
+    case 'month': {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1)
+      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+      return { dateStart: fmt(start), dateEnd: fmt(end) }
+    }
+    case 'year': {
+      const start = new Date(now.getFullYear(), 0, 1)
+      const end = new Date(now.getFullYear(), 11, 31)
+      return { dateStart: fmt(start), dateEnd: fmt(end) }
+    }
+    default:
+      return { dateStart: '', dateEnd: '' }
+  }
+}

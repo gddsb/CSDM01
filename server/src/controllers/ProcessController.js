@@ -5,7 +5,7 @@ import { success, fail } from '../utils/response.js'
 // 工序列表
 export const list = async (req, res) => {
   try {
-    const { keyword, status, page = 1, pageSize = 50 } = req.query
+    const { keyword, status, dateStart, dateEnd, page = 1, pageSize = 50 } = req.query
     const where = {}
     if (keyword) {
       where[Op.or] = [
@@ -14,6 +14,11 @@ export const list = async (req, res) => {
       ]
     }
     if (status !== undefined && status !== '') where.status = Number(status)
+    if (dateStart || dateEnd) {
+      where.created_at = {}
+      if (dateStart) where.created_at[Op.gte] = new Date(dateStart)
+      if (dateEnd) where.created_at[Op.lte] = new Date(dateEnd + ' 23:59:59')
+    }
 
     const limit = Number(pageSize)
     const offset = (Number(page) - 1) * limit

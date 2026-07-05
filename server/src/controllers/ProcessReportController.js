@@ -5,11 +5,16 @@ import { success, fail } from '../utils/response.js'
 // 报工列表（支持 work_order_id 筛选）
 export const list = async (req, res) => {
   try {
-    const { work_order_id, process_id, report_user, page = 1, pageSize = 20 } = req.query
+    const { work_order_id, process_id, report_user, dateStart, dateEnd, page = 1, pageSize = 20 } = req.query
     const where = {}
     if (work_order_id) where.work_order_id = Number(work_order_id)
     if (process_id) where.process_id = Number(process_id)
     if (report_user) where.report_user = { [Op.like]: `%${report_user}%` }
+    if (dateStart || dateEnd) {
+      where.report_time = {}
+      if (dateStart) where.report_time[Op.gte] = new Date(dateStart)
+      if (dateEnd) where.report_time[Op.lte] = new Date(dateEnd + ' 23:59:59')
+    }
 
     const limit = Number(pageSize)
     const offset = (Number(page) - 1) * limit

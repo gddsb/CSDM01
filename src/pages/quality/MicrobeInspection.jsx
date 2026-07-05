@@ -1,10 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { Table, Tag, Button, Drawer, Descriptions, Typography, Alert } from 'antd'
 import {
   ExperimentOutlined, SafetyCertificateOutlined, WarningOutlined,
   CheckCircleOutlined, EyeOutlined, SearchOutlined
 } from '@ant-design/icons'
-import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import dayjs from 'dayjs'
+import ThreeSectionPage, { ActionButtons, getQuickFilterRange } from '../../components/ThreeSectionPage'
 import { microbeInspections, incomingInspections } from '../../mock/data'
 
 const { Text, Title } = Typography
@@ -39,16 +40,34 @@ const handleMap = {
 export default function MicrobeInspection() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [current, setCurrent] = useState(null)
+  const [quickFilter, setQuickFilter] = useState(() => {
+    const { dateStart, dateEnd } = getQuickFilterRange('month')
+    return { dateStart, dateEnd }
+  })
 
-  const normalCount = microbeInspections.filter(i => i.inspection_type === '正常').length
-  const strictCount = microbeInspections.filter(i => i.inspection_type === '加严').length
-  const passCount = microbeInspections.filter(i => i.result === '合格').length
-  const passRate = microbeInspections.length > 0
-    ? Math.round((passCount / microbeInspections.length) * 100)
+  const handleQuickFilterChange = (val) => {
+    const { dateStart, dateEnd } = getQuickFilterRange(val)
+    setQuickFilter({ dateStart, dateEnd })
+  }
+
+  const filteredData = useMemo(() => {
+    return microbeInspections.filter(item => {
+      if (!quickFilter.dateStart || !quickFilter.dateEnd) return true
+      if (!item.inspection_time) return false
+      const t = dayjs(item.inspection_time)
+      return t.isAfter(dayjs(quickFilter.dateStart).subtract(1, 'day')) && t.isBefore(dayjs(quickFilter.dateEnd).add(1, 'day'))
+    })
+  }, [quickFilter])
+
+  const normalCount = filteredData.filter(i => i.inspection_type === '正常').length
+  const strictCount = filteredData.filter(i => i.inspection_type === '加严').length
+  const passCount = filteredData.filter(i => i.result === '合格').length
+  const passRate = filteredData.length > 0
+    ? Math.round((passCount / filteredData.length) * 100)
     : 0
 
   const stats = [
-    { label: '总检验数', value: microbeInspections.length, icon: <ExperimentOutlined />, color: '#2196F3' },
+    { label: '总检验数', value: filteredData.length, icon: <ExperimentOutlined />, color: '#2196F3' },
     { label: '正常检验', value: normalCount, icon: <SafetyCertificateOutlined />, color: '#4CAF50' },
     { label: '加严检验', value: strictCount, icon: <WarningOutlined />, color: '#FF9800' },
     { label: '合格率', value: `${passRate}%`, icon: <CheckCircleOutlined />, color: '#00BCD4' },
@@ -143,6 +162,7 @@ export default function MicrobeInspection() {
         breadcrumbs="质量管理 / 微生物检验"
         stats={stats}
         filters={filters}
+        onQuickFilterChange={handleQuickFilterChange}
         actions={<ActionButtons />}
         table={
           <>
@@ -154,7 +174,7 @@ export default function MicrobeInspection() {
             />
             <Table
               columns={columns}
-              dataSource={microbeInspections}
+              dataSource={filteredData}
               rowKey="inspection_id"
               size="small"
               scroll={{ x: 1300 }}

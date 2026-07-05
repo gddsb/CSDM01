@@ -5,7 +5,7 @@ import {
   SendOutlined, ClockCircleOutlined, CheckCircleOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
-import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import ThreeSectionPage, { ActionButtons, getQuickFilterRange } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 
 const { RangePicker } = DatePicker
@@ -41,7 +41,16 @@ export default function OrderManagement() {
   const [statusInput, setStatusInput] = useState(undefined)
   const [planDateRange, setPlanDateRange] = useState(null)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', materialCode: '', status: undefined, planDateStart: '', planDateEnd: '' })
+  const [query, setQuery] = useState(() => {
+    const { dateStart, dateEnd } = getQuickFilterRange('month')
+    return { page: 1, pageSize: 30, keyword: '', materialCode: '', status: undefined, planDateStart: '', planDateEnd: '', dateStart, dateEnd }
+  })
+
+  // 快速筛选变化时，更新日期范围并重置分页
+  const handleQuickFilterChange = (val) => {
+    const { dateStart, dateEnd } = getQuickFilterRange(val)
+    setQuery(q => ({ ...q, page: 1, dateStart, dateEnd }))
+  }
 
   // 获取订单列表
   useEffect(() => {
@@ -55,6 +64,8 @@ export default function OrderManagement() {
         if (query.status !== undefined && query.status !== '') params.status = query.status
         if (query.planDateStart) params.planDateStart = query.planDateStart
         if (query.planDateEnd) params.planDateEnd = query.planDateEnd
+        if (query.dateStart) params.dateStart = query.dateStart
+        if (query.dateEnd) params.dateEnd = query.dateEnd
         const res = await api.get('/production/orders', { params })
         if (cancelled) return
         const list = res.data || []
@@ -290,6 +301,7 @@ export default function OrderManagement() {
         title="生产订单"
         breadcrumbs="生产管理 / 生产订单"
         stats={stats}
+        onQuickFilterChange={handleQuickFilterChange}
         actions={
           <ActionButtons
             hasAdd={false}

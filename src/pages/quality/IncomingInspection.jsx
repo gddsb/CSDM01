@@ -1,10 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { Table, Tag, Button, Drawer, Descriptions, Typography } from 'antd'
 import {
   ExperimentOutlined, CheckCircleOutlined, CloseCircleOutlined,
   ClockCircleOutlined, EyeOutlined, SearchOutlined
 } from '@ant-design/icons'
-import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import dayjs from 'dayjs'
+import ThreeSectionPage, { ActionButtons, getQuickFilterRange } from '../../components/ThreeSectionPage'
 import { incomingInspections } from '../../mock/data'
 
 const { Text, Title } = Typography
@@ -37,13 +38,31 @@ const statusColor = { '已完成': 'success', '检验中': 'processing' }
 export default function IncomingInspection() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [current, setCurrent] = useState(null)
+  const [quickFilter, setQuickFilter] = useState(() => {
+    const { dateStart, dateEnd } = getQuickFilterRange('month')
+    return { dateStart, dateEnd }
+  })
 
-  const passCount = incomingInspections.filter(i => i.result === '合格').length
-  const failCount = incomingInspections.filter(i => i.result === '不合格').length
-  const pendingCount = incomingInspections.filter(i => i.status === '检验中').length
+  const handleQuickFilterChange = (val) => {
+    const { dateStart, dateEnd } = getQuickFilterRange(val)
+    setQuickFilter({ dateStart, dateEnd })
+  }
+
+  const filteredData = useMemo(() => {
+    return incomingInspections.filter(item => {
+      if (!quickFilter.dateStart || !quickFilter.dateEnd) return true
+      if (!item.inspection_time) return false
+      const t = dayjs(item.inspection_time)
+      return t.isAfter(dayjs(quickFilter.dateStart).subtract(1, 'day')) && t.isBefore(dayjs(quickFilter.dateEnd).add(1, 'day'))
+    })
+  }, [quickFilter])
+
+  const passCount = filteredData.filter(i => i.result === '合格').length
+  const failCount = filteredData.filter(i => i.result === '不合格').length
+  const pendingCount = filteredData.filter(i => i.status === '检验中').length
 
   const stats = [
-    { label: '总检验数', value: incomingInspections.length, icon: <ExperimentOutlined />, color: '#2196F3' },
+    { label: '总检验数', value: filteredData.length, icon: <ExperimentOutlined />, color: '#2196F3' },
     { label: '合格', value: passCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
     { label: '不合格', value: failCount, icon: <CloseCircleOutlined />, color: '#F44336' },
     { label: '检验中', value: pendingCount, icon: <ClockCircleOutlined />, color: '#FF9800' },
@@ -121,11 +140,12 @@ export default function IncomingInspection() {
         breadcrumbs="质量管理 / 来料检验"
         stats={stats}
         filters={filters}
+        onQuickFilterChange={handleQuickFilterChange}
         actions={<ActionButtons />}
         table={
           <Table
             columns={columns}
-            dataSource={incomingInspections}
+            dataSource={filteredData}
             rowKey="inspection_id"
             size="small"
             scroll={{ x: 1500 }}

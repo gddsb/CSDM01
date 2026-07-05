@@ -5,7 +5,7 @@ import { success, fail } from '../utils/response.js'
 // 设备列表
 export const list = async (req, res) => {
   try {
-    const { keyword, status, device_type, line_id, page = 1, pageSize = 20 } = req.query
+    const { keyword, status, device_type, line_id, dateStart, dateEnd, page = 1, pageSize = 20 } = req.query
     const where = {}
     if (keyword) {
       where[Op.or] = [
@@ -18,6 +18,11 @@ export const list = async (req, res) => {
     if (status !== undefined && status !== '') where.status = Number(status)
     if (device_type) where.device_type = device_type
     if (line_id) where.line_id = Number(line_id)
+    if (dateStart || dateEnd) {
+      where.created_at = {}
+      if (dateStart) where.created_at[Op.gte] = new Date(dateStart)
+      if (dateEnd) where.created_at[Op.lte] = new Date(dateEnd + ' 23:59:59')
+    }
 
     const limit = Number(pageSize)
     const offset = (Number(page) - 1) * limit

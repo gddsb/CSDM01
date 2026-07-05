@@ -4,7 +4,7 @@ import {
   ProfileOutlined, CheckCircleOutlined, CloseCircleOutlined,
   PlusOutlined, EyeOutlined, ReloadOutlined,
 } from '@ant-design/icons'
-import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import ThreeSectionPage, { ActionButtons, getQuickFilterRange } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 
 const MaterialManagement = () => {
@@ -21,7 +21,15 @@ const MaterialManagement = () => {
   const [keywordInput, setKeywordInput] = useState('')
   const [isActiveInput, setIsActiveInput] = useState(undefined)
   const [categoryInput, setCategoryInput] = useState(undefined)
-  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', is_active: undefined, category_name: undefined })
+  const [query, setQuery] = useState(() => {
+    const { dateStart, dateEnd } = getQuickFilterRange('month')
+    return { page: 1, pageSize: 30, keyword: '', is_active: undefined, category_name: undefined, dateStart, dateEnd }
+  })
+
+  const handleQuickFilterChange = (val) => {
+    const { dateStart, dateEnd } = getQuickFilterRange(val)
+    setQuery(q => ({ ...q, page: 1, dateStart, dateEnd }))
+  }
 
   const activeCount = data.filter(m => m.is_active).length
   const inactiveCount = data.filter(m => !m.is_active).length
@@ -43,6 +51,8 @@ const MaterialManagement = () => {
         if (query.keyword) params.keyword = query.keyword
         if (query.is_active !== undefined && query.is_active !== null) params.is_active = query.is_active
         if (query.category_name) params.category_name = query.category_name
+        if (query.dateStart) params.dateStart = query.dateStart
+        if (query.dateEnd) params.dateEnd = query.dateEnd
         const res = await api.get('/basic/materials', { params })
         if (cancelled) return
         const list = res.data || []
@@ -207,6 +217,7 @@ const MaterialManagement = () => {
         filters={filters}
         onSearch={handleSearch}
         onReset={handleReset}
+        onQuickFilterChange={handleQuickFilterChange}
         actions={
           <ActionButtons
             hasAdd={false}
