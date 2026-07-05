@@ -55,6 +55,14 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(morgan('dev'))
 
+// 禁止浏览器缓存 API 响应（防止菜单排序等数据修改后刷新仍返回旧缓存）
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+  res.set('Pragma', 'no-cache')
+  res.set('Expires', '0')
+  next()
+})
+
 // 静态文件服务（用户上传的头像等）
 app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads'), {
   maxAge: '7d',

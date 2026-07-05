@@ -146,6 +146,8 @@ export default function MenuManagement() {
       }
       setModalVisible(false)
       refresh()
+      // 通知侧边栏刷新菜单
+      window.dispatchEvent(new Event('menu-updated'))
     } catch (e) {
       if (e?.errorFields) return
       message.error(e.message || '操作失败')
@@ -159,6 +161,8 @@ export default function MenuManagement() {
       const res = await api.delete(`/system/permissions/${record.perm_id}`)
       message.success(res.message || '删除成功')
       refresh()
+      // 通知侧边栏刷新菜单
+      window.dispatchEvent(new Event('menu-updated'))
     } catch (err) {
       message.error(err.message || '删除失败')
     }

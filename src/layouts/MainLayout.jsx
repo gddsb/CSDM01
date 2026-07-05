@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Layout, Menu, Dropdown, Avatar, Space, Typography, Badge, Button, Modal, Form, Input, Tooltip, Upload, message } from 'antd'
 import {
   DashboardOutlined, TeamOutlined, DatabaseOutlined, SettingOutlined,
@@ -245,23 +245,27 @@ export default function MainLayout() {
   }, [])
 
   // 获取动态菜单（按当前用户角色权限）
-  useEffect(() => {
-    let cancelled = false
-    const run = async () => {
-      try {
-        const res = await api.get('/system/permissions/menu')
-        if (cancelled) return
-        const tree = res.data || []
-        if (Array.isArray(tree) && tree.length > 0) {
-          setDynamicMenu(tree)
-        }
-      } catch (err) {
-        // 静默失败，使用默认菜单兜底
+  const fetchMenu = useCallback(async () => {
+    try {
+      const res = await api.get('/system/permissions/menu')
+      const tree = res.data || []
+      if (Array.isArray(tree) && tree.length > 0) {
+        setDynamicMenu(tree)
       }
+    } catch (err) {
+      // 静默失败，使用默认菜单兜底
     }
-    run()
-    return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    fetchMenu()
+    // 监听菜单更新事件（菜单管理页面修改后触发）
+    const handleMenuUpdate = () => fetchMenu()
+    window.addEventListener('menu-updated', handleMenuUpdate)
+    return () => {
+      window.removeEventListener('menu-updated', handleMenuUpdate)
+    }
+  }, [fetchMenu])
 
   const systemName = systemConfig.system_name || '长沙大满生产制造系统'
   const companyName = systemConfig.company_name || ''
