@@ -17,9 +17,9 @@ const statusColorMap = {
 }
 
 const statusOptions = [
-  { label: '开立', value: '开立' },
-  { label: '已下达', value: '已下达' },
-  { label: '已关闭', value: '已关闭' },
+  { label: '开立', value: 0 },
+  { label: '已下达', value: 1 },
+  { label: '已关闭', value: 2 },
 ]
 
 export default function OrderManagement() {
@@ -52,7 +52,7 @@ export default function OrderManagement() {
         const params = { page: query.page, pageSize: query.pageSize }
         if (query.keyword) params.keyword = query.keyword
         if (query.materialCode) params.materialCode = query.materialCode
-        if (query.status) params.status = query.status
+        if (query.status !== undefined && query.status !== '') params.status = query.status
         if (query.planDateStart) params.planDateStart = query.planDateStart
         if (query.planDateEnd) params.planDateEnd = query.planDateEnd
         const res = await api.get('/production/orders', { params })
@@ -331,7 +331,18 @@ export default function OrderManagement() {
                   style={{ width: '100%' }}
                   options={statusOptions}
                   value={statusInput}
-                  onChange={(v) => { setStatusInput(v); setTimeout(handleSearch, 0) }}
+                  onChange={(v) => {
+                    setStatusInput(v)
+                    setQuery(q => ({
+                      ...q,
+                      page: 1,
+                      keyword: keywordInput,
+                      materialCode: materialCodeInput,
+                      status: v,
+                      planDateStart: planDateRange?.[0]?.format('YYYY-MM-DD') || '',
+                      planDateEnd: planDateRange?.[1]?.format('YYYY-MM-DD') || '',
+                    }))
+                  }}
                 />
               </Col>
               <Col flex="260px">
@@ -339,7 +350,8 @@ export default function OrderManagement() {
                   placeholder={['计划开始', '计划结束']}
                   style={{ width: '100%' }}
                   value={planDateRange}
-                  onChange={(v) => { setPlanDateRange(v); setTimeout(() => {
+                  onChange={(v) => {
+                    setPlanDateRange(v)
                     setQuery(q => ({
                       ...q,
                       page: 1,
@@ -349,7 +361,7 @@ export default function OrderManagement() {
                       planDateStart: v?.[0]?.format('YYYY-MM-DD') || '',
                       planDateEnd: v?.[1]?.format('YYYY-MM-DD') || '',
                     }))
-                  }, 0) }}
+                  }}
                 />
               </Col>
               <Col>
