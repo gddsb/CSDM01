@@ -310,7 +310,7 @@ export default function DefectManagement() {
       title: '操作', key: 'action', width: 170, fixed: 'right',
       render: (_, record) => (
         <Space size="small">
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => setViewRecord(record)}>查看</Button>
+          <Button type="link" size="small" onClick={() => setViewRecord(record)}>查看</Button>
           <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
           <Popconfirm
             title="确认删除该不良项？"
