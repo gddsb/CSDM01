@@ -20,6 +20,9 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
+    "docx": "^9.7.1",
+    "html-docx-js-typescript": "^0.1.5",
+    "markdown-it": "^14.3.0",
     "vite": "^5.4.8"
   }
 }
