@@ -451,7 +451,7 @@ export default function WorkOrderManagement() {
                   <span>
                     计划数量
                     {selectedOrder && (
-                      <span style={{ color: '#ff4d4f', fontSize: 12, fontWeight: 'normal', marginLeft: '2em' }}>
+                      <span style={{ color: 'var(--color-accent)', fontSize: 12, fontWeight: 500, marginLeft: '2em' }}>
                         未生成：{Math.max(0, (Number(selectedOrder.planned_qty) || 0) - (Number(selectedOrder.finished_qty) || 0)).toLocaleString()}
                       </span>
                     )}
