@@ -262,6 +262,10 @@ export default function DefectManagement() {
     setSelectedCategory(value)
     // 清空已选分类名称
     form.setFieldValue('defect_type', undefined)
+    // 来料检验类不关联具体工序，清空并禁用
+    if (value === '来料检验类') {
+      form.setFieldValue('related_processes', [])
+    }
   }
 
   // 当前可用的分类名称选项
@@ -479,6 +483,7 @@ export default function DefectManagement() {
               placeholder="请选择关联工序（未选择则在所有工序可用）"
               options={processOptions}
               allowClear
+              disabled={selectedCategory === '来料检验类'}
             />
           </Form.Item>
           {/* 不良图片上传 */}
