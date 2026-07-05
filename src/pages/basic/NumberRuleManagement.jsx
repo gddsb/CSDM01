@@ -5,7 +5,7 @@ import {
 } from 'antd'
 import {
   KeyOutlined, PlusOutlined, EyeOutlined,
-  LockOutlined, UnlockOutlined, CheckCircleOutlined, PauseCircleOutlined,
+  LockOutlined, UnlockOutlined, PauseCircleOutlined,
   PlayCircleOutlined, ThunderboltOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
@@ -224,16 +224,6 @@ export default function NumberRuleManagement() {
     }
   }
 
-  const handleAudit = async (record) => {
-    try {
-      const res = await api.post(`/basic/number-rules/${record.rule_id}/audit`)
-      message.success(res.message || '审核成功')
-      refresh()
-    } catch (err) {
-      message.error(err.message || '审核失败')
-    }
-  }
-
   const handlePreview = async (record) => {
     try {
       const res = await api.get(`/basic/number-rules/${record.rule_id}/preview`)
@@ -277,43 +267,21 @@ export default function NumberRuleManagement() {
         : <Tag>未关联</Tag>,
     },
     {
-      title: '当前最新编号', dataIndex: 'current_no', key: 'current_no', width: 160,
-      render: v => v ? <span style={{ fontFamily: 'monospace', color: '#2196F3' }}>{v}</span> : <Tag>未生成</Tag>,
-    },
-    {
       title: '已使用', dataIndex: 'used_count', key: 'used_count', width: 80,
       render: v => <Tag color="orange">{v || 0}</Tag>,
-    },
-    {
-      title: '审核', dataIndex: 'is_locked', key: 'is_locked', width: 80,
-      render: v => v === 1
-        ? <Tag color="green" icon={<LockOutlined />}>已审核</Tag>
-        : <Tag icon={<UnlockOutlined />}>未审核</Tag>,
     },
     {
       title: '状态', dataIndex: 'status', key: 'status', width: 80,
       render: v => <Tag color={v === 1 ? 'green' : 'default'}>{v === 1 ? '启用' : '停用'}</Tag>,
     },
     {
-      title: '操作', key: 'action', width: 240, fixed: 'right',
+      title: '操作', key: 'action', width: 200, fixed: 'right',
       render: (_, record) => (
         <Space size="small" wrap>
           <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => setViewRecord(record)}>查看</Button>
           <Button type="link" size="small" icon={<ThunderboltOutlined />} onClick={() => handlePreview(record)}>预览</Button>
-          <Button
-            type="link" size="small"
-            disabled={record.is_locked === 1}
-            onClick={() => handleEdit(record)}
-          >编辑</Button>
           {record.is_locked !== 1 && (
-            <Popconfirm
-              title="确认审核该编号规则？审核使用后核心配置不允许修改。"
-              onConfirm={() => handleAudit(record)}
-              okText="确认审核"
-              cancelText="取消"
-            >
-              <Button type="link" size="small" icon={<CheckCircleOutlined />}>审核</Button>
-            </Popconfirm>
+            <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
           )}
           <Button
             type="link" size="small"
@@ -378,7 +346,7 @@ export default function NumberRuleManagement() {
             rowKey="rule_id"
             size="small"
             loading={loading}
-            scroll={{ x: 1700 }}
+            scroll={{ x: 1450 }}
             pagination={{
               current: query.page,
               pageSize: query.pageSize,
@@ -475,7 +443,7 @@ export default function NumberRuleManagement() {
           )}
           {editing && editing.is_locked === 1 && (
             <div style={{ color: '#faad14', fontSize: 12 }}>
-              <LockOutlined /> 该规则已审核使用，核心配置（前缀、日期格式、分隔符、序号位数、重置周期）不允许修改，
+              <LockOutlined /> 该规则已启用审核，核心配置（前缀、日期格式、分隔符、序号位数、重置周期）不允许修改，
               但可以修改关联表单字段和规则说明，以及停用/启用。
             </div>
           )}

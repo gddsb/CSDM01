@@ -68,7 +68,7 @@ export const detail = async (req, res) => {
   }
 }
 
-// 创建编号规则
+// 创建编号规则（默认停用、未审核，启用时自动审核）
 export const create = async (req, res) => {
   try {
     const { rule_name, rule_code, prefix, date_format, separator, seq_width, reset_by } = req.body
@@ -81,16 +81,16 @@ export const create = async (req, res) => {
     const exists = await NumberRule.findOne({ where: { rule_code } })
     if (exists) return fail(res, '规则编码已存在')
     const username = req.user?.username || 'system'
+    // 新建规则默认停用、未审核，用户启用时自动审核
     const rule = await NumberRule.create({
       ...req.body,
       is_locked: 0,
-      status: 1,
+      status: 0,
       current_no: null,
       used_count: 0,
       created_by: username,
     })
-    // 新规则创建后立即同步到内存 SEQ_CONFIG
-    await reloadRulesFromDB()
+    // 新规则创建后不同步到 SEQ_CONFIG（停用状态不生效）
     return success(res, rule, '创建成功')
   } catch (err) {
     console.error('创建编号规则失败:', err)
@@ -151,19 +151,37 @@ export const remove = async (req, res) => {
   }
 }
 
-// 停用/启用（审核使用后允许）
+// 停用/启用（启用即审核；同一表单字段只能有一个生效规则）
 export const toggle = async (req, res) => {
   try {
     const { id } = req.params
     const rule = await NumberRule.findOne({ where: { rule_id: id } })
     if (!rule) return fail(res, '编号规则不存在', 404)
     const next = rule.status === 1 ? 0 : 1
-    await rule.update({ status: next })
-    // 同步内存配置：停用规则不影响 generateBizNo（generateBizNo 直接读 SEQ_CONFIG）
-    // 停用时该规则_code 不会被 reloadRulesFromDB 覆盖，但若之前已加载则保留旧值
-    // 这里通过 reload 重新同步，停用的规则不会被重新加载（保持默认值）
+    if (next === 1) {
+      // 启用操作：
+      // 1. 启用即审核（自动锁定 is_locked=1）
+      // 2. 同一表单字段只能有一个生效规则，先停用同字段的其他启用规则
+      if (rule.target_table && rule.target_field) {
+        await NumberRule.update(
+          { status: 0 },
+          {
+            where: {
+              target_table: rule.target_table,
+              target_field: rule.target_field,
+              status: 1,
+              rule_id: { [Op.ne]: rule.rule_id },
+            },
+          }
+        )
+      }
+      await rule.update({ status: 1, is_locked: 1 })
+    } else {
+      // 停用操作：只改状态，保持已审核锁定状态
+      await rule.update({ status: 0 })
+    }
     await reloadRulesFromDB()
-    return success(res, rule, next === 1 ? '已启用' : '已停用')
+    return success(res, rule, next === 1 ? '已启用并审核' : '已停用')
   } catch (err) {
     console.error('切换编号规则状态失败:', err)
     return fail(res, '服务器错误', 500)
@@ -209,13 +227,16 @@ export const preview = async (req, res) => {
   }
 }
 
-// 初始化默认编号规则
+// 初始化默认编号规则（全部默认为已审核状态）
 export const initDefaultRules = async () => {
   for (const def of defaultRules) {
-    await NumberRule.findOrCreate({
+    const [record, created] = await NumberRule.findOrCreate({
       where: { rule_code: def.rule_code },
-      defaults: { ...def, is_locked: 0, status: 1, used_count: 0 },
+      defaults: { ...def, is_locked: 1, status: 1, used_count: 0 },
     })
+    if (!created && record.is_locked !== 1) {
+      await record.update({ is_locked: 1 })
+    }
   }
   // 初始化后同步到内存
   await reloadRulesFromDB()
