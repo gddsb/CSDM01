@@ -236,6 +236,44 @@ export const getEnvironment = async (req, res) => {
   }
 }
 
+// 重启后端服务
+export const restartServer = async (req, res) => {
+  try {
+    const result = {
+      message: '服务正在重启，请稍候...',
+      estimated_time: 5000,
+      restart_time: new Date().toISOString(),
+    }
+    res.json({ code: 200, success: true, data: result, message: '重启指令已发送' })
+
+    // 延迟 500ms 后启动新进程并退出当前进程
+    const restartDelay = 500
+    setTimeout(async () => {
+      try {
+        const { exec } = await import('child_process')
+        const nodeBin = process.execPath
+        const scriptPath = path.resolve(process.cwd(), 'src', 'app.js')
+        const logPath = path.resolve(process.cwd(), 'restart.log')
+
+        // 使用 nohup 方式启动新进程，确保脱离父进程
+        const cmd = process.platform === 'win32'
+          ? `start /B "" "${nodeBin}" "${scriptPath}"`
+          : `nohup "${nodeBin}" "${scriptPath}" >> "${logPath}" 2>&1 &`
+
+        exec(cmd, { cwd: process.cwd(), env: { ...process.env, RESTARTED: '1' } }, (err) => {
+          if (err) console.error('启动新进程失败:', err)
+          process.exit(0)
+        })
+      } catch (restartErr) {
+        console.error('重启失败:', restartErr)
+      }
+    }, restartDelay)
+  } catch (err) {
+    console.error('重启服务失败:', err)
+    return fail(res, '重启服务失败', 500)
+  }
+}
+
 // 数据库配置信息（密码脱敏）
 export const getDatabaseInfo = async (req, res) => {
   try {

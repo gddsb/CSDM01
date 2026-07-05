@@ -475,44 +475,50 @@ export default function ManagementBigScreen() {
       {/* 顶部标题栏 */}
       <div className="bs-header">
         {/* 左上角：闲置态切换为系统时间显示 */}
-        {!idle ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <Button
-              type="text"
-              icon={<ArrowLeftOutlined />}
-              onClick={() => navigate('/dashboard')}
-              style={{ color: '#8B949E' }}
-            />
-            <div className="bs-screen-tabs">
-              <div className="bs-screen-tab" onClick={() => navigate('/bigscreen/production')}>生产大屏</div>
-              <div className="bs-screen-tab active">管理大屏</div>
+        <div className="bs-header-left">
+          {!idle ? (
+            <>
+              <Button
+                type="text"
+                icon={<ArrowLeftOutlined />}
+                onClick={() => navigate('/dashboard')}
+                style={{ color: '#8B949E' }}
+              />
+              <div className="bs-screen-tabs">
+                <div className="bs-screen-tab" onClick={() => navigate('/bigscreen/production')}>生产大屏</div>
+                <div className="bs-screen-tab active">管理大屏</div>
+              </div>
+            </>
+          ) : (
+            <div className="bs-idle-clock">
+              <span style={{ color: '#3FB950' }}>●</span>
+              <span>{formatClock(currentTime)}</span>
+              <span style={{ fontSize: 12, color: '#8B949E' }}>系统时间</span>
             </div>
+          )}
+        </div>
+        <div className="bs-header-center">
+          <div className="bs-title">
+            <img src={logoRect} alt="logo" style={{ height: 40, width: 'auto', marginRight: 12, verticalAlign: 'middle' }} />
+            奶粉罐生产管理综合大屏
           </div>
-        ) : (
-          <div className="bs-idle-clock">
-            <span style={{ color: '#3FB950' }}>●</span>
-            <span>{formatClock(currentTime)}</span>
-            <span style={{ fontSize: 12, color: '#8B949E' }}>系统时间</span>
-          </div>
-        )}
-        <div className="bs-title">
-          <img src={logoRect} alt="logo" style={{ height: 40, width: 'auto', marginRight: 12, verticalAlign: 'middle' }} />
-          奶粉罐生产管理综合大屏
         </div>
         {/* 右上角：环境数据（温度/湿度/压差）+ 时间 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span className="bs-env-item" title="温度">
-            <span className="bs-env-label" style={{ color: '#58A6FF' }}>温度</span>
-            <span className="bs-env-value">{envData.temperature.toFixed(1)}°C</span>
-          </span>
-          <span className="bs-env-item" title="湿度">
-            <span className="bs-env-label" style={{ color: '#3FB950' }}>湿度</span>
-            <span className="bs-env-value">{envData.humidity.toFixed(1)}%</span>
-          </span>
-          <span className="bs-env-item" title="压差">
-            <span className="bs-env-label" style={{ color: '#F0883E' }}>压差</span>
-            <span className="bs-env-value">{envData.pressure.toFixed(1)}Pa</span>
-          </span>
+        <div className="bs-header-right">
+          <div className="bs-env-group">
+            <span className="bs-env-item" title="温度">
+              <span className="bs-env-label" style={{ color: '#58A6FF' }}>温度</span>
+              <span className="bs-env-value">{envData.temperature.toFixed(1)}°C</span>
+            </span>
+            <span className="bs-env-item" title="湿度">
+              <span className="bs-env-label" style={{ color: '#3FB950' }}>湿度</span>
+              <span className="bs-env-value">{envData.humidity.toFixed(1)}%</span>
+            </span>
+            <span className="bs-env-item" title="压差">
+              <span className="bs-env-label" style={{ color: '#F0883E' }}>压差</span>
+              <span className="bs-env-value">{envData.pressure.toFixed(1)}Pa</span>
+            </span>
+          </div>
           <ReloadOutlined style={{ color: '#3FB950' }} className="bs-blink" />
           <div className="bs-time">{formatTime(currentTime)}</div>
         </div>

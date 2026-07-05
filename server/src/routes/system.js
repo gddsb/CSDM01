@@ -11,7 +11,7 @@ import {
   userMenu,
 } from '../controllers/PermissionController.js'
 import { list as logList } from '../controllers/OperationLogController.js'
-import { getConfig, saveConfig, getEnvironment, getDatabaseInfo, listBackups, createBackup, restoreBackup, deleteBackup, migrateDatabase, getMigrationTargets } from '../controllers/SystemConfigController.js'
+import { getConfig, saveConfig, getEnvironment, getDatabaseInfo, listBackups, createBackup, restoreBackup, deleteBackup, migrateDatabase, getMigrationTargets, restartServer } from '../controllers/SystemConfigController.js'
 import { authRequired, logOperation } from '../middleware/auth.js'
 
 const router = Router()
@@ -69,6 +69,7 @@ router.get('/config', getConfig)
 router.put('/config', logOperation('系统配置'), saveConfig)
 // 项目环境
 router.get('/config/environment', getEnvironment)
+router.post('/config/restart', logOperation('系统配置'), restartServer)
 // 数据库配置
 router.get('/config/database', getDatabaseInfo)
 router.get('/config/database/migration-targets', getMigrationTargets)

@@ -6,7 +6,7 @@ import {
 import {
   SaveOutlined, SettingOutlined, ToolOutlined, SafetyOutlined, BellOutlined,
   DatabaseOutlined, CloudServerOutlined, HistoryOutlined, ReloadOutlined,
-  PlusOutlined, DeleteOutlined, RollbackOutlined, SwapOutlined,
+  PlusOutlined, DeleteOutlined, RollbackOutlined, SwapOutlined, PoweroffOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
@@ -65,6 +65,7 @@ export default function SystemConfig() {
   // 项目环境
   const [envInfo, setEnvInfo] = useState(null)
   const [envLoading, setEnvLoading] = useState(false)
+  const [restartLoading, setRestartLoading] = useState(false)
 
   // 数据库配置
   const [dbInfo, setDbInfo] = useState(null)
@@ -106,6 +107,46 @@ export default function SystemConfig() {
     } finally {
       setEnvLoading(false)
     }
+  }, [])
+
+  const handleRestart = useCallback(async () => {
+    Modal.confirm({
+      title: '确认重启服务？',
+      content: '重启期间服务将短暂不可用，重启完成后会自动刷新环境信息。',
+      okText: '确认重启',
+      cancelText: '取消',
+      okType: 'danger',
+      onOk: async () => {
+        setRestartLoading(true)
+        try {
+          const res = await api.post('/system/config/restart')
+          message.success(res.message || '重启指令已发送，服务正在重启...')
+          // 等待服务重启完成后刷新环境信息
+          const waitAndRefresh = async (attempt = 0) => {
+            const maxAttempts = 20
+            const interval = 1500
+            if (attempt >= maxAttempts) {
+              setRestartLoading(false)
+              message.warning('服务重启时间较长，请手动刷新页面查看')
+              return
+            }
+            try {
+              await new Promise(resolve => setTimeout(resolve, interval))
+              const envRes = await api.get('/system/config/environment')
+              setEnvInfo(envRes.data)
+              setRestartLoading(false)
+              message.success('服务重启成功，环境信息已刷新')
+            } catch (e) {
+              waitAndRefresh(attempt + 1)
+            }
+          }
+          waitAndRefresh()
+        } catch (err) {
+          setRestartLoading(false)
+          message.error(err.message || '重启服务失败')
+        }
+      },
+    })
   }, [])
 
   const loadDb = useCallback(async () => {
@@ -405,7 +446,18 @@ export default function SystemConfig() {
     <Spin spinning={envLoading}>
       <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text type="secondary">展示当前服务运行环境信息（只读）</Text>
-        <Button icon={<ReloadOutlined />} onClick={loadEnv}>刷新</Button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Button icon={<ReloadOutlined />} onClick={loadEnv}>刷新</Button>
+          <Button
+            type="primary"
+            danger
+            icon={<PoweroffOutlined />}
+            loading={restartLoading}
+            onClick={handleRestart}
+          >
+            重启服务
+          </Button>
+        </div>
       </div>
       {envInfo && (
         <>

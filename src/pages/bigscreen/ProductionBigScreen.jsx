@@ -534,7 +534,7 @@ export default function ProductionBigScreen() {
     >
       {/* 顶部标题栏 */}
       <div className="bs-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 0 }}>
+        <div className="bs-header-left">
           {/* 闲置时隐藏左上角看板名称按钮，改显示系统时间 */}
           {!idle ? (
             <>
@@ -558,30 +558,26 @@ export default function ProductionBigScreen() {
             </div>
           )}
         </div>
-        <div className="bs-title">
-          <img src={logoRect} alt="logo" style={{ height: 40, width: 'auto', marginRight: 12, verticalAlign: 'middle' }} />
-          奶粉罐生产实时监控大屏
+        <div className="bs-header-center">
+          <div className="bs-title">
+            <img src={logoRect} alt="logo" style={{ height: 40, width: 'auto', marginRight: 12, verticalAlign: 'middle' }} />
+            奶粉罐生产实时监控大屏
+          </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div className="bs-header-right">
           {/* 右上角：温度、湿度、压差 */}
-          <div style={{ display: 'flex', gap: 12, fontSize: 13, color: '#8B949E' }}>
-            <span title="温度">
-              <span style={{ color: '#58A6FF' }}>温度</span>
-              <span style={{ color: '#E6EDF3', fontFamily: "'Courier New', monospace", marginLeft: 4 }}>
-                {envData.temperature.toFixed(1)}°C
-              </span>
+          <div className="bs-env-group">
+            <span className="bs-env-item" title="温度">
+              <span className="bs-env-label" style={{ color: '#58A6FF' }}>温度</span>
+              <span className="bs-env-value">{envData.temperature.toFixed(1)}°C</span>
             </span>
-            <span title="湿度">
-              <span style={{ color: '#3FB950' }}>湿度</span>
-              <span style={{ color: '#E6EDF3', fontFamily: "'Courier New', monospace", marginLeft: 4 }}>
-                {envData.humidity.toFixed(1)}%
-              </span>
+            <span className="bs-env-item" title="湿度">
+              <span className="bs-env-label" style={{ color: '#3FB950' }}>湿度</span>
+              <span className="bs-env-value">{envData.humidity.toFixed(1)}%</span>
             </span>
-            <span title="压差">
-              <span style={{ color: '#F0883E' }}>压差</span>
-              <span style={{ color: '#E6EDF3', fontFamily: "'Courier New', monospace", marginLeft: 4 }}>
-                {envData.pressure.toFixed(1)}Pa
-              </span>
+            <span className="bs-env-item" title="压差">
+              <span className="bs-env-label" style={{ color: '#F0883E' }}>压差</span>
+              <span className="bs-env-value">{envData.pressure.toFixed(1)}Pa</span>
             </span>
           </div>
           <ReloadOutlined style={{ color: '#3FB950' }} />
