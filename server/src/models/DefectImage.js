@@ -27,6 +27,11 @@ const DefectImage = sequelize.define('DefectImage', {
     defaultValue: 0,
     comment: '排序号',
   },
+  file_hash: {
+    type: DataTypes.STRING(64),
+    allowNull: true,
+    comment: '文件MD5哈希值，用于去重',
+  },
 }, {
   tableName: 'master_defect_image',
   timestamps: true,

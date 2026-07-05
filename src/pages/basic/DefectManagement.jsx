@@ -491,10 +491,11 @@ export default function DefectManagement() {
                   showUploadList={false}
                   customRequest={handleImageUpload}
                   accept="image/*"
+                  style={{ width: 72, height: 72 }}
                 >
-                  <div>
-                    <UploadOutlined />
-                    <div style={{ marginTop: 4 }}>上传图片</div>
+                  <div style={{ fontSize: 12 }}>
+                    <UploadOutlined style={{ fontSize: 18 }} />
+                    <div style={{ marginTop: 2 }}>上传图片</div>
                   </div>
                 </Upload>
                 <div style={{ marginTop: 8, color: '#999', fontSize: 12 }}>

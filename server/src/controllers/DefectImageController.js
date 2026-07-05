@@ -1,8 +1,19 @@
 import path from 'path'
 import fs from 'fs'
+import crypto from 'crypto'
 import { Op } from 'sequelize'
 import { DefectImage, DefectType } from '../models/index.js'
 import { success, fail } from '../utils/response.js'
+
+const computeFileHash = (filePath) => {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('md5')
+    const stream = fs.createReadStream(filePath)
+    stream.on('data', data => hash.update(data))
+    stream.on('end', () => resolve(hash.digest('hex')))
+    stream.on('error', reject)
+  })
+}
 
 // 不良图片列表
 export const listImages = async (req, res) => {
@@ -46,17 +57,38 @@ export const uploadImages = async (req, res) => {
     const uploadsDir = path.resolve(process.cwd(), 'uploads', 'defects')
     if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true })
 
-    const created = []
+    // 计算所有文件的哈希并检查重复
+    const fileInfoList = []
+    const hashSet = new Set()
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
-      // 计算流水码：已有数量 + 当前序号
+      const hash = await computeFileHash(file.path)
+      // 检查当前批次内是否重复
+      if (hashSet.has(hash)) {
+        files.forEach(f => { try { fs.unlinkSync(f.path) } catch {} })
+        return fail(res, `第${i + 1}张图片与本次上传的其他图片重复`)
+      }
+      hashSet.add(hash)
+      // 检查数据库中同一不良项下是否已有相同图片
+      const exists = await DefectImage.findOne({
+        where: { defect_id: id, file_hash: hash },
+      })
+      if (exists) {
+        files.forEach(f => { try { fs.unlinkSync(f.path) } catch {} })
+        return fail(res, `图片「${file.originalname}」已存在，请勿重复上传`)
+      }
+      fileInfoList.push({ file, hash })
+    }
+
+    const created = []
+    for (let i = 0; i < fileInfoList.length; i++) {
+      const { file, hash } = fileInfoList[i]
       const seqNum = existingCount + i + 1
       const seqStr = String(seqNum).padStart(2, '0')
       const ext = path.extname(file.originalname) || '.jpg'
       const newName = `${defect.defect_code}-${seqStr}${ext}`
       const destPath = path.join(uploadsDir, newName)
 
-      // 移动文件
       fs.renameSync(file.path, destPath)
 
       const record = await DefectImage.create({
@@ -64,6 +96,7 @@ export const uploadImages = async (req, res) => {
         image_url: `/uploads/defects/${newName}`,
         image_name: newName,
         sort_order: seqNum,
+        file_hash: hash,
       })
       created.push(record)
     }

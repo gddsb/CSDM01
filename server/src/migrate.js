@@ -78,6 +78,12 @@ const migrations = [
       ['parent_id', 'INTEGER DEFAULT 0'],
     ],
   },
+  {
+    table: 'master_defect_image',
+    columns: [
+      ['file_hash', 'VARCHAR(64)'],
+    ],
+  },
 ]
 
 // SQLite 与 MySQL 取列名的方式不同
