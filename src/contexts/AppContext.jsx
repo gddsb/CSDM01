@@ -56,8 +56,17 @@ export function AppProvider({ children }) {
     localStorage.setItem('mes_theme', key)
   }
 
+  // 切换到下一个主题（按主题顺序：纯净奶源→暗夜工厂→蓝天牧场→金属质感→自然绿洲→暖阳琥珀）
+  const cycleTheme = () => {
+    const order = ['pureMilk', 'darkFactory', 'blueSky', 'metal', 'greenOasis', 'warmAmber']
+    const idx = order.indexOf(themeKey)
+    const nextKey = order[(idx + 1) % order.length]
+    changeTheme(nextKey)
+    return nextKey
+  }
+
   return (
-    <AppContext.Provider value={{ currentUser, login, logout, updateUser, themeKey, changeTheme, initialized }}>
+    <AppContext.Provider value={{ currentUser, login, logout, updateUser, themeKey, changeTheme, cycleTheme, initialized }}>
       {children}
     </AppContext.Provider>
   )

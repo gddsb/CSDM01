@@ -1,5 +1,6 @@
 import { Router } from 'express'
-import { list, detail, create, update, remove, toggle } from '../controllers/UserController.js'
+import multer from 'multer'
+import { list, detail, create, update, remove, toggle, uploadMyAvatar, setMyAvatar, updateMyProfile } from '../controllers/UserController.js'
 import { list as roleList, create as roleCreate, update as roleUpdate, remove as roleRemove, getRolePermissions, assignPermissions } from '../controllers/RoleController.js'
 import {
   list as permList,
@@ -10,13 +11,30 @@ import {
   userMenu,
 } from '../controllers/PermissionController.js'
 import { list as logList } from '../controllers/OperationLogController.js'
-import { getConfig, saveConfig, getEnvironment, getDatabaseInfo, listBackups, createBackup, restoreBackup, deleteBackup } from '../controllers/SystemConfigController.js'
+import { getConfig, saveConfig, getEnvironment, getDatabaseInfo, listBackups, createBackup, restoreBackup, deleteBackup, migrateDatabase, getMigrationTargets } from '../controllers/SystemConfigController.js'
 import { authRequired, logOperation } from '../middleware/auth.js'
 
 const router = Router()
 
+// 头像上传 multer 配置（内存存储到 tmp，控制器再持久化）
+const avatarUpload = multer({
+  dest: 'uploads/tmp/',
+  limits: { fileSize: 2 * 1024 * 1024 },  // 2MB
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype || !file.mimetype.startsWith('image/')) {
+      return cb(new Error('请上传图片格式的文件'))
+    }
+    cb(null, true)
+  },
+})
+
 // 所有系统管理路由都需要登录
 router.use(authRequired)
+
+// 当前用户头像与个人信息（放在 /users/:id 之前避免被匹配）
+router.post('/users/me/avatar', avatarUpload.single('avatar'), uploadMyAvatar)
+router.put('/users/me/avatar', setMyAvatar)
+router.put('/users/me/profile', updateMyProfile)
 
 // 用户管理
 router.get('/users', logOperation('用户管理'), list)
@@ -53,6 +71,8 @@ router.put('/config', logOperation('系统配置'), saveConfig)
 router.get('/config/environment', getEnvironment)
 // 数据库配置
 router.get('/config/database', getDatabaseInfo)
+router.get('/config/database/migration-targets', getMigrationTargets)
+router.post('/config/database/migrate', logOperation('系统配置'), migrateDatabase)
 // 备份还原
 router.get('/config/backups', listBackups)
 router.post('/config/backups', logOperation('系统配置'), createBackup)

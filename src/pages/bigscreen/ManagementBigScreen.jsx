@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import * as echarts from 'echarts'
 import { Row, Col, Table, Tag, Button } from 'antd'
 import { ArrowLeftOutlined, ReloadOutlined } from '@ant-design/icons'
@@ -10,6 +10,64 @@ import {
 } from '../../mock/data'
 import logoRect from '../../assets/logo-rect.png'
 import '../../styles/bigscreen.css'
+
+// 环境数据更新间隔
+const ENV_REFRESH_INTERVAL = 8 * 1000
+// 无操作自动隐藏阈值
+const IDLE_THRESHOLD = 15 * 1000
+
+// 提取数据中所有日期
+function extractDates(items, ...fields) {
+  const set = new Set()
+  items.forEach(item => {
+    fields.forEach(f => {
+      const v = item[f]
+      if (v && typeof v === 'string') {
+        const m = v.match(/^(\d{4}-\d{2}-\d{2})/)
+        if (m) set.add(m[1])
+      }
+    })
+  })
+  return Array.from(set).sort()
+}
+
+// 获取当日数据日期：今天优先，无数据则取最近有数据的日期
+function getActiveDate() {
+  const allDates = []
+    .concat(extractDates(orders, 'plan_start_time', 'release_time', 'created_at'))
+    .concat(extractDates(workOrders, 'start_time', 'created_at'))
+    .concat(extractDates(processReports, 'report_time'))
+    .concat(extractDates(incomingInspections, 'inspection_time', 'arrival_date'))
+    .concat(extractDates(finishedInspections, 'inspection_time'))
+    .concat(extractDates(microbeInspections, 'inspection_time'))
+    .concat(extractDates(envInspections, 'inspection_date'))
+    .concat(extractDates(complaints, 'complaint_time'))
+  if (allDates.length === 0) return null
+  const today = new Date()
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  if (allDates.includes(todayStr)) return todayStr
+  const pastDates = allDates.filter(d => d <= todayStr)
+  return pastDates.length > 0 ? pastDates[pastDates.length - 1] : allDates[allDates.length - 1]
+}
+
+function filterByDate(items, dateStr, ...fields) {
+  if (!dateStr) return items
+  return items.filter(item =>
+    fields.some(f => {
+      const v = item[f]
+      return v && typeof v === 'string' && v.startsWith(dateStr)
+    })
+  )
+}
+
+function nextEnvValue(prev, min, max) {
+  let delta = (Math.random() * 4 - 2)
+  let next = prev + delta
+  if (next < min) next = min + (min - next)
+  if (next > max) next = max - (next - max)
+  next = Math.max(min, Math.min(max, next))
+  return Number(next.toFixed(1))
+}
 
 // 暗色主题通用配置
 const AXIS_LABEL = '#C9D1D9'
@@ -34,6 +92,9 @@ const DEVICE_STATUS_COLOR = {
 export default function ManagementBigScreen() {
   const navigate = useNavigate()
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [activeDate, setActiveDate] = useState(getActiveDate())
+  const [idle, setIdle] = useState(false)
+  const [envData, setEnvData] = useState({ temperature: 21.5, humidity: 60.5, pressure: 18.0 })
 
   // ECharts 图表容器引用
   const orderTrendRef = useRef(null)
@@ -42,8 +103,38 @@ export default function ManagementBigScreen() {
   const deviceStatusRef = useRef(null)
   const lineOutputRef = useRef(null)
 
+  const idleTimerRef = useRef(null)
+
+  const resetIdle = useCallback(() => {
+    setIdle(false)
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+    idleTimerRef.current = setTimeout(() => setIdle(true), IDLE_THRESHOLD)
+  }, [])
+
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'wheel']
+    events.forEach(e => window.addEventListener(e, resetIdle, { passive: true }))
+    resetIdle()
+    return () => {
+      events.forEach(e => window.removeEventListener(e, resetIdle))
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
+    }
+  }, [resetIdle])
+
+  // 定期更新环境数据
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setEnvData(prev => ({
+        temperature: nextEnvValue(prev.temperature, 20, 23),
+        humidity: nextEnvValue(prev.humidity, 58, 63),
+        pressure: nextEnvValue(prev.pressure, 15, 21),
+      }))
+    }, ENV_REFRESH_INTERVAL)
     return () => clearInterval(timer)
   }, [])
 
@@ -51,23 +142,51 @@ export default function ManagementBigScreen() {
     const pad = (n) => String(n).padStart(2, '0')
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
   }
+  const formatClock = (d) => {
+    const pad = (n) => String(n).padStart(2, '0')
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  }
 
-  // 生产指标
-  const activeOrders = orders.filter(o => o.status !== '已关闭').length
-  const closedOrders = orders.filter(o => o.status === '已关闭').length
-  const activeWorkOrders = workOrders.filter(w => w.status === '开工').length
-  const completedWorkOrders = workOrders.filter(w => w.status === '完工').length
+  // 通用图表配置：禁用动画（定期更新数据不要动画）
+  const noAnimation = { animation: false, animationDuration: 0, animationDurationUpdate: 0, animationEasingUpdate: 'linear' }
 
-  // 质量指标
-  const incomingPass = incomingInspections.filter(i => i.result === '合格').length
-  const incomingFail = incomingInspections.filter(i => i.result === '不合格').length
-  const incomingPending = incomingInspections.filter(i => i.status === '检验中').length
-  const finishedPass = finishedInspections.filter(i => i.result === '合格').length
-  const finishedTotal = finishedInspections.length
-  const microbePass = microbeInspections.filter(i => i.result === '合格').length
-  const envPass = envInspections.filter(i => i.result === '合格').length
-  const envTotal = envInspections.length
-  const activeComplaints = complaints.filter(c => c.status !== '已关闭').length
+  // 按当日过滤数据
+  const dateOrders = filterByDate(orders, activeDate, 'plan_start_time', 'release_time', 'created_at')
+  const dateWorkOrders = filterByDate(workOrders, activeDate, 'start_time', 'created_at')
+  const dateProcessReports = filterByDate(processReports, activeDate, 'report_time')
+  const dateIncoming = filterByDate(incomingInspections, activeDate, 'inspection_time', 'arrival_date')
+  const dateFinished = filterByDate(finishedInspections, activeDate, 'inspection_time')
+  const dateMicrobe = filterByDate(microbeInspections, activeDate, 'inspection_time')
+  const dateEnv = filterByDate(envInspections, activeDate, 'inspection_date')
+  const dateComplaints = filterByDate(complaints, activeDate, 'complaint_time')
+  // 当日无数据时回退到全部
+  const hasDateData = dateOrders.length > 0 || dateWorkOrders.length > 0 || dateProcessReports.length > 0
+    || dateIncoming.length > 0 || dateFinished.length > 0 || dateMicrobe.length > 0 || dateEnv.length > 0
+  const useOrders = hasDateData ? dateOrders : orders
+  const useWorkOrders = hasDateData ? dateWorkOrders : workOrders
+  const useProcessReports = hasDateData ? dateProcessReports : processReports
+  const useIncoming = hasDateData ? dateIncoming : incomingInspections
+  const useFinished = hasDateData ? dateFinished : finishedInspections
+  const useMicrobe = hasDateData ? dateMicrobe : microbeInspections
+  const useEnv = hasDateData ? dateEnv : envInspections
+  const useComplaints = dateComplaints.length > 0 ? dateComplaints : complaints
+
+  // 生产指标（基于当日过滤后的数据）
+  const activeOrders = useOrders.filter(o => o.status !== '已关闭').length
+  const closedOrders = useOrders.filter(o => o.status === '已关闭').length
+  const activeWorkOrders = useWorkOrders.filter(w => w.status === '开工').length
+  const completedWorkOrders = useWorkOrders.filter(w => w.status === '完工').length
+
+  // 质量指标（基于当日过滤后的数据）
+  const incomingPass = useIncoming.filter(i => i.result === '合格').length
+  const incomingFail = useIncoming.filter(i => i.result === '不合格').length
+  const incomingPending = useIncoming.filter(i => i.status === '检验中').length
+  const finishedPass = useFinished.filter(i => i.result === '合格').length
+  const finishedTotal = useFinished.length
+  const microbePass = useMicrobe.filter(i => i.result === '合格').length
+  const envPass = useEnv.filter(i => i.result === '合格').length
+  const envTotal = useEnv.length
+  const activeComplaints = useComplaints.filter(c => c.status !== '已关闭').length
 
   // 设备指标
   const runningDevices = devices.filter(d => d.status === '运行').length
@@ -80,10 +199,10 @@ export default function ManagementBigScreen() {
   const expiringInstruments = instruments.filter(i => i.status === '即将到期').length
   const expiredInstruments = instruments.filter(i => i.status === '已超期').length
 
-  // 生产数据
-  const totalInput = processReports.filter(r => r.process_name === '裁剪下料').reduce((s, r) => s + r.input_qty, 0)
-  const totalDefect = processReports.reduce((s, r) => s + r.defect_material + r.defect_process + r.defect_scrap, 0)
-  const totalOutput = processReports.reduce((s, r) => s + r.output_qty, 0)
+  // 生产数据（基于当日过滤后的数据）
+  const totalInput = useProcessReports.filter(r => r.process_name === '裁剪下料').reduce((s, r) => s + r.input_qty, 0)
+  const totalDefect = useProcessReports.reduce((s, r) => s + r.defect_material + r.defect_process + r.defect_scrap, 0)
+  const totalOutput = useProcessReports.reduce((s, r) => s + r.output_qty, 0)
   const yieldRate = totalInput > 0 ? ((totalInput - totalDefect) / totalInput * 100).toFixed(1) : 0
 
   // KPI数据
@@ -96,11 +215,11 @@ export default function ManagementBigScreen() {
     { label: '活跃客诉', value: activeComplaints, unit: '', color: '#F85149', icon: '⚠' },
   ]
 
-  // 质量检验汇总
+  // 质量检验汇总（基于当日过滤后的数据）
   const qualitySummary = [
-    { category: '来料检验', total: incomingInspections.length, pass: incomingPass, fail: incomingFail, pending: incomingPending },
+    { category: '来料检验', total: useIncoming.length, pass: incomingPass, fail: incomingFail, pending: incomingPending },
     { category: '成品检验', total: finishedTotal, pass: finishedPass, fail: finishedTotal - finishedPass, pending: 0 },
-    { category: '微生物检验', total: microbeInspections.length, pass: microbePass, fail: microbeInspections.length - microbePass, pending: 0 },
+    { category: '微生物检验', total: useMicrobe.length, pass: microbePass, fail: useMicrobe.length - microbePass, pending: 0 },
     { category: '环境检验', total: envTotal, pass: envPass, fail: envTotal - envPass, pending: 0 },
   ]
 
@@ -164,6 +283,7 @@ export default function ManagementBigScreen() {
     if (!orderTrendRef.current) return
     const chart = echarts.init(orderTrendRef.current)
     chart.setOption({
+      ...noAnimation,
       backgroundColor: 'transparent',
       tooltip: { trigger: 'axis' },
       legend: { data: ['目标数量', '完工数量'], textStyle: { color: AXIS_LABEL }, top: 0 },
@@ -207,6 +327,7 @@ export default function ManagementBigScreen() {
     if (!lineUtilRef.current) return
     const chart = echarts.init(lineUtilRef.current)
     chart.setOption({
+      ...noAnimation,
       backgroundColor: 'transparent',
       tooltip: { trigger: 'axis', formatter: '{b}: {c}%' },
       grid: { left: '3%', right: '6%', bottom: '3%', top: 30, containLabel: true },
@@ -254,6 +375,7 @@ export default function ManagementBigScreen() {
       '环境': CHART_COLORS.purple,
     }
     chart.setOption({
+      ...noAnimation,
       backgroundColor: 'transparent',
       tooltip: { trigger: 'axis', formatter: (p) => p.map(i => `${i.marker}${i.seriesName}: ${i.value}%`).join('<br/>') },
       legend: { data: Object.keys(qualityTrendSeries), textStyle: { color: AXIS_LABEL }, top: 0 },
@@ -287,6 +409,7 @@ export default function ManagementBigScreen() {
     if (!deviceStatusRef.current) return
     const chart = echarts.init(deviceStatusRef.current)
     chart.setOption({
+      ...noAnimation,
       backgroundColor: 'transparent',
       tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
       legend: { orient: 'vertical', right: 8, top: 'center', textStyle: { color: AXIS_LABEL } },
@@ -315,6 +438,7 @@ export default function ManagementBigScreen() {
     const chart = echarts.init(lineOutputRef.current)
     const productColors = [CHART_COLORS.cyan, CHART_COLORS.green, CHART_COLORS.yellow]
     chart.setOption({
+      ...noAnimation,
       backgroundColor: 'transparent',
       tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
       legend: { data: lineOutputProducts, textStyle: { color: AXIS_LABEL }, top: 0 },
@@ -350,23 +474,45 @@ export default function ManagementBigScreen() {
     <div className="bigscreen-container">
       {/* 顶部标题栏 */}
       <div className="bs-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Button
-            type="text"
-            icon={<ArrowLeftOutlined />}
-            onClick={() => navigate('/dashboard')}
-            style={{ color: '#8B949E' }}
-          />
-          <div className="bs-screen-tabs">
-            <div className="bs-screen-tab" onClick={() => navigate('/bigscreen/production')}>生产大屏</div>
-            <div className="bs-screen-tab active">管理大屏</div>
+        {/* 左上角：闲置态切换为系统时间显示 */}
+        {!idle ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <Button
+              type="text"
+              icon={<ArrowLeftOutlined />}
+              onClick={() => navigate('/dashboard')}
+              style={{ color: '#8B949E' }}
+            />
+            <div className="bs-screen-tabs">
+              <div className="bs-screen-tab" onClick={() => navigate('/bigscreen/production')}>生产大屏</div>
+              <div className="bs-screen-tab active">管理大屏</div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="bs-idle-clock">
+            <span style={{ color: '#3FB950' }}>●</span>
+            <span>{formatClock(currentTime)}</span>
+            <span style={{ fontSize: 12, color: '#8B949E' }}>系统时间</span>
+          </div>
+        )}
         <div className="bs-title">
           <img src={logoRect} alt="logo" style={{ height: 40, width: 'auto', marginRight: 12, verticalAlign: 'middle' }} />
           奶粉罐生产管理综合大屏
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        {/* 右上角：环境数据（温度/湿度/压差）+ 时间 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span className="bs-env-item" title="温度">
+            <span className="bs-env-label" style={{ color: '#58A6FF' }}>温度</span>
+            <span className="bs-env-value">{envData.temperature.toFixed(1)}°C</span>
+          </span>
+          <span className="bs-env-item" title="湿度">
+            <span className="bs-env-label" style={{ color: '#3FB950' }}>湿度</span>
+            <span className="bs-env-value">{envData.humidity.toFixed(1)}%</span>
+          </span>
+          <span className="bs-env-item" title="压差">
+            <span className="bs-env-label" style={{ color: '#F0883E' }}>压差</span>
+            <span className="bs-env-value">{envData.pressure.toFixed(1)}Pa</span>
+          </span>
           <ReloadOutlined style={{ color: '#3FB950' }} className="bs-blink" />
           <div className="bs-time">{formatTime(currentTime)}</div>
         </div>
@@ -452,7 +598,7 @@ export default function ManagementBigScreen() {
             </div>
           </div>
 
-          <div className="bs-panel">
+          <div className="bs-panel bs-no-scrollbar" style={{ overflow: 'auto' }}>
             <div className="bs-panel-title">产线利用率</div>
             {productionLines.map(line => {
               const lineDevices = devices.filter(d => d.location.includes(line.line_name))
@@ -524,7 +670,7 @@ export default function ManagementBigScreen() {
             <Table
               className="bs-table"
               columns={complaintColumns}
-              dataSource={complaints}
+              dataSource={useComplaints}
               rowKey="complaint_id"
               size="small"
               pagination={false}
@@ -535,7 +681,7 @@ export default function ManagementBigScreen() {
 
         {/* 右侧：设备 + 仪器 */}
         <Col span={6}>
-          <div className="bs-panel">
+          <div className="bs-panel bs-no-scrollbar" style={{ overflow: 'auto' }}>
             <div className="bs-panel-title">设备运行状态</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
               <div style={{ textAlign: 'center', padding: 10, background: 'rgba(63,185,80,0.08)', borderRadius: 6 }}>
@@ -557,7 +703,7 @@ export default function ManagementBigScreen() {
             </div>
           </div>
 
-          <div className="bs-panel">
+          <div className="bs-panel bs-no-scrollbar" style={{ overflow: 'auto' }}>
             <div className="bs-panel-title">检测仪器校准状态</div>
             {instruments.map(inst => (
               <div key={inst.instrument_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(88,166,255,0.06)', fontSize: 12 }}>

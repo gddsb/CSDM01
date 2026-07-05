@@ -244,8 +244,7 @@ export default function NumberRuleManagement() {
   }
 
   const columns = [
-    { title: '规则名称', dataIndex: 'rule_name', key: 'rule_name', width: 140, fixed: 'left' },
-    { title: '规则编码', dataIndex: 'rule_code', key: 'rule_code', width: 130 },
+    { title: '规则名称', dataIndex: 'rule_name', key: 'rule_name', width: 160, fixed: 'left' },
     { title: '前缀', dataIndex: 'prefix', key: 'prefix', width: 80 },
     {
       title: '日期格式', dataIndex: 'date_format', key: 'date_format', width: 110,

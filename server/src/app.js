@@ -2,6 +2,8 @@ import express from 'express'
 import cors from 'cors'
 import morgan from 'morgan'
 import dotenv from 'dotenv'
+import path from 'path'
+import fs from 'fs'
 import routes from './routes/index.js'
 import sequelize from './config/database.js'
 import { initDefaultConfigs } from './controllers/SystemConfigController.js'
@@ -13,6 +15,12 @@ dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT || 3001
+
+// 确保上传目录存在
+const uploadsDir = path.resolve(process.cwd(), 'uploads', 'avatars')
+const tmpDir = path.resolve(process.cwd(), 'uploads', 'tmp')
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true })
+if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
 
 // 同步数据库表
 async function initDatabase() {
@@ -46,6 +54,14 @@ app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(morgan('dev'))
+
+// 静态文件服务（用户上传的头像等）
+app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads'), {
+  maxAge: '7d',
+  setHeaders: (res) => {
+    res.setHeader('Cache-Control', 'public, max-age=604800')
+  },
+}))
 
 // 健康检查
 app.get('/api/health', (req, res) => {

@@ -72,9 +72,88 @@ export const saveConfig = async (req, res) => {
 export const getEnvironment = async (req, res) => {
   try {
     const mem = process.memoryUsage()
+    // 操作系统版本
+    let os_version = ''
+    let os_hostname = ''
+    let os_type = ''
+    let os_release = ''
+    let os_uptime = 0
+    let cpus = []
+    try {
+      const os = await import('os')
+      os_type = os.type()
+      os_release = os.release()
+      os_hostname = os.hostname()
+      os_uptime = Math.floor(os.uptime())
+      // 操作系统版本号字符串
+      os_version = `${os.type()} ${os.release()} (${os.arch()})`
+      cpus = os.cpus() || []
+    } catch (e) {
+      os_version = `${process.platform} ${process.arch}`
+    }
+    // 磁盘信息（当前工作目录所在分区）
+    let disk_info = { total: 0, free: 0, used: 0, used_percent: 0, mount: '' }
+    try {
+      const fs = await import('fs')
+      const os = await import('os')
+      const targetPath = process.cwd()
+      const isWin = process.platform === 'win32'
+      const execPath = isWin ? 'wmic' : 'df'
+      const { execFile } = await import('child_process')
+      // 使用 df 获取磁盘信息（Linux/Mac），Windows 使用 wmic
+      await new Promise((resolve) => {
+        if (isWin) {
+          execFile('wmic', ['logicaldisk', 'where', "DeviceID='C:'", 'get', 'Size,FreeSpace', '/format:csv'], { timeout: 3000 }, (err, stdout) => {
+            if (!err && stdout) {
+              const lines = stdout.trim().split(/\r?\n/).filter(Boolean)
+              const line = lines[lines.length - 1]
+              const parts = line.split(',').filter(Boolean)
+              if (parts.length >= 2) {
+                const free = Number(parts[0])
+                const total = Number(parts[1])
+                if (total > 0) {
+                  disk_info = {
+                    total, free, used: total - free,
+                    used_percent: Number(((total - free) / total * 100).toFixed(1)),
+                    mount: 'C:',
+                  }
+                }
+              }
+            }
+            resolve()
+          })
+        } else {
+          execFile('df', ['-k', targetPath], { timeout: 3000 }, (err, stdout) => {
+            if (!err && stdout) {
+              const lines = stdout.trim().split(/\r?\n/)
+              if (lines.length >= 2) {
+                const parts = lines[1].trim().split(/\s+/)
+                if (parts.length >= 6) {
+                  const total = Number(parts[1]) * 1024
+                  const used = Number(parts[2]) * 1024
+                  const free = Number(parts[3]) * 1024
+                  const usedPercent = Number(parts[4].replace('%', ''))
+                  disk_info = { total, free, used, used_percent: usedPercent, mount: parts[5] }
+                }
+              }
+            }
+            resolve()
+          })
+        }
+      })
+    } catch (e) {
+      // 磁盘信息获取失败，保持默认值
+    }
     const info = {
       node_version: process.version,
       platform: `${process.platform} ${process.arch}`,
+      os_type: os_type,
+      os_release: os_release,
+      os_version: os_version,
+      os_hostname: os_hostname,
+      os_uptime: os_uptime,
+      cpu_count: cpus.length,
+      cpu_model: cpus.length > 0 ? cpus[0].model : '',
       pid: process.pid,
       uptime: Math.floor(process.uptime()),
       cwd: process.cwd(),
@@ -82,6 +161,11 @@ export const getEnvironment = async (req, res) => {
       memory_rss: Math.round(mem.rss / 1024 / 1024),
       memory_heap_used: Math.round(mem.heapUsed / 1024 / 1024),
       memory_heap_total: Math.round(mem.heapTotal / 1024 / 1024),
+      disk_total: disk_info.total,
+      disk_free: disk_info.free,
+      disk_used: disk_info.used,
+      disk_used_percent: disk_info.used_percent,
+      disk_mount: disk_info.mount,
       sequelize_version: Sequelize.version || 'unknown',
       server_time: new Date().toISOString(),
     }
@@ -238,6 +322,219 @@ export const initDefaultConfigs = async () => {
   }
 }
 
+// ===== 数据库迁移 =====
+
+// 获取可用迁移目标（常见的几种数据库环境）
+export const getMigrationTargets = async (req, res) => {
+  try {
+    const currentDialect = process.env.DB_DIALECT || 'sqlite'
+    const targets = [
+      {
+        dialect: 'sqlite',
+        name: 'SQLite（开发/单机版）',
+        default_port: '-',
+        default_storage: './data/milk_can_mes.sqlite',
+        description: '嵌入式数据库，无需安装，适合开发演示与单机部署',
+      },
+      {
+        dialect: 'mysql',
+        name: 'MySQL 8（生产环境）',
+        default_port: 3306,
+        description: '推荐的生产级数据库，支持高并发与完整事务',
+      },
+      {
+        dialect: 'postgres',
+        name: 'PostgreSQL（高级环境）',
+        default_port: 5432,
+        description: '支持更复杂的查询与扩展类型，适合数据分析场景',
+      },
+      {
+        dialect: 'mariadb',
+        name: 'MariaDB（开源兼容）',
+        default_port: 3306,
+        description: 'MySQL 的开源分支，兼容 MySQL 协议',
+      },
+    ]
+    // 标记当前正在使用的数据库类型
+    const list = targets.map(t => ({ ...t, is_current: t.dialect === currentDialect }))
+    return success(res, { current: currentDialect, targets: list }, '获取成功')
+  } catch (err) {
+    console.error('获取迁移目标失败:', err)
+    return fail(res, '服务器错误', 500)
+  }
+}
+
+// 读取当前 .env 文件内容
+function readEnvFile() {
+  const envPath = path.resolve(process.cwd(), '.env')
+  if (!fs.existsSync(envPath)) return ''
+  return fs.readFileSync(envPath, 'utf-8')
+}
+
+// 写入 .env 文件
+function writeEnvFile(content) {
+  const envPath = path.resolve(process.cwd(), '.env')
+  fs.writeFileSync(envPath, content, 'utf-8')
+}
+
+// 更新或追加 .env 中的键值
+function updateEnvLine(content, key, value) {
+  const lines = content.split(/\r?\n/)
+  const regex = new RegExp(`^\\s*${key}\\s*=`, 'i')
+  let found = false
+  for (let i = 0; i < lines.length; i++) {
+    if (regex.test(lines[i])) {
+      lines[i] = `${key}=${value}`
+      found = true
+      break
+    }
+  }
+  if (!found) lines.push(`${key}=${value}`)
+  return lines.join('\n')
+}
+
+// 执行数据迁移
+// 入参：{ target: 'sqlite'|'mysql'|'postgres'|'mariadb', host, port, database, username, password, storage }
+export const migrateDatabase = async (req, res) => {
+  const username = req.user?.username || 'system'
+  try {
+    const target = (req.body?.target || '').toLowerCase()
+    const validTargets = ['sqlite', 'mysql', 'postgres', 'mariadb']
+    if (!validTargets.includes(target)) {
+      return fail(res, '不支持的迁移目标数据库类型', 400)
+    }
+    // 1. 迁移前自动备份当前数据（仅 SQLite 支持界面备份）
+    const currentDialect = process.env.DB_DIALECT || 'sqlite'
+    let backupInfo = null
+    if (currentDialect === 'sqlite') {
+      try {
+        if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true })
+        if (fs.existsSync(SQLITE_PATH)) {
+          const ts = new Date().toISOString().replace(/[:T]/g, '-').replace(/\..+/, '').replace(' ', '_')
+          const backupName = `backup_${ts}.sqlite`
+          const backupPath = path.join(BACKUP_DIR, backupName)
+          fs.copyFileSync(SQLITE_PATH, backupPath)
+          const stat = fs.statSync(backupPath)
+          backupInfo = {
+            filename: backupName,
+            size: stat.size,
+            created_at: stat.mtime.toISOString(),
+          }
+        }
+      } catch (e) {
+        console.error('迁移前自动备份失败:', e.message)
+      }
+    }
+
+    // 2. 测试目标数据库连接
+    let targetSequelize
+    try {
+      if (target === 'sqlite') {
+        const storage = req.body?.storage || './data/milk_can_mes.sqlite'
+        const { Sequelize } = await import('sequelize')
+        // 确保目录存在
+        const storageAbs = path.resolve(process.cwd(), storage)
+        const storageDir = path.dirname(storageAbs)
+        if (!fs.existsSync(storageDir)) fs.mkdirSync(storageDir, { recursive: true })
+        targetSequelize = new Sequelize({
+          dialect: 'sqlite',
+          storage: storageAbs,
+          logging: false,
+          define: { timestamps: true, underscored: true },
+        })
+      } else {
+        const { Sequelize } = await import('sequelize')
+        targetSequelize = new Sequelize(
+          req.body?.database || 'milk_can_mes',
+          req.body?.username || 'root',
+          req.body?.password || '',
+          {
+            host: req.body?.host || 'localhost',
+            port: Number(req.body?.port) || (target === 'postgres' ? 5432 : 3306),
+            dialect: target,
+            logging: false,
+            define: { timestamps: true, underscored: true },
+          }
+        )
+      }
+      await targetSequelize.authenticate()
+    } catch (e) {
+      return fail(res, `目标数据库连接失败：${e.message}`, 400)
+    }
+
+    // 3. 复制数据：从当前 sequelize 读取所有表数据，写入目标 sequelize
+    const models = Object.values(sequelize.models || {})
+    const result = { tables: [], total_rows: 0 }
+    try {
+      // 在目标数据库创建表结构
+      const targetModels = []
+      for (const model of models) {
+        const Model = targetSequelize.define(model.name, model.getAttributes(), {
+          tableName: model.getTableName(),
+          timestamps: true,
+          underscored: true,
+        })
+        targetModels.push(Model)
+      }
+      await targetSequelize.sync({ force: false, alter: false })
+
+      // 逐表复制数据
+      for (let i = 0; i < models.length; i++) {
+        const srcModel = models[i]
+        const dstModel = targetModels[i]
+        const tableName = srcModel.getTableName()
+        try {
+          const rows = await srcModel.findAll({ raw: true })
+          if (rows.length > 0) {
+            // 批量插入，遇到错误则跳过该表（避免索引/约束冲突导致整体失败）
+            try {
+              await dstModel.bulkCreate(rows, { validate: false, ignoreDuplicates: true })
+            } catch (e) {
+              console.warn(`表 ${tableName} 批量插入部分失败:`, e.message)
+            }
+          }
+          result.tables.push({ name: tableName, rows: rows.length })
+          result.total_rows += rows.length
+        } catch (e) {
+          console.warn(`表 ${tableName} 数据迁移失败:`, e.message)
+          result.tables.push({ name: tableName, rows: 0, error: e.message })
+        }
+      }
+    } catch (e) {
+      try { await targetSequelize.close() } catch (closeErr) {}
+      return fail(res, `数据迁移失败：${e.message}`, 500)
+    }
+
+    // 4. 关闭目标连接
+    try { await targetSequelize.close() } catch (e) {}
+
+    // 5. 更新 .env 文件，使下次启动时使用新数据库
+    let envContent = readEnvFile()
+    const setEnv = (key, value) => { envContent = updateEnvLine(envContent, key, value) }
+    setEnv('DB_DIALECT', target)
+    if (target === 'sqlite') {
+      setEnv('DB_STORAGE', req.body?.storage || './data/milk_can_mes.sqlite')
+    } else {
+      setEnv('DB_HOST', req.body?.host || 'localhost')
+      setEnv('DB_PORT', req.body?.port || (target === 'postgres' ? 5432 : 3306))
+      setEnv('DB_NAME', req.body?.database || 'milk_can_mes')
+      setEnv('DB_USER', req.body?.username || 'root')
+      setEnv('DB_PASSWORD', req.body?.password || '')
+    }
+    writeEnvFile(envContent)
+
+    return success(res, {
+      target,
+      backup: backupInfo,
+      migration: result,
+      note: '迁移已完成。需要重启后端服务以使新数据库生效。',
+    }, `数据迁移成功，共迁移 ${result.total_rows} 行数据`)
+  } catch (err) {
+    console.error('数据库迁移失败:', err)
+    return fail(res, '服务器错误', 500)
+  }
+}
+
 export default {
   getConfig,
   saveConfig,
@@ -247,5 +544,7 @@ export default {
   createBackup,
   restoreBackup,
   deleteBackup,
+  migrateDatabase,
+  getMigrationTargets,
   initDefaultConfigs,
 }

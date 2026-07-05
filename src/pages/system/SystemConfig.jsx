@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   Form, Input, InputNumber, Select, Switch, Button, Row, Col, Typography, message, Spin,
-  Tabs, Table, Tag, Descriptions, Space, Popconfirm, Card, Statistic,
+  Tabs, Table, Tag, Descriptions, Space, Popconfirm, Card, Statistic, Modal, Alert,
 } from 'antd'
 import {
   SaveOutlined, SettingOutlined, ToolOutlined, SafetyOutlined, BellOutlined,
   DatabaseOutlined, CloudServerOutlined, HistoryOutlined, ReloadOutlined,
-  PlusOutlined, DeleteOutlined, RollbackOutlined,
+  PlusOutlined, DeleteOutlined, RollbackOutlined, SwapOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
@@ -75,6 +75,14 @@ export default function SystemConfig() {
   const [backupsLoading, setBackupsLoading] = useState(false)
   const [backupCreating, setBackupCreating] = useState(false)
 
+  // 数据库迁移
+  const [migrationTargets, setMigrationTargets] = useState([])
+  const [migrationLoading, setMigrationLoading] = useState(false)
+  const [migrationOpen, setMigrationOpen] = useState(false)
+  const [migrationSubmitting, setMigrationSubmitting] = useState(false)
+  const [migrationTarget, setMigrationTarget] = useState(null)
+  const [migrationForm] = Form.useForm()
+
   const loadConfig = useCallback(async () => {
     setLoading(true)
     try {
@@ -124,6 +132,18 @@ export default function SystemConfig() {
     }
   }, [])
 
+  const loadMigrationTargets = useCallback(async () => {
+    setMigrationLoading(true)
+    try {
+      const res = await api.get('/system/config/database/migration-targets')
+      setMigrationTargets(res.data?.targets || [])
+    } catch (err) {
+      message.error(err.message || '加载迁移目标失败')
+    } finally {
+      setMigrationLoading(false)
+    }
+  }, [])
+
   // 首次进入加载参数配置
   useEffect(() => {
     loadConfig()
@@ -134,7 +154,67 @@ export default function SystemConfig() {
     setActiveTab(key)
     if (key === 'env' && !envInfo) loadEnv()
     if (key === 'db' && !dbInfo) loadDb()
+    if (key === 'db') loadMigrationTargets()
     if (key === 'backup' && backups.length === 0) loadBackups()
+  }
+
+  // 打开迁移弹窗
+  const openMigrationModal = (target) => {
+    setMigrationTarget(target)
+    setMigrationOpen(true)
+    // 设置默认值
+    if (target?.dialect === 'sqlite') {
+      migrationForm.setFieldsValue({ storage: target.default_storage })
+    } else {
+      migrationForm.setFieldsValue({
+        host: 'localhost',
+        port: target?.default_port || 3306,
+        database: 'milk_can_mes',
+        username: 'root',
+        password: '',
+      })
+    }
+  }
+
+  // 执行迁移
+  const handleMigrationSubmit = async () => {
+    try {
+      const values = await migrationForm.validateFields()
+      setMigrationSubmitting(true)
+      const payload = { target: migrationTarget.dialect, ...values }
+      const res = await api.post('/system/config/database/migrate', payload)
+      message.success(res.message || '数据迁移成功，请重启后端服务')
+      // 显示迁移结果详情
+      Modal.success({
+        title: '数据迁移完成',
+        width: 560,
+        content: (
+          <div>
+            <p>{res.data?.note}</p>
+            {res.data?.backup && (
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                迁移前已自动备份：<Text code>{res.data.backup.filename}</Text>
+                （可在备份还原中查看并使用该备份进行还原）
+              </p>
+            )}
+            {res.data?.migration && (
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                共迁移 {res.data.migration.total_rows} 行数据，涉及 {res.data.migration.tables.length} 张表
+              </p>
+            )}
+          </div>
+        ),
+      })
+      setMigrationOpen(false)
+      // 重新加载数据库信息和迁移目标
+      loadDb()
+      loadMigrationTargets()
+    } catch (err) {
+      if (err?.errorFields) return
+      message.error(err.message || '迁移失败')
+    } finally {
+      setMigrationSubmitting(false)
+    }
   }
 
   const handleSave = async () => {
@@ -305,6 +385,22 @@ export default function SystemConfig() {
   )
 
   // ===== Tab 2: 项目环境 =====
+  const formatBytes = (b) => {
+    if (!b || b === 0) return '-'
+    if (b < 1024) return `${b} B`
+    if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`
+    if (b < 1024 * 1024 * 1024) return `${(b / 1024 / 1024).toFixed(1)} MB`
+    return `${(b / 1024 / 1024 / 1024).toFixed(2)} GB`
+  }
+  const formatUptime = (s) => {
+    if (!s || s === 0) return '-'
+    const d = Math.floor(s / 86400)
+    const h = Math.floor((s % 86400) / 3600)
+    const m = Math.floor((s % 3600) / 60)
+    if (d > 0) return `${d}天${h}小时${m}分钟`
+    if (h > 0) return `${h}小时${m}分钟`
+    return `${m}分钟`
+  }
   const EnvTab = (
     <Spin spinning={envLoading}>
       <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -312,55 +408,83 @@ export default function SystemConfig() {
         <Button icon={<ReloadOutlined />} onClick={loadEnv}>刷新</Button>
       </div>
       {envInfo && (
-        <Row gutter={[16, 16]}>
-          <Col span={6}>
-            <Card size="small">
-              <Statistic title="Node 版本" value={envInfo.node_version} />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card size="small">
-              <Statistic title="运行环境" value={envInfo.env} />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card size="small">
-              <Statistic title="Sequelize 版本" value={envInfo.sequelize_version} />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card size="small">
-              <Statistic title="进程 PID" value={envInfo.pid} />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card size="small">
-              <Statistic title="运行时长（秒）" value={envInfo.uptime} />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card size="small">
-              <Statistic title="RSS 内存（MB）" value={envInfo.memory_rss} />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card size="small">
-              <Statistic title="堆已用（MB）" value={envInfo.memory_heap_used} />
-            </Card>
-          </Col>
-          <Col span={6}>
-            <Card size="small">
-              <Statistic title="堆总量（MB）" value={envInfo.memory_heap_total} />
-            </Card>
-          </Col>
-        </Row>
-      )}
-      {envInfo && (
-        <Descriptions column={1} size="small" bordered style={{ marginTop: 16 }} title="详细信息">
-          <Descriptions.Item label="操作系统/架构">{envInfo.platform}</Descriptions.Item>
-          <Descriptions.Item label="工作目录">{envInfo.cwd}</Descriptions.Item>
-          <Descriptions.Item label="服务器时间">{dayjs(envInfo.server_time).format('YYYY-MM-DD HH:mm:ss')}</Descriptions.Item>
-        </Descriptions>
+        <>
+          <Row gutter={[16, 16]}>
+            <Col span={6}>
+              <Card size="small">
+                <Statistic title="Node 版本" value={envInfo.node_version} />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card size="small">
+                <Statistic title="运行环境" value={envInfo.env} />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card size="small">
+                <Statistic title="Sequelize 版本" value={envInfo.sequelize_version} />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card size="small">
+                <Statistic title="进程 PID" value={envInfo.pid} />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card size="small">
+                <Statistic title="进程运行时长" value={formatUptime(envInfo.uptime)} />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card size="small">
+                <Statistic title="RSS 内存" value={envInfo.memory_rss} suffix="MB" />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card size="small">
+                <Statistic title="堆已用" value={envInfo.memory_heap_used} suffix="MB" />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card size="small">
+                <Statistic title="堆总量" value={envInfo.memory_heap_total} suffix="MB" />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card size="small">
+                <Statistic title="CPU 核心数" value={envInfo.cpu_count || '-'} suffix="核" />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card size="small">
+                <Statistic title="系统运行时长" value={formatUptime(envInfo.os_uptime)} />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card size="small">
+                <Statistic title="磁盘已用" value={envInfo.disk_used_percent || 0} suffix="%" />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card size="small">
+                <Statistic title="磁盘可用" value={formatBytes(envInfo.disk_free)} />
+              </Card>
+            </Col>
+          </Row>
+          <Descriptions column={1} size="small" bordered style={{ marginTop: 16 }} title="详细信息">
+            <Descriptions.Item label="操作系统版本">{envInfo.os_version || envInfo.platform}</Descriptions.Item>
+            <Descriptions.Item label="操作系统类型">{envInfo.os_type || '-'}</Descriptions.Item>
+            <Descriptions.Item label="系统内核版本">{envInfo.os_release || '-'}</Descriptions.Item>
+            <Descriptions.Item label="主机名">{envInfo.os_hostname || '-'}</Descriptions.Item>
+            <Descriptions.Item label="CPU 型号">{envInfo.cpu_model || '-'}</Descriptions.Item>
+            <Descriptions.Item label="磁盘总容量">{formatBytes(envInfo.disk_total)}</Descriptions.Item>
+            <Descriptions.Item label="磁盘已用">{formatBytes(envInfo.disk_used)}（{envInfo.disk_used_percent || 0}%）</Descriptions.Item>
+            <Descriptions.Item label="磁盘可用">{formatBytes(envInfo.disk_free)}</Descriptions.Item>
+            <Descriptions.Item label="磁盘挂载点">{envInfo.disk_mount || '-'}</Descriptions.Item>
+            <Descriptions.Item label="工作目录">{envInfo.cwd}</Descriptions.Item>
+            <Descriptions.Item label="服务器时间">{dayjs(envInfo.server_time).format('YYYY-MM-DD HH:mm:ss')}</Descriptions.Item>
+          </Descriptions>
+        </>
       )}
     </Spin>
   )
@@ -405,10 +529,146 @@ export default function SystemConfig() {
             )}
           </Descriptions>
           <Paragraph type="secondary" style={{ marginTop: 12, fontSize: 12 }}>
-            数据库连接配置通过环境变量（.env 文件）管理，如需修改请编辑服务器 <Text code>server/.env</Text> 文件后重启服务。
+            数据库连接配置通过环境变量（.env 文件）管理。如需切换数据库，可使用下方的"数据迁移"功能；也可手动编辑服务器 <Text code>server/.env</Text> 文件后重启服务。
           </Paragraph>
         </>
       )}
+
+      {/* 数据迁移 */}
+      <Card
+        size="small"
+        title={<Space><SwapOutlined />数据迁移</Space>}
+        style={{ marginTop: 16 }}
+        extra={<Button size="small" icon={<ReloadOutlined />} onClick={loadMigrationTargets} loading={migrationLoading}>刷新</Button>}
+      >
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message="在 SQLite / MySQL / PostgreSQL / MariaDB 等常见数据库环境之间迁移数据"
+          description="迁移前系统会自动备份当前 SQLite 数据库（可在「备份还原」中还原）。迁移完成后需要重启后端服务以使新数据库生效。"
+        />
+        <Spin spinning={migrationLoading}>
+          <Row gutter={[12, 12]}>
+            {migrationTargets.map(t => (
+              <Col key={t.dialect} span={12}>
+                <Card
+                  size="small"
+                  styles={{ body: { padding: 12 } }}
+                  style={{
+                    borderColor: t.is_current ? 'var(--color-primary)' : undefined,
+                    background: t.is_current ? 'var(--bg-hover)' : undefined,
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1 }}>
+                      <Space>
+                        <Text strong>{t.name}</Text>
+                        {t.is_current && <Tag color="green">当前</Tag>}
+                      </Space>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+                        {t.description}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                        默认端口：{t.default_port}{t.default_storage ? ` · 默认路径：${t.default_storage}` : ''}
+                      </div>
+                    </div>
+                    <Button
+                      type={t.is_current ? 'default' : 'primary'}
+                      size="small"
+                      icon={<SwapOutlined />}
+                      disabled={t.is_current}
+                      onClick={() => openMigrationModal(t)}
+                    >
+                      {t.is_current ? '当前使用' : '迁移到此'}
+                    </Button>
+                  </div>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        </Spin>
+      </Card>
+
+      {/* 迁移表单弹窗 */}
+      <Modal
+        title={`数据迁移 - ${migrationTarget?.name || ''}`}
+        open={migrationOpen}
+        onOk={handleMigrationSubmit}
+        onCancel={() => setMigrationOpen(false)}
+        confirmLoading={migrationSubmitting}
+        okText="开始迁移"
+        cancelText="取消"
+        width={520}
+        destroyOnHidden
+      >
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="迁移前系统将自动备份当前 SQLite 数据库"
+          description="迁移完成后，系统会更新 .env 配置文件并提示重启后端服务。"
+        />
+        <Form form={migrationForm} layout="vertical" preserve={false}>
+          {migrationTarget?.dialect === 'sqlite' ? (
+            <Form.Item
+              label="SQLite 文件路径"
+              name="storage"
+              rules={[{ required: true, message: '请输入 SQLite 文件路径' }]}
+              extra="相对路径相对于 server 工作目录，例如 ./data/milk_can_mes.sqlite"
+            >
+              <Input placeholder="请输入 SQLite 文件路径" />
+            </Form.Item>
+          ) : (
+            <>
+              <Row gutter={12}>
+                <Col span={16}>
+                  <Form.Item
+                    label="主机地址"
+                    name="host"
+                    rules={[{ required: true, message: '请输入主机地址' }]}
+                  >
+                    <Input placeholder="如 localhost 或 192.168.1.100" />
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item
+                    label="端口"
+                    name="port"
+                    rules={[{ required: true, message: '请输入端口' }]}
+                  >
+                    <InputNumber min={1} max={65535} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Form.Item
+                label="数据库名"
+                name="database"
+                rules={[{ required: true, message: '请输入数据库名' }]}
+                extra="目标数据库需要提前创建（空数据库即可）"
+              >
+                <Input placeholder="如 milk_can_mes" />
+              </Form.Item>
+              <Row gutter={12}>
+                <Col span={12}>
+                  <Form.Item
+                    label="用户名"
+                    name="username"
+                    rules={[{ required: true, message: '请输入用户名' }]}
+                  >
+                    <Input placeholder="数据库用户名" />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item label="密码" name="password">
+                    <Input.Password placeholder="数据库密码（可空）" />
+                  </Form.Item>
+                </Col>
+              </Row>
+            </>
+          )}
+        </Form>
+      </Modal>
     </Spin>
   )
 

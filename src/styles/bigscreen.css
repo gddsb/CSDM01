@@ -265,3 +265,49 @@
 .bs-main-row > .ant-col > .bs-panel + .bs-panel {
   margin-top: 10px;
 }
+
+/* 隐藏滚动条（产线状态、设备状态、订单概览等卡片不显示滚动条） */
+.bs-no-scrollbar {
+  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;  /* IE/Edge */
+}
+.bs-no-scrollbar::-webkit-scrollbar {
+  display: none;  /* Chrome/Safari/Opera */
+  width: 0;
+  height: 0;
+}
+
+/* 大屏顶部环境数据（温度/湿度/压差）显示样式 */
+.bs-env-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 4px 10px;
+  background: rgba(88, 166, 255, 0.06);
+  border-radius: 6px;
+  border: 1px solid rgba(88, 166, 255, 0.12);
+  font-size: 13px;
+}
+.bs-env-label {
+  font-size: 12px;
+  color: #8B949E;
+}
+.bs-env-value {
+  font-family: 'DIN', 'Courier New', monospace;
+  color: #E6EDF3;
+  font-weight: 600;
+}
+
+/* 闲置态系统时间显示 */
+.bs-idle-clock {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'DIN', 'Courier New', monospace;
+  font-size: 18px;
+  color: #58A6FF;
+  padding: 4px 12px;
+  background: rgba(88, 166, 255, 0.06);
+  border-radius: 6px;
+  border: 1px solid rgba(88, 166, 255, 0.15);
+}

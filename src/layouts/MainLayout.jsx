@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Layout, Menu, Dropdown, Avatar, Space, Typography, Badge, Button, Modal, Form, Input, message } from 'antd'
+import { Layout, Menu, Dropdown, Avatar, Space, Typography, Badge, Button, Modal, Form, Input, Tooltip, Upload, message } from 'antd'
 import {
   DashboardOutlined, TeamOutlined, DatabaseOutlined, SettingOutlined,
   ProfileOutlined, DeploymentUnitOutlined, SafetyCertificateOutlined,
@@ -8,13 +8,37 @@ import {
   PieChartOutlined, FileSearchOutlined, FundProjectionScreenOutlined,
   ControlOutlined, DesktopOutlined, LineChartOutlined, CalendarOutlined,
   RiseOutlined, AlertOutlined, ContainerOutlined,
-  LockOutlined, KeyOutlined, MenuOutlined
+  LockOutlined, KeyOutlined, MenuOutlined, SkinOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useApp } from '../contexts/AppContext'
-import { themeList } from '../themes'
+import { themeList, themes } from '../themes'
 import api from '../utils/api'
 import logoSquare from '../assets/logo-square.png'
+
+// 20 个预设头像（使用 DiceBear API 生成不同样式头像）
+const presetAvatars = [
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Mimi',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Bandit',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Lily',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Leo',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Sophie',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Toto',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Coco',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Max',
+  'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Whiskers',
+  'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Bubbles',
+  'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Shadow',
+  'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Sunny',
+  'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Pepper',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=Alpha',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=Beta',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=Gamma',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=Delta',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=Omega',
+]
 
 const { Sider, Header, Content } = Layout
 const { Text } = Typography
@@ -122,17 +146,80 @@ const defaultMenuItems = [
 ]
 
 export default function MainLayout() {
-  const { currentUser, logout, updateUser, themeKey, changeTheme } = useApp()
+  const { currentUser, logout, updateUser, themeKey, changeTheme, cycleTheme } = useApp()
   const navigate = useNavigate()
   const location = useLocation()
   const [collapsed, setCollapsed] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [pwdOpen, setPwdOpen] = useState(false)
+  const [avatarOpen, setAvatarOpen] = useState(false)
+  const [avatarUploading, setAvatarUploading] = useState(false)
   const [profileForm] = Form.useForm()
   const [pwdForm] = Form.useForm()
   const [systemConfig, setSystemConfig] = useState({ system_name: '', company_name: '' })
   // 动态菜单（从后端拉取；为 null 时使用默认 menuItems 兜底）
   const [dynamicMenu, setDynamicMenu] = useState(null)
+
+  // 当前主题对象（用于显示图标和提示）
+  const currentTheme = themes[themeKey] || themes.pureMilk
+
+  const handleCycleTheme = () => {
+    const nextKey = cycleTheme()
+    const next = themes[nextKey]
+    message.success(`已切换主题：${next.name}`, 1)
+  }
+
+  // 头像上传（自定义头像）
+  const handleAvatarUpload = async (file) => {
+    if (!file) return
+    // 限制 2MB
+    if (file.size > 2 * 1024 * 1024) {
+      message.error('头像图片不能超过 2MB')
+      return false
+    }
+    // 仅允许图片类型
+    if (!file.type.startsWith('image/')) {
+      message.error('请上传图片格式的文件')
+      return false
+    }
+    try {
+      setAvatarUploading(true)
+      const formData = new FormData()
+      formData.append('avatar', file)
+      const res = await api.post('/users/me/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      // 更新本地用户信息（后端返回完整 user 对象）
+      if (res.data?.user) {
+        updateUser(res.data.user)
+      } else {
+        updateUser({ avatar_url: res.data?.avatar_url })
+      }
+      message.success(res.message || '头像上传成功')
+      setAvatarOpen(false)
+    } catch (err) {
+      message.error(err.message || '头像上传失败')
+    } finally {
+      setAvatarUploading(false)
+    }
+    return false  // 阻止 antd 默认上传行为
+  }
+
+  // 选择预设头像
+  const handleSelectPreset = async (url) => {
+    try {
+      const res = await api.put('/users/me/avatar', { avatar_url: url })
+      if (res.data?.user) {
+        updateUser(res.data.user)
+      } else {
+        updateUser({ avatar_url: url })
+      }
+      message.success(res.message || '头像设置成功')
+      setAvatarOpen(false)
+    } catch (err) {
+      message.error(err.message || '头像设置失败')
+    }
+  }
 
   // 获取系统配置
   useEffect(() => {
@@ -254,13 +341,18 @@ export default function MainLayout() {
 
   const handleProfileSave = async () => {
     const values = await profileForm.validateFields()
-    updateUser({
-      real_name: values.real_name,
-      phone: values.phone,
-      email: values.email,
-    })
-    message.success('个人信息已更新')
-    setProfileOpen(false)
+    try {
+      const res = await api.put('/users/me/profile', {
+        real_name: values.real_name,
+        phone: values.phone,
+        email: values.email,
+      })
+      updateUser(res.data || values)
+      message.success('个人信息已更新')
+      setProfileOpen(false)
+    } catch (err) {
+      message.error(err.message || '保存失败')
+    }
   }
 
   const handlePwdSave = async () => {
@@ -338,22 +430,29 @@ export default function MainLayout() {
             </Badge>
           </Space>
           <Space size={16}>
-            <div className="theme-switcher">
-              {themeList.map(t => (
-                <div
-                  key={t.key}
-                  className={`theme-dot ${themeKey === t.key ? 'active' : ''}`}
-                  style={{ background: t.colors['--color-primary'] }}
-                  onClick={() => changeTheme(t.key)}
-                  title={t.name}
-                >
-                  {t.icon}
-                </div>
-              ))}
-            </div>
+            <Tooltip title={`主题：${currentTheme.name}（点击切换）`}>
+              <Button
+                type="text"
+                shape="circle"
+                icon={currentTheme.icon}
+                onClick={handleCycleTheme}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--color-primary)',
+                  fontSize: 18,
+                }}
+              />
+            </Tooltip>
             <Dropdown menu={userMenu} placement="bottomRight">
               <Space style={{ cursor: 'pointer' }}>
-                <Avatar size="small" icon={<UserOutlined />} style={{ background: 'var(--color-primary)' }} />
+                <Avatar
+                  size="small"
+                  src={currentUser?.avatar_url || undefined}
+                  icon={!currentUser?.avatar_url ? <UserOutlined /> : undefined}
+                  style={{ background: 'var(--color-primary)' }}
+                />
                 <Text>{currentUser?.username}</Text>
               </Space>
             </Dropdown>
@@ -376,10 +475,23 @@ export default function MainLayout() {
         destroyOnHidden
       >
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
-          <Avatar size={64} icon={<UserOutlined />} style={{ background: 'var(--color-primary)' }} />
+          <Avatar
+            size={80}
+            src={currentUser?.avatar_url || undefined}
+            icon={!currentUser?.avatar_url ? <UserOutlined /> : undefined}
+            style={{ background: 'var(--color-primary)' }}
+          />
           <div style={{ marginTop: 8, fontSize: 13, color: 'var(--text-secondary)' }}>
             {currentUser?.username} · {currentUser?.role_name}
           </div>
+          <Button
+            type="link"
+            size="small"
+            icon={<SkinOutlined />}
+            onClick={() => setAvatarOpen(true)}
+          >
+            更换头像
+          </Button>
         </div>
         <Form form={profileForm} layout="vertical" className="compact-form" preserve={false}>
           <Form.Item label="真实姓名" name="real_name" rules={[{ required: true, message: '请输入真实姓名' }]}>
@@ -392,6 +504,55 @@ export default function MainLayout() {
             <Input placeholder="请输入邮箱地址" />
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* 头像选择弹窗 */}
+      <Modal
+        title="更换头像"
+        open={avatarOpen}
+        onCancel={() => setAvatarOpen(false)}
+        footer={null}
+        width={520}
+        destroyOnHidden
+      >
+        <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text strong>选择预设头像</Text>
+          <Upload
+            accept="image/*"
+            showUploadList={false}
+            beforeUpload={handleAvatarUpload}
+            disabled={avatarUploading}
+          >
+            <Button icon={<UserOutlined />} loading={avatarUploading}>
+              上传自定义头像
+            </Button>
+          </Upload>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, maxHeight: 360, overflow: 'auto' }}>
+          {presetAvatars.map((url) => {
+            const active = currentUser?.avatar_url === url
+            return (
+              <div
+                key={url}
+                onClick={() => handleSelectPreset(url)}
+                style={{
+                  cursor: 'pointer',
+                  padding: 4,
+                  borderRadius: 8,
+                  border: active ? '2px solid var(--color-primary)' : '2px solid transparent',
+                  textAlign: 'center',
+                  transition: 'all 0.2s',
+                }}
+                title="点击设为头像"
+              >
+                <Avatar size={56} src={url} />
+              </div>
+            )
+          })}
+        </div>
+        <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-secondary)', textAlign: 'center' }}>
+          共 {presetAvatars.length} 个预设头像，支持上传自定义头像（不超过 2MB）
+        </div>
       </Modal>
 
       {/* 修改密码弹窗 */}

@@ -2,6 +2,8 @@ import bcrypt from 'bcryptjs'
 import { Op } from 'sequelize'
 import { User, Role } from '../models/index.js'
 import { success, fail } from '../utils/response.js'
+import path from 'path'
+import fs from 'fs'
 
 // 用户列表（支持 keyword/status/role_id 筛选）
 export const list = async (req, res) => {
@@ -157,4 +159,108 @@ export const toggle = async (req, res) => {
   }
 }
 
-export default { list, detail, create, update, remove, toggle }
+// 上传当前用户自定义头像（multipart/form-data，字段名 avatar）
+export const uploadMyAvatar = async (req, res) => {
+  try {
+    const userId = req.user?.userId
+    if (!userId) return fail(res, '未登录', 401)
+    const file = req.file
+    if (!file) return fail(res, '请选择要上传的头像图片')
+    // 限制 2MB
+    if (file.size > 2 * 1024 * 1024) {
+      // 清理临时文件
+      try { fs.unlinkSync(file.path) } catch (e) {}
+      return fail(res, '头像图片不能超过 2MB')
+    }
+    // 仅允许图片类型
+    if (!file.mimetype || !file.mimetype.startsWith('image/')) {
+      try { fs.unlinkSync(file.path) } catch (e) {}
+      return fail(res, '请上传图片格式的文件')
+    }
+    // 保存到 /uploads/avatars 目录
+    const uploadsDir = path.resolve(process.cwd(), 'uploads', 'avatars')
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true })
+    }
+    const ext = path.extname(file.originalname || '.png').toLowerCase() || '.png'
+    const filename = `avatar_${userId}_${Date.now()}${ext}`
+    const targetPath = path.join(uploadsDir, filename)
+    fs.renameSync(file.path, targetPath)
+    const avatarUrl = `/uploads/avatars/${filename}`
+    // 更新用户头像
+    const user = await User.findOne({ where: { user_id: userId } })
+    if (!user) return fail(res, '用户不存在', 404)
+    // 删除旧的自定义头像文件（如果是上传类型）
+    if (user.avatar_url && user.avatar_url.startsWith('/uploads/avatars/')) {
+      const oldPath = path.resolve(process.cwd(), user.avatar_url.replace(/^\//, ''))
+      try { if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath) } catch (e) {}
+    }
+    await user.update({ avatar_url: avatarUrl })
+    const data = user.toJSON()
+    delete data.password
+    return success(res, { avatar_url: avatarUrl, user: data }, '头像上传成功')
+  } catch (err) {
+    console.error('上传头像失败:', err)
+    return fail(res, '服务器错误', 500)
+  }
+}
+
+// 设置当前用户头像（从预设头像中选择，JSON: { avatar_url })
+export const setMyAvatar = async (req, res) => {
+  try {
+    const userId = req.user?.userId
+    if (!userId) return fail(res, '未登录', 401)
+    const { avatar_url } = req.body
+    if (!avatar_url || typeof avatar_url !== 'string') {
+      return fail(res, '头像地址不能为空')
+    }
+    // 允许的预设头像来源（DiceBear API）和已上传的自定义头像
+    const isPreset = avatar_url.startsWith('https://api.dicebear.com/')
+    const isUploaded = avatar_url.startsWith('/uploads/avatars/')
+    if (!isPreset && !isUploaded) {
+      return fail(res, '头像地址不合法')
+    }
+    const user = await User.findOne({ where: { user_id: userId } })
+    if (!user) return fail(res, '用户不存在', 404)
+    // 如果旧头像是上传的自定义头像，且新头像不同，则删除旧文件
+    if (
+      user.avatar_url &&
+      user.avatar_url.startsWith('/uploads/avatars/') &&
+      user.avatar_url !== avatar_url
+    ) {
+      const oldPath = path.resolve(process.cwd(), user.avatar_url.replace(/^\//, ''))
+      try { if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath) } catch (e) {}
+    }
+    await user.update({ avatar_url })
+    const data = user.toJSON()
+    delete data.password
+    return success(res, { avatar_url, user: data }, '头像设置成功')
+  } catch (err) {
+    console.error('设置头像失败:', err)
+    return fail(res, '服务器错误', 500)
+  }
+}
+
+// 更新当前用户个人信息（手机、邮箱、真实姓名）
+export const updateMyProfile = async (req, res) => {
+  try {
+    const userId = req.user?.userId
+    if (!userId) return fail(res, '未登录', 401)
+    const { real_name, phone, email } = req.body
+    const user = await User.findOne({ where: { user_id: userId } })
+    if (!user) return fail(res, '用户不存在', 404)
+    const updateData = {}
+    if (real_name !== undefined) updateData.real_name = real_name
+    if (phone !== undefined) updateData.phone = phone
+    if (email !== undefined) updateData.email = email
+    await user.update(updateData)
+    const data = user.toJSON()
+    delete data.password
+    return success(res, data, '个人信息已更新')
+  } catch (err) {
+    console.error('更新个人信息失败:', err)
+    return fail(res, '服务器错误', 500)
+  }
+}
+
+export default { list, detail, create, update, remove, toggle, uploadMyAvatar, setMyAvatar, updateMyProfile }
