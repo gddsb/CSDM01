@@ -32,7 +32,7 @@ export const list = async (req, res) => {
       where,
       limit,
       offset,
-      order: [['work_order_id', 'DESC']],
+      order: [['work_order_no', 'DESC']],
     })
     return success(res, rows, '查询成功', count)
   } catch (err) {

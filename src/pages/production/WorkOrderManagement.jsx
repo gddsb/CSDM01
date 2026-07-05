@@ -447,6 +447,13 @@ export default function WorkOrderManagement() {
           <Row gutter={12}>
             <Col span={12}>
               <Form.Item label="计划数量" name="planned_qty" rules={[{ required: true, message: '请输入计划数量' }]}>
+                <div style={{ marginBottom: 4 }}>
+                  {selectedOrder && (
+                    <span style={{ color: '#1677ff', fontSize: 12 }}>
+                      未生成数量：{Math.max(0, (Number(selectedOrder.planned_qty) || 0) - (Number(selectedOrder.finished_qty) || 0)).toLocaleString()}
+                    </span>
+                  )}
+                </div>
                 <InputNumber min={1} style={{ width: '100%' }} placeholder="请输入计划数量" />
               </Form.Item>
             </Col>

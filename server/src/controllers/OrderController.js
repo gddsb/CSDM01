@@ -34,7 +34,7 @@ export const list = async (req, res) => {
       where,
       limit,
       offset,
-      order: [['order_id', 'DESC']],
+      order: [['order_no', 'DESC']],
     })
     const list = convertStatusInList(rows.map(r => r.toJSON()), 'order')
     return success(res, list, '查询成功', count)
