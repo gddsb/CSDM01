@@ -186,25 +186,29 @@ export const instruments = [
   { instrument_id: 'i3', instrument_no: 'DI260328002', instrument_name: '微生物培养箱', instrument_model: 'SPX-150', department: '质量管理部', location: '微生物室', calibration_cycle: 365, last_calibration_date: '2025-05-01', next_calibration_date: '2026-05-01', status: '已超期', remarks: '待外部校准' },
 ]
 
-// 数据库字典 - 表清单
+// 数据库字典 - 表清单（与实际数据库模型一致）
 export const dbTables = [
-  { table_name: 'sys_user', field_count: 16, record_count: 9, category: '系统表', purpose: '系统用户表，存储所有登录用户信息及权限关联', last_update: '2026-06-30 08:30:00' },
-  { table_name: 'sys_role', field_count: 8, record_count: 9, category: '系统表', purpose: '系统角色表，定义角色名称及编码', last_update: '2026-06-28 10:00:00' },
-  { table_name: 'sys_permission', field_count: 9, record_count: 56, category: '系统表', purpose: '系统权限表，存储菜单、按钮、API权限定义', last_update: '2026-06-28 10:00:00' },
-  { table_name: 'sys_role_permission', field_count: 3, record_count: 128, category: '系统表', purpose: '角色权限关联表，建立角色与权限的多对多关系', last_update: '2026-06-28 10:00:00' },
-  { table_name: 'sys_operation_log', field_count: 7, record_count: 3520, category: '系统表', purpose: '操作日志表，记录用户所有关键操作行为', last_update: '2026-06-30 09:15:00' },
-  { table_name: 'bas_material', field_count: 18, record_count: 5, category: '基础数据表', purpose: '料品档案表，存储奶粉罐料品基础信息及安全库存', last_update: '2026-06-27 14:00:00' },
-  { table_name: 'bas_production_line', field_count: 9, record_count: 3, category: '基础数据表', purpose: '产线表，管理生产线的编号、名称及状态', last_update: '2026-06-20 09:00:00' },
-  { table_name: 'bas_process', field_count: 6, record_count: 11, category: '基础数据表', purpose: '工序表，定义奶粉罐生产工序名称及顺序', last_update: '2026-06-20 09:00:00' },
-  { table_name: 'bas_device', field_count: 20, record_count: 4, category: '基础数据表', purpose: '设备档案表，存储设备基础信息及特种设备检定日期', last_update: '2026-06-25 11:00:00' },
-  { table_name: 'bas_process_defect', field_count: 11, record_count: 7, category: '基础数据表', purpose: '制程检验不良分类表，定义不良分类及单位', last_update: '2026-06-22 15:00:00' },
-  { table_name: 'pro_order', field_count: 13, record_count: 4, category: '业务表', purpose: '生产订单表，记录生产订单信息', last_update: '2026-06-30 09:00:00' },
-  { table_name: 'pro_work_order', field_count: 15, record_count: 3, category: '业务表', purpose: '工单表，记录生产工单及工时计算数据', last_update: '2026-06-30 08:00:00' },
-  { table_name: 'pro_process_report', field_count: 13, record_count: 4, category: '业务表', purpose: '工序报工记录表，记录每道工序的产量和不良数据', last_update: '2026-06-30 12:00:00' },
-  { table_name: 'pro_manpower_record', field_count: 12, record_count: 3, category: '业务表', purpose: '人员投入记录表，记录工单的人员配置及班次', last_update: '2026-06-30 08:00:00' },
-  { table_name: 'pro_exception_record', field_count: 14, record_count: 3, category: '业务表', purpose: '异常工时记录表，记录生产异常及关联订单工单', last_update: '2026-06-30 09:30:00' },
-  { table_name: 'qc_inspection_standard', field_count: 12, record_count: 4, category: '业务表', purpose: '检验标准主表，定义检验标准基本信息和版本', last_update: '2026-06-15 10:00:00' },
-  { table_name: 'qc_incoming_inspection', field_count: 17, record_count: 3, category: '业务表', purpose: '来料检验记录表，记录来料检验结果和处理方式', last_update: '2026-06-30 09:00:00' },
+  { table_name: 'sys_user', field_count: 19, record_count: 9, category: '系统表', purpose: '系统用户表，存储所有登录用户信息及权限关联', last_update: '2026-07-05 09:00:00' },
+  { table_name: 'sys_role', field_count: 11, record_count: 9, category: '系统表', purpose: '系统角色表，定义角色名称、编码及排序', last_update: '2026-07-05 09:00:00' },
+  { table_name: 'sys_permission', field_count: 12, record_count: 40, category: '系统表', purpose: '系统权限表，存储菜单、页面、按钮、API权限定义', last_update: '2026-07-05 09:00:00' },
+  { table_name: 'sys_role_permission', field_count: 3, record_count: 128, category: '系统表', purpose: '角色权限关联表，建立角色与权限的多对多关系', last_update: '2026-07-05 09:00:00' },
+  { table_name: 'sys_operation_log', field_count: 13, record_count: 3520, category: '系统表', purpose: '操作日志表，记录用户所有关键操作行为', last_update: '2026-07-05 09:00:00' },
+  { table_name: 'sys_config', field_count: 9, record_count: 13, category: '系统表', purpose: '系统配置表，存储系统参数配置项', last_update: '2026-07-05 09:00:00' },
+  { table_name: 'sys_sequence', field_count: 6, record_count: 12, category: '系统表', purpose: '业务编号序列表，用于自动编号生成的原子计数', last_update: '2026-07-05 09:00:00' },
+  { table_name: 'sys_number_rule', field_count: 20, record_count: 12, category: '系统表', purpose: '编号规则表，用于系统自动编号的可视化配置管理', last_update: '2026-07-05 09:00:00' },
+  { table_name: 'bas_material', field_count: 28, record_count: 5, category: '基础数据表', purpose: '料品档案表，存储奶粉罐料品基础信息及规格参数', last_update: '2026-07-05 09:00:00' },
+  { table_name: 'bas_customer', field_count: 22, record_count: 24, category: '基础数据表', purpose: '客户档案表，存储客户基本信息及信用等级', last_update: '2026-07-05 09:00:00' },
+  { table_name: 'master_production_line', field_count: 9, record_count: 3, category: '基础数据表', purpose: '产线表，管理生产线的编号、名称及状态', last_update: '2026-07-05 09:00:00' },
+  { table_name: 'master_process', field_count: 7, record_count: 11, category: '基础数据表', purpose: '工序表，定义奶粉罐生产工序名称及顺序', last_update: '2026-07-05 09:00:00' },
+  { table_name: 'master_device', field_count: 19, record_count: 4, category: '基础数据表', purpose: '设备档案表，存储设备基础信息及特种设备检定日期', last_update: '2026-07-05 09:00:00' },
+  { table_name: 'master_defect_type', field_count: 14, record_count: 7, category: '基础数据表', purpose: '不良分类表，定义来料/制程/检验报废不良分类及单位', last_update: '2026-07-05 09:00:00' },
+  { table_name: 'bas_line_process', field_count: 7, record_count: 20, category: '基础数据表', purpose: '产线工序关联表，描述产线与工序多对多关系', last_update: '2026-07-05 09:00:00' },
+  { table_name: 'bas_line_device', field_count: 7, record_count: 10, category: '基础数据表', purpose: '产线设备关联表，描述产线、设备与工序的三方关联', last_update: '2026-07-05 09:00:00' },
+  { table_name: 'production_order', field_count: 18, record_count: 4, category: '业务表', purpose: '生产订单表，记录生产订单信息及计划数量', last_update: '2026-07-05 09:00:00' },
+  { table_name: 'production_work_order', field_count: 19, record_count: 4, category: '业务表', purpose: '工单表，记录生产工单及工时计算数据', last_update: '2026-07-05 09:00:00' },
+  { table_name: 'production_process_report', field_count: 16, record_count: 4, category: '业务表', purpose: '工序报工记录表，记录每道工序的产量和不良数据', last_update: '2026-07-05 09:00:00' },
+  { table_name: 'production_manpower_record', field_count: 11, record_count: 3, category: '业务表', purpose: '人员投入记录表，记录工单的人员配置及班次', last_update: '2026-07-05 09:00:00' },
+  { table_name: 'production_exception_record', field_count: 17, record_count: 3, category: '业务表', purpose: '异常工时记录表，记录生产异常及关联订单工单', last_update: '2026-07-05 09:00:00' },
 ]
 
 // 操作日志
