@@ -22,6 +22,7 @@ import Customer from './Customer.js'
 import LineProcess from './LineProcess.js'
 import LineDevice from './LineDevice.js'
 import NumberRule from './NumberRule.js'
+import DefectImage from './DefectImage.js'
 
 // 建立模型关联关系
 // 用户 - 角色
@@ -68,6 +69,10 @@ Device.belongsToMany(ProductionLine, { through: LineDevice, foreignKey: 'device_
 DefectType.hasMany(DefectType, { foreignKey: 'parent_id', as: 'children' })
 DefectType.belongsTo(DefectType, { foreignKey: 'parent_id', as: 'parent' })
 
+// 不良分类 - 不良图片（一对多）
+DefectType.hasMany(DefectImage, { foreignKey: 'defect_id', as: 'images' })
+DefectImage.belongsTo(DefectType, { foreignKey: 'defect_id', as: 'defect' })
+
 const db = {
   sequelize,
   DataTypes,
@@ -92,6 +97,7 @@ const db = {
   LineProcess,
   LineDevice,
   NumberRule,
+  DefectImage,
 }
 
 // 具名导出，便于按需导入
@@ -117,6 +123,7 @@ export {
   LineProcess,
   LineDevice,
   NumberRule,
+  DefectImage,
 }
 
 export default db

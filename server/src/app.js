@@ -19,8 +19,10 @@ const PORT = process.env.PORT || 3001
 // 确保上传目录存在
 const uploadsDir = path.resolve(process.cwd(), 'uploads', 'avatars')
 const tmpDir = path.resolve(process.cwd(), 'uploads', 'tmp')
+const defectsDir = path.resolve(process.cwd(), 'uploads', 'defects')
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true })
 if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
+if (!fs.existsSync(defectsDir)) fs.mkdirSync(defectsDir, { recursive: true })
 
 // 同步数据库表
 async function initDatabase() {

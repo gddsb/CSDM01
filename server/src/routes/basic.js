@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import multer from 'multer'
 import { list, detail, create, update, remove } from '../controllers/MaterialController.js'
 import {
   list as lineList,
@@ -27,7 +28,13 @@ import {
   create as defectCreate,
   update as defectUpdate,
   remove as defectRemove,
+  nextCode as defectNextCode,
 } from '../controllers/DefectTypeController.js'
+import {
+  listImages as defectImageList,
+  uploadImages as defectImageUpload,
+  deleteImage as defectImageDelete,
+} from '../controllers/DefectImageController.js'
 import {
   list as customerList,
   detail as customerDetail,
@@ -48,6 +55,18 @@ import {
 import { authRequired, logOperation } from '../middleware/auth.js'
 
 const router = Router()
+
+// 不良图片上传 multer 配置
+const defectUploadMiddleware = multer({
+  dest: 'uploads/tmp/',
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype || !file.mimetype.startsWith('image/')) {
+      return cb(new Error('请上传图片格式的文件'))
+    }
+    cb(null, true)
+  },
+})
 
 // 所有基础数据路由都需要登录
 router.use(authRequired)
@@ -82,10 +101,16 @@ router.delete('/devices/:id', deviceRemove)
 
 // 不良分类
 router.get('/defect-types', defectList)
+router.get('/defect-types/next-code', defectNextCode)
 router.get('/defect-types/:id', defectDetail)
 router.post('/defect-types', defectCreate)
 router.put('/defect-types/:id', defectUpdate)
 router.delete('/defect-types/:id', defectRemove)
+
+// 不良图片
+router.get('/defect-types/:id/images', defectImageList)
+router.post('/defect-types/:id/images', defectUploadMiddleware.array('images', 10), defectImageUpload)
+router.delete('/defect-types/:id/images/:imageId', defectImageDelete)
 
 // 客户档案
 router.get('/customers', customerList)

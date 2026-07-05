@@ -1,5 +1,7 @@
 import { Op } from 'sequelize'
-import { DefectType } from '../models/index.js'
+import path from 'path'
+import fs from 'fs'
+import { DefectType, DefectImage } from '../models/index.js'
 import { success, fail } from '../utils/response.js'
 
 // 不良分类列表
@@ -95,6 +97,17 @@ export const remove = async (req, res) => {
     const { id } = req.params
     const defect = await DefectType.findOne({ where: { defect_id: id } })
     if (!defect) return fail(res, '不良分类不存在', 404)
+
+    // 级联删除关联图片
+    const images = await DefectImage.findAll({ where: { defect_id: id } })
+    images.forEach(img => {
+      try {
+        const filePath = path.resolve(process.cwd(), img.image_url.replace(/^\//, ''))
+        fs.unlinkSync(filePath)
+      } catch {}
+    })
+    await DefectImage.destroy({ where: { defect_id: id } })
+
     await defect.destroy()
     return success(res, null, '删除成功')
   } catch (err) {
@@ -103,4 +116,17 @@ export const remove = async (req, res) => {
   }
 }
 
-export default { list, detail, create, update, remove }
+// 生成下一个不良编码（自动编码）
+export const nextCode = async (req, res) => {
+  try {
+    const count = await DefectType.count()
+    const nextNum = count + 1
+    const code = `D-${String(nextNum).padStart(3, '0')}`
+    return success(res, { defect_code: code }, '查询成功')
+  } catch (err) {
+    console.error('生成不良编码失败:', err)
+    return fail(res, '服务器错误', 500)
+  }
+}
+
+export default { list, detail, create, update, remove, nextCode }

@@ -81,7 +81,7 @@ const defaultMenuItems = [
       { key: '/basic/customers', icon: <TeamOutlined />, label: '客户档案' },
       { key: '/basic/lines', icon: <DeploymentUnitOutlined />, label: '产线档案' },
       { key: '/basic/processes', icon: <DeploymentUnitOutlined />, label: '工序档案' },
-      { key: '/basic/defects', icon: <AlertOutlined />, label: '制程不良分类' },
+      { key: '/basic/defects', icon: <AlertOutlined />, label: '不良分类' },
       { key: '/basic/number-rules', icon: <KeyOutlined />, label: '编码管理' },
     ]
   },

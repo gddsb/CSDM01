@@ -103,13 +103,13 @@ const defaultPermissions = [
   { perm_id: 7, parent_id: 1, perm_name: '数据库字典', perm_code: 'system:dictionary', type: 'menu', icon: 'DatabaseOutlined', path: '/system/dictionary', sort_order: 4 },
   { perm_id: 4, parent_id: 1, perm_name: '系统配置', perm_code: 'system:config', type: 'menu', icon: 'ControlOutlined', path: '/system/config', sort_order: 5 },
   { perm_id: 5, parent_id: 1, perm_name: '操作日志', perm_code: 'system:log', type: 'menu', icon: 'FileTextOutlined', path: '/system/logs', sort_order: 6 },
-  // 基础数据（菜单顺序：料品档案、客户档案、产线档案、工序档案、制程不良分类、编码管理）
+  // 基础数据（菜单顺序：料品档案、客户档案、产线档案、工序档案、不良分类、编码管理）
   { perm_id: 10, parent_id: 0, perm_name: '基础数据', perm_code: 'basic', type: 'menu', icon: 'ProfileOutlined', path: '/basic', sort_order: 2 },
   { perm_id: 11, parent_id: 10, perm_name: '料品档案', perm_code: 'basic:material', type: 'menu', icon: 'ProfileOutlined', path: '/basic/materials', sort_order: 1 },
   { perm_id: 15, parent_id: 10, perm_name: '客户档案', perm_code: 'basic:customer', type: 'menu', icon: 'TeamOutlined', path: '/basic/customers', sort_order: 2 },
   { perm_id: 12, parent_id: 10, perm_name: '产线档案', perm_code: 'basic:line', type: 'menu', icon: 'DeploymentUnitOutlined', path: '/basic/lines', sort_order: 3 },
   { perm_id: 13, parent_id: 10, perm_name: '工序档案', perm_code: 'basic:process', type: 'menu', icon: 'DeploymentUnitOutlined', path: '/basic/processes', sort_order: 4 },
-  { perm_id: 14, parent_id: 10, perm_name: '制程不良分类', perm_code: 'basic:defect', type: 'menu', icon: 'AlertOutlined', path: '/basic/defects', sort_order: 5 },
+  { perm_id: 14, parent_id: 10, perm_name: '不良分类', perm_code: 'basic:defect', type: 'menu', icon: 'AlertOutlined', path: '/basic/defects', sort_order: 5 },
   { perm_id: 16, parent_id: 10, perm_name: '编码管理', perm_code: 'basic:number-rule', type: 'menu', icon: 'KeyOutlined', path: '/basic/number-rules', sort_order: 6 },
   // 生产管理
   { perm_id: 20, parent_id: 0, perm_name: '生产管理', perm_code: 'production', type: 'menu', icon: 'ToolOutlined', path: '/production', sort_order: 3 },
