@@ -37,6 +37,7 @@ export default function DefectManagement() {
   const [editing, setEditing] = useState(null)
   const [modalVisible, setModalVisible] = useState(false)
   const [viewRecord, setViewRecord] = useState(null)
+  const [viewImages, setViewImages] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
 
@@ -235,13 +236,8 @@ export default function DefectManagement() {
       } else {
         const res = await api.post('/basic/defect-types', payload)
         message.success(res.message || '不良项新增成功')
-        // 新建后切换为编辑模式，以便上传图片
-        if (res.data) {
-          setEditing(res.data)
-          setSelectedCategory(res.data.category_name)
-          fetchImages(res.data.defect_id)
-        }
       }
+      setModalVisible(false)
       refresh()
     } catch (e) {
       if (e?.errorFields) return
@@ -310,7 +306,15 @@ export default function DefectManagement() {
       title: '操作', key: 'action', width: 170, fixed: 'right',
       render: (_, record) => (
         <Space size="small">
-          <Button type="link" size="small" onClick={() => setViewRecord(record)}>查看</Button>
+          <Button type="link" size="small" onClick={async () => {
+            setViewRecord(record)
+            try {
+              const res = await api.get(`/basic/defect-images?defect_id=${record.defect_id}`)
+              setViewImages(res.data || [])
+            } catch (e) {
+              setViewImages([])
+            }
+          }}>查看</Button>
           <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
           <Popconfirm
             title="确认删除该不良项？"
@@ -407,8 +411,8 @@ export default function DefectManagement() {
         <Form form={form} layout="vertical" className="compact-form" preserve={false}>
           <Row gutter={12}>
             <Col span={8}>
-              <Form.Item name="defect_code" label="不良编码" rules={[{ required: true, message: '请输入不良编码' }]}>
-                <Input placeholder="自动生成" />
+              <Form.Item name="defect_code" label="不良编码">
+                <Input placeholder="系统自动生成" disabled={!editing} />
               </Form.Item>
             </Col>
             <Col span={8}>
@@ -573,6 +577,24 @@ export default function DefectManagement() {
               <div style={{ lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{viewRecord.category_desc || '-'}</div>
             </Descriptions.Item>
           </Descriptions>
+        )}
+        {viewImages.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ fontWeight: 500, marginBottom: 8 }}>不良图片（点击可放大）</div>
+            <Image.PreviewGroup>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {viewImages.map(img => (
+                  <Image
+                    key={img.image_id}
+                    width={88}
+                    height={88}
+                    src={img.image_url}
+                    style={{ objectFit: 'cover', borderRadius: 4, cursor: 'pointer' }}
+                  />
+                ))}
+              </div>
+            </Image.PreviewGroup>
+          </div>
         )}
       </Drawer>
     </>
