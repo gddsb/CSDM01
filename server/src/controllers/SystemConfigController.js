@@ -9,7 +9,7 @@ import { fileURLToPath } from 'url'
 // 默认配置（设计文档 §2.2.2 系统配置表）
 const defaultConfigs = [
   { config_key: 'system_name', config_value: '长沙大满生产制造系统', config_desc: '系统名称' },
-  { config_key: 'system_version', config_value: 'v1.0.0', config_desc: '系统版本（只读）' },
+  { config_key: 'system_version', config_value: 'V1.0.0.109', config_desc: '系统版本（只读）' },
   { config_key: 'company_name', config_value: '东莞市大满包装实业有限公司长沙分公司', config_desc: '公司名称' },
   { config_key: 'contact_phone', config_value: '0731-88888888', config_desc: '联系电话' },
   { config_key: 'default_line', config_value: '', config_desc: '默认产线' },
