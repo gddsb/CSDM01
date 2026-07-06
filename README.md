@@ -15,6 +15,7 @@
 - [功能模块](#功能模块)
 - [项目结构](#项目结构)
 - [快速开始](#快速开始)
+- [Ubuntu 22.04 LTS 生产部署指南](#ubuntu-2204-lts-生产部署指南)
 - [默认登录账号](#默认登录账号)
 - [主题系统](#主题系统)
 - [页面布局规范](#页面布局规范)
@@ -475,6 +476,210 @@ PORT=3001              # 服务端口
 # JWT 配置
 JWT_SECRET=your-secret-key
 JWT_EXPIRES_IN=7d
+```
+
+---
+
+## Ubuntu 22.04 LTS 生产部署指南
+
+### 1. 系统环境准备
+
+```bash
+# 更新系统
+sudo apt update && sudo apt upgrade -y
+
+# 安装 Node.js 20.x LTS
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# 验证安装
+node -v   # 应显示 v20.x.x
+npm -v    # 应显示 10.x.x
+
+# 安装构建工具（sqlite3 编译需要）
+sudo apt install -y build-essential python3
+
+# 安装 Git
+sudo apt install -y git
+
+# 安装 Nginx（反向代理）
+sudo apt install -y nginx
+
+# 安装 PM2（进程管理）
+sudo npm install -g pm2
+```
+
+### 2. 项目部署
+
+```bash
+# 克隆项目（或上传项目文件）
+cd /opt
+git clone <your-repo-url> milk-can-mes
+cd milk-can-mes
+
+# 前端安装与构建
+npm install
+npm run build
+
+# 后端安装
+cd server
+npm install
+
+# 重新编译 sqlite3（如遇到问题）
+npm rebuild sqlite3
+
+# 初始化数据库
+node src/seed.js
+
+# 返回项目根目录
+cd ..
+```
+
+### 3. 使用 PM2 启动后端服务
+
+```bash
+# 创建 PM2 配置文件
+cat > ecosystem.config.cjs << 'EOF'
+module.exports = {
+  apps: [
+    {
+      name: 'milk-can-mes-server',
+      cwd: '/opt/milk-can-mes/server',
+      script: 'src/app.js',
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3001,
+        DB_DIALECT: 'sqlite'
+      }
+    }
+  ]
+}
+EOF
+
+# 启动服务
+pm2 start ecosystem.config.cjs
+
+# 查看状态
+pm2 status
+
+# 设置开机自启
+pm2 startup
+pm2 save
+```
+
+### 4. Nginx 反向代理配置
+
+```bash
+# 创建 Nginx 配置
+sudo cat > /etc/nginx/sites-available/milk-can-mes << 'EOF'
+server {
+    listen 80;
+    server_name your-domain.com;  # 替换为你的域名或 IP
+
+    # 前端静态文件
+    location / {
+        root /opt/milk-can-mes/dist;
+        index index.html;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 后端 API 代理
+    location /api {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+EOF
+
+# 启用配置
+sudo ln -s /etc/nginx/sites-available/milk-can-mes /etc/nginx/sites-enabled/
+
+# 测试配置
+sudo nginx -t
+
+# 重启 Nginx
+sudo systemctl restart nginx
+
+# 设置开机自启
+sudo systemctl enable nginx
+```
+
+### 5. 防火墙配置
+
+```bash
+# 开放 HTTP 端口
+sudo ufw allow 80/tcp
+
+# 开放 HTTPS 端口（如需 SSL）
+sudo ufw allow 443/tcp
+
+# 启用防火墙
+sudo ufw enable
+
+# 查看状态
+sudo ufw status
+```
+
+### 6. SSL 证书配置（可选）
+
+```bash
+# 安装 Certbot
+sudo apt install -y certbot python3-certbot-nginx
+
+# 申请证书
+sudo certbot --nginx -d your-domain.com
+
+# 自动续期测试
+sudo certbot renew --dry-run
+```
+
+### 7. 常用运维命令
+
+```bash
+# 查看 PM2 服务状态
+pm2 status
+
+# 查看日志
+pm2 logs milk-can-mes-server
+
+# 重启服务
+pm2 restart milk-can-mes-server
+
+# 停止服务
+pm2 stop milk-can-mes-server
+
+# 重新部署（更新代码后）
+cd /opt/milk-can-mes
+npm run build
+pm2 restart milk-can-mes-server
+
+# 查看 Nginx 状态
+sudo systemctl status nginx
+
+# 重新加载 Nginx 配置
+sudo systemctl reload nginx
+```
+
+### 8. 数据备份
+
+```bash
+# SQLite 数据库备份
+cp /opt/milk-can-mes/server/data/database.sqlite /opt/milk-can-mes-backup/database_$(date +%Y%m%d).sqlite
+
+# 设置定时备份（crontab）
+crontab -e
+# 添加：每天凌晨 2 点备份
+0 2 * * * cp /opt/milk-can-mes/server/data/database.sqlite /opt/backups/database_$(date +\%Y\%m\%d).sqlite
 ```
 
 ---
