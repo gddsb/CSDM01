@@ -68,8 +68,8 @@ ProductionLine.belongsToMany(Device, { through: LineDevice, foreignKey: 'line_id
 Device.belongsToMany(ProductionLine, { through: LineDevice, foreignKey: 'device_id', otherKey: 'line_id', as: 'lines' })
 
 // 不良分类 - 父级（自关联，树形）
-DefectType.hasMany(DefectType, { foreignKey: 'parent_id', as: 'children' })
-DefectType.belongsTo(DefectType, { foreignKey: 'parent_id', as: 'parent' })
+DefectType.hasMany(DefectType, { foreignKey: 'parent_id', as: 'children', constraints: false })
+DefectType.belongsTo(DefectType, { foreignKey: 'parent_id', as: 'parent', constraints: false })
 
 // 不良分类 - 不良图片（一对多）
 DefectType.hasMany(DefectImage, { foreignKey: 'defect_id', as: 'images' })
