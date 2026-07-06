@@ -723,9 +723,90 @@ sudo systemctl status nginx
 sudo systemctl reload nginx
 ```
 
-### 9. 数据备份
+### 9. 代码更新（生产环境）
 
-#### MySQL 备份（生产环境）
+#### 9.1 标准更新流程
+
+```bash
+# 1. 进入项目目录
+cd /opt/milk-can-mes
+
+# 2. 拉取最新代码
+git pull origin trae/agent-KDO8Sm
+
+# 3. 更新前端依赖（如 package.json 有变更）
+npm install
+
+# 4. 重新构建前端
+npm run build
+
+# 5. 更新后端依赖（如 server/package.json 有变更）
+cd server
+npm install
+cd ..
+
+# 6. 重启后端服务
+pm2 restart milk-can-mes-server
+
+# 7. 查看更新状态
+pm2 status
+```
+
+#### 9.2 更新数据库结构（如有变更）
+
+```bash
+# 如果数据库表结构有变更，先备份数据
+cd /opt/milk-can-mes/server
+mysqldump -u milk_can_mes -p milk_can_mes > /opt/backups/milk_can_mes_before_update.sql
+
+# 重新初始化数据库（会清空所有数据！）
+# 仅在确认需要重新初始化时执行
+node src/seed.js
+```
+
+#### 9.3 回滚到上一版本
+
+```bash
+# 回滚代码到上一版本
+cd /opt/milk-can-mes
+git log --oneline -5   # 查看最近5个提交
+git revert <commit-hash>  # 撤销指定提交
+# 或
+git checkout <commit-hash>  # 强制回退到指定版本
+
+# 重新构建
+npm run build
+
+# 重启服务
+pm2 restart milk-can-mes-server
+```
+
+#### 9.4 更新检查清单
+
+| 步骤 | 检查项 | 命令 |
+|------|--------|------|
+| 1 | 代码是否拉取成功 | `git log --oneline -1` |
+| 2 | 前端构建是否成功 | `npm run build` |
+| 3 | 后端服务是否正常 | `pm2 status` |
+| 4 | API 是否可访问 | `curl http://localhost:3001/api/health` |
+| 5 | 前端是否可访问 | 浏览器访问首页 |
+
+#### 9.5 更新后验证
+
+```bash
+# 检查后端服务状态
+pm2 logs milk-can-mes-server --lines 20
+
+# 检查前端页面
+curl -I http://localhost/
+
+# 检查 API 响应
+curl http://localhost/api/health
+```
+
+### 10. 数据备份
+
+#### 10.1 MySQL 备份（生产环境）
 
 ```bash
 # 手动备份
@@ -740,7 +821,7 @@ crontab -e
 mysql -u milk_can_mes -p milk_can_mes < milk_can_mes_20260706.sql
 ```
 
-#### SQLite 备份（开发/小团队）
+#### 10.2 SQLite 备份（开发/小团队）
 
 ```bash
 # SQLite 数据库备份
