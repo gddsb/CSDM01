@@ -1,0 +1,101 @@
+[
+  {
+    "process_id": 1,
+    "process_code": "P-01",
+    "process_name": "裁剪下料",
+    "sort_order": 1,
+    "status": 1,
+    "createdAt": "2026-07-06 16:15:22.236 +00:00",
+    "updatedAt": "2026-07-06 16:15:22.236 +00:00"
+  },
+  {
+    "process_id": 2,
+    "process_code": "P-02",
+    "process_name": "小料检测",
+    "sort_order": 2,
+    "status": 1,
+    "createdAt": "2026-07-06 16:15:22.236 +00:00",
+    "updatedAt": "2026-07-06 16:15:22.236 +00:00"
+  },
+  {
+    "process_id": 3,
+    "process_code": "P-03",
+    "process_name": "成圆焊接",
+    "sort_order": 3,
+    "status": 1,
+    "createdAt": "2026-07-06 16:15:22.236 +00:00",
+    "updatedAt": "2026-07-06 16:15:22.236 +00:00"
+  },
+  {
+    "process_id": 4,
+    "process_code": "P-04",
+    "process_name": "补涂烘干",
+    "sort_order": 4,
+    "status": 1,
+    "createdAt": "2026-07-06 16:15:22.236 +00:00",
+    "updatedAt": "2026-07-06 16:15:22.236 +00:00"
+  },
+  {
+    "process_id": 5,
+    "process_code": "P-05",
+    "process_name": "倒罐检测",
+    "sort_order": 5,
+    "status": 1,
+    "createdAt": "2026-07-06 16:15:22.236 +00:00",
+    "updatedAt": "2026-07-06 16:15:22.236 +00:00"
+  },
+  {
+    "process_id": 6,
+    "process_code": "P-06",
+    "process_name": "翻边封口",
+    "sort_order": 6,
+    "status": 1,
+    "createdAt": "2026-07-06 16:15:22.236 +00:00",
+    "updatedAt": "2026-07-06 16:15:22.236 +00:00"
+  },
+  {
+    "process_id": 7,
+    "process_code": "P-07",
+    "process_name": "正压测漏",
+    "sort_order": 7,
+    "status": 1,
+    "createdAt": "2026-07-06 16:15:22.236 +00:00",
+    "updatedAt": "2026-07-06 16:15:22.236 +00:00"
+  },
+  {
+    "process_id": 8,
+    "process_code": "P-08",
+    "process_name": "在线光检测",
+    "sort_order": 8,
+    "status": 1,
+    "createdAt": "2026-07-06 16:15:22.236 +00:00",
+    "updatedAt": "2026-07-06 16:15:22.236 +00:00"
+  },
+  {
+    "process_id": 9,
+    "process_code": "P-09",
+    "process_name": "人工全检",
+    "sort_order": 9,
+    "status": 1,
+    "createdAt": "2026-07-06 16:15:22.236 +00:00",
+    "updatedAt": "2026-07-06 16:15:22.236 +00:00"
+  },
+  {
+    "process_id": 10,
+    "process_code": "P-10",
+    "process_name": "码垛包装",
+    "sort_order": 10,
+    "status": 1,
+    "createdAt": "2026-07-06 16:15:22.236 +00:00",
+    "updatedAt": "2026-07-06 16:15:22.236 +00:00"
+  },
+  {
+    "process_id": 11,
+    "process_code": "P-11",
+    "process_name": "成品检验",
+    "sort_order": 11,
+    "status": 1,
+    "createdAt": "2026-07-06 16:15:22.236 +00:00",
+    "updatedAt": "2026-07-06 16:15:22.236 +00:00"
+  }
+]

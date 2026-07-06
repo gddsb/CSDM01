@@ -1,262 +1,107 @@
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import {
-  User, Role, Process, Material, ProductionLine, Device,
-  DefectType, Order, WorkOrder, ProcessReport,
-  ManpowerRecord, ExceptionRecord, Customer,
+  User, Role, Permission, OperationLog, Material,
+  ProductionLine, Process, Device, DefectType,
+  Order, WorkOrder, ProcessReport,
+  ManpowerRecord, ExceptionRecord, SystemConfig,
+  RolePermission, Sequence, Customer,
+  LineProcess, LineDevice, NumberRule, DefectImage,
   DictType, DictData,
 } from './models/index.js'
 import sequelize from './config/database.js'
-import bcrypt from 'bcryptjs'
 
-/**
- * 数据库初始化种子数据
- * 同步数据库表并写入基础数据（角色、用户、工序、料品、产线、设备、不良分类、订单、工单、报工、人员、异常）
- *
- * 说明：
- * - 所有主键为 INTEGER 自增，此处通过显式整数 ID 写入以便维护外键关联
- * - status 字段为 TINYINT：1=启用/运行/已下达/开工，0=待机/待下达/开立，2=维护中/故障/已关闭/完工/试产，3=关闭
- * - created_by / report_user / record_user / line_leader / responsible_person 为 STRING，存储用户名
- */
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const seedDataDir = path.join(__dirname, 'seed-data')
+
+const seedOrder = [
+  { name: 'Role', model: Role, label: '角色' },
+  { name: 'Permission', model: Permission, label: '权限' },
+  { name: 'RolePermission', model: RolePermission, label: '角色权限' },
+  { name: 'User', model: User, label: '用户' },
+  { name: 'Process', model: Process, label: '工序' },
+  { name: 'Customer', model: Customer, label: '客户档案' },
+  { name: 'Material', model: Material, label: '料品档案' },
+  { name: 'ProductionLine', model: ProductionLine, label: '产线' },
+  { name: 'Device', model: Device, label: '设备' },
+  { name: 'LineProcess', model: LineProcess, label: '产线工序' },
+  { name: 'LineDevice', model: LineDevice, label: '产线设备' },
+  { name: 'DefectType', model: DefectType, label: '不良分类' },
+  { name: 'DefectImage', model: DefectImage, label: '不良图片' },
+  { name: 'DictType', model: DictType, label: '字典类型' },
+  { name: 'DictData', model: DictData, label: '字典数据' },
+  { name: 'Order', model: Order, label: '生产订单' },
+  { name: 'WorkOrder', model: WorkOrder, label: '生产工单' },
+  { name: 'ProcessReport', model: ProcessReport, label: '工序报工' },
+  { name: 'ManpowerRecord', model: ManpowerRecord, label: '人员投入' },
+  { name: 'ExceptionRecord', model: ExceptionRecord, label: '异常记录' },
+  { name: 'SystemConfig', model: SystemConfig, label: '系统配置' },
+  { name: 'Sequence', model: Sequence, label: '序列号' },
+  { name: 'NumberRule', model: NumberRule, label: '编码规则' },
+  { name: 'OperationLog', model: OperationLog, label: '操作日志' },
+]
+
+function loadSeedData(name) {
+  const filePath = path.join(seedDataDir, `${name}.json`)
+  if (!fs.existsSync(filePath)) {
+    return []
+  }
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8')
+    return JSON.parse(content)
+  } catch (err) {
+    console.log(`    ⚠️  读取 ${name}.json 失败: ${err.message}`)
+    return []
+  }
+}
+
 async function seed() {
   try {
     console.log('🔄 开始同步数据库表（force: true）...')
     await sequelize.sync({ force: true })
-    console.log('✅ 数据库表同步完成')
+    console.log('✅ 数据库表同步完成\n')
 
-    // 统一密码加密
-    const password = bcrypt.hashSync('123456', 10)
+    const counts = {}
 
-    // 1. 创建角色（9个）
-    console.log('📌 创建角色...')
-    await Role.bulkCreate([
-      { role_id: 1, role_name: '超级管理员', role_code: 'SUPER_ADMIN', type: '系统默认', scope: '系统全部权限，用户管理，系统配置', sort_order: 1, status: 1 },
-      { role_id: 2, role_name: '计划员', role_code: 'PLANNER', type: '系统默认', scope: '生产计划制定、下达、调整，计划进度查看', sort_order: 2, status: 1 },
-      { role_id: 3, role_name: '质量管理员', role_code: 'QC_MANAGER', type: '系统默认', scope: '质量标准制定，质量抽检审批，不合格品处置', sort_order: 3, status: 1 },
-      { role_id: 4, role_name: '质量检验员', role_code: 'QC_INSPECTOR', type: '系统默认', scope: '质量检测执行，检测数据录入，异常上报', sort_order: 4, status: 1 },
-      { role_id: 5, role_name: '生产管理', role_code: 'PROD_MANAGER', type: '系统默认', scope: '生产任务管理，生产调度，人员管理，报表审批', sort_order: 5, status: 1 },
-      { role_id: 6, role_name: '工序操作人', role_code: 'OPERATOR', type: '系统默认', scope: '本工序生产操作，数据录入，设备点检', sort_order: 6, status: 1 },
-      { role_id: 7, role_name: '系统管理员', role_code: 'ADMIN', type: '可选', scope: '日常系统管理（权限低于超级管理员）', sort_order: 7, status: 1 },
-      { role_id: 8, role_name: '设备维护员', role_code: 'MAINTENANCE', type: '可选', scope: '设备维修，保养记录', sort_order: 8, status: 1 },
-      { role_id: 9, role_name: '看板查看者', role_code: 'DASHBOARD_VIEWER', type: '可选', scope: '大屏/看板只读查看', sort_order: 9, status: 1 },
-    ])
-    console.log('✅ 角色创建完成（9条）')
+    for (const { name, model, label } of seedOrder) {
+      const data = loadSeedData(name)
+      if (data.length === 0) {
+        console.log(`📌 ${label}... 无数据，跳过`)
+        counts[name] = 0
+        continue
+      }
 
-    // 2. 创建用户（9个）
-    console.log('📌 创建用户...')
-    await User.bulkCreate([
-      { user_id: 1, username: 'admin', password, real_name: '超级管理员', employee_no: 'EMP001', department: '系统管理部', role_id: 1, phone: '13800000001', email: 'admin@milk.com', status: 1, last_login_time: '2026-06-30 08:30:00' },
-      { user_id: 2, username: 'sysadmin', password, real_name: '系统管理员', employee_no: 'EMP002', department: '信息部', role_id: 7, phone: '13800000002', email: 'it@milk.com', status: 1, last_login_time: '2026-06-29 17:20:00' },
-      { user_id: 3, username: 'planner', password, real_name: '计划员', employee_no: 'EMP003', department: '生产计划部', role_id: 2, phone: '13800000003', email: 'plan@milk.com', status: 1, last_login_time: '2026-06-30 09:00:00' },
-      { user_id: 4, username: 'qm', password, real_name: '质量管理员', employee_no: 'EMP004', department: '质量管理部', role_id: 3, phone: '13800000004', email: 'qc@milk.com', status: 1, last_login_time: '2026-06-30 08:45:00' },
-      { user_id: 5, username: 'qc', password, real_name: '质量检验员', employee_no: 'EMP005', department: '质量管理部', role_id: 4, phone: '13800000005', email: 'qci@milk.com', status: 1, last_login_time: '2026-06-30 07:50:00' },
-      { user_id: 6, username: 'pm', password, real_name: '生产管理', employee_no: 'EMP006', department: '生产部', role_id: 5, phone: '13800000006', email: 'prod@milk.com', status: 1, last_login_time: '2026-06-30 08:00:00' },
-      { user_id: 7, username: 'op', password, real_name: '工序操作人', employee_no: 'EMP007', department: '生产部', role_id: 6, phone: '13800000007', email: 'op@milk.com', status: 1, last_login_time: '2026-06-30 07:30:00' },
-      { user_id: 8, username: 'maint', password, real_name: '设备维护员', employee_no: 'EMP008', department: '设备部', role_id: 8, phone: '13800000008', email: 'maint@milk.com', status: 1, last_login_time: '2026-06-29 16:00:00' },
-      { user_id: 9, username: 'viewer', password, real_name: '看板查看者', employee_no: 'EMP009', department: '综合管理部', role_id: 9, phone: '13800000009', email: 'view@milk.com', status: 1, last_login_time: '2026-06-28 10:00:00' },
-    ])
-    console.log('✅ 用户创建完成（9条）')
-
-    // 3. 创建工序（11道）
-    console.log('📌 创建工序...')
-    await Process.bulkCreate([
-      { process_id: 1, process_code: 'P-01', process_name: '裁剪下料', sort_order: 1, status: 1 },
-      { process_id: 2, process_code: 'P-02', process_name: '小料检测', sort_order: 2, status: 1 },
-      { process_id: 3, process_code: 'P-03', process_name: '成圆焊接', sort_order: 3, status: 1 },
-      { process_id: 4, process_code: 'P-04', process_name: '补涂烘干', sort_order: 4, status: 1 },
-      { process_id: 5, process_code: 'P-05', process_name: '倒罐检测', sort_order: 5, status: 1 },
-      { process_id: 6, process_code: 'P-06', process_name: '翻边封口', sort_order: 6, status: 1 },
-      { process_id: 7, process_code: 'P-07', process_name: '正压测漏', sort_order: 7, status: 1 },
-      { process_id: 8, process_code: 'P-08', process_name: '在线光检测', sort_order: 8, status: 1 },
-      { process_id: 9, process_code: 'P-09', process_name: '人工全检', sort_order: 9, status: 1 },
-      { process_id: 10, process_code: 'P-10', process_name: '码垛包装', sort_order: 10, status: 1 },
-      { process_id: 11, process_code: 'P-11', process_name: '成品检验', sort_order: 11, status: 1 },
-    ])
-    console.log('✅ 工序创建完成（11条）')
-
-    // 4. 创建料品（5个）
-    console.log('📌 创建料品...')
-    const ml900 = await Material.create({ material_code: 'ML-900-A', material_name: '900g奶粉罐', specification: '900g奶粉罐', category_name: '成品罐', unit_name: '个', film_no: 'A312-012-0001', version_no: 'V1', cutting_size: '300x200mm', printing_process: '胶印', color_separation: 'CMYK', material_thickness: 0.23, material_width: 300, material_height: 200, unit_weight: 0.15, weight_unit: 'kg', volume_unit: 'm³', inventory_category: '成品', unit_code: 'PC', is_active: true, effective_date: '2026-01-01', expiry_date: '2027-12-31' })
-    const ml400 = await Material.create({ material_code: 'ML-400-B', material_name: '400g奶粉罐', specification: '400g奶粉罐', category_name: '成品罐', unit_name: '个', film_no: 'A312-013-0002', version_no: 'V1', cutting_size: '250x180mm', printing_process: '胶印', color_separation: 'CMYK', material_thickness: 0.20, material_width: 250, material_height: 180, unit_weight: 0.12, weight_unit: 'kg', volume_unit: 'm³', inventory_category: '成品', unit_code: 'PC', is_active: true, effective_date: '2026-01-01', expiry_date: '2027-12-31' })
-    const ml800 = await Material.create({ material_code: 'ML-800-C', material_name: '800g奶粉罐', specification: '800g奶粉罐', category_name: '成品罐', unit_name: '个', film_no: 'A312-014-0003', version_no: 'V2', cutting_size: '280x190mm', printing_process: '胶印', color_separation: 'CMYK', material_thickness: 0.22, material_width: 280, material_height: 190, unit_weight: 0.14, weight_unit: 'kg', volume_unit: 'm³', inventory_category: '成品', unit_code: 'PC', is_active: true, effective_date: '2026-01-01', expiry_date: '2027-12-31' })
-    const ml1200 = await Material.create({ material_code: 'ML-1200-D', material_name: '1200g奶粉罐', specification: '1200g奶粉罐', category_name: '成品罐', unit_name: '个', film_no: 'A312-015-0004', version_no: 'V1', cutting_size: '320x220mm', printing_process: '胶印', color_separation: 'CMYK', material_thickness: 0.25, material_width: 320, material_height: 220, unit_weight: 0.18, weight_unit: 'kg', volume_unit: 'm³', inventory_category: '成品', unit_code: 'PC', is_active: false, effective_date: '2026-01-01', expiry_date: '2026-06-30' })
-    const mtMar = await Material.create({ material_code: 'MT-MAR-A', material_name: '马口铁基材', specification: '0.23mm镀锡板', category_name: '原材料', unit_name: '片', film_no: '-', version_no: '-', cutting_size: '1000x1200mm', printing_process: '-', color_separation: '-', material_thickness: 0.23, material_width: 1000, material_height: 1200, unit_weight: 2.2, weight_unit: 'kg', volume_unit: 'm³', inventory_category: '原材料', unit_code: 'PC', is_active: true, effective_date: '2026-01-01', expiry_date: '2027-12-31' })
-    console.log('✅ 料品创建完成（5条）')
-
-    // 5. 创建产线（3条）—— 需先于设备创建（设备 line_id 引用产线）
-    console.log('📌 创建产线...')
-    await ProductionLine.bulkCreate([
-      { line_id: 1, line_code: 'LINE-A', line_name: 'A线', workshop: '一号车间', line_leader: 'pm', sort_order: 1, status: 1 },
-      { line_id: 2, line_code: 'LINE-B', line_name: 'B线', workshop: '一号车间', line_leader: 'pm', sort_order: 2, status: 1 },
-      { line_id: 3, line_code: 'LINE-C', line_name: 'C线', workshop: '二号车间', line_leader: 'pm', sort_order: 3, status: 2 },
-    ])
-    console.log('✅ 产线创建完成（3条）')
-
-    // 6. 创建设备（4台：焊接机2台、测漏机1台、码垛机1台）
-    console.log('📌 创建设备...')
-    await Device.bulkCreate([
-      { device_id: 1, device_type: '焊接机', device_code: 'DEV-W001', device_name: '自动焊接机1号', device_model: 'WJ-200', serial_no: 'SN2024001', location: '一号车间-A线', line_id: 1, responsible_person: 'maint', is_special: false, status: 1, last_inspection_date: '2026-03-15', inspection_cycle: '6', next_inspection_date: '2026-09-15', manufacturer: '北京机械', purchase_date: '2024-01-10', warranty_end: '2026-01-10' },
-      { device_id: 2, device_type: '测漏机', device_code: 'DEV-L001', device_name: '正压测漏机1号', device_model: 'CL-300', serial_no: 'SN2024002', location: '一号车间-A线', line_id: 1, responsible_person: 'maint', is_special: true, status: 1, last_inspection_date: '2026-01-20', inspection_cycle: '12', next_inspection_date: '2027-01-20', manufacturer: '上海检测', purchase_date: '2023-06-15', warranty_end: '2025-06-15' },
-      { device_id: 3, device_type: '码垛机', device_code: 'DEV-P001', device_name: '自动码垛机1号', device_model: 'MD-500', serial_no: 'SN2024003', location: '一号车间-A线', line_id: 1, responsible_person: 'maint', is_special: false, status: 0, last_inspection_date: '2026-02-10', inspection_cycle: '6', next_inspection_date: '2026-08-10', manufacturer: '广州智造', purchase_date: '2024-03-20', warranty_end: '2026-03-20' },
-      { device_id: 4, device_type: '焊接机', device_code: 'DEV-W002', device_name: '自动焊接机2号', device_model: 'WJ-200', serial_no: 'SN2024004', location: '一号车间-B线', line_id: 2, responsible_person: 'maint', is_special: false, status: 2, last_inspection_date: '2025-12-05', inspection_cycle: '6', next_inspection_date: '2026-06-05', manufacturer: '北京机械', purchase_date: '2024-01-10', warranty_end: '2026-01-10' },
-    ])
-    console.log('✅ 设备创建完成（4条）')
-
-    // 7. 创建不良分类（7个）
-    // available_units / related_processes 为 STRING，用逗号分隔存储
-    console.log('📌 创建不良分类...')
-    await DefectType.bulkCreate([
-      { defect_id: 1, defect_code: 'D-MAT-01', defect_name: '材料划伤', defect_type: '来料不良', category_name: '来料检验类型', defect_unit: '个', available_units: '个,片', display: true, sort_order: 1, status: 1, related_processes: '1', category_desc: '材料表面有划痕' },
-      { defect_id: 2, defect_code: 'D-MAT-02', defect_name: '材料变形', defect_type: '来料不良', category_name: '来料检验类型', defect_unit: '个', available_units: '个,片', display: true, sort_order: 2, status: 1, related_processes: '1', category_desc: '材料形状变形' },
-      { defect_id: 3, defect_code: 'D-PRC-01', defect_name: '焊接不良', defect_type: '制程不良', category_name: '制程检验类型', defect_unit: '个', available_units: '个,处', display: true, sort_order: 3, status: 1, related_processes: '3', category_desc: '焊接处有气孔、虚焊等' },
-      { defect_id: 4, defect_code: 'D-PRC-02', defect_name: '补涂漏涂', defect_type: '制程不良', category_name: '制程检验类型', defect_unit: '个', available_units: '个,处', display: true, sort_order: 4, status: 1, related_processes: '4', category_desc: '补涂区域有漏涂' },
-      { defect_id: 5, defect_code: 'D-PRC-03', defect_name: '封口不良', defect_type: '制程不良', category_name: '制程检验类型', defect_unit: '个', display: false, sort_order: 5, status: 1, related_processes: '6', category_desc: '封口不严密' },
-      { defect_id: 6, defect_code: 'D-SCP-01', defect_name: '尺寸超差', defect_type: '检验报废', category_name: '制程检验类型', defect_unit: '个', available_units: '个', display: true, sort_order: 6, status: 1, related_processes: '2,5', category_desc: '成品尺寸超出公差范围' },
-      { defect_id: 7, defect_code: 'D-SCP-02', defect_name: '测漏不合格', defect_type: '检验报废', category_name: '制程检验类型', defect_unit: '个', available_units: '个', display: true, sort_order: 7, status: 1, related_processes: '5', category_desc: '正压测漏不合格' },
-    ])
-    console.log('✅ 不良分类创建完成（7条）')
-
-    // 8. 创建生产订单（4个）
-    // status: 0=待下达, 1=已下达, 2=已关闭
-    console.log('📌 创建生产订单...')
-    await Order.bulkCreate([
-      { order_id: 1, order_no: 'MO-16260630001', material_id: ml900.material_id, material_code: 'ML-900-A', material_name: '900g奶粉罐', specification: '900g奶粉罐', film_version: 'A312-012-0001', version_no: 'V1', planned_qty: 20000, finished_qty: 4983, plan_start_time: '2026-06-30 08:00', plan_end_time: '2026-07-02 18:00', status: 1, release_time: '2026-06-30 07:30', created_by: 'planner' },
-      { order_id: 2, order_no: 'MO-16260630002', material_id: ml400.material_id, material_code: 'ML-400-B', material_name: '400g奶粉罐', specification: '400g奶粉罐', film_version: 'A312-013-0002', version_no: 'V1', planned_qty: 15000, finished_qty: 0, plan_start_time: '2026-07-01 08:00', plan_end_time: '2026-07-03 18:00', status: 0, release_time: null, created_by: 'planner' },
-      { order_id: 3, order_no: 'MO-16260629001', material_id: ml800.material_id, material_code: 'ML-800-C', material_name: '800g奶粉罐', specification: '800g奶粉罐', film_version: 'A312-014-0003', version_no: 'V2', planned_qty: 10000, finished_qty: 9965, plan_start_time: '2026-06-29 08:00', plan_end_time: '2026-06-30 18:00', status: 2, release_time: '2026-06-28 16:00', close_time: '2026-06-30 17:00', created_by: 'planner' },
-      { order_id: 4, order_no: 'MO-16260628001', material_id: ml900.material_id, material_code: 'ML-900-A', material_name: '900g奶粉罐', specification: '900g奶粉罐', film_version: 'A312-012-0001', version_no: 'V1', planned_qty: 18000, finished_qty: 18000, plan_start_time: '2026-06-28 08:00', plan_end_time: '2026-06-30 18:00', status: 2, release_time: '2026-06-27 16:00', close_time: '2026-06-30 16:30', created_by: 'planner' },
-    ])
-    console.log('✅ 生产订单创建完成（4条）')
-
-    // 9. 创建工单（4个）
-    // status: 0=开立, 1=开工, 2=完工, 3=关闭
-    console.log('📌 创建工单...')
-    await WorkOrder.bulkCreate([
-      { work_order_id: 1, work_order_no: 'WO20260630001', order_id: 1, order_no: 'MO-16260630001', line_id: 1, line_name: 'A线', material_id: ml900.material_id, material_name: '900g奶粉罐', target_qty: 20000, finished_qty: 4983, start_time: '2026-06-30 08:00', finish_time: null, total_hours: 0, effective_hours: 0, labor_hours: 0, status: 1, created_by: 'pm' },
-      { work_order_id: 2, work_order_no: 'WO20260629001', order_id: 3, order_no: 'MO-16260629001', line_id: 2, line_name: 'B线', material_id: ml800.material_id, material_name: '800g奶粉罐', target_qty: 10000, finished_qty: 9965, start_time: '2026-06-29 08:00', finish_time: '2026-06-30 17:00', total_hours: 33.0, effective_hours: 30.5, labor_hours: 244.0, status: 2, created_by: 'pm' },
-      { work_order_id: 3, work_order_no: 'WO20260628001', order_id: 4, order_no: 'MO-16260628001', line_id: 1, line_name: 'A线', material_id: ml900.material_id, material_name: '900g奶粉罐', target_qty: 18000, finished_qty: 18000, start_time: '2026-06-28 08:00', finish_time: '2026-06-30 16:30', total_hours: 56.5, effective_hours: 52.0, labor_hours: 416.0, status: 3, created_by: 'pm' },
-      { work_order_id: 4, work_order_no: 'WO20260701001', order_id: 2, order_no: 'MO-16260630002', line_id: 1, line_name: 'A线', material_id: ml400.material_id, material_name: '400g奶粉罐', target_qty: 15000, finished_qty: 0, start_time: '2026-07-02 08:00', finish_time: null, total_hours: 0, effective_hours: 0, labor_hours: 0, status: 0, created_by: 'pm' },
-    ])
-    console.log('✅ 工单创建完成（4条）')
-
-    // 10. 创建工序报工记录（4条）
-    console.log('📌 创建工序报工记录...')
-    await ProcessReport.bulkCreate([
-      { report_id: 1, work_order_id: 1, work_order_no: 'WO20260630001', process_id: 1, process_name: '裁剪下料', input_qty: 5000, defect_material: 10, defect_process: 5, defect_scrap: 2, output_qty: 4983, device_id: 1, device_name: '自动焊接机1号', report_user: 'op', report_user_name: '工序操作人', report_time: '2026-06-30 10:30:00' },
-      { report_id: 2, work_order_id: 1, work_order_no: 'WO20260630001', process_id: 2, process_name: '小料检测', input_qty: 4983, defect_material: 3, defect_process: 0, defect_scrap: 1, output_qty: 4979, device_id: null, device_name: '-', report_user: 'op', report_user_name: '工序操作人', report_time: '2026-06-30 11:15:00' },
-      { report_id: 3, work_order_id: 1, work_order_no: 'WO20260630001', process_id: 3, process_name: '成圆焊接', input_qty: 4979, defect_material: 2, defect_process: 8, defect_scrap: 0, output_qty: 4969, device_id: 1, device_name: '自动焊接机1号', report_user: 'pm', report_user_name: '生产管理', report_time: '2026-06-30 12:00:00' },
-      { report_id: 4, work_order_id: 2, work_order_no: 'WO20260629001', process_id: 1, process_name: '裁剪下料', input_qty: 10000, defect_material: 20, defect_process: 10, defect_scrap: 5, output_qty: 9965, device_id: 4, device_name: '自动焊接机2号', report_user: 'op', report_user_name: '工序操作人', report_time: '2026-06-29 10:00:00' },
-    ])
-    console.log('✅ 工序报工记录创建完成（4条）')
-
-    // 11. 创建人员投入记录（3条）
-    console.log('📌 创建人员投入记录...')
-    await ManpowerRecord.bulkCreate([
-      { record_id: 1, work_order_id: 1, work_order_no: 'WO20260630001', skilled_workers: 3, general_workers: 5, contract_workers: 2, auxiliary_workers: 1, remarks: '白班', record_user: 'pm', record_user_name: '生产管理' },
-      { record_id: 2, work_order_id: 2, work_order_no: 'WO20260629001', skilled_workers: 2, general_workers: 4, contract_workers: 2, auxiliary_workers: 0, remarks: '白班', record_user: 'pm', record_user_name: '生产管理' },
-      { record_id: 3, work_order_id: 2, work_order_no: 'WO20260629001', skilled_workers: 2, general_workers: 3, contract_workers: 1, auxiliary_workers: 0, remarks: '夜班', record_user: 'pm', record_user_name: '生产管理' },
-    ])
-    console.log('✅ 人员投入记录创建完成（3条）')
-
-    // 12. 创建异常工时记录（3条）
-    console.log('📌 创建异常工时记录...')
-    await ExceptionRecord.bulkCreate([
-      { record_id: 1, work_order_id: 1, work_order_no: 'WO20260630001', order_id: 1, order_no: 'MO-16260630001', exception_type: 'E04', exception_type_name: '设备故障', device_id: 1, device_name: '自动焊接机1号', start_time: '2026-06-30 09:00', end_time: '2026-06-30 09:30', duration: 30, reason: '焊接头过热，停机冷却', record_user: 'op', record_user_name: '工序操作人' },
-      { record_id: 2, work_order_id: 2, work_order_no: 'WO20260629001', order_id: 3, order_no: 'MO-16260629001', exception_type: 'E01', exception_type_name: '换型调机', device_id: null, device_name: '-', start_time: '2026-06-29 08:00', end_time: '2026-06-29 09:30', duration: 90, reason: '从900g切换至800g规格换型', record_user: 'pm', record_user_name: '生产管理' },
-      { record_id: 3, work_order_id: 2, work_order_no: 'WO20260629001', order_id: 3, order_no: 'MO-16260629001', exception_type: 'E03', exception_type_name: '停机待料', device_id: null, device_name: '-', start_time: '2026-06-29 14:00', end_time: '2026-06-29 15:00', duration: 60, reason: '等待马口铁基材到货', record_user: 'pm', record_user_name: '生产管理' },
-    ])
-    console.log('✅ 异常工时记录创建完成（3条）')
-
-    // 13. 创建客户档案（24条）
-    console.log('📌 创建客户档案...')
-    await Customer.bulkCreate([
-      { customer_id: 1, customer_code: 'C001', customer_name: '内蒙古伊利实业集团股份有限公司', short_name: '伊利', contact_person: '张明', phone: '0471-5358888', email: 'purchase@yili.com', address: '内蒙古呼和浩特市金山开发区伊利工业园', status: 1, sort_order: 1, remark: '战略客户' },
-      { customer_id: 2, customer_code: 'C002', customer_name: '内蒙古蒙牛乳业（集团）股份有限公司', short_name: '蒙牛', contact_person: '李刚', phone: '0471-7399999', email: 'buyer@mengniu.com', address: '内蒙古呼和浩特市和林格尔县盛乐经济园区', status: 1, sort_order: 2, remark: '战略客户' },
-      { customer_id: 3, customer_code: 'C003', customer_name: '黑龙江飞鹤乳业有限公司', short_name: '飞鹤', contact_person: '王伟', phone: '0452-5678888', email: 'pur@feihe.com', address: '黑龙江省齐齐哈尔市克东县克东镇', status: 1, sort_order: 3, remark: '' },
-      { customer_id: 4, customer_code: 'C004', customer_name: '光明乳业股份有限公司', short_name: '光明', contact_person: '陈强', phone: '021-63888888', email: 'buy@brightdairy.com', address: '上海市静安区江场三路255号', status: 1, sort_order: 4, remark: '' },
-      { customer_id: 5, customer_code: 'C005', customer_name: '北京三元食品股份有限公司', short_name: '三元', contact_person: '赵丽', phone: '010-62998888', email: 'sanyuan@sanyuan.com', address: '北京市大兴区瀛海镇三元工业园', status: 1, sort_order: 5, remark: '' },
-      { customer_id: 6, customer_code: 'C006', customer_name: '君乐宝乳业有限公司', short_name: '君乐宝', contact_person: '孙涛', phone: '0311-83928888', email: 'buyer@junlebao.com', address: '河北省石家庄市鹿泉区石铜路36号', status: 1, sort_order: 6, remark: '' },
-      { customer_id: 7, customer_code: 'C007', customer_name: '完达山乳业股份有限公司', short_name: '完达山', contact_person: '周强', phone: '0451-86308888', email: 'wds@wandashan.com', address: '黑龙江省哈尔滨市南岗区长江路382号', status: 1, sort_order: 7, remark: '' },
-      { customer_id: 8, customer_code: 'C008', customer_name: '陕西和氏乳业集团有限公司', short_name: '和氏', contact_person: '吴敏', phone: '0917-4508888', email: 'heshi@heshi.com', address: '陕西省宝鸡市陇县和氏乳业园区', status: 1, sort_order: 8, remark: '' },
-      { customer_id: 9, customer_code: 'C009', customer_name: '雅士利国际集团有限公司', short_name: '雅士利', contact_person: '郑华', phone: '0768-8899888', email: 'yashili@yashili.com', address: '广东省潮州市潮安区雅士利工业园', status: 1, sort_order: 9, remark: '' },
-      { customer_id: 10, customer_code: 'C010', customer_name: '杭州贝因美集团有限公司', short_name: '贝因美', contact_person: '黄玲', phone: '0571-8888888', email: 'buyer@beingmate.com', address: '浙江省杭州市滨江区江南大道588号', status: 1, sort_order: 10, remark: '' },
-      { customer_id: 11, customer_code: 'C011', customer_name: '圣元营养食品有限公司', short_name: '圣元', contact_person: '林峰', phone: '0532-8589888', email: 'shengyuan@shengyuan.com', address: '山东省青岛市黄岛区圣元路1号', status: 1, sort_order: 11, remark: '' },
-      { customer_id: 12, customer_code: 'C012', customer_name: '澳优乳业（中国）有限公司', short_name: '澳优', contact_person: '许文', phone: '0731-8998888', email: 'ausnutria@ausnutria.com', address: '湖南省长沙市望城区澳优乳业园', status: 1, sort_order: 12, remark: '' },
-      { customer_id: 13, customer_code: 'C013', customer_name: '黑龙江红星集团食品有限公司', short_name: '红星', contact_person: '蔡勇', phone: '0453-6598888', email: 'hongxing@hongxing.com', address: '黑龙江省牡丹江市阳明区裕民路1号', status: 1, sort_order: 13, remark: '' },
-      { customer_id: 14, customer_code: 'C014', customer_name: '西安银桥乳业（集团）有限公司', short_name: '银桥', contact_person: '邓军', phone: '029-83888888', email: 'yinqiao@yinqiao.com', address: '陕西省西安市临潼区银桥大道', status: 1, sort_order: 14, remark: '' },
-      { customer_id: 15, customer_code: 'C015', customer_name: '美赞臣营养品（中国）有限公司', short_name: '美赞臣', contact_person: 'Sara Liu', phone: '020-82198888', email: 'meadjohnson@mj.com', address: '广东省广州市黄埔区科丰路31号', status: 1, sort_order: 15, remark: '外资' },
-      { customer_id: 16, customer_code: 'C016', customer_name: '惠氏营养品（中国）有限公司', short_name: '惠氏', contact_person: 'Wang Lei', phone: '021-20898888', email: 'wyeth@wyeth.com', address: '上海市浦东新区张江高科技园区', status: 1, sort_order: 16, remark: '外资' },
-      { customer_id: 17, customer_code: 'C017', customer_name: '雅培（上海）贸易有限公司', short_name: '雅培', contact_person: 'Lily Chen', phone: '021-23298888', email: 'abbott@abbott.com', address: '上海市黄浦区南京西路128号', status: 1, sort_order: 17, remark: '外资' },
-      { customer_id: 18, customer_code: 'C018', customer_name: '雀巢（中国）有限公司', short_name: '雀巢', contact_person: 'Zhang Hua', phone: '010-85898888', email: 'nestle@nestle.com', address: '北京市朝阳区建国门外大街8号', status: 1, sort_order: 18, remark: '外资' },
-      { customer_id: 19, customer_code: 'C019', customer_name: '达能亚太（上海）投资有限公司', short_name: '达能', contact_person: 'Yang Min', phone: '021-60828888', email: 'danone@danone.com', address: '上海市静安区南京西路1601号', status: 1, sort_order: 19, remark: '外资' },
-      { customer_id: 20, customer_code: 'C020', customer_name: '高培（广州）乳业有限公司', short_name: '高培', contact_person: '冯刚', phone: '020-32288888', email: 'gaopei@gaopei.com', address: '广东省广州市黄埔区科丰路29号', status: 1, sort_order: 20, remark: '' },
-      { customer_id: 21, customer_code: 'C021', customer_name: '安吉兰德（中国）食品有限公司', short_name: '安吉兰德', contact_person: '苏静', phone: '0572-5888888', email: 'angiland@angiland.com', address: '浙江省湖州市安吉县递铺街道', status: 1, sort_order: 21, remark: '' },
-      { customer_id: 22, customer_code: 'C022', customer_name: '深圳市晨光乳业有限公司', short_name: '晨光', contact_person: '彭宇', phone: '0755-83398888', email: 'chenguang@chenguang.com', address: '深圳市光明区光明街道晨光大道', status: 1, sort_order: 22, remark: '' },
-      { customer_id: 23, customer_code: 'C023', customer_name: '广州燕塘乳业股份有限公司', short_name: '燕塘', contact_person: '胡海', phone: '020-87038888', email: 'yantang@yantang.com', address: '广东省广州市天河区燕岭路29号', status: 0, sort_order: 23, remark: '停用' },
-      { customer_id: 24, customer_code: 'C024', customer_name: '广州风行乳业股份有限公司', short_name: '风行', contact_person: '叶丹', phone: '020-83828888', email: 'fengxing@fengxing.com', address: '广东省广州市越秀区中山六路18号', status: 0, sort_order: 24, remark: '停用' },
-    ])
-    console.log('✅ 客户档案创建完成（24条）')
-
-    // 13. 创建数据字典
-    console.log('📌 创建数据字典...')
-    await DictType.bulkCreate([
-      { dict_id: 1, dict_name: '用户状态', dict_type: 'sys_user_status', status: 1, remark: '系统用户状态列表', created_by: 'admin' },
-      { dict_id: 2, dict_name: '订单状态', dict_type: 'prod_order_status', status: 1, remark: '生产订单状态', created_by: 'admin' },
-      { dict_id: 3, dict_name: '工单状态', dict_type: 'prod_work_order_status', status: 1, remark: '工单状态列表', created_by: 'admin' },
-      { dict_id: 4, dict_name: '产线状态', dict_type: 'bas_line_status', status: 1, remark: '产线运行状态', created_by: 'admin' },
-      { dict_id: 5, dict_name: '班次', dict_type: 'bas_shift_type', status: 1, remark: '生产班次', created_by: 'admin' },
-      { dict_id: 6, dict_name: '不良大类', dict_type: 'bas_defect_category', status: 1, remark: '不良分类大类名称', created_by: 'admin' },
-      { dict_id: 7, dict_name: '不良类型', dict_type: 'bas_defect_type', status: 1, remark: '不良分类名称', created_by: 'admin' },
-      { dict_id: 8, dict_name: '异常类型', dict_type: 'prod_exception_type', status: 1, remark: '生产异常类型', created_by: 'admin' },
-      { dict_id: 9, dict_name: '设备状态', dict_type: 'bas_device_status', status: 1, remark: '设备运行状态', created_by: 'admin' },
-      { dict_id: 10, dict_name: '性别', dict_type: 'sys_user_sex', status: 1, remark: '用户性别', created_by: 'admin' },
-    ])
-    await DictData.bulkCreate([
-      { dict_code: 1, dict_sort: 1, dict_label: '启用', dict_value: '1', dict_type: 'sys_user_status', list_class: 'success', is_default: 1, status: 1 },
-      { dict_code: 2, dict_sort: 2, dict_label: '禁用', dict_value: '0', dict_type: 'sys_user_status', list_class: 'danger', is_default: 0, status: 1 },
-      { dict_code: 3, dict_sort: 1, dict_label: '开立', dict_value: '0', dict_type: 'prod_order_status', list_class: 'default', is_default: 1, status: 1 },
-      { dict_code: 4, dict_sort: 2, dict_label: '已下达', dict_value: '1', dict_type: 'prod_order_status', list_class: 'processing', is_default: 0, status: 1 },
-      { dict_code: 5, dict_sort: 3, dict_label: '已关闭', dict_value: '2', dict_type: 'prod_order_status', list_class: 'success', is_default: 0, status: 1 },
-      { dict_code: 6, dict_sort: 1, dict_label: '开立', dict_value: '开立', dict_type: 'prod_work_order_status', list_class: 'default', is_default: 1, status: 1 },
-      { dict_code: 7, dict_sort: 2, dict_label: '开工', dict_value: '开工', dict_type: 'prod_work_order_status', list_class: 'processing', is_default: 0, status: 1 },
-      { dict_code: 8, dict_sort: 3, dict_label: '关闭', dict_value: '关闭', dict_type: 'prod_work_order_status', list_class: 'warning', is_default: 0, status: 1 },
-      { dict_code: 9, dict_sort: 4, dict_label: '完工', dict_value: '完工', dict_type: 'prod_work_order_status', list_class: 'success', is_default: 0, status: 1 },
-      { dict_code: 10, dict_sort: 1, dict_label: '运行中', dict_value: '运行中', dict_type: 'bas_line_status', list_class: 'success', is_default: 0, status: 1 },
-      { dict_code: 11, dict_sort: 2, dict_label: '维护中', dict_value: '维护中', dict_type: 'bas_line_status', list_class: 'warning', is_default: 0, status: 1 },
-      { dict_code: 12, dict_sort: 3, dict_label: '停用', dict_value: '停用', dict_type: 'bas_line_status', list_class: 'danger', is_default: 0, status: 1 },
-      { dict_code: 13, dict_sort: 1, dict_label: '白班', dict_value: '白班', dict_type: 'bas_shift_type', list_class: 'blue', is_default: 1, status: 1 },
-      { dict_code: 14, dict_sort: 2, dict_label: '夜班', dict_value: '夜班', dict_type: 'bas_shift_type', list_class: 'purple', is_default: 0, status: 1 },
-      { dict_code: 15, dict_sort: 1, dict_label: '来料检验类', dict_value: '来料检验类', dict_type: 'bas_defect_category', list_class: 'blue', is_default: 0, status: 1 },
-      { dict_code: 16, dict_sort: 2, dict_label: '制程检验类', dict_value: '制程检验类', dict_type: 'bas_defect_category', list_class: 'orange', is_default: 1, status: 1 },
-      { dict_code: 17, dict_sort: 1, dict_label: '来料不良', dict_value: '来料不良', dict_type: 'bas_defect_type', list_class: 'blue', is_default: 0, status: 1 },
-      { dict_code: 18, dict_sort: 2, dict_label: '制程不良', dict_value: '制程不良', dict_type: 'bas_defect_type', list_class: 'orange', is_default: 1, status: 1 },
-      { dict_code: 19, dict_sort: 3, dict_label: '检验报废', dict_value: '检验报废', dict_type: 'bas_defect_type', list_class: 'red', is_default: 0, status: 1 },
-      { dict_code: 20, dict_sort: 1, dict_label: '设备异常', dict_value: '设备异常', dict_type: 'prod_exception_type', list_class: 'orange', is_default: 0, status: 1 },
-      { dict_code: 21, dict_sort: 2, dict_label: '物料异常', dict_value: '物料异常', dict_type: 'prod_exception_type', list_class: 'blue', is_default: 0, status: 1 },
-      { dict_code: 22, dict_sort: 3, dict_label: '品质异常', dict_value: '品质异常', dict_type: 'prod_exception_type', list_class: 'red', is_default: 0, status: 1 },
-      { dict_code: 23, dict_sort: 4, dict_label: '人员异常', dict_value: '人员异常', dict_type: 'prod_exception_type', list_class: 'purple', is_default: 0, status: 1 },
-      { dict_code: 24, dict_sort: 5, dict_label: '工艺异常', dict_value: '工艺异常', dict_type: 'prod_exception_type', list_class: 'cyan', is_default: 0, status: 1 },
-      { dict_code: 25, dict_sort: 1, dict_label: '运行', dict_value: '运行', dict_type: 'bas_device_status', list_class: 'success', is_default: 0, status: 1 },
-      { dict_code: 26, dict_sort: 2, dict_label: '停用', dict_value: '停用', dict_type: 'bas_device_status', list_class: 'danger', is_default: 0, status: 1 },
-      { dict_code: 27, dict_sort: 3, dict_label: '维修', dict_value: '维修', dict_type: 'bas_device_status', list_class: 'warning', is_default: 0, status: 1 },
-      { dict_code: 28, dict_sort: 1, dict_label: '男', dict_value: '1', dict_type: 'sys_user_sex', list_class: 'blue', is_default: 1, status: 1 },
-      { dict_code: 29, dict_sort: 2, dict_label: '女', dict_value: '2', dict_type: 'sys_user_sex', list_class: 'magenta', is_default: 0, status: 1 },
-    ])
-    console.log('✅ 数据字典创建完成（10种类型，29条数据）')
+      console.log(`📌 ${label}...`)
+      try {
+        await model.bulkCreate(data, { validate: false })
+        console.log(`✅ ${label}创建完成（${data.length}条）`)
+        counts[name] = data.length
+      } catch (err) {
+        console.log(`❌ ${label}创建失败: ${err.message}`)
+        console.log(`   尝试逐条插入...`)
+        let success = 0
+        for (const item of data) {
+          try {
+            await model.create(item, { validate: false })
+            success++
+          } catch (itemErr) {
+            console.log(`   ⚠️  跳过一条数据: ${itemErr.message}`)
+          }
+        }
+        console.log(`✅ ${label}创建完成（${success}/${data.length}条）`)
+        counts[name] = success
+      }
+    }
 
     console.log('\n🎉 种子数据初始化完成！')
-    console.log('   - 角色：9 条')
-    console.log('   - 用户：9 条（密码均为 123456）')
-    console.log('   - 工序：11 条')
-    console.log('   - 料品：5 条')
-    console.log('   - 产线：3 条')
-    console.log('   - 设备：4 条')
-    console.log('   - 不良分类：7 条')
-    console.log('   - 生产订单：4 条')
-    console.log('   - 工单：4 条')
-    console.log('   - 工序报工：4 条')
-    console.log('   - 人员记录：3 条')
-    console.log('   - 异常记录：3 条')
-    console.log('   - 客户档案：24 条')
-    console.log('   - 字典类型：10 条')
-    console.log('   - 字典数据：29 条')
+    for (const { name, label } of seedOrder) {
+      if (counts[name] > 0) {
+        console.log(`   - ${label}：${counts[name]} 条`)
+      }
+    }
+    console.log(`\n   默认登录账号：admin / 123456`)
 
     await sequelize.close()
     process.exit(0)
@@ -265,7 +110,6 @@ async function seed() {
     try {
       await sequelize.close()
     } catch (_) {
-      // ignore close error
     }
     process.exit(1)
   }
