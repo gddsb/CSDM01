@@ -631,13 +631,27 @@ pm2 save
 sudo cat > /etc/nginx/sites-available/milk-can-mes << 'EOF'
 server {
     listen 80;
-    server_name your-domain.com;  # 替换为你的域名或 IP
+    server_name 43.138.218.55;  # 替换为你的域名或服务器公网IP
+
+    # 安全头配置（防止常见 Web 攻击）
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Content-Type-Options "nosniff";
 
     # 前端静态文件
     location / {
         root /opt/milk-can-mes/dist;
         index index.html;
         try_files $uri $uri/ /index.html;
+
+        # 缓存控制：HTML 不缓存，其他资源缓存 7 天
+        if ($uri ~* "\.(html|htm)$") {
+            expires -1;
+        }
+        if ($uri ~* "\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$") {
+            expires 7d;
+            add_header Cache-Control "public, immutable";
+        }
     }
 
     # 后端 API 代理
@@ -649,7 +663,24 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
+
+        # 超时设置（防止长请求被中断）
+        proxy_connect_timeout 60s;
+        proxy_read_timeout 120s;
+        proxy_send_timeout 60s;
+    }
+
+    # 上传文件代理（头像、不良图片等）
+    location /uploads {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+
+        # 文件缓存 7 天
+        expires 7d;
+        add_header Cache-Control "public";
     }
 }
 EOF
