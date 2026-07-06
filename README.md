@@ -534,7 +534,7 @@ sudo npm install -g pm2
 ```bash
 # 克隆项目（或上传项目文件）
 cd /opt
-git clone <your-repo-url> milk-can-mes
+git clone https://github.com/gddsb/CSDM01.git milk-can-mes
 cd milk-can-mes
 
 # 前端安装与构建
