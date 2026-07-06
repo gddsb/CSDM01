@@ -482,6 +482,19 @@ JWT_EXPIRES_IN=7d
 
 ## Ubuntu 22.04 LTS 生产部署指南
 
+### 0. 数据库选型建议
+
+| 维度 | SQLite（默认） | MySQL（推荐生产） |
+|------|---------------|-----------------|
+| **适用场景** | 开发测试、小团队（≤10人）、试运行 | 正式生产、多用户并发、数据量大 |
+| **并发能力** | 单写多读，写入时全库锁 | 高并发读写，行级锁，连接池 |
+| **数据规模** | 建议 < 10GB，单表 < 千万级 | TB 级数据，亿级记录 |
+| **运维成本** | 零运维，无需安装数据库服务 | 需要安装、配置、调优、监控 |
+| **备份方式** | 直接拷贝数据库文件 | mysqldump / 主从复制 |
+| **稳定性** | 文件级，异常断电有损坏风险 | 事务日志，崩溃恢复能力强 |
+
+> **生产环境强烈推荐使用 MySQL 8.0+**。项目基于 Sequelize ORM 开发，已完全兼容 MySQL，只需修改环境变量即可切换。
+
 ### 1. 系统环境准备
 
 ```bash
@@ -504,6 +517,13 @@ sudo apt install -y git
 
 # 安装 Nginx（反向代理）
 sudo apt install -y nginx
+
+# 安装 MySQL 8.0（生产环境推荐）
+sudo apt install -y mysql-server
+
+# 启动 MySQL 并设置开机自启
+sudo systemctl start mysql
+sudo systemctl enable mysql
 
 # 安装 PM2（进程管理）
 sudo npm install -g pm2
@@ -535,7 +555,35 @@ node src/seed.js
 cd ..
 ```
 
-### 3. 使用 PM2 启动后端服务
+### 3. MySQL 数据库初始化（生产环境）
+
+```bash
+# 登录 MySQL
+sudo mysql -u root
+
+# 在 MySQL 中执行以下命令：
+# CREATE DATABASE milk_can_mes CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+# CREATE USER 'milk_can_mes'@'localhost' IDENTIFIED BY 'your-strong-password';
+# GRANT ALL PRIVILEGES ON milk_can_mes.* TO 'milk_can_mes'@'localhost';
+# FLUSH PRIVILEGES;
+# EXIT;
+
+# 修改后端环境变量
+cd /opt/milk-can-mes/server
+nano .env
+# 修改以下配置：
+# DB_DIALECT=mysql
+# DB_HOST=localhost
+# DB_PORT=3306
+# DB_NAME=milk_can_mes
+# DB_USER=milk_can_mes
+# DB_PASSWORD=your-strong-password
+
+# 初始化数据库表结构和默认数据
+node src/seed.js
+```
+
+### 4. 使用 PM2 启动后端服务
 
 ```bash
 # 创建 PM2 配置文件
@@ -553,7 +601,12 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3001,
-        DB_DIALECT: 'sqlite'
+        DB_DIALECT: 'mysql',
+        DB_HOST: 'localhost',
+        DB_PORT: 3306,
+        DB_NAME: 'milk_can_mes',
+        DB_USER: 'milk_can_mes',
+        DB_PASSWORD: 'your-strong-password'
       }
     }
   ]
@@ -571,7 +624,7 @@ pm2 startup
 pm2 save
 ```
 
-### 4. Nginx 反向代理配置
+### 5. Nginx 反向代理配置
 
 ```bash
 # 创建 Nginx 配置
@@ -614,7 +667,7 @@ sudo systemctl restart nginx
 sudo systemctl enable nginx
 ```
 
-### 5. 防火墙配置
+### 6. 防火墙配置
 
 ```bash
 # 开放 HTTP 端口
@@ -630,7 +683,7 @@ sudo ufw enable
 sudo ufw status
 ```
 
-### 6. SSL 证书配置（可选）
+### 7. SSL 证书配置（可选）
 
 ```bash
 # 安装 Certbot
@@ -643,7 +696,7 @@ sudo certbot --nginx -d your-domain.com
 sudo certbot renew --dry-run
 ```
 
-### 7. 常用运维命令
+### 8. 常用运维命令
 
 ```bash
 # 查看 PM2 服务状态
@@ -670,11 +723,28 @@ sudo systemctl status nginx
 sudo systemctl reload nginx
 ```
 
-### 8. 数据备份
+### 9. 数据备份
+
+#### MySQL 备份（生产环境）
+
+```bash
+# 手动备份
+mysqldump -u milk_can_mes -p milk_can_mes > /opt/backups/milk_can_mes_$(date +%Y%m%d).sql
+
+# 设置定时备份（crontab）
+crontab -e
+# 添加：每天凌晨 2 点备份
+0 2 * * * mysqldump -u milk_can_mes -pyour-password milk_can_mes > /opt/backups/milk_can_mes_$(date +\%Y\%m\%d).sql
+
+# 恢复数据库
+mysql -u milk_can_mes -p milk_can_mes < milk_can_mes_20260706.sql
+```
+
+#### SQLite 备份（开发/小团队）
 
 ```bash
 # SQLite 数据库备份
-cp /opt/milk-can-mes/server/data/database.sqlite /opt/milk-can-mes-backup/database_$(date +%Y%m%d).sqlite
+cp /opt/milk-can-mes/server/data/database.sqlite /opt/backups/database_$(date +%Y%m%d).sqlite
 
 # 设置定时备份（crontab）
 crontab -e
