@@ -91,7 +91,6 @@ const defaultMenuItems = [
       { key: '/production/orders', icon: <FileTextOutlined />, label: '生产订单' },
       { key: '/production/workorders', icon: <ToolOutlined />, label: '工单列表' },
       { key: '/production/reporting', icon: <ProfileOutlined />, label: '生产报工' },
-      { key: '/production/reporting-by-order', icon: <ProfileOutlined />, label: '生产报工(工单)' },
       { key: '/production/manpower', icon: <TeamOutlined />, label: '人员记录' },
       { key: '/production/exceptions', icon: <BellOutlined />, label: '异常记录' },
     ]
