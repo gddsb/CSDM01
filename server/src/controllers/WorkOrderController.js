@@ -3,7 +3,7 @@ import { WorkOrder, Order, ProductionLine, Material, ProcessReport, ManpowerReco
 import { success, fail } from '../utils/response.js'
 import { generateWorkOrderNo } from '../utils/sequence.js'
 
-// 工单状态: 0=待开工, 1=已开工, 2=已完工, 3=已关闭
+// 工单状态: 0=开立, 1=开工, 2=完工
 
 // 工单列表
 export const list = async (req, res) => {
@@ -201,19 +201,4 @@ export const finish = async (req, res) => {
   }
 }
 
-// 关闭
-export const close = async (req, res) => {
-  try {
-    const { id } = req.params
-    const workOrder = await WorkOrder.findOne({ where: { work_order_id: id } })
-    if (!workOrder) return fail(res, '工单不存在', 404)
-    if (workOrder.status !== 2) return fail(res, '当前工单状态不允许关闭')
-    await workOrder.update({ status: 3 })
-    return success(res, workOrder, '工单已关闭')
-  } catch (err) {
-    console.error('关闭工单失败:', err)
-    return fail(res, '服务器错误', 500)
-  }
-}
-
-export default { list, detail, create, update, remove, start, finish, close }
+export default { list, detail, create, update, remove, start, finish }

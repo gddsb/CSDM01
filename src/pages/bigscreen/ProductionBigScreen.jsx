@@ -151,9 +151,9 @@ export default function ProductionBigScreen() {
   const dateOrders = filterByDate(orders, activeDate, 'created_at', 'release_time')
   const displayOrders = dateOrders.length > 0 ? dateOrders : orders
 
-  // 工单进度（开工/完工/开立，排除已关闭）
+  // 工单进度（开工/完工/开立）
   const chartWorkOrders = workOrders
-    .filter(w => w.status !== '关闭')
+    .filter(w => w.status !== '完工')
     .map(w => {
       // 用当日报工数据计算进度，没有当日数据则用累计数据
       const reported = processReports

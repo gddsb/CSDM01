@@ -61,12 +61,12 @@ const WorkOrder = sequelize.define('WorkOrder', {
     defaultValue: 0,
     get() {
       const val = this.getDataValue('status')
-      const map = { 0: '开立', 1: '开工', 2: '关闭', 3: '完工' }
+      const map = { 0: '开立', 1: '开工', 2: '完工' }
       return map[val] !== undefined ? map[val] : val
     },
     set(val) {
       if (typeof val === 'string') {
-        const map = { '开立': 0, '开工': 1, '关闭': 2, '完工': 3 }
+        const map = { '开立': 0, '开工': 1, '完工': 2 }
         this.setDataValue('status', map[val] !== undefined ? map[val] : 0)
       } else {
         this.setDataValue('status', val)

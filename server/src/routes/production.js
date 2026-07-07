@@ -16,7 +16,6 @@ import {
   remove as woRemove,
   start,
   finish,
-  close as woClose,
 } from '../controllers/WorkOrderController.js'
 import { list as reportList, create as reportCreate } from '../controllers/ProcessReportController.js'
 import { list as manpowerList, create as manpowerCreate } from '../controllers/ManpowerRecordController.js'
@@ -45,7 +44,6 @@ router.put('/work-orders/:id', woUpdate)
 router.delete('/work-orders/:id', woRemove)
 router.post('/work-orders/:id/start', start)
 router.post('/work-orders/:id/finish', finish)
-router.post('/work-orders/:id/close', woClose)
 
 // 工序报工
 router.get('/process-reports', reportList)

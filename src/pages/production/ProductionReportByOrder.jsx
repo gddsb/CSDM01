@@ -4,7 +4,7 @@ import { ProfileOutlined } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 
-const woStatusColor = { '开立': 'default', '开工': 'processing', '关闭': 'warning', '完工': 'success' }
+const woStatusColor = { '开立': 'default', '开工': 'processing', '完工': 'success' }
 
 export default function ProductionReportByOrder() {
   const [orders, setOrders] = useState([])

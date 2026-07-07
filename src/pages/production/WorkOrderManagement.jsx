@@ -12,14 +12,12 @@ import api from '../../utils/api'
 const statusColorMap = {
   '开立': 'default',
   '开工': 'processing',
-  '关闭': 'warning',
   '完工': 'success',
 }
 
 const statusOptions = [
   { label: '开立', value: '开立' },
   { label: '开工', value: '开工' },
-  { label: '关闭', value: '关闭' },
   { label: '完工', value: '完工' },
 ]
 
@@ -151,25 +149,6 @@ export default function WorkOrderManagement() {
     })
   }
 
-  const handleClose = (w) => {
-    Modal.confirm({
-      title: '确认关闭',
-      content: `确认关闭工单 ${w.work_order_no}？关闭后仍可执行完工操作`,
-      okText: '确认关闭',
-      okType: 'danger',
-      cancelText: '取消',
-      onOk: async () => {
-        try {
-          const res = await api.post(`/production/work-orders/${w.work_order_id}/close`)
-          message.success(res.message || '工单已关闭')
-          refresh()
-        } catch (err) {
-          message.error(err.message || '关闭失败')
-        }
-      },
-    })
-  }
-
   const handleDelete = (w) => {
     Modal.confirm({
       title: '确认删除',
@@ -266,26 +245,20 @@ export default function WorkOrderManagement() {
           >
             <Button type="link" size="small" danger>删除</Button>
           </Popconfirm>
+          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(w)}>详情</Button>
         </Space>
       )
     }
     if (w.status === '开工') {
       return (
         <Space size="small">
-          <Button type="link" size="small" danger onClick={() => handleClose(w)}>关闭</Button>
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(w)}>查看</Button>
-        </Space>
-      )
-    }
-    if (w.status === '关闭') {
-      return (
-        <Space size="small">
           <Button type="link" size="small" onClick={() => handleFinish(w)}>完工</Button>
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(w)}>查看</Button>
+          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(w)}>详情</Button>
         </Space>
       )
     }
-    return <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(w)}>查看</Button>
+    // 完工状态仅可查看详情
+    return <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(w)}>详情</Button>
   }
 
   const columns = [
