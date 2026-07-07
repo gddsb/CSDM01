@@ -59,7 +59,7 @@ function formValuesToConfig(values) {
 
 export default function SystemConfig() {
   const { updateSystemConfig } = useApp()
-  const [activeTab, setActiveTab] = useState('params')
+  const [activeTab, setActiveTab] = useState('env')
   const [form] = Form.useForm()
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -187,10 +187,11 @@ export default function SystemConfig() {
     }
   }, [])
 
-  // 首次进入加载参数配置
+  // 首次进入加载参数配置和项目环境
   useEffect(() => {
     loadConfig()
-  }, [loadConfig])
+    loadEnv()
+  }, [loadConfig, loadEnv])
 
   // 切换 Tab 时按需加载
   const handleTabChange = (key) => {

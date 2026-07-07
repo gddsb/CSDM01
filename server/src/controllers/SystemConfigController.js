@@ -226,10 +226,24 @@ export const getEnvironment = async (req, res) => {
       })
     }
 
-    const frontend_port = parseInt(process.env.VITE_PORT, 10) || 5173
+    // 从请求头推断前端实际访问端口（Origin/Referer）
+    let frontend_port = parseInt(process.env.VITE_PORT, 10) || 5173
+    const originHeader = req.headers.origin || req.headers.referer || ''
+    if (originHeader) {
+      try {
+        const match = originHeader.match(/^https?:\/\/[^:/]+(?::(\d+))?/)
+        if (match && match[1]) {
+          frontend_port = parseInt(match[1], 10)
+        } else if (match && !match[1]) {
+          // 标准端口 80/443，前端由 nginx 等反向代理提供，视为运行中
+          frontend_port = originHeader.startsWith('https') ? 443 : 80
+        }
+      } catch (e) { /* 解析失败保持默认 */ }
+    }
     const backend_port = parseInt(process.env.PORT, 10) || 3001
+    // 后端能响应此请求，说明后端正在运行
+    const backend_running = true
     const frontend_running = await checkPort(frontend_port)
-    const backend_running = await checkPort(backend_port)
 
     const info = {
       node_version: process.version,

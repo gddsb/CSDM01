@@ -17,7 +17,7 @@ import {
   start,
   finish,
 } from '../controllers/WorkOrderController.js'
-import { list as reportList, create as reportCreate } from '../controllers/ProcessReportController.js'
+import { list as reportList, create as reportCreate, update as reportUpdate } from '../controllers/ProcessReportController.js'
 import { list as manpowerList, create as manpowerCreate } from '../controllers/ManpowerRecordController.js'
 import { list as exceptionList, create as exceptionCreate } from '../controllers/ExceptionRecordController.js'
 import { list as defectList, create as defectCreate, remove as defectRemove } from '../controllers/ProcessDefectController.js'
@@ -51,6 +51,7 @@ router.post('/work-orders/:id/finish', finish)
 // 工序报工
 router.get('/process-reports', reportList)
 router.post('/process-reports', reportCreate)
+router.put('/process-reports/:id', reportUpdate)
 
 // 人员投入
 router.get('/manpower-records', manpowerList)

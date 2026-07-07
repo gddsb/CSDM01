@@ -4,6 +4,26 @@ import { success, fail } from '../utils/response.js'
 import { generateWorkOrderNo } from '../utils/sequence.js'
 
 // 工单状态: 0=开立, 1=开工, 2=完工
+const statusMap = { '开立': 0, '开工': 1, '完工': 2 }
+
+// 将状态参数（字符串/数字/数组）转换为整数数组
+const parseStatusParam = (status) => {
+  if (status === undefined || status === '') return null
+  const arr = Array.isArray(status) ? status : [status]
+  const nums = []
+  arr.forEach(s => {
+    if (typeof s === 'string' && s.includes(',')) {
+      s.split(',').forEach(p => {
+        const n = statusMap[p] !== undefined ? statusMap[p] : Number(p)
+        if (!Number.isNaN(n)) nums.push(n)
+      })
+    } else {
+      const n = statusMap[s] !== undefined ? statusMap[s] : Number(s)
+      if (!Number.isNaN(n)) nums.push(n)
+    }
+  })
+  return nums.length ? nums : null
+}
 
 // 工单列表
 export const list = async (req, res) => {
@@ -17,7 +37,10 @@ export const list = async (req, res) => {
         { material_name: { [Op.like]: `%${keyword}%` } },
       ]
     }
-    if (status !== undefined && status !== '') where.status = Number(status)
+    const statusNums = parseStatusParam(status)
+    if (statusNums) {
+      where.status = statusNums.length === 1 ? statusNums[0] : { [Op.in]: statusNums }
+    }
     if (order_id) where.order_id = Number(order_id)
     if (line_id) where.line_id = Number(line_id)
     if (dateStart || dateEnd) {
@@ -197,18 +220,17 @@ export const start = async (req, res) => {
     for (const process of processes) {
       await ProcessReportModel.create({
         work_order_id: workOrder.work_order_id,
+        work_order_no: workOrder.work_order_no,
         process_id: process.process_id,
         process_name: process.process_name,
-        reported_date: startTime,
         input_qty: 0,
-        output_qty: 0,
-        defect_qty: 0,
+        defect_material: 0,
+        defect_process: 0,
         defect_scrap: 0,
-        yield_rate: 0,
-        shift: '白班',
+        output_qty: 0,
         report_user: req.user?.username || '',
         report_user_name: req.user?.real_name || '',
-        status: '未报工',
+        report_time: startTime,
       })
     }
 
