@@ -193,7 +193,7 @@ export default function DeviceManagement() {
     { type: 'input', placeholder: '搜索设备编号/名称/型号', col: { flex: '150px' }, value: keywordInput, onChange: e => setKeywordInput(e.target.value) },
     { type: 'select', placeholder: '设备类型', options: typeOptions, col: { flex: '150px' }, value: typeInput, onChange: v => setTypeInput(v) },
     {
-      type: 'checkbox-group', placeholder: '状态筛选', col: { flex: '150px' },
+      type: 'checkbox-group', placeholder: '状态筛选', col: { flex: '200px' },
       options: [{ label: '运行', value: 1 }, { label: '维修', value: 2 }, { label: '停用', value: 0 }],
       value: statusInput, onChange: v => setStatusInput(v),
     },

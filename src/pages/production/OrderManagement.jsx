@@ -323,7 +323,7 @@ export default function OrderManagement() {
                   onBlur={handleSearch}
                 />
               </Col>
-              <Col flex="140px">
+              <Col flex="200px">
                 <Checkbox.Group
                   options={statusOptions}
                   value={statusInput}
