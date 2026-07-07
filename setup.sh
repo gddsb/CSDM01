@@ -436,6 +436,36 @@ verify_deployment() {
     log_success "操作成功完成！"
 }
 
+reset_data() {
+    log_info "=========================================="
+    log_info "执行数据重置"
+    log_info "=========================================="
+
+    log_warn "警告: 此操作将清除所有业务数据并重新初始化！"
+    confirm "确定要重置数据吗？"
+
+    log_info "停止服务..."
+    pm2 stop milk-can-mes-server 2>/dev/null || true
+
+    log_info "备份当前数据库..."
+    backup_database
+
+    log_info "清除现有数据..."
+    cd "$PROJECT_DIR/server"
+    node src/clean-init.js 2>/dev/null || log_warn "clean-init.js 执行失败，跳过"
+
+    log_info "重新初始化数据..."
+    node src/seed.js
+
+    log_info "重启服务..."
+    pm2 restart milk-can-mes-server || pm2 start "$PROJECT_DIR/ecosystem.config.cjs"
+
+    SERVER_IP=$(grep "server_name" /etc/nginx/sites-available/milk-can-mes 2>/dev/null | head -1 | awk '{print $2}' | tr -d ';' || echo "localhost")
+    API_PORT=$(grep "PORT" "$PROJECT_DIR/server/.env" | cut -d'=' -f2 | tr -d ' ')
+
+    verify_deployment "$SERVER_IP" "$API_PORT"
+}
+
 rollback() {
     log_error "部署失败，执行回滚..."
 
@@ -487,10 +517,11 @@ show_menu() {
         log_info "请选择操作:"
         echo "  1) 更新升级 - 从 GitHub main 分支拉取最新代码"
         echo "  2) 重新部署 - 清空并重新部署（保留数据库）"
-        echo "  3) 退出"
+        echo "  3) 重置数据 - 清除所有业务数据并重新初始化"
+        echo "  4) 退出"
         echo
 
-        read -p "请输入选项 (1/2/3): " -n 1 -r
+        read -p "请输入选项 (1/2/3/4): " -n 1 -r
         echo
 
         case $REPLY in
@@ -501,6 +532,9 @@ show_menu() {
                 deploy_redeploy
                 ;;
             3)
+                reset_data
+                ;;
+            4)
                 log_info "退出"
                 exit 0
                 ;;
