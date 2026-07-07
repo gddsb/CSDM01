@@ -26,6 +26,7 @@ import MenuManagement from './pages/system/MenuManagement'
 import OrderManagement from './pages/production/OrderManagement'
 import WorkOrderManagement from './pages/production/WorkOrderManagement'
 import ProcessReporting from './pages/production/ProcessReporting'
+import ProductionReportByOrder from './pages/production/ProductionReportByOrder'
 import ManpowerRecord from './pages/production/ManpowerRecord'
 import ExceptionRecord from './pages/production/ExceptionRecord'
 import InspectionStandard from './pages/quality/InspectionStandard'
@@ -79,6 +80,7 @@ function AppRoutes() {
         <Route path="/system/dictionary" element={<DataDictionary />} />
         <Route path="/system/config" element={<SystemConfig />} />
         <Route path="/system/logs" element={<OperationLogs />} />
+        <Route path="/system/test-reporting" element={<ProductionReportByOrder />} />
         <Route path="/basic/materials" element={<MaterialManagement />} />
         <Route path="/basic/lines" element={<ProductionLine />} />
         <Route path="/basic/processes" element={<ProcessManagement />} />
