@@ -20,6 +20,9 @@ import {
 import { list as reportList, create as reportCreate } from '../controllers/ProcessReportController.js'
 import { list as manpowerList, create as manpowerCreate } from '../controllers/ManpowerRecordController.js'
 import { list as exceptionList, create as exceptionCreate } from '../controllers/ExceptionRecordController.js'
+import { list as defectList, create as defectCreate, remove as defectRemove } from '../controllers/ProcessDefectController.js'
+import { list as exceptionTimeList, create as exceptionTimeCreate, remove as exceptionTimeRemove } from '../controllers/ProcessExceptionController.js'
+import { list as materialList, create as materialCreate, remove as materialRemove } from '../controllers/ProcessMaterialController.js'
 import { authRequired } from '../middleware/auth.js'
 
 const router = Router()
@@ -56,5 +59,20 @@ router.post('/manpower-records', manpowerCreate)
 // 异常记录
 router.get('/exceptions', exceptionList)
 router.post('/exceptions', exceptionCreate)
+
+// 工序不良记录
+router.get('/process-defects', defectList)
+router.post('/process-defects', defectCreate)
+router.delete('/process-defects/:id', defectRemove)
+
+// 异常工时记录
+router.get('/process-exceptions', exceptionTimeList)
+router.post('/process-exceptions', exceptionTimeCreate)
+router.delete('/process-exceptions/:id', exceptionTimeRemove)
+
+// 制程物料记录
+router.get('/process-materials', materialList)
+router.post('/process-materials', materialCreate)
+router.delete('/process-materials/:id', materialRemove)
 
 export default router
