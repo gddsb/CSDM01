@@ -3,7 +3,7 @@ import { Table, Tag, Button, Modal, Form, Input, Select, message, Row, Col, Spac
 import {
   DeploymentUnitOutlined, PlayCircleOutlined, ToolOutlined,
   PlusOutlined, EyeOutlined, ReloadOutlined, DeleteOutlined,
-  UnorderedListOutlined, MachineOutlined,
+  UnorderedListOutlined, SettingOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
@@ -453,7 +453,7 @@ export default function ProductionLine() {
             <Card
               title={
                 <Space>
-                  <MachineOutlined />
+                  <SettingOutlined />
                   <span>关联设备</span>
                 </Space>
               }
