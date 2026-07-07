@@ -5,6 +5,8 @@ import { Sequelize } from 'sequelize'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import http from 'http'
+import net from 'net'
 
 // 默认配置（设计文档 §2.2.2 系统配置表）
 const defaultConfigs = [
@@ -203,23 +205,31 @@ export const getEnvironment = async (req, res) => {
     } catch (e) {
       // 磁盘信息获取失败，保持默认值
     }
-    let frontend_status = 'unknown'
-    let frontend_port = process.env.VITE_PORT || 5173
-    try {
-      const http = await import('http')
-      await new Promise((resolve) => {
-        const timer = setTimeout(() => { resolve(); frontend_status = 'offline' }, 1000)
-        const req = http.request({ hostname: 'localhost', port: frontend_port, path: '/', method: 'HEAD' }, (res) => {
+    const checkPort = (port, hostname = 'localhost') => {
+      return new Promise((resolve) => {
+        const socket = new net.Socket()
+        const timer = setTimeout(() => {
+          socket.destroy()
+          resolve(false)
+        }, 1000)
+        socket.once('connect', () => {
           clearTimeout(timer)
-          frontend_status = res.statusCode >= 200 && res.statusCode < 400 ? 'running' : 'error'
-          resolve()
+          socket.destroy()
+          resolve(true)
         })
-        req.on('error', () => { clearTimeout(timer); frontend_status = 'offline'; resolve() })
-        req.end()
+        socket.once('error', () => {
+          clearTimeout(timer)
+          socket.destroy()
+          resolve(false)
+        })
+        socket.connect(port, hostname)
       })
-    } catch (e) {
-      frontend_status = 'unknown'
     }
+
+    const frontend_port = parseInt(process.env.VITE_PORT, 10) || 5173
+    const backend_port = parseInt(process.env.PORT, 10) || 3001
+    const frontend_running = await checkPort(frontend_port)
+    const backend_running = await checkPort(backend_port)
 
     const info = {
       node_version: process.version,
@@ -248,13 +258,13 @@ export const getEnvironment = async (req, res) => {
       server_time: new Date().toISOString(),
       frontend_server: {
         name: '前端服务器 (Vite)',
-        status: frontend_status,
+        status: frontend_running ? 'running' : 'offline',
         port: frontend_port,
       },
       backend_server: {
         name: '后端服务器 (Express)',
-        status: 'running',
-        port: process.env.PORT || 3001,
+        status: backend_running ? 'running' : 'offline',
+        port: backend_port,
       },
     }
     return success(res, info, '获取成功')
