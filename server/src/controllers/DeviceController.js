@@ -16,7 +16,8 @@ export const list = async (req, res) => {
       ]
     }
     if (status !== undefined && status !== '') {
-      const statusValues = status.split(',').map(s => Number(s)).filter(s => !isNaN(s))
+      const statusArr = Array.isArray(status) ? status : status.split(',')
+      const statusValues = statusArr.map(s => Number(s)).filter(s => !isNaN(s))
       if (statusValues.length === 1) {
         where.status = statusValues[0]
       } else if (statusValues.length > 1) {
