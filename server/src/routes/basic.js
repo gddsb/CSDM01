@@ -9,6 +9,16 @@ import {
   remove as lineRemove,
 } from '../controllers/ProductionLineController.js'
 import {
+  getLineProcesses,
+  addLineProcess,
+  removeLineProcess,
+  updateLineProcessSort,
+  getLineDevices,
+  addLineDevice,
+  removeLineDevice,
+  updateLineDeviceSort,
+} from '../controllers/LineRelationController.js'
+import {
   list as processList,
   detail as processDetail,
   create as processCreate,
@@ -84,6 +94,18 @@ router.get('/production-lines/:id', lineDetail)
 router.post('/production-lines', lineCreate)
 router.put('/production-lines/:id', lineUpdate)
 router.delete('/production-lines/:id', lineRemove)
+
+// 产线-工序关联
+router.get('/production-lines/:id/processes', getLineProcesses)
+router.post('/production-lines/:id/processes', addLineProcess)
+router.delete('/production-lines/:id/processes/:processId', removeLineProcess)
+router.put('/production-lines/:id/processes/sort', updateLineProcessSort)
+
+// 产线-设备关联
+router.get('/production-lines/:id/devices', getLineDevices)
+router.post('/production-lines/:id/devices', addLineDevice)
+router.delete('/production-lines/:id/devices/:deviceId', removeLineDevice)
+router.put('/production-lines/:id/devices/sort', updateLineDeviceSort)
 
 // 工序
 router.get('/processes', processList)
