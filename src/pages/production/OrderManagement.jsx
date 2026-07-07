@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, InputNumber, Select, DatePicker, Space, Row, Col, message, Drawer, Descriptions, Popconfirm } from 'antd'
+import { Table, Tag, Button, Modal, Form, Input, InputNumber, Select, DatePicker, Space, Row, Col, message, Drawer, Descriptions, Popconfirm, Checkbox } from 'antd'
 import {
   FileTextOutlined, PlusOutlined, SearchOutlined, ReloadOutlined,
   SendOutlined, ClockCircleOutlined, CheckCircleOutlined
@@ -324,11 +324,7 @@ export default function OrderManagement() {
                 />
               </Col>
               <Col flex="140px">
-                <Select
-                  placeholder="状态"
-                  mode="multiple"
-                  allowClear
-                  style={{ width: '100%' }}
+                <Checkbox.Group
                   options={statusOptions}
                   value={statusInput}
                   onChange={(v) => {

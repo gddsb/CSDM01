@@ -19,8 +19,15 @@ export const list = async (req, res) => {
       where.material_code = { [Op.like]: `%${materialCode}%` }
     }
     if (status !== undefined && status !== '') {
-      const statusMap = { '开立': 0, '下发': 1, '完工': 2 }
-      where.status = statusMap[status] !== undefined ? statusMap[status] : Number(status)
+      const statusValues = status.split(',').map(s => {
+        const statusMap = { '开立': 0, '下发': 1, '完工': 2 }
+        return statusMap[s] !== undefined ? statusMap[s] : Number(s)
+      }).filter(s => !isNaN(s))
+      if (statusValues.length === 1) {
+        where.status = statusValues[0]
+      } else if (statusValues.length > 1) {
+        where.status = { [Op.in]: statusValues }
+      }
     }
     if (planDateStart || planDateEnd) {
       where.plan_start_time = {}
