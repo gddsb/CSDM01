@@ -553,7 +553,7 @@ export const getDatabaseInfo = async (req, res) => {
       master_defect_type: {
         defect_id: '不良项ID（主键）',
         defect_code: '不良编码',
-        defect_name: '不良名称',
+        defect_name: '不良项目',
         defect_type: '不良类型',
         defect_description: '不良描述',
         category_name: '分类名称',

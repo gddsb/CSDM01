@@ -291,7 +291,7 @@ export default function DefectManagement() {
       title: '分类名称', dataIndex: 'defect_type', key: 'defect_type', width: 100,
       render: v => v ? <Tag color={typeColorMap[v] || 'default'}>{v}</Tag> : '-',
     },
-    { title: '不良名称', dataIndex: 'defect_name', key: 'defect_name', width: 120 },
+    { title: '不良项目', dataIndex: 'defect_name', key: 'defect_name', width: 120 },
     { title: '默认单位', dataIndex: 'defect_unit', key: 'defect_unit', width: 80 },
     {
       title: '关联工序', dataIndex: 'related_processes', key: 'related_processes', width: 160,
@@ -450,8 +450,8 @@ export default function DefectManagement() {
           </Row>
           <Row gutter={12}>
             <Col span={8}>
-              <Form.Item name="defect_name" label="不良名称" rules={[{ required: true, message: '请输入不良名称' }]}>
-                <Input placeholder="请输入不良名称" />
+              <Form.Item name="defect_name" label="不良项目" rules={[{ required: true, message: '请输入不良项目' }]}>
+                <Input placeholder="请输入不良项目" />
               </Form.Item>
             </Col>
             <Col span={8}>
@@ -563,7 +563,7 @@ export default function DefectManagement() {
         {viewRecord && (
           <Descriptions column={2} size="small" bordered>
             <Descriptions.Item label="不良编码">{viewRecord.defect_code}</Descriptions.Item>
-            <Descriptions.Item label="不良名称">{viewRecord.defect_name}</Descriptions.Item>
+            <Descriptions.Item label="不良项目">{viewRecord.defect_name}</Descriptions.Item>
             <Descriptions.Item label="大类名称">
               {viewRecord.category_name ? <Tag color="purple">{viewRecord.category_name}</Tag> : '-'}
             </Descriptions.Item>
