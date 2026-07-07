@@ -175,20 +175,12 @@ export default function ProcessManagement() {
       render: v => <Tag color={v === '启用' ? 'green' : 'red'}>{v}</Tag>,
     },
     {
-      title: '操作', key: 'action', width: 220,
+      title: '操作', key: 'action', width: 180,
       render: (_, record, index) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
           <Button type="link" size="small" icon={<ArrowUpOutlined />} disabled={index === 0} onClick={() => handleMoveUp(record, index)}>上移</Button>
           <Button type="link" size="small" icon={<ArrowDownOutlined />} disabled={index === data.length - 1} onClick={() => handleMoveDown(record, index)}>下移</Button>
-          <Popconfirm
-            title="确认删除该工序？"
-            onConfirm={() => handleDelete(record)}
-            okText="确认"
-            cancelText="取消"
-          >
-            <Button type="link" size="small" danger>删除</Button>
-          </Popconfirm>
         </Space>
       ),
     },

@@ -369,19 +369,11 @@ export default function ProductionLine() {
     { title: '所属车间', dataIndex: 'workshop', key: 'workshop', width: 110 },
     { title: '排序号', dataIndex: 'sort_order', key: 'sort_order', width: 80 },
     {
-      title: '操作', key: 'action', width: 180,
+      title: '操作', key: 'action', width: 140,
       render: (_, record) => (
         <Space size="small">
           <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(record)}>查看</Button>
           <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
-          <Popconfirm
-            title="确认删除该产线？"
-            onConfirm={() => handleDelete(record)}
-            okText="确认"
-            cancelText="取消"
-          >
-            <Button type="link" size="small" danger>删除</Button>
-          </Popconfirm>
         </Space>
       ),
     },

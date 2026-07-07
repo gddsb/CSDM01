@@ -34,16 +34,16 @@ export const list = async (req, res) => {
       const data = row.toJSON()
       const processes = await LineProcess.findAll({
         where: { line_id: row.line_id },
-        include: [{ model: Process, attributes: ['process_name'] }],
+        include: [{ model: Process, as: 'Process', attributes: ['process_name'] }],
         order: [['sort_order', 'ASC']],
       })
       const devices = await LineDevice.findAll({
         where: { line_id: row.line_id },
-        include: [{ model: Device, attributes: ['device_name'] }],
+        include: [{ model: Device, as: 'Device', attributes: ['device_name'] }],
         order: [['sort_order', 'ASC']],
       })
-      data.process_names = processes.map(p => p.Process.process_name).join('、')
-      data.device_names = devices.map(d => d.Device.device_name).join('、')
+      data.process_names = processes.map(p => p.Process?.process_name).filter(Boolean).join('、')
+      data.device_names = devices.map(d => d.Device?.device_name).filter(Boolean).join('、')
       return data
     }))
 

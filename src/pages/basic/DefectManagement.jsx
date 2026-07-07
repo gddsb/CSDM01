@@ -317,7 +317,7 @@ export default function DefectManagement() {
       render: v => <Tag color={v === '启用' ? 'green' : 'red'}>{v}</Tag>,
     },
     {
-      title: '操作', key: 'action', width: 170, fixed: 'right',
+      title: '操作', key: 'action', width: 130, fixed: 'right',
       render: (_, record) => (
         <Space size="small">
           <Button type="link" size="small" onClick={async () => {
@@ -330,14 +330,6 @@ export default function DefectManagement() {
             }
           }}>查看</Button>
           <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
-          <Popconfirm
-            title="确认删除该不良项？"
-            onConfirm={() => handleDelete(record)}
-            okText="确认"
-            cancelText="取消"
-          >
-            <Button type="link" size="small" danger>删除</Button>
-          </Popconfirm>
         </Space>
       ),
     },

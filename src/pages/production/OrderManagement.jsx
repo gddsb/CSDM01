@@ -17,9 +17,9 @@ const statusColorMap = {
 }
 
 const statusOptions = [
-  { label: '开立', value: 0 },
-  { label: '下发', value: 1 },
-  { label: '完工', value: 2 },
+  { label: '开立', value: '开立' },
+  { label: '下发', value: '下发' },
+  { label: '完工', value: '完工' },
 ]
 
 export default function OrderManagement() {
@@ -38,13 +38,19 @@ export default function OrderManagement() {
   // 筛选输入态
   const [keywordInput, setKeywordInput] = useState('')
   const [materialCodeInput, setMaterialCodeInput] = useState('')
-  const [statusInput, setStatusInput] = useState([0, 1])
+  const [statusInput, setStatusInput] = useState(['开立', '下发'])
   const [planDateRange, setPlanDateRange] = useState(null)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', materialCode: '', status: [0, 1], planDateStart: '', planDateEnd: '' })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', materialCode: '', status: ['开立', '下发'], planDateStart: '', planDateEnd: '' })
 
   // 获取订单列表
   useEffect(() => {
+    // 未选择任何状态时不查询，直接显示空列表
+    if (!query.status || query.status.length === 0) {
+      setData([])
+      setTotal(0)
+      return
+    }
     let cancelled = false
     const run = async () => {
       setLoading(true)
@@ -229,9 +235,9 @@ export default function OrderManagement() {
   const handleReset = () => {
     setKeywordInput('')
     setMaterialCodeInput('')
-    setStatusInput([0, 1])
+    setStatusInput(['开立', '下发'])
     setPlanDateRange(null)
-    setQuery(q => ({ ...q, page: 1, keyword: '', materialCode: '', status: [0, 1], planDateStart: '', planDateEnd: '' }))
+    setQuery(q => ({ ...q, page: 1, keyword: '', materialCode: '', status: ['开立', '下发'], planDateStart: '', planDateEnd: '' }))
   }
 
   const renderActions = (r) => {
@@ -323,7 +329,7 @@ export default function OrderManagement() {
                   onBlur={handleSearch}
                 />
               </Col>
-              <Col flex="200px">
+              <Col flex="230px">
                 <Checkbox.Group
                   options={statusOptions}
                   value={statusInput}

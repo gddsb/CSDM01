@@ -78,10 +78,17 @@ Material.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer' })
 // 产线 - 工序（多对多，通过 bas_line_process）
 ProductionLine.belongsToMany(Process, { through: LineProcess, foreignKey: 'line_id', otherKey: 'process_id', as: 'processes' })
 Process.belongsToMany(ProductionLine, { through: LineProcess, foreignKey: 'process_id', otherKey: 'line_id', as: 'lines' })
+// 关联表显式 belongsTo，便于 LineProcess.findAll({ include: [{ model: Process }] })
+LineProcess.belongsTo(ProductionLine, { foreignKey: 'line_id', as: 'line' })
+LineProcess.belongsTo(Process, { foreignKey: 'process_id', as: 'Process' })
 
 // 产线 - 设备（多对多，通过 bas_line_device）
 ProductionLine.belongsToMany(Device, { through: LineDevice, foreignKey: 'line_id', otherKey: 'device_id', as: 'devices' })
 Device.belongsToMany(ProductionLine, { through: LineDevice, foreignKey: 'device_id', otherKey: 'line_id', as: 'lines' })
+// 关联表显式 belongsTo，便于 LineDevice.findAll({ include: [{ model: Device }] })
+LineDevice.belongsTo(ProductionLine, { foreignKey: 'line_id', as: 'line' })
+LineDevice.belongsTo(Device, { foreignKey: 'device_id', as: 'Device' })
+LineDevice.belongsTo(Process, { foreignKey: 'process_id', as: 'Process' })
 
 // 不良分类 - 父级（自关联，树形）
 DefectType.hasMany(DefectType, { foreignKey: 'parent_id', as: 'children', constraints: false })

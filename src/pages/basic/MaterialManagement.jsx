@@ -196,19 +196,11 @@ const MaterialManagement = () => {
       render: v => <Tag color={v ? 'green' : 'red'}>{v ? '生效' : '失效'}</Tag>,
     },
     {
-      title: '操作', key: 'action', width: 180,
+      title: '操作', key: 'action', width: 140,
       render: (_, record) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleDetail(record)}>查看</Button>
           <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
-          <Popconfirm
-            title="确认删除该料品？"
-            onConfirm={() => handleDelete(record)}
-            okText="确认"
-            cancelText="取消"
-          >
-            <Button type="link" size="small" danger>删除</Button>
-          </Popconfirm>
         </Space>
       ),
     },
@@ -345,29 +337,29 @@ const MaterialManagement = () => {
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="blanking_diameter" label="落料直径">
+              <Form.Item name="blanking_diameter" label="落料直径(mm)">
                 <Input placeholder="请输入落料直径" />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="material_thickness" label="材料厚度">
+              <Form.Item name="material_thickness" label="材料厚度(mm)">
                 <Input placeholder="请输入材料厚度" />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={12}>
             <Col span={8}>
-              <Form.Item name="material_width" label="材料宽度">
+              <Form.Item name="material_width" label="材料宽度(mm)">
                 <Input placeholder="请输入材料宽度" />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="material_height" label="材料高度">
+              <Form.Item name="material_height" label="材料高度(mm)">
                 <Input placeholder="请输入材料高度" />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="scrap_weight" label="边角料重量">
+              <Form.Item name="scrap_weight" label="边角料重量(g)">
                 <Input placeholder="请输入边角料重量" />
               </Form.Item>
             </Col>
@@ -379,19 +371,19 @@ const MaterialManagement = () => {
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="unit_volume" label="库存单位体积">
+              <Form.Item name="unit_volume" label="库存单位体积(m³)">
                 <Input placeholder="请输入库存单位体积" />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="weight_unit" label="重量单位">
+              <Form.Item name="weight_unit" label="重量单位(g)">
                 <Input placeholder="请输入重量单位" />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={12}>
             <Col span={8}>
-              <Form.Item name="volume_unit" label="体积单位">
+              <Form.Item name="volume_unit" label="体积单位(m³)">
                 <Input placeholder="请输入体积单位" />
               </Form.Item>
             </Col>
@@ -443,17 +435,7 @@ const MaterialManagement = () => {
             <Descriptions.Item label="开料尺寸">{current.cutting_size || '-'}</Descriptions.Item>
             <Descriptions.Item label="印刷工艺">{current.printing_process || '-'}</Descriptions.Item>
             <Descriptions.Item label="分色信息">{current.color_separation || '-'}</Descriptions.Item>
-            <Descriptions.Item label="落料直径">{current.blanking_diameter || '-'}</Descriptions.Item>
-            <Descriptions.Item label="材料厚度">{current.material_thickness || '-'}</Descriptions.Item>
-            <Descriptions.Item label="材料宽度">{current.material_width || '-'}</Descriptions.Item>
-            <Descriptions.Item label="材料高度">{current.material_height || '-'}</Descriptions.Item>
-            <Descriptions.Item label="边角料重量">{current.scrap_weight || '-'}</Descriptions.Item>
-            <Descriptions.Item label="库存单位重量">{current.unit_weight || '-'}</Descriptions.Item>
-            <Descriptions.Item label="库存单位体积">{current.unit_volume || '-'}</Descriptions.Item>
-            <Descriptions.Item label="重量单位">{current.weight_unit || '-'}</Descriptions.Item>
-            <Descriptions.Item label="体积单位">{current.volume_unit || '-'}</Descriptions.Item>
-            <Descriptions.Item label="存货分类">{current.inventory_category || '-'}</Descriptions.Item>
-            <Descriptions.Item label="单位编码">{current.unit_code || '-'}</Descriptions.Item>
+            <Descriptions.Item label="边角料重量(g)">{current.scrap_weight || '-'}</Descriptions.Item>
             <Descriptions.Item label="关联客户">{(() => {
               if (!current.customer_id) return '-'
               const opt = customerOptions.find(c => c.value === current.customer_id)
