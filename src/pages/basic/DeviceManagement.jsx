@@ -179,19 +179,11 @@ export default function DeviceManagement() {
     { title: '上次检定', dataIndex: 'last_inspection_date', key: 'last_inspection_date', width: 120 },
     { title: '下次检定', dataIndex: 'next_inspection_date', key: 'next_inspection_date', width: 120 },
     {
-      title: '操作', key: 'action', width: 200,
+      title: '操作', key: 'action', width: 140,
       render: (_, record) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleDetail(record)}>查看</Button>
           <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
-          <Popconfirm
-            title="确认删除该设备？"
-            onConfirm={() => handleDelete(record)}
-            okText="确认"
-            cancelText="取消"
-          >
-            <Button type="link" size="small" danger>删除</Button>
-          </Popconfirm>
         </Space>
       ),
     },
@@ -266,7 +258,7 @@ export default function DeviceManagement() {
             </Col>
             <Col span={12}>
               <Form.Item name="device_code" label="设备编号" rules={[{ required: true, message: '请输入设备编号' }]}>
-                <Input placeholder="请输入设备编号" />
+                <Input placeholder="请输入设备编号" disabled={!!editing} />
               </Form.Item>
             </Col>
           </Row>

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Table, Tag, Button, Modal, Form, InputNumber, DatePicker, Input, Space, Row, Col, Select, message, Drawer, Descriptions, Popconfirm } from 'antd'
+
+const { RangePicker } = DatePicker
 import {
   ToolOutlined, SearchOutlined, ReloadOutlined,
   PlayCircleOutlined, CheckCircleOutlined, ClockCircleOutlined,
@@ -181,8 +183,10 @@ export default function WorkOrderManagement() {
       order_id: w.order_id,
       line_id: w.line_id,
       planned_qty: w.planned_qty,
-      plan_start_time: w.plan_start_time ? dayjs(w.plan_start_time) : undefined,
-      plan_end_time: w.plan_end_time ? dayjs(w.plan_end_time) : undefined,
+      plan_date_range: [
+        w.plan_start_time ? dayjs(w.plan_start_time) : undefined,
+        w.plan_end_time ? dayjs(w.plan_end_time) : undefined,
+      ],
     })
     setAddOpen(true)
   }
@@ -195,8 +199,8 @@ export default function WorkOrderManagement() {
         order_id: values.order_id,
         line_id: values.line_id,
         planned_qty: values.planned_qty,
-        plan_start_time: values.plan_start_time ? values.plan_start_time.format('YYYY-MM-DD HH:mm') : undefined,
-        plan_end_time: values.plan_end_time ? values.plan_end_time.format('YYYY-MM-DD HH:mm') : undefined,
+        plan_start_time: values.plan_date_range?.[0] ? values.plan_date_range[0].format('YYYY-MM-DD') : undefined,
+        plan_end_time: values.plan_date_range?.[1] ? values.plan_date_range[1].format('YYYY-MM-DD') : undefined,
       }
       if (editing) {
         const res = await api.put(`/production/work-orders/${editing.work_order_id}`, payload)
@@ -447,31 +451,13 @@ export default function WorkOrderManagement() {
             </Col>
           </Row>
           <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item label="计划开始时间" name="plan_start_time" rules={[{ required: true, message: '请选择计划开始时间' }]}>
-                <DatePicker
-                  showTime={{ minuteStep: 10 }}
-                  format="YYYY-MM-DD HH:mm"
-                  style={{ width: '100%' }}
-                  placeholder="请选择计划开始时间"
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="计划结束时间" name="plan_end_time" rules={[{ required: true, message: '请选择计划结束时间' }]}>
-                <DatePicker
-                  showTime={{ minuteStep: 10 }}
-                  format="YYYY-MM-DD HH:mm"
-                  style={{ width: '100%' }}
-                  placeholder="请选择计划结束时间"
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={12}>
             <Col span={24}>
-              <Form.Item label="班组长" name="team_leader">
-                <Input placeholder="请输入班组长姓名" />
+              <Form.Item label="计划日期区间" name="plan_date_range" rules={[{ required: true, message: '请选择计划日期区间' }]}>
+                <RangePicker
+                  format="YYYY-MM-DD"
+                  style={{ width: '100%' }}
+                  placeholder={['计划开始日期', '计划结束日期']}
+                />
               </Form.Item>
             </Col>
           </Row>

@@ -38,10 +38,10 @@ export default function OrderManagement() {
   // 筛选输入态
   const [keywordInput, setKeywordInput] = useState('')
   const [materialCodeInput, setMaterialCodeInput] = useState('')
-  const [statusInput, setStatusInput] = useState(undefined)
+  const [statusInput, setStatusInput] = useState([0, 1])
   const [planDateRange, setPlanDateRange] = useState(null)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', materialCode: '', status: undefined, planDateStart: '', planDateEnd: '' })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', materialCode: '', status: [0, 1], planDateStart: '', planDateEnd: '' })
 
   // 获取订单列表
   useEffect(() => {
@@ -52,7 +52,7 @@ export default function OrderManagement() {
         const params = { page: query.page, pageSize: query.pageSize }
         if (query.keyword) params.keyword = query.keyword
         if (query.materialCode) params.materialCode = query.materialCode
-        if (query.status !== undefined && query.status !== '') params.status = query.status
+        if (query.status && query.status.length > 0) params.status = query.status.join(',')
         if (query.planDateStart) params.planDateStart = query.planDateStart
         if (query.planDateEnd) params.planDateEnd = query.planDateEnd
         const res = await api.get('/production/orders', { params })
@@ -229,9 +229,9 @@ export default function OrderManagement() {
   const handleReset = () => {
     setKeywordInput('')
     setMaterialCodeInput('')
-    setStatusInput(undefined)
+    setStatusInput([0, 1])
     setPlanDateRange(null)
-    setQuery(q => ({ ...q, page: 1, keyword: '', materialCode: '', status: undefined, planDateStart: '', planDateEnd: '' }))
+    setQuery(q => ({ ...q, page: 1, keyword: '', materialCode: '', status: [0, 1], planDateStart: '', planDateEnd: '' }))
   }
 
   const renderActions = (r) => {
@@ -323,9 +323,10 @@ export default function OrderManagement() {
                   onBlur={handleSearch}
                 />
               </Col>
-              <Col flex="120px">
+              <Col flex="140px">
                 <Select
                   placeholder="状态"
+                  mode="multiple"
                   allowClear
                   style={{ width: '100%' }}
                   options={statusOptions}

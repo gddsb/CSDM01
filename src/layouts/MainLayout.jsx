@@ -378,7 +378,7 @@ export default function MainLayout() {
   }
 
   return (
-    <Layout className="app-layout">
+    <Layout className={`app-layout ${collapsed ? 'collapsed' : ''}`}>
       <Sider
         className="app-sider"
         trigger={null}

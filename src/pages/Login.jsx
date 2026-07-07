@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { Card, Form, Input, Button, message, Typography } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useApp } from '../contexts/AppContext'
+import { useNavigate } from 'react-router-dom'
 import logoSquare from '../assets/logo-square.png'
 
 const { Text } = Typography
 
 export default function Login() {
   const { login } = useApp()
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
 
   const onFinish = async (values) => {
@@ -15,6 +17,11 @@ export default function Login() {
     const result = await login(values.username, values.password)
     if (result.success) {
       message.success('登录成功')
+      if (result.isViewer) {
+        navigate('/bigscreen/production')
+      } else {
+        navigate('/dashboard')
+      }
     } else {
       message.error(result.message)
     }
@@ -24,7 +31,16 @@ export default function Login() {
   const quickLogin = async (username) => {
     setLoading(true)
     const result = await login(username, '123456')
-    if (!result.success) message.error(result.message)
+    if (result.success) {
+      message.success('登录成功')
+      if (result.isViewer) {
+        navigate('/bigscreen/production')
+      } else {
+        navigate('/dashboard')
+      }
+    } else {
+      message.error(result.message)
+    }
     setLoading(false)
   }
 

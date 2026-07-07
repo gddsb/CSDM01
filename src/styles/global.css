@@ -87,6 +87,25 @@ body {
 /* 主布局 */
 .app-layout {
   min-height: 100vh;
+  overflow: hidden;
+}
+
+.app-layout > .ant-layout-sider {
+  position: fixed !important;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 100;
+  overflow: auto;
+}
+
+.app-layout > .ant-layout {
+  margin-left: 220px;
+  min-height: 100vh;
+}
+
+.app-layout.collapsed > .ant-layout {
+  margin-left: 80px;
 }
 
 .app-sider {
@@ -166,19 +185,30 @@ body {
 }
 
 .app-header {
+  position: fixed !important;
+  top: 0;
+  right: 0;
+  left: 220px;
+  z-index: 99;
   background: var(--bg-card) !important;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 24px !important;
-  transition: background 0.3s, border 0.3s;
+  transition: background 0.3s, border 0.3s, left 0.3s;
+}
+
+.app-layout.collapsed .app-header {
+  left: 80px;
 }
 
 .app-content {
   background: var(--bg-main) !important;
   padding: 16px !important;
+  margin-top: 64px;
   min-height: calc(100vh - 64px);
+  overflow-y: auto;
   transition: background 0.3s;
 }
 
