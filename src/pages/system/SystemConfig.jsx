@@ -552,83 +552,78 @@ export default function SystemConfig() {
               </Card>
             </Col>
           </Row>
-          <Descriptions column={1} size="small" bordered style={{ marginTop: 16 }} title="详细信息">
-            <Descriptions.Item label="操作系统版本">{envInfo.os_version || envInfo.platform}</Descriptions.Item>
-            <Descriptions.Item label="操作系统类型">{envInfo.os_type || '-'}</Descriptions.Item>
-            <Descriptions.Item label="系统内核版本">{envInfo.os_release || '-'}</Descriptions.Item>
-            <Descriptions.Item label="主机名">{envInfo.os_hostname || '-'}</Descriptions.Item>
-            <Descriptions.Item label="CPU 型号">{envInfo.cpu_model || '-'}</Descriptions.Item>
-            <Descriptions.Item label="磁盘总容量">{formatBytes(envInfo.disk_total)}</Descriptions.Item>
-            <Descriptions.Item label="磁盘已用">{formatBytes(envInfo.disk_used)}（{envInfo.disk_used_percent || 0}%）</Descriptions.Item>
-            <Descriptions.Item label="磁盘可用">{formatBytes(envInfo.disk_free)}</Descriptions.Item>
-            <Descriptions.Item label="磁盘挂载点">{envInfo.disk_mount || '-'}</Descriptions.Item>
-            <Descriptions.Item label="工作目录">{envInfo.cwd}</Descriptions.Item>
-            <Descriptions.Item label="服务器时间">{dayjs(envInfo.server_time).format('YYYY-MM-DD HH:mm:ss')}</Descriptions.Item>
-          </Descriptions>
-
-          {/* 技术栈展示 */}
-          {envInfo.tech_stack && (
-            <div style={{ marginTop: 16 }}>
-              <Typography.Title level={5} style={{ marginBottom: 12 }}>
-                <DatabaseOutlined style={{ marginRight: 6 }} />
-                技术栈
-              </Typography.Title>
-              <Row gutter={[16, 16]}>
-                {/* 前端技术栈 */}
-                <Col span={12}>
-                  <Card
-                    size="small"
-                    title={
+          <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+            {/* 详细信息 */}
+            <Col span={8}>
+              <Card size="small" title={<span><DatabaseOutlined style={{ color: '#1890ff', marginRight: 6 }} />详细信息</span>}>
+                <Descriptions column={1} size="small">
+                  <Descriptions.Item label="操作系统版本">{envInfo.os_version || envInfo.platform}</Descriptions.Item>
+                  <Descriptions.Item label="操作系统类型">{envInfo.os_type || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="系统内核版本">{envInfo.os_release || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="主机名">{envInfo.os_hostname || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="CPU 型号">{envInfo.cpu_model || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="磁盘总容量">{formatBytes(envInfo.disk_total)}</Descriptions.Item>
+                  <Descriptions.Item label="磁盘已用">{formatBytes(envInfo.disk_used)}（{envInfo.disk_used_percent || 0}%）</Descriptions.Item>
+                  <Descriptions.Item label="磁盘可用">{formatBytes(envInfo.disk_free)}</Descriptions.Item>
+                  <Descriptions.Item label="磁盘挂载点">{envInfo.disk_mount || '-'}</Descriptions.Item>
+                  <Descriptions.Item label="工作目录">{envInfo.cwd}</Descriptions.Item>
+                  <Descriptions.Item label="服务器时间">{dayjs(envInfo.server_time).format('YYYY-MM-DD HH:mm:ss')}</Descriptions.Item>
+                </Descriptions>
+              </Card>
+            </Col>
+            {/* 前端技术栈 */}
+            <Col span={8}>
+              <Card
+                size="small"
+                title={
+                  <span>
+                    <SafetyOutlined style={{ color: '#1890ff', marginRight: 6 }} />
+                    前端技术栈
+                    <Tag style={{ marginLeft: 8 }} color="blue">v{envInfo.tech_stack?.frontend?.version}</Tag>
+                  </span>
+                }
+              >
+                <Descriptions column={1} size="small">
+                  {envInfo.tech_stack?.frontend?.items?.map((item, idx) => (
+                    <Descriptions.Item key={idx} label={
                       <span>
-                        <SafetyOutlined style={{ color: '#1890ff', marginRight: 6 }} />
-                        前端技术栈
-                        <Tag style={{ marginLeft: 8 }} color="blue">v{envInfo.tech_stack.frontend?.version}</Tag>
+                        <Tag color="blue" style={{ marginRight: 6 }}>{item.category}</Tag>
+                        {item.key}
                       </span>
-                    }
-                  >
-                    <Descriptions column={1} size="small">
-                      {envInfo.tech_stack.frontend?.items?.map((item, idx) => (
-                        <Descriptions.Item key={idx} label={
-                          <span>
-                            <Tag color="blue" style={{ marginRight: 6 }}>{item.category}</Tag>
-                            {item.key}
-                          </span>
-                        }>
-                          <code>{item.version}</code>
-                        </Descriptions.Item>
-                      ))}
-                    </Descriptions>
-                  </Card>
-                </Col>
-                {/* 后端技术栈 */}
-                <Col span={12}>
-                  <Card
-                    size="small"
-                    title={
+                    }>
+                      <code>{item.version}</code>
+                    </Descriptions.Item>
+                  ))}
+                </Descriptions>
+              </Card>
+            </Col>
+            {/* 后端技术栈 */}
+            <Col span={8}>
+              <Card
+                size="small"
+                title={
+                  <span>
+                    <CloudServerOutlined style={{ color: '#52c41a', marginRight: 6 }} />
+                    后端技术栈
+                    <Tag style={{ marginLeft: 8 }} color="green">v{envInfo.tech_stack?.backend?.version}</Tag>
+                  </span>
+                }
+              >
+                <Descriptions column={1} size="small">
+                  {envInfo.tech_stack?.backend?.items?.map((item, idx) => (
+                    <Descriptions.Item key={idx} label={
                       <span>
-                        <CloudServerOutlined style={{ color: '#52c41a', marginRight: 6 }} />
-                        后端技术栈
-                        <Tag style={{ marginLeft: 8 }} color="green">v{envInfo.tech_stack.backend?.version}</Tag>
+                        <Tag color="green" style={{ marginRight: 6 }}>{item.category}</Tag>
+                        {item.key}
                       </span>
-                    }
-                  >
-                    <Descriptions column={1} size="small">
-                      {envInfo.tech_stack.backend?.items?.map((item, idx) => (
-                        <Descriptions.Item key={idx} label={
-                          <span>
-                            <Tag color="green" style={{ marginRight: 6 }}>{item.category}</Tag>
-                            {item.key}
-                          </span>
-                        }>
-                          <code>{item.version}</code>
-                        </Descriptions.Item>
-                      ))}
-                    </Descriptions>
-                  </Card>
-                </Col>
-              </Row>
-            </div>
-          )}
+                    }>
+                      <code>{item.version}</code>
+                    </Descriptions.Item>
+                  ))}
+                </Descriptions>
+              </Card>
+            </Col>
+          </Row>
         </>
       )}
     </Spin>
