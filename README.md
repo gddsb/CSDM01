@@ -122,7 +122,7 @@
 |------|------|---------|
 | 料品档案 | `/basic/materials` | 料品基础信息（24字段），支持分类、规格、尺寸、重量、印刷工艺等 |
 | 客户档案 | `/basic/customers` | 客户基础信息、信用等级、税务银行信息、生效失效日期 |
-| 产线档案 | `/basic/lines` | 生产线配置、状态管理、产线-工序关联、产线-设备关联 |
+| 产线档案 | `/basic/lines` | 生产线配置、状态管理、产线-工序关联配置、产线-设备关联配置 |
 | 工序档案 | `/basic/processes` | 生产工序定义、顺序调整 |
 | 设备档案（基础） | `/basic/devices` | 设备基础信息 |
 | 制程不良分类 | `/basic/defects` | 不良类型树形多级分类、单位定义 |
@@ -337,6 +337,7 @@ milk-can-mes/
 │   │   │   ├── MaterialController.js # 料品档案控制器
 │   │   │   ├── CustomerController.js # 客户档案控制器
 │   │   │   ├── ProductionLineController.js  # 产线控制器
+│   │   │   ├── LineRelationController.js    # 产线关联控制器（工序/设备）
 │   │   │   ├── ProcessController.js  # 工序控制器
 │   │   │   ├── DeviceController.js   # 设备控制器
 │   │   │   ├── DefectTypeController.js  # 不良分类控制器
@@ -1088,12 +1089,14 @@ crontab -e
 - 产线编码、产线名称、所属车间、负责人（必填）
 - 联系电话、描述
 - 状态（下拉：运行中/维护中/停用）
-- 关联工序（多选）
-- 关联设备（多选）
+
+**详情配置区域**：
+- **关联工序**：表格展示已关联工序列表（排序、编号、名称），支持添加工序、移除工序
+- **关联设备**：表格展示已关联设备列表（排序、编号、名称、型号、关联工序），支持添加设备（可选择关联工序）、移除设备
 
 **关联规则**：
 - 产线与工序为多对多关系（`bas_line_process` 关联表）
-- 产线与设备为多对多关系（`bas_line_device` 关联表）
+- 产线与设备为多对多关系（`bas_line_device` 关联表），设备可关联到特定工序
 
 #### 1.4 工序档案
 
@@ -1623,6 +1626,14 @@ crontab -e
 | GET/POST/PUT/DELETE | `/api/basic/materials` | 料品档案 CRUD |
 | GET/POST/PUT/DELETE | `/api/basic/customers` | 客户档案 CRUD |
 | GET/POST/PUT/DELETE | `/api/basic/production-lines` | 产线档案 CRUD |
+| GET | `/api/basic/production-lines/:id/processes` | 获取产线关联工序列表 |
+| POST | `/api/basic/production-lines/:id/processes` | 添加产线-工序关联 |
+| DELETE | `/api/basic/production-lines/:id/processes/:processId` | 删除产线-工序关联 |
+| PUT | `/api/basic/production-lines/:id/processes/sort` | 更新工序排序 |
+| GET | `/api/basic/production-lines/:id/devices` | 获取产线关联设备列表 |
+| POST | `/api/basic/production-lines/:id/devices` | 添加产线-设备关联 |
+| DELETE | `/api/basic/production-lines/:id/devices/:deviceId` | 删除产线-设备关联 |
+| PUT | `/api/basic/production-lines/:id/devices/sort` | 更新设备排序 |
 | GET/POST/PUT/DELETE | `/api/basic/processes` | 工序档案 CRUD |
 | GET/POST/PUT/DELETE | `/api/basic/devices` | 设备档案 CRUD |
 | GET/POST/PUT/DELETE | `/api/basic/defect-types` | 不良分类 CRUD |
