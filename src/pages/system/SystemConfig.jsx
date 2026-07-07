@@ -490,6 +490,28 @@ export default function SystemConfig() {
               </Card>
             </Col>
             <Col span={6}>
+              <Card size="small" style={{ borderColor: envInfo.frontend_server?.status === 'running' ? '#52c41a' : '#ff4d4f' }}>
+                <Statistic 
+                  title={envInfo.frontend_server?.name || '前端服务器'} 
+                  value={<Tag color={envInfo.frontend_server?.status === 'running' ? 'green' : 'red'}>
+                    {envInfo.frontend_server?.status === 'running' ? '运行中' : envInfo.frontend_server?.status === 'offline' ? '已停止' : '未知'}
+                  </Tag>}
+                  suffix={`端口: ${envInfo.frontend_server?.port}`}
+                />
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card size="small" style={{ borderColor: envInfo.backend_server?.status === 'running' ? '#52c41a' : '#ff4d4f' }}>
+                <Statistic 
+                  title={envInfo.backend_server?.name || '后端服务器'} 
+                  value={<Tag color={envInfo.backend_server?.status === 'running' ? 'green' : 'red'}>
+                    {envInfo.backend_server?.status === 'running' ? '运行中' : '已停止'}
+                  </Tag>}
+                  suffix={`端口: ${envInfo.backend_server?.port}`}
+                />
+              </Card>
+            </Col>
+            <Col span={6}>
               <Card size="small">
                 <Statistic title="进程运行时长" value={formatUptime(envInfo.uptime)} />
               </Card>

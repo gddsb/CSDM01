@@ -203,6 +203,24 @@ export const getEnvironment = async (req, res) => {
     } catch (e) {
       // 磁盘信息获取失败，保持默认值
     }
+    let frontend_status = 'unknown'
+    let frontend_port = process.env.VITE_PORT || 5173
+    try {
+      const http = await import('http')
+      await new Promise((resolve) => {
+        const timer = setTimeout(() => { resolve(); frontend_status = 'offline' }, 1000)
+        const req = http.request({ hostname: 'localhost', port: frontend_port, path: '/', method: 'HEAD' }, (res) => {
+          clearTimeout(timer)
+          frontend_status = res.statusCode >= 200 && res.statusCode < 400 ? 'running' : 'error'
+          resolve()
+        })
+        req.on('error', () => { clearTimeout(timer); frontend_status = 'offline'; resolve() })
+        req.end()
+      })
+    } catch (e) {
+      frontend_status = 'unknown'
+    }
+
     const info = {
       node_version: process.version,
       platform: `${process.platform} ${process.arch}`,
@@ -228,6 +246,16 @@ export const getEnvironment = async (req, res) => {
       sequelize_version: Sequelize.version || 'unknown',
       tech_stack,
       server_time: new Date().toISOString(),
+      frontend_server: {
+        name: '前端服务器 (Vite)',
+        status: frontend_status,
+        port: frontend_port,
+      },
+      backend_server: {
+        name: '后端服务器 (Express)',
+        status: 'running',
+        port: process.env.PORT || 3001,
+      },
     }
     return success(res, info, '获取成功')
   } catch (err) {
