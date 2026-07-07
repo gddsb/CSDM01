@@ -467,6 +467,9 @@ export default function DefectManagement() {
                     if (currentDefault && !checkedValues.includes(currentDefault)) {
                       form.setFieldsValue({ defect_unit: undefined })
                     }
+                    if (checkedValues.length === 1) {
+                      form.setFieldsValue({ defect_unit: checkedValues[0] })
+                    }
                   }}
                 />
               </Form.Item>
@@ -502,13 +505,13 @@ export default function DefectManagement() {
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="display" label="默认显示" valuePropName="checked">
-                <Switch checkedChildren="是" unCheckedChildren="否" />
+              <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
+                <Select placeholder="请选择状态" options={[{ label: '启用', value: '启用' }, { label: '停用', value: '停用' }]} />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
-                <Select placeholder="请选择状态" options={[{ label: '启用', value: '启用' }, { label: '停用', value: '停用' }]} />
+              <Form.Item name="display" label="默认显示" valuePropName="checked">
+                <Switch checkedChildren="是" unCheckedChildren="否" />
               </Form.Item>
             </Col>
           </Row>

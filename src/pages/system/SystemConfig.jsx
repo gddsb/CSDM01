@@ -878,8 +878,8 @@ export default function SystemConfig() {
   )
 
   const tabItems = [
-    { key: 'params', label: '参数配置', icon: <SettingOutlined />, children: ParamsTab },
     { key: 'env', label: '项目环境', icon: <CloudServerOutlined />, children: EnvTab },
+    { key: 'params', label: '参数配置', icon: <SettingOutlined />, children: ParamsTab },
     { key: 'db', label: '数据库配置', icon: <DatabaseOutlined />, children: DbTab },
     { key: 'backup', label: '备份还原', icon: <HistoryOutlined />, children: BackupTab },
   ]
