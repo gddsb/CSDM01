@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,14 @@ import {
   TouchableOpacity,
   Alert,
   Modal,
+  Platform,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
+import * as FileSystem from 'expo-file-system';
+import * as IntentLauncher from 'expo-intent-launcher';
 import { Card } from '../components/ui';
 import Button from '../components/Button';
 import { useAuth } from '../context/AuthContext';
@@ -30,6 +34,8 @@ export default function ProfileScreen({ navigation }) {
   const [updateModalVisible, setUpdateModalVisible] = useState(false);
   const [latestVersion, setLatestVersion] = useState(null);
   const [currentVersion] = useState(Constants?.expoConfig?.version || '1.0.0');
+  const [downloading, setDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
 
   const handleLogout = () => {
     Alert.alert(
@@ -45,7 +51,9 @@ export default function ProfileScreen({ navigation }) {
   const checkUpdate = async () => {
     setCheckingUpdate(true);
     try {
-      const res = await api.get('/app/version/latest').catch(() => null);
+      const res = await api.get('/app/version/latest', {
+        params: { platform: Platform.OS === 'android' ? 'android' : 'ios' },
+      }).catch(() => null);
       if (res && res.data) {
         setLatestVersion(res.data);
         if (res.data.version && res.data.version !== currentVersion) {
@@ -60,6 +68,63 @@ export default function ProfileScreen({ navigation }) {
       Alert.alert('版本检查失败', e.message || '请稍后重试');
     } finally {
       setCheckingUpdate(false);
+    }
+  };
+
+  // 下载并安装 APK
+  const downloadAndInstallApk = async (downloadUrl) => {
+    if (!downloadUrl) {
+      Alert.alert('错误', '下载地址不存在');
+      return;
+    }
+    setDownloading(true);
+    setDownloadProgress(0);
+    try {
+      const apkPath = FileSystem.documentDirectory + 'dmmes-update.apk';
+      // 若已存在旧包，先删除
+      const fileInfo = await FileSystem.getInfoAsync(apkPath);
+      if (fileInfo.exists) {
+        await FileSystem.deleteAsync(apkPath, { idempotent: true });
+      }
+
+      const downloadResumable = FileSystem.createDownloadResumable(
+        downloadUrl,
+        apkPath,
+        {},
+        (dlProgress) => {
+          const percent = Math.round(
+            (dlProgress.totalBytesWritten / dlProgress.totalBytesExpectedToWrite) * 100
+          );
+          setDownloadProgress(percent);
+        }
+      );
+      const result = await downloadResumable.downloadAsync();
+      if (!result || !result.uri) {
+        throw new Error('下载失败');
+      }
+
+      // 触发 Android 系统安装界面
+      if (Platform.OS === 'android') {
+        const contentUri = await FileSystem.getContentUriAsync(result.uri);
+        await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+          data: contentUri,
+          flags: 1, // FLAG_GRANT_READ_URI_PERMISSION
+          type: 'application/vnd.android.package-archive',
+        });
+        setUpdateModalVisible(false);
+      } else {
+        // iOS 无法直接安装 IPA，引导用户用浏览器打开下载链接
+        const supported = await Linking.canOpenURL(downloadUrl);
+        if (supported) {
+          await Linking.openURL(downloadUrl);
+        }
+        setUpdateModalVisible(false);
+      }
+    } catch (e) {
+      Alert.alert('下载失败', e.message || '请检查网络后重试');
+    } finally {
+      setDownloading(false);
+      setDownloadProgress(0);
     }
   };
 
@@ -83,6 +148,8 @@ export default function ProfileScreen({ navigation }) {
       <Ionicons name="chevron-forward" size={18} color={theme.colors.text.tertiary} />
     </TouchableOpacity>
   );
+
+  const isForceUpdate = latestVersion?.is_force === 1 || latestVersion?.is_force === true;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -108,6 +175,7 @@ export default function ProfileScreen({ navigation }) {
             style={styles.menuItem}
             activeOpacity={0.7}
             onPress={checkUpdate}
+            disabled={checkingUpdate || downloading}
           >
             <View style={[styles.menuIconWrap, { backgroundColor: `${theme.colors.primary}15` }]}>
               <Ionicons name="cloud-download-outline" size={20} color={theme.colors.primary} />
@@ -140,7 +208,9 @@ export default function ProfileScreen({ navigation }) {
         visible={updateModalVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => setUpdateModalVisible(false)}
+        onRequestClose={() => {
+          if (!isForceUpdate && !downloading) setUpdateModalVisible(false);
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -157,24 +227,39 @@ export default function ProfileScreen({ navigation }) {
                 <Text style={styles.modalDescText}>{latestVersion.description}</Text>
               </View>
             )}
-            <View style={styles.modalActions}>
-              <Button
-                title="稍后再说"
-                variant="ghost"
-                size="md"
-                onPress={() => setUpdateModalVisible(false)}
-                style={{ flex: 1 }}
-              />
-              <Button
-                title="立即更新"
-                size="md"
-                onPress={() => {
-                  Alert.alert('提示', '正在下载更新包...');
-                  setUpdateModalVisible(false);
-                }}
-                style={{ flex: 1, marginLeft: theme.spacing.md }}
-              />
-            </View>
+            {latestVersion?.file_size && (
+              <Text style={styles.modalFileSize}>安装包大小：{latestVersion.file_size}</Text>
+            )}
+            {isForceUpdate && (
+              <Text style={styles.modalForceTip}>此为强制更新版本，需更新后才能继续使用</Text>
+            )}
+
+            {downloading ? (
+              <View style={styles.progressWrap}>
+                <View style={styles.progressBarBg}>
+                  <View style={[styles.progressBarFill, { width: `${downloadProgress}%` }]} />
+                </View>
+                <Text style={styles.progressText}>下载中 {downloadProgress}%</Text>
+              </View>
+            ) : (
+              <View style={styles.modalActions}>
+                {!isForceUpdate && (
+                  <Button
+                    title="稍后再说"
+                    variant="ghost"
+                    size="md"
+                    onPress={() => setUpdateModalVisible(false)}
+                    style={{ flex: 1 }}
+                  />
+                )}
+                <Button
+                  title="立即更新"
+                  size="md"
+                  onPress={() => downloadAndInstallApk(latestVersion?.download_url)}
+                  style={{ flex: 1, marginLeft: isForceUpdate ? 0 : theme.spacing.md }}
+                />
+              </View>
+            )}
           </View>
         </View>
       </Modal>
@@ -241,8 +326,34 @@ const styles = StyleSheet.create({
   },
   modalDescTitle: { fontSize: theme.fontSize.sm, color: theme.colors.text.secondary, marginBottom: 4 },
   modalDescText: { fontSize: theme.fontSize.sm, color: theme.colors.text.primary, lineHeight: 18 },
+  modalFileSize: {
+    fontSize: theme.fontSize.xs, color: theme.colors.text.tertiary,
+    marginTop: theme.spacing.sm,
+  },
+  modalForceTip: {
+    fontSize: theme.fontSize.xs, color: theme.colors.warning || '#FF9800',
+    marginTop: theme.spacing.xs, textAlign: 'center',
+  },
   modalActions: {
     flexDirection: 'row', marginTop: theme.spacing.xl,
     width: '100%',
+  },
+  progressWrap: {
+    width: '100%', marginTop: theme.spacing.xl,
+    alignItems: 'center',
+  },
+  progressBarBg: {
+    width: '100%', height: 6,
+    backgroundColor: theme.colors.bg.secondary,
+    borderRadius: 3, overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: theme.colors.primary,
+    borderRadius: 3,
+  },
+  progressText: {
+    fontSize: theme.fontSize.sm, color: theme.colors.text.secondary,
+    marginTop: theme.spacing.sm,
   },
 });
