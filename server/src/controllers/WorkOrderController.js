@@ -88,7 +88,7 @@ export const detail = async (req, res) => {
 // 创建工单（自动生成工单号 WO+YYYYMMDD+3位序号）
 export const create = async (req, res) => {
   try {
-    const { order_id, line_id, material_id, target_qty, start_time, finish_time } = req.body
+    const { order_id, line_id, material_id, planned_qty, plan_start_time, plan_end_time, remarks } = req.body
     if (!order_id) return fail(res, '订单 ID 不能为空')
     if (!line_id) return fail(res, '产线 ID 不能为空')
 
@@ -108,6 +108,7 @@ export const create = async (req, res) => {
     }
 
     const work_order_no = await generateWorkOrderNo()
+    const qty = planned_qty !== undefined ? planned_qty : order.planned_qty
     const workOrder = await WorkOrder.create({
       work_order_no,
       order_id: order.order_id,
@@ -116,9 +117,11 @@ export const create = async (req, res) => {
       line_name: line.line_name,
       material_id: materialId,
       material_name: materialName,
-      target_qty: target_qty || 0,
-      start_time,
-      finish_time,
+      planned_qty: qty,
+      target_qty: qty,
+      plan_start_time,
+      plan_end_time,
+      remarks,
       status: 0,
       created_by: req.user?.username || null,
     })
@@ -138,8 +141,16 @@ export const update = async (req, res) => {
     if (workOrder.status !== 0) {
       return fail(res, '当前工单状态不允许修改')
     }
-    const { line_id, material_id, target_qty, start_time, finish_time, status } = req.body
-    const updateData = { target_qty, start_time, finish_time, status }
+    const { line_id, material_id, planned_qty, plan_start_time, plan_end_time, remarks, status } = req.body
+    const updateData = {}
+    if (planned_qty !== undefined) {
+      updateData.planned_qty = planned_qty
+      updateData.target_qty = planned_qty
+    }
+    if (plan_start_time !== undefined) updateData.plan_start_time = plan_start_time
+    if (plan_end_time !== undefined) updateData.plan_end_time = plan_end_time
+    if (remarks !== undefined) updateData.remarks = remarks
+    if (status !== undefined) updateData.status = status
     if (line_id && line_id !== workOrder.line_id) {
       const line = await ProductionLine.findOne({ where: { line_id } })
       if (!line) return fail(res, '产线不存在', 404)

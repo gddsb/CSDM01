@@ -6,6 +6,7 @@
   { "perm_id": 5, "parent_id": 1, "perm_name": "数据字典", "perm_code": "system:dict", "type": "menu", "icon": "DatabaseOutlined", "path": "/system/dictionary", "component": "pages/system/DictionaryManagement", "sort_order": 4, "visible": 1, "status": 1 },
   { "perm_id": 6, "parent_id": 1, "perm_name": "系统配置", "perm_code": "system:config", "type": "menu", "icon": "ControlOutlined", "path": "/system/config", "component": "pages/system/SystemConfig", "sort_order": 5, "visible": 1, "status": 1 },
   { "perm_id": 7, "parent_id": 1, "perm_name": "操作日志", "perm_code": "system:log", "type": "menu", "icon": "FileTextOutlined", "path": "/system/logs", "component": "pages/system/OperationLog", "sort_order": 6, "visible": 1, "status": 1 },
+  { "perm_id": 8, "parent_id": 1, "perm_name": "测试报工", "perm_code": "system:test-reporting", "type": "menu", "icon": "ExperimentOutlined", "path": "/system/test-reporting", "component": "pages/system/TestReporting", "sort_order": 7, "visible": 1, "status": 1 },
 
   { "perm_id": 10, "parent_id": 0, "perm_name": "基础数据", "perm_code": "basic", "type": "menu", "icon": "ProfileOutlined", "path": "basic", "component": null, "sort_order": 2, "visible": 1, "status": 1 },
   { "perm_id": 11, "parent_id": 10, "perm_name": "料品档案", "perm_code": "basic:material", "type": "menu", "icon": "ProfileOutlined", "path": "/basic/materials", "component": "pages/basic/MaterialManagement", "sort_order": 1, "visible": 1, "status": 1 },
@@ -19,7 +20,6 @@
   { "perm_id": 21, "parent_id": 20, "perm_name": "生产订单", "perm_code": "production:order", "type": "menu", "icon": "FileTextOutlined", "path": "/production/orders", "component": "pages/production/OrderManagement", "sort_order": 1, "visible": 1, "status": 1 },
   { "perm_id": 22, "parent_id": 20, "perm_name": "工单列表", "perm_code": "production:workorder", "type": "menu", "icon": "ToolOutlined", "path": "/production/workorders", "component": "pages/production/WorkOrderManagement", "sort_order": 2, "visible": 1, "status": 1 },
   { "perm_id": 23, "parent_id": 20, "perm_name": "生产报工", "perm_code": "production:reporting", "type": "menu", "icon": "ProfileOutlined", "path": "/production/reporting", "component": "pages/production/ProcessReporting", "sort_order": 3, "visible": 1, "status": 1 },
-  { "perm_id": 24, "parent_id": 20, "perm_name": "生产报工(工单)", "perm_code": "production:reporting-by-order", "type": "menu", "icon": "ProfileOutlined", "path": "/production/reporting-by-order", "component": "pages/production/ReportingByOrder", "sort_order": 4, "visible": 1, "status": 1 },
   { "perm_id": 25, "parent_id": 20, "perm_name": "人员记录", "perm_code": "production:manpower", "type": "menu", "icon": "TeamOutlined", "path": "/production/manpower", "component": "pages/production/ManpowerRecord", "sort_order": 5, "visible": 1, "status": 1 },
   { "perm_id": 26, "parent_id": 20, "perm_name": "异常记录", "perm_code": "production:exception", "type": "menu", "icon": "BellOutlined", "path": "/production/exceptions", "component": "pages/production/ExceptionRecord", "sort_order": 6, "visible": 1, "status": 1 },
 

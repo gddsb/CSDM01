@@ -34,9 +34,19 @@ const WorkOrder = sequelize.define('WorkOrder', {
     type: DataTypes.DECIMAL(12, 2),
     defaultValue: 0,
   },
+  planned_qty: {
+    type: DataTypes.DECIMAL(12, 2),
+    defaultValue: 0,
+  },
   finished_qty: {
     type: DataTypes.DECIMAL(12, 2),
     defaultValue: 0,
+  },
+  plan_start_time: {
+    type: DataTypes.DATE,
+  },
+  plan_end_time: {
+    type: DataTypes.DATE,
   },
   start_time: {
     type: DataTypes.DATE,

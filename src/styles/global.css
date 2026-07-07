@@ -129,6 +129,13 @@ body {
   border-radius: 6px !important;
 }
 
+/* 一级菜单（有子菜单的）加粗 */
+.app-sider > .ant-menu > .ant-menu-submenu > .ant-menu-submenu-title,
+.app-sider > .ant-menu > .ant-menu-submenu > .ant-menu-submenu-title .ant-menu-title-content {
+  font-weight: 600;
+  font-size: 14px;
+}
+
 .app-sider .ant-menu-item:hover,
 .app-sider .ant-menu-submenu-title:hover {
   opacity: 1 !important;

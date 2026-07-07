@@ -103,6 +103,7 @@ const defaultPermissions = [
   { perm_id: 5, parent_id: 1, perm_name: '数据字典', perm_code: 'system:dict', type: 'menu', icon: 'DatabaseOutlined', path: '/system/dictionary', sort_order: 4 },
   { perm_id: 6, parent_id: 1, perm_name: '系统配置', perm_code: 'system:config', type: 'menu', icon: 'ControlOutlined', path: '/system/config', sort_order: 5 },
   { perm_id: 7, parent_id: 1, perm_name: '操作日志', perm_code: 'system:log', type: 'menu', icon: 'FileTextOutlined', path: '/system/logs', sort_order: 6 },
+  { perm_id: 8, parent_id: 1, perm_name: '测试报工', perm_code: 'system:test-reporting', type: 'menu', icon: 'ExperimentOutlined', path: '/system/test-reporting', sort_order: 7 },
   // 基础数据
   { perm_id: 10, parent_id: 0, perm_name: '基础数据', perm_code: 'basic', type: 'menu', icon: 'ProfileOutlined', path: 'basic', sort_order: 2 },
   { perm_id: 11, parent_id: 10, perm_name: '料品档案', perm_code: 'basic:material', type: 'menu', icon: 'ProfileOutlined', path: '/basic/materials', sort_order: 1 },
@@ -116,7 +117,6 @@ const defaultPermissions = [
   { perm_id: 21, parent_id: 20, perm_name: '生产订单', perm_code: 'production:order', type: 'menu', icon: 'FileTextOutlined', path: '/production/orders', sort_order: 1 },
   { perm_id: 22, parent_id: 20, perm_name: '工单列表', perm_code: 'production:workorder', type: 'menu', icon: 'ToolOutlined', path: '/production/workorders', sort_order: 2 },
   { perm_id: 23, parent_id: 20, perm_name: '生产报工', perm_code: 'production:reporting', type: 'menu', icon: 'ProfileOutlined', path: '/production/reporting', sort_order: 3 },
-  { perm_id: 24, parent_id: 20, perm_name: '生产报工(工单)', perm_code: 'production:reporting-by-order', type: 'menu', icon: 'ProfileOutlined', path: '/production/reporting-by-order', sort_order: 4 },
   { perm_id: 25, parent_id: 20, perm_name: '人员记录', perm_code: 'production:manpower', type: 'menu', icon: 'TeamOutlined', path: '/production/manpower', sort_order: 5 },
   { perm_id: 26, parent_id: 20, perm_name: '异常记录', perm_code: 'production:exception', type: 'menu', icon: 'BellOutlined', path: '/production/exceptions', sort_order: 6 },
   // 质量管理
@@ -153,9 +153,8 @@ const defaultPermissions = [
 ]
 
 export const initDefaultPermissions = async () => {
+  const defaultCodes = defaultPermissions.map(p => p.perm_code)
   for (const perm of defaultPermissions) {
-    // findOrCreate 仅保证存在；同时同步 perm_name / parent_id / icon / path / sort_order
-    // 以便菜单顺序调整、名称变更等能对已有数据库生效
     const [record, created] = await Permission.findOrCreate({
       where: { perm_code: perm.perm_code },
       defaults: perm,
@@ -168,14 +167,24 @@ export const initDefaultPermissions = async () => {
         path: perm.path,
         sort_order: perm.sort_order,
         type: perm.type,
+        visible: perm.visible !== undefined ? perm.visible : 1,
+        status: perm.status !== undefined ? perm.status : 1,
+        component: perm.component || null,
       })
     }
   }
-  // 给超级管理员角色分配所有权限
+  // 清理数据库中存在但默认权限中没有的菜单项（防止删除的菜单残留）
+  const allPerms = await Permission.findAll()
+  const toRemove = allPerms.filter(p => !defaultCodes.includes(p.perm_code) && p.type === 'menu')
+  if (toRemove.length > 0) {
+    const removeIds = toRemove.map(p => p.perm_id)
+    console.log(`🧹 清理废弃菜单项: ${toRemove.map(p => p.perm_name).join(', ')}`)
+    await Permission.destroy({ where: { perm_id: { [Op.in]: removeIds } } })
+  }
   const adminRole = await Role.findOne({ where: { role_code: 'SUPER_ADMIN' } })
   if (adminRole) {
-    const allPerms = await Permission.findAll()
-    await adminRole.setPermissions(allPerms)
+    const allPermsAfter = await Permission.findAll()
+    await adminRole.setPermissions(allPermsAfter)
   }
   console.log('✅ 默认权限初始化完成')
 }
