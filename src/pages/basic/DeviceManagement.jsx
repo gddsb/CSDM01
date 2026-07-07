@@ -25,11 +25,11 @@ export default function DeviceManagement() {
 
   // 筛选输入态
   const [keywordInput, setKeywordInput] = useState('')
-  const [statusInput, setStatusInput] = useState(undefined)
+  const [statusInput, setStatusInput] = useState([1, 2, 0])
   const [typeInput, setTypeInput] = useState(undefined)
   const [specialInput, setSpecialInput] = useState(undefined)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined, device_type: undefined, is_special: undefined })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: [1, 2, 0], device_type: undefined, is_special: undefined })
 
   const runningCount = data.filter(d => d.status === '运行').length
   const faultCount = data.filter(d => d.status === '维修').length
@@ -52,7 +52,7 @@ export default function DeviceManagement() {
       try {
         const params = { page: query.page, pageSize: query.pageSize, sortBy: 'device_type,device_code', sortOrder: 'asc' }
         if (query.keyword) params.keyword = query.keyword
-        if (query.status !== undefined && query.status !== null) params.status = query.status
+        if (query.status && query.status.length > 0) params.status = query.status.join(',')
         if (query.device_type) params.device_type = query.device_type
         if (query.is_special !== undefined && query.is_special !== null) params.is_special = query.is_special
         const res = await api.get('/basic/devices', { params })
@@ -82,10 +82,10 @@ export default function DeviceManagement() {
 
   const handleReset = () => {
     setKeywordInput('')
-    setStatusInput(undefined)
+    setStatusInput([1, 2, 0])
     setTypeInput(undefined)
     setSpecialInput(undefined)
-    setQuery(q => ({ ...q, page: 1, keyword: '', status: undefined, device_type: undefined, is_special: undefined }))
+    setQuery(q => ({ ...q, page: 1, keyword: '', status: [1, 2, 0], device_type: undefined, is_special: undefined }))
   }
 
   const handleDetail = (record) => {
@@ -193,7 +193,7 @@ export default function DeviceManagement() {
     { type: 'input', placeholder: '搜索设备编号/名称/型号', col: { flex: '150px' }, value: keywordInput, onChange: e => setKeywordInput(e.target.value) },
     { type: 'select', placeholder: '设备类型', options: typeOptions, col: { flex: '150px' }, value: typeInput, onChange: v => setTypeInput(v) },
     {
-      type: 'select', placeholder: '状态筛选', col: { flex: '150px' },
+      type: 'checkbox-group', placeholder: '状态筛选', col: { flex: '150px' },
       options: [{ label: '运行', value: 1 }, { label: '维修', value: 2 }, { label: '停用', value: 0 }],
       value: statusInput, onChange: v => setStatusInput(v),
     },

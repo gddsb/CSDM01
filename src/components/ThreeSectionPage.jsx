@@ -68,6 +68,16 @@ export default function ThreeSectionPage({
           options={f.options}
           value={f.value}
           onChange={handleChange}
+          mode={f.mode}
+        />
+      )
+    }
+    if (f.type === 'checkbox-group') {
+      return (
+        <Checkbox.Group
+          options={f.options}
+          value={f.value}
+          onChange={handleChange}
         />
       )
     }

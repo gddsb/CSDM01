@@ -15,7 +15,14 @@ export const list = async (req, res) => {
         { serial_no: { [Op.like]: `%${keyword}%` } },
       ]
     }
-    if (status !== undefined && status !== '') where.status = Number(status)
+    if (status !== undefined && status !== '') {
+      const statusValues = status.split(',').map(s => Number(s)).filter(s => !isNaN(s))
+      if (statusValues.length === 1) {
+        where.status = statusValues[0]
+      } else if (statusValues.length > 1) {
+        where.status = { [Op.in]: statusValues }
+      }
+    }
     if (device_type) where.device_type = device_type
     if (line_id) where.line_id = Number(line_id)
     if (dateStart || dateEnd) {
