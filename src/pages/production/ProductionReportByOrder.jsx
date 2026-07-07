@@ -5,7 +5,7 @@ import {
 } from 'antd'
 import {
   ArrowLeftOutlined, ReloadOutlined, PlusOutlined, DeleteOutlined,
-  FileTextOutlined, CloseCircleOutlined, WrenchOutlined, PictureOutlined
+  FileTextOutlined, CloseCircleOutlined, ToolOutlined, PictureOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import api from '../../utils/api'
@@ -643,7 +643,7 @@ export default function ProductionReportByOrder() {
           />
         </TabPane>
 
-        <TabPane tab={<><WrenchOutlined /> 异常工时登记</>} key="exception">
+        <TabPane tab={<><ToolOutlined /> 异常工时登记</>} key="exception">
           {!isWorkOrderClosed && (
             <Card style={{ marginBottom: 16 }}>
               <Form form={exceptionForm} layout="horizontal" onFinish={handleSubmitException}>
