@@ -19,7 +19,7 @@ export const list = async (req, res) => {
       where.material_code = { [Op.like]: `%${materialCode}%` }
     }
     if (status !== undefined && status !== '') {
-      const statusMap = { '开立': 0, '已下达': 1, '已关闭': 2 }
+      const statusMap = { '开立': 0, '下发': 1, '完工': 2 }
       where.status = statusMap[status] !== undefined ? statusMap[status] : Number(status)
     }
     if (planDateStart || planDateEnd) {
@@ -162,24 +162,24 @@ export const release = async (req, res) => {
     if (!order) return fail(res, '订单不存在', 404)
     if (order.status !== '开立') return fail(res, '当前订单状态不允许下发')
     await order.update({ status: 1, release_time: new Date() })
-    return success(res, order, '订单已下达')
+    return success(res, order, '订单已下发')
   } catch (err) {
     console.error('下发订单失败:', err)
     return fail(res, '服务器错误', 500)
   }
 }
 
-// 关闭订单
+// 完工订单
 export const close = async (req, res) => {
   try {
     const { id } = req.params
     const order = await Order.findOne({ where: { order_id: id } })
     if (!order) return fail(res, '订单不存在', 404)
-    if (order.status !== '已下达') return fail(res, '当前订单状态不允许关闭')
+    if (order.status !== '下发') return fail(res, '当前订单状态不允许完工')
     await order.update({ status: 2, close_time: new Date() })
-    return success(res, order, '订单已关闭')
+    return success(res, order, '订单已完工')
   } catch (err) {
-    console.error('关闭订单失败:', err)
+    console.error('完工订单失败:', err)
     return fail(res, '服务器错误', 500)
   }
 }

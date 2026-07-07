@@ -203,8 +203,8 @@ export default function ProductionBigScreen() {
   })
   const totalDefectAll = Object.values(defectDistribution).reduce((s, v) => s + v, 0)
 
-  // 订单概览排序：已开工、待下达、已关闭
-  const orderStatusOrder = { '已下达': 1, '已开工': 1, '开工': 1, '待下达': 2, '已关闭': 3, '关闭': 3 }
+  // 订单概览排序：下发、开工、完工
+  const orderStatusOrder = { '下发': 1, '开工': 1, '已开工': 1, '开立': 2, '完工': 3 }
   const sortedOrders = [...displayOrders].sort((a, b) => {
     const sa = orderStatusOrder[a.status] || 99
     const sb = orderStatusOrder[b.status] || 99
@@ -684,7 +684,7 @@ export default function ProductionBigScreen() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                     <span style={{ color: '#E6EDF3', fontWeight: 600 }}>{o.order_no}</span>
                     <Tag
-                      color={o.status === '已下达' || o.status === '已开工' ? 'processing' : o.status === '已关闭' ? 'success' : 'default'}
+                      color={o.status === '下发' || o.status === '开工' ? 'processing' : o.status === '完工' ? 'success' : 'default'}
                       style={{ fontSize: 11 }}
                     >
                       {o.status}

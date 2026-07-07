@@ -12,14 +12,14 @@ const { RangePicker } = DatePicker
 
 const statusColorMap = {
   '开立': 'default',
-  '已下达': 'processing',
-  '已关闭': 'success',
+  '下发': 'processing',
+  '完工': 'success',
 }
 
 const statusOptions = [
   { label: '开立', value: 0 },
-  { label: '已下达', value: 1 },
-  { label: '已关闭', value: 2 },
+  { label: '下发', value: 1 },
+  { label: '完工', value: 2 },
 ]
 
 export default function OrderManagement() {
@@ -96,14 +96,14 @@ export default function OrderManagement() {
   const cMaterials = materials.filter(m => m.material_code?.toUpperCase().startsWith('C'))
 
   const pendingCount = data.filter(o => o.status === '开立').length
-  const releasedCount = data.filter(o => o.status === '已下达').length
-  const closedCount = data.filter(o => o.status === '已关闭').length
+  const releasedCount = data.filter(o => o.status === '下发').length
+  const closedCount = data.filter(o => o.status === '完工').length
 
   const stats = [
     { label: '总订单数', value: total, icon: <FileTextOutlined />, color: '#2196F3' },
     { label: '开立', value: pendingCount, icon: <ClockCircleOutlined />, color: '#9E9E9E' },
-    { label: '已下达', value: releasedCount, icon: <SendOutlined />, color: '#FF9800' },
-    { label: '已关闭', value: closedCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
+    { label: '下发', value: releasedCount, icon: <SendOutlined />, color: '#FF9800' },
+    { label: '完工', value: closedCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
   ]
 
   const handleRelease = (r) => {
@@ -115,7 +115,7 @@ export default function OrderManagement() {
       onOk: async () => {
         try {
           const res = await api.post(`/production/orders/${r.order_id}/release`)
-          message.success(res.message || `订单 ${r.order_no} 已下达`)
+          message.success(res.message || `订单 ${r.order_no} 已下发`)
           refresh()
         } catch (err) {
           message.error(err.message || '下发失败')
@@ -126,18 +126,18 @@ export default function OrderManagement() {
 
   const handleClose = (r) => {
     Modal.confirm({
-      title: '确认关闭',
-      content: `确认关闭订单 ${r.order_no}？关闭后将不可恢复`,
-      okText: '确认关闭',
+      title: '确认完工',
+      content: `确认完工订单 ${r.order_no}？完工后将不可恢复`,
+      okText: '确认完工',
       okType: 'danger',
       cancelText: '取消',
       onOk: async () => {
         try {
           const res = await api.post(`/production/orders/${r.order_id}/close`)
-          message.success(res.message || '订单已关闭')
+          message.success(res.message || '订单已完工')
           refresh()
         } catch (err) {
-          message.error(err.message || '关闭失败')
+          message.error(err.message || '完工失败')
         }
       },
     })
@@ -251,11 +251,11 @@ export default function OrderManagement() {
         </Space>
       )
     }
-    if (r.status === '已下达') {
+    if (r.status === '下发') {
       return (
         <Space size={0}>
           <Button type="link" size="small" onClick={() => handleView(r)}>查看</Button>
-          <Button type="link" size="small" danger onClick={() => handleClose(r)}>关闭</Button>
+          <Button type="link" size="small" danger onClick={() => handleClose(r)}>完工</Button>
         </Space>
       )
     }

@@ -172,8 +172,8 @@ export default function ManagementBigScreen() {
   const useComplaints = dateComplaints.length > 0 ? dateComplaints : complaints
 
   // 生产指标（基于当日过滤后的数据）
-  const activeOrders = useOrders.filter(o => o.status !== '已关闭').length
-  const closedOrders = useOrders.filter(o => o.status === '已关闭').length
+  const activeOrders = useOrders.filter(o => o.status !== '完工').length
+  const closedOrders = useOrders.filter(o => o.status === '完工').length
   const activeWorkOrders = useWorkOrders.filter(w => w.status === '开工').length
   const completedWorkOrders = useWorkOrders.filter(w => w.status === '完工').length
 

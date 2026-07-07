@@ -38,7 +38,7 @@
   {
     "dict_code": 4,
     "dict_sort": 2,
-    "dict_label": "已下达",
+    "dict_label": "下发",
     "dict_value": "1",
     "dict_type": "prod_order_status",
     "css_class": null,
@@ -50,7 +50,7 @@
   {
     "dict_code": 5,
     "dict_sort": 3,
-    "dict_label": "已关闭",
+    "dict_label": "完工",
     "dict_value": "2",
     "dict_type": "prod_order_status",
     "css_class": null,

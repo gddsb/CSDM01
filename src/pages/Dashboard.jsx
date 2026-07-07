@@ -43,7 +43,7 @@ export default function Dashboard() {
     return () => { cancelled = true }
   }, [])
 
-  const activeOrders = orders.filter(o => o.status !== '已关闭')
+  const activeOrders = orders.filter(o => o.status !== '完工')
   const activeWorkOrders = workOrders.filter(w => w.status === '开工')
   const faultDevices = devices.filter(d => d.status === '故障' || d.status === '维修')
 
@@ -63,7 +63,7 @@ export default function Dashboard() {
     {
       title: '状态', dataIndex: 'status', key: 'status',
       render: v => {
-        const colors = { '待下达': 'default', '已下达': 'processing', '已关闭': 'success' }
+        const colors = { '开立': 'default', '下发': 'processing', '完工': 'success' }
         return <Tag color={colors[v] || 'default'}>{v}</Tag>
       }
     },

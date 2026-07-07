@@ -167,11 +167,67 @@ export const remove = async (req, res) => {
 export const start = async (req, res) => {
   try {
     const { id } = req.params
+    const { start_time } = req.body
     const workOrder = await WorkOrder.findOne({ where: { work_order_id: id } })
     if (!workOrder) return fail(res, '工单不存在', 404)
     if (workOrder.status !== 0) return fail(res, '当前工单状态不允许开工')
-    await workOrder.update({ status: 1, start_time: workOrder.start_time || new Date() })
-    return success(res, workOrder, '工单已开工')
+
+    const now = new Date()
+    let startTime = workOrder.start_time || new Date(start_time || now)
+    
+    const minTime = new Date(now.getTime() - 4 * 60 * 60 * 1000)
+    if (startTime < minTime) return fail(res, '开工时间不可早于当前时间往前推4小时')
+    if (startTime > now) return fail(res, '开工时间不可晚于当前时间')
+
+    await workOrder.update({ status: 1, start_time: startTime })
+
+    const lineId = workOrder.line_id
+    const lineProcesses = await import('../models/LineProcess.js').then(m => m.default).then(model => 
+      model.findAll({ where: { line_id: lineId } })
+    )
+
+    const processIds = lineProcesses.map(lp => lp.process_id)
+    const processes = await import('../models/Process.js').then(m => m.default).then(model =>
+      model.findAll({ where: { process_id: processIds } })
+    )
+
+    const ProcessReportModel = await import('../models/ProcessReport.js').then(m => m.default)
+    const ManpowerRecordModel = await import('../models/ManpowerRecord.js').then(m => m.default)
+
+    for (const process of processes) {
+      await ProcessReportModel.create({
+        work_order_id: workOrder.work_order_id,
+        process_id: process.process_id,
+        process_name: process.process_name,
+        reported_date: startTime,
+        input_qty: 0,
+        output_qty: 0,
+        defect_qty: 0,
+        defect_scrap: 0,
+        yield_rate: 0,
+        shift: '白班',
+        report_user: req.user?.username || '',
+        report_user_name: req.user?.real_name || '',
+        status: '未报工',
+      })
+    }
+
+    await ManpowerRecordModel.create({
+      work_order_id: workOrder.work_order_id,
+      work_order_no: workOrder.work_order_no,
+      process_id: null,
+      process_name: '整单',
+      emp_id: req.user?.emp_id || '',
+      emp_name: req.user?.real_name || '',
+      work_date: startTime,
+      shift: '白班',
+      start_time: startTime,
+      end_time: null,
+      hours: 0,
+      created_by: req.user?.username || '',
+    })
+
+    return success(res, workOrder, '工单已开工，报工记录和人员记录已自动生成')
   } catch (err) {
     console.error('开工失败:', err)
     return fail(res, '服务器错误', 500)

@@ -93,9 +93,9 @@ export default function WorkOrderManagement() {
   const refresh = useCallback(() => setQuery(q => ({ ...q })), [])
 
   const lineOptions = lines.map(l => ({ label: l.line_name, value: l.line_id }))
-  // 仅已下达订单可被关联到新工单
+  // 仅下发订单可被关联到新工单
   const orderOptions = orders
-    .filter(o => o.status === '已下达')
+    .filter(o => o.status === '下发')
     .map(o => ({ label: `${o.order_no} (${o.material_name || '-'})`, value: o.order_id }))
 
   // 监听当前选择的订单

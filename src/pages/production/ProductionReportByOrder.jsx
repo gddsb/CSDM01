@@ -60,8 +60,8 @@ export default function ProductionReportByOrder() {
 
   const stats = [
     { label: '订单总数', value: orders.length, icon: <ProfileOutlined />, color: '#2196F3' },
-    { label: '已下达', value: orders.filter(o => o.status === '已下达').length, icon: <ProfileOutlined />, color: '#FF9800' },
-    { label: '已关闭', value: orders.filter(o => o.status === '已关闭').length, icon: <ProfileOutlined />, color: '#4CAF50' },
+    { label: '下发', value: orders.filter(o => o.status === '下发').length, icon: <ProfileOutlined />, color: '#FF9800' },
+    { label: '完工', value: orders.filter(o => o.status === '完工').length, icon: <ProfileOutlined />, color: '#4CAF50' },
     { label: '完工率', value: `${progressRate}%`, icon: <ProfileOutlined />, color: '#9C27B0' },
   ]
 
