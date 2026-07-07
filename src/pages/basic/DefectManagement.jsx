@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, Select, message, Row, Col, Switch, Drawer, Descriptions, Space, Popconfirm, Upload, Image } from 'antd'
+import { Table, Tag, Button, Modal, Form, Input, Select, message, Row, Col, Switch, Drawer, Descriptions, Space, Popconfirm, Upload, Image, Checkbox } from 'antd'
 import {
   ImportOutlined, ToolOutlined, DeleteOutlined,
   PlusOutlined, EyeOutlined, ReloadOutlined,
@@ -206,7 +206,7 @@ export default function DefectManagement() {
         display: true,
         status: '启用',
         sort_order: total + 1,
-        available_units: [],
+        available_units: ['小片', '罐', '大张'],
         related_processes: [],
       })
     }
@@ -455,18 +455,43 @@ export default function DefectManagement() {
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="defect_unit" label="默认单位" rules={[{ required: true, message: '请输入默认单位' }]}>
-                <Input placeholder="如：个、处、片" />
+              <Form.Item 
+                name="available_units" 
+                label="可选单位" 
+                rules={[{ required: true, message: '请至少选择一个可选单位' }]}
+              >
+                <Checkbox.Group
+                  options={['小片', '罐', '大张']}
+                  onChange={(checkedValues) => {
+                    const currentDefault = form.getFieldValue('defect_unit')
+                    if (currentDefault && !checkedValues.includes(currentDefault)) {
+                      form.setFieldsValue({ defect_unit: undefined })
+                    }
+                  }}
+                />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="available_units" label="可选单位">
-                <Select
-                  mode="tags"
-                  placeholder="输入单位后回车"
-                  tokenSeparators={[',']}
-                  style={{ width: '100%' }}
-                />
+              <Form.Item noStyle shouldUpdate={(prev, cur) => prev.available_units !== cur.available_units}>
+                {({ getFieldValue, setFieldsValue }) => {
+                  const availableUnits = getFieldValue('available_units') || []
+                  const defaultUnit = getFieldValue('defect_unit')
+                  if (defaultUnit && !availableUnits.includes(defaultUnit)) {
+                    setTimeout(() => setFieldsValue({ defect_unit: undefined }), 0)
+                  }
+                  return (
+                    <Form.Item 
+                      name="defect_unit"
+                      label="默认单位" 
+                      rules={[{ required: true, message: '请选择默认单位' }]}
+                    >
+                      <Select
+                        placeholder="请选择默认单位"
+                        options={availableUnits.map(u => ({ label: u, value: u }))}
+                      />
+                    </Form.Item>
+                  )
+                }}
               </Form.Item>
             </Col>
           </Row>
