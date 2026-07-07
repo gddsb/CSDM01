@@ -1,5 +1,5 @@
 import { Op } from 'sequelize'
-import { ProductionLine } from '../models/index.js'
+import { ProductionLine, LineProcess, LineDevice, Process, Device } from '../models/index.js'
 import { success, fail } from '../utils/response.js'
 
 // 产线列表
@@ -29,7 +29,25 @@ export const list = async (req, res) => {
       offset,
       order: [['sort_order', 'ASC'], ['line_id', 'DESC']],
     })
-    return success(res, rows, '查询成功', count)
+
+    const result = await Promise.all(rows.map(async (row) => {
+      const data = row.toJSON()
+      const processes = await LineProcess.findAll({
+        where: { line_id: row.line_id },
+        include: [{ model: Process, attributes: ['process_name'] }],
+        order: [['sort_order', 'ASC']],
+      })
+      const devices = await LineDevice.findAll({
+        where: { line_id: row.line_id },
+        include: [{ model: Device, attributes: ['device_name'] }],
+        order: [['sort_order', 'ASC']],
+      })
+      data.process_names = processes.map(p => p.Process.process_name).join('、')
+      data.device_names = devices.map(d => d.Device.device_name).join('、')
+      return data
+    }))
+
+    return success(res, result, '查询成功', count)
   } catch (err) {
     console.error('查询产线列表失败:', err)
     return fail(res, '服务器错误', 500)

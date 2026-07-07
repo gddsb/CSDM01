@@ -50,7 +50,7 @@ export default function DeviceManagement() {
     const run = async () => {
       setLoading(true)
       try {
-        const params = { page: query.page, pageSize: query.pageSize }
+        const params = { page: query.page, pageSize: query.pageSize, sortBy: 'device_type,device_code', sortOrder: 'asc' }
         if (query.keyword) params.keyword = query.keyword
         if (query.status !== undefined && query.status !== null) params.status = query.status
         if (query.device_type) params.device_type = query.device_type
@@ -190,14 +190,14 @@ export default function DeviceManagement() {
   ]
 
   const filters = [
-    { type: 'input', placeholder: '搜索设备编号/名称/型号', col: { span: 6 }, value: keywordInput, onChange: e => setKeywordInput(e.target.value) },
-    { type: 'select', placeholder: '设备类型', options: typeOptions, col: { span: 6 }, value: typeInput, onChange: v => setTypeInput(v) },
+    { type: 'input', placeholder: '搜索设备编号/名称/型号', col: { flex: '150px' }, value: keywordInput, onChange: e => setKeywordInput(e.target.value) },
+    { type: 'select', placeholder: '设备类型', options: typeOptions, col: { flex: '150px' }, value: typeInput, onChange: v => setTypeInput(v) },
     {
-      type: 'select', placeholder: '状态筛选', col: { span: 6 },
+      type: 'select', placeholder: '状态筛选', col: { flex: '150px' },
       options: [{ label: '运行', value: 1 }, { label: '维修', value: 2 }, { label: '停用', value: 0 }],
       value: statusInput, onChange: v => setStatusInput(v),
     },
-    { type: 'select', placeholder: '是否特种设备', options: specialOptions, col: { span: 6 }, value: specialInput, onChange: v => setSpecialInput(v) },
+    { type: 'select', placeholder: '是否特种设备', options: specialOptions, col: { flex: '150px' }, value: specialInput, onChange: v => setSpecialInput(v) },
   ]
 
   return (

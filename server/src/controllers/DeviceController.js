@@ -26,11 +26,17 @@ export const list = async (req, res) => {
 
     const limit = Number(pageSize)
     const offset = (Number(page) - 1) * limit
+    let order = [['device_type', 'ASC'], ['device_code', 'ASC']]
+    if (req.query.sortBy) {
+      const fields = req.query.sortBy.split(',')
+      const orders = (req.query.sortOrder || 'asc').split(',')
+      order = fields.map((field, idx) => [field, orders[idx]?.toUpperCase() || 'ASC'])
+    }
     const { rows, count } = await Device.findAndCountAll({
       where,
       limit,
       offset,
-      order: [['device_id', 'DESC']],
+      order,
     })
     return success(res, rows, '查询成功', count)
   } catch (err) {
