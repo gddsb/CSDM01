@@ -13,20 +13,44 @@ const ManpowerRecord = sequelize.define('ManpowerRecord', {
   work_order_no: {
     type: DataTypes.STRING(50),
   },
-  skilled_workers: {
+  record_date: {
+    type: DataTypes.DATEONLY,
+  },
+  shift: {
+    type: DataTypes.STRING(20),
+  },
+  start_time: {
+    type: DataTypes.DATE,
+  },
+  end_time: {
+    type: DataTypes.DATE,
+  },
+  hours: {
+    type: DataTypes.DECIMAL(10, 2),
+    defaultValue: 0,
+  },
+  skilled_count: {
     type: DataTypes.INTEGER,
     defaultValue: 0,
   },
-  general_workers: {
+  general_count: {
     type: DataTypes.INTEGER,
     defaultValue: 0,
   },
-  contract_workers: {
+  labor_count: {
     type: DataTypes.INTEGER,
     defaultValue: 0,
   },
-  auxiliary_workers: {
+  other_count: {
     type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
+  total_people: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
+  man_hours: {
+    type: DataTypes.DECIMAL(10, 2),
     defaultValue: 0,
   },
   remarks: {

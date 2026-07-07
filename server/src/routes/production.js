@@ -18,7 +18,7 @@ import {
   finish,
 } from '../controllers/WorkOrderController.js'
 import { list as reportList, create as reportCreate, update as reportUpdate } from '../controllers/ProcessReportController.js'
-import { list as manpowerList, create as manpowerCreate } from '../controllers/ManpowerRecordController.js'
+import { list as manpowerList, detail as manpowerDetail, create as manpowerCreate, update as manpowerUpdate, remove as manpowerRemove } from '../controllers/ManpowerRecordController.js'
 import { list as exceptionList, create as exceptionCreate } from '../controllers/ExceptionRecordController.js'
 import { list as defectList, create as defectCreate, remove as defectRemove } from '../controllers/ProcessDefectController.js'
 import { list as exceptionTimeList, create as exceptionTimeCreate, remove as exceptionTimeRemove } from '../controllers/ProcessExceptionController.js'
@@ -53,9 +53,12 @@ router.get('/process-reports', reportList)
 router.post('/process-reports', reportCreate)
 router.put('/process-reports/:id', reportUpdate)
 
-// 人员投入
+// 人员记录
 router.get('/manpower-records', manpowerList)
+router.get('/manpower-records/:id', manpowerDetail)
 router.post('/manpower-records', manpowerCreate)
+router.put('/manpower-records/:id', manpowerUpdate)
+router.delete('/manpower-records/:id', manpowerRemove)
 
 // 异常记录
 router.get('/exceptions', exceptionList)

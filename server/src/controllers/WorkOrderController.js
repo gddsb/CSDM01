@@ -1,5 +1,5 @@
 import { Op } from 'sequelize'
-import { WorkOrder, Order, ProductionLine, Material, ProcessReport, ManpowerRecord, ExceptionRecord } from '../models/index.js'
+import { WorkOrder, Order, ProductionLine, Material, ProcessReport, ManpowerRecord, ExceptionRecord, ProcessDefect, ProcessException, ProcessMaterial } from '../models/index.js'
 import { success, fail } from '../utils/response.js'
 import { generateWorkOrderNo } from '../utils/sequence.js'
 
@@ -138,7 +138,7 @@ export const update = async (req, res) => {
     const { id } = req.params
     const workOrder = await WorkOrder.findOne({ where: { work_order_id: id } })
     if (!workOrder) return fail(res, '工单不存在', 404)
-    if (workOrder.status !== 0) {
+    if (workOrder.status !== '开立') {
       return fail(res, '当前工单状态不允许修改')
     }
     const { line_id, material_id, planned_qty, plan_start_time, plan_end_time, remarks, status } = req.body
@@ -177,17 +177,20 @@ export const remove = async (req, res) => {
     const { id } = req.params
     const workOrder = await WorkOrder.findOne({ where: { work_order_id: id } })
     if (!workOrder) return fail(res, '工单不存在', 404)
-    if (workOrder.status !== 0) {
+    if (workOrder.status !== '开立') {
       return fail(res, '当前工单状态不允许删除')
     }
-    // 检查是否有报工/人员/异常记录
-    const [reportCount, manpowerCount, exceptionCount] = await Promise.all([
+    const [reportCount, manpowerCount, exceptionCount, defectCount, excTimeCount, materialCount] = await Promise.all([
       ProcessReport.count({ where: { work_order_id: id } }),
       ManpowerRecord.count({ where: { work_order_id: id } }),
       ExceptionRecord.count({ where: { work_order_id: id } }),
+      ProcessDefect.count({ where: { work_order_id: id } }),
+      ProcessException.count({ where: { work_order_id: id } }),
+      ProcessMaterial.count({ where: { work_order_id: id } }),
     ])
-    if (reportCount + manpowerCount + exceptionCount > 0) {
-      return fail(res, `该工单存在关联记录(报工${reportCount}/人员${manpowerCount}/异常${exceptionCount})，无法删除`)
+    const total = reportCount + manpowerCount + exceptionCount + defectCount + excTimeCount + materialCount
+    if (total > 0) {
+      return fail(res, `该工单存在关联记录(报工${reportCount}/人员${manpowerCount}/异常${exceptionCount}/不良${defectCount}/异常工时${excTimeCount}/物料${materialCount})，无法删除`)
     }
     await workOrder.destroy()
     return success(res, null, '删除成功')
@@ -204,7 +207,7 @@ export const start = async (req, res) => {
     const { start_time } = req.body
     const workOrder = await WorkOrder.findOne({ where: { work_order_id: id } })
     if (!workOrder) return fail(res, '工单不存在', 404)
-    if (workOrder.status !== 0) return fail(res, '当前工单状态不允许开工')
+    if (workOrder.status !== '开立') return fail(res, '当前工单状态不允许开工')
 
     const now = new Date()
     let startTime = workOrder.start_time || new Date(start_time || now)
@@ -273,7 +276,7 @@ export const finish = async (req, res) => {
     const { id } = req.params
     const workOrder = await WorkOrder.findOne({ where: { work_order_id: id } })
     if (!workOrder) return fail(res, '工单不存在', 404)
-    if (workOrder.status !== 1) return fail(res, '当前工单状态不允许完工')
+    if (workOrder.status !== '开工') return fail(res, '当前工单状态不允许完工')
     const { total_hours, effective_hours, labor_hours, finished_qty } = req.body
     await workOrder.update({
       status: 2,

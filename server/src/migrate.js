@@ -84,6 +84,31 @@ const migrations = [
       ['file_hash', 'VARCHAR(64)'],
     ],
   },
+  {
+    table: 'production_work_order',
+    columns: [
+      ['planned_qty', 'DECIMAL(12,2) DEFAULT 0'],
+      ['plan_start_time', 'DATETIME'],
+      ['plan_end_time', 'DATETIME'],
+      ['remarks', 'VARCHAR(500)'],
+    ],
+  },
+  {
+    table: 'production_manpower_record',
+    columns: [
+      ['record_date', 'DATE'],
+      ['shift', 'VARCHAR(20)'],
+      ['start_time', 'DATETIME'],
+      ['end_time', 'DATETIME'],
+      ['hours', 'DECIMAL(10,2) DEFAULT 0'],
+      ['skilled_count', 'INTEGER DEFAULT 0'],
+      ['general_count', 'INTEGER DEFAULT 0'],
+      ['labor_count', 'INTEGER DEFAULT 0'],
+      ['other_count', 'INTEGER DEFAULT 0'],
+      ['total_people', 'INTEGER DEFAULT 0'],
+      ['man_hours', 'DECIMAL(10,2) DEFAULT 0'],
+    ],
+  },
 ]
 
 // SQLite 与 MySQL 取列名的方式不同
