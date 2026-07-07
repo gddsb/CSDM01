@@ -28,6 +28,7 @@ import NumberRule from './NumberRule.js'
 import DefectImage from './DefectImage.js'
 import DictType from './DictType.js'
 import DictData from './DictData.js'
+import AppVersion from './AppVersion.js'
 
 // 建立模型关联关系
 // 用户 - 角色
@@ -124,6 +125,7 @@ const db = {
   DefectImage,
   DictType,
   DictData,
+  AppVersion,
 }
 
 // 具名导出，便于按需导入
@@ -155,6 +157,7 @@ export {
   DefectImage,
   DictType,
   DictData,
+  AppVersion,
 }
 
 export default db
