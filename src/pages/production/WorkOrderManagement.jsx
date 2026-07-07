@@ -96,13 +96,29 @@ export default function WorkOrderManagement() {
 
   const lineOptions = lines.map(l => ({ label: l.line_name, value: l.line_id }))
   // 仅下发订单可被关联到新工单
-  const orderOptions = orders
-    .filter(o => o.status === '下发')
-    .map(o => ({ label: `${o.order_no} (${o.material_name || '-'})`, value: o.order_id }))
+  const releasedOrders = orders.filter(o => o.status === '下发' || o.status === 1)
+  const orderOptions = releasedOrders
+    .map(o => ({
+      label: `${o.order_no} (${o.material_name || '-'})`,
+      value: o.order_id,
+      material_code: o.material_code || '',
+      material_name: o.material_name || '',
+      order_no: o.order_no || '',
+    }))
+
+  const filterOrderOption = (input, option) => {
+    const search = input.toLowerCase()
+    return (
+      (option.material_code || '').toLowerCase().includes(search) ||
+      (option.material_name || '').toLowerCase().includes(search) ||
+      (option.order_no || '').toLowerCase().includes(search)
+    )
+  }
 
   // 监听当前选择的订单
   const selectedOrderId = Form.useWatch('order_id', form)
-  const selectedOrder = orders.find(o => o.order_id === selectedOrderId)
+  const selectedOrder = orders.find(o => o.order_id === selectedOrderId) ||
+    releasedOrders.find(o => o.order_id === selectedOrderId)
 
   const openCount = data.filter(w => w.status === '开立').length
   const startedCount = data.filter(w => w.status === '开工').length
@@ -390,9 +406,14 @@ export default function WorkOrderManagement() {
             <Col span={24}>
               <Form.Item label="关联生产订单" name="order_id" rules={[{ required: true, message: '请选择关联生产订单' }]}>
                 <Select
-                  placeholder="请选择关联生产订单"
+                  showSearch
+                  placeholder="输入订单号或料号搜索"
+                  optionFilterProp="label"
+                  filterOption={filterOrderOption}
                   options={orderOptions}
                   disabled={!!editing}
+                  notFoundContent="暂无符合条件的下发订单"
+                  style={{ width: '100%' }}
                 />
               </Form.Item>
             </Col>
