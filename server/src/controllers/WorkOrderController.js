@@ -53,6 +53,9 @@ export const list = async (req, res) => {
     const offset = (Number(page) - 1) * limit
     const { rows, count } = await WorkOrder.findAndCountAll({
       where,
+      include: [
+        { model: Material, as: 'material', attributes: ['material_code', 'specification', 'unit_name'] },
+      ],
       limit,
       offset,
       order: [['work_order_no', 'DESC']],
@@ -72,6 +75,7 @@ export const detail = async (req, res) => {
       where: { work_order_id: id },
       include: [
         { model: Order, as: 'order' },
+        { model: Material, as: 'material', attributes: ['material_code', 'specification', 'unit_name'] },
         { model: ProcessReport, as: 'process_reports' },
         { model: ManpowerRecord, as: 'manpower_records' },
         { model: ExceptionRecord, as: 'exception_records' },

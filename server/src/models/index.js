@@ -40,6 +40,10 @@ Role.hasMany(User, { foreignKey: 'role_id', as: 'users' })
 Order.hasMany(WorkOrder, { foreignKey: 'order_id', as: 'work_orders' })
 WorkOrder.belongsTo(Order, { foreignKey: 'order_id', as: 'order' })
 
+// 工单 - 料品
+WorkOrder.belongsTo(Material, { foreignKey: 'material_id', as: 'material' })
+Material.hasMany(WorkOrder, { foreignKey: 'material_id', as: 'work_orders' })
+
 // 工单 - 工序报工
 WorkOrder.hasMany(ProcessReport, { foreignKey: 'work_order_id', as: 'process_reports' })
 ProcessReport.belongsTo(WorkOrder, { foreignKey: 'work_order_id', as: 'work_order' })
