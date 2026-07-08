@@ -63,6 +63,7 @@ export default function SystemConfig() {
   const [form] = Form.useForm()
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [lineOptions, setLineOptions] = useState([])
 
   // 项目环境
   const [envInfo, setEnvInfo] = useState(null)
@@ -187,11 +188,22 @@ export default function SystemConfig() {
     }
   }, [])
 
+  const loadLines = useCallback(async () => {
+    try {
+      const res = await api.get('/basic/production-lines?status=1')
+      const list = res.data?.list || res.data || []
+      setLineOptions(list.map(l => ({ label: l.line_name || l.line_code, value: l.line_name || l.line_code })))
+    } catch (e) {
+      console.warn('加载产线列表失败:', e.message)
+    }
+  }, [])
+
   // 首次进入加载参数配置和项目环境
   useEffect(() => {
     loadConfig()
     loadEnv()
-  }, [loadConfig, loadEnv])
+    loadLines()
+  }, [loadConfig, loadEnv, loadLines])
 
   // 切换 Tab 时按需加载
   const handleTabChange = (key) => {
@@ -367,7 +379,13 @@ export default function SystemConfig() {
         <Row gutter={24}>
           <Col span={12}>
             <Form.Item name="default_line" label="默认产线">
-              <Input placeholder="请输入默认产线编号或名称" />
+              <Select
+                placeholder="请选择默认产线"
+                options={lineOptions}
+                allowClear
+                showSearch
+                optionFilterProp="label"
+              />
             </Form.Item>
           </Col>
           <Col span={12}>
@@ -492,23 +510,21 @@ export default function SystemConfig() {
             </Col>
             <Col span={6}>
               <Card size="small" style={{ borderColor: envInfo.frontend_server?.status === 'running' ? '#52c41a' : '#ff4d4f' }}>
-                <Statistic 
-                  title={envInfo.frontend_server?.name || '前端服务器'} 
-                  value={<Tag color={envInfo.frontend_server?.status === 'running' ? 'green' : 'red'}>
-                    {envInfo.frontend_server?.status === 'running' ? '运行中' : envInfo.frontend_server?.status === 'offline' ? '已停止' : '未知'}
-                  </Tag>}
-                  suffix={`端口: ${envInfo.frontend_server?.port}`}
+                <Statistic
+                  title={envInfo.frontend_server?.name || '前端服务器'}
+                  value={envInfo.frontend_server?.status === 'running' ? '运行中' : envInfo.frontend_server?.status === 'offline' ? '已停止' : '未知'}
+                  valueStyle={{ color: envInfo.frontend_server?.status === 'running' ? '#52c41a' : '#ff4d4f', fontSize: 16 }}
+                  suffix={<span style={{ fontSize: 13, color: '#666' }}>端口: {envInfo.frontend_server?.port}</span>}
                 />
               </Card>
             </Col>
             <Col span={6}>
               <Card size="small" style={{ borderColor: envInfo.backend_server?.status === 'running' ? '#52c41a' : '#ff4d4f' }}>
-                <Statistic 
-                  title={envInfo.backend_server?.name || '后端服务器'} 
-                  value={<Tag color={envInfo.backend_server?.status === 'running' ? 'green' : 'red'}>
-                    {envInfo.backend_server?.status === 'running' ? '运行中' : '已停止'}
-                  </Tag>}
-                  suffix={`端口: ${envInfo.backend_server?.port}`}
+                <Statistic
+                  title={envInfo.backend_server?.name || '后端服务器'}
+                  value={envInfo.backend_server?.status === 'running' ? '运行中' : '已停止'}
+                  valueStyle={{ color: envInfo.backend_server?.status === 'running' ? '#52c41a' : '#ff4d4f', fontSize: 16 }}
+                  suffix={<span style={{ fontSize: 13, color: '#666' }}>端口: {envInfo.backend_server?.port}</span>}
                 />
               </Card>
             </Col>

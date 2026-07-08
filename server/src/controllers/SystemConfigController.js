@@ -10,11 +10,11 @@ import net from 'net'
 
 // 默认配置（设计文档 §2.2.2 系统配置表）
 const defaultConfigs = [
-  { config_key: 'system_name', config_value: '长沙大满生产制造系统', config_desc: '系统名称' },
-  { config_key: 'system_version', config_value: 'V1.0.0.216', config_desc: '系统版本（只读）' },
+  { config_key: 'system_name', config_value: '长沙大满MES', config_desc: '系统名称' },
+  { config_key: 'system_version', config_value: 'V1.0.0.236', config_desc: '系统版本（只读）' },
   { config_key: 'company_name', config_value: '东莞市大满包装实业有限公司长沙分公司', config_desc: '公司名称' },
   { config_key: 'contact_phone', config_value: '0731-88888888', config_desc: '联系电话' },
-  { config_key: 'default_line', config_value: '', config_desc: '默认产线' },
+  { config_key: 'default_line', config_value: 'A线', config_desc: '默认产线' },
   { config_key: 'standard_hours', config_value: '8', config_desc: '标准工时' },
   // 班次设定：默认白班
   { config_key: 'shift_setting', config_value: '白班', config_desc: '班次设置（默认白班）' },
@@ -891,9 +891,10 @@ export const deleteBackup = async (req, res) => {
 // 需要强制同步默认值的关键配置项
 // 这些 key 的值若与历史旧默认值一致，则刷新为新默认值（避免覆盖用户自定义值）
 const LEGACY_DEFAULT_VALUES = {
-  system_name: ['奶粉罐MES', '奶粉罐生产系统'],
+  system_name: ['奶粉罐MES', '奶粉罐生产系统', '长沙大满生产制造系统'],
   company_name: ['恒丰包装科技有限公司'],
   shift_setting: ['白班,夜班', '白班,夜班,中班'],
+  default_line: [''],
 }
 
 export const initDefaultConfigs = async () => {
