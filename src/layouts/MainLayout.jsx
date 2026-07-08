@@ -185,7 +185,7 @@ export default function MainLayout() {
       setAvatarUploading(true)
       const formData = new FormData()
       formData.append('avatar', file)
-      const res = await api.post('/users/me/avatar', formData, {
+      const res = await api.post('/system/users/me/avatar', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       // 更新本地用户信息（后端返回完整 user 对象）
@@ -207,7 +207,7 @@ export default function MainLayout() {
   // 选择预设头像
   const handleSelectPreset = async (url) => {
     try {
-      const res = await api.put('/users/me/avatar', { avatar_url: url })
+      const res = await api.put('/system/users/me/avatar', { avatar_url: url })
       if (res.data?.user) {
         updateUser(res.data.user)
       } else {
@@ -331,7 +331,7 @@ export default function MainLayout() {
   const handleProfileSave = async () => {
     const values = await profileForm.validateFields()
     try {
-      const res = await api.put('/users/me/profile', {
+      const res = await api.put('/system/users/me/profile', {
         real_name: values.real_name,
         phone: values.phone,
         email: values.email,
@@ -362,7 +362,7 @@ export default function MainLayout() {
 
   const userMenu = {
     items: [
-      { key: 'info', label: `${currentUser?.real_name} (${currentUser?.role_name})`, disabled: true },
+      { key: 'info', label: `${currentUser?.real_name} (${currentUser?.role?.role_name || '-'})`, disabled: true },
       { key: 'dept', label: `部门：${currentUser?.department}`, disabled: true },
       { type: 'divider' },
       { key: 'profile', label: '用户设置', icon: <UserOutlined /> },
@@ -471,7 +471,7 @@ export default function MainLayout() {
             style={{ background: 'var(--color-primary)' }}
           />
           <div style={{ marginTop: 8, fontSize: 13, color: 'var(--text-secondary)' }}>
-            {currentUser?.username} · {currentUser?.role_name}
+            {currentUser?.username} · {currentUser?.role?.role_name || '-'}
           </div>
           <Button
             type="link"

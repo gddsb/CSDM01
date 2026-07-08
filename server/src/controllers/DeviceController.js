@@ -5,7 +5,7 @@ import { success, fail } from '../utils/response.js'
 // 设备列表
 export const list = async (req, res) => {
   try {
-    const { keyword, status, device_type, line_id, dateStart, dateEnd, page = 1, pageSize = 20 } = req.query
+    const { keyword, status, device_type, line_id, is_special, dateStart, dateEnd, page = 1, pageSize = 20 } = req.query
     const where = {}
     if (keyword) {
       where[Op.or] = [
@@ -14,6 +14,9 @@ export const list = async (req, res) => {
         { device_model: { [Op.like]: `%${keyword}%` } },
         { serial_no: { [Op.like]: `%${keyword}%` } },
       ]
+    }
+    if (is_special !== undefined && is_special !== '') {
+      where.is_special = Number(is_special)
     }
     if (status !== undefined && status !== '') {
       const statusArr = Array.isArray(status) ? status : status.split(',')

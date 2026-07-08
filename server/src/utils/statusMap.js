@@ -27,6 +27,7 @@ export const STATUS_MAPS = {
   },
   line: {
     运行中: 1,
+    维护中: 2,
     停用: 0,
   },
 }

@@ -45,7 +45,7 @@ export default function Dashboard() {
 
   const activeOrders = orders.filter(o => o.status !== '完工')
   const activeWorkOrders = workOrders.filter(w => w.status === '开工')
-  const faultDevices = devices.filter(d => d.status === '故障' || d.status === '维修')
+  const faultDevices = devices.filter(d => d.status === '维修')
 
   const stats = [
     { label: '开工中工单', value: activeWorkOrders.length, icon: <ToolOutlined />, color: '#2196F3' },

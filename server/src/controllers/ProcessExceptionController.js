@@ -63,7 +63,7 @@ export const create = async (req, res) => {
     if (start_time && end_time) {
       const start = new Date(start_time)
       const end = new Date(end_time)
-      duration = Math.round((end - start) / 60000)
+      duration = Number(((end - start) / 3600000).toFixed(2))
     }
 
     const exception = await ProcessException.create({

@@ -127,7 +127,7 @@ const defaultPermissions = [
   { perm_id: 34, parent_id: 30, perm_name: '成品检验', perm_code: 'quality:finished', type: 'menu', icon: 'ExperimentOutlined', path: '/quality/finished', sort_order: 4 },
   { perm_id: 35, parent_id: 30, perm_name: '产品微生物检验', perm_code: 'quality:microbe', type: 'menu', icon: 'ExperimentOutlined', path: '/quality/microbe', sort_order: 5 },
   { perm_id: 36, parent_id: 30, perm_name: '环境检验', perm_code: 'quality:environment', type: 'menu', icon: 'ExperimentOutlined', path: '/quality/environment', sort_order: 6 },
-  { perm_id: 37, parent_id: 30, perm_name: '投诉管理', perm_code: 'quality:complaint', type: 'menu', icon: 'BellOutlined', path: 'quality-complaint', sort_order: 7 },
+  { perm_id: 37, parent_id: 30, perm_name: '投诉管理', perm_code: 'quality:complaint', type: 'menu', icon: 'BellOutlined', path: '/quality/complaints', sort_order: 7 },
   { perm_id: 38, parent_id: 37, perm_name: '客诉管理', perm_code: 'quality:complaint:customer', type: 'menu', icon: 'BellOutlined', path: '/quality/complaints', sort_order: 1 },
   { perm_id: 39, parent_id: 37, perm_name: '供应商投诉', perm_code: 'quality:complaint:supplier', type: 'menu', icon: 'TeamOutlined', path: '/quality/supplier', sort_order: 2 },
   { perm_id: 40, parent_id: 30, perm_name: '检测仪器管理', perm_code: 'quality:instrument', type: 'menu', icon: 'ToolOutlined', path: '/quality/instruments', sort_order: 8 },

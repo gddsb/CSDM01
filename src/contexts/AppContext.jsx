@@ -31,7 +31,7 @@ export function AppProvider({ children }) {
         localStorage.setItem('mes_token', token)
         localStorage.setItem('mes_user', JSON.stringify(user))
         setCurrentUser(user)
-        const isViewer = user.role_name === '看板查看者' || user.role_name === 'viewer'
+        const isViewer = user.role?.role_name === '看板查看者' || user.role?.role_code === 'viewer'
         return { success: true, isViewer }
       }
       return { success: false, message: res.message || '登录失败' }

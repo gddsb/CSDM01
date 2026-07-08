@@ -96,7 +96,7 @@ export default function WorkOrderManagement() {
 
   const lineOptions = lines.map(l => ({ label: l.line_name, value: l.line_id }))
   // 仅下发订单可被关联到新工单
-  const releasedOrders = orders.filter(o => o.status === '下发' || o.status === 1)
+  const releasedOrders = orders.filter(o => o.status === '下发')
   const orderOptions = releasedOrders
     .map(o => ({
       label: `${o.order_no} (${o.material_name || '-'})`,

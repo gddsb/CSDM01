@@ -113,7 +113,7 @@ export default function ExceptionRecord() {
 
   const handleAdd = () => {
     form.resetFields()
-    form.setFieldsValue({ exception_type: 'E01', handle_time: dayjs() })
+    form.setFieldsValue({ exception_type: 'E01', end_time: dayjs() })
     setAddOpen(true)
   }
 
@@ -127,19 +127,16 @@ export default function ExceptionRecord() {
       const values = await form.validateFields()
       setSubmitting(true)
       const workOrder = workOrders.find(w => w.work_order_id === values.work_order_id)
-      const line = lines.find(l => l.line_id === values.line_id)
       const excTypeObj = exceptionTypes.find(e => e.code === values.exception_type)
       const payload = {
         work_order_id: values.work_order_id,
         work_order_no: workOrder?.work_order_no,
-        line_id: values.line_id,
-        line_name: line?.line_name,
         exception_type: values.exception_type,
-        exception_desc: values.exception_desc,
-        handler: values.handler,
-        handle_time: values.handle_time ? values.handle_time.format('YYYY-MM-DD HH:mm') : dayjs().format('YYYY-MM-DD HH:mm'),
+        exception_type_name: excTypeObj?.name,
+        reason: values.reason,
+        record_user_name: values.record_user_name,
+        end_time: values.end_time ? values.end_time.format('YYYY-MM-DD HH:mm') : dayjs().format('YYYY-MM-DD HH:mm'),
         handle_result: values.handle_result,
-        remarks: values.remarks,
       }
       const res = await api.post('/production/exceptions', payload)
       message.success(res.message || '异常记录已新增')
@@ -174,9 +171,9 @@ export default function ExceptionRecord() {
         return <Tag color={exceptionTypeColorMap[r.exception_type]}>{r.exception_type} {t?.name || ''}</Tag>
       },
     },
-    { title: '异常描述', dataIndex: 'exception_desc', key: 'exception_desc', width: 220, render: v => v || '-' },
-    { title: '处理人', dataIndex: 'handler', key: 'handler', width: 100, render: v => v || '-' },
-    { title: '处理时间', dataIndex: 'handle_time', key: 'handle_time', width: 150, render: v => v || '-' },
+    { title: '异常描述', dataIndex: 'reason', key: 'reason', width: 220, render: v => v || '-' },
+    { title: '处理人', dataIndex: 'record_user_name', key: 'record_user_name', width: 100, render: v => v || '-' },
+    { title: '处理时间', dataIndex: 'end_time', key: 'end_time', width: 150, render: v => v ? String(v).substring(0, 16).replace('T', ' ') : '-' },
     {
       title: '状态', dataIndex: 'status', key: 'status', width: 100,
       render: v => v ? <Tag color={statusColorMap[v] || 'default'}>{v}</Tag> : '-'
@@ -309,17 +306,17 @@ export default function ExceptionRecord() {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="处理人" name="handler">
+              <Form.Item label="处理人" name="record_user_name">
                 <Input placeholder="请输入处理人姓名" />
               </Form.Item>
             </Col>
           </Row>
-          <Form.Item label="异常描述" name="exception_desc" rules={[{ required: true, message: '请输入异常描述' }]}>
+          <Form.Item label="异常描述" name="reason" rules={[{ required: true, message: '请输入异常描述' }]}>
             <Input.TextArea rows={3} placeholder="请输入异常描述" />
           </Form.Item>
           <Row gutter={12}>
             <Col span={12}>
-              <Form.Item label="处理时间" name="handle_time">
+              <Form.Item label="处理时间" name="end_time">
                 <DatePicker
                   showTime
                   format="YYYY-MM-DD HH:mm"
@@ -331,9 +328,6 @@ export default function ExceptionRecord() {
           </Row>
           <Form.Item label="处理结果" name="handle_result">
             <Input.TextArea rows={2} placeholder="请输入处理结果" />
-          </Form.Item>
-          <Form.Item label="备注" name="remarks">
-            <Input.TextArea rows={2} placeholder="请输入备注" />
           </Form.Item>
         </Form>
       </Modal>
@@ -351,12 +345,11 @@ export default function ExceptionRecord() {
               <Descriptions.Item label="工单编号">{currentRecord.work_order_no}</Descriptions.Item>
               <Descriptions.Item label="产线">{currentRecord.line_name || '-'}</Descriptions.Item>
               <Descriptions.Item label="异常类型">{currentRecord.exception_type} {t?.name || ''}</Descriptions.Item>
-              <Descriptions.Item label="异常描述">{currentRecord.exception_desc || '-'}</Descriptions.Item>
-              <Descriptions.Item label="处理人">{currentRecord.handler || '-'}</Descriptions.Item>
-              <Descriptions.Item label="处理时间">{currentRecord.handle_time || '-'}</Descriptions.Item>
+              <Descriptions.Item label="异常描述">{currentRecord.reason || '-'}</Descriptions.Item>
+              <Descriptions.Item label="处理人">{currentRecord.record_user_name || '-'}</Descriptions.Item>
+              <Descriptions.Item label="处理时间">{currentRecord.end_time ? String(currentRecord.end_time).substring(0, 16).replace('T', ' ') : '-'}</Descriptions.Item>
               <Descriptions.Item label="状态">{currentRecord.status ? <Tag color={statusColorMap[currentRecord.status] || 'default'}>{currentRecord.status}</Tag> : '-'}</Descriptions.Item>
               <Descriptions.Item label="处理结果">{currentRecord.handle_result || '-'}</Descriptions.Item>
-              <Descriptions.Item label="备注">{currentRecord.remarks || '-'}</Descriptions.Item>
               <Descriptions.Item label="创建时间">{currentRecord.created_at || '-'}</Descriptions.Item>
             </Descriptions>
           )

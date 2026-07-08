@@ -93,7 +93,7 @@ export default function ProductionReportByOrder() {
         api.get('/production/process-exceptions', { params: { work_order_id: selectedWorkOrderId, page: 1, pageSize: 1000 } }),
         api.get('/production/process-materials', { params: { work_order_id: selectedWorkOrderId, page: 1, pageSize: 1000 } }),
       ])
-      setWorkOrder(woRes)
+      setWorkOrder(woRes.data)
       setReports(reportRes.data || [])
       setDefects(defectRes.data || [])
       setExceptions(exceptionRes.data || [])
@@ -517,15 +517,10 @@ export default function ProductionReportByOrder() {
           <Descriptions.Item label="工单号">{workOrder?.work_order_no || '-'}</Descriptions.Item>
           <Descriptions.Item label="产品编号">{workOrder?.material_code || '-'}</Descriptions.Item>
           <Descriptions.Item label="产品名称">{workOrder?.material_name || '-'}</Descriptions.Item>
-          <Descriptions.Item label="规格">{workOrder?.specification || '-'}</Descriptions.Item>
-          <Descriptions.Item label="生产批号">{workOrder?.batch_no || '-'}</Descriptions.Item>
           <Descriptions.Item label="生产线">{workOrder?.line_name || '-'}</Descriptions.Item>
-          <Descriptions.Item label="车间">{workOrder?.workshop || '-'}</Descriptions.Item>
-          <Descriptions.Item label="计划数量">{(workOrder?.target_qty || 0).toLocaleString()}</Descriptions.Item>
-          <Descriptions.Item label="计划开工时间">{workOrder?.start_time ? String(workOrder.start_time).substring(0, 19).replace('T', ' ') : '-'}</Descriptions.Item>
-          <Descriptions.Item label="计划完工时间">{workOrder?.finish_time ? String(workOrder.finish_time).substring(0, 19).replace('T', ' ') : '-'}</Descriptions.Item>
-          <Descriptions.Item label="实际开工时间">{workOrder?.actual_start_time ? String(workOrder.actual_start_time).substring(0, 19).replace('T', ' ') : '-'}</Descriptions.Item>
-          <Descriptions.Item label="实际完工时间">{workOrder?.actual_finish_time ? String(workOrder.actual_finish_time).substring(0, 19).replace('T', ' ') : '-'}</Descriptions.Item>
+          <Descriptions.Item label="计划数量">{(workOrder?.planned_qty || workOrder?.target_qty || 0).toLocaleString()}</Descriptions.Item>
+          <Descriptions.Item label="开工时间">{workOrder?.start_time ? String(workOrder.start_time).substring(0, 19).replace('T', ' ') : '-'}</Descriptions.Item>
+          <Descriptions.Item label="完工时间">{workOrder?.finish_time ? String(workOrder.finish_time).substring(0, 19).replace('T', ' ') : '-'}</Descriptions.Item>
         </Descriptions>
       </Card>
 

@@ -106,6 +106,9 @@ const WorkOrder = sequelize.define('WorkOrder', {
   created_by: {
     type: DataTypes.STRING(50),
   },
+  remarks: {
+    type: DataTypes.STRING(500),
+  },
 }, {
   tableName: 'production_work_order',
   timestamps: true,

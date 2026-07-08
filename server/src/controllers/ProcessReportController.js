@@ -75,7 +75,7 @@ export const update = async (req, res) => {
     // 校验关联工单状态：只有"开工"(1)状态才允许修改
     const workOrder = await WorkOrder.findOne({ where: { work_order_id: report.work_order_id } })
     if (!workOrder) return fail(res, '关联工单不存在', 404)
-    if (workOrder.status !== 1) {
+    if (workOrder.status !== '开工') {
       return fail(res, '工单已完工，报工记录不可修改')
     }
 
