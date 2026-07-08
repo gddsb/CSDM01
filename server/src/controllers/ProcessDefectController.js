@@ -91,4 +91,53 @@ export const remove = async (req, res) => {
   }
 }
 
-export default { list, create, remove }
+// 批量保存工序不良记录（按工单+工序覆盖式保存）
+export const batchSave = async (req, res) => {
+  try {
+    const { work_order_id, process_id, items } = req.body
+    if (!work_order_id) return fail(res, '工单 ID 不能为空')
+    if (!process_id) return fail(res, '工序 ID 不能为空')
+    if (!Array.isArray(items)) return fail(res, '不良项目数据格式错误')
+
+    const workOrder = await WorkOrder.findOne({ where: { work_order_id } })
+    if (!workOrder) return fail(res, '工单不存在', 404)
+
+    const process = await Process.findOne({ where: { process_id } })
+    if (!process) return fail(res, '工序不存在', 404)
+
+    const validItems = items.filter(item => item.defect_name && Number(item.quantity) > 0)
+
+    // 先删除该工单+工序下的所有旧记录
+    await ProcessDefect.destroy({ where: { work_order_id, process_id } })
+
+    const created = []
+    for (const item of validItems) {
+      let defectType = null
+      if (item.defect_type_id) {
+        defectType = await DefectType.findOne({ where: { defect_id: item.defect_type_id } })
+      }
+      const defect = await ProcessDefect.create({
+        work_order_id: workOrder.work_order_id,
+        work_order_no: workOrder.work_order_no,
+        process_id: process.process_id,
+        process_code: process.process_code,
+        process_name: process.process_name,
+        defect_category: item.defect_category || (defectType?.category_name || ''),
+        defect_name: item.defect_name,
+        defect_type_id: item.defect_type_id || (defectType?.defect_id || null),
+        quantity: Number(item.quantity),
+        unit: item.unit || (defectType?.defect_unit || ''),
+        record_user: req.user?.username || '',
+        record_user_name: req.user?.real_name || '',
+      })
+      created.push(defect)
+    }
+
+    return success(res, { count: created.length, items: created }, '批量保存成功')
+  } catch (err) {
+    console.error('批量保存工序不良记录失败:', err)
+    return fail(res, '服务器错误', 500)
+  }
+}
+
+export default { list, create, remove, batchSave }

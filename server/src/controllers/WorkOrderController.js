@@ -251,16 +251,19 @@ export const start = async (req, res) => {
     await ManpowerRecordModel.create({
       work_order_id: workOrder.work_order_id,
       work_order_no: workOrder.work_order_no,
-      process_id: null,
-      process_name: '整单',
-      emp_id: req.user?.emp_id || '',
-      emp_name: req.user?.real_name || '',
-      work_date: startTime,
+      record_date: new Date(startTime).toISOString().split('T')[0],
       shift: '白班',
       start_time: startTime,
       end_time: null,
       hours: 0,
-      created_by: req.user?.username || '',
+      skilled_count: 0,
+      general_count: 0,
+      labor_count: 0,
+      other_count: 0,
+      total_people: 0,
+      man_hours: 0,
+      record_user: req.user?.username || '',
+      record_user_name: req.user?.real_name || '',
     })
 
     return success(res, workOrder, '工单已开工，报工记录和人员记录已自动生成')
