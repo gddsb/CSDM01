@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
-import { Table, Button, Modal, Form, Input, InputNumber, Select, DatePicker, TimePicker, Space, Row, Col, message, Drawer, Descriptions, Popconfirm, Card } from 'antd'
+import {
+  Table, Button, Modal, Form, Input, InputNumber, Select, DatePicker, TimePicker, Space, Row, Col, message, Drawer, Descriptions, Popconfirm, Card, Tag,
+} from 'antd'
 import {
   TeamOutlined, PlusOutlined, SearchOutlined, ReloadOutlined, EyeOutlined, EditOutlined, DeleteOutlined,
   ClockCircleOutlined, UserOutlined,
@@ -7,6 +9,12 @@ import {
 import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
+
+const woStatusColorMap = {
+  '开立': 'default',
+  '开工': 'processing',
+  '完工': 'success',
+}
 
 const shiftOptions = [
   { label: '白班', value: '白班' },
@@ -16,10 +24,18 @@ const shiftOptions = [
 ]
 
 export default function ManpowerRecord() {
-  const [data, setData] = useState([])
+  const [summaryData, setSummaryData] = useState([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)
-  const [workOrders, setWorkOrders] = useState([])
+
+  const [selectedWO, setSelectedWO] = useState(null)
+  const [detailList, setDetailList] = useState([])
+  const [detailLoading, setDetailLoading] = useState(false)
+
+  const [keywordInput, setKeywordInput] = useState('')
+  const [statusInput, setStatusInput] = useState('')
+  const [query, setQuery] = useState({ page: 1, pageSize: 20, keyword: '', status: '' })
+
   const [submitting, setSubmitting] = useState(false)
   const [editing, setEditing] = useState(null)
   const [modalVisible, setModalVisible] = useState(false)
@@ -27,24 +43,19 @@ export default function ManpowerRecord() {
   const [currentRecord, setCurrentRecord] = useState(null)
   const [form] = Form.useForm()
 
-  const [keywordInput, setKeywordInput] = useState('')
-  const [workOrderInput, setWorkOrderInput] = useState(undefined)
-  const [dateRangeInput, setDateRangeInput] = useState(null)
-  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', work_order_id: undefined, dateStart: '', dateEnd: '' })
-
   const totalManHours = useMemo(
-    () => data.reduce((s, r) => s + (Number(r.man_hours) || 0), 0),
-    [data]
+    () => summaryData.reduce((s, r) => s + (Number(r.total_man_hours) || 0), 0),
+    [summaryData]
   )
-  const totalPeopleDays = useMemo(
-    () => data.reduce((s, r) => s + (Number(r.total_people) || 0), 0),
-    [data]
+  const totalPeople = useMemo(
+    () => summaryData.reduce((s, r) => s + (Number(r.total_people) || 0), 0),
+    [summaryData]
   )
 
   const stats = [
-    { label: '记录条数', value: total, icon: <TeamOutlined />, color: '#2196F3' },
+    { label: '工单数量', value: total, icon: <TeamOutlined />, color: '#2196F3' },
     { label: '累计人工工时', value: totalManHours.toFixed(2), icon: <ClockCircleOutlined />, color: '#FF9800' },
-    { label: '累计人天', value: totalPeopleDays, icon: <UserOutlined />, color: '#4CAF50' },
+    { label: '累计投入人数', value: totalPeople, icon: <UserOutlined />, color: '#4CAF50' },
   ]
 
   useEffect(() => {
@@ -53,18 +64,16 @@ export default function ManpowerRecord() {
       setLoading(true)
       try {
         const params = { page: query.page, pageSize: query.pageSize }
-        if (query.work_order_id) params.work_order_id = query.work_order_id
-        if (query.dateStart) params.dateStart = query.dateStart
-        if (query.dateEnd) params.dateEnd = query.dateEnd
-        const res = await api.get('/production/manpower-records', { params })
+        if (query.keyword) params.keyword = query.keyword
+        if (query.status) params.status = query.status
+        const res = await api.get('/production/manpower-records/summary/by-work-order', { params })
         if (cancelled) return
-        const list = res.data || []
-        setData(list)
-        setTotal(res.total || list.length)
+        setSummaryData(res.data || [])
+        setTotal(res.total || 0)
       } catch (err) {
         if (!cancelled) {
           message.error(err.message || '获取人员记录失败')
-          setData([])
+          setSummaryData([])
           setTotal(0)
         }
       } finally {
@@ -75,44 +84,50 @@ export default function ManpowerRecord() {
     return () => { cancelled = true }
   }, [query])
 
-  useEffect(() => {
-    let cancelled = false
-    const run = async () => {
-      try {
-        const woRes = await api.get('/production/work-orders', { params: { page: 1, pageSize: 500 } })
-        if (cancelled) return
-        setWorkOrders(woRes.data || [])
-      } catch (err) {
-        if (!cancelled) console.error('获取工单失败:', err)
-      }
+  const fetchDetail = useCallback(async (woId) => {
+    setDetailLoading(true)
+    try {
+      const res = await api.get('/production/manpower-records', {
+        params: { work_order_id: woId, page: 1, pageSize: 1000 },
+      })
+      setDetailList(res.data || [])
+    } catch (err) {
+      message.error(err.message || '获取明细失败')
+    } finally {
+      setDetailLoading(false)
     }
-    run()
-    return () => { cancelled = true }
   }, [])
 
-  const refresh = useCallback(() => setQuery(q => ({ ...q })), [])
+  const handleViewDetail = (record) => {
+    setSelectedWO(record)
+    fetchDetail(record.work_order_id)
+    setDetailOpen(true)
+  }
 
   const handleSearch = () => {
     setQuery(q => ({
       ...q,
       page: 1,
-      work_order_id: workOrderInput,
-      dateStart: dateRangeInput?.[0] ? dateRangeInput[0].format('YYYY-MM-DD') : '',
-      dateEnd: dateRangeInput?.[1] ? dateRangeInput[1].format('YYYY-MM-DD') : '',
+      keyword: keywordInput,
+      status: statusInput,
     }))
   }
 
   const handleReset = () => {
     setKeywordInput('')
-    setWorkOrderInput(undefined)
-    setDateRangeInput(null)
-    setQuery(q => ({ page: 1, pageSize: 30, work_order_id: undefined, dateStart: '', dateEnd: '' }))
+    setStatusInput('')
+    setQuery(q => ({ page: 1, pageSize: 20, keyword: '', status: '' }))
   }
 
   const handleAdd = () => {
+    if (!selectedWO) {
+      message.warning('请先选择一个工单')
+      return
+    }
     setEditing(null)
     form.resetFields()
     form.setFieldsValue({
+      work_order_id: selectedWO.work_order_id,
       record_date: dayjs(),
       shift: '白班',
       start_time: dayjs().hour(8).minute(0).second(0),
@@ -144,7 +159,6 @@ export default function ManpowerRecord() {
 
   const handleView = (r) => {
     setCurrentRecord(r)
-    setDetailOpen(true)
   }
 
   const handleSubmit = async () => {
@@ -171,7 +185,10 @@ export default function ManpowerRecord() {
         message.success(res.message || '新增成功')
       }
       setModalVisible(false)
-      refresh()
+      if (selectedWO) {
+        fetchDetail(selectedWO.work_order_id)
+      }
+      setQuery(q => ({ ...q }))
     } catch (e) {
       if (e?.errorFields) return
       message.error(e.message || '操作失败')
@@ -184,23 +201,91 @@ export default function ManpowerRecord() {
     try {
       const res = await api.delete(`/production/manpower-records/${record.record_id}`)
       message.success(res.message || '删除成功')
-      refresh()
+      if (selectedWO) {
+        fetchDetail(selectedWO.work_order_id)
+      }
+      setQuery(q => ({ ...q }))
     } catch (err) {
       message.error(err.message || '删除失败')
     }
   }
 
+  const calcTotalHours = (record) => {
+    if (!record.start_time || !record.finish_time) return 0
+    const start = new Date(record.start_time)
+    const end = new Date(record.finish_time)
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0
+    const diff = (end - start) / (1000 * 60 * 60)
+    return diff > 0 ? Number(diff.toFixed(2)) : 0
+  }
+
   const columns = [
-    { title: '记录日期', dataIndex: 'record_date', key: 'record_date', width: 120, fixed: 'left' },
-    { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 160 },
+    { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 160, fixed: 'left' },
+    { title: '订单编号', dataIndex: 'order_no', key: 'order_no', width: 160 },
+    {
+      title: '总工时(h)',
+      key: 'total_hours',
+      width: 120,
+      align: 'right',
+      render: (_, r) => {
+        const h = calcTotalHours(r)
+        return Number(h).toFixed(2)
+      },
+    },
+    { title: '技工人数', dataIndex: 'skilled_count', key: 'skilled_count', width: 100, align: 'right', render: v => v || 0 },
+    { title: '普工人数', dataIndex: 'general_count', key: 'general_count', width: 100, align: 'right', render: v => v || 0 },
+    { title: '劳务人数', dataIndex: 'labor_count', key: 'labor_count', width: 100, align: 'right', render: v => v || 0 },
+    { title: '其他人数', dataIndex: 'other_count', key: 'other_count', width: 100, align: 'right', render: v => v || 0 },
+    { title: '总人数', dataIndex: 'total_people', key: 'total_people', width: 100, align: 'right', render: v => v || 0 },
+    { title: '累计人工工时(h)', dataIndex: 'total_man_hours', key: 'total_man_hours', width: 140, align: 'right', render: v => Number(v || 0).toFixed(2) },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      key: 'status',
+      width: 90,
+      align: 'center',
+      render: v => <Tag color={woStatusColorMap[v] || 'default'}>{v}</Tag>,
+    },
+    {
+      title: '开工时间',
+      dataIndex: 'start_time',
+      key: 'start_time',
+      width: 160,
+      render: v => v ? String(v).substring(0, 16).replace('T', ' ') : '-',
+    },
+    {
+      title: '完工时间',
+      dataIndex: 'finish_time',
+      key: 'finish_time',
+      width: 160,
+      render: v => v ? String(v).substring(0, 16).replace('T', ' ') : '-',
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 160,
+      fixed: 'right',
+      render: (_, r) => (
+        <Space size="small">
+          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(r)}>查看明细</Button>
+          {r.status === '开工' && (
+            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => { setSelectedWO(r); handleAdd() }}>新增记录</Button>
+          )}
+        </Space>
+      ),
+    },
+  ]
+
+  const detailColumns = [
+    { title: '记录日期', dataIndex: 'record_date', key: 'record_date', width: 120 },
     { title: '班次', dataIndex: 'shift', key: 'shift', width: 80 },
     {
       title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 140,
-      render: v => v ? String(v).substring(0, 16) : '-',
+      render: v => v ? String(v).substring(0, 16).replace('T', ' ') : '-',
     },
     {
       title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 140,
-      render: v => v ? String(v).substring(0, 16) : '-',
+      render: v => v ? String(v).substring(0, 16).replace('T', ' ') : '-',
     },
     { title: '工时(h)', dataIndex: 'hours', key: 'hours', width: 80, align: 'right', render: v => Number(v || 0).toFixed(2) },
     { title: '技工', dataIndex: 'skilled_count', key: 'skilled_count', width: 70, align: 'right', render: v => v || 0 },
@@ -215,21 +300,16 @@ export default function ManpowerRecord() {
       render: (_, r) => (
         <Space size="small">
           <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(r)}>查看</Button>
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(r)}>编辑</Button>
-          <Popconfirm title="确定删除该条记录？" onConfirm={() => handleDelete(r)}>
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
-          </Popconfirm>
+          {selectedWO?.status === '开工' && (
+            <>
+              <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(r)}>编辑</Button>
+              <Popconfirm title="确定删除该条记录？" onConfirm={() => handleDelete(r)}>
+                <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
+              </Popconfirm>
+            </>
+          )}
         </Space>
       ),
-    },
-  ]
-
-  const filters = [
-    { type: 'input', placeholder: '搜索工单号', col: { span: 5 }, value: keywordInput, onChange: e => setKeywordInput(e.target.value) },
-    {
-      type: 'select', placeholder: '工单筛选', col: { span: 5 },
-      options: workOrders.map(w => ({ label: w.work_order_no, value: w.work_order_id })),
-      value: workOrderInput, onChange: setWorkOrderInput,
     },
   ]
 
@@ -239,27 +319,37 @@ export default function ManpowerRecord() {
         title="人员记录"
         breadcrumbs="生产管理 / 人员记录"
         stats={stats}
-        filters={filters}
-        onSearch={handleSearch}
-        onReset={handleReset}
         actions={
           <ActionButtons
             hasAdd={false}
             hasExport={false}
-            extra={[
-              <Button key="add" type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增记录</Button>,
-            ]}
           />
         }
         table={
           <div>
             <Row gutter={[12, 8]} style={{ marginBottom: 12 }}>
               <Col flex="240px">
-                <DatePicker.RangePicker
+                <Input
+                  placeholder="搜索工单号/订单号"
+                  allowClear
+                  prefix={<SearchOutlined />}
+                  value={keywordInput}
+                  onChange={e => setKeywordInput(e.target.value)}
+                  onPressEnter={handleSearch}
+                />
+              </Col>
+              <Col flex="140px">
+                <Select
+                  placeholder="状态筛选"
+                  allowClear
                   style={{ width: '100%' }}
-                  value={dateRangeInput}
-                  onChange={setDateRangeInput}
-                  placeholder={['开始日期', '结束日期']}
+                  value={statusInput}
+                  onChange={setStatusInput}
+                  options={[
+                    { label: '开立', value: '开立' },
+                    { label: '开工', value: '开工' },
+                    { label: '完工', value: '完工' },
+                  ]}
                 />
               </Col>
               <Col>
@@ -271,11 +361,11 @@ export default function ManpowerRecord() {
             </Row>
             <Table
               columns={columns}
-              dataSource={data}
-              rowKey="record_id"
+              dataSource={summaryData}
+              rowKey="work_order_id"
               size="small"
               loading={loading}
-              scroll={{ x: 1400 }}
+              scroll={{ x: 1600 }}
               pagination={{
                 current: query.page,
                 pageSize: query.pageSize,
@@ -288,6 +378,59 @@ export default function ManpowerRecord() {
           </div>
         }
       />
+
+      <Drawer
+        title={
+          <span>
+            人员记录明细 - {selectedWO?.work_order_no || ''}
+            {selectedWO?.status && (
+              <Tag color={woStatusColorMap[selectedWO.status]} style={{ marginLeft: 8 }}>
+                {selectedWO.status}
+              </Tag>
+            )}
+          </span>
+        }
+        open={detailOpen}
+        onClose={() => { setDetailOpen(false); setSelectedWO(null) }}
+        width={1200}
+        extra={
+          selectedWO?.status === '开工' && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+              新增记录
+            </Button>
+          )
+        }
+      >
+        {selectedWO && (
+          <>
+            <Card size="small" style={{ marginBottom: 12 }}>
+              <Descriptions column={4} size="small">
+                <Descriptions.Item label="工单编号">{selectedWO.work_order_no || '-'}</Descriptions.Item>
+                <Descriptions.Item label="订单编号">{selectedWO.order_no || '-'}</Descriptions.Item>
+                <Descriptions.Item label="状态">
+                  <Tag color={woStatusColorMap[selectedWO.status] || 'default'}>{selectedWO.status}</Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="总人数">{selectedWO.total_people || 0}</Descriptions.Item>
+                <Descriptions.Item label="开工时间">{selectedWO.start_time ? String(selectedWO.start_time).substring(0, 16).replace('T', ' ') : '-'}</Descriptions.Item>
+                <Descriptions.Item label="完工时间">{selectedWO.finish_time ? String(selectedWO.finish_time).substring(0, 16).replace('T', ' ') : '-'}</Descriptions.Item>
+                <Descriptions.Item label="累计人工工时">
+                  <b style={{ color: '#FF9800' }}>{Number(selectedWO.total_man_hours || 0).toFixed(2)} h</b>
+                </Descriptions.Item>
+                <Descriptions.Item label="记录条数">{selectedWO.record_count || 0}</Descriptions.Item>
+              </Descriptions>
+            </Card>
+            <Table
+              columns={detailColumns}
+              dataSource={detailList}
+              rowKey="record_id"
+              size="small"
+              loading={detailLoading}
+              scroll={{ x: 1400 }}
+              pagination={false}
+            />
+          </>
+        )}
+      </Drawer>
 
       <Modal
         title={editing ? '编辑人员记录' : '新增人员记录'}
@@ -304,12 +447,7 @@ export default function ManpowerRecord() {
           <Row gutter={12}>
             <Col span={12}>
               <Form.Item label="工单" name="work_order_id" rules={[{ required: true, message: '请选择工单' }]}>
-                <Select
-                  placeholder="请选择工单"
-                  showSearch
-                  optionFilterProp="label"
-                  options={workOrders.map(w => ({ label: w.work_order_no, value: w.work_order_id }))}
-                />
+                <Input value={selectedWO?.work_order_no} disabled />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -360,7 +498,7 @@ export default function ManpowerRecord() {
               </Col>
             </Row>
             <div style={{ color: '#666', fontSize: 12, marginTop: -4 }}>
-              💡 工时 = 结束时间 - 开始时间；人工工时 = 工时 × 总人数（由系统自动计算）
+              工时 = 结束时间 - 开始时间；人工工时 = 工时 × 总人数（由系统自动计算）
             </div>
           </Card>
 
@@ -372,8 +510,8 @@ export default function ManpowerRecord() {
 
       <Drawer
         title="人员记录详情"
-        open={detailOpen}
-        onClose={() => setDetailOpen(false)}
+        open={!!currentRecord}
+        onClose={() => setCurrentRecord(null)}
         width={480}
       >
         {currentRecord && (
@@ -381,8 +519,8 @@ export default function ManpowerRecord() {
             <Descriptions.Item label="记录日期">{currentRecord.record_date || '-'}</Descriptions.Item>
             <Descriptions.Item label="工单编号">{currentRecord.work_order_no}</Descriptions.Item>
             <Descriptions.Item label="班次">{currentRecord.shift || '-'}</Descriptions.Item>
-            <Descriptions.Item label="开始时间">{currentRecord.start_time ? String(currentRecord.start_time).substring(0, 16) : '-'}</Descriptions.Item>
-            <Descriptions.Item label="结束时间">{currentRecord.end_time ? String(currentRecord.end_time).substring(0, 16) : '-'}</Descriptions.Item>
+            <Descriptions.Item label="开始时间">{currentRecord.start_time ? String(currentRecord.start_time).substring(0, 16).replace('T', ' ') : '-'}</Descriptions.Item>
+            <Descriptions.Item label="结束时间">{currentRecord.end_time ? String(currentRecord.end_time).substring(0, 16).replace('T', ' ') : '-'}</Descriptions.Item>
             <Descriptions.Item label="单班工时(h)">{Number(currentRecord.hours || 0).toFixed(2)}</Descriptions.Item>
             <Descriptions.Item label="技工(人)">{currentRecord.skilled_count || 0}</Descriptions.Item>
             <Descriptions.Item label="普通(人)">{currentRecord.general_count || 0}</Descriptions.Item>

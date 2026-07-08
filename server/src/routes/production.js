@@ -18,9 +18,9 @@ import {
   finish,
 } from '../controllers/WorkOrderController.js'
 import { list as reportList, create as reportCreate, update as reportUpdate } from '../controllers/ProcessReportController.js'
-import { list as manpowerList, detail as manpowerDetail, create as manpowerCreate, update as manpowerUpdate, remove as manpowerRemove } from '../controllers/ManpowerRecordController.js'
+import { list as manpowerList, detail as manpowerDetail, create as manpowerCreate, update as manpowerUpdate, remove as manpowerRemove, summaryByWorkOrder as manpowerSummary } from '../controllers/ManpowerRecordController.js'
 import { list as exceptionList, create as exceptionCreate } from '../controllers/ExceptionRecordController.js'
-import { list as defectList, create as defectCreate, remove as defectRemove } from '../controllers/ProcessDefectController.js'
+import { list as defectList, create as defectCreate, remove as defectRemove, batchSave as defectBatchSave } from '../controllers/ProcessDefectController.js'
 import { list as exceptionTimeList, create as exceptionTimeCreate, remove as exceptionTimeRemove } from '../controllers/ProcessExceptionController.js'
 import { list as materialList, create as materialCreate, remove as materialRemove } from '../controllers/ProcessMaterialController.js'
 import { authRequired } from '../middleware/auth.js'
@@ -55,6 +55,7 @@ router.put('/process-reports/:id', reportUpdate)
 
 // 人员记录
 router.get('/manpower-records', manpowerList)
+router.get('/manpower-records/summary/by-work-order', manpowerSummary)
 router.get('/manpower-records/:id', manpowerDetail)
 router.post('/manpower-records', manpowerCreate)
 router.put('/manpower-records/:id', manpowerUpdate)
@@ -67,6 +68,7 @@ router.post('/exceptions', exceptionCreate)
 // 工序不良记录
 router.get('/process-defects', defectList)
 router.post('/process-defects', defectCreate)
+router.post('/process-defects/batch-save', defectBatchSave)
 router.delete('/process-defects/:id', defectRemove)
 
 // 异常工时记录
