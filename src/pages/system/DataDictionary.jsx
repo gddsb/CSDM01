@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Table, Tag, Button, Drawer, Descriptions, Input, Select, Space, message } from 'antd'
-import { DatabaseOutlined, EyeOutlined, ReloadOutlined, TableOutlined } from '@ant-design/icons'
+import { DatabaseOutlined, EyeOutlined, ReloadOutlined, SyncOutlined, TableOutlined } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 import dayjs from 'dayjs'
@@ -17,8 +17,8 @@ export default function DataDictionary() {
   const [total, setTotal] = useState(0)
   const [detailVisible, setDetailVisible] = useState(false)
   const [currentTable, setCurrentTable] = useState(null)
-  const [detailLoading, setDetailLoading] = useState(false)
   const [columns, setColumns] = useState([])
+  const [refreshing, setRefreshing] = useState(false)
 
   const [keywordInput, setKeywordInput] = useState('')
   const [categoryInput, setCategoryInput] = useState(undefined)
@@ -27,24 +27,12 @@ export default function DataDictionary() {
   const fetchTables = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await api.get('/system/config/database')
-      const tables = res.data?.tables || []
-      const filtered = tables.filter(t => {
-        if (query.keyword) {
-          const kw = query.keyword.toLowerCase()
-          if (!t.table_name.toLowerCase().includes(kw) && !t.purpose?.toLowerCase().includes(kw)) {
-            return false
-          }
-        }
-        if (query.category && t.category !== query.category) {
-          return false
-        }
-        return true
+      const res = await api.get('/system/config/data-dictionary', {
+        params: { keyword: query.keyword, category: query.category, page: query.page, pageSize: query.pageSize },
       })
-      setTotal(filtered.length)
-      const start = (query.page - 1) * query.pageSize
-      const end = start + query.pageSize
-      setTableList(filtered.slice(start, end))
+      const list = res.data?.list || []
+      setTableList(list)
+      setTotal(res.data?.total || 0)
     } catch (err) {
       message.error(err.message || '获取数据表清单失败')
       setTableList([])
@@ -68,20 +56,22 @@ export default function DataDictionary() {
     setQuery(q => ({ ...q, page: 1, keyword: '', category: undefined }))
   }
 
-  const handleViewDetail = async (record) => {
+  const handleViewDetail = (record) => {
     setCurrentTable(record)
+    setColumns(record.fields || [])
     setDetailVisible(true)
-    setDetailLoading(true)
+  }
+
+  const handleRefreshDictionary = async () => {
+    setRefreshing(true)
     try {
-      const tableName = record.table_name
-      const res = await api.get('/system/config/database')
-      const allColumns = res.data?.columns || {}
-      setColumns(allColumns[tableName] || [])
+      const res = await api.post('/system/config/data-dictionary/refresh')
+      message.success(res.message || '数据字典更新成功')
+      setQuery(q => ({ ...q, page: 1 }))
     } catch (err) {
-      message.error(err.message || '获取表字段信息失败')
-      setColumns([])
+      message.error(err.message || '更新数据字典失败')
     } finally {
-      setDetailLoading(false)
+      setRefreshing(false)
     }
   }
 
@@ -142,6 +132,7 @@ export default function DataDictionary() {
             />
             <Button onClick={handleReset}>重置</Button>
             <Button icon={<ReloadOutlined />} onClick={fetchTables}>刷新</Button>
+            <Button type="primary" icon={<SyncOutlined />} loading={refreshing} onClick={handleRefreshDictionary}>更新</Button>
           </div>
         }
         table={
@@ -149,7 +140,7 @@ export default function DataDictionary() {
             size="small"
             columns={tableColumns}
             dataSource={tableList}
-            rowKey="table_name"
+            rowKey="dict_id"
             loading={loading}
             scroll={{ x: 1000 }}
             pagination={{
@@ -201,7 +192,6 @@ export default function DataDictionary() {
               ]}
               dataSource={columns}
               rowKey="name"
-              loading={detailLoading}
               pagination={false}
               scroll={{ y: 400 }}
             />

@@ -29,6 +29,7 @@ import DefectImage from './DefectImage.js'
 import DictType from './DictType.js'
 import DictData from './DictData.js'
 import AppVersion from './AppVersion.js'
+import DataDictionary from './DataDictionary.js'
 
 // 建立模型关联关系
 // 用户 - 角色
@@ -133,6 +134,7 @@ const db = {
   DictType,
   DictData,
   AppVersion,
+  DataDictionary,
 }
 
 // 具名导出，便于按需导入
@@ -165,6 +167,7 @@ export {
   DictType,
   DictData,
   AppVersion,
+  DataDictionary,
 }
 
 export default db

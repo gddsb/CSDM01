@@ -16,6 +16,12 @@ dotenv.config()
 const app = express()
 const PORT = process.env.PORT || 3001
 
+// 确保数据目录存在（SQLite 数据库文件和备份目录）
+const dataDir = path.resolve(process.cwd(), 'data')
+const backupsDir = path.resolve(dataDir, 'backups')
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true })
+if (!fs.existsSync(backupsDir)) fs.mkdirSync(backupsDir, { recursive: true })
+
 // 确保上传目录存在
 const uploadsDir = path.resolve(process.cwd(), 'uploads', 'avatars')
 const tmpDir = path.resolve(process.cwd(), 'uploads', 'tmp')
