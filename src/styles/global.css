@@ -1,0 +1,576 @@
+:root {
+  --bg-main: #FFFFFF;
+  --bg-card: #FAFBFC;
+  --color-primary: #2196F3;
+  --color-secondary: #00BCD4;
+  --color-accent: #FF6F00;
+  --color-success: #4CAF50;
+  --color-warning: #FF9800;
+  --color-error: #F44336;
+  --text-primary: #212121;
+  --text-secondary: #757575;
+  --border-color: #E0E0E0;
+  --nav-bg: #1565C0;
+  --nav-text: #FFFFFF;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-main);
+  color: var(--text-primary);
+  transition: background 0.3s, color 0.3s;
+}
+
+/* 登录页背景 */
+.login-bg {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  position: relative;
+  overflow: hidden;
+}
+
+.login-bg::before {
+  content: '';
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  top: -200px;
+  right: -100px;
+}
+
+.login-bg::after {
+  content: '';
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  bottom: -100px;
+  left: -50px;
+}
+
+.login-card {
+  width: 420px;
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  z-index: 1;
+}
+
+.login-title {
+  text-align: center;
+  margin-bottom: 8px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.login-subtitle {
+  text-align: center;
+  margin-bottom: 32px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* 主布局 */
+.app-layout {
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.app-layout > .ant-layout-sider {
+  position: fixed !important;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 100;
+  overflow: auto;
+}
+
+.app-layout > .ant-layout {
+  margin-left: 220px;
+  min-height: 100vh;
+}
+
+.app-layout.collapsed > .ant-layout {
+  margin-left: 80px;
+}
+
+.app-sider {
+  background: var(--nav-bg) !important;
+  border-right: 1px solid var(--border-color) !important;
+  transition: background 0.3s, border-color 0.3s;
+}
+
+.app-sider .ant-menu {
+  background: transparent !important;
+  border-right: none !important;
+}
+
+/* 菜单项文字颜色 */
+.app-sider .ant-menu-item,
+.app-sider .ant-menu-submenu-title {
+  color: var(--nav-text) !important;
+  opacity: 0.8;
+  transition: all 0.2s;
+  margin: 2px 8px !important;
+  border-radius: 6px !important;
+}
+
+/* 一级菜单（有子菜单的）加粗 */
+.app-sider > .ant-menu > .ant-menu-submenu > .ant-menu-submenu-title,
+.app-sider > .ant-menu > .ant-menu-submenu > .ant-menu-submenu-title .ant-menu-title-content {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.app-sider .ant-menu-item:hover,
+.app-sider .ant-menu-submenu-title:hover {
+  opacity: 1 !important;
+  background: var(--color-primary) !important;
+  color: #FFFFFF !important;
+}
+
+/* 选中项 */
+.app-sider .ant-menu-item-selected {
+  background: var(--color-primary) !important;
+  opacity: 1 !important;
+  color: #FFFFFF !important;
+  font-weight: 600;
+}
+
+.app-sider .ant-menu-item-selected::after {
+  display: none !important;
+}
+
+/* 子菜单展开后的背景 */
+.app-sider .ant-menu-submenu .ant-menu {
+  background: transparent !important;
+}
+
+/* 子菜单箭头图标颜色 */
+.app-sider .ant-menu-submenu-arrow::before,
+.app-sider .ant-menu-submenu-arrow::after {
+  background: var(--nav-text) !important;
+  opacity: 0.6;
+}
+
+.app-sider .ant-menu-submenu-title:hover .ant-menu-submenu-arrow::before,
+.app-sider .ant-menu-submenu-title:hover .ant-menu-submenu-arrow::after {
+  background: #FFFFFF !important;
+  opacity: 1;
+}
+
+/* 子菜单内菜单项 */
+.app-sider .ant-menu-sub .ant-menu-item {
+  color: var(--nav-text) !important;
+  opacity: 0.7;
+}
+
+.app-sider .ant-menu-sub .ant-menu-item:hover {
+  opacity: 1 !important;
+  background: var(--color-primary) !important;
+  color: #FFFFFF !important;
+}
+
+.app-sider .ant-menu-sub .ant-menu-item-selected {
+  background: var(--color-primary) !important;
+  opacity: 1 !important;
+  color: #FFFFFF !important;
+}
+
+.app-header {
+  position: fixed !important;
+  top: 0;
+  right: 0;
+  left: 220px;
+  z-index: 99;
+  background: var(--bg-card) !important;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px !important;
+  transition: background 0.3s, border 0.3s, left 0.3s;
+}
+
+.app-layout.collapsed .app-header {
+  left: 80px;
+}
+
+.app-content {
+  background: var(--bg-main) !important;
+  padding: 16px !important;
+  margin-top: 64px;
+  min-height: calc(100vh - 64px);
+  overflow-y: auto;
+  transition: background 0.3s;
+}
+
+.logo {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--nav-text);
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  padding: 0 8px;
+  overflow: hidden;
+}
+
+.logo-icon {
+  font-size: 28px;
+  margin-right: 8px;
+}
+
+/* ============================================================
+   三段式页面通用组件样式
+   规范：
+     上部页面信息区  15%-20%  主背景色  常规间距
+     中部筛选功能区  10%-15%  卡片背景  小行间距 4-8px 可折叠
+     下部列表区      65%-75%  卡片背景  小行间距 默认每页30条
+   ============================================================ */
+.three-section-page {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: calc(100vh - 110px);
+}
+
+/* —— 上部：页面信息区 —— 主背景色，常规间距 */
+.section-info {
+  background: var(--bg-main);
+  border-radius: 8px;
+  padding: 14px 20px;
+  border: 1px solid var(--border-color);
+  transition: background 0.3s, border 0.3s;
+  flex: 0 0 auto;
+}
+
+.section-info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.section-info-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.section-breadcrumbs {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.section-title-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.section-info-actions {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ============================================================
+   主要操作按钮配色规范
+   - 新增按钮：主色渐变（primary → secondary）
+   - 导出按钮：成功色渐变
+   - 配置按钮：强调色
+   ============================================================ */
+
+/* 操作按钮组：新增/导出/配置 */
+.section-info-actions .action-buttons-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 新增按钮：主色渐变 */
+.section-info-actions .btn-add.ant-btn-primary {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.25);
+  transition: all 0.25s ease;
+}
+
+.section-info-actions .btn-add.ant-btn-primary:hover {
+  background: linear-gradient(135deg, var(--color-secondary), var(--color-primary));
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.35);
+  transform: translateY(-1px);
+}
+
+/* 导出按钮：成功色渐变 */
+.section-info-actions .btn-export.ant-btn {
+  background: linear-gradient(135deg, var(--color-success), #66BB6A);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.25);
+  transition: all 0.25s ease;
+}
+
+.section-info-actions .btn-export.ant-btn:hover {
+  background: linear-gradient(135deg, #66BB6A, var(--color-success));
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.35);
+  transform: translateY(-1px);
+  color: #ffffff;
+}
+
+/* 配置按钮：强调色 */
+.section-info-actions .btn-config.ant-btn {
+  background: linear-gradient(135deg, var(--color-accent), var(--color-warning));
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(255, 111, 0, 0.25);
+  transition: all 0.25s ease;
+}
+
+.section-info-actions .btn-config.ant-btn:hover {
+  background: linear-gradient(135deg, var(--color-warning), var(--color-accent));
+  box-shadow: 0 4px 12px rgba(255, 111, 0, 0.35);
+  transform: translateY(-1px);
+  color: #ffffff;
+}
+
+/* 统计卡片区 */
+.stats-row {
+  margin-top: 4px !important;
+}
+
+/* —— 中部：筛选功能区 —— 卡片背景色，小行间距 4-8px —— */
+.section-filter {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  transition: background 0.3s, border 0.3s;
+  flex: 0 0 auto;
+}
+
+.section-filter .ant-form-item {
+  margin-bottom: 4px !important;
+}
+
+.section-filter .ant-row {
+  row-gap: 4px !important;
+}
+
+.section-filter .ant-col {
+  padding-inline: 4px !important;
+}
+
+/* —— 下部：列表区 —— 卡片背景色，小行间距，默认每页30条 —— */
+.section-table {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  transition: background 0.3s, border 0.3s;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 列表区表格行小间距 */
+.section-table .ant-table-small .ant-table-cell {
+  padding: 4px 8px !important;
+}
+
+/* 料品名称列：默认最小200自动换行 */
+.section-table .ant-table-cell .material-name-cell {
+  word-break: break-word;
+  white-space: normal;
+  min-width: 200px;
+}
+
+/* 表头支持列宽拖拽的视觉提示 */
+.section-table .ant-table-resize-handle {
+  right: -5px;
+  width: 10px;
+  cursor: col-resize;
+}
+
+.section-table .ant-table-resize-handle:hover {
+  background: var(--color-primary);
+}
+
+/* 统计卡片 */
+.stat-card {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: 16px 20px;
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all 0.3s;
+}
+
+.stat-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #fff;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* Dashboard */
+.dashboard-card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s;
+  height: 100%;
+}
+
+.dashboard-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+}
+
+/* 主题切换按钮 */
+.theme-switcher {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* 表格表头居中 */
+.ant-table-thead > tr > th {
+  text-align: center !important;
+}
+
+.theme-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.theme-dot:hover {
+  transform: scale(1.15);
+}
+
+.theme-dot.active {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--bg-card), 0 0 0 4px var(--color-primary);
+}
+
+/* 表格紧凑模式（旧样式保留兼容，三段式页面使用更紧凑的 4px 规范） */
+.compact-table .ant-table-small .ant-table-cell {
+  padding: 6px 8px !important;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 状态标签 */
+.status-tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* 紧凑表单样式 - 用于弹窗中的添加/编辑表单 */
+.compact-form .ant-form-item {
+  margin-bottom: 12px !important;
+}
+.compact-form .ant-form-item:last-child {
+  margin-bottom: 0 !important;
+}
+.compact-form .ant-form-item-label > label {
+  font-size: 13px !important;
+}
+.ant-modal .ant-modal-body {
+  padding: 16px 24px !important;
+}
+.ant-modal .ant-form-item {
+  margin-bottom: 12px !important;
+}
+
+/* Select 下拉列表样式优化 - 增强可读性 */
+.ant-select-dropdown .ant-select-item {
+  padding: 8px 12px !important;
+  height: auto !important;
+  min-height: 36px;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.15s;
+}
+.ant-select-dropdown .ant-select-item:last-child {
+  border-bottom: none;
+}
+.ant-select-dropdown .ant-select-item-option-selected {
+  background: var(--color-primary) !important;
+}
+.ant-select-dropdown .ant-select-item-option-selected .ant-select-item-option-content {
+  color: #FFFFFF !important;
+}
+.ant-select-dropdown .ant-select-item:hover:not(.ant-select-item-option-selected) {
+  background: rgba(0, 0, 0, 0.06);
+}
