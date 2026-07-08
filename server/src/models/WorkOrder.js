@@ -42,6 +42,26 @@ const WorkOrder = sequelize.define('WorkOrder', {
     type: DataTypes.DECIMAL(12, 2),
     defaultValue: 0,
   },
+  start_qty: {
+    type: DataTypes.DECIMAL(12, 2),
+    defaultValue: 0,
+  },
+  qualified_qty: {
+    type: DataTypes.DECIMAL(12, 2),
+    defaultValue: 0,
+  },
+  defect_material: {
+    type: DataTypes.DECIMAL(12, 2),
+    defaultValue: 0,
+  },
+  defect_process: {
+    type: DataTypes.DECIMAL(12, 2),
+    defaultValue: 0,
+  },
+  defect_scrap: {
+    type: DataTypes.DECIMAL(12, 2),
+    defaultValue: 0,
+  },
   plan_start_time: {
     type: DataTypes.DATE,
   },

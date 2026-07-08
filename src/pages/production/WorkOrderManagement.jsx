@@ -284,20 +284,46 @@ export default function WorkOrderManagement() {
   const columns = [
     { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 150, fixed: 'left' },
     { title: '关联订单', dataIndex: 'order_no', key: 'order_no', width: 150, fixed: 'left' },
-    { title: '工序', dataIndex: 'process_name', key: 'process_name', width: 100, render: v => v || '-' },
-    { title: '产线', dataIndex: 'line_name', key: 'line_name', width: 80 },
-    { title: '计划数量', dataIndex: 'planned_qty', key: 'planned_qty', width: 100, align: 'right', render: v => (v || 0).toLocaleString() },
-    { title: '完工数量', dataIndex: 'finished_qty', key: 'finished_qty', width: 100, align: 'right', render: v => (v || 0).toLocaleString() },
+    { title: '产线', dataIndex: 'line_name', key: 'line_name', width: 100 },
+    { title: '计划数量', dataIndex: 'planned_qty', key: 'planned_qty', width: 100, align: 'right', render: v => Math.round(v || 0).toLocaleString() },
+    { title: '开工数量', dataIndex: 'start_qty', key: 'start_qty', width: 100, align: 'right', render: v => Math.round(v || 0).toLocaleString() },
     {
-      title: '计划时间', key: 'plan_time', width: 200,
-      render: (_, w) => (
-        <div style={{ lineHeight: 1.6, fontSize: 12 }}>
-          <div>开始：{w.plan_start_time || '-'}</div>
-          <div>结束：{w.plan_end_time || '-'}</div>
-        </div>
-      ),
+      title: '合格数量', key: 'qualified_qty', width: 130, align: 'right',
+      render: (_, w) => {
+        const qty = Number(w.qualified_qty || 0)
+        const start = Number(w.start_qty || 0)
+        const rate = start > 0 ? ((qty / start) * 100).toFixed(1) + '%' : '-'
+        return <div>{Math.round(qty).toLocaleString()}<span style={{ color: '#999', fontSize: 12, marginLeft: 4 }}>{rate}</span></div>
+      },
     },
-    { title: '班组长', dataIndex: 'team_leader', key: 'team_leader', width: 100, render: v => v || '-' },
+    {
+      title: '来料不良', key: 'defect_material', width: 130, align: 'right',
+      render: (_, w) => {
+        const qty = Number(w.defect_material || 0)
+        const start = Number(w.start_qty || 0)
+        const rate = start > 0 ? ((qty / start) * 100).toFixed(1) + '%' : '-'
+        return <div>{Math.round(qty).toLocaleString()}<span style={{ color: '#FA8C16', fontSize: 12, marginLeft: 4 }}>{rate}</span></div>
+      },
+    },
+    {
+      title: '制程不良', key: 'defect_process', width: 130, align: 'right',
+      render: (_, w) => {
+        const qty = Number(w.defect_process || 0)
+        const start = Number(w.start_qty || 0)
+        const rate = start > 0 ? ((qty / start) * 100).toFixed(1) + '%' : '-'
+        return <div>{Math.round(qty).toLocaleString()}<span style={{ color: '#F5222D', fontSize: 12, marginLeft: 4 }}>{rate}</span></div>
+      },
+    },
+    { title: '检验报废', dataIndex: 'defect_scrap', key: 'defect_scrap', width: 100, align: 'right', render: v => Math.round(v || 0).toLocaleString() },
+    { title: '人工工时', dataIndex: 'labor_hours', key: 'labor_hours', width: 100, align: 'right', render: v => Number(v || 0).toFixed(2) },
+    {
+      title: '开工时间', dataIndex: 'start_time', key: 'start_time', width: 160,
+      render: v => v ? String(v).substring(0, 16).replace('T', ' ') : '-',
+    },
+    {
+      title: '完工时间', dataIndex: 'finish_time', key: 'finish_time', width: 160,
+      render: v => v ? String(v).substring(0, 16).replace('T', ' ') : '-',
+    },
     { title: '状态', dataIndex: 'status', key: 'status', width: 80, align: 'center', render: v => <Tag color={statusColorMap[v]}>{v}</Tag> },
     { title: '操作', key: 'action', width: 180, fixed: 'right', render: (_, r) => renderActions(r) },
   ]
@@ -363,7 +389,7 @@ export default function WorkOrderManagement() {
               rowKey="work_order_id"
               size="small"
               loading={loading}
-              scroll={{ x: 1300 }}
+              scroll={{ x: 2000 }}
               pagination={{
                 current: query.page,
                 pageSize: query.pageSize,
@@ -502,12 +528,18 @@ export default function WorkOrderManagement() {
           <Descriptions column={2} bordered size="small">
             <Descriptions.Item label="工单编号">{currentWO.work_order_no}</Descriptions.Item>
             <Descriptions.Item label="关联订单">{currentWO.order_no}</Descriptions.Item>
-            <Descriptions.Item label="工序">{currentWO.process_name || '-'}</Descriptions.Item>
             <Descriptions.Item label="产线">{currentWO.line_name}</Descriptions.Item>
-            <Descriptions.Item label="计划数量">{(currentWO.planned_qty || 0).toLocaleString()}</Descriptions.Item>
-            <Descriptions.Item label="完工数量">{(currentWO.finished_qty || 0).toLocaleString()}</Descriptions.Item>
             <Descriptions.Item label="状态"><Tag color={statusColorMap[currentWO.status]}>{currentWO.status}</Tag></Descriptions.Item>
-            <Descriptions.Item label="班组长">{currentWO.team_leader || '-'}</Descriptions.Item>
+            <Descriptions.Item label="计划数量">{Math.round(currentWO.planned_qty || 0).toLocaleString()}</Descriptions.Item>
+            <Descriptions.Item label="开工数量">{Math.round(currentWO.start_qty || 0).toLocaleString()}</Descriptions.Item>
+            <Descriptions.Item label="合格数量">{Math.round(currentWO.qualified_qty || 0).toLocaleString()}</Descriptions.Item>
+            <Descriptions.Item label="检验报废">{Math.round(currentWO.defect_scrap || 0).toLocaleString()}</Descriptions.Item>
+            <Descriptions.Item label="来料不良">{Math.round(currentWO.defect_material || 0).toLocaleString()}</Descriptions.Item>
+            <Descriptions.Item label="制程不良">{Math.round(currentWO.defect_process || 0).toLocaleString()}</Descriptions.Item>
+            <Descriptions.Item label="人工工时">{Number(currentWO.labor_hours || 0).toFixed(2)} h</Descriptions.Item>
+            <Descriptions.Item label="完工数量">{Math.round(currentWO.finished_qty || 0).toLocaleString()}</Descriptions.Item>
+            <Descriptions.Item label="开工时间">{currentWO.start_time ? String(currentWO.start_time).substring(0, 16).replace('T', ' ') : '-'}</Descriptions.Item>
+            <Descriptions.Item label="完工时间">{currentWO.finish_time ? String(currentWO.finish_time).substring(0, 16).replace('T', ' ') : '-'}</Descriptions.Item>
             <Descriptions.Item label="计划开始">{currentWO.plan_start_time || '-'}</Descriptions.Item>
             <Descriptions.Item label="计划结束">{currentWO.plan_end_time || '-'}</Descriptions.Item>
             <Descriptions.Item label="备注" span={2}>{currentWO.remarks || '-'}</Descriptions.Item>

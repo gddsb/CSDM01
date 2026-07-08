@@ -91,6 +91,11 @@ const migrations = [
       ['plan_start_time', 'DATETIME'],
       ['plan_end_time', 'DATETIME'],
       ['remarks', 'VARCHAR(500)'],
+      ['start_qty', 'DECIMAL(12,2) DEFAULT 0'],
+      ['qualified_qty', 'DECIMAL(12,2) DEFAULT 0'],
+      ['defect_material', 'DECIMAL(12,2) DEFAULT 0'],
+      ['defect_process', 'DECIMAL(12,2) DEFAULT 0'],
+      ['defect_scrap', 'DECIMAL(12,2) DEFAULT 0'],
     ],
   },
   {

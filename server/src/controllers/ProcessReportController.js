@@ -2,6 +2,32 @@ import { Op } from 'sequelize'
 import { ProcessReport, WorkOrder, Process, Device } from '../models/index.js'
 import { success, fail } from '../utils/response.js'
 
+const syncWorkOrderSummary = async (workOrderId) => {
+  const reports = await ProcessReport.findAll({
+    where: { work_order_id: workOrderId },
+    attributes: ['input_qty', 'output_qty', 'defect_material', 'defect_process', 'defect_scrap'],
+  })
+  const summary = reports.reduce((acc, r) => {
+    acc.start_qty += Number(r.input_qty || 0)
+    acc.qualified_qty += Number(r.output_qty || 0)
+    acc.defect_material += Number(r.defect_material || 0)
+    acc.defect_process += Number(r.defect_process || 0)
+    acc.defect_scrap += Number(r.defect_scrap || 0)
+    return acc
+  }, { start_qty: 0, qualified_qty: 0, defect_material: 0, defect_process: 0, defect_scrap: 0 })
+  await WorkOrder.update(
+    {
+      start_qty: summary.start_qty,
+      qualified_qty: summary.qualified_qty,
+      finished_qty: summary.qualified_qty,
+      defect_material: summary.defect_material,
+      defect_process: summary.defect_process,
+      defect_scrap: summary.defect_scrap,
+    },
+    { where: { work_order_id: workOrderId } }
+  )
+}
+
 // 报工列表（支持 work_order_id 筛选）
 export const list = async (req, res) => {
   try {
@@ -88,13 +114,7 @@ export const update = async (req, res) => {
       report_time: report_time ? new Date(report_time) : report.report_time,
     })
 
-    // 同步工单完工数量
-    const allReports = await ProcessReport.findAll({
-      where: { work_order_id: report.work_order_id },
-      attributes: ['output_qty'],
-    })
-    const totalFinished = allReports.reduce((sum, r) => sum + Number(r.output_qty || 0), 0)
-    await workOrder.update({ finished_qty: totalFinished })
+    await syncWorkOrderSummary(report.work_order_id)
 
     return success(res, report, '修改成功')
   } catch (err) {
@@ -152,13 +172,7 @@ export const create = async (req, res) => {
       report_time: report_time ? new Date(report_time) : new Date(),
     })
 
-    // 同步工单完工数量
-    const allReports = await ProcessReport.findAll({
-      where: { work_order_id },
-      attributes: ['output_qty'],
-    })
-    const totalFinished = allReports.reduce((sum, r) => sum + Number(r.output_qty || 0), 0)
-    await workOrder.update({ finished_qty: totalFinished })
+    await syncWorkOrderSummary(work_order_id)
 
     return success(res, report, '创建成功')
   } catch (err) {
