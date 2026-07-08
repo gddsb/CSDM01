@@ -47,19 +47,19 @@ export default function ProcessReporting() {
   useEffect(() => {
     let cancelled = false
     const run = async () => {
-      try {
-        const [defectRes, procRes, devRes] = await Promise.all([
-          api.get('/basic/defect-types', { params: { page: 1, pageSize: 1000, status: '启用' } }),
-          api.get('/basic/processes', { params: { page: 1, pageSize: 1000 } }),
-          api.get('/basic/devices', { params: { page: 1, pageSize: 1000 } }),
-        ])
-        if (cancelled) return
-        setDefectTypes(defectRes.data || [])
-        setProcesses(procRes.data || [])
-        setDevices(devRes.data || [])
-      } catch (err) {
-        if (!cancelled) message.error(err.message || '获取基础数据失败')
-      }
+      const results = await Promise.allSettled([
+        api.get('/basic/defect-types', { params: { page: 1, pageSize: 1000, status: '启用' } }),
+        api.get('/basic/processes', { params: { page: 1, pageSize: 1000 } }),
+        api.get('/basic/devices', { params: { page: 1, pageSize: 1000 } }),
+      ])
+      if (cancelled) return
+      const [defectRes, procRes, devRes] = results
+      if (defectRes.status === 'fulfilled') setDefectTypes(defectRes.value.data || [])
+      else console.warn('加载不良分类失败:', defectRes.reason?.message)
+      if (procRes.status === 'fulfilled') setProcesses(procRes.value.data || [])
+      else console.warn('加载工序失败:', procRes.reason?.message)
+      if (devRes.status === 'fulfilled') setDevices(devRes.value.data || [])
+      else console.warn('加载设备失败:', devRes.reason?.message)
     }
     run()
     return () => { cancelled = true }
@@ -80,7 +80,7 @@ export default function ProcessReporting() {
         setWoTotal(res.total || 0)
       } catch (err) {
         if (!cancelled) {
-          message.error(err.message || '获取工单列表失败')
+          console.warn('加载工单列表失败:', err.message)
           setWorkOrders([])
           setWoTotal(0)
         }
