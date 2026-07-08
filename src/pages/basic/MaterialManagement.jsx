@@ -17,7 +17,9 @@ const MaterialManagement = () => {
   const [current, setCurrent] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [customerOptions, setCustomerOptions] = useState([])
+  const [customerSearchValue, setCustomerSearchValue] = useState('')
   const [form] = Form.useForm()
+  const materialCode = Form.useWatch('material_code', form)
 
   const [keywordInput, setKeywordInput] = useState('')
   const [isActiveInput, setIsActiveInput] = useState(undefined)
@@ -29,7 +31,7 @@ const MaterialManagement = () => {
     try {
       const res = await api.get('/basic/customers', { params: { pageSize: 999 } })
       const list = res.data || []
-      setCustomerOptions(list.map(c => ({ label: `${c.customer_name}${c.short_name ? '（' + c.short_name + '）' : ''}`, value: c.customer_id })))
+      setCustomerOptions(list.map(c => ({ label: `${c.customer_name}${c.short_name ? '（' + c.short_name + '）' : ''}`, value: c.customer_id, customer_code: c.customer_code || '', customer_name: c.customer_name || '' })))
     } catch (err) {
       // 静默失败，不阻塞页面
       setCustomerOptions([])
@@ -39,6 +41,14 @@ const MaterialManagement = () => {
   useEffect(() => {
     fetchCustomers()
   }, [fetchCustomers])
+
+  useEffect(() => {
+    if (materialCode && materialCode.length >= 7) {
+      setCustomerSearchValue(materialCode.substring(4, 7))
+    } else {
+      setCustomerSearchValue('')
+    }
+  }, [materialCode])
 
   const activeCount = data.filter(m => m.is_active).length
   const inactiveCount = data.filter(m => !m.is_active).length
@@ -290,8 +300,17 @@ const MaterialManagement = () => {
                   placeholder="请选择关联客户"
                   allowClear
                   showSearch
-                  optionFilterProp="label"
+                  filterOption={(input, option) => {
+                    const keyword = input.toLowerCase()
+                    return (
+                      option.customer_code.toLowerCase().includes(keyword) ||
+                      option.customer_name.toLowerCase().includes(keyword)
+                    )
+                  }}
+                  searchValue={customerSearchValue}
+                  onSearch={v => setCustomerSearchValue(v)}
                   options={customerOptions}
+                  style={{ width: '100%' }}
                 />
               </Form.Item>
             </Col>

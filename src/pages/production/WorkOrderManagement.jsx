@@ -5,7 +5,7 @@ const { RangePicker } = DatePicker
 import {
   ToolOutlined, SearchOutlined, ReloadOutlined,
   PlayCircleOutlined, CheckCircleOutlined, ClockCircleOutlined,
-  PlusOutlined, EyeOutlined
+  PlusOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
@@ -95,6 +95,7 @@ export default function WorkOrderManagement() {
   const refresh = useCallback(() => setQuery(q => ({ ...q })), [])
 
   const lineOptions = lines.map(l => ({ label: l.line_name, value: l.line_id }))
+  const runningLineOptions = lines.filter(l => l.status === '运行中').map(l => ({ label: l.line_name, value: l.line_id }))
   // 仅下发订单可被关联到新工单
   const releasedOrders = orders.filter(o => o.status === '下发')
   const orderOptions = releasedOrders
@@ -265,7 +266,6 @@ export default function WorkOrderManagement() {
           >
             <Button type="link" size="small" danger>删除</Button>
           </Popconfirm>
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(w)}>详情</Button>
         </Space>
       )
     }
@@ -273,12 +273,11 @@ export default function WorkOrderManagement() {
       return (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleFinish(w)}>完工</Button>
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(w)}>详情</Button>
+          <Button type="link" size="small" onClick={() => handleView(w)}>详情</Button>
         </Space>
       )
     }
-    // 完工状态仅可查看详情
-    return <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(w)}>详情</Button>
+    return <Button type="link" size="small" onClick={() => handleView(w)}>详情</Button>
   }
 
   const columns = [
@@ -491,7 +490,7 @@ export default function WorkOrderManagement() {
               <Form.Item label="产线" name="line_id" rules={[{ required: true, message: '请选择产线' }]}>
                 <Select
                   placeholder="请选择产线"
-                  options={lineOptions}
+                  options={runningLineOptions}
                   disabled={!!editing}
                 />
               </Form.Item>
