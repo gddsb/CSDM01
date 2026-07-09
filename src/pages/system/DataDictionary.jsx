@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Table, Tag, Button, Drawer, Descriptions, Input, Select, Space, message } from 'antd'
-import { DatabaseOutlined, EyeOutlined, ReloadOutlined, SyncOutlined, TableOutlined } from '@ant-design/icons'
+import { DatabaseOutlined, ReloadOutlined, SyncOutlined, TableOutlined } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 import dayjs from 'dayjs'
@@ -19,6 +19,16 @@ export default function DataDictionary() {
   const [currentTable, setCurrentTable] = useState(null)
   const [columns, setColumns] = useState([])
   const [refreshing, setRefreshing] = useState(false)
+
+  // 表记录抽屉
+  const [recordsVisible, setRecordsVisible] = useState(false)
+  const [recordsTable, setRecordsTable] = useState(null)
+  const [recordsData, setRecordsData] = useState([])
+  const [recordsTotal, setRecordsTotal] = useState(0)
+  const [recordsLoading, setRecordsLoading] = useState(false)
+  const [recordsPage, setRecordsPage] = useState(1)
+  const [recordsPageSize, setRecordsPageSize] = useState(20)
+  const [recordFields, setRecordFields] = useState([])
 
   const [keywordInput, setKeywordInput] = useState('')
   const [categoryInput, setCategoryInput] = useState(undefined)
@@ -62,6 +72,28 @@ export default function DataDictionary() {
     setDetailVisible(true)
   }
 
+  const handleViewRecords = async (record, page = 1, pageSize = 20) => {
+    setRecordsTable(record)
+    setRecordsVisible(true)
+    setRecordsPage(page)
+    setRecordsPageSize(pageSize)
+    setRecordsLoading(true)
+    try {
+      const res = await api.get(`/system/config/data-dictionary/${record.table_name}/records`, {
+        params: { page, pageSize },
+      })
+      setRecordsData(res.data?.list || [])
+      setRecordsTotal(res.data?.total || 0)
+      setRecordFields(res.data?.fields || [])
+    } catch (err) {
+      message.error(err.message || '获取表记录失败')
+      setRecordsData([])
+      setRecordsTotal(0)
+    } finally {
+      setRecordsLoading(false)
+    }
+  }
+
   const handleRefreshDictionary = async () => {
     setRefreshing(true)
     try {
@@ -93,9 +125,12 @@ export default function DataDictionary() {
       render: v => v ? dayjs(v).format('YYYY-MM-DD HH:mm:ss') : '-',
     },
     {
-      title: '操作', key: 'action', width: 100, fixed: 'right',
+      title: '操作', key: 'action', width: 130, fixed: 'right',
       render: (_, record) => (
-        <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>查看</Button>
+        <Space size="small">
+          <Button type="link" size="small" onClick={() => handleViewDetail(record)}>结构</Button>
+          <Button type="link" size="small" onClick={() => handleViewRecords(record)}>记录</Button>
+        </Space>
       ),
     },
   ]
@@ -142,7 +177,7 @@ export default function DataDictionary() {
             dataSource={tableList}
             rowKey="dict_id"
             loading={loading}
-            scroll={{ x: 1000 }}
+            scroll={{ x: 1100 }}
             pagination={{
               pageSize: query.pageSize,
               current: query.page,
@@ -194,6 +229,52 @@ export default function DataDictionary() {
               rowKey="name"
               pagination={false}
               scroll={{ y: 400 }}
+            />
+          </>
+        )}
+      </Drawer>
+
+      <Drawer
+        title={`${recordsTable?.table_name || ''} - 记录`}
+        placement="right"
+        width={1100}
+        open={recordsVisible}
+        onClose={() => setRecordsVisible(false)}
+        destroyOnClose
+      >
+        {recordsTable && (
+          <>
+            <Descriptions column={3} size="small" style={{ marginBottom: 16 }}>
+              <Descriptions.Item label="表名">{recordsTable.table_name}</Descriptions.Item>
+              <Descriptions.Item label="记录数">{recordsTotal}</Descriptions.Item>
+              <Descriptions.Item label="说明">{recordsTable.purpose || '-'}</Descriptions.Item>
+            </Descriptions>
+            <Table
+              size="small"
+              columns={(recordFields.length ? recordFields : Object.keys(recordsData[0] || {}).map(name => ({ name }))).map(f => ({
+                title: f.comment ? `${f.name}（${f.comment}）` : f.name,
+                dataIndex: f.name,
+                key: f.name,
+                width: 150,
+                ellipsis: true,
+                render: v => {
+                  if (v === null || v === undefined) return <span style={{ color: '#bbb' }}>-</span>
+                  if (typeof v === 'object') return JSON.stringify(v)
+                  return String(v)
+                },
+              }))}
+              dataSource={recordsData}
+              rowKey={(_, i) => i}
+              loading={recordsLoading}
+              scroll={{ x: 'max-content', y: 500 }}
+              pagination={{
+                current: recordsPage,
+                pageSize: recordsPageSize,
+                total: recordsTotal,
+                showSizeChanger: true,
+                showTotal: t => `共 ${t} 条`,
+                onChange: (page, pageSize) => handleViewRecords(recordsTable, page, pageSize),
+              }}
             />
           </>
         )}

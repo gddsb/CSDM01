@@ -20,6 +20,21 @@ const Process = sequelize.define('Process', {
     type: DataTypes.INTEGER,
     defaultValue: 0,
   },
+  has_material: {
+    type: DataTypes.TINYINT,
+    defaultValue: 0,
+    get() {
+      const val = this.getDataValue('has_material')
+      return val === 1 ? '是' : val === 0 ? '否' : val
+    },
+    set(val) {
+      if (typeof val === 'string') {
+        this.setDataValue('has_material', val === '是' ? 1 : 0)
+      } else {
+        this.setDataValue('has_material', val)
+      }
+    },
+  },
   status: {
     type: DataTypes.TINYINT,
     defaultValue: 1,

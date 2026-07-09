@@ -25,12 +25,24 @@ const ProcessMaterial = sequelize.define('ProcessMaterial', {
   material_type: {
     type: DataTypes.STRING(100),
   },
+  material_code: {
+    type: DataTypes.STRING(100),
+  },
+  material_name: {
+    type: DataTypes.STRING(200),
+  },
+  specification: {
+    type: DataTypes.STRING(200),
+  },
   material_batch: {
     type: DataTypes.STRING(100),
   },
   quantity: {
     type: DataTypes.DECIMAL(12, 2),
     defaultValue: 0,
+  },
+  label_images: {
+    type: DataTypes.TEXT,
   },
   record_user: {
     type: DataTypes.STRING(50),

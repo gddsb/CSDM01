@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Table, Tag, Button, Modal, Form, Input, InputNumber, Select, Space, Row, Col,
-  message, Drawer, Descriptions, Card, Divider, Popconfirm, DatePicker,
+  message, Drawer, Descriptions, Card, Divider, Popconfirm, DatePicker, Tabs,
+  Upload, Image,
 } from 'antd'
 import {
-  ProfileOutlined, ClockCircleOutlined, SearchOutlined, ReloadOutlined,
+  ProfileOutlined, ClockCircleOutlined,
   EyeOutlined, EditOutlined, PlusOutlined, DeleteOutlined, SaveOutlined,
+  UploadOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
@@ -24,11 +26,18 @@ export default function ProcessReporting() {
   const [defectTypes, setDefectTypes] = useState([])
   const [processes, setProcesses] = useState([])
   const [devices, setDevices] = useState([])
+  const [materials, setMaterials] = useState([])
+  const [lineProcesses, setLineProcesses] = useState([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const [selectedProcessId, setSelectedProcessId] = useState(null)
-  const [processDefects, setProcessDefects] = useState([])
+  const [activeTab, setActiveTab] = useState('defect')
+
+  const [processDefectList, setProcessDefectList] = useState([])
+  const [materialDefectList, setMaterialDefectList] = useState([])
+  const [scrapDefectList, setScrapDefectList] = useState([])
+  const [processMaterialList, setProcessMaterialList] = useState([])
 
   const [viewRecord, setViewRecord] = useState(null)
   const [editing, setEditing] = useState(null)
@@ -37,8 +46,15 @@ export default function ProcessReporting() {
   const [form] = Form.useForm()
   const [addForm] = Form.useForm()
 
-  const [keywordInput, setKeywordInput] = useState('')
-  const [woQuery, setWoQuery] = useState({ page: 1, pageSize: 1000, keyword: '', status: '开工' })
+  const [defectModalOpen, setDefectModalOpen] = useState(false)
+  const [defectModalType, setDefectModalType] = useState('process')
+  const [editingDefect, setEditingDefect] = useState(null)
+  const [defectModalForm] = Form.useForm()
+
+  const [materialModalOpen, setMaterialModalOpen] = useState(false)
+  const [materialModalForm] = Form.useForm()
+
+  const [woQuery, setWoQuery] = useState({ page: 1, pageSize: 1000, keyword: '', status: '开工,完工' })
   const [woTotal, setWoTotal] = useState(0)
   const [selectedWOId, setSelectedWOId] = useState(null)
 
@@ -48,23 +64,21 @@ export default function ProcessReporting() {
     totalOutputQty: 0,
   })
 
-  const [addDefectModalOpen, setAddDefectModalOpen] = useState(false)
-  const [addDefectType, setAddDefectType] = useState('')
-  const [addDefectForm] = Form.useForm()
-
   useEffect(() => {
     let cancelled = false
     const run = async () => {
       try {
-        const [defectRes, procRes, devRes] = await Promise.all([
+        const [defectRes, procRes, devRes, matRes] = await Promise.all([
           api.get('/basic/defect-types', { params: { page: 1, pageSize: 1000, status: '启用' } }),
           api.get('/basic/processes', { params: { page: 1, pageSize: 1000 } }),
           api.get('/basic/devices', { params: { page: 1, pageSize: 1000 } }),
+          api.get('/basic/materials', { params: { page: 1, pageSize: 1000 } }),
         ])
         if (cancelled) return
         setDefectTypes(defectRes.data || [])
         setProcesses(procRes.data || [])
         setDevices(devRes.data || [])
+        setMaterials(matRes.data || [])
       } catch (err) {
         if (!cancelled) message.error(err.message || '获取基础数据失败')
       }
@@ -112,6 +126,7 @@ export default function ProcessReporting() {
   useEffect(() => {
     if (!selectedWO) return
     fetchReports(selectedWO.work_order_id)
+    fetchLineProcesses(selectedWO.line_id)
   }, [selectedWO])
 
   const fetchReports = useCallback(async (woId) => {
@@ -125,9 +140,30 @@ export default function ProcessReporting() {
     }
   }, [])
 
+  const fetchLineProcesses = useCallback(async (lineId) => {
+    if (!lineId) {
+      setLineProcesses([])
+      return
+    }
+    try {
+      const res = await api.get(`/basic/production-lines/${lineId}/processes`)
+      const procs = res.data || []
+      const sorted = [...procs].sort((a, b) => {
+        const sa = Number(a.sort_order) || 0
+        const sb = Number(b.sort_order) || 0
+        return sa - sb
+      })
+      setLineProcesses(sorted)
+    } catch (err) {
+      setLineProcesses([])
+    }
+  }, [])
+
   const fetchProcessDefects = useCallback(async (processId) => {
     if (!selectedWO || !processId) {
-      setProcessDefects([])
+      setProcessDefectList([])
+      setMaterialDefectList([])
+      setScrapDefectList([])
       return
     }
     try {
@@ -139,113 +175,104 @@ export default function ProcessReporting() {
           pageSize: 1000,
         },
       })
-      setProcessDefects(res.data || [])
+      const list = res.data || []
+      const existingNames = list.map(d => d.defect_name)
+      const defaultDefects = defectTypes.filter(d => d.display && d.status === '启用' && ['来料不良', '制程不良', '检验报废'].includes(d.defect_type))
+      const merged = [...list]
+      for (const dt of defaultDefects) {
+        if (!existingNames.includes(dt.defect_name)) {
+          merged.push({
+            defect_id: null,
+            work_order_id: selectedWO.work_order_id,
+            process_id: processId,
+            defect_category: dt.defect_type,
+            defect_name: dt.defect_name,
+            defect_type_id: dt.defect_id,
+            quantity: 0,
+            unit: dt.defect_unit || '',
+            defect_images: [],
+            is_default: true,
+          })
+        }
+      }
+      setProcessDefectList(merged.filter(d => d.defect_category === '制程不良'))
+      setMaterialDefectList(merged.filter(d => d.defect_category === '来料不良'))
+      setScrapDefectList(merged.filter(d => d.defect_category === '检验报废'))
     } catch (err) {
       message.error(err.message || '获取不良记录失败')
+    }
+  }, [selectedWO, defectTypes])
+
+  const fetchProcessMaterials = useCallback(async (processId) => {
+    if (!selectedWO || !processId) {
+      setProcessMaterialList([])
+      return
+    }
+    try {
+      const res = await api.get('/production/process-materials', {
+        params: {
+          work_order_id: selectedWO.work_order_id,
+          process_id: processId,
+          page: 1,
+          pageSize: 1000,
+        },
+      })
+      setProcessMaterialList(res.data || [])
+    } catch (err) {
+      message.error(err.message || '获取物料记录失败')
     }
   }, [selectedWO])
 
   useEffect(() => {
-    fetchProcessDefects(selectedProcessId)
-  }, [selectedProcessId, fetchProcessDefects])
-
-  const processDefectItems = useMemo(() => {
-    if (!selectedProcessId) return { process: [], material: [] }
-
-    const defaultProcessDefects = defectTypes.filter(d =>
-      d.category_name === '制程不良' && d.display === true
-    )
-    const defaultMaterialDefects = defectTypes.filter(d =>
-      d.category_name === '来料不良' && d.display === true
-    )
-
-    const existingMap = {}
-    processDefects.forEach(d => {
-      existingMap[d.defect_name] = d
-    })
-
-    const processItems = defaultProcessDefects.map(d => ({
-      defect_type_id: d.defect_id,
-      defect_code: d.defect_code || '',
-      defect_category: d.category_name,
-      defect_name: d.defect_name,
-      quantity: existingMap[d.defect_name]?.quantity || 0,
-      unit: d.defect_unit || '',
-      isDefault: true,
-    }))
-
-    const extraProcess = processDefects.filter(d =>
-      d.defect_category === '制程不良' && !defaultProcessDefects.find(dp => dp.defect_name === d.defect_name)
-    )
-    extraProcess.forEach(d => {
-      processItems.push({
-        defect_type_id: d.defect_type_id,
-        defect_code: d.defect_code || '',
-        defect_category: d.defect_category,
-        defect_name: d.defect_name,
-        quantity: d.quantity,
-        unit: d.unit || '',
-        isDefault: false,
-      })
-    })
-
-    const materialItems = defaultMaterialDefects.map(d => ({
-      defect_type_id: d.defect_id,
-      defect_code: d.defect_code || '',
-      defect_category: d.category_name,
-      defect_name: d.defect_name,
-      quantity: existingMap[d.defect_name]?.quantity || 0,
-      unit: d.defect_unit || '',
-      isDefault: true,
-    }))
-
-    const extraMaterial = processDefects.filter(d =>
-      d.defect_category === '来料不良' && !defaultMaterialDefects.find(dm => dm.defect_name === d.defect_name)
-    )
-    extraMaterial.forEach(d => {
-      materialItems.push({
-        defect_type_id: d.defect_type_id,
-        defect_code: d.defect_code || '',
-        defect_category: d.defect_category,
-        defect_name: d.defect_name,
-        quantity: d.quantity,
-        unit: d.unit || '',
-        isDefault: false,
-      })
-    })
-
-    return { process: processItems, material: materialItems }
-  }, [selectedProcessId, defectTypes, processDefects])
-
-  const [processDefectData, setProcessDefectData] = useState([])
-  const [materialDefectData, setMaterialDefectData] = useState([])
-
-  useEffect(() => {
-    setProcessDefectData(processDefectItems.process.map((item, idx) => ({ ...item, key: `p-${idx}` })))
-    setMaterialDefectData(processDefectItems.material.map((item, idx) => ({ ...item, key: `m-${idx}` })))
-  }, [processDefectItems])
+    if (activeTab === 'defect') {
+      fetchProcessDefects(selectedProcessId)
+    } else if (activeTab === 'material') {
+      fetchProcessMaterials(selectedProcessId)
+    }
+  }, [activeTab, selectedProcessId, fetchProcessDefects, fetchProcessMaterials])
 
   const processOptions = useMemo(() => {
-    if (!selectedWO) return []
-    return reports.map(r => ({
-      label: r.process_name,
-      value: r.process_id,
+    return lineProcesses.map(p => ({
+      label: `${p.process_code || ''} ${p.process_name || ''}`.trim(),
+      value: p.process_id,
     }))
-  }, [selectedWO, reports])
+  }, [lineProcesses])
 
   const handleSelectWO = (record) => {
     setSelectedWO(record)
     setSelectedWOId(record?.work_order_id)
     setSelectedProcessId(null)
+    setActiveTab('defect')
   }
 
-  const handleSearch = () => {
-    setWoQuery(q => ({ ...q, page: 1, keyword: keywordInput }))
+  const handleFinishWO = async () => {
+    try {
+      setSaving(true)
+      const res = await api.post(`/production/work-orders/${selectedWO.work_order_id}/finish`)
+      message.success(res.message || '工单已完工')
+      const updated = { ...selectedWO, status: '完工' }
+      setSelectedWO(updated)
+      setWoQuery(q => ({ ...q }))
+    } catch (e) {
+      message.error(e.message || '完工失败')
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const handleReset = () => {
-    setKeywordInput('')
-    setWoQuery(q => ({ ...q, page: 1, keyword: '' }))
+  const handleStartWO = async () => {
+    try {
+      setSaving(true)
+      const res = await api.post(`/production/work-orders/${selectedWO.work_order_id}/start`)
+      message.success(res.message || '工单已开工')
+      const updated = { ...selectedWO, status: '开工' }
+      setSelectedWO(updated)
+      setWoQuery(q => ({ ...q }))
+    } catch (e) {
+      message.error(e.message || '开工失败')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleAdd = () => {
@@ -337,101 +364,132 @@ export default function ProcessReporting() {
     }
   }
 
-  const handleProcessQtyChange = (key, value) => {
-    setProcessDefectData(prev =>
-      prev.map(item => item.key === key ? { ...item, quantity: Number(value) || 0 } : item)
-    )
+  const handleAddDefect = (type, record) => {
+    setDefectModalType(type)
+    setEditingDefect(record || null)
+    defectModalForm.resetFields()
+    if (record) {
+      defectModalForm.setFieldsValue({
+        defect_type_id: record.defect_type_id,
+        defect_name: record.defect_name,
+        quantity: record.quantity || 0,
+        unit: record.unit || '',
+        defect_images: record.defect_images || [],
+      })
+    } else {
+      defectModalForm.setFieldsValue({ quantity: 0, defect_images: [] })
+    }
+    setDefectModalOpen(true)
   }
 
-  const handleMaterialQtyChange = (key, value) => {
-    setMaterialDefectData(prev =>
-      prev.map(item => item.key === key ? { ...item, quantity: Number(value) || 0 } : item)
-    )
-  }
-
-  const handleSaveDefects = async () => {
-    if (!selectedWO || !selectedProcessId) return
+  const handleDefectModalSubmit = async () => {
     try {
+      const values = await defectModalForm.validateFields()
+      const defectType = defectTypes.find(d => d.defect_id === values.defect_type_id)
+      const defectName = values.defect_name || defectType?.defect_name
+      const listMap = { process: processDefectList, material: materialDefectList, scrap: scrapDefectList }
+      const currentList = listMap[defectModalType] || processDefectList
+      if (!editingDefect) {
+        const exists = currentList.find(d => d.defect_name === defectName)
+        if (exists) {
+          message.warning('同一工单同一不良项目只允许一条记录')
+          return
+        }
+      }
       setSaving(true)
-      const allItems = [
-        ...processDefectData.filter(d => Number(d.quantity) > 0),
-        ...materialDefectData.filter(d => Number(d.quantity) > 0),
-      ]
+      const catMap = { process: '制程不良', material: '来料不良', scrap: '检验报废' }
+      const category = catMap[defectModalType] || '制程不良'
       const payload = {
         work_order_id: selectedWO.work_order_id,
         process_id: selectedProcessId,
-        items: allItems,
+        defect_category: category,
+        defect_name: defectName,
+        defect_type_id: values.defect_type_id || null,
+        quantity: Number(values.quantity) || 0,
+        unit: values.unit || defectType?.defect_unit || '',
+        defect_images: values.defect_images || [],
       }
-      const res = await api.post('/production/process-defects/batch-save', payload)
-      message.success(res.message || '保存成功')
+      if (editingDefect?.defect_id) {
+        await api.put(`/production/process-defects/${editingDefect.defect_id}`, payload)
+        message.success('编辑成功')
+      } else {
+        await api.post('/production/process-defects', payload)
+        message.success('添加成功')
+      }
+      setDefectModalOpen(false)
       fetchProcessDefects(selectedProcessId)
-    } catch (err) {
-      message.error(err.message || '保存失败')
+    } catch (e) {
+      if (e?.errorFields) return
+      message.error(e.message || '操作失败')
     } finally {
       setSaving(false)
     }
   }
 
-  const handleAddDefect = (type) => {
-    setAddDefectType(type)
-    addDefectForm.resetFields()
-    setAddDefectModalOpen(true)
-  }
-
-  const handleAddDefectSubmit = async () => {
+  const handleDeleteDefect = async (id) => {
+    if (!id) {
+      message.warning('默认不良项目无法删除')
+      return
+    }
     try {
-      const values = await addDefectForm.validateFields()
-      const defectType = defectTypes.find(d => d.defect_id === values.defect_type_id)
-      const defectName = values.defect_name || defectType?.defect_name
-
-      if (addDefectType === 'process') {
-        const exists = processDefectData.find(item => item.defect_name === defectName)
-        if (exists) {
-          message.warning('同一分类下同一不良项目只允许一条记录')
-          return
-        }
-      } else {
-        const exists = materialDefectData.find(item => item.defect_name === defectName)
-        if (exists) {
-          message.warning('同一分类下同一不良项目只允许一条记录')
-          return
-        }
-      }
-
-      const newItem = {
-        key: `${addDefectType}-${Date.now()}`,
-        defect_type_id: values.defect_type_id,
-        defect_code: defectType?.defect_code || '',
-        defect_category: addDefectType === 'process' ? '制程不良' : '来料不良',
-        defect_name: defectName,
-        quantity: values.quantity || 0,
-        unit: values.unit || defectType?.defect_unit || '',
-        isDefault: false,
-      }
-
-      if (addDefectType === 'process') {
-        setProcessDefectData(prev => [...prev, newItem])
-      } else {
-        setMaterialDefectData(prev => [...prev, newItem])
-      }
-      setAddDefectModalOpen(false)
-      message.success('已添加，点击保存按钮生效')
+      setSaving(true)
+      await api.delete(`/production/process-defects/${id}`)
+      message.success('删除成功')
+      fetchProcessDefects(selectedProcessId)
     } catch (e) {
-      if (e?.errorFields) return
-      message.error(e.message || '操作失败')
+      message.error(e.message || '删除失败')
+    } finally {
+      setSaving(false)
     }
   }
 
-  const handleDeleteDefectItem = (key, type) => {
-    if (type === 'process') {
-      setProcessDefectData(prev => prev.filter(item => item.key !== key))
-    } else {
-      setMaterialDefectData(prev => prev.filter(item => item.key !== key))
+  const handleAddMaterial = () => {
+    materialModalForm.resetFields()
+    setMaterialModalOpen(true)
+  }
+
+  const handleMaterialModalSubmit = async () => {
+    try {
+      const values = await materialModalForm.validateFields()
+      setSaving(true)
+      const payload = {
+        work_order_id: selectedWO.work_order_id,
+        process_id: selectedProcessId,
+        material_type: values.material_type || '投入物料',
+        material_code: values.material_code || '',
+        material_name: values.material_name || '',
+        specification: values.specification || '',
+        material_batch: values.material_batch || '',
+        quantity: Number(values.quantity) || 0,
+        label_images: values.label_images || [],
+      }
+      await api.post('/production/process-materials', payload)
+      message.success('添加成功')
+      setMaterialModalOpen(false)
+      fetchProcessMaterials(selectedProcessId)
+    } catch (e) {
+      if (e?.errorFields) return
+      message.error(e.message || '操作失败')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeleteMaterial = async (id) => {
+    try {
+      setSaving(true)
+      await api.delete(`/production/process-materials/${id}`)
+      message.success('删除成功')
+      fetchProcessMaterials(selectedProcessId)
+    } catch (e) {
+      message.error(e.message || '删除失败')
+    } finally {
+      setSaving(false)
     }
   }
 
   const reportColumns = [
-    { title: '工单号', dataIndex: 'work_order_no', key: 'work_order_no', width: 150 },
+    { title: '工单号', dataIndex: 'work_order_no', key: 'work_order_no', width: 140 },
     { title: '工序', dataIndex: 'process_name', key: 'process_name', width: 120 },
     { title: '投入数量', dataIndex: 'input_qty', key: 'input_qty', width: 100, align: 'right', render: v => (v || 0).toLocaleString() },
     {
@@ -441,18 +499,16 @@ export default function ProcessReporting() {
         return Math.max(0, q).toLocaleString()
       },
     },
-    { title: '来料不良', dataIndex: 'defect_material', key: 'defect_material', width: 100, align: 'right', render: v => (v || 0).toLocaleString() },
-    { title: '制程不良', dataIndex: 'defect_process', key: 'defect_process', width: 100, align: 'right', render: v => (v || 0).toLocaleString() },
-    { title: '检验报废', dataIndex: 'defect_scrap', key: 'defect_scrap', width: 100, align: 'right', render: v => (v || 0).toLocaleString() },
-    { title: '投入工时', dataIndex: 'report_time', key: 'input_hours', width: 100, render: () => '-' },
-    { title: '开工人', dataIndex: 'report_user_name', key: 'report_user_name', width: 100, render: v => v || '-' },
+    { title: '来料不良', dataIndex: 'defect_material', key: 'defect_material', width: 90, align: 'right', render: v => (v || 0).toLocaleString() },
+    { title: '制程不良', dataIndex: 'defect_process', key: 'defect_process', width: 90, align: 'right', render: v => (v || 0).toLocaleString() },
+    { title: '检验报废', dataIndex: 'defect_scrap', key: 'defect_scrap', width: 90, align: 'right', render: v => (v || 0).toLocaleString() },
+    { title: '报工人', dataIndex: 'report_user_name', key: 'report_user_name', width: 90, render: v => v || '-' },
     {
-      title: '开工时间', key: 'start_time', width: 160,
+      title: '报工时间', key: 'report_time', width: 140,
       render: (_, r) => r.report_time ? dayjs(r.report_time).format('YYYY-MM-DD HH:mm') : '-',
     },
-    { title: '完工时间', key: 'finish_time', width: 160, render: () => '-' },
     {
-      title: '操作', key: 'action', width: 120, fixed: 'right',
+      title: '操作', key: 'action', width: 100, fixed: 'right',
       render: (_, r) => (
         <Space size="small">
           <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => setViewRecord(r)}>查看</Button>
@@ -464,64 +520,85 @@ export default function ProcessReporting() {
     },
   ]
 
-  const woColumns = [
-    { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 160 },
-    { title: '产品名称', dataIndex: 'material_name', key: 'material_name', width: 140 },
-    { title: '计划数量', dataIndex: 'planned_qty', key: 'planned_qty', width: 100, align: 'right', render: v => (v || 0).toLocaleString() },
-    { title: '完工数量', dataIndex: 'finished_qty', key: 'finished_qty', width: 100, align: 'right', render: v => (v || 0).toLocaleString() },
-    { title: '产线', dataIndex: 'line_name', key: 'line_name', width: 120 },
+  const defectTypeOptions = (category) => {
+    const catMap = { process: '制程不良', material: '来料不良', scrap: '检验报废' }
+    const catName = catMap[category] || '制程不良'
+    return defectTypes
+      .filter(d => d.category_name === catName)
+      .map(d => ({ label: d.defect_name, value: d.defect_id, unit: d.defect_unit, code: d.defect_code }))
+  }
+
+  const materialOptions = materials.map(m => ({
+    label: `${m.material_code || ''} ${m.material_name || ''}`.trim(),
+    value: m.material_id,
+    material_code: m.material_code,
+    material_name: m.material_name,
+    specification: m.specification,
+  }))
+
+  const defectColumns = (type) => [
+    { title: '不良项目', dataIndex: 'defect_name', key: 'defect_name', width: 160 },
+    { title: '不良数量', dataIndex: 'quantity', key: 'quantity', width: 100, align: 'right', render: v => (v || 0).toLocaleString() },
+    { title: '单位', dataIndex: 'unit', key: 'unit', width: 70, render: v => v || '-' },
     {
-      title: '状态', dataIndex: 'status', key: 'status', width: 80,
-      render: v => <Tag color={woStatusColorMap[v] || 'default'}>{v}</Tag>,
+      title: '不良图片', key: 'images', width: 120,
+      render: (_, r) => {
+        const imgs = r.defect_images || []
+        if (!imgs.length) return <span style={{ color: '#bbb' }}>无</span>
+        return (
+          <Image.PreviewGroup>
+            <Space size={4}>
+              {imgs.slice(0, 3).map((img, i) => (
+                <Image key={i} src={img} width={32} height={32} style={{ objectFit: 'cover', borderRadius: 2 }} />
+              ))}
+            </Space>
+          </Image.PreviewGroup>
+        )
+      },
+    },
+    {
+      title: '操作', key: 'action', width: 110,
+      render: (_, r) => selectedWO?.status === '开工' && (
+        <Space size="small">
+          {r.defect_id && (
+            <Button type="link" size="small" onClick={() => handleAddDefect(type, r)}>编辑</Button>
+          )}
+          {r.defect_id && (
+            <Popconfirm title="确认删除？" onConfirm={() => handleDeleteDefect(r.defect_id)}>
+              <Button type="link" size="small" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          )}
+        </Space>
+      ),
     },
   ]
 
-  const processDefectColumns = [
-    { title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 120, render: v => v || '-' },
-    { title: '不良项目', dataIndex: 'defect_name', key: 'defect_name', width: 180 },
-    { title: '单位', dataIndex: 'unit', key: 'unit', width: 80, render: v => v || '-' },
+  const materialColumns = [
+    { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 130, render: v => v || '-' },
+    { title: '品名', dataIndex: 'material_name', key: 'material_name', width: 160, render: v => v || '-' },
+    { title: '规格', dataIndex: 'specification', key: 'specification', width: 140, render: v => v || '-' },
+    { title: '批号', dataIndex: 'material_batch', key: 'material_batch', width: 120, render: v => v || '-' },
+    { title: '数量', dataIndex: 'quantity', key: 'quantity', width: 90, align: 'right', render: v => (v || 0).toLocaleString() },
     {
-      title: '不良数量', key: 'quantity', width: 120, align: 'right',
-      render: (_, r) => (
-        <InputNumber
-          min={0}
-          value={r.quantity}
-          onChange={val => handleProcessQtyChange(r.key, val)}
-          style={{ width: '100%' }}
-          disabled={selectedWO?.status !== '开工'}
-        />
-      ),
+      title: '标签图片', key: 'images', width: 120,
+      render: (_, r) => {
+        const imgs = r.label_images || []
+        if (!imgs.length) return <span style={{ color: '#bbb' }}>无</span>
+        return (
+          <Image.PreviewGroup>
+            <Space size={4}>
+              {imgs.slice(0, 3).map((img, i) => (
+                <Image key={i} src={img} width={32} height={32} style={{ objectFit: 'cover', borderRadius: 2 }} />
+              ))}
+            </Space>
+          </Image.PreviewGroup>
+        )
+      },
     },
     {
-      title: '操作', key: 'action', width: 80,
-      render: (_, r) => !r.isDefault && selectedWO?.status === '开工' && (
-        <Popconfirm title="确认删除？" onConfirm={() => handleDeleteDefectItem(r.key, 'process')}>
-          <Button type="link" size="small" danger icon={<DeleteOutlined />} />
-        </Popconfirm>
-      ),
-    },
-  ]
-
-  const materialDefectColumns = [
-    { title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 120, render: v => v || '-' },
-    { title: '不良项目', dataIndex: 'defect_name', key: 'defect_name', width: 180 },
-    { title: '单位', dataIndex: 'unit', key: 'unit', width: 80, render: v => v || '-' },
-    {
-      title: '不良数量', key: 'quantity', width: 120, align: 'right',
-      render: (_, r) => (
-        <InputNumber
-          min={0}
-          value={r.quantity}
-          onChange={val => handleMaterialQtyChange(r.key, val)}
-          style={{ width: '100%' }}
-          disabled={selectedWO?.status !== '开工'}
-        />
-      ),
-    },
-    {
-      title: '操作', key: 'action', width: 80,
-      render: (_, r) => !r.isDefault && selectedWO?.status === '开工' && (
-        <Popconfirm title="确认删除？" onConfirm={() => handleDeleteDefectItem(r.key, 'material')}>
+      title: '操作', key: 'action', width: 70,
+      render: (_, r) => selectedWO?.status === '开工' && (
+        <Popconfirm title="确认删除？" onConfirm={() => handleDeleteMaterial(r.material_id)}>
           <Button type="link" size="small" danger icon={<DeleteOutlined />} />
         </Popconfirm>
       ),
@@ -534,12 +611,119 @@ export default function ProcessReporting() {
     { label: '累计产出数量', value: statsData.totalOutputQty.toLocaleString(), icon: <ProfileOutlined />, color: '#4CAF50' },
   ]
 
-  const defectTypeOptions = (category) => {
-    const catName = category === 'process' ? '制程不良' : '来料不良'
-    return defectTypes
-      .filter(d => d.category_name === catName)
-      .map(d => ({ label: d.defect_name, value: d.defect_id, unit: d.defect_unit }))
+  const dummyUpload = {
+    beforeUpload: () => false,
   }
+
+  const defectImagesNorm = (val) => Array.isArray(val) ? val : []
+  const labelImagesNorm = (val) => Array.isArray(val) ? val : []
+
+  const tabItems = [
+    {
+      key: 'defect',
+      label: '工序不良记录',
+      children: selectedProcessId ? (
+        <Row gutter={16}>
+          <Col span={12}>
+            <Card
+              size="small"
+              title={<span style={{ color: '#FA8C16' }}>来料不良</span>}
+              extra={selectedWO?.status === '开工' && (
+                <Button size="small" type="link" icon={<PlusOutlined />} onClick={() => handleAddDefect('material')}>
+                  添加
+                </Button>
+              )}
+              style={{ height: '100%' }}
+            >
+              <Table
+                columns={defectColumns('material')}
+                dataSource={materialDefectList}
+                rowKey="defect_id"
+                size="small"
+                pagination={false}
+                locale={{ emptyText: '暂无数来不良记录' }}
+              />
+            </Card>
+          </Col>
+          <Col span={12}>
+            <Card
+              size="small"
+              title={<span style={{ color: '#F5222D' }}>制程不良</span>}
+              extra={selectedWO?.status === '开工' && (
+                <Button size="small" type="link" icon={<PlusOutlined />} onClick={() => handleAddDefect('process')}>
+                  添加
+                </Button>
+              )}
+              style={{ height: '100%' }}
+            >
+              <Table
+                columns={defectColumns('process')}
+                dataSource={processDefectList}
+                rowKey="defect_id"
+                size="small"
+                pagination={false}
+                locale={{ emptyText: '暂无制程不良记录' }}
+              />
+            </Card>
+          </Col>
+        </Row>
+      ) : (
+        <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>请先选择工序</div>
+      ),
+    },
+    {
+      key: 'material',
+      label: '工序料品记录',
+      children: selectedProcessId ? (
+        <div>
+          <div style={{ textAlign: 'right', marginBottom: 8 }}>
+            {selectedWO?.status === '开工' && (
+              <Button type="primary" size="small" icon={<PlusOutlined />} onClick={handleAddMaterial}>
+                添加物料
+              </Button>
+            )}
+          </div>
+          <Table
+            columns={materialColumns}
+            dataSource={processMaterialList}
+            rowKey="material_id"
+            size="small"
+            scroll={{ x: 900 }}
+            pagination={false}
+            locale={{ emptyText: '暂无物料记录' }}
+          />
+        </div>
+      ) : (
+        <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>请先选择工序</div>
+      ),
+    },
+    {
+      key: 'scrap',
+      label: '检验报废记录',
+      children: selectedProcessId ? (
+        <Card
+          size="small"
+          title={<span style={{ color: '#722ED1' }}>检验报废</span>}
+          extra={selectedWO?.status === '开工' && (
+            <Button size="small" type="link" icon={<PlusOutlined />} onClick={() => handleAddDefect('scrap')}>
+              添加
+            </Button>
+          )}
+        >
+          <Table
+            columns={defectColumns('scrap')}
+            dataSource={scrapDefectList}
+            rowKey="defect_id"
+            size="small"
+            pagination={false}
+            locale={{ emptyText: '暂无检验报废记录' }}
+          />
+        </Card>
+      ) : (
+        <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>请先选择工序</div>
+      ),
+    },
+  ]
 
   return (
     <>
@@ -576,10 +760,16 @@ export default function ProcessReporting() {
                 />
               </Col>
               <Col>
-                <Space>
-                  <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>查询</Button>
-                  <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
-                </Space>
+                {selectedWO?.status === '开工' && (
+                  <Popconfirm title="确认完工？完工后将无法继续报工" onConfirm={handleFinishWO} disabled={saving}>
+                    <Button type="primary" loading={saving}>完工</Button>
+                  </Popconfirm>
+                )}
+                {selectedWO?.status === '完工' && Number(selectedWO?.start_qty) < Number(selectedWO?.planned_qty) && (
+                  <Popconfirm title="确认开工？" onConfirm={handleStartWO} disabled={saving}>
+                    <Button type="primary" loading={saving}>开工</Button>
+                  </Popconfirm>
+                )}
               </Col>
             </Row>
 
@@ -601,84 +791,27 @@ export default function ProcessReporting() {
                     <Space>
                       <Select
                         placeholder="请选择工序"
-                        style={{ width: 200 }}
+                        style={{ width: 220 }}
                         value={selectedProcessId}
                         onChange={setSelectedProcessId}
                         options={processOptions}
                         allowClear
+                        showSearch
+                        optionFilterProp="label"
                       />
-                      <span style={{ fontWeight: 600, marginLeft: 12 }}>工序报工</span>
-                    </Space>
-                  }
-                  extra={
-                    <Space>
-                      {selectedWO?.status === '开工' && (
+                      {selectedWO?.status === '开工' && selectedProcessId && (
                         <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
                           添加报工
-                        </Button>
-                      )}
-                      {selectedProcessId && selectedWO?.status === '开工' && (
-                        <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSaveDefects}>
-                          保存不良记录
                         </Button>
                       )}
                     </Space>
                   }
                 >
-                  {selectedProcessId ? (
-                    <Row gutter={16}>
-                      <Col span={12}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                          <span style={{ fontWeight: 600, color: '#FA8C16' }}>制程不良记录</span>
-                          {selectedWO?.status === '开工' && (
-                            <Button size="small" type="link" icon={<PlusOutlined />} onClick={() => handleAddDefect('process')}>
-                              添加不良项目
-                            </Button>
-                          )}
-                        </div>
-                        <Table
-                          columns={processDefectColumns}
-                          dataSource={processDefectData}
-                          rowKey="key"
-                          size="small"
-                          pagination={false}
-                          locale={{ emptyText: '暂无制程不良项目' }}
-                        />
-                      </Col>
-                      <Col span={12}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                          <span style={{ fontWeight: 600, color: '#1890FF' }}>来料不良登记</span>
-                          {selectedWO?.status === '开工' && (
-                            <Button size="small" type="link" icon={<PlusOutlined />} onClick={() => handleAddDefect('material')}>
-                              添加不良项目
-                            </Button>
-                          )}
-                        </div>
-                        <Table
-                          columns={materialDefectColumns}
-                          dataSource={materialDefectData}
-                          rowKey="key"
-                          size="small"
-                          pagination={false}
-                          locale={{ emptyText: '暂无来料不良项目' }}
-                        />
-                      </Col>
-                    </Row>
-                  ) : (
-                    <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
-                      请先选择工序
-                    </div>
-                  )}
-                </Card>
-
-                <Card size="small" title="报工列表">
-                  <Table
-                    columns={reportColumns}
-                    dataSource={reports}
-                    rowKey="report_id"
+                  <Tabs
+                    activeKey={activeTab}
+                    onChange={setActiveTab}
+                    items={tabItems}
                     size="small"
-                    scroll={{ x: 1500 }}
-                    pagination={false}
                   />
                 </Card>
               </>
@@ -851,6 +984,126 @@ export default function ProcessReporting() {
         </Form>
       </Modal>
 
+      <Modal
+        title={editingDefect ? '编辑不良记录' : (defectModalType === 'process' ? '添加制程不良' : defectModalType === 'scrap' ? '添加检验报废' : '添加来料不良')}
+        open={defectModalOpen}
+        onOk={handleDefectModalSubmit}
+        confirmLoading={saving}
+        onCancel={() => setDefectModalOpen(false)}
+        okText={editingDefect ? '保存' : '添加'}
+        cancelText="取消"
+        width={520}
+        destroyOnHidden
+      >
+        <Form form={defectModalForm} layout="vertical" className="compact-form" initialValues={{ quantity: 0, defect_images: [] }}>
+          <Form.Item label="不良项目" name="defect_type_id" rules={[{ required: true, message: '请选择不良项目' }]}>
+            <Select
+              placeholder="请选择不良项目"
+              showSearch
+              optionFilterProp="label"
+              options={defectTypeOptions(defectModalType)}
+              onChange={(value) => {
+                const d = defectTypes.find(dt => dt.defect_id === value)
+                if (d) {
+                  defectModalForm.setFieldsValue({
+                    defect_name: d.defect_name,
+                    unit: d.defect_unit,
+                  })
+                }
+              }}
+            />
+          </Form.Item>
+          <Form.Item label="不良名称" name="defect_name" rules={[{ required: true, message: '请输入不良名称' }]}>
+            <Input placeholder="可手动输入" />
+          </Form.Item>
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item label="不良数量" name="quantity" rules={[{ required: true, message: '请输入数量' }]}>
+                <InputNumber min={0} style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="单位" name="unit">
+                <Input placeholder="如：个、件" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item label="不良图片" name="defect_images" getValueFromEvent={defectImagesNorm}>
+            <Upload {...dummyUpload} listType="picture-card" multiple maxCount={6}>
+              <div>
+                <UploadOutlined />
+                <div style={{ marginTop: 4 }}>上传</div>
+              </div>
+            </Upload>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="添加工序物料"
+        open={materialModalOpen}
+        onOk={handleMaterialModalSubmit}
+        confirmLoading={saving}
+        onCancel={() => setMaterialModalOpen(false)}
+        okText="添加"
+        cancelText="取消"
+        width={560}
+        destroyOnHidden
+      >
+        <Form form={materialModalForm} layout="vertical" className="compact-form" initialValues={{ quantity: 0, label_images: [] }}>
+          <Form.Item label="料号" name="material_code">
+            <Select
+              placeholder="请选择料号"
+              allowClear
+              showSearch
+              optionFilterProp="label"
+              options={materialOptions}
+              onChange={(_, option) => {
+                if (option) {
+                  materialModalForm.setFieldsValue({
+                    material_code: option.material_code,
+                    material_name: option.material_name,
+                    specification: option.specification,
+                  })
+                }
+              }}
+            />
+          </Form.Item>
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item label="品名" name="material_name">
+                <Input placeholder="请输入品名" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="规格" name="specification">
+                <Input placeholder="请输入规格" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item label="批号" name="material_batch">
+                <Input placeholder="请输入批号" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="数量" name="quantity" rules={[{ required: true, message: '请输入数量' }]}>
+                <InputNumber min={0} style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item label="标签图片" name="label_images" getValueFromEvent={labelImagesNorm}>
+            <Upload {...dummyUpload} listType="picture-card" multiple maxCount={6}>
+              <div>
+                <UploadOutlined />
+                <div style={{ marginTop: 4 }}>上传</div>
+              </div>
+            </Upload>
+          </Form.Item>
+        </Form>
+      </Modal>
+
       <Drawer
         title="报工详情"
         open={!!viewRecord}
@@ -872,46 +1125,6 @@ export default function ProcessReporting() {
           </Descriptions>
         )}
       </Drawer>
-
-      <Modal
-        title={addDefectType === 'process' ? '添加制程不良项目' : '添加来料不良项目'}
-        open={addDefectModalOpen}
-        onOk={handleAddDefectSubmit}
-        onCancel={() => setAddDefectModalOpen(false)}
-        okText="添加"
-        cancelText="取消"
-        width={480}
-        destroyOnHidden
-      >
-        <Form form={addDefectForm} layout="vertical" className="compact-form">
-          <Form.Item label="不良项目" name="defect_type_id" rules={[{ required: true, message: '请选择不良项目' }]}>
-            <Select
-              placeholder="请选择不良项目"
-              showSearch
-              optionFilterProp="label"
-              options={defectTypeOptions(addDefectType)}
-              onChange={(value) => {
-                const d = defectTypes.find(dt => dt.defect_id === value)
-                if (d) {
-                  addDefectForm.setFieldsValue({
-                    defect_name: d.defect_name,
-                    unit: d.defect_unit,
-                  })
-                }
-              }}
-            />
-          </Form.Item>
-          <Form.Item label="不良名称" name="defect_name" rules={[{ required: true, message: '请输入不良名称' }]}>
-            <Input placeholder="可手动输入" />
-          </Form.Item>
-          <Form.Item label="单位" name="unit">
-            <Input placeholder="如：个、件、小片等" />
-          </Form.Item>
-          <Form.Item label="数量" name="quantity">
-            <InputNumber min={0} style={{ width: '100%' }} defaultValue={0} />
-          </Form.Item>
-        </Form>
-      </Modal>
     </>
   )
 }

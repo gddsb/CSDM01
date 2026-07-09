@@ -18,7 +18,11 @@ export const list = async (req, res) => {
       offset,
       order: [['record_time', 'DESC']],
     })
-    return success(res, rows, '查询成功', count)
+    const data = rows.map(r => ({
+      ...r.toJSON(),
+      label_images: r.label_images ? JSON.parse(r.label_images) : [],
+    }))
+    return success(res, data, '查询成功', count)
   } catch (err) {
     console.error('查询制程物料列表失败:', err)
     return fail(res, '服务器错误', 500)
@@ -31,8 +35,12 @@ export const create = async (req, res) => {
       work_order_id,
       process_id,
       material_type,
+      material_code,
+      material_name,
+      specification,
       material_batch,
       quantity,
+      label_images,
       record_user,
       record_user_name,
     } = req.body
@@ -55,8 +63,12 @@ export const create = async (req, res) => {
       process_code: process.process_code,
       process_name: process.process_name,
       material_type,
+      material_code: material_code || '',
+      material_name: material_name || '',
+      specification: specification || '',
       material_batch: material_batch || '',
       quantity: Number(quantity),
+      label_images: label_images ? JSON.stringify(label_images) : null,
       record_user,
       record_user_name,
     })

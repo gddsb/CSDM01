@@ -55,6 +55,7 @@ export const create = async (req, res) => {
     }
 
     let workOrderNo = null
+    let lineName = null
     let orderNo = null
     let actualOrderId = order_id || null
     let actualWorkOrderId = work_order_id || null
@@ -63,6 +64,7 @@ export const create = async (req, res) => {
       const workOrder = await WorkOrder.findOne({ where: { work_order_id } })
       if (!workOrder) return fail(res, '工单不存在', 404)
       workOrderNo = workOrder.work_order_no
+      lineName = workOrder.line_name
       // 若未传 order_id，沿用工单的订单 ID
       if (!actualOrderId && workOrder.order_id) {
         actualOrderId = workOrder.order_id
@@ -90,6 +92,7 @@ export const create = async (req, res) => {
     const record = await ExceptionRecord.create({
       work_order_id: actualWorkOrderId,
       work_order_no: workOrderNo,
+      line_name: lineName,
       order_id: actualOrderId,
       order_no: orderNo,
       exception_type,

@@ -20,7 +20,7 @@ import {
 import { list as reportList, create as reportCreate, update as reportUpdate } from '../controllers/ProcessReportController.js'
 import { list as manpowerList, detail as manpowerDetail, create as manpowerCreate, update as manpowerUpdate, remove as manpowerRemove, summaryByWorkOrder as manpowerSummary } from '../controllers/ManpowerRecordController.js'
 import { list as exceptionList, create as exceptionCreate } from '../controllers/ExceptionRecordController.js'
-import { list as defectList, create as defectCreate, remove as defectRemove, batchSave as defectBatchSave } from '../controllers/ProcessDefectController.js'
+import { list as defectList, create as defectCreate, remove as defectRemove, update as defectUpdate, batchSave as defectBatchSave } from '../controllers/ProcessDefectController.js'
 import { list as exceptionTimeList, create as exceptionTimeCreate, remove as exceptionTimeRemove } from '../controllers/ProcessExceptionController.js'
 import { list as materialList, create as materialCreate, remove as materialRemove } from '../controllers/ProcessMaterialController.js'
 import { authRequired } from '../middleware/auth.js'
@@ -69,6 +69,7 @@ router.post('/exceptions', exceptionCreate)
 router.get('/process-defects', defectList)
 router.post('/process-defects', defectCreate)
 router.post('/process-defects/batch-save', defectBatchSave)
+router.put('/process-defects/:id', defectUpdate)
 router.delete('/process-defects/:id', defectRemove)
 
 // 异常工时记录

@@ -54,6 +54,23 @@ const ProcessReport = sequelize.define('ProcessReport', {
   report_time: {
     type: DataTypes.DATE,
   },
+  status: {
+    type: DataTypes.TINYINT,
+    defaultValue: 1,
+    get() {
+      const val = this.getDataValue('status')
+      const map = { 1: '开工', 2: '完工' }
+      return map[val] !== undefined ? map[val] : val
+    },
+    set(val) {
+      if (typeof val === 'string') {
+        const map = { '开工': 1, '完工': 2 }
+        this.setDataValue('status', map[val] !== undefined ? map[val] : 1)
+      } else {
+        this.setDataValue('status', val)
+      }
+    },
+  },
 }, {
   tableName: 'production_process_report',
   timestamps: true,

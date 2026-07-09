@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, Select, message, Row, Col, Switch, Drawer, Descriptions, Space, Popconfirm, Upload, Image, Checkbox } from 'antd'
 import {
   ImportOutlined, ToolOutlined, DeleteOutlined,
-  PlusOutlined, EyeOutlined, ReloadOutlined,
-  UploadOutlined, PictureOutlined,
+  PlusOutlined, EyeOutlined,
+  UploadOutlined, PictureOutlined, SearchOutlined, ReloadOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
@@ -51,12 +51,22 @@ export default function DefectManagement() {
   // 当前选中大类名称（用于联动分类名称下拉）
   const [selectedCategory, setSelectedCategory] = useState(undefined)
 
-  // 筛选输入态
-  const [keywordInput, setKeywordInput] = useState('')
-  const [statusInput, setStatusInput] = useState(undefined)
-  const [typeInput, setTypeInput] = useState(undefined)
+  // 筛选条件
+  const [filterCategory, setFilterCategory] = useState(undefined)
+  const [filterType, setFilterType] = useState(undefined)
+  const [filterKeyword, setFilterKeyword] = useState('')
+  const [filterDisplay, setFilterDisplay] = useState([1, 0])
+  const [filterStatus, setFilterStatus] = useState(undefined)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined, defect_type: undefined })
+  const [query, setQuery] = useState({
+    page: 1,
+    pageSize: 30,
+    category_name: undefined,
+    defect_type: undefined,
+    keyword: '',
+    display: [1, 0],
+    status: undefined,
+  })
 
   const processOptions = processes.map(p => ({ label: `${p.process_code} ${p.process_name}`, value: p.process_id }))
 
@@ -68,8 +78,15 @@ export default function DefectManagement() {
       try {
         const params = { page: query.page, pageSize: query.pageSize }
         if (query.keyword) params.keyword = query.keyword
-        if (query.status !== undefined && query.status !== null) params.status = query.status
+        if (query.category_name) params.category_name = query.category_name
         if (query.defect_type) params.defect_type = query.defect_type
+        if (Array.isArray(query.display)) {
+          if (query.display.length === 1) params.display = query.display[0]
+          else if (query.display.length === 0 || query.display.length >= 2) {}
+        } else if (query.display !== undefined && query.display !== null) {
+          params.display = query.display
+        }
+        if (query.status !== undefined && query.status !== null) params.status = query.status
         const res = await api.get('/basic/defect-types', { params })
         if (cancelled) return
         const list = res.data || []
@@ -107,14 +124,37 @@ export default function DefectManagement() {
   const refresh = useCallback(() => setQuery(q => ({ ...q })), [])
 
   const handleSearch = () => {
-    setQuery(q => ({ ...q, page: 1, keyword: keywordInput, status: statusInput, defect_type: typeInput }))
+    setQuery(q => ({
+      ...q,
+      page: 1,
+      category_name: filterCategory,
+      defect_type: filterType,
+      keyword: filterKeyword,
+      display: filterDisplay,
+      status: filterStatus,
+    }))
   }
 
   const handleReset = () => {
-    setKeywordInput('')
-    setStatusInput(undefined)
-    setTypeInput(undefined)
-    setQuery(q => ({ ...q, page: 1, keyword: '', status: undefined, defect_type: undefined }))
+    setFilterCategory(undefined)
+    setFilterType(undefined)
+    setFilterKeyword('')
+    setFilterDisplay([1, 0])
+    setFilterStatus(undefined)
+    setQuery(q => ({
+      ...q,
+      page: 1,
+      category_name: undefined,
+      defect_type: undefined,
+      keyword: '',
+      display: [1, 0],
+      status: undefined,
+    }))
+  }
+
+  // 大类名称筛选变化
+  const handleFilterCategoryChange = (value) => {
+    setFilterCategory(value)
   }
 
   // 拉取不良图片
@@ -294,6 +334,10 @@ export default function DefectManagement() {
     { title: '不良项目', dataIndex: 'defect_name', key: 'defect_name', width: 120 },
     { title: '默认单位', dataIndex: 'defect_unit', key: 'defect_unit', width: 80 },
     {
+      title: '是否默认', dataIndex: 'display', key: 'display', width: 90,
+      render: v => <Tag color={v ? 'green' : 'default'}>{v ? '是' : '否'}</Tag>,
+    },
+    {
       title: '关联工序', dataIndex: 'related_processes', key: 'related_processes', width: 160,
       render: v => {
         const arr = toArray(v)
@@ -335,23 +379,72 @@ export default function DefectManagement() {
     },
   ]
 
-  const filters = [
-    { type: 'input', placeholder: '搜索不良编码/名称', col: { span: 6 }, value: keywordInput, onChange: e => setKeywordInput(e.target.value) },
-    {
-      type: 'select', placeholder: '分类名称', col: { span: 6 },
-      options: [
-        { label: '来料不良', value: '来料不良' },
-        { label: '制程不良', value: '制程不良' },
-        { label: '检验报废', value: '检验报废' },
-      ],
-      value: typeInput, onChange: v => setTypeInput(v),
-    },
-    {
-      type: 'select', placeholder: '状态筛选', col: { span: 6 },
-      options: [{ label: '启用', value: 1 }, { label: '停用', value: 0 }],
-      value: statusInput, onChange: v => setStatusInput(v),
-    },
+  // 筛选时分类名称下拉选项（所有分类名称，不联动）
+  const filterTypeOptions = [
+    { label: '来料不良', value: '来料不良' },
+    { label: '制程不良', value: '制程不良' },
+    { label: '检验报废', value: '检验报废' },
   ]
+
+  // 即时查询：筛选条件变化时立即触发（跳过首次渲染）
+  const isFirstFilter = useRef(true)
+  useEffect(() => {
+    if (isFirstFilter.current) {
+      isFirstFilter.current = false
+      return
+    }
+    handleSearch()
+  }, [filterCategory, filterType, filterKeyword, filterDisplay, filterStatus])
+
+  // 自定义筛选区
+  const filterBar = (
+    <div style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', gap: 12, marginBottom: 12, padding: '0 2px' }}>
+      <Select
+        placeholder="不良类型"
+        allowClear
+        showSearch
+        style={{ width: 200, flexShrink: 0 }}
+        options={categoryNameOptions}
+        value={filterCategory}
+        onChange={handleFilterCategoryChange}
+      />
+      <Select
+        placeholder="分类名称"
+        allowClear
+        showSearch
+        style={{ width: 200, flexShrink: 0 }}
+        options={filterTypeOptions}
+        value={filterType}
+        onChange={v => setFilterType(v)}
+      />
+      <Input
+        placeholder="不良项目"
+        allowClear
+        style={{ width: 200, flexShrink: 0 }}
+        value={filterKeyword}
+        onChange={e => setFilterKeyword(e.target.value)}
+        onPressEnter={handleSearch}
+      />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        <span style={{ color: '#666', fontSize: 14, whiteSpace: 'nowrap' }}>是否默认</span>
+        <Checkbox.Group
+          options={[{ label: '是', value: 1 }, { label: '否', value: 0 }]}
+          value={filterDisplay}
+          onChange={v => setFilterDisplay(v)}
+        />
+      </div>
+      <Select
+        placeholder="状态"
+        allowClear
+        style={{ width: 120, flexShrink: 0 }}
+        options={[{ label: '启用', value: 1 }, { label: '停用', value: 0 }]}
+        value={filterStatus}
+        onChange={v => setFilterStatus(v)}
+      />
+      <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>查询</Button>
+      <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
+    </div>
+  )
 
   // 统计数据
   const incomingCount = data.filter(d => d.defect_type === '来料不良').length
@@ -371,9 +464,6 @@ export default function DefectManagement() {
         title="不良分类"
         breadcrumbs="基础数据 / 不良分类"
         stats={stats}
-        filters={filters}
-        onSearch={handleSearch}
-        onReset={handleReset}
         actions={
           <ActionButtons
             hasAdd={false}
@@ -384,22 +474,25 @@ export default function DefectManagement() {
           />
         }
         table={
-          <Table
-            columns={columns}
-            dataSource={data}
-            rowKey="defect_id"
-            size="small"
-            loading={loading}
-            scroll={{ x: 1150 }}
-            pagination={{
-              current: query.page,
-              pageSize: query.pageSize,
-              total,
-              showSizeChanger: true,
-              showTotal: t => `共 ${t} 条`,
-              onChange: (p, ps) => setQuery(q => ({ ...q, page: p, pageSize: ps })),
-            }}
-          />
+          <>
+            {filterBar}
+            <Table
+              columns={columns}
+              dataSource={data}
+              rowKey="defect_id"
+              size="small"
+              loading={loading}
+              scroll={{ x: 1250 }}
+              pagination={{
+                current: query.page,
+                pageSize: query.pageSize,
+                total,
+                showSizeChanger: true,
+                showTotal: t => `共 ${t} 条`,
+                onChange: (p, ps) => setQuery(q => ({ ...q, page: p, pageSize: ps })),
+              }}
+            />
+          </>
         }
       />
       <Modal

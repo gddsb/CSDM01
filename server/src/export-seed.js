@@ -11,13 +11,12 @@ import {
   DictType, DictData, ProcessDefect, ProcessException,
   ProcessMaterial, AppVersion, DataDictionary,
 } from './models/index.js'
-import sequelize from './config/database.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const seedDataDir = path.join(__dirname, 'seed-data')
 
-const seedOrder = [
+const exportOrder = [
   { name: 'Role', model: Role, label: '角色' },
   { name: 'Permission', model: Permission, label: '权限' },
   { name: 'RolePermission', model: RolePermission, label: '角色权限' },
@@ -49,76 +48,42 @@ const seedOrder = [
   { name: 'OperationLog', model: OperationLog, label: '操作日志' },
 ]
 
-function loadSeedData(name) {
-  const filePath = path.join(seedDataDir, `${name}.json`)
-  if (!fs.existsSync(filePath)) {
-    return []
-  }
+async function exportAll() {
   try {
-    const content = fs.readFileSync(filePath, 'utf-8')
-    return JSON.parse(content)
-  } catch (err) {
-    console.log(`    ⚠️  读取 ${name}.json 失败: ${err.message}`)
-    return []
-  }
-}
+    console.log('📦 开始导出种子数据...\n')
+    const summary = {}
+    let total = 0
 
-async function seed() {
-  try {
-    console.log('🔄 开始同步数据库表（force: true）...')
-    await sequelize.sync({ force: true })
-    console.log('✅ 数据库表同步完成\n')
-
-    const counts = {}
-
-    for (const { name, model, label } of seedOrder) {
-      const data = loadSeedData(name)
-      if (data.length === 0) {
-        console.log(`📌 ${label}... 无数据，跳过`)
-        counts[name] = 0
-        continue
-      }
-
-      console.log(`📌 ${label}...`)
+    for (const { name, model, label } of exportOrder) {
       try {
-        await model.bulkCreate(data, { validate: false })
-        console.log(`✅ ${label}创建完成（${data.length}条）`)
-        counts[name] = data.length
+        const pk = model.primaryKeyAttribute
+        const rows = await model.findAll({ raw: true, order: [[pk, 'ASC']] })
+        const count = rows.length
+        summary[label] = count
+        total += count
+
+        const filePath = path.join(seedDataDir, `${name}.json`)
+        fs.writeFileSync(filePath, JSON.stringify(rows, null, 2))
+        console.log(`✅ ${label}（${count} 条）→ ${name}.json`)
       } catch (err) {
-        console.log(`❌ ${label}创建失败: ${err.message}`)
-        console.log(`   尝试逐条插入...`)
-        let success = 0
-        for (const item of data) {
-          try {
-            await model.create(item, { validate: false })
-            success++
-          } catch (itemErr) {
-            console.log(`   ⚠️  跳过一条数据: ${itemErr.message}`)
-          }
-        }
-        console.log(`✅ ${label}创建完成（${success}/${data.length}条）`)
-        counts[name] = success
+        console.log(`❌ ${label} 导出失败: ${err.message}`)
       }
     }
 
-    console.log('\n🎉 种子数据初始化完成！')
-    for (const { name, label } of seedOrder) {
-      if (counts[name] > 0) {
-        console.log(`   - ${label}：${counts[name]} 条`)
-      }
-    }
-    console.log(`\n   默认登录账号：admin / 123456`)
+    const summaryPath = path.join(seedDataDir, '_summary.json')
+    fs.writeFileSync(summaryPath, JSON.stringify({
+      export_time: new Date().toISOString(),
+      total_records: total,
+      tables: summary,
+    }, null, 2))
 
-    await sequelize.close()
+    console.log(`\n🎉 导出完成！共 ${exportOrder.length} 张表，${total} 条记录`)
+    console.log(`   输出目录：${seedDataDir}`)
     process.exit(0)
   } catch (err) {
-    console.error('❌ 种子数据初始化失败:', err)
-    try {
-      await sequelize.close()
-    } catch (_) {
-    }
+    console.error('❌ 导出失败:', err)
     process.exit(1)
   }
 }
 
-seed()
+exportAll()

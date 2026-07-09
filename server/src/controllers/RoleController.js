@@ -117,7 +117,7 @@ const defaultPermissions = [
   { perm_id: 22, parent_id: 20, perm_name: '工单管理', perm_code: 'production:workorder', type: 'menu', icon: 'ToolOutlined', path: '/production/workorders', sort_order: 2 },
   { perm_id: 23, parent_id: 20, perm_name: '生产报工', perm_code: 'production:reporting', type: 'menu', icon: 'ProfileOutlined', path: '/production/reporting', sort_order: 3 },
   { perm_id: 25, parent_id: 20, perm_name: '人员记录', perm_code: 'production:manpower', type: 'menu', icon: 'TeamOutlined', path: '/production/manpower', sort_order: 5 },
-  { perm_id: 26, parent_id: 20, perm_name: '异常记录', perm_code: 'production:exception', type: 'menu', icon: 'BellOutlined', path: '/production/exceptions', sort_order: 6 },
+  { perm_id: 26, parent_id: 20, perm_name: '工时记录', perm_code: 'production:exception', type: 'menu', icon: 'BellOutlined', path: '/production/exceptions', sort_order: 6 },
   // 质量管理
   { perm_id: 30, parent_id: 0, perm_name: '质量管理', perm_code: 'quality', type: 'menu', icon: 'ExperimentOutlined', path: 'quality', sort_order: 2 },
   { perm_id: 31, parent_id: 30, perm_name: '检验标准管理', perm_code: 'quality:standard', type: 'menu', icon: 'SafetyCertificateOutlined', path: '/quality/standards', sort_order: 1 },

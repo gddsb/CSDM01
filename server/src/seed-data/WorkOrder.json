@@ -1,1 +1,32 @@
-[]
+[
+  {
+    "work_order_id": 2,
+    "work_order_no": "WO260709002",
+    "order_id": 5,
+    "order_no": "MO-16260702003",
+    "line_id": 1,
+    "line_name": "A线",
+    "material_id": "ba0b1289-bf4b-4c2c-a2c9-d9b91736057e",
+    "material_name": "展辉800g玺铂婴儿配方奶粉罐",
+    "target_qty": 3630,
+    "planned_qty": 3630,
+    "finished_qty": 0,
+    "start_qty": 0,
+    "qualified_qty": 0,
+    "defect_material": 0,
+    "defect_process": 0,
+    "defect_scrap": 0,
+    "plan_start_time": "2026-07-11 00:00:00.000 +00:00",
+    "plan_end_time": "2026-07-13 00:00:00.000 +00:00",
+    "start_time": "2026-07-09 17:02:15.839 +00:00",
+    "finish_time": null,
+    "total_hours": 0,
+    "effective_hours": 0,
+    "labor_hours": 0,
+    "status": 1,
+    "created_by": "admin",
+    "remarks": null,
+    "createdAt": "2026-07-09 16:49:00.227 +00:00",
+    "updatedAt": "2026-07-09 17:02:15.839 +00:00"
+  }
+]

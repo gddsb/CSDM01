@@ -10,7 +10,6 @@ import {
 import dayjs from 'dayjs'
 import api from '../../utils/api'
 
-const { TabPane } = Tabs
 const { RangePicker } = DatePicker
 
 const exceptionTypeOptions = [
@@ -81,7 +80,7 @@ export default function ProductionReportByOrder() {
   useEffect(() => {
     if (!selectedWorkOrderId) return
     fetchWorkOrderData()
-  }, [selectedWorkOrderId])
+  }, [selectedWorkOrderId, fetchWorkOrderData])
 
   const fetchWorkOrderData = useCallback(async () => {
     setLoading(true)
@@ -482,7 +481,7 @@ export default function ProductionReportByOrder() {
               size="small"
               columns={[
                 { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 160 },
-                { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 120 },
+                { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 120, render: (_, r) => r.material?.material_code || r.material_code || '-' },
                 { title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 140 },
                 { title: '计划数量', dataIndex: 'target_qty', key: 'target_qty', width: 100, align: 'right', render: v => (v || 0).toLocaleString() },
                 { title: '完工数量', dataIndex: 'finished_qty', key: 'finished_qty', width: 100, align: 'right', render: v => (v || 0).toLocaleString() },
@@ -515,7 +514,7 @@ export default function ProductionReportByOrder() {
       <Card style={{ marginBottom: 16 }}>
         <Descriptions column={4} size="small" bordered>
           <Descriptions.Item label="工单号">{workOrder?.work_order_no || '-'}</Descriptions.Item>
-          <Descriptions.Item label="产品编号">{workOrder?.material_code || '-'}</Descriptions.Item>
+          <Descriptions.Item label="产品编号">{workOrder?.material?.material_code || workOrder?.material_code || '-'}</Descriptions.Item>
           <Descriptions.Item label="产品名称">{workOrder?.material_name || '-'}</Descriptions.Item>
           <Descriptions.Item label="生产线">{workOrder?.line_name || '-'}</Descriptions.Item>
           <Descriptions.Item label="计划数量">{(workOrder?.planned_qty || workOrder?.target_qty || 0).toLocaleString()}</Descriptions.Item>
@@ -524,299 +523,322 @@ export default function ProductionReportByOrder() {
         </Descriptions>
       </Card>
 
-      <Tabs activeKey={activeTab} onChange={setActiveTab}>
-        <TabPane tab={<><FileTextOutlined /> 工序报工明细</>} key="summary">
-          <Table
-            columns={summaryColumns}
-            dataSource={summaryData}
-            rowKey="process_id"
-            size="small"
-            loading={loading}
-            pagination={false}
-            scroll={{ x: 1300 }}
-          />
-        </TabPane>
-
-        <TabPane tab={<><CloseCircleOutlined /> 工序不良登记</>} key="defect">
-          {!isWorkOrderClosed && (
-            <Card style={{ marginBottom: 16 }}>
-              <Form form={defectForm} layout="horizontal" onFinish={handleSubmitDefect}>
-                <Row gutter={16}>
-                  <Col span={6}>
-                    <Form.Item name="process_id" label="工序" rules={[{ required: true, message: '请选择工序' }]}>
-                      <Select placeholder="请选择工序" options={processOptions} />
-                    </Form.Item>
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={[
+          {
+            key: 'summary',
+            label: <><FileTextOutlined /> 工序报工明细</>,
+            children: (
+              <Table
+                columns={summaryColumns}
+                dataSource={summaryData}
+                rowKey="process_id"
+                size="small"
+                loading={loading}
+                pagination={false}
+                scroll={{ x: 1300 }}
+              />
+            ),
+          },
+          {
+            key: 'defect',
+            label: <><CloseCircleOutlined /> 工序不良登记</>,
+            children: (
+              <>
+                {!isWorkOrderClosed && (
+                  <Card style={{ marginBottom: 16 }}>
+                    <Form form={defectForm} layout="horizontal" onFinish={handleSubmitDefect}>
+                      <Row gutter={16}>
+                        <Col span={6}>
+                          <Form.Item name="process_id" label="工序" rules={[{ required: true, message: '请选择工序' }]}>
+                            <Select placeholder="请选择工序" options={processOptions} />
+                          </Form.Item>
+                        </Col>
+                        <Col span={6}>
+                          <Form.Item name="defect_category" label="不良分类">
+                            <Select placeholder="请选择分类" options={defectCategoryOptions} />
+                          </Form.Item>
+                        </Col>
+                        <Col span={6}>
+                          <Form.Item name="defect_type_id" label="不良项目">
+                            <Select
+                              placeholder="选择不良项目"
+                              options={defectNameOptions}
+                              onChange={(value) => {
+                                const defect = defectTypes.find(d => d.defect_id === value)
+                                if (defect) {
+                                  defectForm.setFieldsValue({
+                                    defect_category: defect.category_name,
+                                    defect_name: defect.defect_name,
+                                    unit: defect.defect_unit,
+                                  })
+                                }
+                              }}
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col span={6}>
+                          <Form.Item name="defect_name" label="不良名称" rules={[{ required: true, message: '请输入不良名称' }]}>
+                            <Input placeholder="可手动输入" />
+                          </Form.Item>
+                        </Col>
+                        <Col span={4}>
+                          <Form.Item name="quantity" label="数量" rules={[{ required: true, message: '请输入数量' }]}>
+                            <InputNumber min={1} style={{ width: '100%' }} placeholder="数量" />
+                          </Form.Item>
+                        </Col>
+                        <Col span={4}>
+                          <Form.Item name="unit" label="单位" rules={[{ required: true, message: '请选择单位' }]}>
+                            <Select placeholder="选择单位" options={[{ label: '小片', value: '小片' }, { label: '罐', value: '罐' }]} />
+                          </Form.Item>
+                        </Col>
+                        <Col span={4}>
+                          <Form.Item>
+                            <Button type="primary" htmlType="submit" icon={<PlusOutlined />}>新增</Button>
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                    </Form>
+                  </Card>
+                )}
+                <Row gutter={16} style={{ marginBottom: 12 }}>
+                  <Col flex="180px">
+                    <Select
+                      placeholder="工序筛选"
+                      allowClear
+                      style={{ width: '100%' }}
+                      options={processOptions}
+                      value={defectFilters.process_id}
+                      onChange={v => setDefectFilters(f => ({ ...f, process_id: v }))}
+                    />
                   </Col>
-                  <Col span={6}>
-                    <Form.Item name="defect_category" label="不良分类">
-                      <Select placeholder="请选择分类" options={defectCategoryOptions} />
-                    </Form.Item>
+                  <Col flex="150px">
+                    <Select
+                      placeholder="不良分类"
+                      allowClear
+                      style={{ width: '100%' }}
+                      options={defectCategoryOptions}
+                      value={defectFilters.defect_category}
+                      onChange={v => setDefectFilters(f => ({ ...f, defect_category: v }))}
+                    />
                   </Col>
-                  <Col span={6}>
-                    <Form.Item name="defect_type_id" label="不良项目">
-                      <Select
-                        placeholder="选择不良项目"
-                        options={defectNameOptions}
-                        onChange={(value) => {
-                          const defect = defectTypes.find(d => d.defect_id === value)
-                          if (defect) {
-                            defectForm.setFieldsValue({
-                              defect_category: defect.category_name,
-                              defect_name: defect.defect_name,
-                              unit: defect.defect_unit,
-                            })
-                          }
-                        }}
-                      />
-                    </Form.Item>
+                  <Col flex="200px">
+                    <Input
+                      placeholder="不良名称搜索"
+                      allowClear
+                      value={defectFilters.defect_name}
+                      onChange={e => setDefectFilters(f => ({ ...f, defect_name: e.target.value }))}
+                    />
                   </Col>
-                  <Col span={6}>
-                    <Form.Item name="defect_name" label="不良名称" rules={[{ required: true, message: '请输入不良名称' }]}>
-                      <Input placeholder="可手动输入" />
-                    </Form.Item>
-                  </Col>
-                  <Col span={4}>
-                    <Form.Item name="quantity" label="数量" rules={[{ required: true, message: '请输入数量' }]}>
-                      <InputNumber min={1} style={{ width: '100%' }} placeholder="数量" />
-                    </Form.Item>
-                  </Col>
-                  <Col span={4}>
-                    <Form.Item name="unit" label="单位" rules={[{ required: true, message: '请选择单位' }]}>
-                      <Select placeholder="选择单位" options={[{ label: '小片', value: '小片' }, { label: '罐', value: '罐' }]} />
-                    </Form.Item>
-                  </Col>
-                  <Col span={4}>
-                    <Form.Item>
-                      <Button type="primary" htmlType="submit" icon={<PlusOutlined />}>新增</Button>
-                    </Form.Item>
+                  <Col>
+                    <Button onClick={() => setDefectFilters({ process_id: undefined, defect_category: undefined, defect_name: '' })}>重置筛选</Button>
                   </Col>
                 </Row>
-              </Form>
-            </Card>
-          )}
-          <Row gutter={16} style={{ marginBottom: 12 }}>
-            <Col flex="180px">
-              <Select
-                placeholder="工序筛选"
-                allowClear
-                style={{ width: '100%' }}
-                options={processOptions}
-                value={defectFilters.process_id}
-                onChange={v => setDefectFilters(f => ({ ...f, process_id: v }))}
-              />
-            </Col>
-            <Col flex="150px">
-              <Select
-                placeholder="不良分类"
-                allowClear
-                style={{ width: '100%' }}
-                options={defectCategoryOptions}
-                value={defectFilters.defect_category}
-                onChange={v => setDefectFilters(f => ({ ...f, defect_category: v }))}
-              />
-            </Col>
-            <Col flex="200px">
-              <Input
-                placeholder="不良名称搜索"
-                allowClear
-                value={defectFilters.defect_name}
-                onChange={e => setDefectFilters(f => ({ ...f, defect_name: e.target.value }))}
-              />
-            </Col>
-            <Col>
-              <Button onClick={() => setDefectFilters({ process_id: undefined, defect_category: undefined, defect_name: '' })}>重置筛选</Button>
-            </Col>
-          </Row>
-          <Table
-            columns={defectColumns}
-            dataSource={filteredDefects}
-            rowKey="defect_id"
-            size="small"
-            loading={loading}
-            pagination={{ pageSize: 20, showSizeChanger: true, showTotal: t => `已筛选 ${filteredDefects.length}/${defects.length} 条` }}
-            scroll={{ x: 1000 }}
-          />
-        </TabPane>
-
-        <TabPane tab={<><ToolOutlined /> 异常工时登记</>} key="exception">
-          {!isWorkOrderClosed && (
-            <Card style={{ marginBottom: 16 }}>
-              <Form form={exceptionForm} layout="horizontal" onFinish={handleSubmitException}>
-                <Row gutter={16}>
-                  <Col span={6}>
-                    <Form.Item name="exception_type" label="异常类型" rules={[{ required: true, message: '请选择异常类型' }]}>
-                      <Select placeholder="请选择" options={exceptionTypeOptions} />
-                    </Form.Item>
+                <Table
+                  columns={defectColumns}
+                  dataSource={filteredDefects}
+                  rowKey="defect_id"
+                  size="small"
+                  loading={loading}
+                  pagination={{ pageSize: 20, showSizeChanger: true, showTotal: t => `已筛选 ${filteredDefects.length}/${defects.length} 条` }}
+                  scroll={{ x: 1000 }}
+                />
+              </>
+            ),
+          },
+          {
+            key: 'exception',
+            label: <><ToolOutlined /> 异常工时登记</>,
+            children: (
+              <>
+                {!isWorkOrderClosed && (
+                  <Card style={{ marginBottom: 16 }}>
+                    <Form form={exceptionForm} layout="horizontal" onFinish={handleSubmitException}>
+                      <Row gutter={16}>
+                        <Col span={6}>
+                          <Form.Item name="exception_type" label="异常类型" rules={[{ required: true, message: '请选择异常类型' }]}>
+                            <Select placeholder="请选择" options={exceptionTypeOptions} />
+                          </Form.Item>
+                        </Col>
+                        <Col span={6}>
+                          <Form.Item name="device_id" label="设备编号">
+                            <Select placeholder="请选择设备" options={deviceOptions} allowClear />
+                          </Form.Item>
+                        </Col>
+                        <Col span={6}>
+                          <Form.Item name="stop_type" label="停机类型">
+                            <Input placeholder="停机类型描述" />
+                          </Form.Item>
+                        </Col>
+                        <Col span={6}>
+                          <Form.Item name="confirm_user" label="确认人">
+                            <Input placeholder="确认人姓名" />
+                          </Form.Item>
+                        </Col>
+                        <Col span={6}>
+                          <Form.Item name="start_time" label="开始时间" rules={[{ required: true, message: '请选择开始时间' }]}>
+                            <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" style={{ width: '100%' }} />
+                          </Form.Item>
+                        </Col>
+                        <Col span={6}>
+                          <Form.Item name="end_time" label="结束时间">
+                            <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" style={{ width: '100%' }} />
+                          </Form.Item>
+                        </Col>
+                        <Col span={8}>
+                          <Form.Item name="description" label="问题描述">
+                            <Input.TextArea rows={2} placeholder="请输入问题描述" />
+                          </Form.Item>
+                        </Col>
+                        <Col span={4}>
+                          <Form.Item>
+                            <Button type="primary" htmlType="submit" icon={<PlusOutlined />}>新增</Button>
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                    </Form>
+                  </Card>
+                )}
+                <Row gutter={16} style={{ marginBottom: 12 }}>
+                  <Col flex="180px">
+                    <Select
+                      placeholder="异常类型"
+                      allowClear
+                      style={{ width: '100%' }}
+                      options={exceptionTypeOptions}
+                      value={exceptionFilters.exception_type}
+                      onChange={v => setExceptionFilters(f => ({ ...f, exception_type: v }))}
+                    />
                   </Col>
-                  <Col span={6}>
-                    <Form.Item name="device_id" label="设备编号">
-                      <Select placeholder="请选择设备" options={deviceOptions} allowClear />
-                    </Form.Item>
+                  <Col flex="180px">
+                    <Select
+                      placeholder="设备筛选"
+                      allowClear
+                      style={{ width: '100%' }}
+                      options={deviceOptions}
+                      value={exceptionFilters.device_id}
+                      onChange={v => setExceptionFilters(f => ({ ...f, device_id: v }))}
+                    />
                   </Col>
-                  <Col span={6}>
-                    <Form.Item name="stop_type" label="停机类型">
-                      <Input placeholder="停机类型描述" />
-                    </Form.Item>
+                  <Col flex="200px">
+                    <Input
+                      placeholder="停机类型搜索"
+                      allowClear
+                      value={exceptionFilters.stop_type}
+                      onChange={e => setExceptionFilters(f => ({ ...f, stop_type: e.target.value }))}
+                    />
                   </Col>
-                  <Col span={6}>
-                    <Form.Item name="confirm_user" label="确认人">
-                      <Input placeholder="确认人姓名" />
-                    </Form.Item>
-                  </Col>
-                  <Col span={6}>
-                    <Form.Item name="start_time" label="开始时间" rules={[{ required: true, message: '请选择开始时间' }]}>
-                      <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" style={{ width: '100%' }} />
-                    </Form.Item>
-                  </Col>
-                  <Col span={6}>
-                    <Form.Item name="end_time" label="结束时间">
-                      <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" style={{ width: '100%' }} />
-                    </Form.Item>
-                  </Col>
-                  <Col span={8}>
-                    <Form.Item name="description" label="问题描述">
-                      <Input.TextArea rows={2} placeholder="请输入问题描述" />
-                    </Form.Item>
-                  </Col>
-                  <Col span={4}>
-                    <Form.Item>
-                      <Button type="primary" htmlType="submit" icon={<PlusOutlined />}>新增</Button>
-                    </Form.Item>
-                  </Col>
-                </Row>
-              </Form>
-            </Card>
-          )}
-          <Row gutter={16} style={{ marginBottom: 12 }}>
-            <Col flex="180px">
-              <Select
-                placeholder="异常类型"
-                allowClear
-                style={{ width: '100%' }}
-                options={exceptionTypeOptions}
-                value={exceptionFilters.exception_type}
-                onChange={v => setExceptionFilters(f => ({ ...f, exception_type: v }))}
-              />
-            </Col>
-            <Col flex="180px">
-              <Select
-                placeholder="设备筛选"
-                allowClear
-                style={{ width: '100%' }}
-                options={deviceOptions}
-                value={exceptionFilters.device_id}
-                onChange={v => setExceptionFilters(f => ({ ...f, device_id: v }))}
-              />
-            </Col>
-            <Col flex="200px">
-              <Input
-                placeholder="停机类型搜索"
-                allowClear
-                value={exceptionFilters.stop_type}
-                onChange={e => setExceptionFilters(f => ({ ...f, stop_type: e.target.value }))}
-              />
-            </Col>
-            <Col>
-              <Button onClick={() => setExceptionFilters({ exception_type: undefined, device_id: undefined, stop_type: '' })}>重置筛选</Button>
-            </Col>
-          </Row>
-          <Table
-            columns={exceptionColumns}
-            dataSource={filteredExceptions}
-            rowKey="exception_id"
-            size="small"
-            loading={loading}
-            pagination={{ pageSize: 20, showSizeChanger: true, showTotal: t => `已筛选 ${filteredExceptions.length}/${exceptions.length} 条` }}
-            scroll={{ x: 1300 }}
-          />
-        </TabPane>
-
-        <TabPane tab={<><PictureOutlined /> 制程信息登记</>} key="material">
-          {!isWorkOrderClosed && (
-            <Card style={{ marginBottom: 16 }}>
-              <Form form={materialForm} layout="horizontal" onFinish={handleSubmitMaterial}>
-                <Row gutter={16}>
-                  <Col span={6}>
-                    <Form.Item name="process_id" label="工序" rules={[{ required: true, message: '请选择工序' }]}>
-                      <Select
-                        placeholder="请选择工序"
-                        options={processOptions}
-                        onChange={(value) => {
-                          const process = processes.find(p => p.process_id === value)
-                          if (process) {
-                            materialForm.setFieldsValue({
-                              material_type: getDefaultMaterialType(process.process_name),
-                            })
-                          }
-                        }}
-                      />
-                    </Form.Item>
-                  </Col>
-                  <Col span={6}>
-                    <Form.Item name="material_type" label="物料类型" rules={[{ required: true, message: '请选择物料类型' }]}>
-                      <Select
-                        placeholder="请选择物料类型"
-                        options={(() => {
-                          const processId = materialForm.getFieldValue('process_id')
-                          const process = processes.find(p => p.process_id === processId)
-                          return getMaterialTypeOptions(process?.process_name || '')
-                        })()}
-                      />
-                    </Form.Item>
-                  </Col>
-                  <Col span={6}>
-                    <Form.Item name="material_batch" label="物料批号">
-                      <Input placeholder="非必填" />
-                    </Form.Item>
-                  </Col>
-                  <Col span={4}>
-                    <Form.Item name="quantity" label="数量" rules={[{ required: true, message: '请输入数量' }]}>
-                      <InputNumber min={1} style={{ width: '100%' }} placeholder="数量" />
-                    </Form.Item>
-                  </Col>
-                  <Col span={2}>
-                    <Form.Item>
-                      <Button type="primary" htmlType="submit" icon={<PlusOutlined />}>新增</Button>
-                    </Form.Item>
+                  <Col>
+                    <Button onClick={() => setExceptionFilters({ exception_type: undefined, device_id: undefined, stop_type: '' })}>重置筛选</Button>
                   </Col>
                 </Row>
-              </Form>
-            </Card>
-          )}
-          <Row gutter={16} style={{ marginBottom: 12 }}>
-            <Col flex="180px">
-              <Select
-                placeholder="工序筛选"
-                allowClear
-                style={{ width: '100%' }}
-                options={processOptions}
-                value={materialFilters.process_id}
-                onChange={v => setMaterialFilters(f => ({ ...f, process_id: v }))}
-              />
-            </Col>
-            <Col flex="200px">
-              <Input
-                placeholder="批号搜索"
-                allowClear
-                value={materialFilters.material_batch}
-                onChange={e => setMaterialFilters(f => ({ ...f, material_batch: e.target.value }))}
-              />
-            </Col>
-            <Col>
-              <Button onClick={() => setMaterialFilters({ process_id: undefined, material_batch: '' })}>重置筛选</Button>
-            </Col>
-          </Row>
-          <Table
-            columns={materialColumns}
-            dataSource={filteredMaterials}
-            rowKey="material_id"
-            size="small"
-            loading={loading}
-            pagination={{ pageSize: 20, showSizeChanger: true, showTotal: t => `已筛选 ${filteredMaterials.length}/${materials.length} 条` }}
-            scroll={{ x: 900 }}
-          />
-        </TabPane>
-      </Tabs>
+                <Table
+                  columns={exceptionColumns}
+                  dataSource={filteredExceptions}
+                  rowKey="exception_id"
+                  size="small"
+                  loading={loading}
+                  pagination={{ pageSize: 20, showSizeChanger: true, showTotal: t => `已筛选 ${filteredExceptions.length}/${exceptions.length} 条` }}
+                  scroll={{ x: 1300 }}
+                />
+              </>
+            ),
+          },
+          {
+            key: 'material',
+            label: <><PictureOutlined /> 制程信息登记</>,
+            children: (
+              <>
+                {!isWorkOrderClosed && (
+                  <Card style={{ marginBottom: 16 }}>
+                    <Form form={materialForm} layout="horizontal" onFinish={handleSubmitMaterial}>
+                      <Row gutter={16}>
+                        <Col span={6}>
+                          <Form.Item name="process_id" label="工序" rules={[{ required: true, message: '请选择工序' }]}>
+                            <Select
+                              placeholder="请选择工序"
+                              options={processOptions}
+                              onChange={(value) => {
+                                const process = processes.find(p => p.process_id === value)
+                                if (process) {
+                                  materialForm.setFieldsValue({
+                                    material_type: getDefaultMaterialType(process.process_name),
+                                  })
+                                }
+                              }}
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col span={6}>
+                          <Form.Item name="material_type" label="物料类型" rules={[{ required: true, message: '请选择物料类型' }]}>
+                            <Select
+                              placeholder="请选择物料类型"
+                              options={(() => {
+                                const processId = materialForm.getFieldValue('process_id')
+                                const process = processes.find(p => p.process_id === processId)
+                                return getMaterialTypeOptions(process?.process_name || '')
+                              })()}
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col span={6}>
+                          <Form.Item name="material_batch" label="物料批号">
+                            <Input placeholder="非必填" />
+                          </Form.Item>
+                        </Col>
+                        <Col span={4}>
+                          <Form.Item name="quantity" label="数量" rules={[{ required: true, message: '请输入数量' }]}>
+                            <InputNumber min={1} style={{ width: '100%' }} placeholder="数量" />
+                          </Form.Item>
+                        </Col>
+                        <Col span={2}>
+                          <Form.Item>
+                            <Button type="primary" htmlType="submit" icon={<PlusOutlined />}>新增</Button>
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                    </Form>
+                  </Card>
+                )}
+                <Row gutter={16} style={{ marginBottom: 12 }}>
+                  <Col flex="180px">
+                    <Select
+                      placeholder="工序筛选"
+                      allowClear
+                      style={{ width: '100%' }}
+                      options={processOptions}
+                      value={materialFilters.process_id}
+                      onChange={v => setMaterialFilters(f => ({ ...f, process_id: v }))}
+                    />
+                  </Col>
+                  <Col flex="200px">
+                    <Input
+                      placeholder="批号搜索"
+                      allowClear
+                      value={materialFilters.material_batch}
+                      onChange={e => setMaterialFilters(f => ({ ...f, material_batch: e.target.value }))}
+                    />
+                  </Col>
+                  <Col>
+                    <Button onClick={() => setMaterialFilters({ process_id: undefined, material_batch: '' })}>重置筛选</Button>
+                  </Col>
+                </Row>
+                <Table
+                  columns={materialColumns}
+                  dataSource={filteredMaterials}
+                  rowKey="material_id"
+                  size="small"
+                  loading={loading}
+                  pagination={{ pageSize: 20, showSizeChanger: true, showTotal: t => `已筛选 ${filteredMaterials.length}/${materials.length} 条` }}
+                  scroll={{ x: 900 }}
+                />
+              </>
+            ),
+          },
+        ]}
+      />
     </div>
   )
 }

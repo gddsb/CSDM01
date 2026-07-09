@@ -211,8 +211,33 @@ export const start = async (req, res) => {
     const { start_time } = req.body
     const workOrder = await WorkOrder.findOne({ where: { work_order_id: id } })
     if (!workOrder) return fail(res, '工单不存在', 404)
-    if (workOrder.status !== '开立') return fail(res, '当前工单状态不允许开工')
 
+    // 允许从"开立"或"完工"状态开工
+    if (workOrder.status !== '开立' && workOrder.status !== '完工') {
+      return fail(res, '当前工单状态不允许开工')
+    }
+
+    // 从"完工"状态重新开工需要检查条件
+    if (workOrder.status === '完工') {
+      // 检查1：累计开工数量 < 计划数量
+      if (Number(workOrder.start_qty) >= Number(workOrder.planned_qty)) {
+        return fail(res, '累计开工数量已达到计划数量，无法再次开工')
+      }
+      // 检查2：没有处于开工状态的报工单
+      const activeReports = await ProcessReport.count({ where: { work_order_id: id, status: 1 } })
+      if (activeReports > 0) {
+        return fail(res, '存在处于开工状态的报工单，无法再次开工')
+      }
+      // 更新工单状态
+      const now = new Date()
+      let startTime = start_time ? new Date(start_time) : now
+      await workOrder.update({ status: 1, start_time: startTime, finish_time: null })
+      // 更新现有报工记录状态为"开工"
+      await ProcessReport.update({ status: 1 }, { where: { work_order_id: id } })
+      return success(res, workOrder, '工单已重新开工')
+    }
+
+    // 从"开立"状态开工（原有逻辑）
     const now = new Date()
     let startTime = workOrder.start_time || new Date(start_time || now)
     
@@ -246,6 +271,7 @@ export const start = async (req, res) => {
         defect_process: 0,
         defect_scrap: 0,
         output_qty: 0,
+        status: 1,
         report_user: req.user?.username || '',
         report_user_name: req.user?.real_name || '',
         report_time: startTime,
@@ -285,6 +311,44 @@ export const finish = async (req, res) => {
     const workOrder = await WorkOrder.findOne({ where: { work_order_id: id } })
     if (!workOrder) return fail(res, '工单不存在', 404)
     if (workOrder.status !== '开工') return fail(res, '当前工单状态不允许完工')
+
+    // 完工检查1：首工序有物料记录且数量不为0
+    const LineProcessModel = await import('../models/LineProcess.js').then(m => m.default)
+    const lineProcesses = await LineProcessModel.findAll({
+      where: { line_id: workOrder.line_id },
+      order: [['sort_order', 'ASC']],
+    })
+    if (lineProcesses.length === 0) {
+      return fail(res, '产线未配置工序，无法完工')
+    }
+    const firstProcessId = lineProcesses[0].process_id
+    const materialQty = await ProcessMaterial.sum('quantity', {
+      where: { work_order_id: id, process_id: firstProcessId }
+    })
+    if (!materialQty || Number(materialQty) === 0) {
+      return fail(res, '首工序无物料记录或数量为0，无法完工')
+    }
+
+    // 完工检查2：工单关联的人员记录总人数不为0
+    const totalPeople = await ManpowerRecord.sum('total_people', {
+      where: { work_order_id: id }
+    })
+    if (!totalPeople || Number(totalPeople) === 0) {
+      return fail(res, '工单人员记录总人数为0，无法完工')
+    }
+
+    // 完工检查3：工时记录至少有一条记录的(结束时间-开始时间)不为0
+    const exceptionRecords = await ExceptionRecord.findAll({
+      where: { work_order_id: id }
+    })
+    const hasValidDuration = exceptionRecords.some(r => {
+      if (!r.start_time || !r.end_time) return false
+      return new Date(r.end_time).getTime() - new Date(r.start_time).getTime() !== 0
+    })
+    if (!hasValidDuration) {
+      return fail(res, '工时记录无有效工时记录（结束时间-开始时间不为0），无法完工')
+    }
+
     const { total_hours, effective_hours, labor_hours, finished_qty } = req.body
     await workOrder.update({
       status: 2,
@@ -294,6 +358,10 @@ export const finish = async (req, res) => {
       labor_hours,
       finished_qty: finished_qty !== undefined ? finished_qty : workOrder.finished_qty,
     })
+
+    // 更新所有报工记录状态为"完工"
+    await ProcessReport.update({ status: 2 }, { where: { work_order_id: id } })
+
     return success(res, workOrder, '工单已完工')
   } catch (err) {
     console.error('完工失败:', err)

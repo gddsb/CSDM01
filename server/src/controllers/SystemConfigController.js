@@ -331,6 +331,8 @@ const tableCategoryMap = {
   sys_dict_type: { category: '系统表', purpose: '数据字典类型表' },
   sys_dict_data: { category: '系统表', purpose: '数据字典项表' },
   sys_number_rule: { category: '系统表', purpose: '编码规则表，用于系统自动编号的可视化配置管理' },
+  sys_app_version: { category: '系统表', purpose: '应用版本管理表，管理APP/PAD等客户端版本发布' },
+  sys_data_dictionary: { category: '系统表', purpose: '数据字典表，存储数据库表结构元数据快照' },
   bas_material: { category: '基础数据表', purpose: '料品档案表，存储奶粉罐料品基础信息及规格参数' },
   bas_customer: { category: '基础数据表', purpose: '客户档案表，存储客户基本信息及信用等级' },
   master_production_line: { category: '基础数据表', purpose: '产线表，管理生产线的编号、名称、车间及状态，与工序多对多关联' },
@@ -341,10 +343,12 @@ const tableCategoryMap = {
   bas_line_process: { category: '基础数据表', purpose: '产线工序关联表，描述产线与工序的多对多关系，支持排序' },
   bas_line_device: { category: '基础数据表', purpose: '产线设备关联表，描述产线、设备与工序的三方关联' },
   production_order: { category: '业务表', purpose: '生产订单表，记录生产订单信息及计划数量' },
-  production_work_order: { category: '业务表', purpose: '工单表，记录生产工单及工时计算数据' },
-  production_process_report: { category: '业务表', purpose: '工序报工记录表，记录每道工序的产量和不良数据' },
-  production_manpower_record: { category: '业务表', purpose: '人员投入记录表，记录工单的人员配置及班次' },
-  production_exception_record: { category: '业务表', purpose: '异常工时记录表，记录生产异常及关联订单工单' },
+  production_work_order: { category: '业务表', purpose: '生产工单表，记录生产工单及工时计算数据' },
+  production_process_report: { category: '业务表', purpose: '工序报工主表，记录工单报工主要信息及统计数据' },
+  production_manpower_record: { category: '业务表', purpose: '工单人员投入记录表，记录工单的人员配置及班次' },
+  production_exception_record: { category: '业务表', purpose: '工单异常工时记录表，记录生产异常及关联订单工单' },
+  production_process_defect: { category: '业务表', purpose: '工单工序不良记录表，记录生产过程中各工序的不良明细' },
+  production_process_material: { category: '业务表', purpose: '工单工序物料记录表，记录各工序投入物料及批次信息' },
 }
 
 // 表名 → { 字段名: 中文注释 }（数据库表结构元数据，模块级常量）
@@ -551,6 +555,7 @@ const columnCommentMap = {
     process_code: '工序编码',
     process_name: '工序名称',
     sort_order: '排序号',
+    has_material: '是否引入物料（1是 0否）',
     status: '状态（1启用 0停用）',
     created_at: '创建时间',
     updated_at: '更新时间',
@@ -568,7 +573,7 @@ const columnCommentMap = {
     is_special: '是否特种设备（1是 0否）',
     status: '状态（1运行 2维修 0停用）',
     last_inspection_date: '上次检定日期',
-    inspection_cycle: '检定周期',
+    inspection_cycle: '检定周期(天)',
     next_inspection_date: '下次检定日期',
     manufacturer: '生产厂家',
     purchase_date: '购置日期',
@@ -669,11 +674,11 @@ const columnCommentMap = {
     work_order_no: '工单编号',
     process_id: '工序ID',
     process_name: '工序名称',
-    input_qty: '投入数量',
-    defect_material: '来料不良数量',
-    defect_process: '制程不良数量',
-    defect_scrap: '检验报废数量',
-    output_qty: '产出数量',
+    input_qty: '投入数量（统计字段：工单工序物料记录表该工单第一道工序投入数量汇总）',
+    defect_material: '来料不良数量（统计字段：工单工序不良记录表该工单来料不良分类汇总）',
+    defect_process: '制程不良数量（统计字段：工单工序不良记录表该工单制程不良分类汇总）',
+    defect_scrap: '检验报废数量（统计字段：工单工序不良记录表该工单制程报废分类汇总）',
+    output_qty: '产出数量（统计字段：投入数量-制程不良-来料不良-检验报废）',
     device_id: '设备ID',
     device_name: '设备名称',
     report_user: '报工人账号',
@@ -712,6 +717,80 @@ const columnCommentMap = {
     record_user: '记录人账号',
     record_user_name: '记录人姓名',
     created_at: '创建时间',
+  },
+  production_process_defect: {
+    defect_id: '不良记录ID（主键）',
+    work_order_id: '工单ID',
+    work_order_no: '工单编号',
+    process_id: '工序ID',
+    process_code: '工序编码',
+    process_name: '工序名称',
+    defect_category: '不良分类',
+    defect_name: '不良名称',
+    defect_type_id: '不良类型ID',
+    quantity: '不良数量',
+    unit: '单位',
+    record_user: '记录人账号',
+    record_user_name: '记录人姓名',
+    record_time: '记录时间',
+  },
+  production_process_exception: {
+    exception_id: '异常ID（主键）',
+    work_order_id: '工单ID',
+    work_order_no: '工单编号',
+    exception_type: '异常类型',
+    device_id: '设备ID',
+    device_code: '设备编码',
+    device_name: '设备名称',
+    stop_type: '停机类型',
+    confirm_user: '确认人账号',
+    confirm_user_name: '确认人姓名',
+    start_time: '开始时间',
+    end_time: '结束时间',
+    duration: '持续时间(小时)',
+    description: '异常描述',
+    record_user: '记录人账号',
+    record_user_name: '记录人姓名',
+    created_at: '创建时间',
+  },
+  production_process_material: {
+    material_id: '物料记录ID（主键）',
+    work_order_id: '工单ID',
+    work_order_no: '工单编号',
+    process_id: '工序ID',
+    process_code: '工序编码',
+    process_name: '工序名称',
+    material_type: '物料类型',
+    material_batch: '物料批次',
+    quantity: '数量',
+    record_user: '记录人账号',
+    record_user_name: '记录人姓名',
+    record_time: '记录时间',
+  },
+  sys_app_version: {
+    id: '版本ID（主键）',
+    version: '版本号',
+    platform: '平台（all/android/ios）',
+    description: '版本描述',
+    download_url: '下载地址',
+    is_force: '是否强制更新（1是 0否）',
+    is_latest: '是否最新版本（1是 0否）',
+    file_size: '文件大小',
+    created_by: '创建人',
+    created_at: '创建时间',
+    updated_at: '更新时间',
+  },
+  sys_data_dictionary: {
+    dict_id: '字典ID（主键）',
+    table_name: '表名',
+    category: '表分类（系统表/基础数据表/业务表）',
+    purpose: '表用途说明',
+    field_count: '字段数',
+    record_count: '记录数',
+    fields: '字段列表（JSON）',
+    last_update: '最后更新时间',
+    created_at: '创建时间',
+    updated_at: '更新时间',
   },
 }
 
@@ -757,6 +836,22 @@ async function collectDatabaseSchema() {
 
   tables.sort((a, b) => {
     const catOrder = { '系统表': 0, '基础数据表': 1, '业务表': 2, '其他': 3 }
+    const businessOrder = [
+      'production_order',
+      'production_work_order',
+      'production_process_report',
+      'production_manpower_record',
+      'production_exception_record',
+      'production_process_defect',
+      'production_process_material',
+    ]
+    if (a.category === b.category && a.category === '业务表') {
+      const ai = businessOrder.indexOf(a.table_name)
+      const bi = businessOrder.indexOf(b.table_name)
+      if (ai >= 0 && bi >= 0) return ai - bi
+      if (ai >= 0) return -1
+      if (bi >= 0) return 1
+    }
     return (catOrder[a.category] - catOrder[b.category]) || a.table_name.localeCompare(b.table_name)
   })
 
@@ -1187,6 +1282,17 @@ export const listDataDictionary = async (req, res) => {
       order: [
         // 按分类排序：系统表/基础数据表/业务表/其他
         sequelize.literal(`CASE category WHEN '系统表' THEN 0 WHEN '基础数据表' THEN 1 WHEN '业务表' THEN 2 ELSE 3 END`),
+        // 业务表按自定义顺序排序
+        sequelize.literal(`CASE table_name 
+          WHEN 'production_order' THEN 0
+          WHEN 'production_work_order' THEN 1
+          WHEN 'production_process_report' THEN 2
+          WHEN 'production_manpower_record' THEN 3
+          WHEN 'production_exception_record' THEN 4
+          WHEN 'production_process_defect' THEN 5
+          WHEN 'production_process_material' THEN 6
+          ELSE 999
+        END`),
         ['table_name', 'ASC'],
       ],
       limit,
@@ -1199,6 +1305,39 @@ export const listDataDictionary = async (req, res) => {
   }
 }
 
+export const listTableRecords = async (req, res) => {
+  try {
+    const { table_name } = req.params
+    const { page = 1, pageSize = 20 } = req.query
+
+    if (!table_name) return fail(res, '表名不能为空')
+
+    // 安全校验：只允许字母、数字、下划线
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(table_name)) {
+      return fail(res, '非法表名')
+    }
+
+    const limit = Math.min(parseInt(pageSize, 10) || 20, 200)
+    const offset = (Math.max(parseInt(page, 10) || 1, 1) - 1) * limit
+
+    // 查询总记录数
+    const countResult = await sequelize.query(`SELECT COUNT(*) as count FROM \`${table_name}\``, { type: Sequelize.QueryTypes.SELECT })
+    const total = countResult[0]?.count || 0
+
+    // 查询分页数据
+    const rows = await sequelize.query(`SELECT * FROM \`${table_name}\` LIMIT ${limit} OFFSET ${offset}`, { type: Sequelize.QueryTypes.SELECT })
+
+    // 查询字段信息
+    const dictEntry = await DataDictionary.findOne({ where: { table_name } })
+    const fields = dictEntry?.fields ? (typeof dictEntry.fields === 'string' ? JSON.parse(dictEntry.fields) : dictEntry.fields) : []
+
+    return success(res, { list: rows, total, fields }, '获取成功')
+  } catch (err) {
+    console.error('查询表记录失败:', err)
+    return fail(res, '服务器错误', 500)
+  }
+}
+
 export default {
   getConfig,
   saveConfig,
@@ -1207,6 +1346,7 @@ export default {
   listDataDictionary,
   refreshDataDictionary,
   refreshDictionaryData,
+  listTableRecords,
   listBackups,
   createBackup,
   restoreBackup,
