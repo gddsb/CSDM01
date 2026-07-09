@@ -1,15 +1,45 @@
 import axios from 'axios'
 
+const STATUS_TEXT_TO_NUM = {
+  '开立': 0, '下发': 1, '开工': 1, '完工': 2, '完成': 2,
+  '启用': 1, '禁用': 0, '停用': 0,
+  '运行': 1, '维修': 2,
+  '运行中': 1, '停机': 0,
+}
+
+function convertStatusParams(params) {
+  if (!params) return params
+  const result = {}
+  for (const [key, val] of Object.entries(params)) {
+    if (key === 'status' && typeof val === 'string') {
+      if (val.includes(',')) {
+        result[key] = val.split(',').map(s => {
+          const t = s.trim()
+          return STATUS_TEXT_TO_NUM[t] !== undefined ? STATUS_TEXT_TO_NUM[t] : s
+        }).join(',')
+      } else {
+        result[key] = STATUS_TEXT_TO_NUM[val] !== undefined ? STATUS_TEXT_TO_NUM[val] : val
+      }
+    } else {
+      result[key] = val
+    }
+  }
+  return result
+}
+
 const api = axios.create({
   baseURL: '/api',
   timeout: 15000,
 })
 
-// 请求拦截器：添加 token
+// 请求拦截器：添加 token，中文 status 转数字（规避 Vite 代理中文 URL 参数异常）
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('mes_token')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
+  }
+  if (config.params) {
+    config.params = convertStatusParams(config.params)
   }
   return config
 })
