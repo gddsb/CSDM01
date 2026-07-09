@@ -5,7 +5,7 @@ import { success, fail } from '../utils/response.js'
 // 日志列表（分页 + 筛选）
 export const list = async (req, res) => {
   try {
-    const { username, module, method, status, startDate, endDate, page = 1, pageSize = 20 } = req.query
+    const { username, module, method, status, startDate, endDate, dateStart, dateEnd, page = 1, pageSize = 20 } = req.query
     const where = {}
     if (username) where.username = { [Op.like]: `%${username}%` }
     if (module) where.module = { [Op.like]: `%${module}%` }
