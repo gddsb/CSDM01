@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, Select, message, Row, Col, Switch, Drawer, Descriptions, Space, Popconfirm, Upload, Image, Checkbox } from 'antd'
 import {
   ImportOutlined, ToolOutlined, DeleteOutlined,
-  PlusOutlined, EyeOutlined, ReloadOutlined,
-  UploadOutlined, PictureOutlined,
+  PlusOutlined, EyeOutlined,
+  UploadOutlined, PictureOutlined, SearchOutlined, ReloadOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
@@ -55,7 +55,7 @@ export default function DefectManagement() {
   const [filterCategory, setFilterCategory] = useState(undefined)
   const [filterType, setFilterType] = useState(undefined)
   const [filterKeyword, setFilterKeyword] = useState('')
-  const [filterDisplay, setFilterDisplay] = useState(undefined)
+  const [filterDisplay, setFilterDisplay] = useState([1, 0])
   const [filterStatus, setFilterStatus] = useState(undefined)
   // 已应用的查询条件
   const [query, setQuery] = useState({
@@ -64,7 +64,7 @@ export default function DefectManagement() {
     category_name: undefined,
     defect_type: undefined,
     keyword: '',
-    display: undefined,
+    display: [1, 0],
     status: undefined,
   })
 
@@ -80,7 +80,12 @@ export default function DefectManagement() {
         if (query.keyword) params.keyword = query.keyword
         if (query.category_name) params.category_name = query.category_name
         if (query.defect_type) params.defect_type = query.defect_type
-        if (query.display !== undefined && query.display !== null) params.display = query.display
+        if (Array.isArray(query.display)) {
+          if (query.display.length === 1) params.display = query.display[0]
+          else if (query.display.length === 0 || query.display.length >= 2) {}
+        } else if (query.display !== undefined && query.display !== null) {
+          params.display = query.display
+        }
         if (query.status !== undefined && query.status !== null) params.status = query.status
         const res = await api.get('/basic/defect-types', { params })
         if (cancelled) return
@@ -118,7 +123,7 @@ export default function DefectManagement() {
 
   const refresh = useCallback(() => setQuery(q => ({ ...q })), [])
 
-  const doSearch = () => {
+  const handleSearch = () => {
     setQuery(q => ({
       ...q,
       page: 1,
@@ -134,7 +139,7 @@ export default function DefectManagement() {
     setFilterCategory(undefined)
     setFilterType(undefined)
     setFilterKeyword('')
-    setFilterDisplay(undefined)
+    setFilterDisplay([1, 0])
     setFilterStatus(undefined)
     setQuery(q => ({
       ...q,
@@ -142,7 +147,7 @@ export default function DefectManagement() {
       category_name: undefined,
       defect_type: undefined,
       keyword: '',
-      display: undefined,
+      display: [1, 0],
       status: undefined,
     }))
   }
@@ -151,7 +156,6 @@ export default function DefectManagement() {
   const handleFilterCategoryChange = (value) => {
     setFilterCategory(value)
     setFilterType(undefined)
-    setTimeout(doSearch, 0)
   }
 
   // 拉取不良图片
@@ -379,38 +383,56 @@ export default function DefectManagement() {
   // 筛选时分类名称下拉选项
   const filterTypeOptions = filterCategory ? (defectTypeMap[filterCategory] || []) : []
 
-  const filters = [
-    {
-      type: 'select', placeholder: '大类名称', col: { span: 5 },
-      options: categoryNameOptions,
-      value: filterCategory,
-      onChange: handleFilterCategoryChange,
-    },
-    {
-      type: 'select', placeholder: '分类名称', col: { span: 5 },
-      options: filterTypeOptions,
-      value: filterType,
-      onChange: v => { setFilterType(v); doSearch() },
-      disabled: !filterCategory,
-    },
-    {
-      type: 'input', placeholder: '不良项目', col: { span: 5 },
-      value: filterKeyword,
-      onChange: e => { setFilterKeyword(e.target.value); doSearch() },
-    },
-    {
-      type: 'select', placeholder: '是否默认', col: { span: 4 },
-      options: [{ label: '是', value: 1 }, { label: '否', value: 0 }],
-      value: filterDisplay,
-      onChange: v => { setFilterDisplay(v); doSearch() },
-    },
-    {
-      type: 'select', placeholder: '状态筛选', col: { span: 4 },
-      options: [{ label: '启用', value: 1 }, { label: '停用', value: 0 }],
-      value: filterStatus,
-      onChange: v => { setFilterStatus(v); doSearch() },
-    },
-  ]
+  // 自定义筛选区
+  const filterBar = (
+    <div style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', gap: 12, marginBottom: 12, padding: '0 2px' }}>
+      <Select
+        placeholder="不良类型"
+        allowClear
+        showSearch
+        style={{ width: 200, flexShrink: 0 }}
+        options={categoryNameOptions}
+        value={filterCategory}
+        onChange={handleFilterCategoryChange}
+      />
+      <Select
+        placeholder="分类名称"
+        allowClear
+        showSearch
+        style={{ width: 200, flexShrink: 0 }}
+        options={filterTypeOptions}
+        value={filterType}
+        onChange={v => setFilterType(v)}
+        disabled={!filterCategory}
+      />
+      <Input
+        placeholder="不良项目"
+        allowClear
+        style={{ width: 200, flexShrink: 0 }}
+        value={filterKeyword}
+        onChange={e => setFilterKeyword(e.target.value)}
+        onPressEnter={handleSearch}
+      />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        <span style={{ color: '#666', fontSize: 14, whiteSpace: 'nowrap' }}>是否默认</span>
+        <Checkbox.Group
+          options={[{ label: '是', value: 1 }, { label: '否', value: 0 }]}
+          value={filterDisplay}
+          onChange={v => setFilterDisplay(v)}
+        />
+      </div>
+      <Select
+        placeholder="状态"
+        allowClear
+        style={{ width: 120, flexShrink: 0 }}
+        options={[{ label: '启用', value: 1 }, { label: '停用', value: 0 }]}
+        value={filterStatus}
+        onChange={v => setFilterStatus(v)}
+      />
+      <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>查询</Button>
+      <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
+    </div>
+  )
 
   // 统计数据
   const incomingCount = data.filter(d => d.defect_type === '来料不良').length
@@ -430,9 +452,6 @@ export default function DefectManagement() {
         title="不良分类"
         breadcrumbs="基础数据 / 不良分类"
         stats={stats}
-        filters={filters}
-        onSearch={doSearch}
-        onReset={handleReset}
         actions={
           <ActionButtons
             hasAdd={false}
@@ -443,22 +462,25 @@ export default function DefectManagement() {
           />
         }
         table={
-          <Table
-            columns={columns}
-            dataSource={data}
-            rowKey="defect_id"
-            size="small"
-            loading={loading}
-            scroll={{ x: 1250 }}
-            pagination={{
-              current: query.page,
-              pageSize: query.pageSize,
-              total,
-              showSizeChanger: true,
-              showTotal: t => `共 ${t} 条`,
-              onChange: (p, ps) => setQuery(q => ({ ...q, page: p, pageSize: ps })),
-            }}
-          />
+          <>
+            {filterBar}
+            <Table
+              columns={columns}
+              dataSource={data}
+              rowKey="defect_id"
+              size="small"
+              loading={loading}
+              scroll={{ x: 1250 }}
+              pagination={{
+                current: query.page,
+                pageSize: query.pageSize,
+                total,
+                showSizeChanger: true,
+                showTotal: t => `共 ${t} 条`,
+                onChange: (p, ps) => setQuery(q => ({ ...q, page: p, pageSize: ps })),
+              }}
+            />
+          </>
         }
       />
       <Modal

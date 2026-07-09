@@ -22,8 +22,12 @@ export const list = async (req, res) => {
     if (defect_type) where.defect_type = defect_type
     if (category_name) where.category_name = category_name
     if (display !== undefined && display !== '') {
-      const displayVal = typeof display === 'string' ? Number(display) : display
-      where.display = !!displayVal
+      if (Array.isArray(display)) {
+        where.display = { [Op.in]: display.map(v => Number(v)) }
+      } else {
+        const displayVal = typeof display === 'string' ? Number(display) : display
+        where.display = !!displayVal
+      }
     }
     if (dateStart || dateEnd) {
       where.created_at = {}
