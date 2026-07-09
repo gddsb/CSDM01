@@ -36,6 +36,7 @@ export default function ProcessReporting() {
 
   const [processDefectList, setProcessDefectList] = useState([])
   const [materialDefectList, setMaterialDefectList] = useState([])
+  const [scrapDefectList, setScrapDefectList] = useState([])
   const [processMaterialList, setProcessMaterialList] = useState([])
 
   const [viewRecord, setViewRecord] = useState(null)
@@ -162,6 +163,7 @@ export default function ProcessReporting() {
     if (!selectedWO || !processId) {
       setProcessDefectList([])
       setMaterialDefectList([])
+      setScrapDefectList([])
       return
     }
     try {
@@ -195,6 +197,7 @@ export default function ProcessReporting() {
       }
       setProcessDefectList(merged.filter(d => d.defect_category === '制程不良'))
       setMaterialDefectList(merged.filter(d => d.defect_category === '来料不良'))
+      setScrapDefectList(merged.filter(d => d.defect_category === '检验报废'))
     } catch (err) {
       message.error(err.message || '获取不良记录失败')
     }
@@ -384,7 +387,8 @@ export default function ProcessReporting() {
       const values = await defectModalForm.validateFields()
       const defectType = defectTypes.find(d => d.defect_id === values.defect_type_id)
       const defectName = values.defect_name || defectType?.defect_name
-      const currentList = defectModalType === 'process' ? processDefectList : materialDefectList
+      const listMap = { process: processDefectList, material: materialDefectList, scrap: scrapDefectList }
+      const currentList = listMap[defectModalType] || processDefectList
       if (!editingDefect) {
         const exists = currentList.find(d => d.defect_name === defectName)
         if (exists) {
@@ -393,7 +397,8 @@ export default function ProcessReporting() {
         }
       }
       setSaving(true)
-      const category = defectModalType === 'process' ? '制程不良' : '来料不良'
+      const catMap = { process: '制程不良', material: '来料不良', scrap: '检验报废' }
+      const category = catMap[defectModalType] || '制程不良'
       const payload = {
         work_order_id: selectedWO.work_order_id,
         process_id: selectedProcessId,
@@ -516,7 +521,8 @@ export default function ProcessReporting() {
   ]
 
   const defectTypeOptions = (category) => {
-    const catName = category === 'process' ? '制程不良' : '来料不良'
+    const catMap = { process: '制程不良', material: '来料不良', scrap: '检验报废' }
+    const catName = catMap[category] || '制程不良'
     return defectTypes
       .filter(d => d.category_name === catName)
       .map(d => ({ label: d.defect_name, value: d.defect_id, unit: d.defect_unit, code: d.defect_code }))
@@ -687,6 +693,32 @@ export default function ProcessReporting() {
             locale={{ emptyText: '暂无物料记录' }}
           />
         </div>
+      ) : (
+        <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>请先选择工序</div>
+      ),
+    },
+    {
+      key: 'scrap',
+      label: '检验报废记录',
+      children: selectedProcessId ? (
+        <Card
+          size="small"
+          title={<span style={{ color: '#722ED1' }}>检验报废</span>}
+          extra={selectedWO?.status === '开工' && (
+            <Button size="small" type="link" icon={<PlusOutlined />} onClick={() => handleAddDefect('scrap')}>
+              添加
+            </Button>
+          )}
+        >
+          <Table
+            columns={defectColumns('scrap')}
+            dataSource={scrapDefectList}
+            rowKey="defect_id"
+            size="small"
+            pagination={false}
+            locale={{ emptyText: '暂无检验报废记录' }}
+          />
+        </Card>
       ) : (
         <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>请先选择工序</div>
       ),
@@ -953,7 +985,7 @@ export default function ProcessReporting() {
       </Modal>
 
       <Modal
-        title={editingDefect ? '编辑不良记录' : (defectModalType === 'process' ? '添加制程不良' : '添加来料不良')}
+        title={editingDefect ? '编辑不良记录' : (defectModalType === 'process' ? '添加制程不良' : defectModalType === 'scrap' ? '添加检验报废' : '添加来料不良')}
         open={defectModalOpen}
         onOk={handleDefectModalSubmit}
         confirmLoading={saving}
