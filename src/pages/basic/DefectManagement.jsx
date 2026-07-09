@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, Select, message, Row, Col, Switch, Drawer, Descriptions, Space, Popconfirm, Upload, Image, Checkbox } from 'antd'
 import {
   ImportOutlined, ToolOutlined, DeleteOutlined,
@@ -152,10 +152,9 @@ export default function DefectManagement() {
     }))
   }
 
-  // 大类名称筛选变化时联动分类名称
+  // 大类名称筛选变化
   const handleFilterCategoryChange = (value) => {
     setFilterCategory(value)
-    setFilterType(undefined)
   }
 
   // 拉取不良图片
@@ -380,8 +379,22 @@ export default function DefectManagement() {
     },
   ]
 
-  // 筛选时分类名称下拉选项
-  const filterTypeOptions = filterCategory ? (defectTypeMap[filterCategory] || []) : []
+  // 筛选时分类名称下拉选项（所有分类名称，不联动）
+  const filterTypeOptions = [
+    { label: '来料不良', value: '来料不良' },
+    { label: '制程不良', value: '制程不良' },
+    { label: '检验报废', value: '检验报废' },
+  ]
+
+  // 即时查询：筛选条件变化时立即触发（跳过首次渲染）
+  const isFirstFilter = useRef(true)
+  useEffect(() => {
+    if (isFirstFilter.current) {
+      isFirstFilter.current = false
+      return
+    }
+    handleSearch()
+  }, [filterCategory, filterType, filterKeyword, filterDisplay, filterStatus])
 
   // 自定义筛选区
   const filterBar = (
@@ -403,7 +416,6 @@ export default function DefectManagement() {
         options={filterTypeOptions}
         value={filterType}
         onChange={v => setFilterType(v)}
-        disabled={!filterCategory}
       />
       <Input
         placeholder="不良项目"
