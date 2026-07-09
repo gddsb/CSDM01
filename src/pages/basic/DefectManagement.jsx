@@ -294,6 +294,10 @@ export default function DefectManagement() {
     { title: '不良项目', dataIndex: 'defect_name', key: 'defect_name', width: 120 },
     { title: '默认单位', dataIndex: 'defect_unit', key: 'defect_unit', width: 80 },
     {
+      title: '是否默认', dataIndex: 'display', key: 'display', width: 90,
+      render: v => <Tag color={v ? 'green' : 'default'}>{v ? '是' : '否'}</Tag>,
+    },
+    {
       title: '关联工序', dataIndex: 'related_processes', key: 'related_processes', width: 160,
       render: v => {
         const arr = toArray(v)
@@ -390,7 +394,7 @@ export default function DefectManagement() {
             rowKey="defect_id"
             size="small"
             loading={loading}
-            scroll={{ x: 1150 }}
+            scroll={{ x: 1250 }}
             pagination={{
               current: query.page,
               pageSize: query.pageSize,

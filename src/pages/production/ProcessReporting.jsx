@@ -174,12 +174,31 @@ export default function ProcessReporting() {
         },
       })
       const list = res.data || []
-      setProcessDefectList(list.filter(d => d.defect_category === '制程不良'))
-      setMaterialDefectList(list.filter(d => d.defect_category === '来料不良'))
+      const existingNames = list.map(d => d.defect_name)
+      const defaultDefects = defectTypes.filter(d => d.display && d.status === '启用' && ['来料不良', '制程不良', '检验报废'].includes(d.defect_type))
+      const merged = [...list]
+      for (const dt of defaultDefects) {
+        if (!existingNames.includes(dt.defect_name)) {
+          merged.push({
+            defect_id: null,
+            work_order_id: selectedWO.work_order_id,
+            process_id: processId,
+            defect_category: dt.defect_type,
+            defect_name: dt.defect_name,
+            defect_type_id: dt.defect_id,
+            quantity: 0,
+            unit: dt.defect_unit || '',
+            defect_images: [],
+            is_default: true,
+          })
+        }
+      }
+      setProcessDefectList(merged.filter(d => d.defect_category === '制程不良'))
+      setMaterialDefectList(merged.filter(d => d.defect_category === '来料不良'))
     } catch (err) {
       message.error(err.message || '获取不良记录失败')
     }
-  }, [selectedWO])
+  }, [selectedWO, defectTypes])
 
   const fetchProcessMaterials = useCallback(async (processId) => {
     if (!selectedWO || !processId) {
@@ -363,6 +382,10 @@ export default function ProcessReporting() {
   }
 
   const handleDeleteDefect = async (id) => {
+    if (!id) {
+      message.warning('默认不良项目无法删除')
+      return
+    }
     try {
       setSaving(true)
       await api.delete(`/production/process-defects/${id}`)
@@ -518,7 +541,7 @@ export default function ProcessReporting() {
     },
     {
       title: '操作', key: 'action', width: 70,
-      render: (_, r) => selectedWO?.status === '开工' && (
+      render: (_, r) => selectedWO?.status === '开工' && r.defect_id && (
         <Popconfirm title="确认删除？" onConfirm={() => handleDeleteDefect(r.defect_id)}>
           <Button type="link" size="small" danger icon={<DeleteOutlined />} />
         </Popconfirm>
