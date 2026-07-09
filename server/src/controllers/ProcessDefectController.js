@@ -19,7 +19,11 @@ export const list = async (req, res) => {
       offset,
       order: [['record_time', 'DESC']],
     })
-    return success(res, rows, '查询成功', count)
+    const data = rows.map(r => ({
+      ...r.toJSON(),
+      defect_images: r.defect_images ? JSON.parse(r.defect_images) : [],
+    }))
+    return success(res, data, '查询成功', count)
   } catch (err) {
     console.error('查询工序不良列表失败:', err)
     return fail(res, '服务器错误', 500)
@@ -130,6 +134,7 @@ export const batchSave = async (req, res) => {
         defect_type_id: item.defect_type_id || (defectType?.defect_id || null),
         quantity: Number(item.quantity),
         unit: item.unit || (defectType?.defect_unit || ''),
+        defect_images: item.defect_images ? JSON.stringify(item.defect_images) : null,
         record_user: req.user?.username || '',
         record_user_name: req.user?.real_name || '',
       })

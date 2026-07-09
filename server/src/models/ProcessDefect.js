@@ -44,6 +44,9 @@ const ProcessDefect = sequelize.define('ProcessDefect', {
   record_user_name: {
     type: DataTypes.STRING(50),
   },
+  defect_images: {
+    type: DataTypes.TEXT,
+  },
 }, {
   tableName: 'production_process_defect',
   timestamps: true,

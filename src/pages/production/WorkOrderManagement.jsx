@@ -309,8 +309,22 @@ export default function WorkOrderManagement() {
     return <Button type="link" size="small" onClick={() => handleView(w)}>详情</Button>
   }
 
+  const roundTo5Min = (timeStr) => {
+    if (!timeStr) return '-'
+    const str = String(timeStr).replace('T', ' ')
+    const parts = str.split(' ')
+    if (parts.length < 2) return str.substring(0, 10)
+    const [datePart, timePart] = parts
+    const [h, m] = timePart.split(':').map(Number)
+    const rounded = Math.round(m / 5) * 5
+    const adjH = rounded >= 60 ? (h + 1) % 24 : h
+    const adjM = rounded >= 60 ? 0 : rounded
+    return `${String(adjH).padStart(2, '0')}:${String(adjM).padStart(2, '0')}`
+  }
+
   const columns = [
     { title: '工单号', dataIndex: 'work_order_no', key: 'work_order_no', width: 140, fixed: 'left' },
+    { title: '开工日期', dataIndex: 'start_time', key: 'start_date', width: 100, render: v => v ? String(v).substring(0, 10).replace('T', ' ') : '-' },
     { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 120 },
     { title: '产品名称', dataIndex: 'material_name', key: 'material_name', ellipsis: true },
     { title: '计划数量', dataIndex: 'planned_qty', key: 'planned_qty', width: 90, align: 'right', render: v => Math.round(v || 0).toLocaleString() },
@@ -353,11 +367,11 @@ export default function WorkOrderManagement() {
     },
     { title: '人工工时', dataIndex: 'labor_hours', key: 'labor_hours', width: 90, align: 'right', render: v => Number(v || 0).toFixed(2) },
     {
-      title: '开完工时间', key: 'work_time', width: 160,
+      title: '开完工时间', key: 'work_time', width: 110, align: 'center',
       render: (_, w) => (
         <div style={{ fontSize: 12, lineHeight: 1.6 }}>
-          <div>开工：{w.start_time ? String(w.start_time).substring(0, 16).replace('T', ' ') : '-'}</div>
-          <div>完工：{w.finish_time ? String(w.finish_time).substring(0, 16).replace('T', ' ') : '-'}</div>
+          <div>开：{roundTo5Min(w.start_time)}</div>
+          <div>完：{roundTo5Min(w.finish_time)}</div>
         </div>
       ),
     },
