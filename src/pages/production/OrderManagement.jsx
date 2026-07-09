@@ -7,6 +7,7 @@ import {
 import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
+import { formatVersionNo } from '../../utils'
 
 const { RangePicker } = DatePicker
 
@@ -274,7 +275,7 @@ export default function OrderManagement() {
     { title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 200, render: (text) => <div style={{ wordBreak: 'break-word', whiteSpace: 'normal' }}>{text}</div> },
     { title: '规格', dataIndex: 'specification', key: 'specification', width: 120, ellipsis: true },
     { title: '菲林版本', dataIndex: 'film_version', key: 'film_version', width: 120 },
-    { title: '版本', dataIndex: 'version_no', key: 'version_no', width: 60 },
+    { title: '版本', dataIndex: 'version_no', key: 'version_no', width: 60, render: v => formatVersionNo(v) },
     { title: '计划数量', dataIndex: 'planned_qty', key: 'planned_qty', width: 100, align: 'right', render: v => (v || 0).toLocaleString() },
     {
       title: '完工数量', dataIndex: 'finished_qty', key: 'finished_qty', width: 100, align: 'right', render: v => {
@@ -451,7 +452,7 @@ export default function OrderManagement() {
             </Col>
             <Col span={12}>
               <Form.Item label="版本号">
-                <Input value={selectedMaterial?.version_no || '-'} disabled />
+                <Input value={formatVersionNo(selectedMaterial?.version_no)} disabled />
               </Form.Item>
             </Col>
           </Row>
@@ -502,7 +503,7 @@ export default function OrderManagement() {
             <Descriptions.Item label="品名">{currentOrder.material_name}</Descriptions.Item>
             <Descriptions.Item label="规格">{currentOrder.specification}</Descriptions.Item>
             <Descriptions.Item label="菲林版本">{currentOrder.film_version}</Descriptions.Item>
-            <Descriptions.Item label="版本号">{currentOrder.version_no}</Descriptions.Item>
+            <Descriptions.Item label="版本号">{formatVersionNo(currentOrder.version_no)}</Descriptions.Item>
             <Descriptions.Item label="计划数量">{(currentOrder.planned_qty || 0).toLocaleString()}</Descriptions.Item>
             <Descriptions.Item label="完工数量">{(currentOrder.finished_qty || 0).toLocaleString()}</Descriptions.Item>
             <Descriptions.Item label="计划开始">{currentOrder.plan_start_time || '-'}</Descriptions.Item>

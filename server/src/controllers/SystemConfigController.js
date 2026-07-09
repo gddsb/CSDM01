@@ -333,12 +333,12 @@ const tableCategoryMap = {
   sys_number_rule: { category: '系统表', purpose: '编码规则表，用于系统自动编号的可视化配置管理' },
   bas_material: { category: '基础数据表', purpose: '料品档案表，存储奶粉罐料品基础信息及规格参数' },
   bas_customer: { category: '基础数据表', purpose: '客户档案表，存储客户基本信息及信用等级' },
-  master_production_line: { category: '基础数据表', purpose: '产线表，管理生产线的编号、名称及状态' },
+  master_production_line: { category: '基础数据表', purpose: '产线表，管理生产线的编号、名称、车间及状态，与工序多对多关联' },
   master_process: { category: '基础数据表', purpose: '工序表，定义奶粉罐生产工序名称及顺序' },
   master_device: { category: '基础数据表', purpose: '设备档案表，存储设备基础信息及特种设备检定日期' },
   master_defect_type: { category: '基础数据表', purpose: '不良分类表，按大类名称和分类名称二级分类管理不良项及单位' },
   master_defect_image: { category: '基础数据表', purpose: '不良图片表，存储不良项的示例图片用于参考对比' },
-  bas_line_process: { category: '基础数据表', purpose: '产线工序关联表，描述产线与工序多对多关系' },
+  bas_line_process: { category: '基础数据表', purpose: '产线工序关联表，描述产线与工序的多对多关系，支持排序' },
   bas_line_device: { category: '基础数据表', purpose: '产线设备关联表，描述产线、设备与工序的三方关联' },
   production_order: { category: '业务表', purpose: '生产订单表，记录生产订单信息及计划数量' },
   production_work_order: { category: '业务表', purpose: '工单表，记录生产工单及工时计算数据' },
@@ -540,7 +540,7 @@ const columnCommentMap = {
     line_code: '产线编码',
     line_name: '产线名称',
     workshop: '所属车间',
-    line_leader: '产线负责人',
+    line_leader: '产线负责人（预留字段）',
     sort_order: '排序号',
     status: '状态（1运行中 2维护中 0停用）',
     created_at: '创建时间',
@@ -1129,31 +1129,37 @@ export const migrateDatabase = async (req, res) => {
   }
 }
 
-// 刷新数据字典：扫描数据库表结构并持久化到 sys_data_dictionary
+// 刷新数据字典核心逻辑（扫描数据库表结构并持久化到 sys_data_dictionary）
+export const refreshDictionaryData = async () => {
+  const { tables, columnsMap } = await collectDatabaseSchema()
+  const now = new Date()
+  let upsertCount = 0
+  for (const t of tables) {
+    const fields = columnsMap[t.table_name] || []
+    await DataDictionary.upsert({
+      table_name: t.table_name,
+      category: t.category,
+      purpose: t.purpose,
+      field_count: t.field_count,
+      record_count: t.record_count,
+      fields,
+      last_update: now,
+    })
+    upsertCount++
+  }
+  // 删除字典表中已不存在的表（数据库中已删除的表）
+  const allTableNames = tables.map(t => t.table_name)
+  if (allTableNames.length > 0) {
+    await DataDictionary.destroy({ where: { table_name: { [Op.notIn]: allTableNames } } })
+  }
+  return { total: upsertCount, refreshed_at: now.toISOString() }
+}
+
+// 刷新数据字典（HTTP 接口）
 export const refreshDataDictionary = async (req, res) => {
   try {
-    const { tables, columnsMap } = await collectDatabaseSchema()
-    const now = new Date()
-    let upsertCount = 0
-    for (const t of tables) {
-      const fields = columnsMap[t.table_name] || []
-      await DataDictionary.upsert({
-        table_name: t.table_name,
-        category: t.category,
-        purpose: t.purpose,
-        field_count: t.field_count,
-        record_count: t.record_count,
-        fields,
-        last_update: now,
-      })
-      upsertCount++
-    }
-    // 删除字典表中已不存在的表（数据库中已删除的表）
-    const allTableNames = tables.map(t => t.table_name)
-    if (allTableNames.length > 0) {
-      await DataDictionary.destroy({ where: { table_name: { [Op.notIn]: allTableNames } } })
-    }
-    return success(res, { total: upsertCount, refreshed_at: now.toISOString() }, `数据字典更新成功，共 ${upsertCount} 张表`)
+    const result = await refreshDictionaryData()
+    return success(res, result, `数据字典更新成功，共 ${result.total} 张表`)
   } catch (err) {
     console.error('刷新数据字典失败:', err)
     return fail(res, '服务器错误', 500)
@@ -1200,6 +1206,7 @@ export default {
   getDatabaseInfo,
   listDataDictionary,
   refreshDataDictionary,
+  refreshDictionaryData,
   listBackups,
   createBackup,
   restoreBackup,

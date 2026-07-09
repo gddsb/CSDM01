@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Table, Tag, Button, Modal, Form, InputNumber, DatePicker, Input, Space, Row, Col, Select, message, Drawer, Descriptions, Popconfirm } from 'antd'
+import { Table, Tag, Button, Modal, Form, InputNumber, DatePicker, Input, Space, Row, Col, Select, Checkbox, message, Drawer, Descriptions, Popconfirm } from 'antd'
 
 const { RangePicker } = DatePicker
 import {
@@ -10,6 +10,7 @@ import {
 import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
+import { formatVersionNo } from '../../utils'
 
 const statusColorMap = {
   '开立': 'default',
@@ -36,12 +37,15 @@ export default function WorkOrderManagement() {
   const [currentWO, setCurrentWO] = useState(null)
   const [form] = Form.useForm()
 
+  const [selectedLineProcesses, setSelectedLineProcesses] = useState([])
+  const [detailLineProcesses, setDetailLineProcesses] = useState([])
+
   // 筛选输入态
   const [keywordInput, setKeywordInput] = useState('')
-  const [statusInput, setStatusInput] = useState(undefined)
+  const [statusInput, setStatusInput] = useState(['开立', '开工'])
   const [lineInput, setLineInput] = useState(undefined)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined, line_id: undefined })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: ['开立', '开工'], line_id: undefined })
 
   // 获取工单列表
   useEffect(() => {
@@ -51,7 +55,7 @@ export default function WorkOrderManagement() {
       try {
         const params = { page: query.page, pageSize: query.pageSize }
         if (query.keyword) params.keyword = query.keyword
-        if (query.status) params.status = query.status
+        if (query.status && query.status.length > 0) params.status = query.status
         if (query.line_id) params.line_id = query.line_id
         const res = await api.get('/production/work-orders', { params })
         if (cancelled) return
@@ -189,8 +193,28 @@ export default function WorkOrderManagement() {
 
   const handleAdd = () => {
     setEditing(null)
+    setSelectedLineProcesses([])
     form.resetFields()
     setAddOpen(true)
+  }
+
+  const fetchLineProcesses = async (lineId) => {
+    try {
+      const res = await api.get(`/basic/production-lines/${lineId}/processes`)
+      setSelectedLineProcesses(res.data || [])
+    } catch (err) {
+      message.error(err.message || '获取产线工序失败')
+      setSelectedLineProcesses([])
+    }
+  }
+
+  const fetchDetailLineProcesses = async (lineId) => {
+    try {
+      const res = await api.get(`/basic/production-lines/${lineId}/processes`)
+      setDetailLineProcesses(res.data || [])
+    } catch (err) {
+      setDetailLineProcesses([])
+    }
   }
 
   // 编辑：仅开立的工单可编辑
@@ -239,6 +263,11 @@ export default function WorkOrderManagement() {
   const handleView = (w) => {
     setCurrentWO(w)
     setDetailOpen(true)
+    if (w.line_id) {
+      fetchDetailLineProcesses(w.line_id)
+    } else {
+      setDetailLineProcesses([])
+    }
   }
 
   const handleSearch = () => {
@@ -247,9 +276,9 @@ export default function WorkOrderManagement() {
 
   const handleReset = () => {
     setKeywordInput('')
-    setStatusInput(undefined)
+    setStatusInput(['开立', '开工'])
     setLineInput(undefined)
-    setQuery(q => ({ ...q, page: 1, keyword: '', status: undefined, line_id: undefined }))
+    setQuery(q => ({ ...q, page: 1, keyword: '', status: ['开立', '开工'], line_id: undefined }))
   }
 
   const renderActions = (w) => {
@@ -281,22 +310,22 @@ export default function WorkOrderManagement() {
   }
 
   const columns = [
-    { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 150, fixed: 'left' },
-    { title: '关联订单', dataIndex: 'order_no', key: 'order_no', width: 150, fixed: 'left' },
-    { title: '产线', dataIndex: 'line_name', key: 'line_name', width: 100 },
+    { title: '工单号', dataIndex: 'work_order_no', key: 'work_order_no', width: 150, fixed: 'left' },
+    { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 130 },
+    { title: '产品名称', dataIndex: 'material_name', key: 'material_name', width: 200, ellipsis: true },
     { title: '计划数量', dataIndex: 'planned_qty', key: 'planned_qty', width: 100, align: 'right', render: v => Math.round(v || 0).toLocaleString() },
     { title: '开工数量', dataIndex: 'start_qty', key: 'start_qty', width: 100, align: 'right', render: v => Math.round(v || 0).toLocaleString() },
     {
-      title: '合格数量', key: 'qualified_qty', width: 130, align: 'right',
+      title: '合格数量', key: 'qualified_qty', width: 140, align: 'right',
       render: (_, w) => {
         const qty = Number(w.qualified_qty || 0)
         const start = Number(w.start_qty || 0)
         const rate = start > 0 ? ((qty / start) * 100).toFixed(1) + '%' : '-'
-        return <div>{Math.round(qty).toLocaleString()}<span style={{ color: '#999', fontSize: 12, marginLeft: 4 }}>{rate}</span></div>
+        return <div>{Math.round(qty).toLocaleString()}<span style={{ color: '#52c41a', fontSize: 12, marginLeft: 4 }}>{rate}</span></div>
       },
     },
     {
-      title: '来料不良', key: 'defect_material', width: 130, align: 'right',
+      title: '来料不良', key: 'defect_material', width: 140, align: 'right',
       render: (_, w) => {
         const qty = Number(w.defect_material || 0)
         const start = Number(w.start_qty || 0)
@@ -305,7 +334,7 @@ export default function WorkOrderManagement() {
       },
     },
     {
-      title: '制程不良', key: 'defect_process', width: 130, align: 'right',
+      title: '制程不良', key: 'defect_process', width: 140, align: 'right',
       render: (_, w) => {
         const qty = Number(w.defect_process || 0)
         const start = Number(w.start_qty || 0)
@@ -313,15 +342,24 @@ export default function WorkOrderManagement() {
         return <div>{Math.round(qty).toLocaleString()}<span style={{ color: '#F5222D', fontSize: 12, marginLeft: 4 }}>{rate}</span></div>
       },
     },
-    { title: '检验报废', dataIndex: 'defect_scrap', key: 'defect_scrap', width: 100, align: 'right', render: v => Math.round(v || 0).toLocaleString() },
+    {
+      title: '检验报废', key: 'defect_scrap', width: 140, align: 'right',
+      render: (_, w) => {
+        const qty = Number(w.defect_scrap || 0)
+        const start = Number(w.start_qty || 0)
+        const rate = start > 0 ? ((qty / start) * 100).toFixed(1) + '%' : '-'
+        return <div>{Math.round(qty).toLocaleString()}<span style={{ color: '#722ed1', fontSize: 12, marginLeft: 4 }}>{rate}</span></div>
+      },
+    },
     { title: '人工工时', dataIndex: 'labor_hours', key: 'labor_hours', width: 100, align: 'right', render: v => Number(v || 0).toFixed(2) },
     {
-      title: '开工时间', dataIndex: 'start_time', key: 'start_time', width: 160,
-      render: v => v ? String(v).substring(0, 16).replace('T', ' ') : '-',
-    },
-    {
-      title: '完工时间', dataIndex: 'finish_time', key: 'finish_time', width: 160,
-      render: v => v ? String(v).substring(0, 16).replace('T', ' ') : '-',
+      title: '开完工时间', key: 'work_time', width: 180,
+      render: (_, w) => (
+        <div style={{ fontSize: 12, lineHeight: 1.6 }}>
+          <div>开工：{w.start_time ? String(w.start_time).substring(0, 16).replace('T', ' ') : '-'}</div>
+          <div>完工：{w.finish_time ? String(w.finish_time).substring(0, 16).replace('T', ' ') : '-'}</div>
+        </div>
+      ),
     },
     { title: '状态', dataIndex: 'status', key: 'status', width: 80, align: 'center', render: v => <Tag color={statusColorMap[v]}>{v}</Tag> },
     { title: '操作', key: 'action', width: 180, fixed: 'right', render: (_, r) => renderActions(r) },
@@ -355,11 +393,8 @@ export default function WorkOrderManagement() {
                   onPressEnter={handleSearch}
                 />
               </Col>
-              <Col flex="140px">
-                <Select
-                  placeholder="状态筛选"
-                  allowClear
-                  style={{ width: '100%' }}
+              <Col>
+                <Checkbox.Group
                   options={statusOptions}
                   value={statusInput}
                   onChange={setStatusInput}
@@ -463,7 +498,7 @@ export default function WorkOrderManagement() {
             </Col>
             <Col span={12}>
               <Form.Item label="版本号">
-                <Input value={selectedOrder?.version_no || '-'} disabled />
+                <Input value={formatVersionNo(selectedOrder?.version_no)} disabled />
               </Form.Item>
             </Col>
           </Row>
@@ -492,10 +527,50 @@ export default function WorkOrderManagement() {
                   placeholder="请选择产线"
                   options={runningLineOptions}
                   disabled={!!editing}
+                  onChange={(value) => {
+                    if (value) {
+                      fetchLineProcesses(value)
+                    } else {
+                      setSelectedLineProcesses([])
+                    }
+                  }}
                 />
               </Form.Item>
             </Col>
           </Row>
+          {selectedLineProcesses.length > 0 && (
+            <Row gutter={12}>
+              <Col span={24}>
+                <div style={{
+                  padding: '12px 16px',
+                  backgroundColor: '#f0f5ff',
+                  borderRadius: 6,
+                  border: '1px solid #d6e4ff',
+                }}>
+                  <div style={{ fontWeight: 500, marginBottom: 8, color: '#1677ff' }}>产线工序（按顺序）</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {selectedLineProcesses.map((p, idx) => {
+                      const bgColor = idx % 2 === 0 ? '#e6f4ff' : '#f0f5ff'
+                      return (
+                        <span
+                          key={p.process_id}
+                          style={{
+                            padding: '4px 12px',
+                            backgroundColor: bgColor,
+                            borderRadius: 4,
+                            fontSize: 13,
+                            border: '1px solid #91caff',
+                          }}
+                        >
+                          {idx + 1}. {p.process_name}
+                        </span>
+                      )
+                    })}
+                  </div>
+                </div>
+              </Col>
+            </Row>
+          )}
           <Row gutter={12}>
             <Col span={24}>
               <Form.Item label="计划日期区间" name="plan_date_range" rules={[{ required: true, message: '请选择计划日期区间' }]}>
@@ -524,25 +599,51 @@ export default function WorkOrderManagement() {
         width="40%"
       >
         {currentWO && (
-          <Descriptions column={2} bordered size="small">
-            <Descriptions.Item label="工单编号">{currentWO.work_order_no}</Descriptions.Item>
-            <Descriptions.Item label="关联订单">{currentWO.order_no}</Descriptions.Item>
-            <Descriptions.Item label="产线">{currentWO.line_name}</Descriptions.Item>
-            <Descriptions.Item label="状态"><Tag color={statusColorMap[currentWO.status]}>{currentWO.status}</Tag></Descriptions.Item>
-            <Descriptions.Item label="计划数量">{Math.round(currentWO.planned_qty || 0).toLocaleString()}</Descriptions.Item>
-            <Descriptions.Item label="开工数量">{Math.round(currentWO.start_qty || 0).toLocaleString()}</Descriptions.Item>
-            <Descriptions.Item label="合格数量">{Math.round(currentWO.qualified_qty || 0).toLocaleString()}</Descriptions.Item>
-            <Descriptions.Item label="检验报废">{Math.round(currentWO.defect_scrap || 0).toLocaleString()}</Descriptions.Item>
-            <Descriptions.Item label="来料不良">{Math.round(currentWO.defect_material || 0).toLocaleString()}</Descriptions.Item>
-            <Descriptions.Item label="制程不良">{Math.round(currentWO.defect_process || 0).toLocaleString()}</Descriptions.Item>
-            <Descriptions.Item label="人工工时">{Number(currentWO.labor_hours || 0).toFixed(2)} h</Descriptions.Item>
-            <Descriptions.Item label="完工数量">{Math.round(currentWO.finished_qty || 0).toLocaleString()}</Descriptions.Item>
-            <Descriptions.Item label="开工时间">{currentWO.start_time ? String(currentWO.start_time).substring(0, 16).replace('T', ' ') : '-'}</Descriptions.Item>
-            <Descriptions.Item label="完工时间">{currentWO.finish_time ? String(currentWO.finish_time).substring(0, 16).replace('T', ' ') : '-'}</Descriptions.Item>
-            <Descriptions.Item label="计划开始">{currentWO.plan_start_time || '-'}</Descriptions.Item>
-            <Descriptions.Item label="计划结束">{currentWO.plan_end_time || '-'}</Descriptions.Item>
-            <Descriptions.Item label="备注" span={2}>{currentWO.remarks || '-'}</Descriptions.Item>
-          </Descriptions>
+          <div>
+            <Descriptions column={2} bordered size="small">
+              <Descriptions.Item label="工单编号">{currentWO.work_order_no}</Descriptions.Item>
+              <Descriptions.Item label="关联订单">{currentWO.order_no}</Descriptions.Item>
+              <Descriptions.Item label="产线">{currentWO.line_name}</Descriptions.Item>
+              <Descriptions.Item label="状态"><Tag color={statusColorMap[currentWO.status]}>{currentWO.status}</Tag></Descriptions.Item>
+              <Descriptions.Item label="计划数量">{Math.round(currentWO.planned_qty || 0).toLocaleString()}</Descriptions.Item>
+              <Descriptions.Item label="开工数量">{Math.round(currentWO.start_qty || 0).toLocaleString()}</Descriptions.Item>
+              <Descriptions.Item label="合格数量">{Math.round(currentWO.qualified_qty || 0).toLocaleString()}</Descriptions.Item>
+              <Descriptions.Item label="检验报废">{Math.round(currentWO.defect_scrap || 0).toLocaleString()}</Descriptions.Item>
+              <Descriptions.Item label="来料不良">{Math.round(currentWO.defect_material || 0).toLocaleString()}</Descriptions.Item>
+              <Descriptions.Item label="制程不良">{Math.round(currentWO.defect_process || 0).toLocaleString()}</Descriptions.Item>
+              <Descriptions.Item label="人工工时">{Number(currentWO.labor_hours || 0).toFixed(2)} h</Descriptions.Item>
+              <Descriptions.Item label="完工数量">{Math.round(currentWO.finished_qty || 0).toLocaleString()}</Descriptions.Item>
+              <Descriptions.Item label="开工时间">{currentWO.start_time ? String(currentWO.start_time).substring(0, 16).replace('T', ' ') : '-'}</Descriptions.Item>
+              <Descriptions.Item label="完工时间">{currentWO.finish_time ? String(currentWO.finish_time).substring(0, 16).replace('T', ' ') : '-'}</Descriptions.Item>
+              <Descriptions.Item label="计划开始">{currentWO.plan_start_time || '-'}</Descriptions.Item>
+              <Descriptions.Item label="计划结束">{currentWO.plan_end_time || '-'}</Descriptions.Item>
+              <Descriptions.Item label="备注" span={2}>{currentWO.remarks || '-'}</Descriptions.Item>
+            </Descriptions>
+            {detailLineProcesses.length > 0 && (
+              <div style={{ marginTop: 16 }}>
+                <div style={{ fontWeight: 600, marginBottom: 8 }}>产线工序（按顺序）</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {detailLineProcesses.map((p, idx) => {
+                    const bgColor = idx % 2 === 0 ? '#e6f4ff' : '#f0f5ff'
+                    return (
+                      <span
+                        key={p.process_id}
+                        style={{
+                          padding: '4px 12px',
+                          backgroundColor: bgColor,
+                          borderRadius: 4,
+                          fontSize: 13,
+                          border: '1px solid #91caff',
+                        }}
+                      >
+                        {idx + 1}. {p.process_name}
+                      </span>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </Drawer>
     </>

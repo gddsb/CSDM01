@@ -64,33 +64,10 @@ function resolveIcon(name) {
 const defaultMenuItems = [
   { key: '/dashboard', icon: <DashboardOutlined />, label: '工作台' },
   {
-    key: 'system', icon: <SettingOutlined />, label: '系统管理',
-    children: [
-      { key: '/system/users', icon: <TeamOutlined />, label: '用户管理' },
-      { key: '/system/roles', icon: <SafetyCertificateOutlined />, label: '角色权限' },
-      { key: '/system/menus', icon: <MenuOutlined />, label: '菜单管理' },
-      { key: '/system/dictionary', icon: <DatabaseOutlined />, label: '数据字典' },
-      { key: '/system/config', icon: <ControlOutlined />, label: '系统配置' },
-      { key: '/system/logs', icon: <FileTextOutlined />, label: '操作日志' },
-      { key: '/system/test-reporting', icon: <ExperimentOutlined />, label: '测试报工' },
-    ]
-  },
-  {
-    key: 'basic', icon: <ProfileOutlined />, label: '基础数据',
-    children: [
-      { key: '/basic/materials', icon: <ProfileOutlined />, label: '料品档案' },
-      { key: '/basic/customers', icon: <TeamOutlined />, label: '客户档案' },
-      { key: '/basic/lines', icon: <DeploymentUnitOutlined />, label: '产线档案' },
-      { key: '/basic/processes', icon: <DeploymentUnitOutlined />, label: '工序档案' },
-      { key: '/basic/defects', icon: <AlertOutlined />, label: '不良分类' },
-      { key: '/basic/number-rules', icon: <KeyOutlined />, label: '编码管理' },
-    ]
-  },
-  {
     key: 'production', icon: <ToolOutlined />, label: '生产管理',
     children: [
       { key: '/production/orders', icon: <FileTextOutlined />, label: '生产订单' },
-      { key: '/production/workorders', icon: <ToolOutlined />, label: '工单列表' },
+      { key: '/production/workorders', icon: <ToolOutlined />, label: '工单管理' },
       { key: '/production/reporting', icon: <ProfileOutlined />, label: '生产报工' },
       { key: '/production/manpower', icon: <TeamOutlined />, label: '人员记录' },
       { key: '/production/exceptions', icon: <BellOutlined />, label: '异常记录' },
@@ -125,11 +102,14 @@ const defaultMenuItems = [
     ]
   },
   {
-    key: 'bigscreen', icon: <DesktopOutlined />, label: '数据大屏',
+    key: 'basic', icon: <ProfileOutlined />, label: '基础数据',
     children: [
-      { key: '/bigscreen/production', icon: <BarChartOutlined />, label: '生产实时看板' },
-      { key: '/bigscreen/quality', icon: <ExperimentOutlined />, label: '质量分析看板' },
-      { key: '/bigscreen/management', icon: <PieChartOutlined />, label: '管理驾驶舱' },
+      { key: '/basic/materials', icon: <ProfileOutlined />, label: '料品档案' },
+      { key: '/basic/customers', icon: <TeamOutlined />, label: '客户档案' },
+      { key: '/basic/lines', icon: <DeploymentUnitOutlined />, label: '产线档案' },
+      { key: '/basic/processes', icon: <DeploymentUnitOutlined />, label: '工序档案' },
+      { key: '/basic/defects', icon: <AlertOutlined />, label: '不良分类' },
+      { key: '/basic/number-rules', icon: <KeyOutlined />, label: '编码管理' },
     ]
   },
   {
@@ -141,6 +121,25 @@ const defaultMenuItems = [
       { key: '/report/production', icon: <FileTextOutlined />, label: '生产报表' },
       { key: '/report/quality', icon: <ExperimentOutlined />, label: '质量报表' },
       { key: '/report/exception', icon: <BellOutlined />, label: '异常分析报表' },
+    ]
+  },
+  {
+    key: 'bigscreen', icon: <DesktopOutlined />, label: '数据大屏',
+    children: [
+      { key: '/bigscreen/production', icon: <BarChartOutlined />, label: '生产实时看板' },
+      { key: '/bigscreen/quality', icon: <ExperimentOutlined />, label: '质量分析看板' },
+      { key: '/bigscreen/management', icon: <PieChartOutlined />, label: '管理驾驶舱' },
+    ]
+  },
+  {
+    key: 'system', icon: <SettingOutlined />, label: '系统管理',
+    children: [
+      { key: '/system/users', icon: <TeamOutlined />, label: '用户管理' },
+      { key: '/system/roles', icon: <SafetyCertificateOutlined />, label: '角色权限' },
+      { key: '/system/menus', icon: <MenuOutlined />, label: '菜单管理' },
+      { key: '/system/dictionary', icon: <DatabaseOutlined />, label: '数据字典' },
+      { key: '/system/config', icon: <ControlOutlined />, label: '系统配置' },
+      { key: '/system/logs', icon: <FileTextOutlined />, label: '操作日志' },
     ]
   },
 ]

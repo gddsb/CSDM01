@@ -22,16 +22,8 @@ export default function ProductionLine() {
   const [form] = Form.useForm()
 
   const [processOptions, setProcessOptions] = useState([])
-  const [deviceOptions, setDeviceOptions] = useState([])
   const [selectedProcesses, setSelectedProcesses] = useState([])
-  const [selectedDevices, setSelectedDevices] = useState([])
-  const [processModalVisible, setProcessModalVisible] = useState(false)
-  const [deviceModalVisible, setDeviceModalVisible] = useState(false)
-  const [processForm] = Form.useForm()
-  const [deviceForm] = Form.useForm()
-
-  const [selectedLine, setSelectedLine] = useState(null)
-  const [selectedLineRelations, setSelectedLineRelations] = useState([])
+  const [selectedLineProcesses, setSelectedLineProcesses] = useState([])
 
   const [keywordInput, setKeywordInput] = useState('')
   const [statusInput, setStatusInput] = useState(undefined)
@@ -80,22 +72,17 @@ export default function ProductionLine() {
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const [processRes, deviceRes] = await Promise.all([
-          api.get('/basic/processes', { params: { pageSize: 100 } }),
-          api.get('/basic/devices', { params: { pageSize: 100 } }),
-        ])
-        setProcessOptions((processRes.data || []).map(p => ({
+        const processRes = await api.get('/basic/processes', { params: { pageSize: 100 } })
+        const processes = (processRes.data || []).sort((a, b) => {
+          const codeA = a.process_code || ''
+          const codeB = b.process_code || ''
+          return codeA.localeCompare(codeB, 'zh-Hans-CN', { numeric: true })
+        })
+        setProcessOptions(processes.map(p => ({
           label: `${p.process_code} - ${p.process_name}`,
           value: p.process_id,
           code: p.process_code,
           name: p.process_name,
-        })))
-        setDeviceOptions((deviceRes.data || []).map(d => ({
-          label: `${d.device_code} - ${d.device_name}`,
-          value: d.device_id,
-          code: d.device_code,
-          name: d.device_name,
-          model: d.device_model,
         })))
       } catch (err) {
         console.error('获取选项数据失败:', err)
@@ -104,45 +91,21 @@ export default function ProductionLine() {
     fetchOptions()
   }, [])
 
-  const fetchLineRelations = async (lineId) => {
+  const fetchLineProcesses = async (lineId) => {
     try {
-      const [processesRes, devicesRes] = await Promise.all([
-        api.get(`/basic/production-lines/${lineId}/processes`),
-        api.get(`/basic/production-lines/${lineId}/devices`),
-      ])
-      const processes = processesRes.data || []
-      const devices = devicesRes.data || []
-      const relations = []
-      processes.forEach(p => {
-        const processDevices = devices.filter(d => d.process_id === p.process_id)
-        if (processDevices.length === 0) {
-          relations.push({
-            sort_order: p.sort_order,
-            process_id: p.process_id,
-            process_code: p.process_code,
-            process_name: p.process_name,
-            device_id: null,
-            device_code: '-',
-            device_name: '-',
-          })
-        } else {
-          processDevices.forEach(d => {
-            relations.push({
-              sort_order: p.sort_order,
-              process_id: p.process_id,
-              process_code: p.process_code,
-              process_name: p.process_name,
-              device_id: d.device_id,
-              device_code: d.device_code,
-              device_name: d.device_name,
-            })
-          })
-        }
+      const res = await api.get(`/basic/production-lines/${lineId}/processes`)
+      const processes = (res.data || []).sort((a, b) => {
+        const sortA = Number(a.sort_order) || 0
+        const sortB = Number(b.sort_order) || 0
+        if (sortA !== sortB) return sortA - sortB
+        const codeA = a.process_code || ''
+        const codeB = b.process_code || ''
+        return codeA.localeCompare(codeB, 'zh-Hans-CN', { numeric: true })
       })
-      setSelectedLineRelations(relations)
+      return processes
     } catch (err) {
-      console.error('获取产线关联数据失败:', err)
-      setSelectedLineRelations([])
+      console.error('获取产线工序失败:', err)
+      return []
     }
   }
 
@@ -150,8 +113,6 @@ export default function ProductionLine() {
 
   const handleSearch = () => {
     setQuery(q => ({ ...q, page: 1, keyword: keywordInput, status: statusInput, workshop: workshopInput }))
-    setSelectedLine(null)
-    setSelectedLineRelations([])
   }
 
   const handleReset = () => {
@@ -159,43 +120,73 @@ export default function ProductionLine() {
     setStatusInput(undefined)
     setWorkshopInput(undefined)
     setQuery(q => ({ ...q, page: 1, keyword: '', status: undefined, workshop: undefined }))
-    setSelectedLine(null)
-    setSelectedLineRelations([])
   }
 
   const handleAdd = () => {
     setEditing(null)
     setSelectedProcesses([])
-    setSelectedDevices([])
     setModalVisible(true)
   }
 
   const handleEdit = (record) => {
     setEditing(record)
     setSelectedProcesses([])
-    setSelectedDevices([])
     setModalVisible(true)
   }
 
-  const handleView = (record) => {
+  const handleView = async (record) => {
     setViewRecord(record)
-    fetchLineRelations(record.line_id)
+    const processes = await fetchLineProcesses(record.line_id)
+    setSelectedLineProcesses(processes)
   }
 
-  const handleAfterOpenChange = (open) => {
+  const handleAfterOpenChange = async (open) => {
     if (!open) return
     if (editing) {
       form.setFieldsValue({
         line_code: editing.line_code,
         line_name: editing.line_name,
         workshop: editing.workshop,
-        line_leader: editing.line_leader,
         sort_order: editing.sort_order,
         status: editing.status,
       })
+      try {
+        const res = await api.get(`/basic/production-lines/${editing.line_id}/processes`)
+        const processes = (res.data || []).map(p => ({
+          process_id: p.process_id,
+          process_code: p.process_code,
+          process_name: p.process_name,
+          sort_order: p.sort_order,
+        }))
+        setSelectedProcesses(processes)
+      } catch (e) {
+        console.error('获取产线工序失败:', e)
+      }
     } else {
       form.resetFields()
-      form.setFieldsValue({ status: '运行中', sort_order: total + 1 })
+      const nextSort = data.length > 0 ? Math.max(...data.map(d => Number(d.sort_order) || 0)) + 1 : 1
+      const existingLetters = data
+        .map(d => {
+          const match = d.line_name?.match(/^([A-Z])线$/)
+          return match ? match[1] : null
+        })
+        .filter(Boolean)
+      let nextLetter = 'A'
+      const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+      for (const c of alphabet) {
+        if (!existingLetters.includes(c)) {
+          nextLetter = c
+          break
+        }
+      }
+      const nextCode = `LINE-${nextLetter}`
+      form.setFieldsValue({
+        status: '运行中',
+        sort_order: nextSort,
+        line_code: nextCode,
+        line_name: `${nextLetter}线`,
+        workshop: '制罐车间',
+      })
     }
   }
 
@@ -214,17 +205,17 @@ export default function ProductionLine() {
         lineId = res.data.line_id
         message.success(res.message || '产线新增成功')
       }
+      if (editing) {
+        try {
+          await api.delete(`/basic/production-lines/${lineId}/processes`)
+        } catch (e) {
+          console.warn('清空旧工序关联失败:', e)
+        }
+      }
       for (const p of selectedProcesses) {
         await api.post(`/basic/production-lines/${lineId}/processes`, {
           process_id: p.process_id,
           sort_order: p.sort_order,
-        })
-      }
-      for (const d of selectedDevices) {
-        await api.post(`/basic/production-lines/${lineId}/devices`, {
-          device_id: d.device_id,
-          process_id: d.process_id || null,
-          sort_order: d.sort_order,
         })
       }
       setModalVisible(false)
@@ -242,125 +233,67 @@ export default function ProductionLine() {
       const res = await api.delete(`/basic/production-lines/${record.line_id}`)
       message.success(res.message || '删除成功')
       refresh()
-      if (selectedLine?.line_id === record.line_id) {
-        setSelectedLine(null)
-        setSelectedLineRelations([])
-      }
     } catch (err) {
       message.error(err.message || '删除失败')
     }
   }
 
-  const handleAddProcess = async () => {
-    try {
-      const values = await processForm.validateFields()
-      const existing = selectedProcesses.find(p => p.process_id === values.process_id)
-      if (existing) {
-        message.warning('该工序已添加')
-        return
-      }
-      const processInfo = processOptions.find(p => p.value === values.process_id)
-      setSelectedProcesses([...selectedProcesses, {
-        process_id: values.process_id,
-        process_code: processInfo?.code || '',
-        process_name: processInfo?.name || '',
-        sort_order: selectedProcesses.length,
-      }])
-      setProcessModalVisible(false)
-      processForm.resetFields()
-    } catch (e) {
-      if (e?.errorFields) return
-      message.error(e.message || '操作失败')
-    }
+  const availableProcessOptions = processOptions.filter(
+    p => !selectedProcesses.find(sp => sp.process_id === p.value)
+  )
+
+  const handleSelectProcesses = (processIds) => {
+    const newProcesses = processIds
+      .filter(id => !selectedProcesses.find(sp => sp.process_id === id))
+      .map(id => {
+        const info = processOptions.find(p => p.value === id)
+        return {
+          process_id: id,
+          process_code: info?.code || '',
+          process_name: info?.name || '',
+          sort_order: selectedProcesses.length,
+        }
+      })
+    const combined = [...selectedProcesses, ...newProcesses]
+    combined.sort((a, b) => {
+      const codeA = a.process_code || ''
+      const codeB = b.process_code || ''
+      return codeA.localeCompare(codeB, 'zh-Hans-CN', { numeric: true })
+    })
+    const reordered = combined.map((p, idx) => ({ ...p, sort_order: idx }))
+    setSelectedProcesses(reordered)
   }
 
   const handleRemoveProcess = (processId) => {
-    setSelectedProcesses(selectedProcesses.filter(p => p.process_id !== processId))
-    setSelectedDevices(selectedDevices.filter(d => d.process_id !== processId))
-  }
-
-  const handleAddDevice = async () => {
-    try {
-      const values = await deviceForm.validateFields()
-      const existing = selectedDevices.find(d => d.device_id === values.device_id)
-      if (existing) {
-        message.warning('该设备已添加')
-        return
-      }
-      const deviceInfo = deviceOptions.find(d => d.value === values.device_id)
-      setSelectedDevices([...selectedDevices, {
-        device_id: values.device_id,
-        device_code: deviceInfo?.code || '',
-        device_name: deviceInfo?.name || '',
-        process_id: values.process_id || null,
-        sort_order: selectedDevices.length,
-      }])
-      setDeviceModalVisible(false)
-      deviceForm.resetFields()
-    } catch (e) {
-      if (e?.errorFields) return
-      message.error(e.message || '操作失败')
-    }
-  }
-
-  const handleRemoveDevice = (deviceId) => {
-    setSelectedDevices(selectedDevices.filter(d => d.device_id !== deviceId))
-  }
-
-  const handleRemoveRelation = async (relation) => {
-    if (!selectedLine) return
-    try {
-      if (relation.device_id) {
-        await api.delete(`/basic/production-lines/${selectedLine.line_id}/devices/${relation.device_id}`)
-      } else {
-        await api.delete(`/basic/production-lines/${selectedLine.line_id}/processes/${relation.process_id}`)
-      }
-      message.success('移除成功')
-      fetchLineRelations(selectedLine.line_id)
-    } catch (err) {
-      message.error(err.message || '操作失败')
-    }
+    const filtered = selectedProcesses.filter(p => p.process_id !== processId)
+    filtered.sort((a, b) => {
+      const codeA = a.process_code || ''
+      const codeB = b.process_code || ''
+      return codeA.localeCompare(codeB, 'zh-Hans-CN', { numeric: true })
+    })
+    const reordered = filtered.map((p, idx) => ({ ...p, sort_order: idx }))
+    setSelectedProcesses(reordered)
   }
 
   const columns = [
-    {
-      title: '选择',
-      key: 'select',
-      width: 60,
-      render: (_, record) => (
-        <Button
-          type={selectedLine?.line_id === record.line_id ? 'primary' : 'default'}
-          size="small"
-          onClick={() => {
-            if (selectedLine?.line_id === record.line_id) {
-              setSelectedLine(null)
-              setSelectedLineRelations([])
-            } else {
-              setSelectedLine(record)
-              fetchLineRelations(record.line_id)
-            }
-          }}
-        >
-          {selectedLine?.line_id === record.line_id ? '已选' : '选择'}
-        </Button>
-      ),
-    },
     { title: '产线编号', dataIndex: 'line_code', key: 'line_code', width: 110 },
     { title: '产线名称', dataIndex: 'line_name', key: 'line_name', width: 100 },
-    { title: '负责人', dataIndex: 'line_leader', key: 'line_leader', width: 100 },
     {
       title: '产线工序',
       dataIndex: 'process_names',
       key: 'process_names',
-      width: 150,
-      render: (text) => text || '-',
-    },
-    {
-      title: '工序设备',
-      dataIndex: 'device_names',
-      key: 'device_names',
-      width: 150,
-      render: (text) => text || '-',
+      width: 250,
+      render: (text) => {
+        if (!text) return <Tag color="default">未配置</Tag>
+        const names = text.split('、').filter(Boolean)
+        return (
+          <Space size="small" wrap>
+            {names.map((name, idx) => (
+              <Tag key={idx} color="cyan">{name}</Tag>
+            ))}
+          </Space>
+        )
+      },
     },
     {
       title: '状态', dataIndex: 'status', key: 'status', width: 90,
@@ -379,52 +312,10 @@ export default function ProductionLine() {
     },
   ]
 
-  const relationColumns = [
+  const processColumns = [
     { title: '排序', dataIndex: 'sort_order', key: 'sort_order', width: 60 },
-    { title: '工序编号', dataIndex: 'process_code', key: 'process_code', width: 100 },
-    { title: '工序名称', dataIndex: 'process_name', key: 'process_name', width: 120 },
-    { title: '设备编号', dataIndex: 'device_code', key: 'device_code', width: 120 },
-    { title: '设备名称', dataIndex: 'device_name', key: 'device_name', width: 120 },
-    {
-      title: '操作', key: 'action', width: 80,
-      render: (_, record) => (
-        <Popconfirm
-          title="确认移除？"
-          onConfirm={() => handleRemoveRelation(record)}
-          okText="确认"
-          cancelText="取消"
-        >
-          <Button type="link" size="small" danger icon={<DeleteOutlined />} />
-        </Popconfirm>
-      ),
-    },
-  ]
-
-  const modalRelationColumns = [
-    { title: '排序', dataIndex: 'sort_order', key: 'sort_order', width: 60 },
-    { title: '工序编号', dataIndex: 'process_code', key: 'process_code', width: 100 },
-    { title: '工序名称', dataIndex: 'process_name', key: 'process_name', width: 120 },
-    { title: '设备编号', dataIndex: 'device_code', key: 'device_code', width: 120 },
-    { title: '设备名称', dataIndex: 'device_name', key: 'device_name', width: 120 },
-    {
-      title: '操作', key: 'action', width: 80,
-      render: (_, record) => (
-        <Popconfirm
-          title="确认移除？"
-          onConfirm={() => {
-            if (record.device_id) {
-              handleRemoveDevice(record.device_id)
-            } else {
-              handleRemoveProcess(record.process_id)
-            }
-          }}
-          okText="确认"
-          cancelText="取消"
-        >
-          <Button type="link" size="small" danger icon={<DeleteOutlined />} />
-        </Popconfirm>
-      ),
-    },
+    { title: '工序编号', dataIndex: 'process_code', key: 'process_code', width: 120 },
+    { title: '工序名称', dataIndex: 'process_name', key: 'process_name', width: 150 },
   ]
 
   const filters = [
@@ -436,37 +327,6 @@ export default function ProductionLine() {
     },
     { type: 'select', placeholder: '车间筛选', options: workshopOptions, col: { span: 6 }, value: workshopInput, onChange: v => setWorkshopInput(v) },
   ]
-
-  const buildModalRelations = () => {
-    const relations = []
-    selectedProcesses.forEach(p => {
-      const processDevices = selectedDevices.filter(d => d.process_id === p.process_id)
-      if (processDevices.length === 0) {
-        relations.push({
-          sort_order: p.sort_order,
-          process_id: p.process_id,
-          process_code: p.process_code,
-          process_name: p.process_name,
-          device_id: null,
-          device_code: '-',
-          device_name: '-',
-        })
-      } else {
-        processDevices.forEach(d => {
-          relations.push({
-            sort_order: p.sort_order,
-            process_id: p.process_id,
-            process_code: p.process_code,
-            process_name: p.process_name,
-            device_id: d.device_id,
-            device_code: d.device_code,
-            device_name: d.device_name,
-          })
-        })
-      }
-    })
-    return relations
-  }
 
   return (
     <>
@@ -487,48 +347,21 @@ export default function ProductionLine() {
           />
         }
         table={
-          <div>
-            <Table
-              columns={columns}
-              dataSource={data}
-              rowKey="line_id"
-              size="small"
-              loading={loading}
-              pagination={{
-                current: query.page,
-                pageSize: query.pageSize,
-                total,
-                showSizeChanger: true,
-                showTotal: t => `共 ${t} 条`,
-                onChange: (p, ps) => setQuery(q => ({ ...q, page: p, pageSize: ps })),
-              }}
-            />
-            {selectedLine && selectedLineRelations.length > 0 && (
-              <Card
-                title={`${selectedLine.line_name} - 工序设备关联列表`}
-                style={{ marginTop: 16 }}
-              >
-                <Table
-                  columns={relationColumns}
-                  dataSource={selectedLineRelations}
-                  rowKey={(r) => `${r.process_id}-${r.device_id}`}
-                  size="small"
-                  pagination={false}
-                  bordered
-                />
-              </Card>
-            )}
-            {selectedLine && selectedLineRelations.length === 0 && (
-              <Card
-                title={`${selectedLine.line_name} - 工序设备关联列表`}
-                style={{ marginTop: 16 }}
-              >
-                <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: 20 }}>
-                  该产线暂无关联的工序和设备，请先添加产线后再配置
-                </div>
-              </Card>
-            )}
-          </div>
+          <Table
+            columns={columns}
+            dataSource={data}
+            rowKey="line_id"
+            size="small"
+            loading={loading}
+            pagination={{
+              current: query.page,
+              pageSize: query.pageSize,
+              total,
+              showSizeChanger: true,
+              showTotal: t => `共 ${t} 条`,
+              onChange: (p, ps) => setQuery(q => ({ ...q, page: p, pageSize: ps })),
+            }}
+          />
         }
       />
       <Modal
@@ -540,7 +373,7 @@ export default function ProductionLine() {
         afterOpenChange={handleAfterOpenChange}
         okText="保存"
         cancelText="取消"
-        width={720}
+        width={640}
         destroyOnHidden
       >
         <Form form={form} layout="vertical" className="compact-form" preserve={false}>
@@ -563,17 +396,12 @@ export default function ProductionLine() {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="line_leader" label="负责人">
-                <Input placeholder="请输入负责人" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={12}>
               <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
                 <Select placeholder="请选择状态" options={statusOptions} />
               </Form.Item>
             </Col>
+          </Row>
+          <Row gutter={12}>
             <Col span={12}>
               <Form.Item name="sort_order" label="排序号">
                 <Input placeholder="数字越小越靠前" />
@@ -584,28 +412,51 @@ export default function ProductionLine() {
             title={
               <Space>
                 <SettingOutlined />
-                <span>工序设备配置</span>
-              </Space>
-            }
-            extra={
-              <Space>
-                <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => setProcessModalVisible(true)}>添加工序</Button>
-                <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => setDeviceModalVisible(true)}>添加设备</Button>
+                <span>工序配置</span>
               </Space>
             }
             style={{ marginTop: 16 }}
+            size="small"
           >
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 8 }}>
-              提示：添加产线后可配置关联的工序和设备，设备可关联到特定工序
+            <Row gutter={[12, 8]} style={{ marginBottom: 12 }}>
+              <Col span={24}>
+                <Select
+                  mode="multiple"
+                  placeholder="请选择工序（可一次性多选，按工序编号自动排序）"
+                  style={{ width: '100%' }}
+                  value={undefined}
+                  onChange={handleSelectProcesses}
+                  options={availableProcessOptions}
+                  showSearch
+                  optionFilterProp="label"
+                  filterOption={(input, option) =>
+                    option.label.toLowerCase().includes(input.toLowerCase())
+                  }
+                  maxTagCount="responsive"
+                />
+              </Col>
+            </Row>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {selectedProcesses.map((p, idx) => {
+                const bgColor = idx % 2 === 0 ? '#f5f7fa' : '#e8ecf1'
+                return (
+                  <div key={p.process_id} style={{ backgroundColor: bgColor, padding: 10, borderRadius: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 500 }}>
+                      {idx + 1}. {p.process_name}
+                      <span style={{ color: '#999', fontWeight: 'normal', marginLeft: 8, fontSize: 12 }}>{p.process_code}</span>
+                    </span>
+                    <Popconfirm title="确认移除该工序？" onConfirm={() => handleRemoveProcess(p.process_id)}>
+                      <Button size="small" danger icon={<DeleteOutlined />} />
+                    </Popconfirm>
+                  </div>
+                )
+              })}
+              {selectedProcesses.length === 0 && (
+                <div style={{ textAlign: 'center', color: '#999', padding: 24 }}>
+                  请从上方下拉框选择工序添加到产线
+                </div>
+              )}
             </div>
-            <Table
-              columns={modalRelationColumns}
-              dataSource={buildModalRelations()}
-              rowKey={(r) => `${r.process_id}-${r.device_id}`}
-              size="small"
-              pagination={false}
-              bordered
-            />
           </Card>
         </Form>
       </Modal>
@@ -613,7 +464,7 @@ export default function ProductionLine() {
         title="产线详情"
         open={!!viewRecord}
         onClose={() => setViewRecord(null)}
-        width={720}
+        width={640}
       >
         {viewRecord && (
           <div>
@@ -622,21 +473,21 @@ export default function ProductionLine() {
               <Descriptions.Item label="产线名称">{viewRecord.line_name}</Descriptions.Item>
               <Descriptions.Item label="状态"><Tag color={statusColorMap[viewRecord.status]}>{viewRecord.status}</Tag></Descriptions.Item>
               <Descriptions.Item label="所属车间">{viewRecord.workshop || '-'}</Descriptions.Item>
-              <Descriptions.Item label="负责人">{viewRecord.line_leader || '-'}</Descriptions.Item>
               <Descriptions.Item label="排序号">{viewRecord.sort_order ?? '-'}</Descriptions.Item>
             </Descriptions>
             <Card
               title={
                 <Space>
-                  <SettingOutlined />
-                  <span>工序设备关联列表</span>
+                  <UnorderedListOutlined />
+                  <span>工序列表</span>
                 </Space>
               }
+              size="small"
             >
               <Table
-                columns={relationColumns}
-                dataSource={selectedLineRelations}
-                rowKey={(r) => `${r.process_id}-${r.device_id}`}
+                columns={processColumns}
+                dataSource={selectedLineProcesses}
+                rowKey="process_id"
                 size="small"
                 pagination={false}
                 bordered
@@ -645,64 +496,6 @@ export default function ProductionLine() {
           </div>
         )}
       </Drawer>
-      <Modal
-        title="添加关联工序"
-        open={processModalVisible}
-        onOk={handleAddProcess}
-        onCancel={() => setProcessModalVisible(false)}
-        okText="确认"
-        cancelText="取消"
-        width={480}
-      >
-        <Form form={processForm} layout="vertical">
-          <Form.Item name="process_id" label="工序" rules={[{ required: true, message: '请选择工序' }]}>
-            <Select
-              placeholder="请选择工序"
-              options={processOptions}
-              showSearch
-              filterOption={(input, option) =>
-                option.label.toLowerCase().includes(input.toLowerCase())
-              }
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
-      <Modal
-        title="添加关联设备"
-        open={deviceModalVisible}
-        onOk={handleAddDevice}
-        onCancel={() => setDeviceModalVisible(false)}
-        okText="确认"
-        cancelText="取消"
-        width={480}
-      >
-        <Form form={deviceForm} layout="vertical">
-          <Form.Item name="device_id" label="设备" rules={[{ required: true, message: '请选择设备' }]}>
-            <Select
-              placeholder="请选择设备"
-              options={deviceOptions}
-              showSearch
-              filterOption={(input, option) =>
-                option.label.toLowerCase().includes(input.toLowerCase())
-              }
-            />
-          </Form.Item>
-          <Form.Item name="process_id" label="关联工序（可选）">
-            <Select
-              placeholder="请选择工序（可选）"
-              options={selectedProcesses.map(p => ({
-                label: `${p.process_code} - ${p.process_name}`,
-                value: p.process_id,
-              }))}
-              allowClear
-              showSearch
-              filterOption={(input, option) =>
-                option.label.toLowerCase().includes(input.toLowerCase())
-              }
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
     </>
   )
 }
