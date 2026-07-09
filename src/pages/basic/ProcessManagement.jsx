@@ -72,8 +72,24 @@ export default function ProcessManagement() {
     setQuery(q => ({ ...q, page: 1, keyword: '', status: undefined }))
   }
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     setEditing(null)
+    try {
+      const res = await api.get('/basic/processes', { params: { page: 1, pageSize: 1000 } })
+      const list = res.data || []
+      let nextCode = 'GX001'
+      if (list.length > 0) {
+        const codes = list.map(p => {
+          const match = p.process_code?.match(/^GX(\d+)$/)
+          return match ? parseInt(match[1], 10) : 0
+        })
+        const maxNum = Math.max(...codes, 0)
+        nextCode = `GX${String(maxNum + 1).padStart(3, '0')}`
+      }
+      form.setFieldsValue({ process_code: nextCode })
+    } catch (e) {
+      form.setFieldsValue({ process_code: 'GX001' })
+    }
     setModalVisible(true)
   }
 
@@ -90,11 +106,11 @@ export default function ProcessManagement() {
         process_code: editing.process_code,
         process_name: editing.process_name,
         sort_order: editing.sort_order,
+        has_material: editing.has_material === '是' || editing.has_material === 1,
         status: editing.status === '启用' ? '启用' : '停用',
       })
     } else {
-      form.resetFields()
-      form.setFieldsValue({ status: '启用', sort_order: total + 1 })
+      form.setFieldsValue({ status: '启用', sort_order: total + 1, has_material: false })
     }
   }
 
@@ -139,6 +155,7 @@ export default function ProcessManagement() {
       const values = await form.validateFields()
       setSubmitting(true)
       const payload = { ...values }
+      payload.has_material = values.has_material ? '是' : '否'
       if (editing) {
         const res = await api.put(`/basic/processes/${editing.process_id}`, payload)
         message.success(res.message || '工序编辑成功')
@@ -170,6 +187,10 @@ export default function ProcessManagement() {
     { title: '排序号', dataIndex: 'sort_order', key: 'sort_order', width: 80 },
     { title: '工序编码', dataIndex: 'process_code', key: 'process_code', width: 120 },
     { title: '工序名称', dataIndex: 'process_name', key: 'process_name' },
+    {
+      title: '是否引入物料', dataIndex: 'has_material', key: 'has_material', width: 110,
+      render: v => <Tag color={v === '是' || v === 1 ? 'blue' : 'default'}>{v === '是' || v === 1 ? '是' : '否'}</Tag>,
+    },
     {
       title: '状态', dataIndex: 'status', key: 'status', width: 100,
       render: v => <Tag color={v === '启用' ? 'green' : 'red'}>{v}</Tag>,
@@ -254,18 +275,15 @@ export default function ProcessManagement() {
         destroyOnHidden
       >
         <Form form={form} layout="vertical" className="compact-form" preserve={false}>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item name="process_name" label="工序名称" rules={[{ required: true, message: '请输入工序名称' }]}>
-                <Input placeholder="请输入工序名称" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="process_code" label="工序编码" rules={[{ required: true, message: '请输入工序编码' }]}>
-                <Input placeholder="请输入工序编码" />
-              </Form.Item>
-            </Col>
-          </Row>
+          <Form.Item name="process_code" label="工序编码" rules={[{ required: true, message: '工序编码自动生成' }]}>
+            <Input placeholder="自动生成" disabled={!editing} />
+          </Form.Item>
+          <Form.Item name="process_name" label="工序名称" rules={[{ required: true, message: '请输入工序名称' }]}>
+            <Input placeholder="请输入工序名称" />
+          </Form.Item>
+          <Form.Item name="has_material" label="是否引入物料" valuePropName="checked">
+            <Switch checkedChildren="是" unCheckedChildren="否" />
+          </Form.Item>
           <Row gutter={12}>
             <Col span={12}>
               <Form.Item name="sort_order" label="排序号">

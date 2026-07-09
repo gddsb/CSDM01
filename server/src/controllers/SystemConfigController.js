@@ -555,6 +555,7 @@ const columnCommentMap = {
     process_code: '工序编码',
     process_name: '工序名称',
     sort_order: '排序号',
+    has_material: '是否引入物料（1是 0否）',
     status: '状态（1启用 0停用）',
     created_at: '创建时间',
     updated_at: '更新时间',
