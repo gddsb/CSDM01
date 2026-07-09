@@ -310,13 +310,13 @@ export default function WorkOrderManagement() {
   }
 
   const columns = [
-    { title: '工单号', dataIndex: 'work_order_no', key: 'work_order_no', width: 150, fixed: 'left' },
-    { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 130 },
-    { title: '产品名称', dataIndex: 'material_name', key: 'material_name', width: 200, ellipsis: true },
-    { title: '计划数量', dataIndex: 'planned_qty', key: 'planned_qty', width: 100, align: 'right', render: v => Math.round(v || 0).toLocaleString() },
-    { title: '开工数量', dataIndex: 'start_qty', key: 'start_qty', width: 100, align: 'right', render: v => Math.round(v || 0).toLocaleString() },
+    { title: '工单号', dataIndex: 'work_order_no', key: 'work_order_no', width: 140, fixed: 'left' },
+    { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 120 },
+    { title: '产品名称', dataIndex: 'material_name', key: 'material_name', ellipsis: true },
+    { title: '计划数量', dataIndex: 'planned_qty', key: 'planned_qty', width: 90, align: 'right', render: v => Math.round(v || 0).toLocaleString() },
+    { title: '开工数量', dataIndex: 'start_qty', key: 'start_qty', width: 90, align: 'right', render: v => Math.round(v || 0).toLocaleString() },
     {
-      title: '合格数量', key: 'qualified_qty', width: 140, align: 'right',
+      title: '合格数量', key: 'qualified_qty', width: 120, align: 'right',
       render: (_, w) => {
         const qty = Number(w.qualified_qty || 0)
         const start = Number(w.start_qty || 0)
@@ -325,7 +325,7 @@ export default function WorkOrderManagement() {
       },
     },
     {
-      title: '来料不良', key: 'defect_material', width: 140, align: 'right',
+      title: '来料不良', key: 'defect_material', width: 120, align: 'right',
       render: (_, w) => {
         const qty = Number(w.defect_material || 0)
         const start = Number(w.start_qty || 0)
@@ -334,7 +334,7 @@ export default function WorkOrderManagement() {
       },
     },
     {
-      title: '制程不良', key: 'defect_process', width: 140, align: 'right',
+      title: '制程不良', key: 'defect_process', width: 120, align: 'right',
       render: (_, w) => {
         const qty = Number(w.defect_process || 0)
         const start = Number(w.start_qty || 0)
@@ -343,7 +343,7 @@ export default function WorkOrderManagement() {
       },
     },
     {
-      title: '检验报废', key: 'defect_scrap', width: 140, align: 'right',
+      title: '检验报废', key: 'defect_scrap', width: 120, align: 'right',
       render: (_, w) => {
         const qty = Number(w.defect_scrap || 0)
         const start = Number(w.start_qty || 0)
@@ -351,9 +351,9 @@ export default function WorkOrderManagement() {
         return <div>{Math.round(qty).toLocaleString()}<span style={{ color: '#722ed1', fontSize: 12, marginLeft: 4 }}>{rate}</span></div>
       },
     },
-    { title: '人工工时', dataIndex: 'labor_hours', key: 'labor_hours', width: 100, align: 'right', render: v => Number(v || 0).toFixed(2) },
+    { title: '人工工时', dataIndex: 'labor_hours', key: 'labor_hours', width: 90, align: 'right', render: v => Number(v || 0).toFixed(2) },
     {
-      title: '开完工时间', key: 'work_time', width: 180,
+      title: '开完工时间', key: 'work_time', width: 160,
       render: (_, w) => (
         <div style={{ fontSize: 12, lineHeight: 1.6 }}>
           <div>开工：{w.start_time ? String(w.start_time).substring(0, 16).replace('T', ' ') : '-'}</div>
@@ -361,8 +361,8 @@ export default function WorkOrderManagement() {
         </div>
       ),
     },
-    { title: '状态', dataIndex: 'status', key: 'status', width: 80, align: 'center', render: v => <Tag color={statusColorMap[v]}>{v}</Tag> },
-    { title: '操作', key: 'action', width: 180, fixed: 'right', render: (_, r) => renderActions(r) },
+    { title: '状态', dataIndex: 'status', key: 'status', width: 70, align: 'center', render: v => <Tag color={statusColorMap[v]}>{v}</Tag> },
+    { title: '操作', key: 'action', width: 170, fixed: 'right', render: (_, r) => renderActions(r) },
   ]
 
   return (
@@ -423,7 +423,7 @@ export default function WorkOrderManagement() {
               rowKey="work_order_id"
               size="small"
               loading={loading}
-              scroll={{ x: 2000 }}
+              scroll={{ x: 1400 }}
               pagination={{
                 current: query.page,
                 pageSize: query.pageSize,
