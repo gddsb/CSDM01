@@ -23,8 +23,6 @@ export default function ProductionLine() {
 
   const [processOptions, setProcessOptions] = useState([])
   const [selectedProcesses, setSelectedProcesses] = useState([])
-
-  const [selectedLine, setSelectedLine] = useState(null)
   const [selectedLineProcesses, setSelectedLineProcesses] = useState([])
 
   const [keywordInput, setKeywordInput] = useState('')
@@ -104,10 +102,10 @@ export default function ProductionLine() {
         const codeB = b.process_code || ''
         return codeA.localeCompare(codeB, 'zh-Hans-CN', { numeric: true })
       })
-      setSelectedLineProcesses(processes)
+      return processes
     } catch (err) {
       console.error('获取产线工序失败:', err)
-      setSelectedLineProcesses([])
+      return []
     }
   }
 
@@ -115,8 +113,6 @@ export default function ProductionLine() {
 
   const handleSearch = () => {
     setQuery(q => ({ ...q, page: 1, keyword: keywordInput, status: statusInput, workshop: workshopInput }))
-    setSelectedLine(null)
-    setSelectedLineProcesses([])
   }
 
   const handleReset = () => {
@@ -124,8 +120,6 @@ export default function ProductionLine() {
     setStatusInput(undefined)
     setWorkshopInput(undefined)
     setQuery(q => ({ ...q, page: 1, keyword: '', status: undefined, workshop: undefined }))
-    setSelectedLine(null)
-    setSelectedLineProcesses([])
   }
 
   const handleAdd = () => {
@@ -140,9 +134,10 @@ export default function ProductionLine() {
     setModalVisible(true)
   }
 
-  const handleView = (record) => {
+  const handleView = async (record) => {
     setViewRecord(record)
-    fetchLineProcesses(record.line_id)
+    const processes = await fetchLineProcesses(record.line_id)
+    setSelectedLineProcesses(processes)
   }
 
   const handleAfterOpenChange = async (open) => {
@@ -238,10 +233,6 @@ export default function ProductionLine() {
       const res = await api.delete(`/basic/production-lines/${record.line_id}`)
       message.success(res.message || '删除成功')
       refresh()
-      if (selectedLine?.line_id === record.line_id) {
-        setSelectedLine(null)
-        setSelectedLineProcesses([])
-      }
     } catch (err) {
       message.error(err.message || '删除失败')
     }
@@ -284,48 +275,25 @@ export default function ProductionLine() {
     setSelectedProcesses(reordered)
   }
 
-  const handleRemoveLineProcess = async (processId) => {
-    if (!selectedLine) return
-    try {
-      await api.delete(`/basic/production-lines/${selectedLine.line_id}/processes/${processId}`)
-      message.success('移除成功')
-      fetchLineProcesses(selectedLine.line_id)
-    } catch (err) {
-      message.error(err.message || '操作失败')
-    }
-  }
-
   const columns = [
-    {
-      title: '选择',
-      key: 'select',
-      width: 60,
-      render: (_, record) => (
-        <Button
-          type={selectedLine?.line_id === record.line_id ? 'primary' : 'default'}
-          size="small"
-          onClick={() => {
-            if (selectedLine?.line_id === record.line_id) {
-              setSelectedLine(null)
-              setSelectedLineProcesses([])
-            } else {
-              setSelectedLine(record)
-              fetchLineProcesses(record.line_id)
-            }
-          }}
-        >
-          {selectedLine?.line_id === record.line_id ? '已选' : '选择'}
-        </Button>
-      ),
-    },
     { title: '产线编号', dataIndex: 'line_code', key: 'line_code', width: 110 },
     { title: '产线名称', dataIndex: 'line_name', key: 'line_name', width: 100 },
     {
       title: '产线工序',
       dataIndex: 'process_names',
       key: 'process_names',
-      width: 200,
-      render: (text) => text || '-',
+      width: 250,
+      render: (text) => {
+        if (!text) return <Tag color="default">未配置</Tag>
+        const names = text.split('、').filter(Boolean)
+        return (
+          <Space size="small" wrap>
+            {names.map((name, idx) => (
+              <Tag key={idx} color="cyan">{name}</Tag>
+            ))}
+          </Space>
+        )
+      },
     },
     {
       title: '状态', dataIndex: 'status', key: 'status', width: 90,
@@ -348,19 +316,6 @@ export default function ProductionLine() {
     { title: '排序', dataIndex: 'sort_order', key: 'sort_order', width: 60 },
     { title: '工序编号', dataIndex: 'process_code', key: 'process_code', width: 120 },
     { title: '工序名称', dataIndex: 'process_name', key: 'process_name', width: 150 },
-    {
-      title: '操作', key: 'action', width: 80,
-      render: (_, record) => (
-        <Popconfirm
-          title="确认移除？"
-          onConfirm={() => handleRemoveLineProcess(record.process_id)}
-          okText="确认"
-          cancelText="取消"
-        >
-          <Button type="link" size="small" danger icon={<DeleteOutlined />} />
-        </Popconfirm>
-      ),
-    },
   ]
 
   const filters = [
@@ -392,52 +347,21 @@ export default function ProductionLine() {
           />
         }
         table={
-          <div>
-            <Table
-              columns={columns}
-              dataSource={data}
-              rowKey="line_id"
-              size="small"
-              loading={loading}
-              pagination={{
-                current: query.page,
-                pageSize: query.pageSize,
-                total,
-                showSizeChanger: true,
-                showTotal: t => `共 ${t} 条`,
-                onChange: (p, ps) => setQuery(q => ({ ...q, page: p, pageSize: ps })),
-              }}
-            />
-            {selectedLine && (
-              <Card
-                title={`${selectedLine.line_name} - 工序列表`}
-                style={{ marginTop: 16 }}
-              >
-                {selectedLineProcesses.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {selectedLineProcesses.map((p, idx) => {
-                      const bgColor = idx % 2 === 0 ? '#f5f7fa' : '#e8ecf1'
-                      return (
-                        <div key={p.process_id} style={{ backgroundColor: bgColor, padding: 12, borderRadius: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontWeight: 600 }}>
-                            {idx + 1}. {p.process_name}
-                            <span style={{ color: '#999', fontWeight: 'normal', marginLeft: 8, fontSize: 12 }}>{p.process_code}</span>
-                          </span>
-                          <Popconfirm title="确认移除该工序？" onConfirm={() => handleRemoveLineProcess(p.process_id)}>
-                            <Button size="small" danger icon={<DeleteOutlined />} />
-                          </Popconfirm>
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: 20 }}>
-                    该产线暂无关联工序
-                  </div>
-                )}
-              </Card>
-            )}
-          </div>
+          <Table
+            columns={columns}
+            dataSource={data}
+            rowKey="line_id"
+            size="small"
+            loading={loading}
+            pagination={{
+              current: query.page,
+              pageSize: query.pageSize,
+              total,
+              showSizeChanger: true,
+              showTotal: t => `共 ${t} 条`,
+              onChange: (p, ps) => setQuery(q => ({ ...q, page: p, pageSize: ps })),
+            }}
+          />
         }
       />
       <Modal

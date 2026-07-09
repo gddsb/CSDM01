@@ -1129,31 +1129,37 @@ export const migrateDatabase = async (req, res) => {
   }
 }
 
-// 刷新数据字典：扫描数据库表结构并持久化到 sys_data_dictionary
+// 刷新数据字典核心逻辑（扫描数据库表结构并持久化到 sys_data_dictionary）
+export const refreshDictionaryData = async () => {
+  const { tables, columnsMap } = await collectDatabaseSchema()
+  const now = new Date()
+  let upsertCount = 0
+  for (const t of tables) {
+    const fields = columnsMap[t.table_name] || []
+    await DataDictionary.upsert({
+      table_name: t.table_name,
+      category: t.category,
+      purpose: t.purpose,
+      field_count: t.field_count,
+      record_count: t.record_count,
+      fields,
+      last_update: now,
+    })
+    upsertCount++
+  }
+  // 删除字典表中已不存在的表（数据库中已删除的表）
+  const allTableNames = tables.map(t => t.table_name)
+  if (allTableNames.length > 0) {
+    await DataDictionary.destroy({ where: { table_name: { [Op.notIn]: allTableNames } } })
+  }
+  return { total: upsertCount, refreshed_at: now.toISOString() }
+}
+
+// 刷新数据字典（HTTP 接口）
 export const refreshDataDictionary = async (req, res) => {
   try {
-    const { tables, columnsMap } = await collectDatabaseSchema()
-    const now = new Date()
-    let upsertCount = 0
-    for (const t of tables) {
-      const fields = columnsMap[t.table_name] || []
-      await DataDictionary.upsert({
-        table_name: t.table_name,
-        category: t.category,
-        purpose: t.purpose,
-        field_count: t.field_count,
-        record_count: t.record_count,
-        fields,
-        last_update: now,
-      })
-      upsertCount++
-    }
-    // 删除字典表中已不存在的表（数据库中已删除的表）
-    const allTableNames = tables.map(t => t.table_name)
-    if (allTableNames.length > 0) {
-      await DataDictionary.destroy({ where: { table_name: { [Op.notIn]: allTableNames } } })
-    }
-    return success(res, { total: upsertCount, refreshed_at: now.toISOString() }, `数据字典更新成功，共 ${upsertCount} 张表`)
+    const result = await refreshDictionaryData()
+    return success(res, result, `数据字典更新成功，共 ${result.total} 张表`)
   } catch (err) {
     console.error('刷新数据字典失败:', err)
     return fail(res, '服务器错误', 500)
@@ -1200,6 +1206,7 @@ export default {
   getDatabaseInfo,
   listDataDictionary,
   refreshDataDictionary,
+  refreshDictionaryData,
   listBackups,
   createBackup,
   restoreBackup,
