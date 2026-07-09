@@ -8,7 +8,8 @@ import {
   ManpowerRecord, ExceptionRecord, SystemConfig,
   RolePermission, Sequence, Customer,
   LineProcess, LineDevice, NumberRule, DefectImage,
-  DictType, DictData,
+  DictType, DictData, ProcessDefect, ProcessException,
+  ProcessMaterial, AppVersion, DataDictionary,
 } from './models/index.js'
 import sequelize from './config/database.js'
 
@@ -35,11 +36,16 @@ const seedOrder = [
   { name: 'Order', model: Order, label: '生产订单' },
   { name: 'WorkOrder', model: WorkOrder, label: '生产工单' },
   { name: 'ProcessReport', model: ProcessReport, label: '工序报工' },
+  { name: 'ProcessDefect', model: ProcessDefect, label: '工序不良' },
+  { name: 'ProcessMaterial', model: ProcessMaterial, label: '工序物料' },
+  { name: 'ProcessException', model: ProcessException, label: '工序异常工时' },
   { name: 'ManpowerRecord', model: ManpowerRecord, label: '人员投入' },
   { name: 'ExceptionRecord', model: ExceptionRecord, label: '工时记录' },
   { name: 'SystemConfig', model: SystemConfig, label: '系统配置' },
   { name: 'Sequence', model: Sequence, label: '序列号' },
   { name: 'NumberRule', model: NumberRule, label: '编码规则' },
+  { name: 'AppVersion', model: AppVersion, label: '应用版本' },
+  { name: 'DataDictionary', model: DataDictionary, label: '数据字典' },
   { name: 'OperationLog', model: OperationLog, label: '操作日志' },
 ]
 
