@@ -162,26 +162,26 @@ export default function ExceptionRecord() {
   }
 
   const columns = [
-    { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 150, fixed: 'left' },
-    { title: '产线', dataIndex: 'line_name', key: 'line_name', width: 80, render: v => v || '-' },
+    { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 140, fixed: 'left' },
+    { title: '产线', dataIndex: 'line_name', key: 'line_name', width: 70, render: v => v || '-' },
     {
-      title: '异常类型', key: 'exc_type', width: 140,
+      title: '异常类型', key: 'exc_type', width: 130,
       render: (_, r) => {
         const t = exceptionTypes.find(e => e.code === r.exception_type)
         return <Tag color={exceptionTypeColorMap[r.exception_type]}>{r.exception_type} {t?.name || ''}</Tag>
       },
     },
-    { title: '异常描述', dataIndex: 'reason', key: 'reason', width: 220, render: v => v || '-' },
-    { title: '处理人', dataIndex: 'record_user_name', key: 'record_user_name', width: 100, render: v => v || '-' },
-    { title: '处理时间', dataIndex: 'end_time', key: 'end_time', width: 150, render: v => v ? String(v).substring(0, 16).replace('T', ' ') : '-' },
+    { title: '异常描述', dataIndex: 'reason', key: 'reason', ellipsis: true, render: v => v || '-' },
+    { title: '处理人', dataIndex: 'record_user_name', key: 'record_user_name', width: 90, render: v => v || '-' },
+    { title: '处理时间', dataIndex: 'end_time', key: 'end_time', width: 140, render: v => v ? String(v).substring(0, 16).replace('T', ' ') : '-' },
     {
-      title: '状态', dataIndex: 'status', key: 'status', width: 100,
+      title: '状态', dataIndex: 'status', key: 'status', width: 80,
       render: v => v ? <Tag color={statusColorMap[v] || 'default'}>{v}</Tag> : '-'
     },
-    { title: '处理结果', dataIndex: 'handle_result', key: 'handle_result', width: 200, render: v => v || '-' },
-    { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 160, render: v => v || '-' },
+    { title: '处理结果', dataIndex: 'handle_result', key: 'handle_result', ellipsis: true, render: v => v || '-' },
+    { title: '创建时间', dataIndex: 'created_at', key: 'created_at', width: 140, render: v => v || '-' },
     {
-      title: '操作', key: 'action', width: 100, fixed: 'right',
+      title: '操作', key: 'action', width: 80, fixed: 'right',
       render: (_, r) => (
         <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(r)}>查看</Button>
       ),
@@ -253,7 +253,7 @@ export default function ExceptionRecord() {
               rowKey="exception_id"
               size="small"
               loading={loading}
-              scroll={{ x: 1400 }}
+              scroll={{ x: 1200 }}
               pagination={{
                 current: query.page,
                 pageSize: query.pageSize,

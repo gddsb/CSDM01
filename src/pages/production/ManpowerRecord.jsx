@@ -220,29 +220,29 @@ export default function ManpowerRecord() {
   }
 
   const columns = [
-    { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 160, fixed: 'left' },
-    { title: '订单编号', dataIndex: 'order_no', key: 'order_no', width: 160 },
+    { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 140, fixed: 'left' },
+    { title: '订单编号', dataIndex: 'order_no', key: 'order_no', width: 140 },
     {
       title: '总工时(h)',
       key: 'total_hours',
-      width: 120,
+      width: 100,
       align: 'right',
       render: (_, r) => {
         const h = calcTotalHours(r)
         return Number(h).toFixed(2)
       },
     },
-    { title: '技工人数', dataIndex: 'skilled_count', key: 'skilled_count', width: 100, align: 'right', render: v => v || 0 },
-    { title: '普工人数', dataIndex: 'general_count', key: 'general_count', width: 100, align: 'right', render: v => v || 0 },
-    { title: '劳务人数', dataIndex: 'labor_count', key: 'labor_count', width: 100, align: 'right', render: v => v || 0 },
-    { title: '其他人数', dataIndex: 'other_count', key: 'other_count', width: 100, align: 'right', render: v => v || 0 },
-    { title: '总人数', dataIndex: 'total_people', key: 'total_people', width: 100, align: 'right', render: v => v || 0 },
-    { title: '累计人工工时(h)', dataIndex: 'total_man_hours', key: 'total_man_hours', width: 140, align: 'right', render: v => Number(v || 0).toFixed(2) },
+    { title: '技工人数', dataIndex: 'skilled_count', key: 'skilled_count', width: 80, align: 'right', render: v => v || 0 },
+    { title: '普工人数', dataIndex: 'general_count', key: 'general_count', width: 80, align: 'right', render: v => v || 0 },
+    { title: '劳务人数', dataIndex: 'labor_count', key: 'labor_count', width: 80, align: 'right', render: v => v || 0 },
+    { title: '其他人数', dataIndex: 'other_count', key: 'other_count', width: 80, align: 'right', render: v => v || 0 },
+    { title: '总人数', dataIndex: 'total_people', key: 'total_people', width: 80, align: 'right', render: v => v || 0 },
+    { title: '累计人工工时(h)', dataIndex: 'total_man_hours', key: 'total_man_hours', width: 120, align: 'right', render: v => Number(v || 0).toFixed(2) },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      width: 90,
+      width: 70,
       align: 'center',
       render: v => <Tag color={woStatusColorMap[v] || 'default'}>{v}</Tag>,
     },
@@ -250,20 +250,20 @@ export default function ManpowerRecord() {
       title: '开工时间',
       dataIndex: 'start_time',
       key: 'start_time',
-      width: 160,
+      width: 140,
       render: v => v ? String(v).substring(0, 16).replace('T', ' ') : '-',
     },
     {
       title: '完工时间',
       dataIndex: 'finish_time',
       key: 'finish_time',
-      width: 160,
+      width: 140,
       render: v => v ? String(v).substring(0, 16).replace('T', ' ') : '-',
     },
     {
       title: '操作',
       key: 'action',
-      width: 160,
+      width: 150,
       fixed: 'right',
       render: (_, r) => (
         <Space size="small">
@@ -365,7 +365,7 @@ export default function ManpowerRecord() {
               rowKey="work_order_id"
               size="small"
               loading={loading}
-              scroll={{ x: 1600 }}
+              scroll={{ x: 1400 }}
               pagination={{
                 current: query.page,
                 pageSize: query.pageSize,
