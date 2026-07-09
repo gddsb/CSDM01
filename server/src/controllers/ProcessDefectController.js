@@ -148,4 +148,27 @@ export const batchSave = async (req, res) => {
   }
 }
 
-export default { list, create, remove, batchSave }
+export const update = async (req, res) => {
+  try {
+    const { id } = req.params
+    const { defect_name, defect_type_id, quantity, unit, defect_images } = req.body
+
+    const defect = await ProcessDefect.findOne({ where: { defect_id: id } })
+    if (!defect) return fail(res, '记录不存在', 404)
+
+    const updateData = {}
+    if (defect_name !== undefined) updateData.defect_name = defect_name
+    if (defect_type_id !== undefined) updateData.defect_type_id = defect_type_id
+    if (quantity !== undefined) updateData.quantity = Number(quantity)
+    if (unit !== undefined) updateData.unit = unit
+    if (defect_images !== undefined) updateData.defect_images = JSON.stringify(defect_images || [])
+
+    await defect.update(updateData)
+    return success(res, defect, '更新成功')
+  } catch (err) {
+    console.error('更新工序不良记录失败:', err)
+    return fail(res, '服务器错误', 500)
+  }
+}
+
+export default { list, create, remove, update, batchSave }

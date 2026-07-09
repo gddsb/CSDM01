@@ -47,6 +47,7 @@ export default function ProcessReporting() {
 
   const [defectModalOpen, setDefectModalOpen] = useState(false)
   const [defectModalType, setDefectModalType] = useState('process')
+  const [editingDefect, setEditingDefect] = useState(null)
   const [defectModalForm] = Form.useForm()
 
   const [materialModalOpen, setMaterialModalOpen] = useState(false)
@@ -340,9 +341,21 @@ export default function ProcessReporting() {
     }
   }
 
-  const handleAddDefect = (type) => {
+  const handleAddDefect = (type, record) => {
     setDefectModalType(type)
+    setEditingDefect(record || null)
     defectModalForm.resetFields()
+    if (record) {
+      defectModalForm.setFieldsValue({
+        defect_type_id: record.defect_type_id,
+        defect_name: record.defect_name,
+        quantity: record.quantity || 0,
+        unit: record.unit || '',
+        defect_images: record.defect_images || [],
+      })
+    } else {
+      defectModalForm.setFieldsValue({ quantity: 0, defect_images: [] })
+    }
     setDefectModalOpen(true)
   }
 
@@ -352,10 +365,12 @@ export default function ProcessReporting() {
       const defectType = defectTypes.find(d => d.defect_id === values.defect_type_id)
       const defectName = values.defect_name || defectType?.defect_name
       const currentList = defectModalType === 'process' ? processDefectList : materialDefectList
-      const exists = currentList.find(d => d.defect_name === defectName)
-      if (exists) {
-        message.warning('同一工单同一不良项目只允许一条记录')
-        return
+      if (!editingDefect) {
+        const exists = currentList.find(d => d.defect_name === defectName)
+        if (exists) {
+          message.warning('同一工单同一不良项目只允许一条记录')
+          return
+        }
       }
       setSaving(true)
       const category = defectModalType === 'process' ? '制程不良' : '来料不良'
@@ -369,8 +384,13 @@ export default function ProcessReporting() {
         unit: values.unit || defectType?.defect_unit || '',
         defect_images: values.defect_images || [],
       }
-      await api.post('/production/process-defects', payload)
-      message.success('添加成功')
+      if (editingDefect?.defect_id) {
+        await api.put(`/production/process-defects/${editingDefect.defect_id}`, payload)
+        message.success('编辑成功')
+      } else {
+        await api.post('/production/process-defects', payload)
+        message.success('添加成功')
+      }
       setDefectModalOpen(false)
       fetchProcessDefects(selectedProcessId)
     } catch (e) {
@@ -540,11 +560,18 @@ export default function ProcessReporting() {
       },
     },
     {
-      title: '操作', key: 'action', width: 70,
-      render: (_, r) => selectedWO?.status === '开工' && r.defect_id && (
-        <Popconfirm title="确认删除？" onConfirm={() => handleDeleteDefect(r.defect_id)}>
-          <Button type="link" size="small" danger icon={<DeleteOutlined />} />
-        </Popconfirm>
+      title: '操作', key: 'action', width: 110,
+      render: (_, r) => selectedWO?.status === '开工' && (
+        <Space size="small">
+          {r.defect_id && (
+            <Button type="link" size="small" onClick={() => handleAddDefect(type, r)}>编辑</Button>
+          )}
+          {r.defect_id && (
+            <Popconfirm title="确认删除？" onConfirm={() => handleDeleteDefect(r.defect_id)}>
+              <Button type="link" size="small" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          )}
+        </Space>
       ),
     },
   ]
@@ -758,18 +785,6 @@ export default function ProcessReporting() {
                     size="small"
                   />
                 </Card>
-
-                <Card size="small" title="报工次数记录">
-                  <Table
-                    columns={reportTimeColumns}
-                    dataSource={reportTimes}
-                    rowKey="key"
-                    size="small"
-                    scroll={{ x: 700 }}
-                    pagination={false}
-                    locale={{ emptyText: '暂无报工记录' }}
-                  />
-                </Card>
               </>
             )}
           </div>
@@ -941,12 +956,12 @@ export default function ProcessReporting() {
       </Modal>
 
       <Modal
-        title={defectModalType === 'process' ? '添加制程不良' : '添加来料不良'}
+        title={editingDefect ? '编辑不良记录' : (defectModalType === 'process' ? '添加制程不良' : '添加来料不良')}
         open={defectModalOpen}
         onOk={handleDefectModalSubmit}
         confirmLoading={saving}
         onCancel={() => setDefectModalOpen(false)}
-        okText="添加"
+        okText={editingDefect ? '保存' : '添加'}
         cancelText="取消"
         width={520}
         destroyOnHidden
