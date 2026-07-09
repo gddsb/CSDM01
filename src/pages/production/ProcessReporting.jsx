@@ -33,7 +33,9 @@ export default function ProcessReporting() {
   const [viewRecord, setViewRecord] = useState(null)
   const [editing, setEditing] = useState(null)
   const [editOpen, setEditOpen] = useState(false)
+  const [addOpen, setAddOpen] = useState(false)
   const [form] = Form.useForm()
+  const [addForm] = Form.useForm()
 
   const [keywordInput, setKeywordInput] = useState('')
   const [woQuery, setWoQuery] = useState({ page: 1, pageSize: 1000, keyword: '', status: '开工' })
@@ -244,6 +246,53 @@ export default function ProcessReporting() {
   const handleReset = () => {
     setKeywordInput('')
     setWoQuery(q => ({ ...q, page: 1, keyword: '' }))
+  }
+
+  const handleAdd = () => {
+    if (!selectedWO) {
+      message.warning('请先选择工单')
+      return
+    }
+    addForm.resetFields()
+    addForm.setFieldsValue({
+      process_id: selectedProcessId || undefined,
+      input_qty: 0,
+      output_qty: 0,
+      defect_material: 0,
+      defect_process: 0,
+      defect_scrap: 0,
+      report_user_name: '',
+      report_time: dayjs(),
+    })
+    setAddOpen(true)
+  }
+
+  const handleAddSubmit = async () => {
+    try {
+      const values = await addForm.validateFields()
+      setSaving(true)
+      const payload = {
+        work_order_id: selectedWO.work_order_id,
+        process_id: values.process_id,
+        input_qty: values.input_qty ?? 0,
+        defect_material: values.defect_material ?? 0,
+        defect_process: values.defect_process ?? 0,
+        defect_scrap: values.defect_scrap ?? 0,
+        output_qty: values.output_qty ?? 0,
+        device_id: values.device_id || null,
+        report_user_name: values.report_user_name || '',
+        report_time: values.report_time ? values.report_time.format('YYYY-MM-DD HH:mm:ss') : undefined,
+      }
+      const res = await api.post('/production/process-reports', payload)
+      message.success(res.message || '报工已添加')
+      setAddOpen(false)
+      fetchReports(selectedWO.work_order_id)
+    } catch (e) {
+      if (e?.errorFields) return
+      message.error(e.message || '操作失败')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleEdit = (r) => {
@@ -520,7 +569,7 @@ export default function ProcessReporting() {
                     }
                   }}
                   options={workOrders.map(w => ({
-                    label: `${w.work_order_no} ${w.material_code || ''} ${w.material_name || ''}`.trim(),
+                    label: `${w.work_order_no} ${w.material_code || ''} ${w.material_name || ''} ${w.specification || ''}`.trim(),
                     value: w.work_order_id,
                   }))}
                   style={{ width: '100%' }}
@@ -534,26 +583,6 @@ export default function ProcessReporting() {
               </Col>
             </Row>
 
-            <Card size="small" style={{ marginBottom: 12 }} title="工序报工清单">
-              <Table
-                columns={woColumns}
-                dataSource={workOrders}
-                rowKey="work_order_id"
-                size="small"
-                loading={loading}
-                scroll={{ x: 800 }}
-                rowSelection={{
-                  type: 'radio',
-                  selectedRowKeys: selectedWO ? [selectedWO.work_order_id] : [],
-                  onChange: (keys, rows) => {
-                    if (rows.length > 0) handleSelectWO(rows[0])
-                    else { setSelectedWO(null); setSelectedProcessId(null) }
-                  },
-                }}
-                pagination={false}
-              />
-            </Card>
-
             {selectedWO && (
               <>
                 <Divider orientation="left" style={{ margin: '12px 0' }}>
@@ -565,21 +594,10 @@ export default function ProcessReporting() {
                   </span>
                 </Divider>
 
-                <Card size="small" style={{ marginBottom: 12 }} title="报工列表">
-                  <Table
-                    columns={reportColumns}
-                    dataSource={reports}
-                    rowKey="report_id"
-                    size="small"
-                    scroll={{ x: 1500 }}
-                    pagination={false}
-                  />
-                </Card>
-
                 <Card
                   size="small"
-                  title="工序报工"
-                  extra={
+                  style={{ marginBottom: 12 }}
+                  title={
                     <Space>
                       <Select
                         placeholder="请选择工序"
@@ -589,6 +607,16 @@ export default function ProcessReporting() {
                         options={processOptions}
                         allowClear
                       />
+                      <span style={{ fontWeight: 600, marginLeft: 12 }}>工序报工</span>
+                    </Space>
+                  }
+                  extra={
+                    <Space>
+                      {selectedWO?.status === '开工' && (
+                        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+                          添加报工
+                        </Button>
+                      )}
                       {selectedProcessId && selectedWO?.status === '开工' && (
                         <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSaveDefects}>
                           保存不良记录
@@ -642,6 +670,17 @@ export default function ProcessReporting() {
                     </div>
                   )}
                 </Card>
+
+                <Card size="small" title="报工列表">
+                  <Table
+                    columns={reportColumns}
+                    dataSource={reports}
+                    rowKey="report_id"
+                    size="small"
+                    scroll={{ x: 1500 }}
+                    pagination={false}
+                  />
+                </Card>
               </>
             )}
           </div>
@@ -666,6 +705,94 @@ export default function ProcessReporting() {
           </Descriptions>
         )}
         <Form form={form} layout="vertical" className="compact-form" preserve={false}>
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item label="投入数量" name="input_qty" rules={[{ required: true, message: '请输入投入数量' }]}>
+                <InputNumber min={0} style={{ width: '100%' }} placeholder="请输入投入数量" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="产出数量" name="output_qty" rules={[{ required: true, message: '请输入产出数量' }]}>
+                <InputNumber min={0} style={{ width: '100%' }} placeholder="请输入产出数量" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={8}>
+              <Form.Item label="来料不良" name="defect_material">
+                <InputNumber min={0} style={{ width: '100%' }} placeholder="0" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="制程不良" name="defect_process">
+                <InputNumber min={0} style={{ width: '100%' }} placeholder="0" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="检验报废" name="defect_scrap">
+                <InputNumber min={0} style={{ width: '100%' }} placeholder="0" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item label="设备" name="device_id">
+                <Select
+                  placeholder="请选择设备"
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  options={devices.map(d => ({ label: `${d.device_code || ''} ${d.device_name || ''}`.trim(), value: d.device_id }))}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="报工人员" name="report_user_name" rules={[{ required: true, message: '请输入报工人员' }]}>
+                <Input placeholder="请输入报工人员姓名" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item label="报工时间" name="report_time">
+            <DatePicker
+              showTime
+              format="YYYY-MM-DD HH:mm:ss"
+              style={{ width: '100%' }}
+              placeholder="选择报工时间"
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="添加报工记录"
+        open={addOpen}
+        onOk={handleAddSubmit}
+        confirmLoading={saving}
+        onCancel={() => setAddOpen(false)}
+        okText="保存"
+        cancelText="取消"
+        width={640}
+        destroyOnHidden
+      >
+        {selectedWO && (
+          <Descriptions column={2} size="small" style={{ marginBottom: 16 }}>
+            <Descriptions.Item label="工单编号">{selectedWO.work_order_no || '-'}</Descriptions.Item>
+            <Descriptions.Item label="产品名称">{selectedWO.material_name || '-'}</Descriptions.Item>
+          </Descriptions>
+        )}
+        <Form form={addForm} layout="vertical" className="compact-form" preserve={false}>
+          <Row gutter={12}>
+            <Col span={24}>
+              <Form.Item label="工序" name="process_id" rules={[{ required: true, message: '请选择工序' }]}>
+                <Select
+                  placeholder="请选择工序"
+                  options={processOptions}
+                  showSearch
+                  optionFilterProp="label"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
           <Row gutter={12}>
             <Col span={12}>
               <Form.Item label="投入数量" name="input_qty" rules={[{ required: true, message: '请输入投入数量' }]}>

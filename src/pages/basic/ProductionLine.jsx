@@ -189,13 +189,34 @@ export default function ProductionLine() {
         line_code: editing.line_code,
         line_name: editing.line_name,
         workshop: editing.workshop,
-        line_leader: editing.line_leader,
         sort_order: editing.sort_order,
         status: editing.status,
       })
     } else {
       form.resetFields()
-      form.setFieldsValue({ status: '运行中', sort_order: total + 1 })
+      const nextSort = data.length > 0 ? Math.max(...data.map(d => Number(d.sort_order) || 0)) + 1 : 1
+      const existingLetters = data
+        .map(d => {
+          const match = d.line_name?.match(/^([A-Z])线$/)
+          return match ? match[1] : null
+        })
+        .filter(Boolean)
+      let nextLetter = 'A'
+      const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+      for (const c of alphabet) {
+        if (!existingLetters.includes(c)) {
+          nextLetter = c
+          break
+        }
+      }
+      const nextCode = `LINE-${nextLetter}`
+      form.setFieldsValue({
+        status: '运行中',
+        sort_order: nextSort,
+        line_code: nextCode,
+        line_name: `${nextLetter}线`,
+        workshop: '制罐车间',
+      })
     }
   }
 
@@ -251,27 +272,63 @@ export default function ProductionLine() {
     }
   }
 
-  const handleAddProcess = async () => {
+  const [selectedProcessId, setSelectedProcessId] = useState(null)
+  const [addDeviceProcessId, setAddDeviceProcessId] = useState(null)
+
+  const availableProcessOptions = processOptions.filter(
+    p => !selectedProcesses.find(sp => sp.process_id === p.value)
+  )
+
+  const usedDeviceIds = selectedDevices.map(d => d.device_id)
+  const availableDeviceOptions = deviceOptions.filter(
+    d => !usedDeviceIds.includes(d.value)
+  )
+
+  const handleSelectProcess = (processId) => {
+    const processInfo = processOptions.find(p => p.value === processId)
+    if (!processInfo) return
+    const newProcess = {
+      process_id: processId,
+      process_code: processInfo.code || '',
+      process_name: processInfo.name || '',
+      sort_order: selectedProcesses.length,
+    }
+    setSelectedProcesses([...selectedProcesses, newProcess])
+    setSelectedProcessId(processId)
+  }
+
+  const handleAddDeviceToProcess = async () => {
     try {
-      const values = await processForm.validateFields()
-      const existing = selectedProcesses.find(p => p.process_id === values.process_id)
-      if (existing) {
-        message.warning('该工序已添加')
+      const values = await deviceForm.validateFields()
+      const deviceIds = Array.isArray(values.device_ids) ? values.device_ids : []
+      if (deviceIds.length === 0) {
+        message.warning('请选择设备')
         return
       }
-      const processInfo = processOptions.find(p => p.value === values.process_id)
-      setSelectedProcesses([...selectedProcesses, {
-        process_id: values.process_id,
-        process_code: processInfo?.code || '',
-        process_name: processInfo?.name || '',
-        sort_order: selectedProcesses.length,
-      }])
-      setProcessModalVisible(false)
-      processForm.resetFields()
+      const newDevices = deviceIds.map((deviceId, idx) => {
+        const deviceInfo = deviceOptions.find(d => d.value === deviceId)
+        return {
+          device_id: deviceId,
+          device_code: deviceInfo?.code || '',
+          device_name: deviceInfo?.name || '',
+          process_id: addDeviceProcessId,
+          sort_order: selectedDevices.length + idx,
+        }
+      })
+      setSelectedDevices([...selectedDevices, ...newDevices])
+      setDeviceModalVisible(false)
+      deviceForm.resetFields()
+      message.success(`已添加 ${deviceIds.length} 台设备`)
     } catch (e) {
       if (e?.errorFields) return
       message.error(e.message || '操作失败')
     }
+  }
+
+  const openAddDeviceModal = (processId) => {
+    setAddDeviceProcessId(processId)
+    deviceForm.resetFields()
+    setDeviceModalVisible(true)
   }
 
   const handleRemoveProcess = (processId) => {
@@ -347,19 +404,11 @@ export default function ProductionLine() {
     },
     { title: '产线编号', dataIndex: 'line_code', key: 'line_code', width: 110 },
     { title: '产线名称', dataIndex: 'line_name', key: 'line_name', width: 100 },
-    { title: '负责人', dataIndex: 'line_leader', key: 'line_leader', width: 100 },
     {
       title: '产线工序',
       dataIndex: 'process_names',
       key: 'process_names',
-      width: 150,
-      render: (text) => text || '-',
-    },
-    {
-      title: '工序设备',
-      dataIndex: 'device_names',
-      key: 'device_names',
-      width: 150,
+      width: 200,
       render: (text) => text || '-',
     },
     {
@@ -503,29 +552,62 @@ export default function ProductionLine() {
                 onChange: (p, ps) => setQuery(q => ({ ...q, page: p, pageSize: ps })),
               }}
             />
-            {selectedLine && selectedLineRelations.length > 0 && (
+            {selectedLine && (
               <Card
                 title={`${selectedLine.line_name} - 工序设备关联列表`}
                 style={{ marginTop: 16 }}
               >
-                <Table
-                  columns={relationColumns}
-                  dataSource={selectedLineRelations}
-                  rowKey={(r) => `${r.process_id}-${r.device_id}`}
-                  size="small"
-                  pagination={false}
-                  bordered
-                />
-              </Card>
-            )}
-            {selectedLine && selectedLineRelations.length === 0 && (
-              <Card
-                title={`${selectedLine.line_name} - 工序设备关联列表`}
-                style={{ marginTop: 16 }}
-              >
-                <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: 20 }}>
-                  该产线暂无关联的工序和设备，请先添加产线后再配置
-                </div>
+                {selectedLineRelations.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {(() => {
+                      const processMap = {}
+                      selectedLineRelations.forEach(r => {
+                        if (!processMap[r.process_id]) {
+                          processMap[r.process_id] = {
+                            sort_order: r.sort_order,
+                            process_id: r.process_id,
+                            process_code: r.process_code,
+                            process_name: r.process_name,
+                            devices: [],
+                          }
+                        }
+                        if (r.device_id) {
+                          processMap[r.process_id].devices.push({
+                            device_id: r.device_id,
+                            device_code: r.device_code,
+                            device_name: r.device_name,
+                          })
+                        }
+                      })
+                      return Object.values(processMap)
+                        .sort((a, b) => a.sort_order - b.sort_order)
+                        .map((p, idx) => {
+                          const bgColor = idx % 2 === 0 ? '#f5f7fa' : '#e8ecf1'
+                          return (
+                            <div key={p.process_id} style={{ backgroundColor: bgColor, padding: 12, borderRadius: 4 }}>
+                              <div style={{ fontWeight: 600, marginBottom: 8 }}>
+                                {idx + 1}. {p.process_name}
+                                <span style={{ color: '#999', fontWeight: 'normal', marginLeft: 8, fontSize: 12 }}>{p.process_code}</span>
+                              </div>
+                              {p.devices.length > 0 ? (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                                  {p.devices.map(d => (
+                                    <Tag key={d.device_id}>{d.device_name}</Tag>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div style={{ color: '#999', fontSize: 12 }}>暂无关联设备</div>
+                              )}
+                            </div>
+                          )
+                        })
+                    })()}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: 20 }}>
+                    该产线暂无关联的工序和设备，请先添加产线后再配置
+                  </div>
+                )}
               </Card>
             )}
           </div>
@@ -563,17 +645,12 @@ export default function ProductionLine() {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="line_leader" label="负责人">
-                <Input placeholder="请输入负责人" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={12}>
               <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
                 <Select placeholder="请选择状态" options={statusOptions} />
               </Form.Item>
             </Col>
+          </Row>
+          <Row gutter={12}>
             <Col span={12}>
               <Form.Item name="sort_order" label="排序号">
                 <Input placeholder="数字越小越靠前" />
@@ -587,25 +664,71 @@ export default function ProductionLine() {
                 <span>工序设备配置</span>
               </Space>
             }
-            extra={
-              <Space>
-                <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => setProcessModalVisible(true)}>添加工序</Button>
-                <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => setDeviceModalVisible(true)}>添加设备</Button>
-              </Space>
-            }
             style={{ marginTop: 16 }}
           >
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 8 }}>
-              提示：添加产线后可配置关联的工序和设备，设备可关联到特定工序
+            <Row gutter={[12, 8]} style={{ marginBottom: 12 }}>
+              <Col span={12}>
+                <Select
+                  placeholder="请选择工序添加到产线"
+                  style={{ width: '100%' }}
+                  value={null}
+                  onChange={handleSelectProcess}
+                  options={availableProcessOptions}
+                  showSearch
+                  optionFilterProp="label"
+                  filterOption={(input, option) =>
+                    option.label.toLowerCase().includes(input.toLowerCase())
+                  }
+                />
+              </Col>
+            </Row>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {selectedProcesses.map((p, idx) => {
+                const processDevices = selectedDevices.filter(d => d.process_id === p.process_id)
+                const bgColor = idx % 2 === 0 ? '#f5f7fa' : '#e8ecf1'
+                return (
+                  <div key={p.process_id} style={{ backgroundColor: bgColor, padding: 12, borderRadius: 4 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <span style={{ fontWeight: 600 }}>
+                        {idx + 1}. {p.process_name}
+                        <span style={{ color: '#999', fontWeight: 'normal', marginLeft: 8, fontSize: 12 }}>{p.process_code}</span>
+                      </span>
+                      <Space>
+                        <Button type="primary" size="small" icon={<PlusOutlined />} onClick={() => openAddDeviceModal(p.process_id)}>
+                          添加设备
+                        </Button>
+                        <Popconfirm title="确认移除该工序？" onConfirm={() => handleRemoveProcess(p.process_id)}>
+                          <Button size="small" danger icon={<DeleteOutlined />} />
+                        </Popconfirm>
+                      </Space>
+                    </div>
+                    {processDevices.length > 0 ? (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {processDevices.map(d => (
+                          <Tag
+                            key={d.device_id}
+                            closable
+                            onClose={(e) => {
+                              e.preventDefault()
+                              handleRemoveDevice(d.device_id)
+                            }}
+                          >
+                            {d.device_name}
+                          </Tag>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ color: '#999', fontSize: 12 }}>暂无关联设备</div>
+                    )}
+                  </div>
+                )
+              })}
+              {selectedProcesses.length === 0 && (
+                <div style={{ textAlign: 'center', color: '#999', padding: 30 }}>
+                  请从上方下拉框选择工序添加到产线
+                </div>
+              )}
             </div>
-            <Table
-              columns={modalRelationColumns}
-              dataSource={buildModalRelations()}
-              rowKey={(r) => `${r.process_id}-${r.device_id}`}
-              size="small"
-              pagination={false}
-              bordered
-            />
           </Card>
         </Form>
       </Modal>
@@ -622,7 +745,6 @@ export default function ProductionLine() {
               <Descriptions.Item label="产线名称">{viewRecord.line_name}</Descriptions.Item>
               <Descriptions.Item label="状态"><Tag color={statusColorMap[viewRecord.status]}>{viewRecord.status}</Tag></Descriptions.Item>
               <Descriptions.Item label="所属车间">{viewRecord.workshop || '-'}</Descriptions.Item>
-              <Descriptions.Item label="负责人">{viewRecord.line_leader || '-'}</Descriptions.Item>
               <Descriptions.Item label="排序号">{viewRecord.sort_order ?? '-'}</Descriptions.Item>
             </Descriptions>
             <Card
@@ -646,61 +768,31 @@ export default function ProductionLine() {
         )}
       </Drawer>
       <Modal
-        title="添加关联工序"
-        open={processModalVisible}
-        onOk={handleAddProcess}
-        onCancel={() => setProcessModalVisible(false)}
-        okText="确认"
-        cancelText="取消"
-        width={480}
-      >
-        <Form form={processForm} layout="vertical">
-          <Form.Item name="process_id" label="工序" rules={[{ required: true, message: '请选择工序' }]}>
-            <Select
-              placeholder="请选择工序"
-              options={processOptions}
-              showSearch
-              filterOption={(input, option) =>
-                option.label.toLowerCase().includes(input.toLowerCase())
-              }
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
-      <Modal
-        title="添加关联设备"
+        title="添加工序设备"
         open={deviceModalVisible}
-        onOk={handleAddDevice}
+        onOk={handleAddDeviceToProcess}
         onCancel={() => setDeviceModalVisible(false)}
-        okText="确认"
+        okText="确认添加"
         cancelText="取消"
         width={480}
       >
         <Form form={deviceForm} layout="vertical">
-          <Form.Item name="device_id" label="设备" rules={[{ required: true, message: '请选择设备' }]}>
+          <Form.Item name="device_ids" label="选择设备" rules={[{ required: true, message: '请选择设备' }]}>
             <Select
-              placeholder="请选择设备"
-              options={deviceOptions}
+              mode="multiple"
+              placeholder="请选择设备（可多选）"
+              options={availableDeviceOptions}
               showSearch
+              optionFilterProp="label"
               filterOption={(input, option) =>
                 option.label.toLowerCase().includes(input.toLowerCase())
               }
+              style={{ width: '100%' }}
             />
           </Form.Item>
-          <Form.Item name="process_id" label="关联工序（可选）">
-            <Select
-              placeholder="请选择工序（可选）"
-              options={selectedProcesses.map(p => ({
-                label: `${p.process_code} - ${p.process_name}`,
-                value: p.process_id,
-              }))}
-              allowClear
-              showSearch
-              filterOption={(input, option) =>
-                option.label.toLowerCase().includes(input.toLowerCase())
-              }
-            />
-          </Form.Item>
+          <div style={{ fontSize: 12, color: '#999' }}>
+            提示：已被其他工序选择的设备不再出现在列表中
+          </div>
         </Form>
       </Modal>
     </>
