@@ -5,7 +5,7 @@ import {
   Upload, Image,
 } from 'antd'
 import {
-  ProfileOutlined, ClockCircleOutlined, SearchOutlined, ReloadOutlined,
+  ProfileOutlined, ClockCircleOutlined,
   EyeOutlined, EditOutlined, PlusOutlined, DeleteOutlined, SaveOutlined,
   UploadOutlined,
 } from '@ant-design/icons'
@@ -53,8 +53,7 @@ export default function ProcessReporting() {
   const [materialModalOpen, setMaterialModalOpen] = useState(false)
   const [materialModalForm] = Form.useForm()
 
-  const [keywordInput, setKeywordInput] = useState('')
-  const [woQuery, setWoQuery] = useState({ page: 1, pageSize: 1000, keyword: '', status: '开工' })
+  const [woQuery, setWoQuery] = useState({ page: 1, pageSize: 1000, keyword: '', status: '开工,完工' })
   const [woTotal, setWoTotal] = useState(0)
   const [selectedWOId, setSelectedWOId] = useState(null)
 
@@ -243,13 +242,34 @@ export default function ProcessReporting() {
     setActiveTab('defect')
   }
 
-  const handleSearch = () => {
-    setWoQuery(q => ({ ...q, page: 1, keyword: keywordInput }))
+  const handleFinishWO = async () => {
+    try {
+      setSaving(true)
+      const res = await api.post(`/production/work-orders/${selectedWO.work_order_id}/finish`)
+      message.success(res.message || '工单已完工')
+      const updated = { ...selectedWO, status: '完工' }
+      setSelectedWO(updated)
+      setWoQuery(q => ({ ...q }))
+    } catch (e) {
+      message.error(e.message || '完工失败')
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const handleReset = () => {
-    setKeywordInput('')
-    setWoQuery(q => ({ ...q, page: 1, keyword: '' }))
+  const handleStartWO = async () => {
+    try {
+      setSaving(true)
+      const res = await api.post(`/production/work-orders/${selectedWO.work_order_id}/start`)
+      message.success(res.message || '工单已开工')
+      const updated = { ...selectedWO, status: '开工' }
+      setSelectedWO(updated)
+      setWoQuery(q => ({ ...q }))
+    } catch (e) {
+      message.error(e.message || '开工失败')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const handleAdd = () => {
@@ -708,10 +728,16 @@ export default function ProcessReporting() {
                 />
               </Col>
               <Col>
-                <Space>
-                  <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>查询</Button>
-                  <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
-                </Space>
+                {selectedWO?.status === '开工' && (
+                  <Popconfirm title="确认完工？完工后将无法继续报工" onConfirm={handleFinishWO} disabled={saving}>
+                    <Button type="primary" loading={saving}>完工</Button>
+                  </Popconfirm>
+                )}
+                {selectedWO?.status === '完工' && Number(selectedWO?.start_qty) < Number(selectedWO?.planned_qty) && (
+                  <Popconfirm title="确认开工？" onConfirm={handleStartWO} disabled={saving}>
+                    <Button type="primary" loading={saving}>开工</Button>
+                  </Popconfirm>
+                )}
               </Col>
             </Row>
 

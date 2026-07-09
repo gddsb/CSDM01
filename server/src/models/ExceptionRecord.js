@@ -13,6 +13,9 @@ const ExceptionRecord = sequelize.define('ExceptionRecord', {
   work_order_no: {
     type: DataTypes.STRING(50),
   },
+  line_name: {
+    type: DataTypes.STRING(100),
+  },
   order_id: {
     type: DataTypes.INTEGER,
   },

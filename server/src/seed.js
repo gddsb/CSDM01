@@ -36,7 +36,7 @@ const seedOrder = [
   { name: 'WorkOrder', model: WorkOrder, label: '生产工单' },
   { name: 'ProcessReport', model: ProcessReport, label: '工序报工' },
   { name: 'ManpowerRecord', model: ManpowerRecord, label: '人员投入' },
-  { name: 'ExceptionRecord', model: ExceptionRecord, label: '异常记录' },
+  { name: 'ExceptionRecord', model: ExceptionRecord, label: '工时记录' },
   { name: 'SystemConfig', model: SystemConfig, label: '系统配置' },
   { name: 'Sequence', model: Sequence, label: '序列号' },
   { name: 'NumberRule', model: NumberRule, label: '编码规则' },
