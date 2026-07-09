@@ -1305,6 +1305,39 @@ export const listDataDictionary = async (req, res) => {
   }
 }
 
+export const listTableRecords = async (req, res) => {
+  try {
+    const { table_name } = req.params
+    const { page = 1, pageSize = 20 } = req.query
+
+    if (!table_name) return fail(res, '表名不能为空')
+
+    // 安全校验：只允许字母、数字、下划线
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(table_name)) {
+      return fail(res, '非法表名')
+    }
+
+    const limit = Math.min(parseInt(pageSize, 10) || 20, 200)
+    const offset = (Math.max(parseInt(page, 10) || 1, 1) - 1) * limit
+
+    // 查询总记录数
+    const countResult = await sequelize.query(`SELECT COUNT(*) as count FROM \`${table_name}\``, { type: Sequelize.QueryTypes.SELECT })
+    const total = countResult[0]?.count || 0
+
+    // 查询分页数据
+    const rows = await sequelize.query(`SELECT * FROM \`${table_name}\` LIMIT ${limit} OFFSET ${offset}`, { type: Sequelize.QueryTypes.SELECT })
+
+    // 查询字段信息
+    const dictEntry = await DataDictionary.findOne({ where: { table_name } })
+    const fields = dictEntry?.fields ? (typeof dictEntry.fields === 'string' ? JSON.parse(dictEntry.fields) : dictEntry.fields) : []
+
+    return success(res, { list: rows, total, fields }, '获取成功')
+  } catch (err) {
+    console.error('查询表记录失败:', err)
+    return fail(res, '服务器错误', 500)
+  }
+}
+
 export default {
   getConfig,
   saveConfig,
@@ -1313,6 +1346,7 @@ export default {
   listDataDictionary,
   refreshDataDictionary,
   refreshDictionaryData,
+  listTableRecords,
   listBackups,
   createBackup,
   restoreBackup,
