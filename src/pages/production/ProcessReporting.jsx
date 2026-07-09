@@ -145,8 +145,8 @@ export default function ProcessReporting() {
       return
     }
     try {
-      const res = await api.get(`/basic/production-lines/${lineId}`)
-      const procs = res.data?.processes || []
+      const res = await api.get(`/basic/production-lines/${lineId}/processes`)
+      const procs = res.data || []
       const sorted = [...procs].sort((a, b) => {
         const sa = Number(a.sort_order) || 0
         const sb = Number(b.sort_order) || 0
