@@ -557,14 +557,14 @@ export default function WorkOrderManagement() {
               <Col span={24}>
                 <div style={{
                   padding: '12px 16px',
-                  backgroundColor: '#f0f5ff',
+                  backgroundColor: 'var(--color-primary-bg)',
                   borderRadius: 6,
-                  border: '1px solid #d6e4ff',
+                  border: '1px solid var(--color-primary-border)',
                 }}>
-                  <div style={{ fontWeight: 500, marginBottom: 8, color: '#1677ff' }}>产线工序（按顺序）</div>
+                  <div style={{ fontWeight: 500, marginBottom: 8, color: 'var(--color-primary)' }}>产线工序（按顺序）</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {selectedLineProcesses.map((p, idx) => {
-                      const bgColor = idx % 2 === 0 ? '#e6f4ff' : '#f0f5ff'
+                      const bgColor = idx % 2 === 0 ? 'var(--color-primary-light)' : 'var(--color-primary-soft)'
                       return (
                         <span
                           key={p.process_id}
@@ -573,7 +573,8 @@ export default function WorkOrderManagement() {
                             backgroundColor: bgColor,
                             borderRadius: 4,
                             fontSize: 13,
-                            border: '1px solid #91caff',
+                            border: '1px solid var(--color-primary-border)',
+                            color: 'var(--text-primary)',
                           }}
                         >
                           {idx + 1}. {p.process_name}
@@ -634,11 +635,17 @@ export default function WorkOrderManagement() {
               <Descriptions.Item label="备注" span={2}>{currentWO.remarks || '-'}</Descriptions.Item>
             </Descriptions>
             {detailLineProcesses.length > 0 && (
-              <div style={{ marginTop: 16 }}>
-                <div style={{ fontWeight: 600, marginBottom: 8 }}>产线工序（按顺序）</div>
+              <div style={{
+                marginTop: 16,
+                padding: '12px 16px',
+                backgroundColor: 'var(--color-primary-bg)',
+                borderRadius: 6,
+                border: '1px solid var(--color-primary-border)',
+              }}>
+                <div style={{ fontWeight: 600, marginBottom: 8, color: 'var(--color-primary)' }}>产线工序（按顺序）</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {detailLineProcesses.map((p, idx) => {
-                    const bgColor = idx % 2 === 0 ? '#e6f4ff' : '#f0f5ff'
+                    const bgColor = idx % 2 === 0 ? 'var(--color-primary-light)' : 'var(--color-primary-soft)'
                     return (
                       <span
                         key={p.process_id}
@@ -647,7 +654,8 @@ export default function WorkOrderManagement() {
                           backgroundColor: bgColor,
                           borderRadius: 4,
                           fontSize: 13,
-                          border: '1px solid #91caff',
+                          border: '1px solid var(--color-primary-border)',
+                          color: 'var(--text-primary)',
                         }}
                       >
                         {idx + 1}. {p.process_name}

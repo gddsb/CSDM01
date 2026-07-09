@@ -1,4 +1,29 @@
 // 六套主题配色方案 - 基于设计文档
+function generateThemeVariants(theme) {
+  const primary = theme.colors['--color-primary']
+  const bgCard = theme.colors['--bg-card']
+  const textSecondary = theme.colors['--text-secondary']
+  const borderColor = theme.colors['--border-color']
+  const dark = theme.dark
+
+  const mix = (color1, color2, ratio) => {
+    const hex = (c) => parseInt(c, 16)
+    const r1 = hex(color1.slice(1, 3)), g1 = hex(color1.slice(3, 5)), b1 = hex(color1.slice(5, 7))
+    const r2 = hex(color2.slice(1, 3)), g2 = hex(color2.slice(3, 5)), b2 = hex(color2.slice(5, 7))
+    const r = Math.round(r1 * ratio + r2 * (1 - ratio))
+    const g = Math.round(g1 * ratio + g2 * (1 - ratio))
+    const b = Math.round(b1 * ratio + b2 * (1 - ratio))
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
+  }
+
+  return {
+    '--color-primary-bg': mix(primary, bgCard, dark ? 0.15 : 0.08),
+    '--color-primary-light': mix(primary, bgCard, dark ? 0.35 : 0.2),
+    '--color-primary-border': mix(primary, borderColor, dark ? 0.5 : 0.4),
+    '--color-primary-soft': mix(primary, bgCard, dark ? 0.25 : 0.12),
+  }
+}
+
 export const themes = {
   pureMilk: {
     name: '纯净奶源',
@@ -126,6 +151,10 @@ export const themes = {
     }
   }
 }
+
+Object.values(themes).forEach(theme => {
+  Object.assign(theme.colors, generateThemeVariants(theme))
+})
 
 export const themeList = Object.values(themes)
 
