@@ -463,27 +463,6 @@ export default function ProcessReporting() {
     }
   }
 
-  const reportTimes = useMemo(() => {
-    const map = {}
-    reports.forEach(r => {
-      const date = r.report_time ? String(r.report_time).substring(0, 10).replace('T', ' ') : ''
-      const key = `${date}_${r.process_id}`
-      if (!map[key]) {
-        map[key] = {
-          key,
-          date,
-          process_id: r.process_id,
-          process_name: r.process_name,
-          total_input: 0,
-          count: 0,
-        }
-      }
-      map[key].total_input += Number(r.input_qty) || 0
-      map[key].count += 1
-    })
-    return Object.values(map).sort((a, b) => (a.date || '').localeCompare(b.date || ''))
-  }, [reports])
-
   const reportColumns = [
     { title: '工单号', dataIndex: 'work_order_no', key: 'work_order_no', width: 140 },
     { title: '工序', dataIndex: 'process_name', key: 'process_name', width: 120 },
@@ -514,14 +493,6 @@ export default function ProcessReporting() {
         </Space>
       ),
     },
-  ]
-
-  const reportTimeColumns = [
-    { title: '序号', key: 'index', width: 60, render: (_, __, idx) => idx + 1 },
-    { title: '工单号', key: 'wo', width: 140, render: () => selectedWO?.work_order_no || '-' },
-    { title: '开工日期', dataIndex: 'date', key: 'date', width: 110 },
-    { title: '投入数量', dataIndex: 'total_input', key: 'total_input', width: 110, align: 'right', render: v => Math.round(v || 0).toLocaleString() },
-    { title: '报工次数', dataIndex: 'count', key: 'count', width: 90, align: 'right' },
   ]
 
   const defectTypeOptions = (category) => {
