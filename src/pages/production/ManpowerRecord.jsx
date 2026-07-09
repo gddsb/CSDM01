@@ -210,27 +210,16 @@ export default function ManpowerRecord() {
     }
   }
 
-  const calcTotalHours = (record) => {
-    if (!record.start_time || !record.finish_time) return 0
-    const start = new Date(record.start_time)
-    const end = new Date(record.finish_time)
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0
-    const diff = (end - start) / (1000 * 60 * 60)
-    return diff > 0 ? Number(diff.toFixed(2)) : 0
-  }
-
   const columns = [
     { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 140, fixed: 'left' },
     { title: '订单编号', dataIndex: 'order_no', key: 'order_no', width: 140 },
     {
       title: '总工时(h)',
+      dataIndex: 'total_hours',
       key: 'total_hours',
       width: 100,
       align: 'right',
-      render: (_, r) => {
-        const h = calcTotalHours(r)
-        return Number(h).toFixed(2)
-      },
+      render: v => Number(v || 0).toFixed(2),
     },
     { title: '技工人数', dataIndex: 'skilled_count', key: 'skilled_count', width: 80, align: 'right', render: v => v || 0 },
     { title: '普工人数', dataIndex: 'general_count', key: 'general_count', width: 80, align: 'right', render: v => v || 0 },

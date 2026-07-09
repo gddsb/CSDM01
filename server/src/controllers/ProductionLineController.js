@@ -13,7 +13,19 @@ export const list = async (req, res) => {
         { line_name: { [Op.like]: `%${keyword}%` } },
       ]
     }
-    if (status !== undefined && status !== '') where.status = Number(status)
+    if (status !== undefined && status !== '') {
+      const statusArr = Array.isArray(status) ? status : String(status).split(',')
+      const statusMap = { '运行中': 1, '维护中': 2, '停用': 0, '运行': 1, '维修': 2 }
+      const statusValues = statusArr.map(s => {
+        const trimmed = String(s).trim()
+        return statusMap[trimmed] !== undefined ? statusMap[trimmed] : Number(trimmed)
+      }).filter(s => !isNaN(s))
+      if (statusValues.length === 1) {
+        where.status = statusValues[0]
+      } else if (statusValues.length > 1) {
+        where.status = { [Op.in]: statusValues }
+      }
+    }
     if (workshop) where.workshop = workshop
     if (dateStart || dateEnd) {
       where.created_at = {}

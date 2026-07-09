@@ -178,8 +178,9 @@ export const summaryByWorkOrder = async (req, res) => {
     const summaryList = workOrders.map(wo => {
       const records = wo.manpower_records || []
       const total_man_hours = records.reduce((sum, r) => sum + Number(r.man_hours || 0), 0)
-      const total_hours = records.length > 0
-        ? Number((records.reduce((sum, r) => sum + Number(r.hours || 0), 0) / records.length).toFixed(2))
+      const total_hours = records.reduce((sum, r) => sum + Number(r.hours || 0), 0)
+      const avg_hours = records.length > 0
+        ? Number((total_hours / records.length).toFixed(2))
         : 0
       const maxSkilled = records.length > 0
         ? Math.max(...records.map(r => Number(r.skilled_count || 0)))
@@ -204,8 +205,10 @@ export const summaryByWorkOrder = async (req, res) => {
         status: wo.status,
         start_time: wo.start_time,
         finish_time: wo.finish_time,
+        labor_hours: wo.labor_hours,
         total_man_hours: Number(total_man_hours.toFixed(2)),
-        avg_hours: total_hours,
+        total_hours: Number(total_hours.toFixed(2)),
+        avg_hours,
         skilled_count: maxSkilled,
         general_count: maxGeneral,
         labor_count: maxLabor,
