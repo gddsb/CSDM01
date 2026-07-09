@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Table, Tag, Button, Modal, Form, InputNumber, DatePicker, Input, Space, Row, Col, Select, message, Drawer, Descriptions, Popconfirm } from 'antd'
+import { Table, Tag, Button, Modal, Form, InputNumber, DatePicker, Input, Space, Row, Col, Select, Checkbox, message, Drawer, Descriptions, Popconfirm } from 'antd'
 
 const { RangePicker } = DatePicker
 import {
@@ -10,6 +10,7 @@ import {
 import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
+import { formatVersionNo } from '../../utils'
 
 const statusColorMap = {
   '开立': 'default',
@@ -38,10 +39,10 @@ export default function WorkOrderManagement() {
 
   // 筛选输入态
   const [keywordInput, setKeywordInput] = useState('')
-  const [statusInput, setStatusInput] = useState(undefined)
+  const [statusInput, setStatusInput] = useState(['开立', '开工'])
   const [lineInput, setLineInput] = useState(undefined)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined, line_id: undefined })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: ['开立', '开工'], line_id: undefined })
 
   // 获取工单列表
   useEffect(() => {
@@ -51,7 +52,7 @@ export default function WorkOrderManagement() {
       try {
         const params = { page: query.page, pageSize: query.pageSize }
         if (query.keyword) params.keyword = query.keyword
-        if (query.status) params.status = query.status
+        if (query.status && query.status.length > 0) params.status = query.status
         if (query.line_id) params.line_id = query.line_id
         const res = await api.get('/production/work-orders', { params })
         if (cancelled) return
@@ -247,9 +248,9 @@ export default function WorkOrderManagement() {
 
   const handleReset = () => {
     setKeywordInput('')
-    setStatusInput(undefined)
+    setStatusInput(['开立', '开工'])
     setLineInput(undefined)
-    setQuery(q => ({ ...q, page: 1, keyword: '', status: undefined, line_id: undefined }))
+    setQuery(q => ({ ...q, page: 1, keyword: '', status: ['开立', '开工'], line_id: undefined }))
   }
 
   const renderActions = (w) => {
@@ -355,11 +356,8 @@ export default function WorkOrderManagement() {
                   onPressEnter={handleSearch}
                 />
               </Col>
-              <Col flex="140px">
-                <Select
-                  placeholder="状态筛选"
-                  allowClear
-                  style={{ width: '100%' }}
+              <Col>
+                <Checkbox.Group
                   options={statusOptions}
                   value={statusInput}
                   onChange={setStatusInput}
@@ -463,7 +461,7 @@ export default function WorkOrderManagement() {
             </Col>
             <Col span={12}>
               <Form.Item label="版本号">
-                <Input value={selectedOrder?.version_no || '-'} disabled />
+                <Input value={formatVersionNo(selectedOrder?.version_no)} disabled />
               </Form.Item>
             </Col>
           </Row>

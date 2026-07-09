@@ -36,8 +36,15 @@ export default function ProcessReporting() {
   const [form] = Form.useForm()
 
   const [keywordInput, setKeywordInput] = useState('')
-  const [woQuery, setWoQuery] = useState({ page: 1, pageSize: 10, keyword: '', status: '开工' })
+  const [woQuery, setWoQuery] = useState({ page: 1, pageSize: 1000, keyword: '', status: '开工' })
   const [woTotal, setWoTotal] = useState(0)
+  const [selectedWOId, setSelectedWOId] = useState(null)
+
+  const [statsData, setStatsData] = useState({
+    workingWoCount: 0,
+    totalInputQty: 0,
+    totalOutputQty: 0,
+  })
 
   const [addDefectModalOpen, setAddDefectModalOpen] = useState(false)
   const [addDefectType, setAddDefectType] = useState('')
@@ -74,8 +81,18 @@ export default function ProcessReporting() {
         if (woQuery.status) params.status = woQuery.status
         const res = await api.get('/production/work-orders', { params })
         if (cancelled) return
-        setWorkOrders(res.data || [])
+        const list = res.data || []
+        setWorkOrders(list)
         setWoTotal(res.total || 0)
+
+        const workingList = list.filter(w => w.status === '开工')
+        const totalInput = workingList.reduce((sum, w) => sum + (Number(w.input_qty) || 0), 0)
+        const totalOutput = workingList.reduce((sum, w) => sum + (Number(w.output_qty) || 0), 0)
+        setStatsData({
+          workingWoCount: workingList.length,
+          totalInputQty: totalInput,
+          totalOutputQty: totalOutput,
+        })
       } catch (err) {
         if (!cancelled) {
           message.error(err.message || '获取工单列表失败')
@@ -147,6 +164,7 @@ export default function ProcessReporting() {
 
     const processItems = defaultProcessDefects.map(d => ({
       defect_type_id: d.defect_id,
+      defect_code: d.defect_code || '',
       defect_category: d.category_name,
       defect_name: d.defect_name,
       quantity: existingMap[d.defect_name]?.quantity || 0,
@@ -160,6 +178,7 @@ export default function ProcessReporting() {
     extraProcess.forEach(d => {
       processItems.push({
         defect_type_id: d.defect_type_id,
+        defect_code: d.defect_code || '',
         defect_category: d.defect_category,
         defect_name: d.defect_name,
         quantity: d.quantity,
@@ -170,6 +189,7 @@ export default function ProcessReporting() {
 
     const materialItems = defaultMaterialDefects.map(d => ({
       defect_type_id: d.defect_id,
+      defect_code: d.defect_code || '',
       defect_category: d.category_name,
       defect_name: d.defect_name,
       quantity: existingMap[d.defect_name]?.quantity || 0,
@@ -183,6 +203,7 @@ export default function ProcessReporting() {
     extraMaterial.forEach(d => {
       materialItems.push({
         defect_type_id: d.defect_type_id,
+        defect_code: d.defect_code || '',
         defect_category: d.defect_category,
         defect_name: d.defect_name,
         quantity: d.quantity,
@@ -212,6 +233,7 @@ export default function ProcessReporting() {
 
   const handleSelectWO = (record) => {
     setSelectedWO(record)
+    setSelectedWOId(record?.work_order_id)
     setSelectedProcessId(null)
   }
 
@@ -311,11 +333,28 @@ export default function ProcessReporting() {
     try {
       const values = await addDefectForm.validateFields()
       const defectType = defectTypes.find(d => d.defect_id === values.defect_type_id)
+      const defectName = values.defect_name || defectType?.defect_name
+
+      if (addDefectType === 'process') {
+        const exists = processDefectData.find(item => item.defect_name === defectName)
+        if (exists) {
+          message.warning('同一分类下同一不良项目只允许一条记录')
+          return
+        }
+      } else {
+        const exists = materialDefectData.find(item => item.defect_name === defectName)
+        if (exists) {
+          message.warning('同一分类下同一不良项目只允许一条记录')
+          return
+        }
+      }
+
       const newItem = {
         key: `${addDefectType}-${Date.now()}`,
         defect_type_id: values.defect_type_id,
+        defect_code: defectType?.defect_code || '',
         defect_category: addDefectType === 'process' ? '制程不良' : '来料不良',
-        defect_name: values.defect_name || defectType?.defect_name,
+        defect_name: defectName,
         quantity: values.quantity || 0,
         unit: values.unit || defectType?.defect_unit || '',
         isDefault: false,
@@ -389,10 +428,11 @@ export default function ProcessReporting() {
   ]
 
   const processDefectColumns = [
+    { title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 120, render: v => v || '-' },
     { title: '不良项目', dataIndex: 'defect_name', key: 'defect_name', width: 180 },
     { title: '单位', dataIndex: 'unit', key: 'unit', width: 80, render: v => v || '-' },
     {
-      title: '数量', key: 'quantity', width: 120, align: 'right',
+      title: '不良数量', key: 'quantity', width: 120, align: 'right',
       render: (_, r) => (
         <InputNumber
           min={0}
@@ -414,10 +454,11 @@ export default function ProcessReporting() {
   ]
 
   const materialDefectColumns = [
+    { title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 120, render: v => v || '-' },
     { title: '不良项目', dataIndex: 'defect_name', key: 'defect_name', width: 180 },
     { title: '单位', dataIndex: 'unit', key: 'unit', width: 80, render: v => v || '-' },
     {
-      title: '数量', key: 'quantity', width: 120, align: 'right',
+      title: '不良数量', key: 'quantity', width: 120, align: 'right',
       render: (_, r) => (
         <InputNumber
           min={0}
@@ -439,8 +480,9 @@ export default function ProcessReporting() {
   ]
 
   const stats = [
-    { label: '总报工记录', value: reports.length, icon: <ProfileOutlined />, color: '#2196F3' },
-    { label: '累计产量', value: reports.reduce((s, r) => s + (Number(r.output_qty) || 0), 0).toLocaleString(), icon: <ProfileOutlined />, color: '#FF9800' },
+    { label: '开工工单数量', value: statsData.workingWoCount, icon: <ProfileOutlined />, color: '#2196F3' },
+    { label: '累计投入数量', value: statsData.totalInputQty.toLocaleString(), icon: <ProfileOutlined />, color: '#FF9800' },
+    { label: '累计产出数量', value: statsData.totalOutputQty.toLocaleString(), icon: <ProfileOutlined />, color: '#4CAF50' },
   ]
 
   const defectTypeOptions = (category) => {
@@ -462,28 +504,26 @@ export default function ProcessReporting() {
         table={
           <div>
             <Row gutter={[12, 8]} style={{ marginBottom: 12 }}>
-              <Col flex="240px">
-                <Input
-                  placeholder="搜索工单编号/产品"
-                  allowClear
-                  prefix={<SearchOutlined />}
-                  value={keywordInput}
-                  onChange={e => setKeywordInput(e.target.value)}
-                  onPressEnter={handleSearch}
-                />
-              </Col>
-              <Col flex="140px">
+              <Col flex="360px">
                 <Select
-                  placeholder="状态筛选"
+                  placeholder="请选择工单编号"
                   allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  value={selectedWOId}
+                  onChange={(value) => {
+                    const wo = workOrders.find(w => w.work_order_id === value)
+                    if (wo) {
+                      handleSelectWO(wo)
+                    } else {
+                      handleSelectWO(null)
+                    }
+                  }}
+                  options={workOrders.map(w => ({
+                    label: `${w.work_order_no} ${w.material_code || ''} ${w.material_name || ''}`.trim(),
+                    value: w.work_order_id,
+                  }))}
                   style={{ width: '100%' }}
-                  value={woQuery.status}
-                  onChange={v => setWoQuery(q => ({ ...q, page: 1, status: v }))}
-                  options={[
-                    { label: '开立', value: '开立' },
-                    { label: '开工', value: '开工' },
-                    { label: '完工', value: '完工' },
-                  ]}
                 />
               </Col>
               <Col>
@@ -494,7 +534,7 @@ export default function ProcessReporting() {
               </Col>
             </Row>
 
-            <Card size="small" style={{ marginBottom: 12 }} title="工单列表">
+            <Card size="small" style={{ marginBottom: 12 }} title="工序报工清单">
               <Table
                 columns={woColumns}
                 dataSource={workOrders}
@@ -510,14 +550,7 @@ export default function ProcessReporting() {
                     else { setSelectedWO(null); setSelectedProcessId(null) }
                   },
                 }}
-                pagination={{
-                  current: woQuery.page,
-                  pageSize: woQuery.pageSize,
-                  total: woTotal,
-                  showSizeChanger: true,
-                  showTotal: t => `共 ${t} 条`,
-                  onChange: (p, ps) => setWoQuery(q => ({ ...q, page: p, pageSize: ps })),
-                }}
+                pagination={false}
               />
             </Card>
 

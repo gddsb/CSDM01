@@ -11,14 +11,22 @@ function convertStatusParams(params) {
   if (!params) return params
   const result = {}
   for (const [key, val] of Object.entries(params)) {
-    if (key === 'status' && typeof val === 'string') {
-      if (val.includes(',')) {
-        result[key] = val.split(',').map(s => {
-          const t = s.trim()
-          return STATUS_TEXT_TO_NUM[t] !== undefined ? STATUS_TEXT_TO_NUM[t] : s
+    if (key === 'status') {
+      if (Array.isArray(val)) {
+        result[key] = val.map(s => {
+          return STATUS_TEXT_TO_NUM[s] !== undefined ? STATUS_TEXT_TO_NUM[s] : s
         }).join(',')
+      } else if (typeof val === 'string') {
+        if (val.includes(',')) {
+          result[key] = val.split(',').map(s => {
+            const t = s.trim()
+            return STATUS_TEXT_TO_NUM[t] !== undefined ? STATUS_TEXT_TO_NUM[t] : s
+          }).join(',')
+        } else {
+          result[key] = STATUS_TEXT_TO_NUM[val] !== undefined ? STATUS_TEXT_TO_NUM[val] : val
+        }
       } else {
-        result[key] = STATUS_TEXT_TO_NUM[val] !== undefined ? STATUS_TEXT_TO_NUM[val] : val
+        result[key] = val
       }
     } else {
       result[key] = val

@@ -6,6 +6,7 @@ import {
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
+import { formatVersionNo } from '../../utils'
 
 const MaterialManagement = () => {
   const [data, setData] = useState([])
@@ -200,7 +201,7 @@ const MaterialManagement = () => {
       },
     },
     { title: '菲林编号', dataIndex: 'film_no', key: 'film_no', width: 100 },
-    { title: '版本号', dataIndex: 'version_no', key: 'version_no', width: 80 },
+    { title: '版本号', dataIndex: 'version_no', key: 'version_no', width: 80, render: v => formatVersionNo(v) },
     {
       title: '是否生效', dataIndex: 'is_active', key: 'is_active', width: 80,
       render: v => <Tag color={v ? 'green' : 'red'}>{v ? '生效' : '失效'}</Tag>,
@@ -450,7 +451,7 @@ const MaterialManagement = () => {
             <Descriptions.Item label="规格">{current.specification || '-'}</Descriptions.Item>
             <Descriptions.Item label="单位名称">{current.unit_name || '-'}</Descriptions.Item>
             <Descriptions.Item label="菲林编号">{current.film_no || '-'}</Descriptions.Item>
-            <Descriptions.Item label="版本号">{current.version_no || '-'}</Descriptions.Item>
+            <Descriptions.Item label="版本号">{formatVersionNo(current.version_no)}</Descriptions.Item>
             <Descriptions.Item label="开料尺寸">{current.cutting_size || '-'}</Descriptions.Item>
             <Descriptions.Item label="印刷工艺">{current.printing_process || '-'}</Descriptions.Item>
             <Descriptions.Item label="分色信息">{current.color_separation || '-'}</Descriptions.Item>
