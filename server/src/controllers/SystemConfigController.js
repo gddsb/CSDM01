@@ -343,13 +343,12 @@ const tableCategoryMap = {
   bas_line_process: { category: '基础数据表', purpose: '产线工序关联表，描述产线与工序的多对多关系，支持排序' },
   bas_line_device: { category: '基础数据表', purpose: '产线设备关联表，描述产线、设备与工序的三方关联' },
   production_order: { category: '业务表', purpose: '生产订单表，记录生产订单信息及计划数量' },
-  production_work_order: { category: '业务表', purpose: '工单表，记录生产工单及工时计算数据' },
+  production_work_order: { category: '业务表', purpose: '生产工单表，记录生产工单及工时计算数据' },
   production_process_report: { category: '业务表', purpose: '工序报工记录表，记录每道工序的产量和不良数据' },
-  production_process_defect: { category: '业务表', purpose: '工序不良记录表，记录生产过程中各工序的不良明细' },
-  production_process_exception: { category: '业务表', purpose: '工序异常记录表，记录生产过程中的设备停机等异常' },
-  production_process_material: { category: '业务表', purpose: '工序物料记录表，记录各工序投入物料及批次信息' },
-  production_manpower_record: { category: '业务表', purpose: '人员投入记录表，记录工单的人员配置及班次' },
-  production_exception_record: { category: '业务表', purpose: '异常工时记录表，记录生产异常及关联订单工单' },
+  production_manpower_record: { category: '业务表', purpose: '工单人员投入记录表，记录工单的人员配置及班次' },
+  production_exception_record: { category: '业务表', purpose: '工单异常工时记录表，记录生产异常及关联订单工单' },
+  production_process_defect: { category: '业务表', purpose: '工单工序不良记录表，记录生产过程中各工序的不良明细' },
+  production_process_material: { category: '业务表', purpose: '工单工序物料记录表，记录各工序投入物料及批次信息' },
 }
 
 // 表名 → { 字段名: 中文注释 }（数据库表结构元数据，模块级常量）
@@ -836,6 +835,22 @@ async function collectDatabaseSchema() {
 
   tables.sort((a, b) => {
     const catOrder = { '系统表': 0, '基础数据表': 1, '业务表': 2, '其他': 3 }
+    const businessOrder = [
+      'production_order',
+      'production_work_order',
+      'production_process_report',
+      'production_manpower_record',
+      'production_exception_record',
+      'production_process_defect',
+      'production_process_material',
+    ]
+    if (a.category === b.category && a.category === '业务表') {
+      const ai = businessOrder.indexOf(a.table_name)
+      const bi = businessOrder.indexOf(b.table_name)
+      if (ai >= 0 && bi >= 0) return ai - bi
+      if (ai >= 0) return -1
+      if (bi >= 0) return 1
+    }
     return (catOrder[a.category] - catOrder[b.category]) || a.table_name.localeCompare(b.table_name)
   })
 
@@ -1266,6 +1281,17 @@ export const listDataDictionary = async (req, res) => {
       order: [
         // 按分类排序：系统表/基础数据表/业务表/其他
         sequelize.literal(`CASE category WHEN '系统表' THEN 0 WHEN '基础数据表' THEN 1 WHEN '业务表' THEN 2 ELSE 3 END`),
+        // 业务表按自定义顺序排序
+        sequelize.literal(`CASE table_name 
+          WHEN 'production_order' THEN 0
+          WHEN 'production_work_order' THEN 1
+          WHEN 'production_process_report' THEN 2
+          WHEN 'production_manpower_record' THEN 3
+          WHEN 'production_exception_record' THEN 4
+          WHEN 'production_process_defect' THEN 5
+          WHEN 'production_process_material' THEN 6
+          ELSE 999
+        END`),
         ['table_name', 'ASC'],
       ],
       limit,
