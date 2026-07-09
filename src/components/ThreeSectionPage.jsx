@@ -69,6 +69,7 @@ export default function ThreeSectionPage({
           value={f.value}
           onChange={handleChange}
           mode={f.mode}
+          disabled={f.disabled}
         />
       )
     }

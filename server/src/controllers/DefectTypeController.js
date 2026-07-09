@@ -7,7 +7,7 @@ import { success, fail } from '../utils/response.js'
 // 不良分类列表
 export const list = async (req, res) => {
   try {
-    const { keyword, status, defect_type, dateStart, dateEnd, page = 1, pageSize = 50 } = req.query
+    const { keyword, status, defect_type, category_name, display, dateStart, dateEnd, page = 1, pageSize = 50 } = req.query
     const where = {}
     if (keyword) {
       where[Op.or] = [
@@ -20,6 +20,11 @@ export const list = async (req, res) => {
       where.status = statusMap[status] !== undefined ? statusMap[status] : Number(status)
     }
     if (defect_type) where.defect_type = defect_type
+    if (category_name) where.category_name = category_name
+    if (display !== undefined && display !== '') {
+      const displayVal = typeof display === 'string' ? Number(display) : display
+      where.display = !!displayVal
+    }
     if (dateStart || dateEnd) {
       where.created_at = {}
       if (dateStart) where.created_at[Op.gte] = new Date(dateStart)

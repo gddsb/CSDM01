@@ -51,12 +51,22 @@ export default function DefectManagement() {
   // 当前选中大类名称（用于联动分类名称下拉）
   const [selectedCategory, setSelectedCategory] = useState(undefined)
 
-  // 筛选输入态
-  const [keywordInput, setKeywordInput] = useState('')
-  const [statusInput, setStatusInput] = useState(undefined)
-  const [typeInput, setTypeInput] = useState(undefined)
+  // 筛选条件
+  const [filterCategory, setFilterCategory] = useState(undefined)
+  const [filterType, setFilterType] = useState(undefined)
+  const [filterKeyword, setFilterKeyword] = useState('')
+  const [filterDisplay, setFilterDisplay] = useState(undefined)
+  const [filterStatus, setFilterStatus] = useState(undefined)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined, defect_type: undefined })
+  const [query, setQuery] = useState({
+    page: 1,
+    pageSize: 30,
+    category_name: undefined,
+    defect_type: undefined,
+    keyword: '',
+    display: undefined,
+    status: undefined,
+  })
 
   const processOptions = processes.map(p => ({ label: `${p.process_code} ${p.process_name}`, value: p.process_id }))
 
@@ -68,8 +78,10 @@ export default function DefectManagement() {
       try {
         const params = { page: query.page, pageSize: query.pageSize }
         if (query.keyword) params.keyword = query.keyword
-        if (query.status !== undefined && query.status !== null) params.status = query.status
+        if (query.category_name) params.category_name = query.category_name
         if (query.defect_type) params.defect_type = query.defect_type
+        if (query.display !== undefined && query.display !== null) params.display = query.display
+        if (query.status !== undefined && query.status !== null) params.status = query.status
         const res = await api.get('/basic/defect-types', { params })
         if (cancelled) return
         const list = res.data || []
@@ -106,15 +118,40 @@ export default function DefectManagement() {
 
   const refresh = useCallback(() => setQuery(q => ({ ...q })), [])
 
-  const handleSearch = () => {
-    setQuery(q => ({ ...q, page: 1, keyword: keywordInput, status: statusInput, defect_type: typeInput }))
+  const doSearch = () => {
+    setQuery(q => ({
+      ...q,
+      page: 1,
+      category_name: filterCategory,
+      defect_type: filterType,
+      keyword: filterKeyword,
+      display: filterDisplay,
+      status: filterStatus,
+    }))
   }
 
   const handleReset = () => {
-    setKeywordInput('')
-    setStatusInput(undefined)
-    setTypeInput(undefined)
-    setQuery(q => ({ ...q, page: 1, keyword: '', status: undefined, defect_type: undefined }))
+    setFilterCategory(undefined)
+    setFilterType(undefined)
+    setFilterKeyword('')
+    setFilterDisplay(undefined)
+    setFilterStatus(undefined)
+    setQuery(q => ({
+      ...q,
+      page: 1,
+      category_name: undefined,
+      defect_type: undefined,
+      keyword: '',
+      display: undefined,
+      status: undefined,
+    }))
+  }
+
+  // 大类名称筛选变化时联动分类名称
+  const handleFilterCategoryChange = (value) => {
+    setFilterCategory(value)
+    setFilterType(undefined)
+    setTimeout(doSearch, 0)
   }
 
   // 拉取不良图片
@@ -339,21 +376,39 @@ export default function DefectManagement() {
     },
   ]
 
+  // 筛选时分类名称下拉选项
+  const filterTypeOptions = filterCategory ? (defectTypeMap[filterCategory] || []) : []
+
   const filters = [
-    { type: 'input', placeholder: '搜索不良编码/名称', col: { span: 6 }, value: keywordInput, onChange: e => setKeywordInput(e.target.value) },
     {
-      type: 'select', placeholder: '分类名称', col: { span: 6 },
-      options: [
-        { label: '来料不良', value: '来料不良' },
-        { label: '制程不良', value: '制程不良' },
-        { label: '检验报废', value: '检验报废' },
-      ],
-      value: typeInput, onChange: v => setTypeInput(v),
+      type: 'select', placeholder: '大类名称', col: { span: 5 },
+      options: categoryNameOptions,
+      value: filterCategory,
+      onChange: handleFilterCategoryChange,
     },
     {
-      type: 'select', placeholder: '状态筛选', col: { span: 6 },
+      type: 'select', placeholder: '分类名称', col: { span: 5 },
+      options: filterTypeOptions,
+      value: filterType,
+      onChange: v => { setFilterType(v); doSearch() },
+      disabled: !filterCategory,
+    },
+    {
+      type: 'input', placeholder: '不良项目', col: { span: 5 },
+      value: filterKeyword,
+      onChange: e => { setFilterKeyword(e.target.value); doSearch() },
+    },
+    {
+      type: 'select', placeholder: '是否默认', col: { span: 4 },
+      options: [{ label: '是', value: 1 }, { label: '否', value: 0 }],
+      value: filterDisplay,
+      onChange: v => { setFilterDisplay(v); doSearch() },
+    },
+    {
+      type: 'select', placeholder: '状态筛选', col: { span: 4 },
       options: [{ label: '启用', value: 1 }, { label: '停用', value: 0 }],
-      value: statusInput, onChange: v => setStatusInput(v),
+      value: filterStatus,
+      onChange: v => { setFilterStatus(v); doSearch() },
     },
   ]
 
@@ -376,7 +431,7 @@ export default function DefectManagement() {
         breadcrumbs="基础数据 / 不良分类"
         stats={stats}
         filters={filters}
-        onSearch={handleSearch}
+        onSearch={doSearch}
         onReset={handleReset}
         actions={
           <ActionButtons
