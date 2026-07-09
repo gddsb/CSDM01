@@ -32,7 +32,7 @@ export default function ProcessReporting() {
   const [saving, setSaving] = useState(false)
 
   const [selectedProcessId, setSelectedProcessId] = useState(null)
-  const [activeTab, setActiveTab] = useState('report')
+  const [activeTab, setActiveTab] = useState('defect')
 
   const [processDefectList, setProcessDefectList] = useState([])
   const [materialDefectList, setMaterialDefectList] = useState([])
@@ -220,7 +220,7 @@ export default function ProcessReporting() {
     setSelectedWO(record)
     setSelectedWOId(record?.work_order_id)
     setSelectedProcessId(null)
-    setActiveTab('report')
+    setActiveTab('defect')
   }
 
   const handleSearch = () => {
@@ -476,7 +476,6 @@ export default function ProcessReporting() {
   const reportTimeColumns = [
     { title: '序号', key: 'index', width: 60, render: (_, __, idx) => idx + 1 },
     { title: '工单号', key: 'wo', width: 140, render: () => selectedWO?.work_order_no || '-' },
-    { title: '工序', dataIndex: 'process_name', key: 'process_name', width: 120 },
     { title: '开工日期', dataIndex: 'date', key: 'date', width: 110 },
     { title: '投入数量', dataIndex: 'total_input', key: 'total_input', width: 110, align: 'right', render: v => Math.round(v || 0).toLocaleString() },
     { title: '报工次数', dataIndex: 'count', key: 'count', width: 90, align: 'right' },
@@ -573,23 +572,6 @@ export default function ProcessReporting() {
   const labelImagesNorm = (val) => Array.isArray(val) ? val : []
 
   const tabItems = [
-    {
-      key: 'report',
-      label: '工序报工',
-      children: selectedProcessId ? (
-        <Table
-          columns={reportColumns}
-          dataSource={reports.filter(r => r.process_id === selectedProcessId)}
-          rowKey="report_id"
-          size="small"
-          scroll={{ x: 1200 }}
-          pagination={false}
-          locale={{ emptyText: '暂无报工记录' }}
-        />
-      ) : (
-        <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>请先选择工序</div>
-      ),
-    },
     {
       key: 'defect',
       label: '工序不良记录',
