@@ -525,9 +525,9 @@ export default function ProcessReporting() {
 
   const defectTypeOptions = (category) => {
     const catMap = { process: '制程不良', material: '来料不良', scrap: '检验报废' }
-    const catName = catMap[category] || '制程不良'
+    const defectType = catMap[category] || '制程不良'
     return defectTypes
-      .filter(d => d.category_name === catName)
+      .filter(d => d.category_name === '制程检验类型' && d.defect_type === defectType && d.status === '启用')
       .map(d => ({ label: d.defect_name, value: d.defect_id, unit: d.defect_unit, code: d.defect_code }))
   }
 

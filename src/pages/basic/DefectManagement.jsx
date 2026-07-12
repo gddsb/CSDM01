@@ -82,11 +82,10 @@ export default function DefectManagement() {
         if (query.defect_type) params.defect_type = query.defect_type
         if (Array.isArray(query.display)) {
           if (query.display.length === 1) params.display = query.display[0]
-          else if (query.display.length === 0 || query.display.length >= 2) {}
-        } else if (query.display !== undefined && query.display !== null) {
+        } else if (query.display !== undefined && query.display !== null && query.display !== '') {
           params.display = query.display
         }
-        if (query.status !== undefined && query.status !== null) params.status = query.status
+        if (query.status !== undefined && query.status !== null && query.status !== '') params.status = query.status
         const res = await api.get('/basic/defect-types', { params })
         if (cancelled) return
         const list = res.data || []

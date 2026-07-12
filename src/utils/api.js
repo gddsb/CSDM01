@@ -35,12 +35,27 @@ function convertStatusParams(params) {
   return result
 }
 
+function doubleEncodeParams(params) {
+  if (!params) return params
+  const result = {}
+  for (const [key, val] of Object.entries(params)) {
+    if (typeof val === 'string' && /[\u4e00-\u9fa5]/.test(val)) {
+      result[key] = encodeURIComponent(val)
+    } else if (Array.isArray(val)) {
+      result[key] = val.map(v => typeof v === 'string' && /[\u4e00-\u9fa5]/.test(v) ? encodeURIComponent(v) : v)
+    } else {
+      result[key] = val
+    }
+  }
+  return result
+}
+
 const api = axios.create({
   baseURL: '/api',
   timeout: 15000,
 })
 
-// 请求拦截器：添加 token，中文 status 转数字（规避 Vite 代理中文 URL 参数异常）
+// 请求拦截器：添加 token，中文 status 转数字，中文参数二次编码（规避 Vite 代理中文 URL 参数异常）
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('mes_token')
   if (token) {
@@ -48,6 +63,7 @@ api.interceptors.request.use(config => {
   }
   if (config.params) {
     config.params = convertStatusParams(config.params)
+    config.params = doubleEncodeParams(config.params)
   }
   return config
 })
