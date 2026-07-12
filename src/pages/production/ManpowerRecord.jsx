@@ -126,9 +126,10 @@ export default function ManpowerRecord() {
     }
     setEditing(null)
     form.resetFields()
+    const recordDate = selectedWO.plan_start_time ? dayjs(selectedWO.plan_start_time) : dayjs()
     form.setFieldsValue({
       work_order_id: selectedWO.work_order_id,
-      record_date: dayjs(),
+      record_date: recordDate,
       shift: '白班',
       start_time: dayjs().hour(8).minute(0).second(0),
       end_time: dayjs().hour(17).minute(0).second(0),
@@ -165,12 +166,25 @@ export default function ManpowerRecord() {
     try {
       const values = await form.validateFields()
       setSubmitting(true)
+      const recordDate = values.record_date
+      const startTime = values.start_time
+        ? recordDate
+            .hour(values.start_time.hour())
+            .minute(values.start_time.minute())
+            .second(0)
+        : null
+      const endTime = values.end_time
+        ? recordDate
+            .hour(values.end_time.hour())
+            .minute(values.end_time.minute())
+            .second(0)
+        : null
       const payload = {
         work_order_id: values.work_order_id,
-        record_date: values.record_date ? values.record_date.format('YYYY-MM-DD') : null,
+        record_date: recordDate ? recordDate.format('YYYY-MM-DD') : null,
         shift: values.shift,
-        start_time: values.start_time ? values.start_time.format('YYYY-MM-DD HH:mm:ss') : null,
-        end_time: values.end_time ? values.end_time.format('YYYY-MM-DD HH:mm:ss') : null,
+        start_time: startTime ? startTime.format('YYYY-MM-DD HH:mm:ss') : null,
+        end_time: endTime ? endTime.format('YYYY-MM-DD HH:mm:ss') : null,
         skilled_count: values.skilled_count || 0,
         general_count: values.general_count || 0,
         labor_count: values.labor_count || 0,
@@ -285,17 +299,12 @@ export default function ManpowerRecord() {
     { title: '人工工时(h)', dataIndex: 'man_hours', key: 'man_hours', width: 110, align: 'right', render: v => Number(v || 0).toFixed(2) },
     { title: '备注', dataIndex: 'remarks', key: 'remarks', width: 150, render: v => v || '-' },
     {
-      title: '操作', key: 'action', width: 160, fixed: 'right',
+      title: '操作', key: 'action', width: 140, fixed: 'right',
       render: (_, r) => (
         <Space size="small">
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(r)}>查看</Button>
+          <Button type="link" size="small" onClick={() => handleView(r)}>查看</Button>
           {selectedWO?.status === '开工' && (
-            <>
-              <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(r)}>编辑</Button>
-              <Popconfirm title="确定删除该条记录？" onConfirm={() => handleDelete(r)}>
-                <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
-              </Popconfirm>
-            </>
+            <Button type="link" size="small" onClick={() => handleEdit(r)}>编辑</Button>
           )}
         </Space>
       ),
@@ -441,7 +450,7 @@ export default function ManpowerRecord() {
             </Col>
             <Col span={12}>
               <Form.Item label="记录日期" name="record_date" rules={[{ required: true, message: '请选择日期' }]}>
-                <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
+                <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" disabled />
               </Form.Item>
             </Col>
           </Row>
@@ -453,12 +462,26 @@ export default function ManpowerRecord() {
             </Col>
             <Col span={8}>
               <Form.Item label="开始时间" name="start_time" rules={[{ required: true, message: '请选择开始时间' }]}>
-                <TimePicker style={{ width: '100%' }} format="HH:mm" minuteStep={5} />
+                <TimePicker
+                  style={{ width: '100%' }}
+                  format="HH:mm"
+                  minuteStep={5}
+                  disabledTime={() => ({
+                    disabledHours: () => [0, 1, 2, 3, 4, 5, 6],
+                  })}
+                />
               </Form.Item>
             </Col>
             <Col span={8}>
               <Form.Item label="结束时间" name="end_time" rules={[{ required: true, message: '请选择结束时间' }]}>
-                <TimePicker style={{ width: '100%' }} format="HH:mm" minuteStep={5} />
+                <TimePicker
+                  style={{ width: '100%' }}
+                  format="HH:mm"
+                  minuteStep={5}
+                  disabledTime={() => ({
+                    disabledHours: () => [0, 1, 2, 3, 4, 5, 6],
+                  })}
+                />
               </Form.Item>
             </Col>
           </Row>
