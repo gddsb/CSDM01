@@ -201,7 +201,7 @@ export const dbTables = [
   { table_name: 'master_production_line', field_count: 9, record_count: 3, category: '基础数据表', purpose: '产线表，管理生产线的编号、名称及状态', last_update: '2026-07-05 09:00:00' },
   { table_name: 'master_process', field_count: 7, record_count: 11, category: '基础数据表', purpose: '工序表，定义奶粉罐生产工序名称及顺序', last_update: '2026-07-05 09:00:00' },
   { table_name: 'master_device', field_count: 19, record_count: 4, category: '基础数据表', purpose: '设备档案表，存储设备基础信息及特种设备检定日期', last_update: '2026-07-05 09:00:00' },
-  { table_name: 'master_defect_type', field_count: 15, record_count: 7, category: '基础数据表', purpose: '不良分类表，按大类名称（来料检验类/制程检验类）和分类名称二级分类管理不良项及单位', last_update: '2026-07-06 09:00:00' },
+  { table_name: 'master_defect_type', field_count: 15, record_count: 7, category: '基础数据表', purpose: '不良分类表，按检验类型（来料检验类型/制程检验类型）和不良类型二级分类管理不良项及单位', last_update: '2026-07-06 09:00:00' },
   { table_name: 'bas_line_process', field_count: 7, record_count: 20, category: '基础数据表', purpose: '产线工序关联表，描述产线与工序多对多关系', last_update: '2026-07-05 09:00:00' },
   { table_name: 'bas_line_device', field_count: 7, record_count: 10, category: '基础数据表', purpose: '产线设备关联表，描述产线、设备与工序的三方关联', last_update: '2026-07-05 09:00:00' },
   { table_name: 'production_order', field_count: 18, record_count: 4, category: '业务表', purpose: '生产订单表，记录生产订单信息及计划数量', last_update: '2026-07-05 09:00:00' },

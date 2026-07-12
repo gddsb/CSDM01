@@ -8,19 +8,19 @@ import {
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 
-// 分类名称标签颜色映射
+// 不良类型标签颜色映射
 const typeColorMap = { '来料不良': 'blue', '制程不良': 'orange', '检验报废': 'red' }
 
-// 大类名称选项
+// 检验类型选项
 const categoryNameOptions = [
-  { label: '来料检验类', value: '来料检验类' },
-  { label: '制程检验类', value: '制程检验类' },
+  { label: '来料检验类型', value: '来料检验类型' },
+  { label: '制程检验类型', value: '制程检验类型' },
 ]
 
-// 大类名称 → 分类名称联动映射
+// 检验类型 → 不良类型联动映射
 const defectTypeMap = {
-  '来料检验类': [{ label: '来料不良', value: '来料不良' }],
-  '制程检验类': [
+  '来料检验类型': [{ label: '来料不良', value: '来料不良' }],
+  '制程检验类型': [
     { label: '来料不良', value: '来料不良' },
     { label: '制程不良', value: '制程不良' },
     { label: '检验报废', value: '检验报废' },
@@ -48,7 +48,7 @@ export default function DefectManagement() {
   const [defectImages, setDefectImages] = useState([])
   const [imageLoading, setImageLoading] = useState(false)
 
-  // 当前选中大类名称（用于联动分类名称下拉）
+  // 当前选中检验类型（用于联动不良类型下拉）
   const [selectedCategory, setSelectedCategory] = useState(undefined)
 
   // 筛选条件
@@ -151,7 +151,7 @@ export default function DefectManagement() {
     }))
   }
 
-  // 大类名称筛选变化
+  // 检验类型筛选变化
   const handleFilterCategoryChange = (value) => {
     setFilterCategory(value)
   }
@@ -306,28 +306,28 @@ export default function DefectManagement() {
     }
   }
 
-  // 大类名称变更时联动分类名称
+  // 检验类型变更时联动不良类型
   const handleCategoryChange = (value) => {
     setSelectedCategory(value)
-    // 清空已选分类名称
+    // 清空已选不良类型
     form.setFieldValue('defect_type', undefined)
-    // 来料检验类不关联具体工序，清空并禁用
-    if (value === '来料检验类') {
+    // 来料检验类型不关联具体工序，清空并禁用
+    if (value === '来料检验类型') {
       form.setFieldValue('related_processes', [])
     }
   }
 
-  // 当前可用的分类名称选项
+  // 当前可用的不良类型选项
   const currentDefectTypeOptions = selectedCategory ? (defectTypeMap[selectedCategory] || []) : []
 
   const columns = [
     { title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 110, fixed: 'left' },
     {
-      title: '大类名称', dataIndex: 'category_name', key: 'category_name', width: 110,
+      title: '检验类型', dataIndex: 'category_name', key: 'category_name', width: 110,
       render: v => v ? <Tag color="purple">{v}</Tag> : '-',
     },
     {
-      title: '分类名称', dataIndex: 'defect_type', key: 'defect_type', width: 100,
+      title: '不良类型', dataIndex: 'defect_type', key: 'defect_type', width: 100,
       render: v => v ? <Tag color={typeColorMap[v] || 'default'}>{v}</Tag> : '-',
     },
     { title: '不良项目', dataIndex: 'defect_name', key: 'defect_name', width: 120 },
@@ -378,7 +378,7 @@ export default function DefectManagement() {
     },
   ]
 
-  // 筛选时分类名称下拉选项（所有分类名称，不联动）
+  // 筛选时不良类型下拉选项（所有不良类型，不联动）
   const filterTypeOptions = [
     { label: '来料不良', value: '来料不良' },
     { label: '制程不良', value: '制程不良' },
@@ -399,7 +399,7 @@ export default function DefectManagement() {
   const filterBar = (
     <div style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', gap: 12, marginBottom: 12, padding: '0 2px' }}>
       <Select
-        placeholder="不良类型"
+        placeholder="检验类型"
         allowClear
         showSearch
         style={{ width: 200, flexShrink: 0 }}
@@ -408,7 +408,7 @@ export default function DefectManagement() {
         onChange={handleFilterCategoryChange}
       />
       <Select
-        placeholder="分类名称"
+        placeholder="不良类型"
         allowClear
         showSearch
         style={{ width: 200, flexShrink: 0 }}
@@ -514,18 +514,18 @@ export default function DefectManagement() {
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="category_name" label="大类名称" rules={[{ required: true, message: '请选择大类名称' }]}>
+              <Form.Item name="category_name" label="检验类型" rules={[{ required: true, message: '请选择检验类型' }]}>
                 <Select
-                  placeholder="请选择大类名称"
+                  placeholder="请选择检验类型"
                   options={categoryNameOptions}
                   onChange={handleCategoryChange}
                 />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="defect_type" label="分类名称" rules={[{ required: true, message: '请选择分类名称' }]}>
+              <Form.Item name="defect_type" label="不良类型" rules={[{ required: true, message: '请选择不良类型' }]}>
                 <Select
-                  placeholder="请先选择大类名称"
+                  placeholder="请先选择检验类型"
                   options={currentDefectTypeOptions}
                   disabled={!selectedCategory}
                 />
@@ -676,10 +676,10 @@ export default function DefectManagement() {
           <Descriptions column={2} size="small" bordered>
             <Descriptions.Item label="不良编码">{viewRecord.defect_code}</Descriptions.Item>
             <Descriptions.Item label="不良项目">{viewRecord.defect_name}</Descriptions.Item>
-            <Descriptions.Item label="大类名称">
+            <Descriptions.Item label="检验类型">
               {viewRecord.category_name ? <Tag color="purple">{viewRecord.category_name}</Tag> : '-'}
             </Descriptions.Item>
-            <Descriptions.Item label="分类名称">
+            <Descriptions.Item label="不良类型">
               <Tag color={typeColorMap[viewRecord.defect_type] || 'default'}>{viewRecord.defect_type}</Tag>
             </Descriptions.Item>
             <Descriptions.Item label="默认单位">{viewRecord.defect_unit || '-'}</Descriptions.Item>

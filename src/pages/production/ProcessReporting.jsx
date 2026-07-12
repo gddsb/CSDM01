@@ -389,7 +389,11 @@ export default function ProcessReporting() {
     try {
       const values = await defectModalForm.validateFields()
       const defectType = defectTypes.find(d => d.defect_id === values.defect_type_id)
-      const defectName = values.defect_name || defectType?.defect_name
+      const defectName = defectType?.defect_name
+      if (!defectName) {
+        message.warning('请选择有效的不良项目')
+        return
+      }
       const listMap = { process: processDefectList, material: materialDefectList, scrap: scrapDefectList }
       const currentList = listMap[defectModalType] || processDefectList
       if (!editingDefect) {
@@ -526,8 +530,14 @@ export default function ProcessReporting() {
   const defectTypeOptions = (category) => {
     const catMap = { process: '制程不良', material: '来料不良', scrap: '检验报废' }
     const defectType = catMap[category] || '制程不良'
+    const categoryMap = {
+      '来料不良': '来料检验类型',
+      '制程不良': '制程检验类型',
+      '检验报废': '制程检验类型',
+    }
+    const categoryName = categoryMap[defectType] || '制程检验类型'
     return defectTypes
-      .filter(d => d.category_name === '制程检验类型' && d.defect_type === defectType && d.status === '启用')
+      .filter(d => d.category_name === categoryName && d.defect_type === defectType && d.status === '启用')
       .map(d => ({ label: d.defect_name, value: d.defect_id, unit: d.defect_unit, code: d.defect_code }))
   }
 
@@ -1159,15 +1169,11 @@ export default function ProcessReporting() {
                 const d = defectTypes.find(dt => dt.defect_id === value)
                 if (d) {
                   defectModalForm.setFieldsValue({
-                    defect_name: d.defect_name,
                     unit: d.defect_unit,
                   })
                 }
               }}
             />
-          </Form.Item>
-          <Form.Item label="不良名称" name="defect_name" rules={[{ required: true, message: '请输入不良名称' }]}>
-            <Input placeholder="可手动输入" />
           </Form.Item>
           <Row gutter={12}>
             <Col span={12}>
