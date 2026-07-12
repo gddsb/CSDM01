@@ -267,12 +267,12 @@ export default function ProcessReporting() {
     try {
       setSaving(true)
       const res = await api.post(`/production/work-orders/${selectedWO.work_order_id}/start`)
-      message.success(res.message || '工单已开工')
+      message.success(res.message || '工单已开始报工')
       const updated = { ...selectedWO, status: '开工' }
       setSelectedWO(updated)
       setWoQuery(q => ({ ...q }))
     } catch (e) {
-      message.error(e.message || '开工失败')
+      message.error(e.message || '开始报工失败')
     } finally {
       setSaving(false)
     }
@@ -950,13 +950,13 @@ export default function ProcessReporting() {
               </Col>
               <Col>
                 {selectedWO?.status === '开工' && (
-                  <Popconfirm title="确认完工？完工后将无法继续报工" onConfirm={handleFinishWO} disabled={saving}>
-                    <Button type="primary" loading={saving}>完工</Button>
+                  <Popconfirm title="确认开始完工？当天需完成完工" onConfirm={handleFinishWO} disabled={saving}>
+                    <Button type="primary" loading={saving}>开始完工</Button>
                   </Popconfirm>
                 )}
-                {selectedWO?.status === '完工' && Number(selectedWO?.start_qty) < Number(selectedWO?.planned_qty) && (
-                  <Popconfirm title="确认开工？" onConfirm={handleStartWO} disabled={saving}>
-                    <Button type="primary" loading={saving}>开工</Button>
+                {selectedWO?.status === '完工' && Number(selectedWO?.finished_qty) < Number(selectedWO?.planned_qty) && (
+                  <Popconfirm title="确认开始报工？当天需完成完工" onConfirm={handleStartWO} disabled={saving}>
+                    <Button type="primary" loading={saving}>开始报工</Button>
                   </Popconfirm>
                 )}
               </Col>

@@ -155,8 +155,8 @@ export default function WorkOrderManagement() {
 
   const handleFinish = (w) => {
     Modal.confirm({
-      title: '确认完工',
-      content: `确认完工工单 ${w.work_order_no}？完工后将不可修改`,
+      title: '确认开始完工',
+      content: `确认开始完工工单 ${w.work_order_no}？当天需完成完工`,
       okText: '确认完工',
       cancelText: '取消',
       onOk: async () => {
@@ -304,7 +304,7 @@ export default function WorkOrderManagement() {
     if (w.status === '开工') {
       return (
         <Space size="small">
-          <Button type="link" size="small" onClick={() => handleFinish(w)}>完工</Button>
+          <Button type="link" size="small" onClick={() => handleFinish(w)}>开始完工</Button>
           <Button type="link" size="small" onClick={() => handleView(w)}>详情</Button>
         </Space>
       )

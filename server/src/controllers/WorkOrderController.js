@@ -219,14 +219,14 @@ export const start = async (req, res) => {
 
     // 从"完工"状态重新开工需要检查条件
     if (workOrder.status === '完工') {
-      // 检查1：累计开工数量 < 计划数量
-      if (Number(workOrder.start_qty) >= Number(workOrder.planned_qty)) {
-        return fail(res, '累计开工数量已达到计划数量，无法再次开工')
+      // 检查1：累计完工数量 < 计划数量
+      if (Number(workOrder.finished_qty) >= Number(workOrder.planned_qty)) {
+        return fail(res, '完工数量已达到计划数量，无法再次报工')
       }
       // 检查2：没有处于开工状态的报工单
       const activeReports = await ProcessReport.count({ where: { work_order_id: id, status: 1 } })
       if (activeReports > 0) {
-        return fail(res, '存在处于开工状态的报工单，无法再次开工')
+        return fail(res, '存在处于开工状态的报工单，无法再次报工')
       }
       // 更新工单状态
       const now = new Date()
@@ -234,7 +234,7 @@ export const start = async (req, res) => {
       await workOrder.update({ status: 1, start_time: startTime, finish_time: null })
       // 更新现有报工记录状态为"开工"
       await ProcessReport.update({ status: 1 }, { where: { work_order_id: id } })
-      return success(res, workOrder, '工单已重新开工')
+      return success(res, workOrder, '工单已开始报工')
     }
 
     // 从"开立"状态开工（原有逻辑）
