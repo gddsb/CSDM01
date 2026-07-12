@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Table, Tag, Button, Modal, Form, Input, InputNumber, Select, Space, Row, Col,
   message, Drawer, Descriptions, Card, Divider, Popconfirm, DatePicker, Tabs,
-  Upload, Image,
+  Upload, Image, Radio,
 } from 'antd'
 import {
   ProfileOutlined, ClockCircleOutlined,
@@ -374,7 +374,6 @@ export default function ProcessReporting() {
     if (record) {
       defectModalForm.setFieldsValue({
         defect_type_id: record.defect_type_id,
-        defect_name: record.defect_name,
         quantity: record.quantity || 0,
         unit: record.unit || '',
         defect_images: record.defect_images || [],
@@ -383,6 +382,18 @@ export default function ProcessReporting() {
       defectModalForm.setFieldsValue({ quantity: 0, defect_images: [] })
     }
     setDefectModalOpen(true)
+  }
+
+  const getCurrentDefectList = (type) => {
+    const listMap = { process: processDefectList, material: materialDefectList, scrap: scrapDefectList }
+    return listMap[type] || processDefectList
+  }
+
+  const getExcludeDefectNames = (type, editingRecord) => {
+    const list = getCurrentDefectList(type)
+    return list
+      .filter(d => !editingRecord || d.defect_name !== editingRecord.defect_name)
+      .map(d => d.defect_name)
   }
 
   const handleDefectModalSubmit = async () => {
@@ -527,7 +538,7 @@ export default function ProcessReporting() {
     },
   ]
 
-  const defectTypeOptions = (category) => {
+  const defectTypeOptions = (category, excludeNames = []) => {
     const catMap = { process: '制程不良', material: '来料不良', scrap: '检验报废' }
     const defectType = catMap[category] || '制程不良'
     const categoryMap = {
@@ -538,7 +549,8 @@ export default function ProcessReporting() {
     const categoryName = categoryMap[defectType] || '制程检验类型'
     return defectTypes
       .filter(d => d.category_name === categoryName && d.defect_type === defectType && d.status === '启用')
-      .map(d => ({ label: d.defect_name, value: d.defect_id, unit: d.defect_unit, code: d.defect_code }))
+      .filter(d => !excludeNames.includes(d.defect_name))
+      .map(d => ({ label: d.defect_name, value: d.defect_id, unit: d.defect_unit, code: d.defect_code, available_units: d.available_units || [] }))
   }
 
   const materialOptions = materials.map(m => ({
@@ -622,7 +634,7 @@ export default function ProcessReporting() {
               placeholder="选择不良项目"
               style={{ width: '100%' }}
               optionFilterProp="label"
-              options={defectTypeOptions(type)}
+              options={defectTypeOptions(type, getExcludeDefectNames(type, record))}
               value={editingDefectData.defect_type_id}
               onChange={(value) => {
                 const d = defectTypes.find(dt => dt.defect_id === value)
@@ -641,7 +653,7 @@ export default function ProcessReporting() {
       },
     },
     {
-      title: '不良数量', dataIndex: 'quantity', key: 'quantity', width: 100, align: 'right',
+      title: '不良数量', dataIndex: 'quantity', key: 'quantity', width: 140, align: 'right',
       render: (v, record) => {
         const isEditing = editingDefectKey === getDefectRowKey(record, type)
         if (isEditing) {
@@ -649,9 +661,11 @@ export default function ProcessReporting() {
             <InputNumber
               size="small"
               min={0}
+              max={selectedWO?.planned_qty || undefined}
               style={{ width: '100%' }}
               value={editingDefectData.quantity}
               onChange={(val) => setEditingDefectData(prev => ({ ...prev, quantity: val }))}
+              addonAfter={`/${selectedWO?.planned_qty || 0}`}
             />
           )
         }
@@ -659,17 +673,22 @@ export default function ProcessReporting() {
       },
     },
     {
-      title: '单位', dataIndex: 'unit', key: 'unit', width: 80,
+      title: '单位', dataIndex: 'unit', key: 'unit', width: 180,
       render: (v, record) => {
         const isEditing = editingDefectKey === getDefectRowKey(record, type)
         if (isEditing) {
+          const defectType = defectTypes.find(d => d.defect_id === editingDefectData.defect_type_id)
+          const availableUnits = defectType?.available_units || []
           return (
-            <Input
+            <Radio.Group
               size="small"
-              placeholder="单位"
               value={editingDefectData.unit}
               onChange={(e) => setEditingDefectData(prev => ({ ...prev, unit: e.target.value }))}
-            />
+            >
+              {availableUnits.map(u => (
+                <Radio key={u} value={u}>{u}</Radio>
+              ))}
+            </Radio.Group>
           )
         }
         return v || '-'
@@ -1164,29 +1183,44 @@ export default function ProcessReporting() {
               placeholder="请选择不良项目"
               showSearch
               optionFilterProp="label"
-              options={defectTypeOptions(defectModalType)}
-              onChange={(value) => {
-                const d = defectTypes.find(dt => dt.defect_id === value)
-                if (d) {
+              options={defectTypeOptions(defectModalType, editingDefect ? getExcludeDefectNames(defectModalType, editingDefect) : getExcludeDefectNames(defectModalType))}
+              onChange={(value, option) => {
+                if (option) {
                   defectModalForm.setFieldsValue({
-                    unit: d.defect_unit,
+                    unit: option.unit,
                   })
                 }
               }}
             />
           </Form.Item>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item label="不良数量" name="quantity" rules={[{ required: true, message: '请输入数量' }]}>
-                <InputNumber min={0} style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="单位" name="unit">
-                <Input placeholder="如：个、件" />
-              </Form.Item>
-            </Col>
-          </Row>
+          <Form.Item noStyle shouldUpdate={(prev, cur) => prev.defect_type_id !== cur.defect_type_id}>
+            {({ getFieldValue }) => {
+              const defectTypeId = getFieldValue('defect_type_id')
+              const defectType = defectTypes.find(d => d.defect_id === defectTypeId)
+              const availableUnits = defectType?.available_units || []
+              const defaultUnit = defectType?.defect_unit || ''
+              return (
+                <Form.Item label="单位" name="unit" rules={[{ required: true, message: '请选择单位' }]}>
+                  <Radio.Group
+                    value={getFieldValue('unit') || defaultUnit}
+                    onChange={(e) => defectModalForm.setFieldsValue({ unit: e.target.value })}
+                  >
+                    {availableUnits.map(u => (
+                      <Radio key={u} value={u}>{u}</Radio>
+                    ))}
+                  </Radio.Group>
+                </Form.Item>
+              )
+            }}
+          </Form.Item>
+          <Form.Item label="不良数量" name="quantity" rules={[{ required: true, message: '请输入数量' }]}>
+            <InputNumber
+              min={0}
+              max={selectedWO?.planned_qty || undefined}
+              style={{ width: '100%' }}
+              addonAfter={`/ ${selectedWO?.planned_qty || 0}`}
+            />
+          </Form.Item>
           <Form.Item label="不良图片" name="defect_images" getValueFromEvent={defectImagesNorm}>
             <Upload {...dummyUpload} listType="picture-card" multiple maxCount={6}>
               <div>
