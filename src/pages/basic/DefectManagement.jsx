@@ -260,7 +260,7 @@ export default function DefectManagement() {
       if (!editing && !defectCode && values.defect_type) {
         try {
           const codeRes = await api.get('/basic/defect-types/next-code', {
-            params: { defect_type: values.defect_type }
+            params: { defect_type: values.defect_type, category_name: values.category_name }
           })
           defectCode = codeRes.data?.defect_code
         } catch {
@@ -330,9 +330,10 @@ export default function DefectManagement() {
       form.setFieldsValue('defect_code', '')
       return
     }
+    const categoryName = form.getFieldValue('category_name')
     try {
       const res = await api.get('/basic/defect-types/next-code', {
-        params: { defect_type: value }
+        params: { defect_type: value, category_name: categoryName }
       })
       form.setFieldsValue('defect_code', res.data?.defect_code)
     } catch {

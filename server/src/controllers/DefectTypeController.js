@@ -126,22 +126,27 @@ export const remove = async (req, res) => {
 }
 
 // 生成下一个不良编码（自动编码）
+// 三段式：检验类型缩写-不良类型缩写-两位流水码
 export const nextCode = async (req, res) => {
   try {
-    const { defect_type } = req.query
+    const { defect_type, category_name } = req.query
+    const categoryMap = {
+      '来料检验类型': 'IC',
+      '制程检验类型': 'PC',
+    }
     const typeMap = {
       '来料不良': 'MAT',
       '制程不良': 'PRC',
       '检验报废': 'SCP',
     }
-    const typeCode = typeMap[defect_type] || 'DEF'
+    const catCode = categoryMap[category_name] || 'XX'
+    const typeCode = typeMap[defect_type] || 'XX'
     const where = {}
-    if (defect_type) {
-      where.defect_type = defect_type
-    }
+    if (category_name) where.category_name = category_name
+    if (defect_type) where.defect_type = defect_type
     const count = await DefectType.count({ where })
     const nextNum = count + 1
-    const code = `D-${typeCode}-${String(nextNum).padStart(2, '0')}`
+    const code = `${catCode}-${typeCode}-${String(nextNum).padStart(2, '0')}`
     return success(res, { defect_code: code }, '查询成功')
   } catch (err) {
     console.error('生成不良编码失败:', err)

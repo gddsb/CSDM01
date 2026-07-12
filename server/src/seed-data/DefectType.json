@@ -1,7 +1,7 @@
 [
   {
     "defect_id": 1,
-    "defect_code": "D-MAT-01",
+    "defect_code": "IC-MAT-01",
     "defect_name": "材料划伤",
     "defect_type": "来料不良",
     "category_name": "来料检验类型",
@@ -18,7 +18,7 @@
   },
   {
     "defect_id": 2,
-    "defect_code": "D-MAT-02",
+    "defect_code": "IC-MAT-02",
     "defect_name": "材料变形",
     "defect_type": "来料不良",
     "category_name": "来料检验类型",
@@ -35,7 +35,7 @@
   },
   {
     "defect_id": 3,
-    "defect_code": "D-PRC-01",
+    "defect_code": "PC-PRC-01",
     "defect_name": "焊接不良",
     "defect_type": "制程不良",
     "category_name": "制程检验类型",
@@ -52,7 +52,7 @@
   },
   {
     "defect_id": 4,
-    "defect_code": "D-PRC-02",
+    "defect_code": "PC-PRC-02",
     "defect_name": "补涂漏涂",
     "defect_type": "制程不良",
     "category_name": "制程检验类型",
@@ -69,7 +69,7 @@
   },
   {
     "defect_id": 5,
-    "defect_code": "D-PRC-03",
+    "defect_code": "PC-PRC-03",
     "defect_name": "封口不良",
     "defect_type": "制程不良",
     "category_name": "制程检验类型",
@@ -86,7 +86,7 @@
   },
   {
     "defect_id": 6,
-    "defect_code": "D-SCP-01",
+    "defect_code": "PC-SCP-01",
     "defect_name": "尺寸超差",
     "defect_type": "检验报废",
     "category_name": "制程检验类型",
@@ -103,7 +103,7 @@
   },
   {
     "defect_id": 7,
-    "defect_code": "D-SCP-02",
+    "defect_code": "PC-SCP-02",
     "defect_name": "测漏不合格",
     "defect_type": "检验报废",
     "category_name": "制程检验类型",
@@ -120,7 +120,7 @@
   },
   {
     "defect_id": 8,
-    "defect_code": "D-SCP-03",
+    "defect_code": "PC-SCP-03",
     "defect_name": "裁剪检测报废",
     "defect_type": "检验报废",
     "category_name": "制程检验类型",
@@ -137,7 +137,7 @@
   },
   {
     "defect_id": 9,
-    "defect_code": "D-SCP-04",
+    "defect_code": "PC-SCP-04",
     "defect_name": "焊接质量撕拉测试",
     "defect_type": "检验报废",
     "category_name": "制程检验类型",
@@ -154,7 +154,7 @@
   },
   {
     "defect_id": 10,
-    "defect_code": "D-SCP-05",
+    "defect_code": "PC-SCP-05",
     "defect_name": "密封测试与三率解剖测试",
     "defect_type": "检验报废",
     "category_name": "制程检验类型",
@@ -171,7 +171,7 @@
   },
   {
     "defect_id": 45,
-    "defect_code": "D-MAT-03",
+    "defect_code": "IC-MAT-03",
     "defect_name": "漏印/叠印",
     "defect_type": "来料不良",
     "category_name": "来料检验类型",
@@ -188,7 +188,7 @@
   },
   {
     "defect_id": 46,
-    "defect_code": "D-MAT-04",
+    "defect_code": "IC-MAT-04",
     "defect_name": "炉叉印",
     "defect_type": "来料不良",
     "category_name": "来料检验类型",
@@ -205,7 +205,7 @@
   },
   {
     "defect_id": 47,
-    "defect_code": "D-MAT-05",
+    "defect_code": "IC-MAT-05",
     "defect_name": "炉灰点",
     "defect_type": "来料不良",
     "category_name": "来料检验类型",
@@ -222,7 +222,7 @@
   },
   {
     "defect_id": 48,
-    "defect_code": "D-MAT-06",
+    "defect_code": "IC-MAT-06",
     "defect_name": "色差",
     "defect_type": "来料不良",
     "category_name": "来料检验类型",
@@ -239,7 +239,7 @@
   },
   {
     "defect_id": 49,
-    "defect_code": "D-MAT-07",
+    "defect_code": "IC-MAT-07",
     "defect_name": "生锈",
     "defect_type": "来料不良",
     "category_name": "来料检验类型",
@@ -256,7 +256,7 @@
   },
   {
     "defect_id": 50,
-    "defect_code": "D-MAT-08",
+    "defect_code": "IC-MAT-08",
     "defect_name": "油针孔",
     "defect_type": "来料不良",
     "category_name": "来料检验类型",
@@ -273,7 +273,7 @@
   },
   {
     "defect_id": 51,
-    "defect_code": "D-MAT-09",
+    "defect_code": "IC-MAT-09",
     "defect_name": "杂色/墨皮",
     "defect_type": "来料不良",
     "category_name": "来料检验类型",
@@ -290,7 +290,7 @@
   },
   {
     "defect_id": 52,
-    "defect_code": "D-MAT-10",
+    "defect_code": "IC-MAT-10",
     "defect_name": "脏污",
     "defect_type": "来料不良",
     "category_name": "来料检验类型",
@@ -307,7 +307,7 @@
   },
   {
     "defect_id": 53,
-    "defect_code": "D-MAT-11",
+    "defect_code": "IC-MAT-11",
     "defect_name": "重影",
     "defect_type": "来料不良",
     "category_name": "来料检验类型",
@@ -324,7 +324,7 @@
   },
   {
     "defect_id": 54,
-    "defect_code": "D-PRC-04",
+    "defect_code": "IC-PRC-01",
     "defect_name": "下料刮花",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -341,7 +341,7 @@
   },
   {
     "defect_id": 55,
-    "defect_code": "D-PRC-05",
+    "defect_code": "IC-PRC-02",
     "defect_name": "垂直度不达标",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -358,7 +358,7 @@
   },
   {
     "defect_id": 56,
-    "defect_code": "D-PRC-06",
+    "defect_code": "IC-PRC-03",
     "defect_name": "焊接刮花",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -375,7 +375,7 @@
   },
   {
     "defect_id": 57,
-    "defect_code": "D-PRC-07",
+    "defect_code": "IC-PRC-04",
     "defect_name": "焊线拖尾",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -392,7 +392,7 @@
   },
   {
     "defect_id": 58,
-    "defect_code": "D-PRC-08",
+    "defect_code": "IC-PRC-05",
     "defect_name": "氮化不良",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -409,7 +409,7 @@
   },
   {
     "defect_id": 59,
-    "defect_code": "D-PRC-09",
+    "defect_code": "IC-PRC-06",
     "defect_name": "错位/爆焊",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -426,7 +426,7 @@
   },
   {
     "defect_id": 60,
-    "defect_code": "D-PRC-10",
+    "defect_code": "IC-PRC-07",
     "defect_name": "假焊/漏焊",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -443,7 +443,7 @@
   },
   {
     "defect_id": 61,
-    "defect_code": "D-PRC-11",
+    "defect_code": "IC-PRC-08",
     "defect_name": "假封/高低脚",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -460,7 +460,7 @@
   },
   {
     "defect_id": 62,
-    "defect_code": "D-PRC-12",
+    "defect_code": "IC-PRC-09",
     "defect_name": "倒罐",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -477,7 +477,7 @@
   },
   {
     "defect_id": 63,
-    "defect_code": "D-PRC-13",
+    "defect_code": "IC-PRC-10",
     "defect_name": "补涂不良",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -494,7 +494,7 @@
   },
   {
     "defect_id": 64,
-    "defect_code": "D-PRC-14",
+    "defect_code": "IC-PRC-11",
     "defect_name": "烘烤不良",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -511,7 +511,7 @@
   },
   {
     "defect_id": 65,
-    "defect_code": "D-PRC-15",
+    "defect_code": "IC-PRC-12",
     "defect_name": "翻边变形",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -528,7 +528,7 @@
   },
   {
     "defect_id": 66,
-    "defect_code": "D-PRC-16",
+    "defect_code": "IC-PRC-13",
     "defect_name": "滚筋变形",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -545,7 +545,7 @@
   },
   {
     "defect_id": 67,
-    "defect_code": "D-PRC-17",
+    "defect_code": "IC-PRC-14",
     "defect_name": "狗牙/裂口",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -562,7 +562,7 @@
   },
   {
     "defect_id": 68,
-    "defect_code": "D-PRC-18",
+    "defect_code": "IC-PRC-15",
     "defect_name": "卷封不良",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -579,7 +579,7 @@
   },
   {
     "defect_id": 69,
-    "defect_code": "D-PRC-19",
+    "defect_code": "IC-PRC-16",
     "defect_name": "卷坏/黑头",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -596,7 +596,7 @@
   },
   {
     "defect_id": 70,
-    "defect_code": "D-PRC-20",
+    "defect_code": "IC-PRC-17",
     "defect_name": "裂口/漏素铁",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -613,7 +613,7 @@
   },
   {
     "defect_id": 71,
-    "defect_code": "D-PRC-21",
+    "defect_code": "IC-PRC-18",
     "defect_name": "铝箔刮破",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -630,7 +630,7 @@
   },
   {
     "defect_id": 72,
-    "defect_code": "D-PRC-22",
+    "defect_code": "IC-PRC-19",
     "defect_name": "剔除刮花",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -647,7 +647,7 @@
   },
   {
     "defect_id": 73,
-    "defect_code": "D-PRC-23",
+    "defect_code": "IC-PRC-20",
     "defect_name": "掉罐",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -664,7 +664,7 @@
   },
   {
     "defect_id": 74,
-    "defect_code": "D-PRC-24",
+    "defect_code": "IC-PRC-21",
     "defect_name": "刮花/变形",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -681,7 +681,7 @@
   },
   {
     "defect_id": 75,
-    "defect_code": "D-PRC-25",
+    "defect_code": "IC-PRC-22",
     "defect_name": "卡罐",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -698,7 +698,7 @@
   },
   {
     "defect_id": 76,
-    "defect_code": "D-PRC-26",
+    "defect_code": "IC-PRC-23",
     "defect_name": "输送刮花",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -715,7 +715,7 @@
   },
   {
     "defect_id": 77,
-    "defect_code": "D-PRC-27",
+    "defect_code": "IC-PRC-24",
     "defect_name": "混罐",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
@@ -732,7 +732,7 @@
   },
   {
     "defect_id": 78,
-    "defect_code": "D-PRC-28",
+    "defect_code": "IC-PRC-25",
     "defect_name": "划伤/变形/脏污",
     "defect_type": "制程不良",
     "category_name": "来料检验类型",
