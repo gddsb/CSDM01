@@ -122,8 +122,7 @@ export default function WorkOrderManagement() {
 
   // 监听当前选择的订单
   const selectedOrderId = Form.useWatch('order_id', form)
-  const selectedOrder = orders.find(o => o.order_id === selectedOrderId) ||
-    releasedOrders.find(o => o.order_id === selectedOrderId)
+  const selectedOrder = orders.find(o => o.order_id === selectedOrderId)
 
   const openCount = data.filter(w => w.status === '开立').length
   const startedCount = data.filter(w => w.status === '开工').length
@@ -228,7 +227,11 @@ export default function WorkOrderManagement() {
         w.plan_start_time ? dayjs(w.plan_start_time) : undefined,
         w.plan_end_time ? dayjs(w.plan_end_time) : undefined,
       ],
+      remarks: w.remarks,
     })
+    if (w.line_id) {
+      fetchLineProcesses(w.line_id)
+    }
     setAddOpen(true)
   }
 
