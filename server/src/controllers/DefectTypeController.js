@@ -128,9 +128,20 @@ export const remove = async (req, res) => {
 // 生成下一个不良编码（自动编码）
 export const nextCode = async (req, res) => {
   try {
-    const count = await DefectType.count()
+    const { defect_type } = req.query
+    const typeMap = {
+      '来料不良': 'MAT',
+      '制程不良': 'PRC',
+      '检验报废': 'SCP',
+    }
+    const typeCode = typeMap[defect_type] || 'DEF'
+    const where = {}
+    if (defect_type) {
+      where.defect_type = defect_type
+    }
+    const count = await DefectType.count({ where })
     const nextNum = count + 1
-    const code = `D-${String(nextNum).padStart(3, '0')}`
+    const code = `D-${typeCode}-${String(nextNum).padStart(2, '0')}`
     return success(res, { defect_code: code }, '查询成功')
   } catch (err) {
     console.error('生成不良编码失败:', err)

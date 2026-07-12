@@ -257,9 +257,11 @@ export default function DefectManagement() {
       setSubmitting(true)
       // 新增时若编码未自动获取到，则实时获取
       let defectCode = values.defect_code
-      if (!editing && !defectCode) {
+      if (!editing && !defectCode && values.defect_type) {
         try {
-          const codeRes = await api.get('/basic/defect-types/next-code')
+          const codeRes = await api.get('/basic/defect-types/next-code', {
+            params: { defect_type: values.defect_type }
+          })
           defectCode = codeRes.data?.defect_code
         } catch {
           // 获取失败继续，后端会再次校验
@@ -310,10 +312,31 @@ export default function DefectManagement() {
   const handleCategoryChange = (value) => {
     setSelectedCategory(value)
     // 清空已选不良类型
-    form.setFieldValue('defect_type', undefined)
+    form.setFieldsValue('defect_type', undefined)
     // 来料检验类型不关联具体工序，清空并禁用
     if (value === '来料检验类型') {
-      form.setFieldValue('related_processes', [])
+      form.setFieldsValue('related_processes', [])
+    }
+    // 清空不良编码，待选择不良类型后再生成
+    if (!editing) {
+      form.setFieldsValue('defect_code', '')
+    }
+  }
+
+  // 不良类型变更时重新生成编码
+  const handleDefectTypeChange = async (value) => {
+    if (editing) return
+    if (!value) {
+      form.setFieldsValue('defect_code', '')
+      return
+    }
+    try {
+      const res = await api.get('/basic/defect-types/next-code', {
+        params: { defect_type: value }
+      })
+      form.setFieldsValue('defect_code', res.data?.defect_code)
+    } catch {
+      // 获取失败则手动输入
     }
   }
 
@@ -528,6 +551,7 @@ export default function DefectManagement() {
                   placeholder="请先选择检验类型"
                   options={currentDefectTypeOptions}
                   disabled={!selectedCategory}
+                  onChange={handleDefectTypeChange}
                 />
               </Form.Item>
             </Col>

@@ -120,7 +120,7 @@
   },
   {
     "defect_id": 8,
-    "defect_code": "D-008",
+    "defect_code": "D-SCP-03",
     "defect_name": "裁剪检测报废",
     "defect_type": "检验报废",
     "category_name": "制程检验类型",
@@ -137,7 +137,7 @@
   },
   {
     "defect_id": 9,
-    "defect_code": "D-009",
+    "defect_code": "D-SCP-04",
     "defect_name": "焊接质量撕拉测试",
     "defect_type": "检验报废",
     "category_name": "制程检验类型",
@@ -154,7 +154,7 @@
   },
   {
     "defect_id": 10,
-    "defect_code": "D-010",
+    "defect_code": "D-SCP-05",
     "defect_name": "密封测试与三率解剖测试",
     "defect_type": "检验报废",
     "category_name": "制程检验类型",

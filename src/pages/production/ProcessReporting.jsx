@@ -550,7 +550,14 @@ export default function ProcessReporting() {
     return defectTypes
       .filter(d => d.category_name === categoryName && d.defect_type === defectType && d.status === '启用')
       .filter(d => !excludeNames.includes(d.defect_name))
-      .map(d => ({ label: d.defect_name, value: d.defect_id, unit: d.defect_unit, code: d.defect_code, available_units: d.available_units || [] }))
+      .map(d => ({
+        label: `${d.defect_code} ${d.defect_name}`,
+        value: d.defect_id,
+        unit: d.defect_unit,
+        code: d.defect_code,
+        name: d.defect_name,
+        available_units: d.available_units || [],
+      }))
   }
 
   const materialOptions = materials.map(m => ({
