@@ -51,6 +51,9 @@ export default function ProcessReporting() {
   const [editingDefect, setEditingDefect] = useState(null)
   const [defectModalForm] = Form.useForm()
 
+  const [editingDefectKey, setEditingDefectKey] = useState(null)
+  const [editingDefectData, setEditingDefectData] = useState({})
+
   const [materialModalOpen, setMaterialModalOpen] = useState(false)
   const [materialModalForm] = Form.useForm()
 
@@ -536,10 +539,132 @@ export default function ProcessReporting() {
     specification: m.specification,
   }))
 
+  const getDefectRowKey = (record, type) => `${type}-${record.defect_id || 'default-' + record.defect_name}`
+
+  const startEditDefect = (record, type) => {
+    setEditingDefectKey(getDefectRowKey(record, type))
+    setEditingDefectData({
+      defect_type_id: record.defect_type_id,
+      defect_name: record.defect_name,
+      quantity: record.quantity || 0,
+      unit: record.unit || '',
+      defect_images: record.defect_images || [],
+    })
+  }
+
+  const cancelEditDefect = () => {
+    setEditingDefectKey(null)
+    setEditingDefectData({})
+  }
+
+  const saveEditDefect = async (record, type) => {
+    try {
+      const data = editingDefectData
+      if (!data.defect_name || !data.defect_name.trim()) {
+        message.warning('请输入不良项目名称')
+        return
+      }
+      if (data.quantity === undefined || data.quantity === null || isNaN(Number(data.quantity))) {
+        message.warning('请输入有效的不良数量')
+        return
+      }
+      setSaving(true)
+      const catMap = { process: '制程不良', material: '来料不良', scrap: '检验报废' }
+      const category = catMap[type] || '制程不良'
+      const payload = {
+        work_order_id: selectedWO.work_order_id,
+        process_id: selectedProcessId,
+        defect_category: category,
+        defect_name: data.defect_name.trim(),
+        defect_type_id: data.defect_type_id || null,
+        quantity: Number(data.quantity) || 0,
+        unit: data.unit || '',
+        defect_images: data.defect_images || [],
+      }
+      if (record.defect_id) {
+        await api.put(`/production/process-defects/${record.defect_id}`, payload)
+        message.success('保存成功')
+      } else {
+        await api.post('/production/process-defects', payload)
+        message.success('添加成功')
+      }
+      setEditingDefectKey(null)
+      setEditingDefectData({})
+      fetchProcessDefects(selectedProcessId)
+    } catch (e) {
+      message.error(e.message || '保存失败')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const defectColumns = (type) => [
-    { title: '不良项目', dataIndex: 'defect_name', key: 'defect_name', width: 160 },
-    { title: '不良数量', dataIndex: 'quantity', key: 'quantity', width: 100, align: 'right', render: v => (v || 0).toLocaleString() },
-    { title: '单位', dataIndex: 'unit', key: 'unit', width: 70, render: v => v || '-' },
+    {
+      title: '不良项目', dataIndex: 'defect_name', key: 'defect_name', width: 180,
+      render: (text, record) => {
+        const isEditing = editingDefectKey === getDefectRowKey(record, type)
+        if (isEditing) {
+          return (
+            <Select
+              size="small"
+              showSearch
+              allowClear
+              placeholder="选择不良项目"
+              style={{ width: '100%' }}
+              optionFilterProp="label"
+              options={defectTypeOptions(type)}
+              value={editingDefectData.defect_type_id}
+              onChange={(value) => {
+                const d = defectTypes.find(dt => dt.defect_id === value)
+                setEditingDefectData(prev => ({
+                  ...prev,
+                  defect_type_id: value,
+                  defect_name: d?.defect_name || prev.defect_name,
+                  unit: d?.defect_unit || prev.unit,
+                }))
+              }}
+              dropdownMatchSelectWidth={false}
+            />
+          )
+        }
+        return text || '-'
+      },
+    },
+    {
+      title: '不良数量', dataIndex: 'quantity', key: 'quantity', width: 100, align: 'right',
+      render: (v, record) => {
+        const isEditing = editingDefectKey === getDefectRowKey(record, type)
+        if (isEditing) {
+          return (
+            <InputNumber
+              size="small"
+              min={0}
+              style={{ width: '100%' }}
+              value={editingDefectData.quantity}
+              onChange={(val) => setEditingDefectData(prev => ({ ...prev, quantity: val }))}
+            />
+          )
+        }
+        return (v || 0).toLocaleString()
+      },
+    },
+    {
+      title: '单位', dataIndex: 'unit', key: 'unit', width: 80,
+      render: (v, record) => {
+        const isEditing = editingDefectKey === getDefectRowKey(record, type)
+        if (isEditing) {
+          return (
+            <Input
+              size="small"
+              placeholder="单位"
+              value={editingDefectData.unit}
+              onChange={(e) => setEditingDefectData(prev => ({ ...prev, unit: e.target.value }))}
+            />
+          )
+        }
+        return v || '-'
+      },
+    },
     {
       title: '不良图片', key: 'images', width: 120,
       render: (_, r) => {
@@ -557,19 +682,47 @@ export default function ProcessReporting() {
       },
     },
     {
-      title: '操作', key: 'action', width: 110,
-      render: (_, r) => selectedWO?.status === '开工' && (
-        <Space size="small">
-          {r.defect_id && (
-            <Button type="link" size="small" onClick={() => handleAddDefect(type, r)}>编辑</Button>
-          )}
-          {r.defect_id && (
-            <Popconfirm title="确认删除？" onConfirm={() => handleDeleteDefect(r.defect_id)}>
-              <Button type="link" size="small" danger icon={<DeleteOutlined />} />
-            </Popconfirm>
-          )}
-        </Space>
-      ),
+      title: '操作', key: 'action', width: 150,
+      render: (_, r) => {
+        const isEditing = editingDefectKey === getDefectRowKey(r, type)
+        if (selectedWO?.status !== '开工') {
+          return <span style={{ color: '#bbb' }}>-</span>
+        }
+        if (isEditing) {
+          return (
+            <Space size="small">
+              <Button
+                type="link"
+                size="small"
+                icon={<SaveOutlined />}
+                loading={saving}
+                onClick={() => saveEditDefect(r, type)}
+              >
+                保存
+              </Button>
+              <Button
+                type="link"
+                size="small"
+                onClick={cancelEditDefect}
+              >
+                取消
+              </Button>
+            </Space>
+          )
+        }
+        return (
+          <Space size="small">
+            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => startEditDefect(r, type)}>
+              编辑
+            </Button>
+            {r.defect_id && (
+              <Popconfirm title="确认删除？" onConfirm={() => handleDeleteDefect(r.defect_id)}>
+                <Button type="link" size="small" danger icon={<DeleteOutlined />} />
+              </Popconfirm>
+            )}
+          </Space>
+        )
+      },
     },
   ]
 
