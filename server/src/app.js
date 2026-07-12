@@ -4,6 +4,7 @@ import morgan from 'morgan'
 import dotenv from 'dotenv'
 import path from 'path'
 import fs from 'fs'
+import httpProxy from 'http-proxy'
 import routes from './routes/index.js'
 import sequelize from './config/database.js'
 import { initDefaultConfigs, refreshDictionaryData } from './controllers/SystemConfigController.js'
@@ -15,6 +16,11 @@ dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT || 3001
+
+const proxy = httpProxy.createProxyServer({
+  target: 'http://localhost:5173',
+  changeOrigin: true,
+})
 
 // 确保数据目录存在（SQLite 数据库文件和备份目录）
 const dataDir = path.resolve(process.cwd(), 'data')
@@ -101,6 +107,13 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   console.error('服务器错误:', err)
   res.status(500).json({ success: false, message: '服务器内部错误' })
+})
+
+app.use('/', (req, res) => {
+  proxy.web(req, res, {}, (err) => {
+    console.error('代理错误:', err)
+    res.status(503).json({ success: false, message: '前端服务暂不可用' })
+  })
 })
 
 app.listen(PORT, () => {
