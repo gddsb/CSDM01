@@ -1,16 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Table, Tag, Button, Modal, Form, Input, InputNumber, Select, Space, Row, Col,
-  message, Drawer, Descriptions, Card, Divider, Popconfirm, DatePicker, Tabs,
-  Upload, Image, Radio,
+  message, Card, Divider, Popconfirm, DatePicker, Tabs, Upload, Radio,
 } from 'antd'
 import {
-  ProfileOutlined, ClockCircleOutlined,
-  EyeOutlined, EditOutlined, PlusOutlined, DeleteOutlined, SaveOutlined,
-  UploadOutlined,
+  ProfileOutlined, PlusOutlined, DeleteOutlined, SaveOutlined, UploadOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
-import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 
 const woStatusColorMap = {
@@ -19,69 +15,49 @@ const woStatusColorMap = {
   '完工': 'success',
 }
 
+const exceptionCategories = [
+  { label: '换型换线', value: '换型换线' },
+  { label: '停机待料', value: '停机待料' },
+  { label: '故障维修', value: '故障维修' },
+  { label: '其它停机', value: '其它停机' },
+]
+
 export default function ProcessReporting() {
   const [workOrders, setWorkOrders] = useState([])
   const [selectedWO, setSelectedWO] = useState(null)
-  const [reports, setReports] = useState([])
   const [defectTypes, setDefectTypes] = useState([])
-  const [processes, setProcesses] = useState([])
   const [devices, setDevices] = useState([])
-  const [materials, setMaterials] = useState([])
   const [lineProcesses, setLineProcesses] = useState([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const [selectedProcessId, setSelectedProcessId] = useState(null)
-  const [activeTab, setActiveTab] = useState('defect')
+  const [activeTab, setActiveTab] = useState('production-defect')
 
-  const [processDefectList, setProcessDefectList] = useState([])
-  const [materialDefectList, setMaterialDefectList] = useState([])
+  const [prodDefectList, setProdDefectList] = useState([])
   const [scrapDefectList, setScrapDefectList] = useState([])
-  const [processMaterialList, setProcessMaterialList] = useState([])
+  const [exceptionList, setExceptionList] = useState([])
+  const [manpowerList, setManpowerList] = useState([])
 
-  const [viewRecord, setViewRecord] = useState(null)
-  const [editing, setEditing] = useState(null)
-  const [editOpen, setEditOpen] = useState(false)
-  const [addOpen, setAddOpen] = useState(false)
-  const [form] = Form.useForm()
-  const [addForm] = Form.useForm()
-
-  const [defectModalOpen, setDefectModalOpen] = useState(false)
-  const [defectModalType, setDefectModalType] = useState('process')
-  const [editingDefect, setEditingDefect] = useState(null)
-  const [defectModalForm] = Form.useForm()
-
-  const [editingDefectKey, setEditingDefectKey] = useState(null)
-  const [editingDefectData, setEditingDefectData] = useState({})
-
-  const [materialModalOpen, setMaterialModalOpen] = useState(false)
-  const [materialModalForm] = Form.useForm()
-
-  const [woQuery, setWoQuery] = useState({ page: 1, pageSize: 1000, keyword: '', status: '开工,完工' })
-  const [woTotal, setWoTotal] = useState(0)
-  const [selectedWOId, setSelectedWOId] = useState(null)
-
-  const [statsData, setStatsData] = useState({
-    workingWoCount: 0,
-    totalInputQty: 0,
-    totalOutputQty: 0,
+  const [stats, setStats] = useState({
+    inputQty: 0,
+    outputQty: 0,
+    defectMaterial: 0,
+    defectProcess: 0,
+    defectScrap: 0,
   })
 
   useEffect(() => {
     let cancelled = false
     const run = async () => {
       try {
-        const [defectRes, procRes, devRes, matRes] = await Promise.all([
+        const [defectRes, devRes] = await Promise.all([
           api.get('/basic/defect-types', { params: { page: 1, pageSize: 1000, status: '启用' } }),
-          api.get('/basic/processes', { params: { page: 1, pageSize: 1000 } }),
           api.get('/basic/devices', { params: { page: 1, pageSize: 1000 } }),
-          api.get('/basic/materials', { params: { page: 1, pageSize: 1000 } }),
         ])
         if (cancelled) return
         setDefectTypes(defectRes.data || [])
-        setProcesses(procRes.data || [])
         setDevices(devRes.data || [])
-        setMaterials(matRes.data || [])
       } catch (err) {
         if (!cancelled) message.error(err.message || '获取基础数据失败')
       }
@@ -95,28 +71,13 @@ export default function ProcessReporting() {
     const run = async () => {
       setLoading(true)
       try {
-        const params = { page: woQuery.page, pageSize: woQuery.pageSize }
-        if (woQuery.keyword) params.keyword = woQuery.keyword
-        if (woQuery.status) params.status = woQuery.status
-        const res = await api.get('/production/work-orders', { params })
+        const res = await api.get('/production/work-orders', { params: { page: 1, pageSize: 1000, status: '开工' } })
         if (cancelled) return
-        const list = res.data || []
-        setWorkOrders(list)
-        setWoTotal(res.total || 0)
-
-        const workingList = list.filter(w => w.status === '开工')
-        const totalInput = workingList.reduce((sum, w) => sum + (Number(w.input_qty) || 0), 0)
-        const totalOutput = workingList.reduce((sum, w) => sum + (Number(w.output_qty) || 0), 0)
-        setStatsData({
-          workingWoCount: workingList.length,
-          totalInputQty: totalInput,
-          totalOutputQty: totalOutput,
-        })
+        setWorkOrders(res.data || [])
       } catch (err) {
         if (!cancelled) {
           message.error(err.message || '获取工单列表失败')
           setWorkOrders([])
-          setWoTotal(0)
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -124,24 +85,22 @@ export default function ProcessReporting() {
     }
     run()
     return () => { cancelled = true }
-  }, [woQuery])
+  }, [])
 
   useEffect(() => {
-    if (!selectedWO) return
-    fetchReports(selectedWO.work_order_id)
-    fetchLineProcesses(selectedWO.line_id)
-  }, [selectedWO])
-
-  const fetchReports = useCallback(async (woId) => {
-    try {
-      const res = await api.get('/production/process-reports', {
-        params: { work_order_id: woId, page: 1, pageSize: 1000 },
-      })
-      setReports(res.data || [])
-    } catch (err) {
-      message.error(err.message || '获取报工记录失败')
+    if (!selectedWO) {
+      setLineProcesses([])
+      setSelectedProcessId(null)
+      setProdDefectList([])
+      setScrapDefectList([])
+      setExceptionList([])
+      setManpowerList([])
+      setStats({ inputQty: 0, outputQty: 0, defectMaterial: 0, defectProcess: 0, defectScrap: 0 })
+      return
     }
-  }, [])
+    fetchLineProcesses(selectedWO.line_id)
+    fetchAllData(selectedWO.work_order_id)
+  }, [selectedWO])
 
   const fetchLineProcesses = useCallback(async (lineId) => {
     if (!lineId) {
@@ -151,1220 +110,850 @@ export default function ProcessReporting() {
     try {
       const res = await api.get(`/basic/production-lines/${lineId}/processes`)
       const procs = res.data || []
-      const sorted = [...procs].sort((a, b) => {
-        const sa = Number(a.sort_order) || 0
-        const sb = Number(b.sort_order) || 0
-        return sa - sb
-      })
+      const sorted = [...procs].sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0))
       setLineProcesses(sorted)
+      if (sorted.length > 0) {
+        setSelectedProcessId(sorted[0].process_id)
+      }
     } catch (err) {
       setLineProcesses([])
     }
   }, [])
 
-  const fetchProcessDefects = useCallback(async (processId) => {
-    if (!selectedWO || !processId) {
-      setProcessDefectList([])
-      setMaterialDefectList([])
-      setScrapDefectList([])
-      return
-    }
+  const fetchAllData = useCallback(async (woId) => {
     try {
-      const res = await api.get('/production/process-defects', {
-        params: {
-          work_order_id: selectedWO.work_order_id,
-          process_id: processId,
-          page: 1,
-          pageSize: 1000,
-        },
-      })
-      const list = res.data || []
-      const existingNames = list.map(d => d.defect_name)
-      const defaultDefects = defectTypes.filter(d => d.display && d.status === '启用' && ['来料不良', '制程不良', '检验报废'].includes(d.defect_type))
-      const merged = [...list]
-      for (const dt of defaultDefects) {
-        if (!existingNames.includes(dt.defect_name)) {
-          merged.push({
-            defect_id: null,
-            work_order_id: selectedWO.work_order_id,
-            process_id: processId,
-            defect_category: dt.defect_type,
-            defect_name: dt.defect_name,
-            defect_type_id: dt.defect_id,
-            quantity: 0,
-            unit: dt.defect_unit || '',
-            defect_images: [],
-            is_default: true,
-          })
-        }
-      }
-      setProcessDefectList(merged.filter(d => d.defect_category === '制程不良'))
-      setMaterialDefectList(merged.filter(d => d.defect_category === '来料不良'))
-      setScrapDefectList(merged.filter(d => d.defect_category === '检验报废'))
-    } catch (err) {
-      message.error(err.message || '获取不良记录失败')
-    }
-  }, [selectedWO, defectTypes])
+      const [defectRes, scrapRes, exceptionRes, manpowerRes] = await Promise.all([
+        api.get('/production/process-defects', { params: { work_order_id: woId, page: 1, pageSize: 1000 } }),
+        api.get('/production/scrap-defects', { params: { work_order_id: woId, page: 1, pageSize: 1000 } }),
+        api.get('/production/exception-records', { params: { work_order_id: woId, page: 1, pageSize: 1000 } }),
+        api.get('/production/manpower-records', { params: { work_order_id: woId, page: 1, pageSize: 1000 } }),
+      ])
+      setProdDefectList(defectRes.data || [])
+      setScrapDefectList(scrapRes.data || [])
+      setExceptionList(exceptionRes.data || [])
+      setManpowerList(manpowerRes.data || [])
 
-  const fetchProcessMaterials = useCallback(async (processId) => {
-    if (!selectedWO || !processId) {
-      setProcessMaterialList([])
-      return
-    }
-    try {
-      const res = await api.get('/production/process-materials', {
-        params: {
-          work_order_id: selectedWO.work_order_id,
-          process_id: processId,
-          page: 1,
-          pageSize: 1000,
-        },
+      const defectTotal = (defectRes.data || []).reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
+      const scrapTotal = (scrapRes.data || []).reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
+      setStats({
+        inputQty: selectedWO?.planned_qty || 0,
+        outputQty: selectedWO?.finished_qty || 0,
+        defectMaterial: defectTotal,
+        defectProcess: defectTotal,
+        defectScrap: scrapTotal,
       })
-      setProcessMaterialList(res.data || [])
     } catch (err) {
-      message.error(err.message || '获取物料记录失败')
+      message.error(err.message || '获取数据失败')
     }
   }, [selectedWO])
 
-  useEffect(() => {
-    if (activeTab === 'defect') {
-      fetchProcessDefects(selectedProcessId)
-    } else if (activeTab === 'material') {
-      fetchProcessMaterials(selectedProcessId)
-    }
-  }, [activeTab, selectedProcessId, fetchProcessDefects, fetchProcessMaterials])
-
-  const processOptions = useMemo(() => {
-    return lineProcesses.map(p => ({
-      label: `${p.process_code || ''} ${p.process_name || ''}`.trim(),
-      value: p.process_id,
-    }))
-  }, [lineProcesses])
-
-  const handleSelectWO = (record) => {
-    setSelectedWO(record)
-    setSelectedWOId(record?.work_order_id)
-    setSelectedProcessId(null)
-    setActiveTab('defect')
-  }
-
-  const handleFinishWO = async () => {
-    try {
-      setSaving(true)
-      const res = await api.post(`/production/work-orders/${selectedWO.work_order_id}/finish`)
-      message.success(res.message || '工单已完工')
-      const updated = { ...selectedWO, status: '完工' }
-      setSelectedWO(updated)
-      setWoQuery(q => ({ ...q }))
-    } catch (e) {
-      message.error(e.message || '完工失败')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleStartWO = async () => {
-    try {
-      setSaving(true)
-      const res = await api.post(`/production/work-orders/${selectedWO.work_order_id}/start`)
-      message.success(res.message || '工单已开工')
-      const updated = { ...selectedWO, status: '开工' }
-      setSelectedWO(updated)
-      setWoQuery(q => ({ ...q }))
-    } catch (e) {
-      message.error(e.message || '开工失败')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  // 报工单开工
-  const handleStartReport = async (r) => {
-    try {
-      setSaving(true)
-      const res = await api.post(`/production/process-reports/${r.report_id}/start`)
-      message.success(res.message || '报工单已开工')
-      fetchReports(selectedWO.work_order_id)
-    } catch (e) {
-      message.error(e.message || '开工失败')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  // 报工单完工
-  const handleFinishReport = async (r) => {
-    try {
-      setSaving(true)
-      const res = await api.post(`/production/process-reports/${r.report_id}/finish`)
-      message.success(res.message || '报工单已完工')
-      fetchReports(selectedWO.work_order_id)
-    } catch (e) {
-      message.error(e.message || '完工失败')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleAdd = () => {
-    if (!selectedWO) {
-      message.warning('请先选择工单')
-      return
-    }
-    addForm.resetFields()
-    addForm.setFieldsValue({
-      process_id: selectedProcessId || undefined,
-      input_qty: 0,
-      output_qty: 0,
-      defect_material: 0,
-      defect_process: 0,
-      defect_scrap: 0,
-      report_user_name: '',
-      report_time: dayjs(),
-    })
-    setAddOpen(true)
-  }
-
-  const handleAddSubmit = async () => {
-    try {
-      const values = await addForm.validateFields()
-      setSaving(true)
-      const payload = {
-        work_order_id: selectedWO.work_order_id,
-        process_id: values.process_id,
-        input_qty: values.input_qty ?? 0,
-        defect_material: values.defect_material ?? 0,
-        defect_process: values.defect_process ?? 0,
-        defect_scrap: values.defect_scrap ?? 0,
-        output_qty: values.output_qty ?? 0,
-        device_id: values.device_id || null,
-        report_user_name: values.report_user_name || '',
-        report_time: values.report_time ? values.report_time.format('YYYY-MM-DD HH:mm:ss') : undefined,
-      }
-      const res = await api.post('/production/process-reports', payload)
-      message.success(res.message || '报工已添加')
-      setAddOpen(false)
-      fetchReports(selectedWO.work_order_id)
-    } catch (e) {
-      if (e?.errorFields) return
-      message.error(e.message || '操作失败')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleEdit = (r) => {
-    setEditing(r)
-    form.setFieldsValue({
-      input_qty: r.input_qty ?? 0,
-      defect_material: r.defect_material ?? 0,
-      defect_process: r.defect_process ?? 0,
-      defect_scrap: r.defect_scrap ?? 0,
-      output_qty: r.output_qty ?? 0,
-      device_id: r.device_id ?? undefined,
-      report_user_name: r.report_user_name ?? '',
-      report_time: r.report_time ? dayjs(r.report_time) : undefined,
-    })
-    setEditOpen(true)
-  }
-
-  const handleEditSubmit = async () => {
-    try {
-      const values = await form.validateFields()
-      setSaving(true)
-      const payload = {
-        input_qty: values.input_qty ?? 0,
-        defect_material: values.defect_material ?? 0,
-        defect_process: values.defect_process ?? 0,
-        defect_scrap: values.defect_scrap ?? 0,
-        output_qty: values.output_qty ?? 0,
-        device_id: values.device_id || null,
-        report_user_name: values.report_user_name || '',
-        report_time: values.report_time ? values.report_time.format('YYYY-MM-DD HH:mm:ss') : undefined,
-      }
-      const res = await api.put(`/production/process-reports/${editing.report_id}`, payload)
-      message.success(res.message || '报工记录已更新')
-      setEditOpen(false)
-      setEditing(null)
-      fetchReports(selectedWO.work_order_id)
-    } catch (e) {
-      if (e?.errorFields) return
-      message.error(e.message || '操作失败')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleAddDefect = (type, record) => {
-    setDefectModalType(type)
-    setEditingDefect(record || null)
-    defectModalForm.resetFields()
-    if (record) {
-      defectModalForm.setFieldsValue({
-        defect_type_id: record.defect_type_id,
-        quantity: record.quantity || 0,
-        unit: record.unit || '',
-        defect_images: record.defect_images || [],
-      })
-    } else {
-      defectModalForm.setFieldsValue({ quantity: 0, defect_images: [] })
-    }
-    setDefectModalOpen(true)
-  }
-
-  const getCurrentDefectList = (type) => {
-    const listMap = { process: processDefectList, material: materialDefectList, scrap: scrapDefectList }
-    return listMap[type] || processDefectList
-  }
-
-  const getExcludeDefectNames = (type, editingRecord) => {
-    const list = getCurrentDefectList(type)
-    return list
-      .filter(d => !editingRecord || d.defect_name !== editingRecord.defect_name)
-      .map(d => d.defect_name)
-  }
-
-  const handleDefectModalSubmit = async () => {
-    try {
-      const values = await defectModalForm.validateFields()
-      const defectType = defectTypes.find(d => d.defect_id === values.defect_type_id)
-      const defectName = defectType?.defect_name
-      if (!defectName) {
-        message.warning('请选择有效的不良项目')
-        return
-      }
-      const listMap = { process: processDefectList, material: materialDefectList, scrap: scrapDefectList }
-      const currentList = listMap[defectModalType] || processDefectList
-      if (!editingDefect) {
-        const exists = currentList.find(d => d.defect_name === defectName)
-        if (exists) {
-          message.warning('同一工单同一不良项目只允许一条记录')
-          return
-        }
-      }
-      setSaving(true)
-      const catMap = { process: '制程不良', material: '来料不良', scrap: '检验报废' }
-      const category = catMap[defectModalType] || '制程不良'
-      const payload = {
-        work_order_id: selectedWO.work_order_id,
-        process_id: selectedProcessId,
-        defect_category: category,
-        defect_name: defectName,
-        defect_type_id: values.defect_type_id || null,
-        quantity: Number(values.quantity) || 0,
-        unit: values.unit || defectType?.defect_unit || '',
-        defect_images: values.defect_images || [],
-      }
-      if (editingDefect?.defect_id) {
-        await api.put(`/production/process-defects/${editingDefect.defect_id}`, payload)
-        message.success('编辑成功')
-      } else {
-        await api.post('/production/process-defects', payload)
-        message.success('添加成功')
-      }
-      setDefectModalOpen(false)
-      fetchProcessDefects(selectedProcessId)
-    } catch (e) {
-      if (e?.errorFields) return
-      message.error(e.message || '操作失败')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleDeleteDefect = async (id) => {
-    if (!id) {
-      message.warning('默认不良项目无法删除')
-      return
-    }
-    try {
-      setSaving(true)
-      await api.delete(`/production/process-defects/${id}`)
-      message.success('删除成功')
-      fetchProcessDefects(selectedProcessId)
-    } catch (e) {
-      message.error(e.message || '删除失败')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleAddMaterial = () => {
-    materialModalForm.resetFields()
-    setMaterialModalOpen(true)
-  }
-
-  const handleMaterialModalSubmit = async () => {
-    try {
-      const values = await materialModalForm.validateFields()
-      setSaving(true)
-      const payload = {
-        work_order_id: selectedWO.work_order_id,
-        process_id: selectedProcessId,
-        material_type: values.material_type || '投入物料',
-        material_code: values.material_code || '',
-        material_name: values.material_name || '',
-        specification: values.specification || '',
-        material_batch: values.material_batch || '',
-        quantity: Number(values.quantity) || 0,
-        label_images: values.label_images || [],
-      }
-      await api.post('/production/process-materials', payload)
-      message.success('添加成功')
-      setMaterialModalOpen(false)
-      fetchProcessMaterials(selectedProcessId)
-    } catch (e) {
-      if (e?.errorFields) return
-      message.error(e.message || '操作失败')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleDeleteMaterial = async (id) => {
-    try {
-      setSaving(true)
-      await api.delete(`/production/process-materials/${id}`)
-      message.success('删除成功')
-      fetchProcessMaterials(selectedProcessId)
-    } catch (e) {
-      message.error(e.message || '删除失败')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const reportColumns = [
-    { title: '工单号', dataIndex: 'work_order_no', key: 'work_order_no', width: 140 },
-    { title: '工序', dataIndex: 'process_name', key: 'process_name', width: 120 },
-    { title: '投入数量', dataIndex: 'input_qty', key: 'input_qty', width: 100, align: 'right', render: v => (v || 0).toLocaleString() },
-    {
-      title: '合格数量', key: 'qualified_qty', width: 100, align: 'right',
-      render: (_, r) => {
-        const q = Number(r.input_qty || 0) - Number(r.defect_material || 0) - Number(r.defect_process || 0) - Number(r.defect_scrap || 0)
-        return Math.max(0, q).toLocaleString()
-      },
-    },
-    { title: '来料不良', dataIndex: 'defect_material', key: 'defect_material', width: 90, align: 'right', render: v => (v || 0).toLocaleString() },
-    { title: '制程不良', dataIndex: 'defect_process', key: 'defect_process', width: 90, align: 'right', render: v => (v || 0).toLocaleString() },
-    { title: '检验报废', dataIndex: 'defect_scrap', key: 'defect_scrap', width: 90, align: 'right', render: v => (v || 0).toLocaleString() },
-    { title: '报工人', dataIndex: 'report_user_name', key: 'report_user_name', width: 90, render: v => v || '-' },
-    {
-      title: '报工时间', key: 'report_time', width: 140,
-      render: (_, r) => r.report_time ? dayjs(r.report_time).format('YYYY-MM-DD HH:mm') : '-',
-    },
-    {
-      title: '状态', key: 'status', width: 80,
-      render: (_, r) => <Tag color={woStatusColorMap[r.status] || 'default'}>{r.status || '开立'}</Tag>,
-    },
-    {
-      title: '操作', key: 'action', width: 160, fixed: 'right',
-      render: (_, r) => (
-        <Space size="small">
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => setViewRecord(r)}>查看</Button>
-          {r.status === '开立' && selectedWO?.status === '开工' && (
-            <Button type="link" size="small" onClick={() => handleStartReport(r)}>开工</Button>
-          )}
-          {r.status === '开工' && (
-            <>
-              <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(r)}>编辑</Button>
-              <Popconfirm title="确认完工？" onConfirm={() => handleFinishReport(r)} disabled={saving}>
-                <Button type="link" size="small">完工</Button>
-              </Popconfirm>
-            </>
-          )}
-        </Space>
-      ),
-    },
-  ]
-
-  const defectTypeOptions = (category, excludeNames = []) => {
-    const catMap = { process: '制程不良', material: '来料不良', scrap: '检验报废' }
-    const defectType = catMap[category] || '制程不良'
-    const categoryMap = {
-      '来料不良': '来料检验类型',
-      '制程不良': '制程检验类型',
-      '检验报废': '制程检验类型',
-    }
-    const categoryName = categoryMap[defectType] || '制程检验类型'
+  const defectTypeOptions = useMemo(() => {
+    const seen = new Set()
     return defectTypes
-      .filter(d => d.category_name === categoryName && d.defect_type === defectType && d.status === '启用')
-      .filter(d => !excludeNames.includes(d.defect_name))
+      .filter(d => d.defect_type === '制程不良' && d.status === '启用')
+      .filter(d => {
+        if (seen.has(d.defect_id)) return false
+        seen.add(d.defect_id)
+        return true
+      })
+      .map(d => ({
+        label: `${d.defect_code} ${d.defect_type} ${d.defect_name}`,
+        value: d.defect_id,
+        defect_code: d.defect_code,
+        defect_type: d.defect_type,
+        defect_name: d.defect_name,
+        defect_unit: d.defect_unit || '',
+      }))
+  }, [defectTypes])
+
+  const scrapTypeOptions = useMemo(() => {
+    const seen = new Set()
+    return defectTypes
+      .filter(d => d.defect_type === '检验报废' && d.status === '启用')
+      .filter(d => {
+        if (seen.has(d.defect_id)) return false
+        seen.add(d.defect_id)
+        return true
+      })
       .map(d => ({
         label: `${d.defect_code} ${d.defect_name}`,
         value: d.defect_id,
-        unit: d.defect_unit,
-        code: d.defect_code,
-        name: d.defect_name,
-        available_units: d.available_units || [],
+        defect_code: d.defect_code,
+        defect_name: d.defect_name,
+        defect_unit: d.defect_unit || '',
       }))
+  }, [defectTypes])
+
+  const deviceOptions = useMemo(() => {
+    return devices.map(d => ({ label: `${d.device_code} ${d.device_name}`, value: d.device_id }))
+  }, [devices])
+
+  const usedDefectIds = useMemo(() => {
+    return new Set(prodDefectList.map(d => d.defect_type_id))
+  }, [prodDefectList])
+
+  const addProdDefect = () => {
+    const newItem = {
+      id: Date.now(),
+      work_order_id: selectedWO.work_order_id,
+      process_id: selectedProcessId,
+      defect_category: '制程不良',
+      defect_type_id: null,
+      defect_code: '',
+      defect_type: '',
+      defect_name: '',
+      quantity: 0,
+      unit: '',
+      defect_images: [],
+    }
+    setProdDefectList([...prodDefectList, newItem])
   }
 
-  const materialOptions = materials.map(m => ({
-    label: `${m.material_code || ''} ${m.material_name || ''}`.trim(),
-    value: m.material_id,
-    material_code: m.material_code,
-    material_name: m.material_name,
-    specification: m.specification,
-  }))
-
-  const getDefectRowKey = (record, type) => `${type}-${record.defect_id || 'default-' + record.defect_name}`
-
-  const startEditDefect = (record, type) => {
-    setEditingDefectKey(getDefectRowKey(record, type))
-    setEditingDefectData({
-      defect_type_id: record.defect_type_id,
-      defect_name: record.defect_name,
-      quantity: record.quantity || 0,
-      unit: record.unit || '',
-      defect_images: record.defect_images || [],
-    })
+  const updateProdDefect = (id, field, value) => {
+    setProdDefectList(prodDefectList.map(item => {
+      if (item.id !== id) return item
+      const updated = { ...item, [field]: value }
+      if (field === 'defect_type_id') {
+        const defect = defectTypeOptions.find(d => d.value === value)
+        if (defect) {
+          updated.defect_code = defect.defect_code
+          updated.defect_type = defect.defect_type
+          updated.defect_name = defect.defect_name
+          updated.unit = defect.defect_unit || '默认单位'
+        }
+      }
+      return updated
+    }))
   }
 
-  const cancelEditDefect = () => {
-    setEditingDefectKey(null)
-    setEditingDefectData({})
+  const deleteProdDefect = (id) => {
+    setProdDefectList(prodDefectList.filter(item => item.id !== id))
   }
 
-  const saveEditDefect = async (record, type) => {
+  const saveProdDefects = async () => {
+    const validItems = prodDefectList.filter(d => d.defect_type_id && d.quantity > 0)
+    if (validItems.length === 0) {
+      message.warning('请填写有效的不良记录')
+      return
+    }
     try {
-      const data = editingDefectData
-      if (!data.defect_name || !data.defect_name.trim()) {
-        message.warning('请输入不良项目名称')
-        return
-      }
-      if (data.quantity === undefined || data.quantity === null || isNaN(Number(data.quantity))) {
-        message.warning('请输入有效的不良数量')
-        return
-      }
       setSaving(true)
-      const catMap = { process: '制程不良', material: '来料不良', scrap: '检验报废' }
-      const category = catMap[type] || '制程不良'
-      const payload = {
-        work_order_id: selectedWO.work_order_id,
-        process_id: selectedProcessId,
-        defect_category: category,
-        defect_name: data.defect_name.trim(),
-        defect_type_id: data.defect_type_id || null,
-        quantity: Number(data.quantity) || 0,
-        unit: data.unit || '',
-        defect_images: data.defect_images || [],
+      for (const item of validItems) {
+        if (item.defect_id) {
+          await api.put(`/production/process-defects/${item.defect_id}`, {
+            quantity: item.quantity,
+            unit: item.unit,
+            defect_images: item.defect_images,
+          })
+        } else {
+          await api.post('/production/process-defects', {
+            work_order_id: item.work_order_id,
+            process_id: item.process_id,
+            defect_type_id: item.defect_type_id,
+            quantity: item.quantity,
+            unit: item.unit,
+            defect_images: item.defect_images,
+          })
+        }
       }
-      if (record.defect_id) {
-        await api.put(`/production/process-defects/${record.defect_id}`, payload)
-        message.success('保存成功')
-      } else {
-        await api.post('/production/process-defects', payload)
-        message.success('添加成功')
-      }
-      setEditingDefectKey(null)
-      setEditingDefectData({})
-      fetchProcessDefects(selectedProcessId)
-    } catch (e) {
-      message.error(e.message || '保存失败')
+      message.success('保存成功')
+      fetchAllData(selectedWO.work_order_id)
+    } catch (err) {
+      message.error(err.message || '保存失败')
     } finally {
       setSaving(false)
     }
   }
 
-  const defectColumns = (type) => [
-    {
-      title: '不良项目', dataIndex: 'defect_name', key: 'defect_name', width: 180,
-      render: (text, record) => {
-        const isEditing = editingDefectKey === getDefectRowKey(record, type)
-        if (isEditing) {
-          return (
-            <Select
-              size="small"
-              showSearch
-              allowClear
-              placeholder="选择不良项目"
-              style={{ width: '100%' }}
-              optionFilterProp="label"
-              options={defectTypeOptions(type, getExcludeDefectNames(type, record))}
-              value={editingDefectData.defect_type_id}
-              onChange={(value) => {
-                const d = defectTypes.find(dt => dt.defect_id === value)
-                setEditingDefectData(prev => ({
-                  ...prev,
-                  defect_type_id: value,
-                  defect_name: d?.defect_name || prev.defect_name,
-                  unit: d?.defect_unit || prev.unit,
-                }))
-              }}
-              dropdownMatchSelectWidth={false}
-            />
-          )
-        }
-        return text || '-'
-      },
-    },
-    {
-      title: '不良数量', dataIndex: 'quantity', key: 'quantity', width: 140, align: 'right',
-      render: (v, record) => {
-        const isEditing = editingDefectKey === getDefectRowKey(record, type)
-        if (isEditing) {
-          return (
-            <InputNumber
-              size="small"
-              min={0}
-              max={selectedWO?.planned_qty || undefined}
-              style={{ width: '100%' }}
-              value={editingDefectData.quantity}
-              onChange={(val) => setEditingDefectData(prev => ({ ...prev, quantity: val }))}
-              addonAfter={`/${selectedWO?.planned_qty || 0}`}
-            />
-          )
-        }
-        return (v || 0).toLocaleString()
-      },
-    },
-    {
-      title: '单位', dataIndex: 'unit', key: 'unit', width: 180,
-      render: (v, record) => {
-        const isEditing = editingDefectKey === getDefectRowKey(record, type)
-        if (isEditing) {
-          const defectType = defectTypes.find(d => d.defect_id === editingDefectData.defect_type_id)
-          const availableUnits = defectType?.available_units || []
-          return (
-            <Radio.Group
-              size="small"
-              value={editingDefectData.unit}
-              onChange={(e) => setEditingDefectData(prev => ({ ...prev, unit: e.target.value }))}
-            >
-              {availableUnits.map(u => (
-                <Radio key={u} value={u}>{u}</Radio>
-              ))}
-            </Radio.Group>
-          )
-        }
-        return v || '-'
-      },
-    },
-    {
-      title: '不良图片', key: 'images', width: 120,
-      render: (_, r) => {
-        const imgs = r.defect_images || []
-        if (!imgs.length) return <span style={{ color: '#bbb' }}>无</span>
-        return (
-          <Image.PreviewGroup>
-            <Space size={4}>
-              {imgs.slice(0, 3).map((img, i) => (
-                <Image key={i} src={img} width={32} height={32} style={{ objectFit: 'cover', borderRadius: 2 }} />
-              ))}
-            </Space>
-          </Image.PreviewGroup>
-        )
-      },
-    },
-    {
-      title: '操作', key: 'action', width: 150,
-      render: (_, r) => {
-        const isEditing = editingDefectKey === getDefectRowKey(r, type)
-        if (selectedWO?.status !== '开工') {
-          return <span style={{ color: '#bbb' }}>-</span>
-        }
-        if (isEditing) {
-          return (
-            <Space size="small">
-              <Button
-                type="link"
-                size="small"
-                icon={<SaveOutlined />}
-                loading={saving}
-                onClick={() => saveEditDefect(r, type)}
-              >
-                保存
-              </Button>
-              <Button
-                type="link"
-                size="small"
-                onClick={cancelEditDefect}
-              >
-                取消
-              </Button>
-            </Space>
-          )
-        }
-        return (
-          <Space size="small">
-            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => startEditDefect(r, type)}>
-              编辑
-            </Button>
-            {r.defect_id && (
-              <Popconfirm title="确认删除？" onConfirm={() => handleDeleteDefect(r.defect_id)}>
-                <Button type="link" size="small" danger icon={<DeleteOutlined />} />
-              </Popconfirm>
-            )}
-          </Space>
-        )
-      },
-    },
-  ]
+  const addScrapDefect = () => {
+    const newItem = {
+      id: Date.now(),
+      work_order_id: selectedWO.work_order_id,
+      defect_type_id: null,
+      defect_code: '',
+      defect_name: '',
+      quantity: 0,
+      unit: '',
+      defect_images: [],
+    }
+    setScrapDefectList([...scrapDefectList, newItem])
+  }
 
-  const materialColumns = [
-    { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 130, render: v => v || '-' },
-    { title: '品名', dataIndex: 'material_name', key: 'material_name', width: 160, render: v => v || '-' },
-    { title: '规格', dataIndex: 'specification', key: 'specification', width: 140, render: v => v || '-' },
-    { title: '批号', dataIndex: 'material_batch', key: 'material_batch', width: 120, render: v => v || '-' },
-    { title: '数量', dataIndex: 'quantity', key: 'quantity', width: 90, align: 'right', render: v => (v || 0).toLocaleString() },
+  const updateScrapDefect = (id, field, value) => {
+    setScrapDefectList(scrapDefectList.map(item => {
+      if (item.id !== id) return item
+      const updated = { ...item, [field]: value }
+      if (field === 'defect_type_id') {
+        const defect = scrapTypeOptions.find(d => d.value === value)
+        if (defect) {
+          updated.defect_code = defect.defect_code
+          updated.defect_name = defect.defect_name
+          updated.unit = defect.defect_unit || '默认单位'
+        }
+      }
+      return updated
+    }))
+  }
+
+  const deleteScrapDefect = (id) => {
+    setScrapDefectList(scrapDefectList.filter(item => item.id !== id))
+  }
+
+  const saveScrapDefects = async () => {
+    const validItems = scrapDefectList.filter(d => d.defect_type_id && d.quantity > 0)
+    if (validItems.length === 0) {
+      message.warning('请填写有效的报废记录')
+      return
+    }
+    try {
+      setSaving(true)
+      for (const item of validItems) {
+        if (item.scrap_id) {
+          await api.put(`/production/scrap-defects/${item.scrap_id}`, {
+            quantity: item.quantity,
+            unit: item.unit,
+            defect_images: item.defect_images,
+          })
+        } else {
+          await api.post('/production/scrap-defects', {
+            work_order_id: item.work_order_id,
+            defect_type_id: item.defect_type_id,
+            quantity: item.quantity,
+            unit: item.unit,
+            defect_images: item.defect_images,
+          })
+        }
+      }
+      message.success('保存成功')
+      fetchAllData(selectedWO.work_order_id)
+    } catch (err) {
+      message.error(err.message || '保存失败')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const addException = () => {
+    const newItem = {
+      id: Date.now(),
+      work_order_id: selectedWO.work_order_id,
+      exception_category: '',
+      start_time: dayjs(),
+      end_time: null,
+      description: '',
+      handler: '',
+      device_id: null,
+    }
+    setExceptionList([...exceptionList, newItem])
+  }
+
+  const updateException = (id, field, value) => {
+    setExceptionList(exceptionList.map(item => item.id !== id ? item : { ...item, [field]: value }))
+  }
+
+  const deleteException = (id) => {
+    setExceptionList(exceptionList.filter(item => item.id !== id))
+  }
+
+  const saveExceptions = async () => {
+    const validItems = exceptionList.filter(e => e.exception_category && e.start_time)
+    if (validItems.length === 0) {
+      message.warning('请填写有效的异常记录')
+      return
+    }
+    try {
+      setSaving(true)
+      for (const item of validItems) {
+        if (item.exception_id) {
+          await api.put(`/production/exception-records/${item.exception_id}`, {
+            exception_category: item.exception_category,
+            start_time: item.start_time.format ? item.start_time.format('YYYY-MM-DD HH:mm:ss') : item.start_time,
+            end_time: item.end_time?.format ? item.end_time.format('YYYY-MM-DD HH:mm:ss') : item.end_time,
+            description: item.description,
+            handler: item.handler,
+            device_id: item.device_id,
+          })
+        } else {
+          await api.post('/production/exception-records', {
+            work_order_id: item.work_order_id,
+            exception_category: item.exception_category,
+            start_time: item.start_time.format ? item.start_time.format('YYYY-MM-DD HH:mm:ss') : item.start_time,
+            end_time: item.end_time?.format ? item.end_time.format('YYYY-MM-DD HH:mm:ss') : item.end_time,
+            description: item.description,
+            handler: item.handler,
+            device_id: item.device_id,
+          })
+        }
+      }
+      message.success('保存成功')
+      fetchAllData(selectedWO.work_order_id)
+    } catch (err) {
+      message.error(err.message || '保存失败')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const addManpower = () => {
+    const newItem = {
+      id: Date.now(),
+      work_order_id: selectedWO.work_order_id,
+      record_date: dayjs(),
+      shift: '白班',
+      start_time: dayjs(),
+      end_time: null,
+      skilled_count: 0,
+      general_count: 0,
+      labor_count: 0,
+      other_count: 0,
+    }
+    setManpowerList([...manpowerList, newItem])
+  }
+
+  const updateManpower = (id, field, value) => {
+    setManpowerList(manpowerList.map(item => item.id !== id ? item : { ...item, [field]: value }))
+  }
+
+  const deleteManpower = (id) => {
+    setManpowerList(manpowerList.filter(item => item.id !== id))
+  }
+
+  const saveManpower = async () => {
+    const validItems = manpowerList.filter(m => {
+      const total = (m.skilled_count || 0) + (m.general_count || 0) + (m.labor_count || 0) + (m.other_count || 0)
+      return total > 0
+    })
+    if (validItems.length === 0) {
+      message.warning('请填写有效的人员记录')
+      return
+    }
+    try {
+      setSaving(true)
+      for (const item of validItems) {
+        if (item.record_id) {
+          await api.put(`/production/manpower-records/${item.record_id}`, {
+            record_date: item.record_date.format ? item.record_date.format('YYYY-MM-DD') : item.record_date,
+            shift: item.shift,
+            start_time: item.start_time.format ? item.start_time.format('YYYY-MM-DD HH:mm:ss') : item.start_time,
+            end_time: item.end_time?.format ? item.end_time.format('YYYY-MM-DD HH:mm:ss') : item.end_time,
+            skilled_count: item.skilled_count,
+            general_count: item.general_count,
+            labor_count: item.labor_count,
+            other_count: item.other_count,
+          })
+        } else {
+          await api.post('/production/manpower-records', {
+            work_order_id: item.work_order_id,
+            record_date: item.record_date.format ? item.record_date.format('YYYY-MM-DD') : item.record_date,
+            shift: item.shift,
+            start_time: item.start_time.format ? item.start_time.format('YYYY-MM-DD HH:mm:ss') : item.start_time,
+            end_time: item.end_time?.format ? item.end_time.format('YYYY-MM-DD HH:mm:ss') : item.end_time,
+            skilled_count: item.skilled_count,
+            general_count: item.general_count,
+            labor_count: item.labor_count,
+            other_count: item.other_count,
+          })
+        }
+      }
+      message.success('保存成功')
+      fetchAllData(selectedWO.work_order_id)
+    } catch (err) {
+      message.error(err.message || '保存失败')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const prodDefectColumns = [
     {
-      title: '标签图片', key: 'images', width: 120,
-      render: (_, r) => {
-        const imgs = r.label_images || []
-        if (!imgs.length) return <span style={{ color: '#bbb' }}>无</span>
-        return (
-          <Image.PreviewGroup>
-            <Space size={4}>
-              {imgs.slice(0, 3).map((img, i) => (
-                <Image key={i} src={img} width={32} height={32} style={{ objectFit: 'cover', borderRadius: 2 }} />
-              ))}
-            </Space>
-          </Image.PreviewGroup>
-        )
-      },
+      title: '不良类型', key: 'defect_type', width: 100,
+      render: (_, r) => <Tag color="purple">{r.defect_type || '-'}</Tag>,
     },
     {
-      title: '操作', key: 'action', width: 70,
-      render: (_, r) => selectedWO?.status === '开工' && (
-        <Popconfirm title="确认删除？" onConfirm={() => handleDeleteMaterial(r.material_id)}>
-          <Button type="link" size="small" danger icon={<DeleteOutlined />} />
+      title: '不良项目', key: 'defect_name', width: 250,
+      render: (_, r) => (
+        <Select
+          value={r.defect_type_id}
+          onChange={(v) => updateProdDefect(r.id, 'defect_type_id', v)}
+          placeholder="请选择不良项目"
+          style={{ width: '100%' }}
+          options={defectTypeOptions.filter(d => !usedDefectIds.has(d.value) || d.value === r.defect_type_id)}
+        />
+      ),
+    },
+    {
+      title: '不良数量', key: 'quantity', width: 100, align: 'right',
+      render: (_, r) => (
+        <InputNumber
+          min={0}
+          value={r.quantity}
+          onChange={(v) => updateProdDefect(r.id, 'quantity', v)}
+          style={{ width: '100%' }}
+        />
+      ),
+    },
+    {
+      title: '单位', key: 'unit', width: 100,
+      render: (_, r) => (
+        <Select
+          value={r.unit}
+          onChange={(v) => updateProdDefect(r.id, 'unit', v)}
+          style={{ width: '100%' }}
+          options={[{ label: '默认单位', value: '默认单位' }]}
+        />
+      ),
+    },
+    {
+      title: '不良图片', key: 'defect_images', width: 120,
+      render: (_, r) => (
+        <Upload
+          listType="picture-card"
+          fileList={r.defect_images?.map((img, i) => ({ uid: i, url: img })) || []}
+          onChange={(info) => updateProdDefect(r.id, 'defect_images', info.fileList.map(f => f.url))}
+          beforeUpload={() => false}
+        >
+          <UploadOutlined />
+        </Upload>
+      ),
+    },
+    {
+      title: '操作', key: 'action', width: 80,
+      render: (_, r) => (
+        <Popconfirm title="确认删除？" onConfirm={() => deleteProdDefect(r.id)}>
+          <Button type="link" danger size="small"><DeleteOutlined /></Button>
         </Popconfirm>
       ),
     },
   ]
 
-  const stats = [
-    { label: '开工工单数量', value: statsData.workingWoCount, icon: <ProfileOutlined />, color: '#2196F3' },
-    { label: '累计投入数量', value: statsData.totalInputQty.toLocaleString(), icon: <ProfileOutlined />, color: '#FF9800' },
-    { label: '累计产出数量', value: statsData.totalOutputQty.toLocaleString(), icon: <ProfileOutlined />, color: '#4CAF50' },
+  const scrapDefectColumns = [
+    {
+      title: '不良编码', key: 'defect_code', width: 140,
+      render: (_, r) => r.defect_code || '-',
+    },
+    {
+      title: '不良项目', key: 'defect_name', width: 250,
+      render: (_, r) => (
+        <Select
+          value={r.defect_type_id}
+          onChange={(v) => updateScrapDefect(r.id, 'defect_type_id', v)}
+          placeholder="请选择不良项目"
+          style={{ width: '100%' }}
+          options={scrapTypeOptions}
+        />
+      ),
+    },
+    {
+      title: '不良数量', key: 'quantity', width: 100, align: 'right',
+      render: (_, r) => (
+        <InputNumber
+          min={0}
+          value={r.quantity}
+          onChange={(v) => updateScrapDefect(r.id, 'quantity', v)}
+          style={{ width: '100%' }}
+        />
+      ),
+    },
+    {
+      title: '单位', key: 'unit', width: 100,
+      render: (_, r) => (
+        <Select
+          value={r.unit}
+          onChange={(v) => updateScrapDefect(r.id, 'unit', v)}
+          style={{ width: '100%' }}
+          options={[{ label: '默认单位', value: '默认单位' }]}
+        />
+      ),
+    },
+    {
+      title: '不良图片', key: 'defect_images', width: 120,
+      render: (_, r) => (
+        <Upload
+          listType="picture-card"
+          fileList={r.defect_images?.map((img, i) => ({ uid: i, url: img })) || []}
+          onChange={(info) => updateScrapDefect(r.id, 'defect_images', info.fileList.map(f => f.url))}
+          beforeUpload={() => false}
+        >
+          <UploadOutlined />
+        </Upload>
+      ),
+    },
+    {
+      title: '操作', key: 'action', width: 80,
+      render: (_, r) => (
+        <Popconfirm title="确认删除？" onConfirm={() => deleteScrapDefect(r.id)}>
+          <Button type="link" danger size="small"><DeleteOutlined /></Button>
+        </Popconfirm>
+      ),
+    },
   ]
 
-  const dummyUpload = {
-    beforeUpload: () => false,
-  }
-
-  const defectImagesNorm = (val) => Array.isArray(val) ? val : []
-  const labelImagesNorm = (val) => Array.isArray(val) ? val : []
-
-  const tabItems = [
+  const exceptionColumns = [
     {
-      key: 'defect',
-      label: '工序不良记录',
-      children: selectedProcessId ? (
-        <Row gutter={16}>
-          <Col span={12}>
-            <Card
-              size="small"
-              title={<span style={{ color: '#FA8C16' }}>来料不良</span>}
-              extra={selectedWO?.status === '开工' && (
-                <Button size="small" type="link" icon={<PlusOutlined />} onClick={() => handleAddDefect('material')}>
-                  添加
-                </Button>
-              )}
-              style={{ height: '100%' }}
-            >
-              <Table
-                columns={defectColumns('material')}
-                dataSource={materialDefectList}
-                rowKey="defect_id"
-                size="small"
-                pagination={false}
-                locale={{ emptyText: '暂无数来不良记录' }}
-              />
-            </Card>
-          </Col>
-          <Col span={12}>
-            <Card
-              size="small"
-              title={<span style={{ color: '#F5222D' }}>制程不良</span>}
-              extra={selectedWO?.status === '开工' && (
-                <Button size="small" type="link" icon={<PlusOutlined />} onClick={() => handleAddDefect('process')}>
-                  添加
-                </Button>
-              )}
-              style={{ height: '100%' }}
-            >
-              <Table
-                columns={defectColumns('process')}
-                dataSource={processDefectList}
-                rowKey="defect_id"
-                size="small"
-                pagination={false}
-                locale={{ emptyText: '暂无制程不良记录' }}
-              />
-            </Card>
-          </Col>
-        </Row>
-      ) : (
-        <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>请先选择工序</div>
+      title: '异常分类', key: 'exception_category', width: 120,
+      render: (_, r) => (
+        <Select
+          value={r.exception_category}
+          onChange={(v) => updateException(r.id, 'exception_category', v)}
+          placeholder="请选择异常分类"
+          style={{ width: '100%' }}
+          options={exceptionCategories}
+        />
       ),
     },
     {
-      key: 'material',
-      label: '工序料品记录',
-      children: selectedProcessId ? (
-        <div>
-          <div style={{ textAlign: 'right', marginBottom: 8 }}>
-            {selectedWO?.status === '开工' && (
-              <Button type="primary" size="small" icon={<PlusOutlined />} onClick={handleAddMaterial}>
-                添加物料
-              </Button>
-            )}
-          </div>
-          <Table
-            columns={materialColumns}
-            dataSource={processMaterialList}
-            rowKey="material_id"
-            size="small"
-            scroll={{ x: 900 }}
-            pagination={false}
-            locale={{ emptyText: '暂无物料记录' }}
-          />
-        </div>
-      ) : (
-        <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>请先选择工序</div>
+      title: '开始时间', key: 'start_time', width: 160,
+      render: (_, r) => (
+        <DatePicker
+          showTime={{ format: 'HH:mm' }}
+          format="YYYY-MM-DD HH:mm"
+          value={r.start_time}
+          onChange={(v) => updateException(r.id, 'start_time', v)}
+          style={{ width: '100%' }}
+        />
       ),
     },
     {
-      key: 'scrap',
-      label: '检验报废记录',
-      children: selectedProcessId ? (
-        <Card
-          size="small"
-          title={<span style={{ color: '#722ED1' }}>检验报废</span>}
-          extra={selectedWO?.status === '开工' && (
-            <Button size="small" type="link" icon={<PlusOutlined />} onClick={() => handleAddDefect('scrap')}>
-              添加
-            </Button>
-          )}
-        >
-          <Table
-            columns={defectColumns('scrap')}
-            dataSource={scrapDefectList}
-            rowKey="defect_id"
-            size="small"
-            pagination={false}
-            locale={{ emptyText: '暂无检验报废记录' }}
-          />
-        </Card>
-      ) : (
-        <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>请先选择工序</div>
+      title: '恢复时间', key: 'end_time', width: 160,
+      render: (_, r) => (
+        <DatePicker
+          showTime={{ format: 'HH:mm' }}
+          format="YYYY-MM-DD HH:mm"
+          value={r.end_time}
+          onChange={(v) => updateException(r.id, 'end_time', v)}
+          style={{ width: '100%' }}
+        />
+      ),
+    },
+    {
+      title: '状态描述', key: 'description', width: 200,
+      render: (_, r) => (
+        <Input
+          value={r.description}
+          onChange={(e) => updateException(r.id, 'description', e.target.value)}
+          placeholder="请输入状态描述"
+        />
+      ),
+    },
+    {
+      title: '处置人', key: 'handler', width: 100,
+      render: (_, r) => (
+        <Input
+          value={r.handler}
+          onChange={(e) => updateException(r.id, 'handler', e.target.value)}
+          placeholder="请输入处置人"
+        />
+      ),
+    },
+    {
+      title: '维修设备', key: 'device_id', width: 150,
+      render: (_, r) => (
+        <Select
+          value={r.device_id}
+          onChange={(v) => updateException(r.id, 'device_id', v)}
+          placeholder="请选择设备"
+          style={{ width: '100%' }}
+          options={deviceOptions}
+          disabled={r.exception_category !== '故障维修'}
+        />
+      ),
+    },
+    {
+      title: '操作', key: 'action', width: 80,
+      render: (_, r) => (
+        <Popconfirm title="确认删除？" onConfirm={() => deleteException(r.id)}>
+          <Button type="link" danger size="small"><DeleteOutlined /></Button>
+        </Popconfirm>
+      ),
+    },
+  ]
+
+  const manpowerColumns = [
+    {
+      title: '日期', key: 'record_date', width: 120,
+      render: (_, r) => (
+        <DatePicker
+          format="YYYY-MM-DD"
+          value={r.record_date}
+          onChange={(v) => updateManpower(r.id, 'record_date', v)}
+          style={{ width: '100%' }}
+        />
+      ),
+    },
+    {
+      title: '班次', key: 'shift', width: 80,
+      render: (_, r) => (
+        <Select
+          value={r.shift}
+          onChange={(v) => updateManpower(r.id, 'shift', v)}
+          style={{ width: '100%' }}
+          options={[{ label: '白班', value: '白班' }, { label: '夜班', value: '夜班' }]}
+        />
+      ),
+    },
+    {
+      title: '开始时间', key: 'start_time', width: 140,
+      render: (_, r) => (
+        <DatePicker
+          showTime={{ format: 'HH:mm' }}
+          format="HH:mm"
+          value={r.start_time}
+          onChange={(v) => updateManpower(r.id, 'start_time', v)}
+          style={{ width: '100%' }}
+        />
+      ),
+    },
+    {
+      title: '结束时间', key: 'end_time', width: 140,
+      render: (_, r) => (
+        <DatePicker
+          showTime={{ format: 'HH:mm' }}
+          format="HH:mm"
+          value={r.end_time}
+          onChange={(v) => updateManpower(r.id, 'end_time', v)}
+          style={{ width: '100%' }}
+        />
+      ),
+    },
+    {
+      title: '技工', key: 'skilled_count', width: 80, align: 'right',
+      render: (_, r) => (
+        <InputNumber
+          min={0}
+          value={r.skilled_count}
+          onChange={(v) => updateManpower(r.id, 'skilled_count', v)}
+          style={{ width: '100%' }}
+        />
+      ),
+    },
+    {
+      title: '普工', key: 'general_count', width: 80, align: 'right',
+      render: (_, r) => (
+        <InputNumber
+          min={0}
+          value={r.general_count}
+          onChange={(v) => updateManpower(r.id, 'general_count', v)}
+          style={{ width: '100%' }}
+        />
+      ),
+    },
+    {
+      title: '劳务工', key: 'labor_count', width: 80, align: 'right',
+      render: (_, r) => (
+        <InputNumber
+          min={0}
+          value={r.labor_count}
+          onChange={(v) => updateManpower(r.id, 'labor_count', v)}
+          style={{ width: '100%' }}
+        />
+      ),
+    },
+    {
+      title: '其他', key: 'other_count', width: 80, align: 'right',
+      render: (_, r) => (
+        <InputNumber
+          min={0}
+          value={r.other_count}
+          onChange={(v) => updateManpower(r.id, 'other_count', v)}
+          style={{ width: '100%' }}
+        />
+      ),
+    },
+    {
+      title: '操作', key: 'action', width: 80,
+      render: (_, r) => (
+        <Popconfirm title="确认删除？" onConfirm={() => deleteManpower(r.id)}>
+          <Button type="link" danger size="small"><DeleteOutlined /></Button>
+        </Popconfirm>
       ),
     },
   ]
 
   return (
-    <>
-      <ThreeSectionPage
-        title="生产报工"
-        breadcrumbs="生产管理 / 生产报工"
-        stats={stats}
-        actions={
-          <ActionButtons hasAdd={false} hasExport={false} />
-        }
-        table={
+    <div className="page-container">
+      <Card className="page-header-card">
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ marginRight: 8, fontWeight: 500 }}>选择生产工单：</label>
+          <Select
+            value={selectedWO?.work_order_id}
+            onChange={(v) => setSelectedWO(workOrders.find(w => w.work_order_id === v))}
+            placeholder="请选择生产工单"
+            style={{ width: 400 }}
+            loading={loading}
+            options={workOrders.map(w => ({
+              label: `${w.work_order_no} ${w.material_name}`,
+              value: w.work_order_id,
+            }))}
+          />
+        </div>
+
+        {selectedWO && (
           <div>
-            <Row gutter={[12, 8]} style={{ marginBottom: 12 }}>
-              <Col flex="360px">
-                <Select
-                  placeholder="请选择工单编号"
-                  allowClear
-                  showSearch
-                  optionFilterProp="label"
-                  value={selectedWOId}
-                  onChange={(value) => {
-                    const wo = workOrders.find(w => w.work_order_id === value)
-                    if (wo) {
-                      handleSelectWO(wo)
-                    } else {
-                      handleSelectWO(null)
-                    }
-                  }}
-                  options={workOrders.map(w => ({
-                    label: `${w.work_order_no} ${w.material_code || ''} ${w.material_name || ''} ${w.specification || ''}`.trim(),
-                    value: w.work_order_id,
-                  }))}
-                  style={{ width: '100%' }}
-                />
+            <Row gutter={16}>
+              <Col span={4}>
+                <div className="stat-item">
+                  <div className="stat-label">工单号</div>
+                  <div className="stat-value">{selectedWO.work_order_no}</div>
+                </div>
               </Col>
-              <Col>
-                {selectedWO?.status === '开工' && (
-                  <Popconfirm title="确认开始完工？当天需完成完工" onConfirm={handleFinishWO} disabled={saving}>
-                    <Button type="primary" loading={saving}>开始完工</Button>
-                  </Popconfirm>
-                )}
-                {selectedWO?.status === '完工' && Number(selectedWO?.finished_qty) < Number(selectedWO?.planned_qty) && (
-                  <Popconfirm title="确认开始报工？当天需完成完工" onConfirm={handleStartWO} disabled={saving}>
-                    <Button type="primary" loading={saving}>开始报工</Button>
-                  </Popconfirm>
-                )}
+              <Col span={4}>
+                <div className="stat-item">
+                  <div className="stat-label">物料编码</div>
+                  <div className="stat-value">{selectedWO.material_code}</div>
+                </div>
+              </Col>
+              <Col span={4}>
+                <div className="stat-item">
+                  <div className="stat-label">物料名称</div>
+                  <div className="stat-value">{selectedWO.material_name}</div>
+                </div>
+              </Col>
+              <Col span={3}>
+                <div className="stat-item">
+                  <div className="stat-label">产线</div>
+                  <div className="stat-value">{selectedWO.line_name}</div>
+                </div>
+              </Col>
+              <Col span={3}>
+                <div className="stat-item">
+                  <div className="stat-label">状态</div>
+                  <div className="stat-value">
+                    <Tag color={woStatusColorMap[selectedWO.status]}>{selectedWO.status}</Tag>
+                  </div>
+                </div>
+              </Col>
+              <Col span={4}>
+                <div className="stat-item">
+                  <div className="stat-label">计划数量</div>
+                  <div className="stat-value">{selectedWO.planned_qty}</div>
+                </div>
               </Col>
             </Row>
-
-            {selectedWO && (
-              <>
-                <Divider orientation="left" style={{ margin: '12px 0' }}>
-                  <span style={{ fontWeight: 600 }}>
-                    工单：{selectedWO.work_order_no}
-                    <Tag color={woStatusColorMap[selectedWO.status]} style={{ marginLeft: 8 }}>
-                      {selectedWO.status}
-                    </Tag>
-                  </span>
-                </Divider>
-
-                <Card
-                  size="small"
-                  style={{ marginBottom: 12 }}
-                  title={
-                    <Space>
-                      <Select
-                        placeholder="请选择工序"
-                        style={{ width: 220 }}
-                        value={selectedProcessId}
-                        onChange={setSelectedProcessId}
-                        options={processOptions}
-                        allowClear
-                        showSearch
-                        optionFilterProp="label"
-                      />
-                      {selectedWO?.status === '开工' && selectedProcessId && (
-                        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-                          添加报工
-                        </Button>
-                      )}
-                    </Space>
-                  }
-                >
-                  <Tabs
-                    activeKey={activeTab}
-                    onChange={setActiveTab}
-                    items={tabItems}
-                    size="small"
-                  />
-                </Card>
-              </>
-            )}
+            <Divider style={{ margin: '16px 0' }} />
+            <Row gutter={16}>
+              <Col span={3}>
+                <div className="stat-item">
+                  <div className="stat-label">投入数量</div>
+                  <div className="stat-value">{stats.inputQty}</div>
+                </div>
+              </Col>
+              <Col span={3}>
+                <div className="stat-item">
+                  <div className="stat-label">产出数量</div>
+                  <div className="stat-value">{stats.outputQty}</div>
+                </div>
+              </Col>
+              <Col span={3}>
+                <div className="stat-item">
+                  <div className="stat-label">来料不良汇总</div>
+                  <div className="stat-value">{stats.defectMaterial}</div>
+                </div>
+              </Col>
+              <Col span={3}>
+                <div className="stat-item">
+                  <div className="stat-label">制程不良汇总</div>
+                  <div className="stat-value">{stats.defectProcess}</div>
+                </div>
+              </Col>
+              <Col span={3}>
+                <div className="stat-item">
+                  <div className="stat-label">检验报废汇总</div>
+                  <div className="stat-value">{stats.defectScrap}</div>
+                </div>
+              </Col>
+            </Row>
           </div>
-        }
-      />
-
-      <Modal
-        title="编辑报工记录"
-        open={editOpen}
-        onOk={handleEditSubmit}
-        confirmLoading={saving}
-        onCancel={() => { setEditOpen(false); setEditing(null) }}
-        okText="保存"
-        cancelText="取消"
-        width={640}
-        destroyOnHidden
-      >
-        {editing && (
-          <Descriptions column={2} size="small" style={{ marginBottom: 16 }}>
-            <Descriptions.Item label="工单编号">{editing.work_order_no || '-'}</Descriptions.Item>
-            <Descriptions.Item label="工序">{editing.process_name || '-'}</Descriptions.Item>
-          </Descriptions>
         )}
-        <Form form={form} layout="vertical" className="compact-form" preserve={false}>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item label="投入数量" name="input_qty" rules={[{ required: true, message: '请输入投入数量' }]}>
-                <InputNumber min={0} style={{ width: '100%' }} placeholder="请输入投入数量" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="产出数量" name="output_qty" rules={[{ required: true, message: '请输入产出数量' }]}>
-                <InputNumber min={0} style={{ width: '100%' }} placeholder="请输入产出数量" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={8}>
-              <Form.Item label="来料不良" name="defect_material">
-                <InputNumber min={0} style={{ width: '100%' }} placeholder="0" />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item label="制程不良" name="defect_process">
-                <InputNumber min={0} style={{ width: '100%' }} placeholder="0" />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item label="检验报废" name="defect_scrap">
-                <InputNumber min={0} style={{ width: '100%' }} placeholder="0" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item label="设备" name="device_id">
-                <Select
-                  placeholder="请选择设备"
-                  allowClear
-                  showSearch
-                  optionFilterProp="label"
-                  options={devices.map(d => ({ label: `${d.device_code || ''} ${d.device_name || ''}`.trim(), value: d.device_id }))}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="报工人员" name="report_user_name" rules={[{ required: true, message: '请输入报工人员' }]}>
-                <Input placeholder="请输入报工人员姓名" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Form.Item label="报工时间" name="report_time">
-            <DatePicker
-              showTime
-              format="YYYY-MM-DD HH:mm:ss"
-              style={{ width: '100%' }}
-              placeholder="选择报工时间"
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
+      </Card>
 
-      <Modal
-        title="添加报工记录"
-        open={addOpen}
-        onOk={handleAddSubmit}
-        confirmLoading={saving}
-        onCancel={() => setAddOpen(false)}
-        okText="保存"
-        cancelText="取消"
-        width={640}
-        destroyOnHidden
-      >
-        {selectedWO && (
-          <Descriptions column={2} size="small" style={{ marginBottom: 16 }}>
-            <Descriptions.Item label="工单编号">{selectedWO.work_order_no || '-'}</Descriptions.Item>
-            <Descriptions.Item label="产品名称">{selectedWO.material_name || '-'}</Descriptions.Item>
-          </Descriptions>
-        )}
-        <Form form={addForm} layout="vertical" className="compact-form" preserve={false}>
-          <Row gutter={12}>
-            <Col span={24}>
-              <Form.Item label="工序" name="process_id" rules={[{ required: true, message: '请选择工序' }]}>
+      {selectedWO && (
+        <Card>
+          <Tabs activeKey={activeTab} onChange={setActiveTab}>
+            <Tabs.TabPane tab="生产不良记录" key="production-defect">
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ marginRight: 8, fontWeight: 500 }}>选择工序：</label>
                 <Select
+                  value={selectedProcessId}
+                  onChange={setSelectedProcessId}
                   placeholder="请选择工序"
-                  options={processOptions}
-                  showSearch
-                  optionFilterProp="label"
+                  style={{ width: 250 }}
+                  options={lineProcesses.map(p => ({
+                    label: `${p.process_code} ${p.process_name}`,
+                    value: p.process_id,
+                  }))}
                 />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item label="投入数量" name="input_qty" rules={[{ required: true, message: '请输入投入数量' }]}>
-                <InputNumber min={0} style={{ width: '100%' }} placeholder="请输入投入数量" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="产出数量" name="output_qty" rules={[{ required: true, message: '请输入产出数量' }]}>
-                <InputNumber min={0} style={{ width: '100%' }} placeholder="请输入产出数量" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={8}>
-              <Form.Item label="来料不良" name="defect_material">
-                <InputNumber min={0} style={{ width: '100%' }} placeholder="0" />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item label="制程不良" name="defect_process">
-                <InputNumber min={0} style={{ width: '100%' }} placeholder="0" />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item label="检验报废" name="defect_scrap">
-                <InputNumber min={0} style={{ width: '100%' }} placeholder="0" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item label="设备" name="device_id">
-                <Select
-                  placeholder="请选择设备"
-                  allowClear
-                  showSearch
-                  optionFilterProp="label"
-                  options={devices.map(d => ({ label: `${d.device_code || ''} ${d.device_name || ''}`.trim(), value: d.device_id }))}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="报工人员" name="report_user_name" rules={[{ required: true, message: '请输入报工人员' }]}>
-                <Input placeholder="请输入报工人员姓名" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Form.Item label="报工时间" name="report_time">
-            <DatePicker
-              showTime
-              format="YYYY-MM-DD HH:mm:ss"
-              style={{ width: '100%' }}
-              placeholder="选择报工时间"
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <Modal
-        title={editingDefect ? '编辑不良记录' : (defectModalType === 'process' ? '添加制程不良' : defectModalType === 'scrap' ? '添加检验报废' : '添加来料不良')}
-        open={defectModalOpen}
-        onOk={handleDefectModalSubmit}
-        confirmLoading={saving}
-        onCancel={() => setDefectModalOpen(false)}
-        okText={editingDefect ? '保存' : '添加'}
-        cancelText="取消"
-        width={520}
-        destroyOnHidden
-      >
-        <Form form={defectModalForm} layout="vertical" className="compact-form" initialValues={{ quantity: 0, defect_images: [] }}>
-          <Form.Item label="不良项目" name="defect_type_id" rules={[{ required: true, message: '请选择不良项目' }]}>
-            <Select
-              placeholder="请选择不良项目"
-              showSearch
-              optionFilterProp="label"
-              options={defectTypeOptions(defectModalType, editingDefect ? getExcludeDefectNames(defectModalType, editingDefect) : getExcludeDefectNames(defectModalType))}
-              onChange={(value, option) => {
-                if (option) {
-                  defectModalForm.setFieldsValue({
-                    unit: option.unit,
-                  })
-                }
-              }}
-            />
-          </Form.Item>
-          <Form.Item noStyle shouldUpdate={(prev, cur) => prev.defect_type_id !== cur.defect_type_id}>
-            {({ getFieldValue }) => {
-              const defectTypeId = getFieldValue('defect_type_id')
-              const defectType = defectTypes.find(d => d.defect_id === defectTypeId)
-              const availableUnits = defectType?.available_units || []
-              const defaultUnit = defectType?.defect_unit || ''
-              return (
-                <Form.Item label="单位" name="unit" rules={[{ required: true, message: '请选择单位' }]}>
-                  <Radio.Group
-                    value={getFieldValue('unit') || defaultUnit}
-                    onChange={(e) => defectModalForm.setFieldsValue({ unit: e.target.value })}
-                  >
-                    {availableUnits.map(u => (
-                      <Radio key={u} value={u}>{u}</Radio>
-                    ))}
-                  </Radio.Group>
-                </Form.Item>
-              )
-            }}
-          </Form.Item>
-          <Form.Item label="不良数量" name="quantity" rules={[{ required: true, message: '请输入数量' }]}>
-            <InputNumber
-              min={0}
-              max={selectedWO?.planned_qty || undefined}
-              style={{ width: '100%' }}
-              addonAfter={`/ ${selectedWO?.planned_qty || 0}`}
-            />
-          </Form.Item>
-          <Form.Item label="不良图片" name="defect_images" getValueFromEvent={defectImagesNorm}>
-            <Upload {...dummyUpload} listType="picture-card" multiple maxCount={6}>
-              <div>
-                <UploadOutlined />
-                <div style={{ marginTop: 4 }}>上传</div>
+                <Button type="primary" icon={<PlusOutlined />} onClick={addProdDefect} style={{ marginLeft: 16 }}>
+                  添加不良记录
+                </Button>
+                <Button icon={<SaveOutlined />} onClick={saveProdDefects} loading={saving} style={{ marginLeft: 8 }}>
+                  保存
+                </Button>
               </div>
-            </Upload>
-          </Form.Item>
-        </Form>
-      </Modal>
+              <Table
+                dataSource={prodDefectList}
+                columns={prodDefectColumns}
+                rowKey="id"
+                pagination={false}
+                bordered
+              />
+            </Tabs.TabPane>
 
-      <Modal
-        title="添加工序物料"
-        open={materialModalOpen}
-        onOk={handleMaterialModalSubmit}
-        confirmLoading={saving}
-        onCancel={() => setMaterialModalOpen(false)}
-        okText="添加"
-        cancelText="取消"
-        width={560}
-        destroyOnHidden
-      >
-        <Form form={materialModalForm} layout="vertical" className="compact-form" initialValues={{ quantity: 0, label_images: [] }}>
-          <Form.Item label="料号" name="material_code">
-            <Select
-              placeholder="请选择料号"
-              allowClear
-              showSearch
-              optionFilterProp="label"
-              options={materialOptions}
-              onChange={(_, option) => {
-                if (option) {
-                  materialModalForm.setFieldsValue({
-                    material_code: option.material_code,
-                    material_name: option.material_name,
-                    specification: option.specification,
-                  })
-                }
-              }}
-            />
-          </Form.Item>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item label="品名" name="material_name">
-                <Input placeholder="请输入品名" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="规格" name="specification">
-                <Input placeholder="请输入规格" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item label="批号" name="material_batch">
-                <Input placeholder="请输入批号" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="数量" name="quantity" rules={[{ required: true, message: '请输入数量' }]}>
-                <InputNumber min={0} style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Form.Item label="标签图片" name="label_images" getValueFromEvent={labelImagesNorm}>
-            <Upload {...dummyUpload} listType="picture-card" multiple maxCount={6}>
-              <div>
-                <UploadOutlined />
-                <div style={{ marginTop: 4 }}>上传</div>
+            <Tabs.TabPane tab="检验报废记录" key="scrap-defect">
+              <div style={{ marginBottom: 16 }}>
+                <Button type="primary" icon={<PlusOutlined />} onClick={addScrapDefect}>
+                  添加报废记录
+                </Button>
+                <Button icon={<SaveOutlined />} onClick={saveScrapDefects} loading={saving} style={{ marginLeft: 8 }}>
+                  保存
+                </Button>
               </div>
-            </Upload>
-          </Form.Item>
-        </Form>
-      </Modal>
+              <Table
+                dataSource={scrapDefectList}
+                columns={scrapDefectColumns}
+                rowKey="id"
+                pagination={false}
+                bordered
+              />
+            </Tabs.TabPane>
 
-      <Drawer
-        title="报工详情"
-        open={!!viewRecord}
-        onClose={() => setViewRecord(null)}
-        width={560}
-      >
-        {viewRecord && (
-          <Descriptions column={1} bordered size="small">
-            <Descriptions.Item label="工单编号">{viewRecord.work_order_no || '-'}</Descriptions.Item>
-            <Descriptions.Item label="工序">{viewRecord.process_name || '-'}</Descriptions.Item>
-            <Descriptions.Item label="报工人员">{viewRecord.report_user_name || '-'}</Descriptions.Item>
-            <Descriptions.Item label="投入数量">{(viewRecord.input_qty || 0).toLocaleString()}</Descriptions.Item>
-            <Descriptions.Item label="来料不良">{(viewRecord.defect_material || 0).toLocaleString()}</Descriptions.Item>
-            <Descriptions.Item label="制程不良">{(viewRecord.defect_process || 0).toLocaleString()}</Descriptions.Item>
-            <Descriptions.Item label="检验报废">{(viewRecord.defect_scrap || 0).toLocaleString()}</Descriptions.Item>
-            <Descriptions.Item label="产出数量">{(viewRecord.output_qty || 0).toLocaleString()}</Descriptions.Item>
-            <Descriptions.Item label="设备">{viewRecord.device_name || '-'}</Descriptions.Item>
-            <Descriptions.Item label="报工时间">{viewRecord.report_time ? dayjs(viewRecord.report_time).format('YYYY-MM-DD HH:mm:ss') : '-'}</Descriptions.Item>
-          </Descriptions>
-        )}
-      </Drawer>
-    </>
+            <Tabs.TabPane tab="异常工时记录" key="exception">
+              <div style={{ marginBottom: 16 }}>
+                <Button type="primary" icon={<PlusOutlined />} onClick={addException}>
+                  添加异常记录
+                </Button>
+                <Button icon={<SaveOutlined />} onClick={saveExceptions} loading={saving} style={{ marginLeft: 8 }}>
+                  保存
+                </Button>
+              </div>
+              <Table
+                dataSource={exceptionList}
+                columns={exceptionColumns}
+                rowKey="id"
+                pagination={false}
+                bordered
+              />
+            </Tabs.TabPane>
+
+            <Tabs.TabPane tab="人员工时记录" key="manpower">
+              <div style={{ marginBottom: 16 }}>
+                <Button type="primary" icon={<PlusOutlined />} onClick={addManpower}>
+                  添加人员记录
+                </Button>
+                <Button icon={<SaveOutlined />} onClick={saveManpower} loading={saving} style={{ marginLeft: 8 }}>
+                  保存
+                </Button>
+              </div>
+              <Table
+                dataSource={manpowerList}
+                columns={manpowerColumns}
+                rowKey="id"
+                pagination={false}
+                bordered
+              />
+            </Tabs.TabPane>
+          </Tabs>
+        </Card>
+      )}
+    </div>
   )
 }

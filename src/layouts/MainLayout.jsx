@@ -64,15 +64,13 @@ function resolveIcon(name) {
 const defaultMenuItems = [
   { key: '/dashboard', icon: <DashboardOutlined />, label: '工作台' },
   {
-    key: 'production', icon: <ToolOutlined />, label: '生产管理',
-    children: [
-      { key: '/production/orders', icon: <FileTextOutlined />, label: '生产订单' },
-      { key: '/production/workorders', icon: <ToolOutlined />, label: '工单管理' },
-      { key: '/production/reporting', icon: <ProfileOutlined />, label: '生产报工' },
-      { key: '/production/manpower', icon: <TeamOutlined />, label: '人员记录' },
-      { key: '/production/exceptions', icon: <BellOutlined />, label: '工时记录' },
-    ]
-  },
+      key: 'production', icon: <ToolOutlined />, label: '生产管理',
+      children: [
+        { key: '/production/orders', icon: <FileTextOutlined />, label: '生产订单' },
+        { key: '/production/workorders', icon: <ToolOutlined />, label: '工单管理' },
+        { key: '/production/reporting', icon: <ProfileOutlined />, label: '生产报工' },
+      ]
+    },
   {
     key: 'quality', icon: <ExperimentOutlined />, label: '质量管理',
     children: [
