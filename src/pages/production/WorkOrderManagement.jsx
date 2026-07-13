@@ -99,10 +99,17 @@ export default function WorkOrderManagement() {
   const refresh = useCallback(() => setQuery(q => ({ ...q })), [])
 
   const lineOptions = lines.map(l => ({ label: l.line_name, value: l.line_id }))
-  const runningLineOptions = lines.filter(l => l.status === '运行中').map(l => ({ label: l.line_name, value: l.line_id }))
-  // 仅下发订单可被关联到新工单
+  const editingLineId = editing?.line_id
+  const runningLineOptions = lines
+    .filter(l => l.status === '运行中' || (editingLineId && l.line_id === editingLineId))
+    .map(l => ({ label: l.line_name, value: l.line_id }))
+  // 仅下发订单可被关联到新工单，编辑时需包含当前工单关联的订单
   const releasedOrders = orders.filter(o => o.status === '下发')
-  const orderOptions = releasedOrders
+  const editingOrderId = editing?.order_id
+  const orderSource = editingOrderId
+    ? orders.filter(o => o.status === '下发' || o.order_id === editingOrderId)
+    : releasedOrders
+  const orderOptions = orderSource
     .map(o => ({
       label: `${o.order_no} (${o.material_name || '-'})`,
       value: o.order_id,
