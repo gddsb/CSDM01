@@ -65,18 +65,15 @@ export const list = async (req, res) => {
   }
 }
 
-// 修改报工记录（仅工单处于"开工"状态时可修改）
+// 修改报工记录（仅报工单处于"开立"或"开工"状态时可修改）
 export const update = async (req, res) => {
   try {
     const { id } = req.params
     const report = await ProcessReport.findOne({ where: { report_id: id } })
     if (!report) return fail(res, '报工记录不存在', 404)
 
-    // 校验关联工单状态：只有"开工"(1)状态才允许修改
-    const workOrder = await WorkOrder.findOne({ where: { work_order_id: report.work_order_id } })
-    if (!workOrder) return fail(res, '关联工单不存在', 404)
-    if (workOrder.status !== '开工') {
-      return fail(res, '工单已完工，报工记录不可修改')
+    if (report.status === '完工') {
+      return fail(res, '报工单已完工，不可修改')
     }
 
     const {
@@ -123,7 +120,7 @@ export const update = async (req, res) => {
   }
 }
 
-// 创建报工记录
+// 创建报工记录（状态默认为"开立"）
 export const create = async (req, res) => {
   try {
     const {
@@ -145,6 +142,11 @@ export const create = async (req, res) => {
 
     const workOrder = await WorkOrder.findOne({ where: { work_order_id } })
     if (!workOrder) return fail(res, '工单不存在', 404)
+
+    // 工单必须处于"开工"状态才允许创建报工记录
+    if (workOrder.status !== '开工') {
+      return fail(res, '工单未开工，不允许创建报工记录')
+    }
 
     const process = await Process.findOne({ where: { process_id } })
     if (!process) return fail(res, '工序不存在', 404)
@@ -170,6 +172,7 @@ export const create = async (req, res) => {
       report_user,
       report_user_name,
       report_time: report_time ? new Date(report_time) : new Date(),
+      status: 0,
     })
 
     await syncWorkOrderSummary(work_order_id)
@@ -181,4 +184,53 @@ export const create = async (req, res) => {
   }
 }
 
-export default { list, create, update }
+// 报工单开工（开立 → 开工）
+export const start = async (req, res) => {
+  try {
+    const { id } = req.params
+    const report = await ProcessReport.findOne({ where: { report_id: id } })
+    if (!report) return fail(res, '报工记录不存在', 404)
+
+    if (report.status !== '开立') {
+      return fail(res, '当前报工单状态不允许开工')
+    }
+
+    // 校验关联工单必须处于"开工"状态
+    const workOrder = await WorkOrder.findOne({ where: { work_order_id: report.work_order_id } })
+    if (!workOrder) return fail(res, '关联工单不存在', 404)
+    if (workOrder.status !== '开工') {
+      return fail(res, '关联工单未开工，报工单无法开工')
+    }
+
+    await report.update({ status: 1, report_time: new Date() })
+
+    return success(res, report, '报工单已开工')
+  } catch (err) {
+    console.error('报工单开工失败:', err)
+    return fail(res, '服务器错误', 500)
+  }
+}
+
+// 报工单完工（开工 → 完工）
+export const finish = async (req, res) => {
+  try {
+    const { id } = req.params
+    const report = await ProcessReport.findOne({ where: { report_id: id } })
+    if (!report) return fail(res, '报工记录不存在', 404)
+
+    if (report.status !== '开工') {
+      return fail(res, '当前报工单状态不允许完工')
+    }
+
+    await report.update({ status: 2 })
+
+    await syncWorkOrderSummary(report.work_order_id)
+
+    return success(res, report, '报工单已完工')
+  } catch (err) {
+    console.error('报工单完工失败:', err)
+    return fail(res, '服务器错误', 500)
+  }
+}
+
+export default { list, create, update, start, finish }

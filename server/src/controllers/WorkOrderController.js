@@ -223,81 +223,29 @@ export const start = async (req, res) => {
       if (Number(workOrder.finished_qty) >= Number(workOrder.planned_qty)) {
         return fail(res, '完工数量已达到计划数量，无法再次报工')
       }
-      // 检查2：没有处于开工状态的报工单
-      const activeReports = await ProcessReport.count({ where: { work_order_id: id, status: 1 } })
+      // 检查2：没有处于开工或开立状态的报工单
+      const activeReports = await ProcessReport.count({ where: { work_order_id: id, status: { [Op.in]: [0, 1] } } })
       if (activeReports > 0) {
-        return fail(res, '存在处于开工状态的报工单，无法再次报工')
+        return fail(res, '存在未完工的报工单，无法再次开工')
       }
       // 更新工单状态
       const now = new Date()
       let startTime = start_time ? new Date(start_time) : now
       await workOrder.update({ status: 1, start_time: startTime, finish_time: null })
-      // 更新现有报工记录状态为"开工"
-      await ProcessReport.update({ status: 1 }, { where: { work_order_id: id } })
-      return success(res, workOrder, '工单已开始报工')
+      return success(res, workOrder, '工单已开工')
     }
 
-    // 从"开立"状态开工（原有逻辑）
+    // 从"开立"状态开工
     const now = new Date()
     let startTime = workOrder.start_time || new Date(start_time || now)
-    
+
     const minTime = new Date(now.getTime() - 4 * 60 * 60 * 1000)
     if (startTime < minTime) return fail(res, '开工时间不可早于当前时间往前推4小时')
     if (startTime > now) return fail(res, '开工时间不可晚于当前时间')
 
     await workOrder.update({ status: 1, start_time: startTime })
 
-    const lineId = workOrder.line_id
-    const lineProcesses = await import('../models/LineProcess.js').then(m => m.default).then(model => 
-      model.findAll({ where: { line_id: lineId } })
-    )
-
-    const processIds = lineProcesses.map(lp => lp.process_id)
-    const processes = await import('../models/Process.js').then(m => m.default).then(model =>
-      model.findAll({ where: { process_id: processIds } })
-    )
-
-    const ProcessReportModel = await import('../models/ProcessReport.js').then(m => m.default)
-    const ManpowerRecordModel = await import('../models/ManpowerRecord.js').then(m => m.default)
-
-    for (const process of processes) {
-      await ProcessReportModel.create({
-        work_order_id: workOrder.work_order_id,
-        work_order_no: workOrder.work_order_no,
-        process_id: process.process_id,
-        process_name: process.process_name,
-        input_qty: 0,
-        defect_material: 0,
-        defect_process: 0,
-        defect_scrap: 0,
-        output_qty: 0,
-        status: 1,
-        report_user: req.user?.username || '',
-        report_user_name: req.user?.real_name || '',
-        report_time: startTime,
-      })
-    }
-
-    const recordDate = new Date(startTime).toISOString().split('T')[0]
-    await ManpowerRecordModel.create({
-      work_order_id: workOrder.work_order_id,
-      work_order_no: workOrder.work_order_no,
-      record_date: recordDate,
-      shift: '白班',
-      start_time: startTime,
-      end_time: null,
-      hours: 0,
-      skilled_count: 0,
-      general_count: 0,
-      labor_count: 0,
-      other_count: 0,
-      total_people: 0,
-      man_hours: 0,
-      record_user: req.user?.username || '',
-      record_user_name: req.user?.real_name || '',
-    })
-
-    return success(res, workOrder, '工单已开工，报工记录和人员记录已自动生成')
+    return success(res, workOrder, '工单已开工')
   } catch (err) {
     console.error('开工失败:', err)
     return fail(res, '服务器错误', 500)
@@ -358,9 +306,6 @@ export const finish = async (req, res) => {
       labor_hours,
       finished_qty: finished_qty !== undefined ? finished_qty : workOrder.finished_qty,
     })
-
-    // 更新所有报工记录状态为"完工"
-    await ProcessReport.update({ status: 2 }, { where: { work_order_id: id } })
 
     return success(res, workOrder, '工单已完工')
   } catch (err) {

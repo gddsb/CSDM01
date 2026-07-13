@@ -267,12 +267,40 @@ export default function ProcessReporting() {
     try {
       setSaving(true)
       const res = await api.post(`/production/work-orders/${selectedWO.work_order_id}/start`)
-      message.success(res.message || '工单已开始报工')
+      message.success(res.message || '工单已开工')
       const updated = { ...selectedWO, status: '开工' }
       setSelectedWO(updated)
       setWoQuery(q => ({ ...q }))
     } catch (e) {
-      message.error(e.message || '开始报工失败')
+      message.error(e.message || '开工失败')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // 报工单开工
+  const handleStartReport = async (r) => {
+    try {
+      setSaving(true)
+      const res = await api.post(`/production/process-reports/${r.report_id}/start`)
+      message.success(res.message || '报工单已开工')
+      fetchReports(selectedWO.work_order_id)
+    } catch (e) {
+      message.error(e.message || '开工失败')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // 报工单完工
+  const handleFinishReport = async (r) => {
+    try {
+      setSaving(true)
+      const res = await api.post(`/production/process-reports/${r.report_id}/finish`)
+      message.success(res.message || '报工单已完工')
+      fetchReports(selectedWO.work_order_id)
+    } catch (e) {
+      message.error(e.message || '完工失败')
     } finally {
       setSaving(false)
     }
@@ -526,12 +554,24 @@ export default function ProcessReporting() {
       render: (_, r) => r.report_time ? dayjs(r.report_time).format('YYYY-MM-DD HH:mm') : '-',
     },
     {
-      title: '操作', key: 'action', width: 100, fixed: 'right',
+      title: '状态', key: 'status', width: 80,
+      render: (_, r) => <Tag color={woStatusColorMap[r.status] || 'default'}>{r.status || '开立'}</Tag>,
+    },
+    {
+      title: '操作', key: 'action', width: 160, fixed: 'right',
       render: (_, r) => (
         <Space size="small">
           <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => setViewRecord(r)}>查看</Button>
-          {selectedWO?.status === '开工' && (
-            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(r)}>编辑</Button>
+          {r.status === '开立' && selectedWO?.status === '开工' && (
+            <Button type="link" size="small" onClick={() => handleStartReport(r)}>开工</Button>
+          )}
+          {r.status === '开工' && (
+            <>
+              <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(r)}>编辑</Button>
+              <Popconfirm title="确认完工？" onConfirm={() => handleFinishReport(r)} disabled={saving}>
+                <Button type="link" size="small">完工</Button>
+              </Popconfirm>
+            </>
           )}
         </Space>
       ),

@@ -20,6 +20,11 @@ export const STATUS_MAPS = {
     开工: 1,
     完工: 2,
   },
+  processReport: {
+    开立: 0,
+    开工: 1,
+    完工: 2,
+  },
   device: {
     运行: 1,
     停用: 0,
