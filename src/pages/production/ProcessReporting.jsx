@@ -38,6 +38,8 @@ export default function ProcessReporting() {
   const [scrapDefectList, setScrapDefectList] = useState([])
   const [exceptionList, setExceptionList] = useState([])
   const [manpowerList, setManpowerList] = useState([])
+  const [materialList, setMaterialList] = useState([])
+  const [materials, setMaterials] = useState([])
 
   const [stats, setStats] = useState({
     inputQty: 0,
@@ -95,11 +97,13 @@ export default function ProcessReporting() {
       setScrapDefectList([])
       setExceptionList([])
       setManpowerList([])
+      setMaterialList([])
       setStats({ inputQty: 0, outputQty: 0, defectMaterial: 0, defectProcess: 0, defectScrap: 0 })
       return
     }
     fetchLineProcesses(selectedWO.line_id)
     fetchAllData(selectedWO.work_order_id)
+    fetchMaterials()
   }, [selectedWO])
 
   const fetchLineProcesses = useCallback(async (lineId) => {
@@ -122,16 +126,18 @@ export default function ProcessReporting() {
 
   const fetchAllData = useCallback(async (woId) => {
     try {
-      const [defectRes, scrapRes, exceptionRes, manpowerRes] = await Promise.all([
+      const [defectRes, scrapRes, exceptionRes, manpowerRes, materialRes] = await Promise.all([
         api.get('/production/process-defects', { params: { work_order_id: woId, page: 1, pageSize: 1000 } }),
         api.get('/production/scrap-defects', { params: { work_order_id: woId, page: 1, pageSize: 1000 } }),
         api.get('/production/exceptions', { params: { work_order_id: woId, page: 1, pageSize: 1000 } }),
         api.get('/production/manpower-records', { params: { work_order_id: woId, page: 1, pageSize: 1000 } }),
+        api.get('/production/process-materials', { params: { work_order_id: woId, page: 1, pageSize: 1000 } }),
       ])
       setProdDefectList(defectRes.data || [])
       setScrapDefectList(scrapRes.data || [])
       setExceptionList(exceptionRes.data || [])
       setManpowerList(manpowerRes.data || [])
+      setMaterialList(materialRes.data || [])
 
       const defectTotal = (defectRes.data || []).reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
       const scrapTotal = (scrapRes.data || []).reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
@@ -146,6 +152,15 @@ export default function ProcessReporting() {
       message.error(err.message || '获取数据失败')
     }
   }, [selectedWO])
+
+  const fetchMaterials = useCallback(async () => {
+    try {
+      const res = await api.get('/basic/materials', { params: { page: 1, pageSize: 1000 } })
+      setMaterials(res.data || [])
+    } catch (err) {
+      setMaterials([])
+    }
+  }, [])
 
   const defectTypeOptions = useMemo(() => {
     const seen = new Set()
@@ -187,6 +202,16 @@ export default function ProcessReporting() {
   const deviceOptions = useMemo(() => {
     return devices.map(d => ({ label: `${d.device_code} ${d.device_name}`, value: d.device_id }))
   }, [devices])
+
+  const materialOptions = useMemo(() => {
+    return materials.map(m => ({
+      label: `${m.material_code} ${m.material_name}`,
+      value: m.material_id,
+      material_code: m.material_code,
+      material_name: m.material_name,
+      specification: m.specification || '',
+    }))
+  }, [materials])
 
   const usedDefectIds = useMemo(() => {
     return new Set(prodDefectList.map(d => d.defect_type_id))
@@ -453,6 +478,89 @@ export default function ProcessReporting() {
             labor_count: item.labor_count,
             other_count: item.other_count,
           })
+        }
+      }
+      message.success('保存成功')
+      fetchAllData(selectedWO.work_order_id)
+    } catch (err) {
+      message.error(err.message || '保存失败')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const addMaterial = () => {
+    const newItem = {
+      id: Date.now(),
+      work_order_id: selectedWO.work_order_id,
+      process_id: selectedProcessId,
+      material_id: null,
+      material_code: '',
+      material_name: '',
+      specification: '',
+      material_batch: '',
+      box_no: '',
+      quantity: 0,
+      label_images: [],
+    }
+    setMaterialList([...materialList, newItem])
+  }
+
+  const updateMaterial = (id, field, value) => {
+    setMaterialList(materialList.map(item => {
+      if (item.id !== id) return item
+      const updated = { ...item, [field]: value }
+      if (field === 'material_id') {
+        const material = materialOptions.find(m => m.value === value)
+        if (material) {
+          updated.material_code = material.material_code
+          updated.material_name = material.material_name
+          updated.specification = material.specification
+        }
+      }
+      return updated
+    }))
+  }
+
+  const deleteMaterial = (id) => {
+    setMaterialList(materialList.filter(item => item.id !== id))
+  }
+
+  const saveMaterials = async () => {
+    const validItems = materialList.filter(m => m.material_id && m.quantity > 0)
+    if (validItems.length === 0) {
+      message.warning('请填写有效的物料记录')
+      return
+    }
+    try {
+      setSaving(true)
+      for (const item of validItems) {
+        if (item.material_id) {
+          if (item.id && typeof item.id === 'number') {
+            await api.put(`/production/process-materials/${item.id}`, {
+              process_id: item.process_id,
+              material_type: '原材料',
+              material_code: item.material_code,
+              material_name: item.material_name,
+              specification: item.specification,
+              material_batch: item.material_batch,
+              box_no: item.box_no,
+              quantity: item.quantity,
+              label_images: item.label_images,
+            })
+          } else {
+            await api.post('/production/process-materials', {
+              work_order_id: item.work_order_id,
+              process_id: item.process_id,
+              material_type: '原材料',
+              material_code: item.material_code,
+              material_name: item.material_name,
+              specification: item.specification,
+              material_batch: item.material_batch,
+              quantity: item.quantity,
+              label_images: item.label_images,
+            })
+          }
         }
       }
       message.success('保存成功')
@@ -769,6 +877,81 @@ export default function ProcessReporting() {
     },
   ]
 
+  const materialColumns = [
+    {
+      title: '料号', key: 'material_code', width: 120,
+      render: (_, r) => r.material_code || '-',
+    },
+    {
+      title: '料品名称', key: 'material_name', width: 200,
+      render: (_, r) => (
+        <Select
+          value={r.material_id}
+          onChange={(v) => updateMaterial(r.id, 'material_id', v)}
+          placeholder="请选择料品"
+          style={{ width: '100%' }}
+          options={materialOptions}
+        />
+      ),
+    },
+    {
+      title: '规格', key: 'specification', width: 120,
+      render: (_, r) => r.specification || '-',
+    },
+    {
+      title: '批号', key: 'material_batch', width: 120,
+      render: (_, r) => (
+        <Input
+          value={r.material_batch}
+          onChange={(e) => updateMaterial(r.id, 'material_batch', e.target.value)}
+          placeholder="请输入批号"
+        />
+      ),
+    },
+    {
+      title: '包(箱)号', key: 'box_no', width: 120,
+      render: (_, r) => (
+        <Input
+          value={r.box_no}
+          onChange={(e) => updateMaterial(r.id, 'box_no', e.target.value)}
+          placeholder="请输入包(箱)号"
+        />
+      ),
+    },
+    {
+      title: '数量', key: 'quantity', width: 100, align: 'right',
+      render: (_, r) => (
+        <InputNumber
+          min={0}
+          value={r.quantity}
+          onChange={(v) => updateMaterial(r.id, 'quantity', v)}
+          style={{ width: '100%' }}
+        />
+      ),
+    },
+    {
+      title: '标签图片', key: 'label_images', width: 120,
+      render: (_, r) => (
+        <Upload
+          listType="picture-card"
+          fileList={r.label_images?.map((img, i) => ({ uid: i, url: img })) || []}
+          onChange={(info) => updateMaterial(r.id, 'label_images', info.fileList.map(f => f.url))}
+          beforeUpload={() => false}
+        >
+          <UploadOutlined />
+        </Upload>
+      ),
+    },
+    {
+      title: '操作', key: 'action', width: 80,
+      render: (_, r) => (
+        <Popconfirm title="确认删除？" onConfirm={() => deleteMaterial(r.id)}>
+          <Button type="link" danger size="small"><DeleteOutlined /></Button>
+        </Popconfirm>
+      ),
+    },
+  ]
+
   return (
     <div className="page-container">
       <Card className="page-header-card">
@@ -910,6 +1093,35 @@ export default function ProcessReporting() {
               <Table
                 dataSource={scrapDefectList}
                 columns={scrapDefectColumns}
+                rowKey="id"
+                pagination={false}
+                bordered
+              />
+            </Tabs.TabPane>
+
+            <Tabs.TabPane tab="生产物料记录" key="material">
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ marginRight: 8, fontWeight: 500 }}>选择工序：</label>
+                <Select
+                  value={selectedProcessId}
+                  onChange={setSelectedProcessId}
+                  placeholder="请选择工序"
+                  style={{ width: 250 }}
+                  options={lineProcesses.map(p => ({
+                    label: `${p.process_code} ${p.process_name}`,
+                    value: p.process_id,
+                  }))}
+                />
+                <Button type="primary" icon={<PlusOutlined />} onClick={addMaterial} style={{ marginLeft: 16 }}>
+                  添加物料记录
+                </Button>
+                <Button icon={<SaveOutlined />} onClick={saveMaterials} loading={saving} style={{ marginLeft: 8 }}>
+                  保存
+                </Button>
+              </div>
+              <Table
+                dataSource={materialList}
+                columns={materialColumns}
                 rowKey="id"
                 pagination={false}
                 bordered

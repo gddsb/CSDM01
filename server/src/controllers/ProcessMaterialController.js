@@ -80,6 +80,48 @@ export const create = async (req, res) => {
   }
 }
 
+export const update = async (req, res) => {
+  try {
+    const { id } = req.params
+    const {
+      process_id,
+      material_type,
+      material_code,
+      material_name,
+      specification,
+      material_batch,
+      quantity,
+      label_images,
+    } = req.body
+
+    const material = await ProcessMaterial.findOne({ where: { material_id: id } })
+    if (!material) return fail(res, '记录不存在', 404)
+
+    if (process_id) {
+      const process = await Process.findOne({ where: { process_id } })
+      if (!process) return fail(res, '工序不存在', 404)
+      material.process_id = process.process_id
+      material.process_code = process.process_code
+      material.process_name = process.process_name
+    }
+
+    if (material_type) material.material_type = material_type
+    if (material_code) material.material_code = material_code
+    if (material_name) material.material_name = material_name
+    if (specification) material.specification = specification
+    if (material_batch) material.material_batch = material_batch
+    if (quantity && quantity > 0) material.quantity = Number(quantity)
+    if (label_images !== undefined) material.label_images = label_images ? JSON.stringify(label_images) : null
+
+    await material.save()
+
+    return success(res, material, '更新成功')
+  } catch (err) {
+    console.error('更新制程物料记录失败:', err)
+    return fail(res, '服务器错误', 500)
+  }
+}
+
 export const remove = async (req, res) => {
   try {
     const { id } = req.params
@@ -93,4 +135,4 @@ export const remove = async (req, res) => {
   }
 }
 
-export default { list, create, remove }
+export default { list, create, update, remove }

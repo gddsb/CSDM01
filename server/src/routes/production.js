@@ -22,7 +22,7 @@ import { list as manpowerList, detail as manpowerDetail, create as manpowerCreat
 import { list as exceptionList, create as exceptionCreate, update as exceptionUpdate } from '../controllers/ExceptionRecordController.js'
 import { list as defectList, create as defectCreate, remove as defectRemove, update as defectUpdate, batchSave as defectBatchSave, scrapList, scrapCreate, scrapUpdate } from '../controllers/ProcessDefectController.js'
 import { list as exceptionTimeList, create as exceptionTimeCreate, remove as exceptionTimeRemove } from '../controllers/ProcessExceptionController.js'
-import { list as materialList, create as materialCreate, remove as materialRemove } from '../controllers/ProcessMaterialController.js'
+import { list as materialList, create as materialCreate, update as materialUpdate, remove as materialRemove } from '../controllers/ProcessMaterialController.js'
 import { authRequired } from '../middleware/auth.js'
 
 const router = Router()
@@ -88,6 +88,7 @@ router.delete('/process-exceptions/:id', exceptionTimeRemove)
 // 制程物料记录
 router.get('/process-materials', materialList)
 router.post('/process-materials', materialCreate)
+router.put('/process-materials/:id', materialUpdate)
 router.delete('/process-materials/:id', materialRemove)
 
 export default router
