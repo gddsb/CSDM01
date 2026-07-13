@@ -30,6 +30,97 @@ export const list = async (req, res) => {
   }
 }
 
+// 检验报废列表（过滤 defect_category='检验报废'）
+export const scrapList = async (req, res) => {
+  try {
+    const { work_order_id, page = 1, pageSize = 20 } = req.query
+    const where = { defect_category: '检验报废' }
+    if (work_order_id) where.work_order_id = Number(work_order_id)
+
+    const limit = Number(pageSize)
+    const offset = (Number(page) - 1) * limit
+    const { rows, count } = await ProcessDefect.findAndCountAll({
+      where,
+      limit,
+      offset,
+      order: [['record_time', 'DESC']],
+    })
+    const data = rows.map(r => ({
+      ...r.toJSON(),
+      scrap_id: r.defect_id,
+      defect_images: r.defect_images ? JSON.parse(r.defect_images) : [],
+    }))
+    return success(res, data, '查询成功', count)
+  } catch (err) {
+    console.error('查询检验报废列表失败:', err)
+    return fail(res, '服务器错误', 500)
+  }
+}
+
+// 创建检验报废记录
+export const scrapCreate = async (req, res) => {
+  try {
+    const { work_order_id, defect_type_id, quantity, unit, defect_images } = req.body
+
+    if (!work_order_id) return fail(res, '工单 ID 不能为空')
+    if (!quantity || quantity <= 0) return fail(res, '数量必须大于0')
+
+    const workOrder = await WorkOrder.findOne({ where: { work_order_id } })
+    if (!workOrder) return fail(res, '工单不存在', 404)
+
+    let defectType = null
+    let defect_code = ''
+    let defect_name = ''
+    if (defect_type_id) {
+      defectType = await DefectType.findOne({ where: { defect_id: defect_type_id } })
+      if (defectType) {
+        defect_code = defectType.defect_code
+        defect_name = defectType.defect_name
+      }
+    }
+
+    const defect = await ProcessDefect.create({
+      work_order_id: workOrder.work_order_id,
+      work_order_no: workOrder.work_order_no,
+      defect_category: '检验报废',
+      defect_name: defect_name || '检验报废',
+      defect_type_id: defect_type_id || null,
+      quantity: Number(quantity),
+      unit: unit || (defectType?.defect_unit || '默认单位'),
+      defect_images: defect_images ? JSON.stringify(defect_images) : null,
+      record_user: req.user?.username || '',
+      record_user_name: req.user?.real_name || '',
+    })
+
+    return success(res, { ...defect.toJSON(), scrap_id: defect.defect_id }, '创建成功')
+  } catch (err) {
+    console.error('创建检验报废记录失败:', err)
+    return fail(res, '服务器错误', 500)
+  }
+}
+
+// 更新检验报废记录
+export const scrapUpdate = async (req, res) => {
+  try {
+    const { id } = req.params
+    const { quantity, unit, defect_images } = req.body
+
+    const defect = await ProcessDefect.findOne({ where: { defect_id: id, defect_category: '检验报废' } })
+    if (!defect) return fail(res, '记录不存在', 404)
+
+    const updateData = {}
+    if (quantity !== undefined) updateData.quantity = Number(quantity)
+    if (unit !== undefined) updateData.unit = unit
+    if (defect_images !== undefined) updateData.defect_images = JSON.stringify(defect_images || [])
+
+    await defect.update(updateData)
+    return success(res, { ...defect.toJSON(), scrap_id: defect.defect_id }, '更新成功')
+  } catch (err) {
+    console.error('更新检验报废记录失败:', err)
+    return fail(res, '服务器错误', 500)
+  }
+}
+
 export const create = async (req, res) => {
   try {
     const {
@@ -171,4 +262,4 @@ export const update = async (req, res) => {
   }
 }
 
-export default { list, create, remove, update, batchSave }
+export default { list, create, remove, update, batchSave, scrapList, scrapCreate, scrapUpdate }

@@ -125,7 +125,7 @@ export default function ProcessReporting() {
       const [defectRes, scrapRes, exceptionRes, manpowerRes] = await Promise.all([
         api.get('/production/process-defects', { params: { work_order_id: woId, page: 1, pageSize: 1000 } }),
         api.get('/production/scrap-defects', { params: { work_order_id: woId, page: 1, pageSize: 1000 } }),
-        api.get('/production/exception-records', { params: { work_order_id: woId, page: 1, pageSize: 1000 } }),
+        api.get('/production/exceptions', { params: { work_order_id: woId, page: 1, pageSize: 1000 } }),
         api.get('/production/manpower-records', { params: { work_order_id: woId, page: 1, pageSize: 1000 } }),
       ])
       setProdDefectList(defectRes.data || [])
@@ -365,7 +365,7 @@ export default function ProcessReporting() {
       setSaving(true)
       for (const item of validItems) {
         if (item.exception_id) {
-          await api.put(`/production/exception-records/${item.exception_id}`, {
+          await api.put(`/production/exceptions/${item.exception_id}`, {
             exception_category: item.exception_category,
             start_time: item.start_time.format ? item.start_time.format('YYYY-MM-DD HH:mm:ss') : item.start_time,
             end_time: item.end_time?.format ? item.end_time.format('YYYY-MM-DD HH:mm:ss') : item.end_time,
@@ -374,7 +374,7 @@ export default function ProcessReporting() {
             device_id: item.device_id,
           })
         } else {
-          await api.post('/production/exception-records', {
+          await api.post('/production/exceptions', {
             work_order_id: item.work_order_id,
             exception_category: item.exception_category,
             start_time: item.start_time.format ? item.start_time.format('YYYY-MM-DD HH:mm:ss') : item.start_time,

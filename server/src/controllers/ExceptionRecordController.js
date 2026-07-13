@@ -115,4 +115,47 @@ export const create = async (req, res) => {
   }
 }
 
-export default { list, create }
+// 更新异常记录
+export const update = async (req, res) => {
+  try {
+    const { id } = req.params
+    const { exception_category, start_time, end_time, description, handler, device_id } = req.body
+
+    const record = await ExceptionRecord.findOne({ where: { record_id: id } })
+    if (!record) return fail(res, '记录不存在', 404)
+
+    const updateData = {}
+    if (exception_category !== undefined) {
+      updateData.exception_type = exception_category
+      updateData.exception_type_name = exception_category
+    }
+    if (start_time !== undefined) updateData.start_time = new Date(start_time)
+    if (end_time !== undefined) updateData.end_time = end_time ? new Date(end_time) : null
+    if (description !== undefined) updateData.reason = description
+    if (handler !== undefined) updateData.handle_result = handler
+
+    if (device_id !== undefined) {
+      updateData.device_id = device_id
+      if (device_id) {
+        const device = await Device.findOne({ where: { device_id } })
+        if (device) updateData.device_name = device.device_name
+      } else {
+        updateData.device_name = null
+      }
+    }
+
+    // 自动计算时长
+    if (updateData.start_time && updateData.end_time) {
+      const ms = new Date(updateData.end_time).getTime() - new Date(updateData.start_time).getTime()
+      updateData.duration = ms > 0 ? Number((ms / 3600000).toFixed(2)) : 0
+    }
+
+    await record.update(updateData)
+    return success(res, record, '更新成功')
+  } catch (err) {
+    console.error('更新异常记录失败:', err)
+    return fail(res, '服务器错误', 500)
+  }
+}
+
+export default { list, create, update }
