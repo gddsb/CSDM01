@@ -46,6 +46,7 @@ export default function WorkOrderManagement() {
   // 筛选输入态
   const [keywordInput, setKeywordInput] = useState('')
   const [statusInput, setStatusInput] = useState(['未开工', '已开工'])
+  const [lineInput, setLineInput] = useState(undefined)
   // 已应用的查询条件
   const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: ['未开工', '已开工'], line_id: undefined })
 
