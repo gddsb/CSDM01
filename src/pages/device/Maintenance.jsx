@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react'
-import { Table, Tag, Button, Space, message } from 'antd'
+import { Table, Tag, Button, Space } from 'antd'
 import {
   ScheduleOutlined, ClockCircleOutlined, ToolOutlined, DollarOutlined,
   ExportOutlined, ReloadOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import { devices } from '../../mock/data'
+import { useMessage } from '../../contexts/AppContext'
 
 // 基于设备档案生成的维修保养记录 Mock 数据
 const maintenanceData = [
@@ -26,6 +27,7 @@ const statusColorMap = { '计划中': 'default', '执行中': 'processing', '已
 const isMaintenance = (t) => t === '日常保养' || t === '定期保养'
 
 export default function Maintenance() {
+  const message = useMessage()
   const [data] = useState(maintenanceData)
   const [deviceFilter, setDeviceFilter] = useState(undefined)
   const [typeFilter, setTypeFilter] = useState(undefined)

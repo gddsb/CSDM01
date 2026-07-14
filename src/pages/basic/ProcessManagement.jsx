@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Table, Tag, Button, Space, Modal, Form, Input, InputNumber, Switch, Popconfirm, message, Row, Col, Tooltip, Typography } from 'antd'
+import { Table, Tag, Button, Space, Modal, Form, Input, InputNumber, Switch, Popconfirm, Row, Col, Tooltip, Typography } from 'antd'
 import {
   OrderedListOutlined, CheckCircleOutlined,
   ArrowUpOutlined, ArrowDownOutlined, InfoCircleOutlined,
@@ -7,10 +7,12 @@ import {
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
+import { useMessage } from '../../contexts/AppContext'
 
 const { Text } = Typography
 
 export default function ProcessManagement() {
+  const message = useMessage()
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)

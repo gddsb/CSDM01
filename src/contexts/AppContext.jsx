@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import api from '../utils/api'
 import { applyTheme } from '../themes'
 
@@ -9,6 +9,9 @@ export function AppProvider({ children }) {
   const [themeKey, setThemeKey] = useState('pureMilk')
   const [initialized, setInitialized] = useState(false)
   const [systemConfig, setSystemConfig] = useState({ system_name: '', company_name: '' })
+  const [messageApi, setMessageApiState] = useState(null)
+  const [modalApi, setModalApiState] = useState(null)
+  const [notificationApi, setNotificationApiState] = useState(null)
 
   useEffect(() => {
     const savedUser = localStorage.getItem('mes_user')
@@ -86,8 +89,12 @@ export function AppProvider({ children }) {
     return nextKey
   }
 
+  const setMessageApi = (api) => { setMessageApiState(api) }
+  const setModalApi = (api) => { setModalApiState(api) }
+  const setNotificationApi = (api) => { setNotificationApiState(api) }
+
   return (
-    <AppContext.Provider value={{ currentUser, login, logout, updateUser, themeKey, changeTheme, cycleTheme, initialized, systemConfig, loadSystemConfig, updateSystemConfig }}>
+    <AppContext.Provider value={{ currentUser, login, logout, updateUser, themeKey, changeTheme, cycleTheme, initialized, systemConfig, loadSystemConfig, updateSystemConfig, messageApi, modalApi, notificationApi, setMessageApi, setModalApi, setNotificationApi }}>
       {children}
     </AppContext.Provider>
   )
@@ -95,4 +102,51 @@ export function AppProvider({ children }) {
 
 export function useApp() {
   return useContext(AppContext)
+}
+
+const noopMessage = {
+  success: () => {},
+  error: () => {},
+  info: () => {},
+  warning: () => {},
+  warn: () => {},
+  loading: () => {},
+  open: () => {},
+  config: () => {},
+  destroy: () => {},
+}
+
+const noopModal = {
+  info: () => {},
+  success: () => {},
+  error: () => {},
+  warning: () => {},
+  warn: () => {},
+  confirm: () => {},
+}
+
+const noopNotification = {
+  success: () => {},
+  error: () => {},
+  info: () => {},
+  warning: () => {},
+  warn: () => {},
+  open: () => {},
+  close: () => {},
+  destroy: () => {},
+}
+
+export function useMessage() {
+  const ctx = useContext(AppContext)
+  return ctx?.messageApi || noopMessage
+}
+
+export function useModal() {
+  const ctx = useContext(AppContext)
+  return ctx?.modalApi || noopModal
+}
+
+export function useNotification() {
+  const ctx = useContext(AppContext)
+  return ctx?.notificationApi || noopNotification
 }

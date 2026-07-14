@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Table, Tag, Button, Modal, Form, Input, InputNumber, Select, Space, Row, Col,
-  message, Card, Divider, Popconfirm, DatePicker, Tabs, Upload, Radio, Drawer, Image,
+  Card, Divider, Popconfirm, DatePicker, Tabs, Upload, Radio, Drawer, Image,
 } from 'antd'
+import { useMessage } from '../../contexts/AppContext'
 import {
   ProfileOutlined, PlusOutlined, DeleteOutlined, SaveOutlined, UploadOutlined,
   PictureOutlined,
@@ -66,6 +67,8 @@ export default function ProcessReporting() {
   const clearUnsaved = () => {
     setHasUnsavedChanges(false)
   }
+
+  const message = useMessage()
 
   useEffect(() => {
     let cancelled = false

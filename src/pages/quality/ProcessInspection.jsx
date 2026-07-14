@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react'
-import { Table, Tag, Button, Select, DatePicker, Space, Row, Col, Modal, Form, Input, message } from 'antd'
+import { Table, Tag, Button, Select, DatePicker, Space, Row, Col, Modal, Form, Input } from 'antd'
+import { useMessage } from '../../contexts/AppContext'
 import {
   ExperimentOutlined, CheckCircleOutlined, CloseCircleOutlined, PercentageOutlined,
   PlusOutlined, ExportOutlined, ReloadOutlined, SearchOutlined
@@ -34,6 +35,8 @@ export default function ProcessInspection() {
   const [dateRange, setDateRange] = useState(null)
   const [modalVisible, setModalVisible] = useState(false)
   const [form] = Form.useForm()
+
+  const message = useMessage()
 
   const selectedWorkOrderId = Form.useWatch('work_order_id', form)
   const selectedWorkOrder = workOrders.find(w => w.work_order_id === selectedWorkOrderId)

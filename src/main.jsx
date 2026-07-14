@@ -1,7 +1,7 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { ConfigProvider, theme as antdTheme } from 'antd'
+import { ConfigProvider, theme as antdTheme, App as AntdApp } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import dayjs from 'dayjs'
 import 'dayjs/locale/zh-cn'
@@ -113,7 +113,7 @@ function AppRoutes() {
 }
 
 function App() {
-  const { themeKey } = useApp()
+  const { themeKey, setMessageApi, setModalApi, setNotificationApi } = useApp()
   const isDark = themeKey === 'darkFactory'
   return (
     <ConfigProvider
@@ -126,10 +126,24 @@ function App() {
         algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
       }}
     >
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
+      <AntdApp>
+        <AppInner setMessageApi={setMessageApi} setModalApi={setModalApi} setNotificationApi={setNotificationApi} />
+      </AntdApp>
     </ConfigProvider>
+  )
+}
+
+function AppInner({ setMessageApi, setModalApi, setNotificationApi }) {
+  const { message, modal, notification } = AntdApp.useApp()
+  useEffect(() => {
+    setMessageApi(message)
+    setModalApi(modal)
+    setNotificationApi(notification)
+  }, [message, modal, notification, setMessageApi, setModalApi, setNotificationApi])
+  return (
+    <BrowserRouter>
+      <AppRoutes />
+    </BrowserRouter>
   )
 }
 

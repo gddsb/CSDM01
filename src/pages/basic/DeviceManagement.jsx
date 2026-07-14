@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Table, Tag, Button, Drawer, Space, Modal, Form, Input, Select, Popconfirm, message, Descriptions, Row, Col } from 'antd'
+import { Table, Tag, Button, Drawer, Space, Modal, Form, Input, Select, Popconfirm, Descriptions, Row, Col } from 'antd'
 import {
   ToolOutlined, PlayCircleOutlined, WarningOutlined, SafetyCertificateOutlined,
   PlusOutlined, EyeOutlined, ReloadOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
+import { useMessage } from '../../contexts/AppContext'
 
 // 设备状态标签颜色映射（与后端 Device 模型一致：运行=1, 停用=0, 维修=2）
 const statusColorMap = { '运行': 'green', '维修': 'orange', '停用': 'red' }
@@ -13,6 +14,7 @@ const statusOptions = ['运行', '维修', '停用'].map(s => ({ label: s, value
 const specialOptions = [{ label: '是', value: 1 }, { label: '否', value: 0 }]
 
 export default function DeviceManagement() {
+  const message = useMessage()
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)

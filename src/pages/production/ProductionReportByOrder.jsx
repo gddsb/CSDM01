@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Table, Tag, Select, Row, Col, Input, InputNumber, DatePicker, Form, Button,
-  Space, Tabs, message, Popconfirm, Card, Descriptions
+  Space, Tabs, Popconfirm, Card, Descriptions
 } from 'antd'
+import { useMessage } from '../../contexts/AppContext'
 import {
   ArrowLeftOutlined, ReloadOutlined, PlusOutlined, DeleteOutlined,
   FileTextOutlined, CloseCircleOutlined, ToolOutlined, PictureOutlined
@@ -49,6 +50,8 @@ export default function ProductionReportByOrder() {
   const [defectForm] = Form.useForm()
   const [exceptionForm] = Form.useForm()
   const [materialForm] = Form.useForm()
+
+  const message = useMessage()
 
   const [defectFilters, setDefectFilters] = useState({ process_id: undefined, defect_category: undefined, defect_name: '' })
   const [exceptionFilters, setExceptionFilters] = useState({ exception_type: undefined, device_id: undefined, stop_type: '' })

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, Select, Space, Tree, InputNumber, Popconfirm, message, Row, Col, Typography, Spin, Switch } from 'antd'
+import { Table, Tag, Button, Modal, Form, Input, Select, Space, Tree, InputNumber, Popconfirm, Row, Col, Typography, Spin, Switch } from 'antd'
 import {
   SafetyCertificateOutlined, ApartmentOutlined,
   PlusOutlined, ReloadOutlined, SafetyOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
+import { useMessage } from '../../contexts/AppContext'
 
 const { Text } = Typography
 
@@ -39,6 +40,7 @@ function buildPermissionTree(permissions) {
 }
 
 export default function RoleManagement() {
+  const message = useMessage()
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { Table, Tag, Button, Drawer, Space, Modal, Form, Input, Select, Descriptions, Typography, message, Row, Col } from 'antd'
+import { Table, Tag, Button, Drawer, Space, Modal, Form, Input, Select, Descriptions, Typography, Row, Col } from 'antd'
+import { useMessage } from '../../contexts/AppContext'
 import {
   FileProtectOutlined, AppstoreOutlined, SolutionOutlined,
   CheckCircleOutlined, EyeOutlined, EditOutlined, SearchOutlined
@@ -50,6 +51,8 @@ export default function InspectionStandard() {
   const [editing, setEditing] = useState(null)
   const [modalVisible, setModalVisible] = useState(false)
   const [form] = Form.useForm()
+
+  const message = useMessage()
 
   const generalCount = data.filter(s => s.standard_type === '通用标准').length
   const customerCount = data.filter(s => s.standard_type === '客户专用标准').length

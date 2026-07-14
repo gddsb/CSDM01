@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Layout, Menu, Dropdown, Avatar, Space, Typography, Badge, Button, Modal, Form, Input, Tooltip, Upload, message } from 'antd'
+import { Layout, Menu, Dropdown, Avatar, Space, Typography, Badge, Button, Modal, Form, Input, Tooltip, Upload } from 'antd'
 import {
   DashboardOutlined, TeamOutlined, DatabaseOutlined, SettingOutlined,
   ProfileOutlined, DeploymentUnitOutlined, SafetyCertificateOutlined,
@@ -11,7 +11,7 @@ import {
   LockOutlined, KeyOutlined, MenuOutlined, SkinOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
-import { useApp } from '../contexts/AppContext'
+import { useApp, useMessage } from '../contexts/AppContext'
 import { themeList, themes } from '../themes'
 import api from '../utils/api'
 import logoSquare from '../assets/logo-square.png'
@@ -143,6 +143,7 @@ const defaultMenuItems = [
 ]
 
 export default function MainLayout() {
+  const message = useMessage()
   const { currentUser, logout, updateUser, themeKey, cycleTheme, systemConfig, loadSystemConfig } = useApp()
   const navigate = useNavigate()
   const location = useLocation()

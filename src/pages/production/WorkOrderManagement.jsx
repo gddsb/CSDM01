@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Table, Tag, Button, Modal, Form, InputNumber, DatePicker, Input, Space, Row, Col, Select, Checkbox, message, Drawer, Descriptions, Popconfirm } from 'antd'
+import { Table, Tag, Button, Modal, Form, InputNumber, DatePicker, Input, Space, Row, Col, Select, Checkbox, Drawer, Descriptions, Popconfirm } from 'antd'
+import { useMessage } from '../../contexts/AppContext'
 
 const { RangePicker } = DatePicker
 import {
@@ -36,6 +37,8 @@ export default function WorkOrderManagement() {
   const [detailOpen, setDetailOpen] = useState(false)
   const [currentWO, setCurrentWO] = useState(null)
   const [form] = Form.useForm()
+
+  const message = useMessage()
 
   const [selectedLineProcesses, setSelectedLineProcesses] = useState([])
   const [detailLineProcesses, setDetailLineProcesses] = useState([])

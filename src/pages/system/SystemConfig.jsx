@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { useApp } from '../../contexts/AppContext'
+import { useApp, useMessage } from '../../contexts/AppContext'
 import {
-  Form, Input, InputNumber, Select, Switch, Button, Row, Col, Typography, message, Spin,
+  Form, Input, InputNumber, Select, Switch, Button, Row, Col, Typography, Spin,
   Tabs, Table, Tag, Descriptions, Space, Popconfirm, Card, Statistic, Modal, Alert,
 } from 'antd'
 import {
@@ -59,6 +59,7 @@ function formValuesToConfig(values) {
 
 export default function SystemConfig() {
   const { updateSystemConfig } = useApp()
+  const message = useMessage()
   const [activeTab, setActiveTab] = useState('env')
   const [form] = Form.useForm()
   const [saving, setSaving] = useState(false)

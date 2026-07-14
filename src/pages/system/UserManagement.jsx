@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, Select, Space, Popconfirm, message, Row, Col, Switch } from 'antd'
+import { Table, Tag, Button, Modal, Form, Input, Select, Space, Popconfirm, Row, Col, Switch } from 'antd'
 import {
   TeamOutlined, CheckCircleOutlined, StopOutlined, ApartmentOutlined,
   PlusOutlined, ReloadOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
+import { useMessage } from '../../contexts/AppContext'
 
 export default function UserManagement() {
+  const message = useMessage()
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)

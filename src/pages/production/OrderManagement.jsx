@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, InputNumber, Select, DatePicker, Space, Row, Col, message, Drawer, Descriptions, Popconfirm, Checkbox } from 'antd'
+import { Table, Tag, Button, Modal, Form, Input, InputNumber, Select, DatePicker, Space, Row, Col, Drawer, Descriptions, Popconfirm, Checkbox } from 'antd'
+import { useMessage } from '../../contexts/AppContext'
 import {
   FileTextOutlined, PlusOutlined, SearchOutlined, ReloadOutlined,
   SendOutlined, ClockCircleOutlined, CheckCircleOutlined
@@ -35,6 +36,8 @@ export default function OrderManagement() {
   const [editing, setEditing] = useState(null)
   const [selectedMaterial, setSelectedMaterial] = useState(null)
   const [form] = Form.useForm()
+
+  const message = useMessage()
 
   // 筛选输入态
   const [keywordInput, setKeywordInput] = useState('')

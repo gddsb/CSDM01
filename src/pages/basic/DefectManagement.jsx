@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, Select, message, Row, Col, Switch, Drawer, Descriptions, Space, Popconfirm, Upload, Image, Checkbox } from 'antd'
+import { Table, Tag, Button, Modal, Form, Input, Select, Row, Col, Switch, Drawer, Descriptions, Space, Popconfirm, Upload, Image, Checkbox } from 'antd'
 import {
   ImportOutlined, ToolOutlined, DeleteOutlined,
   PlusOutlined, EyeOutlined,
@@ -7,6 +7,7 @@ import {
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
+import { useMessage } from '../../contexts/AppContext'
 
 // 不良类型标签颜色映射
 const typeColorMap = { '来料不良': 'blue', '制程不良': 'orange', '检验报废': 'red' }
@@ -31,6 +32,7 @@ const defectTypeMap = {
 const toArray = (v) => Array.isArray(v) ? v : []
 
 export default function DefectManagement() {
+  const message = useMessage()
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)

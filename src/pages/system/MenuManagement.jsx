@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, InputNumber, Select, TreeSelect, message, Row, Col, Space, Popconfirm } from 'antd'
+import { Table, Tag, Button, Modal, Form, Input, InputNumber, Select, TreeSelect, Row, Col, Space, Popconfirm } from 'antd'
 import {
   AppstoreOutlined, CheckCircleOutlined, CloseCircleOutlined,
   PlusOutlined, EyeOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
+import { useMessage } from '../../contexts/AppContext'
 
 const typeOptions = [
   { label: '菜单', value: 'menu' },
@@ -17,6 +18,7 @@ const typeOptions = [
 const typeColorMap = { menu: 'blue', page: 'cyan', button: 'orange', api: 'purple' }
 
 export default function MenuManagement() {
+  const message = useMessage()
   const [data, setData] = useState([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
-  Table, Tag, Button, Modal, Form, Input, Select, message,
+  Table, Tag, Button, Modal, Form, Input, Select,
   Row, Col, Drawer, Descriptions, Space, Popconfirm, Tooltip, Statistic, Card,
 } from 'antd'
 import {
@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
+import { useMessage } from '../../contexts/AppContext'
 
 const dateFormatOptions = [
   { label: '不包含日期（none）', value: 'none' },
@@ -48,6 +49,7 @@ const targetFieldPresets = [
 ]
 
 export default function NumberRuleManagement() {
+  const message = useMessage()
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)

@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react'
-import { Table, Tag, Button, Space, message } from 'antd'
+import { Table, Tag, Button, Space } from 'antd'
 import {
   FileSearchOutlined, CheckCircleOutlined, WarningOutlined, ClockCircleOutlined,
   ExportOutlined, ReloadOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import { devices } from '../../mock/data'
+import { useMessage } from '../../contexts/AppContext'
 
 // 基于设备档案生成的点检记录 Mock 数据
 const checkRecordsData = [
@@ -27,6 +28,7 @@ const resultColorMap = { '正常': 'green', '异常': 'red' }
 const LATEST_CHECK_DATE = '2026-06-30'
 
 export default function CheckRecord() {
+  const message = useMessage()
   const [data] = useState(checkRecordsData)
   const [deviceFilter, setDeviceFilter] = useState(undefined)
   const [resultFilter, setResultFilter] = useState(undefined)

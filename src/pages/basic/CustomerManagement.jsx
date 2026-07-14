@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, Select, DatePicker, message, Row, Col, Drawer, Descriptions, Space, Popconfirm } from 'antd'
+import { Table, Tag, Button, Modal, Form, Input, Select, DatePicker, Row, Col, Drawer, Descriptions, Space, Popconfirm } from 'antd'
 import dayjs from 'dayjs'
 import {
   TeamOutlined, CheckCircleOutlined, CloseCircleOutlined,
@@ -7,8 +7,10 @@ import {
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
+import { useMessage } from '../../contexts/AppContext'
 
 export default function CustomerManagement() {
+  const message = useMessage()
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)

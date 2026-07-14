@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, Select, Drawer, Space, Popconfirm, message, Descriptions, Row, Col } from 'antd'
+import { Table, Tag, Button, Modal, Form, Input, Select, Drawer, Space, Popconfirm, Descriptions, Row, Col } from 'antd'
 import {
   ProfileOutlined, CheckCircleOutlined, CloseCircleOutlined,
   PlusOutlined, EyeOutlined, ReloadOutlined,
@@ -7,8 +7,10 @@ import {
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 import { formatVersionNo } from '../../utils'
+import { useMessage } from '../../contexts/AppContext'
 
 const MaterialManagement = () => {
+  const message = useMessage()
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)

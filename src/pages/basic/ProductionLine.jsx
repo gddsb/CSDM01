@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, Select, message, Row, Col, Space, Drawer, Descriptions, Popconfirm, Card } from 'antd'
+import { Table, Tag, Button, Modal, Form, Input, Select, Row, Col, Space, Drawer, Descriptions, Popconfirm, Card } from 'antd'
 import {
   DeploymentUnitOutlined, PlayCircleOutlined, ToolOutlined,
   PlusOutlined, EyeOutlined, ReloadOutlined, DeleteOutlined,
@@ -7,11 +7,13 @@ import {
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
+import { useMessage } from '../../contexts/AppContext'
 
 const statusColorMap = { '运行中': 'green', '维护中': 'orange', '停用': 'red' }
 const statusOptions = ['运行中', '维护中', '停用'].map(s => ({ label: s, value: s }))
 
 export default function ProductionLine() {
+  const message = useMessage()
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)

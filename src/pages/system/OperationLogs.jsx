@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { Table, Tag, Button, message } from 'antd'
+import { Table, Tag, Button } from 'antd'
 import { HistoryOutlined, ReloadOutlined } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
+import { useMessage } from '../../contexts/AppContext'
 
 // 根据 operation 文本前缀推断 Tag 颜色
 function getOperationColor(op) {
@@ -21,6 +22,7 @@ function formatTime(v) {
 }
 
 export default function OperationLogs() {
+  const message = useMessage()
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)

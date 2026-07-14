@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Table, Tag, Button, Drawer, Descriptions, Input, Select, Space, message } from 'antd'
+import { Table, Tag, Button, Drawer, Descriptions, Input, Select, Space } from 'antd'
 import { DatabaseOutlined, ReloadOutlined, SyncOutlined, TableOutlined } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 import dayjs from 'dayjs'
+import { useMessage } from '../../contexts/AppContext'
 
 const categoryColorMap = {
   '系统表': 'blue',
@@ -12,6 +13,7 @@ const categoryColorMap = {
 }
 
 export default function DataDictionary() {
+  const message = useMessage()
   const [tableList, setTableList] = useState([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)

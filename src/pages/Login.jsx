@@ -1,13 +1,14 @@
 import { useState } from 'react'
-import { Card, Form, Input, Button, message, Typography } from 'antd'
+import { Card, Form, Input, Button, Typography } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
-import { useApp } from '../contexts/AppContext'
+import { useApp, useMessage } from '../contexts/AppContext'
 import { useNavigate } from 'react-router-dom'
 import logoSquare from '../assets/logo-square.png'
 
 const { Text } = Typography
 
 export default function Login() {
+  const message = useMessage()
   const { login } = useApp()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
