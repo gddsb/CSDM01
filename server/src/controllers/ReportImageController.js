@@ -6,8 +6,8 @@ import { success, fail } from '../utils/response.js'
 
 const UPLOAD_DIR = 'uploads/reports'
 
-const ensureDir = () => {
-  const dir = path.resolve(process.cwd(), UPLOAD_DIR)
+const ensureDir = (reportNo) => {
+  const dir = path.resolve(process.cwd(), UPLOAD_DIR, reportNo || 'default')
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
   return dir
 }
@@ -28,9 +28,9 @@ export const uploadImages = async (req, res) => {
     const files = req.files || []
     if (files.length === 0) return fail(res, '请选择要上传的图片')
 
-    const dir = ensureDir()
-
     const reportNo = report_no || 'REPORT'
+    const dir = ensureDir(reportNo)
+
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '')
     const categoryPrefix = category ? `${category}_` : ''
 
@@ -46,7 +46,7 @@ export const uploadImages = async (req, res) => {
       const newName = `${reportNo}_${dateStr}_${categoryPrefix}${seqStr}${ext}`
       const destPath = path.join(dir, newName)
       fs.renameSync(file.path, destPath)
-      uploaded.push(`/${UPLOAD_DIR}/${newName}`)
+      uploaded.push(`/${UPLOAD_DIR}/${reportNo}/${newName}`)
     }
 
     return success(res, uploaded, `成功上传${uploaded.length}张图片`)
