@@ -50,8 +50,9 @@ const buildRecordData = (body) => {
 
 export const list = async (req, res) => {
   try {
-    const { work_order_id, record_date, dateStart, dateEnd, page = 1, pageSize = 20 } = req.query
+    const { report_id, work_order_id, record_date, dateStart, dateEnd, page = 1, pageSize = 20 } = req.query
     const where = {}
+    if (report_id) where.report_id = Number(report_id)
     if (work_order_id) where.work_order_id = Number(work_order_id)
     if (record_date) where.record_date = record_date
     if (dateStart || dateEnd) {
@@ -90,7 +91,7 @@ export const detail = async (req, res) => {
 
 export const create = async (req, res) => {
   try {
-    const { work_order_id } = req.body
+    const { report_id, work_order_id } = req.body
     if (!work_order_id) return fail(res, '工单 ID 不能为空')
 
     const workOrder = await WorkOrder.findOne({ where: { work_order_id } })
@@ -99,6 +100,7 @@ export const create = async (req, res) => {
     const data = buildRecordData(req.body)
     const record = await ManpowerRecord.create({
       ...data,
+      report_id: report_id || null,
       work_order_id: workOrder.work_order_id,
       work_order_no: workOrder.work_order_no,
       record_user: req.user?.username || null,

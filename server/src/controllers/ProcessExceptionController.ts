@@ -4,8 +4,9 @@ import { success, fail } from '../utils/response.js'
 
 export const list = async (req, res) => {
   try {
-    const { work_order_id, exception_type, device_id, stop_type, page = 1, pageSize = 20 } = req.query
+    const { report_id, work_order_id, exception_type, device_id, stop_type, page = 1, pageSize = 20 } = req.query
     const where = {}
+    if (report_id) where.report_id = Number(report_id)
     if (work_order_id) where.work_order_id = Number(work_order_id)
     if (exception_type) where.exception_type = exception_type
     if (device_id) where.device_id = Number(device_id)
@@ -33,6 +34,7 @@ export const list = async (req, res) => {
 export const create = async (req, res) => {
   try {
     const {
+      report_id,
       work_order_id,
       exception_type,
       device_id,
@@ -76,6 +78,7 @@ export const create = async (req, res) => {
       : null
 
     const exception = await ProcessException.create({
+      report_id: report_id || null,
       work_order_id: workOrder.work_order_id,
       work_order_no: workOrder.work_order_no,
       exception_type,

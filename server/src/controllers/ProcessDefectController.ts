@@ -4,8 +4,9 @@ import { success, fail } from '../utils/response.js'
 
 export const list = async (req, res) => {
   try {
-    const { work_order_id, process_id, defect_category, defect_name, page = 1, pageSize = 20 } = req.query
+    const { report_id, work_order_id, process_id, defect_category, defect_name, page = 1, pageSize = 20 } = req.query
     const where = {}
+    if (report_id) where.report_id = Number(report_id)
     if (work_order_id) where.work_order_id = Number(work_order_id)
     if (process_id) where.process_id = Number(process_id)
     if (defect_category) where.defect_category = defect_category
@@ -33,8 +34,9 @@ export const list = async (req, res) => {
 // 检验报废列表（过滤 defect_category='检验报废'）
 export const scrapList = async (req, res) => {
   try {
-    const { work_order_id, page = 1, pageSize = 20 } = req.query
+    const { report_id, work_order_id, page = 1, pageSize = 20 } = req.query
     const where = { defect_category: '检验报废' }
+    if (report_id) where.report_id = Number(report_id)
     if (work_order_id) where.work_order_id = Number(work_order_id)
 
     const limit = Number(pageSize)
@@ -60,7 +62,7 @@ export const scrapList = async (req, res) => {
 // 创建检验报废记录
 export const scrapCreate = async (req, res) => {
   try {
-    const { work_order_id, defect_type_id, quantity, unit, defect_images } = req.body
+    const { report_id, work_order_id, defect_type_id, quantity, unit, defect_images } = req.body
 
     if (!work_order_id) return fail(res, '工单 ID 不能为空')
     if (!quantity || quantity <= 0) return fail(res, '数量必须大于0')
@@ -80,6 +82,7 @@ export const scrapCreate = async (req, res) => {
     }
 
     const defect = await ProcessDefect.create({
+      report_id: report_id || null,
       work_order_id: workOrder.work_order_id,
       work_order_no: workOrder.work_order_no,
       defect_category: '检验报废',
@@ -124,6 +127,7 @@ export const scrapUpdate = async (req, res) => {
 export const create = async (req, res) => {
   try {
     const {
+      report_id,
       work_order_id,
       process_id,
       defect_category,
@@ -154,6 +158,7 @@ export const create = async (req, res) => {
     if (!finalDefectName) return fail(res, '不良名称不能为空')
 
     const defect = await ProcessDefect.create({
+      report_id: report_id || null,
       work_order_id: workOrder.work_order_id,
       work_order_no: workOrder.work_order_no,
       process_id: process.process_id,
