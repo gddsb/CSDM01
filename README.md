@@ -4,7 +4,7 @@
 >
 > 东莞市大满包装实业有限公司长沙分公司 — 奶粉罐生产制造执行系统
 
-基于 React + Ant Design + Vite + Node.js + SQLite/MySQL 构建的现代化生产制造执行系统，覆盖生产管理、质量管理、设备管理、数据大屏、报表中心等核心业务模块。
+基于 React + TypeScript 5.x + Ant Design + Vite + Node.js + SQLite/MySQL 构建的现代化生产制造执行系统，覆盖生产管理、质量管理、设备管理、数据大屏、报表中心等核心业务模块。
 
 ---
 
@@ -54,6 +54,7 @@
 | 技术 | 版本 | 分类 | 说明 |
 |------|------|------|------|
 | React | 18.3 | 核心框架 | 前端 UI 框架 |
+| TypeScript | 5.6 | 类型系统 | JavaScript 超集，静态类型检查 |
 | React DOM | 18.3 | 核心框架 | React DOM 渲染 |
 | React Router DOM | 6.26 | 路由管理 | 声明式路由，支持嵌套路由与路由守卫 |
 | Ant Design | 5.21 | UI 组件库 | 企业级 UI 设计，支持暗色模式 |
@@ -70,18 +71,20 @@
 | 技术 | 版本 | 分类 | 说明 |
 |------|------|------|------|
 | Node.js | 20+ | 运行时 | JavaScript 服务端运行环境 |
+| TypeScript | 5.6 | 类型系统 | JavaScript 超集，静态类型检查 |
 | Express | 4.21 | Web 框架 | 轻量级 Web 应用框架 |
 | Sequelize | 6.37 | ORM 框架 | 多数据库支持的 ORM |
 | SQLite | - | 数据库 | 开发环境默认数据库，零配置 |
 | MySQL | 8.0+ | 数据库 | 生产环境推荐数据库 |
 | mysql2 | 3.11 | 数据库驱动 | MySQL Node.js 驱动 |
-| sqlite3 | 5.1 | 数据库驱动 | SQLite Node.js 驱动 |
+| sqlite3 | 6.0 | 数据库驱动 | SQLite Node.js 驱动 |
 | JWT (jsonwebtoken) | 9.0 | 身份认证 | 基于 Token 的身份认证 |
 | bcryptjs | 2.4 | 密码加密 | 密码哈希加密 |
 | CORS | 2.8 | 跨域处理 | 跨域资源共享中间件 |
 | dotenv | 16.4 | 环境配置 | 环境变量管理 |
 | Morgan | 1.10 | 日志 | HTTP 请求日志 |
 | Multer | 2.2 | 文件上传 | 文件上传处理中间件 |
+| tsx | 4.23 | 运行工具 | TypeScript 执行引擎，开发环境直接运行 TS |
 
 ### 规划技术栈
 
@@ -255,141 +258,141 @@ milk-can-mes/
 │   ├── assets/                       # 静态资源（Logo图片等）
 │   │   └── logo-square.png
 │   ├── components/                   # 公共组件
-│   │   └── ThreeSectionPage.jsx      # 三段式页面通用组件
+│   │   └── ThreeSectionPage.tsx      # 三段式页面通用组件
 │   ├── contexts/                     # React Context
-│   │   └── AppContext.jsx            # 全局状态（用户、主题等）
+│   │   └── AppContext.tsx            # 全局状态（用户、主题等）
 │   ├── layouts/                      # 布局组件
-│   │   └── MainLayout.jsx            # 主布局（侧边栏+顶栏+内容区）
+│   │   └── MainLayout.tsx            # 主布局（侧边栏+顶栏+内容区）
 │   ├── pages/                        # 页面组件
 │   │   ├── basic/                    # 基础数据模块
-│   │   │   ├── MaterialManagement.jsx
-│   │   │   ├── CustomerManagement.jsx
-│   │   │   ├── ProductionLine.jsx
-│   │   │   ├── ProcessManagement.jsx
-│   │   │   ├── DeviceManagement.jsx
-│   │   │   ├── DefectManagement.jsx
-│   │   │   └── NumberRuleManagement.jsx
+│   │   │   ├── MaterialManagement.tsx
+│   │   │   ├── CustomerManagement.tsx
+│   │   │   ├── ProductionLine.tsx
+│   │   │   ├── ProcessManagement.tsx
+│   │   │   ├── DeviceManagement.tsx
+│   │   │   ├── DefectManagement.tsx
+│   │   │   └── NumberRuleManagement.tsx
 │   │   ├── bigscreen/                # 数据大屏模块
-│   │   │   ├── ProductionBigScreen.jsx
-│   │   │   ├── QualityBigScreen.jsx
-│   │   │   └── ManagementBigScreen.jsx
+│   │   │   ├── ProductionBigScreen.tsx
+│   │   │   ├── QualityBigScreen.tsx
+│   │   │   └── ManagementBigScreen.tsx
 │   │   ├── device/                   # 设备管理模块
-│   │   │   ├── DeviceManagement.jsx
-│   │   │   ├── CheckRecord.jsx
-│   │   │   ├── Maintenance.jsx
-│   │   │   └── DeviceOEE.jsx
+│   │   │   ├── DeviceManagement.tsx
+│   │   │   ├── CheckRecord.tsx
+│   │   │   ├── Maintenance.tsx
+│   │   │   └── DeviceOEE.tsx
 │   │   ├── production/               # 生产管理模块
-│   │   │   ├── OrderManagement.jsx
-│   │   │   ├── WorkOrderManagement.jsx
-│   │   │   ├── ProcessReporting.jsx
-│   │   │   ├── ProductionReportByOrder.jsx
-│   │   │   ├── ManpowerRecord.jsx
-│   │   │   └── ProcessException.jsx
+│   │   │   ├── OrderManagement.tsx
+│   │   │   ├── WorkOrderManagement.tsx
+│   │   │   ├── ProcessReporting.tsx
+│   │   │   ├── ProductionReportByOrder.tsx
+│   │   │   ├── ManpowerRecord.tsx
+│   │   │   └── ProcessException.tsx
 │   │   ├── quality/                  # 质量管理模块
-│   │   │   ├── InspectionStandard.jsx
-│   │   │   ├── IncomingInspection.jsx
-│   │   │   ├── ProcessInspection.jsx
-│   │   │   ├── FinishedInspection.jsx
-│   │   │   ├── MicrobeInspection.jsx
-│   │   │   ├── EnvironmentInspection.jsx
-│   │   │   ├── ComplaintManagement.jsx
-│   │   │   ├── SupplierComplaint.jsx
-│   │   │   └── InstrumentManagement.jsx
+│   │   │   ├── InspectionStandard.tsx
+│   │   │   ├── IncomingInspection.tsx
+│   │   │   ├── ProcessInspection.tsx
+│   │   │   ├── FinishedInspection.tsx
+│   │   │   ├── MicrobeInspection.tsx
+│   │   │   ├── EnvironmentInspection.tsx
+│   │   │   ├── ComplaintManagement.tsx
+│   │   │   ├── SupplierComplaint.tsx
+│   │   │   └── InstrumentManagement.tsx
 │   │   ├── report/                   # 报表中心模块
-│   │   │   ├── DailyReport.jsx
-│   │   │   ├── MonthlyReport.jsx
-│   │   │   ├── EfficiencyReport.jsx
-│   │   │   ├── ProductionReport.jsx
-│   │   │   ├── QualityReport.jsx
-│   │   │   └── ExceptionReport.jsx
+│   │   │   ├── DailyReport.tsx
+│   │   │   ├── MonthlyReport.tsx
+│   │   │   ├── EfficiencyReport.tsx
+│   │   │   ├── ProductionReport.tsx
+│   │   │   ├── QualityReport.tsx
+│   │   │   └── ExceptionReport.tsx
 │   │   ├── system/                   # 系统管理模块
-│   │   │   ├── UserManagement.jsx
-│   │   │   ├── RoleManagement.jsx
-│   │   │   ├── MenuManagement.jsx
-│   │   │   ├── DataDictionary.jsx
-│   │   │   ├── SystemConfig.jsx
-│   │   │   └── OperationLogs.jsx
-│   │   ├── Dashboard.jsx             # 工作台首页
-│   │   └── Login.jsx                 # 登录页
+│   │   │   ├── UserManagement.tsx
+│   │   │   ├── RoleManagement.tsx
+│   │   │   ├── MenuManagement.tsx
+│   │   │   ├── DataDictionary.tsx
+│   │   │   ├── SystemConfig.tsx
+│   │   │   └── OperationLogs.tsx
+│   │   ├── Dashboard.tsx             # 工作台首页
+│   │   └── Login.tsx                 # 登录页
 │   ├── styles/                       # 全局样式
 │   │   ├── global.css                # 全局样式（布局、组件、主题）
 │   │   └── bigscreen.css             # 大屏专属样式
 │   ├── themes/                       # 主题配置
-│   │   └── index.js                  # 六套主题定义与切换函数
+│   │   └── index.ts                  # 六套主题定义与切换函数
 │   ├── utils/                        # 工具函数
-│   │   └── api.js                    # Axios 实例与拦截器
+│   │   └── api.ts                    # Axios 实例与拦截器
 │   ├── mock/                         # Mock 数据
-│   │   └── data.js
-│   ├── main.jsx                      # 应用入口（路由配置）
-│   └── AppContext.jsx
+│   │   └── data.ts
+│   ├── main.tsx                      # 应用入口（路由配置）
+│   └── vite-env.d.ts                 # Vite 类型声明
 ├── server/                           # 后端源码
 │   ├── src/
 │   │   ├── config/                   # 配置文件
-│   │   │   └── database.js           # 数据库配置（SQLite/MySQL 切换）
+│   │   │   └── database.ts           # 数据库配置（SQLite/MySQL 切换）
 │   │   ├── controllers/              # 控制器（业务逻辑层）
-│   │   │   ├── AuthController.js     # 认证控制器
-│   │   │   ├── UserController.js     # 用户管理控制器
-│   │   │   ├── RoleController.js     # 角色管理控制器
-│   │   │   ├── PermissionController.js  # 权限/菜单控制器
-│   │   │   ├── DictController.js     # 数据字典控制器
-│   │   │   ├── SystemConfigController.js  # 系统配置控制器
-│   │   │   ├── OperationLogController.js  # 操作日志控制器
-│   │   │   ├── MaterialController.js # 料品档案控制器
-│   │   │   ├── CustomerController.js # 客户档案控制器
-│   │   │   ├── ProductionLineController.js  # 产线控制器
-│   │   │   ├── LineRelationController.js    # 产线关联控制器（工序/设备）
-│   │   │   ├── ProcessController.js  # 工序控制器
-│   │   │   ├── DeviceController.js   # 设备控制器
-│   │   │   ├── DefectTypeController.js  # 不良分类控制器
-│   │   │   ├── NumberRuleController.js  # 编码规则控制器
-│   │   │   ├── OrderController.js    # 生产订单控制器
-│   │   │   ├── WorkOrderController.js  # 工单控制器
-│   │   │   ├── ProcessReportController.js  # 工序报工控制器
-│   │   │   ├── ManpowerRecordController.js # 人员记录控制器
-│   │   │   └── ProcessExceptionController.js  # 异常工时记录控制器
+│   │   │   ├── AuthController.ts     # 认证控制器
+│   │   │   ├── UserController.ts     # 用户管理控制器
+│   │   │   ├── RoleController.ts     # 角色管理控制器
+│   │   │   ├── PermissionController.ts  # 权限/菜单控制器
+│   │   │   ├── DictController.ts     # 数据字典控制器
+│   │   │   ├── SystemConfigController.ts  # 系统配置控制器
+│   │   │   ├── OperationLogController.ts  # 操作日志控制器
+│   │   │   ├── MaterialController.ts # 料品档案控制器
+│   │   │   ├── CustomerController.ts # 客户档案控制器
+│   │   │   ├── ProductionLineController.ts  # 产线控制器
+│   │   │   ├── LineRelationController.ts    # 产线关联控制器（工序/设备）
+│   │   │   ├── ProcessController.ts  # 工序控制器
+│   │   │   ├── DeviceController.ts   # 设备控制器
+│   │   │   ├── DefectTypeController.ts  # 不良分类控制器
+│   │   │   ├── NumberRuleController.ts  # 编码规则控制器
+│   │   │   ├── OrderController.ts    # 生产订单控制器
+│   │   │   ├── WorkOrderController.ts  # 工单控制器
+│   │   │   ├── ProcessReportController.ts  # 工序报工控制器
+│   │   │   ├── ManpowerRecordController.ts # 人员记录控制器
+│   │   │   └── ProcessExceptionController.ts  # 异常工时记录控制器
 │   │   ├── middleware/               # 中间件
-│   │   │   └── auth.js               # JWT 认证、权限校验、操作日志
+│   │   │   └── auth.ts               # JWT 认证、权限校验、操作日志
 │   │   ├── models/                   # 数据模型（Sequelize Model）
-│   │   │   ├── index.js              # 模型导出与关联定义
-│   │   │   ├── User.js               # 用户模型
-│   │   │   ├── Role.js               # 角色模型
-│   │   │   ├── Permission.js         # 权限/菜单模型
-│   │   │   ├── RolePermission.js     # 角色-权限关联表
-│   │   │   ├── DictType.js           # 字典类型模型
-│   │   │   ├── DictData.js           # 字典项模型
-│   │   │   ├── OperationLog.js       # 操作日志模型
-│   │   │   ├── SystemConfig.js       # 系统配置模型
-│   │   │   ├── Material.js           # 料品档案模型
-│   │   │   ├── Customer.js           # 客户档案模型
-│   │   │   ├── ProductionLine.js     # 产线模型
-│   │   │   ├── Process.js            # 工序模型
-│   │   │   ├── LineProcess.js        # 产线-工序关联表
-│   │   │   ├── Device.js             # 设备模型
-│   │   │   ├── LineDevice.js         # 产线-设备关联表
-│   │   │   ├── DefectType.js         # 不良分类模型（自关联树形）
-│   │   │   ├── NumberRule.js         # 编码规则模型
-│   │   │   ├── Sequence.js           # 序号流水号模型
-│   │   │   ├── Order.js              # 生产订单模型
-│   │   │   ├── WorkOrder.js          # 工单模型
-│   │   │   ├── ProcessReport.js      # 工序报工模型
-│   │   │   ├── ManpowerRecord.js     # 人员投入记录模型
-│   │   │   └── ProcessException.js   # 异常工时记录模型
+│   │   │   ├── index.ts              # 模型导出与关联定义
+│   │   │   ├── User.ts               # 用户模型
+│   │   │   ├── Role.ts               # 角色模型
+│   │   │   ├── Permission.ts         # 权限/菜单模型
+│   │   │   ├── RolePermission.ts     # 角色-权限关联表
+│   │   │   ├── DictType.ts           # 字典类型模型
+│   │   │   ├── DictData.ts           # 字典项模型
+│   │   │   ├── OperationLog.ts       # 操作日志模型
+│   │   │   ├── SystemConfig.ts       # 系统配置模型
+│   │   │   ├── Material.ts           # 料品档案模型
+│   │   │   ├── Customer.ts           # 客户档案模型
+│   │   │   ├── ProductionLine.ts     # 产线模型
+│   │   │   ├── Process.ts            # 工序模型
+│   │   │   ├── LineProcess.ts        # 产线-工序关联表
+│   │   │   ├── Device.ts             # 设备模型
+│   │   │   ├── LineDevice.ts         # 产线-设备关联表
+│   │   │   ├── DefectType.ts         # 不良分类模型（自关联树形）
+│   │   │   ├── NumberRule.ts         # 编码规则模型
+│   │   │   ├── Sequence.ts           # 序号流水号模型
+│   │   │   ├── Order.ts              # 生产订单模型
+│   │   │   ├── WorkOrder.ts          # 工单模型
+│   │   │   ├── ProcessReport.ts      # 工序报工模型
+│   │   │   ├── ManpowerRecord.ts     # 人员投入记录模型
+│   │   │   └── ProcessException.ts   # 异常工时记录模型
 │   │   ├── routes/                   # 路由定义
-│   │   │   ├── index.js              # 路由总入口
-│   │   │   ├── auth.js               # 认证路由
-│   │   │   ├── system.js             # 系统管理路由
-│   │   │   ├── basic.js              # 基础数据路由
-│   │   │   └── production.js         # 生产管理路由
+│   │   │   ├── index.ts              # 路由总入口
+│   │   │   ├── auth.ts               # 认证路由
+│   │   │   ├── system.ts             # 系统管理路由
+│   │   │   ├── basic.ts              # 基础数据路由
+│   │   │   └── production.ts         # 生产管理路由
 │   │   ├── utils/                    # 工具函数
-│   │   │   ├── jwt.js                # JWT 签发与验证
-│   │   │   ├── response.js           # 统一响应格式
-│   │   │   ├── sequence.js           # 序号生成器
-│   │   │   └── statusMap.js          # 状态码映射
-│   │   ├── app.js                    # 应用入口（Express 实例化）
-│   │   ├── seed.js                   # 数据初始化脚本
-│   │   ├── clean-init.js             # 数据清理脚本
-│   │   ├── migrate.js                # 数据库列迁移
-│   │   └── import-materials.js       # 料品档案种子数据导入
+│   │   │   ├── jwt.ts                # JWT 签发与验证
+│   │   │   ├── response.ts           # 统一响应格式
+│   │   │   ├── sequence.ts           # 序号生成器
+│   │   │   └── statusMap.ts          # 状态码映射
+│   │   ├── app.ts                    # 应用入口（Express 实例化）
+│   │   ├── seed.ts                   # 数据初始化脚本
+│   │   ├── clean-init.ts             # 数据清理脚本
+│   │   ├── migrate.ts                # 数据库列迁移
+│   │   └── import-materials.ts       # 料品档案种子数据导入
 │   ├── data/                         # SQLite 数据库文件
 │   │   ├── milk_can_mes.sqlite
 │   │   └── backups/                  # 备份文件目录
@@ -397,11 +400,14 @@ milk-can-mes/
 │   │   ├── avatars/                  # 用户头像
 │   │   └── tmp/                      # 临时上传目录
 │   ├── .env                          # 环境变量
+│   ├── tsconfig.json                 # TypeScript 配置
 │   └── package.json
 ├── dist/                             # 前端构建产物
 ├── index.html                        # HTML 入口
-├── vite.config.js                    # Vite 配置
+├── vite.config.ts                    # Vite 配置
+├── tsconfig.json                     # TypeScript 配置
 ├── package.json                      # 前端依赖
+├── setup.sh                          # 一键部署脚本
 └── README.md
 ```
 
@@ -443,15 +449,15 @@ cd server
 npm install
 
 # 初始化数据库（创建表结构和默认数据）
-node src/seed.js
+npm run seed
 
 # 启动后端服务
-node src/app.js
-# 或使用 watch 模式（自动重启）
 npm run dev
 ```
 
 后端服务默认运行在 `http://localhost:3001`
+
+> 后端基于 **tsx** 运行 TypeScript，无需手动编译，开发时直接运行 `.ts` 文件。生产环境推荐使用 `npm run build` 编译后运行。
 
 ### 数据库操作
 
@@ -460,16 +466,16 @@ npm run dev
 cd server
 
 # 清空所有业务数据（保留角色和 admin 用户）
-node src/clean-init.js
+npx tsx src/clean-init.ts
 
 # 重新初始化完整数据
-node src/seed.js
+npm run seed
 
 # 导入料品档案种子数据（114 条料品记录）
-node src/import-materials.js
+npx tsx src/import-materials.ts
 
 # 导入设备档案种子数据（26 条设备记录）
-node src/import-devices.js
+npx tsx src/import-devices.ts
 ```
 
 **设备档案种子数据**：包含 26 条设备记录，涵盖生产设备（自动焊接机、翻边滚筋封罐组合机、光检设备、码垛机等）和其他设备（叉车等），存储在 `master_device` 表。
@@ -566,7 +572,7 @@ npm install
 npm rebuild sqlite3
 
 # 初始化数据库
-node src/seed.js
+npm run seed
 
 # 返回项目根目录
 cd ..
@@ -597,7 +603,7 @@ nano .env
 # DB_PASSWORD=your-strong-password
 
 # 初始化数据库表结构和默认数据
-node src/seed.js
+npm run seed
 ```
 
 ### 4. 使用 PM2 启动后端服务
@@ -610,7 +616,9 @@ module.exports = {
     {
       name: 'milk-can-mes-server',
       cwd: '/opt/milk-can-mes/server',
-      script: 'src/app.js',
+      script: 'src/app.ts',
+      interpreter: 'node',
+      interpreterArgs: '--import tsx',
       instances: 1,
       autorestart: true,
       watch: false,
@@ -629,6 +637,10 @@ module.exports = {
   ]
 }
 EOF
+```
+
+> **生产环境建议**：也可以先编译 TypeScript 到 JavaScript，再运行编译后的代码。
+> 执行 `npx tsc --build` 编译到 `dist/` 目录，然后将 `script` 改为 `dist/app.js`。
 
 # 启动服务
 pm2 start ecosystem.config.cjs
@@ -809,7 +821,7 @@ mysqldump -u milk_can_mes -p milk_can_mes > /opt/backups/milk_can_mes_before_upd
 
 # 重新初始化数据库（会清空所有数据！）
 # 仅在确认需要重新初始化时执行
-node src/seed.js
+npm run seed
 ```
 
 #### 9.3 回滚到上一版本

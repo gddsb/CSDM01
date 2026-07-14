@@ -183,7 +183,7 @@ JWT_REFRESH_EXPIRES_IN=7d
 EOF
 
     log_info "初始化数据库..."
-    node src/seed.js
+    npm run seed
     log_success "步骤3完成"
 
     log_info "步骤4: 配置 PM2"
@@ -193,7 +193,9 @@ module.exports = {
   apps: [{
     name: 'milk-can-mes-server',
     cwd: '$PROJECT_DIR/server',
-    script: 'src/app.js',
+    script: 'src/app.ts',
+    interpreter: 'node',
+    interpreterArgs: '--import tsx',
     instances: 1,
     autorestart: true,
     watch: false,
@@ -452,10 +454,10 @@ reset_data() {
 
     log_info "清除现有数据..."
     cd "$PROJECT_DIR/server"
-    node src/clean-init.js 2>/dev/null || log_warn "clean-init.js 执行失败，跳过"
+    npx tsx src/clean-init.ts 2>/dev/null || log_warn "clean-init.ts 执行失败，跳过"
 
     log_info "重新初始化数据..."
-    node src/seed.js
+    npm run seed
 
     log_info "重启服务..."
     pm2 restart milk-can-mes-server || pm2 start "$PROJECT_DIR/ecosystem.config.cjs"
@@ -501,7 +503,7 @@ show_menu() {
     echo
     log_info "=========================================="
     log_info "    奶粉罐生产管理系统 - 部署工具"
-    log_info "    版本: V1.0.0.236"
+    log_info "    版本: V1.0.0.239"
     log_info "=========================================="
 
     check_root
