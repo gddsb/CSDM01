@@ -44,7 +44,7 @@ export default function Dashboard() {
   }, [])
 
   const activeOrders = orders.filter(o => o.status !== '完工')
-  const activeWorkOrders = workOrders.filter(w => w.status === '开工')
+  const activeWorkOrders = workOrders.filter(w => w.status === '已开工')
   const faultDevices = devices.filter(d => d.status === '维修')
 
   const stats = [

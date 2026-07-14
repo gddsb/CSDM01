@@ -14,15 +14,15 @@ import api from '../../utils/api'
 import { formatVersionNo } from '../../utils'
 
 const statusColorMap = {
-  '开立': 'default',
-  '开工': 'processing',
-  '完工': 'success',
+  '未开工': 'default',
+  '已开工': 'processing',
+  '已关闭': 'success',
 }
 
 const statusOptions = [
-  { label: '开立', value: '开立' },
-  { label: '开工', value: '开工' },
-  { label: '完工', value: '完工' },
+  { label: '未开工', value: '未开工' },
+  { label: '已开工', value: '已开工' },
+  { label: '已关闭', value: '已关闭' },
 ]
 
 export default function WorkOrderManagement() {
@@ -45,10 +45,9 @@ export default function WorkOrderManagement() {
 
   // 筛选输入态
   const [keywordInput, setKeywordInput] = useState('')
-  const [statusInput, setStatusInput] = useState(['开立', '开工'])
-  const [lineInput, setLineInput] = useState(undefined)
+  const [statusInput, setStatusInput] = useState(['未开工', '已开工'])
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: ['开立', '开工'], line_id: undefined })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: ['未开工', '已开工'], line_id: undefined })
 
   // 获取工单列表
   useEffect(() => {
@@ -134,15 +133,15 @@ export default function WorkOrderManagement() {
   const selectedOrderId = Form.useWatch('order_id', form)
   const selectedOrder = orders.find(o => o.order_id === selectedOrderId)
 
-  const openCount = data.filter(w => w.status === '开立').length
-  const startedCount = data.filter(w => w.status === '开工').length
-  const finishedCount = data.filter(w => w.status === '完工').length
+  const openCount = data.filter(w => w.status === '未开工').length
+  const startedCount = data.filter(w => w.status === '已开工').length
+  const finishedCount = data.filter(w => w.status === '已关闭').length
 
   const stats = [
     { label: '总工单数', value: total, icon: <ToolOutlined />, color: '#2196F3' },
-    { label: '开立', value: openCount, icon: <ClockCircleOutlined />, color: '#9E9E9E' },
-    { label: '开工', value: startedCount, icon: <PlayCircleOutlined />, color: '#FF9800' },
-    { label: '完工', value: finishedCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
+    { label: '未开工', value: openCount, icon: <ClockCircleOutlined />, color: '#9E9E9E' },
+    { label: '已开工', value: startedCount, icon: <PlayCircleOutlined />, color: '#FF9800' },
+    { label: '已关闭', value: finishedCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
   ]
 
   const handleStart = (w) => {
@@ -289,13 +288,13 @@ export default function WorkOrderManagement() {
 
   const handleReset = () => {
     setKeywordInput('')
-    setStatusInput(['开立', '开工'])
+    setStatusInput(['未开工', '已开工'])
     setLineInput(undefined)
-    setQuery(q => ({ ...q, page: 1, keyword: '', status: ['开立', '开工'], line_id: undefined }))
+    setQuery(q => ({ ...q, page: 1, keyword: '', status: ['未开工', '已开工'], line_id: undefined }))
   }
 
   const renderActions = (w) => {
-    if (w.status === '开立') {
+    if (w.status === '未开工') {
       return (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleEdit(w)}>编辑</Button>
@@ -311,10 +310,10 @@ export default function WorkOrderManagement() {
         </Space>
       )
     }
-    if (w.status === '开工') {
+    if (w.status === '已开工') {
       return (
         <Space size="small">
-          <Button type="link" size="small" onClick={() => handleFinish(w)}>开始完工</Button>
+          <Button type="link" size="small" onClick={() => handleFinish(w)}>完工</Button>
           <Button type="link" size="small" onClick={() => handleView(w)}>详情</Button>
         </Space>
       )

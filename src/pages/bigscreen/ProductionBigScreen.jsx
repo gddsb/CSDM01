@@ -163,7 +163,7 @@ export default function ProductionBigScreen() {
       return { ...w, reported, pct }
     })
 
-  const activeWorkOrders = workOrders.filter(w => w.status === '开工')
+  const activeWorkOrders = workOrders.filter(w => w.status === '已开工')
   const totalTarget = activeWorkOrders.reduce((s, w) => s + w.target_qty, 0)
   // 当日产出
   const totalOutput = dateProcessReports.reduce((s, r) => s + r.output_qty, 0)
@@ -684,7 +684,7 @@ export default function ProductionBigScreen() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                     <span style={{ color: '#E6EDF3', fontWeight: 600 }}>{o.order_no}</span>
                     <Tag
-                      color={o.status === '下发' || o.status === '开工' ? 'processing' : o.status === '完工' ? 'success' : 'default'}
+                      color={o.status === '下发' ? 'processing' : o.status === '完工' ? 'success' : 'default'}
                       style={{ fontSize: 11 }}
                     >
                       {o.status}
