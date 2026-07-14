@@ -118,6 +118,41 @@ const migrations = [
     table: 'production_process_exception',
     columns: [
       ['exception_images', 'TEXT'],
+      ['report_id', 'INTEGER'],
+    ],
+  },
+  {
+    table: 'production_process_report',
+    columns: [
+      ['line_id', 'INTEGER'],
+      ['line_name', 'VARCHAR(100)'],
+      ['material_id', 'VARCHAR(36)'],
+      ['material_code', 'VARCHAR(50)'],
+      ['material_name', 'VARCHAR(100)'],
+      ['specification', 'VARCHAR(200)'],
+      ['unit', 'VARCHAR(20)'],
+      ['planned_qty', 'DECIMAL(12,2) DEFAULT 0'],
+      ['report_date', 'DATE'],
+      ['shift', 'VARCHAR(20)'],
+      ['team', 'VARCHAR(50)'],
+    ],
+  },
+  {
+    table: 'production_process_defect',
+    columns: [
+      ['report_id', 'INTEGER'],
+    ],
+  },
+  {
+    table: 'production_process_material',
+    columns: [
+      ['report_id', 'INTEGER'],
+    ],
+  },
+  {
+    table: 'production_manpower_record',
+    columns: [
+      ['report_id', 'INTEGER'],
     ],
   },
 ]
