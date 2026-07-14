@@ -33,6 +33,7 @@ import { NumberRule } from '../models/index.js'
 const SEQ_CONFIG = {
   ORDER:               { prefix: 'MO-16', datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
   WORK_ORDER:          { prefix: 'WO',    datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
+  PROCESS_REPORT:      { prefix: 'RG',    datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
   INCOMING:            { prefix: 'LL',    datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
   PROCESS:             { prefix: 'GC',    datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
   FINISHED:            { prefix: 'CP',    datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
@@ -173,6 +174,7 @@ export function previewBizNo(ruleConfig, nextSeq = 1) {
 // 便捷方法
 export const generateOrderNo            = () => generateBizNo('ORDER')
 export const generateWorkOrderNo        = () => generateBizNo('WORK_ORDER')
+export const generateProcessReportNo    = () => generateBizNo('PROCESS_REPORT')
 export const generateIncomingNo         = () => generateBizNo('INCOMING')
 export const generateProcessInspectionNo = () => generateBizNo('PROCESS')
 export const generateFinishedNo         = () => generateBizNo('FINISHED')

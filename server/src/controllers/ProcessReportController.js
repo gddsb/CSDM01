@@ -1,6 +1,7 @@
 import { Op } from 'sequelize'
 import { ProcessReport, WorkOrder, Process, Device } from '../models/index.js'
 import { success, fail } from '../utils/response.js'
+import { generateProcessReportNo } from '../utils/sequence.js'
 
 const syncWorkOrderSummary = async (workOrderId) => {
   const reports = await ProcessReport.findAll({
@@ -157,9 +158,17 @@ export const create = async (req, res) => {
       if (device) deviceName = device.device_name
     }
 
+    const reportNo = await generateProcessReportNo()
+
+    const reportCount = await ProcessReport.count({
+      where: { work_order_id }
+    })
+
     const report = await ProcessReport.create({
+      report_no: reportNo,
       work_order_id: workOrder.work_order_id,
       work_order_no: workOrder.work_order_no,
+      report_count: reportCount + 1,
       process_id: process.process_id,
       process_name: process.process_name,
       input_qty: input_qty || 0,
@@ -172,6 +181,7 @@ export const create = async (req, res) => {
       report_user,
       report_user_name,
       report_time: report_time ? new Date(report_time) : new Date(),
+      report_start_time: report_time ? new Date(report_time) : new Date(),
       status: 0,
     })
 
@@ -202,7 +212,7 @@ export const start = async (req, res) => {
       return fail(res, '关联工单未开工，报工单无法开工')
     }
 
-    await report.update({ status: 1, report_time: new Date() })
+    await report.update({ status: 1, report_time: new Date(), report_start_time: new Date() })
 
     return success(res, report, '报工单已开工')
   } catch (err) {
@@ -222,7 +232,7 @@ export const finish = async (req, res) => {
       return fail(res, '当前报工单状态不允许完工')
     }
 
-    await report.update({ status: 2 })
+    await report.update({ status: 2, report_end_time: new Date() })
 
     await syncWorkOrderSummary(report.work_order_id)
 

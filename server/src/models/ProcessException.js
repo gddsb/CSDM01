@@ -7,6 +7,9 @@ const ProcessException = sequelize.define('ProcessException', {
     primaryKey: true,
     autoIncrement: true,
   },
+  report_id: {
+    type: DataTypes.INTEGER,
+  },
   work_order_id: {
     type: DataTypes.INTEGER,
   },

@@ -7,11 +7,20 @@ const ProcessReport = sequelize.define('ProcessReport', {
     primaryKey: true,
     autoIncrement: true,
   },
+  report_no: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    unique: true,
+  },
   work_order_id: {
     type: DataTypes.INTEGER,
   },
   work_order_no: {
     type: DataTypes.STRING(50),
+  },
+  report_count: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
   },
   process_id: {
     type: DataTypes.INTEGER,
@@ -52,6 +61,12 @@ const ProcessReport = sequelize.define('ProcessReport', {
     type: DataTypes.STRING(50),
   },
   report_time: {
+    type: DataTypes.DATE,
+  },
+  report_start_time: {
+    type: DataTypes.DATE,
+  },
+  report_end_time: {
     type: DataTypes.DATE,
   },
   status: {

@@ -17,6 +17,7 @@ import ManpowerRecord from './ManpowerRecord.js'
 import ProcessDefect from './ProcessDefect.js'
 import ProcessException from './ProcessException.js'
 import ProcessMaterial from './ProcessMaterial.js'
+import ReportExceptionImage from './ReportExceptionImage.js'
 import SystemConfig from './SystemConfig.js'
 import RolePermission from './RolePermission.js'
 import Sequence from './Sequence.js'
@@ -62,6 +63,26 @@ ProcessException.belongsTo(WorkOrder, { foreignKey: 'work_order_id', as: 'work_o
 // 工单 - 制程物料记录
 WorkOrder.hasMany(ProcessMaterial, { foreignKey: 'work_order_id', as: 'process_materials' })
 ProcessMaterial.belongsTo(WorkOrder, { foreignKey: 'work_order_id', as: 'work_order' })
+
+// 报工单 - 人员投入记录
+ProcessReport.hasMany(ManpowerRecord, { foreignKey: 'report_id', as: 'manpower_records' })
+ManpowerRecord.belongsTo(ProcessReport, { foreignKey: 'report_id', as: 'process_report' })
+
+// 报工单 - 工序不良记录
+ProcessReport.hasMany(ProcessDefect, { foreignKey: 'report_id', as: 'process_defects' })
+ProcessDefect.belongsTo(ProcessReport, { foreignKey: 'report_id', as: 'process_report' })
+
+// 报工单 - 异常工时记录
+ProcessReport.hasMany(ProcessException, { foreignKey: 'report_id', as: 'process_exceptions' })
+ProcessException.belongsTo(ProcessReport, { foreignKey: 'report_id', as: 'process_report' })
+
+// 报工单 - 制程物料记录
+ProcessReport.hasMany(ProcessMaterial, { foreignKey: 'report_id', as: 'process_materials' })
+ProcessMaterial.belongsTo(ProcessReport, { foreignKey: 'report_id', as: 'process_report' })
+
+// 报工单 - 异常图片记录
+ProcessReport.hasMany(ReportExceptionImage, { foreignKey: 'report_id', as: 'exception_images' })
+ReportExceptionImage.belongsTo(ProcessReport, { foreignKey: 'report_id', as: 'process_report' })
 
 // 角色 - 权限 (多对多)
 Role.belongsToMany(Permission, { through: RolePermission, foreignKey: 'role_id', otherKey: 'perm_id', as: 'permissions' })
@@ -117,6 +138,7 @@ const db = {
   ProcessDefect,
   ProcessException,
   ProcessMaterial,
+  ReportExceptionImage,
   SystemConfig,
   RolePermission,
   Sequence,
@@ -149,6 +171,7 @@ export {
   ProcessDefect,
   ProcessException,
   ProcessMaterial,
+  ReportExceptionImage,
   SystemConfig,
   RolePermission,
   Sequence,
