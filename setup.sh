@@ -12,6 +12,13 @@ NC='\033[0m'
 PROJECT_DIR="/opt/milk-can-mes"
 BACKUP_DIR="/opt/backups"
 LOG_FILE="$BACKUP_DIR/deploy.log"
+GITHUB_TIMEOUT=30
+
+GITHUB_REPOS=(
+    "https://github.com/gddsb/CSDM01.git"
+    "https://gh-proxy.com/https://github.com/gddsb/CSDM01.git"
+    "https://github.moeyy.xyz/https://github.com/gddsb/CSDM01.git"
+)
 
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
@@ -101,9 +108,100 @@ backup_database() {
     fi
 }
 
+test_github_connection() {
+    local repo_url="$1"
+    log_info "测试连接: $repo_url"
+    
+    timeout "$GITHUB_TIMEOUT" git ls-remote --quiet "$repo_url" main 2>/dev/null
+    local exit_code=$?
+    
+    if [ $exit_code -eq 0 ]; then
+        log_success "连接成功"
+        return 0
+    elif [ $exit_code -eq 124 ]; then
+        log_warn "连接超时（超过${GITHUB_TIMEOUT}秒）"
+        return 1
+    else
+        log_warn "连接失败（错误码: $exit_code）"
+        return 1
+    fi
+}
+
+find_working_repo() {
+    log_info "检测 GitHub 仓库连接..."
+    
+    for repo_url in "${GITHUB_REPOS[@]}"; do
+        if test_github_connection "$repo_url"; then
+            echo "$repo_url"
+            return 0
+        fi
+        log_info "尝试下一个连接..."
+        sleep 2
+    done
+    
+    log_error "所有 GitHub 连接方案均失败"
+    return 1
+}
+
+git_clone_with_retry() {
+    local dest="$1"
+    local working_repo
+    
+    working_repo=$(find_working_repo) || {
+        log_error "无法连接到 GitHub 仓库"
+        exit 1
+    }
+    
+    log_info "使用仓库地址: $working_repo"
+    
+    timeout "$((GITHUB_TIMEOUT * 3))" git clone -b main "$working_repo" "$dest" 2>&1
+    local exit_code=$?
+    
+    if [ $exit_code -eq 0 ]; then
+        log_success "克隆成功"
+        return 0
+    elif [ $exit_code -eq 124 ]; then
+        log_error "克隆超时"
+        return 1
+    else
+        log_error "克隆失败"
+        return 1
+    fi
+}
+
+git_pull_with_retry() {
+    local working_repo
+    
+    working_repo=$(find_working_repo) || {
+        log_error "无法连接到 GitHub 仓库"
+        exit 1
+    }
+    
+    cd "$PROJECT_DIR"
+    git remote set-url origin "$working_repo" 2>/dev/null || true
+    
+    log_info "使用仓库地址: $working_repo"
+    log_info "拉取最新代码..."
+    
+    timeout "$((GITHUB_TIMEOUT * 3))" git pull origin main --force 2>&1
+    local exit_code=$?
+    
+    if [ $exit_code -eq 0 ]; then
+        log_success "拉取成功"
+        return 0
+    elif [ $exit_code -eq 124 ]; then
+        log_error "拉取超时"
+        return 1
+    else
+        log_error "拉取失败，尝试强制重置..."
+        timeout "$((GITHUB_TIMEOUT * 3))" git reset --hard origin/main 2>&1
+        return $?
+    fi
+}
+
 deploy_new() {
     log_info "=========================================="
-    log_info "执行全新部署"
+    log_info "执行全新部署（清空项目文件和数据库）"
     log_info "=========================================="
 
     log_info "检测系统环境..."
@@ -125,7 +223,14 @@ deploy_new() {
     read -p "请输入API端口 (默认: 3001): " API_PORT
     API_PORT=${API_PORT:-3001}
 
-    confirm "即将开始部署，是否继续？"
+    log_warn "警告: 全新部署将清空项目文件和数据库！"
+    confirm "即将开始全新部署，是否继续？"
+
+    log_info "停止现有服务（如果存在）..."
+    pm2 stop milk-can-mes-server 2>/dev/null || true
+
+    log_info "清理旧项目文件..."
+    $SUDO rm -rf "$PROJECT_DIR"
 
     log_info "步骤1: 更新系统并安装依赖"
     $SUDO apt update -y
@@ -142,10 +247,11 @@ deploy_new() {
     $SUDO npm install -g pm2
     log_success "步骤1完成"
 
-    log_info "步骤2: 配置 MySQL"
+    log_info "步骤2: 配置 MySQL（清空旧数据）"
     $SUDO systemctl start mysql
     $SUDO systemctl enable mysql
-    $SUDO mysql -u root -e "CREATE DATABASE IF NOT EXISTS milk_can_mes CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+    $SUDO mysql -u root -e "DROP DATABASE IF EXISTS milk_can_mes;"
+    $SUDO mysql -u root -e "CREATE DATABASE milk_can_mes CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
     $SUDO mysql -u root -e "DROP USER IF EXISTS 'milk_can_mes'@'localhost';"
     $SUDO mysql -u root -e "CREATE USER 'milk_can_mes'@'localhost' IDENTIFIED WITH mysql_native_password BY '$DB_PASSWORD';"
     $SUDO mysql -u root -e "GRANT ALL PRIVILEGES ON milk_can_mes.* TO 'milk_can_mes'@'localhost';"
@@ -153,7 +259,7 @@ deploy_new() {
     log_success "步骤2完成"
 
     log_info "步骤3: 克隆项目代码（main分支）"
-    $SUDO git clone -b main https://github.com/gddsb/CSDM01.git "$PROJECT_DIR"
+    git_clone_with_retry "$PROJECT_DIR"
 
     log_info "修改项目目录所有权..."
     $SUDO chown -R $(whoami):$(whoami) "$PROJECT_DIR"
@@ -273,7 +379,7 @@ EOF
 
 deploy_redeploy() {
     log_info "=========================================="
-    log_info "执行重新部署"
+    log_info "执行重新部署（清空项目文件，保留数据库）"
     log_info "=========================================="
 
     if [ -f "$PROJECT_DIR/server/.env" ]; then
@@ -286,18 +392,20 @@ deploy_redeploy() {
         log_info "  端口: $API_PORT"
     fi
 
+    log_warn "警告: 此操作将清空项目文件，但保留数据库数据！"
     confirm "即将清空项目目录并重新部署，是否继续？"
 
     log_info "停止服务..."
     pm2 stop milk-can-mes-server 2>/dev/null || true
 
-    log_info "备份并清空..."
+    log_info "备份当前版本..."
     backup_current_version
-    backup_database
+
+    log_info "清空项目目录..."
     $SUDO rm -rf "$PROJECT_DIR"
 
     log_info "克隆项目代码（main分支）..."
-    $SUDO git clone -b main https://github.com/gddsb/CSDM01.git "$PROJECT_DIR"
+    git_clone_with_retry "$PROJECT_DIR"
 
     log_info "修改项目目录所有权..."
     $SUDO chown -R $(whoami):$(whoami) "$PROJECT_DIR"
@@ -334,13 +442,22 @@ EOF
 
 deploy_update() {
     log_info "=========================================="
-    log_info "执行更新升级"
+    log_info "执行更新升级（从 GitHub main 分支拉取最新代码）"
     log_info "=========================================="
 
     cd "$PROJECT_DIR"
 
     log_info "检查远程更新..."
-    git fetch origin main 2>/dev/null || git fetch origin 2>/dev/null
+    
+    if ! git fetch origin main 2>/dev/null && ! git fetch origin 2>/dev/null; then
+        log_warn "直接 fetch 失败，尝试检测可用仓库..."
+        working_repo=$(find_working_repo) || {
+            log_error "无法连接到 GitHub 仓库"
+            exit 1
+        }
+        git remote set-url origin "$working_repo"
+        git fetch origin main 2>/dev/null || true
+    fi
 
     LOCAL_COMMIT=$(git rev-parse --short HEAD)
     REMOTE_COMMIT=$(git rev-parse --short origin/main 2>/dev/null || git rev-parse --short origin/HEAD 2>/dev/null)
@@ -372,7 +489,7 @@ deploy_update() {
     log_info "拉取最新代码（main分支）..."
     git stash 2>/dev/null || true
     git checkout main 2>/dev/null || true
-    git pull origin main --force 2>/dev/null || git reset --hard origin/main 2>/dev/null
+    git_pull_with_retry
     git stash pop 2>/dev/null || true
 
     log_info "更新前端..."
@@ -391,11 +508,41 @@ deploy_update() {
     verify_deployment "$SERVER_IP" "$API_PORT"
 }
 
+reset_data() {
+    log_info "=========================================="
+    log_info "执行数据重置（清空数据库重新生成种子数据）"
+    log_info "=========================================="
+
+    log_warn "警告: 此操作将清除所有业务数据并重新初始化！"
+    confirm "确定要重置数据吗？"
+
+    log_info "停止服务..."
+    pm2 stop milk-can-mes-server 2>/dev/null || true
+
+    log_info "备份当前数据库..."
+    backup_database
+
+    log_info "清除现有数据..."
+    cd "$PROJECT_DIR/server"
+    npx tsx src/clean-init.ts 2>/dev/null || log_warn "clean-init.ts 执行失败，跳过"
+
+    log_info "重新初始化数据..."
+    npm run seed
+
+    log_info "重启服务..."
+    pm2 restart milk-can-mes-server || pm2 start "$PROJECT_DIR/ecosystem.config.cjs"
+
+    SERVER_IP=$(grep "server_name" /etc/nginx/sites-available/milk-can-mes 2>/dev/null | head -1 | awk '{print $2}' | tr -d ';' || echo "localhost")
+    API_PORT=$(grep "PORT" "$PROJECT_DIR/server/.env" | cut -d'=' -f2 | tr -d ' ')
+
+    verify_deployment "$SERVER_IP" "$API_PORT"
+}
+
 verify_deployment() {
     SERVER_IP="$1"
     API_PORT="$2"
 
-    log_info "步骤7: 验证部署"
+    log_info "验证部署"
     sleep 3
 
     log_info "检查服务状态..."
@@ -436,36 +583,6 @@ verify_deployment() {
     log_info "  日志文件: cat $LOG_FILE"
     echo
     log_success "操作成功完成！"
-}
-
-reset_data() {
-    log_info "=========================================="
-    log_info "执行数据重置"
-    log_info "=========================================="
-
-    log_warn "警告: 此操作将清除所有业务数据并重新初始化！"
-    confirm "确定要重置数据吗？"
-
-    log_info "停止服务..."
-    pm2 stop milk-can-mes-server 2>/dev/null || true
-
-    log_info "备份当前数据库..."
-    backup_database
-
-    log_info "清除现有数据..."
-    cd "$PROJECT_DIR/server"
-    npx tsx src/clean-init.ts 2>/dev/null || log_warn "clean-init.ts 执行失败，跳过"
-
-    log_info "重新初始化数据..."
-    npm run seed
-
-    log_info "重启服务..."
-    pm2 restart milk-can-mes-server || pm2 start "$PROJECT_DIR/ecosystem.config.cjs"
-
-    SERVER_IP=$(grep "server_name" /etc/nginx/sites-available/milk-can-mes 2>/dev/null | head -1 | awk '{print $2}' | tr -d ';' || echo "localhost")
-    API_PORT=$(grep "PORT" "$PROJECT_DIR/server/.env" | cut -d'=' -f2 | tr -d ' ')
-
-    verify_deployment "$SERVER_IP" "$API_PORT"
 }
 
 rollback() {
@@ -518,12 +635,13 @@ show_menu() {
         echo
         log_info "请选择操作:"
         echo "  1) 更新升级 - 从 GitHub main 分支拉取最新代码"
-        echo "  2) 重新部署 - 清空并重新部署（保留数据库）"
-        echo "  3) 重置数据 - 清除所有业务数据并重新初始化"
-        echo "  4) 退出"
+        echo "  2) 全新部署 - 清空项目文件和数据库重新部署"
+        echo "  3) 重新部署 - 清空项目文件重新部署（保留数据库）"
+        echo "  4) 重置数据 - 清空数据库重新生成种子数据"
+        echo "  5) 退出"
         echo
 
-        read -p "请输入选项 (1/2/3/4): " -n 1 -r
+        read -p "请输入选项 (1/2/3/4/5): " -n 1 -r
         echo
 
         case $REPLY in
@@ -531,12 +649,15 @@ show_menu() {
                 deploy_update
                 ;;
             2)
-                deploy_redeploy
+                deploy_new
                 ;;
             3)
-                reset_data
+                deploy_redeploy
                 ;;
             4)
+                reset_data
+                ;;
+            5)
                 log_info "退出"
                 exit 0
                 ;;
