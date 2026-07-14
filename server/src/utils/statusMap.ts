@@ -1,6 +1,6 @@
 // 状态映射表：前端中文字符串 ↔ 后端数字
 
-export const STATUS_MAPS = {
+export const STATUS_MAPS: any = {
   common: {
     启用: 1,
     禁用: 0,
@@ -37,29 +37,29 @@ export const STATUS_MAPS = {
   },
 }
 
-export function statusToNumber(str, type = 'common') {
+export function statusToNumber(str: any, type: string = 'common'): any {
   const map = STATUS_MAPS[type] || STATUS_MAPS.common
   if (str === undefined || str === null || str === '') return undefined
   if (typeof str === 'number') return str
   return map[str] !== undefined ? map[str] : 1
 }
 
-export function statusToString(num, type = 'common') {
+export function statusToString(num: any, type: string = 'common'): string {
   const map = STATUS_MAPS[type] || STATUS_MAPS.common
   if (num === undefined || num === null || num === '') return ''
   if (typeof num === 'string') return num
-  const reversed = Object.entries(map).find(([, v]) => v === num)
-  return reversed ? reversed[0] : String(num)
+  const reversed = Object.entries(map).find(([, v]: any) => v === num)
+  return reversed ? (reversed[0] as string) : String(num)
 }
 
-export function convertStatusInList(list, type = 'common') {
+export function convertStatusInList(list: any[], type: string = 'common'): any[] {
   return list.map(item => ({
     ...item,
     status: statusToString(item.status, type),
   }))
 }
 
-export function convertStatusInItem(item, type = 'common') {
+export function convertStatusInItem(item: any, type: string = 'common'): any {
   if (!item) return item
   return {
     ...item,

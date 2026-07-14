@@ -1,12 +1,13 @@
+import { Request, Response } from 'express'
 import { Op } from 'sequelize'
 import path from 'path'
 import fs from 'fs'
 import AppVersion from '../models/AppVersion.js'
 import { success, fail } from '../utils/response.js'
 
-export const getLatest = async (req, res) => {
+export const getLatest = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { platform = 'all' } = req.query
+    const { platform = 'all' } = req.query as any
     const latest = await AppVersion.findOne({
       where: {
         is_latest: 1,
@@ -24,10 +25,10 @@ export const getLatest = async (req, res) => {
   }
 }
 
-export const list = async (req, res) => {
+export const list = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { page = 1, pageSize = 20, keyword } = req.query
-    const where = {}
+    const { page = 1, pageSize = 20, keyword } = req.query as any
+    const where: any = {}
     if (keyword) {
       where[Op.or] = [
         { version: { [Op.like]: `%${keyword}%` } },
@@ -49,7 +50,7 @@ export const list = async (req, res) => {
   }
 }
 
-export const create = async (req, res) => {
+export const create = async (req: Request, res: Response): Promise<any> => {
   try {
     const { version, platform = 'all', description, download_url, is_force = 0, file_size } = req.body
     if (!version) {
@@ -64,7 +65,7 @@ export const create = async (req, res) => {
       is_force,
       is_latest: 1,
       file_size,
-      created_by: req.user?.username || 'admin',
+      created_by: (req as any).user?.username || 'admin',
     })
     return success(res, newVersion, '发布成功')
   } catch (err) {
@@ -73,7 +74,7 @@ export const create = async (req, res) => {
   }
 }
 
-export const update = async (req, res) => {
+export const update = async (req: Request, res: Response): Promise<any> => {
   try {
     const { id } = req.params
     const { version, platform, description, download_url, is_force, is_latest, file_size } = req.body
@@ -91,7 +92,7 @@ export const update = async (req, res) => {
   }
 }
 
-export const remove = async (req, res) => {
+export const remove = async (req: Request, res: Response): Promise<any> => {
   try {
     const { id } = req.params
     const record = await AppVersion.findByPk(id)
@@ -103,7 +104,7 @@ export const remove = async (req, res) => {
       const fileName = path.basename(record.download_url)
       const filePath = path.resolve(process.cwd(), 'uploads', 'apps', fileName)
       if (fs.existsSync(filePath)) {
-        try { fs.unlinkSync(filePath) } catch (e) { console.warn('删除APK文件失败:', e.message) }
+        try { fs.unlinkSync(filePath) } catch (e: any) { console.warn('删除APK文件失败:', e.message) }
       }
     }
     await record.destroy()
@@ -115,24 +116,24 @@ export const remove = async (req, res) => {
 }
 
 // 上传 APK/IPA 安装包，返回可访问的 download_url
-export const uploadPackage = async (req, res) => {
+export const uploadPackage = async (req: Request, res: Response): Promise<any> => {
   try {
-    if (!req.file) {
+    if (!(req as any).file) {
       return fail(res, '请上传安装包文件')
     }
     const { version, platform = 'android', description, is_force = 0 } = req.body
     if (!version) {
       // 清理已上传的临时文件
-      try { fs.unlinkSync(req.file.path) } catch (e) {}
+      try { fs.unlinkSync((req as any).file.path) } catch (e) {}
       return fail(res, '版本号不能为空')
     }
 
     // 重命名文件为 {slug}-{version}-{timestamp}.apk
-    const ext = path.extname(req.file.originalname).toLowerCase() || '.apk'
+    const ext = path.extname((req as any).file.originalname).toLowerCase() || '.apk'
     const slug = 'dmmes'
     const fileName = `${slug}-${version}-${Date.now()}${ext}`
     const destPath = path.resolve(process.cwd(), 'uploads', 'apps', fileName)
-    fs.renameSync(req.file.path, destPath)
+    fs.renameSync((req as any).file.path, destPath)
 
     const fileSize = fs.statSync(destPath).size
     // 拼接完整下载 URL（基于请求 host）
@@ -151,22 +152,22 @@ export const uploadPackage = async (req, res) => {
       is_force: is_force === '1' || is_force === 1 || is_force === true ? 1 : 0,
       is_latest: 1,
       file_size: formatFileSize(fileSize),
-      created_by: req.user?.username || 'admin',
+      created_by: (req as any).user?.username || 'admin',
     })
 
     return success(res, newVersion, 'APK 上传并发布成功')
   } catch (err) {
     console.error('上传安装包失败:', err)
     // 清理临时文件
-    if (req.file && req.file.path && fs.existsSync(req.file.path)) {
-      try { fs.unlinkSync(req.file.path) } catch (e) {}
+    if ((req as any).file && (req as any).file.path && fs.existsSync((req as any).file.path)) {
+      try { fs.unlinkSync((req as any).file.path) } catch (e) {}
     }
     return fail(res, '服务器错误', 500)
   }
 }
 
 // 下载指定版本的 APK（无需鉴权，方便用户直接点击链接下载）
-export const downloadPackage = async (req, res) => {
+export const downloadPackage = async (req: Request, res: Response): Promise<any> => {
   try {
     const { id } = req.params
     let record
@@ -193,7 +194,7 @@ export const downloadPackage = async (req, res) => {
   }
 }
 
-function formatFileSize(bytes) {
+function formatFileSize(bytes: number): string {
   if (!bytes) return '0 B'
   const units = ['B', 'KB', 'MB', 'GB']
   let i = 0

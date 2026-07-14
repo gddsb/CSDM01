@@ -30,7 +30,7 @@ import { NumberRule } from '../models/index.js'
  */
 
 // 序列键 → 编号生成配置（默认值；启动时会被 reloadRulesFromDB 覆盖）
-const SEQ_CONFIG = {
+const SEQ_CONFIG: any = {
   ORDER:               { prefix: 'MO-16', datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
   WORK_ORDER:          { prefix: 'WO',    datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
   PROCESS_REPORT:      { prefix: 'RG',    datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
@@ -49,7 +49,7 @@ const SEQ_CONFIG = {
 // NumberRule 字段 → SEQ_CONFIG 字段映射
 // date_format 取值：none / YYMMDD / YYYYMMDD / YYYY
 // reset_by 取值：daily / yearly / never（统一映射到 resetBy: day/year/never）
-function applyRuleToConfig(rule) {
+function applyRuleToConfig(rule: any): void {
   const cfg = {
     prefix: rule.prefix,
     datePattern: rule.date_format === 'YYYYMMDD' ? 'YYYYMMDD'
@@ -69,18 +69,18 @@ function applyRuleToConfig(rule) {
  * 从数据库重新加载所有启用状态的编号规则，覆盖默认 SEQ_CONFIG
  * 应在服务启动 sync 完成后调用一次
  */
-export async function reloadRulesFromDB() {
+export async function reloadRulesFromDB(): Promise<void> {
   try {
     const rules = await NumberRule.findAll({ where: { status: 1 } })
     rules.forEach(applyRuleToConfig)
-  } catch (err) {
+  } catch (err: any) {
     // 数据库未初始化时静默失败，使用默认配置
     console.warn('[sequence] 从数据库加载编号规则失败，使用默认配置:', err.message)
   }
 }
 
 // 格式化日期片段
-function formatDatePart(now, pattern) {
+function formatDatePart(now: Date, pattern: string): string {
   const yy = String(now.getFullYear()).slice(2)
   const yyyy = String(now.getFullYear())
   const mm = String(now.getMonth() + 1).padStart(2, '0')
@@ -92,7 +92,7 @@ function formatDatePart(now, pattern) {
 }
 
 // 根据 resetBy 计算 seq_date
-function computeSeqDate(now, resetBy) {
+function computeSeqDate(now: Date, resetBy: string): string {
   const yyyy = String(now.getFullYear())
   if (resetBy === 'year') return yyyy
   if (resetBy === 'never') return 'NEVER'
@@ -103,10 +103,10 @@ function computeSeqDate(now, resetBy) {
 
 /**
  * 生成业务编号（原子操作）
- * @param {string} seqKey 序列键，参见 SEQ_CONFIG
- * @returns {Promise<string>} 生成的业务编号
+ * @param seqKey 序列键，参见 SEQ_CONFIG
+ * @returns 生成的业务编号
  */
-export async function generateBizNo(seqKey) {
+export async function generateBizNo(seqKey: string): Promise<string> {
   const cfg = SEQ_CONFIG[seqKey]
   if (!cfg) {
     throw new Error(`未知的序列键: ${seqKey}`)
@@ -121,7 +121,7 @@ export async function generateBizNo(seqKey) {
   // - findOrCreate 在并发下只会有一个创建成功，另一个走 update 分支
   // - increment 在事务内对当前行加锁递增
   const t = await sequelize.transaction()
-  let finalNo
+  let finalNo: string
   try {
     const [record] = await Sequence.findOrCreate({
       where: { seq_key: seqKey, seq_date: seqDate },
@@ -159,11 +159,11 @@ export async function generateBizNo(seqKey) {
 /**
  * 仅预览下一个编号（不消耗序号，不写入 sys_sequence）
  * 用于编号管理页面的"预览"功能
- * @param {object} ruleConfig 规则配置 { prefix, date_format, separator, seq_width, reset_by }
- * @param {number} nextSeq 下一个序号值（默认 1）
- * @returns {string} 预览编号
+ * @param ruleConfig 规则配置 { prefix, date_format, separator, seq_width, reset_by }
+ * @param nextSeq 下一个序号值（默认 1）
+ * @returns 预览编号
  */
-export function previewBizNo(ruleConfig, nextSeq = 1) {
+export function previewBizNo(ruleConfig: any, nextSeq: number = 1): string {
   const now = new Date()
   const datePart = formatDatePart(now, ruleConfig.date_format)
   const sep = ruleConfig.separator || ''
@@ -187,7 +187,7 @@ export const generateStandardNo         = () => generateBizNo('STANDARD')
 export const generateNcrNo              = () => generateBizNo('NCR')
 
 // 暴露 SEQ_CONFIG 副本（供调试/读取）
-export function getSeqConfig() {
+export function getSeqConfig(): any {
   return { ...SEQ_CONFIG }
 }
 

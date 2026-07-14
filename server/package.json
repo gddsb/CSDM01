@@ -3,11 +3,12 @@
   "version": "1.0.0.236",
   "description": "奶粉罐生产管理系统 - 后端API服务",
   "type": "module",
-  "main": "src/app.js",
+  "main": "src/app.ts",
   "scripts": {
-    "start": "node src/app.js",
-    "dev": "node --watch src/app.js",
-    "seed": "node src/seed.js"
+    "start": "tsx src/app.ts",
+    "dev": "tsx watch src/app.ts",
+    "seed": "tsx src/seed.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -21,5 +22,17 @@
     "mysql2": "^3.11.0",
     "sequelize": "^6.37.3",
     "sqlite3": "^6.0.1"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/http-proxy": "^1.17.17",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/morgan": "^1.9.10",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^26.1.1",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2"
   }
 }

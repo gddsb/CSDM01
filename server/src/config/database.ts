@@ -3,9 +3,9 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 
-const dialect = process.env.DB_DIALECT || 'sqlite'
+const dialect: string = process.env.DB_DIALECT || 'sqlite'
 
-let sequelize
+let sequelize: Sequelize
 
 if (dialect === 'mysql') {
   // MySQL 配置（生产环境）
@@ -15,7 +15,7 @@ if (dialect === 'mysql') {
     process.env.DB_PASSWORD || '',
     {
       host: process.env.DB_HOST || 'localhost',
-      port: process.env.DB_PORT || 3306,
+      port: Number(process.env.DB_PORT) || 3306,
       dialect: 'mysql',
       logging: false,
       define: {
