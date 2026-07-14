@@ -14,15 +14,15 @@ import api from '../../utils/api'
 import { formatVersionNo } from '../../utils'
 
 const statusColorMap = {
-  '未开工': 'default',
-  '已开工': 'processing',
-  '已关闭': 'success',
+  '开立': 'default',
+  '开工': 'processing',
+  '关闭': 'success',
 }
 
 const statusOptions = [
-  { label: '未开工', value: '未开工' },
-  { label: '已开工', value: '已开工' },
-  { label: '已关闭', value: '已关闭' },
+  { label: '开立', value: '开立' },
+  { label: '开工', value: '开工' },
+  { label: '关闭', value: '关闭' },
 ]
 
 export default function WorkOrderManagement() {
@@ -45,10 +45,10 @@ export default function WorkOrderManagement() {
 
   // 筛选输入态
   const [keywordInput, setKeywordInput] = useState('')
-  const [statusInput, setStatusInput] = useState(['未开工', '已开工'])
+  const [statusInput, setStatusInput] = useState(['开立', '开工'])
   const [lineInput, setLineInput] = useState(undefined)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: ['未开工', '已开工'], line_id: undefined })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: ['开立', '开工'], line_id: undefined })
 
   // 获取工单列表
   useEffect(() => {
@@ -134,15 +134,15 @@ export default function WorkOrderManagement() {
   const selectedOrderId = Form.useWatch('order_id', form)
   const selectedOrder = orders.find(o => o.order_id === selectedOrderId)
 
-  const openCount = data.filter(w => w.status === '未开工').length
-  const startedCount = data.filter(w => w.status === '已开工').length
-  const finishedCount = data.filter(w => w.status === '已关闭').length
+  const openCount = data.filter(w => w.status === '开立').length
+  const startedCount = data.filter(w => w.status === '开工').length
+  const finishedCount = data.filter(w => w.status === '关闭').length
 
   const stats = [
     { label: '总工单数', value: total, icon: <ToolOutlined />, color: '#2196F3' },
-    { label: '未开工', value: openCount, icon: <ClockCircleOutlined />, color: '#9E9E9E' },
-    { label: '已开工', value: startedCount, icon: <PlayCircleOutlined />, color: '#FF9800' },
-    { label: '已关闭', value: finishedCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
+    { label: '开立', value: openCount, icon: <ClockCircleOutlined />, color: '#9E9E9E' },
+    { label: '开工', value: startedCount, icon: <PlayCircleOutlined />, color: '#FF9800' },
+    { label: '关闭', value: finishedCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
   ]
 
   const handleStart = (w) => {
@@ -165,14 +165,14 @@ export default function WorkOrderManagement() {
 
   const handleFinish = (w) => {
     Modal.confirm({
-      title: '确认开始完工',
-      content: `确认开始完工工单 ${w.work_order_no}？当天需完成完工`,
-      okText: '确认完工',
+      title: '确认关闭',
+      content: `确认关闭工单 ${w.work_order_no}？关闭后不可再编辑`,
+      okText: '确认关闭',
       cancelText: '取消',
       onOk: async () => {
         try {
           const res = await api.post(`/production/work-orders/${w.work_order_id}/finish`)
-          message.success(res.message || `工单 ${w.work_order_no} 已完工`)
+          message.success(res.message || `工单 ${w.work_order_no} 已关闭`)
           refresh()
         } catch (err) {
           message.error(err.message || '完工失败')
@@ -289,13 +289,13 @@ export default function WorkOrderManagement() {
 
   const handleReset = () => {
     setKeywordInput('')
-    setStatusInput(['未开工', '已开工'])
+    setStatusInput(['开立', '开工'])
     setLineInput(undefined)
-    setQuery(q => ({ ...q, page: 1, keyword: '', status: ['未开工', '已开工'], line_id: undefined }))
+    setQuery(q => ({ ...q, page: 1, keyword: '', status: ['开立', '开工'], line_id: undefined }))
   }
 
   const renderActions = (w) => {
-    if (w.status === '未开工') {
+    if (w.status === '开立') {
       return (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleEdit(w)}>编辑</Button>
@@ -311,10 +311,10 @@ export default function WorkOrderManagement() {
         </Space>
       )
     }
-    if (w.status === '已开工') {
+    if (w.status === '开工') {
       return (
         <Space size="small">
-          <Button type="link" size="small" onClick={() => handleFinish(w)}>完工</Button>
+          <Button type="link" size="small" onClick={() => handleFinish(w)}>关闭</Button>
           <Button type="link" size="small" onClick={() => handleView(w)}>详情</Button>
         </Space>
       )
@@ -339,7 +339,7 @@ export default function WorkOrderManagement() {
     { title: '工单号', dataIndex: 'work_order_no', key: 'work_order_no', width: 140, fixed: 'left' },
     { title: '开工日期', dataIndex: 'start_time', key: 'start_date', width: 100, render: v => v ? String(v).substring(0, 10).replace('T', ' ') : '-' },
     { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 120 },
-    { title: '产品名称', dataIndex: 'material_name', key: 'material_name', ellipsis: true },
+    { title: '产品名称', dataIndex: 'material_name', key: 'material_name', width: 200 },
     { title: '计划数量', dataIndex: 'planned_qty', key: 'planned_qty', width: 90, align: 'right', render: v => Math.round(v || 0).toLocaleString() },
     { title: '开工数量', dataIndex: 'start_qty', key: 'start_qty', width: 90, align: 'right', render: v => Math.round(v || 0).toLocaleString() },
     {

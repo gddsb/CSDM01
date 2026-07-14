@@ -74,17 +74,51 @@ const ProcessReport = sequelize.define('ProcessReport', {
     defaultValue: 0,
     get() {
       const val = this.getDataValue('status')
-      const map = { 0: '开立', 1: '开工', 2: '完工' }
+      const map = { 0: '开始报工', 1: '结束报工' }
       return map[val] !== undefined ? map[val] : val
     },
     set(val) {
       if (typeof val === 'string') {
-        const map = { '开立': 0, '开工': 1, '完工': 2 }
+        const map = { '开始报工': 0, '结束报工': 1 }
         this.setDataValue('status', map[val] !== undefined ? map[val] : 0)
       } else {
         this.setDataValue('status', val)
       }
     },
+  },
+  line_id: {
+    type: DataTypes.INTEGER,
+  },
+  line_name: {
+    type: DataTypes.STRING(100),
+  },
+  material_id: {
+    type: DataTypes.UUID,
+  },
+  material_code: {
+    type: DataTypes.STRING(50),
+  },
+  material_name: {
+    type: DataTypes.STRING(100),
+  },
+  specification: {
+    type: DataTypes.STRING(200),
+  },
+  unit: {
+    type: DataTypes.STRING(20),
+  },
+  planned_qty: {
+    type: DataTypes.DECIMAL(12, 2),
+    defaultValue: 0,
+  },
+  report_date: {
+    type: DataTypes.DATEONLY,
+  },
+  shift: {
+    type: DataTypes.STRING(20),
+  },
+  team: {
+    type: DataTypes.STRING(50),
   },
 }, {
   tableName: 'production_process_report',

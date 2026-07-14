@@ -17,8 +17,9 @@ import {
   remove as woRemove,
   start,
   finish,
+  toggleReportStatus,
 } from '../controllers/WorkOrderController.js'
-import { list as reportList, create as reportCreate, update as reportUpdate, start as reportStart, finish as reportFinish } from '../controllers/ProcessReportController.js'
+import { list as reportList, detail as reportDetail, create as reportCreate, update as reportUpdate, remove as reportRemove, toggleStatus as reportToggleStatus, start as reportStart, finish as reportFinish } from '../controllers/ProcessReportController.js'
 import { list as manpowerList, detail as manpowerDetail, create as manpowerCreate, update as manpowerUpdate, remove as manpowerRemove, summaryByWorkOrder as manpowerSummary } from '../controllers/ManpowerRecordController.js'
 import { list as defectList, create as defectCreate, remove as defectRemove, update as defectUpdate, batchSave as defectBatchSave, scrapList, scrapCreate, scrapUpdate } from '../controllers/ProcessDefectController.js'
 import { list as exceptionList, create as exceptionCreate, update as exceptionUpdate, remove as exceptionRemove } from '../controllers/ProcessExceptionController.js'
@@ -59,11 +60,15 @@ router.put('/work-orders/:id', woUpdate)
 router.delete('/work-orders/:id', woRemove)
 router.post('/work-orders/:id/start', start)
 router.post('/work-orders/:id/finish', finish)
+router.post('/work-orders/:id/report-status', toggleReportStatus)
 
 // 工序报工
 router.get('/process-reports', reportList)
+router.get('/process-reports/:id', reportDetail)
 router.post('/process-reports', reportCreate)
 router.put('/process-reports/:id', reportUpdate)
+router.delete('/process-reports/:id', reportRemove)
+router.post('/process-reports/:id/toggle-status', reportToggleStatus)
 router.post('/process-reports/:id/start', reportStart)
 router.post('/process-reports/:id/finish', reportFinish)
 

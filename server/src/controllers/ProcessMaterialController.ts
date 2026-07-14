@@ -4,8 +4,9 @@ import { success, fail } from '../utils/response.js'
 
 export const list = async (req, res) => {
   try {
-    const { work_order_id, process_id, material_batch, page = 1, pageSize = 20 } = req.query
+    const { report_id, work_order_id, process_id, material_batch, page = 1, pageSize = 20 } = req.query
     const where = {}
+    if (report_id) where.report_id = Number(report_id)
     if (work_order_id) where.work_order_id = Number(work_order_id)
     if (process_id) where.process_id = Number(process_id)
     if (material_batch) where.material_batch = { [Op.like]: `%${material_batch}%` }
@@ -32,6 +33,7 @@ export const list = async (req, res) => {
 export const create = async (req, res) => {
   try {
     const {
+      report_id,
       work_order_id,
       process_id,
       material_type,
@@ -57,6 +59,7 @@ export const create = async (req, res) => {
     if (!process) return fail(res, '工序不存在', 404)
 
     const material = await ProcessMaterial.create({
+      report_id: report_id || null,
       work_order_id: workOrder.work_order_id,
       work_order_no: workOrder.work_order_no,
       process_id: process.process_id,

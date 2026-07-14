@@ -91,15 +91,32 @@ const WorkOrder = sequelize.define('WorkOrder', {
     defaultValue: 0,
     get() {
       const val = this.getDataValue('status')
-      const map = { 0: '未开工', 1: '已开工', 2: '已关闭' }
+      const map = { 0: '开立', 1: '开工', 2: '关闭' }
       return map[val] !== undefined ? map[val] : val
     },
     set(val) {
       if (typeof val === 'string') {
-        const map = { '未开工': 0, '已开工': 1, '已关闭': 2 }
+        const map = { '开立': 0, '开工': 1, '关闭': 2 }
         this.setDataValue('status', map[val] !== undefined ? map[val] : 0)
       } else {
         this.setDataValue('status', val)
+      }
+    },
+  },
+  report_status: {
+    type: DataTypes.TINYINT,
+    defaultValue: 0,
+    get() {
+      const val = this.getDataValue('report_status')
+      const map = { 0: '开始报工', 1: '结束报工' }
+      return map[val] !== undefined ? map[val] : val
+    },
+    set(val) {
+      if (typeof val === 'string') {
+        const map = { '开始报工': 0, '结束报工': 1 }
+        this.setDataValue('report_status', map[val] !== undefined ? map[val] : 0)
+      } else {
+        this.setDataValue('report_status', val)
       }
     },
   },
