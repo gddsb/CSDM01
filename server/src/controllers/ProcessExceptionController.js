@@ -19,7 +19,11 @@ export const list = async (req, res) => {
       offset,
       order: [['created_at', 'DESC']],
     })
-    return success(res, rows, '查询成功', count)
+    const data = rows.map(r => ({
+      ...r.toJSON(),
+      exception_images: r.exception_images ? JSON.parse(r.exception_images) : [],
+    }))
+    return success(res, data, '查询成功', count)
   } catch (err) {
     console.error('查询异常工时列表失败:', err)
     return fail(res, '服务器错误', 500)

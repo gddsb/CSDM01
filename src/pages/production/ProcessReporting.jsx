@@ -249,8 +249,8 @@ export default function ProcessReporting() {
       setProdDefectList((defectRes.data || []).map(d => ({ ...d, id: d.defect_id, defect_images: parseImages(d.defect_images) })))
       setScrapDefectList((scrapRes.data || []).map(d => ({ ...d, id: d.scrap_id, defect_images: parseImages(d.defect_images) })))
       setExceptionList((exceptionRes.data || []).map(e => ({ ...e, id: e.exception_id, exception_images: parseImages(e.exception_images) })))
-      setManpowerList(manpowerRes.data || [])
-      setMaterialList((materialRes.data || []).map(m => ({ ...m, id: m.id, label_images: parseImages(m.label_images) })))
+      setManpowerList((manpowerRes.data || []).map(m => ({ ...m, id: m.record_id })))
+      setMaterialList((materialRes.data || []).map(m => ({ ...m, id: m.material_id, label_images: parseImages(m.label_images) })))
 
       const defectTotal = (defectRes.data || []).reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
       const scrapTotal = (scrapRes.data || []).reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
@@ -580,6 +580,7 @@ export default function ProcessReporting() {
       other_count: 0,
     }
     setManpowerList([...manpowerList, newItem])
+    markUnsaved()
   }
 
   const updateManpower = (id, field, value) => {
@@ -688,32 +689,30 @@ export default function ProcessReporting() {
     try {
       setSaving(true)
       for (const item of validItems) {
-        if (item.material_id) {
-          if (item.id && typeof item.id === 'number') {
-            await api.put(`/production/process-materials/${item.id}`, {
-              process_id: item.process_id,
-              material_type: '原材料',
-              material_code: item.material_code,
-              material_name: item.material_name,
-              specification: item.specification,
-              material_batch: item.material_batch,
-              box_no: item.box_no,
-              quantity: item.quantity,
-              label_images: item.label_images,
-            })
-          } else {
-            await api.post('/production/process-materials', {
-              work_order_id: item.work_order_id,
-              process_id: item.process_id,
-              material_type: '原材料',
-              material_code: item.material_code,
-              material_name: item.material_name,
-              specification: item.specification,
-              material_batch: item.material_batch,
-              quantity: item.quantity,
-              label_images: item.label_images,
-            })
-          }
+        if (item.id && item.id > 0) {
+          await api.put(`/production/process-materials/${item.id}`, {
+            process_id: item.process_id,
+            material_type: '原材料',
+            material_code: item.material_code,
+            material_name: item.material_name,
+            specification: item.specification,
+            material_batch: item.material_batch,
+            box_no: item.box_no,
+            quantity: item.quantity,
+            label_images: item.label_images,
+          })
+        } else {
+          await api.post('/production/process-materials', {
+            work_order_id: item.work_order_id,
+            process_id: item.process_id,
+            material_type: '原材料',
+            material_code: item.material_code,
+            material_name: item.material_name,
+            specification: item.specification,
+            material_batch: item.material_batch,
+            quantity: item.quantity,
+            label_images: item.label_images,
+          })
         }
       }
       message.success('保存成功')
