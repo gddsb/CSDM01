@@ -339,7 +339,7 @@ export default function WorkOrderManagement() {
     { title: '工单号', dataIndex: 'work_order_no', key: 'work_order_no', width: 140, fixed: 'left' },
     { title: '开工日期', dataIndex: 'start_time', key: 'start_date', width: 100, render: v => v ? String(v).substring(0, 10).replace('T', ' ') : '-' },
     { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 120 },
-    { title: '产品名称', dataIndex: 'material_name', key: 'material_name' },
+    { title: '产品名称', dataIndex: 'material_name', key: 'material_name', width: 200 },
     { title: '计划数量', dataIndex: 'planned_qty', key: 'planned_qty', width: 90, align: 'right', render: v => Math.round(v || 0).toLocaleString() },
     { title: '开工数量', dataIndex: 'start_qty', key: 'start_qty', width: 90, align: 'right', render: v => Math.round(v || 0).toLocaleString() },
     {
