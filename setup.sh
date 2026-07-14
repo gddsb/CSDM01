@@ -294,14 +294,14 @@ EOF
 
     log_info "步骤4: 配置 PM2"
     cd "$PROJECT_DIR"
+    TSX_PATH="$PROJECT_DIR/server/node_modules/.bin/tsx"
     cat > ecosystem.config.cjs <<EOF
 module.exports = {
   apps: [{
     name: 'milk-can-mes-server',
     cwd: '$PROJECT_DIR/server',
     script: 'src/app.ts',
-    interpreter: 'node',
-    interpreterArgs: '--import tsx',
+    interpreter: '$TSX_PATH',
     instances: 1,
     autorestart: true,
     watch: false,
@@ -320,7 +320,16 @@ module.exports = {
 }
 EOF
 
+    log_info "启动服务..."
     pm2 start ecosystem.config.cjs
+    sleep 3
+    if pm2 status | grep "milk-can-mes-server" | grep -q "online"; then
+        log_success "服务启动成功"
+    else
+        log_error "服务启动失败，查看日志:"
+        pm2 logs milk-can-mes-server --lines 30 --nostream
+        exit 1
+    fi
     $SUDO pm2 startup
     pm2 save
     log_success "步骤4完成"
@@ -550,7 +559,9 @@ verify_deployment() {
         log_success "服务运行正常"
     else
         log_error "服务运行异常"
-        pm2 logs milk-can-mes-server --lines 20
+        log_info "===== 服务错误日志 ====="
+        pm2 logs milk-can-mes-server --lines 50 --nostream 2>&1 || true
+        log_info "========================"
         return 1
     fi
 
