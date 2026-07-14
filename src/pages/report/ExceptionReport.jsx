@@ -10,15 +10,12 @@ import { exceptionRecords, workOrders } from '../../mock/data'
 
 const { RangePicker } = DatePicker
 
-// 异常类型映射
+// 异常类型映射（与数据字典 prod_exception_type 保持一致）
 const exceptionTypeMap = {
-  'E01': { name: '换型调机', color: '#1890ff' },
-  'E02': { name: '工艺调整', color: '#722ed1' },
-  'E03': { name: '停机待料', color: '#faad14' },
-  'E04': { name: '设备故障', color: '#ff4d4f' },
-  'E05': { name: '质量异常', color: '#eb2f96' },
-  'E06': { name: '人员异常', color: '#13c2c2' },
-  'E07': { name: '其他', color: '#8c8c8c' },
+  '换型换线': { name: '换型换线', color: '#1890ff' },
+  '停机待料': { name: '停机待料', color: '#faad14' },
+  '故障维修': { name: '故障维修', color: '#ff4d4f' },
+  '其它停机': { name: '其它停机', color: '#8c8c8c' },
 }
 
 export default function ExceptionReport() {
@@ -59,7 +56,7 @@ export default function ExceptionReport() {
     return workOrders.map(wo => {
       const exceptions = exceptionRecords.filter(r => r.work_order_id === wo.work_order_id)
       const totalDur = exceptions.reduce((s, r) => s + r.duration, 0)
-      const types = [...new Set(exceptions.map(r => r.exception_type_name))]
+      const types = [...new Set(exceptions.map(r => r.exception_type))]
       return {
         work_order_no: wo.work_order_no,
         line_name: wo.line_name,

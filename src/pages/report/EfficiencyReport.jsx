@@ -63,14 +63,14 @@ export default function EfficiencyReport() {
       const manpowers = manpowerRecords.filter(m => woIds.includes(m.work_order_id))
       const workerCount = manpowers.reduce((s, r) => s + r.skilled_workers + r.general_workers + r.contract_workers + r.auxiliary_workers, 0)
       const exceptions = exceptionRecords.filter(e => woIds.includes(e.work_order_id))
-      const faultMinutes = exceptions.reduce((s, e) => s + e.duration, 0)
+      const faultHours = exceptions.reduce((s, e) => s + (e.duration || 0), 0)
       const totalHours = wos.reduce((s, w) => {
         if (!w.start_time) return s
         const start = dayjs(w.start_time)
         const end = w.finish_time ? dayjs(w.finish_time) : dayjs()
         return s + end.diff(start, 'hour', true)
       }, 0)
-      const effectiveHours = Math.max(totalHours - faultMinutes / 60, 0)
+      const effectiveHours = Math.max(totalHours - faultHours, 0)
       const availability = totalHours > 0 ? effectiveHours / totalHours : 0
       const quality = totalInput > 0 ? totalOutput / totalInput : 0
       // 生产效率 = 可用率 × 性能率
@@ -83,7 +83,7 @@ export default function EfficiencyReport() {
         woCount: wos.length,
         totalOutput,
         totalHours: roundHalf(totalHours),
-        faultMinutes,
+        faultHours,
         workerCount,
         perCapita,
         efficiency,
@@ -103,9 +103,9 @@ export default function EfficiencyReport() {
     ? (activeLines.reduce((s, l) => s + l.efficiency, 0) / activeLines.length).toFixed(1)
     : '0.0'
   const totalHoursAll = filtered.reduce((s, l) => s + l.totalHours, 0)
-  const totalFaultMinutes = filtered.reduce((s, l) => s + l.faultMinutes, 0)
+  const totalFaultHours = filtered.reduce((s, l) => s + l.faultHours, 0)
   const faultRate = totalHoursAll > 0
-    ? ((totalFaultMinutes / (totalHoursAll * 60)) * 100).toFixed(2)
+    ? ((totalFaultHours / totalHoursAll) * 100).toFixed(2)
     : '0.00'
   const totalOutputAll = filtered.reduce((s, l) => s + l.totalOutput, 0)
   const totalWorkers = filtered.reduce((s, l) => s + l.workerCount, 0)
