@@ -324,7 +324,7 @@
   },
   {
     "defect_id": 54,
-    "defect_code": "PC-PRC-01",
+    "defect_code": "PC-PRC-26",
     "defect_name": "下料刮花",
     "defect_type": "制程不良",
     "category_name": "制程检验类型",
@@ -341,7 +341,7 @@
   },
   {
     "defect_id": 55,
-    "defect_code": "PC-PRC-02",
+    "defect_code": "PC-PRC-27",
     "defect_name": "垂直度不达标",
     "defect_type": "制程不良",
     "category_name": "制程检验类型",
@@ -358,7 +358,7 @@
   },
   {
     "defect_id": 56,
-    "defect_code": "PC-PRC-03",
+    "defect_code": "PC-PRC-28",
     "defect_name": "焊接刮花",
     "defect_type": "制程不良",
     "category_name": "制程检验类型",
