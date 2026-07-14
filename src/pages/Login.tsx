@@ -3,7 +3,6 @@ import { Card, Form, Input, Button, Typography } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useApp, useMessage } from '../contexts/AppContext'
 import { useNavigate } from 'react-router-dom'
-import logoSquare from '../assets/logo-square.png'
 
 const { Text } = Typography
 
@@ -49,7 +48,10 @@ export default function Login() {
     <div className="login-bg">
       <div className="login-card">
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <img src={logoSquare} alt="logo" style={{ height: 56, width: 'auto', objectFit: 'contain', marginBottom: 8 }} />
+          <div className="daman-logo" style={{ marginBottom: 8 }}>
+            <span className="daman-en">daman</span>
+            <span className="daman-cn">大满</span>
+          </div>
           <div className="login-title">奶粉罐生产管理系统</div>
           <div className="login-subtitle">Milk Can Production Management System V1.0.1.1</div>
         </div>
