@@ -1,6 +1,6 @@
 {
   "name": "milk-can-mes-server",
-  "version": "1.0.0.236",
+  "version": "1.0.1.1",
   "description": "奶粉罐生产管理系统 - 后端API服务",
   "type": "module",
   "main": "src/app.ts",

@@ -51,7 +51,7 @@ export default function Login() {
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <img src={logoSquare} alt="logo" style={{ height: 56, width: 'auto', objectFit: 'contain', marginBottom: 8 }} />
           <div className="login-title">奶粉罐生产管理系统</div>
-          <div className="login-subtitle">Milk Can Production Management System V1.0.0.236</div>
+          <div className="login-subtitle">Milk Can Production Management System V1.0.1.1</div>
         </div>
         <Form name="login" onFinish={onFinish} size="large" initialValues={{ username: 'admin', password: '123456' }}>
           <Form.Item name="username" rules={[{ required: true, message: '请输入用户名' }]}>
