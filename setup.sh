@@ -112,7 +112,7 @@ test_github_connection() {
     local repo_url="$1"
     log_info "测试连接: $repo_url"
     
-    timeout "$GITHUB_TIMEOUT" git ls-remote --quiet "$repo_url" main 2>/dev/null
+    timeout "$GITHUB_TIMEOUT" git ls-remote --quiet "$repo_url" main >/dev/null 2>&1
     local exit_code=$?
     
     if [ $exit_code -eq 0 ]; then
