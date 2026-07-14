@@ -252,34 +252,6 @@
     "created_at": "2026-07-09 14:53:38.206 +00:00"
   },
   {
-    "perm_id": 25,
-    "parent_id": 20,
-    "perm_name": "人员记录",
-    "perm_code": "production:manpower",
-    "type": "menu",
-    "icon": "TeamOutlined",
-    "path": "/production/manpower",
-    "component": null,
-    "sort_order": 5,
-    "visible": 1,
-    "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
-  },
-  {
-    "perm_id": 26,
-    "parent_id": 20,
-    "perm_name": "工时记录",
-    "perm_code": "production:exception",
-    "type": "menu",
-    "icon": "BellOutlined",
-    "path": "/production/exceptions",
-    "component": null,
-    "sort_order": 6,
-    "visible": 1,
-    "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
-  },
-  {
     "perm_id": 30,
     "parent_id": 0,
     "perm_name": "质量管理",
