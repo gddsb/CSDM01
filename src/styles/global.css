@@ -239,6 +239,36 @@ body {
   margin-right: 8px;
 }
 
+.daman-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+
+.daman-logo .daman-en {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1a4e85;
+  letter-spacing: -0.5px;
+}
+
+.daman-logo .daman-cn {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1a4e85;
+  letter-spacing: 2px;
+}
+
+.login-bg .daman-logo .daman-en {
+  font-size: 32px;
+}
+
+.login-bg .daman-logo .daman-cn {
+  font-size: 18px;
+}
+
 /* ============================================================
    三段式页面通用组件样式
    规范：

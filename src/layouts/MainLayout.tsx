@@ -15,7 +15,6 @@ import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useApp, useMessage, User } from '../contexts/AppContext'
 import { themeList, themes } from '../themes'
 import api from '../utils/api'
-import logoSquare from '../assets/logo-square.png'
 
 // 20 个预设头像（使用 DiceBear API 生成不同样式头像）
 const presetAvatars = [
@@ -400,7 +399,10 @@ export default function MainLayout() {
         style={{ background: 'var(--nav-bg)' }}
       >
         <div className="logo" style={{ color: 'var(--nav-text)' }}>
-          <img src={logoSquare} alt="logo" className="logo-img" style={{ height: 32, width: 'auto', objectFit: 'contain' }} />
+          <div className="daman-logo">
+            <span className="daman-en">daman</span>
+            <span className="daman-cn">大满</span>
+          </div>
           {!collapsed && <span>{systemName}</span>}
         </div>
         <Menu

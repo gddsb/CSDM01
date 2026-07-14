@@ -8,7 +8,6 @@ import {
   microbeInspections, envInspections, complaints, instruments,
   processReports, devices, productionLines, materials
 } from '../../mock/data'
-import logoRect from '../../assets/logo-rect.png'
 import '../../styles/bigscreen.css'
 
 // 环境数据更新间隔
@@ -499,7 +498,10 @@ export default function ManagementBigScreen() {
         </div>
         <div className="bs-header-center">
           <div className="bs-title">
-            <img src={logoRect} alt="logo" style={{ height: 40, width: 'auto', marginRight: 12, verticalAlign: 'middle' }} />
+            <div className="daman-logo" style={{ display: 'inline-flex', flexDirection: 'row', gap: 4, marginRight: 12, verticalAlign: 'middle' }}>
+              <span className="daman-en" style={{ fontSize: 24, fontWeight: 800, color: '#fff' }}>daman</span>
+              <span className="daman-cn" style={{ fontSize: 14, fontWeight: 700, color: '#fff', letterSpacing: 2 }}>大满</span>
+            </div>
             奶粉罐生产管理综合大屏
           </div>
         </div>

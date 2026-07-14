@@ -2,7 +2,9 @@ module.exports = {
   apps: [
     {
       name: 'milk-can-mes-server',
-      script: './server/src/app.js',
+      script: './server/src/app.ts',
+      interpreter: 'node',
+      interpreter_args: '--import tsx',
       cwd: '/opt/milk-can-mes',
       instances: 1,
       autorestart: true,
