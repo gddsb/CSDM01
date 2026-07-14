@@ -8,24 +8,52 @@ import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPa
 import api from '../../utils/api'
 import { useMessage } from '../../contexts/AppContext'
 
+interface User {
+  user_id: number
+  username: string
+  real_name: string
+  employee_no: string
+  department: string
+  position: string
+  role_id: number
+  role?: { role_name: string }
+  phone: string
+  email: string
+  status: string
+  last_login_time: string
+  pwd_reset_required: number
+  remarks: string
+}
+
+interface Role {
+  role_id: number
+  role_name: string
+}
+
+interface QueryParams {
+  page: number
+  pageSize: number
+  keyword: string
+  status: string | undefined
+  role_id: number | undefined
+}
+
 export default function UserManagement() {
   const message = useMessage()
-  const [data, setData] = useState([])
+  const [data, setData] = useState<User[]>([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)
-  const [roles, setRoles] = useState([])
+  const [roles, setRoles] = useState<Role[]>([])
   const [modalOpen, setModalOpen] = useState(false)
-  const [editingUser, setEditingUser] = useState(null)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
 
-  // 输入态（仅用于筛选项输入，不触发请求）
   const [keywordInput, setKeywordInput] = useState('')
-  const [statusInput, setStatusInput] = useState(undefined)
-  const [roleInput, setRoleInput] = useState(undefined)
+  const [statusInput, setStatusInput] = useState<string | undefined>(undefined)
+  const [roleInput, setRoleInput] = useState<number | undefined>(undefined)
 
-  // 已应用的查询条件（变更会触发请求）
-  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined, role_id: undefined })
+  const [query, setQuery] = useState<QueryParams>({ page: 1, pageSize: 30, keyword: '', status: undefined, role_id: undefined })
 
   const stats = [
     { label: '总用户数', value: total, icon: <TeamOutlined />, color: '#2196F3' },
@@ -36,13 +64,12 @@ export default function UserManagement() {
 
   const roleOptions = roles.map(r => ({ label: r.role_name, value: r.role_id }))
 
-  // 获取用户列表（依赖 query，自动响应分页/筛选变化）
   useEffect(() => {
     let cancelled = false
     const run = async () => {
       setLoading(true)
       try {
-        const params = { page: query.page, pageSize: query.pageSize }
+        const params: Record<string, unknown> = { page: query.page, pageSize: query.pageSize }
         if (query.keyword) params.keyword = query.keyword
         if (query.status !== undefined && query.status !== null) params.status = query.status
         if (query.role_id !== undefined && query.role_id !== null) params.role_id = query.role_id
@@ -51,9 +78,9 @@ export default function UserManagement() {
         const list = res.data || []
         setData(list)
         setTotal(res.total || list.length)
-      } catch (err) {
+      } catch (err: unknown) {
         if (!cancelled) {
-          message.error(err.message || '获取用户列表失败')
+          message.error(err instanceof Error ? err.message : '获取用户列表失败')
           setData([])
           setTotal(0)
         }
@@ -65,7 +92,6 @@ export default function UserManagement() {
     return () => { cancelled = true }
   }, [query])
 
-  // 获取角色列表（作为下拉选项）
   useEffect(() => {
     let cancelled = false
     const run = async () => {
@@ -98,14 +124,12 @@ export default function UserManagement() {
     setModalOpen(true)
   }
 
-  const handleEdit = (record) => {
+  const handleEdit = (record: User) => {
     setEditingUser(record)
     setModalOpen(true)
   }
 
-  // Modal 打开动画结束后再设置表单值（配合 destroyOnHidden + preserve={false}）
-  // 使用 afterOpenChange 而非 useEffect，确保表单字段已挂载注册
-  const handleAfterOpenChange = (open) => {
+  const handleAfterOpenChange = (open: boolean) => {
     if (!open) return
     if (editingUser) {
       form.setFieldsValue({
@@ -127,23 +151,23 @@ export default function UserManagement() {
     }
   }
 
-  const handleToggle = async (record) => {
+  const handleToggle = async (record: User) => {
     try {
       const res = await api.post(`/system/users/${record.user_id}/toggle`)
       message.success(res.message || (record.status === '启用' ? '已禁用该用户' : '已启用该用户'))
       refresh()
-    } catch (err) {
-      message.error(err.message || '操作失败')
+    } catch (err: unknown) {
+      message.error(err instanceof Error ? err.message : '操作失败')
     }
   }
 
-  const handleDelete = async (record) => {
+  const handleDelete = async (record: User) => {
     try {
       const res = await api.delete(`/system/users/${record.user_id}`)
       message.success(res.message || '删除成功')
       refresh()
-    } catch (err) {
-      message.error(err.message || '删除失败')
+    } catch (err: unknown) {
+      message.error(err instanceof Error ? err.message : '删除失败')
     }
   }
 
@@ -153,7 +177,6 @@ export default function UserManagement() {
       setSubmitting(true)
       const payload = { ...values }
       if (editingUser && !payload.password) delete payload.password
-      // Switch 布尔值转 0/1
       payload.pwd_reset_required = payload.pwd_reset_required ? 1 : 0
       if (editingUser) {
         const res = await api.put(`/system/users/${editingUser.user_id}`, payload)
@@ -164,21 +187,21 @@ export default function UserManagement() {
       }
       setModalOpen(false)
       refresh()
-    } catch (e) {
-      if (e?.errorFields) return // 表单校验未通过
-      message.error(e.message || '操作失败')
+    } catch (e: unknown) {
+      if ((e as { errorFields?: unknown[] })?.errorFields) return
+      message.error(e instanceof Error ? e.message : '操作失败')
     } finally {
       setSubmitting(false)
     }
   }
 
   const filters = [
-    { type: 'input', placeholder: '搜索用户名/姓名/工号', col: { span: 6 }, value: keywordInput, onChange: e => setKeywordInput(e.target.value) },
-    { type: 'select', placeholder: '角色筛选', options: roleOptions, col: { span: 6 }, value: roleInput, onChange: v => setRoleInput(v) },
+    { type: 'input', placeholder: '搜索用户名/姓名/工号', col: { span: 6 }, value: keywordInput, onChange: (e: React.ChangeEvent<HTMLInputElement>) => setKeywordInput(e.target.value) },
+    { type: 'select', placeholder: '角色筛选', options: roleOptions, col: { span: 6 }, value: roleInput, onChange: (v: number | undefined) => setRoleInput(v) },
     {
       type: 'select', placeholder: '状态筛选', col: { span: 6 },
       options: [{ label: '启用', value: '启用' }, { label: '禁用', value: '禁用' }],
-      value: statusInput, onChange: v => setStatusInput(v),
+      value: statusInput, onChange: (v: string | undefined) => setStatusInput(v),
     },
   ]
 
@@ -190,20 +213,20 @@ export default function UserManagement() {
     { title: '岗位', dataIndex: 'position', key: 'position' },
     {
       title: '角色', key: 'role',
-      render: (_, record) => record.role?.role_name || '-',
+      render: (_: unknown, record: User) => record.role?.role_name || '-',
     },
     { title: '手机号', dataIndex: 'phone', key: 'phone' },
     {
       title: '状态', dataIndex: 'status', key: 'status',
-      render: v => v === '启用' ? <Tag color="green">启用</Tag> : <Tag color="red">禁用</Tag>,
+      render: (v: string) => v === '启用' ? <Tag color="green">启用</Tag> : <Tag color="red">禁用</Tag>,
     },
     {
       title: '最后登录时间', dataIndex: 'last_login_time', key: 'last_login_time', width: 170,
-      render: v => v ? String(v).replace('T', ' ').slice(0, 19) : '-',
+      render: (v: string) => v ? String(v).replace('T', ' ').slice(0, 19) : '-',
     },
     {
       title: '操作', key: 'action', width: 200,
-      render: (_, record) => (
+      render: (_: unknown, record: User) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
           <Popconfirm

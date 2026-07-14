@@ -1,60 +1,47 @@
-import React from 'react'
-import { Space, Button, Input, Select, DatePicker, Row, Col, Checkbox } from 'antd'
+import { Space, Button, Input, Select, DatePicker, Row, Col, Checkbox, Dropdown } from 'antd'
+import type { RangePickerProps } from 'antd/es/date-picker'
 import {
   SearchOutlined, ReloadOutlined, PlusOutlined, ExportOutlined, SettingOutlined
 } from '@ant-design/icons'
+import React from 'react'
+import dayjs from 'dayjs'
 
 const { RangePicker } = DatePicker
 
+type RangeValueType = RangePickerProps['value']
+
 interface FilterItem {
-  type?: string
+  type: 'input' | 'select' | 'checkbox-group' | 'rangepicker'
   placeholder?: string
   icon?: React.ReactNode
-  value?: any
-  options?: any[]
-  mode?: any
-  disabled?: boolean
+  value?: string | number | boolean | (string | number)[] | RangeValueType
+  onChange?: (value: unknown) => void
   field?: string
-  col?: any
-  onChange?: (v: any) => void
+  options?: { label: string; value: string | number }[]
+  col?: { span: number }
+  mode?: 'multiple'
+  disabled?: boolean
 }
 
 interface StatItem {
-  icon?: React.ReactNode
-  value?: React.ReactNode
-  label?: React.ReactNode
-  color?: string
+  label: string
+  value: number
+  icon: React.ReactNode
+  color: string
 }
 
 interface ThreeSectionPageProps {
-  title?: React.ReactNode
-  breadcrumbs?: React.ReactNode
+  title: string
+  breadcrumbs: string
   stats?: StatItem[]
   filters?: FilterItem[]
   actions?: React.ReactNode
-  table?: React.ReactNode
+  table: React.ReactNode
   onSearch?: () => void
   onReset?: () => void
-  onFilterChange?: (field: string, value: any) => void
+  onFilterChange?: (field: string, value: unknown) => void
 }
 
-/**
- * 三段式页面通用组件
- *
- * 规范：
- *   - 上部页面信息区 (15%-20%)：标题/面包屑/统计卡片/主要操作按钮(新增/导出/配置)，主背景色，常规间距
- *   - 中部筛选功能区 (10%-15%)：查询条件/查询重置按钮，卡片背景色，小行间距(4-8px)，默认一行
- *   - 下部列表区     (65%-75%)：数据表格/分页器/总计记录数，卡片背景色，小行间距，默认每页30条
- *
- * 交互特性：
- *   - 中部筛选区默认显示3-4行常用筛选条件，支持编辑框、下拉框内容变化触发查询
- *   - 列表区表格支持列宽拖拽、列排序、列显隐设置
- *   - 上部统计卡片数据跟随中部筛选条件联动更新
- *
- * 列宽规范：
- *   - 料品名称列宽默认最小200px，自动换行
- *   - 操作列：1-3个功能 80px，4个功能 100px
- */
 export default function ThreeSectionPage({
   title,
   breadcrumbs,
@@ -64,16 +51,13 @@ export default function ThreeSectionPage({
   table,
   onSearch,
   onReset,
-  // 内容变化触发查询
   onFilterChange,
 }: ThreeSectionPageProps) {
-  // 渲染单个筛选项
   const renderFilterItem = (f: FilterItem) => {
     if (!f) return null
-    // 内容变化触发查询
-    const handleChange = (v: any) => {
+    const handleChange = (v: unknown) => {
       f.onChange?.(v)
-      onFilterChange?.(f.field as string, v)
+      onFilterChange?.(f.field || '', v)
     }
     if (f.type === 'input') {
       return (
@@ -81,10 +65,10 @@ export default function ThreeSectionPage({
           placeholder={f.placeholder}
           allowClear
           prefix={f.icon}
-          value={f.value}
+          value={f.value as string}
           onChange={(e) => {
             f.onChange?.(e)
-            onFilterChange?.(f.field as string, e.target.value)
+            onFilterChange?.(f.field || '', e.target.value)
           }}
           onPressEnter={onSearch}
         />
@@ -109,7 +93,7 @@ export default function ThreeSectionPage({
       return (
         <Checkbox.Group
           options={f.options}
-          value={f.value}
+          value={f.value as (string | number)[]}
           onChange={handleChange}
         />
       )
@@ -118,7 +102,7 @@ export default function ThreeSectionPage({
       return (
         <RangePicker
           style={{ width: '100%' }}
-          value={f.value}
+          value={f.value as RangeValueType}
           onChange={handleChange}
         />
       )
@@ -128,7 +112,6 @@ export default function ThreeSectionPage({
 
   return (
     <div className="three-section-page">
-      {/* ============ 上部：页面信息区 ============ */}
       <div className="section-info">
         <div className="section-info-header">
           <div className="section-info-title">
@@ -138,7 +121,6 @@ export default function ThreeSectionPage({
           <Space className="section-info-actions">{actions}</Space>
         </div>
 
-        {/* 统计卡片：跟随中部筛选条件联动更新 */}
         {stats && stats.length > 0 && (
           <Row gutter={12} className="stats-row">
             {stats.map((s, i) => (
@@ -158,7 +140,6 @@ export default function ThreeSectionPage({
         )}
       </div>
 
-      {/* ============ 中部：筛选功能区 ============ */}
       {filters && (
         <div className="section-filter">
           <div className="section-filter-body">
@@ -179,7 +160,6 @@ export default function ThreeSectionPage({
         </div>
       )}
 
-      {/* ============ 下部：列表区 ============ */}
       <div className="section-table compact-table">
         {table}
       </div>
@@ -198,13 +178,6 @@ interface ActionButtonsProps {
   addText?: string
 }
 
-/**
- * 通用操作按钮组
- * 配色规范：
- *   - 新增按钮 (btn-add)：主色渐变 (primary → secondary)
- *   - 导出按钮 (btn-export)：成功色渐变
- *   - 配置按钮 (btn-config)：强调色渐变
- */
 export function ActionButtons({ hasAdd = true, hasExport = true, hasConfig = false, extra = [], onAdd, onExport, onConfig, addText = '新增' }: ActionButtonsProps) {
   return (
     <div className="action-buttons-group">
@@ -217,15 +190,11 @@ export function ActionButtons({ hasAdd = true, hasExport = true, hasConfig = fal
 }
 
 interface ColumnSettingsProps {
-  columns: any[]
-  visibleKeys: any[]
-  onChange: (keys: any) => void
+  columns: { dataIndex?: string; key?: string; title: string }[]
+  visibleKeys: string[]
+  onChange: (keys: string[]) => void
 }
 
-/**
- * 表格列显隐设置下拉
- * 用法：<Dropdown overlay={<ColumnSettings columns={columns} visibleKeys={visible} onChange={setVisible} />}><Button icon={<SettingOutlined />} /></Dropdown>
- */
 export function ColumnSettings({ columns, visibleKeys, onChange }: ColumnSettingsProps) {
   const items = columns
     .filter(c => c.dataIndex || c.key)
@@ -248,21 +217,13 @@ export function ColumnSettings({ columns, visibleKeys, onChange }: ColumnSetting
   )
 }
 
-/**
- * 计算操作列宽度的工具函数
- * 规范：1-3个功能 80px，4个功能 100px
- */
 export function getActionColumnWidth(actionCount: number): number {
   return actionCount >= 4 ? 100 : 80
 }
 
-/**
- * 料品名称列的默认配置
- * 规范：列宽默认最小200，自动换行
- */
-export const materialNameColumn: any = {
+export const materialNameColumn = {
   width: 200,
-  render: (text: any) => (
+  render: (text: string) => (
     <div style={{ wordBreak: 'break-word', whiteSpace: 'normal', minWidth: 200 }}>
       {text}
     </div>

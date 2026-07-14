@@ -1,21 +1,16 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
 import api from '../utils/api'
 import { applyTheme } from '../themes'
 
-interface CurrentUser {
-  user_id?: string
-  username?: string
-  real_name?: string
+export interface User {
+  user_id: number
+  username: string
+  real_name: string
+  avatar_url?: string
   phone?: string
   email?: string
   department?: string
-  avatar_url?: string
-  role?: {
-    role_name?: string
-    role_code?: string
-    [key: string]: any
-  }
-  [key: string]: any
+  role?: { role_name: string; role_code: string }
 }
 
 interface SystemConfig {
@@ -23,77 +18,36 @@ interface SystemConfig {
   company_name: string
 }
 
-interface LoginResult {
-  success: boolean
-  isViewer?: boolean
-  message?: string
-}
-
-interface MessageApi {
-  success: (...args: any[]) => void
-  error: (...args: any[]) => void
-  info: (...args: any[]) => void
-  warning: (...args: any[]) => void
-  warn: (...args: any[]) => void
-  loading: (...args: any[]) => void
-  open: (...args: any[]) => void
-  config: (...args: any[]) => void
-  destroy: (...args: any[]) => void
-  [key: string]: any
-}
-
-interface ModalApi {
-  info: (...args: any[]) => void
-  success: (...args: any[]) => void
-  error: (...args: any[]) => void
-  warning: (...args: any[]) => void
-  warn: (...args: any[]) => void
-  confirm: (...args: any[]) => void
-  [key: string]: any
-}
-
-interface NotificationApi {
-  success: (...args: any[]) => void
-  error: (...args: any[]) => void
-  info: (...args: any[]) => void
-  warning: (...args: any[]) => void
-  warn: (...args: any[]) => void
-  open: (...args: any[]) => void
-  close: (...args: any[]) => void
-  destroy: (...args: any[]) => void
-  [key: string]: any
-}
-
-interface AppContextValue {
-  currentUser: CurrentUser | null
-  login: (username: string, password: string) => Promise<LoginResult>
+interface AppContextType {
+  currentUser: User | null
+  login: (username: string, password: string) => Promise<{ success: boolean; isViewer?: boolean; message?: string }>
   logout: () => void
-  updateUser: (updates: any) => void
+  updateUser: (updates: Partial<User>) => void
   themeKey: string
   changeTheme: (key: string) => void
   cycleTheme: () => string
   initialized: boolean
   systemConfig: SystemConfig
   loadSystemConfig: () => Promise<void>
-  updateSystemConfig: (updates: any) => void
-  messageApi: MessageApi | null
-  modalApi: ModalApi | null
-  notificationApi: NotificationApi | null
-  setMessageApi: (api: any) => void
-  setModalApi: (api: any) => void
-  setNotificationApi: (api: any) => void
+  updateSystemConfig: (updates: Partial<SystemConfig>) => void
+  messageApi: unknown
+  modalApi: unknown
+  notificationApi: unknown
+  setMessageApi: (api: unknown) => void
+  setModalApi: (api: unknown) => void
+  setNotificationApi: (api: unknown) => void
 }
 
-const AppContext = createContext<AppContextValue | null>(null)
+const AppContext = createContext<AppContextType | null>(null)
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
-  const [themeKey, setThemeKey] = useState<string>('pureMilk')
-  const [initialized, setInitialized] = useState<boolean>(false)
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [themeKey, setThemeKey] = useState('pureMilk')
+  const [initialized, setInitialized] = useState(false)
   const [systemConfig, setSystemConfig] = useState<SystemConfig>({ system_name: '', company_name: '' })
-  const [messageApi, setMessageApiState] = useState<MessageApi | null>(null)
-  const [modalApi, setModalApiState] = useState<ModalApi | null>(null)
-  const [notificationApi, setNotificationApiState] = useState<NotificationApi | null>(null)
+  const [messageApi, setMessageApiState] = useState<unknown>(null)
+  const [modalApi, setModalApiState] = useState<unknown>(null)
+  const [notificationApi, setNotificationApiState] = useState<unknown>(null)
 
   useEffect(() => {
     const savedUser = localStorage.getItem('mes_user')
@@ -107,9 +61,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setInitialized(true)
   }, [])
 
-  const login = async (username: string, password: string): Promise<LoginResult> => {
+  const login = async (username: string, password: string) => {
     try {
-      const res: any = await api.post('/auth/login', { username, password })
+      const res = await api.post('/auth/login', { username, password })
       if (res.success) {
         const user = res.data.user
         const token = res.data.token
@@ -120,8 +74,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         return { success: true, isViewer }
       }
       return { success: false, message: res.message || '登录失败' }
-    } catch (err: any) {
-      return { success: false, message: err.message || '登录失败' }
+    } catch (err) {
+      return { success: false, message: err instanceof Error ? err.message : '登录失败' }
     }
   }
 
@@ -131,7 +85,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('mes_user')
   }
 
-  const updateUser = (updates: any) => {
+  const updateUser = (updates: Partial<User>) => {
     const updated = { ...currentUser, ...updates }
     setCurrentUser(updated)
     localStorage.setItem('mes_user', JSON.stringify(updated))
@@ -145,7 +99,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const loadSystemConfig = async () => {
     try {
-      const res: any = await api.get('/system/config')
+      const res = await api.get('/system/config')
       const cfg = res.data || res
       if (cfg && typeof cfg === 'object') {
         setSystemConfig({
@@ -153,17 +107,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           company_name: cfg.company_name || '',
         })
       }
-    } catch (err) {
-      // 静默失败
+    } catch {
     }
   }
 
-  const updateSystemConfig = (updates: any) => {
+  const updateSystemConfig = (updates: Partial<SystemConfig>) => {
     setSystemConfig(prev => ({ ...prev, ...updates }))
   }
 
-  // 切换到下一个主题（按主题顺序：纯净奶源→暗夜工厂→蓝天牧场→金属质感→自然绿洲→暖阳琥珀）
-  const cycleTheme = () => {
+  const cycleTheme = (): string => {
     const order = ['pureMilk', 'darkFactory', 'blueSky', 'metal', 'greenOasis', 'warmAmber']
     const idx = order.indexOf(themeKey)
     const nextKey = order[(idx + 1) % order.length]
@@ -171,9 +123,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return nextKey
   }
 
-  const setMessageApi = (api: any) => { setMessageApiState(api) }
-  const setModalApi = (api: any) => { setModalApiState(api) }
-  const setNotificationApi = (api: any) => { setNotificationApiState(api) }
+  const setMessageApi = (api: unknown) => { setMessageApiState(api) }
+  const setModalApi = (api: unknown) => { setModalApiState(api) }
+  const setNotificationApi = (api: unknown) => { setNotificationApiState(api) }
 
   return (
     <AppContext.Provider value={{ currentUser, login, logout, updateUser, themeKey, changeTheme, cycleTheme, initialized, systemConfig, loadSystemConfig, updateSystemConfig, messageApi, modalApi, notificationApi, setMessageApi, setModalApi, setNotificationApi }}>
@@ -182,12 +134,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function useApp(): AppContextValue {
+export function useApp(): AppContextType {
   const ctx = useContext(AppContext)
-  return ctx as AppContextValue
+  return ctx || {
+    currentUser: null,
+    login: async () => ({ success: false }),
+    logout: () => {},
+    updateUser: () => {},
+    themeKey: 'pureMilk',
+    changeTheme: () => {},
+    cycleTheme: () => 'pureMilk',
+    initialized: false,
+    systemConfig: { system_name: '', company_name: '' },
+    loadSystemConfig: async () => {},
+    updateSystemConfig: () => {},
+    messageApi: null,
+    modalApi: null,
+    notificationApi: null,
+    setMessageApi: () => {},
+    setModalApi: () => {},
+    setNotificationApi: () => {},
+  }
 }
 
-const noopMessage: MessageApi = {
+const noopMessage = {
   success: () => {},
   error: () => {},
   info: () => {},
@@ -199,7 +169,7 @@ const noopMessage: MessageApi = {
   destroy: () => {},
 }
 
-const noopModal: ModalApi = {
+const noopModal = {
   info: () => {},
   success: () => {},
   error: () => {},
@@ -208,7 +178,7 @@ const noopModal: ModalApi = {
   confirm: () => {},
 }
 
-const noopNotification: NotificationApi = {
+const noopNotification = {
   success: () => {},
   error: () => {},
   info: () => {},
@@ -219,17 +189,17 @@ const noopNotification: NotificationApi = {
   destroy: () => {},
 }
 
-export function useMessage(): MessageApi {
+export function useMessage() {
   const ctx = useContext(AppContext)
   return ctx?.messageApi || noopMessage
 }
 
-export function useModal(): ModalApi {
+export function useModal() {
   const ctx = useContext(AppContext)
   return ctx?.modalApi || noopModal
 }
 
-export function useNotification(): NotificationApi {
+export function useNotification() {
   const ctx = useContext(AppContext)
   return ctx?.notificationApi || noopNotification
 }

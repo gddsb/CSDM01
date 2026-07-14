@@ -20,11 +20,16 @@ export default function CustomerManagement() {
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
 
-  // 筛选输入态
+  interface QueryParams {
+    page: number
+    pageSize: number
+    keyword?: string
+    status?: number | string | undefined
+  }
+
   const [keywordInput, setKeywordInput] = useState('')
-  const [statusInput, setStatusInput] = useState(undefined)
-  // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined })
+  const [statusInput, setStatusInput] = useState<number | string | undefined>(undefined)
+  const [query, setQuery] = useState<QueryParams>({ page: 1, pageSize: 30, keyword: '', status: undefined })
 
   // 拉取列表
   useEffect(() => {

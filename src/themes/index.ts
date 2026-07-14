@@ -1,15 +1,32 @@
-// 六套主题配色方案 - 基于设计文档
 interface ThemeColors {
-  [key: string]: string
+  '--bg-main': string
+  '--bg-card': string
+  '--color-primary': string
+  '--color-secondary': string
+  '--color-accent': string
+  '--color-success': string
+  '--color-warning': string
+  '--color-error': string
+  '--text-primary': string
+  '--text-secondary': string
+  '--border-color': string
+  '--nav-bg': string
+  '--nav-text': string
+  '--color-primary-bg'?: string
+  '--color-primary-light'?: string
+  '--color-primary-border'?: string
+  '--color-primary-soft'?: string
 }
 
 interface Theme {
-  key?: string
   name: string
   icon: string
   dark: boolean
   colors: ThemeColors
+  key?: string
 }
+
+type ThemesMap = Record<string, Theme>
 
 function generateThemeVariants(theme: Theme): ThemeColors {
   const primary = theme.colors['--color-primary']
@@ -19,7 +36,7 @@ function generateThemeVariants(theme: Theme): ThemeColors {
   const dark = theme.dark
 
   const mix = (color1: string, color2: string, ratio: number): string => {
-    const hex = (c: string) => parseInt(c, 16)
+    const hex = (c: string): number => parseInt(c, 16)
     const r1 = hex(color1.slice(1, 3)), g1 = hex(color1.slice(3, 5)), b1 = hex(color1.slice(5, 7))
     const r2 = hex(color2.slice(1, 3)), g2 = hex(color2.slice(3, 5)), b2 = hex(color2.slice(5, 7))
     const r = Math.round(r1 * ratio + r2 * (1 - ratio))
@@ -36,7 +53,7 @@ function generateThemeVariants(theme: Theme): ThemeColors {
   }
 }
 
-export const themes: Record<string, Theme> = {
+export const themes: ThemesMap = {
   pureMilk: {
     name: '纯净奶源',
     icon: '🥛',

@@ -15,44 +15,109 @@ import dayjs from 'dayjs'
 
 const { Title, Text, Paragraph } = Typography
 
+interface ServerInfo {
+  name?: string
+  status?: string
+  port?: number
+}
+
+interface TechStackItem {
+  category: string
+  key: string
+  version: string
+}
+
+interface TechStack {
+  frontend?: { version: string; items: TechStackItem[] }
+  backend?: { version: string; items: TechStackItem[] }
+}
+
+interface EnvInfo {
+  node_version: string
+  env: string
+  sequelize_version: string
+  pid: number
+  frontend_server?: ServerInfo
+  backend_server?: ServerInfo
+  uptime: number
+  memory_rss: number
+  memory_heap_used: number
+  memory_heap_total: number
+  cpu_count: number
+  os_uptime: number
+  disk_used_percent: number
+  disk_free: number
+  os_version?: string
+  platform?: string
+  os_type?: string
+  os_release?: string
+  os_hostname?: string
+  cpu_model?: string
+  disk_total: number
+  disk_used: number
+  disk_mount?: string
+  cwd: string
+  server_time: string
+  tech_stack?: TechStack
+}
+
+interface DbInfo {
+  dialect: string
+  connection_status: string
+  host?: string
+  port?: number
+  database?: string
+  username?: string
+  password_set?: boolean
+  storage?: string
+  connection_error?: string
+}
+
+interface MigrationTarget {
+  dialect: string
+  name: string
+  description: string
+  default_port?: number
+  default_storage?: string
+  is_current: boolean
+}
+
+interface BackupRecord {
+  filename: string
+  size: number
+  created_at: string
+}
+
 const shiftOptions = [
   { label: '白班', value: '白班' },
   { label: '夜班', value: '夜班' },
 ]
 
-// 后端配置（字符串）→ 表单值
-function configToFormValues(cfg) {
+function configToFormValues(cfg: Record<string, unknown>): Record<string, unknown> {
   if (!cfg) return {}
   const v = { ...cfg }
-  // 班次：逗号分隔字符串 → 数组（默认白班）
   if (typeof v.shift_setting === 'string' && v.shift_setting.length > 0) {
-    v.shift_setting = v.shift_setting.split(',').map(s => s.trim()).filter(Boolean)
+    v.shift_setting = v.shift_setting.split(',').map((s: string) => s.trim()).filter(Boolean)
   } else if (v.shift_setting == null || (Array.isArray(v.shift_setting) && v.shift_setting.length === 0)) {
     v.shift_setting = ['白班']
   }
-  // 布尔开关：字符串 → 布尔
-  ;['device_alarm', 'quality_alarm', 'stock_warning'].forEach(k => {
+  ;['device_alarm', 'quality_alarm', 'stock_warning'].forEach((k: string) => {
     if (v[k] != null) v[k] = String(v[k]) === 'true'
   })
-  // 数值：字符串 → 数字
-  ;['standard_hours', 'defect_warning_threshold', 'microbe_cycle'].forEach(k => {
+  ;['standard_hours', 'defect_warning_threshold', 'microbe_cycle'].forEach((k: string) => {
     if (v[k] != null && v[k] !== '') v[k] = Number(v[k])
   })
   return v
 }
 
-// 表单值 → 后端配置（字符串/原始值）
-function formValuesToConfig(values) {
+function formValuesToConfig(values: Record<string, unknown>): Record<string, unknown> {
   const cfg = { ...values }
-  // 班次：数组 → 逗号分隔字符串
   if (Array.isArray(cfg.shift_setting)) {
     cfg.shift_setting = cfg.shift_setting.join(',')
   }
-  // 布尔开关：布尔 → 字符串
-  ;['device_alarm', 'quality_alarm', 'stock_warning'].forEach(k => {
+  ;['device_alarm', 'quality_alarm', 'stock_warning'].forEach((k: string) => {
     if (typeof cfg[k] === 'boolean') cfg[k] = String(cfg[k])
   })
-  // 系统版本只读，不传给后端
   delete cfg.system_version
   return cfg
 }
@@ -64,28 +129,24 @@ export default function SystemConfig() {
   const [form] = Form.useForm()
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [lineOptions, setLineOptions] = useState([])
+  const [lineOptions, setLineOptions] = useState<{ label: string; value: string }[]>([])
 
-  // 项目环境
-  const [envInfo, setEnvInfo] = useState(null)
+  const [envInfo, setEnvInfo] = useState<EnvInfo | null>(null)
   const [envLoading, setEnvLoading] = useState(false)
   const [restartLoading, setRestartLoading] = useState(false)
 
-  // 数据库配置
-  const [dbInfo, setDbInfo] = useState(null)
+  const [dbInfo, setDbInfo] = useState<DbInfo | null>(null)
   const [dbLoading, setDbLoading] = useState(false)
 
-  // 备份列表
-  const [backups, setBackups] = useState([])
+  const [backups, setBackups] = useState<BackupRecord[]>([])
   const [backupsLoading, setBackupsLoading] = useState(false)
   const [backupCreating, setBackupCreating] = useState(false)
 
-  // 数据库迁移
-  const [migrationTargets, setMigrationTargets] = useState([])
+  const [migrationTargets, setMigrationTargets] = useState<MigrationTarget[]>([])
   const [migrationLoading, setMigrationLoading] = useState(false)
   const [migrationOpen, setMigrationOpen] = useState(false)
   const [migrationSubmitting, setMigrationSubmitting] = useState(false)
-  const [migrationTarget, setMigrationTarget] = useState(null)
+  const [migrationTarget, setMigrationTarget] = useState<MigrationTarget | null>(null)
   const [migrationForm] = Form.useForm()
 
   const loadConfig = useCallback(async () => {
@@ -94,8 +155,8 @@ export default function SystemConfig() {
       const res = await api.get('/system/config')
       const values = configToFormValues(res.data)
       form.setFieldsValue(values)
-    } catch (err) {
-      message.error(err.message || '加载系统配置失败')
+    } catch (err: unknown) {
+      message.error(err instanceof Error ? err.message : '加载系统配置失败')
     } finally {
       setLoading(false)
     }
@@ -106,8 +167,8 @@ export default function SystemConfig() {
     try {
       const res = await api.get('/system/config/environment')
       setEnvInfo(res.data)
-    } catch (err) {
-      message.error(err.message || '加载项目环境失败')
+    } catch (err: unknown) {
+      message.error(err instanceof Error ? err.message : '加载项目环境失败')
     } finally {
       setEnvLoading(false)
     }
@@ -125,7 +186,6 @@ export default function SystemConfig() {
         try {
           const res = await api.post('/system/config/restart')
           message.success(res.message || '重启指令已发送，服务正在重启...')
-          // 等待服务重启完成后刷新环境信息
           const waitAndRefresh = async (attempt = 0) => {
             const maxAttempts = 20
             const interval = 1500
@@ -145,9 +205,9 @@ export default function SystemConfig() {
             }
           }
           waitAndRefresh()
-        } catch (err) {
+        } catch (err: unknown) {
           setRestartLoading(false)
-          message.error(err.message || '重启服务失败')
+          message.error(err instanceof Error ? err.message : '重启服务失败')
         }
       },
     })
@@ -158,8 +218,8 @@ export default function SystemConfig() {
     try {
       const res = await api.get('/system/config/database')
       setDbInfo(res.data)
-    } catch (err) {
-      message.error(err.message || '加载数据库配置失败')
+    } catch (err: unknown) {
+      message.error(err instanceof Error ? err.message : '加载数据库配置失败')
     } finally {
       setDbLoading(false)
     }
@@ -170,8 +230,8 @@ export default function SystemConfig() {
     try {
       const res = await api.get('/system/config/backups')
       setBackups(res.data || [])
-    } catch (err) {
-      message.error(err.message || '加载备份列表失败')
+    } catch (err: unknown) {
+      message.error(err instanceof Error ? err.message : '加载备份列表失败')
     } finally {
       setBackupsLoading(false)
     }
@@ -182,8 +242,8 @@ export default function SystemConfig() {
     try {
       const res = await api.get('/system/config/database/migration-targets')
       setMigrationTargets(res.data?.targets || [])
-    } catch (err) {
-      message.error(err.message || '加载迁移目标失败')
+    } catch (err: unknown) {
+      message.error(err instanceof Error ? err.message : '加载迁移目标失败')
     } finally {
       setMigrationLoading(false)
     }
@@ -193,21 +253,19 @@ export default function SystemConfig() {
     try {
       const res = await api.get('/basic/production-lines?status=1')
       const list = res.data?.list || res.data || []
-      setLineOptions(list.map(l => ({ label: l.line_name || l.line_code, value: l.line_name || l.line_code })))
-    } catch (e) {
-      console.warn('加载产线列表失败:', e.message)
+      setLineOptions(list.map((l: { line_name?: string; line_code?: string }) => ({ label: l.line_name || l.line_code, value: l.line_name || l.line_code })))
+    } catch (e: unknown) {
+      console.warn('加载产线列表失败:', e instanceof Error ? e.message : e)
     }
   }, [])
 
-  // 首次进入加载参数配置和项目环境
   useEffect(() => {
     loadConfig()
     loadEnv()
     loadLines()
   }, [loadConfig, loadEnv, loadLines])
 
-  // 切换 Tab 时按需加载
-  const handleTabChange = (key) => {
+  const handleTabChange = (key: string) => {
     setActiveTab(key)
     if (key === 'env' && !envInfo) loadEnv()
     if (key === 'db' && !dbInfo) loadDb()
@@ -215,11 +273,9 @@ export default function SystemConfig() {
     if (key === 'backup' && backups.length === 0) loadBackups()
   }
 
-  // 打开迁移弹窗
-  const openMigrationModal = (target) => {
+  const openMigrationModal = (target: MigrationTarget) => {
     setMigrationTarget(target)
     setMigrationOpen(true)
-    // 设置默认值
     if (target?.dialect === 'sqlite') {
       migrationForm.setFieldsValue({ storage: target.default_storage })
     } else {
@@ -233,15 +289,13 @@ export default function SystemConfig() {
     }
   }
 
-  // 执行迁移
   const handleMigrationSubmit = async () => {
     try {
       const values = await migrationForm.validateFields()
       setMigrationSubmitting(true)
-      const payload = { target: migrationTarget.dialect, ...values }
+      const payload = { target: migrationTarget?.dialect, ...values }
       const res = await api.post('/system/config/database/migrate', payload)
       message.success(res.message || '数据迁移成功，请重启后端服务')
-      // 显示迁移结果详情
       Modal.success({
         title: '数据迁移完成',
         width: 560,
@@ -263,12 +317,11 @@ export default function SystemConfig() {
         ),
       })
       setMigrationOpen(false)
-      // 重新加载数据库信息和迁移目标
       loadDb()
       loadMigrationTargets()
-    } catch (err) {
-      if (err?.errorFields) return
-      message.error(err.message || '迁移失败')
+    } catch (err: unknown) {
+      if ((err as { errorFields?: unknown[] })?.errorFields) return
+      message.error(err instanceof Error ? err.message : '迁移失败')
     } finally {
       setMigrationSubmitting(false)
     }
@@ -281,19 +334,17 @@ export default function SystemConfig() {
       const payload = formValuesToConfig(values)
       const res = await api.put('/system/config', payload)
       message.success(res.message || '系统配置保存成功')
-      // 更新全局系统配置（页签标题等会自动更新）
       updateSystemConfig({
         system_name: payload.system_name || '',
         company_name: payload.company_name || '',
       })
-      // 保存后重新加载配置（system_version 等只读字段会回填）
       await loadConfig()
-    } catch (e) {
-      if (e?.errorFields) {
+    } catch (e: unknown) {
+      if ((e as { errorFields?: unknown[] })?.errorFields) {
         message.warning('请完善必填配置项后再保存')
         return
       }
-      message.error(e.message || '保存失败')
+      message.error(e instanceof Error ? e.message : '保存失败')
     } finally {
       setSaving(false)
     }
@@ -305,34 +356,33 @@ export default function SystemConfig() {
       const res = await api.post('/system/config/backups')
       message.success(res.message || '备份创建成功')
       await loadBackups()
-    } catch (err) {
-      message.error(err.message || '备份失败')
+    } catch (err: unknown) {
+      message.error(err instanceof Error ? err.message : '备份失败')
     } finally {
       setBackupCreating(false)
     }
   }
 
-  const handleRestore = async (filename) => {
+  const handleRestore = async (filename: string) => {
     try {
       const res = await api.post('/system/config/backups/restore', { filename })
       message.success(res.message || '还原成功')
-    } catch (err) {
-      message.error(err.message || '还原失败')
+    } catch (err: unknown) {
+      message.error(err instanceof Error ? err.message : '还原失败')
     }
   }
 
-  const handleDeleteBackup = async (filename) => {
+  const handleDeleteBackup = async (filename: string) => {
     try {
       const res = await api.delete(`/system/config/backups/${encodeURIComponent(filename)}`)
       message.success(res.message || '删除成功')
       await loadBackups()
-    } catch (err) {
-      message.error(err.message || '删除失败')
+    } catch (err: unknown) {
+      message.error(err instanceof Error ? err.message : '删除失败')
     }
   }
 
-  // 分区块标题
-  const SectionTitle = ({ icon, title, desc }) => (
+  const SectionTitle = ({ icon, title, desc }: { icon: React.ReactNode; title: string; desc?: string }) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
       <span style={{ fontSize: 18, color: 'var(--color-primary)' }}>{icon}</span>
       <Title level={5} style={{ margin: 0 }}>{title}</Title>
@@ -340,7 +390,6 @@ export default function SystemConfig() {
     </div>
   )
 
-  // ===== Tab 1: 参数配置 =====
   const ParamsTab = (
     <Spin spinning={loading}>
       <Form
@@ -349,7 +398,6 @@ export default function SystemConfig() {
         labelCol={{ span: 8 }}
         wrapperCol={{ span: 16 }}
       >
-        {/* 基本配置 */}
         <SectionTitle icon={<SettingOutlined />} title="基本配置" desc="系统基础信息设置" />
         <Row gutter={24}>
           <Col span={12}>
@@ -375,7 +423,6 @@ export default function SystemConfig() {
         </Row>
         <div style={{ borderTop: '1px dashed var(--border-color)', margin: '8px 0 20px' }} />
 
-        {/* 生产配置 */}
         <SectionTitle icon={<ToolOutlined />} title="生产配置" desc="生产相关默认参数" />
         <Row gutter={24}>
           <Col span={12}>
@@ -402,7 +449,6 @@ export default function SystemConfig() {
         </Row>
         <div style={{ borderTop: '1px dashed var(--border-color)', margin: '8px 0 20px' }} />
 
-        {/* 质量配置 */}
         <SectionTitle icon={<SafetyOutlined />} title="质量配置" desc="质量检验默认参数" />
         <Row gutter={24}>
           <Col span={12}>
@@ -423,7 +469,6 @@ export default function SystemConfig() {
         </Row>
         <div style={{ borderTop: '1px dashed var(--border-color)', margin: '8px 0 20px' }} />
 
-        {/* 报警配置 */}
         <SectionTitle icon={<BellOutlined />} title="报警配置" desc="系统报警开关设置" />
         <Row gutter={24}>
           <Col span={12}>
@@ -452,15 +497,15 @@ export default function SystemConfig() {
     </Spin>
   )
 
-  // ===== Tab 2: 项目环境 =====
-  const formatBytes = (b) => {
+  const formatBytes = (b: number | undefined): string => {
     if (!b || b === 0) return '-'
     if (b < 1024) return `${b} B`
     if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`
     if (b < 1024 * 1024 * 1024) return `${(b / 1024 / 1024).toFixed(1)} MB`
     return `${(b / 1024 / 1024 / 1024).toFixed(2)} GB`
   }
-  const formatUptime = (s) => {
+
+  const formatUptime = (s: number | undefined): string => {
     if (!s || s === 0) return '-'
     const d = Math.floor(s / 86400)
     const h = Math.floor((s % 86400) / 3600)
@@ -469,6 +514,7 @@ export default function SystemConfig() {
     if (h > 0) return `${h}小时${m}分钟`
     return `${m}分钟`
   }
+
   const EnvTab = (
     <Spin spinning={envLoading}>
       <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -571,7 +617,6 @@ export default function SystemConfig() {
             </Col>
           </Row>
           <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-            {/* 详细信息 */}
             <Col span={8}>
               <Card size="small" title={<span><DatabaseOutlined style={{ color: '#1890ff', marginRight: 6 }} />详细信息</span>}>
                 <Descriptions column={1} size="small">
@@ -589,7 +634,6 @@ export default function SystemConfig() {
                 </Descriptions>
               </Card>
             </Col>
-            {/* 前端技术栈 */}
             <Col span={8}>
               <Card
                 size="small"
@@ -615,7 +659,6 @@ export default function SystemConfig() {
                 </Descriptions>
               </Card>
             </Col>
-            {/* 后端技术栈 */}
             <Col span={8}>
               <Card
                 size="small"
@@ -647,7 +690,6 @@ export default function SystemConfig() {
     </Spin>
   )
 
-  // ===== Tab 3: 数据库配置 =====
   const DbTab = (
     <Spin spinning={dbLoading}>
       <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -692,7 +734,6 @@ export default function SystemConfig() {
         </>
       )}
 
-      {/* 数据迁移 */}
       <Card
         size="small"
         title={<Space><SwapOutlined />数据迁移</Space>}
@@ -748,7 +789,6 @@ export default function SystemConfig() {
         </Spin>
       </Card>
 
-      {/* 迁移表单弹窗 */}
       <Modal
         title={`数据迁移 - ${migrationTarget?.name || ''}`}
         open={migrationOpen}
@@ -830,23 +870,22 @@ export default function SystemConfig() {
     </Spin>
   )
 
-  // ===== Tab 4: 备份还原 =====
   const backupColumns = [
     {
       title: '备份文件', dataIndex: 'filename', key: 'filename',
-      render: v => <Text code>{v}</Text>,
+      render: (v: string) => <Text code>{v}</Text>,
     },
     {
       title: '文件大小', dataIndex: 'size', key: 'size', width: 120,
-      render: v => v < 1024 ? `${v} B` : v < 1024 * 1024 ? `${(v / 1024).toFixed(1)} KB` : `${(v / 1024 / 1024).toFixed(2)} MB`,
+      render: (v: number) => v < 1024 ? `${v} B` : v < 1024 * 1024 ? `${(v / 1024).toFixed(1)} KB` : `${(v / 1024 / 1024).toFixed(2)} MB`,
     },
     {
       title: '备份时间', dataIndex: 'created_at', key: 'created_at', width: 180,
-      render: v => dayjs(v).format('YYYY-MM-DD HH:mm:ss'),
+      render: (v: string) => dayjs(v).format('YYYY-MM-DD HH:mm:ss'),
     },
     {
       title: '操作', key: 'action', width: 180,
-      render: (_, record) => (
+      render: (_: unknown, record: BackupRecord) => (
         <Space size="small">
           <Popconfirm
             title="确认还原该备份？当前数据将被覆盖。"

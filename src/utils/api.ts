@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
+import axios, { AxiosResponse, AxiosInstance } from 'axios'
 
 const STATUS_TEXT_TO_NUM: Record<string, number> = {
   '开立': 0, '下发': 1, '开工': 1, '完工': 2, '完成': 2,
@@ -7,18 +7,25 @@ const STATUS_TEXT_TO_NUM: Record<string, number> = {
   '运行中': 1, '停机': 0,
 }
 
-function convertStatusParams(params: any): any {
+export interface ApiResponse<T = any> {
+  success: boolean
+  data?: T
+  message?: string
+  total?: number
+}
+
+function convertStatusParams(params: Record<string, unknown>): Record<string, unknown> {
   if (!params) return params
-  const result: any = {}
+  const result: Record<string, unknown> = {}
   for (const [key, val] of Object.entries(params)) {
     if (key === 'status') {
       if (Array.isArray(val)) {
-        result[key] = val.map((s: any) => {
+        result[key] = val.map((s: string) => {
           return STATUS_TEXT_TO_NUM[s] !== undefined ? STATUS_TEXT_TO_NUM[s] : s
         }).join(',')
       } else if (typeof val === 'string') {
         if (val.includes(',')) {
-          result[key] = val.split(',').map((s: any) => {
+          result[key] = val.split(',').map((s: string) => {
             const t = s.trim()
             return STATUS_TEXT_TO_NUM[t] !== undefined ? STATUS_TEXT_TO_NUM[t] : s
           }).join(',')
@@ -35,14 +42,14 @@ function convertStatusParams(params: any): any {
   return result
 }
 
-function doubleEncodeParams(params: any): any {
+function doubleEncodeParams(params: Record<string, unknown>): Record<string, unknown> {
   if (!params) return params
-  const result: any = {}
+  const result: Record<string, unknown> = {}
   for (const [key, val] of Object.entries(params)) {
     if (typeof val === 'string' && /[\u4e00-\u9fa5]/.test(val)) {
       result[key] = encodeURIComponent(val)
     } else if (Array.isArray(val)) {
-      result[key] = val.map((v: any) => typeof v === 'string' && /[\u4e00-\u9fa5]/.test(v) ? encodeURIComponent(v) : v)
+      result[key] = val.map((v: string | number | boolean) => typeof v === 'string' && /[\u4e00-\u9fa5]/.test(v) ? encodeURIComponent(v) : v)
     } else {
       result[key] = val
     }
@@ -50,28 +57,55 @@ function doubleEncodeParams(params: any): any {
   return result
 }
 
-const api: AxiosInstance = axios.create({
+const axiosInstance = axios.create({
   baseURL: '/api',
   timeout: 15000,
 })
 
-// 请求拦截器：添加 token，中文 status 转数字，中文参数二次编码（规避 Vite 代理中文 URL 参数异常）
-api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+const api = {
+  get: async <T = any>(url: string, config?: Parameters<AxiosInstance['get']>[1]): Promise<ApiResponse<T>> => {
+    const response = await axiosInstance.get<ApiResponse<T>>(url, config)
+    return response.data
+  },
+  post: async <T = any>(url: string, data?: any, config?: Parameters<AxiosInstance['post']>[2]): Promise<ApiResponse<T>> => {
+    const response = await axiosInstance.post<ApiResponse<T>>(url, data, config)
+    return response.data
+  },
+  put: async <T = any>(url: string, data?: any, config?: Parameters<AxiosInstance['put']>[2]): Promise<ApiResponse<T>> => {
+    const response = await axiosInstance.put<ApiResponse<T>>(url, data, config)
+    return response.data
+  },
+  delete: async <T = any>(url: string, config?: Parameters<AxiosInstance['delete']>[1]): Promise<ApiResponse<T>> => {
+    const response = await axiosInstance.delete<ApiResponse<T>>(url, config)
+    return response.data
+  },
+  patch: async <T = any>(url: string, data?: any, config?: Parameters<AxiosInstance['patch']>[2]): Promise<ApiResponse<T>> => {
+    const response = await axiosInstance.patch<ApiResponse<T>>(url, data, config)
+    return response.data
+  },
+} as Omit<AxiosInstance, 'get' | 'post' | 'put' | 'delete' | 'patch'> & {
+  get<T = any>(url: string, config?: Parameters<AxiosInstance['get']>[1]): Promise<ApiResponse<T>>
+  post<T = any>(url: string, data?: any, config?: Parameters<AxiosInstance['post']>[2]): Promise<ApiResponse<T>>
+  put<T = any>(url: string, data?: any, config?: Parameters<AxiosInstance['put']>[2]): Promise<ApiResponse<T>>
+  delete<T = any>(url: string, config?: Parameters<AxiosInstance['delete']>[1]): Promise<ApiResponse<T>>
+  patch<T = any>(url: string, data?: any, config?: Parameters<AxiosInstance['patch']>[2]): Promise<ApiResponse<T>>
+}
+
+axiosInstance.interceptors.request.use((config) => {
   const token = localStorage.getItem('mes_token')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
   if (config.params) {
-    config.params = convertStatusParams(config.params)
+    config.params = convertStatusParams(config.params as Record<string, unknown>)
     config.params = doubleEncodeParams(config.params)
   }
   return config
 })
 
-// 响应拦截器：统一处理错误
-api.interceptors.response.use(
-  (response: AxiosResponse) => response.data,
-  (error: any) => {
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('mes_token')
       localStorage.removeItem('mes_user')

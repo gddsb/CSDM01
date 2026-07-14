@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Layout, Menu, Dropdown, Avatar, Space, Typography, Badge, Button, Modal, Form, Input, Tooltip, Upload } from 'antd'
+import type { MenuProps } from 'antd'
 import {
   DashboardOutlined, TeamOutlined, DatabaseOutlined, SettingOutlined,
   ProfileOutlined, DeploymentUnitOutlined, SafetyCertificateOutlined,
@@ -11,7 +12,7 @@ import {
   LockOutlined, KeyOutlined, MenuOutlined, SkinOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
-import { useApp, useMessage } from '../contexts/AppContext'
+import { useApp, useMessage, User } from '../contexts/AppContext'
 import { themeList, themes } from '../themes'
 import api from '../utils/api'
 import logoSquare from '../assets/logo-square.png'
@@ -44,7 +45,7 @@ const { Sider, Header, Content } = Layout
 const { Text } = Typography
 
 // 图标名称 → 组件映射（用于动态菜单渲染）
-const iconMap = {
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   DashboardOutlined, TeamOutlined, DatabaseOutlined, SettingOutlined,
   ProfileOutlined, DeploymentUnitOutlined, SafetyCertificateOutlined,
   ExperimentOutlined, ToolOutlined, BarChartOutlined, FileTextOutlined,
@@ -54,7 +55,7 @@ const iconMap = {
   RiseOutlined, AlertOutlined, ContainerOutlined,
   LockOutlined, KeyOutlined, MenuOutlined,
 }
-function resolveIcon(name) {
+function resolveIcon(name?: string): React.ReactNode {
   if (!name) return undefined
   const Comp = iconMap[name]
   return Comp ? <Comp /> : undefined
@@ -253,18 +254,26 @@ export default function MainLayout() {
     document.title = systemName
   }, [systemName])
 
-  // 将后端权限树转换为 Antd Menu items 格式
-  const buildMenuItems = (nodes) => {
+  interface MenuNode {
+    type: string
+    path?: string
+    perm_code?: string
+    icon?: string
+    perm_name: string
+    children?: MenuNode[]
+  }
+
+  const buildMenuItems = (nodes: MenuNode[]): MenuProps['items'] => {
     return nodes
       .filter(n => n.type === 'menu' || n.type === 'page')
       .map(n => {
-        const item = {
-          key: n.path || n.perm_code,
+        const item: MenuProps['items'][number] = {
+          key: n.path || n.perm_code || '',
           icon: resolveIcon(n.icon),
           label: n.perm_name,
-        }
+        } as MenuProps['items'][number]
         if (n.children && n.children.length > 0) {
-          item.children = buildMenuItems(n.children)
+          (item as { children?: MenuProps['items'] }).children = buildMenuItems(n.children)
         }
         return item
       })
@@ -278,12 +287,14 @@ export default function MainLayout() {
 
   const getOpenKeys = () => {
     const path = location.pathname
-    for (const item of menuItems) {
-      if (item.children) {
+    for (const item of menuItems as MenuProps['items']) {
+      if ('children' in item && item.children) {
         for (const child of item.children) {
+          if (!('key' in child)) continue
           if (child.key === path) return [item.key]
-          if (child.children) {
+          if ('children' in child && child.children) {
             for (const grandchild of child.children) {
+              if (!('key' in grandchild)) continue
               if (path.startsWith(grandchild.key)) return [item.key, child.key]
             }
           }
@@ -296,13 +307,16 @@ export default function MainLayout() {
 
   const getSelectedKeys = () => {
     const path = location.pathname
-    for (const item of menuItems) {
+    for (const item of menuItems as MenuProps['items']) {
+      if (!('key' in item)) continue
       if (item.key === path) return [path]
-      if (item.children) {
+      if ('children' in item && item.children) {
         for (const child of item.children) {
+          if (!('key' in child)) continue
           if (child.key === path) return [child.key]
-          if (child.children) {
+          if ('children' in child && child.children) {
             for (const grandchild of child.children) {
+              if (!('key' in grandchild)) continue
               if (path.startsWith(grandchild.key)) return [grandchild.key]
             }
           }
@@ -358,14 +372,14 @@ export default function MainLayout() {
     setTimeout(() => logout(), 1000)
   }
 
-  const userMenu = {
+  const userMenu: MenuProps = {
     items: [
       { key: 'info', label: `${currentUser?.real_name} (${currentUser?.role?.role_name || '-'})`, disabled: true },
       { key: 'dept', label: `部门：${currentUser?.department}`, disabled: true },
-      { type: 'divider' },
+      { type: 'divider' as const },
       { key: 'profile', label: '用户设置', icon: <UserOutlined /> },
       { key: 'password', label: '修改密码', icon: <KeyOutlined /> },
-      { type: 'divider' },
+      { type: 'divider' as const },
       { key: 'logout', label: '退出登录', icon: <LogoutOutlined />, danger: true },
     ],
     onClick: ({ key }) => {

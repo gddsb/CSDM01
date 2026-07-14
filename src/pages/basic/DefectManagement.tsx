@@ -53,14 +53,22 @@ export default function DefectManagement() {
   // 当前选中检验类型（用于联动不良类型下拉）
   const [selectedCategory, setSelectedCategory] = useState(undefined)
 
-  // 筛选条件
-  const [filterCategory, setFilterCategory] = useState(undefined)
-  const [filterType, setFilterType] = useState(undefined)
+  interface DefectQueryParams {
+    page: number
+    pageSize: number
+    category_name?: string | undefined
+    defect_type?: string | undefined
+    keyword?: string
+    display?: number[] | number
+    status?: number | string | undefined
+  }
+
+  const [filterCategory, setFilterCategory] = useState<string | undefined>(undefined)
+  const [filterType, setFilterType] = useState<string | undefined>(undefined)
   const [filterKeyword, setFilterKeyword] = useState('')
-  const [filterDisplay, setFilterDisplay] = useState([1, 0])
-  const [filterStatus, setFilterStatus] = useState(undefined)
-  // 已应用的查询条件
-  const [query, setQuery] = useState({
+  const [filterDisplay, setFilterDisplay] = useState<number[]>([1, 0])
+  const [filterStatus, setFilterStatus] = useState<number | string | undefined>(undefined)
+  const [query, setQuery] = useState<DefectQueryParams>({
     page: 1,
     pageSize: 30,
     category_name: undefined,
