@@ -1083,8 +1083,9 @@ export default function ProcessReporting() {
             value={selectedWO?.work_order_id}
             onChange={(v) => setSelectedWO(workOrders.find(w => w.work_order_id === v))}
             placeholder="请选择生产工单"
-            style={{ width: 400 }}
+            style={{ minWidth: 400 }}
             loading={loading}
+            popupMatchSelectWidth={false}
             options={workOrders.map(w => ({
               label: `${w.work_order_no} ${w.material_name}`,
               value: w.work_order_id,
@@ -1093,83 +1094,83 @@ export default function ProcessReporting() {
         </div>
 
         {selectedWO && (
-          <div style={{ fontSize: '12px' }}>
+          <div style={{ fontSize: '16px' }}>
             <Row gutter={16}>
               <Col span={4}>
-                <div className="stat-item" style={{ fontSize: '12px' }}>
-                  <div className="stat-label" style={{ fontSize: '12px', color: '#999' }}>生产报工单号</div>
-                  <div className="stat-value" style={{ fontSize: '12px', fontWeight: 'normal' }}>{selectedWO.work_order_no}</div>
+                <div className="stat-item" style={{ fontSize: '16px' }}>
+                  <div className="stat-label" style={{ fontSize: '14px', color: '#999', marginBottom: 4 }}>生产报工单号</div>
+                  <div className="stat-value" style={{ fontSize: '16px', fontWeight: 600 }}>{selectedWO.work_order_no}</div>
                 </div>
               </Col>
               <Col span={4}>
-                <div className="stat-item" style={{ fontSize: '12px' }}>
-                  <div className="stat-label" style={{ fontSize: '12px', color: '#999' }}>物料编码</div>
-                  <div className="stat-value" style={{ fontSize: '12px', fontWeight: 'normal' }}>{selectedWO.material_code}</div>
+                <div className="stat-item" style={{ fontSize: '16px' }}>
+                  <div className="stat-label" style={{ fontSize: '14px', color: '#999', marginBottom: 4 }}>物料编码</div>
+                  <div className="stat-value" style={{ fontSize: '16px', fontWeight: 600 }}>{selectedWO.material_code}</div>
                 </div>
               </Col>
               <Col span={4}>
-                <div className="stat-item" style={{ fontSize: '12px' }}>
-                  <div className="stat-label" style={{ fontSize: '12px', color: '#999' }}>物料名称</div>
-                  <div className="stat-value" style={{ fontSize: '12px', fontWeight: 'normal' }}>{selectedWO.material_name}</div>
+                <div className="stat-item" style={{ fontSize: '16px' }}>
+                  <div className="stat-label" style={{ fontSize: '14px', color: '#999', marginBottom: 4 }}>物料名称</div>
+                  <div className="stat-value" style={{ fontSize: '16px', fontWeight: 600 }}>{selectedWO.material_name}</div>
                 </div>
               </Col>
               <Col span={3}>
-                <div className="stat-item" style={{ fontSize: '12px' }}>
-                  <div className="stat-label" style={{ fontSize: '12px', color: '#999' }}>产线</div>
-                  <div className="stat-value" style={{ fontSize: '12px', fontWeight: 'normal' }}>{selectedWO.line_name}</div>
+                <div className="stat-item" style={{ fontSize: '16px' }}>
+                  <div className="stat-label" style={{ fontSize: '14px', color: '#999', marginBottom: 4 }}>产线</div>
+                  <div className="stat-value" style={{ fontSize: '16px', fontWeight: 600 }}>{selectedWO.line_name}</div>
                 </div>
               </Col>
               <Col span={3}>
-                <div className="stat-item" style={{ fontSize: '12px' }}>
-                  <div className="stat-label" style={{ fontSize: '12px', color: '#999' }}>状态</div>
-                  <div className="stat-value" style={{ fontSize: '12px', fontWeight: 'normal' }}>
-                    <Tag color={woStatusColorMap[selectedWO.status]}>{selectedWO.status}</Tag>
+                <div className="stat-item" style={{ fontSize: '16px' }}>
+                  <div className="stat-label" style={{ fontSize: '14px', color: '#999', marginBottom: 4 }}>状态</div>
+                  <div className="stat-value" style={{ fontSize: '16px', fontWeight: 600 }}>
+                    <Tag color={woStatusColorMap[selectedWO.status]} style={{ fontSize: '14px' }}>{selectedWO.status}</Tag>
                   </div>
                 </div>
               </Col>
             </Row>
-            <Divider style={{ margin: '8px 0' }} />
+            <Divider style={{ margin: '12px 0' }} />
             <Row gutter={16}>
               <Col span={3}>
-                <div className="stat-item" style={{ fontSize: '12px' }}>
-                  <div className="stat-label" style={{ fontSize: '12px', color: '#999' }}>计划数量</div>
-                  <div className="stat-value" style={{ fontSize: '12px', fontWeight: 'normal' }}>{selectedWO.planned_qty}</div>
+                <div className="stat-item" style={{ fontSize: '16px' }}>
+                  <div className="stat-label" style={{ fontSize: '14px', color: '#999', marginBottom: 4 }}>计划数量</div>
+                  <div className="stat-value" style={{ fontSize: '16px', fontWeight: 600 }}>{selectedWO.planned_qty}</div>
                 </div>
               </Col>
               <Col span={3}>
-                <div className="stat-item" style={{ fontSize: '12px' }}>
-                  <div className="stat-label" style={{ fontSize: '12px', color: '#999' }}>投入数量</div>
-                  <div className="stat-value" style={{ fontSize: '12px', fontWeight: 'normal' }}>{stats.inputQty}</div>
+                <div className="stat-item" style={{ fontSize: '16px' }}>
+                  <div className="stat-label" style={{ fontSize: '14px', color: '#999', marginBottom: 4 }}>投入数量</div>
+                  <div className="stat-value" style={{ fontSize: '16px', fontWeight: 600 }}>{stats.inputQty}</div>
                 </div>
               </Col>
               <Col span={3}>
-                <div className="stat-item" style={{ fontSize: '12px' }}>
-                  <div className="stat-label" style={{ fontSize: '12px', color: '#999' }}>产出数量</div>
-                  <div className="stat-value" style={{ fontSize: '12px', fontWeight: 'normal' }}>{stats.outputQty}</div>
+                <div className="stat-item" style={{ fontSize: '16px' }}>
+                  <div className="stat-label" style={{ fontSize: '14px', color: '#999', marginBottom: 4 }}>产出数量</div>
+                  <div className="stat-value" style={{ fontSize: '16px', fontWeight: 600 }}>{stats.outputQty}</div>
                 </div>
               </Col>
               <Col span={3}>
-                <div className="stat-item" style={{ fontSize: '12px' }}>
-                  <div className="stat-label" style={{ fontSize: '12px', color: '#999' }}>来料不良汇总</div>
-                  <div className="stat-value" style={{ fontSize: '12px', fontWeight: 'normal' }}>{stats.defectMaterial}</div>
+                <div className="stat-item" style={{ fontSize: '16px' }}>
+                  <div className="stat-label" style={{ fontSize: '14px', color: '#999', marginBottom: 4 }}>来料不良汇总</div>
+                  <div className="stat-value" style={{ fontSize: '16px', fontWeight: 600 }}>{stats.defectMaterial}</div>
                 </div>
               </Col>
               <Col span={3}>
-                <div className="stat-item" style={{ fontSize: '12px' }}>
-                  <div className="stat-label" style={{ fontSize: '12px', color: '#999' }}>制程不良汇总</div>
-                  <div className="stat-value" style={{ fontSize: '12px', fontWeight: 'normal' }}>{stats.defectProcess}</div>
+                <div className="stat-item" style={{ fontSize: '16px' }}>
+                  <div className="stat-label" style={{ fontSize: '14px', color: '#999', marginBottom: 4 }}>制程不良汇总</div>
+                  <div className="stat-value" style={{ fontSize: '16px', fontWeight: 600 }}>{stats.defectProcess}</div>
                 </div>
               </Col>
               <Col span={3}>
-                <div className="stat-item" style={{ fontSize: '12px' }}>
-                  <div className="stat-label" style={{ fontSize: '12px', color: '#999' }}>检验报废汇总</div>
-                  <div className="stat-value" style={{ fontSize: '12px', fontWeight: 'normal' }}>{stats.defectScrap}</div>
+                <div className="stat-item" style={{ fontSize: '16px' }}>
+                  <div className="stat-label" style={{ fontSize: '14px', color: '#999', marginBottom: 4 }}>检验报废汇总</div>
+                  <div className="stat-value" style={{ fontSize: '16px', fontWeight: 600 }}>{stats.defectScrap}</div>
                 </div>
               </Col>
               <Col span={3}>
-                <div className="stat-item" style={{ fontSize: '12px' }}>
-                  <div className="stat-label" style={{ fontSize: '12px', color: '#999' }}>异常工时汇总</div>
-                  <div className="stat-value" style={{ fontSize: '12px', fontWeight: 'normal' }}>{stats.exceptionHours}</div>
+                <div className="stat-item" style={{ fontSize: '16px' }}>
+                  <div className="stat-label" style={{ fontSize: '14px', color: '#999', marginBottom: 4 }}>异常工时汇总</div>
+                  <div className="stat-value" style={{ fontSize: '16px', fontWeight: 600 }}>{stats.exceptionHours}</div>
                 </div>
               </Col>
             </Row>
@@ -1179,7 +1180,7 @@ export default function ProcessReporting() {
 
       {selectedWO && (
         <Card>
-          <Tabs activeKey={activeTab} onChange={setActiveTab}>
+          <Tabs activeKey={activeTab} onChange={setActiveTab} size="small">
             <Tabs.TabPane tab="生产不良记录" key="production-defect">
               <div style={{ marginBottom: 16 }}>
                 <label style={{ marginRight: 8, fontWeight: 500 }}>选择工序：</label>
