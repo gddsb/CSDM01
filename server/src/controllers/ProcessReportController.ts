@@ -98,6 +98,27 @@ export const create = async (req, res) => {
       return fail(res, '工单未开工，不允许创建报工单')
     }
 
+    const targetDate = report_date ? new Date(report_date) : new Date()
+    const dateStr = targetDate.toISOString().split('T')[0]
+
+    const todayReports = await ProcessReport.findAll({
+      where: {
+        work_order_id,
+        report_date: dateStr,
+      },
+    })
+    if (todayReports.length > 0) {
+      return fail(res, '该工单今天已创建报工单，一个工单每天只能创建一个报工单')
+    }
+
+    const lastReport = await ProcessReport.findOne({
+      where: { work_order_id },
+      order: [['report_id', 'DESC']],
+    })
+    if (lastReport && lastReport.status === '开始报工') {
+      return fail(res, '上一条报工单尚未结束报工，请先结束报工后再新增')
+    }
+
     const reportNo = await generateProcessReportNo()
 
     const reportCount = await ProcessReport.count({
@@ -119,7 +140,7 @@ export const create = async (req, res) => {
       process_id: process_id || null,
       process_name: null,
       report_count: reportCount + 1,
-      report_date: report_date || new Date(),
+      report_date: dateStr,
       shift: shift || null,
       team: team || null,
       report_user: report_user || req.user?.username || '',

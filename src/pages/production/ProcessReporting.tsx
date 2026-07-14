@@ -1419,10 +1419,10 @@ export default function ProcessReporting() {
   return (
     <div style={{ padding: 16 }}>
       <Card style={{ marginBottom: 16 }}>
-        <Row gutter={16} align="middle">
+        <Row gutter={16} align="middle" style={{ marginBottom: 12 }}>
           <Col span={10}>
             <Space>
-              <span style={{ fontWeight: 'bold' }}>选择生产工单：</span>
+              <span style={{ fontWeight: 'bold' }}>生产工单：</span>
               <Select
                 value={selectedWO?.work_order_id || undefined}
                 onChange={(val) => {
@@ -1430,92 +1430,96 @@ export default function ProcessReporting() {
                   setSelectedWO(wo || null)
                 }}
                 options={workOrders.map(w => ({ label: `${w.work_order_no} ${w.material_name}`, value: w.work_order_id }))}
-                style={{ width: 350 }}
+                style={{ width: 320 }}
                 placeholder="请选择生产工单"
                 showSearch
                 optionFilterProp="label"
               />
             </Space>
           </Col>
-        </Row>
-      </Card>
-
-      {selectedWO && (
-        <Card style={{ marginBottom: 16 }}>
-          <Row gutter={16} align="middle" style={{ marginBottom: 12 }}>
-            <Col span={18}>
-              <Space>
-                <span style={{ fontWeight: 'bold' }}>选择报工单：</span>
-                <Select
-                  value={selectedReport?.report_id || undefined}
-                  onChange={(val) => {
-                    const r = reportList.find(r => r.report_id === val)
-                    setSelectedReport(r || null)
-                  }}
-                  options={reportList.map(r => ({
-                    label: `${r.report_no} (${r.status})`,
-                    value: r.report_id,
-                  }))}
-                  style={{ width: 300 }}
-                  placeholder="请选择报工单"
-                  allowClear
-                />
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={handleCreateReport}
-                  loading={creatingReport}
-                >
-                  新增报工单
-                </Button>
-              </Space>
-            </Col>
-            <Col span={6} style={{ textAlign: 'right' }}>
-              {selectedReport && (
+          {selectedWO && (
+            <>
+              <Col span={8}>
                 <Space>
-                  <Tag color={reportStatusColorMap[reportStatus]} style={{ fontSize: 14, padding: '2px 10px' }}>
-                    报工状态：{reportStatus}
-                  </Tag>
-                  <Button
-                    type={isEditable ? 'default' : 'primary'}
-                    onClick={handleToggleReportStatus}
-                    loading={togglingStatus}
-                  >
-                    {isEditable ? '结束报工' : '开始报工'}
-                  </Button>
+                  <span style={{ fontWeight: 'bold' }}>报工单：</span>
+                  <Select
+                    value={selectedReport?.report_id || undefined}
+                    onChange={(val) => {
+                      const r = reportList.find(r => r.report_id === val)
+                      setSelectedReport(r || null)
+                    }}
+                    options={reportList.map(r => ({
+                      label: `${r.report_no} (${r.status})`,
+                      value: r.report_id,
+                    }))}
+                    style={{ width: 260 }}
+                    placeholder="请选择报工单"
+                    allowClear
+                  />
                 </Space>
-              )}
+              </Col>
+              <Col span={6} style={{ textAlign: 'right' }}>
+                {selectedReport ? (
+                  <Space>
+                    <Tag color={reportStatusColorMap[reportStatus]} style={{ fontSize: 14, padding: '2px 10px' }}>
+                      {reportStatus}
+                    </Tag>
+                    <Button
+                      type={isEditable ? 'default' : 'primary'}
+                      onClick={handleToggleReportStatus}
+                      loading={togglingStatus}
+                    >
+                      {isEditable ? '结束报工' : '开始报工'}
+                    </Button>
+                  </Space>
+                ) : (
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={handleCreateReport}
+                    loading={creatingReport}
+                  >
+                    新增报工单
+                  </Button>
+                )}
+              </Col>
+            </>
+          )}
+        </Row>
+
+        {selectedReport && (
+          <Row gutter={16}>
+            <Col span={4}>
+              <div style={{ color: '#666' }}>生产报工单号</div>
+              <div style={{ fontWeight: 'bold' }}>{selectedReport.report_no}</div>
+            </Col>
+            <Col span={4}>
+              <div style={{ color: '#666' }}>产线</div>
+              <div>{selectedReport.line_name || selectedWO.line_name}</div>
+            </Col>
+            <Col span={4}>
+              <div style={{ color: '#666' }}>工单状态</div>
+              <Tag color={woStatusColorMap[selectedWO.status]}>{selectedWO.status}</Tag>
+            </Col>
+            <Col span={4}>
+              <div style={{ color: '#666' }}>物料名称</div>
+              <div>{selectedReport.material_name || selectedWO.material_name}</div>
+            </Col>
+            <Col span={4}>
+              <div style={{ color: '#666' }}>计划数量</div>
+              <div>{selectedReport.planned_qty || selectedWO.planned_qty}</div>
+            </Col>
+            <Col span={4}>
+              <div style={{ color: '#666' }}>报工日期</div>
+              <div>{selectedReport.report_date ? dayjs(selectedReport.report_date).format('YYYY-MM-DD') : '-'}</div>
             </Col>
           </Row>
+        )}
+      </Card>
 
-          {selectedReport && (
-            <Row gutter={16}>
-              <Col span={4}>
-                <div style={{ color: '#666' }}>生产报工单号</div>
-                <div style={{ fontWeight: 'bold' }}>{selectedReport.report_no}</div>
-              </Col>
-              <Col span={4}>
-                <div style={{ color: '#666' }}>产线</div>
-                <div>{selectedReport.line_name || selectedWO.line_name}</div>
-              </Col>
-              <Col span={4}>
-                <div style={{ color: '#666' }}>工单状态</div>
-                <Tag color={woStatusColorMap[selectedWO.status]}>{selectedWO.status}</Tag>
-              </Col>
-              <Col span={4}>
-                <div style={{ color: '#666' }}>物料名称</div>
-                <div>{selectedReport.material_name || selectedWO.material_name}</div>
-              </Col>
-              <Col span={4}>
-                <div style={{ color: '#666' }}>计划数量</div>
-                <div>{selectedReport.planned_qty || selectedWO.planned_qty}</div>
-              </Col>
-              <Col span={4}>
-                <div style={{ color: '#666' }}>报工日期</div>
-                <div>{selectedReport.report_date ? dayjs(selectedReport.report_date).format('YYYY-MM-DD') : '-'}</div>
-              </Col>
-            </Row>
-          )}
+      {selectedWO && !selectedReport && reportList.length === 0 && (
+        <Card style={{ textAlign: 'center', padding: 40, marginBottom: 16 }}>
+          <div style={{ color: '#999', marginBottom: 16 }}>该工单暂无报工单，请点击"新增报工单"创建</div>
         </Card>
       )}
 
@@ -1558,15 +1562,6 @@ export default function ProcessReporting() {
           <div style={{ marginTop: 16 }}>
             {renderTabContent(activeTab)}
           </div>
-        </Card>
-      )}
-
-      {selectedWO && !selectedReport && (
-        <Card style={{ textAlign: 'center', padding: 40 }}>
-          <div style={{ color: '#999', marginBottom: 16 }}>该工单暂无报工单，请点击"新增报工单"创建</div>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateReport} loading={creatingReport}>
-            新增报工单
-          </Button>
         </Card>
       )}
 
