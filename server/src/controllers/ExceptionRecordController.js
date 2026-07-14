@@ -46,6 +46,7 @@ export const create = async (req, res) => {
       duration,
       reason,
       handle_result,
+      exception_images,
       record_user,
       record_user_name,
     } = req.body
@@ -89,6 +90,10 @@ export const create = async (req, res) => {
       actualDuration = ms > 0 ? Number((ms / 3600000).toFixed(2)) : 0
     }
 
+    const imagesJson = exception_images
+      ? (Array.isArray(exception_images) ? JSON.stringify(exception_images) : exception_images)
+      : null
+
     const record = await ExceptionRecord.create({
       work_order_id: actualWorkOrderId,
       work_order_no: workOrderNo,
@@ -104,6 +109,7 @@ export const create = async (req, res) => {
       duration: actualDuration || 0,
       reason,
       handle_result,
+      exception_images: imagesJson,
       record_user,
       record_user_name,
     })
@@ -119,7 +125,7 @@ export const create = async (req, res) => {
 export const update = async (req, res) => {
   try {
     const { id } = req.params
-    const { exception_category, start_time, end_time, description, handler, device_id } = req.body
+    const { exception_category, start_time, end_time, description, handler, device_id, exception_images } = req.body
 
     const record = await ExceptionRecord.findOne({ where: { record_id: id } })
     if (!record) return fail(res, '记录不存在', 404)
@@ -133,6 +139,9 @@ export const update = async (req, res) => {
     if (end_time !== undefined) updateData.end_time = end_time ? new Date(end_time) : null
     if (description !== undefined) updateData.reason = description
     if (handler !== undefined) updateData.handle_result = handler
+    if (exception_images !== undefined) {
+      updateData.exception_images = Array.isArray(exception_images) ? JSON.stringify(exception_images) : exception_images
+    }
 
     if (device_id !== undefined) {
       updateData.device_id = device_id

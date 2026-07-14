@@ -114,6 +114,12 @@ const migrations = [
       ['man_hours', 'DECIMAL(10,2) DEFAULT 0'],
     ],
   },
+  {
+    table: 'production_exception_record',
+    columns: [
+      ['exception_images', 'TEXT'],
+    ],
+  },
 ]
 
 // SQLite 与 MySQL 取列名的方式不同

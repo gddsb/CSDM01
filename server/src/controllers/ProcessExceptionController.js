@@ -38,6 +38,7 @@ export const create = async (req, res) => {
       start_time,
       end_time,
       description,
+      exception_images,
       record_user,
       record_user_name,
     } = req.body
@@ -66,6 +67,10 @@ export const create = async (req, res) => {
       duration = Number(((end - start) / 3600000).toFixed(2))
     }
 
+    const imagesJson = exception_images
+      ? (Array.isArray(exception_images) ? JSON.stringify(exception_images) : exception_images)
+      : null
+
     const exception = await ProcessException.create({
       work_order_id: workOrder.work_order_id,
       work_order_no: workOrder.work_order_no,
@@ -80,6 +85,7 @@ export const create = async (req, res) => {
       end_time: end_time ? new Date(end_time) : null,
       duration,
       description,
+      exception_images: imagesJson,
       record_user,
       record_user_name,
     })
@@ -87,6 +93,79 @@ export const create = async (req, res) => {
     return success(res, exception, '创建成功')
   } catch (err) {
     console.error('创建异常工时记录失败:', err)
+    return fail(res, '服务器错误', 500)
+  }
+}
+
+export const update = async (req, res) => {
+  try {
+    const { id } = req.params
+    const exception = await ProcessException.findOne({ where: { exception_id: id } })
+    if (!exception) return fail(res, '记录不存在', 404)
+
+    const {
+      exception_type,
+      device_id,
+      stop_type,
+      confirm_user,
+      confirm_user_name,
+      start_time,
+      end_time,
+      description,
+      exception_images,
+      record_user,
+      record_user_name,
+    } = req.body
+
+    let deviceCode = exception.device_code
+    let deviceName = exception.device_name
+    if (device_id !== undefined) {
+      if (device_id) {
+        const device = await Device.findOne({ where: { device_id } })
+        if (device) {
+          deviceCode = device.device_code
+          deviceName = device.device_name
+        }
+      } else {
+        deviceCode = null
+        deviceName = null
+      }
+    }
+
+    let duration = exception.duration
+    const st = start_time || exception.start_time
+    const et = end_time || exception.end_time
+    if (st && et) {
+      const start = new Date(st)
+      const end = new Date(et)
+      duration = Number(((end - start) / 3600000).toFixed(2))
+    }
+
+    let imagesJson = exception.exception_images
+    if (exception_images !== undefined) {
+      imagesJson = Array.isArray(exception_images) ? JSON.stringify(exception_images) : exception_images
+    }
+
+    await exception.update({
+      exception_type: exception_type !== undefined ? exception_type : exception.exception_type,
+      device_id: device_id !== undefined ? (device_id || null) : exception.device_id,
+      device_code: deviceCode,
+      device_name: deviceName,
+      stop_type: stop_type !== undefined ? stop_type : exception.stop_type,
+      confirm_user: confirm_user !== undefined ? confirm_user : exception.confirm_user,
+      confirm_user_name: confirm_user_name !== undefined ? confirm_user_name : exception.confirm_user_name,
+      start_time: start_time ? new Date(start_time) : exception.start_time,
+      end_time: end_time !== undefined ? (end_time ? new Date(end_time) : null) : exception.end_time,
+      duration,
+      description: description !== undefined ? description : exception.description,
+      exception_images: imagesJson,
+      record_user: record_user !== undefined ? record_user : exception.record_user,
+      record_user_name: record_user_name !== undefined ? record_user_name : exception.record_user_name,
+    })
+
+    return success(res, exception, '修改成功')
+  } catch (err) {
+    console.error('修改异常工时记录失败:', err)
     return fail(res, '服务器错误', 500)
   }
 }
@@ -104,4 +183,4 @@ export const remove = async (req, res) => {
   }
 }
 
-export default { list, create, remove }
+export default { list, create, update, remove }

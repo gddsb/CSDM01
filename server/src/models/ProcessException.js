@@ -47,6 +47,10 @@ const ProcessException = sequelize.define('ProcessException', {
   description: {
     type: DataTypes.STRING(500),
   },
+  exception_images: {
+    type: DataTypes.TEXT,
+    comment: '异常图片，JSON数组存储',
+  },
   record_user: {
     type: DataTypes.STRING(50),
   },

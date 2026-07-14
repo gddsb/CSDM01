@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Table, Tag, Button, Modal, Form, Input, InputNumber, Select, Space, Row, Col,
-  message, Card, Divider, Popconfirm, DatePicker, Tabs, Upload, Radio,
+  message, Card, Divider, Popconfirm, DatePicker, Tabs, Upload, Radio, Drawer, Image,
 } from 'antd'
 import {
   ProfileOutlined, PlusOutlined, DeleteOutlined, SaveOutlined, UploadOutlined,
+  PictureOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import api from '../../utils/api'
@@ -33,6 +34,12 @@ export default function ProcessReporting() {
 
   const [selectedProcessId, setSelectedProcessId] = useState(null)
   const [activeTab, setActiveTab] = useState('production-defect')
+
+  const [imageDrawerVisible, setImageDrawerVisible] = useState(false)
+  const [imageDrawerTitle, setImageDrawerTitle] = useState('')
+  const [currentImageList, setCurrentImageList] = useState([])
+  const [imageUploadLoading, setImageUploadLoading] = useState(false)
+  const [currentImageContext, setCurrentImageContext] = useState(null)
 
   const [prodDefectList, setProdDefectList] = useState([])
   const [scrapDefectList, setScrapDefectList] = useState([])
@@ -124,6 +131,85 @@ export default function ProcessReporting() {
     }
   }, [])
 
+  const parseImages = (images) => {
+    if (!images) return []
+    if (Array.isArray(images)) return images
+    try {
+      const parsed = JSON.parse(images)
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }
+
+  const openImageDrawer = (title, imageList, context) => {
+    setImageDrawerTitle(title)
+    setCurrentImageList([...imageList])
+    setCurrentImageContext(context)
+    setImageDrawerVisible(true)
+  }
+
+  const closeImageDrawer = () => {
+    setImageDrawerVisible(false)
+    setCurrentImageList([])
+    setCurrentImageContext(null)
+  }
+
+  const handleImageUpload = async (fileList) => {
+    if (!selectedWO) {
+      message.warning('请先选择工单')
+      return false
+    }
+    try {
+      setImageUploadLoading(true)
+      const formData = new FormData()
+      fileList.forEach(file => {
+        formData.append('files', file.originFileObj || file)
+      })
+      const reportNo = selectedWO.work_order_no || 'REPORT'
+      const category = currentImageContext?.category || 'general'
+      const res = await api.post(`/production/report-images/${reportNo}/${category}/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      const uploadedUrls = res.data || []
+      const newList = [...currentImageList, ...uploadedUrls]
+      setCurrentImageList(newList)
+      applyImageChanges(newList)
+      message.success(`成功上传${uploadedUrls.length}张图片`)
+      return false
+    } catch (err) {
+      message.error(err.message || '上传失败')
+      return false
+    } finally {
+      setImageUploadLoading(false)
+    }
+  }
+
+  const handleDeleteImage = (index) => {
+    const newList = currentImageList.filter((_, i) => i !== index)
+    setCurrentImageList(newList)
+    applyImageChanges(newList)
+  }
+
+  const applyImageChanges = (newImageList) => {
+    if (!currentImageContext) return
+    const { listType, recordId, field } = currentImageContext
+
+    const setters = {
+      prodDefect: setProdDefectList,
+      scrapDefect: setScrapDefectList,
+      exception: setExceptionList,
+      material: setMaterialList,
+    }
+    const setList = setters[listType]
+    if (!setList) return
+
+    setList(prev => prev.map(item => {
+      if (String(item.id) !== String(recordId)) return item
+      return { ...item, [field]: newImageList }
+    }))
+  }
+
   const fetchAllData = useCallback(async (woId) => {
     try {
       const [defectRes, scrapRes, exceptionRes, manpowerRes, materialRes] = await Promise.all([
@@ -133,11 +219,11 @@ export default function ProcessReporting() {
         api.get('/production/manpower-records', { params: { work_order_id: woId, page: 1, pageSize: 1000 } }),
         api.get('/production/process-materials', { params: { work_order_id: woId, page: 1, pageSize: 1000 } }),
       ])
-      setProdDefectList(defectRes.data || [])
-      setScrapDefectList(scrapRes.data || [])
-      setExceptionList(exceptionRes.data || [])
+      setProdDefectList((defectRes.data || []).map(d => ({ ...d, id: d.defect_id, defect_images: parseImages(d.defect_images) })))
+      setScrapDefectList((scrapRes.data || []).map(d => ({ ...d, id: d.scrap_id, defect_images: parseImages(d.defect_images) })))
+      setExceptionList((exceptionRes.data || []).map(e => ({ ...e, id: e.record_id, exception_images: parseImages(e.exception_images) })))
       setManpowerList(manpowerRes.data || [])
-      setMaterialList(materialRes.data || [])
+      setMaterialList((materialRes.data || []).map(m => ({ ...m, id: m.id, label_images: parseImages(m.label_images) })))
 
       const defectTotal = (defectRes.data || []).reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
       const scrapTotal = (scrapRes.data || []).reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
@@ -368,6 +454,7 @@ export default function ProcessReporting() {
       description: '',
       handler: '',
       device_id: null,
+      exception_images: [],
     }
     setExceptionList([...exceptionList, newItem])
   }
@@ -389,24 +476,27 @@ export default function ProcessReporting() {
     try {
       setSaving(true)
       for (const item of validItems) {
-        if (item.exception_id) {
-          await api.put(`/production/exceptions/${item.exception_id}`, {
+        if (item.record_id) {
+          await api.put(`/production/exceptions/${item.record_id}`, {
             exception_category: item.exception_category,
             start_time: item.start_time.format ? item.start_time.format('YYYY-MM-DD HH:mm:ss') : item.start_time,
             end_time: item.end_time?.format ? item.end_time.format('YYYY-MM-DD HH:mm:ss') : item.end_time,
             description: item.description,
             handler: item.handler,
             device_id: item.device_id,
+            exception_images: item.exception_images,
           })
         } else {
           await api.post('/production/exceptions', {
             work_order_id: item.work_order_id,
-            exception_category: item.exception_category,
+            exception_type: item.exception_category,
+            exception_type_name: item.exception_category,
             start_time: item.start_time.format ? item.start_time.format('YYYY-MM-DD HH:mm:ss') : item.start_time,
             end_time: item.end_time?.format ? item.end_time.format('YYYY-MM-DD HH:mm:ss') : item.end_time,
-            description: item.description,
-            handler: item.handler,
+            reason: item.description,
+            handle_result: item.handler,
             device_id: item.device_id,
+            exception_images: item.exception_images,
           })
         }
       }
@@ -612,16 +702,20 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '不良图片', key: 'defect_images', width: 120,
+      title: '不良图片', key: 'defect_images', width: 100,
       render: (_, r) => (
-        <Upload
-          listType="picture-card"
-          fileList={r.defect_images?.map((img, i) => ({ uid: i, url: img })) || []}
-          onChange={(info) => updateProdDefect(r.id, 'defect_images', info.fileList.map(f => f.url))}
-          beforeUpload={() => false}
+        <Button
+          type="link"
+          icon={<PictureOutlined />}
+          onClick={() => openImageDrawer('不良图片', r.defect_images || [], {
+            listType: 'prodDefect',
+            recordId: r.id,
+            field: 'defect_images',
+            category: 'defect',
+          })}
         >
-          <UploadOutlined />
-        </Upload>
+          {(r.defect_images || []).length} 张
+        </Button>
       ),
     },
     {
@@ -674,16 +768,20 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '不良图片', key: 'defect_images', width: 120,
+      title: '不良图片', key: 'defect_images', width: 100,
       render: (_, r) => (
-        <Upload
-          listType="picture-card"
-          fileList={r.defect_images?.map((img, i) => ({ uid: i, url: img })) || []}
-          onChange={(info) => updateScrapDefect(r.id, 'defect_images', info.fileList.map(f => f.url))}
-          beforeUpload={() => false}
+        <Button
+          type="link"
+          icon={<PictureOutlined />}
+          onClick={() => openImageDrawer('不良图片', r.defect_images || [], {
+            listType: 'scrapDefect',
+            recordId: r.id,
+            field: 'defect_images',
+            category: 'scrap',
+          })}
         >
-          <UploadOutlined />
-        </Upload>
+          {(r.defect_images || []).length} 张
+        </Button>
       ),
     },
     {
@@ -764,6 +862,23 @@ export default function ProcessReporting() {
           options={deviceOptions}
           disabled={r.exception_category !== '故障维修'}
         />
+      ),
+    },
+    {
+      title: '异常图片', key: 'exception_images', width: 100,
+      render: (_, r) => (
+        <Button
+          type="link"
+          icon={<PictureOutlined />}
+          onClick={() => openImageDrawer('异常图片', r.exception_images || [], {
+            listType: 'exception',
+            recordId: r.id,
+            field: 'exception_images',
+            category: 'exception',
+          })}
+        >
+          {(r.exception_images || []).length} 张
+        </Button>
       ),
     },
     {
@@ -930,16 +1045,20 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '标签图片', key: 'label_images', width: 120,
+      title: '标签图片', key: 'label_images', width: 100,
       render: (_, r) => (
-        <Upload
-          listType="picture-card"
-          fileList={r.label_images?.map((img, i) => ({ uid: i, url: img })) || []}
-          onChange={(info) => updateMaterial(r.id, 'label_images', info.fileList.map(f => f.url))}
-          beforeUpload={() => false}
+        <Button
+          type="link"
+          icon={<PictureOutlined />}
+          onClick={() => openImageDrawer('标签图片', r.label_images || [], {
+            listType: 'material',
+            recordId: r.id,
+            field: 'label_images',
+            category: 'label',
+          })}
         >
-          <UploadOutlined />
-        </Upload>
+          {(r.label_images || []).length} 张
+        </Button>
       ),
     },
     {
@@ -1166,6 +1285,67 @@ export default function ProcessReporting() {
           </Tabs>
         </Card>
       )}
+
+      <Drawer
+        title={imageDrawerTitle}
+        placement="right"
+        width={600}
+        open={imageDrawerVisible}
+        onClose={closeImageDrawer}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <Upload
+            multiple
+            listType="picture-card"
+            showUploadList={false}
+            accept="image/*"
+            beforeUpload={() => false}
+            onChange={(info) => {
+              if (info.fileList.length > 0) {
+                handleImageUpload(info.fileList)
+              }
+            }}
+            disabled={imageUploadLoading}
+          >
+            <div>
+              <UploadOutlined />
+              <div style={{ marginTop: 8 }}>上传图片</div>
+            </div>
+          </Upload>
+        </div>
+        <Divider style={{ margin: '16px 0' }} />
+        {currentImageList.length === 0 ? (
+          <div style={{ textAlign: 'center', color: '#999', padding: '40px 0' }}>
+            暂无图片
+          </div>
+        ) : (
+          <Row gutter={[12, 12]}>
+            {currentImageList.map((img, index) => (
+              <Col span={12} key={index}>
+                <div style={{ position: 'relative' }}>
+                  <Image
+                    src={img}
+                    width="100%"
+                    style={{ borderRadius: 4 }}
+                  />
+                  <Button
+                    type="primary"
+                    danger
+                    size="small"
+                    icon={<DeleteOutlined />}
+                    style={{
+                      position: 'absolute',
+                      top: 4,
+                      right: 4,
+                    }}
+                    onClick={() => handleDeleteImage(index)}
+                  />
+                </div>
+              </Col>
+            ))}
+          </Row>
+        )}
+      </Drawer>
     </div>
   )
 }
