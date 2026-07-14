@@ -3,8 +3,8 @@ import { WorkOrder, Order, ProductionLine, Material, ProcessReport, ManpowerReco
 import { success, fail } from '../utils/response.js'
 import { generateWorkOrderNo } from '../utils/sequence.js'
 
-// 工单状态: 0=开立, 1=开工, 2=完工
-const statusMap = { '开立': 0, '开工': 1, '完工': 2 }
+// 工单状态: 0=未开工, 1=已开工, 2=已关闭
+const statusMap = { '未开工': 0, '已开工': 1, '已关闭': 2 }
 
 // 将状态参数（字符串/数字/数组）转换为整数数组
 const parseStatusParam = (status) => {
@@ -142,7 +142,7 @@ export const update = async (req, res) => {
     const { id } = req.params
     const workOrder = await WorkOrder.findOne({ where: { work_order_id: id } })
     if (!workOrder) return fail(res, '工单不存在', 404)
-    if (workOrder.status !== '开立') {
+    if (workOrder.status !== '未开工') {
       return fail(res, '当前工单状态不允许修改')
     }
     const { line_id, material_id, planned_qty, plan_start_time, plan_end_time, remarks, status } = req.body
@@ -181,8 +181,8 @@ export const remove = async (req, res) => {
     const { id } = req.params
     const workOrder = await WorkOrder.findOne({ where: { work_order_id: id } })
     if (!workOrder) return fail(res, '工单不存在', 404)
-    if (workOrder.status !== '开立') {
-      return fail(res, '当前工单状态不允许删除')
+    if (workOrder.status !== '未开工') {
+      return fail(res, '只有未开工状态的工单可以删除')
     }
     const [reportCount, manpowerCount, exceptionCount, defectCount, excTimeCount, materialCount] = await Promise.all([
       ProcessReport.count({ where: { work_order_id: id } }),
@@ -212,30 +212,10 @@ export const start = async (req, res) => {
     const workOrder = await WorkOrder.findOne({ where: { work_order_id: id } })
     if (!workOrder) return fail(res, '工单不存在', 404)
 
-    // 允许从"开立"或"完工"状态开工
-    if (workOrder.status !== '开立' && workOrder.status !== '完工') {
-      return fail(res, '当前工单状态不允许开工')
+    // 允许从"未开工"状态开工
+    if (workOrder.status !== '未开工') {
+      return fail(res, '只有未开工状态的工单可以开工')
     }
-
-    // 从"完工"状态重新开工需要检查条件
-    if (workOrder.status === '完工') {
-      // 检查1：累计完工数量 < 计划数量
-      if (Number(workOrder.finished_qty) >= Number(workOrder.planned_qty)) {
-        return fail(res, '完工数量已达到计划数量，无法再次报工')
-      }
-      // 检查2：没有处于开工或开立状态的报工单
-      const activeReports = await ProcessReport.count({ where: { work_order_id: id, status: { [Op.in]: [0, 1] } } })
-      if (activeReports > 0) {
-        return fail(res, '存在未完工的报工单，无法再次开工')
-      }
-      // 更新工单状态
-      const now = new Date()
-      let startTime = start_time ? new Date(start_time) : now
-      await workOrder.update({ status: 1, start_time: startTime, finish_time: null })
-      return success(res, workOrder, '工单已开工')
-    }
-
-    // 从"开立"状态开工
     const now = new Date()
     let startTime = workOrder.start_time || new Date(start_time || now)
 
@@ -258,7 +238,7 @@ export const finish = async (req, res) => {
     const { id } = req.params
     const workOrder = await WorkOrder.findOne({ where: { work_order_id: id } })
     if (!workOrder) return fail(res, '工单不存在', 404)
-    if (workOrder.status !== '开工') return fail(res, '当前工单状态不允许完工')
+    if (workOrder.status !== '已开工') return fail(res, '当前工单状态不允许完工')
 
     // 完工检查1：首工序有物料记录且数量不为0
     const LineProcessModel = await import('../models/LineProcess.js').then(m => m.default)
@@ -307,7 +287,7 @@ export const finish = async (req, res) => {
       finished_qty: finished_qty !== undefined ? finished_qty : workOrder.finished_qty,
     })
 
-    return success(res, workOrder, '工单已完工')
+    return success(res, workOrder, '工单已关闭')
   } catch (err) {
     console.error('完工失败:', err)
     return fail(res, '服务器错误', 500)

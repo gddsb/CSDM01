@@ -11,9 +11,9 @@ import dayjs from 'dayjs'
 import api from '../../utils/api'
 
 const woStatusColorMap = {
-  '开立': 'default',
-  '开工': 'processing',
-  '完工': 'success',
+  '未开工': 'default',
+  '已开工': 'processing',
+  '已关闭': 'warning',
 }
 
 const exceptionCategories = [
@@ -48,6 +48,8 @@ export default function ProcessReporting() {
   const [materialList, setMaterialList] = useState([])
   const [materials, setMaterials] = useState([])
 
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+
   const [stats, setStats] = useState({
     inputQty: 0,
     outputQty: 0,
@@ -56,6 +58,14 @@ export default function ProcessReporting() {
     defectScrap: 0,
     exceptionHours: 0,
   })
+
+  const markUnsaved = () => {
+    setHasUnsavedChanges(true)
+  }
+
+  const clearUnsaved = () => {
+    setHasUnsavedChanges(false)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -81,7 +91,7 @@ export default function ProcessReporting() {
     const run = async () => {
       setLoading(true)
       try {
-        const res = await api.get('/production/work-orders', { params: { page: 1, pageSize: 1000, status: '开工' } })
+        const res = await api.get('/production/work-orders', { params: { page: 1, pageSize: 1000, status: '已开工,已关闭' } })
         if (cancelled) return
         setWorkOrders(res.data || [])
       } catch (err) {
@@ -96,6 +106,19 @@ export default function ProcessReporting() {
     run()
     return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault()
+        e.returnValue = '当前页面存在未保存的数据，离开后将丢失。'
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [hasUnsavedChanges])
 
   useEffect(() => {
     if (!selectedWO) {
@@ -229,8 +252,20 @@ export default function ProcessReporting() {
       const defectTotal = (defectRes.data || []).reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
       const scrapTotal = (scrapRes.data || []).reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
       const exceptionTotal = (exceptionRes.data || []).reduce((sum, e) => sum + (Number(e.duration) || 0), 0)
+
+      let inputQty = 0
+      if (lineProcesses.length > 0 && materialRes.data) {
+        const firstProcessId = lineProcesses[0].process_id
+        inputQty = (materialRes.data || []).reduce((sum, m) => {
+          if (m.process_id === firstProcessId) {
+            return sum + (Number(m.quantity) || 0)
+          }
+          return sum
+        }, 0)
+      }
+
       setStats({
-        inputQty: selectedWO?.planned_qty || 0,
+        inputQty,
         outputQty: selectedWO?.finished_qty || 0,
         defectMaterial: defectTotal,
         defectProcess: defectTotal,
@@ -240,7 +275,7 @@ export default function ProcessReporting() {
     } catch (err) {
       message.error(err.message || '获取数据失败')
     }
-  }, [selectedWO])
+  }, [selectedWO, lineProcesses])
 
   const fetchMaterials = useCallback(async () => {
     try {
@@ -321,6 +356,7 @@ export default function ProcessReporting() {
       defect_images: [],
     }
     setProdDefectList([...prodDefectList, newItem])
+    markUnsaved()
   }
 
   const updateProdDefect = (id, field, value) => {
@@ -338,10 +374,12 @@ export default function ProcessReporting() {
       }
       return updated
     }))
+    markUnsaved()
   }
 
   const deleteProdDefect = (id) => {
     setProdDefectList(prodDefectList.filter(item => item.id !== id))
+    markUnsaved()
   }
 
   const saveProdDefects = async () => {
@@ -372,6 +410,7 @@ export default function ProcessReporting() {
       }
       message.success('保存成功')
       fetchAllData(selectedWO.work_order_id)
+      clearUnsaved()
     } catch (err) {
       message.error(err.message || '保存失败')
     } finally {
@@ -391,6 +430,7 @@ export default function ProcessReporting() {
       defect_images: [],
     }
     setScrapDefectList([...scrapDefectList, newItem])
+    markUnsaved()
   }
 
   const updateScrapDefect = (id, field, value) => {
@@ -407,10 +447,12 @@ export default function ProcessReporting() {
       }
       return updated
     }))
+    markUnsaved()
   }
 
   const deleteScrapDefect = (id) => {
     setScrapDefectList(scrapDefectList.filter(item => item.id !== id))
+    markUnsaved()
   }
 
   const saveScrapDefects = async () => {
@@ -440,6 +482,7 @@ export default function ProcessReporting() {
       }
       message.success('保存成功')
       fetchAllData(selectedWO.work_order_id)
+      clearUnsaved()
     } catch (err) {
       message.error(err.message || '保存失败')
     } finally {
@@ -460,14 +503,17 @@ export default function ProcessReporting() {
       exception_images: [],
     }
     setExceptionList([...exceptionList, newItem])
+    markUnsaved()
   }
 
   const updateException = (id, field, value) => {
     setExceptionList(exceptionList.map(item => item.id !== id ? item : { ...item, [field]: value }))
+    markUnsaved()
   }
 
   const deleteException = (id) => {
     setExceptionList(exceptionList.filter(item => item.id !== id))
+    markUnsaved()
   }
 
   const saveExceptions = async () => {
@@ -505,6 +551,7 @@ export default function ProcessReporting() {
       }
       message.success('保存成功')
       fetchAllData(selectedWO.work_order_id)
+      clearUnsaved()
     } catch (err) {
       message.error(err.message || '保存失败')
     } finally {
@@ -513,6 +560,10 @@ export default function ProcessReporting() {
   }
 
   const addManpower = () => {
+    if (manpowerList.length >= 1) {
+      message.warning('一个生产报工单只允许添加一条人员工时记录')
+      return
+    }
     const newItem = {
       id: Date.now(),
       work_order_id: selectedWO.work_order_id,
@@ -530,10 +581,12 @@ export default function ProcessReporting() {
 
   const updateManpower = (id, field, value) => {
     setManpowerList(manpowerList.map(item => item.id !== id ? item : { ...item, [field]: value }))
+    markUnsaved()
   }
 
   const deleteManpower = (id) => {
     setManpowerList(manpowerList.filter(item => item.id !== id))
+    markUnsaved()
   }
 
   const saveManpower = async () => {
@@ -575,6 +628,7 @@ export default function ProcessReporting() {
       }
       message.success('保存成功')
       fetchAllData(selectedWO.work_order_id)
+      clearUnsaved()
     } catch (err) {
       message.error(err.message || '保存失败')
     } finally {
@@ -597,6 +651,7 @@ export default function ProcessReporting() {
       label_images: [],
     }
     setMaterialList([...materialList, newItem])
+    markUnsaved()
   }
 
   const updateMaterial = (id, field, value) => {
@@ -613,10 +668,12 @@ export default function ProcessReporting() {
       }
       return updated
     }))
+    markUnsaved()
   }
 
   const deleteMaterial = (id) => {
     setMaterialList(materialList.filter(item => item.id !== id))
+    markUnsaved()
   }
 
   const saveMaterials = async () => {
@@ -658,6 +715,7 @@ export default function ProcessReporting() {
       }
       message.success('保存成功')
       fetchAllData(selectedWO.work_order_id)
+      clearUnsaved()
     } catch (err) {
       message.error(err.message || '保存失败')
     } finally {
@@ -667,23 +725,22 @@ export default function ProcessReporting() {
 
   const prodDefectColumns = [
     {
-      title: '不良类型', key: 'defect_type', width: 100,
+      title: '不良类型', key: 'defect_type',
       render: (_, r) => <Tag color="purple">{r.defect_type || '-'}</Tag>,
     },
     {
-      title: '不良项目', key: 'defect_name', width: 250,
+      title: '不良项目', key: 'defect_name',
       render: (_, r) => (
         <Select
           value={r.defect_type_id}
           onChange={(v) => updateProdDefect(r.id, 'defect_type_id', v)}
           placeholder="请选择不良项目"
-          style={{ width: '100%' }}
           options={defectTypeOptions.filter(d => !usedDefectIds.has(d.value) || d.value === r.defect_type_id)}
         />
       ),
     },
     {
-      title: '不良数量', key: 'quantity', width: 100, align: 'right',
+      title: '不良数量', key: 'quantity', align: 'right',
       render: (_, r) => (
         <InputNumber
           min={0}
@@ -694,18 +751,17 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '单位', key: 'unit', width: 100,
+      title: '单位', key: 'unit',
       render: (_, r) => (
         <Select
           value={r.unit}
           onChange={(v) => updateProdDefect(r.id, 'unit', v)}
-          style={{ width: '100%' }}
           options={[{ label: '默认单位', value: '默认单位' }]}
         />
       ),
     },
     {
-      title: '不良图片', key: 'defect_images', width: 100,
+      title: '不良图片', key: 'defect_images',
       render: (_, r) => (
         <Button
           type="link"
@@ -722,7 +778,7 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '操作', key: 'action', width: 80,
+      title: '操作', key: 'action',
       render: (_, r) => (
         <Popconfirm title="确认删除？" onConfirm={() => deleteProdDefect(r.id)}>
           <Button type="link" danger size="small"><DeleteOutlined /></Button>
@@ -733,23 +789,22 @@ export default function ProcessReporting() {
 
   const scrapDefectColumns = [
     {
-      title: '不良编码', key: 'defect_code', width: 140,
+      title: '不良编码', key: 'defect_code',
       render: (_, r) => r.defect_code || '-',
     },
     {
-      title: '不良项目', key: 'defect_name', width: 250,
+      title: '不良项目', key: 'defect_name',
       render: (_, r) => (
         <Select
           value={r.defect_type_id}
           onChange={(v) => updateScrapDefect(r.id, 'defect_type_id', v)}
           placeholder="请选择不良项目"
-          style={{ width: '100%' }}
           options={scrapTypeOptions}
         />
       ),
     },
     {
-      title: '不良数量', key: 'quantity', width: 100, align: 'right',
+      title: '不良数量', key: 'quantity', align: 'right',
       render: (_, r) => (
         <InputNumber
           min={0}
@@ -760,18 +815,17 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '单位', key: 'unit', width: 100,
+      title: '单位', key: 'unit',
       render: (_, r) => (
         <Select
           value={r.unit}
           onChange={(v) => updateScrapDefect(r.id, 'unit', v)}
-          style={{ width: '100%' }}
           options={[{ label: '默认单位', value: '默认单位' }]}
         />
       ),
     },
     {
-      title: '不良图片', key: 'defect_images', width: 100,
+      title: '不良图片', key: 'defect_images',
       render: (_, r) => (
         <Button
           type="link"
@@ -788,7 +842,7 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '操作', key: 'action', width: 80,
+      title: '操作', key: 'action',
       render: (_, r) => (
         <Popconfirm title="确认删除？" onConfirm={() => deleteScrapDefect(r.id)}>
           <Button type="link" danger size="small"><DeleteOutlined /></Button>
@@ -799,19 +853,18 @@ export default function ProcessReporting() {
 
   const exceptionColumns = [
     {
-      title: '异常分类', key: 'exception_category', width: 120,
+      title: '异常分类', key: 'exception_category',
       render: (_, r) => (
         <Select
           value={r.exception_category}
           onChange={(v) => updateException(r.id, 'exception_category', v)}
           placeholder="请选择异常分类"
-          style={{ width: '100%' }}
           options={exceptionCategories}
         />
       ),
     },
     {
-      title: '开始时间', key: 'start_time', width: 160,
+      title: '开始时间', key: 'start_time',
       render: (_, r) => (
         <DatePicker
           showTime={{ format: 'HH:mm' }}
@@ -823,7 +876,7 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '恢复时间', key: 'end_time', width: 160,
+      title: '恢复时间', key: 'end_time',
       render: (_, r) => (
         <DatePicker
           showTime={{ format: 'HH:mm' }}
@@ -835,7 +888,7 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '状态描述', key: 'description', width: 200,
+      title: '状态描述', key: 'description',
       render: (_, r) => (
         <Input
           value={r.description}
@@ -845,7 +898,7 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '处置人', key: 'handler', width: 100,
+      title: '处置人', key: 'handler',
       render: (_, r) => (
         <Input
           value={r.handler}
@@ -855,20 +908,19 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '维修设备', key: 'device_id', width: 150,
+      title: '维修设备', key: 'device_id',
       render: (_, r) => (
         <Select
           value={r.device_id}
           onChange={(v) => updateException(r.id, 'device_id', v)}
           placeholder="请选择设备"
-          style={{ width: '100%' }}
           options={deviceOptions}
           disabled={r.exception_category !== '故障维修'}
         />
       ),
     },
     {
-      title: '异常图片', key: 'exception_images', width: 100,
+      title: '异常图片', key: 'exception_images',
       render: (_, r) => (
         <Button
           type="link"
@@ -885,7 +937,7 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '操作', key: 'action', width: 80,
+      title: '操作', key: 'action',
       render: (_, r) => (
         <Popconfirm title="确认删除？" onConfirm={() => deleteException(r.id)}>
           <Button type="link" danger size="small"><DeleteOutlined /></Button>
@@ -896,7 +948,7 @@ export default function ProcessReporting() {
 
   const manpowerColumns = [
     {
-      title: '日期', key: 'record_date', width: 120,
+      title: '日期', key: 'record_date',
       render: (_, r) => (
         <DatePicker
           format="YYYY-MM-DD"
@@ -907,18 +959,17 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '班次', key: 'shift', width: 80,
+      title: '班次', key: 'shift',
       render: (_, r) => (
         <Select
           value={r.shift}
           onChange={(v) => updateManpower(r.id, 'shift', v)}
-          style={{ width: '100%' }}
           options={[{ label: '白班', value: '白班' }, { label: '夜班', value: '夜班' }]}
         />
       ),
     },
     {
-      title: '开始时间', key: 'start_time', width: 140,
+      title: '开始时间', key: 'start_time',
       render: (_, r) => (
         <DatePicker
           showTime={{ format: 'HH:mm' }}
@@ -930,7 +981,7 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '结束时间', key: 'end_time', width: 140,
+      title: '结束时间', key: 'end_time',
       render: (_, r) => (
         <DatePicker
           showTime={{ format: 'HH:mm' }}
@@ -942,7 +993,7 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '技工', key: 'skilled_count', width: 80, align: 'right',
+      title: '技工', key: 'skilled_count', align: 'right',
       render: (_, r) => (
         <InputNumber
           min={0}
@@ -953,7 +1004,7 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '普工', key: 'general_count', width: 80, align: 'right',
+      title: '普工', key: 'general_count', align: 'right',
       render: (_, r) => (
         <InputNumber
           min={0}
@@ -964,7 +1015,7 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '劳务工', key: 'labor_count', width: 80, align: 'right',
+      title: '劳务工', key: 'labor_count', align: 'right',
       render: (_, r) => (
         <InputNumber
           min={0}
@@ -975,7 +1026,7 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '其他', key: 'other_count', width: 80, align: 'right',
+      title: '其他', key: 'other_count', align: 'right',
       render: (_, r) => (
         <InputNumber
           min={0}
@@ -986,7 +1037,7 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '操作', key: 'action', width: 80,
+      title: '操作', key: 'action',
       render: (_, r) => (
         <Popconfirm title="确认删除？" onConfirm={() => deleteManpower(r.id)}>
           <Button type="link" danger size="small"><DeleteOutlined /></Button>
@@ -997,27 +1048,26 @@ export default function ProcessReporting() {
 
   const materialColumns = [
     {
-      title: '料号', key: 'material_code', width: 120,
+      title: '料号', key: 'material_code',
       render: (_, r) => r.material_code || '-',
     },
     {
-      title: '料品名称', key: 'material_name', width: 200,
+      title: '料品名称', key: 'material_name',
       render: (_, r) => (
         <Select
           value={r.material_id}
           onChange={(v) => updateMaterial(r.id, 'material_id', v)}
           placeholder="请选择料品"
-          style={{ width: '100%' }}
           options={materialOptions}
         />
       ),
     },
     {
-      title: '规格', key: 'specification', width: 120,
+      title: '规格', key: 'specification',
       render: (_, r) => r.specification || '-',
     },
     {
-      title: '批号', key: 'material_batch', width: 120,
+      title: '批号', key: 'material_batch',
       render: (_, r) => (
         <Input
           value={r.material_batch}
@@ -1027,7 +1077,7 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '包(箱)号', key: 'box_no', width: 120,
+      title: '包(箱)号', key: 'box_no',
       render: (_, r) => (
         <Input
           value={r.box_no}
@@ -1037,7 +1087,7 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '数量', key: 'quantity', width: 100, align: 'right',
+      title: '数量', key: 'quantity', align: 'right',
       render: (_, r) => (
         <InputNumber
           min={0}
@@ -1048,7 +1098,7 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '标签图片', key: 'label_images', width: 100,
+      title: '标签图片', key: 'label_images',
       render: (_, r) => (
         <Button
           type="link"
@@ -1065,7 +1115,7 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '操作', key: 'action', width: 80,
+      title: '操作', key: 'action',
       render: (_, r) => (
         <Popconfirm title="确认删除？" onConfirm={() => deleteMaterial(r.id)}>
           <Button type="link" danger size="small"><DeleteOutlined /></Button>
@@ -1080,55 +1130,60 @@ export default function ProcessReporting() {
         <div style={{ marginBottom: 16 }}>
           <label style={{ marginRight: 8, fontWeight: 500 }}>选择生产工单：</label>
           <Select
-            value={selectedWO?.work_order_id}
-            onChange={(v) => setSelectedWO(workOrders.find(w => w.work_order_id === v))}
-            placeholder="请选择生产工单"
-            style={{ minWidth: 400 }}
-            loading={loading}
-            popupMatchSelectWidth={false}
-            options={workOrders.map(w => ({
-              label: `${w.work_order_no} ${w.material_name}`,
-              value: w.work_order_id,
-            }))}
-          />
+          value={selectedWO?.work_order_id}
+          onChange={(v) => {
+            if (hasUnsavedChanges) {
+              Modal.confirm({
+                title: '提示',
+                content: '当前页面存在未保存的数据，切换工单后将丢失。是否继续？',
+                okText: '继续切换',
+                cancelText: '取消',
+                onOk: () => {
+                  setSelectedWO(workOrders.find(w => w.work_order_id === v))
+                  clearUnsaved()
+                },
+              })
+            } else {
+              setSelectedWO(workOrders.find(w => w.work_order_id === v))
+            }
+          }}
+          placeholder="请选择生产工单"
+          style={{ minWidth: 400 }}
+          loading={loading}
+          popupMatchSelectWidth={false}
+          options={workOrders.map(w => ({
+            label: `${w.work_order_no} ${w.material_name}`,
+            value: w.work_order_id,
+          }))}
+        />
         </div>
 
         {selectedWO && (
           <div style={{ fontSize: '16px' }}>
-            <Row gutter={16}>
-              <Col span={4}>
-                <div className="stat-item" style={{ fontSize: '16px' }}>
-                  <div className="stat-label" style={{ fontSize: '14px', color: '#999', marginBottom: 4 }}>生产报工单号</div>
-                  <div className="stat-value" style={{ fontSize: '16px', fontWeight: 600 }}>{selectedWO.work_order_no}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ width: '120px' }}>
+                <div className="stat-label" style={{ fontSize: '14px', color: '#999', marginBottom: 4 }}>生产报工单号</div>
+                <div className="stat-value" style={{ fontSize: '16px', fontWeight: 600 }}>{selectedWO.work_order_no}</div>
+              </div>
+              <div style={{ width: '120px' }}>
+                <div className="stat-label" style={{ fontSize: '14px', color: '#999', marginBottom: 4 }}>物料编码</div>
+                <div className="stat-value" style={{ fontSize: '16px', fontWeight: 600 }}>{selectedWO.material_code}</div>
+              </div>
+              <div style={{ width: '80px' }}>
+                <div className="stat-label" style={{ fontSize: '14px', color: '#999', marginBottom: 4 }}>产线</div>
+                <div className="stat-value" style={{ fontSize: '16px', fontWeight: 600 }}>{selectedWO.line_name}</div>
+              </div>
+              <div style={{ width: '100px' }}>
+                <div className="stat-label" style={{ fontSize: '14px', color: '#999', marginBottom: 4 }}>状态</div>
+                <div className="stat-value" style={{ fontSize: '16px', fontWeight: 600 }}>
+                  <Tag color={woStatusColorMap[selectedWO.status]} style={{ fontSize: '14px' }}>{selectedWO.status}</Tag>
                 </div>
-              </Col>
-              <Col span={4}>
-                <div className="stat-item" style={{ fontSize: '16px' }}>
-                  <div className="stat-label" style={{ fontSize: '14px', color: '#999', marginBottom: 4 }}>物料编码</div>
-                  <div className="stat-value" style={{ fontSize: '16px', fontWeight: 600 }}>{selectedWO.material_code}</div>
-                </div>
-              </Col>
-              <Col span={4}>
-                <div className="stat-item" style={{ fontSize: '16px' }}>
-                  <div className="stat-label" style={{ fontSize: '14px', color: '#999', marginBottom: 4 }}>物料名称</div>
-                  <div className="stat-value" style={{ fontSize: '16px', fontWeight: 600 }}>{selectedWO.material_name}</div>
-                </div>
-              </Col>
-              <Col span={3}>
-                <div className="stat-item" style={{ fontSize: '16px' }}>
-                  <div className="stat-label" style={{ fontSize: '14px', color: '#999', marginBottom: 4 }}>产线</div>
-                  <div className="stat-value" style={{ fontSize: '16px', fontWeight: 600 }}>{selectedWO.line_name}</div>
-                </div>
-              </Col>
-              <Col span={3}>
-                <div className="stat-item" style={{ fontSize: '16px' }}>
-                  <div className="stat-label" style={{ fontSize: '14px', color: '#999', marginBottom: 4 }}>状态</div>
-                  <div className="stat-value" style={{ fontSize: '16px', fontWeight: 600 }}>
-                    <Tag color={woStatusColorMap[selectedWO.status]} style={{ fontSize: '14px' }}>{selectedWO.status}</Tag>
-                  </div>
-                </div>
-              </Col>
-            </Row>
+              </div>
+              <div style={{ minWidth: '200px', flex: 1 }}>
+                <div className="stat-label" style={{ fontSize: '14px', color: '#999', marginBottom: 4 }}>物料名称</div>
+                <div className="stat-value" style={{ fontSize: '16px', fontWeight: 600 }}>{selectedWO.material_name}</div>
+              </div>
+            </div>
             <Divider style={{ margin: '12px 0' }} />
             <Row gutter={16}>
               <Col span={3}>
@@ -1180,7 +1235,26 @@ export default function ProcessReporting() {
 
       {selectedWO && (
         <Card>
-          <Tabs activeKey={activeTab} onChange={setActiveTab} size="small">
+          <Tabs 
+          activeKey={activeTab} 
+          onChange={(key) => {
+            if (hasUnsavedChanges) {
+              Modal.confirm({
+                title: '提示',
+                content: '当前页面存在未保存的数据，离开后将丢失。是否继续？',
+                okText: '继续离开',
+                cancelText: '取消',
+                onOk: () => {
+                  setActiveTab(key)
+                  clearUnsaved()
+                },
+              })
+            } else {
+              setActiveTab(key)
+            }
+          }} 
+          size="small"
+        >
             <Tabs.TabPane tab="生产不良记录" key="production-defect">
               <div style={{ marginBottom: 16 }}>
                 <label style={{ marginRight: 8, fontWeight: 500 }}>选择工序：</label>
@@ -1207,6 +1281,7 @@ export default function ProcessReporting() {
                 rowKey="id"
                 pagination={false}
                 bordered
+                scroll={{ x: 'max-content' }}
               />
             </Tabs.TabPane>
 
@@ -1225,6 +1300,7 @@ export default function ProcessReporting() {
                 rowKey="id"
                 pagination={false}
                 bordered
+                scroll={{ x: 'max-content' }}
               />
             </Tabs.TabPane>
 
@@ -1254,6 +1330,7 @@ export default function ProcessReporting() {
                 rowKey="id"
                 pagination={false}
                 bordered
+                scroll={{ x: 'max-content' }}
               />
             </Tabs.TabPane>
 
@@ -1272,6 +1349,7 @@ export default function ProcessReporting() {
                 rowKey="id"
                 pagination={false}
                 bordered
+                scroll={{ x: 'max-content' }}
               />
             </Tabs.TabPane>
 
@@ -1290,6 +1368,7 @@ export default function ProcessReporting() {
                 rowKey="id"
                 pagination={false}
                 bordered
+                scroll={{ x: 'max-content' }}
               />
             </Tabs.TabPane>
           </Tabs>
