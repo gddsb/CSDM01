@@ -137,7 +137,6 @@ export const create = async (req, res) => {
 
     if (!work_order_id) return fail(res, '工单 ID 不能为空')
     if (!process_id) return fail(res, '工序 ID 不能为空')
-    if (!defect_name) return fail(res, '不良名称不能为空')
     if (!quantity || quantity <= 0) return fail(res, '数量必须大于0')
 
     const workOrder = await WorkOrder.findOne({ where: { work_order_id } })
@@ -151,6 +150,9 @@ export const create = async (req, res) => {
       defectType = await DefectType.findOne({ where: { defect_id: defect_type_id } })
     }
 
+    const finalDefectName = defect_name || (defectType?.defect_name || '')
+    if (!finalDefectName) return fail(res, '不良名称不能为空')
+
     const defect = await ProcessDefect.create({
       work_order_id: workOrder.work_order_id,
       work_order_no: workOrder.work_order_no,
@@ -158,7 +160,7 @@ export const create = async (req, res) => {
       process_code: process.process_code,
       process_name: process.process_name,
       defect_category: defect_category || (defectType?.category_name || ''),
-      defect_name,
+      defect_name: finalDefectName,
       defect_type_id: defect_type_id || null,
       quantity: Number(quantity),
       unit: unit || (defectType?.defect_unit || ''),

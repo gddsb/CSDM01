@@ -396,6 +396,8 @@ export default function ProcessReporting() {
       for (const item of validItems) {
         if (item.defect_id) {
           await api.put(`/production/process-defects/${item.defect_id}`, {
+            defect_name: item.defect_name,
+            defect_type_id: item.defect_type_id,
             quantity: item.quantity,
             unit: item.unit,
             defect_images: item.defect_images,
@@ -404,6 +406,8 @@ export default function ProcessReporting() {
           await api.post('/production/process-defects', {
             work_order_id: item.work_order_id,
             process_id: item.process_id,
+            defect_category: item.defect_type || item.defect_category,
+            defect_name: item.defect_name,
             defect_type_id: item.defect_type_id,
             quantity: item.quantity,
             unit: item.unit,
