@@ -144,8 +144,8 @@ export const create = async (req, res) => {
     const workOrder = await WorkOrder.findOne({ where: { work_order_id } })
     if (!workOrder) return fail(res, '工单不存在', 404)
 
-    // 工单必须处于"已开工"状态才允许创建报工记录
-    if (workOrder.status !== '已开工') {
+    // 工单必须处于"开工"状态才允许创建报工记录
+    if (workOrder.status !== '开工') {
       return fail(res, '工单未开工，不允许创建报工记录')
     }
 
@@ -205,10 +205,10 @@ export const start = async (req, res) => {
       return fail(res, '当前报工单状态不允许开工')
     }
 
-    // 校验关联工单必须处于"已开工"状态
+    // 校验关联工单必须处于"开工"状态
     const workOrder = await WorkOrder.findOne({ where: { work_order_id: report.work_order_id } })
     if (!workOrder) return fail(res, '关联工单不存在', 404)
-    if (workOrder.status !== '已开工') {
+    if (workOrder.status !== '开工') {
       return fail(res, '关联工单未开工，报工单无法开工')
     }
 
