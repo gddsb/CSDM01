@@ -147,7 +147,7 @@
 | 生产报工 | `/production/reporting` | 工序级报工，投入/产出/不良登记 |
 | 生产报工(工单) | `/production/reporting-by-order` | 按工单维度的报工视图 |
 | 人员记录 | `/production/manpower` | 工单人员配置与班次管理 |
-| 异常记录 | `/production/exceptions` | 生产异常登记，关联订单与工单 |
+| 异常工时记录 | `/production/process-exceptions` | 工序生产异常工时登记，关联工单与设备 |
 
 #### 生产订单业务流程
 
@@ -171,17 +171,17 @@
 - 输入框失焦/状态下拉变更/日期选择完成时**立即触发筛选**
 - 计划开始日期不得早于今天，计划完成日期不得早于计划开始日期
 - 仅"开立"状态可编辑，可修改数量、计划开始日期、计划完成日期
-- 订单详情页展示关联工单、人员、异常记录
+- 订单详情页展示关联工单、人员、异常工时记录
 
 #### 工单状态流转
 
-**状态机**：`开立 → 开工 → 完工`
+**状态机**：`未开工 → 已开工 → 已关闭`
 
-| 状态 | 编辑 | 开工 | 删除 | 完工 | 详情 |
+| 状态 | 编辑 | 开工 | 删除 | 关闭 | 详情 |
 |------|------|------|------|------|------|
-| 开立 | ✓ | ✓ | ✓ | ✗ | ✓ |
-| 开工 | ✗ | ✗ | ✗ | ✓ | ✓ |
-| 完工 | ✗ | ✗ | ✗ | ✗ | ✓ |
+| 未开工 | ✓ | ✓ | ✓ | ✗ | ✓ |
+| 已开工 | ✗ | ✗ | ✗ | ✓ | ✓ |
+| 已关闭 | ✗ | ✗ | ✗ | ✗ | ✓ |
 
 **业务规则**：
 
@@ -190,10 +190,10 @@
 - 工单计划数量**必须为正整数且大于 0**
 - 开工后**自动生成报工记录和人员记录**，各工序可自由报工
 - **工时计算规则**：按 0.5 小时取值
-- 工单完工后，关联记录自动转为只读
+- 工单关闭后，关联记录自动转为只读
 - **订单状态联动**：
-  - 工单完工时，若订单累计完工数量 ≥ 计划数量，生产订单状态改为"完工"
-  - 工单完工时，若订单累计完工数量 < 计划数量，生产订单状态改为"下发"
+  - 工单关闭时，若订单累计完工数量 ≥ 计划数量，生产订单状态改为"完工"
+  - 工单关闭时，若订单累计完工数量 < 计划数量，生产订单状态改为"下发"
 
 ### 4. 质量管理
 
@@ -284,7 +284,7 @@ milk-can-mes/
 │   │   │   ├── ProcessReporting.jsx
 │   │   │   ├── ProductionReportByOrder.jsx
 │   │   │   ├── ManpowerRecord.jsx
-│   │   │   └── ExceptionRecord.jsx
+│   │   │   └── ProcessException.jsx
 │   │   ├── quality/                  # 质量管理模块
 │   │   │   ├── InspectionStandard.jsx
 │   │   │   ├── IncomingInspection.jsx
@@ -346,7 +346,7 @@ milk-can-mes/
 │   │   │   ├── WorkOrderController.js  # 工单控制器
 │   │   │   ├── ProcessReportController.js  # 工序报工控制器
 │   │   │   ├── ManpowerRecordController.js # 人员记录控制器
-│   │   │   └── ExceptionRecordController.js  # 异常记录控制器
+│   │   │   └── ProcessExceptionController.js  # 异常工时记录控制器
 │   │   ├── middleware/               # 中间件
 │   │   │   └── auth.js               # JWT 认证、权限校验、操作日志
 │   │   ├── models/                   # 数据模型（Sequelize Model）
@@ -373,7 +373,7 @@ milk-can-mes/
 │   │   │   ├── WorkOrder.js          # 工单模型
 │   │   │   ├── ProcessReport.js      # 工序报工模型
 │   │   │   ├── ManpowerRecord.js     # 人员投入记录模型
-│   │   │   └── ExceptionRecord.js    # 异常记录模型
+│   │   │   └── ProcessException.js   # 异常工时记录模型
 │   │   ├── routes/                   # 路由定义
 │   │   │   ├── index.js              # 路由总入口
 │   │   │   ├── auth.js               # 认证路由
@@ -999,9 +999,9 @@ crontab -e
 
 | 状态值 | 显示名称 | 说明 |
 |--------|---------|------|
-| 0 | 开立 | 初始状态，可编辑、开工、删除 |
-| 1 | 开工 | 生产中，可完工 |
-| 2 | 完工 | 最终状态，不可编辑 |
+| 0 | 未开工 | 初始状态，可编辑、开工、删除 |
+| 1 | 已开工 | 生产中，可关闭 |
+| 2 | 已关闭 | 最终状态，不可编辑 |
 
 ---
 
@@ -1289,7 +1289,7 @@ crontab -e
 - 计划开始日期：不得早于今天
 - 计划完成日期：不得早于计划开始日期
 
-**订单详情**：查看抽屉展示订单基本信息 + 关联工单列表 + 关联人员记录 + 关联异常记录
+**订单详情**：查看抽屉展示订单基本信息 + 关联工单列表 + 关联人员记录 + 关联异常工时记录
 
 #### 2.2 工单列表
 
@@ -1301,23 +1301,22 @@ crontab -e
 
 **统计卡片**：
 - 总工单数（蓝色）
-- 开立（灰色）
-- 开工（橙色）
-- 完工（绿色）
+- 未开工（灰色）
+- 已开工（橙色）
+- 已关闭（绿色）
 
 **筛选条件**：
 - 关键字（工单号/订单号/料品名）
 - 状态下拉
 - 产线下拉
 
-**状态机**：`开立 → 开工 → 关闭 → 完工`
+**状态机**：`未开工 → 已开工 → 已关闭`
 
-| 状态 | 编辑 | 开工 | 删除 | 关闭 | 完工 |
-|------|------|------|------|------|------|
-| 开立 | ✓ | ✓ | ✓ | ✗ | ✗ |
-| 开工 | ✗ | ✗ | ✗ | ✓ | ✗ |
-| 关闭 | ✗ | ✗ | ✗ | ✗ | ✓ |
-| 完工 | ✗ | ✗ | ✗ | ✗ | ✗ |
+| 状态 | 编辑 | 开工 | 删除 | 关闭 |
+|------|------|------|------|------|
+| 未开工 | ✓ | ✓ | ✓ | ✗ |
+| 已开工 | ✗ | ✗ | ✗ | ✓ |
+| 已关闭 | ✗ | ✗ | ✗ | ✗ |
 
 **工单号规则**：`WO` + `YYYYMMDD` + 3位流水号
 - 日重置：每日流水号从 001 开始
@@ -1342,9 +1341,9 @@ crontab -e
 - 删除「班组长」字段
 - 计划开始时间和计划完成时间合并为日期区间选择框
 
-**工时计算**：工单完工后自动计算工时，按 0.5 小时取整
+**工时计算**：工单关闭后自动计算工时，按 0.5 小时取整
 
-**工单详情**：查看抽屉展示基本信息 + 工序报工记录 + 人员记录 + 异常记录
+**工单详情**：查看抽屉展示基本信息 + 工序报工记录 + 人员记录 + 异常工时记录
 
 #### 2.3 生产报工（工序级）
 
@@ -1411,26 +1410,31 @@ crontab -e
 - 产量（数字，默认 0）
 - 日期（日期，默认今天）
 
-#### 2.5 异常记录
+#### 2.5 异常工时记录
 
-**页面路径**：`/production/exceptions`
+**页面路径**：`/production/process-exceptions`
 
-**列表列**：异常编号、关联订单、关联工单、异常类型、异常描述、发生时间、处理状态、操作
+**列表列**：异常 ID、关联工单、异常类型、维修设备、停机类型、开始时间、恢复时间、持续时长、确认人、操作
 
-**统计卡片**：总异常数、未处理数、处理中、已完成
-
-**筛选条件**：关键字、异常类型、处理状态
+**筛选条件**：工单 ID、异常类型、设备 ID、停机类型
 
 **表单字段**：
-- 异常编号（自动生成）
-- 关联生产订单（下拉）
-- 关联工单（下拉）
-- 异常类型（下拉）
-- 异常描述（文本域）
-- 发生时间（日期时间）
-- 处理人
-- 处理结果
-- 处理状态（未处理/处理中/已完成）
+- 关联工单（下拉，必填）
+- 异常类型（下拉，必填，数据字典 `prod_exception_type`）
+- 维修设备（下拉，仅"故障维修"类型可选）
+- 停机类型
+- 确认人 / 确认人姓名
+- 开始时间（日期时间，必填）
+- 恢复时间（日期时间，自动计算持续时长）
+- 异常描述
+- 异常图片（多张）
+
+**业务规则**：
+- 异常工时记录与生产工单关联，一个工单可有多条异常记录
+- "故障维修"类型的异常需要选择维修设备
+- 持续时长（小时）= (结束时间 - 开始时间) / 3600000，保留 2 位小数
+- 异常工时记录修改后，自动重新计算持续时长
+- 工单关闭时检查：必须存在至少一条有效持续时长的异常工时记录
 
 ---
 
@@ -1726,18 +1730,17 @@ crontab -e
 | POST | `/api/production/orders/:id/release` | 下达订单 |
 | POST | `/api/production/orders/:id/close` | 关闭订单 |
 | GET/POST/PUT/DELETE | `/api/production/work-orders` | 工单 CRUD |
-| POST | `/api/production/work-orders/:id/start` | 开工 |
-| POST | `/api/production/work-orders/:id/finish` | 完工 |
-| POST | `/api/production/work-orders/:id/close` | 关闭 |
+| POST | `/api/production/work-orders/:id/start` | 开工（未开工→已开工）|
+| POST | `/api/production/work-orders/:id/finish` | 关闭（已开工→已关闭）|
 | GET/POST | `/api/production/process-reports` | 工序报工列表/新增 |
 | GET/POST | `/api/production/manpower-records` | 人员记录列表/新增 |
-| GET/POST | `/api/production/exceptions` | 异常记录列表/新增 |
+| GET/POST/PUT/DELETE | `/api/production/process-exceptions` | 异常工时记录 CRUD |
 
 ---
 
 ## 数据库模型
 
-### 模型清单（26个）
+### 模型清单（28个）
 
 | 模型 | 表名 | 说明 |
 |------|------|------|
@@ -1760,11 +1763,15 @@ crontab -e
 | DefectImage | `bas_defect_image` | 不良图片表 |
 | NumberRule | `bas_number_rule` | 编码规则表 |
 | Sequence | `sys_sequence` | 序号流水号表 |
+| AppVersion | `sys_app_version` | App 版本表 |
+| DataDictionary | `sys_data_dictionary` | 数据字典元数据表 |
 | Order | `prod_order` | 生产订单表 |
 | WorkOrder | `prod_work_order` | 工单表 |
 | ProcessReport | `prod_process_report` | 工序报工表 |
 | ManpowerRecord | `prod_manpower_record` | 人员投入记录表 |
-| ExceptionRecord | `prod_exception_record` | 异常记录表 |
+| ProcessException | `prod_process_exception` | 异常工时记录表 |
+| ProcessMaterial | `prod_process_material` | 工序物料使用记录表 |
+| ProcessDefect | `prod_process_defect` | 工序不良记录表 |
 
 ### 主要关联关系
 
@@ -1774,8 +1781,7 @@ crontab -e
 - **订单 - 工单**：一对多（Order.hasMany(WorkOrder)）
 - **工单 - 工序报工**：一对多（WorkOrder.hasMany(ProcessReport)）
 - **工单 - 人员记录**：一对多（WorkOrder.hasMany(ManpowerRecord)）
-- **工单 - 异常记录**：一对多（WorkOrder.hasMany(ExceptionRecord)）
-- **订单 - 异常记录**：一对多（Order.hasMany(ExceptionRecord)）
+- **工单 - 异常工时记录**：一对多（WorkOrder.hasMany(ProcessException)）
 - **客户 - 料品**：一对多（Customer.hasMany(Material)）
 - **产线 - 工序**：多对多（ProductionLine.belongsToMany(Process, through: LineProcess)）
 - **产线 - 设备**：多对多（ProductionLine.belongsToMany(Device, through: LineDevice)）

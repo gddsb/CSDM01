@@ -346,7 +346,7 @@ const tableCategoryMap = {
   production_work_order: { category: '业务表', purpose: '生产工单表，记录生产工单及工时计算数据' },
   production_process_report: { category: '业务表', purpose: '工序报工主表，记录工单报工主要信息及统计数据' },
   production_manpower_record: { category: '业务表', purpose: '工单人员投入记录表，记录工单的人员配置及班次' },
-  production_exception_record: { category: '业务表', purpose: '工单异常工时记录表，记录生产异常及关联订单工单' },
+  production_process_exception: { category: '业务表', purpose: '工单异常工时记录表，记录生产异常及关联设备信息' },
   production_process_defect: { category: '业务表', purpose: '工单工序不良记录表，记录生产过程中各工序的不良明细' },
   production_process_material: { category: '业务表', purpose: '工单工序物料记录表，记录各工序投入物料及批次信息' },
 }
@@ -663,7 +663,7 @@ const columnCommentMap = {
     total_hours: '总工时',
     effective_hours: '有效工时',
     labor_hours: '人工工时',
-    status: '工单状态（0开立 1开工 2关闭 3完工）',
+    status: '工单状态（0未开工 1已开工 2已关闭）',
     created_by: '创建人',
     created_at: '创建时间',
     updated_at: '更新时间',
@@ -699,25 +699,6 @@ const columnCommentMap = {
     record_user_name: '记录人姓名',
     created_at: '创建时间',
   },
-  production_exception_record: {
-    record_id: '异常记录ID（主键）',
-    work_order_id: '工单ID',
-    work_order_no: '工单编号',
-    order_id: '生产订单ID',
-    order_no: '生产订单编号',
-    exception_type: '异常类型',
-    exception_type_name: '异常类型名称',
-    device_id: '设备ID',
-    device_name: '设备名称',
-    start_time: '开始时间',
-    end_time: '结束时间',
-    duration: '持续时间(小时)',
-    reason: '异常原因',
-    handle_result: '处理结果',
-    record_user: '记录人账号',
-    record_user_name: '记录人姓名',
-    created_at: '创建时间',
-  },
   production_process_defect: {
     defect_id: '不良记录ID（主键）',
     work_order_id: '工单ID',
@@ -749,6 +730,7 @@ const columnCommentMap = {
     end_time: '结束时间',
     duration: '持续时间(小时)',
     description: '异常描述',
+    exception_images: '异常图片(JSON 数组)',
     record_user: '记录人账号',
     record_user_name: '记录人姓名',
     created_at: '创建时间',
@@ -841,7 +823,7 @@ async function collectDatabaseSchema() {
       'production_work_order',
       'production_process_report',
       'production_manpower_record',
-      'production_exception_record',
+      'production_process_exception',
       'production_process_defect',
       'production_process_material',
     ]
@@ -1288,7 +1270,7 @@ export const listDataDictionary = async (req, res) => {
           WHEN 'production_work_order' THEN 1
           WHEN 'production_process_report' THEN 2
           WHEN 'production_manpower_record' THEN 3
-          WHEN 'production_exception_record' THEN 4
+          WHEN 'production_process_exception' THEN 4
           WHEN 'production_process_defect' THEN 5
           WHEN 'production_process_material' THEN 6
           ELSE 999

@@ -115,7 +115,7 @@ const migrations = [
     ],
   },
   {
-    table: 'production_exception_record',
+    table: 'production_process_exception',
     columns: [
       ['exception_images', 'TEXT'],
     ],

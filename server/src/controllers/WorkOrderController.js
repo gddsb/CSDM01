@@ -1,5 +1,5 @@
 import { Op } from 'sequelize'
-import { WorkOrder, Order, ProductionLine, Material, ProcessReport, ManpowerRecord, ExceptionRecord, ProcessDefect, ProcessException, ProcessMaterial } from '../models/index.js'
+import { WorkOrder, Order, ProductionLine, Material, ProcessReport, ManpowerRecord, ProcessDefect, ProcessException, ProcessMaterial } from '../models/index.js'
 import { success, fail } from '../utils/response.js'
 import { generateWorkOrderNo } from '../utils/sequence.js'
 
@@ -78,7 +78,7 @@ export const detail = async (req, res) => {
         { model: Material, as: 'material', attributes: ['material_code', 'specification', 'unit_name'] },
         { model: ProcessReport, as: 'process_reports' },
         { model: ManpowerRecord, as: 'manpower_records' },
-        { model: ExceptionRecord, as: 'exception_records' },
+        { model: ProcessException, as: 'process_exceptions' },
       ],
     })
     if (!workOrder) return fail(res, '工单不存在', 404)
@@ -184,17 +184,16 @@ export const remove = async (req, res) => {
     if (workOrder.status !== '未开工') {
       return fail(res, '只有未开工状态的工单可以删除')
     }
-    const [reportCount, manpowerCount, exceptionCount, defectCount, excTimeCount, materialCount] = await Promise.all([
+    const [reportCount, manpowerCount, excTimeCount, defectCount, materialCount] = await Promise.all([
       ProcessReport.count({ where: { work_order_id: id } }),
       ManpowerRecord.count({ where: { work_order_id: id } }),
-      ExceptionRecord.count({ where: { work_order_id: id } }),
-      ProcessDefect.count({ where: { work_order_id: id } }),
       ProcessException.count({ where: { work_order_id: id } }),
+      ProcessDefect.count({ where: { work_order_id: id } }),
       ProcessMaterial.count({ where: { work_order_id: id } }),
     ])
-    const total = reportCount + manpowerCount + exceptionCount + defectCount + excTimeCount + materialCount
+    const total = reportCount + manpowerCount + excTimeCount + defectCount + materialCount
     if (total > 0) {
-      return fail(res, `该工单存在关联记录(报工${reportCount}/人员${manpowerCount}/异常${exceptionCount}/不良${defectCount}/异常工时${excTimeCount}/物料${materialCount})，无法删除`)
+      return fail(res, `该工单存在关联记录(报工${reportCount}/人员${manpowerCount}/异常工时${excTimeCount}/不良${defectCount}/物料${materialCount})，无法删除`)
     }
     await workOrder.destroy()
     return success(res, null, '删除成功')
@@ -265,8 +264,8 @@ export const finish = async (req, res) => {
       return fail(res, '工单人员记录总人数为0，无法完工')
     }
 
-    // 完工检查3：工时记录至少有一条记录的(结束时间-开始时间)不为0
-    const exceptionRecords = await ExceptionRecord.findAll({
+    // 完工检查3：异常工时记录至少有一条记录的(结束时间-开始时间)不为0
+    const exceptionRecords = await ProcessException.findAll({
       where: { work_order_id: id }
     })
     const hasValidDuration = exceptionRecords.some(r => {
@@ -274,7 +273,7 @@ export const finish = async (req, res) => {
       return new Date(r.end_time).getTime() - new Date(r.start_time).getTime() !== 0
     })
     if (!hasValidDuration) {
-      return fail(res, '工时记录无有效工时记录（结束时间-开始时间不为0），无法完工')
+      return fail(res, '异常工时记录无有效记录（结束时间-开始时间不为0），无法完工')
     }
 
     const { total_hours, effective_hours, labor_hours, finished_qty } = req.body

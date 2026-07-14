@@ -229,12 +229,12 @@
   },
   {
     "dict_id": 20,
-    "table_name": "production_exception_record",
+    "table_name": "production_process_exception",
     "category": "业务表",
-    "purpose": "工单异常工时记录表，记录生产异常及关联订单工单",
+    "purpose": "工单异常工时记录表，记录生产异常类型、关联工单与设备",
     "field_count": 18,
     "record_count": 0,
-    "fields": "[{\"name\":\"record_id\",\"type\":\"INTEGER\",\"nullable\":true,\"primaryKey\":true,\"defaultValue\":null,\"comment\":\"异常记录ID（主键）\"},{\"name\":\"work_order_id\",\"type\":\"INTEGER\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"工单ID\"},{\"name\":\"work_order_no\",\"type\":\"VARCHAR(50)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"工单编号\"},{\"name\":\"order_id\",\"type\":\"INTEGER\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"生产订单ID\"},{\"name\":\"order_no\",\"type\":\"VARCHAR(50)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"生产订单编号\"},{\"name\":\"exception_type\",\"type\":\"VARCHAR(50)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"异常类型\"},{\"name\":\"exception_type_name\",\"type\":\"VARCHAR(100)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"异常类型名称\"},{\"name\":\"device_id\",\"type\":\"INTEGER\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"设备ID\"},{\"name\":\"device_name\",\"type\":\"VARCHAR(100)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"设备名称\"},{\"name\":\"start_time\",\"type\":\"DATETIME\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"开始时间\"},{\"name\":\"end_time\",\"type\":\"DATETIME\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"结束时间\"},{\"name\":\"duration\",\"type\":\"DECIMAL(10,2)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":\"0\",\"comment\":\"持续时间(小时)\"},{\"name\":\"reason\",\"type\":\"VARCHAR(500)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"异常原因\"},{\"name\":\"handle_result\",\"type\":\"VARCHAR(500)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"处理结果\"},{\"name\":\"record_user\",\"type\":\"VARCHAR(50)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"记录人账号\"},{\"name\":\"record_user_name\",\"type\":\"VARCHAR(50)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"记录人姓名\"},{\"name\":\"created_at\",\"type\":\"DATETIME\",\"nullable\":false,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"创建时间\"},{\"name\":\"line_name\",\"type\":\"VARCHAR(100)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"\"}]",
+    "fields": "[{\"name\":\"exception_id\",\"type\":\"INTEGER\",\"nullable\":true,\"primaryKey\":true,\"defaultValue\":null,\"comment\":\"异常ID（主键）\"},{\"name\":\"work_order_id\",\"type\":\"INTEGER\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"工单ID\"},{\"name\":\"work_order_no\",\"type\":\"VARCHAR(50)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"工单编号\"},{\"name\":\"exception_type\",\"type\":\"VARCHAR(50)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"异常类型（换型换线/停机待料/故障维修/其它停机）\"},{\"name\":\"device_id\",\"type\":\"INTEGER\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"设备ID\"},{\"name\":\"device_code\",\"type\":\"VARCHAR(50)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"设备编码\"},{\"name\":\"device_name\",\"type\":\"VARCHAR(100)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"设备名称\"},{\"name\":\"stop_type\",\"type\":\"VARCHAR(100)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"停机类型\"},{\"name\":\"confirm_user\",\"type\":\"VARCHAR(50)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"确认人账号\"},{\"name\":\"confirm_user_name\",\"type\":\"VARCHAR(50)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"确认人姓名\"},{\"name\":\"start_time\",\"type\":\"DATETIME\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"开始时间\"},{\"name\":\"end_time\",\"type\":\"DATETIME\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"结束时间\"},{\"name\":\"duration\",\"type\":\"DECIMAL(10,2)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":\"0\",\"comment\":\"持续时间(小时)\"},{\"name\":\"description\",\"type\":\"VARCHAR(500)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"异常描述\"},{\"name\":\"exception_images\",\"type\":\"TEXT\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"异常图片(JSON 数组)\"},{\"name\":\"record_user\",\"type\":\"VARCHAR(50)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"记录人账号\"},{\"name\":\"record_user_name\",\"type\":\"VARCHAR(50)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"记录人姓名\"},{\"name\":\"created_at\",\"type\":\"DATETIME\",\"nullable\":false,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"创建时间\"}]",
     "last_update": "2026-07-09 19:48:08.997 +00:00",
     "created_at": "2026-07-09 16:37:41.128 +00:00",
     "updated_at": "2026-07-09 19:48:09.118 +00:00"
@@ -301,18 +301,6 @@
   },
   {
     "dict_id": 26,
-    "table_name": "production_process_exception",
-    "category": "其他",
-    "purpose": "",
-    "field_count": 17,
-    "record_count": 0,
-    "fields": "[{\"name\":\"exception_id\",\"type\":\"INTEGER\",\"nullable\":true,\"primaryKey\":true,\"defaultValue\":null,\"comment\":\"异常ID（主键）\"},{\"name\":\"work_order_id\",\"type\":\"INTEGER\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"工单ID\"},{\"name\":\"work_order_no\",\"type\":\"VARCHAR(50)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"工单编号\"},{\"name\":\"exception_type\",\"type\":\"VARCHAR(50)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"异常类型\"},{\"name\":\"device_id\",\"type\":\"INTEGER\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"设备ID\"},{\"name\":\"device_code\",\"type\":\"VARCHAR(50)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"设备编码\"},{\"name\":\"device_name\",\"type\":\"VARCHAR(100)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"设备名称\"},{\"name\":\"stop_type\",\"type\":\"VARCHAR(100)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"停机类型\"},{\"name\":\"confirm_user\",\"type\":\"VARCHAR(50)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"确认人账号\"},{\"name\":\"confirm_user_name\",\"type\":\"VARCHAR(50)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"确认人姓名\"},{\"name\":\"start_time\",\"type\":\"DATETIME\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"开始时间\"},{\"name\":\"end_time\",\"type\":\"DATETIME\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"结束时间\"},{\"name\":\"duration\",\"type\":\"DECIMAL(10,2)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":\"0\",\"comment\":\"持续时间(小时)\"},{\"name\":\"description\",\"type\":\"VARCHAR(500)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"异常描述\"},{\"name\":\"record_user\",\"type\":\"VARCHAR(50)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"记录人账号\"},{\"name\":\"record_user_name\",\"type\":\"VARCHAR(50)\",\"nullable\":true,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"记录人姓名\"},{\"name\":\"created_at\",\"type\":\"DATETIME\",\"nullable\":false,\"primaryKey\":false,\"defaultValue\":null,\"comment\":\"创建时间\"}]",
-    "last_update": "2026-07-09 19:48:08.997 +00:00",
-    "created_at": "2026-07-09 16:37:41.150 +00:00",
-    "updated_at": "2026-07-09 19:48:09.129 +00:00"
-  },
-  {
-    "dict_id": 27,
     "table_name": "production_process_material",
     "category": "业务表",
     "purpose": "工单工序物料记录表，记录各工序投入物料及批次信息",
@@ -324,7 +312,7 @@
     "updated_at": "2026-07-09 19:48:09.125 +00:00"
   },
   {
-    "dict_id": 28,
+    "dict_id": 27,
     "table_name": "sys_app_version",
     "category": "系统表",
     "purpose": "应用版本管理表，管理APP/PAD等客户端版本发布",
@@ -336,7 +324,7 @@
     "updated_at": "2026-07-09 19:48:08.998 +00:00"
   },
   {
-    "dict_id": 29,
+    "dict_id": 28,
     "table_name": "sys_data_dictionary",
     "category": "系统表",
     "purpose": "数据字典表，存储数据库表结构元数据快照",

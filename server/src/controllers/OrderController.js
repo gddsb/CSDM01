@@ -1,5 +1,5 @@
 import { Op } from 'sequelize'
-import { Order, WorkOrder, ManpowerRecord, ExceptionRecord, Material } from '../models/index.js'
+import { Order, WorkOrder, ManpowerRecord, ProcessException, Material } from '../models/index.js'
 import { success, fail } from '../utils/response.js'
 import { statusToNumber, statusToString, convertStatusInList, convertStatusInItem } from '../utils/statusMap.js'
 import { generateOrderNo } from '../utils/sequence.js'
@@ -52,7 +52,7 @@ export const list = async (req, res) => {
   }
 }
 
-// 订单详情（含关联工单、人员、异常记录）
+// 订单详情（含关联工单、人员、异常工时记录）
 export const detail = async (req, res) => {
   try {
     const { id } = req.params
@@ -64,10 +64,9 @@ export const detail = async (req, res) => {
           as: 'work_orders',
           include: [
             { model: ManpowerRecord, as: 'manpower_records' },
-            { model: ExceptionRecord, as: 'exception_records' },
+            { model: ProcessException, as: 'process_exceptions' },
           ],
         },
-        { model: ExceptionRecord, as: 'exception_records' },
       ],
     })
     if (!order) return fail(res, '订单不存在', 404)

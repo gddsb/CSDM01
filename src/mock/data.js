@@ -130,9 +130,9 @@ export const manpowerRecords = [
 
 // 异常工时记录
 export const exceptionRecords = [
-  { record_id: 'er1', work_order_id: 'w1', work_order_no: 'WO20260630001', order_id: 'o1', order_no: 'MO-16260630001', exception_type: 'E04', exception_type_name: '设备故障', device_id: 'd1', device_name: '自动焊接机1号', start_time: '2026-06-30 09:00', end_time: '2026-06-30 09:30', duration: 30, reason: '焊接头过热，停机冷却', record_user: 'u7', record_user_name: '工序操作人' },
-  { record_id: 'er2', work_order_id: 'w2', work_order_no: 'WO20260629001', order_id: 'o3', order_no: 'MO-16260629001', exception_type: 'E01', exception_type_name: '换型调机', device_id: null, device_name: '-', start_time: '2026-06-29 08:00', end_time: '2026-06-29 09:30', duration: 90, reason: '从900g切换至800g规格换型', record_user: 'u6', record_user_name: '生产管理' },
-  { record_id: 'er3', work_order_id: 'w2', work_order_no: 'WO20260629001', order_id: 'o3', order_no: 'MO-16260629001', exception_type: 'E03', exception_type_name: '停机待料', device_id: null, device_name: '-', start_time: '2026-06-29 14:00', end_time: '2026-06-29 15:00', duration: 60, reason: '等待马口铁基材到货', record_user: 'u6', record_user_name: '生产管理' },
+  { exception_id: 'pe1', work_order_id: 'w1', work_order_no: 'WO20260630001', exception_type: '故障维修', device_id: 'd1', device_code: 'DEV001', device_name: '自动焊接机1号', stop_type: '设备故障', confirm_user: 'u7', confirm_user_name: '工序操作人', start_time: '2026-06-30 09:00', end_time: '2026-06-30 09:30', duration: 0.5, description: '焊接头过热，停机冷却', exception_images: '[]', record_user: 'u7', record_user_name: '工序操作人' },
+  { exception_id: 'pe2', work_order_id: 'w2', work_order_no: 'WO20260629001', exception_type: '换型换线', device_id: null, device_code: null, device_name: null, stop_type: '换型换线', confirm_user: 'u6', confirm_user_name: '生产管理', start_time: '2026-06-29 08:00', end_time: '2026-06-29 09:30', duration: 1.5, description: '从900g切换至800g规格换型', exception_images: '[]', record_user: 'u6', record_user_name: '生产管理' },
+  { exception_id: 'pe3', work_order_id: 'w2', work_order_no: 'WO20260629001', exception_type: '停机待料', device_id: null, device_code: null, device_name: null, stop_type: '停机待料', confirm_user: 'u6', confirm_user_name: '生产管理', start_time: '2026-06-29 14:00', end_time: '2026-06-29 15:00', duration: 1, description: '等待马口铁基材到货', exception_images: '[]', record_user: 'u6', record_user_name: '生产管理' },
 ]
 
 // 检验标准
@@ -208,7 +208,7 @@ export const dbTables = [
   { table_name: 'production_work_order', field_count: 19, record_count: 4, category: '业务表', purpose: '工单表，记录生产工单及工时计算数据', last_update: '2026-07-05 09:00:00' },
   { table_name: 'production_process_report', field_count: 16, record_count: 4, category: '业务表', purpose: '工序报工记录表，记录每道工序的产量和不良数据', last_update: '2026-07-05 09:00:00' },
   { table_name: 'production_manpower_record', field_count: 11, record_count: 3, category: '业务表', purpose: '人员投入记录表，记录工单的人员配置及班次', last_update: '2026-07-05 09:00:00' },
-  { table_name: 'production_exception_record', field_count: 17, record_count: 3, category: '业务表', purpose: '异常工时记录表，记录生产异常及关联订单工单', last_update: '2026-07-05 09:00:00' },
+  { table_name: 'production_process_exception', field_count: 18, record_count: 3, category: '业务表', purpose: '工单异常工时记录表，记录生产异常类型、关联工单与设备', last_update: '2026-07-05 09:00:00' },
 ]
 
 // 操作日志

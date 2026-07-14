@@ -20,9 +20,8 @@ import {
 } from '../controllers/WorkOrderController.js'
 import { list as reportList, create as reportCreate, update as reportUpdate, start as reportStart, finish as reportFinish } from '../controllers/ProcessReportController.js'
 import { list as manpowerList, detail as manpowerDetail, create as manpowerCreate, update as manpowerUpdate, remove as manpowerRemove, summaryByWorkOrder as manpowerSummary } from '../controllers/ManpowerRecordController.js'
-import { list as exceptionList, create as exceptionCreate, update as exceptionUpdate } from '../controllers/ExceptionRecordController.js'
 import { list as defectList, create as defectCreate, remove as defectRemove, update as defectUpdate, batchSave as defectBatchSave, scrapList, scrapCreate, scrapUpdate } from '../controllers/ProcessDefectController.js'
-import { list as exceptionTimeList, create as exceptionTimeCreate, update as exceptionTimeUpdate, remove as exceptionTimeRemove } from '../controllers/ProcessExceptionController.js'
+import { list as exceptionList, create as exceptionCreate, update as exceptionUpdate, remove as exceptionRemove } from '../controllers/ProcessExceptionController.js'
 import { list as materialList, create as materialCreate, update as materialUpdate, remove as materialRemove } from '../controllers/ProcessMaterialController.js'
 import { uploadImages as uploadReportImages } from '../controllers/ReportImageController.js'
 import { authRequired } from '../middleware/auth.js'
@@ -76,11 +75,6 @@ router.post('/manpower-records', manpowerCreate)
 router.put('/manpower-records/:id', manpowerUpdate)
 router.delete('/manpower-records/:id', manpowerRemove)
 
-// 异常记录
-router.get('/exceptions', exceptionList)
-router.post('/exceptions', exceptionCreate)
-router.put('/exceptions/:id', exceptionUpdate)
-
 // 工序不良记录
 router.get('/process-defects', defectList)
 router.post('/process-defects', defectCreate)
@@ -94,10 +88,10 @@ router.post('/scrap-defects', scrapCreate)
 router.put('/scrap-defects/:id', scrapUpdate)
 
 // 异常工时记录
-router.get('/process-exceptions', exceptionTimeList)
-router.post('/process-exceptions', exceptionTimeCreate)
-router.put('/process-exceptions/:id', exceptionTimeUpdate)
-router.delete('/process-exceptions/:id', exceptionTimeRemove)
+router.get('/process-exceptions', exceptionList)
+router.post('/process-exceptions', exceptionCreate)
+router.put('/process-exceptions/:id', exceptionUpdate)
+router.delete('/process-exceptions/:id', exceptionRemove)
 
 // 制程物料记录
 router.get('/process-materials', materialList)

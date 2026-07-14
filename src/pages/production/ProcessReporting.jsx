@@ -239,13 +239,13 @@ export default function ProcessReporting() {
       const [defectRes, scrapRes, exceptionRes, manpowerRes, materialRes] = await Promise.all([
         api.get('/production/process-defects', { params: { work_order_id: woId, page: 1, pageSize: 1000 } }),
         api.get('/production/scrap-defects', { params: { work_order_id: woId, page: 1, pageSize: 1000 } }),
-        api.get('/production/exceptions', { params: { work_order_id: woId, page: 1, pageSize: 1000 } }),
+        api.get('/production/process-exceptions', { params: { work_order_id: woId, page: 1, pageSize: 1000 } }),
         api.get('/production/manpower-records', { params: { work_order_id: woId, page: 1, pageSize: 1000 } }),
         api.get('/production/process-materials', { params: { work_order_id: woId, page: 1, pageSize: 1000 } }),
       ])
       setProdDefectList((defectRes.data || []).map(d => ({ ...d, id: d.defect_id, defect_images: parseImages(d.defect_images) })))
       setScrapDefectList((scrapRes.data || []).map(d => ({ ...d, id: d.scrap_id, defect_images: parseImages(d.defect_images) })))
-      setExceptionList((exceptionRes.data || []).map(e => ({ ...e, id: e.record_id, exception_images: parseImages(e.exception_images) })))
+      setExceptionList((exceptionRes.data || []).map(e => ({ ...e, id: e.exception_id, exception_images: parseImages(e.exception_images) })))
       setManpowerList(manpowerRes.data || [])
       setMaterialList((materialRes.data || []).map(m => ({ ...m, id: m.id, label_images: parseImages(m.label_images) })))
 
@@ -494,11 +494,10 @@ export default function ProcessReporting() {
     const newItem = {
       id: Date.now(),
       work_order_id: selectedWO.work_order_id,
-      exception_category: '',
+      exception_type: '',
       start_time: dayjs(),
       end_time: null,
       description: '',
-      handler: '',
       device_id: null,
       exception_images: [],
     }
@@ -517,7 +516,7 @@ export default function ProcessReporting() {
   }
 
   const saveExceptions = async () => {
-    const validItems = exceptionList.filter(e => e.exception_category && e.start_time)
+    const validItems = exceptionList.filter(e => e.exception_type && e.start_time)
     if (validItems.length === 0) {
       message.warning('请填写有效的异常记录')
       return
@@ -525,25 +524,22 @@ export default function ProcessReporting() {
     try {
       setSaving(true)
       for (const item of validItems) {
-        if (item.record_id) {
-          await api.put(`/production/exceptions/${item.record_id}`, {
-            exception_category: item.exception_category,
+        if (item.exception_id) {
+          await api.put(`/production/process-exceptions/${item.exception_id}`, {
+            exception_type: item.exception_type,
             start_time: item.start_time.format ? item.start_time.format('YYYY-MM-DD HH:mm:ss') : item.start_time,
             end_time: item.end_time?.format ? item.end_time.format('YYYY-MM-DD HH:mm:ss') : item.end_time,
             description: item.description,
-            handler: item.handler,
             device_id: item.device_id,
             exception_images: item.exception_images,
           })
         } else {
-          await api.post('/production/exceptions', {
+          await api.post('/production/process-exceptions', {
             work_order_id: item.work_order_id,
-            exception_type: item.exception_category,
-            exception_type_name: item.exception_category,
+            exception_type: item.exception_type,
             start_time: item.start_time.format ? item.start_time.format('YYYY-MM-DD HH:mm:ss') : item.start_time,
             end_time: item.end_time?.format ? item.end_time.format('YYYY-MM-DD HH:mm:ss') : item.end_time,
-            reason: item.description,
-            handle_result: item.handler,
+            description: item.description,
             device_id: item.device_id,
             exception_images: item.exception_images,
           })
@@ -853,12 +849,12 @@ export default function ProcessReporting() {
 
   const exceptionColumns = [
     {
-      title: '异常分类', key: 'exception_category',
+      title: '异常类型', key: 'exception_type',
       render: (_, r) => (
         <Select
-          value={r.exception_category}
-          onChange={(v) => updateException(r.id, 'exception_category', v)}
-          placeholder="请选择异常分类"
+          value={r.exception_type}
+          onChange={(v) => updateException(r.id, 'exception_type', v)}
+          placeholder="请选择异常类型"
           options={exceptionCategories}
         />
       ),
@@ -888,22 +884,12 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '状态描述', key: 'description',
+      title: '异常描述', key: 'description',
       render: (_, r) => (
         <Input
           value={r.description}
           onChange={(e) => updateException(r.id, 'description', e.target.value)}
-          placeholder="请输入状态描述"
-        />
-      ),
-    },
-    {
-      title: '处置人', key: 'handler',
-      render: (_, r) => (
-        <Input
-          value={r.handler}
-          onChange={(e) => updateException(r.id, 'handler', e.target.value)}
-          placeholder="请输入处置人"
+          placeholder="请输入异常描述"
         />
       ),
     },
@@ -915,7 +901,7 @@ export default function ProcessReporting() {
           onChange={(v) => updateException(r.id, 'device_id', v)}
           placeholder="请选择设备"
           options={deviceOptions}
-          disabled={r.exception_category !== '故障维修'}
+          disabled={r.exception_type !== '故障维修'}
         />
       ),
     },

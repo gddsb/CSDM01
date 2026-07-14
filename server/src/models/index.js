@@ -14,7 +14,6 @@ import Order from './Order.js'
 import WorkOrder from './WorkOrder.js'
 import ProcessReport from './ProcessReport.js'
 import ManpowerRecord from './ManpowerRecord.js'
-import ExceptionRecord from './ExceptionRecord.js'
 import ProcessDefect from './ProcessDefect.js'
 import ProcessException from './ProcessException.js'
 import ProcessMaterial from './ProcessMaterial.js'
@@ -52,10 +51,6 @@ ProcessReport.belongsTo(WorkOrder, { foreignKey: 'work_order_id', as: 'work_orde
 WorkOrder.hasMany(ManpowerRecord, { foreignKey: 'work_order_id', as: 'manpower_records' })
 ManpowerRecord.belongsTo(WorkOrder, { foreignKey: 'work_order_id', as: 'work_order' })
 
-// 工单 - 异常记录
-WorkOrder.hasMany(ExceptionRecord, { foreignKey: 'work_order_id', as: 'exception_records' })
-ExceptionRecord.belongsTo(WorkOrder, { foreignKey: 'work_order_id', as: 'work_order' })
-
 // 工单 - 工序不良记录
 WorkOrder.hasMany(ProcessDefect, { foreignKey: 'work_order_id', as: 'process_defects' })
 ProcessDefect.belongsTo(WorkOrder, { foreignKey: 'work_order_id', as: 'work_order' })
@@ -67,10 +62,6 @@ ProcessException.belongsTo(WorkOrder, { foreignKey: 'work_order_id', as: 'work_o
 // 工单 - 制程物料记录
 WorkOrder.hasMany(ProcessMaterial, { foreignKey: 'work_order_id', as: 'process_materials' })
 ProcessMaterial.belongsTo(WorkOrder, { foreignKey: 'work_order_id', as: 'work_order' })
-
-// 订单 - 异常记录
-Order.hasMany(ExceptionRecord, { foreignKey: 'order_id', as: 'exception_records' })
-ExceptionRecord.belongsTo(Order, { foreignKey: 'order_id', as: 'order' })
 
 // 角色 - 权限 (多对多)
 Role.belongsToMany(Permission, { through: RolePermission, foreignKey: 'role_id', otherKey: 'perm_id', as: 'permissions' })
@@ -123,7 +114,6 @@ const db = {
   WorkOrder,
   ProcessReport,
   ManpowerRecord,
-  ExceptionRecord,
   ProcessDefect,
   ProcessException,
   ProcessMaterial,
@@ -156,7 +146,6 @@ export {
   WorkOrder,
   ProcessReport,
   ManpowerRecord,
-  ExceptionRecord,
   ProcessDefect,
   ProcessException,
   ProcessMaterial,

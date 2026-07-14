@@ -5,14 +5,14 @@ import bcrypt from 'bcryptjs'
 
 const { User, Role, Permission, OperationLog,
   Material, ProductionLine, Process, Device, DefectType,
-  Order, WorkOrder, ProcessReport, ManpowerRecord, ExceptionRecord } = db
+  Order, WorkOrder, ProcessReport, ManpowerRecord, ProcessException } = db
 
 async function cleanAll() {
   console.log('🗑️  清除所有示例数据...')
 
   // 删除生产数据
-  await ExceptionRecord.destroy({ where: {}, force: true })
-  console.log('✅ 异常记录已清除')
+  await ProcessException.destroy({ where: {}, force: true })
+  console.log('✅ 异常工时记录已清除')
   await ManpowerRecord.destroy({ where: {}, force: true })
   console.log('✅ 人员记录已清除')
   await ProcessReport.destroy({ where: {}, force: true })
