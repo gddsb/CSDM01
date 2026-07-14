@@ -356,7 +356,7 @@
     "perm_code": "quality:complaint",
     "type": "menu",
     "icon": "BellOutlined",
-    "path": "/quality/complaints",
+    "path": "",
     "component": null,
     "sort_order": 7,
     "visible": 1,
