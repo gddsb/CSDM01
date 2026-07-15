@@ -372,7 +372,7 @@ export default function ProcessReporting() {
         return true
       })
       .map(d => ({
-        label: `${d.defect_code} ${d.defect_type} ${d.defect_name}`,
+        label: d.defect_code,
         value: d.defect_id,
         defect_code: d.defect_code,
         defect_type: d.defect_type,
@@ -576,10 +576,17 @@ export default function ProcessReporting() {
           options={defectTypeOptions}
           style={{ width: '100%' }}
           showSearch
+          optionRender={(option) => (
+            <span>
+              <span style={{ fontWeight: 500 }}>{option.defect_code}</span>
+              <span style={{ color: '#999', marginLeft: 8 }}>{option.defect_name}</span>
+            </span>
+          )}
           filterOption={(input, option) => {
-            const label = (option?.label || '').toLowerCase()
+            const code = (option?.defect_code || '').toLowerCase()
+            const name = (option?.defect_name || '').toLowerCase()
             const inputLower = input.toLowerCase()
-            return label.includes(inputLower)
+            return code.includes(inputLower) || name.includes(inputLower)
           }}
           size="small"
         />
