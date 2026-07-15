@@ -556,7 +556,7 @@ export default function ProcessReporting() {
 
   const prodDefectColumns = [
     {
-      title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', minWidth: 150,
+      title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 120,
       render: (_, record) => isEditable ? (
         <Select
           placeholder="请选择不良编码"
@@ -770,7 +770,7 @@ export default function ProcessReporting() {
 
   const scrapDefectColumns = [
     {
-      title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', minWidth: 150,
+      title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 120,
       render: (_, record) => isEditable ? (
         <Select
           placeholder="请选择不良编码"
@@ -1004,7 +1004,7 @@ export default function ProcessReporting() {
       ) : val || '-',
     },
     {
-      title: '料号', dataIndex: 'material_code', key: 'material_code', minWidth: 150,
+      title: '料号', dataIndex: 'material_code', key: 'material_code', width: 120,
       render: (_, record) => isEditable ? (
         <Select
           placeholder="请选择料号"
