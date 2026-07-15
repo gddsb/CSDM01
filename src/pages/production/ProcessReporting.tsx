@@ -577,6 +577,10 @@ export default function ProcessReporting() {
           style={{ width: '100%' }}
           showSearch
           popupMatchSelectWidth={false}
+          optionLabelRender={(option) => {
+            const opt = option as any
+            return opt.defect_code
+          }}
           filterOption={(input, option) => {
             const code = (option?.defect_code || '').toLowerCase()
             const name = (option?.defect_name || '').toLowerCase()
@@ -790,6 +794,10 @@ export default function ProcessReporting() {
           style={{ width: '100%' }}
           showSearch
           popupMatchSelectWidth={false}
+          optionLabelRender={(option) => {
+            const opt = option as any
+            return opt.defect_code
+          }}
           filterOption={(input, option) => {
             const code = (option?.defect_code || '').toLowerCase()
             const name = (option?.defect_name || '').toLowerCase()
@@ -1012,6 +1020,10 @@ export default function ProcessReporting() {
           style={{ width: '100%' }}
           showSearch
           popupMatchSelectWidth={false}
+          optionLabelRender={(option) => {
+            const opt = option as any
+            return opt.material_code
+          }}
           filterOption={(input, option) => {
             const code = (option?.material_code || '').toLowerCase()
             const name = (option?.material_name || '').toLowerCase()
