@@ -365,7 +365,7 @@ export default function ProcessReporting() {
   const defectTypeOptions = useMemo(() => {
     const seen = new Set()
     return defectTypes
-      .filter(d => d.defect_type === '制程不良' && d.status === '启用')
+      .filter(d => d.category_name === '制程检验类型' && d.status === '启用')
       .filter(d => {
         if (seen.has(d.defect_id)) return false
         seen.add(d.defect_id)
@@ -378,24 +378,27 @@ export default function ProcessReporting() {
         defect_type: d.defect_type,
         defect_name: d.defect_name,
         defect_unit: d.defect_unit || '',
+        available_units: d.available_units || '',
       }))
   }, [defectTypes])
 
   const scrapTypeOptions = useMemo(() => {
     const seen = new Set()
     return defectTypes
-      .filter(d => d.defect_type === '检验报废' && d.status === '启用')
+      .filter(d => d.category_name === '制程检验类型' && d.defect_type === '检验报废' && d.status === '启用')
       .filter(d => {
         if (seen.has(d.defect_id)) return false
         seen.add(d.defect_id)
         return true
       })
       .map(d => ({
-        label: `${d.defect_code} ${d.defect_name}`,
+        label: `${d.defect_code} ${d.defect_type} ${d.defect_name}`,
         value: d.defect_id,
         defect_code: d.defect_code,
+        defect_type: d.defect_type,
         defect_name: d.defect_name,
         defect_unit: d.defect_unit || '',
+        available_units: d.available_units || '',
       }))
   }, [defectTypes])
 
@@ -405,7 +408,7 @@ export default function ProcessReporting() {
 
   const materialOptions = useMemo(() => {
     return materials.map(m => ({
-      label: `${m.material_code} ${m.material_name}`,
+      label: `${m.material_code} ${m.material_name} ${m.specification || ''}`,
       value: m.material_id,
       material_code: m.material_code,
       material_name: m.material_name,
@@ -413,14 +416,7 @@ export default function ProcessReporting() {
     }))
   }, [materials])
 
-  const debouncedSave = (key, saveFn) => {
-    if (savingRef.current[key]) {
-      clearTimeout(savingRef.current[key])
-    }
-    savingRef.current[key] = setTimeout(() => {
-      saveFn()
-    }, 800)
-  }
+  
 
   const saveProdDefectItem = async (item) => {
     if (!selectedReport || !selectedProcessId) return
@@ -464,25 +460,12 @@ export default function ProcessReporting() {
         const defect = defectTypeOptions.find(d => d.value === value)
         if (defect) {
           updated.defect_name = defect.defect_name
-          updated.unit = defect.defect_unit
+          updated.defect_code = defect.defect_code
+          updated.defect_type = defect.defect_type
         }
       }
       return updated
     }))
-    const item = prodDefectList.find(d => String(d.id) === String(recordId))
-    if (!item) return
-    const updatedItem = { ...item, [field]: value }
-    if (field === 'defect_type_id' && value) {
-      const defect = defectTypeOptions.find(d => d.value === value)
-      if (defect) {
-        updatedItem.defect_name = defect.defect_name
-        updatedItem.unit = defect.defect_unit
-      }
-    }
-    const hasContent = updatedItem.defect_type_id && Number(updatedItem.quantity) > 0
-    if (hasContent) {
-      debouncedSave(`prod-defect-${recordId}`, () => saveProdDefectItem(updatedItem))
-    }
   }
 
   const handleDeleteProdDefect = async (item) => {
@@ -520,25 +503,41 @@ export default function ProcessReporting() {
     return [...prodDefectList, emptyRow]
   }, [prodDefectList, isEditable, selectedReport, selectedWO, selectedProcessId])
 
+  const getUnitOptions = (defectTypeId) => {
+    const defect = defectTypeOptions.find(d => d.value === defectTypeId)
+    if (!defect || !defect.available_units) return []
+    return defect.available_units.split(',').map(u => ({ label: u.trim(), value: u.trim() }))
+  }
+
   const prodDefectColumns = [
-    { title: '不良类型', dataIndex: 'defect_category', key: 'defect_category', width: 100 },
     {
-      title: '不良项目', dataIndex: 'defect_name', key: 'defect_name', minWidth: 200,
+      title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', minWidth: 250,
       render: (_, record) => isEditable ? (
         <Select
-          placeholder="请选择不良项目"
+          placeholder="请选择不良编码"
           value={record.defect_type_id || undefined}
-          onChange={(val) => handleProdDefectChange(record.id, 'defect_type_id', val)}
+          onChange={(val) => {
+            if (val) {
+              const isDuplicate = prodDefectList.some(d => 
+                d.id !== record.id && d.defect_type_id === val
+              )
+              if (isDuplicate) {
+                message.warning('同一不良项目只允许选择一次')
+                return
+              }
+            }
+            handleProdDefectChange(record.id, 'defect_type_id', val)
+          }}
           options={defectTypeOptions}
           style={{ width: '100%' }}
           showSearch
           optionFilterProp="label"
           size="small"
         />
-      ) : record.defect_name || '-',
+      ) : (record.defect_code || '') + (record.defect_type ? ` ${record.defect_type}` : '') + (record.defect_name ? ` ${record.defect_name}` : ''),
     },
     {
-      title: '不良数量', dataIndex: 'quantity', key: 'quantity', width: 120,
+      title: '数量', dataIndex: 'quantity', key: 'quantity', width: 100,
       render: (val, record) => isEditable ? (
         <InputNumber
           min={0}
@@ -549,7 +548,20 @@ export default function ProcessReporting() {
         />
       ) : val,
     },
-    { title: '单位', dataIndex: 'unit', key: 'unit', width: 80 },
+    {
+      title: '单位', dataIndex: 'unit', key: 'unit', width: 100,
+      render: (_, record) => isEditable ? (
+        <Select
+          placeholder="请选择单位"
+          value={record.unit || undefined}
+          onChange={(val) => handleProdDefectChange(record.id, 'unit', val)}
+          options={getUnitOptions(record.defect_type_id)}
+          style={{ width: '100%' }}
+          size="small"
+          disabled={!record.defect_type_id}
+        />
+      ) : record.unit || '-',
+    },
     {
       title: '不良图片', dataIndex: 'defect_images', key: 'defect_images', width: 120,
       render: (val, record) => (
@@ -606,25 +618,11 @@ export default function ProcessReporting() {
         const defect = scrapTypeOptions.find(d => d.value === value)
         if (defect) {
           updated.defect_name = defect.defect_name
-          updated.unit = defect.defect_unit
+          updated.defect_code = defect.defect_code
         }
       }
       return updated
     }))
-    const item = scrapDefectList.find(d => String(d.id) === String(recordId))
-    if (!item) return
-    const updatedItem = { ...item, [field]: value }
-    if (field === 'defect_type_id' && value) {
-      const defect = scrapTypeOptions.find(d => d.value === value)
-      if (defect) {
-        updatedItem.defect_name = defect.defect_name
-        updatedItem.unit = defect.defect_unit
-      }
-    }
-    const hasContent = updatedItem.defect_type_id && Number(updatedItem.quantity) > 0
-    if (hasContent) {
-      debouncedSave(`scrap-defect-${recordId}`, () => saveScrapDefectItem(updatedItem))
-    }
   }
 
   const handleDeleteScrapDefect = async (item) => {
@@ -659,24 +657,41 @@ export default function ProcessReporting() {
     return [...scrapDefectList, emptyRow]
   }, [scrapDefectList, isEditable, selectedReport, selectedWO])
 
+  const getScrapUnitOptions = (defectTypeId) => {
+    const defect = scrapTypeOptions.find(d => d.value === defectTypeId)
+    if (!defect || !defect.available_units) return []
+    return defect.available_units.split(',').map(u => ({ label: u.trim(), value: u.trim() }))
+  }
+
   const scrapDefectColumns = [
     {
-      title: '报废项目', dataIndex: 'defect_name', key: 'defect_name', minWidth: 200,
+      title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', minWidth: 250,
       render: (_, record) => isEditable ? (
         <Select
-          placeholder="请选择报废项目"
+          placeholder="请选择不良编码"
           value={record.defect_type_id || undefined}
-          onChange={(val) => handleScrapDefectChange(record.id, 'defect_type_id', val)}
+          onChange={(val) => {
+            if (val) {
+              const isDuplicate = scrapDefectList.some(d => 
+                d.id !== record.id && d.defect_type_id === val
+              )
+              if (isDuplicate) {
+                message.warning('同一不良项目只允许选择一次')
+                return
+              }
+            }
+            handleScrapDefectChange(record.id, 'defect_type_id', val)
+          }}
           options={scrapTypeOptions}
           style={{ width: '100%' }}
           showSearch
           optionFilterProp="label"
           size="small"
         />
-      ) : record.defect_name || '-',
+      ) : (record.defect_code || '') + (record.defect_type ? ` ${record.defect_type}` : '') + (record.defect_name ? ` ${record.defect_name}` : ''),
     },
     {
-      title: '报废数量', dataIndex: 'quantity', key: 'quantity', width: 120,
+      title: '数量', dataIndex: 'quantity', key: 'quantity', width: 100,
       render: (val, record) => isEditable ? (
         <InputNumber
           min={0}
@@ -687,12 +702,25 @@ export default function ProcessReporting() {
         />
       ) : val,
     },
-    { title: '单位', dataIndex: 'unit', key: 'unit', width: 80 },
     {
-      title: '图片', dataIndex: 'defect_images', key: 'defect_images', width: 120,
+      title: '单位', dataIndex: 'unit', key: 'unit', width: 100,
+      render: (_, record) => isEditable ? (
+        <Select
+          placeholder="请选择单位"
+          value={record.unit || undefined}
+          onChange={(val) => handleScrapDefectChange(record.id, 'unit', val)}
+          options={getScrapUnitOptions(record.defect_type_id)}
+          style={{ width: '100%' }}
+          size="small"
+          disabled={!record.defect_type_id}
+        />
+      ) : record.unit || '-',
+    },
+    {
+      title: '不良图片', dataIndex: 'defect_images', key: 'defect_images', width: 120,
       render: (val, record) => (
         <Button type="link" size="small" icon={<PictureOutlined />}
-          onClick={() => openImageDrawer('报废图片', val || [], { listType: 'scrapDefect', recordId: record.id, field: 'defect_images' })}>
+          onClick={() => openImageDrawer('不良图片', val || [], { listType: 'scrapDefect', recordId: record.id, field: 'defect_images' })}>
           {(val || []).length} 张
         </Button>
       ),
@@ -746,15 +774,17 @@ export default function ProcessReporting() {
     if (!isEditable) return
     setMaterialList(prev => prev.map(item => {
       if (String(item.id) !== String(recordId)) return item
-      return { ...item, [field]: value }
+      let updated = { ...item, [field]: value }
+      if (field === 'material_id' && value) {
+        const material = materialOptions.find(m => m.value === value)
+        if (material) {
+          updated.material_code = material.material_code
+          updated.material_name = material.material_name
+          updated.specification = material.specification
+        }
+      }
+      return updated
     }))
-    const item = materialList.find(m => String(m.id) === String(recordId))
-    if (!item) return
-    const updatedItem = { ...item, [field]: value }
-    const hasContent = updatedItem.material_name && Number(updatedItem.quantity) > 0
-    if (hasContent) {
-      debouncedSave(`material-${recordId}`, () => saveMaterialItem(updatedItem))
-    }
   }
 
   const handleDeleteMaterial = async (item) => {
@@ -780,11 +810,13 @@ export default function ProcessReporting() {
       report_id: selectedReport.report_id,
       work_order_id: selectedWO?.work_order_id,
       process_id: selectedProcessId,
-      material_type: '投入物料',
+      material_type: '投入',
+      material_id: null,
       material_code: '',
       material_name: '',
       specification: '',
       material_batch: '',
+      package_no: '',
       quantity: 0,
       label_images: [],
     }
@@ -792,36 +824,55 @@ export default function ProcessReporting() {
   }, [materialList, isEditable, selectedReport, selectedWO, selectedProcessId])
 
   const materialColumns = [
-    { title: '物料类型', dataIndex: 'material_type', key: 'material_type', width: 100 },
     {
-      title: '物料名称', dataIndex: 'material_name', key: 'material_name', minWidth: 200,
-      render: (_, record) => isEditable ? (
-        <Input
-          placeholder="请输入物料名称"
-          value={record.material_name}
-          onChange={(e) => handleMaterialChange(record.id, 'material_name', e.target.value)}
-          size="small"
-        />
-      ) : record.material_name || '-',
-    },
-    {
-      title: '规格型号', dataIndex: 'specification', key: 'specification', width: 120,
+      title: '物料类型', dataIndex: 'material_type', key: 'material_type', width: 100,
       render: (val, record) => isEditable ? (
-        <Input
-          placeholder="规格"
-          value={val}
-          onChange={(e) => handleMaterialChange(record.id, 'specification', e.target.value)}
+        <Select
+          placeholder="请选择"
+          value={val || undefined}
+          onChange={(v) => handleMaterialChange(record.id, 'material_type', v)}
+          options={[
+            { label: '投入', value: '投入' },
+            { label: '退回', value: '退回' },
+          ]}
+          style={{ width: '100%' }}
           size="small"
         />
       ) : val || '-',
     },
     {
-      title: '批次号', dataIndex: 'material_batch', key: 'material_batch', width: 120,
+      title: '料号', dataIndex: 'material_code', key: 'material_code', minWidth: 250,
+      render: (_, record) => isEditable ? (
+        <Select
+          placeholder="请选择料号"
+          value={record.material_id || undefined}
+          onChange={(val) => handleMaterialChange(record.id, 'material_id', val)}
+          options={materialOptions}
+          style={{ width: '100%' }}
+          showSearch
+          optionFilterProp="label"
+          size="small"
+        />
+      ) : (record.material_code || '') + (record.material_name ? ` ${record.material_name}` : '') + (record.specification ? ` ${record.specification}` : ''),
+    },
+    {
+      title: '批号', dataIndex: 'material_batch', key: 'material_batch', width: 120,
       render: (val, record) => isEditable ? (
         <Input
-          placeholder="批次号"
+          placeholder="批号"
           value={val}
           onChange={(e) => handleMaterialChange(record.id, 'material_batch', e.target.value)}
+          size="small"
+        />
+      ) : val || '-',
+    },
+    {
+      title: '包号', dataIndex: 'package_no', key: 'package_no', width: 120,
+      render: (val, record) => isEditable ? (
+        <Input
+          placeholder="包号"
+          value={val}
+          onChange={(e) => handleMaterialChange(record.id, 'package_no', e.target.value)}
           size="small"
         />
       ) : val || '-',
@@ -905,20 +956,6 @@ export default function ProcessReporting() {
       }
       return updated
     }))
-    const item = exceptionList.find(e => String(e.id) === String(recordId))
-    if (!item) return
-    const updatedItem = { ...item, [field]: value }
-    if (field === 'start_time' || field === 'end_time') {
-      if (updatedItem.start_time && updatedItem.end_time) {
-        const start = new Date(updatedItem.start_time)
-        const end = new Date(updatedItem.end_time)
-        updatedItem.duration = Number(((end - start) / 3600000).toFixed(2))
-      }
-    }
-    const hasContent = updatedItem.exception_type && updatedItem.start_time
-    if (hasContent) {
-      debouncedSave(`exception-${recordId}`, () => saveExceptionItem(updatedItem))
-    }
   }
 
   const handleDeleteException = async (item) => {
@@ -1087,25 +1124,6 @@ export default function ProcessReporting() {
       }
       return updated
     }))
-    const item = manpowerList.find(m => String(m.id) === String(recordId))
-    if (!item) return
-    const updatedItem = { ...item, [field]: value }
-    const sk = Number(updatedItem.skilled_count) || 0
-    const gn = Number(updatedItem.general_count) || 0
-    const lb = Number(updatedItem.labor_count) || 0
-    const ot = Number(updatedItem.other_count) || 0
-    updatedItem.total_people = sk + gn + lb + ot
-    if (updatedItem.start_time && updatedItem.end_time) {
-      const start = new Date(updatedItem.start_time)
-      const end = new Date(updatedItem.end_time)
-      const hours = ((end - start) / 3600000)
-      updatedItem.hours = hours > 0 ? Number(hours.toFixed(2)) : 0
-      updatedItem.man_hours = Number((updatedItem.hours * updatedItem.total_people).toFixed(2))
-    }
-    const hasContent = updatedItem.record_date && updatedItem.total_people > 0
-    if (hasContent) {
-      debouncedSave(`manpower-${recordId}`, () => saveManpowerItem(updatedItem))
-    }
   }
 
   const handleDeleteManpower = async (item) => {
