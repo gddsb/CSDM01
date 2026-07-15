@@ -392,7 +392,7 @@ export default function ProcessReporting() {
         return true
       })
       .map(d => ({
-        label: `${d.defect_code} ${d.defect_type} ${d.defect_name}`,
+        label: <><span style={{ fontWeight: 600 }}>{d.defect_code}</span><span style={{ marginLeft: 8, opacity: 0.65 }}>{d.defect_name}</span></>,
         value: d.defect_id,
         defect_code: d.defect_code,
         defect_type: d.defect_type,
@@ -408,7 +408,7 @@ export default function ProcessReporting() {
 
   const materialOptions = useMemo(() => {
     return materials.map(m => ({
-      label: `${m.material_code} ${m.material_name} ${m.specification || ''}`,
+      label: <><span style={{ fontWeight: 600 }}>{m.material_code}</span><span style={{ marginLeft: 8, opacity: 0.65 }}>{m.material_name}</span>{m.specification && <span style={{ marginLeft: 8, opacity: 0.45 }}>{m.specification}</span>}</>,
       value: m.material_id,
       material_code: m.material_code,
       material_name: m.material_name,
@@ -790,10 +790,13 @@ export default function ProcessReporting() {
           options={scrapTypeOptions}
           style={{ width: '100%' }}
           showSearch
+          popupMatchSelectWidth={false}
+          optionLabelRender={(option) => option.defect_code}
           filterOption={(input, option) => {
-            const label = (option?.label || '').toLowerCase()
+            const code = (option?.defect_code || '').toLowerCase()
+            const name = (option?.defect_name || '').toLowerCase()
             const inputLower = input.toLowerCase()
-            return label.includes(inputLower)
+            return code.includes(inputLower) || name.includes(inputLower)
           }}
           size="small"
         />
@@ -1010,10 +1013,14 @@ export default function ProcessReporting() {
           options={materialOptions}
           style={{ width: '100%' }}
           showSearch
+          popupMatchSelectWidth={false}
+          optionLabelRender={(option) => option.material_code}
           filterOption={(input, option) => {
-            const label = (option?.label || '').toLowerCase()
+            const code = (option?.material_code || '').toLowerCase()
+            const name = (option?.material_name || '').toLowerCase()
+            const spec = (option?.specification || '').toLowerCase()
             const inputLower = input.toLowerCase()
-            return label.includes(inputLower)
+            return code.includes(inputLower) || name.includes(inputLower) || spec.includes(inputLower)
           }}
           size="small"
         />
