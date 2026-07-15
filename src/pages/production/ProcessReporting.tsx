@@ -579,7 +579,7 @@ export default function ProcessReporting() {
           optionRender={(option) => (
             <span>
               <span style={{ fontWeight: 500 }}>{option.defect_code}</span>
-              <span style={{ color: '#999', marginLeft: 8 }}>{option.defect_name}</span>
+              <span style={{ color: '#666', marginLeft: 8 }}>{option.defect_name}</span>
             </span>
           )}
           filterOption={(input, option) => {
