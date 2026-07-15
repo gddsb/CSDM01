@@ -460,7 +460,7 @@ export default function ProcessReporting() {
           if (String(item.id) !== String(recordId)) return item
           let updated = { ...item, [field]: value }
           if (field === 'defect_type_id' && value) {
-            const defect = defectTypeOptions.find(d => d.value === value)
+            const defect = defectTypeOptions.find(d => String(d.value) === String(value))
             if (defect) {
               updated.defect_name = defect.defect_name
               updated.defect_code = defect.defect_code
@@ -477,7 +477,7 @@ export default function ProcessReporting() {
           work_order_id: selectedWO?.work_order_id,
           process_id: selectedProcessId,
           defect_category: '制程不良',
-          defect_type_id: value,
+          defect_type_id: null,
           defect_code: '',
           defect_type: '',
           defect_name: '',
@@ -485,15 +485,14 @@ export default function ProcessReporting() {
           unit: '',
           defect_images: [],
         }
+        newItem[field] = value
         if (field === 'defect_type_id' && value) {
-          const defect = defectTypeOptions.find(d => d.value === value)
+          const defect = defectTypeOptions.find(d => String(d.value) === String(value))
           if (defect) {
             newItem.defect_name = defect.defect_name
             newItem.defect_code = defect.defect_code
             newItem.defect_type = defect.defect_type
           }
-        } else {
-          newItem[field] = value
         }
         return [...prev, newItem]
       }
@@ -650,7 +649,7 @@ export default function ProcessReporting() {
           if (String(item.id) !== String(recordId)) return item
           let updated = { ...item, [field]: value }
           if (field === 'defect_type_id' && value) {
-            const defect = scrapTypeOptions.find(d => d.value === value)
+            const defect = scrapTypeOptions.find(d => String(d.value) === String(value))
             if (defect) {
               updated.defect_name = defect.defect_name
               updated.defect_code = defect.defect_code
@@ -666,7 +665,7 @@ export default function ProcessReporting() {
           report_id: selectedReport?.report_id,
           work_order_id: selectedWO?.work_order_id,
           defect_category: '检验报废',
-          defect_type_id: value,
+          defect_type_id: null,
           defect_code: '',
           defect_type: '',
           defect_name: '',
@@ -674,15 +673,14 @@ export default function ProcessReporting() {
           unit: '',
           defect_images: [],
         }
+        newItem[field] = value
         if (field === 'defect_type_id' && value) {
-          const defect = scrapTypeOptions.find(d => d.value === value)
+          const defect = scrapTypeOptions.find(d => String(d.value) === String(value))
           if (defect) {
             newItem.defect_name = defect.defect_name
             newItem.defect_code = defect.defect_code
             newItem.defect_type = defect.defect_type
           }
-        } else {
-          newItem[field] = value
         }
         return [...prev, newItem]
       }
@@ -843,7 +841,7 @@ export default function ProcessReporting() {
           if (String(item.id) !== String(recordId)) return item
           let updated = { ...item, [field]: value }
           if (field === 'material_id' && value) {
-            const material = materialOptions.find(m => m.value === value)
+            const material = materialOptions.find(m => String(m.value) === String(value))
             if (material) {
               updated.material_code = material.material_code
               updated.material_name = material.material_name
@@ -860,7 +858,7 @@ export default function ProcessReporting() {
           work_order_id: selectedWO?.work_order_id,
           process_id: selectedProcessId,
           material_type: '投入',
-          material_id: value,
+          material_id: null,
           material_code: '',
           material_name: '',
           specification: '',
@@ -869,15 +867,14 @@ export default function ProcessReporting() {
           quantity: 0,
           label_images: [],
         }
+        newItem[field] = value
         if (field === 'material_id' && value) {
-          const material = materialOptions.find(m => m.value === value)
+          const material = materialOptions.find(m => String(m.value) === String(value))
           if (material) {
             newItem.material_code = material.material_code
             newItem.material_name = material.material_name
             newItem.specification = material.specification
           }
-        } else {
-          newItem[field] = value
         }
         return [...prev, newItem]
       }
