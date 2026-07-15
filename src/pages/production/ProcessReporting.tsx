@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   Table, Tag, Button, Modal, Input, InputNumber, Select, Space, Row, Col,
-  Card, Divider, Popconfirm, DatePicker, Tabs, Upload, Drawer, Image,
+  Card, Divider, Popconfirm, DatePicker, TimePicker, Tabs, Upload, Drawer, Image,
 } from 'antd'
 import { useMessage } from '../../contexts/AppContext'
 import {
@@ -556,7 +556,7 @@ export default function ProcessReporting() {
 
   const prodDefectColumns = [
     {
-      title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', minWidth: 250,
+      title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', minWidth: 150,
       render: (_, record) => isEditable ? (
         <Select
           placeholder="请选择不良编码"
@@ -576,13 +576,25 @@ export default function ProcessReporting() {
           options={defectTypeOptions}
           style={{ width: '100%' }}
           showSearch
-          optionFilterProp="label"
+          filterOption={(input, option) => {
+            const label = (option?.label || '').toLowerCase()
+            const inputLower = input.toLowerCase()
+            return label.includes(inputLower)
+          }}
           size="small"
         />
-      ) : (record.defect_code || '') + (record.defect_type ? ` ${record.defect_type}` : '') + (record.defect_name ? ` ${record.defect_name}` : ''),
+      ) : record.defect_code || '-',
     },
     {
-      title: '数量', dataIndex: 'quantity', key: 'quantity', width: 100,
+      title: '不良类型', dataIndex: 'defect_type', key: 'defect_type', width: 120,
+      render: (val) => val || '-',
+    },
+    {
+      title: '不良项目', dataIndex: 'defect_name', key: 'defect_name', width: 150,
+      render: (val) => val || '-',
+    },
+    {
+      title: '不良数量', dataIndex: 'quantity', key: 'quantity', width: 100,
       render: (val, record) => isEditable ? (
         <InputNumber
           min={0}
@@ -755,7 +767,7 @@ export default function ProcessReporting() {
 
   const scrapDefectColumns = [
     {
-      title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', minWidth: 250,
+      title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', minWidth: 150,
       render: (_, record) => isEditable ? (
         <Select
           placeholder="请选择不良编码"
@@ -775,13 +787,25 @@ export default function ProcessReporting() {
           options={scrapTypeOptions}
           style={{ width: '100%' }}
           showSearch
-          optionFilterProp="label"
+          filterOption={(input, option) => {
+            const label = (option?.label || '').toLowerCase()
+            const inputLower = input.toLowerCase()
+            return label.includes(inputLower)
+          }}
           size="small"
         />
-      ) : (record.defect_code || '') + (record.defect_type ? ` ${record.defect_type}` : '') + (record.defect_name ? ` ${record.defect_name}` : ''),
+      ) : record.defect_code || '-',
     },
     {
-      title: '数量', dataIndex: 'quantity', key: 'quantity', width: 100,
+      title: '不良类型', dataIndex: 'defect_type', key: 'defect_type', width: 120,
+      render: (val) => val || '-',
+    },
+    {
+      title: '不良项目', dataIndex: 'defect_name', key: 'defect_name', width: 150,
+      render: (val) => val || '-',
+    },
+    {
+      title: '不良数量', dataIndex: 'quantity', key: 'quantity', width: 100,
       render: (val, record) => isEditable ? (
         <InputNumber
           min={0}
@@ -974,7 +998,7 @@ export default function ProcessReporting() {
       ) : val || '-',
     },
     {
-      title: '料号', dataIndex: 'material_code', key: 'material_code', minWidth: 250,
+      title: '料号', dataIndex: 'material_code', key: 'material_code', minWidth: 150,
       render: (_, record) => isEditable ? (
         <Select
           placeholder="请选择料号"
@@ -983,10 +1007,22 @@ export default function ProcessReporting() {
           options={materialOptions}
           style={{ width: '100%' }}
           showSearch
-          optionFilterProp="label"
+          filterOption={(input, option) => {
+            const label = (option?.label || '').toLowerCase()
+            const inputLower = input.toLowerCase()
+            return label.includes(inputLower)
+          }}
           size="small"
         />
-      ) : (record.material_code || '') + (record.material_name ? ` ${record.material_name}` : '') + (record.specification ? ` ${record.specification}` : ''),
+      ) : record.material_code || '-',
+    },
+    {
+      title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 150,
+      render: (val) => val || '-',
+    },
+    {
+      title: '规格', dataIndex: 'specification', key: 'specification', width: 150,
+      render: (val) => val || '-',
     },
     {
       title: '批号', dataIndex: 'material_batch', key: 'material_batch', width: 120,
@@ -1192,26 +1228,42 @@ export default function ProcessReporting() {
       ) : record.device_name || '-',
     },
     {
-      title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 170,
+      title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 150,
       render: (val, record) => isEditable ? (
-        <DatePicker
-          showTime
+        <TimePicker
           value={val ? dayjs(val) : null}
-          onChange={(d) => handleExceptionChange(record.id, 'start_time', d ? d.toISOString() : null)}
+          onChange={(d) => {
+            if (d) {
+              const today = dayjs().format('YYYY-MM-DD')
+              const timeStr = d.format('HH:mm:ss')
+              handleExceptionChange(record.id, 'start_time', `${today}T${timeStr}`)
+            } else {
+              handleExceptionChange(record.id, 'start_time', null)
+            }
+          }}
           style={{ width: '100%' }}
           size="small"
+          minuteStep={10}
         />
       ) : val ? dayjs(val).format('YYYY-MM-DD HH:mm') : '-',
     },
     {
-      title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 170,
+      title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 150,
       render: (val, record) => isEditable ? (
-        <DatePicker
-          showTime
+        <TimePicker
           value={val ? dayjs(val) : null}
-          onChange={(d) => handleExceptionChange(record.id, 'end_time', d ? d.toISOString() : null)}
+          onChange={(d) => {
+            if (d) {
+              const today = dayjs().format('YYYY-MM-DD')
+              const timeStr = d.format('HH:mm:ss')
+              handleExceptionChange(record.id, 'end_time', `${today}T${timeStr}`)
+            } else {
+              handleExceptionChange(record.id, 'end_time', null)
+            }
+          }}
           style={{ width: '100%' }}
           size="small"
+          minuteStep={10}
         />
       ) : val ? dayjs(val).format('YYYY-MM-DD HH:mm') : '-',
     },
@@ -1373,14 +1425,7 @@ export default function ProcessReporting() {
   const manpowerColumns = [
     {
       title: '日期', dataIndex: 'record_date', key: 'record_date', width: 130,
-      render: (val, record) => isEditable ? (
-        <DatePicker
-          value={val ? dayjs(val) : null}
-          onChange={(d) => handleManpowerChange(record.id, 'record_date', d ? d.format('YYYY-MM-DD') : null)}
-          style={{ width: '100%' }}
-          size="small"
-        />
-      ) : val || '-',
+      render: (val) => val || '-',
     },
     {
       title: '班次', dataIndex: 'shift', key: 'shift', width: 100,
@@ -1400,30 +1445,46 @@ export default function ProcessReporting() {
     {
       title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 150,
       render: (val, record) => isEditable ? (
-        <DatePicker
-          showTime
+        <TimePicker
           value={val ? dayjs(val) : null}
-          onChange={(d) => handleManpowerChange(record.id, 'start_time', d ? d.toISOString() : null)}
+          onChange={(d) => {
+            if (d) {
+              const today = dayjs().format('YYYY-MM-DD')
+              const timeStr = d.format('HH:mm:ss')
+              handleManpowerChange(record.id, 'start_time', `${today}T${timeStr}`)
+            } else {
+              handleManpowerChange(record.id, 'start_time', null)
+            }
+          }}
           style={{ width: '100%' }}
           size="small"
+          minuteStep={10}
         />
       ) : val ? dayjs(val).format('YYYY-MM-DD HH:mm') : '-',
     },
     {
       title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 150,
       render: (val, record) => isEditable ? (
-        <DatePicker
-          showTime
+        <TimePicker
           value={val ? dayjs(val) : null}
-          onChange={(d) => handleManpowerChange(record.id, 'end_time', d ? d.toISOString() : null)}
+          onChange={(d) => {
+            if (d) {
+              const today = dayjs().format('YYYY-MM-DD')
+              const timeStr = d.format('HH:mm:ss')
+              handleManpowerChange(record.id, 'end_time', `${today}T${timeStr}`)
+            } else {
+              handleManpowerChange(record.id, 'end_time', null)
+            }
+          }}
           style={{ width: '100%' }}
           size="small"
+          minuteStep={10}
         />
       ) : val ? dayjs(val).format('YYYY-MM-DD HH:mm') : '-',
     },
     { title: '工时(小时)', dataIndex: 'hours', key: 'hours', width: 100 },
     {
-      title: '熟练工', dataIndex: 'skilled_count', key: 'skilled_count', width: 90,
+      title: '技工', dataIndex: 'skilled_count', key: 'skilled_count', width: 90,
       render: (val, record) => isEditable ? (
         <InputNumber
           min={0}
