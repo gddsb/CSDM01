@@ -577,6 +577,7 @@ export default function ProcessReporting() {
           style={{ width: '100%' }}
           showSearch
           popupMatchSelectWidth={false}
+          popupPlacement="bottomLeft"
           optionLabelRender={(option) => {
             const opt = option as any
             return opt.defect_code
@@ -794,6 +795,7 @@ export default function ProcessReporting() {
           style={{ width: '100%' }}
           showSearch
           popupMatchSelectWidth={false}
+          popupPlacement="bottomLeft"
           optionLabelRender={(option) => {
             const opt = option as any
             return opt.defect_code
@@ -1020,6 +1022,7 @@ export default function ProcessReporting() {
           style={{ width: '100%' }}
           showSearch
           popupMatchSelectWidth={false}
+          popupPlacement="bottomLeft"
           optionLabelRender={(option) => {
             const opt = option as any
             return opt.material_code
