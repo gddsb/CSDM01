@@ -576,6 +576,7 @@ export default function ProcessReporting() {
           options={defectTypeOptions}
           style={{ width: '100%' }}
           showSearch
+          popupMatchSelectWidth={false}
           optionLabelRender={(option) => option.defect_code}
           filterOption={(input, option) => {
             const code = (option?.defect_code || '').toLowerCase()
