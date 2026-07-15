@@ -372,7 +372,7 @@ export default function ProcessReporting() {
         return true
       })
       .map(d => ({
-        label: <><span style={{ fontWeight: 600 }}>{d.defect_code}</span><span style={{ marginLeft: 8, opacity: 0.65 }}>{d.defect_name}</span></>,
+        label: d.defect_code,
         value: d.defect_id,
         defect_code: d.defect_code,
         defect_type: d.defect_type,
@@ -392,7 +392,7 @@ export default function ProcessReporting() {
         return true
       })
       .map(d => ({
-        label: <><span style={{ fontWeight: 600 }}>{d.defect_code}</span><span style={{ marginLeft: 8, opacity: 0.65 }}>{d.defect_name}</span></>,
+        label: d.defect_code,
         value: d.defect_id,
         defect_code: d.defect_code,
         defect_type: d.defect_type,
@@ -408,7 +408,7 @@ export default function ProcessReporting() {
 
   const materialOptions = useMemo(() => {
     return materials.map(m => ({
-      label: <><span style={{ fontWeight: 600 }}>{m.material_code}</span><span style={{ marginLeft: 8, opacity: 0.65 }}>{m.material_name}</span>{m.specification && <span style={{ marginLeft: 8, opacity: 0.45 }}>{m.specification}</span>}</>,
+      label: m.material_code,
       value: m.material_id,
       material_code: m.material_code,
       material_name: m.material_name,
@@ -577,7 +577,12 @@ export default function ProcessReporting() {
           style={{ width: '100%' }}
           showSearch
           popupMatchSelectWidth={false}
-          optionLabelRender={(option) => option.defect_code}
+          optionRender={(option) => (
+            <span>
+              <span style={{ fontWeight: 600 }}>{option.defect_code}</span>
+              <span style={{ marginLeft: 8, opacity: 0.65 }}>{option.defect_name}</span>
+            </span>
+          )}
           filterOption={(input, option) => {
             const code = (option?.defect_code || '').toLowerCase()
             const name = (option?.defect_name || '').toLowerCase()
@@ -791,7 +796,12 @@ export default function ProcessReporting() {
           style={{ width: '100%' }}
           showSearch
           popupMatchSelectWidth={false}
-          optionLabelRender={(option) => option.defect_code}
+          optionRender={(option) => (
+            <span>
+              <span style={{ fontWeight: 600 }}>{option.defect_code}</span>
+              <span style={{ marginLeft: 8, opacity: 0.65 }}>{option.defect_name}</span>
+            </span>
+          )}
           filterOption={(input, option) => {
             const code = (option?.defect_code || '').toLowerCase()
             const name = (option?.defect_name || '').toLowerCase()
@@ -1014,7 +1024,13 @@ export default function ProcessReporting() {
           style={{ width: '100%' }}
           showSearch
           popupMatchSelectWidth={false}
-          optionLabelRender={(option) => option.material_code}
+          optionRender={(option) => (
+            <span>
+              <span style={{ fontWeight: 600 }}>{option.material_code}</span>
+              <span style={{ marginLeft: 8, opacity: 0.65 }}>{option.material_name}</span>
+              {option.specification && <span style={{ marginLeft: 8, opacity: 0.45 }}>{option.specification}</span>}
+            </span>
+          )}
           filterOption={(input, option) => {
             const code = (option?.material_code || '').toLowerCase()
             const name = (option?.material_name || '').toLowerCase()
