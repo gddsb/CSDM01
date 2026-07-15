@@ -585,6 +585,9 @@ body {
 }
 
 /* Select 下拉列表样式优化 - 增强可读性 */
+.ant-select-dropdown {
+  background: #FFFFFF !important;
+}
 .ant-select-dropdown .ant-select-item {
   padding: 8px 12px !important;
   height: auto !important;
@@ -595,6 +598,9 @@ body {
 .ant-select-dropdown .ant-select-item:last-child {
   border-bottom: none;
 }
+.ant-select-dropdown .ant-select-item-option-content {
+  color: var(--text-primary) !important;
+}
 .ant-select-dropdown .ant-select-item-option-selected {
   background: var(--color-primary) !important;
 }
@@ -603,4 +609,7 @@ body {
 }
 .ant-select-dropdown .ant-select-item:hover:not(.ant-select-item-option-selected) {
   background: rgba(0, 0, 0, 0.06);
+}
+.ant-select-dropdown .ant-select-item:hover:not(.ant-select-item-option-selected) .ant-select-item-option-content {
+  color: var(--text-primary) !important;
 }

@@ -577,12 +577,15 @@ export default function ProcessReporting() {
           style={{ width: '100%' }}
           showSearch
           popupMatchSelectWidth={false}
-          optionRender={(option) => (
-            <span>
-              <span style={{ fontWeight: 600 }}>{option.defect_code}</span>
-              <span style={{ marginLeft: 8, opacity: 0.65 }}>{option.defect_name}</span>
-            </span>
-          )}
+          optionRender={(option) => {
+            const opt = option as any
+            return (
+              <span>
+                <span style={{ fontWeight: 600, color: '#212121' }}>{opt.defect_code}</span>
+                <span style={{ marginLeft: 8, opacity: 0.65, color: '#757575' }}>{opt.defect_name}</span>
+              </span>
+            )
+          }}
           filterOption={(input, option) => {
             const code = (option?.defect_code || '').toLowerCase()
             const name = (option?.defect_name || '').toLowerCase()
@@ -796,12 +799,15 @@ export default function ProcessReporting() {
           style={{ width: '100%' }}
           showSearch
           popupMatchSelectWidth={false}
-          optionRender={(option) => (
-            <span>
-              <span style={{ fontWeight: 600 }}>{option.defect_code}</span>
-              <span style={{ marginLeft: 8, opacity: 0.65 }}>{option.defect_name}</span>
-            </span>
-          )}
+          optionRender={(option) => {
+            const opt = option as any
+            return (
+              <span>
+                <span style={{ fontWeight: 600, color: '#212121' }}>{opt.defect_code}</span>
+                <span style={{ marginLeft: 8, opacity: 0.65, color: '#757575' }}>{opt.defect_name}</span>
+              </span>
+            )
+          }}
           filterOption={(input, option) => {
             const code = (option?.defect_code || '').toLowerCase()
             const name = (option?.defect_name || '').toLowerCase()
@@ -1024,13 +1030,16 @@ export default function ProcessReporting() {
           style={{ width: '100%' }}
           showSearch
           popupMatchSelectWidth={false}
-          optionRender={(option) => (
-            <span>
-              <span style={{ fontWeight: 600 }}>{option.material_code}</span>
-              <span style={{ marginLeft: 8, opacity: 0.65 }}>{option.material_name}</span>
-              {option.specification && <span style={{ marginLeft: 8, opacity: 0.45 }}>{option.specification}</span>}
-            </span>
-          )}
+          optionRender={(option) => {
+            const opt = option as any
+            return (
+              <span>
+                <span style={{ fontWeight: 600, color: '#212121' }}>{opt.material_code}</span>
+                <span style={{ marginLeft: 8, opacity: 0.65, color: '#757575' }}>{opt.material_name}</span>
+                {opt.specification && <span style={{ marginLeft: 8, opacity: 0.45, color: '#9E9E9E' }}>{opt.specification}</span>}
+              </span>
+            )
+          }}
           filterOption={(input, option) => {
             const code = (option?.material_code || '').toLowerCase()
             const name = (option?.material_name || '').toLowerCase()
