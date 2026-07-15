@@ -455,8 +455,9 @@ export default function ProcessReporting() {
     if (!isEditable) return
     setProdDefectList(prev => {
       const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
+      let updatedItem = null
       if (existingIndex >= 0) {
-        return prev.map(item => {
+        const newlist = prev.map(item => {
           if (String(item.id) !== String(recordId)) return item
           let updated = { ...item, [field]: value }
           if (field === 'defect_type_id' && value) {
@@ -467,8 +468,14 @@ export default function ProcessReporting() {
               updated.defect_type = defect.defect_type
             }
           }
+          updatedItem = updated
           return updated
         })
+        // 自动保存：有不良编码且有数量时保存
+        if (updatedItem && updatedItem.defect_type_id && updatedItem.quantity > 0) {
+          saveProdDefectItem(updatedItem)
+        }
+        return newlist
       } else {
         // 新增记录（空行情况）
         const newItem = {
@@ -493,6 +500,10 @@ export default function ProcessReporting() {
             newItem.defect_code = defect.defect_code
             newItem.defect_type = defect.defect_type
           }
+        }
+        // 自动保存：有不良编码且有数量时保存
+        if (newItem.defect_type_id && newItem.quantity > 0) {
+          saveProdDefectItem(newItem)
         }
         return [...prev, newItem]
       }
@@ -647,8 +658,9 @@ export default function ProcessReporting() {
     if (!isEditable) return
     setScrapDefectList(prev => {
       const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
+      let updatedItem = null
       if (existingIndex >= 0) {
-        return prev.map(item => {
+        const newlist = prev.map(item => {
           if (String(item.id) !== String(recordId)) return item
           let updated = { ...item, [field]: value }
           if (field === 'defect_type_id' && value) {
@@ -659,8 +671,14 @@ export default function ProcessReporting() {
               updated.defect_type = defect.defect_type
             }
           }
+          updatedItem = updated
           return updated
         })
+        // 自动保存：有不良编码且有数量时保存
+        if (updatedItem && updatedItem.defect_type_id && updatedItem.quantity > 0) {
+          saveScrapDefectItem(updatedItem)
+        }
+        return newlist
       } else {
         // 新增记录（空行情况）
         const newItem = {
@@ -684,6 +702,10 @@ export default function ProcessReporting() {
             newItem.defect_code = defect.defect_code
             newItem.defect_type = defect.defect_type
           }
+        }
+        // 自动保存：有不良编码且有数量时保存
+        if (newItem.defect_type_id && newItem.quantity > 0) {
+          saveScrapDefectItem(newItem)
         }
         return [...prev, newItem]
       }
@@ -842,8 +864,9 @@ export default function ProcessReporting() {
     if (!isEditable) return
     setMaterialList(prev => {
       const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
+      let updatedItem = null
       if (existingIndex >= 0) {
-        return prev.map(item => {
+        const newlist = prev.map(item => {
           if (String(item.id) !== String(recordId)) return item
           let updated = { ...item, [field]: value }
           if (field === 'material_id' && value) {
@@ -854,8 +877,14 @@ export default function ProcessReporting() {
               updated.specification = material.specification
             }
           }
+          updatedItem = updated
           return updated
         })
+        // 自动保存：有料号且有数量时保存
+        if (updatedItem && updatedItem.material_code && updatedItem.quantity > 0) {
+          saveMaterialItem(updatedItem)
+        }
+        return newlist
       } else {
         // 新增记录（空行情况）
         const newItem = {
@@ -881,6 +910,10 @@ export default function ProcessReporting() {
             newItem.material_name = material.material_name
             newItem.specification = material.specification
           }
+        }
+        // 自动保存：有料号且有数量时保存
+        if (newItem.material_code && newItem.quantity > 0) {
+          saveMaterialItem(newItem)
         }
         return [...prev, newItem]
       }
@@ -1046,8 +1079,9 @@ export default function ProcessReporting() {
     if (!isEditable) return
     setExceptionList(prev => {
       const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
+      let updatedItem = null
       if (existingIndex >= 0) {
-        return prev.map(item => {
+        const newList = prev.map(item => {
           if (String(item.id) !== String(recordId)) return item
           const updated = { ...item, [field]: value }
           if (field === 'start_time' || field === 'end_time') {
@@ -1057,8 +1091,14 @@ export default function ProcessReporting() {
               updated.duration = Number(((end - start) / 3600000).toFixed(2))
             }
           }
+          updatedItem = updated
           return updated
         })
+        // 自动保存：有异常类型且有开始和结束时间时保存
+        if (updatedItem && updatedItem.exception_type && updatedItem.start_time && updatedItem.end_time) {
+          saveExceptionItem(updatedItem)
+        }
+        return newList
       } else {
         // 新增记录（空行情况）
         const newItem = {
@@ -1076,6 +1116,11 @@ export default function ProcessReporting() {
           exception_images: [],
         }
         newItem[field] = value
+        updatedItem = newItem
+        // 自动保存：有异常类型且有开始和结束时间时保存
+        if (updatedItem.exception_type && updatedItem.start_time && updatedItem.end_time) {
+          saveExceptionItem(updatedItem)
+        }
         return [...prev, newItem]
       }
     })
@@ -1232,8 +1277,9 @@ export default function ProcessReporting() {
     if (!isEditable) return
     setManpowerList(prev => {
       const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
+      let updatedItem = null
       if (existingIndex >= 0) {
-        return prev.map(item => {
+        const newList = prev.map(item => {
           if (String(item.id) !== String(recordId)) return item
           const updated = { ...item, [field]: value }
           const sk = Number(updated.skilled_count) || 0
@@ -1248,8 +1294,14 @@ export default function ProcessReporting() {
             updated.hours = hours > 0 ? Number(hours.toFixed(2)) : 0
             updated.man_hours = Number((updated.hours * updated.total_people).toFixed(2))
           }
+          updatedItem = updated
           return updated
         })
+        // 自动保存：有开始和结束时间且有总人数时保存
+        if (updatedItem && updatedItem.start_time && updatedItem.end_time && updatedItem.total_people > 0) {
+          saveManpowerItem(updatedItem)
+        }
+        return newList
       } else {
         // 新增记录（空行情况）
         const newItem = {
@@ -1270,6 +1322,11 @@ export default function ProcessReporting() {
           remarks: '',
         }
         newItem[field] = value
+        updatedItem = newItem
+        // 自动保存：有开始和结束时间且有总人数时保存
+        if (updatedItem.start_time && updatedItem.end_time && updatedItem.total_people > 0) {
+          saveManpowerItem(updatedItem)
+        }
         return [...prev, newItem]
       }
     })
