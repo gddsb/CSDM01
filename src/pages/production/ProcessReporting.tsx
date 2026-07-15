@@ -453,19 +453,51 @@ export default function ProcessReporting() {
 
   const handleProdDefectChange = (recordId, field, value) => {
     if (!isEditable) return
-    setProdDefectList(prev => prev.map(item => {
-      if (String(item.id) !== String(recordId)) return item
-      let updated = { ...item, [field]: value }
-      if (field === 'defect_type_id' && value) {
-        const defect = defectTypeOptions.find(d => d.value === value)
-        if (defect) {
-          updated.defect_name = defect.defect_name
-          updated.defect_code = defect.defect_code
-          updated.defect_type = defect.defect_type
+    setProdDefectList(prev => {
+      const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
+      if (existingIndex >= 0) {
+        return prev.map(item => {
+          if (String(item.id) !== String(recordId)) return item
+          let updated = { ...item, [field]: value }
+          if (field === 'defect_type_id' && value) {
+            const defect = defectTypeOptions.find(d => d.value === value)
+            if (defect) {
+              updated.defect_name = defect.defect_name
+              updated.defect_code = defect.defect_code
+              updated.defect_type = defect.defect_type
+            }
+          }
+          return updated
+        })
+      } else {
+        // 新增记录（空行情况）
+        const newItem = {
+          id: recordId,
+          report_id: selectedReport?.report_id,
+          work_order_id: selectedWO?.work_order_id,
+          process_id: selectedProcessId,
+          defect_category: '制程不良',
+          defect_type_id: value,
+          defect_code: '',
+          defect_type: '',
+          defect_name: '',
+          quantity: 0,
+          unit: '',
+          defect_images: [],
         }
+        if (field === 'defect_type_id' && value) {
+          const defect = defectTypeOptions.find(d => d.value === value)
+          if (defect) {
+            newItem.defect_name = defect.defect_name
+            newItem.defect_code = defect.defect_code
+            newItem.defect_type = defect.defect_type
+          }
+        } else {
+          newItem[field] = value
+        }
+        return [...prev, newItem]
       }
-      return updated
-    }))
+    })
   }
 
   const handleDeleteProdDefect = async (item) => {
@@ -611,18 +643,50 @@ export default function ProcessReporting() {
 
   const handleScrapDefectChange = (recordId, field, value) => {
     if (!isEditable) return
-    setScrapDefectList(prev => prev.map(item => {
-      if (String(item.id) !== String(recordId)) return item
-      let updated = { ...item, [field]: value }
-      if (field === 'defect_type_id' && value) {
-        const defect = scrapTypeOptions.find(d => d.value === value)
-        if (defect) {
-          updated.defect_name = defect.defect_name
-          updated.defect_code = defect.defect_code
+    setScrapDefectList(prev => {
+      const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
+      if (existingIndex >= 0) {
+        return prev.map(item => {
+          if (String(item.id) !== String(recordId)) return item
+          let updated = { ...item, [field]: value }
+          if (field === 'defect_type_id' && value) {
+            const defect = scrapTypeOptions.find(d => d.value === value)
+            if (defect) {
+              updated.defect_name = defect.defect_name
+              updated.defect_code = defect.defect_code
+              updated.defect_type = defect.defect_type
+            }
+          }
+          return updated
+        })
+      } else {
+        // 新增记录（空行情况）
+        const newItem = {
+          id: recordId,
+          report_id: selectedReport?.report_id,
+          work_order_id: selectedWO?.work_order_id,
+          defect_category: '检验报废',
+          defect_type_id: value,
+          defect_code: '',
+          defect_type: '',
+          defect_name: '',
+          quantity: 0,
+          unit: '',
+          defect_images: [],
         }
+        if (field === 'defect_type_id' && value) {
+          const defect = scrapTypeOptions.find(d => d.value === value)
+          if (defect) {
+            newItem.defect_name = defect.defect_name
+            newItem.defect_code = defect.defect_code
+            newItem.defect_type = defect.defect_type
+          }
+        } else {
+          newItem[field] = value
+        }
+        return [...prev, newItem]
       }
-      return updated
-    }))
+    })
   }
 
   const handleDeleteScrapDefect = async (item) => {
@@ -772,19 +836,52 @@ export default function ProcessReporting() {
 
   const handleMaterialChange = (recordId, field, value) => {
     if (!isEditable) return
-    setMaterialList(prev => prev.map(item => {
-      if (String(item.id) !== String(recordId)) return item
-      let updated = { ...item, [field]: value }
-      if (field === 'material_id' && value) {
-        const material = materialOptions.find(m => m.value === value)
-        if (material) {
-          updated.material_code = material.material_code
-          updated.material_name = material.material_name
-          updated.specification = material.specification
+    setMaterialList(prev => {
+      const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
+      if (existingIndex >= 0) {
+        return prev.map(item => {
+          if (String(item.id) !== String(recordId)) return item
+          let updated = { ...item, [field]: value }
+          if (field === 'material_id' && value) {
+            const material = materialOptions.find(m => m.value === value)
+            if (material) {
+              updated.material_code = material.material_code
+              updated.material_name = material.material_name
+              updated.specification = material.specification
+            }
+          }
+          return updated
+        })
+      } else {
+        // 新增记录（空行情况）
+        const newItem = {
+          id: recordId,
+          report_id: selectedReport?.report_id,
+          work_order_id: selectedWO?.work_order_id,
+          process_id: selectedProcessId,
+          material_type: '投入',
+          material_id: value,
+          material_code: '',
+          material_name: '',
+          specification: '',
+          material_batch: '',
+          package_no: '',
+          quantity: 0,
+          label_images: [],
         }
+        if (field === 'material_id' && value) {
+          const material = materialOptions.find(m => m.value === value)
+          if (material) {
+            newItem.material_code = material.material_code
+            newItem.material_name = material.material_name
+            newItem.specification = material.specification
+          }
+        } else {
+          newItem[field] = value
+        }
+        return [...prev, newItem]
       }
-      return updated
-    }))
+    })
   }
 
   const handleDeleteMaterial = async (item) => {
@@ -944,18 +1041,41 @@ export default function ProcessReporting() {
 
   const handleExceptionChange = (recordId, field, value) => {
     if (!isEditable) return
-    setExceptionList(prev => prev.map(item => {
-      if (String(item.id) !== String(recordId)) return item
-      const updated = { ...item, [field]: value }
-      if (field === 'start_time' || field === 'end_time') {
-        if (updated.start_time && updated.end_time) {
-          const start = new Date(updated.start_time)
-          const end = new Date(updated.end_time)
-          updated.duration = Number(((end - start) / 3600000).toFixed(2))
+    setExceptionList(prev => {
+      const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
+      if (existingIndex >= 0) {
+        return prev.map(item => {
+          if (String(item.id) !== String(recordId)) return item
+          const updated = { ...item, [field]: value }
+          if (field === 'start_time' || field === 'end_time') {
+            if (updated.start_time && updated.end_time) {
+              const start = new Date(updated.start_time)
+              const end = new Date(updated.end_time)
+              updated.duration = Number(((end - start) / 3600000).toFixed(2))
+            }
+          }
+          return updated
+        })
+      } else {
+        // 新增记录（空行情况）
+        const newItem = {
+          id: recordId,
+          report_id: selectedReport?.report_id,
+          work_order_id: selectedWO?.work_order_id,
+          exception_type: field === 'exception_type' ? value : '',
+          device_id: field === 'device_id' ? value : null,
+          device_name: '',
+          stop_type: '',
+          start_time: field === 'start_time' ? value : null,
+          end_time: field === 'end_time' ? value : null,
+          duration: 0,
+          description: '',
+          exception_images: [],
         }
+        newItem[field] = value
+        return [...prev, newItem]
       }
-      return updated
-    }))
+    })
   }
 
   const handleDeleteException = async (item) => {
@@ -1107,23 +1227,49 @@ export default function ProcessReporting() {
 
   const handleManpowerChange = (recordId, field, value) => {
     if (!isEditable) return
-    setManpowerList(prev => prev.map(item => {
-      if (String(item.id) !== String(recordId)) return item
-      const updated = { ...item, [field]: value }
-      const sk = Number(updated.skilled_count) || 0
-      const gn = Number(updated.general_count) || 0
-      const lb = Number(updated.labor_count) || 0
-      const ot = Number(updated.other_count) || 0
-      updated.total_people = sk + gn + lb + ot
-      if (updated.start_time && updated.end_time) {
-        const start = new Date(updated.start_time)
-        const end = new Date(updated.end_time)
-        const hours = ((end - start) / 3600000)
-        updated.hours = hours > 0 ? Number(hours.toFixed(2)) : 0
-        updated.man_hours = Number((updated.hours * updated.total_people).toFixed(2))
+    setManpowerList(prev => {
+      const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
+      if (existingIndex >= 0) {
+        return prev.map(item => {
+          if (String(item.id) !== String(recordId)) return item
+          const updated = { ...item, [field]: value }
+          const sk = Number(updated.skilled_count) || 0
+          const gn = Number(updated.general_count) || 0
+          const lb = Number(updated.labor_count) || 0
+          const ot = Number(updated.other_count) || 0
+          updated.total_people = sk + gn + lb + ot
+          if (updated.start_time && updated.end_time) {
+            const start = new Date(updated.start_time)
+            const end = new Date(updated.end_time)
+            const hours = ((end - start) / 3600000)
+            updated.hours = hours > 0 ? Number(hours.toFixed(2)) : 0
+            updated.man_hours = Number((updated.hours * updated.total_people).toFixed(2))
+          }
+          return updated
+        })
+      } else {
+        // 新增记录（空行情况）
+        const newItem = {
+          id: recordId,
+          report_id: selectedReport?.report_id,
+          work_order_id: selectedWO?.work_order_id,
+          record_date: dayjs().format('YYYY-MM-DD'),
+          shift: '白班',
+          start_time: null,
+          end_time: null,
+          hours: 0,
+          skilled_count: 0,
+          general_count: 0,
+          labor_count: 0,
+          other_count: 0,
+          total_people: 0,
+          man_hours: 0,
+          remarks: '',
+        }
+        newItem[field] = value
+        return [...prev, newItem]
       }
-      return updated
-    }))
+    })
   }
 
   const handleDeleteManpower = async (item) => {
