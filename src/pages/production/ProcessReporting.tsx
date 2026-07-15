@@ -515,7 +515,7 @@ export default function ProcessReporting() {
 
   const prodDefectDisplayList = useMemo(() => {
     if (!isEditable || !selectedReport) return prodDefectList
-    const hasEmptyRow = prodDefectList.some(d => !d.defect_id)
+    const hasEmptyRow = prodDefectList.some(d => !d.defect_type_id)
     if (hasEmptyRow) return prodDefectList
     const emptyRow = {
       id: genTempId(),
@@ -535,7 +535,7 @@ export default function ProcessReporting() {
   }, [prodDefectList, isEditable, selectedReport, selectedWO, selectedProcessId])
 
   const getUnitOptions = (defectTypeId) => {
-    const defect = defectTypeOptions.find(d => d.value === defectTypeId)
+    const defect = defectTypeOptions.find(d => String(d.value) === String(defectTypeId))
     if (!defect || !defect.available_units) return []
     return defect.available_units.split(',').map(u => ({ label: u.trim(), value: u.trim() }))
   }
@@ -549,8 +549,8 @@ export default function ProcessReporting() {
           value={record.defect_type_id || undefined}
           onChange={(val) => {
             if (val) {
-              const isDuplicate = prodDefectList.some(d => 
-                d.id !== record.id && d.defect_type_id === val
+              const isDuplicate = prodDefectList.some(d =>
+                String(d.id) !== String(record.id) && String(d.defect_type_id) === String(val)
               )
               if (isDuplicate) {
                 message.warning('同一不良项目只允许选择一次')
@@ -693,7 +693,7 @@ export default function ProcessReporting() {
       return
     }
     try {
-      await api.delete(`/production/process-defects/${item.scrap_id}`)
+      await api.delete(`/production/scrap-defects/${item.scrap_id}`)
       setScrapDefectList(prev => prev.filter(d => d.id !== item.id))
       message.success('删除成功')
     } catch (err) {
@@ -703,7 +703,7 @@ export default function ProcessReporting() {
 
   const scrapDefectDisplayList = useMemo(() => {
     if (!isEditable || !selectedReport) return scrapDefectList
-    const hasEmptyRow = scrapDefectList.some(d => !d.scrap_id)
+    const hasEmptyRow = scrapDefectList.some(d => !d.defect_type_id)
     if (hasEmptyRow) return scrapDefectList
     const emptyRow = {
       id: genTempId(),
@@ -720,7 +720,7 @@ export default function ProcessReporting() {
   }, [scrapDefectList, isEditable, selectedReport, selectedWO])
 
   const getScrapUnitOptions = (defectTypeId) => {
-    const defect = scrapTypeOptions.find(d => d.value === defectTypeId)
+    const defect = scrapTypeOptions.find(d => String(d.value) === String(defectTypeId))
     if (!defect || !defect.available_units) return []
     return defect.available_units.split(',').map(u => ({ label: u.trim(), value: u.trim() }))
   }
@@ -734,8 +734,8 @@ export default function ProcessReporting() {
           value={record.defect_type_id || undefined}
           onChange={(val) => {
             if (val) {
-              const isDuplicate = scrapDefectList.some(d => 
-                d.id !== record.id && d.defect_type_id === val
+              const isDuplicate = scrapDefectList.some(d =>
+                String(d.id) !== String(record.id) && String(d.defect_type_id) === String(val)
               )
               if (isDuplicate) {
                 message.warning('同一不良项目只允许选择一次')
@@ -897,7 +897,7 @@ export default function ProcessReporting() {
 
   const materialDisplayList = useMemo(() => {
     if (!isEditable || !selectedReport) return materialList
-    const hasEmptyRow = materialList.some(m => !m.material_id || String(m.material_id).startsWith('tmp_'))
+    const hasEmptyRow = materialList.some(m => !m.material_id)
     if (hasEmptyRow) return materialList
     const emptyRow = {
       id: genTempId(),
