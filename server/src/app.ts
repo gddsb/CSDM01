@@ -98,8 +98,20 @@ app.get('/api/health', (req, res) => {
 // API 路由
 app.use('/api', routes)
 
-// 404 处理
-app.use((req, res) => {
+// 非 API 请求代理到前端 Vite 开发服务器
+app.use('/', (req, res, next) => {
+  // 只代理非 API 请求
+  if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+    return next()
+  }
+  proxy.web(req, res, {}, (err) => {
+    console.error('代理错误:', err)
+    res.status(503).json({ success: false, message: '前端服务暂不可用' })
+  })
+})
+
+// 404 处理（仅针对未匹配的 API 请求）
+app.use('/api', (req, res) => {
   res.status(404).json({ success: false, message: `接口不存在: ${req.method} ${req.path}` })
 })
 
@@ -107,13 +119,6 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   console.error('服务器错误:', err)
   res.status(500).json({ success: false, message: '服务器内部错误' })
-})
-
-app.use('/', (req, res) => {
-  proxy.web(req, res, {}, (err) => {
-    console.error('代理错误:', err)
-    res.status(503).json({ success: false, message: '前端服务暂不可用' })
-  })
 })
 
 app.listen(PORT, () => {
