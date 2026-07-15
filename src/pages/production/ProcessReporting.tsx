@@ -537,7 +537,10 @@ export default function ProcessReporting() {
   const getUnitOptions = (defectTypeId) => {
     const defect = defectTypeOptions.find(d => String(d.value) === String(defectTypeId))
     if (!defect || !defect.available_units) return []
-    return defect.available_units.split(',').map(u => ({ label: u.trim(), value: u.trim() }))
+    const units = Array.isArray(defect.available_units)
+      ? defect.available_units
+      : defect.available_units.split(',')
+    return units.map(u => ({ label: (u || '').trim(), value: (u || '').trim() }))
   }
 
   const prodDefectColumns = [
@@ -722,7 +725,10 @@ export default function ProcessReporting() {
   const getScrapUnitOptions = (defectTypeId) => {
     const defect = scrapTypeOptions.find(d => String(d.value) === String(defectTypeId))
     if (!defect || !defect.available_units) return []
-    return defect.available_units.split(',').map(u => ({ label: u.trim(), value: u.trim() }))
+    const units = Array.isArray(defect.available_units)
+      ? defect.available_units
+      : defect.available_units.split(',')
+    return units.map(u => ({ label: (u || '').trim(), value: (u || '').trim() }))
   }
 
   const scrapDefectColumns = [
