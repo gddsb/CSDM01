@@ -586,7 +586,7 @@ body {
 
 /* Select 下拉列表样式优化 - 增强可读性 */
 .ant-select-dropdown {
-  background: #FFFFFF !important;
+  background: var(--bg-card) !important;
 }
 .ant-select-dropdown .ant-select-item {
   padding: 8px 12px !important;
@@ -608,8 +608,27 @@ body {
   color: #FFFFFF !important;
 }
 .ant-select-dropdown .ant-select-item:hover:not(.ant-select-item-option-selected) {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--color-primary-soft) !important;
 }
 .ant-select-dropdown .ant-select-item:hover:not(.ant-select-item-option-selected) .ant-select-item-option-content {
   color: var(--text-primary) !important;
+}
+/* 暗黑主题下拉菜单样式增强 */
+[data-dark="true"] .ant-select-dropdown {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+}
+[data-dark="true"] .ant-select-selector {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+[data-dark="true"] .ant-select-selection-placeholder {
+  color: var(--text-secondary) !important;
+}
+[data-dark="true"] .ant-select-arrow {
+  color: var(--text-secondary) !important;
+}
+[data-dark="true"] .ant-select-item-option-disabled {
+  color: var(--text-secondary) !important;
 }

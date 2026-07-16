@@ -554,6 +554,13 @@ export default function ProcessReporting() {
     return units.map(u => ({ label: (u || '').trim(), value: (u || '').trim() }))
   }
 
+  const getFilteredProdDefectOptions = (currentRecordId) => {
+    const selectedIds = prodDefectList
+      .filter(d => String(d.id) !== String(currentRecordId) && d.defect_type_id)
+      .map(d => String(d.defect_type_id))
+    return defectTypeOptions.filter(d => !selectedIds.includes(String(d.value)))
+  }
+
   const prodDefectColumns = [
     {
       title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 120,
@@ -562,18 +569,9 @@ export default function ProcessReporting() {
           placeholder="请选择不良编码"
           value={record.defect_type_id || undefined}
           onChange={(val) => {
-            if (val) {
-              const isDuplicate = prodDefectList.some(d =>
-                String(d.id) !== String(record.id) && String(d.defect_type_id) === String(val)
-              )
-              if (isDuplicate) {
-                message.warning('同一不良项目只允许选择一次')
-                return
-              }
-            }
             handleProdDefectChange(record.id, 'defect_type_id', val)
           }}
-          options={defectTypeOptions}
+          options={getFilteredProdDefectOptions(record.id)}
           style={{ width: '100%' }}
           showSearch
           popupMatchSelectWidth={false}
@@ -772,6 +770,13 @@ export default function ProcessReporting() {
     return units.map(u => ({ label: (u || '').trim(), value: (u || '').trim() }))
   }
 
+  const getFilteredScrapDefectOptions = (currentRecordId) => {
+    const selectedIds = scrapDefectList
+      .filter(d => String(d.id) !== String(currentRecordId) && d.defect_type_id)
+      .map(d => String(d.defect_type_id))
+    return scrapTypeOptions.filter(d => !selectedIds.includes(String(d.value)))
+  }
+
   const scrapDefectColumns = [
     {
       title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 120,
@@ -780,18 +785,9 @@ export default function ProcessReporting() {
           placeholder="请选择不良编码"
           value={record.defect_type_id || undefined}
           onChange={(val) => {
-            if (val) {
-              const isDuplicate = scrapDefectList.some(d =>
-                String(d.id) !== String(record.id) && String(d.defect_type_id) === String(val)
-              )
-              if (isDuplicate) {
-                message.warning('同一不良项目只允许选择一次')
-                return
-              }
-            }
             handleScrapDefectChange(record.id, 'defect_type_id', val)
           }}
-          options={scrapTypeOptions}
+          options={getFilteredScrapDefectOptions(record.id)}
           style={{ width: '100%' }}
           showSearch
           popupMatchSelectWidth={false}
@@ -994,6 +990,24 @@ export default function ProcessReporting() {
     return [...materialList, emptyRow]
   }, [materialList, isEditable, selectedReport, selectedWO, selectedProcessId])
 
+  const isFirstProcess = useMemo(() => {
+    if (!lineProcesses.length || !selectedProcessId) return false
+    return lineProcesses[0].process_id === selectedProcessId
+  }, [lineProcesses, selectedProcessId])
+
+  const getFilteredMaterialOptions = (record) => {
+    if (!isFirstProcess) return materialOptions
+    if (record.material_type === '退回') {
+      const enteredMaterials = materialList
+        .filter(m => m.material_id && m.material_code && m.material_batch && m.package_no)
+        .map(m => String(m.material_id))
+      return materialOptions.filter(m => enteredMaterials.includes(String(m.value)))
+    }
+    return materialOptions.filter(m =>
+      m.material_code.startsWith('Y2') || m.material_code.startsWith('T1')
+    )
+  }
+
   const materialColumns = [
     {
       title: '物料类型', dataIndex: 'material_type', key: 'material_type', width: 100,
@@ -1018,7 +1032,7 @@ export default function ProcessReporting() {
           placeholder="请选择料号"
           value={record.material_id || undefined}
           onChange={(val) => handleMaterialChange(record.id, 'material_id', val)}
-          options={materialOptions}
+          options={getFilteredMaterialOptions(record)}
           style={{ width: '100%' }}
           showSearch
           popupMatchSelectWidth={false}
