@@ -365,7 +365,7 @@ export default function ProcessReporting() {
   const defectTypeOptions = useMemo(() => {
     const seen = new Set()
     return defectTypes
-      .filter(d => d.category_name === '制程检验类型' && d.status === '启用')
+      .filter(d => d.category_name === '制程检验类型' && d.status === '启用' && d.display !== false && d.display !== 0)
       .filter(d => {
         if (seen.has(d.defect_id)) return false
         seen.add(d.defect_id)
@@ -385,7 +385,7 @@ export default function ProcessReporting() {
   const scrapTypeOptions = useMemo(() => {
     const seen = new Set()
     return defectTypes
-      .filter(d => d.category_name === '制程检验类型' && d.defect_type === '检验报废' && d.status === '启用')
+      .filter(d => d.category_name === '制程检验类型' && d.defect_type === '检验报废' && d.status === '启用' && d.display !== false && d.display !== 0)
       .filter(d => {
         if (seen.has(d.defect_id)) return false
         seen.add(d.defect_id)
@@ -862,13 +862,14 @@ export default function ProcessReporting() {
   const saveMaterialItem = async (item) => {
     if (!selectedReport || !selectedProcessId) return
     try {
-      if (item.material_id && String(item.material_id).startsWith('tmp_') === false) {
-        await api.put(`/production/process-materials/${item.material_id}`, {
+      if (String(item.id).startsWith('tmp_') === false) {
+        await api.put(`/production/process-materials/${item.id}`, {
           material_type: item.material_type,
           material_code: item.material_code,
           material_name: item.material_name,
           specification: item.specification,
           material_batch: item.material_batch,
+          package_no: item.package_no,
           quantity: item.quantity,
           label_images: item.label_images,
         })
@@ -877,11 +878,12 @@ export default function ProcessReporting() {
           report_id: selectedReport.report_id,
           work_order_id: selectedWO.work_order_id,
           process_id: selectedProcessId,
-          material_type: item.material_type || '投入物料',
+          material_type: item.material_type || '投入',
           material_code: item.material_code,
           material_name: item.material_name,
           specification: item.specification,
           material_batch: item.material_batch,
+          package_no: item.package_no,
           quantity: item.quantity,
           label_images: item.label_images,
         })
