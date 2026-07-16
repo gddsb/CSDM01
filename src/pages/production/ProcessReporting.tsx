@@ -46,6 +46,7 @@ export default function ProcessReporting() {
 
   const [selectedProcessId, setSelectedProcessId] = useState(null)
   const [activeTab, setActiveTab] = useState('production-defect')
+  const [prevProcessQualifiedQty, setPrevProcessQualifiedQty] = useState(0)
 
   const [imageDrawerVisible, setImageDrawerVisible] = useState(false)
   const [imageDrawerTitle, setImageDrawerTitle] = useState('')
@@ -997,6 +998,75 @@ export default function ProcessReporting() {
     return lineProcesses[0].process_id === selectedProcessId
   }, [lineProcesses, selectedProcessId])
 
+  // 获取上一道工序的合格数
+  useEffect(() => {
+    if (!selectedReport || !selectedProcessId || !lineProcesses.length || isFirstProcess) {
+      setPrevProcessQualifiedQty(0)
+      return
+    }
+    const currentIndex = lineProcesses.findIndex(p => p.process_id === selectedProcessId)
+    if (currentIndex <= 0) {
+      setPrevProcessQualifiedQty(0)
+      return
+    }
+    const prevProcessId = lineProcesses[currentIndex - 1].process_id
+    let cancelled = false
+    const run = async () => {
+      try {
+        const [defectRes, materialRes] = await Promise.all([
+          api.get('/production/process-defects', { params: { report_id: selectedReport.report_id, process_id: prevProcessId, page: 1, pageSize: 1000 } }),
+          api.get('/production/process-materials', { params: { report_id: selectedReport.report_id, process_id: prevProcessId, page: 1, pageSize: 1000 } }),
+        ])
+        if (cancelled) return
+        const prevDefects = defectRes.data || []
+        const prevMaterials = materialRes.data || []
+        let prevInputQty = prevMaterials.reduce((sum, m) => sum + (Number(m.quantity) || 0), 0)
+        if (prevMaterials.length > 0) {
+          const investQty = prevMaterials.filter(m => m.material_type === '投入').reduce((sum, m) => sum + (Number(m.quantity) || 0), 0)
+          const returnQty = prevMaterials.filter(m => m.material_type === '退回').reduce((sum, m) => sum + (Number(m.quantity) || 0), 0)
+          prevInputQty = investQty - returnQty
+        }
+        const prevProcessDefect = prevDefects.filter(d => d.defect_type === '制程不良').reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
+        const prevMaterialDefect = prevDefects.filter(d => d.defect_type === '来料不良').reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
+        const prevQualified = prevInputQty - prevProcessDefect - prevMaterialDefect
+        setPrevProcessQualifiedQty(prevQualified > 0 ? Number(prevQualified.toFixed(2)) : 0)
+      } catch {
+        if (!cancelled) setPrevProcessQualifiedQty(0)
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [selectedReport, selectedProcessId, lineProcesses, isFirstProcess])
+
+  // 当前工序统计数据
+  const processStats = useMemo(() => {
+    // 制程不良
+    const processDefectQty = prodDefectList
+      .filter(d => d.defect_type === '制程不良')
+      .reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
+    // 来料不良
+    const materialDefectQty = prodDefectList
+      .filter(d => d.defect_type === '来料不良')
+      .reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
+    // 投入数量
+    let inputQty = 0
+    if (isFirstProcess) {
+      const investQty = materialList.filter(m => m.material_type === '投入').reduce((sum, m) => sum + (Number(m.quantity) || 0), 0)
+      const returnQty = materialList.filter(m => m.material_type === '退回').reduce((sum, m) => sum + (Number(m.quantity) || 0), 0)
+      inputQty = investQty - returnQty
+    } else {
+      inputQty = prevProcessQualifiedQty
+    }
+    // 合格数 = 投入 - 制程不良 - 来料不良
+    const qualifiedQty = inputQty - processDefectQty - materialDefectQty
+    return {
+      inputQty: Number(inputQty.toFixed(2)),
+      qualifiedQty: Number((qualifiedQty > 0 ? qualifiedQty : 0).toFixed(2)),
+      processDefectQty: Number(processDefectQty.toFixed(2)),
+      materialDefectQty: Number(materialDefectQty.toFixed(2)),
+    }
+  }, [prodDefectList, materialList, isFirstProcess, prevProcessQualifiedQty])
+
   const getFilteredMaterialOptions = (record) => {
     if (!isFirstProcess) return materialOptions
     if (record.material_type === '退回') {
@@ -1266,7 +1336,7 @@ export default function ProcessReporting() {
       ) : record.device_name || '-',
     },
     {
-      title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 150,
+      title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 120,
       render: (val, record) => isEditable ? (
         <TimePicker
           value={val ? dayjs(val) : null}
@@ -1279,14 +1349,15 @@ export default function ProcessReporting() {
               handleExceptionChange(record.id, 'start_time', null)
             }
           }}
+          format="HH:mm"
           style={{ width: '100%' }}
           size="small"
           minuteStep={10}
         />
-      ) : val ? dayjs(val).format('YYYY-MM-DD HH:mm') : '-',
+      ) : val ? dayjs(val).format('HH:mm') : '-',
     },
     {
-      title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 150,
+      title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 120,
       render: (val, record) => isEditable ? (
         <TimePicker
           value={val ? dayjs(val) : null}
@@ -1299,11 +1370,12 @@ export default function ProcessReporting() {
               handleExceptionChange(record.id, 'end_time', null)
             }
           }}
+          format="HH:mm"
           style={{ width: '100%' }}
           size="small"
           minuteStep={10}
         />
-      ) : val ? dayjs(val).format('YYYY-MM-DD HH:mm') : '-',
+      ) : val ? dayjs(val).format('HH:mm') : '-',
     },
     { title: '时长(小时)', dataIndex: 'duration', key: 'duration', width: 100 },
     {
@@ -1400,8 +1472,8 @@ export default function ProcessReporting() {
           work_order_id: selectedWO?.work_order_id,
           record_date: dayjs().format('YYYY-MM-DD'),
           shift: '白班',
-          start_time: null,
-          end_time: null,
+          start_time: selectedReport?.report_start_time || null,
+          end_time: selectedReport?.report_end_time || null,
           hours: 0,
           skilled_count: 0,
           general_count: 0,
@@ -1467,10 +1539,10 @@ export default function ProcessReporting() {
     },
     {
       title: '班次', dataIndex: 'shift', key: 'shift', width: 100,
-      render: (val, record) => isEditable ? (
+      render: (val) => isEditable ? (
         <Select
-          value={val || undefined}
-          onChange={(v) => handleManpowerChange(record.id, 'shift', v)}
+          value={val || '白班'}
+          disabled
           options={[
             { label: '白班', value: '白班' },
             { label: '夜班', value: '夜班' },
@@ -1481,7 +1553,7 @@ export default function ProcessReporting() {
       ) : val || '-',
     },
     {
-      title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 150,
+      title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 120,
       render: (val, record) => isEditable ? (
         <TimePicker
           value={val ? dayjs(val) : null}
@@ -1494,14 +1566,15 @@ export default function ProcessReporting() {
               handleManpowerChange(record.id, 'start_time', null)
             }
           }}
+          format="HH:mm"
           style={{ width: '100%' }}
           size="small"
           minuteStep={10}
         />
-      ) : val ? dayjs(val).format('YYYY-MM-DD HH:mm') : '-',
+      ) : val ? dayjs(val).format('HH:mm') : '-',
     },
     {
-      title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 150,
+      title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 120,
       render: (val, record) => isEditable ? (
         <TimePicker
           value={val ? dayjs(val) : null}
@@ -1514,11 +1587,12 @@ export default function ProcessReporting() {
               handleManpowerChange(record.id, 'end_time', null)
             }
           }}
+          format="HH:mm"
           style={{ width: '100%' }}
           size="small"
           minuteStep={10}
         />
-      ) : val ? dayjs(val).format('YYYY-MM-DD HH:mm') : '-',
+      ) : val ? dayjs(val).format('HH:mm') : '-',
     },
     { title: '工时(小时)', dataIndex: 'hours', key: 'hours', width: 100 },
     {
@@ -1594,8 +1668,8 @@ export default function ProcessReporting() {
       case 'production-defect':
         return (
           <div>
-            <Row style={{ marginBottom: 16 }}>
-              <Col span={12}>
+            <Row style={{ marginBottom: 16 }} align="middle">
+              <Col span={8}>
                 <Space>
                   <span>选择工序：</span>
                   <Select
@@ -1607,11 +1681,14 @@ export default function ProcessReporting() {
                   />
                 </Space>
               </Col>
-              <Col span={12} style={{ textAlign: 'right' }}>
-                {isEditable ? (
-                  <Tag color="blue">表格末尾空行可直接录入，修改后自动保存</Tag>
-                ) : (
-                  <Tag color="default">已结束报工，数据只读</Tag>
+              <Col span={16} style={{ textAlign: 'right' }}>
+                {selectedProcessId && (
+                  <Space size="large">
+                    <span>投入数量：<b style={{ color: '#1890ff' }}>{processStats.inputQty}</b></span>
+                    <span>合格数：<b style={{ color: '#52c41a' }}>{processStats.qualifiedQty}</b></span>
+                    <span>制程不良：<b style={{ color: '#fa8c16' }}>{processStats.processDefectQty}</b></span>
+                    <span>来料不良：<b style={{ color: '#faad14' }}>{processStats.materialDefectQty}</b></span>
+                  </Space>
                 )}
               </Col>
             </Row>
