@@ -1620,6 +1620,7 @@ export default function ProcessReporting() {
               size="small"
               pagination={false}
               scroll={{ x: 800 }}
+              tableLayout="fixed"
             />
           </div>
         )
@@ -1654,6 +1655,7 @@ export default function ProcessReporting() {
               size="small"
               pagination={false}
               scroll={{ x: 900 }}
+              tableLayout="fixed"
             />
           </div>
         )
@@ -1679,6 +1681,7 @@ export default function ProcessReporting() {
               size="small"
               pagination={false}
               scroll={{ x: 700 }}
+              tableLayout="fixed"
             />
           </div>
         )
@@ -1704,6 +1707,7 @@ export default function ProcessReporting() {
               size="small"
               pagination={false}
               scroll={{ x: 900 }}
+              tableLayout="fixed"
             />
           </div>
         )
@@ -1729,6 +1733,7 @@ export default function ProcessReporting() {
               size="small"
               pagination={false}
               scroll={{ x: 1200 }}
+              tableLayout="fixed"
             />
           </div>
         )
