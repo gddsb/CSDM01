@@ -98,7 +98,7 @@ backup_database() {
             $SUDO mysqldump -u "$DB_USER" "$DB_NAME" > "$DB_BACKUP" 2>/dev/null || true
             log_success "数据库备份完成"
         else
-            DB_FILE=$(find "$PROJECT_DIR/server" -name "*.sqlite" -o -name "database.sqlite" 2>/dev/null | head -1)
+            DB_FILE=$(find "$PROJECT_DIR/server" -name "*.sqlite" -o -name "database.sqlite" -o -name "*.db" 2>/dev/null | head -1)
             if [ -n "$DB_FILE" ] && [ -f "$DB_FILE" ]; then
                 DB_BACKUP="$BACKUP_DIR/database_$(date +%Y%m%d_%H%M%S).sqlite"
                 $SUDO cp "$DB_FILE" "$DB_BACKUP"
@@ -618,7 +618,7 @@ rollback() {
             DB_USER=$(grep "DB_USER" "$PROJECT_DIR/server/.env" | cut -d'=' -f2 | tr -d ' ')
             $SUDO mysql -u "$DB_USER" "$DB_NAME" < "$LATEST_DB"
         else
-            DB_FILE=$(find "$PROJECT_DIR/server" -name "*.sqlite" 2>/dev/null | head -1)
+            DB_FILE=$(find "$PROJECT_DIR/server" -name "*.sqlite" -o -name "*.db" 2>/dev/null | head -1)
             [ -n "$DB_FILE" ] && $SUDO cp "$LATEST_DB" "$DB_FILE"
         fi
     fi
