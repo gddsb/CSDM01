@@ -195,7 +195,7 @@ export default function DataDictionary() {
       <Drawer
         title={currentTable?.table_name}
         placement="right"
-        width={720}
+        width={920}
         open={detailVisible}
         onClose={() => setDetailVisible(false)}
         destroyOnClose
@@ -225,12 +225,12 @@ export default function DataDictionary() {
                 { title: '可空', dataIndex: 'nullable', key: 'nullable', width: 60, render: v => v ? '是' : '否' },
                 { title: '主键', dataIndex: 'primaryKey', key: 'primaryKey', width: 60, render: v => v ? <Tag color="blue">是</Tag> : '否' },
                 { title: '默认值', dataIndex: 'defaultValue', key: 'defaultValue', width: 100, render: v => v ?? '-' },
-                { title: '说明', dataIndex: 'comment', key: 'comment', ellipsis: true },
+                { title: '说明', dataIndex: 'comment', key: 'comment' },
               ]}
               dataSource={columns}
               rowKey="name"
               pagination={false}
-              scroll={{ y: 400 }}
+              scroll={{ x: 800, y: 400 }}
             />
           </>
         )}
@@ -254,10 +254,15 @@ export default function DataDictionary() {
             <Table
               size="small"
               columns={(recordFields.length ? recordFields : Object.keys(recordsData[0] || {}).map(name => ({ name }))).map(f => ({
-                title: f.comment ? `${f.name}（${f.comment}）` : f.name,
+                title: (
+                  <div style={{ lineHeight: 1.4 }}>
+                    <div style={{ fontWeight: 600 }}>{f.name}</div>
+                    {f.comment && <div style={{ fontSize: 12, color: '#888', whiteSpace: 'normal' }}>{f.comment}</div>}
+                  </div>
+                ),
                 dataIndex: f.name,
                 key: f.name,
-                width: 150,
+                width: 160,
                 ellipsis: true,
                 render: v => {
                   if (v === null || v === undefined) return <span style={{ color: '#bbb' }}>-</span>
