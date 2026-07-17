@@ -1,6 +1,7 @@
 import { Op } from 'sequelize'
 import { ProcessDefect, WorkOrder, Process, DefectType } from '../models/index.js'
 import { success, fail } from '../utils/response.js'
+import { syncWorkOrderSummary } from './ProcessReportController.js'
 
 export const list = async (req, res) => {
   try {
@@ -97,6 +98,7 @@ export const scrapCreate = async (req, res) => {
       record_user_name: req.user?.real_name || '',
     })
 
+    await syncWorkOrderSummary(workOrder.work_order_id)
     return success(res, { ...defect.toJSON(), scrap_id: defect.defect_id }, '创建成功')
   } catch (err) {
     console.error('创建检验报废记录失败:', err)
@@ -134,6 +136,7 @@ export const scrapUpdate = async (req, res) => {
     if (defect_images !== undefined) updateData.defect_images = JSON.stringify(defect_images || [])
 
     await defect.update(updateData)
+    await syncWorkOrderSummary(defect.work_order_id)
     return success(res, { ...defect.toJSON(), scrap_id: defect.defect_id }, '更新成功')
   } catch (err) {
     console.error('更新检验报废记录失败:', err)
@@ -194,6 +197,7 @@ export const create = async (req, res) => {
       record_user_name,
     })
 
+    await syncWorkOrderSummary(workOrder.work_order_id)
     return success(res, defect, '创建成功')
   } catch (err) {
     console.error('创建工序不良记录失败:', err)
@@ -206,7 +210,9 @@ export const remove = async (req, res) => {
     const { id } = req.params
     const defect = await ProcessDefect.findOne({ where: { defect_id: id } })
     if (!defect) return fail(res, '记录不存在', 404)
+    const workOrderId = defect.work_order_id
     await defect.destroy()
+    await syncWorkOrderSummary(workOrderId)
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除工序不良记录失败:', err)
@@ -260,6 +266,7 @@ export const batchSave = async (req, res) => {
       created.push(defect)
     }
 
+    await syncWorkOrderSummary(workOrder.work_order_id)
     return success(res, { count: created.length, items: created }, '批量保存成功')
   } catch (err) {
     console.error('批量保存工序不良记录失败:', err)
@@ -298,6 +305,7 @@ export const update = async (req, res) => {
     if (defect_images !== undefined) updateData.defect_images = JSON.stringify(defect_images || [])
 
     await defect.update(updateData)
+    await syncWorkOrderSummary(defect.work_order_id)
     return success(res, defect, '更新成功')
   } catch (err) {
     console.error('更新工序不良记录失败:', err)

@@ -1,29 +1,41 @@
 import { Op } from 'sequelize'
-import { ProcessReport, WorkOrder, Process, Device } from '../models/index.js'
+import { ProcessReport, WorkOrder, Process, Device, ProcessDefect, ProcessMaterial } from '../models/index.js'
 import { success, fail } from '../utils/response.js'
 import { generateProcessReportNo } from '../utils/sequence.js'
 
-const syncWorkOrderSummary = async (workOrderId) => {
-  const reports = await ProcessReport.findAll({
+// 同步工单汇总数据：从 ProcessDefect 和 ProcessMaterial 表聚合实际数据
+export const syncWorkOrderSummary = async (workOrderId) => {
+  // 从不良记录表聚合：按 defect_category 分类汇总数量
+  const defects = await ProcessDefect.findAll({
     where: { work_order_id: workOrderId },
-    attributes: ['input_qty', 'output_qty', 'defect_material', 'defect_process', 'defect_scrap'],
+    attributes: ['defect_category', 'quantity'],
   })
-  const summary = reports.reduce((acc, r) => {
-    acc.start_qty += Number(r.input_qty || 0)
-    acc.qualified_qty += Number(r.output_qty || 0)
-    acc.defect_material += Number(r.defect_material || 0)
-    acc.defect_process += Number(r.defect_process || 0)
-    acc.defect_scrap += Number(r.defect_scrap || 0)
-    return acc
-  }, { start_qty: 0, qualified_qty: 0, defect_material: 0, defect_process: 0, defect_scrap: 0 })
+  const defectSummary = { material: 0, process: 0, scrap: 0 }
+  for (const d of defects) {
+    const qty = Number(d.quantity || 0)
+    const cat = d.defect_category || ''
+    if (cat === '物料不良') defectSummary.material += qty
+    else if (cat === '检验报废') defectSummary.scrap += qty
+    else defectSummary.process += qty // 制程不良及其他
+  }
+
+  // 从物料记录表聚合：投入数量
+  const inputQty = await ProcessMaterial.sum('quantity', {
+    where: { work_order_id: workOrderId, material_type: '投入' },
+  }) || 0
+
+  // 合格数量 = 投入数量 - 物料不良 - 制程不良 - 报废
+  const totalDefect = defectSummary.material + defectSummary.process + defectSummary.scrap
+  const qualifiedQty = Math.max(0, Number(inputQty) - totalDefect)
+
   await WorkOrder.update(
     {
-      start_qty: summary.start_qty,
-      qualified_qty: summary.qualified_qty,
-      finished_qty: summary.qualified_qty,
-      defect_material: summary.defect_material,
-      defect_process: summary.defect_process,
-      defect_scrap: summary.defect_scrap,
+      start_qty: Number(inputQty),
+      qualified_qty: qualifiedQty,
+      finished_qty: qualifiedQty,
+      defect_material: defectSummary.material,
+      defect_process: defectSummary.process,
+      defect_scrap: defectSummary.scrap,
     },
     { where: { work_order_id: workOrderId } }
   )
