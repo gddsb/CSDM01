@@ -20,7 +20,8 @@ const tables = [
   { name: '工单工序记录 (production_work_order_process)', model: WorkOrderProcess },
   { name: '工序报工记录 (production_process_report)', model: ProcessReport },
   { name: '生产工单 (production_work_order)', model: WorkOrder },
-  { name: '生产订单 (production_order)', model: Order },
+  // 保留生产订单数据，仅清除工单和报工相关数据
+  // { name: '生产订单 (production_order)', model: Order },
 ]
 
 async function clearProductionData() {
