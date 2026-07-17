@@ -74,6 +74,47 @@ export default function ProcessReporting() {
 
   const message = useMessage()
 
+  // 不良类型下拉选项（必须在 fetchAllData 之前定义，避免 TDZ 错误）
+  const defectTypeOptions = useMemo(() => {
+    const seen = new Set()
+    return defectTypes
+      .filter(d => d.category_name === '制程检验类型' && d.status === '启用' && d.display !== false && d.display !== 0)
+      .filter(d => {
+        if (seen.has(d.defect_id)) return false
+        seen.add(d.defect_id)
+        return true
+      })
+      .map(d => ({
+        label: <span><span style={{ fontWeight: 600, color: '#212121' }}>{d.defect_code}</span><span style={{ marginLeft: 8, opacity: 0.65, color: '#757575' }}>{d.defect_name}</span></span>,
+        value: d.defect_id,
+        defect_code: d.defect_code,
+        defect_type: d.defect_type,
+        defect_name: d.defect_name,
+        defect_unit: d.defect_unit || '',
+        available_units: d.available_units || '',
+      }))
+  }, [defectTypes])
+
+  const scrapTypeOptions = useMemo(() => {
+    const seen = new Set()
+    return defectTypes
+      .filter(d => d.category_name === '制程检验类型' && d.defect_type === '检验报废' && d.status === '启用' && d.display !== false && d.display !== 0)
+      .filter(d => {
+        if (seen.has(d.defect_id)) return false
+        seen.add(d.defect_id)
+        return true
+      })
+      .map(d => ({
+        label: <span><span style={{ fontWeight: 600, color: '#212121' }}>{d.defect_code}</span><span style={{ marginLeft: 8, opacity: 0.65, color: '#757575' }}>{d.defect_name}</span></span>,
+        value: d.defect_id,
+        defect_code: d.defect_code,
+        defect_type: d.defect_type,
+        defect_name: d.defect_name,
+        defect_unit: d.defect_unit || '',
+        available_units: d.available_units || '',
+      }))
+  }, [defectTypes])
+
   useEffect(() => {
     let cancelled = false
     const run = async () => {
@@ -427,46 +468,6 @@ export default function ProcessReporting() {
       },
     })
   }
-
-  const defectTypeOptions = useMemo(() => {
-    const seen = new Set()
-    return defectTypes
-      .filter(d => d.category_name === '制程检验类型' && d.status === '启用' && d.display !== false && d.display !== 0)
-      .filter(d => {
-        if (seen.has(d.defect_id)) return false
-        seen.add(d.defect_id)
-        return true
-      })
-      .map(d => ({
-        label: <span><span style={{ fontWeight: 600, color: '#212121' }}>{d.defect_code}</span><span style={{ marginLeft: 8, opacity: 0.65, color: '#757575' }}>{d.defect_name}</span></span>,
-        value: d.defect_id,
-        defect_code: d.defect_code,
-        defect_type: d.defect_type,
-        defect_name: d.defect_name,
-        defect_unit: d.defect_unit || '',
-        available_units: d.available_units || '',
-      }))
-  }, [defectTypes])
-
-  const scrapTypeOptions = useMemo(() => {
-    const seen = new Set()
-    return defectTypes
-      .filter(d => d.category_name === '制程检验类型' && d.defect_type === '检验报废' && d.status === '启用' && d.display !== false && d.display !== 0)
-      .filter(d => {
-        if (seen.has(d.defect_id)) return false
-        seen.add(d.defect_id)
-        return true
-      })
-      .map(d => ({
-        label: <span><span style={{ fontWeight: 600, color: '#212121' }}>{d.defect_code}</span><span style={{ marginLeft: 8, opacity: 0.65, color: '#757575' }}>{d.defect_name}</span></span>,
-        value: d.defect_id,
-        defect_code: d.defect_code,
-        defect_type: d.defect_type,
-        defect_name: d.defect_name,
-        defect_unit: d.defect_unit || '',
-        available_units: d.available_units || '',
-      }))
-  }, [defectTypes])
 
   const deviceOptions = useMemo(() => {
     return devices.map(d => ({ label: `${d.device_code} ${d.device_name}`, value: d.device_id }))
