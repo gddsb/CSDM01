@@ -39,9 +39,12 @@ export const list = async (req, res) => {
     const offset = (Number(page) - 1) * limit
     let order = [['device_type', 'ASC'], ['device_code', 'ASC']]
     if (req.query.sortBy) {
-      const fields = req.query.sortBy.split(',')
-      const orders = (req.query.sortOrder || 'asc').split(',')
-      order = fields.map((field, idx) => [field, orders[idx]?.toUpperCase() || 'ASC'])
+      const allowedSortFields = ['device_code', 'device_name', 'device_type', 'device_model', 'serial_no', 'location', 'status', 'created_at', 'updated_at']
+      const fields = req.query.sortBy.split(',').filter(f => allowedSortFields.includes(f))
+      if (fields.length > 0) {
+        const orders = (req.query.sortOrder || 'asc').split(',')
+        order = fields.map((field, idx) => [field, (orders[idx]?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC')])
+      }
     }
     const { rows, count } = await Device.findAndCountAll({
       where,
@@ -72,13 +75,15 @@ export const detail = async (req, res) => {
 // 创建设备
 export const create = async (req, res) => {
   try {
-    const { device_code, device_name } = req.body
+    const { device_code, device_name, device_type, device_model, serial_no, location, line_id, responsible_person, is_special, status, last_inspection_date, inspection_cycle, next_inspection_date, manufacturer, purchase_date, warranty_end } = req.body
     if (!device_code || !device_name) {
       return fail(res, '设备编码和名称不能为空')
     }
     const exists = await Device.findOne({ where: { device_code } })
     if (exists) return fail(res, '设备编码已存在')
-    const device = await Device.create(req.body)
+    const device = await Device.create({
+      device_code, device_name, device_type, device_model, serial_no, location, line_id, responsible_person, is_special, status, last_inspection_date, inspection_cycle, next_inspection_date, manufacturer, purchase_date, warranty_end,
+    })
     return success(res, device, '创建成功')
   } catch (err) {
     console.error('创建设备失败:', err)
@@ -98,7 +103,10 @@ export const update = async (req, res) => {
       })
       if (exists) return fail(res, '设备编码已存在')
     }
-    await device.update(req.body)
+    const { device_code, device_name, device_type, device_model, serial_no, location, line_id, responsible_person, is_special, status, last_inspection_date, inspection_cycle, next_inspection_date, manufacturer, purchase_date, warranty_end } = req.body
+    await device.update({
+      device_code, device_name, device_type, device_model, serial_no, location, line_id, responsible_person, is_special, status, last_inspection_date, inspection_cycle, next_inspection_date, manufacturer, purchase_date, warranty_end,
+    })
     return success(res, device, '修改成功')
   } catch (err) {
     console.error('修改设备失败:', err)

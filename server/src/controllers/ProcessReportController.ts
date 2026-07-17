@@ -1,5 +1,6 @@
 import { Op } from 'sequelize'
 import { ProcessReport, WorkOrder, Process, Device, ProcessDefect, ProcessMaterial, DefectType } from '../models/index.js'
+import sequelize from '../config/database.js'
 import { success, fail } from '../utils/response.js'
 import { generateProcessReportNo } from '../utils/sequence.js'
 
@@ -117,59 +118,69 @@ export const create = async (req, res) => {
     }
 
     const targetDate = report_date ? new Date(report_date) : new Date()
-    const dateStr = targetDate.toISOString().split('T')[0]
+    const dateStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}`
 
-    const todayReports = await ProcessReport.findAll({
-      where: {
-        work_order_id,
+    const result = await sequelize.transaction(async (t) => {
+      const todayReports = await ProcessReport.findAll({
+        where: {
+          work_order_id,
+          report_date: dateStr,
+        },
+        transaction: t,
+      })
+      if (todayReports.length > 0) {
+        throw new Error('该工单今天已创建报工单，一个工单每天只能创建一个报工单')
+      }
+
+      const lastReport = await ProcessReport.findOne({
+        where: { work_order_id },
+        order: [['report_id', 'DESC']],
+        transaction: t,
+      })
+      if (lastReport && lastReport.status === '开始报工') {
+        throw new Error('上一条报工单尚未结束报工，请先结束报工后再新增')
+      }
+
+      const reportNo = await generateProcessReportNo()
+
+      const reportCount = await ProcessReport.count({
+        where: { work_order_id },
+        transaction: t,
+      })
+
+      const report = await ProcessReport.create({
+        report_no: reportNo,
+        work_order_id: workOrder.work_order_id,
+        work_order_no: workOrder.work_order_no,
+        line_id: workOrder.line_id,
+        line_name: workOrder.line_name,
+        material_id: workOrder.material_id,
+        material_code: workOrder.material_code,
+        material_name: workOrder.material_name,
+        specification: workOrder.specification,
+        unit: workOrder.unit,
+        planned_qty: workOrder.planned_qty,
+        process_id: process_id || null,
+        process_name: null,
+        report_count: reportCount + 1,
         report_date: dateStr,
-      },
-    })
-    if (todayReports.length > 0) {
-      return fail(res, '该工单今天已创建报工单，一个工单每天只能创建一个报工单')
-    }
+        shift: shift || null,
+        team: team || null,
+        report_user: report_user || req.user?.username || '',
+        report_user_name: report_user_name || req.user?.real_name || '',
+        report_time: new Date(),
+        report_start_time: new Date(),
+        status: 0,
+      }, { transaction: t })
 
-    const lastReport = await ProcessReport.findOne({
-      where: { work_order_id },
-      order: [['report_id', 'DESC']],
-    })
-    if (lastReport && lastReport.status === '开始报工') {
-      return fail(res, '上一条报工单尚未结束报工，请先结束报工后再新增')
-    }
-
-    const reportNo = await generateProcessReportNo()
-
-    const reportCount = await ProcessReport.count({
-      where: { work_order_id }
+      return report
     })
 
-    const report = await ProcessReport.create({
-      report_no: reportNo,
-      work_order_id: workOrder.work_order_id,
-      work_order_no: workOrder.work_order_no,
-      line_id: workOrder.line_id,
-      line_name: workOrder.line_name,
-      material_id: workOrder.material_id,
-      material_code: workOrder.material_code,
-      material_name: workOrder.material_name,
-      specification: workOrder.specification,
-      unit: workOrder.unit,
-      planned_qty: workOrder.planned_qty,
-      process_id: process_id || null,
-      process_name: null,
-      report_count: reportCount + 1,
-      report_date: dateStr,
-      shift: shift || null,
-      team: team || null,
-      report_user: report_user || req.user?.username || '',
-      report_user_name: report_user_name || req.user?.real_name || '',
-      report_time: new Date(),
-      report_start_time: new Date(),
-      status: 0,
-    })
-
-    return success(res, report, '创建成功')
+    return success(res, result, '创建成功')
   } catch (err) {
+    if (err.message && !err.message.includes('服务器')) {
+      return fail(res, err.message)
+    }
     console.error('创建报工单失败:', err)
     return fail(res, '服务器错误', 500)
   }

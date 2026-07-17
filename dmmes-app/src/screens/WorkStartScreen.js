@@ -41,8 +41,11 @@ export default function WorkStartScreen({ navigation }) {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
+    try {
+      await loadData();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleStart = (item) => {

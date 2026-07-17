@@ -61,8 +61,11 @@ export default function HomeScreen({ navigation }) {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadStats();
-    setRefreshing(false);
+    try {
+      await loadStats();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleMenuPress = (item) => {

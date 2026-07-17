@@ -50,13 +50,15 @@ export const detail = async (req, res) => {
 
 export const create = async (req, res) => {
   try {
-    const { material_code, material_name, category_name, unit_name, effective_date, expiry_date } = req.body
+    const { material_code, material_name, category_name, specification, unit_name, film_no, version_no, cutting_size, printing_process, color_separation, blanking_diameter, material_thickness, material_width, material_height, scrap_weight, unit_weight, unit_volume, weight_unit, volume_unit, inventory_category, unit_code, customer_id, is_active, effective_date, expiry_date } = req.body
     if (!material_code || !material_name || !category_name || !unit_name || !effective_date || !expiry_date) {
       return fail(res, '料号、品名、分类名称、单位名称、生效日期、失效日期不能为空')
     }
     const exists = await Material.findOne({ where: { material_code } })
     if (exists) return fail(res, '料号已存在')
-    const material = await Material.create(req.body)
+    const material = await Material.create({
+      material_code, material_name, category_name, specification, unit_name, film_no, version_no, cutting_size, printing_process, color_separation, blanking_diameter, material_thickness, material_width, material_height, scrap_weight, unit_weight, unit_volume, weight_unit, volume_unit, inventory_category, unit_code, customer_id, is_active, effective_date, expiry_date,
+    })
     return success(res, material, '创建成功')
   } catch (err) {
     console.error('创建料品失败:', err)
@@ -75,7 +77,10 @@ export const update = async (req, res) => {
       })
       if (exists) return fail(res, '料号已存在')
     }
-    await material.update(req.body)
+    const { material_code, material_name, category_name, specification, unit_name, film_no, version_no, cutting_size, printing_process, color_separation, blanking_diameter, material_thickness, material_width, material_height, scrap_weight, unit_weight, unit_volume, weight_unit, volume_unit, inventory_category, unit_code, customer_id, is_active, effective_date, expiry_date } = req.body
+    await material.update({
+      material_code, material_name, category_name, specification, unit_name, film_no, version_no, cutting_size, printing_process, color_separation, blanking_diameter, material_thickness, material_width, material_height, scrap_weight, unit_weight, unit_volume, weight_unit, volume_unit, inventory_category, unit_code, customer_id, is_active, effective_date, expiry_date,
+    })
     return success(res, material, '修改成功')
   } catch (err) {
     console.error('修改料品失败:', err)

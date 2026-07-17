@@ -98,7 +98,6 @@ axiosInstance.interceptors.request.use((config) => {
   }
   if (config.params) {
     config.params = convertStatusParams(config.params as Record<string, unknown>)
-    config.params = doubleEncodeParams(config.params)
   }
   return config
 })

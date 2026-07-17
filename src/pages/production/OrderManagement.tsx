@@ -102,8 +102,8 @@ export default function OrderManagement() {
 
   const refresh = useCallback(() => setQuery(q => ({ ...q })), [])
 
-  // C开头的成品罐料品
-  const cMaterials = materials.filter(m => m.material_code?.toUpperCase().startsWith('C'))
+  // 成品罐料品（不限前缀，由后端数据决定）
+  const cMaterials = materials
 
   const pendingCount = data.filter(o => o.status === '开立').length
   const releasedCount = data.filter(o => o.status === '下发').length

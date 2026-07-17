@@ -55,23 +55,17 @@ export const detail = async (req, res) => {
 // 创建客户
 export const create = async (req, res) => {
   try {
-    const { customer_code, customer_name } = req.body
+    const { customer_code, customer_name, short_name, customer_category, customer_type, contact_person, phone, email, address, effective_date, expiry_date, credit_level, tax_id, bank_account, bank_name, remark, sort_order } = req.body
     if (!customer_code || !customer_name) {
       return fail(res, '客户编号和名称不能为空')
     }
     const exists = await Customer.findOne({ where: { customer_code } })
     if (exists) return fail(res, '客户编号已存在')
-    const payload = { ...req.body }
-    // status 兼容前端传 "启用"/"停用"/1/0
-    if (payload.status === '启用' || payload.status === 1 || payload.status === '1') {
-      payload.status = 1
-    } else if (payload.status === '停用' || payload.status === 0 || payload.status === '0') {
-      payload.status = 0
-    } else {
-      payload.status = 1
-    }
-    payload.created_by = req.user?.username || null
-    const customer = await Customer.create(payload)
+    const customer = await Customer.create({
+      customer_code, customer_name, short_name, customer_category, customer_type, contact_person, phone, email, address, effective_date, expiry_date, credit_level, tax_id, bank_account, bank_name, remark, sort_order,
+      status: 1,
+      created_by: req.user?.username || null,
+    })
     return success(res, customer, '创建成功')
   } catch (err) {
     console.error('创建客户失败:', err)
@@ -91,13 +85,12 @@ export const update = async (req, res) => {
       })
       if (exists) return fail(res, '客户编号已存在')
     }
-    const payload = { ...req.body }
-    if (payload.status !== undefined) {
-      if (payload.status === '启用' || payload.status === 1 || payload.status === '1') {
-        payload.status = 1
-      } else if (payload.status === '停用' || payload.status === 0 || payload.status === '0') {
-        payload.status = 0
-      }
+    const { customer_code, customer_name, short_name, customer_category, customer_type, contact_person, phone, email, address, status, effective_date, expiry_date, credit_level, tax_id, bank_account, bank_name, remark, sort_order } = req.body
+    const payload = {
+      customer_code, customer_name, short_name, customer_category, customer_type, contact_person, phone, email, address, effective_date, expiry_date, credit_level, tax_id, bank_account, bank_name, remark, sort_order,
+    }
+    if (status !== undefined) {
+      payload.status = (status === '启用' || status === 1 || status === '1') ? 1 : (status === '停用' || status === 0 || status === '0') ? 0 : 1
     }
     await customer.update(payload)
     return success(res, customer, '修改成功')

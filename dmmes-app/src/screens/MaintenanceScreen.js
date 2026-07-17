@@ -42,8 +42,11 @@ export default function MaintenanceScreen({ navigation }) {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
+    try {
+      await loadData();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleMaintenance = (item) => {

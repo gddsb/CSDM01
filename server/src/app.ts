@@ -66,7 +66,6 @@ async function initDatabase() {
     }
   }
 }
-initDatabase()
 
 // 中间件
 app.use(cors())
@@ -118,12 +117,18 @@ app.use('/api', (req, res) => {
 // 全局错误处理
 app.use((err, req, res, next) => {
   console.error('服务器错误:', err)
-  res.status(500).json({ success: false, message: '服务器内部错误' })
+  if (!res.headersSent) {
+    res.status(500).json({ success: false, message: '服务器内部错误' })
+  }
 })
 
-app.listen(PORT, () => {
-  console.log(`\n🚀 Milk Can MES API Server`)
-  console.log(`   运行地址: http://localhost:${PORT}`)
-  console.log(`   API基础路径: http://localhost:${PORT}/api`)
-  console.log(`   健康检查: http://localhost:${PORT}/api/health\n`)
-})
+async function start() {
+  await initDatabase()
+  app.listen(PORT, () => {
+    console.log(`\n🚀 Milk Can MES API Server`)
+    console.log(`   运行地址: http://localhost:${PORT}`)
+    console.log(`   API基础路径: http://localhost:${PORT}/api`)
+    console.log(`   健康检查: http://localhost:${PORT}/api/health\n`)
+  })
+}
+start()

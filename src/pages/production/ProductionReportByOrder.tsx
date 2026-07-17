@@ -111,9 +111,9 @@ export default function ProductionReportByOrder() {
     fetchWorkOrderData()
   }, [fetchWorkOrderData])
 
-  const isWorkOrderClosed = workOrder?.status === '已关闭'
+  const isWorkOrderClosed = workOrder?.status === '关闭'
 
-  const woStatusColor = { '未开工': 'default', '已开工': 'processing', '已关闭': 'success' }
+  const woStatusColor = { '开立': 'default', '开工': 'processing', '关闭': 'success' }
 
   const workOrderOptions = useMemo(() => {
     return [...workOrders]

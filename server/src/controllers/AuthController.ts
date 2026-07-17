@@ -30,7 +30,7 @@ export const login = async (req, res) => {
       }).catch(() => {})
       return fail(res, '用户名不存在', 404)
     }
-    const valid = bcrypt.compareSync(password, user.password)
+    const valid = await bcrypt.compare(password, user.password)
     if (!valid) {
       OperationLog.create({
         user_id: user.user_id,
