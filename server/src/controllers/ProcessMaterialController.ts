@@ -73,7 +73,7 @@ export const create = async (req, res) => {
       label_images: label_images ? JSON.stringify(label_images) : null,
     })
 
-    await syncWorkOrderSummary(workOrder.work_order_id)
+    await syncWorkOrderSummary(work_order_id)
     return success(res, material, '创建成功')
   } catch (err) {
     console.error('创建制程物料记录失败:', err)

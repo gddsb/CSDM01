@@ -1,19 +1,25 @@
 import { Op } from 'sequelize'
-import { ProcessReport, WorkOrder, Process, Device, ProcessDefect, ProcessMaterial } from '../models/index.js'
+import { ProcessReport, WorkOrder, Process, Device, ProcessDefect, ProcessMaterial, DefectType } from '../models/index.js'
 import { success, fail } from '../utils/response.js'
 import { generateProcessReportNo } from '../utils/sequence.js'
 
 // 同步工单汇总数据：从 ProcessDefect 和 ProcessMaterial 表聚合实际数据
 export const syncWorkOrderSummary = async (workOrderId) => {
-  // 从不良记录表聚合：按 defect_category 分类汇总数量
+  // 从不良记录表聚合：通过关联 DefectType 获取 category_name 分类汇总数量
   const defects = await ProcessDefect.findAll({
     where: { work_order_id: workOrderId },
-    attributes: ['defect_category', 'quantity'],
+    attributes: ['quantity'],
+    include: [{
+      model: DefectType,
+      as: 'defect_type',
+      attributes: ['category_name'],
+      required: false,
+    }],
   })
   const defectSummary = { material: 0, process: 0, scrap: 0 }
   for (const d of defects) {
     const qty = Number(d.quantity || 0)
-    const cat = d.defect_category || ''
+    const cat = d.defect_type?.category_name || ''
     if (cat === '物料不良') defectSummary.material += qty
     else if (cat === '检验报废') defectSummary.scrap += qty
     else defectSummary.process += qty // 制程不良及其他
