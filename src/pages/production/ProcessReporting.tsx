@@ -46,6 +46,7 @@ export default function ProcessReporting() {
 
   const [selectedProcessId, setSelectedProcessId] = useState(null)
   const [activeTab, setActiveTab] = useState('production-defect')
+  const [prevProcessQualifiedQty, setPrevProcessQualifiedQty] = useState(0)
 
   const [imageDrawerVisible, setImageDrawerVisible] = useState(false)
   const [imageDrawerTitle, setImageDrawerTitle] = useState('')
@@ -133,6 +134,16 @@ export default function ProcessReporting() {
     fetchMaterials()
   }, [selectedWO])
 
+  // 报工单级别统计数据（当前工单/报工单汇总，不按工序过滤）
+  useEffect(() => {
+    if (!selectedReport) {
+      setStats({ inputQty: 0, outputQty: 0, defectMaterial: 0, defectProcess: 0, defectScrap: 0, exceptionHours: 0 })
+      return
+    }
+    fetchReportStats(selectedReport.report_id)
+  }, [selectedReport, lineProcesses])
+
+  // 当前工序列表数据
   useEffect(() => {
     if (!selectedReport) {
       setProdDefectList([])
@@ -140,7 +151,6 @@ export default function ProcessReporting() {
       setExceptionList([])
       setManpowerList([])
       setMaterialList([])
-      setStats({ inputQty: 0, outputQty: 0, defectMaterial: 0, defectProcess: 0, defectScrap: 0, exceptionHours: 0 })
       setReportStatus('开始报工')
       return
     }
@@ -272,33 +282,88 @@ export default function ProcessReporting() {
         api.get('/production/manpower-records', { params: { report_id: reportId, page: 1, pageSize: 1000 } }),
         api.get('/production/process-materials', { params: { report_id: reportId, process_id: selectedProcessId, page: 1, pageSize: 1000 } }),
       ])
-      setProdDefectList((defectRes.data || []).map(d => ({ ...d, id: d.defect_id, defect_images: parseImages(d.defect_images) })))
-      setScrapDefectList((scrapRes.data || []).map(d => ({ ...d, id: d.scrap_id, defect_images: parseImages(d.defect_images) })))
+      setProdDefectList((defectRes.data || []).map(d => {
+        // 历史数据可能缺少 defect_code/defect_type，从下拉选项补充
+        let enriched = { ...d, id: d.defect_id, defect_images: parseImages(d.defect_images) }
+        if ((!enriched.defect_code || !enriched.defect_type) && enriched.defect_type_id) {
+          const opt = defectTypeOptions.find(o => String(o.value) === String(enriched.defect_type_id))
+          if (opt) {
+            if (!enriched.defect_code) enriched.defect_code = opt.defect_code
+            if (!enriched.defect_type) enriched.defect_type = opt.defect_type
+            if (!enriched.defect_name) enriched.defect_name = opt.defect_name
+          }
+        }
+        return enriched
+      }))
+      setScrapDefectList((scrapRes.data || []).map(d => {
+        let enriched = { ...d, id: d.scrap_id, defect_images: parseImages(d.defect_images) }
+        if ((!enriched.defect_code || !enriched.defect_type) && enriched.defect_type_id) {
+          const opt = scrapTypeOptions.find(o => String(o.value) === String(enriched.defect_type_id))
+          if (opt) {
+            if (!enriched.defect_code) enriched.defect_code = opt.defect_code
+            if (!enriched.defect_type) enriched.defect_type = opt.defect_type
+            if (!enriched.defect_name) enriched.defect_name = opt.defect_name
+          }
+        }
+        return enriched
+      }))
       setExceptionList((exceptionRes.data || []).map(e => ({ ...e, id: e.exception_id, exception_images: parseImages(e.exception_images) })))
       setManpowerList((manpowerRes.data || []).map(m => ({ ...m, id: m.record_id })))
       setMaterialList((materialRes.data || []).map(m => ({ ...m, id: m.material_id, label_images: parseImages(m.label_images) })))
-
-      const defectTotal = (defectRes.data || []).reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
-      const scrapTotal = (scrapRes.data || []).reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
-      const exceptionTotal = (exceptionRes.data || []).reduce((sum, e) => sum + (Number(e.duration) || 0), 0)
-
-      let inputQty = 0
-      if (materialRes.data) {
-        inputQty = (materialRes.data || []).reduce((sum, m) => sum + (Number(m.quantity) || 0), 0)
-      }
-
-      setStats({
-        inputQty,
-        outputQty: selectedReport?.output_qty || 0,
-        defectMaterial: 0,
-        defectProcess: defectTotal,
-        defectScrap: scrapTotal,
-        exceptionHours: exceptionTotal,
-      })
     } catch (err) {
       message.error(err.message || '获取数据失败')
     }
-  }, [selectedReport, selectedProcessId])
+  }, [selectedReport, selectedProcessId, defectTypeOptions, scrapTypeOptions])
+
+  // 获取整个报工单的统计数据（不按工序过滤）
+  const fetchReportStats = useCallback(async (reportId) => {
+    if (!reportId) return
+    try {
+      const [defectRes, scrapRes, exceptionRes, materialRes] = await Promise.all([
+        api.get('/production/process-defects', { params: { report_id: reportId, page: 1, pageSize: 1000 } }),
+        api.get('/production/scrap-defects', { params: { report_id: reportId, page: 1, pageSize: 1000 } }),
+        api.get('/production/process-exceptions', { params: { report_id: reportId, page: 1, pageSize: 1000 } }),
+        api.get('/production/process-materials', { params: { report_id: reportId, page: 1, pageSize: 1000 } }),
+      ])
+      const allDefects = defectRes.data || []
+      const allScraps = scrapRes.data || []
+      const allExceptions = exceptionRes.data || []
+      const allMaterials = materialRes.data || []
+
+      // 来料不良
+      const defectMaterial = allDefects
+        .filter(d => d.defect_type === '来料不良')
+        .reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
+      // 制程不良
+      const defectProcess = allDefects
+        .filter(d => d.defect_type === '制程不良')
+        .reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
+      // 检验报废
+      const defectScrapTotal = allScraps.reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
+      // 异常工时
+      const exceptionHours = allExceptions.reduce((sum, e) => sum + (Number(e.duration) || 0), 0)
+      // 投入数量 = 第一道工序的投入-退回
+      let inputQty = 0
+      if (lineProcesses.length > 0) {
+        const firstProcessId = lineProcesses[0].process_id
+        const firstProcessMaterials = allMaterials.filter(m => m.process_id === firstProcessId)
+        const investQty = firstProcessMaterials.filter(m => m.material_type === '投入').reduce((sum, m) => sum + (Number(m.quantity) || 0), 0)
+        const returnQty = firstProcessMaterials.filter(m => m.material_type === '退回').reduce((sum, m) => sum + (Number(m.quantity) || 0), 0)
+        inputQty = investQty - returnQty
+      }
+
+      setStats({
+        inputQty: Number(inputQty.toFixed(2)),
+        outputQty: selectedReport?.output_qty || 0,
+        defectMaterial: Number(defectMaterial.toFixed(2)),
+        defectProcess: Number(defectProcess.toFixed(2)),
+        defectScrap: Number(defectScrapTotal.toFixed(2)),
+        exceptionHours: Number(exceptionHours.toFixed(2)),
+      })
+    } catch {
+      // 静默失败
+    }
+  }, [selectedReport, lineProcesses])
 
   const fetchMaterials = useCallback(async () => {
     try {
@@ -353,6 +418,7 @@ export default function ProcessReporting() {
           setReportList(prev => prev.map(r => r.report_id === selectedReport.report_id ? { ...r, status: newStatus } : r))
           message.success(res.message || '操作成功')
           fetchAllData(selectedReport.report_id)
+          fetchReportStats(selectedReport.report_id)
         } catch (err) {
           message.error(err.message || '操作失败')
         } finally {
@@ -365,7 +431,7 @@ export default function ProcessReporting() {
   const defectTypeOptions = useMemo(() => {
     const seen = new Set()
     return defectTypes
-      .filter(d => d.category_name === '制程检验类型' && d.status === '启用')
+      .filter(d => d.category_name === '制程检验类型' && d.status === '启用' && d.display !== false && d.display !== 0)
       .filter(d => {
         if (seen.has(d.defect_id)) return false
         seen.add(d.defect_id)
@@ -385,7 +451,7 @@ export default function ProcessReporting() {
   const scrapTypeOptions = useMemo(() => {
     const seen = new Set()
     return defectTypes
-      .filter(d => d.category_name === '制程检验类型' && d.defect_type === '检验报废' && d.status === '启用')
+      .filter(d => d.category_name === '制程检验类型' && d.defect_type === '检验报废' && d.status === '启用' && d.display !== false && d.display !== 0)
       .filter(d => {
         if (seen.has(d.defect_id)) return false
         seen.add(d.defect_id)
@@ -446,6 +512,7 @@ export default function ProcessReporting() {
           d.id === item.id ? { ...res.data, id: res.data.defect_id, defect_images: parseImages(res.data.defect_images) } : d
         ))
       }
+      fetchReportStats(selectedReport.report_id)
     } catch (err) {
       message.error(err.message || '保存失败')
     }
@@ -519,6 +586,7 @@ export default function ProcessReporting() {
       await api.delete(`/production/process-defects/${item.defect_id}`)
       setProdDefectList(prev => prev.filter(d => d.id !== item.id))
       message.success('删除成功')
+      if (selectedReport) fetchReportStats(selectedReport.report_id)
     } catch (err) {
       message.error(err.message || '删除失败')
     }
@@ -554,6 +622,13 @@ export default function ProcessReporting() {
     return units.map(u => ({ label: (u || '').trim(), value: (u || '').trim() }))
   }
 
+  const getFilteredProdDefectOptions = (currentRecordId) => {
+    const selectedIds = prodDefectList
+      .filter(d => String(d.id) !== String(currentRecordId) && d.defect_type_id)
+      .map(d => String(d.defect_type_id))
+    return defectTypeOptions.filter(d => !selectedIds.includes(String(d.value)))
+  }
+
   const prodDefectColumns = [
     {
       title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 120,
@@ -562,18 +637,9 @@ export default function ProcessReporting() {
           placeholder="请选择不良编码"
           value={record.defect_type_id || undefined}
           onChange={(val) => {
-            if (val) {
-              const isDuplicate = prodDefectList.some(d =>
-                String(d.id) !== String(record.id) && String(d.defect_type_id) === String(val)
-              )
-              if (isDuplicate) {
-                message.warning('同一不良项目只允许选择一次')
-                return
-              }
-            }
             handleProdDefectChange(record.id, 'defect_type_id', val)
           }}
-          options={defectTypeOptions}
+          options={getFilteredProdDefectOptions(record.id)}
           style={{ width: '100%' }}
           showSearch
           popupMatchSelectWidth={false}
@@ -650,6 +716,7 @@ export default function ProcessReporting() {
     try {
       if (item.scrap_id) {
         await api.put(`/production/scrap-defects/${item.scrap_id}`, {
+          defect_type_id: item.defect_type_id,
           quantity: item.quantity,
           unit: item.unit,
           defect_images: item.defect_images,
@@ -668,6 +735,7 @@ export default function ProcessReporting() {
           d.id === item.id ? { ...res.data, id: res.data.scrap_id, defect_images: parseImages(res.data.defect_images) } : d
         ))
       }
+      fetchReportStats(selectedReport.report_id)
     } catch (err) {
       message.error(err.message || '保存失败')
     }
@@ -740,6 +808,7 @@ export default function ProcessReporting() {
       await api.delete(`/production/scrap-defects/${item.scrap_id}`)
       setScrapDefectList(prev => prev.filter(d => d.id !== item.id))
       message.success('删除成功')
+      if (selectedReport) fetchReportStats(selectedReport.report_id)
     } catch (err) {
       message.error(err.message || '删除失败')
     }
@@ -772,6 +841,13 @@ export default function ProcessReporting() {
     return units.map(u => ({ label: (u || '').trim(), value: (u || '').trim() }))
   }
 
+  const getFilteredScrapDefectOptions = (currentRecordId) => {
+    const selectedIds = scrapDefectList
+      .filter(d => String(d.id) !== String(currentRecordId) && d.defect_type_id)
+      .map(d => String(d.defect_type_id))
+    return scrapTypeOptions.filter(d => !selectedIds.includes(String(d.value)))
+  }
+
   const scrapDefectColumns = [
     {
       title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 120,
@@ -780,18 +856,9 @@ export default function ProcessReporting() {
           placeholder="请选择不良编码"
           value={record.defect_type_id || undefined}
           onChange={(val) => {
-            if (val) {
-              const isDuplicate = scrapDefectList.some(d =>
-                String(d.id) !== String(record.id) && String(d.defect_type_id) === String(val)
-              )
-              if (isDuplicate) {
-                message.warning('同一不良项目只允许选择一次')
-                return
-              }
-            }
             handleScrapDefectChange(record.id, 'defect_type_id', val)
           }}
-          options={scrapTypeOptions}
+          options={getFilteredScrapDefectOptions(record.id)}
           style={{ width: '100%' }}
           showSearch
           popupMatchSelectWidth={false}
@@ -866,13 +933,14 @@ export default function ProcessReporting() {
   const saveMaterialItem = async (item) => {
     if (!selectedReport || !selectedProcessId) return
     try {
-      if (item.material_id && String(item.material_id).startsWith('tmp_') === false) {
-        await api.put(`/production/process-materials/${item.material_id}`, {
+      if (String(item.id).startsWith('tmp_') === false) {
+        await api.put(`/production/process-materials/${item.id}`, {
           material_type: item.material_type,
           material_code: item.material_code,
           material_name: item.material_name,
           specification: item.specification,
           material_batch: item.material_batch,
+          package_no: item.package_no,
           quantity: item.quantity,
           label_images: item.label_images,
         })
@@ -881,11 +949,12 @@ export default function ProcessReporting() {
           report_id: selectedReport.report_id,
           work_order_id: selectedWO.work_order_id,
           process_id: selectedProcessId,
-          material_type: item.material_type || '投入物料',
+          material_type: item.material_type || '投入',
           material_code: item.material_code,
           material_name: item.material_name,
           specification: item.specification,
           material_batch: item.material_batch,
+          package_no: item.package_no,
           quantity: item.quantity,
           label_images: item.label_images,
         })
@@ -893,6 +962,7 @@ export default function ProcessReporting() {
           m.id === item.id ? { ...res.data, id: res.data.material_id, label_images: parseImages(res.data.label_images) } : m
         ))
       }
+      fetchReportStats(selectedReport.report_id)
     } catch (err) {
       message.error(err.message || '保存失败')
     }
@@ -967,6 +1037,7 @@ export default function ProcessReporting() {
       await api.delete(`/production/process-materials/${item.material_id}`)
       setMaterialList(prev => prev.filter(m => m.id !== item.id))
       message.success('删除成功')
+      if (selectedReport) fetchReportStats(selectedReport.report_id)
     } catch (err) {
       message.error(err.message || '删除失败')
     }
@@ -994,6 +1065,93 @@ export default function ProcessReporting() {
     return [...materialList, emptyRow]
   }, [materialList, isEditable, selectedReport, selectedWO, selectedProcessId])
 
+  const isFirstProcess = useMemo(() => {
+    if (!lineProcesses.length || !selectedProcessId) return false
+    return lineProcesses[0].process_id === selectedProcessId
+  }, [lineProcesses, selectedProcessId])
+
+  // 获取上一道工序的合格数
+  useEffect(() => {
+    if (!selectedReport || !selectedProcessId || !lineProcesses.length || isFirstProcess) {
+      setPrevProcessQualifiedQty(0)
+      return
+    }
+    const currentIndex = lineProcesses.findIndex(p => p.process_id === selectedProcessId)
+    if (currentIndex <= 0) {
+      setPrevProcessQualifiedQty(0)
+      return
+    }
+    const prevProcessId = lineProcesses[currentIndex - 1].process_id
+    let cancelled = false
+    const run = async () => {
+      try {
+        const [defectRes, materialRes] = await Promise.all([
+          api.get('/production/process-defects', { params: { report_id: selectedReport.report_id, process_id: prevProcessId, page: 1, pageSize: 1000 } }),
+          api.get('/production/process-materials', { params: { report_id: selectedReport.report_id, process_id: prevProcessId, page: 1, pageSize: 1000 } }),
+        ])
+        if (cancelled) return
+        const prevDefects = defectRes.data || []
+        const prevMaterials = materialRes.data || []
+        let prevInputQty = prevMaterials.reduce((sum, m) => sum + (Number(m.quantity) || 0), 0)
+        if (prevMaterials.length > 0) {
+          const investQty = prevMaterials.filter(m => m.material_type === '投入').reduce((sum, m) => sum + (Number(m.quantity) || 0), 0)
+          const returnQty = prevMaterials.filter(m => m.material_type === '退回').reduce((sum, m) => sum + (Number(m.quantity) || 0), 0)
+          prevInputQty = investQty - returnQty
+        }
+        const prevProcessDefect = prevDefects.filter(d => d.defect_type === '制程不良').reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
+        const prevMaterialDefect = prevDefects.filter(d => d.defect_type === '来料不良').reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
+        const prevQualified = prevInputQty - prevProcessDefect - prevMaterialDefect
+        setPrevProcessQualifiedQty(prevQualified > 0 ? Number(prevQualified.toFixed(2)) : 0)
+      } catch {
+        if (!cancelled) setPrevProcessQualifiedQty(0)
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [selectedReport, selectedProcessId, lineProcesses, isFirstProcess])
+
+  // 当前工序统计数据
+  const processStats = useMemo(() => {
+    // 制程不良
+    const processDefectQty = prodDefectList
+      .filter(d => d.defect_type === '制程不良')
+      .reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
+    // 来料不良
+    const materialDefectQty = prodDefectList
+      .filter(d => d.defect_type === '来料不良')
+      .reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
+    // 投入数量
+    let inputQty = 0
+    if (isFirstProcess) {
+      const investQty = materialList.filter(m => m.material_type === '投入').reduce((sum, m) => sum + (Number(m.quantity) || 0), 0)
+      const returnQty = materialList.filter(m => m.material_type === '退回').reduce((sum, m) => sum + (Number(m.quantity) || 0), 0)
+      inputQty = investQty - returnQty
+    } else {
+      inputQty = prevProcessQualifiedQty
+    }
+    // 合格数 = 投入 - 制程不良 - 来料不良
+    const qualifiedQty = inputQty - processDefectQty - materialDefectQty
+    return {
+      inputQty: Number(inputQty.toFixed(2)),
+      qualifiedQty: Number((qualifiedQty > 0 ? qualifiedQty : 0).toFixed(2)),
+      processDefectQty: Number(processDefectQty.toFixed(2)),
+      materialDefectQty: Number(materialDefectQty.toFixed(2)),
+    }
+  }, [prodDefectList, materialList, isFirstProcess, prevProcessQualifiedQty])
+
+  const getFilteredMaterialOptions = (record) => {
+    if (!isFirstProcess) return materialOptions
+    if (record.material_type === '退回') {
+      const enteredMaterials = materialList
+        .filter(m => m.material_id && m.material_code && m.material_batch && m.package_no)
+        .map(m => String(m.material_id))
+      return materialOptions.filter(m => enteredMaterials.includes(String(m.value)))
+    }
+    return materialOptions.filter(m =>
+      m.material_code.startsWith('Y2') || m.material_code.startsWith('T1')
+    )
+  }
+
   const materialColumns = [
     {
       title: '物料类型', dataIndex: 'material_type', key: 'material_type', width: 100,
@@ -1018,7 +1176,7 @@ export default function ProcessReporting() {
           placeholder="请选择料号"
           value={record.material_id || undefined}
           onChange={(val) => handleMaterialChange(record.id, 'material_id', val)}
-          options={materialOptions}
+          options={getFilteredMaterialOptions(record)}
           style={{ width: '100%' }}
           showSearch
           popupMatchSelectWidth={false}
@@ -1128,6 +1286,7 @@ export default function ProcessReporting() {
           e.id === item.id ? { ...res.data, id: res.data.exception_id, exception_images: parseImages(res.data.exception_images) } : e
         ))
       }
+      fetchReportStats(selectedReport.report_id)
     } catch (err) {
       message.error(err.message || '保存失败')
     }
@@ -1193,6 +1352,7 @@ export default function ProcessReporting() {
       await api.delete(`/production/process-exceptions/${item.exception_id}`)
       setExceptionList(prev => prev.filter(e => e.id !== item.id))
       message.success('删除成功')
+      if (selectedReport) fetchReportStats(selectedReport.report_id)
     } catch (err) {
       message.error(err.message || '删除失败')
     }
@@ -1250,7 +1410,7 @@ export default function ProcessReporting() {
       ) : record.device_name || '-',
     },
     {
-      title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 150,
+      title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 120,
       render: (val, record) => isEditable ? (
         <TimePicker
           value={val ? dayjs(val) : null}
@@ -1263,14 +1423,15 @@ export default function ProcessReporting() {
               handleExceptionChange(record.id, 'start_time', null)
             }
           }}
+          format="HH:mm"
           style={{ width: '100%' }}
           size="small"
           minuteStep={10}
         />
-      ) : val ? dayjs(val).format('YYYY-MM-DD HH:mm') : '-',
+      ) : val ? dayjs(val).format('HH:mm') : '-',
     },
     {
-      title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 150,
+      title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 120,
       render: (val, record) => isEditable ? (
         <TimePicker
           value={val ? dayjs(val) : null}
@@ -1283,11 +1444,12 @@ export default function ProcessReporting() {
               handleExceptionChange(record.id, 'end_time', null)
             }
           }}
+          format="HH:mm"
           style={{ width: '100%' }}
           size="small"
           minuteStep={10}
         />
-      ) : val ? dayjs(val).format('YYYY-MM-DD HH:mm') : '-',
+      ) : val ? dayjs(val).format('HH:mm') : '-',
     },
     { title: '时长(小时)', dataIndex: 'duration', key: 'duration', width: 100 },
     {
@@ -1384,8 +1546,8 @@ export default function ProcessReporting() {
           work_order_id: selectedWO?.work_order_id,
           record_date: dayjs().format('YYYY-MM-DD'),
           shift: '白班',
-          start_time: null,
-          end_time: null,
+          start_time: selectedReport?.report_start_time || null,
+          end_time: selectedReport?.report_end_time || null,
           hours: 0,
           skilled_count: 0,
           general_count: 0,
@@ -1451,10 +1613,10 @@ export default function ProcessReporting() {
     },
     {
       title: '班次', dataIndex: 'shift', key: 'shift', width: 100,
-      render: (val, record) => isEditable ? (
+      render: (val) => isEditable ? (
         <Select
-          value={val || undefined}
-          onChange={(v) => handleManpowerChange(record.id, 'shift', v)}
+          value={val || '白班'}
+          disabled
           options={[
             { label: '白班', value: '白班' },
             { label: '夜班', value: '夜班' },
@@ -1465,7 +1627,7 @@ export default function ProcessReporting() {
       ) : val || '-',
     },
     {
-      title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 150,
+      title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 120,
       render: (val, record) => isEditable ? (
         <TimePicker
           value={val ? dayjs(val) : null}
@@ -1478,14 +1640,15 @@ export default function ProcessReporting() {
               handleManpowerChange(record.id, 'start_time', null)
             }
           }}
+          format="HH:mm"
           style={{ width: '100%' }}
           size="small"
           minuteStep={10}
         />
-      ) : val ? dayjs(val).format('YYYY-MM-DD HH:mm') : '-',
+      ) : val ? dayjs(val).format('HH:mm') : '-',
     },
     {
-      title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 150,
+      title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 120,
       render: (val, record) => isEditable ? (
         <TimePicker
           value={val ? dayjs(val) : null}
@@ -1498,11 +1661,12 @@ export default function ProcessReporting() {
               handleManpowerChange(record.id, 'end_time', null)
             }
           }}
+          format="HH:mm"
           style={{ width: '100%' }}
           size="small"
           minuteStep={10}
         />
-      ) : val ? dayjs(val).format('YYYY-MM-DD HH:mm') : '-',
+      ) : val ? dayjs(val).format('HH:mm') : '-',
     },
     { title: '工时(小时)', dataIndex: 'hours', key: 'hours', width: 100 },
     {
@@ -1578,8 +1742,8 @@ export default function ProcessReporting() {
       case 'production-defect':
         return (
           <div>
-            <Row style={{ marginBottom: 16 }}>
-              <Col span={12}>
+            <Row style={{ marginBottom: 16 }} align="middle">
+              <Col span={8}>
                 <Space>
                   <span>选择工序：</span>
                   <Select
@@ -1591,11 +1755,15 @@ export default function ProcessReporting() {
                   />
                 </Space>
               </Col>
-              <Col span={12} style={{ textAlign: 'right' }}>
-                {isEditable ? (
-                  <Tag color="blue">表格末尾空行可直接录入，修改后自动保存</Tag>
-                ) : (
-                  <Tag color="default">已结束报工，数据只读</Tag>
+              <Col span={16} style={{ textAlign: 'right' }}>
+                {selectedProcessId && (
+                  <Space size="large">
+                    <span style={{ color: '#999', fontSize: 12 }}>当前工序统计：</span>
+                    <span>投入数量：<b style={{ color: '#1890ff' }}>{processStats.inputQty}</b></span>
+                    <span>合格数：<b style={{ color: '#52c41a' }}>{processStats.qualifiedQty}</b></span>
+                    <span>制程不良：<b style={{ color: '#fa8c16' }}>{processStats.processDefectQty}</b></span>
+                    <span>来料不良：<b style={{ color: '#faad14' }}>{processStats.materialDefectQty}</b></span>
+                  </Space>
                 )}
               </Col>
             </Row>
@@ -1606,6 +1774,7 @@ export default function ProcessReporting() {
               size="small"
               pagination={false}
               scroll={{ x: 800 }}
+              tableLayout="fixed"
             />
           </div>
         )
@@ -1640,6 +1809,7 @@ export default function ProcessReporting() {
               size="small"
               pagination={false}
               scroll={{ x: 900 }}
+              tableLayout="fixed"
             />
           </div>
         )
@@ -1665,6 +1835,7 @@ export default function ProcessReporting() {
               size="small"
               pagination={false}
               scroll={{ x: 700 }}
+              tableLayout="fixed"
             />
           </div>
         )
@@ -1690,6 +1861,7 @@ export default function ProcessReporting() {
               size="small"
               pagination={false}
               scroll={{ x: 900 }}
+              tableLayout="fixed"
             />
           </div>
         )
@@ -1715,6 +1887,7 @@ export default function ProcessReporting() {
               size="small"
               pagination={false}
               scroll={{ x: 1200 }}
+              tableLayout="fixed"
             />
           </div>
         )
@@ -1832,6 +2005,7 @@ export default function ProcessReporting() {
 
       {selectedWO && selectedReport && (
         <Card>
+          <div style={{ marginBottom: 8, fontWeight: 'bold', color: '#333' }}>报工单统计（当前工单汇总）</div>
           <Row gutter={16} style={{ marginBottom: 16 }}>
             <Col span={4}>
               <div style={{ color: '#666' }}>投入数量</div>

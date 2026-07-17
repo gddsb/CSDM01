@@ -141,12 +141,15 @@ const migrations = [
     table: 'production_process_defect',
     columns: [
       ['report_id', 'INTEGER'],
+      ['defect_code', 'VARCHAR(50)'],
+      ['defect_type', 'VARCHAR(50)'],
     ],
   },
   {
     table: 'production_process_material',
     columns: [
       ['report_id', 'INTEGER'],
+      ['package_no', 'VARCHAR(100)'],
     ],
   },
   {
