@@ -18,6 +18,7 @@ import {
   start,
   finish,
   toggleReportStatus,
+  getProcesses,
 } from '../controllers/WorkOrderController.js'
 import { list as reportList, detail as reportDetail, create as reportCreate, update as reportUpdate, remove as reportRemove, toggleStatus as reportToggleStatus, start as reportStart, finish as reportFinish } from '../controllers/ProcessReportController.js'
 import { list as manpowerList, detail as manpowerDetail, create as manpowerCreate, update as manpowerUpdate, remove as manpowerRemove, summaryByWorkOrder as manpowerSummary } from '../controllers/ManpowerRecordController.js'
@@ -61,6 +62,7 @@ router.delete('/work-orders/:id', woRemove)
 router.post('/work-orders/:id/start', start)
 router.post('/work-orders/:id/finish', finish)
 router.post('/work-orders/:id/report-status', toggleReportStatus)
+router.get('/work-orders/:id/processes', getProcesses)
 
 // 工序报工
 router.get('/process-reports', reportList)

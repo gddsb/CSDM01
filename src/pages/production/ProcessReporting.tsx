@@ -170,7 +170,7 @@ export default function ProcessReporting() {
       setReportStatus('开始报工')
       return
     }
-    fetchLineProcesses(selectedWO.line_id)
+    fetchWorkOrderProcesses(selectedWO.work_order_id)
     fetchReportList(selectedWO.work_order_id)
     fetchMaterials()
   }, [selectedWO])
@@ -199,13 +199,14 @@ export default function ProcessReporting() {
     fetchAllData(selectedReport.report_id)
   }, [selectedReport, selectedProcessId])
 
-  const fetchLineProcesses = useCallback(async (lineId) => {
-    if (!lineId) {
+  // 获取工单工序（从工单工序表获取，而非产线工序）
+  const fetchWorkOrderProcesses = useCallback(async (workOrderId) => {
+    if (!workOrderId) {
       setLineProcesses([])
       return
     }
     try {
-      const res = await api.get(`/basic/production-lines/${lineId}/processes`)
+      const res = await api.get(`/production/work-orders/${workOrderId}/processes`)
       const procs = res.data || []
       const sorted = [...procs].sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0))
       setLineProcesses(sorted)

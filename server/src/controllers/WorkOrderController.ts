@@ -1,10 +1,51 @@
 import { Op } from 'sequelize'
-import { WorkOrder, Order, ProductionLine, Material, ProcessReport, ManpowerRecord, ProcessDefect, ProcessException, ProcessMaterial } from '../models/index.js'
+import { WorkOrder, Order, ProductionLine, Material, ProcessReport, ManpowerRecord, ProcessDefect, ProcessException, ProcessMaterial, WorkOrderProcess, LineProcess, Process } from '../models/index.js'
 import { success, fail } from '../utils/response.js'
 import { generateWorkOrderNo } from '../utils/sequence.js'
 
 // 工单状态: 0=开立, 1=开工, 2=关闭
 const statusMap = { '开立': 0, '开工': 1, '关闭': 2 }
+
+// 同步工单工序（从产线工序表复制）
+async function syncWorkOrderProcesses(workOrderId, lineId) {
+  // 先删除原有工序
+  await WorkOrderProcess.destroy({ where: { work_order_id: workOrderId } })
+  
+  // 查询产线工序
+  const lineProcesses = await LineProcess.findAll({
+    where: { line_id: lineId },
+    order: [['sort_order', 'ASC']],
+  })
+  
+  // 获取工序详情
+  const processIds = lineProcesses.map(lp => lp.process_id)
+  const processes = await Process.findAll({
+    where: { process_id: processIds },
+  })
+  const processMap = new Map(processes.map(p => [p.process_id, p]))
+  
+  // 批量插入工单工序
+  const records = []
+  for (const lp of lineProcesses) {
+    const process = processMap.get(lp.process_id)
+    if (process) {
+      records.push({
+        work_order_id: workOrderId,
+        process_id: process.process_id,
+        process_code: process.process_code,
+        process_name: process.process_name,
+        has_material: process.has_material,
+        sort_order: lp.sort_order,
+      })
+    }
+  }
+  
+  if (records.length > 0) {
+    await WorkOrderProcess.bulkCreate(records)
+  }
+  
+  return records.length
+}
 
 // 将状态参数（字符串/数字/数组）转换为整数数组
 const parseStatusParam = (status) => {
@@ -129,6 +170,10 @@ export const create = async (req, res) => {
       status: 0,
       created_by: req.user?.username || null,
     })
+    
+    // 同步工单工序
+    await syncWorkOrderProcesses(workOrder.work_order_id, line.line_id)
+    
     return success(res, workOrder, '创建成功')
   } catch (err) {
     console.error('创建工单失败:', err)
@@ -168,6 +213,12 @@ export const update = async (req, res) => {
       updateData.material_name = material.material_name
     }
     await workOrder.update(updateData)
+    
+    // 如果更换了产线，同步更新工序
+    if (updateData.line_id) {
+      await syncWorkOrderProcesses(workOrder.work_order_id, updateData.line_id)
+    }
+    
     return success(res, workOrder, '修改成功')
   } catch (err) {
     console.error('修改工单失败:', err)
@@ -316,4 +367,19 @@ export const toggleReportStatus = async (req, res) => {
   }
 }
 
-export default { list, detail, create, update, remove, start, finish, toggleReportStatus }
+// 获取工单工序列表
+export const getProcesses = async (req, res) => {
+  try {
+    const { id } = req.params
+    const processes = await WorkOrderProcess.findAll({
+      where: { work_order_id: id },
+      order: [['sort_order', 'ASC']],
+    })
+    return success(res, processes)
+  } catch (err) {
+    console.error('获取工单工序失败:', err)
+    return fail(res, '服务器错误', 500)
+  }
+}
+
+export default { list, detail, create, update, remove, start, finish, toggleReportStatus, getProcesses }

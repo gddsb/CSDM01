@@ -1,16 +1,15 @@
 import { Op } from 'sequelize'
-import { ProcessDefect, WorkOrder, Process, DefectType } from '../models/index.js'
+import { ProcessDefect, DefectType } from '../models/index.js'
 import { success, fail } from '../utils/response.js'
 
+// 列表查询（关联不良分类获取详情）
 export const list = async (req, res) => {
   try {
-    const { report_id, work_order_id, process_id, defect_category, defect_name, page = 1, pageSize = 20 } = req.query
+    const { report_id, work_order_id, process_id, page = 1, pageSize = 20 } = req.query
     const where = {}
     if (report_id) where.report_id = Number(report_id)
     if (work_order_id) where.work_order_id = Number(work_order_id)
     if (process_id) where.process_id = Number(process_id)
-    if (defect_category) where.defect_category = defect_category
-    if (defect_name) where.defect_name = { [Op.like]: `%${defect_name}%` }
 
     const limit = Number(pageSize)
     const offset = (Number(page) - 1) * limit
@@ -19,11 +18,26 @@ export const list = async (req, res) => {
       limit,
       offset,
       order: [['record_time', 'DESC']],
+      include: [{
+        model: DefectType,
+        as: 'defect_type',
+        attributes: ['defect_id', 'defect_code', 'defect_name', 'defect_type', 'category_name', 'defect_unit'],
+        required: false,
+      }],
     })
-    const data = rows.map(r => ({
-      ...r.toJSON(),
-      defect_images: r.defect_images ? JSON.parse(r.defect_images) : [],
-    }))
+    const data = rows.map(r => {
+      const json = r.toJSON()
+      // 从关联的不良分类中获取详情
+      const defectType = json.defect_type
+      return {
+        ...json,
+        defect_code: defectType?.defect_code || '',
+        defect_name: defectType?.defect_name || '',
+        defect_type: defectType?.defect_type || '',
+        category_name: defectType?.category_name || '',
+        defect_images: json.defect_images ? JSON.parse(json.defect_images) : [],
+      }
+    })
     return success(res, data, '查询成功', count)
   } catch (err) {
     console.error('查询工序不良列表失败:', err)
@@ -31,11 +45,11 @@ export const list = async (req, res) => {
   }
 }
 
-// 检验报废列表（过滤 defect_category='检验报废'）
+// 检验报废列表
 export const scrapList = async (req, res) => {
   try {
     const { report_id, work_order_id, page = 1, pageSize = 20 } = req.query
-    const where = { defect_category: '检验报废' }
+    const where = {}
     if (report_id) where.report_id = Number(report_id)
     if (work_order_id) where.work_order_id = Number(work_order_id)
 
@@ -46,12 +60,26 @@ export const scrapList = async (req, res) => {
       limit,
       offset,
       order: [['record_time', 'DESC']],
+      include: [{
+        model: DefectType,
+        as: 'defect_type',
+        attributes: ['defect_id', 'defect_code', 'defect_name', 'defect_type', 'category_name', 'defect_unit'],
+        required: false,
+      }],
     })
-    const data = rows.map(r => ({
-      ...r.toJSON(),
-      scrap_id: r.defect_id,
-      defect_images: r.defect_images ? JSON.parse(r.defect_images) : [],
-    }))
+    const data = rows.map(r => {
+      const json = r.toJSON()
+      const defectType = json.defect_type
+      return {
+        ...json,
+        scrap_id: json.defect_id,
+        defect_code: defectType?.defect_code || '',
+        defect_name: defectType?.defect_name || '',
+        defect_type: defectType?.defect_type || '',
+        category_name: defectType?.category_name || '',
+        defect_images: json.defect_images ? JSON.parse(json.defect_images) : [],
+      }
+    })
     return success(res, data, '查询成功', count)
   } catch (err) {
     console.error('查询检验报废列表失败:', err)
@@ -67,34 +95,23 @@ export const scrapCreate = async (req, res) => {
     if (!work_order_id) return fail(res, '工单 ID 不能为空')
     if (!quantity || quantity <= 0) return fail(res, '数量必须大于0')
 
-    const workOrder = await WorkOrder.findOne({ where: { work_order_id } })
-    if (!workOrder) return fail(res, '工单不存在', 404)
-
-    let defectType = null
-    let defect_code = ''
-    let defect_name = ''
+    // 获取不良分类信息以确定单位
+    let defectUnit = unit
     if (defect_type_id) {
-      defectType = await DefectType.findOne({ where: { defect_id: defect_type_id } })
-      if (defectType) {
-        defect_code = defectType.defect_code
-        defect_name = defectType.defect_name
+      const defectType = await DefectType.findOne({ where: { defect_id: defect_type_id } })
+      if (defectType && !unit) {
+        defectUnit = defectType.defect_unit || '默认单位'
       }
     }
 
     const defect = await ProcessDefect.create({
       report_id: report_id || null,
-      work_order_id: workOrder.work_order_id,
-      work_order_no: workOrder.work_order_no,
-      defect_category: '检验报废',
-      defect_code: defect_code || '',
-      defect_name: defect_name || '检验报废',
-      defect_type: defectType?.defect_type || '',
+      work_order_id,
+      process_id: null, // 报废记录可能没有工序
       defect_type_id: defect_type_id || null,
       quantity: Number(quantity),
-      unit: unit || (defectType?.defect_unit || '默认单位'),
+      unit: defectUnit || '默认单位',
       defect_images: defect_images ? JSON.stringify(defect_images) : null,
-      record_user: req.user?.username || '',
-      record_user_name: req.user?.real_name || '',
     })
 
     return success(res, { ...defect.toJSON(), scrap_id: defect.defect_id }, '创建成功')
@@ -110,25 +127,11 @@ export const scrapUpdate = async (req, res) => {
     const { id } = req.params
     const { defect_type_id, quantity, unit, defect_images } = req.body
 
-    const defect = await ProcessDefect.findOne({ where: { defect_id: id, defect_category: '检验报废' } })
+    const defect = await ProcessDefect.findOne({ where: { defect_id: id } })
     if (!defect) return fail(res, '记录不存在', 404)
 
     const updateData = {}
-    if (defect_type_id !== undefined) {
-      updateData.defect_type_id = defect_type_id
-      if (defect_type_id) {
-        const defectType = await DefectType.findOne({ where: { defect_id: defect_type_id } })
-        if (defectType) {
-          updateData.defect_code = defectType.defect_code
-          updateData.defect_type = defectType.defect_type
-          updateData.defect_name = defectType.defect_name
-          updateData.unit = defectType.defect_unit || defect.unit
-        }
-      } else {
-        updateData.defect_code = ''
-        updateData.defect_type = ''
-      }
-    }
+    if (defect_type_id !== undefined) updateData.defect_type_id = defect_type_id
     if (quantity !== undefined) updateData.quantity = Number(quantity)
     if (unit !== undefined) updateData.unit = unit
     if (defect_images !== undefined) updateData.defect_images = JSON.stringify(defect_images || [])
@@ -141,57 +144,36 @@ export const scrapUpdate = async (req, res) => {
   }
 }
 
+// 创建不良记录
 export const create = async (req, res) => {
   try {
     const {
       report_id,
       work_order_id,
       process_id,
-      defect_category,
-      defect_name,
       defect_type_id,
       quantity,
       unit,
       defect_images,
-      record_user,
-      record_user_name,
     } = req.body
 
     if (!work_order_id) return fail(res, '工单 ID 不能为空')
     if (!process_id) return fail(res, '工序 ID 不能为空')
+    if (!defect_type_id) return fail(res, '不良类型 ID 不能为空')
     if (!quantity || quantity <= 0) return fail(res, '数量必须大于0')
 
-    const workOrder = await WorkOrder.findOne({ where: { work_order_id } })
-    if (!workOrder) return fail(res, '工单不存在', 404)
-
-    const process = await Process.findOne({ where: { process_id } })
-    if (!process) return fail(res, '工序不存在', 404)
-
-    let defectType = null
-    if (defect_type_id) {
-      defectType = await DefectType.findOne({ where: { defect_id: defect_type_id } })
-    }
-
-    const finalDefectName = defect_name || (defectType?.defect_name || '')
-    if (!finalDefectName) return fail(res, '不良名称不能为空')
+    // 获取不良分类信息以确定单位
+    const defectType = await DefectType.findOne({ where: { defect_id: defect_type_id } })
+    if (!defectType) return fail(res, '不良类型不存在', 404)
 
     const defect = await ProcessDefect.create({
       report_id: report_id || null,
-      work_order_id: workOrder.work_order_id,
-      work_order_no: workOrder.work_order_no,
-      process_id: process.process_id,
-      process_code: process.process_code,
-      process_name: process.process_name,
-      defect_category: defect_category || (defectType?.category_name || ''),
-      defect_code: defectType?.defect_code || '',
-      defect_name: finalDefectName,
-      defect_type: defectType?.defect_type || '',
-      defect_type_id: defect_type_id || null,
+      work_order_id,
+      process_id,
+      defect_type_id,
       quantity: Number(quantity),
-      unit: unit || (defectType?.defect_unit || ''),
+      unit: unit || defectType.defect_unit || '',
       defect_images: defect_images ? JSON.stringify(defect_images) : null,
-      record_user,
-      record_user_name,
     })
 
     return success(res, defect, '创建成功')
@@ -201,6 +183,7 @@ export const create = async (req, res) => {
   }
 }
 
+// 删除不良记录
 export const remove = async (req, res) => {
   try {
     const { id } = req.params
@@ -214,6 +197,7 @@ export const remove = async (req, res) => {
   }
 }
 
+// 批量保存不良记录
 export const batchSave = async (req, res) => {
   try {
     const { work_order_id, process_id, items } = req.body
@@ -221,41 +205,28 @@ export const batchSave = async (req, res) => {
     if (!process_id) return fail(res, '工序 ID 不能为空')
     if (!Array.isArray(items)) return fail(res, '不良项目数据格式错误')
 
-    const workOrder = await WorkOrder.findOne({ where: { work_order_id } })
-    if (!workOrder) return fail(res, '工单不存在', 404)
+    // 过滤有效项目
+    const validItems = items.filter(item => item.defect_type_id && Number(item.quantity) > 0)
 
-    const process = await Process.findOne({ where: { process_id } })
-    if (!process) return fail(res, '工序不存在', 404)
-
-    const validItems = items.filter(item => item.defect_name && Number(item.quantity) > 0)
-
+    // 先删除该工单工序下的原有记录
     await ProcessDefect.destroy({
-      where: {
-        work_order_id,
-        process_id,
-      },
+      where: { work_order_id, process_id },
     })
 
+    // 批量创建
     const created = []
     for (const item of validItems) {
-      let defectType = null
-      if (item.defect_type_id) {
-        defectType = await DefectType.findOne({ where: { defect_id: item.defect_type_id } })
-      }
+      // 获取不良分类信息以确定单位
+      const defectType = await DefectType.findOne({ where: { defect_id: item.defect_type_id } })
+      
       const defect = await ProcessDefect.create({
-        work_order_id: workOrder.work_order_id,
-        work_order_no: workOrder.work_order_no,
-        process_id: process.process_id,
-        process_code: process.process_code,
-        process_name: process.process_name,
-        defect_category: item.defect_category || (defectType?.category_name || ''),
-        defect_name: item.defect_name,
-        defect_type_id: item.defect_type_id || (defectType?.defect_id || null),
+        work_order_id,
+        process_id,
+        report_id: item.report_id || null,
+        defect_type_id: item.defect_type_id,
         quantity: Number(item.quantity),
         unit: item.unit || (defectType?.defect_unit || ''),
         defect_images: item.defect_images ? JSON.stringify(item.defect_images) : null,
-        record_user: req.user?.username || '',
-        record_user_name: req.user?.real_name || '',
       })
       created.push(defect)
     }
@@ -267,30 +238,24 @@ export const batchSave = async (req, res) => {
   }
 }
 
+// 更新不良记录
 export const update = async (req, res) => {
   try {
     const { id } = req.params
-    const { defect_name, defect_type_id, quantity, unit, defect_images } = req.body
+    const { defect_type_id, quantity, unit, defect_images } = req.body
 
     const defect = await ProcessDefect.findOne({ where: { defect_id: id } })
     if (!defect) return fail(res, '记录不存在', 404)
 
     const updateData = {}
-    if (defect_name !== undefined) updateData.defect_name = defect_name
     if (defect_type_id !== undefined) {
       updateData.defect_type_id = defect_type_id
-      // defect_type_id 变化时同步更新 defect_code/defect_type/defect_name
+      // 如果更新了不良类型，也更新单位
       if (defect_type_id) {
         const defectType = await DefectType.findOne({ where: { defect_id: defect_type_id } })
-        if (defectType) {
-          updateData.defect_code = defectType.defect_code
-          updateData.defect_type = defectType.defect_type
-          if (!defect_name) updateData.defect_name = defectType.defect_name
+        if (defectType && !unit) {
           updateData.unit = defectType.defect_unit || defect.unit
         }
-      } else {
-        updateData.defect_code = ''
-        updateData.defect_type = ''
       }
     }
     if (quantity !== undefined) updateData.quantity = Number(quantity)
