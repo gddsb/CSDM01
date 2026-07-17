@@ -155,50 +155,6 @@ export default function ProcessReporting() {
     return () => { cancelled = true }
   }, [])
 
-  useEffect(() => {
-    if (!selectedWO) {
-      setReportList([])
-      setSelectedReport(null)
-      setLineProcesses([])
-      setSelectedProcessId(null)
-      setProdDefectList([])
-      setScrapDefectList([])
-      setExceptionList([])
-      setManpowerList([])
-      setMaterialList([])
-      setStats({ inputQty: 0, outputQty: 0, defectMaterial: 0, defectProcess: 0, defectScrap: 0, exceptionHours: 0 })
-      setReportStatus('开始报工')
-      return
-    }
-    fetchWorkOrderProcesses(selectedWO.work_order_id)
-    fetchReportList(selectedWO.work_order_id)
-    fetchMaterials()
-  }, [selectedWO])
-
-  // 报工单级别统计数据（当前工单/报工单汇总，不按工序过滤）
-  useEffect(() => {
-    if (!selectedReport) {
-      setStats({ inputQty: 0, outputQty: 0, defectMaterial: 0, defectProcess: 0, defectScrap: 0, exceptionHours: 0 })
-      return
-    }
-    fetchReportStats(selectedReport.report_id)
-  }, [selectedReport, lineProcesses])
-
-  // 当前工序列表数据
-  useEffect(() => {
-    if (!selectedReport) {
-      setProdDefectList([])
-      setScrapDefectList([])
-      setExceptionList([])
-      setManpowerList([])
-      setMaterialList([])
-      setReportStatus('开始报工')
-      return
-    }
-    setReportStatus(selectedReport.status || '开始报工')
-    fetchAllData(selectedReport.report_id)
-  }, [selectedReport, selectedProcessId])
-
   // 获取工单工序（从工单工序表获取，而非产线工序）
   const fetchWorkOrderProcesses = useCallback(async (workOrderId) => {
     if (!workOrderId) {
@@ -427,6 +383,52 @@ export default function ProcessReporting() {
       setMaterials([])
     }
   }, [])
+
+  // ===== useEffect 依赖回调函数的部分，必须放在所有 useCallback 之后 =====
+
+  useEffect(() => {
+    if (!selectedWO) {
+      setReportList([])
+      setSelectedReport(null)
+      setLineProcesses([])
+      setSelectedProcessId(null)
+      setProdDefectList([])
+      setScrapDefectList([])
+      setExceptionList([])
+      setManpowerList([])
+      setMaterialList([])
+      setStats({ inputQty: 0, outputQty: 0, defectMaterial: 0, defectProcess: 0, defectScrap: 0, exceptionHours: 0 })
+      setReportStatus('开始报工')
+      return
+    }
+    fetchWorkOrderProcesses(selectedWO.work_order_id)
+    fetchReportList(selectedWO.work_order_id)
+    fetchMaterials()
+  }, [selectedWO, fetchWorkOrderProcesses, fetchReportList, fetchMaterials])
+
+  // 报工单级别统计数据（当前工单/报工单汇总，不按工序过滤）
+  useEffect(() => {
+    if (!selectedReport) {
+      setStats({ inputQty: 0, outputQty: 0, defectMaterial: 0, defectProcess: 0, defectScrap: 0, exceptionHours: 0 })
+      return
+    }
+    fetchReportStats(selectedReport.report_id)
+  }, [selectedReport, lineProcesses, fetchReportStats])
+
+  // 当前工序列表数据
+  useEffect(() => {
+    if (!selectedReport) {
+      setProdDefectList([])
+      setScrapDefectList([])
+      setExceptionList([])
+      setManpowerList([])
+      setMaterialList([])
+      setReportStatus('开始报工')
+      return
+    }
+    setReportStatus(selectedReport.status || '开始报工')
+    fetchAllData(selectedReport.report_id)
+  }, [selectedReport, selectedProcessId, fetchAllData])
 
   const isEditable = reportStatus === '开始报工'
 
