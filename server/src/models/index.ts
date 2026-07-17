@@ -81,6 +81,9 @@ ProcessException.belongsTo(ProcessReport, { foreignKey: 'report_id', as: 'proces
 ProcessReport.hasMany(ProcessMaterial, { foreignKey: 'report_id', as: 'process_materials' })
 ProcessMaterial.belongsTo(ProcessReport, { foreignKey: 'report_id', as: 'process_report' })
 
+// 制程物料 - 基础料品
+ProcessMaterial.belongsTo(Material, { foreignKey: 'bas_material_id', as: 'bas_material' })
+
 // 报工单 - 异常图片记录
 ProcessReport.hasMany(ReportExceptionImage, { foreignKey: 'report_id', as: 'exception_images' })
 ReportExceptionImage.belongsTo(ProcessReport, { foreignKey: 'report_id', as: 'process_report' })

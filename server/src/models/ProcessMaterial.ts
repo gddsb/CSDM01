@@ -13,29 +13,14 @@ const ProcessMaterial = sequelize.define('ProcessMaterial', {
   work_order_id: {
     type: DataTypes.INTEGER,
   },
-  work_order_no: {
-    type: DataTypes.STRING(50),
-  },
   process_id: {
     type: DataTypes.INTEGER,
-  },
-  process_code: {
-    type: DataTypes.STRING(50),
-  },
-  process_name: {
-    type: DataTypes.STRING(100),
   },
   material_type: {
     type: DataTypes.STRING(100),
   },
-  material_code: {
-    type: DataTypes.STRING(100),
-  },
-  material_name: {
-    type: DataTypes.STRING(200),
-  },
-  specification: {
-    type: DataTypes.STRING(200),
+  bas_material_id: {
+    type: DataTypes.STRING,
   },
   material_batch: {
     type: DataTypes.STRING(100),
@@ -49,12 +34,6 @@ const ProcessMaterial = sequelize.define('ProcessMaterial', {
   },
   label_images: {
     type: DataTypes.TEXT,
-  },
-  record_user: {
-    type: DataTypes.STRING(50),
-  },
-  record_user_name: {
-    type: DataTypes.STRING(50),
   },
 }, {
   tableName: 'production_process_material',

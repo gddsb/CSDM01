@@ -351,11 +351,23 @@ export default function ProcessReporting() {
       }))
       setExceptionList((exceptionRes.data || []).map(e => ({ ...e, id: e.exception_id, exception_images: parseImages(e.exception_images) })))
       setManpowerList((manpowerRes.data || []).map(m => ({ ...m, id: m.record_id })))
-      setMaterialList((materialRes.data || []).map(m => ({ ...m, id: m.material_id, label_images: parseImages(m.label_images) })))
+      setMaterialList((materialRes.data || []).map(m => {
+        let enriched = { ...m, id: m.material_id, label_images: parseImages(m.label_images) }
+        // 后端只记录 bas_material_id，从物料主数据补充 material_code/material_name/specification
+        if (!enriched.material_code && (enriched.bas_material_id || enriched.material_id)) {
+          const mat = materialOptions.find(opt => String(opt.value) === String(enriched.bas_material_id || enriched.material_id))
+          if (mat) {
+            if (!enriched.material_code) enriched.material_code = mat.material_code
+            if (!enriched.material_name) enriched.material_name = mat.material_name
+            if (!enriched.specification) enriched.specification = mat.specification
+          }
+        }
+        return enriched
+      }))
     } catch (err) {
       message.error(err.message || '获取数据失败')
     }
-  }, [selectedReport, selectedProcessId, defectTypeOptions, scrapTypeOptions])
+  }, [selectedReport, selectedProcessId, defectTypeOptions, scrapTypeOptions, materialOptions])
 
   // 获取整个报工单的统计数据（不按工序过滤）
   const fetchReportStats = useCallback(async (reportId) => {
@@ -646,6 +658,7 @@ export default function ProcessReporting() {
           showSearch
           popupMatchSelectWidth={false}
           popupPlacement="bottomLeft"
+          popupClassName="mes-select-dropdown"
           optionLabelRender={(option) => {
             const opt = option as any
             return opt.defect_code
@@ -672,11 +685,14 @@ export default function ProcessReporting() {
       title: '不良数量', dataIndex: 'quantity', key: 'quantity', width: 100,
       render: (val, record) => isEditable ? (
         <InputNumber
-          min={0}
+          min={1}
+          step={1}
+          precision={0}
           value={val}
           onChange={(v) => handleProdDefectChange(record.id, 'quantity', v || 0)}
           style={{ width: '100%' }}
           size="small"
+          controls={false}
         />
       ) : val,
     },
@@ -691,6 +707,7 @@ export default function ProcessReporting() {
           style={{ width: '100%' }}
           size="small"
           disabled={!record.defect_type_id}
+          popupClassName="mes-select-dropdown"
         />
       ) : record.unit || '-',
     },
@@ -865,6 +882,7 @@ export default function ProcessReporting() {
           showSearch
           popupMatchSelectWidth={false}
           popupPlacement="bottomLeft"
+          popupClassName="mes-select-dropdown"
           optionLabelRender={(option) => {
             const opt = option as any
             return opt.defect_code
@@ -891,11 +909,14 @@ export default function ProcessReporting() {
       title: '不良数量', dataIndex: 'quantity', key: 'quantity', width: 100,
       render: (val, record) => isEditable ? (
         <InputNumber
-          min={0}
+          min={1}
+          step={1}
+          precision={0}
           value={val}
           onChange={(v) => handleScrapDefectChange(record.id, 'quantity', v || 0)}
           style={{ width: '100%' }}
           size="small"
+          controls={false}
         />
       ) : val,
     },
@@ -910,6 +931,7 @@ export default function ProcessReporting() {
           style={{ width: '100%' }}
           size="small"
           disabled={!record.defect_type_id}
+          popupClassName="mes-select-dropdown"
         />
       ) : record.unit || '-',
     },
@@ -938,9 +960,7 @@ export default function ProcessReporting() {
       if (String(item.id).startsWith('tmp_') === false) {
         await api.put(`/production/process-materials/${item.id}`, {
           material_type: item.material_type,
-          material_code: item.material_code,
-          material_name: item.material_name,
-          specification: item.specification,
+          bas_material_id: item.bas_material_id,
           material_batch: item.material_batch,
           package_no: item.package_no,
           quantity: item.quantity,
@@ -952,9 +972,7 @@ export default function ProcessReporting() {
           work_order_id: selectedWO.work_order_id,
           process_id: selectedProcessId,
           material_type: item.material_type || '投入',
-          material_code: item.material_code,
-          material_name: item.material_name,
-          specification: item.specification,
+          bas_material_id: item.bas_material_id,
           material_batch: item.material_batch,
           package_no: item.package_no,
           quantity: item.quantity,
@@ -985,6 +1003,7 @@ export default function ProcessReporting() {
               updated.material_code = material.material_code
               updated.material_name = material.material_name
               updated.specification = material.specification
+              updated.bas_material_id = value
             }
           }
           updatedItem = updated
@@ -1004,6 +1023,7 @@ export default function ProcessReporting() {
           process_id: selectedProcessId,
           material_type: '投入',
           material_id: null,
+          bas_material_id: null,
           material_code: '',
           material_name: '',
           specification: '',
@@ -1019,6 +1039,7 @@ export default function ProcessReporting() {
             newItem.material_code = material.material_code
             newItem.material_name = material.material_name
             newItem.specification = material.specification
+            newItem.bas_material_id = value
           }
         }
         // 自动保存：有料号且有数量时保存
@@ -1056,6 +1077,7 @@ export default function ProcessReporting() {
       process_id: selectedProcessId,
       material_type: '投入',
       material_id: null,
+      bas_material_id: null,
       material_code: '',
       material_name: '',
       specification: '',
@@ -1168,6 +1190,7 @@ export default function ProcessReporting() {
           ]}
           style={{ width: '100%' }}
           size="small"
+          popupClassName="mes-select-dropdown"
         />
       ) : val || '-',
     },
@@ -1183,6 +1206,7 @@ export default function ProcessReporting() {
           showSearch
           popupMatchSelectWidth={false}
           popupPlacement="bottomLeft"
+          popupClassName="mes-select-dropdown"
           optionLabelRender={(option) => {
             const opt = option as any
             return opt.material_code
@@ -1196,15 +1220,25 @@ export default function ProcessReporting() {
           }}
           size="small"
         />
-      ) : record.material_code || '-',
+      ) : record.material_code || (materialOptions.find(m => String(m.value) === String(record.bas_material_id || record.material_id))?.material_code) || '-',
     },
     {
       title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 150,
-      render: (val) => val || '-',
+      render: (val, record) => {
+        if (val) return val
+        // 从关联数据读取
+        const mat = materialOptions.find(m => String(m.value) === String(record.bas_material_id || record.material_id))
+        return mat?.material_name || '-'
+      },
     },
     {
       title: '规格', dataIndex: 'specification', key: 'specification', width: 150,
-      render: (val) => val || '-',
+      render: (val, record) => {
+        if (val) return val
+        // 从关联数据读取
+        const mat = materialOptions.find(m => String(m.value) === String(record.bas_material_id || record.material_id))
+        return mat?.specification || '-'
+      },
     },
     {
       title: '批号', dataIndex: 'material_batch', key: 'material_batch', width: 120,
@@ -1232,11 +1266,14 @@ export default function ProcessReporting() {
       title: '数量', dataIndex: 'quantity', key: 'quantity', width: 100,
       render: (val, record) => isEditable ? (
         <InputNumber
-          min={0}
+          min={1}
+          step={1}
+          precision={0}
           value={val}
           onChange={(v) => handleMaterialChange(record.id, 'quantity', v || 0)}
           style={{ width: '100%' }}
           size="small"
+          controls={false}
         />
       ) : val,
     },
@@ -1392,6 +1429,7 @@ export default function ProcessReporting() {
           options={exceptionCategories}
           style={{ width: '100%' }}
           size="small"
+          popupClassName="mes-select-dropdown"
         />
       ) : val || '-',
     },
@@ -1408,6 +1446,7 @@ export default function ProcessReporting() {
           optionFilterProp="label"
           size="small"
           allowClear
+          popupClassName="mes-select-dropdown"
         />
       ) : record.device_name || '-',
     },
@@ -1420,7 +1459,14 @@ export default function ProcessReporting() {
             if (d) {
               const today = dayjs().format('YYYY-MM-DD')
               const timeStr = d.format('HH:mm:ss')
-              handleExceptionChange(record.id, 'start_time', `${today}T${timeStr}`)
+              const newTime = `${today}T${timeStr}`
+              // 开始时间不能早于报工开始时间
+              const reportStart = selectedReport?.report_start_time
+              if (reportStart && dayjs(newTime).isBefore(dayjs(reportStart))) {
+                message.warning('开始时间不能早于报工开始时间')
+                return
+              }
+              handleExceptionChange(record.id, 'start_time', newTime)
             } else {
               handleExceptionChange(record.id, 'start_time', null)
             }
@@ -1428,7 +1474,7 @@ export default function ProcessReporting() {
           format="HH:mm"
           style={{ width: '100%' }}
           size="small"
-          minuteStep={10}
+          minuteStep={5}
         />
       ) : val ? dayjs(val).format('HH:mm') : '-',
     },
@@ -1441,7 +1487,20 @@ export default function ProcessReporting() {
             if (d) {
               const today = dayjs().format('YYYY-MM-DD')
               const timeStr = d.format('HH:mm:ss')
-              handleExceptionChange(record.id, 'end_time', `${today}T${timeStr}`)
+              const newTime = `${today}T${timeStr}`
+              // 结束时间不能大于报工结束时间
+              const reportEnd = selectedReport?.report_end_time
+              if (reportEnd && dayjs(newTime).isAfter(dayjs(reportEnd))) {
+                message.warning('结束时间不能大于报工结束时间')
+                return
+              }
+              // 结束时间不能小于开始时间
+              const startTime = record.start_time
+              if (startTime && dayjs(newTime).isBefore(dayjs(startTime))) {
+                message.warning('结束时间不能小于开始时间')
+                return
+              }
+              handleExceptionChange(record.id, 'end_time', newTime)
             } else {
               handleExceptionChange(record.id, 'end_time', null)
             }
@@ -1449,7 +1508,7 @@ export default function ProcessReporting() {
           format="HH:mm"
           style={{ width: '100%' }}
           size="small"
-          minuteStep={10}
+          minuteStep={5}
         />
       ) : val ? dayjs(val).format('HH:mm') : '-',
     },
@@ -1625,6 +1684,7 @@ export default function ProcessReporting() {
           ]}
           style={{ width: '100%' }}
           size="small"
+          popupClassName="mes-select-dropdown"
         />
       ) : val || '-',
     },
@@ -1637,7 +1697,14 @@ export default function ProcessReporting() {
             if (d) {
               const today = dayjs().format('YYYY-MM-DD')
               const timeStr = d.format('HH:mm:ss')
-              handleManpowerChange(record.id, 'start_time', `${today}T${timeStr}`)
+              const newTime = `${today}T${timeStr}`
+              // 开始时间不能早于报工开始时间
+              const reportStart = selectedReport?.report_start_time
+              if (reportStart && dayjs(newTime).isBefore(dayjs(reportStart))) {
+                message.warning('开始时间不能早于报工开始时间')
+                return
+              }
+              handleManpowerChange(record.id, 'start_time', newTime)
             } else {
               handleManpowerChange(record.id, 'start_time', null)
             }
@@ -1645,7 +1712,7 @@ export default function ProcessReporting() {
           format="HH:mm"
           style={{ width: '100%' }}
           size="small"
-          minuteStep={10}
+          minuteStep={5}
         />
       ) : val ? dayjs(val).format('HH:mm') : '-',
     },
@@ -1658,7 +1725,20 @@ export default function ProcessReporting() {
             if (d) {
               const today = dayjs().format('YYYY-MM-DD')
               const timeStr = d.format('HH:mm:ss')
-              handleManpowerChange(record.id, 'end_time', `${today}T${timeStr}`)
+              const newTime = `${today}T${timeStr}`
+              // 结束时间不能大于报工结束时间
+              const reportEnd = selectedReport?.report_end_time
+              if (reportEnd && dayjs(newTime).isAfter(dayjs(reportEnd))) {
+                message.warning('结束时间不能大于报工结束时间')
+                return
+              }
+              // 结束时间不能小于开始时间
+              const startTime = record.start_time
+              if (startTime && dayjs(newTime).isBefore(dayjs(startTime))) {
+                message.warning('结束时间不能小于开始时间')
+                return
+              }
+              handleManpowerChange(record.id, 'end_time', newTime)
             } else {
               handleManpowerChange(record.id, 'end_time', null)
             }
@@ -1666,7 +1746,7 @@ export default function ProcessReporting() {
           format="HH:mm"
           style={{ width: '100%' }}
           size="small"
-          minuteStep={10}
+          minuteStep={5}
         />
       ) : val ? dayjs(val).format('HH:mm') : '-',
     },
@@ -1754,6 +1834,7 @@ export default function ProcessReporting() {
                     options={lineProcesses.map(p => ({ label: p.process_name, value: p.process_id }))}
                     style={{ width: 200 }}
                     placeholder="请选择工序"
+                    popupClassName="mes-select-dropdown"
                   />
                 </Space>
               </Col>
@@ -1793,6 +1874,7 @@ export default function ProcessReporting() {
                     options={lineProcesses.map(p => ({ label: p.process_name, value: p.process_id }))}
                     style={{ width: 200 }}
                     placeholder="请选择工序"
+                    popupClassName="mes-select-dropdown"
                   />
                 </Space>
               </Col>
@@ -1916,6 +1998,7 @@ export default function ProcessReporting() {
                 placeholder="请选择生产工单"
                 showSearch
                 optionFilterProp="label"
+                popupClassName="mes-select-dropdown"
               />
             </Space>
           </Col>
@@ -1937,6 +2020,7 @@ export default function ProcessReporting() {
                     style={{ width: 260 }}
                     placeholder="请选择报工单"
                     allowClear
+                    popupClassName="mes-select-dropdown"
                   />
                 </Space>
               </Col>
