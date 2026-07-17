@@ -28,7 +28,6 @@ import NumberRule from './NumberRule.js'
 import DefectImage from './DefectImage.js'
 import DictType from './DictType.js'
 import DictData from './DictData.js'
-import AppVersion from './AppVersion.js'
 import DataDictionary from './DataDictionary.js'
 import WorkOrderProcess from './WorkOrderProcess.js'
 
@@ -161,7 +160,6 @@ const db = {
   DefectImage,
   DictType,
   DictData,
-  AppVersion,
   DataDictionary,
   WorkOrderProcess,
 }
@@ -195,7 +193,6 @@ export {
   DefectImage,
   DictType,
   DictData,
-  AppVersion,
   DataDictionary,
   WorkOrderProcess,
 }
