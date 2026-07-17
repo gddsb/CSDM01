@@ -384,6 +384,16 @@ export default function ProcessReporting() {
     }
   }, [])
 
+  const materialOptions = useMemo(() => {
+    return materials.map(m => ({
+      label: <span><span style={{ fontWeight: 600, color: '#212121' }}>{m.material_code}</span><span style={{ marginLeft: 8, opacity: 0.65, color: '#757575' }}>{m.material_name}</span>{m.specification && <span style={{ marginLeft: 8, opacity: 0.45, color: '#9E9E9E' }}>{m.specification}</span>}</span>,
+      value: m.material_id,
+      material_code: m.material_code,
+      material_name: m.material_name,
+      specification: m.specification || '',
+    }))
+  }, [materials])
+
   // ===== useEffect 依赖回调函数的部分，必须放在所有 useCallback 之后 =====
 
   useEffect(() => {
@@ -487,18 +497,6 @@ export default function ProcessReporting() {
   const deviceOptions = useMemo(() => {
     return devices.map(d => ({ label: `${d.device_code} ${d.device_name}`, value: d.device_id }))
   }, [devices])
-
-  const materialOptions = useMemo(() => {
-    return materials.map(m => ({
-      label: <span><span style={{ fontWeight: 600, color: '#212121' }}>{m.material_code}</span><span style={{ marginLeft: 8, opacity: 0.65, color: '#757575' }}>{m.material_name}</span>{m.specification && <span style={{ marginLeft: 8, opacity: 0.45, color: '#9E9E9E' }}>{m.specification}</span>}</span>,
-      value: m.material_id,
-      material_code: m.material_code,
-      material_name: m.material_name,
-      specification: m.specification || '',
-    }))
-  }, [materials])
-
-  
 
   const saveProdDefectItem = async (item) => {
     if (!selectedReport || !selectedProcessId) return
