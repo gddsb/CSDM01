@@ -17,11 +17,9 @@ export default function Login() {
     const result = await login(values.username, values.password)
     if (result.success) {
       message.success('登录成功')
-      if (result.isViewer) {
-        navigate('/bigscreen/production')
-      } else {
-        navigate('/dashboard')
-      }
+      const targetPath = result.isViewer ? '/bigscreen/production' : '/dashboard'
+      console.log('登录成功，完整链接地址：', `${window.location.origin}${targetPath}`)
+      navigate(targetPath)
     } else {
       message.error(result.message)
     }
@@ -33,11 +31,9 @@ export default function Login() {
     const result = await login(username, '123456')
     if (result.success) {
       message.success('登录成功')
-      if (result.isViewer) {
-        navigate('/bigscreen/production')
-      } else {
-        navigate('/dashboard')
-      }
+      const targetPath = result.isViewer ? '/bigscreen/production' : '/dashboard'
+      console.log('登录成功，完整链接地址：', `${window.location.origin}${targetPath}`)
+      navigate(targetPath)
     } else {
       message.error(result.message)
     }
