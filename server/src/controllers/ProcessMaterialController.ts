@@ -41,6 +41,7 @@ export const create = async (req, res) => {
       material_name,
       specification,
       material_batch,
+      package_no,
       quantity,
       label_images,
       record_user,
@@ -70,6 +71,7 @@ export const create = async (req, res) => {
       material_name: material_name || '',
       specification: specification || '',
       material_batch: material_batch || '',
+      package_no: package_no || '',
       quantity: Number(quantity),
       label_images: label_images ? JSON.stringify(label_images) : null,
       record_user,
@@ -93,6 +95,7 @@ export const update = async (req, res) => {
       material_name,
       specification,
       material_batch,
+      package_no,
       quantity,
       label_images,
     } = req.body
@@ -108,12 +111,13 @@ export const update = async (req, res) => {
       material.process_name = process.process_name
     }
 
-    if (material_type) material.material_type = material_type
-    if (material_code) material.material_code = material_code
-    if (material_name) material.material_name = material_name
-    if (specification) material.specification = specification
-    if (material_batch) material.material_batch = material_batch
-    if (quantity && quantity > 0) material.quantity = Number(quantity)
+    if (material_type !== undefined) material.material_type = material_type
+    if (material_code !== undefined) material.material_code = material_code
+    if (material_name !== undefined) material.material_name = material_name
+    if (specification !== undefined) material.specification = specification
+    if (material_batch !== undefined) material.material_batch = material_batch
+    if (package_no !== undefined) material.package_no = package_no
+    if (quantity !== undefined && Number(quantity) > 0) material.quantity = Number(quantity)
     if (label_images !== undefined) material.label_images = label_images ? JSON.stringify(label_images) : null
 
     await material.save()

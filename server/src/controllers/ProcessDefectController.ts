@@ -86,7 +86,9 @@ export const scrapCreate = async (req, res) => {
       work_order_id: workOrder.work_order_id,
       work_order_no: workOrder.work_order_no,
       defect_category: '检验报废',
+      defect_code: defect_code || '',
       defect_name: defect_name || '检验报废',
+      defect_type: defectType?.defect_type || '',
       defect_type_id: defect_type_id || null,
       quantity: Number(quantity),
       unit: unit || (defectType?.defect_unit || '默认单位'),
@@ -106,12 +108,27 @@ export const scrapCreate = async (req, res) => {
 export const scrapUpdate = async (req, res) => {
   try {
     const { id } = req.params
-    const { quantity, unit, defect_images } = req.body
+    const { defect_type_id, quantity, unit, defect_images } = req.body
 
     const defect = await ProcessDefect.findOne({ where: { defect_id: id, defect_category: '检验报废' } })
     if (!defect) return fail(res, '记录不存在', 404)
 
     const updateData = {}
+    if (defect_type_id !== undefined) {
+      updateData.defect_type_id = defect_type_id
+      if (defect_type_id) {
+        const defectType = await DefectType.findOne({ where: { defect_id: defect_type_id } })
+        if (defectType) {
+          updateData.defect_code = defectType.defect_code
+          updateData.defect_type = defectType.defect_type
+          updateData.defect_name = defectType.defect_name
+          updateData.unit = defectType.defect_unit || defect.unit
+        }
+      } else {
+        updateData.defect_code = ''
+        updateData.defect_type = ''
+      }
+    }
     if (quantity !== undefined) updateData.quantity = Number(quantity)
     if (unit !== undefined) updateData.unit = unit
     if (defect_images !== undefined) updateData.defect_images = JSON.stringify(defect_images || [])
@@ -135,6 +152,7 @@ export const create = async (req, res) => {
       defect_type_id,
       quantity,
       unit,
+      defect_images,
       record_user,
       record_user_name,
     } = req.body
@@ -165,10 +183,13 @@ export const create = async (req, res) => {
       process_code: process.process_code,
       process_name: process.process_name,
       defect_category: defect_category || (defectType?.category_name || ''),
+      defect_code: defectType?.defect_code || '',
       defect_name: finalDefectName,
+      defect_type: defectType?.defect_type || '',
       defect_type_id: defect_type_id || null,
       quantity: Number(quantity),
       unit: unit || (defectType?.defect_unit || ''),
+      defect_images: defect_images ? JSON.stringify(defect_images) : null,
       record_user,
       record_user_name,
     })
@@ -256,7 +277,22 @@ export const update = async (req, res) => {
 
     const updateData = {}
     if (defect_name !== undefined) updateData.defect_name = defect_name
-    if (defect_type_id !== undefined) updateData.defect_type_id = defect_type_id
+    if (defect_type_id !== undefined) {
+      updateData.defect_type_id = defect_type_id
+      // defect_type_id 变化时同步更新 defect_code/defect_type/defect_name
+      if (defect_type_id) {
+        const defectType = await DefectType.findOne({ where: { defect_id: defect_type_id } })
+        if (defectType) {
+          updateData.defect_code = defectType.defect_code
+          updateData.defect_type = defectType.defect_type
+          if (!defect_name) updateData.defect_name = defectType.defect_name
+          updateData.unit = defectType.defect_unit || defect.unit
+        }
+      } else {
+        updateData.defect_code = ''
+        updateData.defect_type = ''
+      }
+    }
     if (quantity !== undefined) updateData.quantity = Number(quantity)
     if (unit !== undefined) updateData.unit = unit
     if (defect_images !== undefined) updateData.defect_images = JSON.stringify(defect_images || [])

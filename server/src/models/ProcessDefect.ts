@@ -28,8 +28,14 @@ const ProcessDefect = sequelize.define('ProcessDefect', {
   defect_category: {
     type: DataTypes.STRING(50),
   },
+  defect_code: {
+    type: DataTypes.STRING(50),
+  },
   defect_name: {
     type: DataTypes.STRING(100),
+  },
+  defect_type: {
+    type: DataTypes.STRING(50),
   },
   defect_type_id: {
     type: DataTypes.INTEGER,

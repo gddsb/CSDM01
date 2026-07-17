@@ -40,6 +40,9 @@ const ProcessMaterial = sequelize.define('ProcessMaterial', {
   material_batch: {
     type: DataTypes.STRING(100),
   },
+  package_no: {
+    type: DataTypes.STRING(100),
+  },
   quantity: {
     type: DataTypes.DECIMAL(12, 2),
     defaultValue: 0,

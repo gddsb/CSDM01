@@ -282,15 +282,38 @@ export default function ProcessReporting() {
         api.get('/production/manpower-records', { params: { report_id: reportId, page: 1, pageSize: 1000 } }),
         api.get('/production/process-materials', { params: { report_id: reportId, process_id: selectedProcessId, page: 1, pageSize: 1000 } }),
       ])
-      setProdDefectList((defectRes.data || []).map(d => ({ ...d, id: d.defect_id, defect_images: parseImages(d.defect_images) })))
-      setScrapDefectList((scrapRes.data || []).map(d => ({ ...d, id: d.scrap_id, defect_images: parseImages(d.defect_images) })))
+      setProdDefectList((defectRes.data || []).map(d => {
+        // 历史数据可能缺少 defect_code/defect_type，从下拉选项补充
+        let enriched = { ...d, id: d.defect_id, defect_images: parseImages(d.defect_images) }
+        if ((!enriched.defect_code || !enriched.defect_type) && enriched.defect_type_id) {
+          const opt = defectTypeOptions.find(o => String(o.value) === String(enriched.defect_type_id))
+          if (opt) {
+            if (!enriched.defect_code) enriched.defect_code = opt.defect_code
+            if (!enriched.defect_type) enriched.defect_type = opt.defect_type
+            if (!enriched.defect_name) enriched.defect_name = opt.defect_name
+          }
+        }
+        return enriched
+      }))
+      setScrapDefectList((scrapRes.data || []).map(d => {
+        let enriched = { ...d, id: d.scrap_id, defect_images: parseImages(d.defect_images) }
+        if ((!enriched.defect_code || !enriched.defect_type) && enriched.defect_type_id) {
+          const opt = scrapTypeOptions.find(o => String(o.value) === String(enriched.defect_type_id))
+          if (opt) {
+            if (!enriched.defect_code) enriched.defect_code = opt.defect_code
+            if (!enriched.defect_type) enriched.defect_type = opt.defect_type
+            if (!enriched.defect_name) enriched.defect_name = opt.defect_name
+          }
+        }
+        return enriched
+      }))
       setExceptionList((exceptionRes.data || []).map(e => ({ ...e, id: e.exception_id, exception_images: parseImages(e.exception_images) })))
       setManpowerList((manpowerRes.data || []).map(m => ({ ...m, id: m.record_id })))
       setMaterialList((materialRes.data || []).map(m => ({ ...m, id: m.material_id, label_images: parseImages(m.label_images) })))
     } catch (err) {
       message.error(err.message || '获取数据失败')
     }
-  }, [selectedReport, selectedProcessId])
+  }, [selectedReport, selectedProcessId, defectTypeOptions, scrapTypeOptions])
 
   // 获取整个报工单的统计数据（不按工序过滤）
   const fetchReportStats = useCallback(async (reportId) => {
@@ -693,6 +716,7 @@ export default function ProcessReporting() {
     try {
       if (item.scrap_id) {
         await api.put(`/production/scrap-defects/${item.scrap_id}`, {
+          defect_type_id: item.defect_type_id,
           quantity: item.quantity,
           unit: item.unit,
           defect_images: item.defect_images,
