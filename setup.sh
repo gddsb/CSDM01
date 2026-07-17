@@ -3,6 +3,11 @@ set -e
 set -u
 set -o pipefail
 
+# ============================================================
+# 奶粉罐生产管理系统 - 服务器自动安装/更新脚本
+# 技术栈: React + Vite | Express + Sequelize + TypeScript(tsx) | MySQL | PM2 | Nginx
+# ============================================================
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -13,6 +18,11 @@ PROJECT_DIR="/opt/milk-can-mes"
 BACKUP_DIR="/opt/backups"
 LOG_FILE="$BACKUP_DIR/deploy.log"
 GITHUB_TIMEOUT=30
+DB_NAME="milk_can_mes"
+DB_USER="milk_can_mes"
+DB_DEFAULT_PASSWORD="milk-can-2026"
+JWT_SECRET="milk-can-mes-jwt-secret-key-2026"
+DEFAULT_PORT=3001
 
 GITHUB_REPOS=(
     "https://github.com/gddsb/CSDM01.git"
@@ -20,6 +30,9 @@ GITHUB_REPOS=(
     "https://github.moeyy.xyz/https://github.com/gddsb/CSDM01.git"
 )
 
+# ============================================================
+# 日志函数
+# ============================================================
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1" >&2
     echo "[INFO] $(date '+%Y-%m-%d %H:%M:%S') $1" >> "$LOG_FILE" 2>/dev/null || true
@@ -40,6 +53,9 @@ log_error() {
     echo "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') $1" >> "$LOG_FILE" 2>/dev/null || true
 }
 
+# ============================================================
+# 基础函数
+# ============================================================
 check_root() {
     if [ "$(id -u)" != "0" ]; then
         SUDO="sudo"
@@ -71,6 +87,9 @@ create_backup_dir() {
     echo "操作开始: $(date '+%Y-%m-%d %H:%M:%S')" >> "$LOG_FILE"
 }
 
+# ============================================================
+# 备份函数
+# ============================================================
 backup_current_version() {
     log_info "备份当前版本..."
 
@@ -85,36 +104,35 @@ backup_current_version() {
 }
 
 backup_database() {
-    log_info "备份数据库..."
+    log_info "备份数据库 (MySQL)..."
 
-    if [ -f "$PROJECT_DIR/server/.env" ]; then
-        DB_TYPE=$(grep "DB_DIALECT" "$PROJECT_DIR/server/.env" | cut -d'=' -f2 | tr -d ' ' || echo "sqlite")
-
-        if [ "$DB_TYPE" == "mysql" ]; then
-            DB_NAME=$(grep "DB_NAME" "$PROJECT_DIR/server/.env" | cut -d'=' -f2 | tr -d ' ')
-            DB_USER=$(grep "DB_USER" "$PROJECT_DIR/server/.env" | cut -d'=' -f2 | tr -d ' ')
-            DB_BACKUP="$BACKUP_DIR/${DB_NAME}_$(date +%Y%m%d_%H%M%S).sql"
-            log_info "导出 MySQL: $DB_NAME"
-            $SUDO mysqldump -u "$DB_USER" "$DB_NAME" > "$DB_BACKUP" 2>/dev/null || true
-            log_success "数据库备份完成"
-        else
-            DB_FILE=$(find "$PROJECT_DIR/server" -name "*.sqlite" -o -name "database.sqlite" -o -name "*.db" 2>/dev/null | head -1)
-            if [ -n "$DB_FILE" ] && [ -f "$DB_FILE" ]; then
-                DB_BACKUP="$BACKUP_DIR/database_$(date +%Y%m%d_%H%M%S).sqlite"
-                $SUDO cp "$DB_FILE" "$DB_BACKUP"
-                log_success "数据库备份完成"
-            fi
-        fi
+    if [ ! -f "$PROJECT_DIR/server/.env" ]; then
+        log_warn "未找到 .env 文件，跳过数据库备份"
+        return
     fi
+
+    local db_password
+    db_password=$(grep "DB_PASSWORD" "$PROJECT_DIR/server/.env" | cut -d'=' -f2 | tr -d ' ')
+
+    DB_BACKUP="$BACKUP_DIR/${DB_NAME}_$(date +%Y%m%d_%H%M%S).sql"
+    log_info "导出 MySQL: $DB_NAME"
+    $SUDO mysqldump -u "$DB_USER" -p"$db_password" "$DB_NAME" > "$DB_BACKUP" 2>/dev/null || {
+        log_warn "mysqldump 失败，尝试 root 用户..."
+        $SUDO mysqldump -u root "$DB_NAME" > "$DB_BACKUP" 2>/dev/null || log_warn "数据库备份失败"
+    }
+    [ -f "$DB_BACKUP" ] && log_success "数据库备份完成: $DB_BACKUP"
 }
 
+# ============================================================
+# GitHub 连接函数
+# ============================================================
 test_github_connection() {
     local repo_url="$1"
     log_info "测试连接: $repo_url"
-    
+
     timeout "$GITHUB_TIMEOUT" git ls-remote --quiet "$repo_url" main >/dev/null 2>&1
     local exit_code=$?
-    
+
     if [ $exit_code -eq 0 ]; then
         log_success "连接成功"
         return 0
@@ -129,7 +147,7 @@ test_github_connection() {
 
 find_working_repo() {
     log_info "检测 GitHub 仓库连接..."
-    
+
     for repo_url in "${GITHUB_REPOS[@]}"; do
         if test_github_connection "$repo_url"; then
             echo "$repo_url"
@@ -138,7 +156,7 @@ find_working_repo() {
         log_info "尝试下一个连接..."
         sleep 2
     done
-    
+
     log_error "所有 GitHub 连接方案均失败"
     return 1
 }
@@ -146,17 +164,17 @@ find_working_repo() {
 git_clone_with_retry() {
     local dest="$1"
     local working_repo
-    
+
     working_repo=$(find_working_repo) || {
         log_error "无法连接到 GitHub 仓库"
         exit 1
     }
-    
+
     log_info "使用仓库地址: $working_repo"
-    
+
     timeout "$((GITHUB_TIMEOUT * 3))" git clone -b main "$working_repo" "$dest" 2>&1
     local exit_code=$?
-    
+
     if [ $exit_code -eq 0 ]; then
         log_success "克隆成功"
         return 0
@@ -171,21 +189,21 @@ git_clone_with_retry() {
 
 git_pull_with_retry() {
     local working_repo
-    
+
     working_repo=$(find_working_repo) || {
         log_error "无法连接到 GitHub 仓库"
         exit 1
     }
-    
+
     cd "$PROJECT_DIR"
     git remote set-url origin "$working_repo" 2>/dev/null || true
-    
+
     log_info "使用仓库地址: $working_repo"
     log_info "拉取最新代码..."
-    
+
     timeout "$((GITHUB_TIMEOUT * 3))" git pull origin main --force 2>&1
     local exit_code=$?
-    
+
     if [ $exit_code -eq 0 ]; then
         log_success "拉取成功"
         return 0
@@ -199,6 +217,278 @@ git_pull_with_retry() {
     fi
 }
 
+# ============================================================
+# 环境安装函数
+# ============================================================
+install_system_deps() {
+    log_info "更新系统并安装依赖..."
+    $SUDO apt update -y
+    $SUDO apt upgrade -y
+    $SUDO apt install -y build-essential python3 git nginx mysql-server
+
+    log_info "安装 Node.js 20.x..."
+    if ! command -v node &> /dev/null; then
+        curl -fsSL https://deb.nodesource.com/setup_20.x | $SUDO -E bash -
+        $SUDO apt install -y nodejs
+    fi
+    log_info "Node.js: $(node -v), npm: $(npm -v)"
+
+    log_info "安装 PM2..."
+    $SUDO npm install -g pm2
+    log_success "系统依赖安装完成"
+}
+
+setup_mysql() {
+    local db_password="$1"
+
+    log_info "配置 MySQL..."
+    $SUDO systemctl start mysql
+    $SUDO systemctl enable mysql
+
+    $SUDO mysql -u root -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+    $SUDO mysql -u root -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED WITH mysql_native_password BY '${db_password}';"
+    $SUDO mysql -u root -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'localhost';"
+    $SUDO mysql -u root -e "FLUSH PRIVILEGES;"
+    log_success "MySQL 配置完成"
+}
+
+setup_mysql_fresh() {
+    local db_password="$1"
+
+    log_info "配置 MySQL（全新初始化）..."
+    $SUDO systemctl start mysql
+    $SUDO systemctl enable mysql
+
+    $SUDO mysql -u root -e "DROP DATABASE IF EXISTS ${DB_NAME};"
+    $SUDO mysql -u root -e "CREATE DATABASE ${DB_NAME} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+    $SUDO mysql -u root -e "DROP USER IF EXISTS '${DB_USER}'@'localhost';"
+    $SUDO mysql -u root -e "CREATE USER '${DB_USER}'@'localhost' IDENTIFIED WITH mysql_native_password BY '${db_password}';"
+    $SUDO mysql -u root -e "GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'localhost';"
+    $SUDO mysql -u root -e "FLUSH PRIVILEGES;"
+    log_success "MySQL 全新初始化完成"
+}
+
+# ============================================================
+# 项目构建函数
+# ============================================================
+build_frontend() {
+    log_info "安装前端依赖并构建..."
+    cd "$PROJECT_DIR"
+    npm install
+    npm run build
+    log_success "前端构建完成"
+}
+
+install_backend_deps() {
+    log_info "安装后端依赖..."
+    cd "$PROJECT_DIR/server"
+    npm install
+    log_success "后端依赖安装完成"
+}
+
+write_env_file() {
+    local api_port="$1"
+    local db_password="$2"
+
+    log_info "配置环境变量..."
+    cat > "$PROJECT_DIR/server/.env" <<EOF
+# 服务端口
+PORT=${api_port}
+
+# 数据库配置（MySQL）
+DB_DIALECT=mysql
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=${DB_NAME}
+DB_USER=${DB_USER}
+DB_PASSWORD=${db_password}
+
+# JWT 密钥
+JWT_SECRET=${JWT_SECRET}
+JWT_EXPIRES_IN=2h
+JWT_REFRESH_EXPIRES_IN=7d
+EOF
+    log_success "环境变量配置完成"
+}
+
+write_ecosystem_config() {
+    local api_port="$1"
+    local db_password="$2"
+
+    log_info "配置 PM2..."
+    cat > "$PROJECT_DIR/ecosystem.config.cjs" <<EOF
+module.exports = {
+  apps: [{
+    name: 'milk-can-mes-server',
+    script: './server/src/app.ts',
+    interpreter: 'node',
+    interpreter_args: '--import tsx',
+    cwd: '$PROJECT_DIR',
+    instances: 1,
+    autorestart: true,
+    watch: false,
+    max_memory_restart: '1G',
+    env: {
+      NODE_ENV: 'production',
+      PORT: ${api_port},
+      DB_DIALECT: 'mysql',
+      DB_HOST: 'localhost',
+      DB_PORT: 3306,
+      DB_NAME: '${DB_NAME}',
+      DB_USER: '${DB_USER}',
+      DB_PASSWORD: '${db_password}',
+      JWT_SECRET: '${JWT_SECRET}',
+      UPLOAD_DIR: './uploads'
+    },
+    error_file: '$BACKUP_DIR/pm2-error.log',
+    out_file: '$BACKUP_DIR/pm2-out.log',
+    time: true
+  }]
+}
+EOF
+    log_success "PM2 配置完成"
+}
+
+setup_nginx() {
+    local server_ip="$1"
+    local api_port="$2"
+
+    log_info "配置 Nginx..."
+    $SUDO cat > /etc/nginx/sites-available/milk-can-mes <<EOF
+server {
+    listen 80;
+    server_name $server_ip;
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-XSS-Protection "1; mode=block";
+    add_header X-Content-Type-Options "nosniff";
+
+    location / {
+        root $PROJECT_DIR/dist;
+        index index.html;
+        try_files \$uri \$uri/ /index.html;
+    }
+
+    location /api {
+        proxy_pass http://127.0.0.1:$api_port;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+    }
+
+    location /uploads {
+        proxy_pass http://127.0.0.1:$api_port;
+        proxy_set_header Host \$host;
+        expires 7d;
+    }
+}
+EOF
+
+    $SUDO rm -f /etc/nginx/sites-enabled/default
+    $SUDO ln -sf /etc/nginx/sites-available/milk-can-mes /etc/nginx/sites-enabled/
+    $SUDO nginx -t
+    $SUDO systemctl restart nginx
+    $SUDO systemctl enable nginx
+    log_success "Nginx 配置完成"
+}
+
+setup_firewall() {
+    log_info "配置防火墙..."
+    $SUDO ufw allow 80/tcp
+    $SUDO ufw allow 443/tcp
+    $SUDO ufw allow 22/tcp
+    $SUDO ufw --force enable
+    log_success "防火墙配置完成"
+}
+
+start_pm2_service() {
+    log_info "启动 PM2 服务..."
+    cd "$PROJECT_DIR"
+    pm2 start ecosystem.config.cjs
+    sleep 3
+    if pm2 status | grep "milk-can-mes-server" | grep -q "online"; then
+        log_success "服务启动成功"
+    else
+        log_error "服务启动失败，查看日志:"
+        pm2 logs milk-can-mes-server --lines 30 --nostream
+        exit 1
+    fi
+    $SUDO pm2 startup
+    pm2 save
+}
+
+restart_pm2_service() {
+    log_info "重启 PM2 服务..."
+    pm2 restart milk-can-mes-server 2>/dev/null || pm2 start "$PROJECT_DIR/ecosystem.config.cjs"
+    sleep 3
+    if pm2 status | grep "milk-can-mes-server" | grep -q "online"; then
+        log_success "服务重启成功"
+    else
+        log_error "服务重启失败，查看日志:"
+        pm2 logs milk-can-mes-server --lines 30 --nostream
+        exit 1
+    fi
+}
+
+# ============================================================
+# 验证函数
+# ============================================================
+verify_deployment() {
+    local server_ip="$1"
+    local api_port="$2"
+
+    log_info "验证部署..."
+    sleep 3
+
+    log_info "检查服务状态..."
+    if pm2 status | grep "milk-can-mes-server" | grep -q "online"; then
+        log_success "服务运行正常"
+    else
+        log_error "服务运行异常"
+        log_info "===== 服务错误日志 ====="
+        pm2 logs milk-can-mes-server --lines 50 --nostream 2>&1 || true
+        log_info "========================"
+        return 1
+    fi
+
+    log_info "检查 API..."
+    API_RESPONSE=$(curl -s "http://127.0.0.1:$api_port/api/health" 2>/dev/null)
+    if echo "$API_RESPONSE" | grep -q "ok"; then
+        log_success "API 正常: $API_RESPONSE"
+    else
+        log_warn "API 异常: $API_RESPONSE"
+    fi
+
+    log_info "检查前端..."
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://$server_ip/" 2>/dev/null)
+    if [[ "$HTTP_CODE" == "200" ]]; then
+        log_success "前端正常: HTTP $HTTP_CODE"
+    else
+        log_warn "前端异常: HTTP $HTTP_CODE"
+    fi
+
+    log_info "=========================================="
+    log_info "部署完成！"
+    log_info "=========================================="
+    log_info "访问地址: http://$server_ip"
+    log_info "账号: admin / 密码: 123456"
+    echo
+    log_info "常用命令:"
+    log_info "  状态: pm2 status"
+    log_info "  日志: pm2 logs milk-can-mes-server"
+    log_info "  重启: pm2 restart milk-can-mes-server"
+    log_info "  日志文件: cat $LOG_FILE"
+    echo
+    log_success "操作成功完成！"
+}
+
+# ============================================================
+# 部署函数
+# ============================================================
 deploy_new() {
     log_info "=========================================="
     log_info "执行全新部署（清空项目文件和数据库）"
@@ -217,171 +507,57 @@ deploy_new() {
     read -p "请输入服务器公网IP (默认: 43.138.218.55): " SERVER_IP
     SERVER_IP=${SERVER_IP:-43.138.218.55}
 
-    read -p "请输入数据库密码 (默认: milk-can-2026): " DB_PASSWORD
-    DB_PASSWORD=${DB_PASSWORD:-milk-can-2026}
+    read -p "请输入数据库密码 (默认: ${DB_DEFAULT_PASSWORD}): " DB_PASSWORD
+    DB_PASSWORD=${DB_PASSWORD:-$DB_DEFAULT_PASSWORD}
 
-    read -p "请输入API端口 (默认: 3001): " API_PORT
-    API_PORT=${API_PORT:-3001}
+    read -p "请输入API端口 (默认: ${DEFAULT_PORT}): " API_PORT
+    API_PORT=${API_PORT:-$DEFAULT_PORT}
 
     log_warn "警告: 全新部署将清空项目文件和数据库！"
     confirm "即将开始全新部署，是否继续？"
 
+    # 停止现有服务
     log_info "停止现有服务（如果存在）..."
     pm2 stop milk-can-mes-server 2>/dev/null || true
 
+    # 清理旧项目文件
     log_info "清理旧项目文件..."
     $SUDO rm -rf "$PROJECT_DIR"
 
-    log_info "步骤1: 更新系统并安装依赖"
-    $SUDO apt update -y
-    $SUDO apt upgrade -y
-    $SUDO apt install -y build-essential python3 git nginx mysql-server
+    # 步骤1: 安装系统依赖
+    log_info "步骤1/6: 安装系统依赖"
+    install_system_deps
 
-    log_info "安装 Node.js 20.x..."
-    if ! command -v node &> /dev/null; then
-        curl -fsSL https://deb.nodesource.com/setup_20.x | $SUDO -E bash -
-        $SUDO apt install -y nodejs
-    fi
-    log_info "Node.js: $(node -v), npm: $(npm -v)"
+    # 步骤2: 配置 MySQL
+    log_info "步骤2/6: 配置 MySQL（全新初始化）"
+    setup_mysql_fresh "$DB_PASSWORD"
 
-    $SUDO npm install -g pm2
-    log_success "步骤1完成"
-
-    log_info "步骤2: 配置 MySQL（清空旧数据）"
-    $SUDO systemctl start mysql
-    $SUDO systemctl enable mysql
-    $SUDO mysql -u root -e "DROP DATABASE IF EXISTS milk_can_mes;"
-    $SUDO mysql -u root -e "CREATE DATABASE milk_can_mes CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-    $SUDO mysql -u root -e "DROP USER IF EXISTS 'milk_can_mes'@'localhost';"
-    $SUDO mysql -u root -e "CREATE USER 'milk_can_mes'@'localhost' IDENTIFIED WITH mysql_native_password BY '$DB_PASSWORD';"
-    $SUDO mysql -u root -e "GRANT ALL PRIVILEGES ON milk_can_mes.* TO 'milk_can_mes'@'localhost';"
-    $SUDO mysql -u root -e "FLUSH PRIVILEGES;"
-    log_success "步骤2完成"
-
-    log_info "步骤3: 克隆项目代码（main分支）"
+    # 步骤3: 克隆代码并构建
+    log_info "步骤3/6: 克隆项目代码并构建"
     git_clone_with_retry "$PROJECT_DIR"
-
-    log_info "修改项目目录所有权..."
     $SUDO chown -R $(whoami):$(whoami) "$PROJECT_DIR"
 
-    log_info "安装前端依赖并构建..."
-    cd "$PROJECT_DIR"
-    npm install
-    npm run build
+    build_frontend
+    install_backend_deps
 
-    log_info "安装后端依赖..."
+    # 步骤4: 配置环境并初始化数据
+    log_info "步骤4/6: 配置环境并初始化数据"
+    write_env_file "$API_PORT" "$DB_PASSWORD"
+
+    log_info "初始化数据库种子数据..."
     cd "$PROJECT_DIR/server"
-    npm install
-    npm rebuild sqlite3 2>/dev/null || true
-
-    log_info "配置环境变量..."
-    cat > .env <<EOF
-PORT=$API_PORT
-DB_DIALECT=mysql
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=milk_can_mes
-DB_USER=milk_can_mes
-DB_PASSWORD=$DB_PASSWORD
-JWT_SECRET=milk-can-mes-secret-key-2026
-JWT_EXPIRES_IN=2h
-JWT_REFRESH_EXPIRES_IN=7d
-EOF
-
-    log_info "初始化数据库..."
     npm run seed
-    log_success "步骤3完成"
+    log_success "种子数据初始化完成"
 
-    log_info "步骤4: 配置 PM2"
-    cd "$PROJECT_DIR"
-    TSX_PATH="$PROJECT_DIR/server/node_modules/.bin/tsx"
-    cat > ecosystem.config.cjs <<EOF
-module.exports = {
-  apps: [{
-    name: 'milk-can-mes-server',
-    cwd: '$PROJECT_DIR/server',
-    script: 'src/app.ts',
-    interpreter: '$TSX_PATH',
-    instances: 1,
-    autorestart: true,
-    watch: false,
-    max_memory_restart: '1G',
-    env: {
-      NODE_ENV: 'production',
-      PORT: $API_PORT,
-      DB_DIALECT: 'mysql',
-      DB_HOST: 'localhost',
-      DB_PORT: 3306,
-      DB_NAME: 'milk_can_mes',
-      DB_USER: 'milk_can_mes',
-      DB_PASSWORD: '$DB_PASSWORD'
-    }
-  }]
-}
-EOF
+    # 步骤5: 启动服务
+    log_info "步骤5/6: 配置 PM2 并启动服务"
+    write_ecosystem_config "$API_PORT" "$DB_PASSWORD"
+    start_pm2_service
 
-    log_info "启动服务..."
-    pm2 start ecosystem.config.cjs
-    sleep 3
-    if pm2 status | grep "milk-can-mes-server" | grep -q "online"; then
-        log_success "服务启动成功"
-    else
-        log_error "服务启动失败，查看日志:"
-        pm2 logs milk-can-mes-server --lines 30 --nostream
-        exit 1
-    fi
-    $SUDO pm2 startup
-    pm2 save
-    log_success "步骤4完成"
-
-    log_info "步骤5: 配置 Nginx"
-    $SUDO cat > /etc/nginx/sites-available/milk-can-mes <<EOF
-server {
-    listen 80;
-    server_name $SERVER_IP;
-    add_header X-Frame-Options "SAMEORIGIN";
-    add_header X-XSS-Protection "1; mode=block";
-    add_header X-Content-Type-Options "nosniff";
-
-    location / {
-        root $PROJECT_DIR/dist;
-        index index.html;
-        try_files \$uri \$uri/ /index.html;
-    }
-
-    location /api {
-        proxy_pass http://127.0.0.1:$API_PORT;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_cache_bypass \$http_upgrade;
-    }
-
-    location /uploads {
-        proxy_pass http://127.0.0.1:$API_PORT;
-        proxy_set_header Host \$host;
-        expires 7d;
-    }
-}
-EOF
-
-    $SUDO rm -f /etc/nginx/sites-enabled/default
-    $SUDO ln -sf /etc/nginx/sites-available/milk-can-mes /etc/nginx/sites-enabled/
-    $SUDO nginx -t
-    $SUDO systemctl restart nginx
-    $SUDO systemctl enable nginx
-    log_success "步骤5完成"
-
-    log_info "步骤6: 配置防火墙"
-    $SUDO ufw allow 80/tcp
-    $SUDO ufw allow 443/tcp
-    $SUDO ufw allow 22/tcp
-    $SUDO ufw --force enable
-    log_success "步骤6完成"
+    # 步骤6: 配置 Nginx 和防火墙
+    log_info "步骤6/6: 配置 Nginx 和防火墙"
+    setup_nginx "$SERVER_IP" "$API_PORT"
+    setup_firewall
 
     verify_deployment "$SERVER_IP" "$API_PORT"
 }
@@ -391,14 +567,19 @@ deploy_redeploy() {
     log_info "执行重新部署（清空项目文件，保留数据库）"
     log_info "=========================================="
 
+    local server_ip api_port db_password
+
     if [ -f "$PROJECT_DIR/server/.env" ]; then
-        SERVER_IP=$(grep "server_name" /etc/nginx/sites-available/milk-can-mes 2>/dev/null | head -1 | awk '{print $2}' | tr -d ';' || echo "43.138.218.55")
-        API_PORT=$(grep "PORT" "$PROJECT_DIR/server/.env" | cut -d'=' -f2 | tr -d ' ')
-        DB_PASSWORD=$(grep "DB_PASSWORD" "$PROJECT_DIR/server/.env" | cut -d'=' -f2 | tr -d ' ')
+        server_ip=$(grep "server_name" /etc/nginx/sites-available/milk-can-mes 2>/dev/null | head -1 | awk '{print $2}' | tr -d ';' || echo "43.138.218.55")
+        api_port=$(grep "PORT" "$PROJECT_DIR/server/.env" | cut -d'=' -f2 | tr -d ' ')
+        db_password=$(grep "DB_PASSWORD" "$PROJECT_DIR/server/.env" | cut -d'=' -f2 | tr -d ' ')
 
         log_info "检测到现有配置:"
-        log_info "  IP: $SERVER_IP"
-        log_info "  端口: $API_PORT"
+        log_info "  IP: $server_ip"
+        log_info "  端口: $api_port"
+    else
+        log_error "未找到 .env 配置文件，请使用全新部署"
+        exit 1
     fi
 
     log_warn "警告: 此操作将清空项目文件，但保留数据库数据！"
@@ -415,38 +596,17 @@ deploy_redeploy() {
 
     log_info "克隆项目代码（main分支）..."
     git_clone_with_retry "$PROJECT_DIR"
-
-    log_info "修改项目目录所有权..."
     $SUDO chown -R $(whoami):$(whoami) "$PROJECT_DIR"
 
-    log_info "安装前端依赖并构建..."
-    cd "$PROJECT_DIR"
-    npm install
-    npm run build
+    build_frontend
+    install_backend_deps
 
-    log_info "安装后端依赖..."
-    cd "$PROJECT_DIR/server"
-    npm install
-    npm rebuild sqlite3 2>/dev/null || true
+    # 恢复环境变量和 PM2 配置
+    write_env_file "$api_port" "$db_password"
+    write_ecosystem_config "$api_port" "$db_password"
 
-    log_info "恢复环境变量..."
-    cat > .env <<EOF
-PORT=$API_PORT
-DB_DIALECT=mysql
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=milk_can_mes
-DB_USER=milk_can_mes
-DB_PASSWORD=$DB_PASSWORD
-JWT_SECRET=milk-can-mes-secret-key-2026
-JWT_EXPIRES_IN=2h
-JWT_REFRESH_EXPIRES_IN=7d
-EOF
-
-    log_info "重启服务..."
-    pm2 restart milk-can-mes-server || pm2 start "$PROJECT_DIR/ecosystem.config.cjs"
-
-    verify_deployment "$SERVER_IP" "$API_PORT"
+    restart_pm2_service
+    verify_deployment "$server_ip" "$api_port"
 }
 
 deploy_update() {
@@ -457,7 +617,7 @@ deploy_update() {
     cd "$PROJECT_DIR"
 
     log_info "检查远程更新..."
-    
+
     if ! git fetch origin main 2>/dev/null && ! git fetch origin 2>/dev/null; then
         log_warn "直接 fetch 失败，尝试检测可用仓库..."
         working_repo=$(find_working_repo) || {
@@ -486,8 +646,9 @@ deploy_update() {
 
     confirm "是否继续更新？"
 
-    SERVER_IP=$(grep "server_name" /etc/nginx/sites-available/milk-can-mes 2>/dev/null | head -1 | awk '{print $2}' | tr -d ';' || echo "43.138.218.55")
-    API_PORT=$(grep "PORT" "$PROJECT_DIR/server/.env" | cut -d'=' -f2 | tr -d ' ')
+    local server_ip api_port
+    server_ip=$(grep "server_name" /etc/nginx/sites-available/milk-can-mes 2>/dev/null | head -1 | awk '{print $2}' | tr -d ';' || echo "43.138.218.55")
+    api_port=$(grep "PORT" "$PROJECT_DIR/server/.env" | cut -d'=' -f2 | tr -d ' ')
 
     log_info "停止服务..."
     pm2 stop milk-can-mes-server 2>/dev/null || true
@@ -501,20 +662,11 @@ deploy_update() {
     git_pull_with_retry
     git stash pop 2>/dev/null || true
 
-    log_info "更新前端..."
-    cd "$PROJECT_DIR"
-    npm install
-    npm run build
+    build_frontend
+    install_backend_deps
 
-    log_info "更新后端..."
-    cd "$PROJECT_DIR/server"
-    npm install
-    npm rebuild sqlite3 2>/dev/null || true
-
-    log_info "重启服务..."
-    pm2 restart milk-can-mes-server || pm2 start "$PROJECT_DIR/ecosystem.config.cjs"
-
-    verify_deployment "$SERVER_IP" "$API_PORT"
+    restart_pm2_service
+    verify_deployment "$server_ip" "$api_port"
 }
 
 reset_data() {
@@ -524,6 +676,9 @@ reset_data() {
 
     log_warn "警告: 此操作将清除所有业务数据并重新初始化！"
     confirm "确定要重置数据吗？"
+
+    local api_port
+    api_port=$(grep "PORT" "$PROJECT_DIR/server/.env" | cut -d'=' -f2 | tr -d ' ')
 
     log_info "停止服务..."
     pm2 stop milk-can-mes-server 2>/dev/null || true
@@ -538,62 +693,11 @@ reset_data() {
     log_info "重新初始化数据..."
     npm run seed
 
-    log_info "重启服务..."
-    pm2 restart milk-can-mes-server || pm2 start "$PROJECT_DIR/ecosystem.config.cjs"
+    restart_pm2_service
 
-    SERVER_IP=$(grep "server_name" /etc/nginx/sites-available/milk-can-mes 2>/dev/null | head -1 | awk '{print $2}' | tr -d ';' || echo "localhost")
-    API_PORT=$(grep "PORT" "$PROJECT_DIR/server/.env" | cut -d'=' -f2 | tr -d ' ')
-
-    verify_deployment "$SERVER_IP" "$API_PORT"
-}
-
-verify_deployment() {
-    SERVER_IP="$1"
-    API_PORT="$2"
-
-    log_info "验证部署"
-    sleep 3
-
-    log_info "检查服务状态..."
-    if pm2 status | grep "milk-can-mes-server" | grep -q "online"; then
-        log_success "服务运行正常"
-    else
-        log_error "服务运行异常"
-        log_info "===== 服务错误日志 ====="
-        pm2 logs milk-can-mes-server --lines 50 --nostream 2>&1 || true
-        log_info "========================"
-        return 1
-    fi
-
-    log_info "检查 API..."
-    API_RESPONSE=$(curl -s "http://127.0.0.1:$API_PORT/api/health" 2>/dev/null)
-    if echo "$API_RESPONSE" | grep -q "ok"; then
-        log_success "API 正常: $API_RESPONSE"
-    else
-        log_warn "API 异常: $API_RESPONSE"
-    fi
-
-    log_info "检查前端..."
-    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "http://$SERVER_IP/" 2>/dev/null)
-    if [[ "$HTTP_CODE" == "200" ]]; then
-        log_success "前端正常: HTTP $HTTP_CODE"
-    else
-        log_warn "前端异常: HTTP $HTTP_CODE"
-    fi
-
-    log_info "=========================================="
-    log_info "部署完成！"
-    log_info "=========================================="
-    log_info "访问地址: http://$SERVER_IP"
-    log_info "账号: admin / 密码: 123456"
-    echo
-    log_info "常用命令:"
-    log_info "  状态: pm2 status"
-    log_info "  日志: pm2 logs milk-can-mes-server"
-    log_info "  重启: pm2 restart milk-can-mes-server"
-    log_info "  日志文件: cat $LOG_FILE"
-    echo
-    log_success "操作成功完成！"
+    local server_ip
+    server_ip=$(grep "server_name" /etc/nginx/sites-available/milk-can-mes 2>/dev/null | head -1 | awk '{print $2}' | tr -d ';' || echo "localhost")
+    verify_deployment "$server_ip" "$api_port"
 }
 
 rollback() {
@@ -610,27 +714,32 @@ rollback() {
     $SUDO rm -rf "$PROJECT_DIR"
     $SUDO tar -xzf "$LATEST_BACKUP" -C "$(dirname $PROJECT_DIR)"
 
-    LATEST_DB=$(ls -t "$BACKUP_DIR"/*.sql "$BACKUP_DIR"/*.sqlite 2>/dev/null | head -1)
+    # 恢复数据库
+    LATEST_DB=$(ls -t "$BACKUP_DIR"/*.sql 2>/dev/null | head -1)
     if [ -n "$LATEST_DB" ]; then
-        DB_TYPE=$(grep "DB_DIALECT" "$PROJECT_DIR/server/.env" | cut -d'=' -f2 | tr -d ' ' || echo "sqlite")
-        if [ "$DB_TYPE" == "mysql" ]; then
-            DB_NAME=$(grep "DB_NAME" "$PROJECT_DIR/server/.env" | cut -d'=' -f2 | tr -d ' ')
-            DB_USER=$(grep "DB_USER" "$PROJECT_DIR/server/.env" | cut -d'=' -f2 | tr -d ' ')
-            $SUDO mysql -u "$DB_USER" "$DB_NAME" < "$LATEST_DB"
+        log_info "恢复数据库: $LATEST_DB"
+        if [ -f "$PROJECT_DIR/server/.env" ]; then
+            local db_password
+            db_password=$(grep "DB_PASSWORD" "$PROJECT_DIR/server/.env" | cut -d'=' -f2 | tr -d ' ')
+            $SUDO mysql -u "$DB_USER" -p"$db_password" "$DB_NAME" < "$LATEST_DB" 2>/dev/null || \
+            $SUDO mysql -u root "$DB_NAME" < "$LATEST_DB" 2>/dev/null || log_warn "数据库恢复失败"
         else
-            DB_FILE=$(find "$PROJECT_DIR/server" -name "*.sqlite" -o -name "*.db" 2>/dev/null | head -1)
-            [ -n "$DB_FILE" ] && $SUDO cp "$LATEST_DB" "$DB_FILE"
+            $SUDO mysql -u root "$DB_NAME" < "$LATEST_DB" 2>/dev/null || log_warn "数据库恢复失败"
         fi
     fi
 
-    pm2 restart milk-can-mes-server || pm2 start "$PROJECT_DIR/ecosystem.config.cjs"
+    pm2 restart milk-can-mes-server 2>/dev/null || pm2 start "$PROJECT_DIR/ecosystem.config.cjs" 2>/dev/null || true
     log_success "回滚完成"
 }
 
+# ============================================================
+# 主菜单
+# ============================================================
 show_menu() {
     echo
     log_info "=========================================="
     log_info "    奶粉罐生产管理系统 - 部署工具"
+    log_info "    技术栈: React+Vite | TS+tsx | MySQL"
     log_info "    版本: V1.0.1.1"
     log_info "=========================================="
 
@@ -656,26 +765,12 @@ show_menu() {
         echo
 
         case $REPLY in
-            1)
-                deploy_update
-                ;;
-            2)
-                deploy_new
-                ;;
-            3)
-                deploy_redeploy
-                ;;
-            4)
-                reset_data
-                ;;
-            5)
-                log_info "退出"
-                exit 0
-                ;;
-            *)
-                log_error "无效选项"
-                exit 1
-                ;;
+            1) deploy_update ;;
+            2) deploy_new ;;
+            3) deploy_redeploy ;;
+            4) reset_data ;;
+            5) log_info "退出"; exit 0 ;;
+            *) log_error "无效选项"; exit 1 ;;
         esac
     else
         log_info "项目未部署"
@@ -689,25 +784,16 @@ show_menu() {
         echo
 
         case $REPLY in
-            1)
-                deploy_new
-                ;;
-            2)
-                log_info "退出"
-                exit 0
-                ;;
-            *)
-                log_error "无效选项"
-                exit 1
-                ;;
+            1) deploy_new ;;
+            2) log_info "退出"; exit 0 ;;
+            *) log_error "无效选项"; exit 1 ;;
         esac
     fi
 }
 
-main() {
-    show_menu
-}
-
+# ============================================================
+# 入口
+# ============================================================
 trap 'rollback' ERR
 
-main
+show_menu
