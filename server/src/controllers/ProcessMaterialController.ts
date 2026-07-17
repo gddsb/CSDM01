@@ -1,6 +1,7 @@
 import { Op } from 'sequelize'
 import { ProcessMaterial, WorkOrder, Process, Material } from '../models/index.js'
 import { success, fail } from '../utils/response.js'
+import { syncWorkOrderSummary } from './ProcessReportController.js'
 
 export const list = async (req, res) => {
   try {
@@ -72,6 +73,7 @@ export const create = async (req, res) => {
       label_images: label_images ? JSON.stringify(label_images) : null,
     })
 
+    await syncWorkOrderSummary(workOrder.work_order_id)
     return success(res, material, '创建成功')
   } catch (err) {
     console.error('创建制程物料记录失败:', err)
@@ -103,6 +105,7 @@ export const update = async (req, res) => {
 
     await material.save()
 
+    await syncWorkOrderSummary(material.work_order_id)
     return success(res, material, '更新成功')
   } catch (err) {
     console.error('更新制程物料记录失败:', err)
@@ -115,7 +118,9 @@ export const remove = async (req, res) => {
     const { id } = req.params
     const material = await ProcessMaterial.findOne({ where: { material_id: id } })
     if (!material) return fail(res, '记录不存在', 404)
+    const workOrderId = material.work_order_id
     await material.destroy()
+    await syncWorkOrderSummary(workOrderId)
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除制程物料记录失败:', err)
