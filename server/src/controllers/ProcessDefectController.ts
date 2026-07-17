@@ -115,7 +115,7 @@ export const scrapCreate = async (req, res) => {
       defect_images: defect_images ? JSON.stringify(defect_images) : null,
     })
 
-    await syncWorkOrderSummary(workOrder.work_order_id)
+    await syncWorkOrderSummary(work_order_id)
     return success(res, { ...defect.toJSON(), scrap_id: defect.defect_id }, '创建成功')
   } catch (err) {
     console.error('创建检验报废记录失败:', err)
@@ -179,7 +179,7 @@ export const create = async (req, res) => {
       defect_images: defect_images ? JSON.stringify(defect_images) : null,
     })
 
-    await syncWorkOrderSummary(workOrder.work_order_id)
+    await syncWorkOrderSummary(work_order_id)
     return success(res, defect, '创建成功')
   } catch (err) {
     console.error('创建工序不良记录失败:', err)
@@ -237,7 +237,7 @@ export const batchSave = async (req, res) => {
       created.push(defect)
     }
 
-    await syncWorkOrderSummary(workOrder.work_order_id)
+    await syncWorkOrderSummary(work_order_id)
     return success(res, { count: created.length, items: created }, '批量保存成功')
   } catch (err) {
     console.error('批量保存工序不良记录失败:', err)

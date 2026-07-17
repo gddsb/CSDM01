@@ -9,7 +9,7 @@ import {
   RolePermission, Sequence, Customer,
   LineProcess, LineDevice, NumberRule, DefectImage,
   DictType, DictData, ProcessDefect, ProcessException,
-  ProcessMaterial, AppVersion, DataDictionary,
+  ProcessMaterial, DataDictionary,
 } from './models/index.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -42,7 +42,6 @@ const exportOrder = [
   { name: 'SystemConfig', model: SystemConfig, label: '系统配置' },
   { name: 'Sequence', model: Sequence, label: '序列号' },
   { name: 'NumberRule', model: NumberRule, label: '编码规则' },
-  { name: 'AppVersion', model: AppVersion, label: '应用版本' },
   { name: 'DataDictionary', model: DataDictionary, label: '数据字典' },
   { name: 'OperationLog', model: OperationLog, label: '操作日志' },
 ]
