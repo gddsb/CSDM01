@@ -9,7 +9,7 @@
  * 对于已存在但类型不同的列保持原样，避免数据丢失。
  */
 import sequelize from './config/database.js'
-import { User, Role, Permission, OperationLog, SystemConfig, Customer, Material, DefectType } from './models/index.js'
+import { User, Role, Permission, OperationLog, SystemConfig, Customer, Material, DefectType, WorkOrderProcess } from './models/index.js'
 
 // 各模型需要保证存在的列（仅列出新增/补齐的列，避免对类型变更产生影响）
 // 字段定义参考对应模型文件
@@ -156,6 +156,18 @@ const migrations = [
     table: 'production_manpower_record',
     columns: [
       ['report_id', 'INTEGER'],
+    ],
+  },
+  // 新增：生产工单工序表
+  {
+    table: 'production_work_order_process',
+    columns: [
+      ['work_order_id', 'INTEGER NOT NULL'],
+      ['process_id', 'INTEGER NOT NULL'],
+      ['process_code', 'VARCHAR(30) NOT NULL'],
+      ['process_name', 'VARCHAR(50) NOT NULL'],
+      ['has_material', 'TINYINT DEFAULT 0'],
+      ['sort_order', 'INTEGER DEFAULT 0'],
     ],
   },
 ]

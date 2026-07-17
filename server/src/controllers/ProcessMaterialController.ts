@@ -1,5 +1,5 @@
 import { Op } from 'sequelize'
-import { ProcessMaterial, WorkOrder, Process } from '../models/index.js'
+import { ProcessMaterial, WorkOrder, Process, Material } from '../models/index.js'
 import { success, fail } from '../utils/response.js'
 import { syncWorkOrderSummary } from './ProcessReportController.js'
 
@@ -19,11 +19,22 @@ export const list = async (req, res) => {
       limit,
       offset,
       order: [['record_time', 'DESC']],
+      include: [{
+        model: Material,
+        as: 'bas_material',
+        attributes: ['material_id', 'material_code', 'material_name', 'specification', 'unit_name'],
+      }],
     })
-    const data = rows.map(r => ({
-      ...r.toJSON(),
-      label_images: r.label_images ? JSON.parse(r.label_images) : [],
-    }))
+    const data = rows.map(r => {
+      const json = r.toJSON()
+      return {
+        ...json,
+        material_code: json.bas_material?.material_code || '',
+        material_name: json.bas_material?.material_name || '',
+        specification: json.bas_material?.specification || '',
+        label_images: json.label_images ? JSON.parse(json.label_images) : [],
+      }
+    })
     return success(res, data, '查询成功', count)
   } catch (err) {
     console.error('查询制程物料列表失败:', err)
@@ -38,15 +49,11 @@ export const create = async (req, res) => {
       work_order_id,
       process_id,
       material_type,
-      material_code,
-      material_name,
-      specification,
+      bas_material_id,
       material_batch,
       package_no,
       quantity,
       label_images,
-      record_user,
-      record_user_name,
     } = req.body
 
     if (!work_order_id) return fail(res, '工单 ID 不能为空')
@@ -54,29 +61,16 @@ export const create = async (req, res) => {
     if (!material_type) return fail(res, '物料类型不能为空')
     if (!quantity || quantity <= 0) return fail(res, '数量必须大于0')
 
-    const workOrder = await WorkOrder.findOne({ where: { work_order_id } })
-    if (!workOrder) return fail(res, '工单不存在', 404)
-
-    const process = await Process.findOne({ where: { process_id } })
-    if (!process) return fail(res, '工序不存在', 404)
-
     const material = await ProcessMaterial.create({
       report_id: report_id || null,
-      work_order_id: workOrder.work_order_id,
-      work_order_no: workOrder.work_order_no,
-      process_id: process.process_id,
-      process_code: process.process_code,
-      process_name: process.process_name,
+      work_order_id,
+      process_id,
       material_type,
-      material_code: material_code || '',
-      material_name: material_name || '',
-      specification: specification || '',
+      bas_material_id: bas_material_id || null,
       material_batch: material_batch || '',
       package_no: package_no || '',
       quantity: Number(quantity),
       label_images: label_images ? JSON.stringify(label_images) : null,
-      record_user,
-      record_user_name,
     })
 
     await syncWorkOrderSummary(workOrder.work_order_id)
@@ -91,11 +85,8 @@ export const update = async (req, res) => {
   try {
     const { id } = req.params
     const {
-      process_id,
       material_type,
-      material_code,
-      material_name,
-      specification,
+      bas_material_id,
       material_batch,
       package_no,
       quantity,
@@ -105,18 +96,8 @@ export const update = async (req, res) => {
     const material = await ProcessMaterial.findOne({ where: { material_id: id } })
     if (!material) return fail(res, '记录不存在', 404)
 
-    if (process_id) {
-      const process = await Process.findOne({ where: { process_id } })
-      if (!process) return fail(res, '工序不存在', 404)
-      material.process_id = process.process_id
-      material.process_code = process.process_code
-      material.process_name = process.process_name
-    }
-
     if (material_type !== undefined) material.material_type = material_type
-    if (material_code !== undefined) material.material_code = material_code
-    if (material_name !== undefined) material.material_name = material_name
-    if (specification !== undefined) material.specification = specification
+    if (bas_material_id !== undefined) material.bas_material_id = bas_material_id
     if (material_batch !== undefined) material.material_batch = material_batch
     if (package_no !== undefined) material.package_no = package_no
     if (quantity !== undefined && Number(quantity) > 0) material.quantity = Number(quantity)

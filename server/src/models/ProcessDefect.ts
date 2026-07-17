@@ -1,6 +1,7 @@
 import { DataTypes } from 'sequelize'
 import sequelize from '../config/database.js'
 
+// 工序不良记录表（简化版，只记录外键，详情通过关联查询获取）
 const ProcessDefect = sequelize.define('ProcessDefect', {
   defect_id: {
     type: DataTypes.INTEGER,
@@ -9,52 +10,32 @@ const ProcessDefect = sequelize.define('ProcessDefect', {
   },
   report_id: {
     type: DataTypes.INTEGER,
+    comment: '报工单ID',
   },
   work_order_id: {
     type: DataTypes.INTEGER,
-  },
-  work_order_no: {
-    type: DataTypes.STRING(50),
+    comment: '生产工单ID',
   },
   process_id: {
     type: DataTypes.INTEGER,
-  },
-  process_code: {
-    type: DataTypes.STRING(50),
-  },
-  process_name: {
-    type: DataTypes.STRING(100),
-  },
-  defect_category: {
-    type: DataTypes.STRING(50),
-  },
-  defect_code: {
-    type: DataTypes.STRING(50),
-  },
-  defect_name: {
-    type: DataTypes.STRING(100),
-  },
-  defect_type: {
-    type: DataTypes.STRING(50),
+    comment: '工序ID',
   },
   defect_type_id: {
     type: DataTypes.INTEGER,
+    comment: '不良分类ID',
   },
   quantity: {
     type: DataTypes.DECIMAL(12, 2),
     defaultValue: 0,
+    comment: '数量',
   },
   unit: {
     type: DataTypes.STRING(20),
-  },
-  record_user: {
-    type: DataTypes.STRING(50),
-  },
-  record_user_name: {
-    type: DataTypes.STRING(50),
+    comment: '单位',
   },
   defect_images: {
     type: DataTypes.TEXT,
+    comment: '不良图片(JSON数组)',
   },
 }, {
   tableName: 'production_process_defect',

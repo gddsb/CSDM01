@@ -1768,7 +1768,7 @@ crontab -e
 
 ## 数据库模型
 
-### 模型清单（28个）
+### 模型清单（30个）
 
 | 模型 | 表名 | 说明 |
 |------|------|------|
@@ -1782,24 +1782,26 @@ crontab -e
 | DictData | `sys_dict_data` | 字典项表 |
 | Material | `bas_material` | 料品档案表 |
 | Customer | `bas_customer` | 客户档案表 |
-| ProductionLine | `bas_production_line` | 产线档案表 |
-| Process | `bas_process` | 工序档案表 |
+| ProductionLine | `master_production_line` | 产线档案表 |
+| Process | `master_process` | 工序档案表 |
 | LineProcess | `bas_line_process` | 产线-工序关联表 |
-| Device | `bas_device` | 设备档案表 |
+| Device | `master_device` | 设备档案表 |
 | LineDevice | `bas_line_device` | 产线-设备关联表 |
-| DefectType | `bas_defect_type` | 不良分类表（树形自关联） |
-| DefectImage | `bas_defect_image` | 不良图片表 |
-| NumberRule | `bas_number_rule` | 编码规则表 |
+| DefectType | `master_defect_type` | 不良分类表（树形自关联） |
+| DefectImage | `master_defect_image` | 不良图片表 |
+| NumberRule | `sys_number_rule` | 编码规则表 |
 | Sequence | `sys_sequence` | 序号流水号表 |
 | AppVersion | `sys_app_version` | App 版本表 |
 | DataDictionary | `sys_data_dictionary` | 数据字典元数据表 |
-| Order | `prod_order` | 生产订单表 |
-| WorkOrder | `prod_work_order` | 工单表 |
-| ProcessReport | `prod_process_report` | 生产报工单表 |
-| ManpowerRecord | `prod_manpower_record` | 人员投入记录表 |
-| ProcessException | `prod_process_exception` | 异常工时记录表 |
-| ProcessMaterial | `prod_process_material` | 工序物料使用记录表 |
-| ProcessDefect | `prod_process_defect` | 工序不良记录表 |
+| Order | `production_order` | 生产订单表 |
+| WorkOrder | `production_work_order` | 工单表 |
+| WorkOrderProcess | `production_work_order_process` | 生产工单工序表 |
+| ProcessReport | `production_process_report` | 生产报工单表 |
+| ManpowerRecord | `production_manpower_record` | 人员投入记录表 |
+| ProcessException | `production_process_exception` | 异常工时记录表 |
+| ProcessMaterial | `production_process_material` | 工序物料记录表 |
+| ProcessDefect | `production_process_defect` | 工序不良记录表 |
+| ReportExceptionImage | `production_report_exception_image` | 报工异常图片表 |
 
 ### 主要关联关系
 
@@ -1816,6 +1818,63 @@ crontab -e
 - **产线 - 工序**：多对多（ProductionLine.belongsToMany(Process, through: LineProcess)）
 - **产线 - 设备**：多对多（ProductionLine.belongsToMany(Device, through: LineDevice)）
 - **不良分类**：自关联树形（DefectType.hasMany(DefectType, as: children)）
+- **工单 - 工单工序**：一对多（WorkOrder.hasMany(WorkOrderProcess)）
+- **工序不良 - 不良分类**：多对一（ProcessDefect.belongsTo(DefectType)）
+- **工序物料 - 基础料品**：多对一（ProcessMaterial.belongsTo(Material)）
+
+### 新增/变更表结构说明
+
+#### production_work_order_process（生产工单工序表）
+
+记录生产工单关联的产线工序，工单开工时从产线工序配置自动带入。
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | INTEGER | 主键，自增 |
+| work_order_id | INTEGER | 外键，关联生产工单 |
+| process_id | INTEGER | 外键，关联工序 |
+| process_code | VARCHAR(30) | 工序编码 |
+| process_name | VARCHAR(50) | 工序名称 |
+| has_material | TINYINT | 是否引入物料（0-否/1-是） |
+| sort_order | INTEGER | 工序顺序 |
+| created_at | DATETIME | 创建时间 |
+| updated_at | DATETIME | 更新时间 |
+
+**唯一索引**：`work_order_id + process_id`
+
+#### production_process_defect（工序不良记录表）
+
+简化版设计，只记录外键关联，详情通过关联查询获取。已删除冗余字段：work_order_no、process_code、process_name、defect_category、defect_code、defect_name、defect_type、record_user、record_user_name。
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| defect_id | INTEGER | 主键，自增 |
+| report_id | INTEGER | 外键，关联报工单 |
+| work_order_id | INTEGER | 外键，关联生产工单 |
+| process_id | INTEGER | 外键，关联工序 |
+| defect_type_id | INTEGER | 外键，关联不良分类 |
+| quantity | DECIMAL(12,2) | 数量 |
+| unit | VARCHAR(20) | 单位 |
+| defect_images | TEXT | 不良图片（JSON数组） |
+| record_time | DATETIME | 记录时间 |
+
+#### production_process_material（工序物料记录表）
+
+简化版设计，通过外键关联料品档案获取物料详情。已删除冗余字段：work_order_no、process_code、process_name、material_code、material_name、specification、record_user、record_user_name；新增 bas_material_id 关联基础料品表。
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| material_id | INTEGER | 主键，自增 |
+| report_id | INTEGER | 外键，关联报工单 |
+| work_order_id | INTEGER | 外键，关联生产工单 |
+| process_id | INTEGER | 外键，关联工序 |
+| material_type | VARCHAR(100) | 物料类型 |
+| bas_material_id | VARCHAR | 外键，关联基础料品表 |
+| material_batch | VARCHAR(100) | 物料批次 |
+| package_no | VARCHAR(100) | 包号 |
+| quantity | DECIMAL(12,2) | 数量 |
+| label_images | TEXT | 标签图片（JSON） |
+| record_time | DATETIME | 记录时间 |
 
 ---
 

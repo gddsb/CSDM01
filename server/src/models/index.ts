@@ -30,6 +30,7 @@ import DictType from './DictType.js'
 import DictData from './DictData.js'
 import AppVersion from './AppVersion.js'
 import DataDictionary from './DataDictionary.js'
+import WorkOrderProcess from './WorkOrderProcess.js'
 
 // 建立模型关联关系
 // 用户 - 角色
@@ -80,6 +81,9 @@ ProcessException.belongsTo(ProcessReport, { foreignKey: 'report_id', as: 'proces
 ProcessReport.hasMany(ProcessMaterial, { foreignKey: 'report_id', as: 'process_materials' })
 ProcessMaterial.belongsTo(ProcessReport, { foreignKey: 'report_id', as: 'process_report' })
 
+// 制程物料 - 基础料品
+ProcessMaterial.belongsTo(Material, { foreignKey: 'bas_material_id', as: 'bas_material' })
+
 // 报工单 - 异常图片记录
 ProcessReport.hasMany(ReportExceptionImage, { foreignKey: 'report_id', as: 'exception_images' })
 ReportExceptionImage.belongsTo(ProcessReport, { foreignKey: 'report_id', as: 'process_report' })
@@ -114,6 +118,14 @@ DefectType.belongsTo(DefectType, { foreignKey: 'parent_id', as: 'parent', constr
 // 不良分类 - 不良图片（一对多）
 DefectType.hasMany(DefectImage, { foreignKey: 'defect_id', as: 'images' })
 DefectImage.belongsTo(DefectType, { foreignKey: 'defect_id', as: 'defect' })
+
+// 工单 - 工单工序（一对多）
+WorkOrder.hasMany(WorkOrderProcess, { foreignKey: 'work_order_id', as: 'work_order_processes' })
+WorkOrderProcess.belongsTo(WorkOrder, { foreignKey: 'work_order_id', as: 'work_order' })
+
+// 不良记录 - 不良分类（一对多）
+ProcessDefect.belongsTo(DefectType, { foreignKey: 'defect_type_id', as: 'defect_type' })
+DefectType.hasMany(ProcessDefect, { foreignKey: 'defect_type_id', as: 'process_defects' })
 
 // 字典类型 - 字典数据（一对多）
 DictType.hasMany(DictData, { foreignKey: 'dict_type', sourceKey: 'dict_type', as: 'datas' })
@@ -151,6 +163,7 @@ const db = {
   DictData,
   AppVersion,
   DataDictionary,
+  WorkOrderProcess,
 }
 
 // 具名导出，便于按需导入
@@ -184,6 +197,7 @@ export {
   DictData,
   AppVersion,
   DataDictionary,
+  WorkOrderProcess,
 }
 
 export default db
