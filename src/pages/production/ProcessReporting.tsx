@@ -1809,19 +1809,43 @@ export default function ProcessReporting() {
       ) : record.device_name || '-',
     },
     {
-      title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 120,
+      title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 150,
       render: (val, record) => isEditable ? (
         <TimePicker
           value={val ? dayjs(val) : null}
           onChange={(d) => {
             if (d) {
-              const today = dayjs().format('YYYY-MM-DD')
+              // 用报工时间的日期 + 用户选择的时分秒，避免跨天错乱
+              const reportTime = selectedReport?.report_time
+              const baseDate = reportTime ? dayjs(reportTime).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')
               const timeStr = d.format('HH:mm:ss')
-              const newTime = `${today}T${timeStr}`
-              // 开始时间不能早于报工时间
-              const reportStart = selectedReport?.report_time
-              if (reportStart && dayjs(newTime).isBefore(dayjs(reportStart))) {
+              const newTime = `${baseDate}T${timeStr}`
+              // 校验 1：开始时间不能早于报工时间
+              if (reportTime && dayjs(newTime).isBefore(dayjs(reportTime))) {
                 message.warning('开始时间不能早于报工时间')
+                return
+              }
+              // 校验 2：开始时间不能晚于当前时间（禁止未来时间）
+              if (dayjs(newTime).isAfter(dayjs())) {
+                message.warning('开始时间不能晚于当前时间')
+                return
+              }
+              // 校验 3：与同报工单其他异常记录的时间区间不能重叠
+              const overlap = exceptionList.some(e => {
+                if (String(e.id) === String(record.id)) return false
+                if (!e.start_time) return false
+                const eStart = dayjs(e.start_time)
+                const eEnd = e.end_time ? dayjs(e.end_time) : null
+                const newStart = dayjs(newTime)
+                // 新区间为 [newStart, record.end_time 或 newStart]
+                const newEnd = record.end_time ? dayjs(record.end_time) : newStart
+                if (eEnd) {
+                  return newStart.isBefore(eEnd) && newEnd.isAfter(eStart)
+                }
+                return newEnd.isAfter(eStart) || newStart.isSame(eStart)
+              })
+              if (overlap) {
+                message.warning('开始时间与已有异常记录的时间区间重叠')
                 return
               }
               handleExceptionChange(record.id, 'start_time', newTime)
@@ -1833,24 +1857,65 @@ export default function ProcessReporting() {
           style={{ width: '100%' }}
           size="small"
           minuteStep={5}
+          disabledTime={(now) => {
+            // 禁用未来时间的小时和分钟
+            const reportTime = selectedReport?.report_time
+            const baseDate = reportTime ? dayjs(reportTime).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')
+            const today = dayjs().format('YYYY-MM-DD')
+            if (baseDate !== today) return {}
+            const current = dayjs()
+            return {
+              disabledHours: () => Array.from({ length: 24 }, (_, i) => i).filter(h => h > current.hour()),
+              disabledMinutes: (selHour) => {
+                if (selHour < current.hour()) return []
+                return Array.from({ length: 60 }, (_, i) => i).filter(m => m > current.minute())
+              },
+            }
+          }}
         />
-      ) : val ? dayjs(val).format('HH:mm') : '-',
+      ) : val ? dayjs(val).format('MM-DD HH:mm') : '-',
     },
     {
-      title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 120,
+      title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 150,
       render: (val, record) => isEditable ? (
         <TimePicker
           value={val ? dayjs(val) : null}
           onChange={(d) => {
             if (d) {
-              const today = dayjs().format('YYYY-MM-DD')
+              // 用报工时间的日期 + 用户选择的时分秒
+              const reportTime = selectedReport?.report_time
+              const baseDate = reportTime ? dayjs(reportTime).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')
               const timeStr = d.format('HH:mm:ss')
-              const newTime = `${today}T${timeStr}`
-              // 结束时间不能小于开始时间
+              const newTime = `${baseDate}T${timeStr}`
+              // 校验 1：结束时间不能小于开始时间
               const startTime = record.start_time
               if (startTime && dayjs(newTime).isBefore(dayjs(startTime))) {
                 message.warning('结束时间不能小于开始时间')
                 return
+              }
+              // 校验 2：结束时间不能晚于当前时间（禁止未来时间）
+              if (dayjs(newTime).isAfter(dayjs())) {
+                message.warning('结束时间不能晚于当前时间')
+                return
+              }
+              // 校验 3：与同报工单其他异常记录的时间区间不能重叠
+              if (startTime) {
+                const overlap = exceptionList.some(e => {
+                  if (String(e.id) === String(record.id)) return false
+                  if (!e.start_time) return false
+                  const eStart = dayjs(e.start_time)
+                  const eEnd = e.end_time ? dayjs(e.end_time) : null
+                  const newStart = dayjs(startTime)
+                  const newEnd = dayjs(newTime)
+                  if (eEnd) {
+                    return newStart.isBefore(eEnd) && newEnd.isAfter(eStart)
+                  }
+                  return newEnd.isAfter(eStart)
+                })
+                if (overlap) {
+                  message.warning('结束时间与已有异常记录的时间区间重叠')
+                  return
+                }
               }
               handleExceptionChange(record.id, 'end_time', newTime)
             } else {
@@ -1861,8 +1926,22 @@ export default function ProcessReporting() {
           style={{ width: '100%' }}
           size="small"
           minuteStep={5}
+          disabledTime={(now) => {
+            const reportTime = selectedReport?.report_time
+            const baseDate = reportTime ? dayjs(reportTime).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')
+            const today = dayjs().format('YYYY-MM-DD')
+            if (baseDate !== today) return {}
+            const current = dayjs()
+            return {
+              disabledHours: () => Array.from({ length: 24 }, (_, i) => i).filter(h => h > current.hour()),
+              disabledMinutes: (selHour) => {
+                if (selHour < current.hour()) return []
+                return Array.from({ length: 60 }, (_, i) => i).filter(m => m > current.minute())
+              },
+            }
+          }}
         />
-      ) : val ? dayjs(val).format('HH:mm') : '-',
+      ) : val ? dayjs(val).format('MM-DD HH:mm') : '-',
     },
     { title: '时长(小时)', dataIndex: 'duration', key: 'duration', width: 100 },
     {
