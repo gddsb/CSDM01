@@ -11,12 +11,31 @@ const calcHours = (start, end) => {
   return diff > 0 ? Number(diff.toFixed(2)) : 0
 }
 
-const buildRecordData = (body) => {
+// 根据报工单时间计算人员工时的开始/结束/小时数
+// 开始时间 = 报工单 report_time
+// 结束时间 = 完工状态(status=1)取 finish_time；开工状态(status=0)取当前时间（已投入工时实时计算）
+const resolveTimeFromReportOrder = (reportOrder) => {
+  if (!reportOrder) return { start_time: null, end_time: null, hours: 0 }
+  const start_time = reportOrder.report_time || null
+  let end_time = null
+  // status: 0=开工, 1=完工（数字或字符串均支持）
+  const statusVal = reportOrder.status
+  const isFinished = Number(statusVal) === 1 || statusVal === '完工'
+  if (isFinished && reportOrder.finish_time) {
+    end_time = reportOrder.finish_time
+  } else {
+    // 开工状态：用当前时间作为结束时间，计算"已投入工时"
+    end_time = new Date()
+  }
+  const hours = calcHours(start_time, end_time)
+  return { start_time, end_time, hours }
+}
+
+const buildRecordData = async (body, existingRecord = null) => {
   const {
+    report_order_id,
     record_date,
     shift,
-    start_time,
-    end_time,
     skilled_count,
     general_count,
     labor_count,
@@ -29,7 +48,16 @@ const buildRecordData = (body) => {
   const lb = Number(labor_count) || 0
   const ot = Number(other_count) || 0
   const total_people = sk + gn + lb + ot
-  const hours = calcHours(start_time, end_time)
+
+  // 优先使用 body.report_order_id，否则回退到 existingRecord 关联的报工单
+  const roId = report_order_id || existingRecord?.report_order_id
+  let timeInfo = { start_time: existingRecord?.start_time || null, end_time: existingRecord?.end_time || null, hours: existingRecord?.hours || 0 }
+  if (roId) {
+    const reportOrder = await ReportOrder.findOne({ where: { report_order_id: roId } })
+    timeInfo = resolveTimeFromReportOrder(reportOrder)
+  }
+
+  const { start_time, end_time, hours } = timeInfo
   const man_hours = Number((hours * total_people).toFixed(2))
 
   return {
@@ -96,7 +124,7 @@ export const create = async (req, res) => {
     const reportOrder = await ReportOrder.findOne({ where: { report_order_id } })
     if (!reportOrder) return fail(res, '报工单不存在', 404)
 
-    const data = buildRecordData(req.body)
+    const data = await buildRecordData(req.body)
     const record = await ManpowerRecord.create({
       ...data,
       report_order_id: reportOrder.report_order_id,
@@ -117,7 +145,7 @@ export const update = async (req, res) => {
     const record = await ManpowerRecord.findOne({ where: { record_id: id } })
     if (!record) return fail(res, '记录不存在', 404)
 
-    const data = buildRecordData(req.body)
+    const data = await buildRecordData(req.body, record)
     await record.update(data)
     return success(res, record, '修改成功')
   } catch (err) {

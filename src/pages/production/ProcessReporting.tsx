@@ -467,7 +467,7 @@ export default function ProcessReporting() {
       return exceptionList.some(e => e.exception_type && !e.exception_id)
     }
     if (activeTab === 'manpower') {
-      return manpowerList.some(m => m.start_time && !m.record_id)
+      return manpowerList.some(m => isManpowerRecordFilled(m) && !m.record_id)
     }
     return false
   }, [activeTab, isEditable, prodDefectList, scrapDefectList, materialList, exceptionList, manpowerList, dirtyIds])
@@ -1966,31 +1966,21 @@ export default function ProcessReporting() {
   const saveManpowerItem = async (item) => {
     if (!selectedReport) return
     try {
+      // 开始/结束时间由后端从报工单读取（开工状态用当前时间作为结束时间）
+      const payload = {
+        report_order_id: selectedReport.report_order_id,
+        record_date: item.record_date,
+        shift: item.shift,
+        skilled_count: item.skilled_count,
+        general_count: item.general_count,
+        labor_count: item.labor_count,
+        other_count: item.other_count,
+        remarks: item.remarks,
+      }
       if (item.record_id) {
-        await api.put(`/production/manpower-records/${item.record_id}`, {
-          record_date: item.record_date,
-          shift: item.shift,
-          start_time: item.start_time,
-          end_time: item.end_time,
-          skilled_count: item.skilled_count,
-          general_count: item.general_count,
-          labor_count: item.labor_count,
-          other_count: item.other_count,
-          remarks: item.remarks,
-        })
+        await api.put(`/production/manpower-records/${item.record_id}`, payload)
       } else {
-        const res = await api.post('/production/manpower-records', {
-          report_order_id: selectedReport.report_order_id,
-          record_date: item.record_date,
-          shift: item.shift,
-          start_time: item.start_time,
-          end_time: item.end_time,
-          skilled_count: item.skilled_count,
-          general_count: item.general_count,
-          labor_count: item.labor_count,
-          other_count: item.other_count,
-          remarks: item.remarks,
-        })
+        const res = await api.post('/production/manpower-records', payload)
         setManpowerList(prev => prev.map(m =>
           m.id === item.id ? { ...res.data, id: res.data.record_id } : m
         ))
@@ -2008,20 +1998,8 @@ export default function ProcessReporting() {
       if (existingIndex >= 0) {
         return prev.map(item => {
           if (String(item.id) !== String(recordId)) return item
-          const updated = { ...item, [field]: value }
-          const sk = Number(updated.skilled_count) || 0
-          const gn = Number(updated.general_count) || 0
-          const lb = Number(updated.labor_count) || 0
-          const ot = Number(updated.other_count) || 0
-          updated.total_people = sk + gn + lb + ot
-          if (updated.start_time && updated.end_time) {
-            const start = new Date(updated.start_time).getTime()
-            const end = new Date(updated.end_time).getTime()
-            const hours = ((end - start) / 3600000)
-            updated.hours = hours > 0 ? Number(hours.toFixed(2)) : 0
-            updated.man_hours = Number((updated.hours * updated.total_people).toFixed(2))
-          }
-          return updated
+          // 只更新字段本身，hours/total_people/man_hours 由 manpowerDisplayList 实时计算
+          return { ...item, [field]: value }
         })
       } else {
         // 新增记录（空行情况）
@@ -2030,15 +2008,10 @@ export default function ProcessReporting() {
           report_order_id: selectedReport?.report_order_id,
           record_date: dayjs().format('YYYY-MM-DD'),
           shift: '白班',
-          start_time: selectedReport?.report_time || null,
-          end_time: null,
-          hours: 0,
           skilled_count: 0,
           general_count: 0,
           labor_count: 0,
           other_count: 0,
-          total_people: 0,
-          man_hours: 0,
           remarks: '',
         }
         newItem[field] = value
@@ -2063,16 +2036,26 @@ export default function ProcessReporting() {
 
   // 校验单条人员工时记录
   const validateManpowerRecord = (record) => {
-    if (!record.start_time || !record.end_time) {
-      message.warning('请选择开始时间和结束时间')
-      return false
-    }
-    const total = Number(record.total_people) || 0
+    // 开始/结束时间从报工单读取，无需用户填写；只校验人员数量
+    const sk = Number(record.skilled_count) || 0
+    const gn = Number(record.general_count) || 0
+    const lb = Number(record.labor_count) || 0
+    const ot = Number(record.other_count) || 0
+    const total = sk + gn + lb + ot
     if (total <= 0) {
       message.warning('请填写至少一项人员数量（技工/普工/劳务/其他）')
       return false
     }
     return true
+  }
+
+  // 判断人员工时记录是否为有效记录（至少填写了一项人员数量）
+  function isManpowerRecordFilled(m) {
+    const sk = Number(m.skilled_count) || 0
+    const gn = Number(m.general_count) || 0
+    const lb = Number(m.labor_count) || 0
+    const ot = Number(m.other_count) || 0
+    return (sk + gn + lb + ot) > 0
   }
 
   // 批量保存所有未保存的人员工时记录
@@ -2081,8 +2064,9 @@ export default function ProcessReporting() {
       message.warning('请先选择报工单')
       return
     }
+    // 时间从报工单读取，所以以"是否填写人员数量"作为有效记录的判断条件
     const recordsToSave = manpowerList.filter(m => {
-      if (!m.start_time) return false
+      if (!isManpowerRecordFilled(m)) return false
       if (!m.record_id) return true
       return dirtyIds.has(m.id)
     })
@@ -2114,7 +2098,7 @@ export default function ProcessReporting() {
     }
     // 添加前先执行一次保存（保存新增 + 已修改的记录）
     const recordsToSave = manpowerList.filter(m => {
-      if (!m.start_time) return false
+      if (!isManpowerRecordFilled(m)) return false
       if (!m.record_id) return true
       return dirtyIds.has(m.id)
     })
@@ -2136,31 +2120,52 @@ export default function ProcessReporting() {
       }
     }
     setManpowerList(prev => {
-      const hasEmptyRow = prev.some(m => !m.start_time)
+      // 已存在未填写人员的空行时不再追加
+      const hasEmptyRow = prev.some(m => !isManpowerRecordFilled(m))
       if (hasEmptyRow) return prev
       return [...prev, {
         id: genTempId(),
         report_order_id: selectedReport.report_order_id,
         record_date: dayjs().format('YYYY-MM-DD'),
         shift: '白班',
-        start_time: null,
-        end_time: null,
-        hours: 0,
         skilled_count: 0,
         general_count: 0,
         labor_count: 0,
         other_count: 0,
-        total_people: 0,
-        man_hours: 0,
         remarks: '',
       }]
     })
   }
 
+  // 根据报工单时间计算单条人员工时记录的 hours / man_hours
+  // 开始时间 = 报工单 report_time；结束时间 = 完工状态取 finish_time，开工状态取当前时间
+  const calcManpowerHours = useCallback(() => {
+    const reportStart = selectedReport?.report_time
+    if (!reportStart) return { start_time: null, end_time: null, hours: 0 }
+    const start = dayjs(reportStart)
+    // 完工状态用 finish_time；开工状态用当前时间（已投入工时实时计算）
+    const end = selectedReport?.status === '完工' && selectedReport?.finish_time
+      ? dayjs(selectedReport.finish_time)
+      : dayjs()
+    const diffMs = end.valueOf() - start.valueOf()
+    const hours = diffMs > 0 ? Number((diffMs / 3600000).toFixed(2)) : 0
+    return { start_time: reportStart, end_time: end.toISOString(), hours }
+  }, [selectedReport])
+
   const manpowerDisplayList = useMemo(() => {
     // 改为手动添加模式，不再自动追加空行
-    return manpowerList
-  }, [manpowerList])
+    // 工时实时根据报工单时间计算（开工状态结束时间取当前时间）
+    const { hours } = calcManpowerHours()
+    return manpowerList.map(m => {
+      const sk = Number(m.skilled_count) || 0
+      const gn = Number(m.general_count) || 0
+      const lb = Number(m.labor_count) || 0
+      const ot = Number(m.other_count) || 0
+      const total_people = sk + gn + lb + ot
+      const man_hours = Number((hours * total_people).toFixed(2))
+      return { ...m, hours, total_people, man_hours }
+    })
+  }, [manpowerList, calcManpowerHours])
 
   const manpowerColumns = [
     {
@@ -2184,60 +2189,22 @@ export default function ProcessReporting() {
       ) : val || '-',
     },
     {
-      title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 120,
-      render: (val, record) => isEditable ? (
-        <TimePicker
-          value={val ? dayjs(val) : null}
-          onChange={(d) => {
-            if (d) {
-              const today = dayjs().format('YYYY-MM-DD')
-              const timeStr = d.format('HH:mm:ss')
-              const newTime = `${today}T${timeStr}`
-              // 开始时间不能早于报工时间
-              const reportStart = selectedReport?.report_time
-              if (reportStart && dayjs(newTime).isBefore(dayjs(reportStart))) {
-                message.warning('开始时间不能早于报工时间')
-                return
-              }
-              handleManpowerChange(record.id, 'start_time', newTime)
-            } else {
-              handleManpowerChange(record.id, 'start_time', null)
-            }
-          }}
-          format="HH:mm"
-          style={{ width: '100%' }}
-          size="small"
-          minuteStep={5}
-        />
-      ) : val ? dayjs(val).format('HH:mm') : '-',
+      title: '开始时间', dataIndex: 'report_start_time', key: 'report_start_time', width: 150,
+      render: (val) => {
+        const t = selectedReport?.report_time
+        return t ? dayjs(t).format('MM-DD HH:mm') : '-'
+      },
     },
     {
-      title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 120,
-      render: (val, record) => isEditable ? (
-        <TimePicker
-          value={val ? dayjs(val) : null}
-          onChange={(d) => {
-            if (d) {
-              const today = dayjs().format('YYYY-MM-DD')
-              const timeStr = d.format('HH:mm:ss')
-              const newTime = `${today}T${timeStr}`
-              // 结束时间不能小于开始时间
-              const startTime = record.start_time
-              if (startTime && dayjs(newTime).isBefore(dayjs(startTime))) {
-                message.warning('结束时间不能小于开始时间')
-                return
-              }
-              handleManpowerChange(record.id, 'end_time', newTime)
-            } else {
-              handleManpowerChange(record.id, 'end_time', null)
-            }
-          }}
-          format="HH:mm"
-          style={{ width: '100%' }}
-          size="small"
-          minuteStep={5}
-        />
-      ) : val ? dayjs(val).format('HH:mm') : '-',
+      title: '结束时间', dataIndex: 'report_end_time', key: 'report_end_time', width: 150,
+      render: (val) => {
+        // 完工状态显示 finish_time；开工状态显示"进行中"（结束时间实时取当前时间）
+        if (selectedReport?.status === '完工') {
+          const t = selectedReport?.finish_time
+          return t ? dayjs(t).format('MM-DD HH:mm') : '-'
+        }
+        return <Tag color="processing">进行中</Tag>
+      },
     },
     { title: '工时(小时)', dataIndex: 'hours', key: 'hours', width: 100 },
     {
