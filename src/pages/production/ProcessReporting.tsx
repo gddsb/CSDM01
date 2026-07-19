@@ -611,15 +611,74 @@ export default function ProcessReporting() {
       message.warning('请填写不良数量')
       return
     }
+    if (!record.unit) {
+      message.warning('请选择单位')
+      return
+    }
     await saveProdDefectItem(record)
     message.success('保存成功')
   }
 
-  // 新增一条生产不良记录空行（手动触发）
-  const handleAddProdDefectRow = () => {
+  // 批量保存所有未保存的生产不良记录
+  const handleSaveAllProdDefects = async () => {
     if (!selectedReport) {
       message.warning('请先选择报工单')
       return
+    }
+    const unsavedRecords = prodDefectList.filter(d => d.defect_type_id && !d.defect_id)
+    if (unsavedRecords.length === 0) {
+      message.info('没有需要保存的记录')
+      return
+    }
+    // 校验所有未保存记录
+    for (const record of unsavedRecords) {
+      if (!record.quantity || record.quantity <= 0) {
+        message.warning(`不良编码 ${record.defect_code || ''} 的数量无效，请填写大于0的数量`)
+        return
+      }
+      if (!record.unit) {
+        message.warning(`不良编码 ${record.defect_code || ''} 的单位未选择`)
+        return
+      }
+    }
+    try {
+      for (const record of unsavedRecords) {
+        await saveProdDefectItem(record)
+      }
+      message.success(`已保存 ${unsavedRecords.length} 条记录`)
+    } catch (err) {
+      message.error(err.message || '保存失败')
+    }
+  }
+
+  // 新增一条生产不良记录空行（手动触发，添加前先执行一次保存）
+  const handleAddProdDefectRow = async () => {
+    if (!selectedReport) {
+      message.warning('请先选择报工单')
+      return
+    }
+    // 添加前先执行一次保存
+    const unsavedRecords = prodDefectList.filter(d => d.defect_type_id && !d.defect_id)
+    if (unsavedRecords.length > 0) {
+      for (const record of unsavedRecords) {
+        if (!record.quantity || record.quantity <= 0) {
+          message.warning(`请先完善不良编码 ${record.defect_code || ''} 的数量（需大于0）`)
+          return
+        }
+        if (!record.unit) {
+          message.warning(`请先选择不良编码 ${record.defect_code || ''} 的单位`)
+          return
+        }
+      }
+      try {
+        for (const record of unsavedRecords) {
+          await saveProdDefectItem(record)
+        }
+        message.success(`已保存 ${unsavedRecords.length} 条记录`)
+      } catch (err) {
+        message.error(err.message || '保存失败，无法添加新记录')
+        return
+      }
     }
     setProdDefectList(prev => {
       const hasEmptyRow = prev.some(d => !d.defect_type_id)
@@ -678,7 +737,7 @@ export default function ProcessReporting() {
 
   const prodDefectColumns = [
     {
-      title: '记录主键', dataIndex: 'defect_id', key: 'defect_id', width: 100,
+      title: '关键主键', dataIndex: 'defect_type_id', key: 'defect_type_id', width: 100,
       render: (val) => val ?? '-',
     },
     {
@@ -858,15 +917,74 @@ export default function ProcessReporting() {
       message.warning('请填写不良数量')
       return
     }
+    if (!record.unit) {
+      message.warning('请选择单位')
+      return
+    }
     await saveScrapDefectItem(record)
     message.success('保存成功')
   }
 
-  // 新增一条检验报废记录空行（手动触发）
-  const handleAddScrapDefectRow = () => {
+  // 批量保存所有未保存的检验报废记录
+  const handleSaveAllScrapDefects = async () => {
     if (!selectedReport) {
       message.warning('请先选择报工单')
       return
+    }
+    const unsavedRecords = scrapDefectList.filter(d => d.defect_type_id && !d.scrap_id)
+    if (unsavedRecords.length === 0) {
+      message.info('没有需要保存的记录')
+      return
+    }
+    // 校验所有未保存记录
+    for (const record of unsavedRecords) {
+      if (!record.quantity || record.quantity <= 0) {
+        message.warning(`不良编码 ${record.defect_code || ''} 的数量无效，请填写大于0的数量`)
+        return
+      }
+      if (!record.unit) {
+        message.warning(`不良编码 ${record.defect_code || ''} 的单位未选择`)
+        return
+      }
+    }
+    try {
+      for (const record of unsavedRecords) {
+        await saveScrapDefectItem(record)
+      }
+      message.success(`已保存 ${unsavedRecords.length} 条记录`)
+    } catch (err) {
+      message.error(err.message || '保存失败')
+    }
+  }
+
+  // 新增一条检验报废记录空行（手动触发，添加前先执行一次保存）
+  const handleAddScrapDefectRow = async () => {
+    if (!selectedReport) {
+      message.warning('请先选择报工单')
+      return
+    }
+    // 添加前先执行一次保存
+    const unsavedRecords = scrapDefectList.filter(d => d.defect_type_id && !d.scrap_id)
+    if (unsavedRecords.length > 0) {
+      for (const record of unsavedRecords) {
+        if (!record.quantity || record.quantity <= 0) {
+          message.warning(`请先完善不良编码 ${record.defect_code || ''} 的数量（需大于0）`)
+          return
+        }
+        if (!record.unit) {
+          message.warning(`请先选择不良编码 ${record.defect_code || ''} 的单位`)
+          return
+        }
+      }
+      try {
+        for (const record of unsavedRecords) {
+          await saveScrapDefectItem(record)
+        }
+        message.success(`已保存 ${unsavedRecords.length} 条记录`)
+      } catch (err) {
+        message.error(err.message || '保存失败，无法添加新记录')
+        return
+      }
     }
     setScrapDefectList(prev => {
       const hasEmptyRow = prev.some(d => !d.defect_type_id)
@@ -924,7 +1042,7 @@ export default function ProcessReporting() {
 
   const scrapDefectColumns = [
     {
-      title: '记录主键', dataIndex: 'scrap_id', key: 'scrap_id', width: 100,
+      title: '关键主键', dataIndex: 'defect_type_id', key: 'defect_type_id', width: 100,
       render: (val) => val ?? '-',
     },
     {
@@ -1882,7 +2000,10 @@ export default function ProcessReporting() {
                     popupClassName="mes-select-dropdown"
                   />
                   {isEditable && (
-                    <Button type="primary" icon={<PlusOutlined />} onClick={handleAddProdDefectRow}>添加</Button>
+                    <>
+                      <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveAllProdDefects}>保存</Button>
+                      <Button type="primary" icon={<PlusOutlined />} onClick={handleAddProdDefectRow}>添加</Button>
+                    </>
                   )}
                 </Space>
               </Col>
@@ -1953,13 +2074,16 @@ export default function ProcessReporting() {
                 <Space>
                   <span style={{ color: '#666' }}>检验报废记录</span>
                   {isEditable && (
-                    <Button type="primary" icon={<PlusOutlined />} onClick={handleAddScrapDefectRow}>添加</Button>
+                    <>
+                      <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveAllScrapDefects}>保存</Button>
+                      <Button type="primary" icon={<PlusOutlined />} onClick={handleAddScrapDefectRow}>添加</Button>
+                    </>
                   )}
                 </Space>
               </Col>
               <Col span={12} style={{ textAlign: 'right' }}>
                 {isEditable ? (
-                  <Tag color="blue">点击"添加"录入数据后，点"保存"提交</Tag>
+                  <Tag color="blue">点"添加"前会自动保存未提交记录；录入数据后请点"保存"提交</Tag>
                 ) : (
                   <Tag color="default">已完工，数据只读</Tag>
                 )}
