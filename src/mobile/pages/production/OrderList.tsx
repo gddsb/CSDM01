@@ -8,8 +8,10 @@ import dayjs from 'dayjs'
 const STATUS_FILTERS = [
   { label: '全部', value: '' },
   { label: '开立', value: '开立' },
+  { label: '下发', value: '下发' },
   { label: '开工', value: '开工' },
   { label: '完工', value: '完工' },
+  { label: '关闭', value: '关闭' },
 ]
 
 // 订单状态徽章样式
@@ -42,8 +44,11 @@ export default function OrderList() {
     try {
       const params: any = { page: pageNum, pageSize }
       if (keyword.trim()) params.keyword = keyword.trim()
-      if (statusFilter) params.status = [statusFilter]
-      else params.status = ['开立', '开工'] // 默认显示开立+开工
+      if (statusFilter) {
+        params.status = [statusFilter]
+      } else {
+        params.status = ['开立', '下发', '开工', '完工', '关闭']
+      }
 
       const res = await api.get('/production/orders', { params })
       const newList = res.data || []
@@ -94,6 +99,21 @@ export default function OrderList() {
       fetchList(1, true)
     } catch (err) {
       Toast.show({ icon: 'fail', content: err.message || '下发失败' })
+    }
+  }
+
+  const handleClose = async (order) => {
+    const confirmed = await Dialog.confirm({
+      title: '确认关闭',
+      content: `确认关闭订单 ${order.order_no}？关闭后将不可恢复`,
+    })
+    if (!confirmed) return
+    try {
+      const res = await api.post(`/production/orders/${order.order_id}/close`)
+      Toast.show({ icon: 'success', content: res.message || '订单已关闭' })
+      fetchList(1, true)
+    } catch (err) {
+      Toast.show({ icon: 'fail', content: err.message || '关闭失败' })
     }
   }
 

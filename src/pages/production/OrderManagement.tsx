@@ -22,8 +22,10 @@ const statusColorMap = {
 
 const statusOptions = [
   { label: '开立', value: '开立' },
+  { label: '下发', value: '下发' },
   { label: '开工', value: '开工' },
   { label: '完工', value: '完工' },
+  { label: '关闭', value: '关闭' },
 ]
 
 export default function OrderManagement() {
@@ -44,10 +46,10 @@ export default function OrderManagement() {
   // 筛选输入态
   const [keywordInput, setKeywordInput] = useState('')
   const [materialCodeInput, setMaterialCodeInput] = useState('')
-  const [statusInput, setStatusInput] = useState(['开立', '开工'])
+  const [statusInput, setStatusInput] = useState(['开立', '下发', '开工', '完工', '关闭'])
   const [planDateRange, setPlanDateRange] = useState(null)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', materialCode: '', status: ['开立', '开工'], planDateStart: '', planDateEnd: '' })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', materialCode: '', status: ['开立', '下发', '开工', '完工', '关闭'], planDateStart: '', planDateEnd: '' })
 
   // 获取订单列表
   useEffect(() => {
@@ -241,9 +243,9 @@ export default function OrderManagement() {
   const handleReset = () => {
     setKeywordInput('')
     setMaterialCodeInput('')
-    setStatusInput(['开立', '开工'])
+    setStatusInput(['开立', '下发', '开工', '完工', '关闭'])
     setPlanDateRange(null)
-    setQuery(q => ({ ...q, page: 1, keyword: '', materialCode: '', status: ['开立', '开工'], planDateStart: '', planDateEnd: '' }))
+    setQuery(q => ({ ...q, page: 1, keyword: '', materialCode: '', status: ['开立', '下发', '开工', '完工', '关闭'], planDateStart: '', planDateEnd: '' }))
   }
 
   const renderActions = (r) => {
