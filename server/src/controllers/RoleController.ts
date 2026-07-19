@@ -103,6 +103,7 @@ const defaultPermissions = [
   { perm_id: 5, parent_id: 1, perm_name: '数据字典', perm_code: 'system:dict', type: 'menu', icon: 'DatabaseOutlined', path: '/system/dictionary', sort_order: 4 },
   { perm_id: 6, parent_id: 1, perm_name: '系统配置', perm_code: 'system:config', type: 'menu', icon: 'ControlOutlined', path: '/system/config', sort_order: 5 },
   { perm_id: 7, parent_id: 1, perm_name: '操作日志', perm_code: 'system:log', type: 'menu', icon: 'FileTextOutlined', path: '/system/logs', sort_order: 6 },
+  { perm_id: 8, parent_id: 1, perm_name: '移动端模拟器', perm_code: 'system:mobile-simulator', type: 'menu', icon: 'MobileOutlined', path: '/system/mobile-simulator', sort_order: 7 },
   // 基础数据
   { perm_id: 10, parent_id: 0, perm_name: '基础数据', perm_code: 'basic', type: 'menu', icon: 'ProfileOutlined', path: 'basic', sort_order: 4 },
   { perm_id: 11, parent_id: 10, perm_name: '料品档案', perm_code: 'basic:material', type: 'menu', icon: 'ProfileOutlined', path: '/basic/materials', sort_order: 1 },
@@ -114,8 +115,7 @@ const defaultPermissions = [
   // 生产管理
   { perm_id: 20, parent_id: 0, perm_name: '生产管理', perm_code: 'production', type: 'menu', icon: 'ToolOutlined', path: 'production', sort_order: 1 },
   { perm_id: 21, parent_id: 20, perm_name: '生产订单', perm_code: 'production:order', type: 'menu', icon: 'FileTextOutlined', path: '/production/orders', sort_order: 1 },
-  { perm_id: 22, parent_id: 20, perm_name: '工单管理', perm_code: 'production:workorder', type: 'menu', icon: 'ToolOutlined', path: '/production/workorders', sort_order: 2 },
-  { perm_id: 23, parent_id: 20, perm_name: '生产报工', perm_code: 'production:reporting', type: 'menu', icon: 'ProfileOutlined', path: '/production/reporting', sort_order: 3 },
+  { perm_id: 23, parent_id: 20, perm_name: '生产报工', perm_code: 'production:reporting', type: 'menu', icon: 'ProfileOutlined', path: '/production/reporting', sort_order: 2 },
   // 质量管理
   { perm_id: 30, parent_id: 0, perm_name: '质量管理', perm_code: 'quality', type: 'menu', icon: 'ExperimentOutlined', path: 'quality', sort_order: 2 },
   { perm_id: 31, parent_id: 30, perm_name: '检验标准管理', perm_code: 'quality:standard', type: 'menu', icon: 'SafetyCertificateOutlined', path: '/quality/standards', sort_order: 1 },

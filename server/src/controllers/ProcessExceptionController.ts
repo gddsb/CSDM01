@@ -1,13 +1,12 @@
 import { Op } from 'sequelize'
-import { ProcessException, WorkOrder, Device } from '../models/index.js'
+import { ProcessException, Device } from '../models/index.js'
 import { success, fail } from '../utils/response.js'
 
 export const list = async (req, res) => {
   try {
-    const { report_id, work_order_id, exception_type, device_id, stop_type, page = 1, pageSize = 20 } = req.query
-    const where = {}
-    if (report_id) where.report_id = Number(report_id)
-    if (work_order_id) where.work_order_id = Number(work_order_id)
+    const { report_order_id, exception_type, device_id, stop_type, page = 1, pageSize = 20 } = req.query
+    const where: any = {}
+    if (report_order_id) where.report_order_id = Number(report_order_id)
     if (exception_type) where.exception_type = exception_type
     if (device_id) where.device_id = Number(device_id)
     if (stop_type) where.stop_type = { [Op.like]: `%${stop_type}%` }
@@ -34,8 +33,7 @@ export const list = async (req, res) => {
 export const create = async (req, res) => {
   try {
     const {
-      report_id,
-      work_order_id,
+      report_order_id,
       exception_type,
       device_id,
       stop_type,
@@ -49,12 +47,9 @@ export const create = async (req, res) => {
       record_user_name,
     } = req.body
 
-    if (!work_order_id) return fail(res, '工单 ID 不能为空')
+    if (!report_order_id) return fail(res, '报工单 ID 不能为空')
     if (!exception_type) return fail(res, '异常类型不能为空')
     if (!start_time) return fail(res, '开始时间不能为空')
-
-    const workOrder = await WorkOrder.findOne({ where: { work_order_id } })
-    if (!workOrder) return fail(res, '工单不存在', 404)
 
     let deviceCode = null
     let deviceName = null
@@ -78,9 +73,7 @@ export const create = async (req, res) => {
       : null
 
     const exception = await ProcessException.create({
-      report_id: report_id || null,
-      work_order_id: workOrder.work_order_id,
-      work_order_no: workOrder.work_order_no,
+      report_order_id,
       exception_type,
       device_id: device_id || null,
       device_code: deviceCode,

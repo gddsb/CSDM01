@@ -1,20 +1,16 @@
 import { DataTypes } from 'sequelize'
 import sequelize from '../config/database.js'
 
-// 工序不良记录表（简化版，只记录外键，详情通过关联查询获取）
+// 报工不良记录子表（关联生产报工单）
 const ProcessDefect = sequelize.define('ProcessDefect', {
   defect_id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
   },
-  report_id: {
+  report_order_id: {
     type: DataTypes.INTEGER,
-    comment: '报工单ID',
-  },
-  work_order_id: {
-    type: DataTypes.INTEGER,
-    comment: '生产工单ID',
+    comment: '生产报工单ID',
   },
   process_id: {
     type: DataTypes.INTEGER,

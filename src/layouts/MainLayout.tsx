@@ -67,7 +67,6 @@ const defaultMenuItems = [
       key: 'production', icon: <ToolOutlined />, label: '生产管理',
       children: [
         { key: '/production/orders', icon: <FileTextOutlined />, label: '生产订单' },
-        { key: '/production/workorders', icon: <ToolOutlined />, label: '工单管理' },
         { key: '/production/reporting', icon: <ProfileOutlined />, label: '生产报工' },
       ]
     },

@@ -24,7 +24,6 @@ import CustomerManagement from './pages/basic/CustomerManagement'
 import NumberRuleManagement from './pages/basic/NumberRuleManagement'
 import MenuManagement from './pages/system/MenuManagement'
 import OrderManagement from './pages/production/OrderManagement'
-import WorkOrderManagement from './pages/production/WorkOrderManagement'
 import ProcessReporting from './pages/production/ProcessReporting'
 import InspectionStandard from './pages/quality/InspectionStandard'
 import IncomingInspection from './pages/quality/IncomingInspection'
@@ -85,7 +84,6 @@ function AppRoutes() {
         <Route path="/basic/customers" element={<CustomerManagement />} />
         <Route path="/basic/number-rules" element={<NumberRuleManagement />} />
         <Route path="/production/orders" element={<OrderManagement />} />
-        <Route path="/production/workorders" element={<WorkOrderManagement />} />
         <Route path="/production/reporting" element={<ProcessReporting />} />
         <Route path="/quality/standards" element={<InspectionStandard />} />
         <Route path="/quality/incoming" element={<IncomingInspection />} />

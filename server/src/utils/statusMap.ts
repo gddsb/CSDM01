@@ -13,7 +13,13 @@ export const STATUS_MAPS: any = {
   order: {
     开立: 0,
     下发: 1,
-    完工: 2,
+    开工: 2,
+    完工: 3,
+    关闭: 4,
+  },
+  reportOrder: {
+    开工: 0,
+    完工: 1,
   },
   workOrder: {
     开立: 0,

@@ -26,6 +26,7 @@ const Order = sequelize.define('Order', {
   },
   film_version: {
     type: DataTypes.STRING(50),
+    comment: '菲林编号（来自料品档案 film_no）',
   },
   version_no: {
     type: DataTypes.STRING(50),
@@ -47,14 +48,15 @@ const Order = sequelize.define('Order', {
   status: {
     type: DataTypes.TINYINT,
     defaultValue: 0,
+    comment: '状态：0=开立, 1=下发, 2=开工, 3=完工, 4=关闭',
     get() {
       const val = this.getDataValue('status')
-      const map = { 0: '开立', 1: '下发', 2: '完工' }
+      const map = { 0: '开立', 1: '下发', 2: '开工', 3: '完工', 4: '关闭' }
       return map[val] !== undefined ? map[val] : val
     },
     set(val) {
       if (typeof val === 'string') {
-        const map = { '开立': 0, '下发': 1, '完工': 2 }
+        const map = { '开立': 0, '下发': 1, '开工': 2, '完工': 3, '关闭': 4 }
         this.setDataValue('status', map[val] !== undefined ? map[val] : 0)
       } else {
         this.setDataValue('status', val)

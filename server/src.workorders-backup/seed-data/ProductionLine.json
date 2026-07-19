@@ -1,0 +1,24 @@
+[
+  {
+    "line_id": 1,
+    "line_code": "LINE-A",
+    "line_name": "A线",
+    "workshop": "制罐车间",
+    "line_leader": "pm",
+    "sort_order": 1,
+    "status": 1,
+    "createdAt": "2026-07-06 16:15:22.267 +00:00",
+    "updatedAt": "2026-07-06 16:15:22.267 +00:00"
+  },
+  {
+    "line_id": 2,
+    "line_code": "LINE-B",
+    "line_name": "B线",
+    "workshop": "制罐车间",
+    "line_leader": "pm",
+    "sort_order": 2,
+    "status": 1,
+    "createdAt": "2026-07-06 16:15:22.267 +00:00",
+    "updatedAt": "2026-07-06 16:15:22.267 +00:00"
+  }
+]

@@ -10,22 +10,49 @@ import {
   close,
 } from '../controllers/OrderController.js'
 import {
-  list as woList,
-  detail as woDetail,
-  create as woCreate,
-  update as woUpdate,
-  remove as woRemove,
-  start,
-  finish,
-  toggleReportStatus,
-  getProcesses,
-} from '../controllers/WorkOrderController.js'
-import { list as reportList, detail as reportDetail, create as reportCreate, update as reportUpdate, remove as reportRemove, toggleStatus as reportToggleStatus, start as reportStart, finish as reportFinish } from '../controllers/ProcessReportController.js'
-import { list as manpowerList, detail as manpowerDetail, create as manpowerCreate, update as manpowerUpdate, remove as manpowerRemove, summaryByWorkOrder as manpowerSummary } from '../controllers/ManpowerRecordController.js'
-import { list as defectList, create as defectCreate, remove as defectRemove, update as defectUpdate, batchSave as defectBatchSave, scrapList, scrapCreate, scrapUpdate } from '../controllers/ProcessDefectController.js'
-import { list as exceptionList, create as exceptionCreate, update as exceptionUpdate, remove as exceptionRemove } from '../controllers/ProcessExceptionController.js'
-import { list as materialList, create as materialCreate, update as materialUpdate, remove as materialRemove } from '../controllers/ProcessMaterialController.js'
-import { uploadImages as uploadReportImages } from '../controllers/ReportImageController.js'
+  list as roList,
+  detail as roDetail,
+  create as roCreate,
+  update as roUpdate,
+  remove as roRemove,
+  finish as roFinish,
+  getProcesses as roGetProcesses,
+} from '../controllers/ReportOrderController.js'
+import {
+  list as manpowerList,
+  detail as manpowerDetail,
+  create as manpowerCreate,
+  update as manpowerUpdate,
+  remove as manpowerRemove,
+  summaryByReportOrder as manpowerSummary,
+} from '../controllers/ManpowerRecordController.js'
+import {
+  list as defectList,
+  create as defectCreate,
+  remove as defectRemove,
+  update as defectUpdate,
+  batchSave as defectBatchSave,
+  scrapList,
+  scrapCreate,
+  scrapUpdate,
+} from '../controllers/ProcessDefectController.js'
+import {
+  list as exceptionList,
+  create as exceptionCreate,
+  update as exceptionUpdate,
+  remove as exceptionRemove,
+} from '../controllers/ProcessExceptionController.js'
+import {
+  list as materialList,
+  create as materialCreate,
+  update as materialUpdate,
+  remove as materialRemove,
+} from '../controllers/ProcessMaterialController.js'
+import {
+  uploadImages as uploadReportImages,
+  list as reportImageList,
+  remove as reportImageRemove,
+} from '../controllers/ReportImageController.js'
 import { authRequired } from '../middleware/auth.js'
 
 const router = Router()
@@ -44,7 +71,7 @@ const reportImageUpload = multer({
 // 所有生产管理路由都需要登录
 router.use(authRequired)
 
-// 生产订单
+// 生产订单（状态：开立/下发/开工/完工/关闭）
 router.get('/orders', orderList)
 router.get('/orders/:id', orderDetail)
 router.post('/orders', orderCreate)
@@ -53,30 +80,18 @@ router.delete('/orders/:id', orderRemove)
 router.post('/orders/:id/release', release)
 router.post('/orders/:id/close', close)
 
-// 工单
-router.get('/work-orders', woList)
-router.get('/work-orders/:id', woDetail)
-router.post('/work-orders', woCreate)
-router.put('/work-orders/:id', woUpdate)
-router.delete('/work-orders/:id', woRemove)
-router.post('/work-orders/:id/start', start)
-router.post('/work-orders/:id/finish', finish)
-router.post('/work-orders/:id/report-status', toggleReportStatus)
-router.get('/work-orders/:id/processes', getProcesses)
-
-// 工序报工
-router.get('/process-reports', reportList)
-router.get('/process-reports/:id', reportDetail)
-router.post('/process-reports', reportCreate)
-router.put('/process-reports/:id', reportUpdate)
-router.delete('/process-reports/:id', reportRemove)
-router.post('/process-reports/:id/toggle-status', reportToggleStatus)
-router.post('/process-reports/:id/start', reportStart)
-router.post('/process-reports/:id/finish', reportFinish)
+// 生产报工单（状态：开工/完工；订单下发后直接创建）
+router.get('/report-orders', roList)
+router.get('/report-orders/:id', roDetail)
+router.post('/report-orders', roCreate)
+router.put('/report-orders/:id', roUpdate)
+router.delete('/report-orders/:id', roRemove)
+router.post('/report-orders/:id/finish', roFinish)
+router.get('/report-orders/:id/processes', roGetProcesses)
 
 // 人员记录
 router.get('/manpower-records', manpowerList)
-router.get('/manpower-records/summary/by-work-order', manpowerSummary)
+router.get('/manpower-records/summary/by-report-order', manpowerSummary)
 router.get('/manpower-records/:id', manpowerDetail)
 router.post('/manpower-records', manpowerCreate)
 router.put('/manpower-records/:id', manpowerUpdate)
@@ -106,7 +121,9 @@ router.post('/process-materials', materialCreate)
 router.put('/process-materials/:id', materialUpdate)
 router.delete('/process-materials/:id', materialRemove)
 
-// 报工图片上传
+// 报工图片
+router.get('/report-images', reportImageList)
+router.delete('/report-images/:id', reportImageRemove)
 router.post('/report-images/:report_no/:category/upload', reportImageUpload.array('files', 10), uploadReportImages)
 
 export default router

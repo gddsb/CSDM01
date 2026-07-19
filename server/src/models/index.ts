@@ -11,13 +11,13 @@ import Process from './Process.js'
 import Device from './Device.js'
 import DefectType from './DefectType.js'
 import Order from './Order.js'
-import WorkOrder from './WorkOrder.js'
-import ProcessReport from './ProcessReport.js'
+import ReportOrder from './ReportOrder.js'
+import ReportProcess from './ReportProcess.js'
 import ManpowerRecord from './ManpowerRecord.js'
 import ProcessDefect from './ProcessDefect.js'
 import ProcessException from './ProcessException.js'
 import ProcessMaterial from './ProcessMaterial.js'
-import ReportExceptionImage from './ReportExceptionImage.js'
+import ReportImage from './ReportImage.js'
 import SystemConfig from './SystemConfig.js'
 import RolePermission from './RolePermission.js'
 import Sequence from './Sequence.js'
@@ -29,63 +29,45 @@ import DefectImage from './DefectImage.js'
 import DictType from './DictType.js'
 import DictData from './DictData.js'
 import DataDictionary from './DataDictionary.js'
-import WorkOrderProcess from './WorkOrderProcess.js'
 
 // 建立模型关联关系
 // 用户 - 角色
 User.belongsTo(Role, { foreignKey: 'role_id', as: 'role' })
 Role.hasMany(User, { foreignKey: 'role_id', as: 'users' })
 
-// 订单 - 工单
-Order.hasMany(WorkOrder, { foreignKey: 'order_id', as: 'work_orders' })
-WorkOrder.belongsTo(Order, { foreignKey: 'order_id', as: 'order' })
+// 订单 - 生产报工单（一对多，订单下发后直接创建报工单）
+Order.hasMany(ReportOrder, { foreignKey: 'order_id', as: 'report_orders' })
+ReportOrder.belongsTo(Order, { foreignKey: 'order_id', as: 'order' })
 
-// 工单 - 料品（material_id 类型不兼容，禁用外键约束）
-WorkOrder.belongsTo(Material, { foreignKey: 'material_id', as: 'material', constraints: false })
-Material.hasMany(WorkOrder, { foreignKey: 'material_id', as: 'work_orders', constraints: false })
+// 报工单 - 料品
+ReportOrder.belongsTo(Material, { foreignKey: 'material_id', as: 'material' })
 
-// 工单 - 工序报工
-WorkOrder.hasMany(ProcessReport, { foreignKey: 'work_order_id', as: 'process_reports' })
-ProcessReport.belongsTo(WorkOrder, { foreignKey: 'work_order_id', as: 'work_order' })
+// 报工单 - 报工工序（一对多，从产线工序表继承）
+ReportOrder.hasMany(ReportProcess, { foreignKey: 'report_order_id', as: 'report_processes' })
+ReportProcess.belongsTo(ReportOrder, { foreignKey: 'report_order_id', as: 'report_order' })
 
-// 工单 - 人员投入记录
-WorkOrder.hasMany(ManpowerRecord, { foreignKey: 'work_order_id', as: 'manpower_records' })
-ManpowerRecord.belongsTo(WorkOrder, { foreignKey: 'work_order_id', as: 'work_order' })
+// 报工单 - 人员使用记录（一对多）
+ReportOrder.hasMany(ManpowerRecord, { foreignKey: 'report_order_id', as: 'manpower_records' })
+ManpowerRecord.belongsTo(ReportOrder, { foreignKey: 'report_order_id', as: 'report_order' })
 
-// 工单 - 工序不良记录
-WorkOrder.hasMany(ProcessDefect, { foreignKey: 'work_order_id', as: 'process_defects' })
-ProcessDefect.belongsTo(WorkOrder, { foreignKey: 'work_order_id', as: 'work_order' })
+// 报工单 - 报工不良记录（一对多）
+ReportOrder.hasMany(ProcessDefect, { foreignKey: 'report_order_id', as: 'process_defects' })
+ProcessDefect.belongsTo(ReportOrder, { foreignKey: 'report_order_id', as: 'report_order' })
 
-// 工单 - 异常工时记录
-WorkOrder.hasMany(ProcessException, { foreignKey: 'work_order_id', as: 'process_exceptions' })
-ProcessException.belongsTo(WorkOrder, { foreignKey: 'work_order_id', as: 'work_order' })
+// 报工单 - 异常工时记录（一对多）
+ReportOrder.hasMany(ProcessException, { foreignKey: 'report_order_id', as: 'process_exceptions' })
+ProcessException.belongsTo(ReportOrder, { foreignKey: 'report_order_id', as: 'report_order' })
 
-// 工单 - 制程物料记录
-WorkOrder.hasMany(ProcessMaterial, { foreignKey: 'work_order_id', as: 'process_materials' })
-ProcessMaterial.belongsTo(WorkOrder, { foreignKey: 'work_order_id', as: 'work_order' })
+// 报工单 - 报工物料记录（一对多）
+ReportOrder.hasMany(ProcessMaterial, { foreignKey: 'report_order_id', as: 'process_materials' })
+ProcessMaterial.belongsTo(ReportOrder, { foreignKey: 'report_order_id', as: 'report_order' })
 
-// 报工单 - 人员投入记录
-ProcessReport.hasMany(ManpowerRecord, { foreignKey: 'report_id', as: 'manpower_records' })
-ManpowerRecord.belongsTo(ProcessReport, { foreignKey: 'report_id', as: 'process_report' })
-
-// 报工单 - 工序不良记录
-ProcessReport.hasMany(ProcessDefect, { foreignKey: 'report_id', as: 'process_defects' })
-ProcessDefect.belongsTo(ProcessReport, { foreignKey: 'report_id', as: 'process_report' })
-
-// 报工单 - 异常工时记录
-ProcessReport.hasMany(ProcessException, { foreignKey: 'report_id', as: 'process_exceptions' })
-ProcessException.belongsTo(ProcessReport, { foreignKey: 'report_id', as: 'process_report' })
-
-// 报工单 - 制程物料记录
-ProcessReport.hasMany(ProcessMaterial, { foreignKey: 'report_id', as: 'process_materials' })
-ProcessMaterial.belongsTo(ProcessReport, { foreignKey: 'report_id', as: 'process_report' })
-
-// 制程物料 - 基础料品（bas_material_id 是 VARCHAR，material_id 是 INTEGER，禁用外键约束）
+// 报工物料 - 基础料品（bas_material_id 为字符串类型，与 material_id 整数类型不兼容，禁用 FK 约束）
 ProcessMaterial.belongsTo(Material, { foreignKey: 'bas_material_id', as: 'bas_material', constraints: false })
 
-// 报工单 - 异常图片记录
-ProcessReport.hasMany(ReportExceptionImage, { foreignKey: 'report_id', as: 'exception_images' })
-ReportExceptionImage.belongsTo(ProcessReport, { foreignKey: 'report_id', as: 'process_report' })
+// 报工单 - 报工图片记录（一对多）
+ReportOrder.hasMany(ReportImage, { foreignKey: 'report_order_id', as: 'report_images' })
+ReportImage.belongsTo(ReportOrder, { foreignKey: 'report_order_id', as: 'report_order' })
 
 // 角色 - 权限 (多对多)
 Role.belongsToMany(Permission, { through: RolePermission, foreignKey: 'role_id', otherKey: 'perm_id', as: 'permissions' })
@@ -118,10 +100,6 @@ DefectType.belongsTo(DefectType, { foreignKey: 'parent_id', as: 'parent', constr
 DefectType.hasMany(DefectImage, { foreignKey: 'defect_id', as: 'images' })
 DefectImage.belongsTo(DefectType, { foreignKey: 'defect_id', as: 'defect' })
 
-// 工单 - 工单工序（一对多）
-WorkOrder.hasMany(WorkOrderProcess, { foreignKey: 'work_order_id', as: 'work_order_processes' })
-WorkOrderProcess.belongsTo(WorkOrder, { foreignKey: 'work_order_id', as: 'work_order' })
-
 // 不良记录 - 不良分类（一对多）
 ProcessDefect.belongsTo(DefectType, { foreignKey: 'defect_type_id', as: 'defect_type' })
 DefectType.hasMany(ProcessDefect, { foreignKey: 'defect_type_id', as: 'process_defects' })
@@ -143,13 +121,13 @@ const db = {
   Device,
   DefectType,
   Order,
-  WorkOrder,
-  ProcessReport,
+  ReportOrder,
+  ReportProcess,
   ManpowerRecord,
   ProcessDefect,
   ProcessException,
   ProcessMaterial,
-  ReportExceptionImage,
+  ReportImage,
   SystemConfig,
   RolePermission,
   Sequence,
@@ -161,7 +139,6 @@ const db = {
   DictType,
   DictData,
   DataDictionary,
-  WorkOrderProcess,
 }
 
 // 具名导出，便于按需导入
@@ -176,13 +153,13 @@ export {
   Device,
   DefectType,
   Order,
-  WorkOrder,
-  ProcessReport,
+  ReportOrder,
+  ReportProcess,
   ManpowerRecord,
   ProcessDefect,
   ProcessException,
   ProcessMaterial,
-  ReportExceptionImage,
+  ReportImage,
   SystemConfig,
   RolePermission,
   Sequence,
@@ -194,7 +171,6 @@ export {
   DictType,
   DictData,
   DataDictionary,
-  WorkOrderProcess,
 }
 
 export default db

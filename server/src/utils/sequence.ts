@@ -16,7 +16,7 @@ import { NumberRule } from '../models/index.js'
  *
  * 编号格式规范（依据《奶粉罐生产管理系统开发设计文档V4.0》编号规则章节）：
  * - 订单号：MO-16 + YYMMDD + 3位序号          例：MO-16260705001
- * - 工单号：WO + YYMMDD + 3位序号              例：WO260705001
+ * - 报工单号：WO-16 + YYMMDD + 3位序号         例：WO-16260705001
  * - 来料检验：LL + YYMMDD + 3位序号             例：LL260705001
  * - 过程检验：GC + YYMMDD + 3位序号             例：GC260705001
  * - 成品检验：CP + YYMMDD + 3位序号             例：CP260705001
@@ -32,7 +32,7 @@ import { NumberRule } from '../models/index.js'
 // 序列键 → 编号生成配置（默认值；启动时会被 reloadRulesFromDB 覆盖）
 const SEQ_CONFIG: any = {
   ORDER:               { prefix: 'MO-16', datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
-  WORK_ORDER:          { prefix: 'WO',    datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
+  WORK_ORDER:          { prefix: 'WO-16', datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
   PROCESS_REPORT:      { prefix: 'RG',    datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
   INCOMING:            { prefix: 'LL',    datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
   PROCESS:             { prefix: 'GC',    datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
@@ -173,8 +173,7 @@ export function previewBizNo(ruleConfig: any, nextSeq: number = 1): string {
 
 // 便捷方法
 export const generateOrderNo            = () => generateBizNo('ORDER')
-export const generateWorkOrderNo        = () => generateBizNo('WORK_ORDER')
-export const generateProcessReportNo    = () => generateBizNo('PROCESS_REPORT')
+export const generateReportOrderNo      = () => generateBizNo('WORK_ORDER')
 export const generateIncomingNo         = () => generateBizNo('INCOMING')
 export const generateProcessInspectionNo = () => generateBizNo('PROCESS')
 export const generateFinishedNo         = () => generateBizNo('FINISHED')
@@ -197,7 +196,7 @@ export default {
   reloadRulesFromDB,
   getSeqConfig,
   generateOrderNo,
-  generateWorkOrderNo,
+  generateReportOrderNo,
   generateIncomingNo,
   generateProcessInspectionNo,
   generateFinishedNo,

@@ -1,0 +1,102 @@
+[
+  {
+    "dict_id": 1,
+    "dict_name": "用户状态",
+    "dict_type": "sys_user_status",
+    "status": 1,
+    "remark": "系统用户状态列表",
+    "created_by": "admin",
+    "created_at": "2026-07-09 14:53:38.544 +00:00",
+    "updated_at": "2026-07-09 14:53:38.544 +00:00"
+  },
+  {
+    "dict_id": 2,
+    "dict_name": "订单状态",
+    "dict_type": "prod_order_status",
+    "status": 1,
+    "remark": "生产订单状态",
+    "created_by": "admin",
+    "created_at": "2026-07-09 14:53:38.544 +00:00",
+    "updated_at": "2026-07-09 14:53:38.544 +00:00"
+  },
+  {
+    "dict_id": 3,
+    "dict_name": "工单状态",
+    "dict_type": "prod_work_order_status",
+    "status": 1,
+    "remark": "工单状态列表",
+    "created_by": "admin",
+    "created_at": "2026-07-09 14:53:38.544 +00:00",
+    "updated_at": "2026-07-09 14:53:38.544 +00:00"
+  },
+  {
+    "dict_id": 4,
+    "dict_name": "产线状态",
+    "dict_type": "bas_line_status",
+    "status": 1,
+    "remark": "产线运行状态",
+    "created_by": "admin",
+    "created_at": "2026-07-09 14:53:38.544 +00:00",
+    "updated_at": "2026-07-09 14:53:38.544 +00:00"
+  },
+  {
+    "dict_id": 5,
+    "dict_name": "班次",
+    "dict_type": "bas_shift_type",
+    "status": 1,
+    "remark": "生产班次",
+    "created_by": "admin",
+    "created_at": "2026-07-09 14:53:38.544 +00:00",
+    "updated_at": "2026-07-09 14:53:38.544 +00:00"
+  },
+  {
+    "dict_id": 6,
+    "dict_name": "不良大类",
+    "dict_type": "bas_defect_category",
+    "status": 1,
+    "remark": "不良分类大类名称",
+    "created_by": "admin",
+    "created_at": "2026-07-09 14:53:38.544 +00:00",
+    "updated_at": "2026-07-09 14:53:38.544 +00:00"
+  },
+  {
+    "dict_id": 7,
+    "dict_name": "不良类型",
+    "dict_type": "bas_defect_type",
+    "status": 1,
+    "remark": "不良分类名称",
+    "created_by": "admin",
+    "created_at": "2026-07-09 14:53:38.544 +00:00",
+    "updated_at": "2026-07-09 14:53:38.544 +00:00"
+  },
+  {
+    "dict_id": 8,
+    "dict_name": "异常类型",
+    "dict_type": "prod_exception_type",
+    "status": 1,
+    "remark": "生产异常类型",
+    "created_by": "admin",
+    "created_at": "2026-07-09 14:53:38.544 +00:00",
+    "updated_at": "2026-07-09 14:53:38.544 +00:00"
+  },
+  {
+    "dict_id": 9,
+    "dict_name": "设备状态",
+    "dict_type": "bas_device_status",
+    "status": 1,
+    "remark": "设备运行状态",
+    "created_by": "admin",
+    "created_at": "2026-07-09 14:53:38.544 +00:00",
+    "updated_at": "2026-07-09 14:53:38.544 +00:00"
+  },
+  {
+    "dict_id": 10,
+    "dict_name": "性别",
+    "dict_type": "sys_user_sex",
+    "status": 1,
+    "remark": "用户性别",
+    "created_by": "admin",
+    "created_at": "2026-07-09 14:53:38.544 +00:00",
+    "updated_at": "2026-07-09 14:53:38.544 +00:00"
+  }
+]

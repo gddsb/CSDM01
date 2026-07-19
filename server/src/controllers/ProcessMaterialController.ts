@@ -1,14 +1,12 @@
 import { Op } from 'sequelize'
-import { ProcessMaterial, WorkOrder, Process, Material } from '../models/index.js'
+import { ProcessMaterial, Material } from '../models/index.js'
 import { success, fail } from '../utils/response.js'
-import { syncWorkOrderSummary } from './ProcessReportController.js'
 
 export const list = async (req, res) => {
   try {
-    const { report_id, work_order_id, process_id, material_batch, page = 1, pageSize = 20 } = req.query
-    const where = {}
-    if (report_id) where.report_id = Number(report_id)
-    if (work_order_id) where.work_order_id = Number(work_order_id)
+    const { report_order_id, process_id, material_batch, page = 1, pageSize = 20 } = req.query
+    const where: any = {}
+    if (report_order_id) where.report_order_id = Number(report_order_id)
     if (process_id) where.process_id = Number(process_id)
     if (material_batch) where.material_batch = { [Op.like]: `%${material_batch}%` }
 
@@ -23,6 +21,7 @@ export const list = async (req, res) => {
         model: Material,
         as: 'bas_material',
         attributes: ['material_id', 'material_code', 'material_name', 'specification', 'unit_name'],
+        required: false,
       }],
     })
     const data = rows.map(r => {
@@ -45,8 +44,7 @@ export const list = async (req, res) => {
 export const create = async (req, res) => {
   try {
     const {
-      report_id,
-      work_order_id,
+      report_order_id,
       process_id,
       material_type,
       bas_material_id,
@@ -56,14 +54,13 @@ export const create = async (req, res) => {
       label_images,
     } = req.body
 
-    if (!work_order_id) return fail(res, '工单 ID 不能为空')
+    if (!report_order_id) return fail(res, '报工单 ID 不能为空')
     if (!process_id) return fail(res, '工序 ID 不能为空')
     if (!material_type) return fail(res, '物料类型不能为空')
     if (!quantity || quantity <= 0) return fail(res, '数量必须大于0')
 
     const material = await ProcessMaterial.create({
-      report_id: report_id || null,
-      work_order_id,
+      report_order_id,
       process_id,
       material_type,
       bas_material_id: bas_material_id || null,
@@ -73,7 +70,6 @@ export const create = async (req, res) => {
       label_images: label_images ? JSON.stringify(label_images) : null,
     })
 
-    await syncWorkOrderSummary(work_order_id)
     return success(res, material, '创建成功')
   } catch (err) {
     console.error('创建制程物料记录失败:', err)
@@ -105,7 +101,6 @@ export const update = async (req, res) => {
 
     await material.save()
 
-    await syncWorkOrderSummary(material.work_order_id)
     return success(res, material, '更新成功')
   } catch (err) {
     console.error('更新制程物料记录失败:', err)
@@ -118,9 +113,7 @@ export const remove = async (req, res) => {
     const { id } = req.params
     const material = await ProcessMaterial.findOne({ where: { material_id: id } })
     if (!material) return fail(res, '记录不存在', 404)
-    const workOrderId = material.work_order_id
     await material.destroy()
-    await syncWorkOrderSummary(workOrderId)
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除制程物料记录失败:', err)

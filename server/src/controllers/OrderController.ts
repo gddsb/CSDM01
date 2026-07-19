@@ -1,14 +1,44 @@
 import { Op } from 'sequelize'
-import { Order, WorkOrder, ManpowerRecord, ProcessException, Material } from '../models/index.js'
+import { Order, ReportOrder, Material } from '../models/index.js'
 import { success, fail } from '../utils/response.js'
-import { statusToNumber, statusToString, convertStatusInList, convertStatusInItem } from '../utils/statusMap.js'
 import { generateOrderNo } from '../utils/sequence.js'
 
-// 订单列表（支持 keyword/materialCode/status/planDateStart/planDateEnd 筛选）
+// 订单状态: 0=开立, 1=下发, 2=开工, 3=完工, 4=关闭
+const statusMap = { '开立': 0, '下发': 1, '开工': 2, '完工': 3, '关闭': 4 }
+
+// 将状态参数（字符串/数字/数组）转换为整数数组
+const parseStatusParam = (status) => {
+  if (status === undefined || status === '') return null
+  const arr = Array.isArray(status) ? status : [status]
+  const nums: number[] = []
+  arr.forEach(s => {
+    if (typeof s === 'string' && s.includes(',')) {
+      s.split(',').forEach(p => {
+        const n = statusMap[p] !== undefined ? statusMap[p] : Number(p)
+        if (!Number.isNaN(n)) nums.push(n)
+      })
+    } else {
+      const n = statusMap[s] !== undefined ? statusMap[s] : Number(s)
+      if (!Number.isNaN(n)) nums.push(n)
+    }
+  })
+  return nums.length ? nums : null
+}
+
+// 订单列表（支持 keyword/materialCode/materialName/status/planDateStart/planDateEnd 筛选）
 export const list = async (req, res) => {
   try {
-    const { keyword, materialCode, status, planDateStart, planDateEnd, page = 1, pageSize = 20 } = req.query
-    const where = {}
+    const {
+      keyword,
+      materialCode,
+      materialName,
+      status,
+      planDateStart,
+      planDateEnd,
+      page = 1,
+      pageSize = 20,
+    } = req.query
+    const where: any = {}
     if (keyword) {
       where[Op.or] = [
         { order_no: { [Op.like]: `%${keyword}%` } },
@@ -18,17 +48,12 @@ export const list = async (req, res) => {
     if (materialCode) {
       where.material_code = { [Op.like]: `%${materialCode}%` }
     }
-    if (status !== undefined && status !== '') {
-      const statusArr = Array.isArray(status) ? status : status.split(',')
-      const statusValues = statusArr.map(s => {
-        const statusMap = { '开立': 0, '下发': 1, '完工': 2 }
-        return statusMap[s] !== undefined ? statusMap[s] : Number(s)
-      }).filter(s => !isNaN(s))
-      if (statusValues.length === 1) {
-        where.status = statusValues[0]
-      } else if (statusValues.length > 1) {
-        where.status = { [Op.in]: statusValues }
-      }
+    if (materialName) {
+      where.material_name = { [Op.like]: `%${materialName}%` }
+    }
+    const statusNums = parseStatusParam(status)
+    if (statusNums) {
+      where.status = statusNums.length === 1 ? statusNums[0] : { [Op.in]: statusNums }
     }
     if (planDateStart || planDateEnd) {
       where.plan_start_time = {}
@@ -44,15 +69,14 @@ export const list = async (req, res) => {
       offset,
       order: [['order_no', 'DESC']],
     })
-    const list = convertStatusInList(rows.map(r => r.toJSON()), 'order')
-    return success(res, list, '查询成功', count)
+    return success(res, rows, '查询成功', count)
   } catch (err) {
     console.error('查询订单列表失败:', err)
     return fail(res, '服务器错误', 500)
   }
 }
 
-// 订单详情（含关联工单、人员、异常工时记录）
+// 订单详情（含关联生产报工单）
 export const detail = async (req, res) => {
   try {
     const { id } = req.params
@@ -60,12 +84,9 @@ export const detail = async (req, res) => {
       where: { order_id: id },
       include: [
         {
-          model: WorkOrder,
-          as: 'work_orders',
-          include: [
-            { model: ManpowerRecord, as: 'manpower_records' },
-            { model: ProcessException, as: 'process_exceptions' },
-          ],
+          model: ReportOrder,
+          as: 'report_orders',
+          required: false,
         },
       ],
     })
@@ -78,12 +99,33 @@ export const detail = async (req, res) => {
 }
 
 // 创建订单（自动生成订单号 MO-16+YYMMDD+3位序号）
+// 业务规则：料品下拉仅显示 C 开头且状态为生效的料品
 export const create = async (req, res) => {
   try {
     const { material_id, planned_qty, plan_start_time, plan_end_time } = req.body
     if (!material_id) {
       return fail(res, '料品 ID 不能为空')
     }
+    // 计划数量只能为正整数
+    if (planned_qty === undefined || !Number.isInteger(Number(planned_qty)) || Number(planned_qty) <= 0) {
+      return fail(res, '计划数量只能为正整数')
+    }
+    // 计划开始日期不得早于今天
+    if (plan_start_time) {
+      const startDate = new Date(plan_start_time)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      if (startDate < today) {
+        return fail(res, '计划开始日期不得早于今天')
+      }
+    }
+    // 计划完成日期不得早于计划开始日期
+    if (plan_start_time && plan_end_time) {
+      if (new Date(plan_end_time) < new Date(plan_start_time)) {
+        return fail(res, '计划完成日期不得早于计划开始日期')
+      }
+    }
+
     // 关联料品档案，冗余料品信息
     const material = await Material.findOne({ where: { material_id } })
     if (!material) return fail(res, '料品不存在', 404)
@@ -97,7 +139,7 @@ export const create = async (req, res) => {
       specification: material.specification,
       film_version: material.film_no,
       version_no: material.version_no,
-      planned_qty: planned_qty || 0,
+      planned_qty: Number(planned_qty),
       plan_start_time,
       plan_end_time,
       status: 0,
@@ -110,18 +152,40 @@ export const create = async (req, res) => {
   }
 }
 
-// 修改订单
+// 修改订单（仅"开立"状态可修改数量、计划开始日期、计划完成日期）
 export const update = async (req, res) => {
   try {
     const { id } = req.params
     const order = await Order.findOne({ where: { order_id: id } })
     if (!order) return fail(res, '订单不存在', 404)
-    // 已下发或已关闭的订单不允许修改关键字段
-    if (order.status !== '开立') {
-      return fail(res, '当前订单状态不允许修改')
+    if (order.getDataValue('status') !== 0) {
+      return fail(res, '只有开立状态的订单可以修改')
     }
-    const { material_id, planned_qty, plan_start_time, plan_end_time, status } = req.body
-    const updateData = { planned_qty, plan_start_time, plan_end_time, status }
+    const { material_id, planned_qty, plan_start_time, plan_end_time } = req.body
+
+    // 计划数量只能为正整数
+    if (planned_qty !== undefined && (!Number.isInteger(Number(planned_qty)) || Number(planned_qty) <= 0)) {
+      return fail(res, '计划数量只能为正整数')
+    }
+    // 计划开始日期不得早于今天
+    if (plan_start_time) {
+      const startDate = new Date(plan_start_time)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      if (startDate < today) {
+        return fail(res, '计划开始日期不得早于今天')
+      }
+    }
+    // 计划完成日期不得早于计划开始日期
+    const startForCheck = plan_start_time || order.plan_start_time
+    if (startForCheck && plan_end_time && new Date(plan_end_time) < new Date(startForCheck)) {
+      return fail(res, '计划完成日期不得早于计划开始日期')
+    }
+
+    const updateData: any = {}
+    if (planned_qty !== undefined) updateData.planned_qty = Number(planned_qty)
+    if (plan_start_time !== undefined) updateData.plan_start_time = plan_start_time
+    if (plan_end_time !== undefined) updateData.plan_end_time = plan_end_time
     // 若更换料品，同步冗余字段
     if (material_id && material_id !== order.material_id) {
       const material = await Material.findOne({ where: { material_id } })
@@ -141,18 +205,18 @@ export const update = async (req, res) => {
   }
 }
 
-// 删除订单
+// 删除订单（仅"开立"状态可删除）
 export const remove = async (req, res) => {
   try {
     const { id } = req.params
     const order = await Order.findOne({ where: { order_id: id } })
     if (!order) return fail(res, '订单不存在', 404)
-    if (order.status !== '开立') {
-      return fail(res, '当前订单状态不允许删除')
+    if (order.getDataValue('status') !== 0) {
+      return fail(res, '只有开立状态的订单可以删除')
     }
-    // 检查是否有关联工单
-    const woCount = await WorkOrder.count({ where: { order_id: id } })
-    if (woCount > 0) return fail(res, `该订单下存在 ${woCount} 个工单，无法删除`)
+    // 检查是否有关联报工单
+    const roCount = await ReportOrder.count({ where: { order_id: id } })
+    if (roCount > 0) return fail(res, `该订单下存在 ${roCount} 个报工单，无法删除`)
     await order.destroy()
     return success(res, null, '删除成功')
   } catch (err) {
@@ -161,13 +225,13 @@ export const remove = async (req, res) => {
   }
 }
 
-// 下发订单
+// 下发订单（开立 → 下发）
 export const release = async (req, res) => {
   try {
     const { id } = req.params
     const order = await Order.findOne({ where: { order_id: id } })
     if (!order) return fail(res, '订单不存在', 404)
-    if (order.status !== '开立') return fail(res, '当前订单状态不允许下发')
+    if (order.getDataValue('status') !== 0) return fail(res, '只有开立状态的订单可以下发')
     await order.update({ status: 1, release_time: new Date() })
     return success(res, order, '订单已下发')
   } catch (err) {
@@ -176,17 +240,20 @@ export const release = async (req, res) => {
   }
 }
 
-// 完工订单
+// 关闭订单（强制归档，不可逆；除"开立"外其他状态均可关闭）
+// 业务规则：订单"开工""完工"由报工单自动联动，"关闭"为最终归档状态
 export const close = async (req, res) => {
   try {
     const { id } = req.params
     const order = await Order.findOne({ where: { order_id: id } })
     if (!order) return fail(res, '订单不存在', 404)
-    if (order.status !== '下发') return fail(res, '当前订单状态不允许完工')
-    await order.update({ status: 2, close_time: new Date() })
-    return success(res, order, '订单已完工')
+    const statusVal = order.getDataValue('status')
+    if (statusVal === 0) return fail(res, '开立状态的订单请直接下发或删除，不能关闭')
+    if (statusVal === 4) return fail(res, '订单已关闭')
+    await order.update({ status: 4, close_time: new Date() })
+    return success(res, order, '订单已关闭')
   } catch (err) {
-    console.error('完工订单失败:', err)
+    console.error('关闭订单失败:', err)
     return fail(res, '服务器错误', 500)
   }
 }

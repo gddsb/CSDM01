@@ -1,26 +1,25 @@
 import sequelize from './config/database.js'
 import {
+  ReportImage,
+  ProcessMaterial,
+  ProcessDefect,
   ProcessException,
   ManpowerRecord,
-  ProcessReport,
-  WorkOrder,
-  Order,
-  ProcessDefect,
-  ProcessMaterial,
-  ReportExceptionImage,
-  WorkOrderProcess,
+  ReportProcess,
+  ReportOrder,
 } from './models/index.js'
 
+// 清除生产业务数据（保留基础数据和订单）
+// 按外键依赖顺序清除：先子表后主表
 const tables = [
-  { name: '异常图片记录 (production_report_exception_image)', model: ReportExceptionImage },
+  { name: '报工图片记录 (production_report_image)', model: ReportImage },
   { name: '制程物料记录 (production_process_material)', model: ProcessMaterial },
   { name: '工序不良记录 (production_process_defect)', model: ProcessDefect },
   { name: '异常工时记录 (production_process_exception)', model: ProcessException },
   { name: '人员投入记录 (production_manpower_record)', model: ManpowerRecord },
-  { name: '工单工序记录 (production_work_order_process)', model: WorkOrderProcess },
-  { name: '工序报工记录 (production_process_report)', model: ProcessReport },
-  { name: '生产工单 (production_work_order)', model: WorkOrder },
-  // 保留生产订单数据，仅清除工单和报工相关数据
+  { name: '报工工序记录 (production_report_process)', model: ReportProcess },
+  { name: '生产报工单 (production_report_order)', model: ReportOrder },
+  // 保留生产订单数据，仅清除报工相关数据
   // { name: '生产订单 (production_order)', model: Order },
 ]
 

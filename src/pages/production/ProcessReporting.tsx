@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   Table, Tag, Button, Modal, Input, InputNumber, Select, Space, Row, Col,
-  Card, Divider, Popconfirm, DatePicker, TimePicker, Tabs, Upload, Drawer, Image,
+  Card, Divider, Popconfirm, DatePicker, TimePicker, Tabs, Upload, Drawer, Image, Form,
 } from 'antd'
 import { useMessage } from '../../contexts/AppContext'
 import {
@@ -11,15 +11,10 @@ import {
 import dayjs from 'dayjs'
 import api from '../../utils/api'
 
-const woStatusColorMap = {
-  '开立': 'default',
-  '开工': 'processing',
-  '关闭': 'warning',
-}
-
-const reportStatusColorMap = {
-  '开始报工': 'processing',
-  '结束报工': 'success',
+// 报工单状态：0=开工，1=完工
+const reportOrderStatusMap = {
+  0: { label: '开工', color: 'processing' },
+  1: { label: '完工', color: 'success' },
 }
 
 const exceptionCategories = [
@@ -32,17 +27,22 @@ const exceptionCategories = [
 const genTempId = () => 'tmp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6)
 
 export default function ProcessReporting() {
-  const [workOrders, setWorkOrders] = useState([])
-  const [selectedWO, setSelectedWO] = useState(null)
-  const [reportList, setReportList] = useState([])
+  // 顶部下拉框数据：仅开工状态(status=0)的报工单
+  const [reportOrders, setReportOrders] = useState([])
   const [selectedReport, setSelectedReport] = useState(null)
-  const [reportStatus, setReportStatus] = useState('开始报工')
   const [defectTypes, setDefectTypes] = useState([])
   const [devices, setDevices] = useState([])
   const [lineProcesses, setLineProcesses] = useState([])
   const [loading, setLoading] = useState(false)
-  const [togglingStatus, setTogglingStatus] = useState(false)
+  const [finishingReport, setFinishingReport] = useState(false)
+  const [deletingReport, setDeletingReport] = useState(false)
+
+  // 新增报工单 Modal
+  const [createModalOpen, setCreateModalOpen] = useState(false)
   const [creatingReport, setCreatingReport] = useState(false)
+  const [orders, setOrders] = useState([])
+  const [lines, setLines] = useState([])
+  const [createForm] = Form.useForm()
 
   const [selectedProcessId, setSelectedProcessId] = useState(null)
   const [activeTab, setActiveTab] = useState('production-defect')
@@ -115,17 +115,22 @@ export default function ProcessReporting() {
       }))
   }, [defectTypes])
 
+  // 初始加载：不良类型、设备、订单、产线
   useEffect(() => {
     let cancelled = false
     const run = async () => {
       try {
-        const [defectRes, devRes] = await Promise.all([
+        const [defectRes, devRes, ordersRes, linesRes] = await Promise.all([
           api.get('/basic/defect-types', { params: { page: 1, pageSize: 1000, status: '启用' } }),
           api.get('/basic/devices', { params: { page: 1, pageSize: 1000 } }),
+          api.get('/production/orders', { params: { page: 1, pageSize: 1000, status: '下发' } }),
+          api.get('/basic/production-lines', { params: { page: 1, pageSize: 1000 } }),
         ])
         if (cancelled) return
         setDefectTypes(defectRes.data || [])
         setDevices(devRes.data || [])
+        setOrders(ordersRes.data || [])
+        setLines(linesRes.data || [])
       } catch (err) {
         if (!cancelled) message.error(err.message || '获取基础数据失败')
       }
@@ -134,60 +139,43 @@ export default function ProcessReporting() {
     return () => { cancelled = true }
   }, [])
 
-  useEffect(() => {
-    let cancelled = false
-    const run = async () => {
-      setLoading(true)
-      try {
-        const res = await api.get('/production/work-orders', { params: { page: 1, pageSize: 1000, status: '开工' } })
-        if (cancelled) return
-        setWorkOrders(res.data || [])
-      } catch (err) {
-        if (!cancelled) {
-          message.error(err.message || '获取工单列表失败')
-          setWorkOrders([])
-        }
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
+  // 获取报工单列表（仅开工状态 status=0）
+  const fetchReportOrders = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await api.get('/production/report-orders', { params: { page: 1, pageSize: 1000, status: 0 } })
+      setReportOrders(res.data || [])
+    } catch (err) {
+      message.error(err.message || '获取报工单列表失败')
+      setReportOrders([])
+    } finally {
+      setLoading(false)
     }
-    run()
-    return () => { cancelled = true }
   }, [])
 
-  // 获取工单工序（从工单工序表获取，而非产线工序）
-  const fetchWorkOrderProcesses = useCallback(async (workOrderId) => {
-    if (!workOrderId) {
+  useEffect(() => {
+    fetchReportOrders()
+  }, [fetchReportOrders])
+
+  // 获取报工单工序（从报工单工序子表 report_processes 获取）
+  const fetchReportProcesses = useCallback(async (reportOrderId) => {
+    if (!reportOrderId) {
       setLineProcesses([])
       return
     }
     try {
-      const res = await api.get(`/production/work-orders/${workOrderId}/processes`)
+      const res = await api.get(`/production/report-orders/${reportOrderId}/processes`)
       const procs = res.data || []
       const sorted = [...procs].sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0))
       setLineProcesses(sorted)
       if (sorted.length > 0) {
         setSelectedProcessId(sorted[0].process_id)
+      } else {
+        setSelectedProcessId(null)
       }
     } catch (err) {
       setLineProcesses([])
-    }
-  }, [])
-
-  const fetchReportList = useCallback(async (woId) => {
-    try {
-      const res = await api.get('/production/process-reports', { params: { work_order_id: woId, page: 1, pageSize: 1000 } })
-      const list = res.data || []
-      setReportList(list)
-      if (list.length > 0) {
-        setSelectedReport(list[0])
-      } else {
-        setSelectedReport(null)
-      }
-    } catch (err) {
-      message.error(err.message || '获取报工单列表失败')
-      setReportList([])
-      setSelectedReport(null)
+      setSelectedProcessId(null)
     }
   }, [])
 
@@ -280,15 +268,15 @@ export default function ProcessReporting() {
     }))
   }
 
-  const fetchAllData = useCallback(async (reportId) => {
-    if (!reportId || !selectedProcessId) return
+  const fetchAllData = useCallback(async (reportOrderId) => {
+    if (!reportOrderId || !selectedProcessId) return
     try {
       const [defectRes, scrapRes, exceptionRes, manpowerRes, materialRes] = await Promise.all([
-        api.get('/production/process-defects', { params: { report_id: reportId, process_id: selectedProcessId, page: 1, pageSize: 1000 } }),
-        api.get('/production/scrap-defects', { params: { report_id: reportId, page: 1, pageSize: 1000 } }),
-        api.get('/production/process-exceptions', { params: { report_id: reportId, page: 1, pageSize: 1000 } }),
-        api.get('/production/manpower-records', { params: { report_id: reportId, page: 1, pageSize: 1000 } }),
-        api.get('/production/process-materials', { params: { report_id: reportId, process_id: selectedProcessId, page: 1, pageSize: 1000 } }),
+        api.get('/production/process-defects', { params: { report_order_id: reportOrderId, process_id: selectedProcessId, page: 1, pageSize: 1000 } }),
+        api.get('/production/scrap-defects', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } }),
+        api.get('/production/process-exceptions', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } }),
+        api.get('/production/manpower-records', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } }),
+        api.get('/production/process-materials', { params: { report_order_id: reportOrderId, process_id: selectedProcessId, page: 1, pageSize: 1000 } }),
       ])
       setProdDefectList((defectRes.data || []).map(d => {
         // 历史数据可能缺少 defect_code/defect_type，从下拉选项补充
@@ -333,17 +321,17 @@ export default function ProcessReporting() {
     } catch (err) {
       message.error(err.message || '获取数据失败')
     }
-  }, [selectedReport, selectedProcessId, defectTypeOptions, scrapTypeOptions, materialOptions])
+  }, [selectedProcessId, defectTypeOptions, scrapTypeOptions, materialOptions])
 
   // 获取整个报工单的统计数据（不按工序过滤）
-  const fetchReportStats = useCallback(async (reportId) => {
-    if (!reportId) return
+  const fetchReportStats = useCallback(async (reportOrderId) => {
+    if (!reportOrderId) return
     try {
       const [defectRes, scrapRes, exceptionRes, materialRes] = await Promise.all([
-        api.get('/production/process-defects', { params: { report_id: reportId, page: 1, pageSize: 1000 } }),
-        api.get('/production/scrap-defects', { params: { report_id: reportId, page: 1, pageSize: 1000 } }),
-        api.get('/production/process-exceptions', { params: { report_id: reportId, page: 1, pageSize: 1000 } }),
-        api.get('/production/process-materials', { params: { report_id: reportId, page: 1, pageSize: 1000 } }),
+        api.get('/production/process-defects', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } }),
+        api.get('/production/scrap-defects', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } }),
+        api.get('/production/process-exceptions', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } }),
+        api.get('/production/process-materials', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } }),
       ])
       const allDefects = defectRes.data || []
       const allScraps = scrapRes.data || []
@@ -374,7 +362,7 @@ export default function ProcessReporting() {
 
       setStats({
         inputQty: Number(inputQty.toFixed(2)),
-        outputQty: selectedReport?.output_qty || 0,
+        outputQty: Number(selectedReport?.report_qty || 0),
         defectMaterial: Number(defectMaterial.toFixed(2)),
         defectProcess: Number(defectProcess.toFixed(2)),
         defectScrap: Number(defectScrapTotal.toFixed(2)),
@@ -396,10 +384,9 @@ export default function ProcessReporting() {
 
   // ===== useEffect 依赖回调函数的部分，必须放在所有 useCallback 之后 =====
 
+  // 报工单切换：拉取工序 + 物料主数据，清空子记录
   useEffect(() => {
-    if (!selectedWO) {
-      setReportList([])
-      setSelectedReport(null)
+    if (!selectedReport) {
       setLineProcesses([])
       setSelectedProcessId(null)
       setProdDefectList([])
@@ -408,21 +395,19 @@ export default function ProcessReporting() {
       setManpowerList([])
       setMaterialList([])
       setStats({ inputQty: 0, outputQty: 0, defectMaterial: 0, defectProcess: 0, defectScrap: 0, exceptionHours: 0 })
-      setReportStatus('开始报工')
       return
     }
-    fetchWorkOrderProcesses(selectedWO.work_order_id)
-    fetchReportList(selectedWO.work_order_id)
+    fetchReportProcesses(selectedReport.report_order_id)
     fetchMaterials()
-  }, [selectedWO, fetchWorkOrderProcesses, fetchReportList, fetchMaterials])
+  }, [selectedReport, fetchReportProcesses, fetchMaterials])
 
-  // 报工单级别统计数据（当前工单/报工单汇总，不按工序过滤）
+  // 报工单级别统计数据（当前报工单汇总，不按工序过滤）
   useEffect(() => {
     if (!selectedReport) {
       setStats({ inputQty: 0, outputQty: 0, defectMaterial: 0, defectProcess: 0, defectScrap: 0, exceptionHours: 0 })
       return
     }
-    fetchReportStats(selectedReport.report_id)
+    fetchReportStats(selectedReport.report_order_id)
   }, [selectedReport, lineProcesses, fetchReportStats])
 
   // 当前工序列表数据
@@ -433,70 +418,105 @@ export default function ProcessReporting() {
       setExceptionList([])
       setManpowerList([])
       setMaterialList([])
-      setReportStatus('开始报工')
       return
     }
-    setReportStatus(selectedReport.status || '开始报工')
-    fetchAllData(selectedReport.report_id)
+    fetchAllData(selectedReport.report_order_id)
   }, [selectedReport, selectedProcessId, fetchAllData])
 
-  const isEditable = reportStatus === '开始报工'
+  // 报工单状态：0=开工（可编辑），1=完工（只读）
+  const isEditable = selectedReport?.status === 0
 
+  // 打开新增报工 Modal
+  const handleOpenCreateModal = () => {
+    createForm.resetFields()
+    createForm.setFieldsValue({ report_qty: 0, remarks: '' })
+    setCreateModalOpen(true)
+  }
+
+  // 提交新增报工单
   const handleCreateReport = async () => {
-    if (!selectedWO) {
-      message.warning('请先选择生产工单')
-      return
-    }
     try {
+      const values = await createForm.validateFields()
       setCreatingReport(true)
-      const res = await api.post('/production/process-reports', {
-        work_order_id: selectedWO.work_order_id,
+      const res = await api.post('/production/report-orders', {
+        order_id: values.order_id,
+        line_id: values.line_id,
+        report_qty: values.report_qty,
+        remarks: values.remarks || '',
       })
       message.success('报工单创建成功')
-      await fetchReportList(selectedWO.work_order_id)
+      setCreateModalOpen(false)
+      await fetchReportOrders()
       if (res.data) {
+        // 创建后端会自动从产线工序继承到 report_processes 子表
         setSelectedReport(res.data)
       }
     } catch (err) {
+      if (err?.errorFields) return // 表单校验失败
       message.error(err.message || '创建报工单失败')
     } finally {
       setCreatingReport(false)
     }
   }
 
-  const handleToggleReportStatus = () => {
+  // 完工报工单（开工 → 完工，单向）
+  const handleFinishReport = async () => {
     if (!selectedReport) return
-    const action = reportStatus === '开始报工' ? 'end' : 'start'
-    const title = action === 'end' ? '确认结束报工' : '确认开始报工'
-    const content = action === 'end' ? '结束报工后所有数据将变为只读，确认继续？' : '开始报工后数据可编辑，确认继续？'
-    Modal.confirm({
-      title,
-      content,
-      okText: '确认',
-      cancelText: '取消',
-      onOk: async () => {
-        try {
-          setTogglingStatus(true)
-          const res = await api.post(`/production/process-reports/${selectedReport.report_id}/toggle-status`, { action })
-          const newStatus = res.data?.status || (action === 'end' ? '结束报工' : '开始报工')
-          setReportStatus(newStatus)
-          setSelectedReport(prev => prev ? { ...prev, status: newStatus } : null)
-          setReportList(prev => prev.map(r => r.report_id === selectedReport.report_id ? { ...r, status: newStatus } : r))
-          message.success(res.message || '操作成功')
-          fetchAllData(selectedReport.report_id)
-          fetchReportStats(selectedReport.report_id)
-        } catch (err) {
-          message.error(err.message || '操作失败')
-        } finally {
-          setTogglingStatus(false)
-        }
-      },
-    })
+    try {
+      setFinishingReport(true)
+      const res = await api.post(`/production/report-orders/${selectedReport.report_order_id}/finish`)
+      const updated = res.data || { ...selectedReport, status: 1, finish_time: new Date() }
+      setSelectedReport(updated)
+      // 完工后该报工单不再出现在下拉框（只显示开工状态）
+      await fetchReportOrders()
+      message.success(res.message || '已完工')
+    } catch (err) {
+      message.error(err.message || '操作失败')
+    } finally {
+      setFinishingReport(false)
+    }
+  }
+
+  // 删除报工单（仅开工状态可删，后端会检查关联子记录）
+  const handleDeleteReport = async () => {
+    if (!selectedReport) return
+    try {
+      setDeletingReport(true)
+      await api.delete(`/production/report-orders/${selectedReport.report_order_id}`)
+      message.success('删除成功')
+      setSelectedReport(null)
+      setReportOrders(prev => prev.filter(r => r.report_order_id !== selectedReport.report_order_id))
+    } catch (err) {
+      message.error(err.message || '删除失败')
+    } finally {
+      setDeletingReport(false)
+    }
   }
 
   const deviceOptions = useMemo(() => {
     return devices.map(d => ({ label: `${d.device_code} ${d.device_name}`, value: d.device_id }))
   }, [devices])
+
+  // 新增报工 Modal 的订单下拉选项（仅"下发"状态可创建报工单）
+  const orderOptions = useMemo(() => {
+    return orders
+      .filter(o => o.status === '下发')
+      .map(o => ({
+        label: `${o.order_no} (${o.material_name || '-'})`,
+        value: o.order_id,
+        order_no: o.order_no || '',
+        material_code: o.material_code || '',
+        material_name: o.material_name || '',
+        specification: o.specification || '',
+      }))
+  }, [orders])
+
+  // 新增报工 Modal 的产线下拉选项（仅运行中）
+  const lineOptions = useMemo(() => {
+    return lines
+      .filter(l => l.status === '运行中')
+      .map(l => ({ label: l.line_name, value: l.line_id }))
+  }, [lines])
 
   const saveProdDefectItem = async (item) => {
     if (!selectedReport || !selectedProcessId) return
@@ -512,8 +532,7 @@ export default function ProcessReporting() {
       } else {
         const defect = defectTypeOptions.find(d => d.value === item.defect_type_id)
         const res = await api.post('/production/process-defects', {
-          report_id: selectedReport.report_id,
-          work_order_id: selectedWO.work_order_id,
+          report_order_id: selectedReport.report_order_id,
           process_id: selectedProcessId,
           defect_category: '制程不良',
           defect_type_id: item.defect_type_id,
@@ -526,7 +545,7 @@ export default function ProcessReporting() {
           d.id === item.id ? { ...res.data, id: res.data.defect_id, defect_images: parseImages(res.data.defect_images) } : d
         ))
       }
-      fetchReportStats(selectedReport.report_id)
+      fetchReportStats(selectedReport.report_order_id)
     } catch (err) {
       message.error(err.message || '保存失败')
     }
@@ -557,8 +576,7 @@ export default function ProcessReporting() {
         // 新增记录（空行情况）
         const newItem = {
           id: recordId,
-          report_id: selectedReport?.report_id,
-          work_order_id: selectedWO?.work_order_id,
+          report_order_id: selectedReport?.report_order_id,
           process_id: selectedProcessId,
           defect_category: '制程不良',
           defect_type_id: null,
@@ -608,8 +626,7 @@ export default function ProcessReporting() {
       if (hasEmptyRow) return prev
       return [...prev, {
         id: genTempId(),
-        report_id: selectedReport.report_id,
-        work_order_id: selectedWO?.work_order_id,
+        report_order_id: selectedReport.report_order_id,
         process_id: selectedProcessId,
         defect_category: '制程不良',
         defect_type_id: null,
@@ -632,7 +649,7 @@ export default function ProcessReporting() {
       await api.delete(`/production/process-defects/${item.defect_id}`)
       setProdDefectList(prev => prev.filter(d => d.id !== item.id))
       message.success('删除成功')
-      if (selectedReport) fetchReportStats(selectedReport.report_id)
+      if (selectedReport) fetchReportStats(selectedReport.report_order_id)
     } catch (err) {
       message.error(err.message || '删除失败')
     }
@@ -766,8 +783,7 @@ export default function ProcessReporting() {
       } else {
         const defect = scrapTypeOptions.find(d => d.value === item.defect_type_id)
         const res = await api.post('/production/scrap-defects', {
-          report_id: selectedReport.report_id,
-          work_order_id: selectedWO.work_order_id,
+          report_order_id: selectedReport.report_order_id,
           defect_type_id: item.defect_type_id,
           quantity: item.quantity,
           unit: defect?.defect_unit || item.unit,
@@ -777,7 +793,7 @@ export default function ProcessReporting() {
           d.id === item.id ? { ...res.data, id: res.data.scrap_id, defect_images: parseImages(res.data.defect_images) } : d
         ))
       }
-      fetchReportStats(selectedReport.report_id)
+      fetchReportStats(selectedReport.report_order_id)
     } catch (err) {
       message.error(err.message || '保存失败')
     }
@@ -808,8 +824,7 @@ export default function ProcessReporting() {
         // 新增记录（空行情况）
         const newItem = {
           id: recordId,
-          report_id: selectedReport?.report_id,
-          work_order_id: selectedWO?.work_order_id,
+          report_order_id: selectedReport?.report_order_id,
           defect_category: '检验报废',
           defect_type_id: null,
           defect_code: '',
@@ -858,8 +873,7 @@ export default function ProcessReporting() {
       if (hasEmptyRow) return prev
       return [...prev, {
         id: genTempId(),
-        report_id: selectedReport.report_id,
-        work_order_id: selectedWO?.work_order_id,
+        report_order_id: selectedReport.report_order_id,
         defect_category: '检验报废',
         defect_type_id: null,
         defect_code: '',
@@ -881,7 +895,7 @@ export default function ProcessReporting() {
       await api.delete(`/production/scrap-defects/${item.scrap_id}`)
       setScrapDefectList(prev => prev.filter(d => d.id !== item.id))
       message.success('删除成功')
-      if (selectedReport) fetchReportStats(selectedReport.report_id)
+      if (selectedReport) fetchReportStats(selectedReport.report_order_id)
     } catch (err) {
       message.error(err.message || '删除失败')
     }
@@ -1016,8 +1030,7 @@ export default function ProcessReporting() {
         })
       } else {
         const res = await api.post('/production/process-materials', {
-          report_id: selectedReport.report_id,
-          work_order_id: selectedWO.work_order_id,
+          report_order_id: selectedReport.report_order_id,
           process_id: selectedProcessId,
           material_type: item.material_type || '投入',
           bas_material_id: item.bas_material_id,
@@ -1030,7 +1043,7 @@ export default function ProcessReporting() {
           m.id === item.id ? { ...res.data, id: res.data.material_id, label_images: parseImages(res.data.label_images) } : m
         ))
       }
-      fetchReportStats(selectedReport.report_id)
+      fetchReportStats(selectedReport.report_order_id)
     } catch (err) {
       message.error(err.message || '保存失败')
     }
@@ -1066,8 +1079,7 @@ export default function ProcessReporting() {
         // 新增记录（空行情况）
         const newItem = {
           id: recordId,
-          report_id: selectedReport?.report_id,
-          work_order_id: selectedWO?.work_order_id,
+          report_order_id: selectedReport?.report_order_id,
           process_id: selectedProcessId,
           material_type: '投入',
           material_id: null,
@@ -1108,7 +1120,7 @@ export default function ProcessReporting() {
       await api.delete(`/production/process-materials/${item.material_id}`)
       setMaterialList(prev => prev.filter(m => m.id !== item.id))
       message.success('删除成功')
-      if (selectedReport) fetchReportStats(selectedReport.report_id)
+      if (selectedReport) fetchReportStats(selectedReport.report_order_id)
     } catch (err) {
       message.error(err.message || '删除失败')
     }
@@ -1120,8 +1132,7 @@ export default function ProcessReporting() {
     if (hasEmptyRow) return materialList
     const emptyRow = {
       id: genTempId(),
-      report_id: selectedReport.report_id,
-      work_order_id: selectedWO?.work_order_id,
+      report_order_id: selectedReport.report_order_id,
       process_id: selectedProcessId,
       material_type: '投入',
       material_id: null,
@@ -1135,7 +1146,7 @@ export default function ProcessReporting() {
       label_images: [],
     }
     return [...materialList, emptyRow]
-  }, [materialList, isEditable, selectedReport, selectedWO, selectedProcessId])
+  }, [materialList, isEditable, selectedReport, selectedProcessId])
 
   const isFirstProcess = useMemo(() => {
     if (!lineProcesses.length || !selectedProcessId) return false
@@ -1158,8 +1169,8 @@ export default function ProcessReporting() {
     const run = async () => {
       try {
         const [defectRes, materialRes] = await Promise.all([
-          api.get('/production/process-defects', { params: { report_id: selectedReport.report_id, process_id: prevProcessId, page: 1, pageSize: 1000 } }),
-          api.get('/production/process-materials', { params: { report_id: selectedReport.report_id, process_id: prevProcessId, page: 1, pageSize: 1000 } }),
+          api.get('/production/process-defects', { params: { report_order_id: selectedReport.report_order_id, process_id: prevProcessId, page: 1, pageSize: 1000 } }),
+          api.get('/production/process-materials', { params: { report_order_id: selectedReport.report_order_id, process_id: prevProcessId, page: 1, pageSize: 1000 } }),
         ])
         if (cancelled) return
         const prevDefects = defectRes.data || []
@@ -1363,8 +1374,7 @@ export default function ProcessReporting() {
         })
       } else {
         const res = await api.post('/production/process-exceptions', {
-          report_id: selectedReport.report_id,
-          work_order_id: selectedWO.work_order_id,
+          report_order_id: selectedReport.report_order_id,
           exception_type: item.exception_type,
           device_id: item.device_id,
           stop_type: item.stop_type,
@@ -1377,7 +1387,7 @@ export default function ProcessReporting() {
           e.id === item.id ? { ...res.data, id: res.data.exception_id, exception_images: parseImages(res.data.exception_images) } : e
         ))
       }
-      fetchReportStats(selectedReport.report_id)
+      fetchReportStats(selectedReport.report_order_id)
     } catch (err) {
       message.error(err.message || '保存失败')
     }
@@ -1394,8 +1404,8 @@ export default function ProcessReporting() {
           const updated = { ...item, [field]: value }
           if (field === 'start_time' || field === 'end_time') {
             if (updated.start_time && updated.end_time) {
-              const start = new Date(updated.start_time)
-              const end = new Date(updated.end_time)
+              const start = new Date(updated.start_time).getTime()
+              const end = new Date(updated.end_time).getTime()
               updated.duration = Number(((end - start) / 3600000).toFixed(2))
             }
           }
@@ -1411,8 +1421,7 @@ export default function ProcessReporting() {
         // 新增记录（空行情况）
         const newItem = {
           id: recordId,
-          report_id: selectedReport?.report_id,
-          work_order_id: selectedWO?.work_order_id,
+          report_order_id: selectedReport?.report_order_id,
           exception_type: field === 'exception_type' ? value : '',
           device_id: field === 'device_id' ? value : null,
           device_name: '',
@@ -1443,7 +1452,7 @@ export default function ProcessReporting() {
       await api.delete(`/production/process-exceptions/${item.exception_id}`)
       setExceptionList(prev => prev.filter(e => e.id !== item.id))
       message.success('删除成功')
-      if (selectedReport) fetchReportStats(selectedReport.report_id)
+      if (selectedReport) fetchReportStats(selectedReport.report_order_id)
     } catch (err) {
       message.error(err.message || '删除失败')
     }
@@ -1455,8 +1464,7 @@ export default function ProcessReporting() {
     if (hasEmptyRow) return exceptionList
     const emptyRow = {
       id: genTempId(),
-      report_id: selectedReport.report_id,
-      work_order_id: selectedWO?.work_order_id,
+      report_order_id: selectedReport.report_order_id,
       exception_type: '',
       device_id: null,
       device_name: '',
@@ -1468,7 +1476,7 @@ export default function ProcessReporting() {
       exception_images: [],
     }
     return [...exceptionList, emptyRow]
-  }, [exceptionList, isEditable, selectedReport, selectedWO])
+  }, [exceptionList, isEditable, selectedReport])
 
   const exceptionColumns = [
     {
@@ -1512,10 +1520,10 @@ export default function ProcessReporting() {
               const today = dayjs().format('YYYY-MM-DD')
               const timeStr = d.format('HH:mm:ss')
               const newTime = `${today}T${timeStr}`
-              // 开始时间不能早于报工开始时间
-              const reportStart = selectedReport?.report_start_time
+              // 开始时间不能早于报工时间
+              const reportStart = selectedReport?.report_time
               if (reportStart && dayjs(newTime).isBefore(dayjs(reportStart))) {
-                message.warning('开始时间不能早于报工开始时间')
+                message.warning('开始时间不能早于报工时间')
                 return
               }
               handleExceptionChange(record.id, 'start_time', newTime)
@@ -1540,12 +1548,6 @@ export default function ProcessReporting() {
               const today = dayjs().format('YYYY-MM-DD')
               const timeStr = d.format('HH:mm:ss')
               const newTime = `${today}T${timeStr}`
-              // 结束时间不能大于报工结束时间
-              const reportEnd = selectedReport?.report_end_time
-              if (reportEnd && dayjs(newTime).isAfter(dayjs(reportEnd))) {
-                message.warning('结束时间不能大于报工结束时间')
-                return
-              }
               // 结束时间不能小于开始时间
               const startTime = record.start_time
               if (startTime && dayjs(newTime).isBefore(dayjs(startTime))) {
@@ -1601,8 +1603,7 @@ export default function ProcessReporting() {
         })
       } else {
         const res = await api.post('/production/manpower-records', {
-          report_id: selectedReport.report_id,
-          work_order_id: selectedWO.work_order_id,
+          report_order_id: selectedReport.report_order_id,
           record_date: item.record_date,
           shift: item.shift,
           start_time: item.start_time,
@@ -1637,8 +1638,8 @@ export default function ProcessReporting() {
           const ot = Number(updated.other_count) || 0
           updated.total_people = sk + gn + lb + ot
           if (updated.start_time && updated.end_time) {
-            const start = new Date(updated.start_time)
-            const end = new Date(updated.end_time)
+            const start = new Date(updated.start_time).getTime()
+            const end = new Date(updated.end_time).getTime()
             const hours = ((end - start) / 3600000)
             updated.hours = hours > 0 ? Number(hours.toFixed(2)) : 0
             updated.man_hours = Number((updated.hours * updated.total_people).toFixed(2))
@@ -1655,12 +1656,11 @@ export default function ProcessReporting() {
         // 新增记录（空行情况）
         const newItem = {
           id: recordId,
-          report_id: selectedReport?.report_id,
-          work_order_id: selectedWO?.work_order_id,
+          report_order_id: selectedReport?.report_order_id,
           record_date: dayjs().format('YYYY-MM-DD'),
           shift: '白班',
-          start_time: selectedReport?.report_start_time || null,
-          end_time: selectedReport?.report_end_time || null,
+          start_time: selectedReport?.report_time || null,
+          end_time: null,
           hours: 0,
           skilled_count: 0,
           general_count: 0,
@@ -1701,8 +1701,7 @@ export default function ProcessReporting() {
     if (hasEmptyRow) return manpowerList
     const emptyRow = {
       id: genTempId(),
-      report_id: selectedReport.report_id,
-      work_order_id: selectedWO?.work_order_id,
+      report_order_id: selectedReport.report_order_id,
       record_date: dayjs().format('YYYY-MM-DD'),
       shift: '白班',
       start_time: null,
@@ -1717,7 +1716,7 @@ export default function ProcessReporting() {
       remarks: '',
     }
     return [...manpowerList, emptyRow]
-  }, [manpowerList, isEditable, selectedReport, selectedWO])
+  }, [manpowerList, isEditable, selectedReport])
 
   const manpowerColumns = [
     {
@@ -1750,10 +1749,10 @@ export default function ProcessReporting() {
               const today = dayjs().format('YYYY-MM-DD')
               const timeStr = d.format('HH:mm:ss')
               const newTime = `${today}T${timeStr}`
-              // 开始时间不能早于报工开始时间
-              const reportStart = selectedReport?.report_start_time
+              // 开始时间不能早于报工时间
+              const reportStart = selectedReport?.report_time
               if (reportStart && dayjs(newTime).isBefore(dayjs(reportStart))) {
-                message.warning('开始时间不能早于报工开始时间')
+                message.warning('开始时间不能早于报工时间')
                 return
               }
               handleManpowerChange(record.id, 'start_time', newTime)
@@ -1778,12 +1777,6 @@ export default function ProcessReporting() {
               const today = dayjs().format('YYYY-MM-DD')
               const timeStr = d.format('HH:mm:ss')
               const newTime = `${today}T${timeStr}`
-              // 结束时间不能大于报工结束时间
-              const reportEnd = selectedReport?.report_end_time
-              if (reportEnd && dayjs(newTime).isAfter(dayjs(reportEnd))) {
-                message.warning('结束时间不能大于报工结束时间')
-                return
-              }
               // 结束时间不能小于开始时间
               const startTime = record.start_time
               if (startTime && dayjs(newTime).isBefore(dayjs(startTime))) {
@@ -1937,7 +1930,7 @@ export default function ProcessReporting() {
                 {isEditable ? (
                   <Tag color="blue">表格末尾空行可直接录入，修改后自动保存</Tag>
                 ) : (
-                  <Tag color="default">已结束报工，数据只读</Tag>
+                  <Tag color="default">已完工，数据只读</Tag>
                 )}
               </Col>
             </Row>
@@ -1968,7 +1961,7 @@ export default function ProcessReporting() {
                 {isEditable ? (
                   <Tag color="blue">点击"添加"录入数据后，点"保存"提交</Tag>
                 ) : (
-                  <Tag color="default">已结束报工，数据只读</Tag>
+                  <Tag color="default">已完工，数据只读</Tag>
                 )}
               </Col>
             </Row>
@@ -1994,7 +1987,7 @@ export default function ProcessReporting() {
                 {isEditable ? (
                   <Tag color="blue">表格末尾空行可直接录入，修改后自动保存</Tag>
                 ) : (
-                  <Tag color="default">已结束报工，数据只读</Tag>
+                  <Tag color="default">已完工，数据只读</Tag>
                 )}
               </Col>
             </Row>
@@ -2020,7 +2013,7 @@ export default function ProcessReporting() {
                 {isEditable ? (
                   <Tag color="blue">表格末尾空行可直接录入，修改后自动保存</Tag>
                 ) : (
-                  <Tag color="default">已结束报工，数据只读</Tag>
+                  <Tag color="default">已完工，数据只读</Tag>
                 )}
               </Col>
             </Row>
@@ -2046,119 +2039,132 @@ export default function ProcessReporting() {
         <Row gutter={16} align="middle" style={{ marginBottom: 12 }}>
           <Col span={10}>
             <Space>
-              <span style={{ fontWeight: 'bold' }}>生产工单：</span>
+              <span style={{ fontWeight: 'bold' }}>报工单：</span>
               <Select
-                value={selectedWO?.work_order_id || undefined}
+                value={selectedReport?.report_order_id || undefined}
                 onChange={(val) => {
-                  const wo = workOrders.find(w => w.work_order_id === val)
-                  setSelectedWO(wo || null)
+                  const r = reportOrders.find(r => r.report_order_id === val)
+                  setSelectedReport(r || null)
                 }}
-                options={workOrders.map(w => ({ label: `${w.work_order_no} ${w.material_name}`, value: w.work_order_id }))}
-                style={{ width: 320 }}
-                placeholder="请选择生产工单"
+                options={reportOrders.map(r => ({
+                  label: `${r.report_no} (${r.order_no || '-'}) ${r.material_name || ''}`,
+                  value: r.report_order_id,
+                }))}
+                style={{ width: 360 }}
+                placeholder="请选择报工单"
                 showSearch
                 optionFilterProp="label"
                 popupClassName="mes-select-dropdown"
+                loading={loading}
               />
+              <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal}>新增报工</Button>
             </Space>
           </Col>
-          {selectedWO && (
-            <>
-              <Col span={8}>
-                <Space>
-                  <span style={{ fontWeight: 'bold' }}>报工单：</span>
-                  <Select
-                    value={selectedReport?.report_id || undefined}
-                    onChange={(val) => {
-                      const r = reportList.find(r => r.report_id === val)
-                      setSelectedReport(r || null)
-                    }}
-                    options={reportList.map(r => ({
-                      label: `${r.report_no} (${r.status})`,
-                      value: r.report_id,
-                    }))}
-                    style={{ width: 260 }}
-                    placeholder="请选择报工单"
-                    allowClear
-                    popupClassName="mes-select-dropdown"
-                  />
-                </Space>
-              </Col>
-              <Col span={6} style={{ textAlign: 'right' }}>
-                {selectedReport ? (
-                  <Space>
-                    <Tag color={reportStatusColorMap[reportStatus]} style={{ fontSize: 14, padding: '2px 10px' }}>
-                      {reportStatus}
-                    </Tag>
-                    <Button
-                      type={isEditable ? 'default' : 'primary'}
-                      onClick={handleToggleReportStatus}
-                      loading={togglingStatus}
-                    >
-                      {isEditable ? '结束报工' : '开始报工'}
-                    </Button>
-                  </Space>
-                ) : (
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={handleCreateReport}
-                    loading={creatingReport}
-                  >
-                    新增报工单
-                  </Button>
+          {selectedReport && (
+            <Col span={14} style={{ textAlign: 'right' }}>
+              <Space>
+                <Tag
+                  color={reportOrderStatusMap[selectedReport.status as 0 | 1]?.color || 'default'}
+                  style={{ fontSize: 14, padding: '2px 10px' }}
+                >
+                  {reportOrderStatusMap[selectedReport.status as 0 | 1]?.label || '-'}
+                </Tag>
+                {isEditable && (
+                  <>
+                    <Popconfirm title="确认完工？完工后数据将变为只读" onConfirm={handleFinishReport}>
+                      <Button type="primary" loading={finishingReport}>完工</Button>
+                    </Popconfirm>
+                    <Popconfirm title="确认删除该报工单？后端会检查关联子记录" onConfirm={handleDeleteReport}>
+                      <Button danger loading={deletingReport}>删除</Button>
+                    </Popconfirm>
+                  </>
                 )}
-              </Col>
-            </>
+              </Space>
+            </Col>
           )}
         </Row>
 
         {selectedReport && (
           <Row gutter={16}>
             <Col span={4}>
-              <div style={{ color: '#666' }}>生产报工单号</div>
+              <div style={{ color: '#666' }}>报工单号</div>
               <div style={{ fontWeight: 'bold' }}>{selectedReport.report_no}</div>
             </Col>
             <Col span={4}>
-              <div style={{ color: '#666' }}>产线</div>
-              <div>{selectedReport.line_name || selectedWO.line_name}</div>
+              <div style={{ color: '#666' }}>订单编号</div>
+              <div>{selectedReport.order_no || '-'}</div>
             </Col>
             <Col span={4}>
-              <div style={{ color: '#666' }}>工单状态</div>
-              <Tag color={woStatusColorMap[selectedWO.status]}>{selectedWO.status}</Tag>
+              <div style={{ color: '#666' }}>产线</div>
+              <div>{selectedReport.line_name || '-'}</div>
+            </Col>
+            <Col span={4}>
+              <div style={{ color: '#666' }}>报工状态</div>
+              <Tag color={reportOrderStatusMap[selectedReport.status as 0 | 1]?.color || 'default'}>
+                {reportOrderStatusMap[selectedReport.status as 0 | 1]?.label || '-'}
+              </Tag>
             </Col>
             <Col span={4}>
               <div style={{ color: '#666' }}>物料名称</div>
-              <div>{selectedReport.material_name || selectedWO.material_name}</div>
+              <div>{selectedReport.material_name || '-'}</div>
             </Col>
             <Col span={4}>
-              <div style={{ color: '#666' }}>计划数量</div>
-              <div>{selectedReport.planned_qty || selectedWO.planned_qty}</div>
+              <div style={{ color: '#666' }}>报工数量</div>
+              <div>{selectedReport.report_qty ?? 0}</div>
+            </Col>
+          </Row>
+        )}
+
+        {selectedReport && (
+          <Row gutter={16} style={{ marginTop: 12 }}>
+            <Col span={4}>
+              <div style={{ color: '#666' }}>物料编码</div>
+              <div>{selectedReport.material_code || '-'}</div>
             </Col>
             <Col span={4}>
-              <div style={{ color: '#666' }}>报工日期</div>
-              <div>{selectedReport.report_date ? dayjs(selectedReport.report_date).format('YYYY-MM-DD') : '-'}</div>
+              <div style={{ color: '#666' }}>规格</div>
+              <div>{selectedReport.specification || '-'}</div>
+            </Col>
+            <Col span={4}>
+              <div style={{ color: '#666' }}>报工时间</div>
+              <div>{selectedReport.report_time ? dayjs(selectedReport.report_time).format('YYYY-MM-DD HH:mm') : '-'}</div>
+            </Col>
+            <Col span={4}>
+              <div style={{ color: '#666' }}>完工时间</div>
+              <div>{selectedReport.finish_time ? dayjs(selectedReport.finish_time).format('YYYY-MM-DD HH:mm') : '-'}</div>
+            </Col>
+            <Col span={4}>
+              <div style={{ color: '#666' }}>报工人</div>
+              <div>{selectedReport.report_user_name || '-'}</div>
+            </Col>
+            <Col span={4}>
+              <div style={{ color: '#666' }}>完工人</div>
+              <div>{selectedReport.finish_user_name || '-'}</div>
             </Col>
           </Row>
         )}
       </Card>
 
-      {selectedWO && !selectedReport && reportList.length === 0 && (
+      {!selectedReport && (
         <Card style={{ textAlign: 'center', padding: 40, marginBottom: 16 }}>
-          <div style={{ color: '#999', marginBottom: 16 }}>该工单暂无报工单，请点击"新增报工单"创建</div>
+          <div style={{ color: '#999', marginBottom: 16 }}>
+            {reportOrders.length === 0
+              ? '暂无开工状态的报工单，请点击"新增报工"创建'
+              : '请从上方下拉框选择一个报工单'}
+          </div>
         </Card>
       )}
 
-      {selectedWO && selectedReport && (
+      {selectedReport && (
         <Card>
-          <div style={{ marginBottom: 8, fontWeight: 'bold', color: '#333' }}>报工单统计（当前工单汇总）</div>
+          <div style={{ marginBottom: 8, fontWeight: 'bold', color: '#333' }}>报工单统计（当前报工单汇总）</div>
           <Row gutter={16} style={{ marginBottom: 16 }}>
             <Col span={4}>
               <div style={{ color: '#666' }}>投入数量</div>
               <div style={{ fontSize: 18, fontWeight: 'bold', color: '#1890ff' }}>{stats.inputQty}</div>
             </Col>
             <Col span={4}>
-              <div style={{ color: '#666' }}>产出数量</div>
+              <div style={{ color: '#666' }}>报工数量</div>
               <div style={{ fontSize: 18, fontWeight: 'bold', color: '#52c41a' }}>{stats.outputQty}</div>
             </Col>
             <Col span={4}>
@@ -2191,6 +2197,58 @@ export default function ProcessReporting() {
           </div>
         </Card>
       )}
+
+      {/* 新增报工单 Modal */}
+      <Modal
+        title="新增报工单"
+        open={createModalOpen}
+        onOk={handleCreateReport}
+        onCancel={() => setCreateModalOpen(false)}
+        confirmLoading={creatingReport}
+        okText="确定"
+        cancelText="取消"
+        width={520}
+        destroyOnClose
+      >
+        <Form form={createForm} layout="vertical" preserve={false}>
+          <Form.Item
+            name="order_id"
+            label="生产订单"
+            rules={[{ required: true, message: '请选择生产订单' }]}
+          >
+            <Select
+              placeholder="请选择生产订单（仅下发状态）"
+              options={orderOptions}
+              showSearch
+              optionFilterProp="label"
+              popupClassName="mes-select-dropdown"
+            />
+          </Form.Item>
+          <Form.Item
+            name="line_id"
+            label="产线"
+            rules={[{ required: true, message: '请选择产线' }]}
+          >
+            <Select
+              placeholder="请选择产线（仅运行中）"
+              options={lineOptions}
+              showSearch
+              optionFilterProp="label"
+              popupClassName="mes-select-dropdown"
+            />
+          </Form.Item>
+          <Form.Item
+            name="report_qty"
+            label="报工数量"
+            rules={[{ required: true, message: '请填写报工数量' }]}
+          >
+            <InputNumber min={1} step={1} precision={0} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item name="remarks" label="备注">
+            <Input.TextArea rows={2} placeholder="备注（可选）" />
+          </Form.Item>
+        </Form>
+      </Modal>
 
       <Drawer
         title={imageDrawerTitle}
