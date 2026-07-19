@@ -61,6 +61,26 @@ export default function ProcessReporting() {
   const [materials, setMaterials] = useState([])
 
   const savingRef = useRef({})
+  // 跟踪被修改但尚未保存的记录 ID（脏标记）
+  const [dirtyIds, setDirtyIds] = useState(new Set())
+
+  const markDirty = (id) => {
+    if (!id) return
+    setDirtyIds(prev => {
+      if (prev.has(id)) return prev
+      const next = new Set(prev)
+      next.add(id)
+      return next
+    })
+  }
+
+  const clearDirty = (ids) => {
+    setDirtyIds(prev => {
+      const next = new Set(prev)
+      ;(ids || []).forEach(id => next.delete(id))
+      return next
+    })
+  }
 
   const [stats, setStats] = useState({
     inputQty: 0,
@@ -261,6 +281,8 @@ export default function ProcessReporting() {
     const setList = setters[listType]
     if (!setList) return
 
+    // 图片修改后标记为脏
+    markDirty(recordId)
     setList(prev => prev.map(item => {
       if (String(item.id) !== String(recordId)) return item
       return { ...item, [field]: newImageList }
@@ -411,6 +433,8 @@ export default function ProcessReporting() {
 
   // 当前工序列表数据
   useEffect(() => {
+    // 切换报工单或工序时清空脏标记
+    setDirtyIds(new Set())
     if (!selectedReport) {
       setProdDefectList([])
       setScrapDefectList([])
@@ -428,6 +452,8 @@ export default function ProcessReporting() {
   // 检查当前页签是否有未保存记录
   const hasUnsavedChanges = useMemo(() => {
     if (!isEditable) return false
+    // 任何 dirtyIds 中的已修改记录都算未保存
+    if (dirtyIds.size > 0) return true
     if (activeTab === 'production-defect') {
       return prodDefectList.some(d => d.defect_type_id && !d.defect_id)
     }
@@ -444,7 +470,7 @@ export default function ProcessReporting() {
       return manpowerList.some(m => m.start_time && !m.record_id)
     }
     return false
-  }, [activeTab, isEditable, prodDefectList, scrapDefectList, materialList, exceptionList, manpowerList])
+  }, [activeTab, isEditable, prodDefectList, scrapDefectList, materialList, exceptionList, manpowerList, dirtyIds])
 
   // 监听浏览器关闭/刷新（仅在当前页签有未保存记录时提示）
   useEffect(() => {
@@ -585,6 +611,7 @@ export default function ProcessReporting() {
 
   const handleProdDefectChange = (recordId, field, value) => {
     if (!isEditable) return
+    markDirty(recordId)
     setProdDefectList(prev => {
       const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
       let updatedItem = null
@@ -633,19 +660,24 @@ export default function ProcessReporting() {
     })
   }
 
-  // 批量保存所有未保存的生产不良记录
+  // 批量保存生产不良记录（新增 + 已修改）
   const handleSaveAllProdDefects = async () => {
     if (!selectedReport) {
       message.warning('请先选择报工单')
       return
     }
-    const unsavedRecords = prodDefectList.filter(d => d.defect_type_id && !d.defect_id)
-    if (unsavedRecords.length === 0) {
+    // 筛选待保存记录：新增（有 defect_type_id 无 defect_id）或 已修改（在 dirtyIds 中）
+    const recordsToSave = prodDefectList.filter(d => {
+      if (!d.defect_type_id) return false
+      if (!d.defect_id) return true  // 新增
+      return dirtyIds.has(d.id)      // 已修改
+    })
+    if (recordsToSave.length === 0) {
       message.info('没有需要保存的记录')
       return
     }
-    // 校验所有未保存记录
-    for (const record of unsavedRecords) {
+    // 校验所有待保存记录
+    for (const record of recordsToSave) {
       if (!record.quantity || record.quantity <= 0) {
         message.warning(`不良编码 ${record.defect_code || ''} 的数量无效，请填写大于0的数量`)
         return
@@ -656,10 +688,13 @@ export default function ProcessReporting() {
       }
     }
     try {
-      for (const record of unsavedRecords) {
+      const savedIds = []
+      for (const record of recordsToSave) {
         await saveProdDefectItem(record)
+        savedIds.push(record.id)
       }
-      message.success(`已保存 ${unsavedRecords.length} 条记录`)
+      clearDirty(savedIds)
+      message.success(`已保存 ${recordsToSave.length} 条记录`)
     } catch (err) {
       message.error(err.message || '保存失败')
     }
@@ -671,10 +706,14 @@ export default function ProcessReporting() {
       message.warning('请先选择报工单')
       return
     }
-    // 添加前先执行一次保存
-    const unsavedRecords = prodDefectList.filter(d => d.defect_type_id && !d.defect_id)
-    if (unsavedRecords.length > 0) {
-      for (const record of unsavedRecords) {
+    // 添加前先执行一次保存（保存新增 + 已修改的记录）
+    const recordsToSave = prodDefectList.filter(d => {
+      if (!d.defect_type_id) return false
+      if (!d.defect_id) return true
+      return dirtyIds.has(d.id)
+    })
+    if (recordsToSave.length > 0) {
+      for (const record of recordsToSave) {
         if (!record.quantity || record.quantity <= 0) {
           message.warning(`请先完善不良编码 ${record.defect_code || ''} 的数量（需大于0）`)
           return
@@ -685,10 +724,13 @@ export default function ProcessReporting() {
         }
       }
       try {
-        for (const record of unsavedRecords) {
+        const savedIds = []
+        for (const record of recordsToSave) {
           await saveProdDefectItem(record)
+          savedIds.push(record.id)
         }
-        message.success(`已保存 ${unsavedRecords.length} 条记录`)
+        clearDirty(savedIds)
+        message.success(`已保存 ${recordsToSave.length} 条记录`)
       } catch (err) {
         message.error(err.message || '保存失败，无法添加新记录')
         return
@@ -871,6 +913,7 @@ export default function ProcessReporting() {
 
   const handleScrapDefectChange = (recordId, field, value) => {
     if (!isEditable) return
+    markDirty(recordId)
     setScrapDefectList(prev => {
       const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
       let updatedItem = null
@@ -918,19 +961,23 @@ export default function ProcessReporting() {
     })
   }
 
-  // 批量保存所有未保存的检验报废记录
+  // 批量保存检验报废记录（新增 + 已修改）
   const handleSaveAllScrapDefects = async () => {
     if (!selectedReport) {
       message.warning('请先选择报工单')
       return
     }
-    const unsavedRecords = scrapDefectList.filter(d => d.defect_type_id && !d.scrap_id)
-    if (unsavedRecords.length === 0) {
+    const recordsToSave = scrapDefectList.filter(d => {
+      if (!d.defect_type_id) return false
+      if (!d.scrap_id) return true
+      return dirtyIds.has(d.id)
+    })
+    if (recordsToSave.length === 0) {
       message.info('没有需要保存的记录')
       return
     }
-    // 校验所有未保存记录
-    for (const record of unsavedRecords) {
+    // 校验所有待保存记录
+    for (const record of recordsToSave) {
       if (!record.quantity || record.quantity <= 0) {
         message.warning(`不良编码 ${record.defect_code || ''} 的数量无效，请填写大于0的数量`)
         return
@@ -941,10 +988,13 @@ export default function ProcessReporting() {
       }
     }
     try {
-      for (const record of unsavedRecords) {
+      const savedIds = []
+      for (const record of recordsToSave) {
         await saveScrapDefectItem(record)
+        savedIds.push(record.id)
       }
-      message.success(`已保存 ${unsavedRecords.length} 条记录`)
+      clearDirty(savedIds)
+      message.success(`已保存 ${recordsToSave.length} 条记录`)
     } catch (err) {
       message.error(err.message || '保存失败')
     }
@@ -956,10 +1006,14 @@ export default function ProcessReporting() {
       message.warning('请先选择报工单')
       return
     }
-    // 添加前先执行一次保存
-    const unsavedRecords = scrapDefectList.filter(d => d.defect_type_id && !d.scrap_id)
-    if (unsavedRecords.length > 0) {
-      for (const record of unsavedRecords) {
+    // 添加前先执行一次保存（保存新增 + 已修改的记录）
+    const recordsToSave = scrapDefectList.filter(d => {
+      if (!d.defect_type_id) return false
+      if (!d.scrap_id) return true
+      return dirtyIds.has(d.id)
+    })
+    if (recordsToSave.length > 0) {
+      for (const record of recordsToSave) {
         if (!record.quantity || record.quantity <= 0) {
           message.warning(`请先完善不良编码 ${record.defect_code || ''} 的数量（需大于0）`)
           return
@@ -970,10 +1024,13 @@ export default function ProcessReporting() {
         }
       }
       try {
-        for (const record of unsavedRecords) {
+        const savedIds = []
+        for (const record of recordsToSave) {
           await saveScrapDefectItem(record)
+          savedIds.push(record.id)
         }
-        message.success(`已保存 ${unsavedRecords.length} 条记录`)
+        clearDirty(savedIds)
+        message.success(`已保存 ${recordsToSave.length} 条记录`)
       } catch (err) {
         message.error(err.message || '保存失败，无法添加新记录')
         return
@@ -1159,6 +1216,7 @@ export default function ProcessReporting() {
 
   const handleMaterialChange = (recordId, field, value) => {
     if (!isEditable) return
+    markDirty(recordId)
     setMaterialList(prev => {
       const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
       if (existingIndex >= 0) {
@@ -1236,25 +1294,32 @@ export default function ProcessReporting() {
     return true
   }
 
-  // 批量保存所有未保存的生产物料记录
+  // 批量保存生产物料记录（新增 + 已修改）
   const handleSaveAllMaterials = async () => {
     if (!selectedReport) {
       message.warning('请先选择报工单')
       return
     }
-    const unsavedRecords = materialList.filter(m => m.bas_material_id && (!m.material_id || String(m.id).startsWith('tmp_')))
-    if (unsavedRecords.length === 0) {
+    const recordsToSave = materialList.filter(m => {
+      if (!m.bas_material_id) return false
+      if (!m.material_id || String(m.id).startsWith('tmp_')) return true
+      return dirtyIds.has(m.id)
+    })
+    if (recordsToSave.length === 0) {
       message.info('没有需要保存的记录')
       return
     }
-    for (const record of unsavedRecords) {
+    for (const record of recordsToSave) {
       if (!validateMaterialRecord(record)) return
     }
     try {
-      for (const record of unsavedRecords) {
+      const savedIds = []
+      for (const record of recordsToSave) {
         await saveMaterialItem(record)
+        savedIds.push(record.id)
       }
-      message.success(`已保存 ${unsavedRecords.length} 条记录`)
+      clearDirty(savedIds)
+      message.success(`已保存 ${recordsToSave.length} 条记录`)
     } catch (err) {
       message.error(err.message || '保存失败')
     }
@@ -1266,17 +1331,24 @@ export default function ProcessReporting() {
       message.warning('请先选择报工单')
       return
     }
-    // 添加前先执行一次保存
-    const unsavedRecords = materialList.filter(m => m.bas_material_id && (!m.material_id || String(m.id).startsWith('tmp_')))
-    if (unsavedRecords.length > 0) {
-      for (const record of unsavedRecords) {
+    // 添加前先执行一次保存（保存新增 + 已修改的记录）
+    const recordsToSave = materialList.filter(m => {
+      if (!m.bas_material_id) return false
+      if (!m.material_id || String(m.id).startsWith('tmp_')) return true
+      return dirtyIds.has(m.id)
+    })
+    if (recordsToSave.length > 0) {
+      for (const record of recordsToSave) {
         if (!validateMaterialRecord(record)) return
       }
       try {
-        for (const record of unsavedRecords) {
+        const savedIds = []
+        for (const record of recordsToSave) {
           await saveMaterialItem(record)
+          savedIds.push(record.id)
         }
-        message.success(`已保存 ${unsavedRecords.length} 条记录`)
+        clearDirty(savedIds)
+        message.success(`已保存 ${recordsToSave.length} 条记录`)
       } catch (err) {
         message.error(err.message || '保存失败，无法添加新记录')
         return
@@ -1397,7 +1469,7 @@ export default function ProcessReporting() {
 
   const materialColumns = [
     {
-      title: '料品主键', dataIndex: 'material_id', key: 'material_id', width: 100,
+      title: '料品主键', dataIndex: 'bas_material_id', key: 'bas_material_id', width: 100,
       render: (val) => val ?? '-',
     },
     {
@@ -1555,6 +1627,7 @@ export default function ProcessReporting() {
 
   const handleExceptionChange = (recordId, field, value) => {
     if (!isEditable) return
+    markDirty(recordId)
     setExceptionList(prev => {
       const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
       if (existingIndex >= 0) {
@@ -1619,25 +1692,32 @@ export default function ProcessReporting() {
     return true
   }
 
-  // 批量保存所有未保存的异常工时记录
+  // 批量保存异常工时记录（新增 + 已修改）
   const handleSaveAllExceptions = async () => {
     if (!selectedReport) {
       message.warning('请先选择报工单')
       return
     }
-    const unsavedRecords = exceptionList.filter(e => e.exception_type && !e.exception_id)
-    if (unsavedRecords.length === 0) {
+    const recordsToSave = exceptionList.filter(e => {
+      if (!e.exception_type) return false
+      if (!e.exception_id) return true
+      return dirtyIds.has(e.id)
+    })
+    if (recordsToSave.length === 0) {
       message.info('没有需要保存的记录')
       return
     }
-    for (const record of unsavedRecords) {
+    for (const record of recordsToSave) {
       if (!validateExceptionRecord(record)) return
     }
     try {
-      for (const record of unsavedRecords) {
+      const savedIds = []
+      for (const record of recordsToSave) {
         await saveExceptionItem(record)
+        savedIds.push(record.id)
       }
-      message.success(`已保存 ${unsavedRecords.length} 条记录`)
+      clearDirty(savedIds)
+      message.success(`已保存 ${recordsToSave.length} 条记录`)
     } catch (err) {
       message.error(err.message || '保存失败')
     }
@@ -1649,17 +1729,24 @@ export default function ProcessReporting() {
       message.warning('请先选择报工单')
       return
     }
-    // 添加前先执行一次保存
-    const unsavedRecords = exceptionList.filter(e => e.exception_type && !e.exception_id)
-    if (unsavedRecords.length > 0) {
-      for (const record of unsavedRecords) {
+    // 添加前先执行一次保存（保存新增 + 已修改的记录）
+    const recordsToSave = exceptionList.filter(e => {
+      if (!e.exception_type) return false
+      if (!e.exception_id) return true
+      return dirtyIds.has(e.id)
+    })
+    if (recordsToSave.length > 0) {
+      for (const record of recordsToSave) {
         if (!validateExceptionRecord(record)) return
       }
       try {
-        for (const record of unsavedRecords) {
+        const savedIds = []
+        for (const record of recordsToSave) {
           await saveExceptionItem(record)
+          savedIds.push(record.id)
         }
-        message.success(`已保存 ${unsavedRecords.length} 条记录`)
+        clearDirty(savedIds)
+        message.success(`已保存 ${recordsToSave.length} 条记录`)
       } catch (err) {
         message.error(err.message || '保存失败，无法添加新记录')
         return
@@ -1836,6 +1923,7 @@ export default function ProcessReporting() {
 
   const handleManpowerChange = (recordId, field, value) => {
     if (!isEditable) return
+    markDirty(recordId)
     setManpowerList(prev => {
       const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
       if (existingIndex >= 0) {
@@ -1914,19 +2002,26 @@ export default function ProcessReporting() {
       message.warning('请先选择报工单')
       return
     }
-    const unsavedRecords = manpowerList.filter(m => m.start_time && !m.record_id)
-    if (unsavedRecords.length === 0) {
+    const recordsToSave = manpowerList.filter(m => {
+      if (!m.start_time) return false
+      if (!m.record_id) return true
+      return dirtyIds.has(m.id)
+    })
+    if (recordsToSave.length === 0) {
       message.info('没有需要保存的记录')
       return
     }
-    for (const record of unsavedRecords) {
+    for (const record of recordsToSave) {
       if (!validateManpowerRecord(record)) return
     }
     try {
-      for (const record of unsavedRecords) {
+      const savedIds = []
+      for (const record of recordsToSave) {
         await saveManpowerItem(record)
+        savedIds.push(record.id)
       }
-      message.success(`已保存 ${unsavedRecords.length} 条记录`)
+      clearDirty(savedIds)
+      message.success(`已保存 ${recordsToSave.length} 条记录`)
     } catch (err) {
       message.error(err.message || '保存失败')
     }
@@ -1938,17 +2033,24 @@ export default function ProcessReporting() {
       message.warning('请先选择报工单')
       return
     }
-    // 添加前先执行一次保存
-    const unsavedRecords = manpowerList.filter(m => m.start_time && !m.record_id)
-    if (unsavedRecords.length > 0) {
-      for (const record of unsavedRecords) {
+    // 添加前先执行一次保存（保存新增 + 已修改的记录）
+    const recordsToSave = manpowerList.filter(m => {
+      if (!m.start_time) return false
+      if (!m.record_id) return true
+      return dirtyIds.has(m.id)
+    })
+    if (recordsToSave.length > 0) {
+      for (const record of recordsToSave) {
         if (!validateManpowerRecord(record)) return
       }
       try {
-        for (const record of unsavedRecords) {
+        const savedIds = []
+        for (const record of recordsToSave) {
           await saveManpowerItem(record)
+          savedIds.push(record.id)
         }
-        message.success(`已保存 ${unsavedRecords.length} 条记录`)
+        clearDirty(savedIds)
+        message.success(`已保存 ${recordsToSave.length} 条记录`)
       } catch (err) {
         message.error(err.message || '保存失败，无法添加新记录')
         return
