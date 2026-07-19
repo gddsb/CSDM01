@@ -35,7 +35,6 @@ export default function ProcessReporting() {
   const [lineProcesses, setLineProcesses] = useState([])
   const [loading, setLoading] = useState(false)
   const [finishingReport, setFinishingReport] = useState(false)
-  const [deletingReport, setDeletingReport] = useState(false)
 
   // 新增报工单 Modal
   const [createModalOpen, setCreateModalOpen] = useState(false)
@@ -426,6 +425,55 @@ export default function ProcessReporting() {
   // 报工单状态：'开工'=可编辑，'完工'=只读
   const isEditable = selectedReport?.status === '开工'
 
+  // 检查当前页签是否有未保存记录
+  const hasUnsavedChanges = useMemo(() => {
+    if (!isEditable) return false
+    if (activeTab === 'production-defect') {
+      return prodDefectList.some(d => d.defect_type_id && !d.defect_id)
+    }
+    if (activeTab === 'scrap-defect') {
+      return scrapDefectList.some(d => d.defect_type_id && !d.scrap_id)
+    }
+    if (activeTab === 'production-material') {
+      return materialList.some(m => m.bas_material_id && (!m.material_id || String(m.id).startsWith('tmp_')))
+    }
+    if (activeTab === 'exception') {
+      return exceptionList.some(e => e.exception_type && !e.exception_id)
+    }
+    if (activeTab === 'manpower') {
+      return manpowerList.some(m => m.start_time && !m.record_id)
+    }
+    return false
+  }, [activeTab, isEditable, prodDefectList, scrapDefectList, materialList, exceptionList, manpowerList])
+
+  // 监听浏览器关闭/刷新（仅在当前页签有未保存记录时提示）
+  useEffect(() => {
+    if (!hasUnsavedChanges) return
+    const handler = (e) => {
+      e.preventDefault()
+      e.returnValue = ''
+      return ''
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [hasUnsavedChanges])
+
+  // 切换页签前若有未保存记录则提示
+  const handleTabChange = (newTab) => {
+    if (hasUnsavedChanges) {
+      Modal.confirm({
+        title: '存在未保存的记录',
+        content: '当前页签有未保存的记录，离开将丢失这些数据。是否确认离开？',
+        okText: '确认离开',
+        okType: 'danger',
+        cancelText: '继续编辑',
+        onOk: () => setActiveTab(newTab),
+      })
+      return
+    }
+    setActiveTab(newTab)
+  }
+
   // 打开新增报工 Modal
   const handleOpenCreateModal = () => {
     createForm.resetFields()
@@ -474,22 +522,6 @@ export default function ProcessReporting() {
       message.error(err.message || '操作失败')
     } finally {
       setFinishingReport(false)
-    }
-  }
-
-  // 删除报工单（仅开工状态可删，后端会检查关联子记录）
-  const handleDeleteReport = async () => {
-    if (!selectedReport) return
-    try {
-      setDeletingReport(true)
-      await api.delete(`/production/report-orders/${selectedReport.report_order_id}`)
-      message.success('删除成功')
-      setSelectedReport(null)
-      setReportOrders(prev => prev.filter(r => r.report_order_id !== selectedReport.report_order_id))
-    } catch (err) {
-      message.error(err.message || '删除失败')
-    } finally {
-      setDeletingReport(false)
     }
   }
 
@@ -599,24 +631,6 @@ export default function ProcessReporting() {
         return [...prev, newItem]
       }
     })
-  }
-
-  // 保存生产不良记录（手动触发）
-  const handleSaveProdDefect = async (record) => {
-    if (!record.defect_type_id) {
-      message.warning('请选择不良编码')
-      return
-    }
-    if (!record.quantity || record.quantity <= 0) {
-      message.warning('请填写不良数量')
-      return
-    }
-    if (!record.unit) {
-      message.warning('请选择单位')
-      return
-    }
-    await saveProdDefectItem(record)
-    message.success('保存成功')
   }
 
   // 批量保存所有未保存的生产不良记录
@@ -819,12 +833,9 @@ export default function ProcessReporting() {
     {
       title: '操作', key: 'action', width: 120,
       render: (_, record) => isEditable ? (
-        <Space size="small">
-          <Button type="link" size="small" icon={<SaveOutlined />} onClick={() => handleSaveProdDefect(record)}>保存</Button>
-          <Popconfirm title="确认删除？" onConfirm={() => handleDeleteProdDefect(record)}>
-            <Button type="link" size="small" danger>删除</Button>
-          </Popconfirm>
-        </Space>
+        <Popconfirm title="确认删除？" onConfirm={() => handleDeleteProdDefect(record)}>
+          <Button type="link" size="small" danger>删除</Button>
+        </Popconfirm>
       ) : null,
     },
   ]
@@ -905,24 +916,6 @@ export default function ProcessReporting() {
         return [...prev, newItem]
       }
     })
-  }
-
-  // 保存检验报废记录（手动触发）
-  const handleSaveScrapDefect = async (record) => {
-    if (!record.defect_type_id) {
-      message.warning('请选择不良编码')
-      return
-    }
-    if (!record.quantity || record.quantity <= 0) {
-      message.warning('请填写不良数量')
-      return
-    }
-    if (!record.unit) {
-      message.warning('请选择单位')
-      return
-    }
-    await saveScrapDefectItem(record)
-    message.success('保存成功')
   }
 
   // 批量保存所有未保存的检验报废记录
@@ -1124,12 +1117,9 @@ export default function ProcessReporting() {
     {
       title: '操作', key: 'action', width: 120,
       render: (_, record) => isEditable ? (
-        <Space size="small">
-          <Button type="link" size="small" icon={<SaveOutlined />} onClick={() => handleSaveScrapDefect(record)}>保存</Button>
-          <Popconfirm title="确认删除？" onConfirm={() => handleDeleteScrapDefect(record)}>
-            <Button type="link" size="small" danger>删除</Button>
-          </Popconfirm>
-        </Space>
+        <Popconfirm title="确认删除？" onConfirm={() => handleDeleteScrapDefect(record)}>
+          <Button type="link" size="small" danger>删除</Button>
+        </Popconfirm>
       ) : null,
     },
   ]
@@ -1171,9 +1161,8 @@ export default function ProcessReporting() {
     if (!isEditable) return
     setMaterialList(prev => {
       const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
-      let updatedItem = null
       if (existingIndex >= 0) {
-        const newlist = prev.map(item => {
+        return prev.map(item => {
           if (String(item.id) !== String(recordId)) return item
           let updated = { ...item, [field]: value }
           if (field === 'material_id' && value) {
@@ -1185,14 +1174,8 @@ export default function ProcessReporting() {
               updated.bas_material_id = value
             }
           }
-          updatedItem = updated
           return updated
         })
-        // 自动保存：有料号且有数量时保存
-        if (updatedItem && updatedItem.material_code && updatedItem.quantity > 0) {
-          saveMaterialItem(updatedItem)
-        }
-        return newlist
       } else {
         // 新增记录（空行情况）
         const newItem = {
@@ -1220,10 +1203,6 @@ export default function ProcessReporting() {
             newItem.bas_material_id = value
           }
         }
-        // 自动保存：有料号且有数量时保存
-        if (newItem.material_code && newItem.quantity > 0) {
-          saveMaterialItem(newItem)
-        }
         return [...prev, newItem]
       }
     })
@@ -1244,27 +1223,90 @@ export default function ProcessReporting() {
     }
   }
 
-  const materialDisplayList = useMemo(() => {
-    if (!isEditable || !selectedReport) return materialList
-    const hasEmptyRow = materialList.some(m => !m.material_id)
-    if (hasEmptyRow) return materialList
-    const emptyRow = {
-      id: genTempId(),
-      report_order_id: selectedReport.report_order_id,
-      process_id: selectedProcessId,
-      material_type: '投入',
-      material_id: null,
-      bas_material_id: null,
-      material_code: '',
-      material_name: '',
-      specification: '',
-      material_batch: '',
-      package_no: '',
-      quantity: 0,
-      label_images: [],
+  // 校验单条生产物料记录
+  const validateMaterialRecord = (record) => {
+    if (!record.bas_material_id) {
+      message.warning('请选择料号')
+      return false
     }
-    return [...materialList, emptyRow]
-  }, [materialList, isEditable, selectedReport, selectedProcessId])
+    if (!record.quantity || record.quantity <= 0) {
+      message.warning('请填写大于0的数量')
+      return false
+    }
+    return true
+  }
+
+  // 批量保存所有未保存的生产物料记录
+  const handleSaveAllMaterials = async () => {
+    if (!selectedReport) {
+      message.warning('请先选择报工单')
+      return
+    }
+    const unsavedRecords = materialList.filter(m => m.bas_material_id && (!m.material_id || String(m.id).startsWith('tmp_')))
+    if (unsavedRecords.length === 0) {
+      message.info('没有需要保存的记录')
+      return
+    }
+    for (const record of unsavedRecords) {
+      if (!validateMaterialRecord(record)) return
+    }
+    try {
+      for (const record of unsavedRecords) {
+        await saveMaterialItem(record)
+      }
+      message.success(`已保存 ${unsavedRecords.length} 条记录`)
+    } catch (err) {
+      message.error(err.message || '保存失败')
+    }
+  }
+
+  // 新增一条生产物料记录空行（手动触发，添加前先执行一次保存）
+  const handleAddMaterialRow = async () => {
+    if (!selectedReport) {
+      message.warning('请先选择报工单')
+      return
+    }
+    // 添加前先执行一次保存
+    const unsavedRecords = materialList.filter(m => m.bas_material_id && (!m.material_id || String(m.id).startsWith('tmp_')))
+    if (unsavedRecords.length > 0) {
+      for (const record of unsavedRecords) {
+        if (!validateMaterialRecord(record)) return
+      }
+      try {
+        for (const record of unsavedRecords) {
+          await saveMaterialItem(record)
+        }
+        message.success(`已保存 ${unsavedRecords.length} 条记录`)
+      } catch (err) {
+        message.error(err.message || '保存失败，无法添加新记录')
+        return
+      }
+    }
+    setMaterialList(prev => {
+      const hasEmptyRow = prev.some(m => !m.bas_material_id)
+      if (hasEmptyRow) return prev
+      return [...prev, {
+        id: genTempId(),
+        report_order_id: selectedReport.report_order_id,
+        process_id: selectedProcessId,
+        material_type: '投入',
+        material_id: null,
+        bas_material_id: null,
+        material_code: '',
+        material_name: '',
+        specification: '',
+        material_batch: '',
+        package_no: '',
+        quantity: 0,
+        label_images: [],
+      }]
+    })
+  }
+
+  const materialDisplayList = useMemo(() => {
+    // 改为手动添加模式，不再自动追加空行
+    return materialList
+  }, [materialList])
 
   const isFirstProcess = useMemo(() => {
     if (!lineProcesses.length || !selectedProcessId) return false
@@ -1515,9 +1557,8 @@ export default function ProcessReporting() {
     if (!isEditable) return
     setExceptionList(prev => {
       const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
-      let updatedItem = null
       if (existingIndex >= 0) {
-        const newList = prev.map(item => {
+        return prev.map(item => {
           if (String(item.id) !== String(recordId)) return item
           const updated = { ...item, [field]: value }
           if (field === 'start_time' || field === 'end_time') {
@@ -1527,14 +1568,8 @@ export default function ProcessReporting() {
               updated.duration = Number(((end - start) / 3600000).toFixed(2))
             }
           }
-          updatedItem = updated
           return updated
         })
-        // 自动保存：有异常类型且有开始和结束时间时保存
-        if (updatedItem && updatedItem.exception_type && updatedItem.start_time && updatedItem.end_time) {
-          saveExceptionItem(updatedItem)
-        }
-        return newList
       } else {
         // 新增记录（空行情况）
         const newItem = {
@@ -1551,11 +1586,6 @@ export default function ProcessReporting() {
           exception_images: [],
         }
         newItem[field] = value
-        updatedItem = newItem
-        // 自动保存：有异常类型且有开始和结束时间时保存
-        if (updatedItem.exception_type && updatedItem.start_time && updatedItem.end_time) {
-          saveExceptionItem(updatedItem)
-        }
         return [...prev, newItem]
       }
     })
@@ -1576,25 +1606,88 @@ export default function ProcessReporting() {
     }
   }
 
-  const exceptionDisplayList = useMemo(() => {
-    if (!isEditable || !selectedReport) return exceptionList
-    const hasEmptyRow = exceptionList.some(e => !e.exception_id)
-    if (hasEmptyRow) return exceptionList
-    const emptyRow = {
-      id: genTempId(),
-      report_order_id: selectedReport.report_order_id,
-      exception_type: '',
-      device_id: null,
-      device_name: '',
-      stop_type: '',
-      start_time: null,
-      end_time: null,
-      duration: 0,
-      description: '',
-      exception_images: [],
+  // 校验单条异常工时记录
+  const validateExceptionRecord = (record) => {
+    if (!record.exception_type) {
+      message.warning('请选择异常类型')
+      return false
     }
-    return [...exceptionList, emptyRow]
-  }, [exceptionList, isEditable, selectedReport])
+    if (!record.start_time || !record.end_time) {
+      message.warning('请选择开始时间和结束时间')
+      return false
+    }
+    return true
+  }
+
+  // 批量保存所有未保存的异常工时记录
+  const handleSaveAllExceptions = async () => {
+    if (!selectedReport) {
+      message.warning('请先选择报工单')
+      return
+    }
+    const unsavedRecords = exceptionList.filter(e => e.exception_type && !e.exception_id)
+    if (unsavedRecords.length === 0) {
+      message.info('没有需要保存的记录')
+      return
+    }
+    for (const record of unsavedRecords) {
+      if (!validateExceptionRecord(record)) return
+    }
+    try {
+      for (const record of unsavedRecords) {
+        await saveExceptionItem(record)
+      }
+      message.success(`已保存 ${unsavedRecords.length} 条记录`)
+    } catch (err) {
+      message.error(err.message || '保存失败')
+    }
+  }
+
+  // 新增一条异常工时记录空行（手动触发，添加前先执行一次保存）
+  const handleAddExceptionRow = async () => {
+    if (!selectedReport) {
+      message.warning('请先选择报工单')
+      return
+    }
+    // 添加前先执行一次保存
+    const unsavedRecords = exceptionList.filter(e => e.exception_type && !e.exception_id)
+    if (unsavedRecords.length > 0) {
+      for (const record of unsavedRecords) {
+        if (!validateExceptionRecord(record)) return
+      }
+      try {
+        for (const record of unsavedRecords) {
+          await saveExceptionItem(record)
+        }
+        message.success(`已保存 ${unsavedRecords.length} 条记录`)
+      } catch (err) {
+        message.error(err.message || '保存失败，无法添加新记录')
+        return
+      }
+    }
+    setExceptionList(prev => {
+      const hasEmptyRow = prev.some(e => !e.exception_type)
+      if (hasEmptyRow) return prev
+      return [...prev, {
+        id: genTempId(),
+        report_order_id: selectedReport.report_order_id,
+        exception_type: '',
+        device_id: null,
+        device_name: '',
+        stop_type: '',
+        start_time: null,
+        end_time: null,
+        duration: 0,
+        description: '',
+        exception_images: [],
+      }]
+    })
+  }
+
+  const exceptionDisplayList = useMemo(() => {
+    // 改为手动添加模式，不再自动追加空行
+    return exceptionList
+  }, [exceptionList])
 
   const exceptionColumns = [
     {
@@ -1745,9 +1838,8 @@ export default function ProcessReporting() {
     if (!isEditable) return
     setManpowerList(prev => {
       const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
-      let updatedItem = null
       if (existingIndex >= 0) {
-        const newList = prev.map(item => {
+        return prev.map(item => {
           if (String(item.id) !== String(recordId)) return item
           const updated = { ...item, [field]: value }
           const sk = Number(updated.skilled_count) || 0
@@ -1762,14 +1854,8 @@ export default function ProcessReporting() {
             updated.hours = hours > 0 ? Number(hours.toFixed(2)) : 0
             updated.man_hours = Number((updated.hours * updated.total_people).toFixed(2))
           }
-          updatedItem = updated
           return updated
         })
-        // 自动保存：有开始和结束时间且有总人数时保存
-        if (updatedItem && updatedItem.start_time && updatedItem.end_time && updatedItem.total_people > 0) {
-          saveManpowerItem(updatedItem)
-        }
-        return newList
       } else {
         // 新增记录（空行情况）
         const newItem = {
@@ -1789,11 +1875,6 @@ export default function ProcessReporting() {
           remarks: '',
         }
         newItem[field] = value
-        updatedItem = newItem
-        // 自动保存：有开始和结束时间且有总人数时保存
-        if (updatedItem.start_time && updatedItem.end_time && updatedItem.total_people > 0) {
-          saveManpowerItem(updatedItem)
-        }
         return [...prev, newItem]
       }
     })
@@ -1813,28 +1894,92 @@ export default function ProcessReporting() {
     }
   }
 
-  const manpowerDisplayList = useMemo(() => {
-    if (!isEditable || !selectedReport) return manpowerList
-    const hasEmptyRow = manpowerList.some(m => !m.record_id)
-    if (hasEmptyRow) return manpowerList
-    const emptyRow = {
-      id: genTempId(),
-      report_order_id: selectedReport.report_order_id,
-      record_date: dayjs().format('YYYY-MM-DD'),
-      shift: '白班',
-      start_time: null,
-      end_time: null,
-      hours: 0,
-      skilled_count: 0,
-      general_count: 0,
-      labor_count: 0,
-      other_count: 0,
-      total_people: 0,
-      man_hours: 0,
-      remarks: '',
+  // 校验单条人员工时记录
+  const validateManpowerRecord = (record) => {
+    if (!record.start_time || !record.end_time) {
+      message.warning('请选择开始时间和结束时间')
+      return false
     }
-    return [...manpowerList, emptyRow]
-  }, [manpowerList, isEditable, selectedReport])
+    const total = Number(record.total_people) || 0
+    if (total <= 0) {
+      message.warning('请填写至少一项人员数量（技工/普工/劳务/其他）')
+      return false
+    }
+    return true
+  }
+
+  // 批量保存所有未保存的人员工时记录
+  const handleSaveAllManpowers = async () => {
+    if (!selectedReport) {
+      message.warning('请先选择报工单')
+      return
+    }
+    const unsavedRecords = manpowerList.filter(m => m.start_time && !m.record_id)
+    if (unsavedRecords.length === 0) {
+      message.info('没有需要保存的记录')
+      return
+    }
+    for (const record of unsavedRecords) {
+      if (!validateManpowerRecord(record)) return
+    }
+    try {
+      for (const record of unsavedRecords) {
+        await saveManpowerItem(record)
+      }
+      message.success(`已保存 ${unsavedRecords.length} 条记录`)
+    } catch (err) {
+      message.error(err.message || '保存失败')
+    }
+  }
+
+  // 新增一条人员工时记录空行（手动触发，添加前先执行一次保存）
+  const handleAddManpowerRow = async () => {
+    if (!selectedReport) {
+      message.warning('请先选择报工单')
+      return
+    }
+    // 添加前先执行一次保存
+    const unsavedRecords = manpowerList.filter(m => m.start_time && !m.record_id)
+    if (unsavedRecords.length > 0) {
+      for (const record of unsavedRecords) {
+        if (!validateManpowerRecord(record)) return
+      }
+      try {
+        for (const record of unsavedRecords) {
+          await saveManpowerItem(record)
+        }
+        message.success(`已保存 ${unsavedRecords.length} 条记录`)
+      } catch (err) {
+        message.error(err.message || '保存失败，无法添加新记录')
+        return
+      }
+    }
+    setManpowerList(prev => {
+      const hasEmptyRow = prev.some(m => !m.start_time)
+      if (hasEmptyRow) return prev
+      return [...prev, {
+        id: genTempId(),
+        report_order_id: selectedReport.report_order_id,
+        record_date: dayjs().format('YYYY-MM-DD'),
+        shift: '白班',
+        start_time: null,
+        end_time: null,
+        hours: 0,
+        skilled_count: 0,
+        general_count: 0,
+        labor_count: 0,
+        other_count: 0,
+        total_people: 0,
+        man_hours: 0,
+        remarks: '',
+      }]
+    })
+  }
+
+  const manpowerDisplayList = useMemo(() => {
+    // 改为手动添加模式，不再自动追加空行
+    return manpowerList
+  }, [manpowerList])
 
   const manpowerColumns = [
     {
@@ -2045,11 +2190,17 @@ export default function ProcessReporting() {
                     placeholder="请选择工序"
                     popupClassName="mes-select-dropdown"
                   />
+                  {isEditable && (
+                    <>
+                      <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveAllMaterials}>保存</Button>
+                      <Button type="primary" icon={<PlusOutlined />} onClick={handleAddMaterialRow}>添加</Button>
+                    </>
+                  )}
                 </Space>
               </Col>
               <Col span={12} style={{ textAlign: 'right' }}>
                 {isEditable ? (
-                  <Tag color="blue">表格末尾空行可直接录入，修改后自动保存</Tag>
+                  <Tag color="blue">点"添加"前会自动保存未提交记录；录入数据后请点"保存"提交</Tag>
                 ) : (
                   <Tag color="default">已完工，数据只读</Tag>
                 )}
@@ -2103,13 +2254,21 @@ export default function ProcessReporting() {
       case 'exception':
         return (
           <div>
-            <Row style={{ marginBottom: 16 }}>
+            <Row style={{ marginBottom: 16 }} align="middle">
               <Col span={12}>
-                <span style={{ color: '#666' }}>异常工时记录</span>
+                <Space>
+                  <span style={{ color: '#666' }}>异常工时记录</span>
+                  {isEditable && (
+                    <>
+                      <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveAllExceptions}>保存</Button>
+                      <Button type="primary" icon={<PlusOutlined />} onClick={handleAddExceptionRow}>添加</Button>
+                    </>
+                  )}
+                </Space>
               </Col>
               <Col span={12} style={{ textAlign: 'right' }}>
                 {isEditable ? (
-                  <Tag color="blue">表格末尾空行可直接录入，修改后自动保存</Tag>
+                  <Tag color="blue">点"添加"前会自动保存未提交记录；录入数据后请点"保存"提交</Tag>
                 ) : (
                   <Tag color="default">已完工，数据只读</Tag>
                 )}
@@ -2129,13 +2288,21 @@ export default function ProcessReporting() {
       case 'manpower':
         return (
           <div>
-            <Row style={{ marginBottom: 16 }}>
+            <Row style={{ marginBottom: 16 }} align="middle">
               <Col span={12}>
-                <span style={{ color: '#666' }}>人员工时记录</span>
+                <Space>
+                  <span style={{ color: '#666' }}>人员工时记录</span>
+                  {isEditable && (
+                    <>
+                      <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveAllManpowers}>保存</Button>
+                      <Button type="primary" icon={<PlusOutlined />} onClick={handleAddManpowerRow}>添加</Button>
+                    </>
+                  )}
+                </Space>
               </Col>
               <Col span={12} style={{ textAlign: 'right' }}>
                 {isEditable ? (
-                  <Tag color="blue">表格末尾空行可直接录入，修改后自动保存</Tag>
+                  <Tag color="blue">点"添加"前会自动保存未提交记录；录入数据后请点"保存"提交</Tag>
                 ) : (
                   <Tag color="default">已完工，数据只读</Tag>
                 )}
@@ -2167,6 +2334,20 @@ export default function ProcessReporting() {
               <Select
                 value={selectedReport?.report_order_id || undefined}
                 onChange={(val) => {
+                  if (hasUnsavedChanges) {
+                    Modal.confirm({
+                      title: '存在未保存的记录',
+                      content: '当前页签有未保存的记录，切换报工单将丢失这些数据。是否确认切换？',
+                      okText: '确认切换',
+                      okType: 'danger',
+                      cancelText: '取消',
+                      onOk: () => {
+                        const r = reportOrders.find(r => r.report_order_id === val)
+                        setSelectedReport(r || null)
+                      },
+                    })
+                    return
+                  }
                   const r = reportOrders.find(r => r.report_order_id === val)
                   setSelectedReport(r || null)
                 }}
@@ -2197,9 +2378,6 @@ export default function ProcessReporting() {
                   <>
                     <Popconfirm title="确认完工？完工后数据将变为只读" onConfirm={handleFinishReport}>
                       <Button type="primary" loading={finishingReport}>完工</Button>
-                    </Popconfirm>
-                    <Popconfirm title="确认删除该报工单？后端会检查关联子记录" onConfirm={handleDeleteReport}>
-                      <Button danger loading={deletingReport}>删除</Button>
                     </Popconfirm>
                   </>
                 )}
@@ -2311,7 +2489,7 @@ export default function ProcessReporting() {
 
           <Tabs
             activeKey={activeTab}
-            onChange={setActiveTab}
+            onChange={handleTabChange}
             items={tabItems}
           >
           </Tabs>
