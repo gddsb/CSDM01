@@ -47,6 +47,7 @@ import EfficiencyReport from './pages/report/EfficiencyReport'
 import ProductionBigScreen from './pages/bigscreen/ProductionBigScreen'
 import ManagementBigScreen from './pages/bigscreen/ManagementBigScreen'
 import QualityBigScreen from './pages/bigscreen/QualityBigScreen'
+import MobileRoutes from './mobile/MobileRoutes'
 
 dayjs.locale('zh-cn')
 
@@ -59,7 +60,12 @@ function ProtectedRoute({ children }) {
 
 function AppRoutes() {
   const { currentUser, initialized } = useApp()
+  const location = useLocation()
   if (!initialized) return null
+  // 移动端独立路由（不进入 PC 端 MainLayout）
+  if (location.pathname.startsWith('/mobile')) {
+    return <MobileRoutes />
+  }
   return (
     <Routes>
       <Route path="/login" element={currentUser ? <Navigate to="/dashboard" replace /> : <Login />} />

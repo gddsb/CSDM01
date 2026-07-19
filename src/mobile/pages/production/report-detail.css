@@ -1,0 +1,11 @@
+/* 报工详情页专属样式 */
+
+/* 表单元素在移动端卡片内的间距 */
+.mobile-card .mobile-form-item:last-child {
+  margin-bottom: 0;
+}
+
+/* 选项卡容器滚动条隐藏 */
+.mobile-tabs {
+  scrollbar-width: none;
+}

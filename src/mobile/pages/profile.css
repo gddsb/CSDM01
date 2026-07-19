@@ -1,0 +1,38 @@
+/* 个人中心样式 */
+
+.profile-header {
+  background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+  margin: -12px -12px 12px;
+  padding: 24px 16px;
+  display: flex;
+  align-items: center;
+  border-radius: 0 0 16px 16px;
+  color: #fff;
+}
+
+.profile-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 32px;
+  background: rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 14px;
+  overflow: hidden;
+}
+
+.profile-info {
+  flex: 1;
+}
+
+.profile-name {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.profile-role {
+  font-size: 13px;
+  opacity: 0.85;
+}

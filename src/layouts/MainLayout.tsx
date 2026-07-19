@@ -9,7 +9,7 @@ import {
   PieChartOutlined, FileSearchOutlined, FundProjectionScreenOutlined,
   ControlOutlined, DesktopOutlined, LineChartOutlined, CalendarOutlined,
   RiseOutlined, AlertOutlined, ContainerOutlined,
-  LockOutlined, KeyOutlined, MenuOutlined, SkinOutlined,
+  LockOutlined, KeyOutlined, MenuOutlined, SkinOutlined, MobileOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useApp, useMessage, User } from '../contexts/AppContext'
@@ -52,7 +52,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   PieChartOutlined, FileSearchOutlined, FundProjectionScreenOutlined,
   ControlOutlined, DesktopOutlined, LineChartOutlined, CalendarOutlined,
   RiseOutlined, AlertOutlined, ContainerOutlined,
-  LockOutlined, KeyOutlined, MenuOutlined,
+  LockOutlined, KeyOutlined, MenuOutlined, MobileOutlined,
 }
 function resolveIcon(name?: string): React.ReactNode {
   if (!name) return undefined
@@ -137,6 +137,12 @@ const defaultMenuItems = [
       { key: '/system/dictionary', icon: <DatabaseOutlined />, label: '数据字典' },
       { key: '/system/config', icon: <ControlOutlined />, label: '系统配置' },
       { key: '/system/logs', icon: <FileTextOutlined />, label: '操作日志' },
+    ]
+  },
+  {
+    key: 'system-link', icon: <DesktopOutlined />, label: '系统关联',
+    children: [
+      { key: '/mobile/home', icon: <MobileOutlined />, label: '移动端模拟器' },
     ]
   },
 ]
