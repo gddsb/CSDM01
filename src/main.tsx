@@ -73,6 +73,8 @@ function AppRoutes() {
       <Route path="/bigscreen/production" element={<ProtectedRoute><ProductionBigScreen /></ProtectedRoute>} />
       <Route path="/bigscreen/management" element={<ProtectedRoute><ManagementBigScreen /></ProtectedRoute>} />
       <Route path="/bigscreen/quality" element={<ProtectedRoute><QualityBigScreen /></ProtectedRoute>} />
+      {/* 移动端模拟器入口（兼容后端动态菜单的旧路径，统一重定向到 /mobile/home） */}
+      <Route path="/system/mobile-simulator" element={<Navigate to="/mobile/home" replace />} />
       <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dashboard-bigscreen" element={<Dashboard />} />

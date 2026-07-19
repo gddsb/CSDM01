@@ -104,7 +104,7 @@
     "perm_code": "system:mobile-simulator",
     "type": "menu",
     "icon": "MobileOutlined",
-    "path": "/system/mobile-simulator",
+    "path": "/mobile/home",
     "component": null,
     "sort_order": 7,
     "visible": 1,
