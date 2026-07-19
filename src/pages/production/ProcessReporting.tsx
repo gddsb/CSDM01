@@ -6,7 +6,7 @@ import {
 import { useMessage } from '../../contexts/AppContext'
 import {
   PlusOutlined, DeleteOutlined, UploadOutlined,
-  PictureOutlined,
+  PictureOutlined, SaveOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import api from '../../utils/api'
@@ -552,10 +552,6 @@ export default function ProcessReporting() {
           updatedItem = updated
           return updated
         })
-        // 自动保存：有不良编码且有数量时保存
-        if (updatedItem && updatedItem.defect_type_id && updatedItem.quantity > 0) {
-          saveProdDefectItem(updatedItem)
-        }
         return newlist
       } else {
         // 新增记录（空行情况）
@@ -582,12 +578,48 @@ export default function ProcessReporting() {
             newItem.defect_type = defect.defect_type
           }
         }
-        // 自动保存：有不良编码且有数量时保存
-        if (newItem.defect_type_id && newItem.quantity > 0) {
-          saveProdDefectItem(newItem)
-        }
         return [...prev, newItem]
       }
+    })
+  }
+
+  // 保存生产不良记录（手动触发）
+  const handleSaveProdDefect = async (record) => {
+    if (!record.defect_type_id) {
+      message.warning('请选择不良编码')
+      return
+    }
+    if (!record.quantity || record.quantity <= 0) {
+      message.warning('请填写不良数量')
+      return
+    }
+    await saveProdDefectItem(record)
+    message.success('保存成功')
+  }
+
+  // 新增一条生产不良记录空行（手动触发）
+  const handleAddProdDefectRow = () => {
+    if (!selectedReport) {
+      message.warning('请先选择报工单')
+      return
+    }
+    setProdDefectList(prev => {
+      const hasEmptyRow = prev.some(d => !d.defect_type_id)
+      if (hasEmptyRow) return prev
+      return [...prev, {
+        id: genTempId(),
+        report_id: selectedReport.report_id,
+        work_order_id: selectedWO?.work_order_id,
+        process_id: selectedProcessId,
+        defect_category: '制程不良',
+        defect_type_id: null,
+        defect_code: '',
+        defect_type: '',
+        defect_name: '',
+        quantity: 0,
+        unit: '',
+        defect_images: [],
+      }]
     })
   }
 
@@ -607,25 +639,9 @@ export default function ProcessReporting() {
   }
 
   const prodDefectDisplayList = useMemo(() => {
-    if (!isEditable || !selectedReport) return prodDefectList
-    const hasEmptyRow = prodDefectList.some(d => !d.defect_type_id)
-    if (hasEmptyRow) return prodDefectList
-    const emptyRow = {
-      id: genTempId(),
-      report_id: selectedReport.report_id,
-      work_order_id: selectedWO?.work_order_id,
-      process_id: selectedProcessId,
-      defect_category: '制程不良',
-      defect_type_id: null,
-      defect_code: '',
-      defect_type: '',
-      defect_name: '',
-      quantity: 0,
-      unit: '',
-      defect_images: [],
-    }
-    return [...prodDefectList, emptyRow]
-  }, [prodDefectList, isEditable, selectedReport, selectedWO, selectedProcessId])
+    // 改为手动添加模式，不再自动追加空行
+    return prodDefectList
+  }, [prodDefectList])
 
   const getUnitOptions = (defectTypeId) => {
     const defect = defectTypeOptions.find(d => String(d.value) === String(defectTypeId))
@@ -644,6 +660,10 @@ export default function ProcessReporting() {
   }
 
   const prodDefectColumns = [
+    {
+      title: '记录主键', dataIndex: 'defect_id', key: 'defect_id', width: 100,
+      render: (val) => val ?? '-',
+    },
     {
       title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 120,
       render: (_, record) => isEditable ? (
@@ -721,11 +741,14 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '操作', key: 'action', width: 80,
+      title: '操作', key: 'action', width: 120,
       render: (_, record) => isEditable ? (
-        <Popconfirm title="确认删除？" onConfirm={() => handleDeleteProdDefect(record)}>
-          <Button type="link" size="small" danger>删除</Button>
-        </Popconfirm>
+        <Space size="small">
+          <Button type="link" size="small" icon={<SaveOutlined />} onClick={() => handleSaveProdDefect(record)}>保存</Button>
+          <Popconfirm title="确认删除？" onConfirm={() => handleDeleteProdDefect(record)}>
+            <Button type="link" size="small" danger>删除</Button>
+          </Popconfirm>
+        </Space>
       ) : null,
     },
   ]
@@ -780,10 +803,6 @@ export default function ProcessReporting() {
           updatedItem = updated
           return updated
         })
-        // 自动保存：有不良编码且有数量时保存
-        if (updatedItem && updatedItem.defect_type_id && updatedItem.quantity > 0) {
-          saveScrapDefectItem(updatedItem)
-        }
         return newlist
       } else {
         // 新增记录（空行情况）
@@ -809,12 +828,47 @@ export default function ProcessReporting() {
             newItem.defect_type = defect.defect_type
           }
         }
-        // 自动保存：有不良编码且有数量时保存
-        if (newItem.defect_type_id && newItem.quantity > 0) {
-          saveScrapDefectItem(newItem)
-        }
         return [...prev, newItem]
       }
+    })
+  }
+
+  // 保存检验报废记录（手动触发）
+  const handleSaveScrapDefect = async (record) => {
+    if (!record.defect_type_id) {
+      message.warning('请选择不良编码')
+      return
+    }
+    if (!record.quantity || record.quantity <= 0) {
+      message.warning('请填写不良数量')
+      return
+    }
+    await saveScrapDefectItem(record)
+    message.success('保存成功')
+  }
+
+  // 新增一条检验报废记录空行（手动触发）
+  const handleAddScrapDefectRow = () => {
+    if (!selectedReport) {
+      message.warning('请先选择报工单')
+      return
+    }
+    setScrapDefectList(prev => {
+      const hasEmptyRow = prev.some(d => !d.defect_type_id)
+      if (hasEmptyRow) return prev
+      return [...prev, {
+        id: genTempId(),
+        report_id: selectedReport.report_id,
+        work_order_id: selectedWO?.work_order_id,
+        defect_category: '检验报废',
+        defect_type_id: null,
+        defect_code: '',
+        defect_type: '',
+        defect_name: '',
+        quantity: 0,
+        unit: '',
+        defect_images: [],
+      }]
     })
   }
 
@@ -834,22 +888,9 @@ export default function ProcessReporting() {
   }
 
   const scrapDefectDisplayList = useMemo(() => {
-    if (!isEditable || !selectedReport) return scrapDefectList
-    const hasEmptyRow = scrapDefectList.some(d => !d.defect_type_id)
-    if (hasEmptyRow) return scrapDefectList
-    const emptyRow = {
-      id: genTempId(),
-      report_id: selectedReport.report_id,
-      work_order_id: selectedWO?.work_order_id,
-      defect_category: '检验报废',
-      defect_type_id: null,
-      defect_name: '',
-      quantity: 0,
-      unit: '',
-      defect_images: [],
-    }
-    return [...scrapDefectList, emptyRow]
-  }, [scrapDefectList, isEditable, selectedReport, selectedWO])
+    // 改为手动添加模式，不再自动追加空行
+    return scrapDefectList
+  }, [scrapDefectList])
 
   const getScrapUnitOptions = (defectTypeId) => {
     const defect = scrapTypeOptions.find(d => String(d.value) === String(defectTypeId))
@@ -868,6 +909,10 @@ export default function ProcessReporting() {
   }
 
   const scrapDefectColumns = [
+    {
+      title: '记录主键', dataIndex: 'scrap_id', key: 'scrap_id', width: 100,
+      render: (val) => val ?? '-',
+    },
     {
       title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 120,
       render: (_, record) => isEditable ? (
@@ -945,11 +990,14 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '操作', key: 'action', width: 80,
+      title: '操作', key: 'action', width: 120,
       render: (_, record) => isEditable ? (
-        <Popconfirm title="确认删除？" onConfirm={() => handleDeleteScrapDefect(record)}>
-          <Button type="link" size="small" danger>删除</Button>
-        </Popconfirm>
+        <Space size="small">
+          <Button type="link" size="small" icon={<SaveOutlined />} onClick={() => handleSaveScrapDefect(record)}>保存</Button>
+          <Popconfirm title="确认删除？" onConfirm={() => handleDeleteScrapDefect(record)}>
+            <Button type="link" size="small" danger>删除</Button>
+          </Popconfirm>
+        </Space>
       ) : null,
     },
   ]
@@ -1177,6 +1225,10 @@ export default function ProcessReporting() {
   }
 
   const materialColumns = [
+    {
+      title: '料品主键', dataIndex: 'material_id', key: 'material_id', width: 100,
+      render: (val) => val ?? '-',
+    },
     {
       title: '物料类型', dataIndex: 'material_type', key: 'material_type', width: 100,
       render: (val, record) => isEditable ? (
@@ -1825,7 +1877,7 @@ export default function ProcessReporting() {
         return (
           <div>
             <Row style={{ marginBottom: 16 }} align="middle">
-              <Col span={8}>
+              <Col span={12}>
                 <Space>
                   <span>选择工序：</span>
                   <Select
@@ -1836,9 +1888,12 @@ export default function ProcessReporting() {
                     placeholder="请选择工序"
                     popupClassName="mes-select-dropdown"
                   />
+                  {isEditable && (
+                    <Button type="primary" icon={<PlusOutlined />} onClick={handleAddProdDefectRow}>添加</Button>
+                  )}
                 </Space>
               </Col>
-              <Col span={16} style={{ textAlign: 'right' }}>
+              <Col span={12} style={{ textAlign: 'right' }}>
                 {selectedProcessId && (
                   <Space size="large">
                     <span style={{ color: '#999', fontSize: 12 }}>当前工序统计：</span>
@@ -1856,7 +1911,7 @@ export default function ProcessReporting() {
               rowKey="id"
               size="small"
               pagination={false}
-              scroll={{ x: 800 }}
+              scroll={{ x: 900 }}
               tableLayout="fixed"
             />
           </div>
@@ -1892,7 +1947,7 @@ export default function ProcessReporting() {
               rowKey="id"
               size="small"
               pagination={false}
-              scroll={{ x: 900 }}
+              scroll={{ x: 1000 }}
               tableLayout="fixed"
             />
           </div>
@@ -1900,13 +1955,18 @@ export default function ProcessReporting() {
       case 'scrap-defect':
         return (
           <div>
-            <Row style={{ marginBottom: 16 }}>
+            <Row style={{ marginBottom: 16 }} align="middle">
               <Col span={12}>
-                <span style={{ color: '#666' }}>检验报废记录</span>
+                <Space>
+                  <span style={{ color: '#666' }}>检验报废记录</span>
+                  {isEditable && (
+                    <Button type="primary" icon={<PlusOutlined />} onClick={handleAddScrapDefectRow}>添加</Button>
+                  )}
+                </Space>
               </Col>
               <Col span={12} style={{ textAlign: 'right' }}>
                 {isEditable ? (
-                  <Tag color="blue">表格末尾空行可直接录入，修改后自动保存</Tag>
+                  <Tag color="blue">点击"添加"录入数据后，点"保存"提交</Tag>
                 ) : (
                   <Tag color="default">已结束报工，数据只读</Tag>
                 )}
@@ -1918,7 +1978,7 @@ export default function ProcessReporting() {
               rowKey="id"
               size="small"
               pagination={false}
-              scroll={{ x: 700 }}
+              scroll={{ x: 800 }}
               tableLayout="fixed"
             />
           </div>
