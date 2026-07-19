@@ -40,9 +40,9 @@ Role.hasMany(User, { foreignKey: 'role_id', as: 'users' })
 Order.hasMany(WorkOrder, { foreignKey: 'order_id', as: 'work_orders' })
 WorkOrder.belongsTo(Order, { foreignKey: 'order_id', as: 'order' })
 
-// 工单 - 料品
-WorkOrder.belongsTo(Material, { foreignKey: 'material_id', as: 'material' })
-Material.hasMany(WorkOrder, { foreignKey: 'material_id', as: 'work_orders' })
+// 工单 - 料品（material_id 类型不兼容，禁用外键约束）
+WorkOrder.belongsTo(Material, { foreignKey: 'material_id', as: 'material', constraints: false })
+Material.hasMany(WorkOrder, { foreignKey: 'material_id', as: 'work_orders', constraints: false })
 
 // 工单 - 工序报工
 WorkOrder.hasMany(ProcessReport, { foreignKey: 'work_order_id', as: 'process_reports' })
@@ -80,8 +80,8 @@ ProcessException.belongsTo(ProcessReport, { foreignKey: 'report_id', as: 'proces
 ProcessReport.hasMany(ProcessMaterial, { foreignKey: 'report_id', as: 'process_materials' })
 ProcessMaterial.belongsTo(ProcessReport, { foreignKey: 'report_id', as: 'process_report' })
 
-// 制程物料 - 基础料品
-ProcessMaterial.belongsTo(Material, { foreignKey: 'bas_material_id', as: 'bas_material' })
+// 制程物料 - 基础料品（bas_material_id 是 VARCHAR，material_id 是 INTEGER，禁用外键约束）
+ProcessMaterial.belongsTo(Material, { foreignKey: 'bas_material_id', as: 'bas_material', constraints: false })
 
 // 报工单 - 异常图片记录
 ProcessReport.hasMany(ReportExceptionImage, { foreignKey: 'report_id', as: 'exception_images' })
