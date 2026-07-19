@@ -40,7 +40,7 @@ export default function OrderDetail() {
 
   const fetchLines = async () => {
     try {
-      const res = await api.get('/basic/lines', { params: { page: 1, pageSize: 1000, status: '启用' } })
+      const res = await api.get('/basic/production-lines', { params: { page: 1, pageSize: 1000, status: '启用' } })
       setLines(res.data || [])
     } catch (err) {
       setLines([])
