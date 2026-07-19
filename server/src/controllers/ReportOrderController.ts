@@ -241,6 +241,24 @@ export const create = async (req, res) => {
       // 继承产线工序到报工工序子表
       await syncReportProcesses(reportOrder.report_order_id, line.line_id, t)
 
+      // 工单开工时自动创建一条人员工时记录（每个报工单仅一条，用户只能修改人数）
+      await ManpowerRecord.create({
+        report_order_id: reportOrder.report_order_id,
+        record_date: now.toISOString().slice(0, 10),
+        shift: '白班',
+        start_time: now,
+        end_time: now, // 开工状态：后端读取时动态替换为当前时间
+        hours: 0,
+        skilled_count: 0,
+        general_count: 0,
+        labor_count: 0,
+        other_count: 0,
+        total_people: 0,
+        man_hours: 0,
+        record_user: req.user?.username || null,
+        record_user_name: req.user?.real_name || req.user?.username || null,
+      }, { transaction: t })
+
       return reportOrder
     })
 

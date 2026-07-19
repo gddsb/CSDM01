@@ -467,7 +467,8 @@ export default function ProcessReporting() {
       return exceptionList.some(e => e.exception_type && !e.exception_id)
     }
     if (activeTab === 'manpower') {
-      return manpowerList.some(m => isManpowerRecordFilled(m) && !m.record_id)
+      // 不允许新增，只检查是否有被修改的记录
+      return manpowerList.some(m => m.record_id && dirtyIds.has(m.id))
     }
     return false
   }, [activeTab, isEditable, prodDefectList, scrapDefectList, materialList, exceptionList, manpowerList, dirtyIds])
@@ -2020,20 +2021,6 @@ export default function ProcessReporting() {
     })
   }
 
-  const handleDeleteManpower = async (item) => {
-    if (!item.record_id) {
-      setManpowerList(prev => prev.filter(m => m.id !== item.id))
-      return
-    }
-    try {
-      await api.delete(`/production/manpower-records/${item.record_id}`)
-      setManpowerList(prev => prev.filter(m => m.id !== item.id))
-      message.success('删除成功')
-    } catch (err) {
-      message.error(err.message || '删除失败')
-    }
-  }
-
   // 校验单条人员工时记录
   const validateManpowerRecord = (record) => {
     // 开始/结束时间从报工单读取，无需用户填写；只校验人员数量
@@ -2058,16 +2045,17 @@ export default function ProcessReporting() {
     return (sk + gn + lb + ot) > 0
   }
 
-  // 批量保存所有未保存的人员工时记录
+  // 保存人员工时记录（每个报工单只有一条记录，由后端在开工时自动创建）
+  // 前端只允许修改人数，不允许新增
   const handleSaveAllManpowers = async () => {
     if (!selectedReport) {
       message.warning('请先选择报工单')
       return
     }
-    // 时间从报工单读取，所以以"是否填写人员数量"作为有效记录的判断条件
+    // 只保存被修改且已存在的记录（不允许新增）
     const recordsToSave = manpowerList.filter(m => {
+      if (!m.record_id) return false // 不允许新增
       if (!isManpowerRecordFilled(m)) return false
-      if (!m.record_id) return true
       return dirtyIds.has(m.id)
     })
     if (recordsToSave.length === 0) {
@@ -2088,53 +2076,6 @@ export default function ProcessReporting() {
     } catch (err) {
       message.error(err.message || '保存失败')
     }
-  }
-
-  // 新增一条人员工时记录空行（手动触发，添加前先执行一次保存）
-  const handleAddManpowerRow = async () => {
-    if (!selectedReport) {
-      message.warning('请先选择报工单')
-      return
-    }
-    // 添加前先执行一次保存（保存新增 + 已修改的记录）
-    const recordsToSave = manpowerList.filter(m => {
-      if (!isManpowerRecordFilled(m)) return false
-      if (!m.record_id) return true
-      return dirtyIds.has(m.id)
-    })
-    if (recordsToSave.length > 0) {
-      for (const record of recordsToSave) {
-        if (!validateManpowerRecord(record)) return
-      }
-      try {
-        const savedIds = []
-        for (const record of recordsToSave) {
-          await saveManpowerItem(record)
-          savedIds.push(record.id)
-        }
-        clearDirty(savedIds)
-        message.success(`已保存 ${recordsToSave.length} 条记录`)
-      } catch (err) {
-        message.error(err.message || '保存失败，无法添加新记录')
-        return
-      }
-    }
-    setManpowerList(prev => {
-      // 已存在未填写人员的空行时不再追加
-      const hasEmptyRow = prev.some(m => !isManpowerRecordFilled(m))
-      if (hasEmptyRow) return prev
-      return [...prev, {
-        id: genTempId(),
-        report_order_id: selectedReport.report_order_id,
-        record_date: dayjs().format('YYYY-MM-DD'),
-        shift: '白班',
-        skilled_count: 0,
-        general_count: 0,
-        labor_count: 0,
-        other_count: 0,
-        remarks: '',
-      }]
-    })
   }
 
   // 根据报工单时间计算单条人员工时记录的 hours / man_hours
@@ -2168,10 +2109,6 @@ export default function ProcessReporting() {
   }, [manpowerList, calcManpowerHours])
 
   const manpowerColumns = [
-    {
-      title: '日期', dataIndex: 'record_date', key: 'record_date', width: 130,
-      render: (val) => val || '-',
-    },
     {
       title: '班次', dataIndex: 'shift', key: 'shift', width: 100,
       render: (val) => isEditable ? (
@@ -2257,14 +2194,6 @@ export default function ProcessReporting() {
     },
     { title: '总人数', dataIndex: 'total_people', key: 'total_people', width: 80 },
     { title: '总工时', dataIndex: 'man_hours', key: 'man_hours', width: 100 },
-    {
-      title: '操作', key: 'action', width: 80,
-      render: (_, record) => isEditable ? (
-        <Popconfirm title="确认删除？" onConfirm={() => handleDeleteManpower(record)}>
-          <Button type="link" size="small" danger>删除</Button>
-        </Popconfirm>
-      ) : null,
-    },
   ]
 
   const tabItems = [
@@ -2441,16 +2370,13 @@ export default function ProcessReporting() {
                 <Space>
                   <span style={{ color: '#666' }}>人员工时记录</span>
                   {isEditable && (
-                    <>
-                      <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveAllManpowers}>保存</Button>
-                      <Button type="primary" icon={<PlusOutlined />} onClick={handleAddManpowerRow}>添加</Button>
-                    </>
+                    <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveAllManpowers}>保存</Button>
                   )}
                 </Space>
               </Col>
               <Col span={12} style={{ textAlign: 'right' }}>
                 {isEditable ? (
-                  <Tag color="blue">点"添加"前会自动保存未提交记录；录入数据后请点"保存"提交</Tag>
+                  <Tag color="blue">工时按报工单时间自动计算，修改人数后点"保存"提交</Tag>
                 ) : (
                   <Tag color="default">已完工，数据只读</Tag>
                 )}

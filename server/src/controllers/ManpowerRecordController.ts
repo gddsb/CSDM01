@@ -124,6 +124,12 @@ export const create = async (req, res) => {
     const reportOrder = await ReportOrder.findOne({ where: { report_order_id } })
     if (!reportOrder) return fail(res, '报工单不存在', 404)
 
+    // 每个报工单仅允许一条人员工时记录（开工时自动创建），禁止重复创建
+    const existing = await ManpowerRecord.findOne({ where: { report_order_id } })
+    if (existing) {
+      return fail(res, '该报工单已存在人员工时记录，请直接修改')
+    }
+
     const data = await buildRecordData(req.body)
     const record = await ManpowerRecord.create({
       ...data,
