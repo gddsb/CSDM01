@@ -21,6 +21,10 @@ export default function OrderDetail() {
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(true)
   const [starting, setStarting] = useState(false)
+  const [finishing, setFinishing] = useState(false)
+  const [lines, setLines] = useState([])
+  const [selectedLineId, setSelectedLineId] = useState('')
+  const [showLineSelect, setShowLineSelect] = useState(false)
 
   const fetchDetail = async () => {
     setLoading(true)
@@ -34,22 +38,63 @@ export default function OrderDetail() {
     }
   }
 
+  const fetchLines = async () => {
+    try {
+      const res = await api.get('/basic/lines', { params: { page: 1, pageSize: 1000, status: '启用' } })
+      setLines(res.data || [])
+    } catch (err) {
+      setLines([])
+    }
+  }
+
   useEffect(() => {
     fetchDetail()
+    fetchLines()
   }, [id])
 
-  // 下发开工（订单状态：开立 → 下发，触发报工单创建）
-  const handleStart = async () => {
+  // 下发（开立 → 下发）
+  const handleRelease = async () => {
     if (!order) return
     const confirmed = await Dialog.confirm({
-      title: '确认开工',
-      content: `确认下发开工订单 ${order.order_no}？将自动创建对应报工单`,
+      title: '确认下发',
+      content: `确认下发订单 ${order.order_no}？下发后可进行开工`,
     })
     if (!confirmed) return
     setStarting(true)
     try {
-      const res = await api.post(`/production/orders/${order.order_id}/release`)
-      Toast.show({ icon: 'success', content: res.message || '订单已下发开工' })
+      await api.post(`/production/orders/${order.order_id}/release`)
+      Toast.show({ icon: 'success', content: '订单已下发' })
+      fetchDetail()
+    } catch (err) {
+      Toast.show({ icon: 'fail', content: err.message || '下发失败' })
+    } finally {
+      setStarting(false)
+    }
+  }
+
+  // 开工（下发 → 开工）：选择产线并创建报工单
+  const handleStart = async () => {
+    if (!order) return
+    if (!selectedLineId) {
+      Toast.show({ icon: 'fail', content: '请选择生产产线' })
+      return
+    }
+    const line = lines.find(l => String(l.line_id) === String(selectedLineId))
+    const confirmed = await Dialog.confirm({
+      title: '确认开工',
+      content: `确认使用产线【${line?.line_name || ''}】开工订单 ${order.order_no}？将创建对应报工单`,
+    })
+    if (!confirmed) return
+    setStarting(true)
+    try {
+      await api.post('/production/report-orders', {
+        order_id: order.order_id,
+        line_id: Number(selectedLineId),
+        report_qty: order.planned_qty || 0,
+      })
+      Toast.show({ icon: 'success', content: '订单已开工' })
+      setShowLineSelect(false)
+      setSelectedLineId('')
       fetchDetail()
     } catch (err) {
       Toast.show({ icon: 'fail', content: err.message || '开工失败' })
@@ -58,7 +103,31 @@ export default function OrderDetail() {
     }
   }
 
-  // 跳转到该订单关联的报工单
+  // 完工（开工 → 完工）：调用报工单 finish 接口，联动订单完工
+  const handleFinish = async () => {
+    if (!order) return
+    const reportOrder = order.report_orders?.[0]
+    if (!reportOrder) {
+      Toast.show({ icon: 'fail', content: '未找到关联报工单' })
+      return
+    }
+    const confirmed = await Dialog.confirm({
+      title: '确认完工',
+      content: `确认完工订单 ${order.order_no}？完工后报工数据将变为只读`,
+    })
+    if (!confirmed) return
+    setFinishing(true)
+    try {
+      await api.post(`/production/report-orders/${reportOrder.report_order_id}/finish`)
+      Toast.show({ icon: 'success', content: '订单已完工' })
+      fetchDetail()
+    } catch (err) {
+      Toast.show({ icon: 'fail', content: err.message || '完工失败' })
+    } finally {
+      setFinishing(false)
+    }
+  }
+
   const handleViewReport = () => {
     if (order?.report_orders?.length > 0) {
       navigate(`/mobile/reporting/${order.report_orders[0].report_order_id}`)
@@ -77,19 +146,19 @@ export default function OrderDetail() {
 
   const status = order.status
   const statusStyle = getStatusStyle(status)
-  const canStart = status === '开立'
+  const canRelease = status === '开立'
+  const canStart = status === '下发'
+  const canFinish = status === '开工' && order.report_orders?.length > 0
   const hasReport = order.report_orders?.length > 0
 
   return (
     <div>
-      {/* 顶部返回栏 */}
       <div className="mobile-sub-header">
         <div className="mobile-sub-back" onClick={() => navigate(-1)}>‹</div>
         <div className="mobile-sub-title">订单详情</div>
       </div>
 
       <div className="mobile-page">
-        {/* 基本信息 */}
         <div className="mobile-detail-grid">
           <div className="mobile-flex-between" style={{ marginBottom: 8 }}>
             <div style={{ fontSize: 16, fontWeight: 600, color: '#212121' }}>{order.order_no}</div>
@@ -126,7 +195,6 @@ export default function OrderDetail() {
           </div>
         </div>
 
-        {/* 计划信息 */}
         <div className="mobile-section-title">计划信息</div>
         <div className="mobile-detail-grid">
           <div className="mobile-detail-row">
@@ -151,7 +219,6 @@ export default function OrderDetail() {
           </div>
         </div>
 
-        {/* 关联报工单 */}
         {hasReport && (
           <>
             <div className="mobile-section-title">关联报工单</div>
@@ -171,20 +238,93 @@ export default function OrderDetail() {
           </>
         )}
 
+        {/* 产线选择（仅在"下发"状态时显示） */}
+        {canStart && showLineSelect && (
+          <>
+            <div className="mobile-section-title">选择生产产线</div>
+            <div className="mobile-detail-grid">
+              <div className="mobile-form-item">
+                <label className="mobile-form-label required">生产产线</label>
+                <select
+                  className="mobile-form-input"
+                  value={selectedLineId}
+                  onChange={(e) => setSelectedLineId(e.target.value)}
+                >
+                  <option value="">请选择产线</option>
+                  {lines.map(l => (
+                    <option key={l.line_id} value={l.line_id}>{l.line_name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </>
+        )}
+
         {/* 操作按钮 */}
         <div style={{ marginTop: 24 }}>
-          {canStart ? (
+          {canRelease && (
             <Button
               block
               color="primary"
               size="large"
               loading={starting}
-              onClick={handleStart}
+              onClick={handleRelease}
               style={{ borderRadius: 8, height: 44 }}
             >
-              下发开工
+              下发
             </Button>
-          ) : hasReport ? (
+          )}
+
+          {canStart && !showLineSelect && (
+            <Button
+              block
+              color="primary"
+              size="large"
+              onClick={() => setShowLineSelect(true)}
+              style={{ borderRadius: 8, height: 44 }}
+            >
+              开工
+            </Button>
+          )}
+
+          {canStart && showLineSelect && (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button
+                block
+                color="default"
+                size="large"
+                onClick={() => { setShowLineSelect(false); setSelectedLineId('') }}
+                style={{ borderRadius: 8, height: 44, flex: 1 }}
+              >
+                取消
+              </Button>
+              <Button
+                block
+                color="primary"
+                size="large"
+                loading={starting}
+                onClick={handleStart}
+                style={{ borderRadius: 8, height: 44, flex: 2 }}
+              >
+                确认开工
+              </Button>
+            </div>
+          )}
+
+          {canFinish && (
+            <Button
+              block
+              color="primary"
+              size="large"
+              loading={finishing}
+              onClick={handleFinish}
+              style={{ borderRadius: 8, height: 44 }}
+            >
+              完工
+            </Button>
+          )}
+
+          {hasReport && !canFinish && !canRelease && !canStart && (
             <Button
               block
               color="primary"
@@ -194,7 +334,7 @@ export default function OrderDetail() {
             >
               查看报工单
             </Button>
-          ) : null}
+          )}
         </div>
       </div>
     </div>

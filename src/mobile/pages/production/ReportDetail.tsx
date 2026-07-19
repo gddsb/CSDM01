@@ -24,7 +24,6 @@ export default function ReportDetail() {
   const [activeTab, setActiveTab] = useState('defect')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [finishing, setFinishing] = useState(false)
 
   const [defectTypes, setDefectTypes] = useState([])
   const [materials, setMaterials] = useState([])
@@ -113,24 +112,6 @@ export default function ReportDetail() {
   useEffect(() => {
     if (id && selectedProcessId) fetchProcessData()
   }, [id, selectedProcessId])
-
-  const handleFinish = async () => {
-    const confirmed = await Dialog.confirm({
-      title: '确认完工',
-      content: '完工后数据将变为只读，确认完工？',
-    })
-    if (!confirmed) return
-    setFinishing(true)
-    try {
-      await api.post(`/production/report-orders/${id}/finish`)
-      Toast.show({ icon: 'success', content: '已完工' })
-      fetchReport()
-    } catch (err) {
-      Toast.show({ icon: 'fail', content: err.message || '完工失败' })
-    } finally {
-      setFinishing(false)
-    }
-  }
 
   const defectOptions = defectTypes
     .filter(d => (d.category_name === '制程检验类' || d.category_name === '制程检验类型')
@@ -268,21 +249,6 @@ export default function ReportDetail() {
           />
         )}
       </div>
-
-      {isEditable && (
-        <div style={{ padding: '12px 16px 24px', background: '#fff', borderTop: '1px solid #f0f0f0' }}>
-          <Button
-            block
-            color="primary"
-            size="large"
-            loading={finishing}
-            onClick={handleFinish}
-            style={{ borderRadius: 8, height: 44 }}
-          >
-            完工
-          </Button>
-        </div>
-      )}
     </div>
   )
 }
