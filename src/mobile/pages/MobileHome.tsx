@@ -1,13 +1,13 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  FileTextOutline,
-  ProfileOutline,
+  FileOutline,
+  UserOutline,
   CheckShieldOutline,
   SetOutline,
   SearchOutline,
-  FileSearchOutline,
-  AlertOutline,
+  ClockCircleOutline,
+  ExclamationOutline,
   EditSOutline,
 } from 'antd-mobile-icons'
 import { useApp } from '../../contexts/AppContext'
@@ -16,13 +16,13 @@ import './home.css'
 // 首页菜单（仅显示图标和名称）
 // 除"生产订单"和"生产报工"外，其他菜单功能后续开发（点击跳转到占位页）
 const menuItems = [
-  { key: '/mobile/orders', name: '生产订单', icon: <FileTextOutline />, color: '#1890ff', enabled: true },
-  { key: '/mobile/reporting', name: '生产报工', icon: <ProfileOutline />, color: '#52c41a', enabled: true },
+  { key: '/mobile/orders', name: '生产订单', icon: <FileOutline />, color: '#1890ff', enabled: true },
+  { key: '/mobile/reporting', name: '生产报工', icon: <UserOutline />, color: '#52c41a', enabled: true },
   { key: '/mobile/quality', name: '质量检验', icon: <CheckShieldOutline />, color: '#722ed1', enabled: false },
   { key: '/mobile/inspection', name: '设备巡检', icon: <SetOutline />, color: '#13c2c2', enabled: false },
   { key: '/mobile/craft', name: '工艺查询', icon: <SearchOutline />, color: '#fa8c16', enabled: false },
-  { key: '/mobile/trace', name: '工单追踪', icon: <FileSearchOutline />, color: '#eb2f96', enabled: false },
-  { key: '/mobile/exception', name: '异常上报', icon: <AlertOutline />, color: '#f5222d', enabled: false },
+  { key: '/mobile/trace', name: '工单追踪', icon: <ClockCircleOutline />, color: '#eb2f96', enabled: false },
+  { key: '/mobile/exception', name: '异常上报', icon: <ExclamationOutline />, color: '#f5222d', enabled: false },
   { key: '/mobile/archive', name: '档案更新', icon: <EditSOutline />, color: '#faad14', enabled: false },
 ]
 

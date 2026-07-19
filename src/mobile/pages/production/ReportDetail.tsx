@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Toast, Dialog, Button, Stepper, Input, TextArea, Selector, DatePicker, Switch } from 'antd-mobile'
-import { AddOutline, DeleteOutline, SaveOutline, PictureOutline } from 'antd-mobile-icons'
+import { AddOutline, DeleteOutline, CheckOutline, PictureOutline } from 'antd-mobile-icons'
 import api from '../../../utils/api'
 import dayjs from 'dayjs'
 import './report-detail.css'
@@ -398,7 +398,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
       {isEditable && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
           <Button block color="primary" fill="outline" size="small" onClick={handleSave} loading={saving}>
-            <SaveOutline /> 保存
+            <CheckOutline /> 保存
           </Button>
           <Button block color="primary" size="small" onClick={handleAdd}>
             <AddOutline /> 添加
@@ -566,7 +566,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
       {isEditable && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
           <Button block color="primary" fill="outline" size="small" onClick={handleSave} loading={saving}>
-            <SaveOutline /> 保存
+            <CheckOutline /> 保存
           </Button>
           <Button block color="primary" size="small" onClick={handleAdd}>
             <AddOutline /> 添加
@@ -761,7 +761,7 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
       {isEditable && (
         <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
           <Button block color="primary" fill="outline" size="small" onClick={handleSave} loading={saving}>
-            <SaveOutline /> 保存
+            <CheckOutline /> 保存
           </Button>
           <Button block color="primary" size="small" onClick={handleAdd}>
             <AddOutline /> 添加
