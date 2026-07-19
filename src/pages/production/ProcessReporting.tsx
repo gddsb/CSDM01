@@ -11,10 +11,10 @@ import {
 import dayjs from 'dayjs'
 import api from '../../utils/api'
 
-// 报工单状态：0=开工，1=完工
+// 报工单状态：后端模型 getter 返回中文名称 '开工'/'完工'
 const reportOrderStatusMap = {
-  0: { label: '开工', color: 'processing' },
-  1: { label: '完工', color: 'success' },
+  '开工': { label: '开工', color: 'processing' },
+  '完工': { label: '完工', color: 'success' },
 }
 
 const exceptionCategories = [
@@ -423,8 +423,8 @@ export default function ProcessReporting() {
     fetchAllData(selectedReport.report_order_id)
   }, [selectedReport, selectedProcessId, fetchAllData])
 
-  // 报工单状态：0=开工（可编辑），1=完工（只读）
-  const isEditable = selectedReport?.status === 0
+  // 报工单状态：'开工'=可编辑，'完工'=只读
+  const isEditable = selectedReport?.status === '开工'
 
   // 打开新增报工 Modal
   const handleOpenCreateModal = () => {
@@ -465,7 +465,7 @@ export default function ProcessReporting() {
     try {
       setFinishingReport(true)
       const res = await api.post(`/production/report-orders/${selectedReport.report_order_id}/finish`)
-      const updated = res.data || { ...selectedReport, status: 1, finish_time: new Date() }
+      const updated = res.data || { ...selectedReport, status: '完工', finish_time: new Date() }
       setSelectedReport(updated)
       // 完工后该报工单不再出现在下拉框（只显示开工状态）
       await fetchReportOrders()
