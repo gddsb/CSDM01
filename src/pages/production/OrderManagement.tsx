@@ -15,12 +15,14 @@ const { RangePicker } = DatePicker
 const statusColorMap = {
   '开立': 'default',
   '下发': 'processing',
+  '开工': 'processing',
   '完工': 'success',
+  '关闭': 'error',
 }
 
 const statusOptions = [
   { label: '开立', value: '开立' },
-  { label: '下发', value: '下发' },
+  { label: '开工', value: '开工' },
   { label: '完工', value: '完工' },
 ]
 
@@ -42,10 +44,10 @@ export default function OrderManagement() {
   // 筛选输入态
   const [keywordInput, setKeywordInput] = useState('')
   const [materialCodeInput, setMaterialCodeInput] = useState('')
-  const [statusInput, setStatusInput] = useState(['开立', '下发'])
+  const [statusInput, setStatusInput] = useState(['开立', '开工'])
   const [planDateRange, setPlanDateRange] = useState(null)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', materialCode: '', status: ['开立', '下发'], planDateStart: '', planDateEnd: '' })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', materialCode: '', status: ['开立', '开工'], planDateStart: '', planDateEnd: '' })
 
   // 获取订单列表
   useEffect(() => {
@@ -106,13 +108,13 @@ export default function OrderManagement() {
   const cMaterials = materials
 
   const pendingCount = data.filter(o => o.status === '开立').length
-  const releasedCount = data.filter(o => o.status === '下发').length
+  const startedCount = data.filter(o => o.status === '开工').length
   const closedCount = data.filter(o => o.status === '完工').length
 
   const stats = [
     { label: '总订单数', value: total, icon: <FileTextOutlined />, color: '#2196F3' },
     { label: '开立', value: pendingCount, icon: <ClockCircleOutlined />, color: '#9E9E9E' },
-    { label: '下发', value: releasedCount, icon: <SendOutlined />, color: '#FF9800' },
+    { label: '开工', value: startedCount, icon: <SendOutlined />, color: '#FF9800' },
     { label: '完工', value: closedCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
   ]
 
@@ -239,9 +241,9 @@ export default function OrderManagement() {
   const handleReset = () => {
     setKeywordInput('')
     setMaterialCodeInput('')
-    setStatusInput(['开立', '下发'])
+    setStatusInput(['开立', '开工'])
     setPlanDateRange(null)
-    setQuery(q => ({ ...q, page: 1, keyword: '', materialCode: '', status: ['开立', '下发'], planDateStart: '', planDateEnd: '' }))
+    setQuery(q => ({ ...q, page: 1, keyword: '', materialCode: '', status: ['开立', '开工'], planDateStart: '', planDateEnd: '' }))
   }
 
   const renderActions = (r) => {
@@ -261,7 +263,7 @@ export default function OrderManagement() {
         </Space>
       )
     }
-    if (r.status === '下发') {
+    if (r.status === '下发' || r.status === '开工') {
       return (
         <Space size={0}>
           <Button type="link" size="small" onClick={() => handleView(r)}>查看</Button>

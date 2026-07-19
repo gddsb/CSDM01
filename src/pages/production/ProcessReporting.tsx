@@ -94,10 +94,13 @@ export default function ProcessReporting() {
   const message = useMessage()
 
   // 不良类型下拉选项（必须在 fetchAllData 之前定义，避免 TDZ 错误）
+  // 制程不良记录页签：检验类型=制程检验类（兼容旧数据"制程检验类型"），不良类型=制程不良或来料不良
   const defectTypeOptions = useMemo(() => {
     const seen = new Set()
     return defectTypes
-      .filter(d => d.category_name === '制程检验类型' && d.status === '启用' && d.display !== false && d.display !== 0)
+      .filter(d => (d.category_name === '制程检验类' || d.category_name === '制程检验类型')
+        && (d.defect_type === '制程不良' || d.defect_type === '来料不良')
+        && d.status === '启用' && d.display !== false && d.display !== 0)
       .filter(d => {
         if (seen.has(d.defect_id)) return false
         seen.add(d.defect_id)
@@ -114,10 +117,13 @@ export default function ProcessReporting() {
       }))
   }, [defectTypes])
 
+  // 检验报废记录页签：检验类型=制程检验类，不良类型=检验报废
   const scrapTypeOptions = useMemo(() => {
     const seen = new Set()
     return defectTypes
-      .filter(d => d.category_name === '制程检验类型' && d.defect_type === '检验报废' && d.status === '启用' && d.display !== false && d.display !== 0)
+      .filter(d => (d.category_name === '制程检验类' || d.category_name === '制程检验类型')
+        && d.defect_type === '检验报废'
+        && d.status === '启用' && d.display !== false && d.display !== 0)
       .filter(d => {
         if (seen.has(d.defect_id)) return false
         seen.add(d.defect_id)
@@ -158,15 +164,22 @@ export default function ProcessReporting() {
     return () => { cancelled = true }
   }, [])
 
-  // 获取报工单列表（仅开工状态 status=0）
+  // 获取报工单列表（仅开工状态 status=0），并默认选中最近一条开工报工单
   const fetchReportOrders = useCallback(async () => {
     setLoading(true)
     try {
       const res = await api.get('/production/report-orders', { params: { page: 1, pageSize: 1000, status: 0 } })
-      setReportOrders(res.data || [])
+      const list = res.data || []
+      setReportOrders(list)
+      // 默认选中最近一条开工报工单（后端已按 created_at DESC 排序，第一条即最新）
+      setSelectedReport(prev => {
+        if (prev && list.some(r => r.report_order_id === prev.report_order_id)) return prev
+        return list[0] || null
+      })
     } catch (err) {
       message.error(err.message || '获取报工单列表失败')
       setReportOrders([])
+      setSelectedReport(null)
     } finally {
       setLoading(false)
     }
@@ -1282,10 +1295,14 @@ export default function ProcessReporting() {
     }
   }
 
-  // 校验单条生产物料记录
+  // 校验单条生产物料记录（批号、数量为必填项）
   const validateMaterialRecord = (record) => {
     if (!record.bas_material_id) {
       message.warning('请选择料号')
+      return false
+    }
+    if (!record.material_batch || !String(record.material_batch).trim()) {
+      message.warning('请填写批号')
       return false
     }
     if (!record.quantity || record.quantity <= 0) {
@@ -1471,7 +1488,7 @@ export default function ProcessReporting() {
   const materialColumns = [
     {
       title: '料品主键', dataIndex: 'bas_material_id', key: 'bas_material_id', width: 100,
-      render: (val) => val ?? '-',
+      render: (val) => <span style={{ whiteSpace: 'nowrap', display: 'inline-block' }}>{val ?? '-'}</span>,
     },
     {
       title: '物料类型', dataIndex: 'material_type', key: 'material_type', width: 100,
@@ -1537,13 +1554,14 @@ export default function ProcessReporting() {
       },
     },
     {
-      title: '批号', dataIndex: 'material_batch', key: 'material_batch', width: 120,
+      title: <span><span style={{ color: '#ff4d4f' }}>*</span> 批号</span>, dataIndex: 'material_batch', key: 'material_batch', width: 120,
       render: (val, record) => isEditable ? (
         <Input
           placeholder="批号"
           value={val}
           onChange={(e) => handleMaterialChange(record.id, 'material_batch', e.target.value)}
           size="small"
+          status={!val || !String(val).trim() ? 'error' : undefined}
         />
       ) : val || '-',
     },
@@ -1559,7 +1577,7 @@ export default function ProcessReporting() {
       ) : val || '-',
     },
     {
-      title: '数量', dataIndex: 'quantity', key: 'quantity', width: 100,
+      title: <span><span style={{ color: '#ff4d4f' }}>*</span> 数量</span>, dataIndex: 'quantity', key: 'quantity', width: 100,
       render: (val, record) => isEditable ? (
         <InputNumber
           min={1}
@@ -1570,6 +1588,7 @@ export default function ProcessReporting() {
           style={{ width: '100%' }}
           size="small"
           controls={false}
+          status={!val || val <= 0 ? 'error' : undefined}
         />
       ) : val,
     },
@@ -2448,13 +2467,12 @@ export default function ProcessReporting() {
                 >
                   {reportOrderStatusMap[selectedReport.status as 0 | 1]?.label || '-'}
                 </Tag>
-                {isEditable && (
-                  <>
-                    <Popconfirm title="确认完工？完工后数据将变为只读" onConfirm={handleFinishReport}>
-                      <Button type="primary" loading={finishingReport}>完工</Button>
-                    </Popconfirm>
-                  </>
-                )}
+                {/* 开工/完工按钮不同时显示：仅在开工状态下显示"完工"按钮 */}
+                {isEditable ? (
+                  <Popconfirm title="确认完工？完工后数据将变为只读" onConfirm={handleFinishReport}>
+                    <Button type="primary" loading={finishingReport}>完工</Button>
+                  </Popconfirm>
+                ) : null}
               </Space>
             </Col>
           )}
