@@ -6,13 +6,11 @@ import api from '../../../utils/api'
 import dayjs from 'dayjs'
 import './report-detail.css'
 
-// 5 大页签
 const TABS = [
-  { key: 'defect', title: '制程不良' },
-  { key: 'scrap', title: '检验报废' },
-  { key: 'material', title: '生产物料' },
-  { key: 'exception', title: '异常工时' },
-  { key: 'manpower', title: '人员工时' },
+  { key: 'defect', title: '不良记录', needProcess: true },
+  { key: 'material', title: '物料记录', needProcess: true },
+  { key: 'scrap', title: '检验报废', needProcess: false },
+  { key: 'exception', title: '异常工时', needProcess: false },
 ]
 
 const genTempId = () => 'tmp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6)
@@ -28,21 +26,18 @@ export default function ReportDetail() {
   const [saving, setSaving] = useState(false)
   const [finishing, setFinishing] = useState(false)
 
-  // 基础数据
   const [defectTypes, setDefectTypes] = useState([])
   const [materials, setMaterials] = useState([])
   const [devices, setDevices] = useState([])
 
-  // 5 大页签列表数据
   const [prodDefectList, setProdDefectList] = useState([])
   const [scrapList, setScrapList] = useState([])
   const [materialList, setMaterialList] = useState([])
   const [exceptionList, setExceptionList] = useState([])
-  const [manpowerList, setManpowerList] = useState([])
 
   const isEditable = report?.status === 0 || report?.status === '0' || report?.status === '开工'
+  const currentTabNeedProcess = TABS.find(t => t.key === activeTab)?.needProcess
 
-  // 加载基础数据
   useEffect(() => {
     Promise.all([
       api.get('/basic/defect-types', { params: { page: 1, pageSize: 1000, status: '启用' } }),
@@ -81,21 +76,29 @@ export default function ReportDetail() {
     }
   }
 
-  const fetchAllData = async () => {
+  const fetchProcessData = async () => {
     if (!id || !selectedProcessId) return
     try {
-      const [defectRes, scrapRes, exceptionRes, manpowerRes, materialRes] = await Promise.all([
+      const [defectRes, materialRes] = await Promise.all([
         api.get('/production/process-defects', { params: { report_order_id: id, process_id: selectedProcessId, page: 1, pageSize: 1000 } }),
-        api.get('/production/scrap-defects', { params: { report_order_id: id, page: 1, pageSize: 1000 } }),
-        api.get('/production/process-exceptions', { params: { report_order_id: id, page: 1, pageSize: 1000 } }),
-        api.get('/production/manpower-records', { params: { report_order_id: id, page: 1, pageSize: 1000 } }),
         api.get('/production/process-materials', { params: { report_order_id: id, process_id: selectedProcessId, page: 1, pageSize: 1000 } }),
       ])
       setProdDefectList((defectRes.data || []).map(d => ({ ...d, id: d.defect_id || genTempId() })))
+      setMaterialList((materialRes.data || []).map(m => ({ ...m, id: m.material_id || genTempId() })))
+    } catch (err) {
+      Toast.show({ icon: 'fail', content: err.message || '获取数据失败' })
+    }
+  }
+
+  const fetchGlobalData = async () => {
+    if (!id) return
+    try {
+      const [scrapRes, exceptionRes] = await Promise.all([
+        api.get('/production/scrap-defects', { params: { report_order_id: id, page: 1, pageSize: 1000 } }),
+        api.get('/production/process-exceptions', { params: { report_order_id: id, page: 1, pageSize: 1000 } }),
+      ])
       setScrapList((scrapRes.data || []).map(d => ({ ...d, id: d.scrap_id || genTempId() })))
       setExceptionList((exceptionRes.data || []).map(e => ({ ...e, id: e.exception_id || genTempId() })))
-      setManpowerList((manpowerRes.data || []).map(m => ({ ...m, id: m.record_id || genTempId() })))
-      setMaterialList((materialRes.data || []).map(m => ({ ...m, id: m.material_id || genTempId() })))
     } catch (err) {
       Toast.show({ icon: 'fail', content: err.message || '获取数据失败' })
     }
@@ -104,13 +107,13 @@ export default function ReportDetail() {
   useEffect(() => {
     fetchReport()
     fetchProcesses()
+    fetchGlobalData()
   }, [id])
 
   useEffect(() => {
-    if (id && selectedProcessId) fetchAllData()
+    if (id && selectedProcessId) fetchProcessData()
   }, [id, selectedProcessId])
 
-  // 完工
   const handleFinish = async () => {
     const confirmed = await Dialog.confirm({
       title: '确认完工',
@@ -129,7 +132,6 @@ export default function ReportDetail() {
     }
   }
 
-  // 下拉数据：制程不良（制程不良/来料不良）
   const defectOptions = defectTypes
     .filter(d => (d.category_name === '制程检验类' || d.category_name === '制程检验类型')
       && (d.defect_type === '制程不良' || d.defect_type === '来料不良')
@@ -158,60 +160,42 @@ export default function ReportDetail() {
 
   return (
     <div>
-      {/* 顶部返回栏 */}
       <div className="mobile-sub-header">
         <div className="mobile-sub-back" onClick={() => navigate(-1)}>‹</div>
         <div className="mobile-sub-title">报工单详情</div>
       </div>
 
-      {/* 报工单基本信息 */}
       <div className="mobile-page" style={{ paddingBottom: 0 }}>
-        <div className="mobile-detail-grid">
-          <div className="mobile-flex-between" style={{ marginBottom: 8 }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: '#212121' }}>{report.report_no}</div>
-            <span className={`mobile-status-tag ${report.status === 0 || report.status === '开工' ? 'started' : 'done'}`}
-              style={{
-                background: report.status === 0 || report.status === '开工' ? '#f6ffed' : '#f0f0f0',
-                color: report.status === 0 || report.status === '开工' ? '#52c41a' : '#595959',
-              }}>
+        <div className="rd-header-card">
+          <div className="rd-header-row">
+            <div className="rd-header-left">
+              <span className="rd-report-no">{report.report_no}</span>
+            </div>
+            <div className="rd-header-right">
+              <span className="rd-label">产线</span>
+              <span className="rd-value">{report.line_name || '-'}</span>
+            </div>
+          </div>
+          <div className="rd-header-row">
+            <div className="rd-header-left">
+              <span className="rd-label">料号</span>
+              <span className="rd-value">{report.material_code || '-'}</span>
+            </div>
+            <div className="rd-header-right">
+              <span className="rd-label">料品名称</span>
+              <span className="rd-value rd-material-name">{report.material_name || '-'}</span>
+            </div>
+          </div>
+          <div className="rd-header-row rd-qty-row">
+            <span className="rd-label">报工数量</span>
+            <span className="rd-qty">{report.report_qty || 0}</span>
+            <span className={`rd-status-tag ${report.status === 0 || report.status === '开工' ? 'started' : 'done'}`}>
               {report.status === 0 || report.status === '开工' ? '开工' : '完工'}
             </span>
           </div>
-          <div className="mobile-detail-row">
-            <div className="mobile-detail-label">订单号</div>
-            <div className="mobile-detail-value">{report.order_no || '-'}</div>
-          </div>
-          <div className="mobile-detail-row">
-            <div className="mobile-detail-label">料品</div>
-            <div className="mobile-detail-value">{report.material_name || '-'}</div>
-          </div>
-          <div className="mobile-detail-row">
-            <div className="mobile-detail-label">报工数</div>
-            <div className="mobile-detail-value" style={{ fontWeight: 600, color: '#2196F3' }}>{report.report_qty || 0}</div>
-          </div>
-          <div className="mobile-detail-row">
-            <div className="mobile-detail-label">产线</div>
-            <div className="mobile-detail-value">{report.line_name || '-'}</div>
-          </div>
         </div>
-
-        {/* 工序选择 */}
-        {processes.length > 0 && (
-          <div className="mobile-filter-chips" style={{ background: '#fff', padding: '8px 12px', margin: 0 }}>
-            {processes.map(p => (
-              <div
-                key={p.process_id}
-                className={`mobile-filter-chip ${String(selectedProcessId) === String(p.process_id) ? 'active' : ''}`}
-                onClick={() => setSelectedProcessId(p.process_id)}
-              >
-                {p.process_name}
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
-      {/* 5 大页签 */}
       <div className="mobile-tabs" style={{ marginTop: 8 }}>
         {TABS.map(t => (
           <div
@@ -225,7 +209,20 @@ export default function ReportDetail() {
       </div>
 
       <div className="mobile-page" style={{ paddingTop: 12 }}>
-        {/* 制程不良记录 */}
+        {currentTabNeedProcess && processes.length > 0 && (
+          <div className="rd-process-chips">
+            {processes.map(p => (
+              <div
+                key={p.process_id}
+                className={`rd-process-chip ${String(selectedProcessId) === String(p.process_id) ? 'active' : ''}`}
+                onClick={() => setSelectedProcessId(p.process_id)}
+              >
+                {p.process_name}
+              </div>
+            ))}
+          </div>
+        )}
+
         {activeTab === 'defect' && (
           <DefectTab
             list={prodDefectList}
@@ -238,20 +235,6 @@ export default function ReportDetail() {
           />
         )}
 
-        {/* 检验报废记录 */}
-        {activeTab === 'scrap' && (
-          <DefectTab
-            list={scrapList}
-            setList={setScrapList}
-            options={scrapOptions}
-            isEditable={isEditable}
-            category="scrap"
-            reportOrderId={id}
-            processId={selectedProcessId}
-          />
-        )}
-
-        {/* 生产物料记录 */}
         {activeTab === 'material' && (
           <MaterialTab
             list={materialList}
@@ -263,7 +246,17 @@ export default function ReportDetail() {
           />
         )}
 
-        {/* 异常工时记录 */}
+        {activeTab === 'scrap' && (
+          <ScrapTab
+            list={scrapList}
+            setList={setScrapList}
+            options={scrapOptions}
+            isEditable={isEditable}
+            category="scrap"
+            reportOrderId={id}
+          />
+        )}
+
         {activeTab === 'exception' && (
           <ExceptionTab
             list={exceptionList}
@@ -274,20 +267,8 @@ export default function ReportDetail() {
             reportTime={report.report_time}
           />
         )}
-
-        {/* 人员工时记录 */}
-        {activeTab === 'manpower' && (
-          <ManpowerTab
-            list={manpowerList}
-            setList={setManpowerList}
-            isEditable={isEditable}
-            reportOrderId={id}
-            report={report}
-          />
-        )}
       </div>
 
-      {/* 底部完工按钮 */}
       {isEditable && (
         <div style={{ padding: '12px 16px 24px', background: '#fff', borderTop: '1px solid #f0f0f0' }}>
           <Button
@@ -306,12 +287,10 @@ export default function ReportDetail() {
   )
 }
 
-/* ====================== 制程不良 / 检验报废 共用组件 ====================== */
 function DefectTab({ list, setList, options, isEditable, category, reportOrderId, processId }) {
   const [saving, setSaving] = useState(false)
 
   const handleAdd = async () => {
-    // 添加前先保存
     await handleSave()
     setList(prev => [...prev, {
       id: genTempId(),
@@ -350,9 +329,8 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
         }
       }
       Toast.show({ icon: 'success', content: `已保存 ${valid.length} 条记录` })
-      // 重新加载
       const res = await api.get(url, { params: { report_order_id: reportOrderId, process_id: processId, page: 1, pageSize: 1000 } })
-      setList((res.data || []).map(d => ({ ...d, id: d.defect_id || d.scrap_id || genTempId() })))
+      setList((res.data || []).map(d => ({ ...d, id: d.defect_id || genTempId() })))
     } catch (err) {
       Toast.show({ icon: 'fail', content: err.message || '保存失败' })
     } finally {
@@ -379,7 +357,6 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
     setList(prev => prev.map(item => {
       if (item.id !== recordId) return item
       const next = { ...item, [field]: value }
-      // 选择不良项目时自动填充单位
       if (field === 'defect_type_id') {
         const opt = options.find(o => o.value === value)
         if (opt) {
@@ -482,7 +459,6 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
   )
 }
 
-/* ====================== 生产物料组件 ====================== */
 function MaterialTab({ list, setList, options, isEditable, reportOrderId, processId }) {
   const [saving, setSaving] = useState(false)
 
@@ -639,7 +615,175 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
   )
 }
 
-/* ====================== 异常工时组件 ====================== */
+function ScrapTab({ list, setList, options, isEditable, category, reportOrderId }) {
+  const [saving, setSaving] = useState(false)
+
+  const handleAdd = async () => {
+    await handleSave()
+    setList(prev => [...prev, {
+      id: genTempId(),
+      report_order_id: Number(reportOrderId),
+      defect_type_id: null,
+      defect_qty: 0,
+      defect_unit: '',
+      description: '',
+    }])
+  }
+
+  const handleSave = async () => {
+    if (!isEditable) return
+    const valid = list.filter(d => d.defect_type_id && d.defect_qty > 0)
+    if (valid.length === 0) {
+      Toast.show({ icon: 'fail', content: '没有需要保存的记录' })
+      return
+    }
+    setSaving(true)
+    try {
+      const url = '/production/scrap-defects'
+      for (const d of valid) {
+        const payload = {
+          report_order_id: d.report_order_id,
+          defect_type_id: d.defect_type_id,
+          defect_qty: d.defect_qty,
+          defect_unit: d.defect_unit || '',
+          description: d.description || '',
+        }
+        if (d.scrap_id) {
+          await api.put(`${url}/${d.scrap_id}`, payload)
+        } else {
+          await api.post(url, payload)
+        }
+      }
+      Toast.show({ icon: 'success', content: `已保存 ${valid.length} 条记录` })
+      const res = await api.get(url, { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } })
+      setList((res.data || []).map(d => ({ ...d, id: d.scrap_id || genTempId() })))
+    } catch (err) {
+      Toast.show({ icon: 'fail', content: err.message || '保存失败' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async (d) => {
+    const confirmed = await Dialog.confirm({ content: '确认删除该记录？' })
+    if (!confirmed) return
+    try {
+      if (d.scrap_id) {
+        await api.delete(`/production/scrap-defects/${d.scrap_id}`)
+      }
+      setList(prev => prev.filter(x => x.id !== d.id))
+      Toast.show({ icon: 'success', content: '已删除' })
+    } catch (err) {
+      Toast.show({ icon: 'fail', content: err.message || '删除失败' })
+    }
+  }
+
+  const handleChange = (recordId, field, value) => {
+    setList(prev => prev.map(item => {
+      if (item.id !== recordId) return item
+      const next = { ...item, [field]: value }
+      if (field === 'defect_type_id') {
+        const opt = options.find(o => o.value === value)
+        if (opt) {
+          next.defect_unit = opt.defect_unit || ''
+          next.defect_code = opt.defect_code
+          next.defect_name = opt.defect_name
+          next.defect_type = opt.defect_type
+        }
+      }
+      return next
+    }))
+  }
+
+  return (
+    <div>
+      {isEditable && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+          <Button block color="primary" fill="outline" size="small" onClick={handleSave} loading={saving}>
+            <CheckOutline /> 保存
+          </Button>
+          <Button block color="primary" size="small" onClick={handleAdd}>
+            <AddOutline /> 添加
+          </Button>
+        </div>
+      )}
+
+      {list.length === 0 && <div className="mobile-empty">暂无记录</div>}
+
+      {list.map(record => (
+        <div key={record.id} className="mobile-card">
+          <div className="mobile-flex-between" style={{ marginBottom: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#424242' }}>
+              {record.defect_code ? `${record.defect_code} ${record.defect_name || ''}` : '新增记录'}
+            </span>
+            {isEditable && (
+              <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} />
+            )}
+          </div>
+
+          {isEditable ? (
+            <>
+              <div className="mobile-form-item">
+                <label className="mobile-form-label required">报废项目</label>
+                <select
+                  className="mobile-form-input"
+                  value={record.defect_type_id || ''}
+                  onChange={(e) => handleChange(record.id, 'defect_type_id', e.target.value ? Number(e.target.value) : null)}
+                >
+                  <option value="">请选择</option>
+                  {options.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="mobile-form-item">
+                <label className="mobile-form-label required">数量</label>
+                <input
+                  type="number"
+                  className="mobile-form-input"
+                  value={record.defect_qty || 0}
+                  onChange={(e) => handleChange(record.id, 'defect_qty', Number(e.target.value))}
+                  min={0}
+                />
+              </div>
+              <div className="mobile-form-item">
+                <label className="mobile-form-label">单位</label>
+                <input
+                  className="mobile-form-input"
+                  value={record.defect_unit || ''}
+                  onChange={(e) => handleChange(record.id, 'defect_unit', e.target.value)}
+                />
+              </div>
+              <div className="mobile-form-item">
+                <label className="mobile-form-label">备注</label>
+                <textarea
+                  className="mobile-form-input"
+                  style={{ height: 60, paddingTop: 8 }}
+                  value={record.description || ''}
+                  onChange={(e) => handleChange(record.id, 'description', e.target.value)}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="mobile-card-row">
+                <span className="mobile-card-label">数量</span>
+                <span className="mobile-card-value">{record.defect_qty || 0} {record.defect_unit || ''}</span>
+              </div>
+              {record.description && (
+                <div className="mobile-card-row">
+                  <span className="mobile-card-label">备注</span>
+                  <span className="mobile-card-value">{record.description}</span>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, reportTime }) {
   const [saving, setSaving] = useState(false)
   const exceptionCategories = ['换型换线', '停机待料', '故障维修', '其它停机']
@@ -713,18 +857,15 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
       handleChange(recordId, field, null)
       return
     }
-    // 用报工时间的日期 + 用户选择的时分，避免跨天错乱
     const baseDate = reportTime ? dayjs(reportTime).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')
     const timeStr = dayjs(value).format('HH:mm:ss')
     const newTime = `${baseDate}T${timeStr}`
 
-    // 禁止未来时间
     if (dayjs(newTime).isAfter(dayjs())) {
       Toast.show({ icon: 'fail', content: '不能选择未来时间' })
       return
     }
 
-    // 区间校验
     const record = list.find(r => r.id === recordId)
     if (field === 'start_time' && record?.end_time && dayjs(newTime).isAfter(dayjs(record.end_time))) {
       Toast.show({ icon: 'fail', content: '开始时间不能晚于结束时间' })
@@ -735,7 +876,6 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
       return
     }
 
-    // 区间重叠校验
     const overlap = list.some(e => {
       if (String(e.id) === String(recordId)) return false
       if (!e.start_time) return false
@@ -868,166 +1008,6 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
           )}
         </div>
       ))}
-    </div>
-  )
-}
-
-/* ====================== 人员工时组件 ====================== */
-function ManpowerTab({ list, setList, isEditable, reportOrderId, report }) {
-  const [saving, setSaving] = useState(false)
-
-  // 开工状态：结束时间用当前时间；完工状态：用 finish_time
-  const isFinished = !(report?.status === 0 || report?.status === '0' || report?.status === '开工')
-  const endTime = isFinished ? report?.finish_time : new Date()
-  const startTime = report?.report_time
-  const hours = startTime && endTime
-    ? Number(((dayjs(endTime).valueOf() - dayjs(startTime).valueOf()) / 3600000).toFixed(2))
-    : 0
-
-  const record = list[0] // 每个报工单只有一条人员工时记录
-  const totalPeople = record
-    ? (Number(record.skilled_count) || 0) + (Number(record.general_count) || 0) + (Number(record.labor_count) || 0) + (Number(record.other_count) || 0)
-    : 0
-  const manHours = Number((hours * totalPeople).toFixed(2))
-
-  const handleChange = (field, value) => {
-    if (!record) return
-    setList(prev => prev.map(item => item.id === record.id ? { ...item, [field]: value } : item))
-  }
-
-  const handleSave = async () => {
-    if (!record) return
-    if (!record.record_id) {
-      Toast.show({ icon: 'fail', content: '记录不存在' })
-      return
-    }
-    setSaving(true)
-    try {
-      await api.put(`/production/manpower-records/${record.record_id}`, {
-        skilled_count: record.skilled_count || 0,
-        general_count: record.general_count || 0,
-        labor_count: record.labor_count || 0,
-        other_count: record.other_count || 0,
-        shift: record.shift || '白班',
-      })
-      Toast.show({ icon: 'success', content: '保存成功' })
-      const res = await api.get('/production/manpower-records', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } })
-      setList((res.data || []).map(m => ({ ...m, id: m.record_id || genTempId() })))
-    } catch (err) {
-      Toast.show({ icon: 'fail', content: err.message || '保存失败' })
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  if (!record) {
-    return <div className="mobile-empty">暂无人员工时记录</div>
-  }
-
-  return (
-    <div>
-      {/* 工时信息（自动计算） */}
-      <div className="mobile-card" style={{ background: '#e6f4ff', borderColor: '#91caff' }}>
-        <div className="mobile-card-row">
-          <span className="mobile-card-label">开始时间</span>
-          <span className="mobile-card-value">{startTime ? dayjs(startTime).format('MM-DD HH:mm') : '-'}</span>
-        </div>
-        <div className="mobile-card-row">
-          <span className="mobile-card-label">结束时间</span>
-          <span className="mobile-card-value">
-            {isFinished
-              ? (endTime ? dayjs(endTime).format('MM-DD HH:mm') : '-')
-              : <span style={{ color: '#52c41a' }}>进行中</span>}
-          </span>
-        </div>
-        <div className="mobile-card-row">
-          <span className="mobile-card-label">已投入工时</span>
-          <span className="mobile-card-value" style={{ fontWeight: 600, color: '#2196F3' }}>{hours} 小时</span>
-        </div>
-      </div>
-
-      {/* 人员录入 */}
-      <div className="mobile-card">
-        <div className="mobile-form-item">
-          <label className="mobile-form-label">班次</label>
-          <select
-            className="mobile-form-input"
-            value={record.shift || '白班'}
-            onChange={(e) => handleChange('shift', e.target.value)}
-            disabled={!isEditable}
-          >
-            <option value="白班">白班</option>
-            <option value="夜班">夜班</option>
-          </select>
-        </div>
-        <div className="mobile-form-item">
-          <label className="mobile-form-label">技工人数</label>
-          <input
-            type="number"
-            className="mobile-form-input"
-            value={record.skilled_count || 0}
-            onChange={(e) => handleChange('skilled_count', Number(e.target.value))}
-            min={0}
-            disabled={!isEditable}
-          />
-        </div>
-        <div className="mobile-form-item">
-          <label className="mobile-form-label">普工人数</label>
-          <input
-            type="number"
-            className="mobile-form-input"
-            value={record.general_count || 0}
-            onChange={(e) => handleChange('general_count', Number(e.target.value))}
-            min={0}
-            disabled={!isEditable}
-          />
-        </div>
-        <div className="mobile-form-item">
-          <label className="mobile-form-label">劳务工人数</label>
-          <input
-            type="number"
-            className="mobile-form-input"
-            value={record.labor_count || 0}
-            onChange={(e) => handleChange('labor_count', Number(e.target.value))}
-            min={0}
-            disabled={!isEditable}
-          />
-        </div>
-        <div className="mobile-form-item">
-          <label className="mobile-form-label">其他人数</label>
-          <input
-            type="number"
-            className="mobile-form-input"
-            value={record.other_count || 0}
-            onChange={(e) => handleChange('other_count', Number(e.target.value))}
-            min={0}
-            disabled={!isEditable}
-          />
-        </div>
-
-        <div style={{
-          background: '#f5f6f8', borderRadius: 6, padding: 10, marginTop: 8,
-          display: 'flex', justifyContent: 'space-between', fontSize: 13,
-        }}>
-          <span style={{ color: '#757575' }}>总人数 / 总工时</span>
-          <span style={{ fontWeight: 600, color: '#2196F3' }}>
-            {totalPeople} 人 / {manHours} 工时
-          </span>
-        </div>
-      </div>
-
-      {isEditable && (
-        <Button
-          block
-          color="primary"
-          size="large"
-          loading={saving}
-          onClick={handleSave}
-          style={{ borderRadius: 8, height: 44, marginTop: 12 }}
-        >
-          保存
-        </Button>
-      )}
     </div>
   )
 }
