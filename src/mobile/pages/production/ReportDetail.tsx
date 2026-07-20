@@ -190,22 +190,6 @@ export default function ReportDetail() {
       </div>
 
       <div className="mobile-page" style={{ paddingTop: 12 }}>
-        {currentTabNeedProcess && processes.length > 0 && (
-          <div className="mobile-form-item">
-            <label className="mobile-form-label">工序</label>
-            <select
-              className="mobile-form-input"
-              value={selectedProcessId || ''}
-              onChange={(e) => setSelectedProcessId(e.target.value ? Number(e.target.value) : null)}
-            >
-              <option value="">请选择工序</option>
-              {processes.map(p => (
-                <option key={p.process_id} value={p.process_id}>{p.process_name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
         {activeTab === 'defect' && (
           <DefectTab
             list={prodDefectList}
@@ -215,6 +199,9 @@ export default function ReportDetail() {
             category="defect"
             reportOrderId={id}
             processId={selectedProcessId}
+            processes={processes}
+            onProcessChange={setSelectedProcessId}
+            showProcess={currentTabNeedProcess && processes.length > 0}
           />
         )}
 
@@ -226,6 +213,9 @@ export default function ReportDetail() {
             isEditable={isEditable}
             reportOrderId={id}
             processId={selectedProcessId}
+            processes={processes}
+            onProcessChange={setSelectedProcessId}
+            showProcess={currentTabNeedProcess && processes.length > 0}
           />
         )}
 
@@ -255,7 +245,7 @@ export default function ReportDetail() {
   )
 }
 
-function DefectTab({ list, setList, options, isEditable, category, reportOrderId, processId }) {
+function DefectTab({ list, setList, options, isEditable, category, reportOrderId, processId, processes, onProcessChange, showProcess }) {
   const [saving, setSaving] = useState(false)
 
   const handleAdd = async () => {
@@ -340,86 +330,102 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
 
   return (
     <div>
-      {isEditable && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-          <Button block color="primary" fill="outline" size="small" onClick={handleSave} loading={saving}>
-            <CheckOutline /> 保存
-          </Button>
-          <Button block color="primary" size="small" onClick={handleAdd}>
-            <AddOutline /> 添加
-          </Button>
-        </div>
-      )}
+      <div className="rd-toolbar">
+        {showProcess && (
+          <select
+            className="rd-process-select"
+            value={processId || ''}
+            onChange={(e) => onProcessChange && onProcessChange(e.target.value ? Number(e.target.value) : null)}
+          >
+            <option value="">请选择工序</option>
+            {processes.map(p => (
+              <option key={p.process_id} value={p.process_id}>{p.process_name}</option>
+            ))}
+          </select>
+        )}
+        {isEditable && (
+          <div className="rd-toolbar-btns">
+            <Button fill="outline" size="small" onClick={handleSave} loading={saving}>
+              <CheckOutline /> 保存
+            </Button>
+            <Button color="primary" size="small" onClick={handleAdd}>
+              <AddOutline /> 添加
+            </Button>
+          </div>
+        )}
+      </div>
 
       {list.length === 0 && <div className="mobile-empty">暂无记录</div>}
 
       {list.map(record => (
-        <div key={record.id} className="mobile-card">
-          <div className="mobile-flex-between" style={{ marginBottom: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#424242' }}>
+        <div key={record.id} className="rd-list-item">
+          <div className="rd-list-item-header">
+            <span className="rd-list-item-title">
               {record.defect_code ? `${record.defect_code} ${record.defect_name || ''}` : '新增记录'}
             </span>
             {isEditable && (
-              <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} />
+              <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} fontSize={16} />
             )}
           </div>
 
           {isEditable ? (
-            <>
-              <div className="mobile-form-item">
-                <label className="mobile-form-label required">不良项目</label>
-                <select
-                  className="mobile-form-input"
-                  value={record.defect_type_id || ''}
-                  onChange={(e) => handleChange(record.id, 'defect_type_id', e.target.value ? Number(e.target.value) : null)}
-                >
-                  <option value="">请选择</option>
-                  {options.map(o => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
+            <div className="rd-list-item-body">
+              <div className="rd-form-row">
+                <div className="rd-form-item">
+                  <label className="rd-form-label">不良项目</label>
+                  <select
+                    className="rd-form-input"
+                    value={record.defect_type_id || ''}
+                    onChange={(e) => handleChange(record.id, 'defect_type_id', e.target.value ? Number(e.target.value) : null)}
+                  >
+                    <option value="">请选择</option>
+                    {options.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="rd-form-item">
+                  <label className="rd-form-label">数量</label>
+                  <input
+                    type="number"
+                    className="rd-form-input"
+                    value={record.defect_qty || 0}
+                    onChange={(e) => handleChange(record.id, 'defect_qty', Number(e.target.value))}
+                    min={0}
+                  />
+                </div>
+                <div className="rd-form-item">
+                  <label className="rd-form-label">单位</label>
+                  <input
+                    className="rd-form-input"
+                    value={record.defect_unit || ''}
+                    onChange={(e) => handleChange(record.id, 'defect_unit', e.target.value)}
+                  />
+                </div>
               </div>
-              <div className="mobile-form-item">
-                <label className="mobile-form-label required">数量</label>
-                <input
-                  type="number"
-                  className="mobile-form-input"
-                  value={record.defect_qty || 0}
-                  onChange={(e) => handleChange(record.id, 'defect_qty', Number(e.target.value))}
-                  min={0}
-                />
-              </div>
-              <div className="mobile-form-item">
-                <label className="mobile-form-label">单位</label>
-                <input
-                  className="mobile-form-input"
-                  value={record.defect_unit || ''}
-                  onChange={(e) => handleChange(record.id, 'defect_unit', e.target.value)}
-                />
-              </div>
-              <div className="mobile-form-item">
-                <label className="mobile-form-label">备注</label>
+              <div className="rd-form-item">
+                <label className="rd-form-label">备注</label>
                 <textarea
-                  className="mobile-form-input"
-                  style={{ height: 60, paddingTop: 8 }}
+                  className="rd-form-input"
+                  style={{ height: 48, paddingTop: 6 }}
                   value={record.description || ''}
                   onChange={(e) => handleChange(record.id, 'description', e.target.value)}
                 />
               </div>
-            </>
+            </div>
           ) : (
-            <>
-              <div className="mobile-card-row">
-                <span className="mobile-card-label">数量</span>
-                <span className="mobile-card-value">{record.defect_qty || 0} {record.defect_unit || ''}</span>
+            <div className="rd-list-item-body">
+              <div className="rd-list-row">
+                <span className="rd-list-label">数量</span>
+                <span className="rd-list-value">{record.defect_qty || 0} {record.defect_unit || ''}</span>
               </div>
               {record.description && (
-                <div className="mobile-card-row">
-                  <span className="mobile-card-label">备注</span>
-                  <span className="mobile-card-value">{record.description}</span>
+                <div className="rd-list-row">
+                  <span className="rd-list-label">备注</span>
+                  <span className="rd-list-value">{record.description}</span>
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
       ))}
@@ -427,7 +433,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
   )
 }
 
-function MaterialTab({ list, setList, options, isEditable, reportOrderId, processId }) {
+function MaterialTab({ list, setList, options, isEditable, reportOrderId, processId, processes, onProcessChange, showProcess }) {
   const [saving, setSaving] = useState(false)
 
   const handleAdd = async () => {
@@ -507,75 +513,87 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
 
   return (
     <div>
-      {isEditable && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-          <Button block color="primary" fill="outline" size="small" onClick={handleSave} loading={saving}>
-            <CheckOutline /> 保存
-          </Button>
-          <Button block color="primary" size="small" onClick={handleAdd}>
-            <AddOutline /> 添加
-          </Button>
-        </div>
-      )}
+      <div className="rd-toolbar">
+        {showProcess && (
+          <select
+            className="rd-process-select"
+            value={processId || ''}
+            onChange={(e) => onProcessChange && onProcessChange(e.target.value ? Number(e.target.value) : null)}
+          >
+            <option value="">请选择工序</option>
+            {processes.map(p => (
+              <option key={p.process_id} value={p.process_id}>{p.process_name}</option>
+            ))}
+          </select>
+        )}
+        {isEditable && (
+          <div className="rd-toolbar-btns">
+            <Button fill="outline" size="small" onClick={handleSave} loading={saving}>
+              <CheckOutline /> 保存
+            </Button>
+            <Button color="primary" size="small" onClick={handleAdd}>
+              <AddOutline /> 添加
+            </Button>
+          </div>
+        )}
+      </div>
 
       {list.length === 0 && <div className="mobile-empty">暂无记录</div>}
 
       {list.map(record => (
-        <div key={record.id} className="mobile-card">
-          <div className="mobile-flex-between" style={{ marginBottom: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#424242' }}>
+        <div key={record.id} className="rd-list-item">
+          <div className="rd-list-item-header">
+            <span className="rd-list-item-title">
               {record.material_code ? `${record.material_code} ${record.material_name || ''}` : '新增记录'}
             </span>
-            {isEditable && <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} />}
+            {isEditable && <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} fontSize={16} />}
           </div>
 
           {isEditable ? (
-            <>
-              <div className="mobile-form-item">
-                <label className="mobile-form-label required">料号</label>
-                <select
-                  className="mobile-form-input"
-                  value={record.bas_material_id || ''}
-                  onChange={(e) => handleChange(record.id, 'bas_material_id', e.target.value || null)}
-                >
-                  <option value="">请选择</option>
-                  {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
+            <div className="rd-list-item-body">
+              <div className="rd-form-row">
+                <div className="rd-form-item">
+                  <label className="rd-form-label">料号</label>
+                  <select
+                    className="rd-form-input"
+                    value={record.bas_material_id || ''}
+                    onChange={(e) => handleChange(record.id, 'bas_material_id', e.target.value || null)}
+                  >
+                    <option value="">请选择</option>
+                    {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+                <div className="rd-form-item">
+                  <label className="rd-form-label">批号</label>
+                  <input
+                    className="rd-form-input"
+                    value={record.material_batch || ''}
+                    onChange={(e) => handleChange(record.id, 'material_batch', e.target.value)}
+                  />
+                </div>
+                <div className="rd-form-item">
+                  <label className="rd-form-label">数量</label>
+                  <input
+                    type="number"
+                    className="rd-form-input"
+                    value={record.quantity || 0}
+                    onChange={(e) => handleChange(record.id, 'quantity', Number(e.target.value))}
+                    min={1}
+                  />
+                </div>
               </div>
-              <div className="mobile-form-item">
-                <label className="mobile-form-label required">批号</label>
-                <input
-                  className="mobile-form-input"
-                  value={record.material_batch || ''}
-                  onChange={(e) => handleChange(record.id, 'material_batch', e.target.value)}
-                />
-              </div>
-              <div className="mobile-form-item">
-                <label className="mobile-form-label required">数量</label>
-                <input
-                  type="number"
-                  className="mobile-form-input"
-                  value={record.quantity || 0}
-                  onChange={(e) => handleChange(record.id, 'quantity', Number(e.target.value))}
-                  min={1}
-                />
-              </div>
-            </>
+            </div>
           ) : (
-            <>
-              <div className="mobile-card-row">
-                <span className="mobile-card-label">料品主键</span>
-                <span className="mobile-card-value" style={{ whiteSpace: 'nowrap' }}>{record.bas_material_id || '-'}</span>
+            <div className="rd-list-item-body">
+              <div className="rd-list-row">
+                <span className="rd-list-label">批号</span>
+                <span className="rd-list-value">{record.material_batch || '-'}</span>
               </div>
-              <div className="mobile-card-row">
-                <span className="mobile-card-label">批号</span>
-                <span className="mobile-card-value">{record.material_batch || '-'}</span>
+              <div className="rd-list-row">
+                <span className="rd-list-label">数量</span>
+                <span className="rd-list-value">{record.quantity || 0}</span>
               </div>
-              <div className="mobile-card-row">
-                <span className="mobile-card-label">数量</span>
-                <span className="mobile-card-value">{record.quantity || 0}</span>
-              </div>
-            </>
+            </div>
           )}
         </div>
       ))}
@@ -666,85 +684,89 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId 
   return (
     <div>
       {isEditable && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-          <Button block color="primary" fill="outline" size="small" onClick={handleSave} loading={saving}>
-            <CheckOutline /> 保存
-          </Button>
-          <Button block color="primary" size="small" onClick={handleAdd}>
-            <AddOutline /> 添加
-          </Button>
+        <div className="rd-toolbar">
+          <div className="rd-toolbar-btns" style={{ marginLeft: 'auto' }}>
+            <Button fill="outline" size="small" onClick={handleSave} loading={saving}>
+              <CheckOutline /> 保存
+            </Button>
+            <Button color="primary" size="small" onClick={handleAdd}>
+              <AddOutline /> 添加
+            </Button>
+          </div>
         </div>
       )}
 
       {list.length === 0 && <div className="mobile-empty">暂无记录</div>}
 
       {list.map(record => (
-        <div key={record.id} className="mobile-card">
-          <div className="mobile-flex-between" style={{ marginBottom: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#424242' }}>
+        <div key={record.id} className="rd-list-item">
+          <div className="rd-list-item-header">
+            <span className="rd-list-item-title">
               {record.defect_code ? `${record.defect_code} ${record.defect_name || ''}` : '新增记录'}
             </span>
             {isEditable && (
-              <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} />
+              <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} fontSize={16} />
             )}
           </div>
 
           {isEditable ? (
-            <>
-              <div className="mobile-form-item">
-                <label className="mobile-form-label required">报废项目</label>
-                <select
-                  className="mobile-form-input"
-                  value={record.defect_type_id || ''}
-                  onChange={(e) => handleChange(record.id, 'defect_type_id', e.target.value ? Number(e.target.value) : null)}
-                >
-                  <option value="">请选择</option>
-                  {options.map(o => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
+            <div className="rd-list-item-body">
+              <div className="rd-form-row">
+                <div className="rd-form-item">
+                  <label className="rd-form-label">报废项目</label>
+                  <select
+                    className="rd-form-input"
+                    value={record.defect_type_id || ''}
+                    onChange={(e) => handleChange(record.id, 'defect_type_id', e.target.value ? Number(e.target.value) : null)}
+                  >
+                    <option value="">请选择</option>
+                    {options.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="rd-form-item">
+                  <label className="rd-form-label">数量</label>
+                  <input
+                    type="number"
+                    className="rd-form-input"
+                    value={record.defect_qty || 0}
+                    onChange={(e) => handleChange(record.id, 'defect_qty', Number(e.target.value))}
+                    min={0}
+                  />
+                </div>
+                <div className="rd-form-item">
+                  <label className="rd-form-label">单位</label>
+                  <input
+                    className="rd-form-input"
+                    value={record.defect_unit || ''}
+                    onChange={(e) => handleChange(record.id, 'defect_unit', e.target.value)}
+                  />
+                </div>
               </div>
-              <div className="mobile-form-item">
-                <label className="mobile-form-label required">数量</label>
-                <input
-                  type="number"
-                  className="mobile-form-input"
-                  value={record.defect_qty || 0}
-                  onChange={(e) => handleChange(record.id, 'defect_qty', Number(e.target.value))}
-                  min={0}
-                />
-              </div>
-              <div className="mobile-form-item">
-                <label className="mobile-form-label">单位</label>
-                <input
-                  className="mobile-form-input"
-                  value={record.defect_unit || ''}
-                  onChange={(e) => handleChange(record.id, 'defect_unit', e.target.value)}
-                />
-              </div>
-              <div className="mobile-form-item">
-                <label className="mobile-form-label">备注</label>
+              <div className="rd-form-item">
+                <label className="rd-form-label">备注</label>
                 <textarea
-                  className="mobile-form-input"
-                  style={{ height: 60, paddingTop: 8 }}
+                  className="rd-form-input"
+                  style={{ height: 48, paddingTop: 6 }}
                   value={record.description || ''}
                   onChange={(e) => handleChange(record.id, 'description', e.target.value)}
                 />
               </div>
-            </>
+            </div>
           ) : (
-            <>
-              <div className="mobile-card-row">
-                <span className="mobile-card-label">数量</span>
-                <span className="mobile-card-value">{record.defect_qty || 0} {record.defect_unit || ''}</span>
+            <div className="rd-list-item-body">
+              <div className="rd-list-row">
+                <span className="rd-list-label">数量</span>
+                <span className="rd-list-value">{record.defect_qty || 0} {record.defect_unit || ''}</span>
               </div>
               {record.description && (
-                <div className="mobile-card-row">
-                  <span className="mobile-card-label">备注</span>
-                  <span className="mobile-card-value">{record.description}</span>
+                <div className="rd-list-row">
+                  <span className="rd-list-label">备注</span>
+                  <span className="rd-list-value">{record.description}</span>
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
       ))}
@@ -867,112 +889,116 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
   return (
     <div>
       {isEditable && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-          <Button block color="primary" fill="outline" size="small" onClick={handleSave} loading={saving}>
-            <CheckOutline /> 保存
-          </Button>
-          <Button block color="primary" size="small" onClick={handleAdd}>
-            <AddOutline /> 添加
-          </Button>
+        <div className="rd-toolbar">
+          <div className="rd-toolbar-btns" style={{ marginLeft: 'auto' }}>
+            <Button fill="outline" size="small" onClick={handleSave} loading={saving}>
+              <CheckOutline /> 保存
+            </Button>
+            <Button color="primary" size="small" onClick={handleAdd}>
+              <AddOutline /> 添加
+            </Button>
+          </div>
         </div>
       )}
 
       {list.length === 0 && <div className="mobile-empty">暂无记录</div>}
 
       {list.map(record => (
-        <div key={record.id} className="mobile-card">
-          <div className="mobile-flex-between" style={{ marginBottom: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#424242' }}>
+        <div key={record.id} className="rd-list-item">
+          <div className="rd-list-item-header">
+            <span className="rd-list-item-title">
               {record.exception_type || '新增记录'}
             </span>
-            {isEditable && <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} />}
+            {isEditable && <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} fontSize={16} />}
           </div>
 
           {isEditable ? (
-            <>
-              <div className="mobile-form-item">
-                <label className="mobile-form-label required">异常类型</label>
-                <select
-                  className="mobile-form-input"
-                  value={record.exception_type || ''}
-                  onChange={(e) => handleChange(record.id, 'exception_type', e.target.value)}
-                >
-                  <option value="">请选择</option>
-                  {exceptionCategories.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+            <div className="rd-list-item-body">
+              <div className="rd-form-row">
+                <div className="rd-form-item">
+                  <label className="rd-form-label">异常类型</label>
+                  <select
+                    className="rd-form-input"
+                    value={record.exception_type || ''}
+                    onChange={(e) => handleChange(record.id, 'exception_type', e.target.value)}
+                  >
+                    <option value="">请选择</option>
+                    {exceptionCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div className="rd-form-item">
+                  <label className="rd-form-label">设备</label>
+                  <select
+                    className="rd-form-input"
+                    value={record.device_id || ''}
+                    onChange={(e) => handleChange(record.id, 'device_id', e.target.value ? Number(e.target.value) : null)}
+                  >
+                    <option value="">无</option>
+                    {devices.map(d => <option key={d.device_id} value={d.device_id}>{d.device_name}</option>)}
+                  </select>
+                </div>
               </div>
-              <div className="mobile-form-item">
-                <label className="mobile-form-label">设备</label>
-                <select
-                  className="mobile-form-input"
-                  value={record.device_id || ''}
-                  onChange={(e) => handleChange(record.id, 'device_id', e.target.value ? Number(e.target.value) : null)}
-                >
-                  <option value="">无</option>
-                  {devices.map(d => <option key={d.device_id} value={d.device_id}>{d.device_name}</option>)}
-                </select>
+              <div className="rd-form-row">
+                <div className="rd-form-item">
+                  <label className="rd-form-label">开始时间</label>
+                  <input
+                    type="time"
+                    className="rd-form-input"
+                    value={record.start_time ? dayjs(record.start_time).format('HH:mm') : ''}
+                    onChange={(e) => {
+                      const [h, m] = e.target.value.split(':').map(Number)
+                      const baseDate = reportTime ? dayjs(reportTime).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')
+                      handleTimeChange(record.id, 'start_time', new Date(`${baseDate}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`))
+                    }}
+                  />
+                </div>
+                <div className="rd-form-item">
+                  <label className="rd-form-label">结束时间</label>
+                  <input
+                    type="time"
+                    className="rd-form-input"
+                    value={record.end_time ? dayjs(record.end_time).format('HH:mm') : ''}
+                    onChange={(e) => {
+                      if (!e.target.value) {
+                        handleChange(record.id, 'end_time', null)
+                        return
+                      }
+                      const [h, m] = e.target.value.split(':').map(Number)
+                      const baseDate = reportTime ? dayjs(reportTime).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')
+                      handleTimeChange(record.id, 'end_time', new Date(`${baseDate}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`))
+                    }}
+                  />
+                </div>
               </div>
-              <div className="mobile-form-item">
-                <label className="mobile-form-label required">开始时间</label>
-                <input
-                  type="time"
-                  className="mobile-form-input"
-                  value={record.start_time ? dayjs(record.start_time).format('HH:mm') : ''}
-                  onChange={(e) => {
-                    const [h, m] = e.target.value.split(':').map(Number)
-                    const baseDate = reportTime ? dayjs(reportTime).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')
-                    handleTimeChange(record.id, 'start_time', new Date(`${baseDate}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`))
-                  }}
-                />
-              </div>
-              <div className="mobile-form-item">
-                <label className="mobile-form-label">结束时间</label>
-                <input
-                  type="time"
-                  className="mobile-form-input"
-                  value={record.end_time ? dayjs(record.end_time).format('HH:mm') : ''}
-                  onChange={(e) => {
-                    if (!e.target.value) {
-                      handleChange(record.id, 'end_time', null)
-                      return
-                    }
-                    const [h, m] = e.target.value.split(':').map(Number)
-                    const baseDate = reportTime ? dayjs(reportTime).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')
-                    handleTimeChange(record.id, 'end_time', new Date(`${baseDate}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`))
-                  }}
-                />
-              </div>
-              <div className="mobile-form-item">
-                <label className="mobile-form-label">异常描述</label>
+              <div className="rd-form-item">
+                <label className="rd-form-label">异常描述</label>
                 <textarea
-                  className="mobile-form-input"
-                  style={{ height: 60, paddingTop: 8 }}
+                  className="rd-form-input"
+                  style={{ height: 48, paddingTop: 6 }}
                   value={record.description || ''}
                   onChange={(e) => handleChange(record.id, 'description', e.target.value)}
                 />
               </div>
-            </>
+            </div>
           ) : (
-            <>
-              <div className="mobile-card-row">
-                <span className="mobile-card-label">开始时间</span>
-                <span className="mobile-card-value">{record.start_time ? dayjs(record.start_time).format('MM-DD HH:mm') : '-'}</span>
+            <div className="rd-list-item-body">
+              <div className="rd-list-row">
+                <span className="rd-list-label">时间</span>
+                <span className="rd-list-value">
+                  {record.start_time ? dayjs(record.start_time).format('HH:mm') : '-'} ~ {record.end_time ? dayjs(record.end_time).format('HH:mm') : '-'}
+                </span>
               </div>
-              <div className="mobile-card-row">
-                <span className="mobile-card-label">结束时间</span>
-                <span className="mobile-card-value">{record.end_time ? dayjs(record.end_time).format('MM-DD HH:mm') : '-'}</span>
-              </div>
-              <div className="mobile-card-row">
-                <span className="mobile-card-label">时长(小时)</span>
-                <span className="mobile-card-value">{record.duration || 0}</span>
+              <div className="rd-list-row">
+                <span className="rd-list-label">时长</span>
+                <span className="rd-list-value">{record.duration || 0} 小时</span>
               </div>
               {record.description && (
-                <div className="mobile-card-row">
-                  <span className="mobile-card-label">描述</span>
-                  <span className="mobile-card-value">{record.description}</span>
+                <div className="rd-list-row">
+                  <span className="rd-list-label">描述</span>
+                  <span className="rd-list-value">{record.description}</span>
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
       ))}

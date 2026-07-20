@@ -109,21 +109,25 @@ export default function MobileLayout() {
 
       {showControls && (
         <div className="mobile-simulator-controls">
-          <button
-            className={`mobile-sim-btn ${!isLandscape ? 'active' : ''}`}
-            onClick={handleOrientationChange}
-          >
-            <AddOutline fontSize={14} />
-            <span>竖屏</span>
-          </button>
-          <button
-            className={`mobile-sim-btn ${isLandscape ? 'active' : ''}`}
-            onClick={handleOrientationChange}
-          >
-            <CheckOutline fontSize={14} />
-            <span>横屏</span>
-          </button>
+          <div className="mobile-sim-label">屏幕方向</div>
+          <div className="mobile-sim-orient-row">
+            <button
+              className={`mobile-sim-btn ${!isLandscape ? 'active' : ''}`}
+              onClick={handleOrientationChange}
+            >
+              <AddOutline fontSize={14} />
+              <span>竖屏</span>
+            </button>
+            <button
+              className={`mobile-sim-btn ${isLandscape ? 'active' : ''}`}
+              onClick={handleOrientationChange}
+            >
+              <CheckOutline fontSize={14} />
+              <span>横屏</span>
+            </button>
+          </div>
           <div className="mobile-sim-divider" />
+          <div className="mobile-sim-label">机型</div>
           <select className="mobile-sim-select" value={deviceType} onChange={handleDeviceChange}>
             {DEVICE_TYPES.map(d => (
               <option key={d.value} value={d.value}>{d.label}</option>
