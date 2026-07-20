@@ -3,11 +3,13 @@ import { useApp, useMessage } from '../../contexts/AppContext'
 import {
   Form, Input, InputNumber, Select, Switch, Button, Row, Col, Typography, Spin,
   Tabs, Table, Tag, Descriptions, Space, Popconfirm, Card, Statistic, Modal, Alert,
+  Breadcrumb,
 } from 'antd'
 import {
   SaveOutlined, SettingOutlined, ToolOutlined, SafetyOutlined, BellOutlined,
   DatabaseOutlined, CloudServerOutlined, HistoryOutlined, ReloadOutlined,
   PlusOutlined, DeleteOutlined, RollbackOutlined, SwapOutlined, PoweroffOutlined,
+  FolderOutlined, FileOutlined, ArrowLeftOutlined, EyeOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
@@ -142,6 +144,11 @@ export default function SystemConfig() {
   const [backupsLoading, setBackupsLoading] = useState(false)
   const [backupCreating, setBackupCreating] = useState(false)
 
+  const [fileItems, setFileItems] = useState<any[]>([])
+  const [fileCurrentDir, setFileCurrentDir] = useState('')
+  const [fileBreadcrumbs, setFileBreadcrumbs] = useState<any[]>([])
+  const [fileLoading, setFileLoading] = useState(false)
+
   const [migrationTargets, setMigrationTargets] = useState<MigrationTarget[]>([])
   const [migrationLoading, setMigrationLoading] = useState(false)
   const [migrationOpen, setMigrationOpen] = useState(false)
@@ -237,6 +244,32 @@ export default function SystemConfig() {
     }
   }, [])
 
+  const loadFileDirectory = useCallback(async (dir: string) => {
+    setFileLoading(true)
+    try {
+      const res = await api.get('/system/files', { params: { dir: dir || '' } })
+      const data = res.data || {}
+      setFileItems(data.items || [])
+      setFileCurrentDir(data.currentDir || '/')
+
+      const pathParts = (data.currentDir && data.currentDir !== '/')
+        ? data.currentDir.split('/').filter(Boolean)
+        : []
+      const crumbs = [{ name: 'uploads', path: '' }]
+      let accPath = ''
+      for (const part of pathParts) {
+        accPath = accPath ? accPath + '/' + part : part
+        crumbs.push({ name: part, path: accPath })
+      }
+      setFileBreadcrumbs(crumbs)
+    } catch (err: unknown) {
+      message.error(err instanceof Error ? err.message : '获取文件列表失败')
+      setFileItems([])
+    } finally {
+      setFileLoading(false)
+    }
+  }, [])
+
   const loadMigrationTargets = useCallback(async () => {
     setMigrationLoading(true)
     try {
@@ -271,6 +304,68 @@ export default function SystemConfig() {
     if (key === 'db' && !dbInfo) loadDb()
     if (key === 'db') loadMigrationTargets()
     if (key === 'backup' && backups.length === 0) loadBackups()
+    if (key === 'files' && fileItems.length === 0) loadFileDirectory('')
+  }
+
+  const handleFileEnterDir = (item: any) => {
+    if (item.isDirectory) {
+      loadFileDirectory(item.path)
+    }
+  }
+
+  const handleFileGoBack = () => {
+    if (fileCurrentDir && fileCurrentDir !== '/') {
+      const parent = fileCurrentDir.substring(0, fileCurrentDir.lastIndexOf('/'))
+      loadFileDirectory(parent === '/' ? '' : parent)
+    }
+  }
+
+  const handleFileGoToCrumb = (path: string) => {
+    loadFileDirectory(path)
+  }
+
+  const handleFileDelete = (item: any) => {
+    Modal.confirm({
+      title: `确认删除${item.isDirectory ? '目录' : '文件'}？`,
+      content: `确定要删除 "${item.name}" 吗？${item.isDirectory ? '仅空目录可删除。' : ''}`,
+      okText: '确认删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          await api.delete(`/system/files/${encodeURIComponent(item.path)}`)
+          message.success('删除成功')
+          loadFileDirectory(fileCurrentDir === '/' ? '' : fileCurrentDir.replace(/^\//, ''))
+        } catch (err: unknown) {
+          message.error(err instanceof Error ? err.message : '删除失败')
+        }
+      },
+    })
+  }
+
+  const handleFilePreview = (item: any) => {
+    if (!item.isDirectory) {
+      const url = '/' + item.path
+      const isImage = /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(item.name)
+      if (isImage) {
+        Modal.info({
+          title: item.name,
+          width: 600,
+          icon: null,
+          content: (
+            <div style={{ textAlign: 'center' }}>
+              <img
+                src={url}
+                alt={item.name}
+                style={{ maxWidth: '100%', maxHeight: 500, objectFit: 'contain' }}
+              />
+            </div>
+          ),
+        })
+      } else {
+        window.open(url, '_blank')
+      }
+    }
   }
 
   const openMigrationModal = (target: MigrationTarget) => {
@@ -934,11 +1029,130 @@ export default function SystemConfig() {
     </div>
   )
 
+  const fileColumns = [
+    {
+      title: '名称',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text: string, record: any) => (
+        <Space>
+          {record.isDirectory ? (
+            <FolderOutlined style={{ color: '#FAAD14', fontSize: 16 }} />
+          ) : (
+            <FileOutlined style={{ color: '#1890FF', fontSize: 16 }} />
+          )}
+          <span
+            style={{
+              cursor: record.isDirectory ? 'pointer' : 'default',
+              color: record.isDirectory ? '#1890FF' : 'inherit',
+            }}
+            onClick={() => record.isDirectory && handleFileEnterDir(record)}
+          >
+            {text}
+          </span>
+        </Space>
+      ),
+    },
+    {
+      title: '类型',
+      dataIndex: 'isDirectory',
+      key: 'type',
+      width: 100,
+      render: (isDir: boolean) => (
+        <Tag color={isDir ? 'gold' : 'blue'}>
+          {isDir ? '目录' : '文件'}
+        </Tag>
+      ),
+    },
+    {
+      title: '大小',
+      dataIndex: 'sizeText',
+      key: 'size',
+      width: 120,
+      render: (text: string, record: any) => record.isDirectory ? '-' : text,
+    },
+    {
+      title: '修改时间',
+      dataIndex: 'modifiedTime',
+      key: 'modifiedTime',
+      width: 200,
+      render: (time: string) => time ? new Date(time).toLocaleString('zh-CN') : '-',
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 150,
+      render: (_: any, record: any) => (
+        <Space size="small">
+          {!record.isDirectory && (
+            <Button
+              type="link"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => handleFilePreview(record)}
+            >
+              查看
+            </Button>
+          )}
+          <Button
+            type="link"
+            size="small"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => handleFileDelete(record)}
+          >
+            删除
+          </Button>
+        </Space>
+      ),
+    },
+  ]
+
+  const FilesTab = (
+    <div>
+      <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Breadcrumb
+          items={fileBreadcrumbs.map((b: any, i: number) => ({
+            title: i < fileBreadcrumbs.length - 1
+              ? <a onClick={() => handleFileGoToCrumb(b.path)}>{b.name}</a>
+              : b.name,
+          }))}
+        />
+        <Space>
+          {fileCurrentDir && fileCurrentDir !== '/' && (
+            <Button icon={<ArrowLeftOutlined />} onClick={handleFileGoBack}>
+              返回上级
+            </Button>
+          )}
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => loadFileDirectory(fileCurrentDir === '/' ? '' : fileCurrentDir.replace(/^\//, ''))}
+          >
+            刷新
+          </Button>
+        </Space>
+      </div>
+      <Table
+        rowKey="path"
+        columns={fileColumns}
+        dataSource={fileItems}
+        loading={fileLoading}
+        pagination={false}
+        size="small"
+        onRow={(record: any) => ({
+          onDoubleClick: () => record.isDirectory && handleFileEnterDir(record),
+        })}
+        locale={{ emptyText: '暂无文件' }}
+      />
+    </div>
+  )
+
   const tabItems = [
     { key: 'env', label: '项目环境', icon: <CloudServerOutlined />, children: EnvTab },
     { key: 'params', label: '参数配置', icon: <SettingOutlined />, children: ParamsTab },
     { key: 'db', label: '数据库配置', icon: <DatabaseOutlined />, children: DbTab },
     { key: 'backup', label: '备份还原', icon: <HistoryOutlined />, children: BackupTab },
+    { key: 'files', label: '文件查看', icon: <FolderOutlined />, children: FilesTab },
   ]
 
   return (
