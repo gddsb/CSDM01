@@ -809,10 +809,6 @@ export default function ProcessReporting() {
 
   const prodDefectColumns = [
     {
-      title: '关键主键', dataIndex: 'defect_type_id', key: 'defect_type_id', width: 100,
-      render: (val) => val ?? '-',
-    },
-    {
       title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 120,
       render: (_, record) => {
         const opts = getFilteredProdDefectOptions(record.id)
@@ -1110,10 +1106,6 @@ export default function ProcessReporting() {
   }
 
   const scrapDefectColumns = [
-    {
-      title: '关键主键', dataIndex: 'defect_type_id', key: 'defect_type_id', width: 100,
-      render: (val) => val ?? '-',
-    },
     {
       title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 120,
       render: (_, record) => {
@@ -1491,10 +1483,6 @@ export default function ProcessReporting() {
   }
 
   const materialColumns = [
-    {
-      title: '料品主键', dataIndex: 'bas_material_id', key: 'bas_material_id', width: 100,
-      render: (val) => <span style={{ whiteSpace: 'nowrap', display: 'inline-block' }}>{val ?? '-'}</span>,
-    },
     {
       title: '物料类型', dataIndex: 'material_type', key: 'material_type', width: 100,
       render: (val, record) => isEditable ? (
