@@ -478,8 +478,16 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
           ) : (
             <div className="rd-list-item-body">
               <div className="rd-list-row">
+                <span className="rd-list-label">不良编号</span>
+                <span className="rd-list-value">{record.defect_code || '-'}</span>
+              </div>
+              <div className="rd-list-row">
                 <span className="rd-list-label">数量</span>
                 <span className="rd-list-value">{record.defect_qty || 0} {record.defect_unit || ''}</span>
+              </div>
+              <div className="rd-list-row">
+                <span className="rd-list-label">单位</span>
+                <span className="rd-list-value">{record.defect_unit || '-'}</span>
               </div>
               {(record.images || []).length > 0 && (
                 <div className="rd-image-list">
@@ -508,6 +516,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
       process_id: processId,
       bas_material_id: null,
       material_batch: '',
+      package_no: '',
       quantity: '',
       images: [],
     }])
@@ -549,6 +558,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
           material_type: '投入',
           bas_material_id: m.bas_material_id,
           material_batch: m.material_batch,
+          package_no: m.package_no || '',
           quantity: Math.floor(Number(m.quantity)),
           images: m.images || [],
         }
@@ -706,6 +716,16 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
                     onChange={(e) => handleChangeMaterial(record.id, 'material_batch', e.target.value)}
                   />
                 </div>
+              </div>
+              <div className="rd-form-row">
+                <div className="rd-form-item">
+                  <label className="rd-form-label">包号</label>
+                  <input
+                    className="rd-form-input"
+                    value={record.package_no || ''}
+                    onChange={(e) => handleChangeMaterial(record.id, 'package_no', e.target.value)}
+                  />
+                </div>
                 <div className="rd-form-item rd-form-item-qty">
                   <label className="rd-form-label">数量</label>
                   <input
@@ -732,8 +752,16 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
           ) : (
             <div className="rd-list-item-body">
               <div className="rd-list-row">
+                <span className="rd-list-label">料号</span>
+                <span className="rd-list-value">{record.material_code || '-'}</span>
+              </div>
+              <div className="rd-list-row">
                 <span className="rd-list-label">批号</span>
                 <span className="rd-list-value">{record.material_batch || '-'}</span>
+              </div>
+              <div className="rd-list-row">
+                <span className="rd-list-label">包号</span>
+                <span className="rd-list-value">{record.package_no || '-'}</span>
               </div>
               <div className="rd-list-row">
                 <span className="rd-list-label">数量</span>
@@ -767,7 +795,6 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId 
       defect_type_id: null,
       defect_qty: 0,
       defect_unit: '',
-      description: '',
     }])
   }
 
@@ -785,9 +812,8 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId 
         const payload = {
           report_order_id: d.report_order_id,
           defect_type_id: d.defect_type_id,
-          defect_qty: d.defect_qty,
+          defect_qty: Math.floor(Number(d.defect_qty)),
           defect_unit: d.defect_unit || '',
-          description: d.description || '',
         }
         if (d.scrap_id) {
           await api.put(`${url}/${d.scrap_id}`, payload)
@@ -868,7 +894,7 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId 
             <div className="rd-list-item-body">
               <div className="rd-form-row">
                 <div className="rd-form-item">
-                  <label className="rd-form-label">报废项目</label>
+                  <label className="rd-form-label">报废编码</label>
                   <select
                     className="rd-form-input"
                     value={record.defect_type_id || ''}
@@ -886,8 +912,9 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId 
                     type="number"
                     className="rd-form-input"
                     value={record.defect_qty || 0}
-                    onChange={(e) => handleChange(record.id, 'defect_qty', Number(e.target.value))}
+                    onChange={(e) => handleChange(record.id, 'defect_qty', Math.floor(Number(e.target.value)) || 0)}
                     min={0}
+                    step={1}
                   />
                 </div>
                 <div className="rd-form-item">
@@ -899,28 +926,21 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId 
                   />
                 </div>
               </div>
-              <div className="rd-form-item">
-                <label className="rd-form-label">备注</label>
-                <textarea
-                  className="rd-form-input"
-                  style={{ height: 48, paddingTop: 6 }}
-                  value={record.description || ''}
-                  onChange={(e) => handleChange(record.id, 'description', e.target.value)}
-                />
-              </div>
             </div>
           ) : (
             <div className="rd-list-item-body">
               <div className="rd-list-row">
-                <span className="rd-list-label">数量</span>
-                <span className="rd-list-value">{record.defect_qty || 0} {record.defect_unit || ''}</span>
+                <span className="rd-list-label">报废编码</span>
+                <span className="rd-list-value">{record.defect_code || '-'}</span>
               </div>
-              {record.description && (
-                <div className="rd-list-row">
-                  <span className="rd-list-label">备注</span>
-                  <span className="rd-list-value">{record.description}</span>
-                </div>
-              )}
+              <div className="rd-list-row">
+                <span className="rd-list-label">数量</span>
+                <span className="rd-list-value">{record.defect_qty ? Math.floor(Number(record.defect_qty)) : 0} {record.defect_unit || ''}</span>
+              </div>
+              <div className="rd-list-row">
+                <span className="rd-list-label">单位</span>
+                <span className="rd-list-value">{record.defect_unit || '-'}</span>
+              </div>
             </div>
           )}
         </div>
