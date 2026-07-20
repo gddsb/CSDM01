@@ -23,6 +23,7 @@ import DefectManagement from './pages/basic/DefectManagement'
 import CustomerManagement from './pages/basic/CustomerManagement'
 import NumberRuleManagement from './pages/basic/NumberRuleManagement'
 import MenuManagement from './pages/system/MenuManagement'
+import FileManager from './pages/system/FileManager'
 import OrderManagement from './pages/production/OrderManagement'
 import ProcessReporting from './pages/production/ProcessReporting'
 import InspectionStandard from './pages/quality/InspectionStandard'
@@ -84,6 +85,7 @@ function AppRoutes() {
         <Route path="/system/dictionary" element={<DataDictionary />} />
         <Route path="/system/config" element={<SystemConfig />} />
         <Route path="/system/logs" element={<OperationLogs />} />
+        <Route path="/system/files" element={<FileManager />} />
         <Route path="/basic/materials" element={<MaterialManagement />} />
         <Route path="/basic/lines" element={<ProductionLine />} />
         <Route path="/basic/processes" element={<ProcessManagement />} />

@@ -10,6 +10,7 @@ import {
   ControlOutlined, DesktopOutlined, LineChartOutlined, CalendarOutlined,
   RiseOutlined, AlertOutlined, ContainerOutlined,
   LockOutlined, KeyOutlined, MenuOutlined, SkinOutlined, MobileOutlined,
+  FolderOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useApp, useMessage, User } from '../contexts/AppContext'
@@ -142,6 +143,7 @@ const defaultMenuItems = [
   {
     key: 'system-link', icon: <DesktopOutlined />, label: '系统关联',
     children: [
+      { key: '/system/files', icon: <FolderOutlined />, label: '文件查看' },
       { key: '/mobile/home', icon: <MobileOutlined />, label: '移动端模拟器' },
     ]
   },

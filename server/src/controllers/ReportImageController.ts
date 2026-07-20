@@ -53,7 +53,7 @@ export const uploadImages = async (req, res) => {
     const dir = ensureDir(report_no)
 
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '')
-    const prefix = report_no + dateStr
+    const prefix = report_no + '-' + dateStr + '-'
     const existingFiles = fs.readdirSync(dir).filter(f => f.startsWith(prefix))
     const existingMap = getExistingFileMap(dir)
 

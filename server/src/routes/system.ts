@@ -26,6 +26,7 @@ import {
   updateData as dictDataUpdate,
   removeData as dictDataRemove,
 } from '../controllers/DictController.js'
+import { listDirectory, removeItem } from '../controllers/FileManagerController.js'
 
 const router = Router()
 
@@ -111,5 +112,9 @@ router.get('/config/backups', listBackups)
 router.post('/config/backups', logOperation('系统配置'), createBackup)
 router.post('/config/backups/restore', logOperation('系统配置'), restoreBackup)
 router.delete('/config/backups/:filename', logOperation('系统配置'), deleteBackup)
+
+// 文件管理
+router.get('/files', listDirectory)
+router.delete('/files/:path', logOperation('文件管理'), removeItem)
 
 export default router
