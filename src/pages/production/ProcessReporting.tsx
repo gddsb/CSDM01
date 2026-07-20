@@ -325,7 +325,7 @@ export default function ProcessReporting() {
         }
         return enriched
       }))
-      setScrapDefectList((scrapRes.data || []).map(d => {
+      setScrapDefectList((scrapRes.data || []).filter(d => d.defect_type === '检验报废').map(d => {
         let enriched = { ...d, id: d.scrap_id, defect_images: parseImages(d.defect_images) }
         if ((!enriched.defect_code || !enriched.defect_type) && enriched.defect_type_id) {
           const opt = scrapTypeOptions.find(o => String(o.value) === String(enriched.defect_type_id))
@@ -381,7 +381,9 @@ export default function ProcessReporting() {
         .filter(d => d.defect_type === '制程不良')
         .reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
       // 检验报废
-      const defectScrapTotal = allScraps.reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
+      const defectScrapTotal = allScraps
+        .filter(d => d.defect_type === '检验报废')
+        .reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
       // 异常工时
       const exceptionHours = allExceptions.reduce((sum, e) => sum + (Number(e.duration) || 0), 0)
       // 投入数量 = 第一道工序的投入-退回

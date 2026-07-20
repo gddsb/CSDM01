@@ -64,7 +64,8 @@ export const scrapList = async (req, res) => {
         model: DefectType,
         as: 'defect_type',
         attributes: ['defect_id', 'defect_code', 'defect_name', 'defect_type', 'category_name', 'defect_unit'],
-        required: false,
+        where: { defect_type: '检验报废' },
+        required: true,
       }],
     })
     const data = rows.map(r => {

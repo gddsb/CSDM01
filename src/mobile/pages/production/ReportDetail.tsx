@@ -96,7 +96,7 @@ export default function ReportDetail() {
         api.get('/production/scrap-defects', { params: { report_order_id: id, page: 1, pageSize: 1000 } }),
         api.get('/production/process-exceptions', { params: { report_order_id: id, page: 1, pageSize: 1000 } }),
       ])
-      setScrapList((scrapRes.data || []).map(d => ({ ...d, id: d.scrap_id || genTempId() })))
+      setScrapList((scrapRes.data || []).filter(d => d.defect_type === '检验报废').map(d => ({ ...d, id: d.scrap_id || genTempId() })))
       setExceptionList((exceptionRes.data || []).map(e => ({ ...e, id: e.exception_id || genTempId() })))
     } catch (err) {
       Toast.show({ icon: 'fail', content: err.message || '获取数据失败' })
