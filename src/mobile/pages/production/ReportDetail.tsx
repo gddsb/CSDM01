@@ -253,6 +253,7 @@ export default function ReportDetail() {
             isEditable={isEditable}
             category="defect"
             reportOrderId={id}
+            reportNo={report?.report_no}
             processId={selectedProcessId}
             processes={processes}
             onProcessChange={setSelectedProcessId}
@@ -267,6 +268,7 @@ export default function ReportDetail() {
             options={materialOptions}
             isEditable={isEditable}
             reportOrderId={id}
+            reportNo={report?.report_no}
             processId={selectedProcessId}
             processes={processes}
             onProcessChange={setSelectedProcessId}
@@ -282,6 +284,7 @@ export default function ReportDetail() {
             isEditable={isEditable}
             category="scrap"
             reportOrderId={id}
+            reportNo={report?.report_no}
           />
         )}
 
@@ -292,6 +295,7 @@ export default function ReportDetail() {
             devices={devices}
             isEditable={isEditable}
             reportOrderId={id}
+            reportNo={report?.report_no}
             reportTime={report.report_time}
           />
         )}
@@ -300,7 +304,7 @@ export default function ReportDetail() {
   )
 }
 
-function DefectTab({ list, setList, options, isEditable, category, reportOrderId, processId, processes, onProcessChange, showProcess }) {
+function DefectTab({ list, setList, options, isEditable, category, reportOrderId, reportNo, processId, processes, onProcessChange, showProcess }) {
   const [saving, setSaving] = useState(false)
 
   const handleAdd = () => {
@@ -388,24 +392,23 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
     input.onchange = async (e) => {
       const files = Array.from(e.target.files || [])
       if (files.length === 0) return
+      if (!reportNo) {
+        Toast.show({ icon: 'fail', content: '报工单号不存在，无法上传' })
+        return
+      }
       try {
-        const uploaded = []
-        for (const file of files) {
-          const formData = new FormData()
-          formData.append('file', file)
-          const res = await api.post('/upload/image', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          })
-          if (res.data?.url) {
-            uploaded.push(res.data.url)
-          }
-        }
+        const formData = new FormData()
+        files.forEach(file => formData.append('files', file))
+        const res = await api.post(`/production/report-images/${reportNo}/${category}/upload`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        const uploaded = res.data || []
         if (uploaded.length > 0) {
           setList(prev => prev.map(item => {
             if (item.id !== recordId) return item
             return { ...item, images: [...(item.images || []), ...uploaded] }
           }))
-          Toast.show({ icon: 'success', content: `已上传 ${uploaded.length} 张图片` })
+          Toast.show({ icon: 'success', content: res.message || `已上传 ${uploaded.length} 张图片` })
         }
       } catch (err) {
         Toast.show({ icon: 'fail', content: err.message || '图片上传失败' })
@@ -559,7 +562,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
   )
 }
 
-function MaterialTab({ list, setList, options, isEditable, reportOrderId, processId, processes, onProcessChange, showProcess }) {
+function MaterialTab({ list, setList, options, isEditable, reportOrderId, reportNo, processId, processes, onProcessChange, showProcess }) {
   const [saving, setSaving] = useState(false)
 
   const handleAdd = () => {
@@ -653,24 +656,23 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
     input.onchange = async (e) => {
       const files = Array.from(e.target.files || [])
       if (files.length === 0) return
+      if (!reportNo) {
+        Toast.show({ icon: 'fail', content: '报工单号不存在，无法上传' })
+        return
+      }
       try {
-        const uploaded = []
-        for (const file of files) {
-          const formData = new FormData()
-          formData.append('file', file)
-          const res = await api.post('/upload/image', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          })
-          if (res.data?.url) {
-            uploaded.push(res.data.url)
-          }
-        }
+        const formData = new FormData()
+        files.forEach(file => formData.append('files', file))
+        const res = await api.post(`/production/report-images/${reportNo}/material/upload`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        const uploaded = res.data || []
         if (uploaded.length > 0) {
           setList(prev => prev.map(item => {
             if (item.id !== recordId) return item
             return { ...item, images: [...(item.images || []), ...uploaded] }
           }))
-          Toast.show({ icon: 'success', content: `已上传 ${uploaded.length} 张图片` })
+          Toast.show({ icon: 'success', content: res.message || `已上传 ${uploaded.length} 张图片` })
         }
       } catch (err) {
         Toast.show({ icon: 'fail', content: err.message || '图片上传失败' })

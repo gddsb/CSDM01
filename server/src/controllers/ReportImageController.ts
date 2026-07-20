@@ -53,15 +53,30 @@ export const uploadImages = async (req, res) => {
     const dir = ensureDir(report_no)
 
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '')
-    const categoryPrefix = `${category}_`
-
-    const prefix = report_no + '_' + dateStr + '_' + categoryPrefix
+    const prefix = report_no + dateStr
     const existingFiles = fs.readdirSync(dir).filter(f => f.startsWith(prefix))
     const existingMap = getExistingFileMap(dir)
+
+    // 从数据库查当日同前缀的最大流水号
+    const dbRecords = await ReportImage.findAll({
+      where: { report_no },
+      raw: true,
+      order: [['createdAt', 'DESC']],
+    })
+    let maxSeq = 0
+    dbRecords.forEach(r => {
+      const fname = path.basename(r.image_url || '', path.extname(r.image_url || ''))
+      if (fname.startsWith(prefix)) {
+        const seqPart = fname.slice(prefix.length)
+        const seqNum = parseInt(seqPart, 10)
+        if (!isNaN(seqNum) && seqNum > maxSeq) maxSeq = seqNum
+      }
+    })
 
     const uploaded: string[] = []
     const skipped: string[] = []
     const newRecords: any[] = []
+    let currentSeq = maxSeq
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       const fileMd5 = getFileMd5(file.path)
@@ -72,14 +87,13 @@ export const uploadImages = async (req, res) => {
         const existUrl = `/${UPLOAD_DIR}/${report_no}/${existName}`
         uploaded.push(existUrl)
         fs.unlinkSync(file.path)
-        // 已存在记录则跳过持久化
         continue
       }
 
-      const seqNum = existingFiles.length + uploaded.length - skipped.length + 1
-      const seqStr = String(seqNum).padStart(3, '0')
+      currentSeq += 1
+      const seqStr = String(currentSeq).padStart(3, '0')
       const ext = path.extname(file.originalname) || '.jpg'
-      const newName = `${report_no}_${dateStr}_${categoryPrefix}${seqStr}${ext}`
+      const newName = `${prefix}${seqStr}${ext}`
       const destPath = path.join(dir, newName)
       fs.renameSync(file.path, destPath)
       const newUrl = `/${UPLOAD_DIR}/${report_no}/${newName}`

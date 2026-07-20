@@ -29,6 +29,7 @@ const genTempId = () => 'tmp_' + Date.now() + '_' + Math.random().toString(36).s
 export default function ProcessReporting() {
   // 顶部下拉框数据：仅开工状态(status=0)的报工单
   const [reportOrders, setReportOrders] = useState([])
+  const [allReportOrders, setAllReportOrders] = useState([])
   const [selectedReport, setSelectedReport] = useState(null)
   const [defectTypes, setDefectTypes] = useState([])
   const [devices, setDevices] = useState([])
@@ -168,9 +169,14 @@ export default function ProcessReporting() {
   const fetchReportOrders = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await api.get('/production/report-orders', { params: { page: 1, pageSize: 1000, status: 0 } })
-      const list = res.data || []
+      const [activeRes, allRes] = await Promise.all([
+        api.get('/production/report-orders', { params: { page: 1, pageSize: 1000, status: 0 } }),
+        api.get('/production/report-orders', { params: { page: 1, pageSize: 1000 } }),
+      ])
+      const list = activeRes.data || []
+      const allList = allRes.data || []
       setReportOrders(list)
+      setAllReportOrders(allList)
       // 默认选中最近一条开工报工单（后端已按 created_at DESC 排序，第一条即最新）
       setSelectedReport(prev => {
         if (prev && list.some(r => r.report_order_id === prev.report_order_id)) return prev
@@ -179,6 +185,7 @@ export default function ProcessReporting() {
     } catch (err) {
       message.error(err.message || '获取报工单列表失败')
       setReportOrders([])
+      setAllReportOrders([])
       setSelectedReport(null)
     } finally {
       setLoading(false)
@@ -463,6 +470,14 @@ export default function ProcessReporting() {
 
   // 报工单状态：'开工'=可编辑，'完工'=只读
   const isEditable = selectedReport?.status === '开工'
+
+  // 判断当前选中报工单所属的生产订单是否有未完工的报工单
+  const hasUnfinishedReportOfOrder = useMemo(() => {
+    if (!selectedReport?.order_id) return false
+    return allReportOrders.some(
+      r => r.order_id === selectedReport.order_id && (r.status === '开工' || r.status === 0)
+    )
+  }, [selectedReport, allReportOrders])
 
   // 检查当前页签是否有未保存记录
   const hasUnsavedChanges = useMemo(() => {
@@ -2426,7 +2441,7 @@ export default function ProcessReporting() {
     <div style={{ padding: 16 }}>
       <Card style={{ marginBottom: 16 }}>
         <Row gutter={16} align="middle" style={{ marginBottom: 12 }}>
-          <Col span={10}>
+          <Col span={16}>
             <Space>
               <span style={{ fontWeight: 'bold' }}>报工单：</span>
               <Select
@@ -2460,25 +2475,24 @@ export default function ProcessReporting() {
                 popupClassName="mes-select-dropdown"
                 loading={loading}
               />
-              <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal}>新增报工</Button>
+              {!hasUnfinishedReportOfOrder && (
+                <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal}>新增报工</Button>
+              )}
+              {selectedReport && isEditable && (
+                <Popconfirm title="确认完工？完工后数据将变为只读" onConfirm={handleFinishReport}>
+                  <Button type="primary" loading={finishingReport}>完工</Button>
+                </Popconfirm>
+              )}
             </Space>
           </Col>
           {selectedReport && (
-            <Col span={14} style={{ textAlign: 'right' }}>
-              <Space>
-                <Tag
-                  color={reportOrderStatusMap[selectedReport.status as 0 | 1]?.color || 'default'}
-                  style={{ fontSize: 14, padding: '2px 10px' }}
-                >
-                  {reportOrderStatusMap[selectedReport.status as 0 | 1]?.label || '-'}
-                </Tag>
-                {/* 开工/完工按钮不同时显示：仅在开工状态下显示"完工"按钮 */}
-                {isEditable ? (
-                  <Popconfirm title="确认完工？完工后数据将变为只读" onConfirm={handleFinishReport}>
-                    <Button type="primary" loading={finishingReport}>完工</Button>
-                  </Popconfirm>
-                ) : null}
-              </Space>
+            <Col span={8} style={{ textAlign: 'right' }}>
+              <Tag
+                color={reportOrderStatusMap[selectedReport.status as 0 | 1]?.color || 'default'}
+                style={{ fontSize: 14, padding: '2px 10px' }}
+              >
+                {reportOrderStatusMap[selectedReport.status as 0 | 1]?.label || '-'}
+              </Tag>
             </Col>
           )}
         </Row>
