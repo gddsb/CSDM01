@@ -248,8 +248,7 @@ export default function ReportDetail() {
 function DefectTab({ list, setList, options, isEditable, category, reportOrderId, processId, processes, onProcessChange, showProcess }) {
   const [saving, setSaving] = useState(false)
 
-  const handleAdd = async () => {
-    await handleSave()
+  const handleAdd = () => {
     setList(prev => [...prev, {
       id: genTempId(),
       report_order_id: Number(reportOrderId),
@@ -263,14 +262,24 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
 
   const handleSave = async () => {
     if (!isEditable) return
-    const valid = list.filter(d => d.defect_type_id && d.defect_qty && d.defect_qty > 0)
-    const invalidQty = list.filter(d => d.defect_type_id && (!d.defect_qty || d.defect_qty <= 0))
+    const hasEmpty = list.some(d => !d.defect_type_id && !d.defect_qty && !d.defect_unit && (!d.images || d.images.length === 0))
+    if (hasEmpty) {
+      Toast.show({ icon: 'fail', content: '存在空白记录，请填写或删除后保存' })
+      return
+    }
+    const invalidType = list.filter(d => d.defect_qty || d.defect_unit || (d.images && d.images.length > 0) ? !d.defect_type_id : false)
+    if (invalidType.length > 0) {
+      Toast.show({ icon: 'fail', content: `有 ${invalidType.length} 条记录请选择不良项目` })
+      return
+    }
+    const invalidQty = list.filter(d => d.defect_type_id && (!d.defect_qty || Number(d.defect_qty) <= 0))
     if (invalidQty.length > 0) {
       Toast.show({ icon: 'fail', content: `有 ${invalidQty.length} 条记录数量必须大于0` })
       return
     }
+    const valid = list.filter(d => d.defect_type_id && d.defect_qty && Number(d.defect_qty) > 0)
     if (valid.length === 0) {
-      Toast.show({ icon: 'fail', content: '没有需要保存的记录，请填写不良项目和数量' })
+      Toast.show({ icon: 'fail', content: '没有需要保存的记录' })
       return
     }
     setSaving(true)
@@ -281,7 +290,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
           report_order_id: d.report_order_id,
           process_id: d.process_id,
           defect_type_id: d.defect_type_id,
-          defect_qty: d.defect_qty,
+          defect_qty: Number(d.defect_qty),
           defect_unit: d.defect_unit || '',
           images: d.images || [],
         }
@@ -492,8 +501,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
 function MaterialTab({ list, setList, options, isEditable, reportOrderId, processId, processes, onProcessChange, showProcess }) {
   const [saving, setSaving] = useState(false)
 
-  const handleAdd = async () => {
-    await handleSave()
+  const handleAdd = () => {
     setList(prev => [...prev, {
       id: genTempId(),
       report_order_id: Number(reportOrderId),
@@ -507,14 +515,29 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
 
   const handleSave = async () => {
     if (!isEditable) return
-    const valid = list.filter(m => m.bas_material_id && m.material_batch && m.quantity && m.quantity > 0)
-    const invalidQty = list.filter(m => m.bas_material_id && m.material_batch && (!m.quantity || m.quantity <= 0))
+    const hasEmpty = list.some(m => !m.bas_material_id && !m.material_batch && !m.quantity && (!m.images || m.images.length === 0))
+    if (hasEmpty) {
+      Toast.show({ icon: 'fail', content: '存在空白记录，请填写或删除后保存' })
+      return
+    }
+    const invalidMaterial = list.filter(m => (m.material_batch || m.quantity || (m.images && m.images.length > 0)) ? !m.bas_material_id : false)
+    if (invalidMaterial.length > 0) {
+      Toast.show({ icon: 'fail', content: `有 ${invalidMaterial.length} 条记录请选择料号` })
+      return
+    }
+    const invalidBatch = list.filter(m => m.bas_material_id && !m.material_batch)
+    if (invalidBatch.length > 0) {
+      Toast.show({ icon: 'fail', content: `有 ${invalidBatch.length} 条记录批号不能为空` })
+      return
+    }
+    const invalidQty = list.filter(m => m.bas_material_id && (!m.quantity || Number(m.quantity) <= 0))
     if (invalidQty.length > 0) {
       Toast.show({ icon: 'fail', content: `有 ${invalidQty.length} 条记录数量必须大于0` })
       return
     }
+    const valid = list.filter(m => m.bas_material_id && m.material_batch && m.quantity && Number(m.quantity) > 0)
     if (valid.length === 0) {
-      Toast.show({ icon: 'fail', content: '没有需要保存的记录，请填写料号/批号/数量' })
+      Toast.show({ icon: 'fail', content: '没有需要保存的记录' })
       return
     }
     setSaving(true)
@@ -523,9 +546,10 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
         const payload = {
           report_order_id: m.report_order_id,
           process_id: m.process_id,
+          material_type: '投入',
           bas_material_id: m.bas_material_id,
           material_batch: m.material_batch,
-          quantity: m.quantity,
+          quantity: Math.floor(Number(m.quantity)),
           images: m.images || [],
         }
         if (m.material_id) {
@@ -713,7 +737,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
               </div>
               <div className="rd-list-row">
                 <span className="rd-list-label">数量</span>
-                <span className="rd-list-value">{record.quantity || 0}</span>
+                <span className="rd-list-value">{record.quantity ? Math.floor(Number(record.quantity)) : 0}</span>
               </div>
               {(record.images || []).length > 0 && (
                 <div className="rd-image-list">

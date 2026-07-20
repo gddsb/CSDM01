@@ -84,13 +84,9 @@ export default function MobileLayout() {
     <>
       <div className={shellClass}>
         <header className="mobile-header">
-          <div className="mobile-header-title">
+          <div className="mobile-header-title" style={{ flex: 1, justifyContent: 'center' }}>
             <span className="mobile-header-name">{systemName}</span>
             <span className="mobile-header-version">{SYSTEM_VERSION}</span>
-          </div>
-          <div className="mobile-header-user">
-            <UserOutline fontSize={16} />
-            <span style={{ marginLeft: 4 }}>{currentUser?.real_name || currentUser?.username || '-'}</span>
           </div>
         </header>
 
