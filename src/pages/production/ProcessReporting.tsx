@@ -814,22 +814,24 @@ export default function ProcessReporting() {
     },
     {
       title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 120,
-      render: (_, record) => isEditable ? (
+      render: (_, record) => {
+        const opts = getFilteredProdDefectOptions(record.id)
+        return isEditable ? (
         <Select
           placeholder="请选择不良编码"
           value={record.defect_type_id || undefined}
           onChange={(val) => {
             handleProdDefectChange(record.id, 'defect_type_id', val)
           }}
-          options={getFilteredProdDefectOptions(record.id)}
+          options={opts}
           style={{ width: '100%' }}
           showSearch
           popupMatchSelectWidth={false}
           popupPlacement="bottomLeft"
           popupClassName="mes-select-dropdown"
-          optionLabelRender={(option) => {
-            const opt = option as any
-            return opt.defect_code
+          labelRender={(props) => {
+            const opt = opts.find(o => o.value === props.value) as any
+            return opt?.defect_code || props.label
           }}
           filterOption={(input, option) => {
             const code = (option?.defect_code || '').toLowerCase()
@@ -839,7 +841,8 @@ export default function ProcessReporting() {
           }}
           size="small"
         />
-      ) : record.defect_code || '-',
+      ) : record.defect_code || '-'
+      },
     },
     {
       title: '不良类型', dataIndex: 'defect_type', key: 'defect_type', width: 120,
@@ -1113,22 +1116,24 @@ export default function ProcessReporting() {
     },
     {
       title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 120,
-      render: (_, record) => isEditable ? (
+      render: (_, record) => {
+        const opts = getFilteredScrapDefectOptions(record.id)
+        return isEditable ? (
         <Select
           placeholder="请选择不良编码"
           value={record.defect_type_id || undefined}
           onChange={(val) => {
             handleScrapDefectChange(record.id, 'defect_type_id', val)
           }}
-          options={getFilteredScrapDefectOptions(record.id)}
+          options={opts}
           style={{ width: '100%' }}
           showSearch
           popupMatchSelectWidth={false}
           popupPlacement="bottomLeft"
           popupClassName="mes-select-dropdown"
-          optionLabelRender={(option) => {
-            const opt = option as any
-            return opt.defect_code
+          labelRender={(props) => {
+            const opt = opts.find(o => o.value === props.value) as any
+            return opt?.defect_code || props.label
           }}
           filterOption={(input, option) => {
             const code = (option?.defect_code || '').toLowerCase()
@@ -1138,7 +1143,8 @@ export default function ProcessReporting() {
           }}
           size="small"
         />
-      ) : record.defect_code || '-',
+      ) : record.defect_code || '-'
+      },
     },
     {
       title: '不良类型', dataIndex: 'defect_type', key: 'defect_type', width: 120,
@@ -1511,20 +1517,22 @@ export default function ProcessReporting() {
     },
     {
       title: '料号', dataIndex: 'material_code', key: 'material_code', width: 120,
-      render: (_, record) => isEditable ? (
+      render: (_, record) => {
+        const opts = getFilteredMaterialOptions(record)
+        return isEditable ? (
         <Select
           placeholder="请选择料号"
           value={record.material_id || undefined}
           onChange={(val) => handleMaterialChange(record.id, 'material_id', val)}
-          options={getFilteredMaterialOptions(record)}
+          options={opts}
           style={{ width: '100%' }}
           showSearch
           popupMatchSelectWidth={false}
           popupPlacement="bottomLeft"
           popupClassName="mes-select-dropdown"
-          optionLabelRender={(option) => {
-            const opt = option as any
-            return opt.material_code
+          labelRender={(props) => {
+            const opt = opts.find(o => o.value === props.value) as any
+            return opt?.material_code || props.label
           }}
           filterOption={(input, option) => {
             const code = (option?.material_code || '').toLowerCase()
@@ -1535,7 +1543,8 @@ export default function ProcessReporting() {
           }}
           size="small"
         />
-      ) : record.material_code || (materialOptions.find(m => String(m.value) === String(record.bas_material_id || record.material_id))?.material_code) || '-',
+      ) : record.material_code || (materialOptions.find(m => String(m.value) === String(record.bas_material_id || record.material_id))?.material_code) || '-'
+      },
     },
     {
       title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 150,

@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Toast, Dialog, Button, Stepper, Input, TextArea, Selector, DatePicker, Switch } from 'antd-mobile'
-import { AddOutline, DeleteOutline, CheckOutline, PictureOutline } from 'antd-mobile-icons'
+import { AddOutline, DeleteOutline, CheckOutline, PictureOutline, DownOutline } from 'antd-mobile-icons'
 import api from '../../../utils/api'
 import dayjs from 'dayjs'
 import './report-detail.css'
@@ -14,6 +14,60 @@ const TABS = [
 ]
 
 const genTempId = () => 'tmp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6)
+
+// 自定义下拉组件：下拉显示编码+项目，选中后只显示编码
+function DefectSelect({ value, onChange, options, placeholder, codeField }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    document.addEventListener('touchstart', handler)
+    return () => {
+      document.removeEventListener('mousedown', handler)
+      document.removeEventListener('touchstart', handler)
+    }
+  }, [open])
+
+  const selected = options.find(o => o.value === value)
+  const codeKey = codeField || 'defect_code'
+
+  return (
+    <div className="rd-defect-select" ref={ref}>
+      <div
+        className={`rd-defect-select-display ${!selected ? 'placeholder' : ''}`}
+        onClick={() => setOpen(!open)}
+      >
+        {selected ? selected[codeKey] : (placeholder || '请选择')}
+        <span className="rd-defect-select-arrow"><DownOutline /></span>
+      </div>
+      {open && (
+        <div className="rd-defect-select-dropdown">
+          {options.length === 0 && (
+            <div className="rd-defect-select-option" style={{ color: '#999' }}>无选项</div>
+          )}
+          {options.map(o => (
+            <div
+              key={o.value}
+              className={`rd-defect-select-option ${o.value === value ? 'selected' : ''}`}
+              onClick={() => {
+                onChange(o.value)
+                setOpen(false)
+              }}
+            >
+              <span className="rd-defect-select-option-code">{o[codeKey]}</span>
+              <span className="rd-defect-select-option-name">{o.defect_name}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function ReportDetail() {
   const { id } = useParams()
@@ -432,17 +486,14 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
             <div className="rd-list-item-body">
               <div className="rd-form-row">
                 <div className="rd-form-item">
-                  <label className="rd-form-label">不良项目</label>
-                  <select
-                    className="rd-form-input"
-                    value={record.defect_type_id || ''}
-                    onChange={(e) => handleChangeDefect(record.id, 'defect_type_id', e.target.value ? Number(e.target.value) : null)}
-                  >
-                    <option value="">请选择</option>
-                    {options.map(o => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
+                  <label className="rd-form-label">不良编码</label>
+                  <DefectSelect
+                    value={record.defect_type_id}
+                    onChange={(val) => handleChangeDefect(record.id, 'defect_type_id', val)}
+                    options={options}
+                    placeholder="请选择"
+                    codeField="defect_code"
+                  />
                 </div>
                 <div className="rd-form-item rd-form-item-qty">
                   <label className="rd-form-label">数量</label>
@@ -895,16 +946,13 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId 
               <div className="rd-form-row">
                 <div className="rd-form-item">
                   <label className="rd-form-label">报废编码</label>
-                  <select
-                    className="rd-form-input"
-                    value={record.defect_type_id || ''}
-                    onChange={(e) => handleChange(record.id, 'defect_type_id', e.target.value ? Number(e.target.value) : null)}
-                  >
-                    <option value="">请选择</option>
-                    {options.map(o => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
+                  <DefectSelect
+                    value={record.defect_type_id}
+                    onChange={(val) => handleChange(record.id, 'defect_type_id', val)}
+                    options={options}
+                    placeholder="请选择"
+                    codeField="defect_code"
+                  />
                 </div>
                 <div className="rd-form-item">
                   <label className="rd-form-label">数量</label>
