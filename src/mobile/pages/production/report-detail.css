@@ -204,3 +204,32 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.rd-form-item-code {
+  flex: 0 0 auto;
+  width: 10em;
+}
+
+.rd-defect-select-dropdown.auto-width {
+  left: 0;
+  right: auto;
+  min-width: 100%;
+  width: max-content;
+  max-width: 280px;
+}
+
+.rd-material-same-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.rd-material-same-row .rd-form-item {
+  flex: 1;
+  min-width: 0;
+}
+
+.rd-material-same-row .rd-form-item:first-child {
+  flex: 0 0 auto;
+  width: 9em;
+}

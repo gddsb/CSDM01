@@ -16,7 +16,7 @@ const TABS = [
 const genTempId = () => 'tmp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6)
 
 // 自定义下拉组件：下拉显示编码+项目，选中后只显示编码
-function DefectSelect({ value, onChange, options, placeholder, codeField }) {
+function DefectSelect({ value, onChange, options, placeholder, codeField, nameField, autoWidth }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -35,6 +35,7 @@ function DefectSelect({ value, onChange, options, placeholder, codeField }) {
 
   const selected = options.find(o => o.value === value)
   const codeKey = codeField || 'defect_code'
+  const nameKey = nameField || 'defect_name'
 
   return (
     <div className="rd-defect-select" ref={ref}>
@@ -46,7 +47,7 @@ function DefectSelect({ value, onChange, options, placeholder, codeField }) {
         <span className="rd-defect-select-arrow"><DownOutline /></span>
       </div>
       {open && (
-        <div className="rd-defect-select-dropdown">
+        <div className={`rd-defect-select-dropdown ${autoWidth ? 'auto-width' : ''}`}>
           {options.length === 0 && (
             <div className="rd-defect-select-option" style={{ color: '#999' }}>无选项</div>
           )}
@@ -60,7 +61,7 @@ function DefectSelect({ value, onChange, options, placeholder, codeField }) {
               }}
             >
               <span className="rd-defect-select-option-code">{o[codeKey]}</span>
-              <span className="rd-defect-select-option-name">{o.defect_name}</span>
+              <span className="rd-defect-select-option-name">{o[nameKey]}</span>
             </div>
           ))}
         </div>
@@ -485,7 +486,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
           {isEditable ? (
             <div className="rd-list-item-body">
               <div className="rd-form-row">
-                <div className="rd-form-item">
+                <div className="rd-form-item rd-form-item-code">
                   <label className="rd-form-label">不良编码</label>
                   <DefectSelect
                     value={record.defect_type_id}
@@ -493,6 +494,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
                     options={options}
                     placeholder="请选择"
                     codeField="defect_code"
+                    autoWidth={true}
                   />
                 </div>
                 <div className="rd-form-item rd-form-item-qty">
@@ -747,17 +749,18 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
 
           {isEditable ? (
             <div className="rd-list-item-body">
-              <div className="rd-form-row">
+              <div className="rd-form-row rd-material-same-row">
                 <div className="rd-form-item">
                   <label className="rd-form-label">料号</label>
-                  <select
-                    className="rd-form-input"
-                    value={record.bas_material_id || ''}
-                    onChange={(e) => handleChangeMaterial(record.id, 'bas_material_id', e.target.value || null)}
-                  >
-                    <option value="">请选择</option>
-                    {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
+                  <DefectSelect
+                    value={record.bas_material_id}
+                    onChange={(val) => handleChangeMaterial(record.id, 'bas_material_id', val)}
+                    options={options}
+                    placeholder="请选择"
+                    codeField="material_code"
+                    nameField="material_name"
+                    autoWidth={true}
+                  />
                 </div>
                 <div className="rd-form-item">
                   <label className="rd-form-label">批号</label>
@@ -767,8 +770,6 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
                     onChange={(e) => handleChangeMaterial(record.id, 'material_batch', e.target.value)}
                   />
                 </div>
-              </div>
-              <div className="rd-form-row">
                 <div className="rd-form-item">
                   <label className="rd-form-label">包号</label>
                   <input
@@ -944,7 +945,7 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId 
           {isEditable ? (
             <div className="rd-list-item-body">
               <div className="rd-form-row">
-                <div className="rd-form-item">
+                <div className="rd-form-item rd-form-item-code">
                   <label className="rd-form-label">报废编码</label>
                   <DefectSelect
                     value={record.defect_type_id}
@@ -952,6 +953,7 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId 
                     options={options}
                     placeholder="请选择"
                     codeField="defect_code"
+                    autoWidth={true}
                   />
                 </div>
                 <div className="rd-form-item">
