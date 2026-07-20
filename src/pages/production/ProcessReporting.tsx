@@ -342,8 +342,8 @@ export default function ProcessReporting() {
       setMaterialList((materialRes.data || []).map(m => {
         let enriched = { ...m, id: m.material_id, label_images: parseImages(m.label_images) }
         // 后端只记录 bas_material_id，从物料主数据补充 material_code/material_name/specification
-        if (!enriched.material_code && (enriched.bas_material_id || enriched.material_id)) {
-          const mat = materialOptions.find(opt => String(opt.value) === String(enriched.bas_material_id || enriched.material_id))
+        if (!enriched.material_code && enriched.bas_material_id) {
+          const mat = materialOptions.find(opt => String(opt.value) === String(enriched.bas_material_id))
           if (mat) {
             if (!enriched.material_code) enriched.material_code = mat.material_code
             if (!enriched.material_name) enriched.material_name = mat.material_name
@@ -1245,13 +1245,12 @@ export default function ProcessReporting() {
         return prev.map(item => {
           if (String(item.id) !== String(recordId)) return item
           let updated = { ...item, [field]: value }
-          if (field === 'material_id' && value) {
+          if (field === 'bas_material_id' && value) {
             const material = materialOptions.find(m => String(m.value) === String(value))
             if (material) {
               updated.material_code = material.material_code
               updated.material_name = material.material_name
               updated.specification = material.specification
-              updated.bas_material_id = value
             }
           }
           return updated
@@ -1263,7 +1262,6 @@ export default function ProcessReporting() {
           report_order_id: selectedReport?.report_order_id,
           process_id: selectedProcessId,
           material_type: '投入',
-          material_id: null,
           bas_material_id: null,
           material_code: '',
           material_name: '',
@@ -1274,13 +1272,12 @@ export default function ProcessReporting() {
           label_images: [],
         }
         newItem[field] = value
-        if (field === 'material_id' && value) {
+        if (field === 'bas_material_id' && value) {
           const material = materialOptions.find(m => String(m.value) === String(value))
           if (material) {
             newItem.material_code = material.material_code
             newItem.material_name = material.material_name
             newItem.specification = material.specification
-            newItem.bas_material_id = value
           }
         }
         return [...prev, newItem]
@@ -1522,8 +1519,8 @@ export default function ProcessReporting() {
         return isEditable ? (
         <Select
           placeholder="请选择料号"
-          value={record.material_id || undefined}
-          onChange={(val) => handleMaterialChange(record.id, 'material_id', val)}
+          value={record.bas_material_id || undefined}
+          onChange={(val) => handleMaterialChange(record.id, 'bas_material_id', val)}
           options={opts}
           style={{ width: '100%' }}
           showSearch
@@ -1531,7 +1528,7 @@ export default function ProcessReporting() {
           popupPlacement="bottomLeft"
           popupClassName="mes-select-dropdown"
           labelRender={(props) => {
-            const opt = opts.find(o => o.value === props.value) as any
+            const opt = opts.find(o => String(o.value) === String(props.value)) as any
             return opt?.material_code || props.label
           }}
           filterOption={(input, option) => {
@@ -1543,7 +1540,7 @@ export default function ProcessReporting() {
           }}
           size="small"
         />
-      ) : record.material_code || (materialOptions.find(m => String(m.value) === String(record.bas_material_id || record.material_id))?.material_code) || '-'
+      ) : record.material_code || (materialOptions.find(m => String(m.value) === String(record.bas_material_id))?.material_code) || '-'
       },
     },
     {
@@ -1551,7 +1548,7 @@ export default function ProcessReporting() {
       render: (val, record) => {
         if (val) return val
         // 从关联数据读取
-        const mat = materialOptions.find(m => String(m.value) === String(record.bas_material_id || record.material_id))
+        const mat = materialOptions.find(m => String(m.value) === String(record.bas_material_id))
         return mat?.material_name || '-'
       },
     },
@@ -1560,7 +1557,7 @@ export default function ProcessReporting() {
       render: (val, record) => {
         if (val) return val
         // 从关联数据读取
-        const mat = materialOptions.find(m => String(m.value) === String(record.bas_material_id || record.material_id))
+        const mat = materialOptions.find(m => String(m.value) === String(record.bas_material_id))
         return mat?.specification || '-'
       },
     },
