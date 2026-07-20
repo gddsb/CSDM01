@@ -138,12 +138,12 @@ const defaultMenuItems = [
       { key: '/system/dictionary', icon: <DatabaseOutlined />, label: '数据字典' },
       { key: '/system/config', icon: <ControlOutlined />, label: '系统配置' },
       { key: '/system/logs', icon: <FileTextOutlined />, label: '操作日志' },
+      { key: '/system/files', icon: <FolderOutlined />, label: '文件管理' },
     ]
   },
   {
     key: 'system-link', icon: <DesktopOutlined />, label: '系统关联',
     children: [
-      { key: '/system/files', icon: <FolderOutlined />, label: '文件查看' },
       { key: '/mobile/home', icon: <MobileOutlined />, label: '移动端模拟器' },
     ]
   },
