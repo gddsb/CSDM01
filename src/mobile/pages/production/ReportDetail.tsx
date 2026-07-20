@@ -255,7 +255,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
       report_order_id: Number(reportOrderId),
       process_id: processId,
       defect_type_id: null,
-      defect_qty: 0,
+      defect_qty: '',
       defect_unit: '',
       images: [],
     }])
@@ -263,9 +263,14 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
 
   const handleSave = async () => {
     if (!isEditable) return
-    const valid = list.filter(d => d.defect_type_id && d.defect_qty > 0)
+    const valid = list.filter(d => d.defect_type_id && d.defect_qty && d.defect_qty > 0)
+    const invalidQty = list.filter(d => d.defect_type_id && (!d.defect_qty || d.defect_qty <= 0))
+    if (invalidQty.length > 0) {
+      Toast.show({ icon: 'fail', content: `有 ${invalidQty.length} 条记录数量必须大于0` })
+      return
+    }
     if (valid.length === 0) {
-      Toast.show({ icon: 'fail', content: '没有需要保存的记录' })
+      Toast.show({ icon: 'fail', content: '没有需要保存的记录，请填写不良项目和数量' })
       return
     }
     setSaving(true)
@@ -435,9 +440,10 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
                   <input
                     type="number"
                     className="rd-form-input"
-                    value={record.defect_qty || 0}
-                    onChange={(e) => handleChangeDefect(record.id, 'defect_qty', Number(e.target.value))}
-                    min={0}
+                    value={record.defect_qty || ''}
+                    onChange={(e) => handleChangeDefect(record.id, 'defect_qty', e.target.value ? Math.max(1, Number(e.target.value)) : null)}
+                    min={1}
+                    step={1}
                   />
                 </div>
                 <div className="rd-form-item rd-form-item-unit">
@@ -494,14 +500,19 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
       process_id: processId,
       bas_material_id: null,
       material_batch: '',
-      quantity: 0,
+      quantity: '',
       images: [],
     }])
   }
 
   const handleSave = async () => {
     if (!isEditable) return
-    const valid = list.filter(m => m.bas_material_id && m.material_batch && m.quantity > 0)
+    const valid = list.filter(m => m.bas_material_id && m.material_batch && m.quantity && m.quantity > 0)
+    const invalidQty = list.filter(m => m.bas_material_id && m.material_batch && (!m.quantity || m.quantity <= 0))
+    if (invalidQty.length > 0) {
+      Toast.show({ icon: 'fail', content: `有 ${invalidQty.length} 条记录数量必须大于0` })
+      return
+    }
     if (valid.length === 0) {
       Toast.show({ icon: 'fail', content: '没有需要保存的记录，请填写料号/批号/数量' })
       return
@@ -676,9 +687,10 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
                   <input
                     type="number"
                     className="rd-form-input"
-                    value={record.quantity || 0}
-                    onChange={(e) => handleChangeMaterial(record.id, 'quantity', Number(e.target.value))}
+                    value={record.quantity || ''}
+                    onChange={(e) => handleChangeMaterial(record.id, 'quantity', e.target.value ? Math.max(1, Number(e.target.value)) : null)}
                     min={1}
+                    step={1}
                   />
                 </div>
               </div>
