@@ -32,6 +32,7 @@ export const list = async (req, res) => {
         material_name: json.bas_material?.material_name || '',
         specification: json.bas_material?.specification || '',
         label_images: json.label_images ? JSON.parse(json.label_images) : [],
+        images: json.label_images ? JSON.parse(json.label_images) : [],
       }
     })
     return success(res, data, '查询成功', count)
@@ -52,7 +53,10 @@ export const create = async (req, res) => {
       package_no,
       quantity,
       label_images,
+      images,
     } = req.body
+
+    const imgData = images !== undefined ? images : label_images
 
     if (!report_order_id) return fail(res, '报工单 ID 不能为空')
     if (!process_id) return fail(res, '工序 ID 不能为空')
@@ -67,10 +71,13 @@ export const create = async (req, res) => {
       material_batch: material_batch || '',
       package_no: package_no || '',
       quantity: Number(quantity),
-      label_images: label_images ? JSON.stringify(label_images) : null,
+      label_images: imgData ? JSON.stringify(imgData) : null,
     })
 
-    return success(res, material, '创建成功')
+    return success(res, {
+      ...material.toJSON(),
+      images: material.label_images ? JSON.parse(material.label_images) : [],
+    }, '创建成功')
   } catch (err) {
     console.error('创建制程物料记录失败:', err)
     return fail(res, '服务器错误', 500)
@@ -87,21 +94,27 @@ export const update = async (req, res) => {
       package_no,
       quantity,
       label_images,
+      images,
     } = req.body
 
     const material = await ProcessMaterial.findOne({ where: { material_id: id } })
     if (!material) return fail(res, '记录不存在', 404)
+
+    const imgData = images !== undefined ? images : label_images
 
     if (material_type !== undefined) material.material_type = material_type
     if (bas_material_id !== undefined) material.bas_material_id = bas_material_id
     if (material_batch !== undefined) material.material_batch = material_batch
     if (package_no !== undefined) material.package_no = package_no
     if (quantity !== undefined && Number(quantity) > 0) material.quantity = Number(quantity)
-    if (label_images !== undefined) material.label_images = label_images ? JSON.stringify(label_images) : null
+    if (imgData !== undefined) material.label_images = imgData ? JSON.stringify(imgData) : null
 
     await material.save()
 
-    return success(res, material, '更新成功')
+    return success(res, {
+      ...material.toJSON(),
+      images: material.label_images ? JSON.parse(material.label_images) : [],
+    }, '更新成功')
   } catch (err) {
     console.error('更新制程物料记录失败:', err)
     return fail(res, '服务器错误', 500)
