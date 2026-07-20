@@ -257,7 +257,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
       defect_type_id: null,
       defect_qty: 0,
       defect_unit: '',
-      description: '',
+      images: [],
     }])
   }
 
@@ -278,7 +278,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
           defect_type_id: d.defect_type_id,
           defect_qty: d.defect_qty,
           defect_unit: d.defect_unit || '',
-          description: d.description || '',
+          images: d.images || [],
         }
         if (d.defect_id) {
           await api.put(`${url}/${d.defect_id}`, payload)
@@ -288,7 +288,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
       }
       Toast.show({ icon: 'success', content: `已保存 ${valid.length} 条记录` })
       const res = await api.get(url, { params: { report_order_id: reportOrderId, process_id: processId, page: 1, pageSize: 1000 } })
-      setList((res.data || []).map(d => ({ ...d, id: d.defect_id || genTempId() })))
+      setList((res.data || []).map(d => ({ ...d, id: d.defect_id || genTempId(), images: d.images || [] })))
     } catch (err) {
       Toast.show({ icon: 'fail', content: err.message || '保存失败' })
     } finally {
@@ -311,7 +311,50 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
     }
   }
 
-  const handleChange = (recordId, field, value) => {
+  const handleImageUpload = async (recordId) => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.multiple = true
+    input.onchange = async (e) => {
+      const files = Array.from(e.target.files || [])
+      if (files.length === 0) return
+      try {
+        const uploaded = []
+        for (const file of files) {
+          const formData = new FormData()
+          formData.append('file', file)
+          const res = await api.post('/upload/image', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          })
+          if (res.data?.url) {
+            uploaded.push(res.data.url)
+          }
+        }
+        if (uploaded.length > 0) {
+          setList(prev => prev.map(item => {
+            if (item.id !== recordId) return item
+            return { ...item, images: [...(item.images || []), ...uploaded] }
+          }))
+          Toast.show({ icon: 'success', content: `已上传 ${uploaded.length} 张图片` })
+        }
+      } catch (err) {
+        Toast.show({ icon: 'fail', content: err.message || '图片上传失败' })
+      }
+    }
+    input.click()
+  }
+
+  const handleRemoveImage = (recordId, imageIndex) => {
+    setList(prev => prev.map(item => {
+      if (item.id !== recordId) return item
+      const images = [...(item.images || [])]
+      images.splice(imageIndex, 1)
+      return { ...item, images }
+    }))
+  }
+
+  const handleChangeDefect = (recordId, field, value) => {
     setList(prev => prev.map(item => {
       if (item.id !== recordId) return item
       const next = { ...item, [field]: value }
@@ -364,7 +407,10 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
               {record.defect_code ? `${record.defect_code} ${record.defect_name || ''}` : '新增记录'}
             </span>
             {isEditable && (
-              <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} fontSize={16} />
+              <div className="rd-list-item-actions">
+                <PictureOutline color="#2196F3" onClick={() => handleImageUpload(record.id)} fontSize={18} />
+                <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} fontSize={16} />
+              </div>
             )}
           </div>
 
@@ -376,7 +422,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
                   <select
                     className="rd-form-input"
                     value={record.defect_type_id || ''}
-                    onChange={(e) => handleChange(record.id, 'defect_type_id', e.target.value ? Number(e.target.value) : null)}
+                    onChange={(e) => handleChangeDefect(record.id, 'defect_type_id', e.target.value ? Number(e.target.value) : null)}
                   >
                     <option value="">请选择</option>
                     {options.map(o => (
@@ -384,34 +430,35 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
                     ))}
                   </select>
                 </div>
-                <div className="rd-form-item">
+                <div className="rd-form-item rd-form-item-qty">
                   <label className="rd-form-label">数量</label>
                   <input
                     type="number"
                     className="rd-form-input"
                     value={record.defect_qty || 0}
-                    onChange={(e) => handleChange(record.id, 'defect_qty', Number(e.target.value))}
+                    onChange={(e) => handleChangeDefect(record.id, 'defect_qty', Number(e.target.value))}
                     min={0}
                   />
                 </div>
-                <div className="rd-form-item">
+                <div className="rd-form-item rd-form-item-unit">
                   <label className="rd-form-label">单位</label>
                   <input
                     className="rd-form-input"
                     value={record.defect_unit || ''}
-                    onChange={(e) => handleChange(record.id, 'defect_unit', e.target.value)}
+                    onChange={(e) => handleChangeDefect(record.id, 'defect_unit', e.target.value)}
                   />
                 </div>
               </div>
-              <div className="rd-form-item">
-                <label className="rd-form-label">备注</label>
-                <textarea
-                  className="rd-form-input"
-                  style={{ height: 48, paddingTop: 6 }}
-                  value={record.description || ''}
-                  onChange={(e) => handleChange(record.id, 'description', e.target.value)}
-                />
-              </div>
+              {(record.images || []).length > 0 && (
+                <div className="rd-image-list">
+                  {(record.images || []).map((img, idx) => (
+                    <div key={idx} className="rd-image-item">
+                      <img src={img} alt="" className="rd-image" />
+                      <DeleteOutline color="#fff" fontSize={12} onClick={() => handleRemoveImage(record.id, idx)} className="rd-image-delete" />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
             <div className="rd-list-item-body">
@@ -419,10 +466,13 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
                 <span className="rd-list-label">数量</span>
                 <span className="rd-list-value">{record.defect_qty || 0} {record.defect_unit || ''}</span>
               </div>
-              {record.description && (
-                <div className="rd-list-row">
-                  <span className="rd-list-label">备注</span>
-                  <span className="rd-list-value">{record.description}</span>
+              {(record.images || []).length > 0 && (
+                <div className="rd-image-list">
+                  {(record.images || []).map((img, idx) => (
+                    <div key={idx} className="rd-image-item">
+                      <img src={img} alt="" className="rd-image" />
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -445,6 +495,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
       bas_material_id: null,
       material_batch: '',
       quantity: 0,
+      images: [],
     }])
   }
 
@@ -464,6 +515,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
           bas_material_id: m.bas_material_id,
           material_batch: m.material_batch,
           quantity: m.quantity,
+          images: m.images || [],
         }
         if (m.material_id) {
           await api.put(`/production/process-materials/${m.material_id}`, payload)
@@ -473,7 +525,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
       }
       Toast.show({ icon: 'success', content: `已保存 ${valid.length} 条记录` })
       const res = await api.get('/production/process-materials', { params: { report_order_id: reportOrderId, process_id: processId, page: 1, pageSize: 1000 } })
-      setList((res.data || []).map(m => ({ ...m, id: m.material_id || genTempId() })))
+      setList((res.data || []).map(m => ({ ...m, id: m.material_id || genTempId(), images: m.images || [] })))
     } catch (err) {
       Toast.show({ icon: 'fail', content: err.message || '保存失败' })
     } finally {
@@ -495,7 +547,50 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
     }
   }
 
-  const handleChange = (recordId, field, value) => {
+  const handleImageUpload = async (recordId) => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.multiple = true
+    input.onchange = async (e) => {
+      const files = Array.from(e.target.files || [])
+      if (files.length === 0) return
+      try {
+        const uploaded = []
+        for (const file of files) {
+          const formData = new FormData()
+          formData.append('file', file)
+          const res = await api.post('/upload/image', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          })
+          if (res.data?.url) {
+            uploaded.push(res.data.url)
+          }
+        }
+        if (uploaded.length > 0) {
+          setList(prev => prev.map(item => {
+            if (item.id !== recordId) return item
+            return { ...item, images: [...(item.images || []), ...uploaded] }
+          }))
+          Toast.show({ icon: 'success', content: `已上传 ${uploaded.length} 张图片` })
+        }
+      } catch (err) {
+        Toast.show({ icon: 'fail', content: err.message || '图片上传失败' })
+      }
+    }
+    input.click()
+  }
+
+  const handleRemoveImage = (recordId, imageIndex) => {
+    setList(prev => prev.map(item => {
+      if (item.id !== recordId) return item
+      const images = [...(item.images || [])]
+      images.splice(imageIndex, 1)
+      return { ...item, images }
+    }))
+  }
+
+  const handleChangeMaterial = (recordId, field, value) => {
     setList(prev => prev.map(item => {
       if (item.id !== recordId) return item
       const next = { ...item, [field]: value }
@@ -546,7 +641,12 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
             <span className="rd-list-item-title">
               {record.material_code ? `${record.material_code} ${record.material_name || ''}` : '新增记录'}
             </span>
-            {isEditable && <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} fontSize={16} />}
+            {isEditable && (
+              <div className="rd-list-item-actions">
+                <PictureOutline color="#2196F3" onClick={() => handleImageUpload(record.id)} fontSize={18} />
+                <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} fontSize={16} />
+              </div>
+            )}
           </div>
 
           {isEditable ? (
@@ -557,7 +657,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
                   <select
                     className="rd-form-input"
                     value={record.bas_material_id || ''}
-                    onChange={(e) => handleChange(record.id, 'bas_material_id', e.target.value || null)}
+                    onChange={(e) => handleChangeMaterial(record.id, 'bas_material_id', e.target.value || null)}
                   >
                     <option value="">请选择</option>
                     {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -568,20 +668,30 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
                   <input
                     className="rd-form-input"
                     value={record.material_batch || ''}
-                    onChange={(e) => handleChange(record.id, 'material_batch', e.target.value)}
+                    onChange={(e) => handleChangeMaterial(record.id, 'material_batch', e.target.value)}
                   />
                 </div>
-                <div className="rd-form-item">
+                <div className="rd-form-item rd-form-item-qty">
                   <label className="rd-form-label">数量</label>
                   <input
                     type="number"
                     className="rd-form-input"
                     value={record.quantity || 0}
-                    onChange={(e) => handleChange(record.id, 'quantity', Number(e.target.value))}
+                    onChange={(e) => handleChangeMaterial(record.id, 'quantity', Number(e.target.value))}
                     min={1}
                   />
                 </div>
               </div>
+              {(record.images || []).length > 0 && (
+                <div className="rd-image-list">
+                  {(record.images || []).map((img, idx) => (
+                    <div key={idx} className="rd-image-item">
+                      <img src={img} alt="" className="rd-image" />
+                      <DeleteOutline color="#fff" fontSize={12} onClick={() => handleRemoveImage(record.id, idx)} className="rd-image-delete" />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
             <div className="rd-list-item-body">
@@ -593,6 +703,15 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, proces
                 <span className="rd-list-label">数量</span>
                 <span className="rd-list-value">{record.quantity || 0}</span>
               </div>
+              {(record.images || []).length > 0 && (
+                <div className="rd-image-list">
+                  {(record.images || []).map((img, idx) => (
+                    <div key={idx} className="rd-image-item">
+                      <img src={img} alt="" className="rd-image" />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

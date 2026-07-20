@@ -648,10 +648,26 @@
 }
 
 .rd-toolbar-btns .adm-button {
-  --text-color: #2196F3;
-  --border-color: #2196F3;
-  height: 32px;
-  font-size: 12px;
+  --text-color: #fff;
+  --border-color: #1976D2;
+  --background-color: #1976D2;
+  height: 34px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px;
+}
+
+.rd-toolbar-btns .adm-button--outline {
+  --text-color: #1976D2;
+  --background-color: transparent;
+  --border-color: #1976D2;
+  border-width: 1.5px;
+}
+
+.rd-toolbar-btns .adm-button--primary {
+  --text-color: #fff;
+  --background-color: #1976D2;
+  --border-color: #1976D2;
 }
 
 .rd-list-item {
@@ -688,6 +704,14 @@
 
 .rd-form-item {
   flex: 1;
+}
+
+.rd-form-item-qty {
+  max-width: 80px;
+}
+
+.rd-form-item-unit {
+  max-width: 60px;
 }
 
 .rd-form-label {
@@ -727,4 +751,40 @@
 .rd-list-value {
   color: #424242;
   text-align: right;
+}
+
+.rd-list-item-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.rd-image-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.rd-image-item {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.rd-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.rd-image-delete {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+  padding: 2px;
+  cursor: pointer;
 }
