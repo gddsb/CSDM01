@@ -191,16 +191,18 @@ export default function ReportDetail() {
 
       <div className="mobile-page" style={{ paddingTop: 12 }}>
         {currentTabNeedProcess && processes.length > 0 && (
-          <div className="rd-process-chips">
-            {processes.map(p => (
-              <div
-                key={p.process_id}
-                className={`rd-process-chip ${String(selectedProcessId) === String(p.process_id) ? 'active' : ''}`}
-                onClick={() => setSelectedProcessId(p.process_id)}
-              >
-                {p.process_name}
-              </div>
-            ))}
+          <div className="mobile-form-item">
+            <label className="mobile-form-label">工序</label>
+            <select
+              className="mobile-form-input"
+              value={selectedProcessId || ''}
+              onChange={(e) => setSelectedProcessId(e.target.value ? Number(e.target.value) : null)}
+            >
+              <option value="">请选择工序</option>
+              {processes.map(p => (
+                <option key={p.process_id} value={p.process_id}>{p.process_name}</option>
+              ))}
+            </select>
           </div>
         )}
 

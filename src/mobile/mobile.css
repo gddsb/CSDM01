@@ -22,6 +22,52 @@
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18), 0 0 0 8px #1a1a1a, 0 0 0 10px #333;
     overflow: hidden;
   }
+  
+  .mobile-shell.landscape {
+    width: 844px;
+    height: 390px;
+  }
+  
+  .mobile-shell.iphone-se {
+    width: 320px;
+    height: 568px;
+  }
+  
+  .mobile-shell.iphone-se.landscape {
+    width: 568px;
+    height: 320px;
+  }
+  
+  .mobile-shell.iphone-14-pro {
+    width: 393px;
+    height: 852px;
+  }
+  
+  .mobile-shell.iphone-14-pro.landscape {
+    width: 852px;
+    height: 393px;
+  }
+  
+  .mobile-shell.android-s {
+    width: 360px;
+    height: 640px;
+  }
+  
+  .mobile-shell.android-s.landscape {
+    width: 640px;
+    height: 360px;
+  }
+  
+  .mobile-shell.android-xl {
+    width: 412px;
+    height: 915px;
+  }
+  
+  .mobile-shell.android-xl.landscape {
+    width: 915px;
+    height: 412px;
+  }
+  
   html, body, #root {
     height: 100%;
     background: #e9ebf0;
@@ -489,4 +535,70 @@
   font-weight: 600;
   color: #212121;
   margin-right: 28px;
+}
+
+/* 桌面端模拟器控制栏 */
+@media (min-width: 768px) {
+  .mobile-simulator-controls {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 24px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    z-index: 1000;
+  }
+  
+  .mobile-sim-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 12px;
+    background: #f5f6f8;
+    color: #424242;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  
+  .mobile-sim-btn:hover {
+    background: #e0e0e0;
+  }
+  
+  .mobile-sim-btn.active {
+    background: #2196F3;
+    color: #fff;
+  }
+  
+  .mobile-sim-btn.pc-btn {
+    background: #424242;
+    color: #fff;
+  }
+  
+  .mobile-sim-btn.pc-btn:hover {
+    background: #212121;
+  }
+  
+  .mobile-sim-divider {
+    width: 1px;
+    height: 24px;
+    background: #e0e0e0;
+  }
+  
+  .mobile-sim-select {
+    padding: 6px 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 12px;
+    background: #fff;
+    cursor: pointer;
+    outline: none;
+  }
 }

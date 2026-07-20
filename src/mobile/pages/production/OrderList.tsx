@@ -189,16 +189,6 @@ export default function OrderList() {
                 <span style={{ color: '#757575' }}>计划开始</span>
                 <span>{order.plan_start_time ? dayjs(order.plan_start_time).format('MM-DD HH:mm') : '-'}</span>
               </div>
-
-              {order.status === '开立' && (
-                <button
-                  className="mobile-action-btn mobile-action-primary"
-                  style={{ marginTop: 10 }}
-                  onClick={(e) => { e.stopPropagation(); handleRelease(order) }}
-                >
-                  下发开工
-                </button>
-              )}
             </div>
           </div>
         ))}
