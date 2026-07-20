@@ -32,15 +32,6 @@ export default function MobileHome() {
 
   return (
     <div className="mobile-page home-page">
-      {/* 顶部欢迎区 */}
-      <div className="home-welcome">
-        <div className="home-welcome-row">
-          <div className="home-welcome-name">您好，{currentUser?.real_name || currentUser?.username || '用户'}</div>
-          <div className="home-welcome-company">{systemConfig.company_name || '大满乳业'}</div>
-        </div>
-        <div className="home-welcome-sub">欢迎使用 MES 工作台</div>
-      </div>
-
       {/* 中部功能区上部：菜单网格 */}
       <div className="home-section-title">功能菜单</div>
       <div className="mobile-menu-grid">
