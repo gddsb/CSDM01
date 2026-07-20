@@ -809,7 +809,7 @@ export default function ProcessReporting() {
 
   const prodDefectColumns = [
     {
-      title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 120,
+      title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 100,
       render: (_, record) => {
         const opts = getFilteredProdDefectOptions(record.id)
         return isEditable ? (
@@ -1107,7 +1107,7 @@ export default function ProcessReporting() {
 
   const scrapDefectColumns = [
     {
-      title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 120,
+      title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 100,
       render: (_, record) => {
         const opts = getFilteredScrapDefectOptions(record.id)
         return isEditable ? (
@@ -1518,6 +1518,15 @@ export default function ProcessReporting() {
           labelRender={(props) => {
             const opt = opts.find(o => String(o.value) === String(props.value)) as any
             return opt?.material_code || props.label
+          }}
+          optionRender={(optionInfo) => {
+            const opt = optionInfo.data as any
+            return (
+              <span>
+                <span style={{ fontWeight: 600, color: '#212121' }}>{opt.material_code}</span>
+                <span style={{ marginLeft: 8, opacity: 0.65, color: '#757575' }}>{opt.material_name}</span>
+              </span>
+            )
           }}
           filterOption={(input, option) => {
             const code = (option?.material_code || '').toLowerCase()
