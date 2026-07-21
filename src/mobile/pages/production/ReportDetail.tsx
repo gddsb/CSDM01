@@ -172,13 +172,13 @@ export default function ReportDetail() {
   const defectOptions = defectTypes
     .filter(d => d.category_name === '制程检验类型'
       && d.defect_type !== '检验报废'
-      && d.status === '启用' && d.display !== false && d.display !== 0)
+      && d.status === '启用')
     .map(d => ({ label: `${d.defect_code} ${d.defect_name}`, value: d.defect_id, ...d }))
 
   const scrapOptions = defectTypes
     .filter(d => d.category_name === '制程检验类型'
       && d.defect_type === '检验报废'
-      && d.status === '启用' && d.display !== false && d.display !== 0)
+      && d.status === '启用')
     .map(d => ({ label: `${d.defect_code} ${d.defect_name}`, value: d.defect_id, ...d }))
 
   const materialOptions = materials.map(m => ({

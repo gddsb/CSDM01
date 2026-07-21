@@ -101,7 +101,7 @@ export default function ProcessReporting() {
     return defectTypes
       .filter(d => d.category_name === '制程检验类型'
         && d.defect_type !== '检验报废'
-        && d.status === '启用' && d.display !== false && d.display !== 0)
+        && d.status === '启用')
       .filter(d => {
         if (seen.has(d.defect_id)) return false
         seen.add(d.defect_id)
@@ -124,7 +124,7 @@ export default function ProcessReporting() {
     return defectTypes
       .filter(d => d.category_name === '制程检验类型'
         && d.defect_type === '检验报废'
-        && d.status === '启用' && d.display !== false && d.display !== 0)
+        && d.status === '启用')
       .filter(d => {
         if (seen.has(d.defect_id)) return false
         seen.add(d.defect_id)
