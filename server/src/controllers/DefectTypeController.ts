@@ -135,6 +135,13 @@ export const nextCode = async (req, res) => {
       '制程检验类型': 'PC',
     }
     const typeMap = {
+      '外观不良': 'COS',
+      '尺寸不良': 'DIM',
+      '理化不良': 'PHC',
+      '材质不良': 'MAT',
+      '标识不良': 'LBL',
+      '污染异物': 'CON',
+      '运输不良': 'TRD',
       '来料不良': 'INC',
       '制程不良': 'PNC',
       '检验报废': 'SCR',
