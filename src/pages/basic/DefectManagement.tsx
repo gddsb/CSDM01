@@ -10,7 +10,18 @@ import api from '../../utils/api'
 import { useMessage } from '../../contexts/AppContext'
 
 // 不良类型标签颜色映射
-const typeColorMap = { '来料不良': 'blue', '制程不良': 'orange', '检验报废': 'red' }
+const typeColorMap = { 
+  '来料不良': 'blue', 
+  '制程不良': 'orange', 
+  '检验报废': 'red',
+  '外观不良': 'purple',
+  '尺寸不良': 'cyan',
+  '理化不良': 'magenta',
+  '材质不良': 'geekblue',
+  '标识不良': 'gold',
+  '污染异物': 'lime',
+  '运输不良': 'volcano',
+}
 
 // 检验类型选项
 const categoryNameOptions = [
@@ -20,7 +31,15 @@ const categoryNameOptions = [
 
 // 检验类型 → 不良类型联动映射
 const defectTypeMap = {
-  '来料检验类型': [{ label: '来料不良', value: '来料不良' }],
+  '来料检验类型': [
+    { label: '外观不良', value: '外观不良' },
+    { label: '尺寸不良', value: '尺寸不良' },
+    { label: '理化不良', value: '理化不良' },
+    { label: '材质不良', value: '材质不良' },
+    { label: '标识不良', value: '标识不良' },
+    { label: '污染异物', value: '污染异物' },
+    { label: '运输不良', value: '运输不良' },
+  ],
   '制程检验类型': [
     { label: '来料不良', value: '来料不良' },
     { label: '制程不良', value: '制程不良' },
@@ -414,6 +433,13 @@ export default function DefectManagement() {
 
   // 筛选时不良类型下拉选项（所有不良类型，不联动）
   const filterTypeOptions = [
+    { label: '外观不良', value: '外观不良' },
+    { label: '尺寸不良', value: '尺寸不良' },
+    { label: '理化不良', value: '理化不良' },
+    { label: '材质不良', value: '材质不良' },
+    { label: '标识不良', value: '标识不良' },
+    { label: '污染异物', value: '污染异物' },
+    { label: '运输不良', value: '运输不良' },
     { label: '来料不良', value: '来料不良' },
     { label: '制程不良', value: '制程不良' },
     { label: '检验报废', value: '检验报废' },

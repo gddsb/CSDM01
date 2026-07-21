@@ -67,12 +67,48 @@ export const detail = async (req, res) => {
 export const create = async (req, res) => {
   try {
     const { defect_code, defect_name } = req.body
-    if (!defect_code || !defect_name) {
-      return fail(res, '不良编码和名称不能为空')
+    if (!defect_name) {
+      return fail(res, '不良名称不能为空')
     }
-    const exists = await DefectType.findOne({ where: { defect_code } })
-    if (exists) return fail(res, '不良编码已存在')
-    const defect = await DefectType.create(req.body)
+    let finalCode = defect_code
+    
+    const categoryMap = {
+      '来料检验类型': 'IC',
+      '制程检验类型': 'PC',
+    }
+    const typeMap = {
+      '外观不良': 'COS',
+      '尺寸不良': 'DIM',
+      '理化不良': 'PHC',
+      '材质不良': 'MAT',
+      '标识不良': 'LBL',
+      '污染异物': 'CON',
+      '运输不良': 'TRD',
+      '来料不良': 'INC',
+      '制程不良': 'PNC',
+      '检验报废': 'SCR',
+    }
+    
+    if (!finalCode && req.body.defect_type && req.body.category_name) {
+      const catCode = categoryMap[req.body.category_name] || 'XX'
+      const typeCode = typeMap[req.body.defect_type] || 'XX'
+      const where = { defect_type: req.body.defect_type, category_name: req.body.category_name }
+      const count = await DefectType.count({ where })
+      finalCode = `${catCode}-${typeCode}-${String(count + 1).padStart(2, '0')}`
+    }
+    
+    if (finalCode) {
+      const exists = await DefectType.findOne({ where: { defect_code: finalCode } })
+      if (exists) {
+        const catCode = categoryMap[req.body.category_name] || 'XX'
+        const typeCode = typeMap[req.body.defect_type] || 'XX'
+        const where = { defect_type: req.body.defect_type, category_name: req.body.category_name }
+        const count = await DefectType.count({ where })
+        finalCode = `${catCode}-${typeCode}-${String(count + 1).padStart(2, '0')}`
+      }
+    }
+    
+    const defect = await DefectType.create({ ...req.body, defect_code: finalCode })
     return success(res, defect, '创建成功')
   } catch (err) {
     console.error('创建不良分类失败:', err)
