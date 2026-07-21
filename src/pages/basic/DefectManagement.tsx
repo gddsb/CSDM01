@@ -419,7 +419,7 @@ export default function DefectManagement() {
           <Button type="link" size="small" onClick={async () => {
             setViewRecord(record)
             try {
-              const res = await api.get(`/basic/defect-images?defect_id=${record.defect_id}`)
+              const res = await api.get(`/basic/defect-types/${record.defect_id}/images`)
               setViewImages(res.data || [])
             } catch (e) {
               setViewImages([])

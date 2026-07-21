@@ -344,11 +344,15 @@
 - 选中后单元格显示：仅显示`不良编码`
 - 列宽：10字符宽度，下拉菜单根据内容自动宽度
 
-##### 不良图片
+##### 不良项目示例图片（基础数据维护）
 
-- 不良项目可关联多张不良图片
+> **注意**：此处的"不良图片"是指**基础数据管理**中维护不良项目时上传的**标准示例图片**（如"刮伤长什么样"），与报工过程中产生的不良记录照片不同。报工照片的存储规范参见 [2.8 报工图片上传](#28-报工图片上传)。
+
+- 不良项目可关联多张标准示例图片
 - 图片上传至 `uploads/defects/` 目录
-- 图片信息存储在 `bas_defect_image` 表
+- 文件命名规则：`不良编码` + `-` + 两位流水码（如 `IC-COS-01-01.jpg`）
+- 图片信息存储在 `master_defect_image` 表
+- 上传时使用 MD5 哈希值去重
 
 #### 2.5 物料记录业务逻辑
 
@@ -356,13 +360,14 @@
 - 字段：物料类型、料号、批次号、包号、数量、标签图片
 - 料号下拉菜单弹出显示：`料号 + 料品名称`，选中后单元格只显示料号
 - 物料记录支持引入物料标识（工序的 `has_material` 字段控制）
+- **标签图片**：物理文件统一存储在 `uploads/reports/` 目录，URL 引用以 JSON 数组形式存储在 `label_images` 字段，详见 [2.8 报工图片上传](#28-报工图片上传)
 
 #### 2.6 异常工时业务逻辑
 
 - 记录设备停机/异常情况的工时损失
 - 字段：异常类型、设备、停机类型、确认人、开始时间、恢复时间、持续时长(小时)、异常描述、异常图片
 - 持续时长自动计算：`(end_time - start_time) / 3600`
-- 异常图片以 JSON 数组形式存储
+- **异常图片**：物理文件统一存储在 `uploads/reports/` 目录，URL 引用以 JSON 数组形式存储在 `exception_images` 字段，详见 [2.8 报工图片上传](#28-报工图片上传)
 
 #### 2.7 人员记录业务逻辑
 
@@ -380,9 +385,11 @@
 
 | 分类标识 | 分类名称 | 说明 | 对应子表字段 |
 |---------|---------|------|-------------|
-| `defect` | 不良图片 | 不良记录和检验报废记录关联的图片 | `production_process_defect.defect_images` |
-| `label` | 标签图片 | 物料记录关联的标签图片 | `production_process_material.label_images` |
-| `exception` | 异常图片 | 异常工时记录关联的图片 | `production_process_exception.exception_images` |
+| `defect` | 不良图片 | 报工过程中不良记录和检验报废记录关联的照片 | `production_process_defect.defect_images` |
+| `label` | 标签图片 | 物料记录关联的标签照片 | `production_process_material.label_images` |
+| `exception` | 异常图片 | 异常工时记录关联的照片 | `production_process_exception.exception_images` |
+
+> **与基础数据不良项目示例图片的区别**：此处的报工图片是指**生产报工过程中拍摄的实际不良照片**，物理文件存储在 `uploads/reports/` 目录。基础数据维护中的不良项目标准示例图片存储在 `uploads/defects/` 目录，记录在 `master_defect_image` 表，参见 [2.4 不良项目示例图片](#不良项目示例图片基础数据维护)。
 
 > 子表中的 `defect_images` / `label_images` / `exception_images` 字段仅存储图片 URL 的 JSON 数组引用，物理文件统一存储在 `uploads/reports/` 目录，文件元数据统一记录在 `production_report_image` 表中。
 
