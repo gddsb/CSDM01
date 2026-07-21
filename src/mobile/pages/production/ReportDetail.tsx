@@ -16,7 +16,7 @@ const TABS = [
 const genTempId = () => 'tmp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6)
 
 // 自定义下拉组件：下拉显示编码+项目，选中后只显示编码
-function DefectSelect({ value, onChange, options, placeholder, codeField, nameField, autoWidth }) {
+function DefectSelect({ value, onChange, options, placeholder, codeField, nameField, autoWidth, excludeValues = [] }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
 
@@ -34,6 +34,7 @@ function DefectSelect({ value, onChange, options, placeholder, codeField, nameFi
   }, [open])
 
   const selected = options.find(o => o.value === value)
+  const filteredOptions = options.filter(o => o.value === value || !excludeValues.includes(o.value))
   const codeKey = codeField || 'defect_code'
   const nameKey = nameField || 'defect_name'
 
@@ -48,10 +49,10 @@ function DefectSelect({ value, onChange, options, placeholder, codeField, nameFi
       </div>
       {open && (
         <div className={`rd-defect-select-dropdown ${autoWidth ? 'auto-width' : ''}`}>
-          {options.length === 0 && (
+          {filteredOptions.length === 0 && (
             <div className="rd-defect-select-option" style={{ color: '#999' }}>无选项</div>
           )}
-          {options.map(o => (
+          {filteredOptions.map(o => (
             <div
               key={o.value}
               className={`rd-defect-select-option ${o.value === value ? 'selected' : ''}`}
@@ -169,13 +170,13 @@ export default function ReportDetail() {
   }, [id, selectedProcessId])
 
   const defectOptions = defectTypes
-    .filter(d => (d.category_name === '制程检验类' || d.category_name === '制程检验类型')
-      && (d.defect_type === '制程不良' || d.defect_type === '来料不良')
+    .filter(d => d.category_name === '制程检验类型'
+      && d.defect_type !== '检验报废'
       && d.status === '启用' && d.display !== false && d.display !== 0)
     .map(d => ({ label: `${d.defect_code} ${d.defect_name}`, value: d.defect_id, ...d }))
 
   const scrapOptions = defectTypes
-    .filter(d => (d.category_name === '制程检验类' || d.category_name === '制程检验类型')
+    .filter(d => d.category_name === '制程检验类型'
       && d.defect_type === '检验报废'
       && d.status === '启用' && d.display !== false && d.display !== 0)
     .map(d => ({ label: `${d.defect_code} ${d.defect_name}`, value: d.defect_id, ...d }))
@@ -498,6 +499,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
                     placeholder="请选择"
                     codeField="defect_code"
                     autoWidth={true}
+                    excludeValues={list.filter(r => r.id !== record.id).map(r => r.defect_type_id).filter(Boolean)}
                   />
                 </div>
                 <div className="rd-form-item rd-form-item-qty">
@@ -956,6 +958,7 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId 
                     placeholder="请选择"
                     codeField="defect_code"
                     autoWidth={true}
+                    excludeValues={list.filter(r => r.id !== record.id).map(r => r.defect_type_id).filter(Boolean)}
                   />
                 </div>
                 <div className="rd-form-item">
