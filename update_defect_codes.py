@@ -14,7 +14,8 @@ fail = 0
 for item in data:
     defect_id = item['defect_id']
     new_code = item['defect_code']
-    sql = f"UPDATE master_defect_type SET defect_code='{new_code}' WHERE defect_id={defect_id};"
+    defect_type = item.get('defect_type', '')
+    sql = f"UPDATE master_defect_type SET defect_code='{new_code}', defect_type='{defect_type}' WHERE defect_id={defect_id};"
     cmd = ['sudo', 'mysql', '-u', db_user, '-D', db_name, '-e', sql]
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode == 0:
