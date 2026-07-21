@@ -197,6 +197,13 @@
   flex-shrink: 0;
 }
 
+.rd-defect-select-option-type {
+  color: #9E9E9E;
+  font-size: 11px;
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
 .rd-defect-select-option-name {
   color: #757575;
   font-size: 12px;

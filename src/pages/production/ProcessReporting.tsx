@@ -108,7 +108,7 @@ export default function ProcessReporting() {
         return true
       })
       .map(d => ({
-        label: <span><span style={{ fontWeight: 600, color: '#212121' }}>{d.defect_code}</span><span style={{ marginLeft: 8, opacity: 0.65, color: '#757575' }}>{d.defect_name}</span></span>,
+        label: <span><span style={{ fontWeight: 600, color: '#212121' }}>{d.defect_code}</span><span style={{ marginLeft: 8, opacity: 0.5, color: '#9E9E9E', fontSize: 12 }}>{d.defect_type}</span><span style={{ marginLeft: 8, opacity: 0.65, color: '#757575' }}>{d.defect_name}</span></span>,
         value: d.defect_id,
         defect_code: d.defect_code,
         defect_type: d.defect_type,
@@ -131,7 +131,7 @@ export default function ProcessReporting() {
         return true
       })
       .map(d => ({
-        label: <span><span style={{ fontWeight: 600, color: '#212121' }}>{d.defect_code}</span><span style={{ marginLeft: 8, opacity: 0.65, color: '#757575' }}>{d.defect_name}</span></span>,
+        label: <span><span style={{ fontWeight: 600, color: '#212121' }}>{d.defect_code}</span><span style={{ marginLeft: 8, opacity: 0.5, color: '#9E9E9E', fontSize: 12 }}>{d.defect_type}</span><span style={{ marginLeft: 8, opacity: 0.65, color: '#757575' }}>{d.defect_name}</span></span>,
         value: d.defect_id,
         defect_code: d.defect_code,
         defect_type: d.defect_type,

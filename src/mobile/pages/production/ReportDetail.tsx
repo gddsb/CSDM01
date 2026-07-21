@@ -62,6 +62,7 @@ function DefectSelect({ value, onChange, options, placeholder, codeField, nameFi
               }}
             >
               <span className="rd-defect-select-option-code">{o[codeKey]}</span>
+              <span className="rd-defect-select-option-type">{o.defect_type}</span>
               <span className="rd-defect-select-option-name">{o[nameKey]}</span>
             </div>
           ))}
