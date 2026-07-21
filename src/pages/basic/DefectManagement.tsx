@@ -341,14 +341,14 @@ export default function DefectManagement() {
   const handleCategoryChange = (value) => {
     setSelectedCategory(value)
     // 清空已选不良类型
-    form.setFieldsValue('defect_type', undefined)
+    form.setFieldsValue({ defect_type: undefined })
     // 来料检验类型不关联具体工序，清空并禁用
     if (value === '来料检验类型') {
-      form.setFieldsValue('related_processes', [])
+      form.setFieldsValue({ related_processes: [] })
     }
     // 清空不良编码，待选择不良类型后再生成
     if (!editing) {
-      form.setFieldsValue('defect_code', '')
+      form.setFieldsValue({ defect_code: '' })
     }
   }
 
@@ -356,7 +356,7 @@ export default function DefectManagement() {
   const handleDefectTypeChange = async (value) => {
     if (editing) return
     if (!value) {
-      form.setFieldsValue('defect_code', '')
+      form.setFieldsValue({ defect_code: '' })
       return
     }
     const categoryName = form.getFieldValue('category_name')
@@ -364,7 +364,7 @@ export default function DefectManagement() {
       const res = await api.get('/basic/defect-types/next-code', {
         params: { defect_type: value, category_name: categoryName }
       })
-      form.setFieldsValue('defect_code', res.data?.defect_code)
+      form.setFieldsValue({ defect_code: res.data?.defect_code })
     } catch {
       // 获取失败则手动输入
     }

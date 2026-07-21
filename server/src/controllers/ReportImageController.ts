@@ -57,9 +57,9 @@ export const uploadImages = async (req, res) => {
     const existingFiles = fs.readdirSync(dir).filter(f => f.startsWith(prefix))
     const existingMap = getExistingFileMap(dir)
 
-    // 从数据库查当日同前缀的最大流水号
+    // 从数据库查当日同前缀的最大流水号（通过 report_order_id 查询）
     const dbRecords = await ReportImage.findAll({
-      where: { report_no },
+      where: { report_order_id: reportOrder.report_order_id },
       raw: true,
       order: [['createdAt', 'DESC']],
     })
