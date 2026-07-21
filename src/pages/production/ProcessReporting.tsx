@@ -96,6 +96,7 @@ export default function ProcessReporting() {
 
   // 不良类型下拉选项（必须在 fetchAllData 之前定义，避免 TDZ 错误）
   // 制程不良记录页签：检验类型=制程检验类（兼容旧数据"制程检验类型"），不良类型=制程不良或来料不良
+  // 根据当前工序过滤：关联工序为空的不良项目在所有工序可用，有关联工序的只在关联工序中可用
   const defectTypeOptions = useMemo(() => {
     const seen = new Set()
     return defectTypes
@@ -103,28 +104,10 @@ export default function ProcessReporting() {
         && d.defect_type !== '检验报废'
         && d.status === '启用')
       .filter(d => {
-        if (seen.has(d.defect_id)) return false
-        seen.add(d.defect_id)
-        return true
+        const relatedProcesses = Array.isArray(d.related_processes) ? d.related_processes : []
+        if (relatedProcesses.length === 0) return true
+        return relatedProcesses.includes(selectedProcessId)
       })
-      .map(d => ({
-        label: <span><span style={{ fontWeight: 600, color: '#212121' }}>{d.defect_code}</span><span style={{ marginLeft: 8, opacity: 0.5, color: '#9E9E9E', fontSize: 12 }}>{d.defect_type}</span><span style={{ marginLeft: 8, opacity: 0.65, color: '#757575' }}>{d.defect_name}</span></span>,
-        value: d.defect_id,
-        defect_code: d.defect_code,
-        defect_type: d.defect_type,
-        defect_name: d.defect_name,
-        defect_unit: d.defect_unit || '',
-        available_units: d.available_units || '',
-      }))
-  }, [defectTypes])
-
-  // 检验报废记录页签：检验类型=制程检验类型，不良类型=检验报废
-  const scrapTypeOptions = useMemo(() => {
-    const seen = new Set()
-    return defectTypes
-      .filter(d => d.category_name === '制程检验类型'
-        && d.defect_type === '检验报废'
-        && d.status === '启用')
       .filter(d => {
         if (seen.has(d.defect_id)) return false
         seen.add(d.defect_id)
@@ -139,7 +122,36 @@ export default function ProcessReporting() {
         defect_unit: d.defect_unit || '',
         available_units: d.available_units || '',
       }))
-  }, [defectTypes])
+  }, [defectTypes, selectedProcessId])
+
+  // 检验报废记录页签：检验类型=制程检验类型，不良类型=检验报废
+  // 根据当前工序过滤：关联工序为空的不良项目在所有工序可用，有关联工序的只在关联工序中可用
+  const scrapTypeOptions = useMemo(() => {
+    const seen = new Set()
+    return defectTypes
+      .filter(d => d.category_name === '制程检验类型'
+        && d.defect_type === '检验报废'
+        && d.status === '启用')
+      .filter(d => {
+        const relatedProcesses = Array.isArray(d.related_processes) ? d.related_processes : []
+        if (relatedProcesses.length === 0) return true
+        return relatedProcesses.includes(selectedProcessId)
+      })
+      .filter(d => {
+        if (seen.has(d.defect_id)) return false
+        seen.add(d.defect_id)
+        return true
+      })
+      .map(d => ({
+        label: <span><span style={{ fontWeight: 600, color: '#212121' }}>{d.defect_code}</span><span style={{ marginLeft: 8, opacity: 0.5, color: '#9E9E9E', fontSize: 12 }}>{d.defect_type}</span><span style={{ marginLeft: 8, opacity: 0.65, color: '#757575' }}>{d.defect_name}</span></span>,
+        value: d.defect_id,
+        defect_code: d.defect_code,
+        defect_type: d.defect_type,
+        defect_name: d.defect_name,
+        defect_unit: d.defect_unit || '',
+        available_units: d.available_units || '',
+      }))
+  }, [defectTypes, selectedProcessId])
 
   // 初始加载：不良类型、设备、订单、产线
   useEffect(() => {

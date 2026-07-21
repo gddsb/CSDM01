@@ -33,10 +33,12 @@ const uploadsDir = path.resolve(process.cwd(), 'uploads', 'avatars')
 const tmpDir = path.resolve(process.cwd(), 'uploads', 'tmp')
 const defectsDir = path.resolve(process.cwd(), 'uploads', 'defects')
 const appsDir = path.resolve(process.cwd(), 'uploads', 'apps')
+const reportsDir = path.resolve(process.cwd(), 'uploads', 'reports')
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true })
 if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true })
 if (!fs.existsSync(defectsDir)) fs.mkdirSync(defectsDir, { recursive: true })
 if (!fs.existsSync(appsDir)) fs.mkdirSync(appsDir, { recursive: true })
+if (!fs.existsSync(reportsDir)) fs.mkdirSync(reportsDir, { recursive: true })
 
 // 同步数据库表
 async function initDatabase() {

@@ -666,7 +666,7 @@ export default function DefectManagement() {
               placeholder="请选择关联工序（未选择则在所有工序可用）"
               options={processOptions}
               allowClear
-              disabled={selectedCategory === '来料检验类'}
+              disabled={selectedCategory === '来料检验类型'}
             />
           </Form.Item>
           {/* 不良图片上传 */}

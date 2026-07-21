@@ -174,12 +174,22 @@ export default function ReportDetail() {
     .filter(d => d.category_name === '制程检验类型'
       && d.defect_type !== '检验报废'
       && d.status === '启用')
+    .filter(d => {
+      const relatedProcesses = Array.isArray(d.related_processes) ? d.related_processes : []
+      if (relatedProcesses.length === 0) return true
+      return relatedProcesses.includes(selectedProcessId)
+    })
     .map(d => ({ label: `${d.defect_code} ${d.defect_name}`, value: d.defect_id, ...d }))
 
   const scrapOptions = defectTypes
     .filter(d => d.category_name === '制程检验类型'
       && d.defect_type === '检验报废'
       && d.status === '启用')
+    .filter(d => {
+      const relatedProcesses = Array.isArray(d.related_processes) ? d.related_processes : []
+      if (relatedProcesses.length === 0) return true
+      return relatedProcesses.includes(selectedProcessId)
+    })
     .map(d => ({ label: `${d.defect_code} ${d.defect_name}`, value: d.defect_id, ...d }))
 
   const materialOptions = materials.map(m => ({
