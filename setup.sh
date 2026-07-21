@@ -608,7 +608,6 @@ reset_data() {
     pm2 stop milk-can-mes-server 2>/dev/null || true
     backup_database
     cd "$PROJECT_DIR/server"
-    npx tsx src/clean-init.ts 2>/dev/null || log_warn "清理脚本执行跳过"
     if ! npm run seed; then
         log_warn "种子数据初始化失败，请手动执行 npm run seed"
     fi

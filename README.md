@@ -705,10 +705,7 @@ milk-can-mes/
 │   │   │   └── statusMap.ts          # 状态码映射
 │   │   ├── app.ts                    # 应用入口（Express 实例化）
 │   │   ├── seed.ts                   # 数据初始化脚本
-│   │   ├── clean-init.ts             # 数据清理脚本
-│   │   ├── migrate.ts                # 数据库列迁移
-│   │   ├── import-materials.ts       # 料品档案种子数据导入
-│   │   └── import-devices.ts         # 设备档案种子数据导入
+│   │   └── migrate.ts                # 数据库列迁移
 │   ├── data/                         # SQLite 数据库文件
 │   │   ├── mes.db
 │   │   └── backups/                  # 备份文件目录
@@ -728,8 +725,6 @@ milk-can-mes/
 ├── tsconfig.json                     # TypeScript 配置
 ├── package.json                      # 前端依赖
 ├── ecosystem.config.cjs              # PM2 生产配置
-├── ecosystem.dev.cjs                 # PM2 开发配置
-├── nginx-milk-can-mes-dev.conf       # Nginx 配置示例
 ├── setup.sh                          # 一键部署脚本
 └── README.md
 ```
@@ -1060,15 +1055,6 @@ cd server
 
 # 初始化数据库
 npm run seed
-
-# 清空所有业务数据（保留角色和 admin 用户）
-npx tsx src/clean-init.ts
-
-# 导入料品档案种子数据
-npx tsx src/import-materials.ts
-
-# 导入设备档案种子数据
-npx tsx src/import-devices.ts
 ```
 
 ### 环境变量配置
@@ -1139,7 +1125,7 @@ pm2 start ecosystem.config.cjs
 
 ### Nginx 反向代理（推荐）
 
-生产环境建议使用 Nginx 作为反向代理，参考配置文件 `nginx-milk-can-mes-dev.conf`。
+生产环境建议使用 Nginx 作为反向代理，可参考 `setup.sh` 中的 Nginx 配置。
 
 ---
 
