@@ -13,14 +13,15 @@
 - [项目概述](#项目概述)
 - [技术栈](#技术栈)
 - [功能模块](#功能模块)
+- [业务逻辑详解](#业务逻辑详解)
 - [项目结构](#项目结构)
+- [数据库设计](#数据库设计)
 - [快速开始](#快速开始)
 - [生产部署指南](#生产部署指南)
 - [默认登录账号](#默认登录账号)
 - [主题系统](#主题系统)
 - [移动端](#移动端)
 - [API 接口概览](#api-接口概览)
-- [数据库模型](#数据库模型)
 - [编码规则](#编码规则)
 - [开发规范](#开发规范)
 - [常见问题](#常见问题)
@@ -39,6 +40,24 @@
 - **决策数据化**：多维度报表与大屏看板，数据驱动决策
 - **双端协同**：PC 端管理 + 移动端报工，满足车间现场需求
 - **个性体验**：六套主题配色，支持自定义头像，灵活适配不同场景
+
+### 业务架构
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        决策层（大屏/报表）                        │
+│   生产实时看板 │ 质量分析看板 │ 管理驾驶舱 │ 生产/质量/异常报表    │
+├─────────────────────────────────────────────────────────────────┤
+│                        业务层（PC端）                             │
+│   系统管理 │ 基础数据 │ 生产管理 │ 质量管理 │ 设备管理            │
+├─────────────────────────────────────────────────────────────────┤
+│                        执行层（移动端）                           │
+│   生产订单 │ 生产报工 │ 不良记录 │ 物料记录 │ 图片上传            │
+├─────────────────────────────────────────────────────────────────┤
+│                        数据层                                    │
+│   SQLite(开发) / MySQL(生产) + 文件存储(uploads)                │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -125,27 +144,6 @@
 | 生产订单 | `/production/orders` | 订单创建、下发、关闭全生命周期，订单号自动生成 |
 | 生产报工 | `/production/reporting` | 生产报工单管理，支持多日报工，子表格数据按报工单归属 |
 
-#### 生产订单业务流程
-
-**状态机**：`开立 → 下发 → 完工`
-
-| 状态 | 编辑 | 下发 | 删除 | 完工 | 查看 |
-|------|------|------|------|------|------|
-| 开立 | ✓ | ✓ | ✓ | ✗ | ✓ |
-| 下发 | ✗ | ✗ | ✗ | ✓ | ✓ |
-| 完工 | ✗ | ✗ | ✗ | ✗ | ✓ |
-
-**订单号规则**：`MO-16` + `YYMMDD` + 3位流水号（如 `MO-16260704001`）
-
-#### 生产报工业务模型
-
-- **生产报工单**是**生产订单**的下级独立单据
-- 一个生产订单可对应多张生产报工单（适用于多日生产场景）
-- 子表格数据（不良记录、物料记录、异常工时、人员记录）均挂在具体报工单下
-- 子表格的只读/可编辑状态与所属报工单保持一致
-
-**报工图片命名规则**：`报工单号 + 年月日 + 三位流水码`（如 `WO260719001-20260721-001`），存放在 `uploads/reports/` 目录，上传时使用 MD5 去重校验。
-
 ### 4. 质量管理
 
 | 模块 | 路径 | 功能说明 |
@@ -205,7 +203,319 @@
 | 生产报工 | `/mobile/reporting` | 报工单列表、报工详情、不良记录、物料记录、检验报废、图片上传 |
 | 个人中心 | `/mobile/profile` | 用户信息、设置 |
 
-移动端使用 Ant Design Mobile 组件库，适配手机屏幕，支持车间现场扫码报工、图片上传等操作。
+---
+
+## 业务逻辑详解
+
+### 1. 生产订单业务流程
+
+#### 1.1 状态机
+
+```
+开立 ──下发──▶ 下发（开工） ──完工──▶ 完工
+  │                                    │
+  └──────────────删除──────────────┘
+```
+
+| 状态值 | 显示名称 | 编辑 | 下发 | 开工 | 删除 | 完工 | 查看 |
+|--------|---------|------|------|------|------|------|------|
+| 0 | 开立 | ✓ | ✓ | ✗ | ✓ | ✗ | ✓ |
+| 1 | 下发 | ✗ | ✗ | ✓ | ✗ | ✗ | ✓ |
+| 2 | 开工 | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ |
+| 3 | 完工 | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
+| 4 | 关闭 | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
+
+#### 1.2 订单号规则
+
+- **格式**：`MO-16` + `YYMMDD` + 3位流水号
+- **示例**：`MO-16260704001`
+- **日重置**：每日流水号从 001 开始重新计数
+
+#### 1.3 新增订单业务规则
+
+1. **料品筛选**：料品下拉**仅显示 C 开头的成品罐料品**且状态为生效
+2. **自动带入**：选中料品后自动带入料号、料品名称、规格、菲林编号、版本号
+3. **数量校验**：计划数量只能为正整数
+4. **日期校验**：计划开始日期不得早于今天，计划完成日期不得早于计划开始日期
+5. **编辑限制**：仅"开立"状态可编辑，可修改数量、计划开始日期、计划完成日期
+
+#### 1.4 下发逻辑
+
+订单下发时自动创建第一张报工单：
+
+1. 校验订单状态为"开立"
+2. 更新订单状态为"下发"
+3. 生成报工单号（`WO` + `YYMMDD` + 3位流水号）
+4. 从产线工序表继承工序到报工工序子表
+5. 创建报工单记录，状态为"开工"
+
+#### 1.5 订单详情
+
+订单详情页展示以下关联数据：
+- 基本信息（订单号、料品、数量、状态等）
+- 关联报工单列表
+- 人员记录汇总
+- 异常工时记录汇总
+
+---
+
+### 2. 生产报工业务流程
+
+#### 2.1 业务模型
+
+```
+生产订单（1） ──── （N）生产报工单
+                      │
+                      ├── 报工工序（N）
+                      ├── 不良记录（N）
+                      ├── 物料记录（N）
+                      ├── 异常工时（N）
+                      ├── 人员记录（N）
+                      └── 报工图片（N）
+```
+
+- **生产报工单**是**生产订单**的下级独立单据
+- 一个生产订单可对应多张生产报工单（适用于多日生产场景）
+- 子表格数据（不良记录、物料记录、异常工时、人员记录）均挂在具体报工单下
+- 子表格的只读/可编辑状态与所属报工单保持一致
+
+#### 2.2 报工单状态机
+
+| 状态值 | 显示名称 | 说明 |
+|--------|---------|------|
+| 0 | 开工 | 报工进行中，子表格可编辑 |
+| 1 | 完工 | 报工已完成，子表格只读，可新增下一张报工单 |
+
+#### 2.3 报工工序继承机制
+
+创建报工单时，自动从产线工序表（`bas_line_process`）继承工序列表：
+
+1. 根据产线 ID 查询该产线的所有有效工序（状态=启用）
+2. 按工序顺序（`sort_order`）升序排序
+3. 将工序信息复制到报工工序表（`production_report_process`）
+4. 继承字段：工序ID、工序编码、工序名称、是否引入物料、排序号
+5. 唯一约束：同一报工单内同一工序不重复（`report_order_id + process_id` 联合唯一）
+
+#### 2.4 不良记录业务逻辑
+
+##### 不良分类三级体系
+
+```
+检验类型（2种）
+  ├── 来料检验类型
+  │     ├── 外观不良 (COS)
+  │     ├── 尺寸不良 (DIM)
+  │     ├── 理化不良 (PHC)
+  │     ├── 材质不良 (MAT)
+  │     ├── 标识不良 (LBL)
+  │     ├── 污染异物 (CON)
+  │     └── 运输不良 (TRD)
+  └── 制程检验类型
+        ├── 制程不良 (PNC)
+        ├── 来料不良 (INC)
+        └── 检验报废 (SCR)
+```
+
+##### 不良编码命名规则
+
+- **格式**：`检验类型缩写-不良类型缩写-两位流水码`
+- **示例**：`IC-COS-01`（来料检验类型-外观不良-第1条）
+- 完整编码前缀表参见 [编码规则](#编码规则) 章节
+
+##### 不良记录筛选规则
+
+**生产不良记录页签**：
+- `category_name = '制程检验类型'`
+- `defect_type ≠ '检验报废'`
+- `status = '启用'`
+- 已选用的项目自动过滤（同一报工同一工序不重复选）
+- **按工序过滤**：关联工序为空的不良项目在所有工序可用，有关联工序的只在关联工序中可用
+
+**检验报废记录页签**：
+- `category_name = '制程检验类型'`
+- `defect_type = '检验报废'`
+- `status = '启用'`
+- 已选用的项目自动过滤
+- **按工序过滤**（同上）
+
+##### 不良编码显示规则
+
+- 下拉列表显示：`不良编码 + 不良分类 + 不良项目`
+- 选中后单元格显示：仅显示`不良编码`
+- 列宽：10字符宽度，下拉菜单根据内容自动宽度
+
+##### 不良图片
+
+- 不良项目可关联多张不良图片
+- 图片上传至 `uploads/defects/` 目录
+- 图片信息存储在 `bas_defect_image` 表
+
+#### 2.5 物料记录业务逻辑
+
+- 物料记录关联料品档案（`bas_material_id` 字符串类型，关联 `bas_material.material_id` UUID）
+- 字段：物料类型、料号、批次号、包号、数量、标签图片
+- 料号下拉菜单弹出显示：`料号 + 料品名称`，选中后单元格只显示料号
+- 物料记录支持引入物料标识（工序的 `has_material` 字段控制）
+
+#### 2.6 异常工时业务逻辑
+
+- 记录设备停机/异常情况的工时损失
+- 字段：异常类型、设备、停机类型、确认人、开始时间、恢复时间、持续时长(小时)、异常描述、异常图片
+- 持续时长自动计算：`(end_time - start_time) / 3600`
+- 异常图片以 JSON 数组形式存储
+
+#### 2.7 人员记录业务逻辑
+
+- 记录报工期间的人力投入情况
+- 人员分类：熟手、普工、劳务、其他
+- 字段：记录日期、班次、开始时间、结束时间、工时、各类型人数、总人数、人时
+- 总人数 = 熟手 + 普工 + 劳务 + 其他
+- 人时 = 总人数 × 工时
+
+#### 2.8 报工图片上传
+
+##### 图片分类
+
+| 分类标识 | 分类名称 | 说明 |
+|---------|---------|------|
+| `defect` | 不良图片 | 关联不良记录的图片 |
+| `label` | 标签图片 | 物料标签类图片 |
+| `exception` | 异常图片 | 异常工时相关图片 |
+
+##### 命名规则
+
+- **格式**：`报工单号` + `-` + `YYYYMMDD` + `-` + 三位流水码
+- **示例**：`WO260719001-20260721-001`
+- 流水码按当日该报工单已上传图片数量递增
+
+##### 存储位置
+
+- 文件目录：`uploads/reports/`（服务器启动时自动创建）
+- 数据库表：`production_report_image`
+
+##### 去重机制
+
+使用 MD5 哈希值判断图片是否重复，上传时双重校验：
+
+1. **本次上传内去重**：多张上传图片之间互相比对 MD5
+2. **历史记录去重**：与该报工单已上传的图片 MD5 对比
+3. 检测到重复时直接报错提示，不上传重复文件
+
+##### 上传接口流程
+
+```
+前端 (FormData, files字段)
+    │
+    ▼
+后端 Multer 中间件 → 临时目录 uploads/tmp/
+    │
+    ▼
+计算文件 MD5 → 去重校验
+    │
+    ▼
+生成文件名（报工单号+日期+流水码）
+    │
+    ▼
+移动到 uploads/reports/ 目录
+    │
+    ▼
+写入 production_report_image 表
+    │
+    ▼
+返回成功响应（图片列表）
+```
+
+---
+
+### 3. 基础数据业务逻辑
+
+#### 3.1 料品档案
+
+- **主键**：UUID 类型（`material_id`）
+- **分类体系**：支持料品分类（`category_name`）
+- **客户关联**：料品关联客户（`customer_id` → `bas_customer.customer_id`）
+- **尺寸重量**：冲切直径、料厚、料宽、料高、废品重量、单件重量、单件体积
+- **印刷信息**：菲林编号、版本号、印刷工艺、分色
+- **状态管理**：启用/停用，支持生效日期和失效日期
+- **料号唯一**：`material_code` 字段唯一约束
+
+#### 3.2 客户档案
+
+- **客户分类**：奶粉罐/废品/蛋白粉/其它粉罐/内部客户等
+- **信用等级**：A/B/C/D
+- **税务银行**：纳税人识别号、开户银行、银行账号
+- **生效管理**：生效日期、失效日期、状态（启用/停用）
+- **客户编号**：`customer_code` 唯一，如 C001、C002
+
+#### 3.3 产线档案
+
+- **产线-工序关联**：多对多关系，通过 `bas_line_process` 中间表
+- **产线-设备关联**：多对多关系，通过 `bas_line_device` 中间表
+- **状态管理**：运行中/维护中/停用
+- **排序管理**：`sort_order` 控制显示顺序
+- **产线负责人**：`line_leader` 字段
+
+#### 3.4 工序档案
+
+- **工序编码**：`process_code` 唯一
+- **引入物料**：`has_material` 标记该工序是否需要记录物料
+- **状态管理**：启用/停用
+- **排序管理**：`sort_order` 控制工序顺序
+
+#### 3.5 不良项目管理
+
+- **检验类型联动**：选择检验类型后，不良类型下拉选项动态变化
+- **关联工序**：不良项目可关联多个工序，影响报工页面下拉可选范围
+- **可用单位**：支持多个计量单位，逗号分隔存储
+- **状态管理**：启用/停用
+- **树形结构**：支持 `parent_id` 上级分类（0=顶级）
+- **新增时状态默认值**：启用
+- **不良编码自动生成**：保存时根据检验类型和不良类型自动生成下一个编码
+
+#### 3.6 编码规则管理
+
+支持自定义编号规则，配置项包括：
+- 编号名称
+- 编号前缀
+- 日期格式（如 YYMMDD）
+- 分隔符
+- 序号位数
+- 重置周期（日/月/年/不重置）
+
+---
+
+### 4. 系统管理业务逻辑
+
+#### 4.1 用户认证
+
+- **认证方式**：JWT Token
+- **密码加密**：bcryptjs 哈希
+- **Token 有效期**：7 天
+- **登录流程**：用户名密码验证 → 生成 Token → 返回用户信息和 Token
+- **请求验证**：所有 `/api/` 接口（除 `/api/auth/login`）需携带 Authorization Header
+
+#### 4.2 权限体系
+
+```
+用户（N） ─── （1）角色（N） ─── （N）权限/菜单
+```
+
+- 用户归属一个角色
+- 角色关联多个权限（菜单）
+- 权限支持树形结构（多级菜单）
+- 前端根据用户角色权限动态渲染菜单
+
+#### 4.3 操作日志
+
+- 自动记录用户的增删改操作
+- 记录字段：操作模块、操作类型、操作人、操作时间、IP地址、请求参数
+- 支持按模块、用户、时间范围筛选查询
+
+#### 4.4 数据字典
+
+- 自动读取数据库中所有数据表结构
+- 展示表名、字段名、字段类型、是否主键、是否允许空、默认值、字段注释
+- 方便开发人员快速了解数据库结构
 
 ---
 
@@ -355,7 +665,7 @@ milk-can-mes/
 │   │   │   ├── ReportImage.ts        # 报工图片模型
 │   │   │   ├── ManpowerRecord.ts     # 人员投入记录模型
 │   │   │   ├── ProcessDefect.ts      # 不良记录模型
-│   │   │   ├── ProcessException.ts   # 异常工时记录模型
+│   │   │   ├── ProcessException.ts   # 异常工时模型
 │   │   │   └── ProcessMaterial.ts    # 物料记录模型
 │   │   ├── routes/                   # 路由定义
 │   │   │   ├── index.ts              # 路由总入口
@@ -397,6 +707,275 @@ milk-can-mes/
 ├── nginx-milk-can-mes-dev.conf       # Nginx 配置示例
 ├── setup.sh                          # 一键部署脚本
 └── README.md
+```
+
+---
+
+## 数据库设计
+
+### 数据表分类
+
+| 分类 | 表名前缀 | 示例 | 说明 |
+|------|---------|------|------|
+| 系统类 | `sys_` | `sys_user`, `sys_role` | 系统管理相关表 |
+| 基础类 | `bas_` / `master_` | `bas_material`, `master_process` | 基础档案表 |
+| 生产类 | `production_` / `prod_` | `production_order`, `prod_report_order` | 生产业务表 |
+| 字典类 | `bas_dict_` | `bas_dict_type`, `bas_dict_data` | 数据字典表 |
+
+### 核心数据表详细结构
+
+#### 1. 生产订单表（production_order）
+
+| 字段名 | 类型 | 主键 | 必填 | 默认值 | 说明 |
+|--------|------|------|------|--------|------|
+| order_id | INTEGER | ✓ | ✓ | 自增 | 生产订单ID |
+| order_no | STRING(50) | ✗ | ✓ | - | 订单号（唯一） |
+| material_id | UUID | ✗ | ✗ | - | 料品ID |
+| material_code | STRING(50) | ✗ | ✗ | - | 料号（冗余） |
+| material_name | STRING(100) | ✗ | ✗ | - | 料品名称（冗余） |
+| specification | STRING(200) | ✗ | ✗ | - | 规格（冗余） |
+| film_version | STRING(50) | ✗ | ✗ | - | 菲林编号 |
+| version_no | STRING(50) | ✗ | ✗ | - | 版本号 |
+| planned_qty | DECIMAL(12,2) | ✗ | ✗ | 0 | 计划数量 |
+| finished_qty | DECIMAL(12,2) | ✗ | ✗ | 0 | 完工数量 |
+| plan_start_time | DATE | ✗ | ✗ | - | 计划开始时间 |
+| plan_end_time | DATE | ✗ | ✗ | - | 计划完成时间 |
+| status | TINYINT | ✗ | ✗ | 0 | 状态：0=开立,1=下发,2=开工,3=完工,4=关闭 |
+| release_time | DATE | ✗ | ✗ | - | 下发时间 |
+| close_time | DATE | ✗ | ✗ | - | 关闭时间 |
+| created_by | STRING(50) | ✗ | ✗ | - | 创建人 |
+| created_at | DATE | ✗ | ✗ | - | 创建时间 |
+| updated_at | DATE | ✗ | ✗ | - | 更新时间 |
+
+#### 2. 生产报工单表（production_report_order）
+
+| 字段名 | 类型 | 主键 | 必填 | 默认值 | 说明 |
+|--------|------|------|------|--------|------|
+| report_order_id | INTEGER | ✓ | ✓ | 自增 | 报工单ID |
+| order_id | INTEGER | ✗ | ✓ | - | 关联生产订单ID |
+| order_no | STRING(50) | ✗ | ✗ | - | 订单号（冗余） |
+| report_no | STRING(50) | ✗ | ✓ | - | 报工单号（唯一） |
+| line_id | INTEGER | ✗ | ✗ | - | 生产产线ID |
+| line_name | STRING(100) | ✗ | ✗ | - | 产线名称（冗余） |
+| material_id | UUID | ✗ | ✗ | - | 料品ID |
+| material_code | STRING(50) | ✗ | ✗ | - | 料号（冗余） |
+| material_name | STRING(200) | ✗ | ✗ | - | 料品名称（冗余） |
+| specification | STRING(200) | ✗ | ✗ | - | 规格（冗余） |
+| report_qty | DECIMAL(12,2) | ✗ | ✗ | 0 | 报工数量 |
+| report_time | DATE | ✗ | ✗ | - | 报工时间 |
+| finish_time | DATE | ✗ | ✗ | - | 完工时间 |
+| status | TINYINT | ✗ | ✗ | 0 | 状态：0=开工,1=完工 |
+| report_user_id | INTEGER | ✗ | ✗ | - | 报工人员ID |
+| report_user_name | STRING(50) | ✗ | ✗ | - | 报工人员姓名（冗余） |
+| finish_user_id | INTEGER | ✗ | ✗ | - | 完工人员ID |
+| finish_user_name | STRING(50) | ✗ | ✗ | - | 完工人员姓名（冗余） |
+| remarks | STRING(500) | ✗ | ✗ | - | 备注 |
+| created_at | DATE | ✗ | ✗ | - | 创建时间 |
+| updated_at | DATE | ✗ | ✗ | - | 更新时间 |
+
+#### 3. 报工工序表（production_report_process）
+
+| 字段名 | 类型 | 主键 | 必填 | 默认值 | 说明 |
+|--------|------|------|------|--------|------|
+| id | INTEGER | ✓ | ✓ | 自增 | 主键ID |
+| report_order_id | INTEGER | ✗ | ✓ | - | 关联报工单ID |
+| process_id | INTEGER | ✗ | ✓ | - | 工序ID |
+| process_code | STRING(30) | ✗ | ✓ | - | 工序编码 |
+| process_name | STRING(50) | ✗ | ✓ | - | 工序名称 |
+| has_material | TINYINT | ✗ | ✗ | 0 | 是否引入物料：0=否,1=是 |
+| sort_order | INTEGER | ✗ | ✗ | 0 | 工序顺序 |
+| created_at | DATE | ✗ | ✗ | - | 创建时间 |
+| updated_at | DATE | ✗ | ✗ | - | 更新时间 |
+
+> **唯一约束**：`report_order_id + process_id` 联合唯一
+
+#### 4. 不良项目表（master_defect_type）
+
+| 字段名 | 类型 | 主键 | 必填 | 默认值 | 说明 |
+|--------|------|------|------|--------|------|
+| defect_id | INTEGER | ✓ | ✓ | 自增 | 不良项目ID |
+| defect_code | STRING(50) | ✗ | ✓ | - | 不良编码（唯一） |
+| defect_name | STRING(100) | ✗ | ✓ | - | 不良项目名称 |
+| defect_type | STRING(50) | ✗ | ✗ | - | 不良类型 |
+| category_name | STRING(50) | ✗ | ✗ | - | 分类名称（检验类型） |
+| parent_id | INTEGER | ✗ | ✗ | 0 | 上级分类ID（0=顶级） |
+| defect_unit | STRING(20) | ✗ | ✗ | - | 默认单位 |
+| available_units | STRING(255) | ✗ | ✗ | - | 可用单位（逗号分隔） |
+| display | BOOLEAN | ✗ | ✗ | true | 是否显示 |
+| sort_order | INTEGER | ✗ | ✗ | 0 | 排序号 |
+| status | TINYINT | ✗ | ✗ | 1 | 状态：1=启用,0=停用 |
+| related_processes | STRING(255) | ✗ | ✗ | - | 关联工序ID（逗号分隔） |
+| category_desc | STRING(500) | ✗ | ✗ | - | 分类描述 |
+| created_at | DATE | ✗ | ✗ | - | 创建时间 |
+| updated_at | DATE | ✗ | ✗ | - | 更新时间 |
+
+#### 5. 不良记录表（production_process_defect）
+
+| 字段名 | 类型 | 主键 | 必填 | 默认值 | 说明 |
+|--------|------|------|------|--------|------|
+| defect_id | INTEGER | ✓ | ✓ | 自增 | 不良记录ID |
+| report_order_id | INTEGER | ✗ | ✗ | - | 报工单ID |
+| process_id | INTEGER | ✗ | ✗ | - | 工序ID |
+| defect_type_id | INTEGER | ✗ | ✗ | - | 不良分类ID（关联master_defect_type.defect_id） |
+| quantity | DECIMAL(12,2) | ✗ | ✗ | 0 | 数量 |
+| unit | STRING(20) | ✗ | ✗ | - | 单位 |
+| defect_images | TEXT | ✗ | ✗ | - | 不良图片（JSON数组） |
+| record_time | DATE | ✗ | ✗ | - | 记录时间（=createdAt） |
+
+#### 6. 物料记录表（production_process_material）
+
+| 字段名 | 类型 | 主键 | 必填 | 默认值 | 说明 |
+|--------|------|------|------|--------|------|
+| material_id | INTEGER | ✓ | ✓ | 自增 | 物料记录ID |
+| report_order_id | INTEGER | ✗ | ✗ | - | 报工单ID |
+| process_id | INTEGER | ✗ | ✗ | - | 工序ID |
+| material_type | STRING(100) | ✗ | ✗ | - | 物料类型 |
+| bas_material_id | STRING | ✗ | ✗ | - | 关联基础料品表ID |
+| material_batch | STRING(100) | ✗ | ✗ | - | 物料批次 |
+| package_no | STRING(100) | ✗ | ✗ | - | 包号 |
+| quantity | DECIMAL(12,2) | ✗ | ✗ | 0 | 数量 |
+| label_images | TEXT | ✗ | ✗ | - | 标签图片（JSON） |
+| record_time | DATE | ✗ | ✗ | - | 记录时间 |
+
+#### 7. 异常工时表（production_process_exception）
+
+| 字段名 | 类型 | 主键 | 必填 | 默认值 | 说明 |
+|--------|------|------|------|--------|------|
+| exception_id | INTEGER | ✓ | ✓ | 自增 | 异常记录ID |
+| report_order_id | INTEGER | ✗ | ✗ | - | 报工单ID |
+| exception_type | STRING(50) | ✗ | ✗ | - | 异常类型 |
+| device_id | INTEGER | ✗ | ✗ | - | 设备ID |
+| device_code | STRING(50) | ✗ | ✗ | - | 设备编码（冗余） |
+| device_name | STRING(100) | ✗ | ✗ | - | 设备名称（冗余） |
+| stop_type | STRING(100) | ✗ | ✗ | - | 停机类型 |
+| confirm_user | STRING(50) | ✗ | ✗ | - | 确认人 |
+| confirm_user_name | STRING(50) | ✗ | ✗ | - | 确认人姓名（冗余） |
+| start_time | DATE | ✗ | ✗ | - | 开始时间 |
+| end_time | DATE | ✗ | ✗ | - | 恢复时间 |
+| duration | DECIMAL(10,2) | ✗ | ✗ | 0 | 持续时长(小时) |
+| description | STRING(500) | ✗ | ✗ | - | 异常描述 |
+| exception_images | TEXT | ✗ | ✗ | - | 异常图片（JSON数组） |
+| record_user | STRING(50) | ✗ | ✗ | - | 记录人 |
+| record_user_name | STRING(50) | ✗ | ✗ | - | 记录人姓名（冗余） |
+| created_at | DATE | ✗ | ✗ | - | 创建时间 |
+
+#### 8. 人员记录表（production_manpower_record）
+
+| 字段名 | 类型 | 主键 | 必填 | 默认值 | 说明 |
+|--------|------|------|------|--------|------|
+| record_id | INTEGER | ✓ | ✓ | 自增 | 记录ID |
+| report_order_id | INTEGER | ✗ | ✗ | - | 报工单ID |
+| record_date | DATEONLY | ✗ | ✗ | - | 记录日期 |
+| shift | STRING(20) | ✗ | ✗ | - | 班次 |
+| start_time | DATE | ✗ | ✗ | - | 开始时间 |
+| end_time | DATE | ✗ | ✗ | - | 结束时间 |
+| hours | DECIMAL(10,2) | ✗ | ✗ | 0 | 工时 |
+| skilled_count | INTEGER | ✗ | ✗ | 0 | 熟手人数 |
+| general_count | INTEGER | ✗ | ✗ | 0 | 普工人数 |
+| labor_count | INTEGER | ✗ | ✗ | 0 | 劳务人数 |
+| other_count | INTEGER | ✗ | ✗ | 0 | 其他人数 |
+| total_people | INTEGER | ✗ | ✗ | 0 | 总人数 |
+| man_hours | DECIMAL(10,2) | ✗ | ✗ | 0 | 人时 |
+| remarks | STRING(500) | ✗ | ✗ | - | 备注 |
+| record_user | STRING(50) | ✗ | ✗ | - | 记录人 |
+| record_user_name | STRING(50) | ✗ | ✗ | - | 记录人姓名（冗余） |
+| created_at | DATE | ✗ | ✗ | - | 创建时间 |
+
+#### 9. 报工图片表（production_report_image）
+
+| 字段名 | 类型 | 主键 | 必填 | 默认值 | 说明 |
+|--------|------|------|------|--------|------|
+| image_id | INTEGER | ✓ | ✓ | 自增 | 图片ID |
+| report_order_id | INTEGER | ✗ | ✓ | - | 关联报工单ID |
+| category | STRING(30) | ✗ | ✓ | - | 图片分类：defect/label/exception |
+| image_url | STRING(500) | ✗ | ✓ | - | 图片URL |
+| file_hash | STRING(64) | ✗ | ✗ | - | 文件哈希（MD5，用于去重） |
+| created_at | DATE | ✗ | ✗ | - | 创建时间 |
+
+#### 10. 料品档案表（bas_material）
+
+| 字段名 | 类型 | 主键 | 必填 | 默认值 | 说明 |
+|--------|------|------|------|--------|------|
+| material_id | UUID | ✓ | ✓ | UUIDV4 | 料品ID |
+| category_name | STRING(50) | ✗ | ✓ | - | 分类名称 |
+| material_code | STRING(50) | ✗ | ✓ | - | 料号（唯一） |
+| material_name | STRING(200) | ✗ | ✓ | - | 料品名称 |
+| specification | STRING(200) | ✗ | ✗ | - | 规格 |
+| unit_name | STRING(50) | ✗ | ✓ | - | 单位名称 |
+| film_no | STRING(50) | ✗ | ✗ | - | 菲林编号 |
+| version_no | STRING(50) | ✗ | ✗ | - | 版本号 |
+| cutting_size | STRING(50) | ✗ | ✗ | - | 冲切尺寸 |
+| printing_process | STRING(50) | ✗ | ✗ | - | 印刷工艺 |
+| color_separation | STRING(50) | ✗ | ✗ | - | 分色 |
+| blanking_diameter | DECIMAL(11,2) | ✗ | ✗ | - | 冲切直径 |
+| material_thickness | DECIMAL(11,2) | ✗ | ✗ | - | 料厚 |
+| material_width | DECIMAL(11,2) | ✗ | ✗ | - | 料宽 |
+| material_height | DECIMAL(11,2) | ✗ | ✗ | - | 料高 |
+| scrap_weight | DECIMAL(11,2) | ✗ | ✗ | - | 废品重量 |
+| unit_weight | DECIMAL(11,2) | ✗ | ✗ | - | 单件重量 |
+| unit_volume | DECIMAL(11,2) | ✗ | ✗ | - | 单件体积 |
+| weight_unit | STRING(20) | ✗ | ✗ | - | 重量单位 |
+| volume_unit | STRING(20) | ✗ | ✗ | - | 体积单位 |
+| inventory_category | STRING(20) | ✗ | ✗ | - | 库存分类 |
+| unit_code | STRING(20) | ✗ | ✗ | - | 单位编码 |
+| customer_id | INTEGER | ✗ | ✗ | - | 关联客户ID |
+| is_active | BOOLEAN | ✗ | ✓ | true | 是否启用 |
+| effective_date | DATE | ✗ | ✓ | - | 生效日期 |
+| expiry_date | DATE | ✗ | ✓ | - | 失效日期 |
+| created_at | DATE | ✗ | ✗ | - | 创建时间 |
+| updated_at | DATE | ✗ | ✗ | - | 更新时间 |
+
+#### 11. 用户表（sys_user）
+
+| 字段名 | 类型 | 主键 | 必填 | 默认值 | 说明 |
+|--------|------|------|------|--------|------|
+| user_id | INTEGER | ✓ | ✓ | 自增 | 用户ID |
+| username | STRING(50) | ✗ | ✓ | - | 用户名（唯一） |
+| password | STRING(100) | ✗ | ✓ | - | 密码（bcrypt加密） |
+| real_name | STRING(50) | ✗ | ✓ | - | 真实姓名 |
+| employee_no | STRING(50) | ✗ | ✗ | - | 工号 |
+| department | STRING(50) | ✗ | ✗ | - | 部门 |
+| position | STRING(50) | ✗ | ✗ | - | 岗位 |
+| role_id | INTEGER | ✗ | ✗ | - | 角色ID |
+| phone | STRING(20) | ✗ | ✗ | - | 电话 |
+| email | STRING(100) | ✗ | ✗ | - | 邮箱 |
+| avatar_url | STRING(255) | ✗ | ✗ | - | 头像地址 |
+| status | TINYINT | ✗ | ✗ | 1 | 状态：1=启用,0=禁用 |
+| last_login_time | DATE | ✗ | ✗ | - | 最后登录时间 |
+| last_login_ip | STRING(45) | ✗ | ✗ | - | 最后登录IP |
+| pwd_reset_required | TINYINT | ✗ | ✓ | 0 | 首次登录需改密：0=否,1=是 |
+| created_by | STRING(50) | ✗ | ✗ | - | 创建人 |
+| remarks | STRING(500) | ✗ | ✗ | - | 备注 |
+| created_at | DATE | ✗ | ✗ | - | 创建时间 |
+| updated_at | DATE | ✗ | ✗ | - | 更新时间 |
+
+### 数据库关联关系
+
+```
+sys_user (N) ── (1) sys_role (N) ── (N) sys_permission
+                    │
+                    └── sys_role_permission (中间表)
+
+bas_customer (1) ── (N) bas_material
+
+master_production_line (N) ── (N) master_process
+        │                            │
+        └── bas_line_process ────────┘ (中间表)
+
+master_production_line (N) ── (N) master_device
+        │                            │
+        └── bas_line_device ────────┘ (中间表)
+
+production_order (1) ── (N) production_report_order
+                             │
+                             ├── (N) production_report_process
+                             ├── (N) production_process_defect
+                             ├── (N) production_process_material
+                             ├── (N) production_process_exception
+                             ├── (N) production_manpower_record
+                             └── (N) production_report_image
+
+master_defect_type (1) ── (N) bas_defect_image
 ```
 
 ---
@@ -591,6 +1170,18 @@ pm2 start ecosystem.config.cjs
 - **生产报工**：报工单列表、报工详情、不良记录、物料记录、检验报废、图片上传
 - **个人中心**：用户信息展示、设置
 
+### 移动端报工详情页面结构
+
+报工详情页采用 Tab 页签式布局，包含以下页签：
+
+| 页签 | 说明 |
+|------|------|
+| 基本信息 | 报工单基本信息展示 |
+| 不良记录 | 不良记录列表，新增时筛选制程检验类型且非检验报废的不良项目 |
+| 物料记录 | 物料记录列表，料号下拉显示料号+料品名称 |
+| 检验报废 | 检验报废记录列表，筛选制程检验类型且不良类型=检验报废 |
+| 图片上传 | 报工图片上传，支持多图，MD5去重 |
+
 ### 技术特点
 
 - 使用 Ant Design Mobile 5.x 组件库
@@ -666,57 +1257,21 @@ pm2 start ecosystem.config.cjs
 |------|------|------|
 | POST | `/upload/image` | 通用图片上传（单文件） |
 
----
+### 统一响应格式
 
-## 数据库模型
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {},
+  "total": 100
+}
+```
 
-### 核心数据表
-
-| 表名 | 模型名 | 说明 |
-|------|--------|------|
-| `sys_user` | User | 用户表 |
-| `sys_role` | Role | 角色表 |
-| `sys_permission` | Permission | 权限/菜单表 |
-| `sys_role_permission` | RolePermission | 角色权限关联表 |
-| `sys_operation_log` | OperationLog | 操作日志表 |
-| `sys_config` | SystemConfig | 系统配置表 |
-| `sys_dict_type` | DictType | 字典类型表 |
-| `sys_dict_data` | DictData | 字典数据表 |
-| `sys_data_dictionary` | DataDictionary | 数据字典表 |
-| `bas_material` | Material | 料品档案表 |
-| `bas_customer` | Customer | 客户档案表 |
-| `bas_production_line` | ProductionLine | 产线档案表 |
-| `bas_process` | Process | 工序档案表 |
-| `bas_line_process` | LineProcess | 产线工序关联表 |
-| `bas_device` | Device | 设备档案表 |
-| `bas_line_device` | LineDevice | 产线设备关联表 |
-| `bas_defect_type` | DefectType | 不良项目表 |
-| `bas_defect_image` | DefectImage | 不良图片表 |
-| `bas_number_rule` | NumberRule | 编码规则表 |
-| `bas_sequence` | Sequence | 序号流水号表 |
-| `prod_order` | Order | 生产订单表 |
-| `prod_report_order` | ReportOrder | 报工单表 |
-| `prod_report_process` | ReportProcess | 报工工序表 |
-| `prod_report_image` | ReportImage | 报工图片表 |
-| `prod_manpower_record` | ManpowerRecord | 人员记录表 |
-| `prod_process_defect` | ProcessDefect | 不良记录表 |
-| `prod_process_exception` | ProcessException | 异常工时表 |
-| `prod_process_material` | ProcessMaterial | 物料记录表 |
-
-### 主要关联关系
-
-- **用户 - 角色**：多对一（User.belongsTo(Role)）
-- **角色 - 权限**：多对多（Role.belongsToMany(Permission, through: RolePermission)）
-- **客户 - 料品**：一对多（Customer.hasMany(Material)）
-- **产线 - 工序**：多对多（ProductionLine.belongsToMany(Process, through: LineProcess)）
-- **产线 - 设备**：多对多（ProductionLine.belongsToMany(Device, through: LineDevice)）
-- **订单 - 报工单**：一对多（Order.hasMany(ReportOrder)）
-- **报工单 - 报工工序**：一对多（ReportOrder.hasMany(ReportProcess)）
-- **报工单 - 不良记录**：一对多（ReportOrder.hasMany(ProcessDefect)）
-- **报工单 - 物料记录**：一对多（ReportOrder.hasMany(ProcessMaterial)）
-- **报工单 - 异常工时**：一对多（ReportOrder.hasMany(ProcessException)）
-- **报工单 - 报工图片**：一对多（ReportOrder.hasMany(ReportImage)）
-- **不良项目 - 不良图片**：一对多（DefectType.hasMany(DefectImage)）
+- `code`：状态码，200 表示成功
+- `message`：提示信息
+- `data`：响应数据
+- `total`：总记录数（分页接口返回）
 
 ---
 
@@ -839,6 +1394,17 @@ type 类型：
 ### 6. 如何重置管理员密码？
 
 直接修改数据库 `sys_user` 表中对应用户的 `password` 字段，密码使用 bcryptjs 加密。或在系统中使用管理员账号修改。
+
+### 7. 报工图片上传提示服务器错误？
+
+- 检查 `uploads/reports/` 目录是否存在且有写入权限
+- 查看后端日志确认具体错误信息
+- 确认报工单号是否正确
+
+### 8. 新增不良项目时不良类型无法选中？
+
+- 请确保先选择"检验类型"，不良类型选项会根据检验类型动态变化
+- 状态默认值为"启用"
 
 ---
 
