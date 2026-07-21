@@ -39,6 +39,10 @@ export const getConfig = async (req, res) => {
         result[def.config_key] = def.config_value
       }
     }
+    const versionDef = defaultConfigs.find(d => d.config_key === 'system_version')
+    if (versionDef) {
+      result.system_version = versionDef.config_value
+    }
     return success(res, result, '获取成功')
   } catch (err) {
     console.error('获取系统配置失败:', err)
