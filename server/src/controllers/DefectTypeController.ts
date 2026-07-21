@@ -135,9 +135,9 @@ export const nextCode = async (req, res) => {
       '制程检验类型': 'PC',
     }
     const typeMap = {
-      '来料不良': 'MAT',
-      '制程不良': 'PRC',
-      '检验报废': 'SCP',
+      '来料不良': 'INC',
+      '制程不良': 'PNC',
+      '检验报废': 'SCR',
     }
     const catCode = categoryMap[category_name] || 'XX'
     const typeCode = typeMap[defect_type] || 'XX'
