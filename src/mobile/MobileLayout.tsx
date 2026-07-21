@@ -14,7 +14,7 @@ import { useApp } from '../contexts/AppContext'
 import api from '../utils/api'
 import './mobile.css'
 
-const SYSTEM_VERSION = 'V1.0.1.1'
+const SYSTEM_VERSION = 'V1.0.1.722'
 
 const tabs = [
   { key: '/mobile/orders', title: '工单', icon: <UnorderedListOutline /> },

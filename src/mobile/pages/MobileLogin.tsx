@@ -45,7 +45,7 @@ export default function MobileLogin() {
       }}>
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{ fontSize: 28, fontWeight: 700, marginBottom: 8 }}>MES工作台</div>
-          <div style={{ fontSize: 13, opacity: 0.85 }}>奶粉罐生产管理系统 V1.0.1.1</div>
+          <div style={{ fontSize: 13, opacity: 0.85 }}>奶粉罐生产管理系统 V1.0.1.722</div>
         </div>
 
         <div style={{

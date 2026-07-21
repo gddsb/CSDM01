@@ -13,7 +13,7 @@
   {
     "config_id": 2,
     "config_key": "system_version",
-    "config_value": "V1.0.1.1",
+    "config_value": "V1.0.1.722",
     "config_type": "string",
     "config_group": "system",
     "config_desc": "系统版本（只读）",
