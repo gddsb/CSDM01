@@ -99,8 +99,8 @@ export default function ProcessReporting() {
   const defectTypeOptions = useMemo(() => {
     const seen = new Set()
     return defectTypes
-      .filter(d => (d.category_name === '制程检验类' || d.category_name === '制程检验类型')
-        && (d.defect_type === '制程不良' || d.defect_type === '来料不良')
+      .filter(d => d.category_name === '制程检验类型'
+        && d.defect_type !== '检验报废'
         && d.status === '启用' && d.display !== false && d.display !== 0)
       .filter(d => {
         if (seen.has(d.defect_id)) return false
@@ -118,11 +118,11 @@ export default function ProcessReporting() {
       }))
   }, [defectTypes])
 
-  // 检验报废记录页签：检验类型=制程检验类，不良类型=检验报废
+  // 检验报废记录页签：检验类型=制程检验类型，不良类型=检验报废
   const scrapTypeOptions = useMemo(() => {
     const seen = new Set()
     return defectTypes
-      .filter(d => (d.category_name === '制程检验类' || d.category_name === '制程检验类型')
+      .filter(d => d.category_name === '制程检验类型'
         && d.defect_type === '检验报废'
         && d.status === '启用' && d.display !== false && d.display !== 0)
       .filter(d => {
