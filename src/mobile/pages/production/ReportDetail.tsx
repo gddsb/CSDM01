@@ -294,7 +294,7 @@ export default function ReportDetail() {
             setList={setScrapList}
             options={scrapOptions}
             isEditable={isEditable}
-            category="scrap"
+            category="defect"
             reportOrderId={id}
             reportNo={report?.report_no}
           />
@@ -676,7 +676,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
       try {
         const formData = new FormData()
         files.forEach(file => formData.append('files', file))
-        const res = await api.post(`/production/report-images/${reportNo}/material/upload`, formData, {
+        const res = await api.post(`/production/report-images/${reportNo}/label/upload`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
         const uploaded = res.data || []
@@ -1015,7 +1015,7 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId 
   )
 }
 
-function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, reportTime }) {
+function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, reportNo, reportTime }) {
   const [saving, setSaving] = useState(false)
   const exceptionCategories = ['换型换线', '停机待料', '故障维修', '其它停机']
 
@@ -1028,6 +1028,7 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
       start_time: null,
       end_time: null,
       description: '',
+      images: [],
     }])
   }
 
@@ -1048,6 +1049,7 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
           start_time: e.start_time,
           end_time: e.end_time,
           description: e.description || '',
+          exception_images: e.images || [],
         }
         if (e.exception_id) {
           await api.put(`/production/process-exceptions/${e.exception_id}`, payload)
@@ -1057,7 +1059,11 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
       }
       Toast.show({ icon: 'success', content: `已保存 ${valid.length} 条记录` })
       const res = await api.get('/production/process-exceptions', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } })
-      setList((res.data || []).map(e => ({ ...e, id: e.exception_id || genTempId() })))
+      setList((res.data || []).map(e => {
+        let imgs = []
+        try { imgs = e.exception_images ? (Array.isArray(e.exception_images) ? e.exception_images : JSON.parse(e.exception_images)) : [] } catch {}
+        return { ...e, id: e.exception_id || genTempId(), images: imgs }
+      }))
     } catch (err) {
       Toast.show({ icon: 'fail', content: err.message || '保存失败' })
     } finally {
@@ -1081,6 +1087,48 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
 
   const handleChange = (recordId, field, value) => {
     setList(prev => prev.map(item => item.id === recordId ? { ...item, [field]: value } : item))
+  }
+
+  const handleImageUpload = async (recordId) => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.multiple = true
+    input.onchange = async (e) => {
+      const files = Array.from(e.target.files || [])
+      if (files.length === 0) return
+      if (!reportNo) {
+        Toast.show({ icon: 'fail', content: '报工单号不存在，无法上传' })
+        return
+      }
+      try {
+        const formData = new FormData()
+        files.forEach(file => formData.append('files', file))
+        const res = await api.post(`/production/report-images/${reportNo}/exception/upload`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        const uploaded = res.data || []
+        if (uploaded.length > 0) {
+          setList(prev => prev.map(item => {
+            if (item.id !== recordId) return item
+            return { ...item, images: [...(item.images || []), ...uploaded] }
+          }))
+          Toast.show({ icon: 'success', content: res.message || `已上传 ${uploaded.length} 张图片` })
+        }
+      } catch (err) {
+        Toast.show({ icon: 'fail', content: err.message || '图片上传失败' })
+      }
+    }
+    input.click()
+  }
+
+  const handleRemoveImage = (recordId, imageIndex) => {
+    setList(prev => prev.map(item => {
+      if (item.id !== recordId) return item
+      const images = [...(item.images || [])]
+      images.splice(imageIndex, 1)
+      return { ...item, images }
+    }))
   }
 
   const handleTimeChange = (recordId, field, value) => {
@@ -1220,6 +1268,23 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
                   onChange={(e) => handleChange(record.id, 'description', e.target.value)}
                 />
               </div>
+              <div className="rd-form-item">
+                <label className="rd-form-label">异常图片</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <PictureOutline color="#2196F3" onClick={() => handleImageUpload(record.id)} fontSize={18} />
+                  {(record.images || []).length > 0 && <span style={{ color: '#999', fontSize: 12 }}>{(record.images || []).length}张</span>}
+                </div>
+                {(record.images || []).length > 0 && (
+                  <div className="rd-image-list" style={{ marginTop: 8 }}>
+                    {(record.images || []).map((img, idx) => (
+                      <div key={idx} className="rd-image-item">
+                        <img src={img} alt="" className="rd-image" />
+                        <DeleteOutline color="#fff" fontSize={12} onClick={() => handleRemoveImage(record.id, idx)} className="rd-image-delete" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <div className="rd-list-item-body">
@@ -1237,6 +1302,15 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
                 <div className="rd-list-row">
                   <span className="rd-list-label">描述</span>
                   <span className="rd-list-value">{record.description}</span>
+                </div>
+              )}
+              {(record.images || []).length > 0 && (
+                <div className="rd-image-list" style={{ marginTop: 8 }}>
+                  {(record.images || []).map((img, idx) => (
+                    <div key={idx} className="rd-image-item">
+                      <img src={img} alt="" className="rd-image" />
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

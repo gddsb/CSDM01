@@ -6,8 +6,8 @@ import { success, fail } from '../utils/response.js'
 
 const UPLOAD_DIR = 'uploads/reports'
 
-const ensureDir = (reportNo) => {
-  const dir = path.resolve(process.cwd(), UPLOAD_DIR, reportNo || 'default')
+const ensureDir = () => {
+  const dir = path.resolve(process.cwd(), UPLOAD_DIR)
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
   return dir
 }
@@ -50,7 +50,7 @@ export const uploadImages = async (req, res) => {
     const reportOrder = await ReportOrder.findOne({ where: { report_no } })
     if (!reportOrder) return fail(res, '报工单不存在', 404)
 
-    const dir = ensureDir(report_no)
+    const dir = ensureDir()
 
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '')
     const prefix = report_no + '-' + dateStr + '-'
@@ -84,7 +84,7 @@ export const uploadImages = async (req, res) => {
       if (existingMap.has(fileMd5)) {
         const existName = existingMap.get(fileMd5)
         skipped.push(existName)
-        const existUrl = `/${UPLOAD_DIR}/${report_no}/${existName}`
+        const existUrl = `/${UPLOAD_DIR}/${existName}`
         uploaded.push(existUrl)
         fs.unlinkSync(file.path)
         continue
@@ -96,7 +96,7 @@ export const uploadImages = async (req, res) => {
       const newName = `${prefix}${seqStr}${ext}`
       const destPath = path.join(dir, newName)
       fs.renameSync(file.path, destPath)
-      const newUrl = `/${UPLOAD_DIR}/${report_no}/${newName}`
+      const newUrl = `/${UPLOAD_DIR}/${newName}`
       uploaded.push(newUrl)
       existingMap.set(fileMd5, newName)
       newRecords.push({

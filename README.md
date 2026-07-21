@@ -374,55 +374,73 @@
 
 #### 2.8 报工图片上传
 
+> **统一存储规范**：报工单产生的所有图片（不良图片、标签图片、异常图片）均按照本节规范统一存储，使用相同的存储路径、命名规则和去重机制。
+
 ##### 图片分类
 
-| 分类标识 | 分类名称 | 说明 |
-|---------|---------|------|
-| `defect` | 不良图片 | 关联不良记录的图片 |
-| `label` | 标签图片 | 物料标签类图片 |
-| `exception` | 异常图片 | 异常工时相关图片 |
+| 分类标识 | 分类名称 | 说明 | 对应子表字段 |
+|---------|---------|------|-------------|
+| `defect` | 不良图片 | 不良记录和检验报废记录关联的图片 | `production_process_defect.defect_images` |
+| `label` | 标签图片 | 物料记录关联的标签图片 | `production_process_material.label_images` |
+| `exception` | 异常图片 | 异常工时记录关联的图片 | `production_process_exception.exception_images` |
+
+> 子表中的 `defect_images` / `label_images` / `exception_images` 字段仅存储图片 URL 的 JSON 数组引用，物理文件统一存储在 `uploads/reports/` 目录，文件元数据统一记录在 `production_report_image` 表中。
 
 ##### 命名规则
 
 - **格式**：`报工单号` + `-` + `YYYYMMDD` + `-` + 三位流水码
 - **示例**：`WO260719001-20260721-001`
-- 流水码按当日该报工单已上传图片数量递增
+- 流水码按当日该报工单已上传图片数量递增（跨分类统一编号）
 
 ##### 存储位置
 
-- 文件目录：`uploads/reports/`（服务器启动时自动创建）
-- 数据库表：`production_report_image`
+- **物理文件目录**：`uploads/reports/`（服务器启动时自动创建，所有图片直接存放在此目录，不再按报工单号创建子目录）
+- **文件元数据表**：`production_report_image`（记录 `report_order_id`、`category`、`image_url`、`file_hash`）
+- **子表引用字段**：各子表通过 JSON 数组字段存储图片 URL 列表
 
 ##### 去重机制
 
 使用 MD5 哈希值判断图片是否重复，上传时双重校验：
 
 1. **本次上传内去重**：多张上传图片之间互相比对 MD5
-2. **历史记录去重**：与该报工单已上传的图片 MD5 对比
-3. 检测到重复时直接报错提示，不上传重复文件
+2. **历史记录去重**：与 `uploads/reports/` 目录下已有文件的 MD5 对比
+3. 检测到重复时跳过上传，返回已有文件的 URL
 
-##### 上传接口流程
+##### 上传接口
 
 ```
-前端 (FormData, files字段)
+POST /api/production/report-images/:report_no/:category/upload
+```
+
+- `report_no`：报工单号
+- `category`：图片分类（`defect` / `label` / `exception`）
+- 请求体：`multipart/form-data`，字段名 `files`，最多 10 张，单文件最大 5MB
+
+##### 上传流程
+
+```
+前端 (FormData, files字段, category参数)
     │
     ▼
 后端 Multer 中间件 → 临时目录 uploads/tmp/
     │
     ▼
-计算文件 MD5 → 去重校验
+根据 report_no 查询 ReportOrder 获取 report_order_id
     │
     ▼
-生成文件名（报工单号+日期+流水码）
+计算文件 MD5 → 与 uploads/reports/ 目录已有文件去重
     │
     ▼
-移动到 uploads/reports/ 目录
+生成文件名（报工单号+日期+三位流水码）
     │
     ▼
-写入 production_report_image 表
+移动到 uploads/reports/ 目录（统一存储，不分子目录）
     │
     ▼
-返回成功响应（图片列表）
+写入 production_report_image 表（含 report_order_id, category, image_url, file_hash）
+    │
+    ▼
+返回图片 URL 列表 → 前端保存到对应子表的 JSON 字段
 ```
 
 ---

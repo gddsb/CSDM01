@@ -909,7 +909,7 @@ export default function ProcessReporting() {
       title: '不良图片', dataIndex: 'defect_images', key: 'defect_images', width: 120,
       render: (val, record) => (
         <Button type="link" size="small" icon={<PictureOutlined />}
-          onClick={() => openImageDrawer('不良图片', val || [], { listType: 'prodDefect', recordId: record.id, field: 'defect_images' })}>
+          onClick={() => openImageDrawer('不良图片', val || [], { listType: 'prodDefect', recordId: record.id, field: 'defect_images', category: 'defect' })}>
           {(val || []).length} 张
         </Button>
       ),
@@ -1207,7 +1207,7 @@ export default function ProcessReporting() {
       title: '不良图片', dataIndex: 'defect_images', key: 'defect_images', width: 120,
       render: (val, record) => (
         <Button type="link" size="small" icon={<PictureOutlined />}
-          onClick={() => openImageDrawer('不良图片', val || [], { listType: 'scrapDefect', recordId: record.id, field: 'defect_images' })}>
+          onClick={() => openImageDrawer('不良图片', val || [], { listType: 'scrapDefect', recordId: record.id, field: 'defect_images', category: 'defect' })}>
           {(val || []).length} 张
         </Button>
       ),
@@ -1628,7 +1628,7 @@ export default function ProcessReporting() {
       title: '标签图片', dataIndex: 'label_images', key: 'label_images', width: 120,
       render: (val, record) => (
         <Button type="link" size="small" icon={<PictureOutlined />}
-          onClick={() => openImageDrawer('标签图片', val || [], { listType: 'material', recordId: record.id, field: 'label_images' })}>
+          onClick={() => openImageDrawer('标签图片', val || [], { listType: 'material', recordId: record.id, field: 'label_images', category: 'label' })}>
           {(val || []).length} 张
         </Button>
       ),
@@ -2000,7 +2000,7 @@ export default function ProcessReporting() {
       title: '图片', dataIndex: 'exception_images', key: 'exception_images', width: 100,
       render: (val, record) => (
         <Button type="link" size="small" icon={<PictureOutlined />}
-          onClick={() => openImageDrawer('异常图片', val || [], { listType: 'exception', recordId: record.id, field: 'exception_images' })}>
+          onClick={() => openImageDrawer('异常图片', val || [], { listType: 'exception', recordId: record.id, field: 'exception_images', category: 'exception' })}>
           {(val || []).length} 张
         </Button>
       ),
