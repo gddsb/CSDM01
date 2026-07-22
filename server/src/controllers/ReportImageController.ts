@@ -3,6 +3,8 @@ import fs from 'fs'
 import crypto from 'crypto'
 import { ReportOrder, ReportImage } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
+import { logger } from '../utils/logger.js'
+
 
 const UPLOAD_DIR = 'uploads/reports'
 
@@ -146,8 +148,8 @@ export const remove = async (req, res) => {
     try {
       const filePath = path.resolve(process.cwd(), image.image_url.replace(/^\//, ''))
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
-    } catch (e) {
-      // 文件删除失败不影响记录删除
+    } catch (err) {
+        logger.warn('[SilentCatch] // 文件删除失败不影响记录删除', err?.message)
     }
 
     await image.destroy()

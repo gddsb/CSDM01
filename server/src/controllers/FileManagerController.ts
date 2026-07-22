@@ -1,6 +1,8 @@
 import fs from 'fs'
 import path from 'path'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
+import { logger } from '../utils/logger.js'
+
 
 const UPLOADS_DIR = path.resolve('uploads')
 
@@ -61,9 +63,9 @@ export const listDirectory = async (req, res) => {
           sizeText: formatSize(itemStat.size),
           modifiedTime: itemStat.mtime,
         })
-      } catch (e) {
-        // skip inaccessible files
-      }
+      } catch (err) {
+        logger.warn('[SilentCatch] // skip inaccessible files', err?.message)
+    }
     }
 
     // 排序：目录在前，文件在后，按名称排序

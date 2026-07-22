@@ -1,6 +1,8 @@
 import sequelize from '../config/database.js'
 import Sequence from '../models/Sequence.js'
 import { NumberRule } from '../models/index.js'
+import { logger } from './logger.js'
+
 
 /**
  * 业务编号生成器
@@ -150,8 +152,8 @@ export async function generateBizNo(seqKey: string): Promise<string> {
       })
     }
   } catch (err) {
-    // 静默失败，不影响编号生成
-  }
+        logger.warn('[SilentCatch] // 静默失败，不影响编号生成', err?.message)
+    }
 
   return finalNo
 }

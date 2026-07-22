@@ -4,6 +4,8 @@ import { User, Role } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import path from 'path'
 import fs from 'fs'
+import { logger } from '../utils/logger.js'
+
 
 // 用户列表（支持 keyword/status/role_id 筛选）
 export const list = async (req, res) => {
@@ -169,12 +171,16 @@ export const uploadMyAvatar = async (req, res) => {
     // 限制 2MB
     if (file.size > 2 * 1024 * 1024) {
       // 清理临时文件
-      try { fs.unlinkSync(file.path) } catch (e) {}
+      try { fs.unlinkSync(file.path) } catch (err) {
+        logger.warn('[SilentCatch] 静默异常被捕获', err?.message)
+    }
       return fail(res, '头像图片不能超过 2MB')
     }
     // 仅允许图片类型
     if (!file.mimetype || !file.mimetype.startsWith('image/')) {
-      try { fs.unlinkSync(file.path) } catch (e) {}
+      try { fs.unlinkSync(file.path) } catch (err) {
+        logger.warn('[SilentCatch] 静默异常被捕获', err?.message)
+    }
       return fail(res, '请上传图片格式的文件')
     }
     // 保存到 /uploads/avatars 目录
@@ -193,7 +199,9 @@ export const uploadMyAvatar = async (req, res) => {
     // 删除旧的自定义头像文件（如果是上传类型）
     if (user.avatar_url && user.avatar_url.startsWith('/uploads/avatars/')) {
       const oldPath = path.resolve(process.cwd(), user.avatar_url.replace(/^\//, ''))
-      try { if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath) } catch (e) {}
+      try { if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath) } catch (err) {
+        logger.warn('[SilentCatch] 静默异常被捕获', err?.message)
+    }
     }
     await user.update({ avatar_url: avatarUrl })
     const data = user.toJSON()
@@ -229,7 +237,9 @@ export const setMyAvatar = async (req, res) => {
       user.avatar_url !== avatar_url
     ) {
       const oldPath = path.resolve(process.cwd(), user.avatar_url.replace(/^\//, ''))
-      try { if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath) } catch (e) {}
+      try { if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath) } catch (err) {
+        logger.warn('[SilentCatch] 静默异常被捕获', err?.message)
+    }
     }
     await user.update({ avatar_url })
     const data = user.toJSON()

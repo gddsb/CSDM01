@@ -16,6 +16,7 @@ import {
 } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { generateReportOrderNo } from '../utils/sequence.js'
+import { logger } from '../utils/logger.js'
 
 // 报工单状态: 0=开工, 1=完工
 const statusMap = { '开工': 0, '完工': 1 }
@@ -367,6 +368,7 @@ export const finish = async (req, res) => {
     // 联动订单状态：所有报工单完工 → 订单完工
     await syncOrderStatus(reportOrder.order_id)
 
+    logger.info('[ReportOrder.finish] 报工单完工成功', { report_order_id: id, order_id: reportOrder.order_id, report_order_no: reportOrder.report_order_no, user: req.user?.username })
     return success(res, reportOrder, '报工单已完工')
   } catch (err) {
     console.error('完工报工单失败:', err)

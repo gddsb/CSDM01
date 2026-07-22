@@ -2,6 +2,7 @@ import { Op } from 'sequelize'
 import { Order, ReportOrder, Material } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { generateOrderNo } from '../utils/sequence.js'
+import { logger } from '../utils/logger.js'
 
 // 订单状态: 0=开立, 1=下发, 2=开工, 3=完工, 4=关闭
 const statusMap = { '开立': 0, '下发': 1, '开工': 2, '完工': 3, '关闭': 4 }
@@ -233,6 +234,7 @@ export const release = async (req, res) => {
     if (!order) return fail(res, '订单不存在', ErrorCode.RECORD_NOT_FOUND)
     if (order.getDataValue('status') !== 0) return fail(res, '只有开立状态的订单可以下发')
     await order.update({ status: 1, release_time: new Date() })
+    logger.info('[Order.release] 订单下发成功', { order_id: id, order_no: order.getDataValue('order_no'), user: (req as any).user?.username })
     return success(res, order, '订单已下发')
   } catch (err) {
     console.error('下发订单失败:', err)
@@ -251,6 +253,7 @@ export const close = async (req, res) => {
     if (statusVal === 0) return fail(res, '开立状态的订单请直接下发或删除，不能关闭')
     if (statusVal === 4) return fail(res, '订单已关闭')
     await order.update({ status: 4, close_time: new Date() })
+    logger.info('[Order.close] 订单关闭成功', { order_id: id, order_no: order.getDataValue('order_no'), user: (req as any).user?.username })
     return success(res, order, '订单已关闭')
   } catch (err) {
     console.error('关闭订单失败:', err)

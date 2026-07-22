@@ -11,6 +11,8 @@
  * 另外提供 dropObsoleteTables 清理废弃表（生产业务重构后遗留的工单/报工表）
  */
 import sequelize from './config/database.js'
+import { logger } from '../utils/logger.js'
+
 
 // 各模型需要保证存在的列（仅列出新增/补齐的列，避免对类型变更产生影响）
 // 字段定义参考对应模型文件
@@ -266,9 +268,9 @@ async function dropObsoleteColumns() {
           try {
             await sequelize.query(`ALTER TABLE ${table} DROP COLUMN ${col}`)
             console.log(`  🗑️  删除 ${table}.${col}`)
-          } catch (e) {
-            // 列删除失败时跳过
-          }
+          } catch (err) {
+        logger.warn('[SilentCatch] // 列删除失败时跳过', err?.message)
+    }
         }
       }
     } catch (err) {
@@ -295,9 +297,9 @@ export async function runMigrations() {
           try {
             await sequelize.query(`ALTER TABLE ${m.table} ADD COLUMN ${col} ${ddl}`)
             console.log(`  ➕ ${m.table}.${col} (${ddl})`)
-          } catch (e) {
-            // 列已存在或语法不兼容，跳过
-          }
+          } catch (err) {
+        logger.warn('[SilentCatch] // 列已存在或语法不兼容，跳过', err?.message)
+    }
         }
       }
     } catch (err) {

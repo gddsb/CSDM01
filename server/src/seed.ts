@@ -12,6 +12,8 @@ import {
   ProcessMaterial, DataDictionary,
 } from './models/index.js'
 import sequelize from './config/database.js'
+import { logger } from '../utils/logger.js'
+
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -114,7 +116,8 @@ async function seed() {
     console.error('❌ 种子数据初始化失败:', err)
     try {
       await sequelize.close()
-    } catch (_) {
+    } catch (err) {
+        logger.warn('[SilentCatch] 静默异常被捕获', err?.message)
     }
     process.exit(1)
   }

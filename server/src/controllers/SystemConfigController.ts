@@ -7,6 +7,8 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import http from 'http'
 import net from 'net'
+import { logger } from '../utils/logger.js'
+
 
 // 默认配置（设计文档 §2.2.2 系统配置表）
 const defaultConfigs = [
@@ -84,14 +86,18 @@ export const getEnvironment = async (req, res) => {
     try {
       const pkgPath = path.resolve(process.cwd(), 'package.json')
       backendPkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
-    } catch (e) { /* ignore */ }
+    } catch (err) {
+        logger.warn('[SilentCatch] /* ignore */', err?.message)
+    }
 
     // 读取前端 package.json 获取版本
     let frontendPkg = {}
     try {
       const pkgPath = path.resolve(process.cwd(), '..', 'package.json')
       frontendPkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
-    } catch (e) { /* ignore */ }
+    } catch (err) {
+        logger.warn('[SilentCatch] /* ignore */', err?.message)
+    }
 
     const getDepVersion = (pkg, name) => {
       if (!pkg) return 'unknown'
@@ -199,8 +205,8 @@ export const getEnvironment = async (req, res) => {
           })
         }
       })
-    } catch (e) {
-      // 磁盘信息获取失败，保持默认值
+    } catch (err) {
+        logger.warn('[SilentCatch] // 磁盘信息获取失败，保持默认值', err?.message)
     }
     const checkPort = (port, hostname = 'localhost') => {
       return new Promise((resolve) => {
@@ -235,7 +241,9 @@ export const getEnvironment = async (req, res) => {
           // 标准端口 80/443，前端由 nginx 等反向代理提供，视为运行中
           frontend_port = originHeader.startsWith('https') ? 443 : 80
         }
-      } catch (e) { /* 解析失败保持默认 */ }
+      } catch (err) {
+        logger.warn('[SilentCatch] /* 解析失败保持默认 */', err?.message)
+    }
     }
     const backend_port = parseInt(process.env.PORT, 10) || 3001
     // 后端能响应此请求，说明后端正在运行
@@ -795,8 +803,8 @@ async function collectDatabaseSchema() {
     try {
       const result = await sequelize.query(`SELECT COUNT(*) as count FROM "${tableName}"`, { type: sequelize.QueryTypes.SELECT })
       recordCount = result[0]?.count || 0
-    } catch (e) {
-      // ignore
+    } catch (err) {
+        logger.warn('[SilentCatch] // ignore', err?.message)
     }
     const cols = await queryInterface.describeTable(tableName)
     const colComments = columnCommentMap[tableName] || {}
@@ -1178,12 +1186,16 @@ export const migrateDatabase = async (req, res) => {
         }
       }
     } catch (e) {
-      try { await targetSequelize.close() } catch (closeErr) {}
+      try { await targetSequelize.close() } catch (err) {
+        logger.warn('[SilentCatch] 静默异常被捕获', err?.message)
+    }
       return fail(res, `数据迁移失败：${e.message}`, ErrorCode.SYSTEM_ERROR)
     }
 
     // 4. 关闭目标连接
-    try { await targetSequelize.close() } catch (e) {}
+    try { await targetSequelize.close() } catch (err) {
+        logger.warn('[SilentCatch] 静默异常被捕获', err?.message)
+    }
 
     // 5. 更新 .env 文件，使下次启动时使用新数据库
     let envContent = readEnvFile()
