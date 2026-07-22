@@ -248,6 +248,18 @@
   width: 10em;
 }
 
+/* 不良记录/检验报废：数量列宽两个汉字 */
+.rd-form-item-qty {
+  flex: 0 0 auto;
+  width: 3.5em;
+}
+
+/* 不良记录/检验报废：单位列自动列宽 */
+.rd-form-item-unit {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .rd-defect-select-dropdown.auto-width {
   left: 0;
   right: auto;
@@ -267,22 +279,32 @@
   min-width: 0;
 }
 
-.rd-material-same-row .rd-form-item:first-child {
+/* 物料记录：料号列宽 */
+.rd-material-same-row .rd-form-item-code-mat {
   flex: 0 0 auto;
   width: 9em;
 }
 
-.rd-material-same-row .rd-form-item-pkg {
-  flex: 0 0 auto;
-  width: 3.5em;
-}
-
+/* 物料记录：类型列宽两个汉字 */
 .rd-material-same-row .rd-form-item-type {
   flex: 0 0 auto;
   width: 3.5em;
 }
 
+/* 物料记录：批号自动列宽 */
+.rd-material-same-row .rd-form-item-batch {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* 物料记录：包号列宽两个汉字 */
+.rd-material-same-row .rd-form-item-pkg {
+  flex: 0 0 auto;
+  width: 3.5em;
+}
+
+/* 物料记录：数量列宽6个字符 */
 .rd-material-same-row .rd-form-item-qty-wide {
-  flex: 1.5;
-  min-width: 60px;
+  flex: 0 0 auto;
+  width: 6em;
 }

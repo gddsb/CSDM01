@@ -824,7 +824,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
                     <option value="退">退</option>
                   </select>
                 </div>
-                <div className="rd-form-item">
+                <div className="rd-form-item rd-form-item-code-mat">
                   <label className="rd-form-label">料号</label>
                   <DefectSelect
                     value={record.bas_material_id}
@@ -836,7 +836,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
                     autoWidth={true}
                   />
                 </div>
-                <div className="rd-form-item">
+                <div className="rd-form-item rd-form-item-batch">
                   <label className="rd-form-label">批号</label>
                   <input
                     className="rd-form-input"
