@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { ProductionLine, LineProcess, LineDevice, Process, Device } from '../models/index.js'
-import { success, fail } from '../utils/response.js'
+import { success, fail, ErrorCode } from '../utils/response.js'
 
 // 产线列表
 export const list = async (req, res) => {
@@ -62,7 +62,7 @@ export const list = async (req, res) => {
     return success(res, result, '查询成功', count)
   } catch (err) {
     console.error('查询产线列表失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -71,11 +71,11 @@ export const detail = async (req, res) => {
   try {
     const { id } = req.params
     const line = await ProductionLine.findOne({ where: { line_id: id } })
-    if (!line) return fail(res, '产线不存在', 404)
+    if (!line) return fail(res, '产线不存在', ErrorCode.RECORD_NOT_FOUND)
     return success(res, line, '查询成功')
   } catch (err) {
     console.error('查询产线详情失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -92,7 +92,7 @@ export const create = async (req, res) => {
     return success(res, line, '创建成功')
   } catch (err) {
     console.error('创建产线失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -101,7 +101,7 @@ export const update = async (req, res) => {
   try {
     const { id } = req.params
     const line = await ProductionLine.findOne({ where: { line_id: id } })
-    if (!line) return fail(res, '产线不存在', 404)
+    if (!line) return fail(res, '产线不存在', ErrorCode.RECORD_NOT_FOUND)
     if (req.body.line_code && req.body.line_code !== line.line_code) {
       const exists = await ProductionLine.findOne({
         where: { line_code: req.body.line_code, line_id: { [Op.ne]: id } },
@@ -112,7 +112,7 @@ export const update = async (req, res) => {
     return success(res, line, '修改成功')
   } catch (err) {
     console.error('修改产线失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -121,12 +121,12 @@ export const remove = async (req, res) => {
   try {
     const { id } = req.params
     const line = await ProductionLine.findOne({ where: { line_id: id } })
-    if (!line) return fail(res, '产线不存在', 404)
+    if (!line) return fail(res, '产线不存在', ErrorCode.RECORD_NOT_FOUND)
     await line.destroy()
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除产线失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 

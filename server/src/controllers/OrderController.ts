@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { Order, ReportOrder, Material } from '../models/index.js'
-import { success, fail } from '../utils/response.js'
+import { success, fail, ErrorCode } from '../utils/response.js'
 import { generateOrderNo } from '../utils/sequence.js'
 
 // 订单状态: 0=开立, 1=下发, 2=开工, 3=完工, 4=关闭
@@ -72,7 +72,7 @@ export const list = async (req, res) => {
     return success(res, rows, '查询成功', count)
   } catch (err) {
     console.error('查询订单列表失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -90,11 +90,11 @@ export const detail = async (req, res) => {
         },
       ],
     })
-    if (!order) return fail(res, '订单不存在', 404)
+    if (!order) return fail(res, '订单不存在', ErrorCode.RECORD_NOT_FOUND)
     return success(res, order, '查询成功')
   } catch (err) {
     console.error('查询订单详情失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -128,7 +128,7 @@ export const create = async (req, res) => {
 
     // 关联料品档案，冗余料品信息
     const material = await Material.findOne({ where: { material_id } })
-    if (!material) return fail(res, '料品不存在', 404)
+    if (!material) return fail(res, '料品不存在', ErrorCode.RECORD_NOT_FOUND)
 
     const order_no = await generateOrderNo()
     const order = await Order.create({
@@ -148,7 +148,7 @@ export const create = async (req, res) => {
     return success(res, order, '创建成功')
   } catch (err) {
     console.error('创建订单失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -157,7 +157,7 @@ export const update = async (req, res) => {
   try {
     const { id } = req.params
     const order = await Order.findOne({ where: { order_id: id } })
-    if (!order) return fail(res, '订单不存在', 404)
+    if (!order) return fail(res, '订单不存在', ErrorCode.RECORD_NOT_FOUND)
     if (order.getDataValue('status') !== 0) {
       return fail(res, '只有开立状态的订单可以修改')
     }
@@ -189,7 +189,7 @@ export const update = async (req, res) => {
     // 若更换料品，同步冗余字段
     if (material_id && material_id !== order.material_id) {
       const material = await Material.findOne({ where: { material_id } })
-      if (!material) return fail(res, '料品不存在', 404)
+      if (!material) return fail(res, '料品不存在', ErrorCode.RECORD_NOT_FOUND)
       updateData.material_id = material.material_id
       updateData.material_code = material.material_code
       updateData.material_name = material.material_name
@@ -201,7 +201,7 @@ export const update = async (req, res) => {
     return success(res, order, '修改成功')
   } catch (err) {
     console.error('修改订单失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -210,7 +210,7 @@ export const remove = async (req, res) => {
   try {
     const { id } = req.params
     const order = await Order.findOne({ where: { order_id: id } })
-    if (!order) return fail(res, '订单不存在', 404)
+    if (!order) return fail(res, '订单不存在', ErrorCode.RECORD_NOT_FOUND)
     if (order.getDataValue('status') !== 0) {
       return fail(res, '只有开立状态的订单可以删除')
     }
@@ -221,7 +221,7 @@ export const remove = async (req, res) => {
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除订单失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -230,13 +230,13 @@ export const release = async (req, res) => {
   try {
     const { id } = req.params
     const order = await Order.findOne({ where: { order_id: id } })
-    if (!order) return fail(res, '订单不存在', 404)
+    if (!order) return fail(res, '订单不存在', ErrorCode.RECORD_NOT_FOUND)
     if (order.getDataValue('status') !== 0) return fail(res, '只有开立状态的订单可以下发')
     await order.update({ status: 1, release_time: new Date() })
     return success(res, order, '订单已下发')
   } catch (err) {
     console.error('下发订单失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -246,7 +246,7 @@ export const close = async (req, res) => {
   try {
     const { id } = req.params
     const order = await Order.findOne({ where: { order_id: id } })
-    if (!order) return fail(res, '订单不存在', 404)
+    if (!order) return fail(res, '订单不存在', ErrorCode.RECORD_NOT_FOUND)
     const statusVal = order.getDataValue('status')
     if (statusVal === 0) return fail(res, '开立状态的订单请直接下发或删除，不能关闭')
     if (statusVal === 4) return fail(res, '订单已关闭')
@@ -254,7 +254,7 @@ export const close = async (req, res) => {
     return success(res, order, '订单已关闭')
   } catch (err) {
     console.error('关闭订单失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 

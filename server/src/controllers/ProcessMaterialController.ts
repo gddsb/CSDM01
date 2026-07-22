@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { ProcessMaterial, Material } from '../models/index.js'
-import { success, fail } from '../utils/response.js'
+import { success, fail, ErrorCode } from '../utils/response.js'
 
 export const list = async (req, res) => {
   try {
@@ -38,7 +38,7 @@ export const list = async (req, res) => {
     return success(res, data, '查询成功', count)
   } catch (err) {
     console.error('查询制程物料列表失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -80,7 +80,7 @@ export const create = async (req, res) => {
     }, '创建成功')
   } catch (err) {
     console.error('创建制程物料记录失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -98,7 +98,7 @@ export const update = async (req, res) => {
     } = req.body
 
     const material = await ProcessMaterial.findOne({ where: { material_id: id } })
-    if (!material) return fail(res, '记录不存在', 404)
+    if (!material) return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)
 
     const imgData = images !== undefined ? images : label_images
 
@@ -117,7 +117,7 @@ export const update = async (req, res) => {
     }, '更新成功')
   } catch (err) {
     console.error('更新制程物料记录失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -125,12 +125,12 @@ export const remove = async (req, res) => {
   try {
     const { id } = req.params
     const material = await ProcessMaterial.findOne({ where: { material_id: id } })
-    if (!material) return fail(res, '记录不存在', 404)
+    if (!material) return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)
     await material.destroy()
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除制程物料记录失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 

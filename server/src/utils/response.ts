@@ -11,15 +11,15 @@ export enum ErrorCode {
   SYSTEM_ERROR = 50000,
 }
 
-function httpStatusToErrorCode(httpStatus: number): number {
-  switch (httpStatus) {
-    case 400: return ErrorCode.PARAM_INVALID
-    case 401: return ErrorCode.UNAUTHORIZED
-    case 403: return ErrorCode.PERMISSION_DENIED
-    case 404: return ErrorCode.RECORD_NOT_FOUND
-    case 409: return ErrorCode.DUPLICATE_REQUEST
-    case 500: return ErrorCode.SYSTEM_ERROR
-    default: return ErrorCode.BUSINESS_ERROR
+function errorCodeToHttpStatus(errorCode: number): number {
+  switch (errorCode) {
+    case ErrorCode.PARAM_INVALID: return 400
+    case ErrorCode.UNAUTHORIZED: return 401
+    case ErrorCode.PERMISSION_DENIED: return 403
+    case ErrorCode.RECORD_NOT_FOUND: return 404
+    case ErrorCode.DUPLICATE_REQUEST: return 409
+    case ErrorCode.SYSTEM_ERROR: return 500
+    default: return 400
   }
 }
 
@@ -29,13 +29,9 @@ export function success(res: Response, data: any = null, message: string = '操�
   return res.json(result)
 }
 
-export function fail(res: Response, message: string = '操作失败', httpStatus: number = 400) {
-  const code = httpStatusToErrorCode(httpStatus)
-  return res.status(httpStatus).json({ success: false, code, message })
-}
-
-export function failWithCode(res: Response, message: string, errorCode: number = ErrorCode.BUSINESS_ERROR, httpStatus: number = 400) {
-  return res.status(httpStatus).json({ success: false, code: errorCode, message })
+export function fail(res: Response, message: string = '操作失败', errorCode: number = ErrorCode.PARAM_INVALID, httpStatus?: number) {
+  const status = httpStatus ?? errorCodeToHttpStatus(errorCode)
+  return res.status(status).json({ success: false, code: errorCode, message })
 }
 
 export function paginate(res: Response, data: any, total: number, pageNum: number, pageSize: number, message: string = '获取成功') {

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { verifyToken } from '../utils/jwt.js'
-import { fail } from '../utils/response.js'
+import { fail, ErrorCode } from '../utils/response.js'
 import { OperationLog } from '../models/index.js'
 
 // HTTP 方法到操作名称的映射
@@ -20,17 +20,17 @@ const methodActionMap: Record<string, string> = {
 export function authRequired(req: Request, res: Response, next: NextFunction): any {
   const authHeader = req.headers.authorization
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return fail(res, '未提供认证令牌', 401)
+    return fail(res, '未提供认证令牌', ErrorCode.UNAUTHORIZED)
   }
 
   const token = authHeader.slice(7).trim()
   if (!token) {
-    return fail(res, '认证令牌为空', 401)
+    return fail(res, '认证令牌为空', ErrorCode.UNAUTHORIZED)
   }
 
   const decoded = verifyToken(token)
   if (!decoded) {
-    return fail(res, '认证令牌无效或已过期', 401)
+    return fail(res, '认证令牌无效或已过期', ErrorCode.UNAUTHORIZED)
   }
 
   (req as any).user = decoded
@@ -44,7 +44,7 @@ export function authRequired(req: Request, res: Response, next: NextFunction): a
 export function permissionRequired(permCode: string) {
   return (req: Request, res: Response, next: NextFunction): any => {
     if (!(req as any).user) {
-      return fail(res, '用户未登录', 401)
+      return fail(res, '用户未登录', ErrorCode.UNAUTHORIZED)
     }
     // 简化处理：所有登录用户都有权限
     next()

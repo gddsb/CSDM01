@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { success, fail } from '../utils/response.js'
+import { success, fail, ErrorCode } from '../utils/response.js'
 
 const UPLOADS_DIR = path.resolve('uploads')
 
@@ -33,16 +33,16 @@ export const listDirectory = async (req, res) => {
     const targetDir = path.resolve(UPLOADS_DIR, dir || '')
     const relativePath = path.relative(UPLOADS_DIR, targetDir)
     if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
-      return fail(res, '路径不合法', 400)
+      return fail(res, '路径不合法', ErrorCode.PARAM_INVALID)
     }
 
     if (!fs.existsSync(targetDir)) {
-      return fail(res, '目录不存在', 404)
+      return fail(res, '目录不存在', ErrorCode.RECORD_NOT_FOUND)
     }
 
     const stat = fs.statSync(targetDir)
     if (!stat.isDirectory()) {
-      return fail(res, '不是目录', 400)
+      return fail(res, '不是目录', ErrorCode.PARAM_INVALID)
     }
 
     const items = fs.readdirSync(targetDir)
@@ -84,7 +84,7 @@ export const listDirectory = async (req, res) => {
     }, '查询成功')
   } catch (err) {
     console.error('列出目录失败:', err)
-    return fail(res, err.message || '查询失败', 500)
+    return fail(res, err.message || '查询失败', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -92,24 +92,24 @@ export const listDirectory = async (req, res) => {
 export const removeItem = async (req, res) => {
   try {
     const { path: itemPath } = req.params
-    if (!itemPath) return fail(res, '路径不能为空', 400)
+    if (!itemPath) return fail(res, '路径不能为空', ErrorCode.PARAM_INVALID)
 
     // 安全检查
     const targetPath = path.resolve(UPLOADS_DIR, itemPath)
     const relativePath = path.relative(UPLOADS_DIR, targetPath)
     if (relativePath.startsWith('..') || path.isAbsolute(relativePath) || relativePath === '') {
-      return fail(res, '路径不合法', 400)
+      return fail(res, '路径不合法', ErrorCode.PARAM_INVALID)
     }
 
     if (!fs.existsSync(targetPath)) {
-      return fail(res, '文件或目录不存在', 404)
+      return fail(res, '文件或目录不存在', ErrorCode.RECORD_NOT_FOUND)
     }
 
     const stat = fs.statSync(targetPath)
     if (stat.isDirectory()) {
       const items = fs.readdirSync(targetPath)
       if (items.length > 0) {
-        return fail(res, '目录不为空，无法删除', 400)
+        return fail(res, '目录不为空，无法删除', ErrorCode.PARAM_INVALID)
       }
       fs.rmdirSync(targetPath)
     } else {
@@ -119,7 +119,7 @@ export const removeItem = async (req, res) => {
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除失败:', err)
-    return fail(res, err.message || '删除失败', 500)
+    return fail(res, err.message || '删除失败', ErrorCode.SYSTEM_ERROR)
   }
 }
 

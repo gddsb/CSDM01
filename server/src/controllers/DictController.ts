@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { DictType, DictData } from '../models/index.js'
-import { success, fail } from '../utils/response.js'
+import { success, fail, ErrorCode } from '../utils/response.js'
 
 export const listType = async (req, res) => {
   try {
@@ -26,7 +26,7 @@ export const listType = async (req, res) => {
     return success(res, rows, '查询成功', count)
   } catch (err) {
     console.error('查询字典类型失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -34,11 +34,11 @@ export const getType = async (req, res) => {
   try {
     const { id } = req.params
     const dict = await DictType.findOne({ where: { dict_id: id } })
-    if (!dict) return fail(res, '字典类型不存在', 404)
+    if (!dict) return fail(res, '字典类型不存在', ErrorCode.RECORD_NOT_FOUND)
     return success(res, dict, '查询成功')
   } catch (err) {
     console.error('查询字典类型失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -59,7 +59,7 @@ export const createType = async (req, res) => {
     return success(res, dict, '创建成功')
   } catch (err) {
     console.error('创建字典类型失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -68,7 +68,7 @@ export const updateType = async (req, res) => {
     const { id } = req.params
     const { dict_name, dict_type, status, remark } = req.body
     const dict = await DictType.findOne({ where: { dict_id: id } })
-    if (!dict) return fail(res, '字典类型不存在', 404)
+    if (!dict) return fail(res, '字典类型不存在', ErrorCode.RECORD_NOT_FOUND)
     if (dict_type && dict_type !== dict.dict_type) {
       const existing = await DictType.findOne({ where: { dict_type } })
       if (existing) return fail(res, '字典类型编码已存在')
@@ -81,7 +81,7 @@ export const updateType = async (req, res) => {
     return success(res, updated, '更新成功')
   } catch (err) {
     console.error('更新字典类型失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -89,13 +89,13 @@ export const removeType = async (req, res) => {
   try {
     const { id } = req.params
     const dict = await DictType.findOne({ where: { dict_id: id } })
-    if (!dict) return fail(res, '字典类型不存在', 404)
+    if (!dict) return fail(res, '字典类型不存在', ErrorCode.RECORD_NOT_FOUND)
     await DictData.destroy({ where: { dict_type: dict.dict_type } })
     await DictType.destroy({ where: { dict_id: id } })
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除字典类型失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -124,7 +124,7 @@ export const listData = async (req, res) => {
     return success(res, rows, '查询成功', count)
   } catch (err) {
     console.error('查询字典数据失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -138,7 +138,7 @@ export const listDataByType = async (req, res) => {
     return success(res, data, '查询成功')
   } catch (err) {
     console.error('查询字典数据失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -146,11 +146,11 @@ export const getData = async (req, res) => {
   try {
     const { code } = req.params
     const data = await DictData.findOne({ where: { dict_code: code } })
-    if (!data) return fail(res, '字典数据不存在', 404)
+    if (!data) return fail(res, '字典数据不存在', ErrorCode.RECORD_NOT_FOUND)
     return success(res, data, '查询成功')
   } catch (err) {
     console.error('查询字典数据失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -174,7 +174,7 @@ export const createData = async (req, res) => {
     return success(res, data, '创建成功')
   } catch (err) {
     console.error('创建字典数据失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -183,7 +183,7 @@ export const updateData = async (req, res) => {
     const { code } = req.params
     const { dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, remark } = req.body
     const data = await DictData.findOne({ where: { dict_code: code } })
-    if (!data) return fail(res, '字典数据不存在', 404)
+    if (!data) return fail(res, '字典数据不存在', ErrorCode.RECORD_NOT_FOUND)
     await DictData.update(
       {
         dict_sort,
@@ -202,7 +202,7 @@ export const updateData = async (req, res) => {
     return success(res, updated, '更新成功')
   } catch (err) {
     console.error('更新字典数据失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -210,11 +210,11 @@ export const removeData = async (req, res) => {
   try {
     const { code } = req.params
     const data = await DictData.findOne({ where: { dict_code: code } })
-    if (!data) return fail(res, '字典数据不存在', 404)
+    if (!data) return fail(res, '字典数据不存在', ErrorCode.RECORD_NOT_FOUND)
     await DictData.destroy({ where: { dict_code: code } })
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除字典数据失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }

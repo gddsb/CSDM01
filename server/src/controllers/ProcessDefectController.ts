@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { ProcessDefect, DefectType } from '../models/index.js'
-import { success, fail } from '../utils/response.js'
+import { success, fail, ErrorCode } from '../utils/response.js'
 
 // 列表查询（关联不良分类获取详情）
 export const list = async (req, res) => {
@@ -42,7 +42,7 @@ export const list = async (req, res) => {
     return success(res, data, '查询成功', count)
   } catch (err) {
     console.error('查询工序不良列表失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -87,7 +87,7 @@ export const scrapList = async (req, res) => {
     return success(res, data, '查询成功', count)
   } catch (err) {
     console.error('查询检验报废列表失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -128,7 +128,7 @@ export const scrapCreate = async (req, res) => {
     }, '创建成功')
   } catch (err) {
     console.error('创建检验报废记录失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -139,7 +139,7 @@ export const scrapUpdate = async (req, res) => {
     const { defect_type_id, quantity, unit, defect_images, defect_qty, defect_unit } = req.body
 
     const defect = await ProcessDefect.findOne({ where: { defect_id: id } })
-    if (!defect) return fail(res, '记录不存在', 404)
+    if (!defect) return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)
 
     const qty = defect_qty !== undefined ? defect_qty : quantity
     const u = defect_unit !== undefined ? defect_unit : unit
@@ -160,7 +160,7 @@ export const scrapUpdate = async (req, res) => {
     }, '更新成功')
   } catch (err) {
     console.error('更新检验报废记录失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -187,7 +187,7 @@ export const create = async (req, res) => {
     if (!qty || Number(qty) <= 0) return fail(res, '数量必须大于0')
 
     const defectType = await DefectType.findOne({ where: { defect_id: defect_type_id } })
-    if (!defectType) return fail(res, '不良类型不存在', 404)
+    if (!defectType) return fail(res, '不良类型不存在', ErrorCode.RECORD_NOT_FOUND)
 
     const defect = await ProcessDefect.create({
       report_order_id,
@@ -206,7 +206,7 @@ export const create = async (req, res) => {
     }, '创建成功')
   } catch (err) {
     console.error('创建工序不良记录失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -215,12 +215,12 @@ export const remove = async (req, res) => {
   try {
     const { id } = req.params
     const defect = await ProcessDefect.findOne({ where: { defect_id: id } })
-    if (!defect) return fail(res, '记录不存在', 404)
+    if (!defect) return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)
     await defect.destroy()
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除工序不良记录失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -260,7 +260,7 @@ export const batchSave = async (req, res) => {
     return success(res, { count: created.length, items: created }, '批量保存成功')
   } catch (err) {
     console.error('批量保存工序不良记录失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -271,7 +271,7 @@ export const update = async (req, res) => {
     const { defect_type_id, quantity, unit, defect_images, defect_qty, defect_unit } = req.body
 
     const defect = await ProcessDefect.findOne({ where: { defect_id: id } })
-    if (!defect) return fail(res, '记录不存在', 404)
+    if (!defect) return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)
 
     const qty = defect_qty !== undefined ? defect_qty : quantity
     const u = defect_unit !== undefined ? defect_unit : unit
@@ -299,7 +299,7 @@ export const update = async (req, res) => {
     }, '更新成功')
   } catch (err) {
     console.error('更新工序不良记录失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 

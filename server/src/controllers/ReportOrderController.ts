@@ -14,7 +14,7 @@ import {
   ProcessMaterial,
   ReportImage,
 } from '../models/index.js'
-import { success, fail } from '../utils/response.js'
+import { success, fail, ErrorCode } from '../utils/response.js'
 import { generateReportOrderNo } from '../utils/sequence.js'
 
 // 报工单状态: 0=开工, 1=完工
@@ -165,7 +165,7 @@ export const list = async (req, res) => {
     return success(res, rows, '查询成功', count)
   } catch (err) {
     console.error('查询报工单列表失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -186,11 +186,11 @@ export const detail = async (req, res) => {
         { model: ReportImage, as: 'report_images' },
       ],
     })
-    if (!reportOrder) return fail(res, '报工单不存在', 404)
+    if (!reportOrder) return fail(res, '报工单不存在', ErrorCode.RECORD_NOT_FOUND)
     return success(res, reportOrder, '查询成功')
   } catch (err) {
     console.error('查询报工单详情失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -203,7 +203,7 @@ export const create = async (req, res) => {
     if (!line_id) return fail(res, '产线 ID 不能为空')
 
     const order = await Order.findOne({ where: { order_id } })
-    if (!order) return fail(res, '订单不存在', 404)
+    if (!order) return fail(res, '订单不存在', ErrorCode.RECORD_NOT_FOUND)
 
     const orderStatus = order.getDataValue('status')
     if (orderStatus < 1) {
@@ -214,7 +214,7 @@ export const create = async (req, res) => {
     }
 
     const line = await ProductionLine.findOne({ where: { line_id } })
-    if (!line) return fail(res, '产线不存在', 404)
+    if (!line) return fail(res, '产线不存在', ErrorCode.RECORD_NOT_FOUND)
 
     const report_no = await generateReportOrderNo()
     const now = new Date()
@@ -268,7 +268,7 @@ export const create = async (req, res) => {
     return success(res, result, '创建成功')
   } catch (err) {
     console.error('创建报工单失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -277,7 +277,7 @@ export const update = async (req, res) => {
   try {
     const { id } = req.params
     const reportOrder = await ReportOrder.findOne({ where: { report_order_id: id } })
-    if (!reportOrder) return fail(res, '报工单不存在', 404)
+    if (!reportOrder) return fail(res, '报工单不存在', ErrorCode.RECORD_NOT_FOUND)
 
     if (reportOrder.getDataValue('status') !== 0) {
       return fail(res, '当前报工单状态不允许修改')
@@ -291,7 +291,7 @@ export const update = async (req, res) => {
     // 切换产线时重新继承工序
     if (line_id && line_id !== reportOrder.line_id) {
       const line = await ProductionLine.findOne({ where: { line_id } })
-      if (!line) return fail(res, '产线不存在', 404)
+      if (!line) return fail(res, '产线不存在', ErrorCode.RECORD_NOT_FOUND)
       updateData.line_id = line.line_id
       updateData.line_name = line.line_name
     }
@@ -305,7 +305,7 @@ export const update = async (req, res) => {
     return success(res, reportOrder, '修改成功')
   } catch (err) {
     console.error('修改报工单失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -314,7 +314,7 @@ export const remove = async (req, res) => {
   try {
     const { id } = req.params
     const reportOrder = await ReportOrder.findOne({ where: { report_order_id: id } })
-    if (!reportOrder) return fail(res, '报工单不存在', 404)
+    if (!reportOrder) return fail(res, '报工单不存在', ErrorCode.RECORD_NOT_FOUND)
 
     if (reportOrder.getDataValue('status') !== 0) {
       return fail(res, '只有开工状态的报工单可以删除')
@@ -342,7 +342,7 @@ export const remove = async (req, res) => {
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除报工单失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -352,7 +352,7 @@ export const finish = async (req, res) => {
   try {
     const { id } = req.params
     const reportOrder = await ReportOrder.findOne({ where: { report_order_id: id } })
-    if (!reportOrder) return fail(res, '报工单不存在', 404)
+    if (!reportOrder) return fail(res, '报工单不存在', ErrorCode.RECORD_NOT_FOUND)
     if (reportOrder.getDataValue('status') !== 0) {
       return fail(res, '当前报工单状态不允许完工')
     }
@@ -370,7 +370,7 @@ export const finish = async (req, res) => {
     return success(res, reportOrder, '报工单已完工')
   } catch (err) {
     console.error('完工报工单失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -385,7 +385,7 @@ export const getProcesses = async (req, res) => {
     return success(res, processes)
   } catch (err) {
     console.error('获取报工单工序失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 

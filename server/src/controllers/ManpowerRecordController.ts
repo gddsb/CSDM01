@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { ManpowerRecord, ReportOrder } from '../models/index.js'
-import { success, fail } from '../utils/response.js'
+import { success, fail, ErrorCode } from '../utils/response.js'
 
 const calcHours = (start, end) => {
   if (!start || !end) return 0
@@ -100,7 +100,7 @@ export const list = async (req, res) => {
     return success(res, rows, '查询成功', count)
   } catch (err) {
     console.error('查询人员记录列表失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -108,11 +108,11 @@ export const detail = async (req, res) => {
   try {
     const { id } = req.params
     const record = await ManpowerRecord.findOne({ where: { record_id: id } })
-    if (!record) return fail(res, '记录不存在', 404)
+    if (!record) return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)
     return success(res, record)
   } catch (err) {
     console.error('获取人员记录详情失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -122,7 +122,7 @@ export const create = async (req, res) => {
     if (!report_order_id) return fail(res, '报工单 ID 不能为空')
 
     const reportOrder = await ReportOrder.findOne({ where: { report_order_id } })
-    if (!reportOrder) return fail(res, '报工单不存在', 404)
+    if (!reportOrder) return fail(res, '报工单不存在', ErrorCode.RECORD_NOT_FOUND)
 
     // 每个报工单仅允许一条人员工时记录（开工时自动创建），禁止重复创建
     const existing = await ManpowerRecord.findOne({ where: { report_order_id } })
@@ -141,7 +141,7 @@ export const create = async (req, res) => {
     return success(res, record, '创建成功')
   } catch (err) {
     console.error('创建人员记录失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -149,14 +149,14 @@ export const update = async (req, res) => {
   try {
     const { id } = req.params
     const record = await ManpowerRecord.findOne({ where: { record_id: id } })
-    if (!record) return fail(res, '记录不存在', 404)
+    if (!record) return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)
 
     const data = await buildRecordData(req.body, record)
     await record.update(data)
     return success(res, record, '修改成功')
   } catch (err) {
     console.error('修改人员记录失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -164,13 +164,13 @@ export const remove = async (req, res) => {
   try {
     const { id } = req.params
     const record = await ManpowerRecord.findOne({ where: { record_id: id } })
-    if (!record) return fail(res, '记录不存在', 404)
+    if (!record) return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)
 
     await record.destroy()
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除人员记录失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -255,7 +255,7 @@ export const summaryByReportOrder = async (req, res) => {
     return success(res, summaryList, '查询成功', count)
   } catch (err) {
     console.error('查询人员记录汇总失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 

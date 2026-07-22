@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { Process } from '../models/index.js'
-import { success, fail } from '../utils/response.js'
+import { success, fail, ErrorCode } from '../utils/response.js'
 
 // 工序列表
 export const list = async (req, res) => {
@@ -31,7 +31,7 @@ export const list = async (req, res) => {
     return success(res, rows, '查询成功', count)
   } catch (err) {
     console.error('查询工序列表失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -40,11 +40,11 @@ export const detail = async (req, res) => {
   try {
     const { id } = req.params
     const process = await Process.findOne({ where: { process_id: id } })
-    if (!process) return fail(res, '工序不存在', 404)
+    if (!process) return fail(res, '工序不存在', ErrorCode.RECORD_NOT_FOUND)
     return success(res, process, '查询成功')
   } catch (err) {
     console.error('查询工序详情失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -61,7 +61,7 @@ export const create = async (req, res) => {
     return success(res, process, '创建成功')
   } catch (err) {
     console.error('创建工序失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -70,7 +70,7 @@ export const update = async (req, res) => {
   try {
     const { id } = req.params
     const process = await Process.findOne({ where: { process_id: id } })
-    if (!process) return fail(res, '工序不存在', 404)
+    if (!process) return fail(res, '工序不存在', ErrorCode.RECORD_NOT_FOUND)
     if (req.body.process_code && req.body.process_code !== process.process_code) {
       const exists = await Process.findOne({
         where: { process_code: req.body.process_code, process_id: { [Op.ne]: id } },
@@ -81,7 +81,7 @@ export const update = async (req, res) => {
     return success(res, process, '修改成功')
   } catch (err) {
     console.error('修改工序失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -90,12 +90,12 @@ export const remove = async (req, res) => {
   try {
     const { id } = req.params
     const process = await Process.findOne({ where: { process_id: id } })
-    if (!process) return fail(res, '工序不存在', 404)
+    if (!process) return fail(res, '工序不存在', ErrorCode.RECORD_NOT_FOUND)
     await process.destroy()
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除工序失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 

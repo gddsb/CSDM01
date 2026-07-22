@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { Role, User, Permission } from '../models/index.js'
-import { success, fail } from '../utils/response.js'
+import { success, fail, ErrorCode } from '../utils/response.js'
 
 // 角色列表
 export const list = async (req, res) => {
@@ -29,7 +29,7 @@ export const list = async (req, res) => {
     return success(res, rows, '查询成功', count)
   } catch (err) {
     console.error('查询角色列表失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -53,7 +53,7 @@ export const create = async (req, res) => {
     return success(res, role, '创建成功')
   } catch (err) {
     console.error('创建角色失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -62,7 +62,7 @@ export const update = async (req, res) => {
   try {
     const { id } = req.params
     const role = await Role.findOne({ where: { role_id: id } })
-    if (!role) return fail(res, '角色不存在', 404)
+    if (!role) return fail(res, '角色不存在', ErrorCode.RECORD_NOT_FOUND)
     const { role_name, role_code, type, scope, sort_order, status } = req.body
     if (role_code && role_code !== role.role_code) {
       const exists = await Role.findOne({ where: { role_code, role_id: { [Op.ne]: id } } })
@@ -72,7 +72,7 @@ export const update = async (req, res) => {
     return success(res, role, '修改成功')
   } catch (err) {
     console.error('修改角色失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -81,7 +81,7 @@ export const remove = async (req, res) => {
   try {
     const { id } = req.params
     const role = await Role.findOne({ where: { role_id: id } })
-    if (!role) return fail(res, '角色不存在', 404)
+    if (!role) return fail(res, '角色不存在', ErrorCode.RECORD_NOT_FOUND)
     // 检查是否有用户使用该角色
     const userCount = await User.count({ where: { role_id: id } })
     if (userCount > 0) return fail(res, `该角色下存在 ${userCount} 个用户，无法删除`)
@@ -89,7 +89,7 @@ export const remove = async (req, res) => {
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除角色失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -195,7 +195,7 @@ export const listPermissions = async (req, res) => {
     return success(res, permissions, '查询成功')
   } catch (err) {
     console.error('查询权限列表失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -207,12 +207,12 @@ export const getRolePermissions = async (req, res) => {
       where: { role_id: id },
       include: [{ model: Permission, as: 'permissions' }],
     })
-    if (!role) return fail(res, '角色不存在', 404)
+    if (!role) return fail(res, '角色不存在', ErrorCode.RECORD_NOT_FOUND)
     const permIds = role.permissions?.map(p => p.perm_id) || []
     return success(res, permIds, '查询成功')
   } catch (err) {
     console.error('获取角色权限失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -222,7 +222,7 @@ export const assignPermissions = async (req, res) => {
     const { id } = req.params
     const { perm_ids } = req.body
     const role = await Role.findOne({ where: { role_id: id } })
-    if (!role) return fail(res, '角色不存在', 404)
+    if (!role) return fail(res, '角色不存在', ErrorCode.RECORD_NOT_FOUND)
     
     if (perm_ids && Array.isArray(perm_ids)) {
       const permissions = await Permission.findAll({
@@ -236,7 +236,7 @@ export const assignPermissions = async (req, res) => {
     return success(res, null, '权限分配成功')
   } catch (err) {
     console.error('分配角色权限失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 

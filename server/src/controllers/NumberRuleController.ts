@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { NumberRule } from '../models/index.js'
-import { success, fail } from '../utils/response.js'
+import { success, fail, ErrorCode } from '../utils/response.js'
 import { previewBizNo, reloadRulesFromDB } from '../utils/sequence.js'
 
 // 受 SEQ_CONFIG 保护的系统内置规则编码（与 utils/sequence.js 一致）
@@ -51,7 +51,7 @@ export const list = async (req, res) => {
     return success(res, rows, '查询成功', count)
   } catch (err) {
     console.error('查询编号规则列表失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -60,11 +60,11 @@ export const detail = async (req, res) => {
   try {
     const { id } = req.params
     const rule = await NumberRule.findOne({ where: { rule_id: id } })
-    if (!rule) return fail(res, '编号规则不存在', 404)
+    if (!rule) return fail(res, '编号规则不存在', ErrorCode.RECORD_NOT_FOUND)
     return success(res, rule, '查询成功')
   } catch (err) {
     console.error('查询编号规则详情失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -94,7 +94,7 @@ export const create = async (req, res) => {
     return success(res, rule, '创建成功')
   } catch (err) {
     console.error('创建编号规则失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -103,7 +103,7 @@ export const update = async (req, res) => {
   try {
     const { id } = req.params
     const rule = await NumberRule.findOne({ where: { rule_id: id } })
-    if (!rule) return fail(res, '编号规则不存在', 404)
+    if (!rule) return fail(res, '编号规则不存在', ErrorCode.RECORD_NOT_FOUND)
     if (rule.is_locked === 1) {
       // 审核使用后只允许修改非核心字段（说明、关联表单字段、状态）
       const allowed = ['target_table', 'target_field', 'target_label', 'description']
@@ -112,7 +112,7 @@ export const update = async (req, res) => {
         if (req.body[k] !== undefined) safe[k] = req.body[k]
       })
       if (Object.keys(safe).length === 0) {
-        return fail(res, '编号规则已审核使用，核心配置不允许修改', 400)
+        return fail(res, '编号规则已审核使用，核心配置不允许修改', ErrorCode.PARAM_INVALID)
       }
       await rule.update(safe)
       return success(res, rule, '修改成功（核心配置已锁定）')
@@ -129,7 +129,7 @@ export const update = async (req, res) => {
     return success(res, rule, '修改成功')
   } catch (err) {
     console.error('修改编号规则失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -138,16 +138,16 @@ export const remove = async (req, res) => {
   try {
     const { id } = req.params
     const rule = await NumberRule.findOne({ where: { rule_id: id } })
-    if (!rule) return fail(res, '编号规则不存在', 404)
+    if (!rule) return fail(res, '编号规则不存在', ErrorCode.RECORD_NOT_FOUND)
     if (rule.is_locked === 1) {
-      return fail(res, '编号规则已审核使用，不允许删除，可改为停用', 400)
+      return fail(res, '编号规则已审核使用，不允许删除，可改为停用', ErrorCode.PARAM_INVALID)
     }
     await rule.destroy()
     await reloadRulesFromDB()
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除编号规则失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -156,7 +156,7 @@ export const toggle = async (req, res) => {
   try {
     const { id } = req.params
     const rule = await NumberRule.findOne({ where: { rule_id: id } })
-    if (!rule) return fail(res, '编号规则不存在', 404)
+    if (!rule) return fail(res, '编号规则不存在', ErrorCode.RECORD_NOT_FOUND)
     const next = rule.status === 1 ? 0 : 1
     if (next === 1) {
       // 启用操作：
@@ -184,7 +184,7 @@ export const toggle = async (req, res) => {
     return success(res, rule, next === 1 ? '已启用并审核' : '已停用')
   } catch (err) {
     console.error('切换编号规则状态失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -193,9 +193,9 @@ export const audit = async (req, res) => {
   try {
     const { id } = req.params
     const rule = await NumberRule.findOne({ where: { rule_id: id } })
-    if (!rule) return fail(res, '编号规则不存在', 404)
+    if (!rule) return fail(res, '编号规则不存在', ErrorCode.RECORD_NOT_FOUND)
     if (rule.is_locked === 1) {
-      return fail(res, '编号规则已审核使用，无需重复审核', 400)
+      return fail(res, '编号规则已审核使用，无需重复审核', ErrorCode.PARAM_INVALID)
     }
     await rule.update({ is_locked: 1 })
     // 锁定后立即同步到内存 SEQ_CONFIG
@@ -203,7 +203,7 @@ export const audit = async (req, res) => {
     return success(res, rule, '审核成功，规则已锁定使用')
   } catch (err) {
     console.error('审核编号规则失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -212,7 +212,7 @@ export const preview = async (req, res) => {
   try {
     const { id } = req.params
     const rule = await NumberRule.findOne({ where: { rule_id: id } })
-    if (!rule) return fail(res, '编号规则不存在', 404)
+    if (!rule) return fail(res, '编号规则不存在', ErrorCode.RECORD_NOT_FOUND)
     const nextSeq = (rule.used_count || 0) + 1
     const no = previewBizNo({
       prefix: rule.prefix,
@@ -223,7 +223,7 @@ export const preview = async (req, res) => {
     return success(res, { preview_no: no, next_seq: nextSeq }, '预览成功')
   } catch (err) {
     console.error('预览编号失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 

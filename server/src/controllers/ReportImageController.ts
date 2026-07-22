@@ -2,7 +2,7 @@ import path from 'path'
 import fs from 'fs'
 import crypto from 'crypto'
 import { ReportOrder, ReportImage } from '../models/index.js'
-import { success, fail } from '../utils/response.js'
+import { success, fail, ErrorCode } from '../utils/response.js'
 
 const UPLOAD_DIR = 'uploads/reports'
 
@@ -33,7 +33,7 @@ export const uploadImages = async (req, res) => {
 
     // 解析报工单
     const reportOrder = await ReportOrder.findOne({ where: { report_no } })
-    if (!reportOrder) return fail(res, '报工单不存在', 404)
+    if (!reportOrder) return fail(res, '报工单不存在', ErrorCode.RECORD_NOT_FOUND)
 
     const dir = ensureDir()
 
@@ -112,7 +112,7 @@ export const uploadImages = async (req, res) => {
     return success(res, uploaded, msg)
   } catch (err) {
     console.error('上传报工图片失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -131,7 +131,7 @@ export const list = async (req, res) => {
     return success(res, rows, '查询成功')
   } catch (err) {
     console.error('查询报工图片列表失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -140,7 +140,7 @@ export const remove = async (req, res) => {
   try {
     const { id } = req.params
     const image = await ReportImage.findOne({ where: { image_id: id } })
-    if (!image) return fail(res, '图片记录不存在', 404)
+    if (!image) return fail(res, '图片记录不存在', ErrorCode.RECORD_NOT_FOUND)
 
     // 删除文件
     try {
@@ -154,7 +154,7 @@ export const remove = async (req, res) => {
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除报工图片失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 

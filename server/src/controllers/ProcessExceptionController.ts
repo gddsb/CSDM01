@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { ProcessException, Device } from '../models/index.js'
-import { success, fail } from '../utils/response.js'
+import { success, fail, ErrorCode } from '../utils/response.js'
 
 export const list = async (req, res) => {
   try {
@@ -26,7 +26,7 @@ export const list = async (req, res) => {
     return success(res, data, '查询成功', count)
   } catch (err) {
     console.error('查询异常工时列表失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -93,7 +93,7 @@ export const create = async (req, res) => {
     return success(res, exception, '创建成功')
   } catch (err) {
     console.error('创建异常工时记录失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -101,7 +101,7 @@ export const update = async (req, res) => {
   try {
     const { id } = req.params
     const exception = await ProcessException.findOne({ where: { exception_id: id } })
-    if (!exception) return fail(res, '记录不存在', 404)
+    if (!exception) return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)
 
     const {
       exception_type,
@@ -166,7 +166,7 @@ export const update = async (req, res) => {
     return success(res, exception, '修改成功')
   } catch (err) {
     console.error('修改异常工时记录失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -174,12 +174,12 @@ export const remove = async (req, res) => {
   try {
     const { id } = req.params
     const exception = await ProcessException.findOne({ where: { exception_id: id } })
-    if (!exception) return fail(res, '记录不存在', 404)
+    if (!exception) return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)
     await exception.destroy()
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除异常工时记录失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 

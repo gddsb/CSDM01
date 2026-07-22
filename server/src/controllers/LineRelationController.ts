@@ -1,11 +1,11 @@
 import { LineProcess, LineDevice, Process, Device, ProductionLine } from '../models/index.js'
-import { success, fail } from '../utils/response.js'
+import { success, fail, ErrorCode } from '../utils/response.js'
 
 export const getLineProcesses = async (req, res) => {
   try {
     const { id } = req.params
     const line = await ProductionLine.findOne({ where: { line_id: id } })
-    if (!line) return fail(res, '产线不存在', 404)
+    if (!line) return fail(res, '产线不存在', ErrorCode.RECORD_NOT_FOUND)
 
     const lineProcesses = await LineProcess.findAll({
       where: { line_id: id, status: 1 },
@@ -34,7 +34,7 @@ export const getLineProcesses = async (req, res) => {
     return success(res, result, '查询成功')
   } catch (err) {
     console.error('查询产线工序关联失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -46,10 +46,10 @@ export const addLineProcess = async (req, res) => {
     if (!process_id) return fail(res, '工序ID不能为空')
 
     const line = await ProductionLine.findOne({ where: { line_id: id } })
-    if (!line) return fail(res, '产线不存在', 404)
+    if (!line) return fail(res, '产线不存在', ErrorCode.RECORD_NOT_FOUND)
 
     const process = await Process.findOne({ where: { process_id } })
-    if (!process) return fail(res, '工序不存在', 404)
+    if (!process) return fail(res, '工序不存在', ErrorCode.RECORD_NOT_FOUND)
 
     const exists = await LineProcess.findOne({ where: { line_id: id, process_id } })
     if (exists) {
@@ -71,7 +71,7 @@ export const addLineProcess = async (req, res) => {
     if (err.name === 'SequelizeUniqueConstraintError') {
       return fail(res, '该工序已关联到产线')
     }
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -80,13 +80,13 @@ export const removeLineProcess = async (req, res) => {
     const { id, processId } = req.params
 
     const lineProcess = await LineProcess.findOne({ where: { line_id: id, process_id: processId } })
-    if (!lineProcess) return fail(res, '关联不存在', 404)
+    if (!lineProcess) return fail(res, '关联不存在', ErrorCode.RECORD_NOT_FOUND)
 
     await lineProcess.destroy()
     return success(res, null, '移除成功')
   } catch (err) {
     console.error('移除产线工序关联失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -107,7 +107,7 @@ export const updateLineProcessSort = async (req, res) => {
     return success(res, null, '排序更新成功')
   } catch (err) {
     console.error('更新产线工序排序失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -115,7 +115,7 @@ export const getLineDevices = async (req, res) => {
   try {
     const { id } = req.params
     const line = await ProductionLine.findOne({ where: { line_id: id } })
-    if (!line) return fail(res, '产线不存在', 404)
+    if (!line) return fail(res, '产线不存在', ErrorCode.RECORD_NOT_FOUND)
 
     const lineDevices = await LineDevice.findAll({
       where: { line_id: id },
@@ -153,7 +153,7 @@ export const getLineDevices = async (req, res) => {
     return success(res, result, '查询成功')
   } catch (err) {
     console.error('查询产线设备关联失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -165,14 +165,14 @@ export const addLineDevice = async (req, res) => {
     if (!device_id) return fail(res, '设备ID不能为空')
 
     const line = await ProductionLine.findOne({ where: { line_id: id } })
-    if (!line) return fail(res, '产线不存在', 404)
+    if (!line) return fail(res, '产线不存在', ErrorCode.RECORD_NOT_FOUND)
 
     const device = await Device.findOne({ where: { device_id } })
-    if (!device) return fail(res, '设备不存在', 404)
+    if (!device) return fail(res, '设备不存在', ErrorCode.RECORD_NOT_FOUND)
 
     if (process_id) {
       const process = await Process.findOne({ where: { process_id } })
-      if (!process) return fail(res, '工序不存在', 404)
+      if (!process) return fail(res, '工序不存在', ErrorCode.RECORD_NOT_FOUND)
     }
 
     const exists = await LineDevice.findOne({
@@ -193,7 +193,7 @@ export const addLineDevice = async (req, res) => {
     if (err.name === 'SequelizeUniqueConstraintError') {
       return fail(res, '该设备已关联到产线')
     }
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -202,13 +202,13 @@ export const removeLineDevice = async (req, res) => {
     const { id, deviceId } = req.params
 
     const lineDevice = await LineDevice.findOne({ where: { line_id: id, device_id: deviceId } })
-    if (!lineDevice) return fail(res, '关联不存在', 404)
+    if (!lineDevice) return fail(res, '关联不存在', ErrorCode.RECORD_NOT_FOUND)
 
     await lineDevice.destroy()
     return success(res, null, '移除成功')
   } catch (err) {
     console.error('移除产线设备关联失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -229,7 +229,7 @@ export const updateLineDeviceSort = async (req, res) => {
     return success(res, null, '排序更新成功')
   } catch (err) {
     console.error('更新产线设备排序失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 

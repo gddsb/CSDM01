@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { Customer } from '../models/index.js'
-import { success, fail } from '../utils/response.js'
+import { success, fail, ErrorCode } from '../utils/response.js'
 
 // 客户档案列表
 export const list = async (req, res) => {
@@ -35,7 +35,7 @@ export const list = async (req, res) => {
     return success(res, rows, '查询成功', count)
   } catch (err) {
     console.error('查询客户档案列表失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -44,11 +44,11 @@ export const detail = async (req, res) => {
   try {
     const { id } = req.params
     const customer = await Customer.findOne({ where: { customer_id: id } })
-    if (!customer) return fail(res, '客户不存在', 404)
+    if (!customer) return fail(res, '客户不存在', ErrorCode.RECORD_NOT_FOUND)
     return success(res, customer, '查询成功')
   } catch (err) {
     console.error('查询客户详情失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -69,7 +69,7 @@ export const create = async (req, res) => {
     return success(res, customer, '创建成功')
   } catch (err) {
     console.error('创建客户失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -78,7 +78,7 @@ export const update = async (req, res) => {
   try {
     const { id } = req.params
     const customer = await Customer.findOne({ where: { customer_id: id } })
-    if (!customer) return fail(res, '客户不存在', 404)
+    if (!customer) return fail(res, '客户不存在', ErrorCode.RECORD_NOT_FOUND)
     if (req.body.customer_code && req.body.customer_code !== customer.customer_code) {
       const exists = await Customer.findOne({
         where: { customer_code: req.body.customer_code, customer_id: { [Op.ne]: id } },
@@ -96,7 +96,7 @@ export const update = async (req, res) => {
     return success(res, customer, '修改成功')
   } catch (err) {
     console.error('修改客户失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -105,12 +105,12 @@ export const remove = async (req, res) => {
   try {
     const { id } = req.params
     const customer = await Customer.findOne({ where: { customer_id: id } })
-    if (!customer) return fail(res, '客户不存在', 404)
+    if (!customer) return fail(res, '客户不存在', ErrorCode.RECORD_NOT_FOUND)
     await customer.destroy()
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除客户失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 

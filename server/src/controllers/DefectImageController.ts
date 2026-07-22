@@ -3,7 +3,7 @@ import fs from 'fs'
 import crypto from 'crypto'
 import { Op } from 'sequelize'
 import { DefectImage, DefectType } from '../models/index.js'
-import { success, fail } from '../utils/response.js'
+import { success, fail, ErrorCode } from '../utils/response.js'
 
 const computeFileHash = (filePath) => {
   return new Promise((resolve, reject) => {
@@ -26,7 +26,7 @@ export const listImages = async (req, res) => {
     return success(res, images, '查询成功')
   } catch (err) {
     console.error('查询不良图片列表失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -44,7 +44,7 @@ export const uploadImages = async (req, res) => {
     if (!defect) {
       // 清理临时文件
       files.forEach(f => { try { fs.unlinkSync(f.path) } catch {} })
-      return fail(res, '不良项不存在', 404)
+      return fail(res, '不良项不存在', ErrorCode.RECORD_NOT_FOUND)
     }
 
     // 检查已有图片数量
@@ -104,7 +104,7 @@ export const uploadImages = async (req, res) => {
     return success(res, created, `成功上传${created.length}张图片`)
   } catch (err) {
     console.error('上传不良图片失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -113,7 +113,7 @@ export const deleteImage = async (req, res) => {
   try {
     const { id, imageId } = req.params
     const image = await DefectImage.findOne({ where: { image_id: imageId, defect_id: id } })
-    if (!image) return fail(res, '图片不存在', 404)
+    if (!image) return fail(res, '图片不存在', ErrorCode.RECORD_NOT_FOUND)
 
     // 删除物理文件
     const filePath = path.resolve(process.cwd(), image.image_url.replace(/^\//, ''))
@@ -123,7 +123,7 @@ export const deleteImage = async (req, res) => {
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除不良图片失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 

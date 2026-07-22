@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { Material } from '../models/index.js'
-import { success, fail } from '../utils/response.js'
+import { success, fail, ErrorCode } from '../utils/response.js'
 
 export const list = async (req, res) => {
   try {
@@ -32,7 +32,7 @@ export const list = async (req, res) => {
     return success(res, rows, '查询成功', count)
   } catch (err) {
     console.error('查询料品列表失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -40,11 +40,11 @@ export const detail = async (req, res) => {
   try {
     const { id } = req.params
     const material = await Material.findOne({ where: { material_id: id } })
-    if (!material) return fail(res, '料品不存在', 404)
+    if (!material) return fail(res, '料品不存在', ErrorCode.RECORD_NOT_FOUND)
     return success(res, material, '查询成功')
   } catch (err) {
     console.error('查询料品详情失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -62,7 +62,7 @@ export const create = async (req, res) => {
     return success(res, material, '创建成功')
   } catch (err) {
     console.error('创建料品失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -70,7 +70,7 @@ export const update = async (req, res) => {
   try {
     const { id } = req.params
     const material = await Material.findOne({ where: { material_id: id } })
-    if (!material) return fail(res, '料品不存在', 404)
+    if (!material) return fail(res, '料品不存在', ErrorCode.RECORD_NOT_FOUND)
     if (req.body.material_code && req.body.material_code !== material.material_code) {
       const exists = await Material.findOne({
         where: { material_code: req.body.material_code, material_id: { [Op.ne]: id } },
@@ -84,7 +84,7 @@ export const update = async (req, res) => {
     return success(res, material, '修改成功')
   } catch (err) {
     console.error('修改料品失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -92,12 +92,12 @@ export const remove = async (req, res) => {
   try {
     const { id } = req.params
     const material = await Material.findOne({ where: { material_id: id } })
-    if (!material) return fail(res, '料品不存在', 404)
+    if (!material) return fail(res, '料品不存在', ErrorCode.RECORD_NOT_FOUND)
     await material.destroy()
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除料品失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 

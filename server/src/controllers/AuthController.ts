@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs'
 import { User, Role, OperationLog } from '../models/index.js'
-import { success, fail } from '../utils/response.js'
+import { success, fail, ErrorCode } from '../utils/response.js'
 import { generateToken } from '../utils/jwt.js'
 
 // 登录
@@ -28,7 +28,7 @@ export const login = async (req, res) => {
         ip,
         status: 0,
       }).catch(() => {})
-      return fail(res, '用户名不存在', 404)
+      return fail(res, '用户名不存在', ErrorCode.RECORD_NOT_FOUND)
     }
     const valid = await bcrypt.compare(password, user.password)
     if (!valid) {
@@ -79,7 +79,7 @@ export const login = async (req, res) => {
     return success(res, { user: userWithRole, token }, '登录成功')
   } catch (err) {
     console.error('登录失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -87,18 +87,18 @@ export const login = async (req, res) => {
 export const profile = async (req, res) => {
   try {
     const userId = req.user?.userId
-    if (!userId) return fail(res, '未登录', 401)
+    if (!userId) return fail(res, '未登录', ErrorCode.UNAUTHORIZED)
     const user = await User.findOne({
       where: { user_id: userId },
       include: [{ model: Role, as: 'role' }],
     })
-    if (!user) return fail(res, '用户不存在', 404)
+    if (!user) return fail(res, '用户不存在', ErrorCode.RECORD_NOT_FOUND)
     const userData = user.toJSON()
     delete userData.password
     return success(res, userData, '获取用户信息成功')
   } catch (err) {
     console.error('获取用户信息失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -108,7 +108,7 @@ export const logout = async (req, res) => {
     return success(res, null, '登出成功')
   } catch (err) {
     console.error('登出失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 

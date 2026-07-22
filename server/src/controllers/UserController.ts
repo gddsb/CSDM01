@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs'
 import { Op } from 'sequelize'
 import { User, Role } from '../models/index.js'
-import { success, fail } from '../utils/response.js'
+import { success, fail, ErrorCode } from '../utils/response.js'
 import path from 'path'
 import fs from 'fs'
 
@@ -40,7 +40,7 @@ export const list = async (req, res) => {
     return success(res, list, '查询成功', count)
   } catch (err) {
     console.error('查询用户列表失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -52,13 +52,13 @@ export const detail = async (req, res) => {
       where: { user_id: id },
       include: [{ model: Role, as: 'role' }],
     })
-    if (!user) return fail(res, '用户不存在', 404)
+    if (!user) return fail(res, '用户不存在', ErrorCode.RECORD_NOT_FOUND)
     const data = user.toJSON()
     delete data.password
     return success(res, data, '查询成功')
   } catch (err) {
     console.error('查询用户详情失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -89,7 +89,7 @@ export const create = async (req, res) => {
     return success(res, data, '创建成功')
   } catch (err) {
     console.error('创建用户失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -98,7 +98,7 @@ export const update = async (req, res) => {
   try {
     const { id } = req.params
     const user = await User.findOne({ where: { user_id: id } })
-    if (!user) return fail(res, '用户不存在', 404)
+    if (!user) return fail(res, '用户不存在', ErrorCode.RECORD_NOT_FOUND)
     const { username, password, real_name, employee_no, department, role_id, phone, email, status } = req.body
     const updateData = {
       real_name,
@@ -126,7 +126,7 @@ export const update = async (req, res) => {
     return success(res, data, '修改成功')
   } catch (err) {
     console.error('修改用户失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -135,12 +135,12 @@ export const remove = async (req, res) => {
   try {
     const { id } = req.params
     const user = await User.findOne({ where: { user_id: id } })
-    if (!user) return fail(res, '用户不存在', 404)
+    if (!user) return fail(res, '用户不存在', ErrorCode.RECORD_NOT_FOUND)
     await user.destroy()
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除用户失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -149,13 +149,13 @@ export const toggle = async (req, res) => {
   try {
     const { id } = req.params
     const user = await User.findOne({ where: { user_id: id } })
-    if (!user) return fail(res, '用户不存在', 404)
+    if (!user) return fail(res, '用户不存在', ErrorCode.RECORD_NOT_FOUND)
     const newStatus = user.status === '启用' ? '禁用' : '启用'
     await user.update({ status: newStatus })
     return success(res, { user_id: user.user_id, status: newStatus }, newStatus === '启用' ? '已启用' : '已禁用')
   } catch (err) {
     console.error('切换用户状态失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -163,7 +163,7 @@ export const toggle = async (req, res) => {
 export const uploadMyAvatar = async (req, res) => {
   try {
     const userId = req.user?.userId
-    if (!userId) return fail(res, '未登录', 401)
+    if (!userId) return fail(res, '未登录', ErrorCode.UNAUTHORIZED)
     const file = req.file
     if (!file) return fail(res, '请选择要上传的头像图片')
     // 限制 2MB
@@ -189,7 +189,7 @@ export const uploadMyAvatar = async (req, res) => {
     const avatarUrl = `/uploads/avatars/${filename}`
     // 更新用户头像
     const user = await User.findOne({ where: { user_id: userId } })
-    if (!user) return fail(res, '用户不存在', 404)
+    if (!user) return fail(res, '用户不存在', ErrorCode.RECORD_NOT_FOUND)
     // 删除旧的自定义头像文件（如果是上传类型）
     if (user.avatar_url && user.avatar_url.startsWith('/uploads/avatars/')) {
       const oldPath = path.resolve(process.cwd(), user.avatar_url.replace(/^\//, ''))
@@ -201,7 +201,7 @@ export const uploadMyAvatar = async (req, res) => {
     return success(res, { avatar_url: avatarUrl, user: data }, '头像上传成功')
   } catch (err) {
     console.error('上传头像失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -209,7 +209,7 @@ export const uploadMyAvatar = async (req, res) => {
 export const setMyAvatar = async (req, res) => {
   try {
     const userId = req.user?.userId
-    if (!userId) return fail(res, '未登录', 401)
+    if (!userId) return fail(res, '未登录', ErrorCode.UNAUTHORIZED)
     const { avatar_url } = req.body
     if (!avatar_url || typeof avatar_url !== 'string') {
       return fail(res, '头像地址不能为空')
@@ -221,7 +221,7 @@ export const setMyAvatar = async (req, res) => {
       return fail(res, '头像地址不合法')
     }
     const user = await User.findOne({ where: { user_id: userId } })
-    if (!user) return fail(res, '用户不存在', 404)
+    if (!user) return fail(res, '用户不存在', ErrorCode.RECORD_NOT_FOUND)
     // 如果旧头像是上传的自定义头像，且新头像不同，则删除旧文件
     if (
       user.avatar_url &&
@@ -237,7 +237,7 @@ export const setMyAvatar = async (req, res) => {
     return success(res, { avatar_url, user: data }, '头像设置成功')
   } catch (err) {
     console.error('设置头像失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -245,10 +245,10 @@ export const setMyAvatar = async (req, res) => {
 export const updateMyProfile = async (req, res) => {
   try {
     const userId = req.user?.userId
-    if (!userId) return fail(res, '未登录', 401)
+    if (!userId) return fail(res, '未登录', ErrorCode.UNAUTHORIZED)
     const { real_name, phone, email } = req.body
     const user = await User.findOne({ where: { user_id: userId } })
-    if (!user) return fail(res, '用户不存在', 404)
+    if (!user) return fail(res, '用户不存在', ErrorCode.RECORD_NOT_FOUND)
     const updateData = {}
     if (real_name !== undefined) updateData.real_name = real_name
     if (phone !== undefined) updateData.phone = phone
@@ -259,7 +259,7 @@ export const updateMyProfile = async (req, res) => {
     return success(res, data, '个人信息已更新')
   } catch (err) {
     console.error('更新个人信息失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 

@@ -2,7 +2,7 @@ import { Op } from 'sequelize'
 import path from 'path'
 import fs from 'fs'
 import { DefectType, DefectImage } from '../models/index.js'
-import { success, fail } from '../utils/response.js'
+import { success, fail, ErrorCode } from '../utils/response.js'
 
 // 不良分类列表
 export const list = async (req, res) => {
@@ -46,7 +46,7 @@ export const list = async (req, res) => {
     return success(res, rows, '查询成功', count)
   } catch (err) {
     console.error('查询不良分类列表失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -55,11 +55,11 @@ export const detail = async (req, res) => {
   try {
     const { id } = req.params
     const defect = await DefectType.findOne({ where: { defect_id: id } })
-    if (!defect) return fail(res, '不良分类不存在', 404)
+    if (!defect) return fail(res, '不良分类不存在', ErrorCode.RECORD_NOT_FOUND)
     return success(res, defect, '查询成功')
   } catch (err) {
     console.error('查询不良分类详情失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -112,7 +112,7 @@ export const create = async (req, res) => {
     return success(res, defect, '创建成功')
   } catch (err) {
     console.error('创建不良分类失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -121,7 +121,7 @@ export const update = async (req, res) => {
   try {
     const { id } = req.params
     const defect = await DefectType.findOne({ where: { defect_id: id } })
-    if (!defect) return fail(res, '不良分类不存在', 404)
+    if (!defect) return fail(res, '不良分类不存在', ErrorCode.RECORD_NOT_FOUND)
     if (req.body.defect_code && req.body.defect_code !== defect.defect_code) {
       const exists = await DefectType.findOne({
         where: { defect_code: req.body.defect_code, defect_id: { [Op.ne]: id } },
@@ -132,7 +132,7 @@ export const update = async (req, res) => {
     return success(res, defect, '修改成功')
   } catch (err) {
     console.error('修改不良分类失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -141,7 +141,7 @@ export const remove = async (req, res) => {
   try {
     const { id } = req.params
     const defect = await DefectType.findOne({ where: { defect_id: id } })
-    if (!defect) return fail(res, '不良分类不存在', 404)
+    if (!defect) return fail(res, '不良分类不存在', ErrorCode.RECORD_NOT_FOUND)
 
     // 级联删除关联图片
     const images = await DefectImage.findAll({ where: { defect_id: id } })
@@ -157,7 +157,7 @@ export const remove = async (req, res) => {
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除不良分类失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -193,7 +193,7 @@ export const nextCode = async (req, res) => {
     return success(res, { defect_code: code }, '查询成功')
   } catch (err) {
     console.error('生成不良编码失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 

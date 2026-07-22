@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { Permission, Role, User } from '../models/index.js'
-import { success, fail } from '../utils/response.js'
+import { success, fail, ErrorCode } from '../utils/response.js'
 
 // 菜单/权限列表（树形结构）
 export const list = async (req, res) => {
@@ -36,7 +36,7 @@ export const list = async (req, res) => {
     return success(res, tree, '查询成功', rows.length)
   } catch (err) {
     console.error('查询权限列表失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -45,11 +45,11 @@ export const detail = async (req, res) => {
   try {
     const { id } = req.params
     const perm = await Permission.findOne({ where: { perm_id: id } })
-    if (!perm) return fail(res, '菜单/权限不存在', 404)
+    if (!perm) return fail(res, '菜单/权限不存在', ErrorCode.RECORD_NOT_FOUND)
     return success(res, perm, '查询成功')
   } catch (err) {
     console.error('查询权限详情失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -73,7 +73,7 @@ export const create = async (req, res) => {
     return success(res, perm, '创建成功')
   } catch (err) {
     console.error('创建权限失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -82,7 +82,7 @@ export const update = async (req, res) => {
   try {
     const { id } = req.params
     const perm = await Permission.findOne({ where: { perm_id: id } })
-    if (!perm) return fail(res, '菜单/权限不存在', 404)
+    if (!perm) return fail(res, '菜单/权限不存在', ErrorCode.RECORD_NOT_FOUND)
     if (req.body.perm_code && req.body.perm_code !== perm.perm_code) {
       const exists = await Permission.findOne({
         where: { perm_code: req.body.perm_code, perm_id: { [Op.ne]: id } },
@@ -100,7 +100,7 @@ export const update = async (req, res) => {
     return success(res, perm, '修改成功')
   } catch (err) {
     console.error('修改权限失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -109,7 +109,7 @@ export const remove = async (req, res) => {
   try {
     const { id } = req.params
     const perm = await Permission.findOne({ where: { perm_id: id } })
-    if (!perm) return fail(res, '菜单/权限不存在', 404)
+    if (!perm) return fail(res, '菜单/权限不存在', ErrorCode.RECORD_NOT_FOUND)
     // 检查是否有子节点
     const childCount = await Permission.count({ where: { parent_id: id } })
     if (childCount > 0) return fail(res, `存在 ${childCount} 个子菜单，无法删除`)
@@ -117,7 +117,7 @@ export const remove = async (req, res) => {
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除权限失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -194,7 +194,7 @@ export const userMenu = async (req, res) => {
     return success(res, tree, '查询成功')
   } catch (err) {
     console.error('查询用户菜单失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 

@@ -1,5 +1,5 @@
 import { SystemConfig, DataDictionary } from '../models/index.js'
-import { success, fail } from '../utils/response.js'
+import { success, fail, ErrorCode } from '../utils/response.js'
 import sequelize from '../config/database.js'
 import { Sequelize, Op } from 'sequelize'
 import fs from 'fs'
@@ -46,7 +46,7 @@ export const getConfig = async (req, res) => {
     return success(res, result, '获取成功')
   } catch (err) {
     console.error('获取系统配置失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -70,7 +70,7 @@ export const saveConfig = async (req, res) => {
     return success(res, null, '保存成功')
   } catch (err) {
     console.error('保存系统配置失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -281,7 +281,7 @@ export const getEnvironment = async (req, res) => {
     return success(res, info, '获取成功')
   } catch (err) {
     console.error('获取项目环境失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -319,7 +319,7 @@ export const restartServer = async (req, res) => {
     }, restartDelay)
   } catch (err) {
     console.error('重启服务失败:', err)
-    return fail(res, '重启服务失败', 500)
+    return fail(res, '重启服务失败', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -876,7 +876,7 @@ export const getDatabaseInfo = async (req, res) => {
     return success(res, info, '获取成功')
   } catch (err) {
     console.error('获取数据库配置失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -908,7 +908,7 @@ export const listBackups = async (req, res) => {
     return success(res, backups, '获取成功')
   } catch (err) {
     console.error('列出备份失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -917,10 +917,10 @@ export const createBackup = async (req, res) => {
   try {
     const dialect = process.env.DB_DIALECT || 'sqlite'
     if (dialect !== 'sqlite') {
-      return fail(res, '当前数据库类型暂不支持界面备份，请使用数据库管理工具进行备份', 400)
+      return fail(res, '当前数据库类型暂不支持界面备份，请使用数据库管理工具进行备份', ErrorCode.PARAM_INVALID)
     }
     if (!fs.existsSync(SQLITE_PATH)) {
-      return fail(res, '数据库文件不存在', 404)
+      return fail(res, '数据库文件不存在', ErrorCode.RECORD_NOT_FOUND)
     }
     if (!fs.existsSync(BACKUP_DIR)) {
       fs.mkdirSync(BACKUP_DIR, { recursive: true })
@@ -934,7 +934,7 @@ export const createBackup = async (req, res) => {
     return success(res, { filename, size: stat.size, created_at: stat.mtime.toISOString() }, '备份成功')
   } catch (err) {
     console.error('创建备份失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -943,20 +943,20 @@ export const restoreBackup = async (req, res) => {
   try {
     const dialect = process.env.DB_DIALECT || 'sqlite'
     if (dialect !== 'sqlite') {
-      return fail(res, '当前数据库类型暂不支持界面还原，请使用数据库管理工具进行还原', 400)
+      return fail(res, '当前数据库类型暂不支持界面还原，请使用数据库管理工具进行还原', ErrorCode.PARAM_INVALID)
     }
     const { filename } = req.body
-    if (!filename) return fail(res, '请选择备份文件', 400)
+    if (!filename) return fail(res, '请选择备份文件', ErrorCode.PARAM_INVALID)
     // 防止路径穿越
     const safe = path.basename(filename)
     const source = path.join(BACKUP_DIR, safe)
-    if (!fs.existsSync(source)) return fail(res, '备份文件不存在', 404)
+    if (!fs.existsSync(source)) return fail(res, '备份文件不存在', ErrorCode.RECORD_NOT_FOUND)
     // 关闭当前连接后再还原
     fs.copyFileSync(source, SQLITE_PATH)
     return success(res, null, '还原成功，建议重启服务以使连接生效')
   } catch (err) {
     console.error('还原备份失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -966,12 +966,12 @@ export const deleteBackup = async (req, res) => {
     const { filename } = req.params
     const safe = path.basename(filename)
     const target = path.join(BACKUP_DIR, safe)
-    if (!fs.existsSync(target)) return fail(res, '备份文件不存在', 404)
+    if (!fs.existsSync(target)) return fail(res, '备份文件不存在', ErrorCode.RECORD_NOT_FOUND)
     fs.unlinkSync(target)
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除备份失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -1037,7 +1037,7 @@ export const getMigrationTargets = async (req, res) => {
     return success(res, { current: currentDialect, targets: list }, '获取成功')
   } catch (err) {
     console.error('获取迁移目标失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -1078,7 +1078,7 @@ export const migrateDatabase = async (req, res) => {
     const target = (req.body?.target || '').toLowerCase()
     const validTargets = ['sqlite', 'mysql', 'postgres', 'mariadb']
     if (!validTargets.includes(target)) {
-      return fail(res, '不支持的迁移目标数据库类型', 400)
+      return fail(res, '不支持的迁移目标数据库类型', ErrorCode.PARAM_INVALID)
     }
     // 1. 迁移前自动备份当前数据（仅 SQLite 支持界面备份）
     const currentDialect = process.env.DB_DIALECT || 'sqlite'
@@ -1136,7 +1136,7 @@ export const migrateDatabase = async (req, res) => {
       }
       await targetSequelize.authenticate()
     } catch (e) {
-      return fail(res, `目标数据库连接失败：${e.message}`, 400)
+      return fail(res, `目标数据库连接失败：${e.message}`, ErrorCode.PARAM_INVALID)
     }
 
     // 3. 复制数据：从当前 sequelize 读取所有表数据，写入目标 sequelize
@@ -1179,7 +1179,7 @@ export const migrateDatabase = async (req, res) => {
       }
     } catch (e) {
       try { await targetSequelize.close() } catch (closeErr) {}
-      return fail(res, `数据迁移失败：${e.message}`, 500)
+      return fail(res, `数据迁移失败：${e.message}`, ErrorCode.SYSTEM_ERROR)
     }
 
     // 4. 关闭目标连接
@@ -1208,7 +1208,7 @@ export const migrateDatabase = async (req, res) => {
     }, `数据迁移成功，共迁移 ${result.total_rows} 行数据`)
   } catch (err) {
     console.error('数据库迁移失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -1245,7 +1245,7 @@ export const refreshDataDictionary = async (req, res) => {
     return success(res, result, `数据字典更新成功，共 ${result.total} 张表`)
   } catch (err) {
     console.error('刷新数据字典失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -1289,7 +1289,7 @@ export const listDataDictionary = async (req, res) => {
     return success(res, { list: rows, total: count }, '获取成功')
   } catch (err) {
     console.error('查询数据字典失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -1322,7 +1322,7 @@ export const listTableRecords = async (req, res) => {
     return success(res, { list: rows, total, fields }, '获取成功')
   } catch (err) {
     console.error('查询表记录失败:', err)
-    return fail(res, '服务器错误', 500)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
