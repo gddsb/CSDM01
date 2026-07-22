@@ -1,6 +1,36 @@
 import { Op } from 'sequelize'
-import { ProcessDefect, DefectType } from '../models/index.js'
+import sequelize from '../config/database.js'
+import { ProcessDefect, DefectType, ReportProcess, ReportOrder } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
+import { logger } from '../utils/logger.js'
+
+async function validateProcessBelongsToReportOrder(reportOrderId: number, processId: number): Promise<boolean> {
+  const exists = await ReportProcess.findOne({
+    where: { report_order_id: reportOrderId, process_id: processId },
+  })
+  return !!exists
+}
+
+async function getReportOutputQty(reportOrderId: number): Promise<number> {
+  const order = await ReportOrder.findOne({
+    where: { report_order_id: reportOrderId },
+    attributes: ['report_qty'],
+  })
+  return Number(order?.getDataValue('report_qty') || 0)
+}
+
+async function sumDefectQty(reportOrderId: number, processId: number, excludeDefectId?: number): Promise<number> {
+  const where: any = { report_order_id: reportOrderId, process_id: processId }
+  if (excludeDefectId !== undefined) {
+    where.defect_id = { [Op.ne]: excludeDefectId }
+  }
+  const rows = await ProcessDefect.findAll({
+    where,
+    attributes: [[sequelize.fn('SUM', sequelize.col('quantity')), 'total_qty']],
+    raw: true,
+  })
+  return Number(rows[0]?.total_qty || 0)
+}
 
 // 列表查询（关联不良分类获取详情）
 export const list = async (req, res) => {
@@ -181,10 +211,21 @@ export const create = async (req, res) => {
     const qty = defect_qty !== undefined ? defect_qty : quantity
     const u = defect_unit !== undefined ? defect_unit : unit
 
-    if (!report_order_id) return fail(res, '报工单 ID 不能为空')
-    if (!process_id) return fail(res, '工序 ID 不能为空')
-    if (!defect_type_id) return fail(res, '不良类型 ID 不能为空')
-    if (!qty || Number(qty) <= 0) return fail(res, '数量必须大于0')
+    if (!report_order_id) return fail(res, '报工单 ID 不能为空', ErrorCode.PARAM_INVALID)
+    if (!process_id) return fail(res, '工序 ID 不能为空', ErrorCode.PARAM_INVALID)
+    if (!defect_type_id) return fail(res, '不良类型 ID 不能为空', ErrorCode.PARAM_INVALID)
+    if (!qty || Number(qty) <= 0) return fail(res, '数量必须大于0', ErrorCode.PARAM_INVALID)
+
+    const valid = await validateProcessBelongsToReportOrder(Number(report_order_id), Number(process_id))
+    if (!valid) return fail(res, '该工序不属于当前报工单', ErrorCode.BUSINESS_ERROR)
+
+    const outputQty = await getReportOutputQty(Number(report_order_id))
+    if (outputQty > 0) {
+      const existingDefectQty = await sumDefectQty(Number(report_order_id), Number(process_id))
+      if (existingDefectQty + Number(qty) > outputQty) {
+        return fail(res, `不良数量超出该工序报工产出（已记录不良${existingDefectQty}，报工产出${outputQty}）`, ErrorCode.BUSINESS_ERROR)
+      }
+    }
 
     const defectType = await DefectType.findOne({ where: { defect_id: defect_type_id } })
     if (!defectType) return fail(res, '不良类型不存在', ErrorCode.RECORD_NOT_FOUND)
@@ -205,7 +246,7 @@ export const create = async (req, res) => {
       images: defect.defect_images ? JSON.parse(defect.defect_images) : [],
     }, '创建成功')
   } catch (err) {
-    console.error('创建工序不良记录失败:', err)
+    logger.error('[ProcessDefect.create] 创建工序不良记录失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
@@ -228,38 +269,49 @@ export const remove = async (req, res) => {
 export const batchSave = async (req, res) => {
   try {
     const { report_order_id, process_id, items } = req.body
-    if (!report_order_id) return fail(res, '报工单 ID 不能为空')
-    if (!process_id) return fail(res, '工序 ID 不能为空')
-    if (!Array.isArray(items)) return fail(res, '不良项目数据格式错误')
+    if (!report_order_id) return fail(res, '报工单 ID 不能为空', ErrorCode.PARAM_INVALID)
+    if (!process_id) return fail(res, '工序 ID 不能为空', ErrorCode.PARAM_INVALID)
+    if (!Array.isArray(items)) return fail(res, '不良项目数据格式错误', ErrorCode.PARAM_INVALID)
 
-    // 过滤有效项目
+    const valid = await validateProcessBelongsToReportOrder(Number(report_order_id), Number(process_id))
+    if (!valid) return fail(res, '该工序不属于当前报工单', ErrorCode.BUSINESS_ERROR)
+
     const validItems = items.filter(item => item.defect_type_id && Number(item.quantity) > 0)
 
-    // 先删除该报工单工序下的原有记录
-    await ProcessDefect.destroy({
-      where: { report_order_id, process_id },
-    })
-
-    // 批量创建
-    const created = []
-    for (const item of validItems) {
-      // 获取不良分类信息以确定单位
-      const defectType = await DefectType.findOne({ where: { defect_id: item.defect_type_id } })
-
-      const defect = await ProcessDefect.create({
-        report_order_id,
-        process_id,
-        defect_type_id: item.defect_type_id,
-        quantity: Number(item.quantity),
-        unit: item.unit || (defectType?.defect_unit || ''),
-        defect_images: item.defect_images ? JSON.stringify(item.defect_images) : null,
-      })
-      created.push(defect)
+    const outputQty = await getReportOutputQty(Number(report_order_id))
+    if (outputQty > 0) {
+      const newTotalDefectQty = validItems.reduce((sum, item) => sum + Number(item.quantity), 0)
+      if (newTotalDefectQty > outputQty) {
+        return fail(res, `不良数量超出该工序报工产出（合计不良${newTotalDefectQty}，报工产出${outputQty}）`, ErrorCode.BUSINESS_ERROR)
+      }
     }
 
-    return success(res, { count: created.length, items: created }, '批量保存成功')
+    const result = await sequelize.transaction(async (t) => {
+      await ProcessDefect.destroy({
+        where: { report_order_id, process_id },
+        transaction: t,
+      })
+
+      const created = []
+      for (const item of validItems) {
+        const defectType = await DefectType.findOne({ where: { defect_id: item.defect_type_id } })
+
+        const defect = await ProcessDefect.create({
+          report_order_id,
+          process_id,
+          defect_type_id: item.defect_type_id,
+          quantity: Number(item.quantity),
+          unit: item.unit || (defectType?.defect_unit || ''),
+          defect_images: item.defect_images ? JSON.stringify(item.defect_images) : null,
+        }, { transaction: t })
+        created.push(defect)
+      }
+      return created
+    })
+
+    return success(res, { count: result.length, items: result }, '批量保存成功')
   } catch (err) {
-    console.error('批量保存工序不良记录失败:', err)
+    logger.error('[ProcessDefect.batchSave] 批量保存工序不良记录失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
