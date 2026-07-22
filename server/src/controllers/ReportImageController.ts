@@ -19,24 +19,9 @@ const getFileMd5 = (filePath) => {
   return hashSum.digest('hex')
 }
 
-const getExistingFileMap = (dir) => {
-  const map = new Map()
-  if (!fs.existsSync(dir)) return map
-  const files = fs.readdirSync(dir)
-  for (const f of files) {
-    const filePath = path.join(dir, f)
-    try {
-      const md5 = getFileMd5(filePath)
-      map.set(md5, f)
-    } catch (e) {
-      // skip
-    }
-  }
-  return map
-}
-
 // 上传报工图片（同时持久化到 production_report_image 表）
 // category: defect=不良, label=标签, exception=异常
+// MD5去重只针对当前报工单已上传的图片，不对历史上传去重
 export const uploadImages = async (req, res) => {
   try {
     const { report_no, category } = req.params
@@ -54,15 +39,23 @@ export const uploadImages = async (req, res) => {
 
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '')
     const prefix = report_no + '-' + dateStr + '-'
-    const existingFiles = fs.readdirSync(dir).filter(f => f.startsWith(prefix))
-    const existingMap = getExistingFileMap(dir)
 
-    // 从数据库查当日同前缀的最大流水号（通过 report_order_id 查询）
+    // 从数据库查当前报工单的所有图片记录，用于MD5去重和流水号计算
     const dbRecords = await ReportImage.findAll({
       where: { report_order_id: reportOrder.report_order_id },
       raw: true,
       order: [['created_at', 'DESC']],
     })
+
+    // 构建当前报工单已上传图片的MD5映射（只对当前工单去重，不对历史上传去重）
+    const existingMap = new Map()
+    dbRecords.forEach(r => {
+      if (r.file_hash) {
+        existingMap.set(r.file_hash, path.basename(r.image_url || ''))
+      }
+    })
+
+    // 计算当前报工单当日最大流水号
     let maxSeq = 0
     dbRecords.forEach(r => {
       const fname = path.basename(r.image_url || '', path.extname(r.image_url || ''))
