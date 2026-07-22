@@ -11,7 +11,7 @@
  * 另外提供 dropObsoleteTables 清理废弃表（生产业务重构后遗留的工单/报工表）
  */
 import sequelize from './config/database.js'
-import { logger } from '../utils/logger.js'
+import { logger } from './utils/logger.js'
 
 
 // 各模型需要保证存在的列（仅列出新增/补齐的列，避免对类型变更产生影响）
