@@ -271,3 +271,13 @@
   flex: 0 0 auto;
   width: 9em;
 }
+
+.rd-material-same-row .rd-form-item-pkg {
+  flex: 0 0 auto;
+  width: 3.5em;
+}
+
+.rd-material-same-row .rd-form-item-qty-wide {
+  flex: 1.5;
+  min-width: 60px;
+}

@@ -567,11 +567,23 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
                 </div>
                 <div className="rd-form-item rd-form-item-unit">
                   <label className="rd-form-label">单位</label>
-                  <input
+                  <select
                     className="rd-form-input"
                     value={record.defect_unit || ''}
                     onChange={(e) => handleChangeDefect(record.id, 'defect_unit', e.target.value)}
-                  />
+                  >
+                    <option value="">请选择</option>
+                    <option value="个">个</option>
+                    <option value="件">件</option>
+                    <option value="只">只</option>
+                    <option value="根">根</option>
+                    <option value="片">片</option>
+                    <option value="套">套</option>
+                    <option value="台">台</option>
+                    <option value="批">批</option>
+                    <option value="kg">kg</option>
+                    <option value="g">g</option>
+                  </select>
                 </div>
               </div>
               {(record.images || []).length > 0 && (
@@ -826,7 +838,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
                     onChange={(e) => handleChangeMaterial(record.id, 'material_batch', e.target.value)}
                   />
                 </div>
-                <div className="rd-form-item">
+                <div className="rd-form-item rd-form-item-pkg">
                   <label className="rd-form-label">包号</label>
                   <input
                     className="rd-form-input"
@@ -834,7 +846,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
                     onChange={(e) => handleChangeMaterial(record.id, 'package_no', e.target.value)}
                   />
                 </div>
-                <div className="rd-form-item rd-form-item-qty">
+                <div className="rd-form-item rd-form-item-qty-wide">
                   <label className="rd-form-label">数量</label>
                   <input
                     type="number"
@@ -1026,11 +1038,23 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId 
                 </div>
                 <div className="rd-form-item">
                   <label className="rd-form-label">单位</label>
-                  <input
+                  <select
                     className="rd-form-input"
                     value={record.defect_unit || ''}
                     onChange={(e) => handleChange(record.id, 'defect_unit', e.target.value)}
-                  />
+                  >
+                    <option value="">请选择</option>
+                    <option value="个">个</option>
+                    <option value="件">件</option>
+                    <option value="只">只</option>
+                    <option value="根">根</option>
+                    <option value="片">片</option>
+                    <option value="套">套</option>
+                    <option value="台">台</option>
+                    <option value="批">批</option>
+                    <option value="kg">kg</option>
+                    <option value="g">g</option>
+                  </select>
                 </div>
               </div>
             </div>
