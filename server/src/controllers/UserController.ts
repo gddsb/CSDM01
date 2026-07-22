@@ -6,6 +6,21 @@ import path from 'path'
 import fs from 'fs'
 import { logger } from '../utils/logger.js'
 
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+const PHONE_REGEX = /^1[3-9]\d{9}$|^0\d{2,3}-?\d{7,8}$/
+
+function validateEmail(email): { valid: boolean; message?: string } {
+  if (email === undefined || email === null || email === '') return { valid: true }
+  if (!EMAIL_REGEX.test(email)) return { valid: false, message: '邮箱格式不正确' }
+  return { valid: true }
+}
+
+function validatePhone(phone): { valid: boolean; message?: string } {
+  if (phone === undefined || phone === null || phone === '') return { valid: true }
+  if (!PHONE_REGEX.test(phone)) return { valid: false, message: '手机号格式不正确' }
+  return { valid: true }
+}
+
 
 // 用户列表（支持 keyword/status/role_id 筛选）
 export const list = async (req, res) => {
@@ -69,10 +84,17 @@ export const create = async (req, res) => {
   try {
     const { username, password, real_name, employee_no, department, role_id, phone, email, status } = req.body
     if (!username || !password || !real_name) {
-      return fail(res, '用户名、密码和真实姓名不能为空')
+      return fail(res, '用户名、密码和真实姓名不能为空', ErrorCode.PARAM_INVALID)
     }
+
+    const emailCheck = validateEmail(email)
+    if (!emailCheck.valid) return fail(res, emailCheck.message!, ErrorCode.PARAM_INVALID)
+
+    const phoneCheck = validatePhone(phone)
+    if (!phoneCheck.valid) return fail(res, phoneCheck.message!, ErrorCode.PARAM_INVALID)
+
     const exists = await User.findOne({ where: { username } })
-    if (exists) return fail(res, '用户名已存在')
+    if (exists) return fail(res, '用户名已存在', ErrorCode.RECORD_EXISTS)
     const salt = bcrypt.genSaltSync(10)
     const hashedPassword = bcrypt.hashSync(password, salt)
     const user = await User.create({
@@ -102,6 +124,16 @@ export const update = async (req, res) => {
     const user = await User.findOne({ where: { user_id: id } })
     if (!user) return fail(res, '用户不存在', ErrorCode.RECORD_NOT_FOUND)
     const { username, password, real_name, employee_no, department, role_id, phone, email, status } = req.body
+
+    if (email !== undefined) {
+      const emailCheck = validateEmail(email)
+      if (!emailCheck.valid) return fail(res, emailCheck.message!, ErrorCode.PARAM_INVALID)
+    }
+    if (phone !== undefined) {
+      const phoneCheck = validatePhone(phone)
+      if (!phoneCheck.valid) return fail(res, phoneCheck.message!, ErrorCode.PARAM_INVALID)
+    }
+
     const updateData = {
       real_name,
       employee_no,
@@ -259,6 +291,16 @@ export const updateMyProfile = async (req, res) => {
     const { real_name, phone, email } = req.body
     const user = await User.findOne({ where: { user_id: userId } })
     if (!user) return fail(res, '用户不存在', ErrorCode.RECORD_NOT_FOUND)
+
+    if (email !== undefined) {
+      const emailCheck = validateEmail(email)
+      if (!emailCheck.valid) return fail(res, emailCheck.message!, ErrorCode.PARAM_INVALID)
+    }
+    if (phone !== undefined) {
+      const phoneCheck = validatePhone(phone)
+      if (!phoneCheck.valid) return fail(res, phoneCheck.message!, ErrorCode.PARAM_INVALID)
+    }
+
     const updateData = {}
     if (real_name !== undefined) updateData.real_name = real_name
     if (phone !== undefined) updateData.phone = phone

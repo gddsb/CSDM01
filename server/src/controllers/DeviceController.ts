@@ -1,6 +1,9 @@
 import { Op } from 'sequelize'
 import { Device } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
+import { logger } from '../utils/logger.js'
+
+const ALLOWED_DEVICE_TYPES = new Set(['生产设备', '检测设备', '辅助设备', '其他设备'])
 
 // 设备列表
 export const list = async (req, res) => {
@@ -77,10 +80,13 @@ export const create = async (req, res) => {
   try {
     const { device_code, device_name, device_type, device_model, serial_no, location, line_id, responsible_person, is_special, status, last_inspection_date, inspection_cycle, next_inspection_date, manufacturer, purchase_date, warranty_end } = req.body
     if (!device_code || !device_name) {
-      return fail(res, '设备编码和名称不能为空')
+      return fail(res, '设备编码和名称不能为空', ErrorCode.PARAM_INVALID)
+    }
+    if (device_type && !ALLOWED_DEVICE_TYPES.has(device_type)) {
+      return fail(res, `设备类型不合法，可选值：${[...ALLOWED_DEVICE_TYPES].join('、')}`, ErrorCode.PARAM_INVALID)
     }
     const exists = await Device.findOne({ where: { device_code } })
-    if (exists) return fail(res, '设备编码已存在')
+    if (exists) return fail(res, '设备编码已存在', ErrorCode.RECORD_EXISTS)
     const device = await Device.create({
       device_code, device_name, device_type, device_model, serial_no, location, line_id, responsible_person, is_special, status, last_inspection_date, inspection_cycle, next_inspection_date, manufacturer, purchase_date, warranty_end,
     })
@@ -104,6 +110,9 @@ export const update = async (req, res) => {
       if (exists) return fail(res, '设备编码已存在')
     }
     const { device_code, device_name, device_type, device_model, serial_no, location, line_id, responsible_person, is_special, status, last_inspection_date, inspection_cycle, next_inspection_date, manufacturer, purchase_date, warranty_end } = req.body
+    if (device_type !== undefined && device_type !== null && device_type !== '' && !ALLOWED_DEVICE_TYPES.has(device_type)) {
+      return fail(res, `设备类型不合法，可选值：${[...ALLOWED_DEVICE_TYPES].join('、')}`, ErrorCode.PARAM_INVALID)
+    }
     await device.update({
       device_code, device_name, device_type, device_model, serial_no, location, line_id, responsible_person, is_special, status, last_inspection_date, inspection_cycle, next_inspection_date, manufacturer, purchase_date, warranty_end,
     })

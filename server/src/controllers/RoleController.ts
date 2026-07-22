@@ -223,16 +223,27 @@ export const assignPermissions = async (req, res) => {
     const { perm_ids } = req.body
     const role = await Role.findOne({ where: { role_id: id } })
     if (!role) return fail(res, '角色不存在', ErrorCode.RECORD_NOT_FOUND)
-    
-    if (perm_ids && Array.isArray(perm_ids)) {
+
+    const ids = perm_ids || []
+    if (!Array.isArray(ids)) {
+      return fail(res, 'perm_ids 必须是数组', ErrorCode.PARAM_INVALID)
+    }
+
+    if (ids.length > 0) {
+      const validIds = ids.map(x => Number(x)).filter(x => !isNaN(x))
       const permissions = await Permission.findAll({
-        where: { perm_id: { [Op.in]: perm_ids } },
+        where: { perm_id: { [Op.in]: validIds } },
       })
+      if (permissions.length !== validIds.length) {
+        const foundIds = new Set(permissions.map(p => p.perm_id))
+        const missingIds = validIds.filter(x => !foundIds.has(x))
+        return fail(res, `以下权限ID不存在: ${missingIds.join(', ')}`, ErrorCode.PARAM_INVALID)
+      }
       await role.setPermissions(permissions)
     } else {
       await role.setPermissions([])
     }
-    
+
     return success(res, null, '权限分配成功')
   } catch (err) {
     console.error('分配角色权限失败:', err)

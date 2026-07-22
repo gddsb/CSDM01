@@ -1,6 +1,20 @@
 import { Op } from 'sequelize'
 import { ProcessException, Device } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
+import { logger } from '../utils/logger.js'
+
+function validateTimeRange(start, end): { valid: boolean; message?: string; duration?: number } {
+  if (!start) return { valid: true }
+  const s = new Date(start)
+  if (isNaN(s.getTime())) return { valid: false, message: '开始时间格式不正确' }
+  if (!end) return { valid: true }
+  const e = new Date(end)
+  if (isNaN(e.getTime())) return { valid: false, message: '结束时间格式不正确' }
+  if (e < s) return { valid: false, message: '结束时间不能早于开始时间' }
+  const dur = (e.getTime() - s.getTime()) / 3600000
+  if (dur > 24) return { valid: false, message: '异常工时持续时长不能超过24小时' }
+  return { valid: true, duration: Number(dur.toFixed(2)) }
+}
 
 export const list = async (req, res) => {
   try {
@@ -47,9 +61,14 @@ export const create = async (req, res) => {
       record_user_name,
     } = req.body
 
-    if (!report_order_id) return fail(res, '报工单 ID 不能为空')
-    if (!exception_type) return fail(res, '异常类型不能为空')
-    if (!start_time) return fail(res, '开始时间不能为空')
+    if (!report_order_id) return fail(res, '报工单 ID 不能为空', ErrorCode.PARAM_INVALID)
+    if (!exception_type) return fail(res, '异常类型不能为空', ErrorCode.PARAM_INVALID)
+    if (!start_time) return fail(res, '开始时间不能为空', ErrorCode.PARAM_INVALID)
+
+    const timeCheck = validateTimeRange(start_time, end_time)
+    if (!timeCheck.valid) {
+      return fail(res, timeCheck.message!, ErrorCode.PARAM_INVALID)
+    }
 
     let deviceCode = null
     let deviceName = null
@@ -61,12 +80,7 @@ export const create = async (req, res) => {
       }
     }
 
-    let duration = 0
-    if (start_time && end_time) {
-      const start = new Date(start_time)
-      const end = new Date(end_time)
-      duration = Number(((end - start) / 3600000).toFixed(2))
-    }
+    const duration = timeCheck.duration !== undefined ? timeCheck.duration : 0
 
     const imagesJson = exception_images
       ? (Array.isArray(exception_images) ? JSON.stringify(exception_images) : exception_images)
@@ -132,14 +146,13 @@ export const update = async (req, res) => {
       }
     }
 
-    let duration = exception.duration
-    const st = start_time || exception.start_time
-    const et = end_time || exception.end_time
-    if (st && et) {
-      const start = new Date(st)
-      const end = new Date(et)
-      duration = Number(((end - start) / 3600000).toFixed(2))
+    const st = start_time !== undefined ? start_time : exception.start_time
+    const et = end_time !== undefined ? end_time : exception.end_time
+    const timeCheck = validateTimeRange(st, et)
+    if (!timeCheck.valid) {
+      return fail(res, timeCheck.message!, ErrorCode.PARAM_INVALID)
     }
+    const duration = timeCheck.duration !== undefined ? timeCheck.duration : exception.duration
 
     let imagesJson = exception.exception_images
     if (exception_images !== undefined) {
