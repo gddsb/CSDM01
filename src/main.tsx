@@ -14,6 +14,7 @@ import UserManagement from './pages/system/UserManagement'
 import RoleManagement from './pages/system/RoleManagement'
 import DataDictionary from './pages/system/DataDictionary'
 import OperationLogs from './pages/system/OperationLogs'
+import SystemLogs from './pages/system/SystemLogs'
 import SystemConfig from './pages/system/SystemConfig'
 import MaterialManagement from './pages/basic/MaterialManagement'
 import ProductionLine from './pages/basic/ProductionLine'
@@ -84,6 +85,7 @@ function AppRoutes() {
         <Route path="/system/dictionary" element={<DataDictionary />} />
         <Route path="/system/config" element={<SystemConfig />} />
         <Route path="/system/logs" element={<OperationLogs />} />
+        <Route path="/system/system-logs" element={<SystemLogs />} />
         <Route path="/basic/materials" element={<MaterialManagement />} />
         <Route path="/basic/lines" element={<ProductionLine />} />
         <Route path="/basic/processes" element={<ProcessManagement />} />

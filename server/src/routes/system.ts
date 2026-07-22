@@ -11,6 +11,7 @@ import {
   userMenu,
 } from '../controllers/PermissionController.js'
 import { list as logList } from '../controllers/OperationLogController.js'
+import { list as systemLogList } from '../controllers/SystemLogController.js'
 import { getConfig, saveConfig, getEnvironment, getDatabaseInfo, listBackups, createBackup, restoreBackup, deleteBackup, migrateDatabase, getMigrationTargets, restartServer, listDataDictionary, refreshDataDictionary, listTableRecords } from '../controllers/SystemConfigController.js'
 import { authRequired, logOperation } from '../middleware/auth.js'
 import {
@@ -77,6 +78,9 @@ router.put('/roles/:id/permissions', logOperation('角色权限分配'), assignP
 
 // 操作日志
 router.get('/logs', logList)
+
+// 系统日志（结构化日志）
+router.get('/system-logs', systemLogList)
 
 // 数据字典 - 字典类型
 router.get('/dict/types', dictTypeList)

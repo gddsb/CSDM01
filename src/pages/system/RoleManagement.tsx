@@ -18,7 +18,15 @@ function buildPermissionTree(permissions) {
   const map = new Map()
   const roots = []
   permissions.forEach(p => {
-    map.set(p.perm_id, { title: p.perm_name, key: p.perm_id, children: [], _raw: p })
+    const isButton = p.type === 'button'
+    const titleNode = (
+      <span>
+        {isButton && <Tag color="purple" style={{ marginRight: 6, fontSize: 11, padding: '0 4px', lineHeight: '18px' }}>按钮</Tag>}
+        <span>{p.perm_name}</span>
+        <Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>{p.perm_code}</Text>
+      </span>
+    )
+    map.set(p.perm_id, { title: titleNode, key: p.perm_id, children: [], _raw: p })
   })
   permissions.forEach(p => {
     const node = map.get(p.perm_id)

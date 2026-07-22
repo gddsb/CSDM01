@@ -104,6 +104,7 @@ const defaultPermissions = [
   { perm_id: 5, parent_id: 1, perm_name: '数据字典', perm_code: 'system:dict', type: 'menu', icon: 'DatabaseOutlined', path: '/system/dictionary', sort_order: 4 },
   { perm_id: 6, parent_id: 1, perm_name: '系统配置', perm_code: 'system:config', type: 'menu', icon: 'ControlOutlined', path: '/system/config', sort_order: 5 },
   { perm_id: 7, parent_id: 1, perm_name: '操作日志', perm_code: 'system:log', type: 'menu', icon: 'FileTextOutlined', path: '/system/logs', sort_order: 6 },
+  { perm_id: 9, parent_id: 1, perm_name: '系统日志', perm_code: 'system:system-log', type: 'menu', icon: 'BugOutlined', path: '/system/system-logs', sort_order: 8 },
   { perm_id: 8, parent_id: 1, perm_name: '移动端模拟器', perm_code: 'system:mobile-simulator', type: 'menu', icon: 'MobileOutlined', path: '/system/mobile-simulator', sort_order: 7 },
   // 基础数据
   { perm_id: 10, parent_id: 0, perm_name: '基础数据', perm_code: 'basic', type: 'menu', icon: 'ProfileOutlined', path: 'basic', sort_order: 4 },
@@ -148,6 +149,32 @@ const defaultPermissions = [
   { perm_id: 74, parent_id: 70, perm_name: '生产报表', perm_code: 'report:production', type: 'menu', icon: 'FileTextOutlined', path: '/report/production', sort_order: 4 },
   { perm_id: 75, parent_id: 70, perm_name: '质量报表', perm_code: 'report:quality', type: 'menu', icon: 'ExperimentOutlined', path: '/report/quality', sort_order: 5 },
   { perm_id: 76, parent_id: 70, perm_name: '异常分析报表', perm_code: 'report:exception', type: 'menu', icon: 'BellOutlined', path: '/report/exception', sort_order: 6 },
+  // ===== 按钮级权限（type: button）=====
+  // 系统管理 - 角色权限
+  { perm_id: 201, parent_id: 3, perm_name: '分配权限', perm_code: 'system:role:assign', type: 'button', sort_order: 1 },
+  // 生产管理 - 生产订单
+  { perm_id: 210, parent_id: 21, perm_name: '订单下发', perm_code: 'production:order:release', type: 'button', sort_order: 1 },
+  { perm_id: 211, parent_id: 21, perm_name: '订单关闭', perm_code: 'production:order:close', type: 'button', sort_order: 2 },
+  { perm_id: 212, parent_id: 21, perm_name: '新增订单', perm_code: 'production:order:create', type: 'button', sort_order: 3 },
+  { perm_id: 213, parent_id: 21, perm_name: '编辑订单', perm_code: 'production:order:update', type: 'button', sort_order: 4 },
+  { perm_id: 214, parent_id: 21, perm_name: '删除订单', perm_code: 'production:order:delete', type: 'button', sort_order: 5 },
+  // 生产管理 - 生产报工
+  { perm_id: 220, parent_id: 23, perm_name: '新增报工', perm_code: 'production:reporting:create', type: 'button', sort_order: 1 },
+  { perm_id: 221, parent_id: 23, perm_name: '报工完工', perm_code: 'production:reporting:finish', type: 'button', sort_order: 2 },
+  { perm_id: 222, parent_id: 23, perm_name: '编辑报工', perm_code: 'production:reporting:update', type: 'button', sort_order: 3 },
+  { perm_id: 223, parent_id: 23, perm_name: '删除报工', perm_code: 'production:reporting:delete', type: 'button', sort_order: 4 },
+  // 基础数据 - 产线档案
+  { perm_id: 230, parent_id: 13, perm_name: '新增产线', perm_code: 'basic:line:create', type: 'button', sort_order: 1 },
+  { perm_id: 231, parent_id: 13, perm_name: '编辑产线', perm_code: 'basic:line:update', type: 'button', sort_order: 2 },
+  { perm_id: 232, parent_id: 13, perm_name: '删除产线', perm_code: 'basic:line:delete', type: 'button', sort_order: 3 },
+  // 基础数据 - 工序档案
+  { perm_id: 240, parent_id: 14, perm_name: '新增工序', perm_code: 'basic:process:create', type: 'button', sort_order: 1 },
+  { perm_id: 241, parent_id: 14, perm_name: '编辑工序', perm_code: 'basic:process:update', type: 'button', sort_order: 2 },
+  { perm_id: 242, parent_id: 14, perm_name: '删除工序', perm_code: 'basic:process:delete', type: 'button', sort_order: 3 },
+  // 基础数据 - 设备档案
+  { perm_id: 250, parent_id: 51, perm_name: '新增设备', perm_code: 'device:list:create', type: 'button', sort_order: 1 },
+  { perm_id: 251, parent_id: 51, perm_name: '编辑设备', perm_code: 'device:list:update', type: 'button', sort_order: 2 },
+  { perm_id: 252, parent_id: 51, perm_name: '删除设备', perm_code: 'device:list:delete', type: 'button', sort_order: 3 },
 ]
 
 export const initDefaultPermissions = async () => {
