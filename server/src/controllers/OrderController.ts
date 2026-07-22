@@ -232,7 +232,16 @@ export const release = async (req, res) => {
     const { id } = req.params
     const order = await Order.findOne({ where: { order_id: id } })
     if (!order) return fail(res, '订单不存在', ErrorCode.RECORD_NOT_FOUND)
-    if (order.getDataValue('status') !== 0) return fail(res, '只有开立状态的订单可以下发')
+
+    const statusVal = order.getDataValue('status')
+    const releaseTime = order.getDataValue('release_time')
+
+    if (statusVal >= 1 && releaseTime) {
+      logger.warn('[Order.release] 幂等命中：订单已下发', { order_id: id, order_no: order.getDataValue('order_no') })
+      return success(res, order, '订单已下发')
+    }
+
+    if (statusVal !== 0) return fail(res, '只有开立状态的订单可以下发', ErrorCode.BUSINESS_ERROR)
     await order.update({ status: 1, release_time: new Date() })
     logger.info('[Order.release] 订单下发成功', { order_id: id, order_no: order.getDataValue('order_no'), user: (req as any).user?.username })
     return success(res, order, '订单已下发')

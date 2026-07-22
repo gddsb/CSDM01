@@ -87,28 +87,35 @@ async function syncReportProcesses(reportOrderId: number, lineId: number, transa
  * 检查并联动更新订单状态
  * - 报工单创建后：若订单为"下发"，自动转为"开工"
  * - 报工单完工后：若该订单下所有报工单均"完工"，订单自动转为"完工"
+ * - 报工单删除后：若无剩余报工单且订单为"开工"，可回退为"下发"
  */
-export async function syncOrderStatus(orderId: number) {
-  const order = await Order.findOne({ where: { order_id: orderId } })
+export async function syncOrderStatus(orderId: number, transaction?: any) {
+  const opts = transaction ? { transaction, lock: transaction.LOCK ? transaction.LOCK.UPDATE : undefined } : {}
+  const countOpts = transaction ? { transaction } : {}
+
+  const order = await Order.findOne({ where: { order_id: orderId }, ...opts })
   if (!order) return
 
   const statusVal = order.getDataValue('status')
 
-  // 统计该订单下所有报工单状态
-  const total = await ReportOrder.count({ where: { order_id: orderId } })
+  const total = await ReportOrder.count({ where: { order_id: orderId }, ...countOpts })
   const finishedCount = await ReportOrder.count({
     where: { order_id: orderId, status: 1 },
+    ...countOpts,
   })
 
-  // 若有报工单且订单仍为"下发"，自动转为"开工"
   if (total > 0 && statusVal === 1) {
-    await order.update({ status: 2 })
+    await order.update({ status: 2 }, { transaction })
     return
   }
 
-  // 若所有报工单均完工且订单为"开工"，自动转为"完工"
   if (total > 0 && finishedCount === total && statusVal === 2) {
-    await order.update({ status: 3, close_time: new Date() })
+    await order.update({ status: 3, close_time: new Date() }, { transaction })
+    return
+  }
+
+  if (total === 0 && statusVal === 2) {
+    await order.update({ status: 1, release_time: order.release_time || new Date() }, { transaction })
     return
   }
 }
@@ -197,28 +204,44 @@ export const detail = async (req, res) => {
 
 // 创建报工单（自动生成报工单号 WO-16+YYMMDD+3位序号）
 // 业务规则：仅"下发"/"开工"状态的订单可创建报工单；创建时从所选产线继承工序
+// 幂等：同一 order_id + line_id + 当日 已存在则返回已有
 export const create = async (req, res) => {
   try {
     const { order_id, line_id, report_qty, remarks } = req.body
-    if (!order_id) return fail(res, '订单 ID 不能为空')
-    if (!line_id) return fail(res, '产线 ID 不能为空')
+    if (!order_id) return fail(res, '订单 ID 不能为空', ErrorCode.PARAM_INVALID)
+    if (!line_id) return fail(res, '产线 ID 不能为空', ErrorCode.PARAM_INVALID)
 
     const order = await Order.findOne({ where: { order_id } })
     if (!order) return fail(res, '订单不存在', ErrorCode.RECORD_NOT_FOUND)
 
     const orderStatus = order.getDataValue('status')
     if (orderStatus < 1) {
-      return fail(res, '订单未下发，不允许创建报工单')
+      return fail(res, '订单未下发，不允许创建报工单', ErrorCode.BUSINESS_ERROR)
     }
     if (orderStatus >= 4) {
-      return fail(res, '订单已关闭，不允许创建报工单')
+      return fail(res, '订单已关闭，不允许创建报工单', ErrorCode.BUSINESS_ERROR)
     }
 
     const line = await ProductionLine.findOne({ where: { line_id } })
     if (!line) return fail(res, '产线不存在', ErrorCode.RECORD_NOT_FOUND)
 
-    const report_no = await generateReportOrderNo()
     const now = new Date()
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const tomorrowStart = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000)
+
+    const existing = await ReportOrder.findOne({
+      where: {
+        order_id,
+        line_id,
+        report_time: { [Op.gte]: todayStart, [Op.lt]: tomorrowStart },
+      },
+    })
+    if (existing) {
+      logger.warn('[ReportOrder.create] 幂等命中：当日同产线已存在报工单', { order_id, line_id, report_order_id: existing.report_order_id })
+      return success(res, existing, '当日同产线已存在报工单，返回已有记录')
+    }
+
+    const report_no = await generateReportOrderNo()
 
     const result = await sequelize.transaction(async (t) => {
       const reportOrder = await ReportOrder.create({
@@ -233,22 +256,20 @@ export const create = async (req, res) => {
         specification: order.specification,
         report_qty: report_qty || 0,
         report_time: now,
-        status: 0, // 开工
+        status: 0,
         report_user_id: req.user?.userId || null,
         report_user_name: req.user?.username || null,
         remarks,
       }, { transaction: t })
 
-      // 继承产线工序到报工工序子表
       await syncReportProcesses(reportOrder.report_order_id, line.line_id, t)
 
-      // 工单开工时自动创建一条人员工时记录（每个报工单仅一条，用户只能修改人数）
       await ManpowerRecord.create({
         report_order_id: reportOrder.report_order_id,
         record_date: now.toISOString().slice(0, 10),
         shift: '白班',
         start_time: now,
-        end_time: now, // 开工状态：后端读取时动态替换为当前时间
+        end_time: now,
         hours: 0,
         skilled_count: 0,
         general_count: 0,
@@ -260,12 +281,12 @@ export const create = async (req, res) => {
         record_user_name: req.user?.real_name || req.user?.username || null,
       }, { transaction: t })
 
+      await syncOrderStatus(order_id, t)
+
       return reportOrder
     })
 
-    // 联动订单状态：下发 → 开工
-    await syncOrderStatus(order_id)
-
+    logger.info('[ReportOrder.create] 报工单创建成功', { report_order_id: result.report_order_id, order_id, report_no: result.report_no, user: req.user?.username })
     return success(res, result, '创建成功')
   } catch (err) {
     console.error('创建报工单失败:', err)
@@ -281,7 +302,7 @@ export const update = async (req, res) => {
     if (!reportOrder) return fail(res, '报工单不存在', ErrorCode.RECORD_NOT_FOUND)
 
     if (reportOrder.getDataValue('status') !== 0) {
-      return fail(res, '当前报工单状态不允许修改')
+      return fail(res, '当前报工单状态不允许修改', ErrorCode.BUSINESS_ERROR)
     }
 
     const { report_qty, line_id, remarks } = req.body
@@ -289,18 +310,25 @@ export const update = async (req, res) => {
     if (report_qty !== undefined) updateData.report_qty = report_qty
     if (remarks !== undefined) updateData.remarks = remarks
 
-    // 切换产线时重新继承工序
+    let newLineId: number | null = null
+    let newLineName: string | null = null
+
     if (line_id && line_id !== reportOrder.line_id) {
       const line = await ProductionLine.findOne({ where: { line_id } })
       if (!line) return fail(res, '产线不存在', ErrorCode.RECORD_NOT_FOUND)
-      updateData.line_id = line.line_id
-      updateData.line_name = line.line_name
+      newLineId = line.line_id
+      newLineName = line.line_name
+      updateData.line_id = newLineId
+      updateData.line_name = newLineName
     }
 
-    await reportOrder.update(updateData)
-
-    if (updateData.line_id) {
-      await syncReportProcesses(reportOrder.report_order_id, updateData.line_id)
+    if (newLineId !== null) {
+      await sequelize.transaction(async (t) => {
+        await reportOrder.update(updateData, { transaction: t })
+        await syncReportProcesses(reportOrder.report_order_id, newLineId!, t)
+      })
+    } else if (Object.keys(updateData).length > 0) {
+      await reportOrder.update(updateData)
     }
 
     return success(res, reportOrder, '修改成功')
@@ -318,7 +346,7 @@ export const remove = async (req, res) => {
     if (!reportOrder) return fail(res, '报工单不存在', ErrorCode.RECORD_NOT_FOUND)
 
     if (reportOrder.getDataValue('status') !== 0) {
-      return fail(res, '只有开工状态的报工单可以删除')
+      return fail(res, '只有开工状态的报工单可以删除', ErrorCode.BUSINESS_ERROR)
     }
 
     const orderId = reportOrder.order_id
@@ -332,14 +360,17 @@ export const remove = async (req, res) => {
     ])
     const total = defectCount + materialCount + exceptionCount + manpowerCount + imageCount
     if (total > 0) {
-      return fail(res, `该报工单存在关联记录(不良${defectCount}/物料${materialCount}/异常${exceptionCount}/人员${manpowerCount}/图片${imageCount})，无法删除`)
+      return fail(res, `该报工单存在关联记录(不良${defectCount}/物料${materialCount}/异常${exceptionCount}/人员${manpowerCount}/图片${imageCount})，无法删除`, ErrorCode.BUSINESS_ERROR)
     }
 
-    // 同步删除继承的报工工序
-    await ReportProcess.destroy({ where: { report_order_id: id } })
-    await reportOrder.destroy()
+    await sequelize.transaction(async (t) => {
+      await ReportProcess.destroy({ where: { report_order_id: id }, transaction: t })
+      await ManpowerRecord.destroy({ where: { report_order_id: id }, transaction: t })
+      await reportOrder.destroy({ transaction: t })
+      await syncOrderStatus(orderId, t)
+    })
 
-    // 联动订单状态（如无剩余报工单且订单为"开工"，可回退为"下发"；这里保持订单状态不变）
+    logger.info('[ReportOrder.remove] 报工单删除成功', { report_order_id: id, order_id: orderId, user: req.user?.username })
     return success(res, null, '删除成功')
   } catch (err) {
     console.error('删除报工单失败:', err)
@@ -352,25 +383,48 @@ export const remove = async (req, res) => {
 export const finish = async (req, res) => {
   try {
     const { id } = req.params
-    const reportOrder = await ReportOrder.findOne({ where: { report_order_id: id } })
-    if (!reportOrder) return fail(res, '报工单不存在', ErrorCode.RECORD_NOT_FOUND)
-    if (reportOrder.getDataValue('status') !== 0) {
-      return fail(res, '当前报工单状态不允许完工')
-    }
 
-    await reportOrder.update({
-      status: 1,
-      finish_time: new Date(),
-      finish_user_id: req.user?.userId || null,
-      finish_user_name: req.user?.username || null,
+    const result = await sequelize.transaction(async (t) => {
+      const reportOrder = await ReportOrder.findOne({
+        where: { report_order_id: id },
+        transaction: t,
+        lock: t.LOCK.UPDATE,
+      })
+      if (!reportOrder) {
+        const err: any = new Error('报工单不存在')
+        err.code = ErrorCode.RECORD_NOT_FOUND
+        throw err
+      }
+      if (reportOrder.getDataValue('status') !== 0) {
+        const err: any = new Error('当前报工单状态不允许完工')
+        err.code = ErrorCode.BUSINESS_ERROR
+        throw err
+      }
+
+      await Order.findOne({
+        where: { order_id: reportOrder.order_id },
+        transaction: t,
+        lock: t.LOCK.UPDATE,
+      })
+
+      await reportOrder.update({
+        status: 1,
+        finish_time: new Date(),
+        finish_user_id: req.user?.userId || null,
+        finish_user_name: req.user?.username || null,
+      }, { transaction: t })
+
+      await syncOrderStatus(reportOrder.order_id, t)
+
+      return reportOrder
     })
 
-    // 联动订单状态：所有报工单完工 → 订单完工
-    await syncOrderStatus(reportOrder.order_id)
-
-    logger.info('[ReportOrder.finish] 报工单完工成功', { report_order_id: id, order_id: reportOrder.order_id, report_order_no: reportOrder.report_order_no, user: req.user?.username })
-    return success(res, reportOrder, '报工单已完工')
-  } catch (err) {
+    logger.info('[ReportOrder.finish] 报工单完工成功', { report_order_id: id, order_id: result.order_id, report_order_no: result.report_order_no, user: req.user?.username })
+    return success(res, result, '报工单已完工')
+  } catch (err: any) {
+    if (err && err.code) {
+      return fail(res, err.message, err.code)
+    }
     console.error('完工报工单失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
