@@ -1065,7 +1065,7 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId 
                   <input
                     type="number"
                     className="rd-form-input"
-                    value={record.defect_qty || 0}
+                    value={Math.floor(Number(record.defect_qty) || 0)}
                     onChange={(e) => handleChange(record.id, 'defect_qty', Math.floor(Number(e.target.value)) || 0)}
                     min={0}
                     step={1}

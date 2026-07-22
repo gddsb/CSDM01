@@ -255,10 +255,10 @@
   width: 10em;
 }
 
-/* 不良记录/检验报废：单位列宽8个字符 */
+/* 不良记录/检验报废：单位列自动列宽 */
 .rd-form-item-unit {
-  flex: 0 0 auto;
-  width: 8em;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .rd-defect-select-dropdown.auto-width {
@@ -280,16 +280,16 @@
   min-width: 0;
 }
 
-/* 物料记录：料号列宽 */
+/* 物料记录：料号列宽8个字符 */
 .rd-material-same-row .rd-form-item-code-mat {
   flex: 0 0 auto;
-  width: 9em;
+  width: 8em;
 }
 
-/* 物料记录：类型列宽6个字符 */
+/* 物料记录：类型列宽4个字符 */
 .rd-material-same-row .rd-form-item-type {
   flex: 0 0 auto;
-  width: 6em;
+  width: 4em;
 }
 
 /* 物料记录：批号自动列宽 */
@@ -298,10 +298,10 @@
   min-width: 0;
 }
 
-/* 物料记录：包号列宽6个字符 */
+/* 物料记录：包号列宽4个字符 */
 .rd-material-same-row .rd-form-item-pkg {
   flex: 0 0 auto;
-  width: 6em;
+  width: 4em;
 }
 
 /* 物料记录：数量列宽6个字符 */
