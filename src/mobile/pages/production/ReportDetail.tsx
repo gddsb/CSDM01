@@ -487,6 +487,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
         const opt = options.find(o => o.value === value)
         if (opt) {
           next.defect_unit = opt.defect_unit || ''
+          next.available_units = opt.available_units || []
           next.defect_code = opt.defect_code
           next.defect_name = opt.defect_name
           next.defect_type = opt.defect_type
@@ -573,16 +574,9 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
                     onChange={(e) => handleChangeDefect(record.id, 'defect_unit', e.target.value)}
                   >
                     <option value="">请选择</option>
-                    <option value="个">个</option>
-                    <option value="件">件</option>
-                    <option value="只">只</option>
-                    <option value="根">根</option>
-                    <option value="片">片</option>
-                    <option value="套">套</option>
-                    <option value="台">台</option>
-                    <option value="批">批</option>
-                    <option value="kg">kg</option>
-                    <option value="g">g</option>
+                    {(record.available_units || []).map(u => (
+                      <option key={u} value={u}>{u}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -973,6 +967,7 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId 
         const opt = options.find(o => o.value === value)
         if (opt) {
           next.defect_unit = opt.defect_unit || ''
+          next.available_units = opt.available_units || []
           next.defect_code = opt.defect_code
           next.defect_name = opt.defect_name
           next.defect_type = opt.defect_type
@@ -1044,16 +1039,9 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId 
                     onChange={(e) => handleChange(record.id, 'defect_unit', e.target.value)}
                   >
                     <option value="">请选择</option>
-                    <option value="个">个</option>
-                    <option value="件">件</option>
-                    <option value="只">只</option>
-                    <option value="根">根</option>
-                    <option value="片">片</option>
-                    <option value="套">套</option>
-                    <option value="台">台</option>
-                    <option value="批">批</option>
-                    <option value="kg">kg</option>
-                    <option value="g">g</option>
+                    {(record.available_units || []).map(u => (
+                      <option key={u} value={u}>{u}</option>
+                    ))}
                   </select>
                 </div>
               </div>
