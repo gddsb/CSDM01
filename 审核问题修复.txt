@@ -1,0 +1,205 @@
+审核问题修复 — 交付批次清单
+工作原则
+同文件集中改：同一文件的改动尽量放在同一批次，减少反复切换
+从底层到上层：先改基础设施（响应格式、日志），再改中间件，最后改业务逻辑
+每次独立验证：每个批次完成后构建 + 部署 + 验证，确保不回退
+每次独立提交：一个批次一次 git commit，便于 review 和回滚
+Batch 1：基础设施层 — 响应格式 & 错误码体系
+对应任务：T-P2-07、T-P2-08
+涉及文件：
+
+utils/response.ts 全文
+SystemConfigController.ts L292（restartServer 返回格式）
+全量 Controller 的 fail() / success() 调用点（约 30+ 处，需统一参数）
+修改内容：
+
+定义业务错误码枚举（PARAM_INVALID、RECORD_NOT_FOUND、DUPLICATE_REQUEST、SYSTEM_ERROR 等）
+统一响应格式为 { success, code, message, data, total? }
+fail 函数增加 code 参数
+paginate 函数增加 message 字段
+修复 restartServer 返回格式不一致问题
+预估：约 2 小时
+
+Batch 2：中间件层 — 全局错误处理 & 操作日志 & 分页
+对应任务：T-P2-04、T-P2-09、T-P0-07
+涉及文件：
+
+app.ts L76（Morgan）、L120-125（全局错误处理）
+middleware/auth.ts L74（操作日志）
+所有 list 接口入口（约 15+ 处，或统一在 paginate 函数中）
+修改内容：
+
+全局错误处理器记录 method + URL + 关键参数（脱敏）
+全局错误返回不含完整堆栈，敏感关键词打码
+logOperation 中间件记录请求体（密码字段打码为 ***）
+生产环境关闭 Morgan 或使用脱敏格式
+分页参数统一 pageSize = Math.min(pageSize, 200)（在 paginate 函数中加）
+预估：约 1.5 小时
+
+Batch 3：日志分级 & 上下文 & 静默错误修复
+对应任务：T-P2-01、T-P2-02、T-P2-03、T-P2-05
+涉及文件：
+
+新建 utils/logger.ts（引入 winston/pino）
+所有 Controller（约 25 个文件）的 catch 块和关键操作点
+静默 catch 点：ReportImageController L31、SystemConfigController L83/90/149/199/234、UploadController L30
+修改内容：
+
+新建结构化日志工具，区分 info / warn / error 级别
+所有 ERROR 日志统一格式：[模块.方法] 描述, { 关键业务参数, err }
+关键业务操作（订单下发、完工、关闭）成功后加 info 日志
+所有空 catch(e) {} 至少加 logger.warn
+业务校验失败（如"订单不存在"）从 console.error 改为 logger.warn
+预估：约 3 小时（因为涉及文件多，但改动模式统一）
+
+Batch 4：安全专项 — Mass Assignment & SQL 注入 & 配置白名单 & 密码泄露
+对应任务：T-P0-08、T-P0-09、T-P0-10、T-P0-11、T-P0-12
+涉及文件：
+
+SystemConfigController.ts L50-71（saveConfig 白名单）、L863（getDatabaseInfo 脱敏）、L1195（密码写入.env）、L1308-1312（SQL 注入）
+ProductionLineController.ts L91、L111
+ProcessController.ts L60、L80
+UploadController.ts L37
+FileManagerController.ts L87、L122
+修改内容：
+
+listTableRecords 改用 Sequelize replacements 参数化查询
+ProductionLine/Process 的 create/update 显式列出可写字段
+saveConfig 定义 key 白名单，拒绝未知 key
+数据库迁移接口不回写密码到 .env
+getDatabaseInfo 过滤 connection_error 中的敏感信息
+UploadController / FileManagerController 错误响应不暴露 err.message，详细错误记日志
+预估：约 2.5 小时
+
+Batch 5：ReportOrderController 专项（一）— 事务 & 幂等
+对应任务：T-P0-02、T-P0-03、T-P0-04、T-P1-05、T-P1-06、T-P1-09
+涉及文件：
+
+ReportOrderController.ts 全文（重点 L90-113、L199-273、L276-310、L313-347、L349-375）
+OrderController.ts L229-241（下发幂等）
+修改内容：
+
+remove（删除报工单）：destroy 子记录 + destroy 报工单 放入事务
+finish（完工）：开启事务 → Order 加 LOCK.UPDATE 悲观锁 → syncOrderStatus 接收事务参数
+create（创建）：同一 order_id + line_id + report_date 查重，存在则返回已有
+update（切换产线）：reportOrder.update + syncReportProcesses 放入事务
+create 后 syncOrderStatus 移到事务提交前
+订单下发：检查 release_time 已设置则直接返回
+预估：约 3 小时（这是最复杂的文件，改动点多且需仔细验证）
+
+Batch 6：ReportOrderController 专项（二）— 业务规则校验
+对应任务：T-P0-05、T-P1-01、T-P1-02、T-P1-07、T-P1-08
+涉及文件：
+
+ReportOrderController.ts L201-273（创建）、L276-310（修改）、L341（删除）、L351-375（完工）
+修改内容：
+
+report_qty 正整数校验（Number.isInteger && > 0）
+超量报工校验：SUM(已存在报工qty) + 当前qty <= 订单planned_qty
+完工校验：所有 ReportProcess 已完成 + 无未关闭 ProcessException
+完工回写 Order.finished_qty
+删除后调用 syncOrderStatus 回退订单状态
+切换产线前查询是否已有子表记录，有则禁止切换
+预估：约 2 小时
+
+Batch 7：ProcessDefectController 专项
+对应任务：T-P0-01、T-P1-03、T-P1-04
+涉及文件：
+
+ProcessDefectController.ts L168-211（创建）、L228-265（batchSave）
+修改内容：
+
+batchSave：destroy + create 包裹在 sequelize.transaction 中
+创建不良记录：校验 process_id 属于当前报工单（查 ReportProcess）
+不良数量上限：同一报工单+工序下，累计不良 ≤ 该工序报工产出
+预估：约 1.5 小时
+
+Batch 8：业务 Controller 入参校验
+对应任务：T-P0-06、T-P2-10、T-P2-11
+涉及文件：
+
+ProcessExceptionController.ts L64-69
+UserController.ts L66-93、L152、L172-232
+CustomerController.ts L56-73
+DeviceController.ts L78-86
+RoleController.ts L220-241
+修改内容：
+
+异常工时：end_time < start_time 校验 + duration ≤ 24h 校验
+用户创建/修改：邮箱正则 + 手机号正则校验
+客户创建：邮箱 + 手机号格式校验
+设备创建：device_type 枚举值校验
+assignPermissions：perm_ids 是数组且 ID 都存在
+所有 catch 块至少加 warn 日志（T-P2-05 的遗留点）
+预估：约 2 小时
+
+Batch 9：上传 & 文件 Controller 错误处理 + 数据层
+对应任务：T-P0-11（已在 Batch 4 做）、T-P2-06（索引）
+涉及文件：
+
+所有 Model 文件（约 10+ 个）
+修改内容：
+
+为以下高频查询字段增加 index: true：
+production_report_order：order_id、line_id、status、report_time
+production_process_defect：report_order_id、process_id
+production_process_material：report_order_id、process_id
+production_process_exception：report_order_id
+production_manpower_record：report_order_id
+production_report_image：report_order_id
+预估：约 1 小时（改动简单但要核对每个 Model）
+
+Batch 10：权限分级
+对应任务：T-P1-10
+涉及文件：
+
+routes/production.ts L80-81 等
+middleware/auth.ts（需增加权限校验中间件）
+修改内容：
+
+定义关键操作的权限编码：order:release、order:close、report:finish、report:create
+在 auth 中间件中增加 requirePermission(code) 函数
+订单下发/关闭、报工单完工/创建等路由加上权限校验
+无权限返回 403
+预估：约 1.5 小时
+
+Batch 11：关联数据检查 + 删除前校验
+对应任务：P1 中未覆盖的删除关联检查
+涉及文件：
+
+ProductionLineController.ts L120-131
+ProcessController.ts L89-100
+DeviceController.ts L118-129
+修改内容：
+
+删除产线前检查是否有关联报工单/设备/工序，存在则拒绝
+删除工序前检查是否有关联报工单记录，存在则拒绝
+删除设备前检查是否有关联异常工时记录，存在则拒绝
+预估：约 1 小时
+
+总览
+批次	内容	预估工时	优先级
+Batch 1	响应格式 & 错误码体系	2h	P2 基础
+Batch 2	全局错误处理 & 操作日志 & 分页	1.5h	P2 基础
+Batch 3	日志分级 & 上下文 & 静默错误	3h	P2 大面积
+Batch 4	安全专项（注入/Mass Assignment/白名单/密码）	2.5h	P0
+Batch 5	ReportOrder 事务 & 幂等	3h	P0
+Batch 6	ReportOrder 业务规则校验	2h	P0+P1
+Batch 7	ProcessDefect 事务 & 校验	1.5h	P0+P1
+Batch 8	业务入参校验（时间/邮箱/枚举等）	2h	P0+P2
+Batch 9	数据库索引	1h	P2
+Batch 10	权限分级	1.5h	P1
+Batch 11	删除前关联检查	1h	P1
+合计		~ 21 小时	
+建议交付顺序（按依赖关系）
+
+Plain Text
+
+Batch 1 (响应格式) 
+  → Batch 2 (中间件/分页)
+    → Batch 4 (安全) + Batch 3 (日志)   ← 可并行
+      → Batch 5 (ReportOrder 事务)         ← P0 核心
+        → Batch 6 (ReportOrder 业务)
+          → Batch 7 (ProcessDefect)
+            → Batch 8 (入参校验) + Batch 9 (索引) + Batch 10 (权限) + Batch 11 (删除检查) ← 可并行
+每次您可以直接说"做 Batch X"，我就按这个清单执行对应的任务并部署验证。 需要从哪一批开始？
