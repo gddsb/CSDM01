@@ -1,7 +1,7 @@
 import path from 'path'
 import fs from 'fs'
 import crypto from 'crypto'
-import { success, fail } from '../utils/response.js'
+import { success, fail, MAX_PAGE_SIZE } from '../utils/response.js'
 
 const UPLOAD_DIR = 'uploads/common'
 

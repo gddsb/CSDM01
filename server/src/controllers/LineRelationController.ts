@@ -1,5 +1,5 @@
 import { LineProcess, LineDevice, Process, Device, ProductionLine } from '../models/index.js'
-import { success, fail, ErrorCode } from '../utils/response.js'
+import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 
 export const getLineProcesses = async (req, res) => {
   try {

@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { Material } from '../models/index.js'
-import { success, fail, ErrorCode } from '../utils/response.js'
+import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 
 export const list = async (req, res) => {
   try {
@@ -21,7 +21,7 @@ export const list = async (req, res) => {
       if (dateEnd) where.created_at[Op.lte] = new Date(dateEnd + ' 23:59:59')
     }
 
-    const limit = Number(pageSize)
+    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
     const offset = (Number(page) - 1) * limit
     const { rows, count } = await Material.findAndCountAll({
       where,

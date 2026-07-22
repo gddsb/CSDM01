@@ -3,7 +3,7 @@ import fs from 'fs'
 import crypto from 'crypto'
 import { Op } from 'sequelize'
 import { DefectImage, DefectType } from '../models/index.js'
-import { success, fail, ErrorCode } from '../utils/response.js'
+import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 
 const computeFileHash = (filePath) => {
   return new Promise((resolve, reject) => {

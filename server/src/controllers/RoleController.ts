@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { Role, User, Permission } from '../models/index.js'
-import { success, fail, ErrorCode } from '../utils/response.js'
+import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 
 // 角色列表
 export const list = async (req, res) => {
@@ -18,7 +18,7 @@ export const list = async (req, res) => {
       where.status = statusMap[status] !== undefined ? statusMap[status] : Number(status)
     }
 
-    const limit = Number(pageSize)
+    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
     const offset = (Number(page) - 1) * limit
     const { rows, count } = await Role.findAndCountAll({
       where,

@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { ProductionLine, LineProcess, LineDevice, Process, Device } from '../models/index.js'
-import { success, fail, ErrorCode } from '../utils/response.js'
+import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 
 // 产线列表
 export const list = async (req, res) => {
@@ -33,7 +33,7 @@ export const list = async (req, res) => {
       if (dateEnd) where.created_at[Op.lte] = new Date(dateEnd + ' 23:59:59')
     }
 
-    const limit = Number(pageSize)
+    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
     const offset = (Number(page) - 1) * limit
     const { rows, count } = await ProductionLine.findAndCountAll({
       where,

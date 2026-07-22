@@ -34,7 +34,10 @@ export function fail(res: Response, message: string = '操作失败', errorCode:
   return res.status(status).json({ success: false, code: errorCode, message })
 }
 
+export const MAX_PAGE_SIZE = 200
+
 export function paginate(res: Response, data: any, total: number, pageNum: number, pageSize: number, message: string = '获取成功') {
+  const safePageSize = Math.min(Number(pageSize), MAX_PAGE_SIZE)
   return res.json({
     success: true,
     code: ErrorCode.SUCCESS,
@@ -42,6 +45,6 @@ export function paginate(res: Response, data: any, total: number, pageNum: numbe
     data,
     total,
     pageNum: Number(pageNum),
-    pageSize: Number(pageSize),
+    pageSize: safePageSize,
   })
 }

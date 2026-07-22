@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { NumberRule } from '../models/index.js'
-import { success, fail, ErrorCode } from '../utils/response.js'
+import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { previewBizNo, reloadRulesFromDB } from '../utils/sequence.js'
 
 // 受 SEQ_CONFIG 保护的系统内置规则编码（与 utils/sequence.js 一致）
@@ -40,7 +40,7 @@ export const list = async (req, res) => {
     if (status !== undefined && status !== '') {
       where.status = Number(status)
     }
-    const limit = Number(pageSize)
+    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
     const offset = (Number(page) - 1) * limit
     const { rows, count } = await NumberRule.findAndCountAll({
       where,

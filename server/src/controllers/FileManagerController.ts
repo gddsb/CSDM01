@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { success, fail, ErrorCode } from '../utils/response.js'
+import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 
 const UPLOADS_DIR = path.resolve('uploads')
 

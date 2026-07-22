@@ -3,6 +3,23 @@ import { verifyToken } from '../utils/jwt.js'
 import { fail, ErrorCode } from '../utils/response.js'
 import { OperationLog } from '../models/index.js'
 
+const SENSITIVE_KEYS = ['password', 'token', 'secret', 'authorization', 'pwd', 'access_token', 'refresh_token']
+
+function maskSensitive(obj: any, depth: number = 0): any {
+  if (depth > 5 || obj == null) return obj
+  if (typeof obj !== 'object') return obj
+  if (Array.isArray(obj)) return obj.map((item) => maskSensitive(item, depth + 1))
+  const result: any = {}
+  for (const key of Object.keys(obj)) {
+    if (SENSITIVE_KEYS.some((k) => key.toLowerCase().includes(k))) {
+      result[key] = '***'
+    } else {
+      result[key] = maskSensitive(obj[key], depth + 1)
+    }
+  }
+  return result
+}
+
 // HTTP 方法到操作名称的映射
 const methodActionMap: Record<string, string> = {
   GET: '查询',
@@ -65,6 +82,15 @@ export function logOperation(module: string) {
         const forwarded = req.headers['x-forwarded-for']
         const ip = (forwarded && String(forwarded).split(',')[0].trim()) || req.ip || (req.socket as any)?.remoteAddress || ''
 
+        let bodyContent = ''
+        if (req.body && Object.keys(req.body).length > 0) {
+          try {
+            bodyContent = JSON.stringify(maskSensitive(req.body))
+          } catch (e) {
+            bodyContent = '[无法序列化的请求体]'
+          }
+        }
+
         OperationLog.create({
           user_id: userInfo.userId || null,
           username: userInfo.username || '匿名',
@@ -72,6 +98,7 @@ export function logOperation(module: string) {
           operation: `${action} ${module}`,
           method: req.method,
           params: req.originalUrl || req.url || '',
+          content: bodyContent || null,
           ip,
           status: 1,
         }).catch((err: any) => {

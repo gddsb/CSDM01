@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { ProcessMaterial, Material } from '../models/index.js'
-import { success, fail, ErrorCode } from '../utils/response.js'
+import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 
 export const list = async (req, res) => {
   try {
@@ -10,7 +10,7 @@ export const list = async (req, res) => {
     if (process_id) where.process_id = Number(process_id)
     if (material_batch) where.material_batch = { [Op.like]: `%${material_batch}%` }
 
-    const limit = Number(pageSize)
+    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
     const offset = (Number(page) - 1) * limit
     const { rows, count } = await ProcessMaterial.findAndCountAll({
       where,

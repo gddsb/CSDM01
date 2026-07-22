@@ -73,7 +73,38 @@ async function initDatabase() {
 app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
-app.use(morgan('dev'))
+const SENSITIVE_KEYS = ['password', 'token', 'secret', 'authorization', 'pwd', 'access_token', 'refresh_token']
+
+function maskSensitive(obj: any, depth: number = 0): any {
+  if (depth > 5 || obj == null) return obj
+  if (typeof obj !== 'object') return obj
+  if (Array.isArray(obj)) return obj.map((item) => maskSensitive(item, depth + 1))
+  const result: any = {}
+  for (const key of Object.keys(obj)) {
+    if (SENSITIVE_KEYS.some((k) => key.toLowerCase().includes(k))) {
+      result[key] = '***'
+    } else {
+      result[key] = maskSensitive(obj[key], depth + 1)
+    }
+  }
+  return result
+}
+
+function getSafeReqInfo(req: any): any {
+  const info: any = {
+    method: req.method,
+    url: req.originalUrl || req.url,
+    ip: (req.headers['x-forwarded-for'] || req.ip || (req.socket as any)?.remoteAddress || '').toString().split(',')[0].trim(),
+  }
+  if (req.user) info.user = { userId: req.user.userId, username: req.user.username }
+  if (Object.keys(req.body || {}).length > 0) info.body = maskSensitive(req.body)
+  if (Object.keys(req.query || {}).length > 0) info.query = maskSensitive(req.query)
+  return info
+}
+
+const isProd = process.env.NODE_ENV === 'production'
+
+app.use(morgan(isProd ? 'combined' : 'dev'))
 
 // 禁止浏览器缓存 API 响应（防止菜单排序等数据修改后刷新仍返回旧缓存）
 app.use('/api', (req, res, next) => {
@@ -117,10 +148,18 @@ app.use('/api', (req, res) => {
 })
 
 // 全局错误处理
-app.use((err, req, res, next) => {
-  console.error('服务器错误:', err)
+app.use((err: any, req: any, res: any, next: any) => {
+  const reqInfo = getSafeReqInfo(req)
+  console.error('[GlobalError] 未处理异常:', JSON.stringify({
+    ...reqInfo,
+    error: {
+      message: err?.message || String(err),
+      name: err?.name,
+      stack: isProd ? undefined : err?.stack,
+    },
+  }))
   if (!res.headersSent) {
-    res.status(500).json({ success: false, message: '服务器内部错误' })
+    res.status(500).json({ success: false, code: 50000, message: '服务器内部错误' })
   }
 })
 

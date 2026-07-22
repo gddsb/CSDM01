@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs'
 import { User, Role, OperationLog } from '../models/index.js'
-import { success, fail, ErrorCode } from '../utils/response.js'
+import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { generateToken } from '../utils/jwt.js'
 
 // 登录

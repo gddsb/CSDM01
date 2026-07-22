@@ -1,5 +1,5 @@
 import { SystemConfig, DataDictionary } from '../models/index.js'
-import { success, fail, ErrorCode } from '../utils/response.js'
+import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import sequelize from '../config/database.js'
 import { Sequelize, Op } from 'sequelize'
 import fs from 'fs'

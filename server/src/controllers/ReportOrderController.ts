@@ -14,7 +14,7 @@ import {
   ProcessMaterial,
   ReportImage,
 } from '../models/index.js'
-import { success, fail, ErrorCode } from '../utils/response.js'
+import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { generateReportOrderNo } from '../utils/sequence.js'
 
 // 报工单状态: 0=开工, 1=完工
@@ -146,7 +146,7 @@ export const list = async (req, res) => {
       if (dateEnd) where.report_time[Op.lte] = new Date(dateEnd + ' 23:59:59')
     }
 
-    const limit = Number(pageSize)
+    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
     const offset = (Number(page) - 1) * limit
     const { rows, count } = await ReportOrder.findAndCountAll({
       where,

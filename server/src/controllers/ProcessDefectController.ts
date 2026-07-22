@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { ProcessDefect, DefectType } from '../models/index.js'
-import { success, fail, ErrorCode } from '../utils/response.js'
+import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 
 // 列表查询（关联不良分类获取详情）
 export const list = async (req, res) => {
@@ -10,7 +10,7 @@ export const list = async (req, res) => {
     if (report_order_id) where.report_order_id = Number(report_order_id)
     if (process_id) where.process_id = Number(process_id)
 
-    const limit = Number(pageSize)
+    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
     const offset = (Number(page) - 1) * limit
     const { rows, count } = await ProcessDefect.findAndCountAll({
       where,
@@ -53,7 +53,7 @@ export const scrapList = async (req, res) => {
     const where: any = {}
     if (report_order_id) where.report_order_id = Number(report_order_id)
 
-    const limit = Number(pageSize)
+    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
     const offset = (Number(page) - 1) * limit
     const { rows, count } = await ProcessDefect.findAndCountAll({
       where,

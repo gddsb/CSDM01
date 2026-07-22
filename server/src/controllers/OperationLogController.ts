@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { OperationLog } from '../models/index.js'
-import { success, fail, ErrorCode } from '../utils/response.js'
+import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 
 // 日志列表（分页 + 筛选）
 export const list = async (req, res) => {
@@ -17,7 +17,7 @@ export const list = async (req, res) => {
       if (endDate || dateEnd) where.created_at[Op.lte] = new Date((endDate || dateEnd) + ' 23:59:59')
     }
 
-    const limit = Number(pageSize)
+    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
     const offset = (Number(page) - 1) * limit
     const { rows, count } = await OperationLog.findAndCountAll({
       where,

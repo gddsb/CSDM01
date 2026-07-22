@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs'
 import { Op } from 'sequelize'
 import { User, Role } from '../models/index.js'
-import { success, fail, ErrorCode } from '../utils/response.js'
+import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import path from 'path'
 import fs from 'fs'
 
@@ -23,7 +23,7 @@ export const list = async (req, res) => {
     }
     if (role_id) where.role_id = Number(role_id)
 
-    const limit = Number(pageSize)
+    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
     const offset = (Number(page) - 1) * limit
     const { rows, count } = await User.findAndCountAll({
       where,

@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { Order, ReportOrder, Material } from '../models/index.js'
-import { success, fail, ErrorCode } from '../utils/response.js'
+import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { generateOrderNo } from '../utils/sequence.js'
 
 // 订单状态: 0=开立, 1=下发, 2=开工, 3=完工, 4=关闭
@@ -61,7 +61,7 @@ export const list = async (req, res) => {
       if (planDateEnd) where.plan_start_time[Op.lte] = new Date(planDateEnd)
     }
 
-    const limit = Number(pageSize)
+    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
     const offset = (Number(page) - 1) * limit
     const { rows, count } = await Order.findAndCountAll({
       where,

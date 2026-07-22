@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { ProcessException, Device } from '../models/index.js'
-import { success, fail, ErrorCode } from '../utils/response.js'
+import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 
 export const list = async (req, res) => {
   try {
@@ -11,7 +11,7 @@ export const list = async (req, res) => {
     if (device_id) where.device_id = Number(device_id)
     if (stop_type) where.stop_type = { [Op.like]: `%${stop_type}%` }
 
-    const limit = Number(pageSize)
+    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
     const offset = (Number(page) - 1) * limit
     const { rows, count } = await ProcessException.findAndCountAll({
       where,

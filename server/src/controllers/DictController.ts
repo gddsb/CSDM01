@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { DictType, DictData } from '../models/index.js'
-import { success, fail, ErrorCode } from '../utils/response.js'
+import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 
 export const listType = async (req, res) => {
   try {
@@ -15,7 +15,7 @@ export const listType = async (req, res) => {
     if (status !== undefined && status !== '' && status !== null) {
       where.status = Number(status)
     }
-    const limit = Number(pageSize)
+    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
     const offset = (Number(page) - 1) * limit
     const { rows, count } = await DictType.findAndCountAll({
       where,
@@ -113,7 +113,7 @@ export const listData = async (req, res) => {
     if (status !== undefined && status !== '' && status !== null) {
       where.status = Number(status)
     }
-    const limit = Number(pageSize)
+    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
     const offset = (Number(page) - 1) * limit
     const { rows, count } = await DictData.findAndCountAll({
       where,

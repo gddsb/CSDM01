@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { ManpowerRecord, ReportOrder } from '../models/index.js'
-import { success, fail, ErrorCode } from '../utils/response.js'
+import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 
 const calcHours = (start, end) => {
   if (!start || !end) return 0
@@ -88,7 +88,7 @@ export const list = async (req, res) => {
       if (dateEnd) where.record_date[Op.lte] = dateEnd
     }
 
-    const limit = Number(pageSize)
+    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
     const offset = (Number(page) - 1) * limit
     const { rows, count } = await ManpowerRecord.findAndCountAll({
       where,
@@ -193,7 +193,7 @@ export const summaryByReportOrder = async (req, res) => {
       else if (statusArr.length > 1) roWhere.status = { [Op.in]: statusArr }
     }
 
-    const limit = Number(pageSize)
+    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
     const offset = (Number(page) - 1) * limit
 
     const { rows: reportOrders, count } = await ReportOrder.findAndCountAll({

@@ -1,6 +1,6 @@
 import { Op } from 'sequelize'
 import { Permission, Role, User } from '../models/index.js'
-import { success, fail, ErrorCode } from '../utils/response.js'
+import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 
 // 菜单/权限列表（树形结构）
 export const list = async (req, res) => {
