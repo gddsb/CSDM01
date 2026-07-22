@@ -642,8 +642,19 @@ export default function ProcessReporting() {
           unit: defect?.defect_unit || item.unit,
           defect_images: item.defect_images,
         })
+        // 后端 create 返回不含 defect_code/defect_type/defect_name（这些来自关联表，仅 list 接口返回），
+        // 用 item 作为基底合并，保留选择时已设置好的展示字段，避免保存后显示空白需刷新
         setProdDefectList(prev => prev.map(d =>
-          d.id === item.id ? { ...res.data, id: res.data.defect_id, defect_images: parseImages(res.data.defect_images) } : d
+          d.id === item.id ? {
+            ...item,
+            ...res.data,
+            id: res.data.defect_id,
+            defect_id: res.data.defect_id,
+            defect_code: item.defect_code,
+            defect_type: item.defect_type,
+            defect_name: item.defect_name,
+            defect_images: parseImages(res.data.defect_images),
+          } : d
         ))
       }
       fetchReportStats(selectedReport.report_order_id)
@@ -943,8 +954,19 @@ export default function ProcessReporting() {
           unit: defect?.defect_unit || item.unit,
           defect_images: item.defect_images,
         })
+        // 后端 create 返回不含 defect_code/defect_type/defect_name（这些来自关联表，仅 list 接口返回），
+        // 用 item 作为基底合并，保留选择时已设置好的展示字段，避免保存后显示空白需刷新
         setScrapDefectList(prev => prev.map(d =>
-          d.id === item.id ? { ...res.data, id: res.data.scrap_id, defect_images: parseImages(res.data.defect_images) } : d
+          d.id === item.id ? {
+            ...item,
+            ...res.data,
+            id: res.data.scrap_id,
+            scrap_id: res.data.scrap_id,
+            defect_code: item.defect_code,
+            defect_type: item.defect_type,
+            defect_name: item.defect_name,
+            defect_images: parseImages(res.data.defect_images),
+          } : d
         ))
       }
       fetchReportStats(selectedReport.report_order_id)

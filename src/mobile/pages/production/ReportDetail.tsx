@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Toast, Dialog, Button, Stepper, Input, TextArea, Selector, DatePicker, Switch } from 'antd-mobile'
+import { Toast, Dialog, Button, Stepper, Input, TextArea, Selector, DatePicker, Switch, ImageViewer } from 'antd-mobile'
 import { AddOutline, DeleteOutline, CheckOutline, PictureOutline, DownOutline } from 'antd-mobile-icons'
 import api from '../../../utils/api'
 import dayjs from 'dayjs'
@@ -359,6 +359,12 @@ export default function ReportDetail() {
 
 function DefectTab({ list, setList, options, isEditable, category, reportOrderId, reportNo, processId, processes, onProcessChange, showProcess }) {
   const [saving, setSaving] = useState(false)
+  const [preview, setPreview] = useState({ visible: false, images: [], index: 0 })
+
+  const handlePreview = (images, index) => {
+    if (!images || images.length === 0) return
+    setPreview({ visible: true, images, index })
+  }
 
   const handleAdd = () => {
     setList(prev => [...prev, {
@@ -584,7 +590,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
                 <div className="rd-image-list">
                   {(record.images || []).map((img, idx) => (
                     <div key={idx} className="rd-image-item">
-                      <img src={img} alt="" className="rd-image" />
+                      <img src={img} alt="" className="rd-image" onClick={() => handlePreview(record.images || [], idx)} />
                       <DeleteOutline color="#fff" fontSize={12} onClick={() => handleRemoveImage(record.id, idx)} className="rd-image-delete" />
                     </div>
                   ))}
@@ -609,7 +615,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
                 <div className="rd-image-list">
                   {(record.images || []).map((img, idx) => (
                     <div key={idx} className="rd-image-item">
-                      <img src={img} alt="" className="rd-image" />
+                      <img src={img} alt="" className="rd-image" onClick={() => handlePreview(record.images || [], idx)} />
                     </div>
                   ))}
                 </div>
@@ -618,12 +624,24 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
           )}
         </div>
       ))}
+      <ImageViewer.Multi
+        images={preview.images}
+        visible={preview.visible}
+        defaultIndex={preview.index}
+        onClose={() => setPreview(p => ({ ...p, visible: false }))}
+      />
     </div>
   )
 }
 
 function MaterialTab({ list, setList, options, isEditable, reportOrderId, reportNo, processId, processes, onProcessChange, showProcess }) {
   const [saving, setSaving] = useState(false)
+  const [preview, setPreview] = useState({ visible: false, images: [], index: 0 })
+
+  const handlePreview = (images, index) => {
+    if (!images || images.length === 0) return
+    setPreview({ visible: true, images, index })
+  }
 
   const handleAdd = () => {
     setList(prev => [...prev, {
@@ -868,7 +886,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
                 <div className="rd-image-list">
                   {(record.images || []).map((img, idx) => (
                     <div key={idx} className="rd-image-item">
-                      <img src={img} alt="" className="rd-image" />
+                      <img src={img} alt="" className="rd-image" onClick={() => handlePreview(record.images || [], idx)} />
                       <DeleteOutline color="#fff" fontSize={12} onClick={() => handleRemoveImage(record.id, idx)} className="rd-image-delete" />
                     </div>
                   ))}
@@ -901,7 +919,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
                 <div className="rd-image-list">
                   {(record.images || []).map((img, idx) => (
                     <div key={idx} className="rd-image-item">
-                      <img src={img} alt="" className="rd-image" />
+                      <img src={img} alt="" className="rd-image" onClick={() => handlePreview(record.images || [], idx)} />
                     </div>
                   ))}
                 </div>
@@ -910,6 +928,12 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
           )}
         </div>
       ))}
+      <ImageViewer.Multi
+        images={preview.images}
+        visible={preview.visible}
+        defaultIndex={preview.index}
+        onClose={() => setPreview(p => ({ ...p, visible: false }))}
+      />
     </div>
   )
 }
@@ -1086,7 +1110,13 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId 
 
 function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, reportNo, reportTime }) {
   const [saving, setSaving] = useState(false)
+  const [preview, setPreview] = useState({ visible: false, images: [], index: 0 })
   const exceptionCategories = ['换型换线', '停机待料', '故障维修', '其它停机']
+
+  const handlePreview = (images, index) => {
+    if (!images || images.length === 0) return
+    setPreview({ visible: true, images, index })
+  }
 
   const handleAdd = async () => {
     await handleSave()
@@ -1355,7 +1385,7 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
                 <div className="rd-image-list" style={{ marginTop: 8 }}>
                   {(record.images || []).map((img, idx) => (
                     <div key={idx} className="rd-image-item">
-                      <img src={img} alt="" className="rd-image" />
+                      <img src={img} alt="" className="rd-image" onClick={() => handlePreview(record.images || [], idx)} />
                       <DeleteOutline color="#fff" fontSize={12} onClick={() => handleRemoveImage(record.id, idx)} className="rd-image-delete" />
                     </div>
                   ))}
@@ -1384,7 +1414,7 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
                 <div className="rd-image-list" style={{ marginTop: 8 }}>
                   {(record.images || []).map((img, idx) => (
                     <div key={idx} className="rd-image-item">
-                      <img src={img} alt="" className="rd-image" />
+                      <img src={img} alt="" className="rd-image" onClick={() => handlePreview(record.images || [], idx)} />
                     </div>
                   ))}
                 </div>
@@ -1393,6 +1423,12 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
           )}
         </div>
       ))}
+      <ImageViewer.Multi
+        images={preview.images}
+        visible={preview.visible}
+        defaultIndex={preview.index}
+        onClose={() => setPreview(p => ({ ...p, visible: false }))}
+      />
     </div>
   )
 }
