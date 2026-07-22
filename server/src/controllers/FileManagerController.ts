@@ -85,8 +85,8 @@ export const listDirectory = async (req, res) => {
       total: result.length,
     }, '查询成功')
   } catch (err) {
-    console.error('列出目录失败:', err)
-    return fail(res, err.message || '查询失败', ErrorCode.SYSTEM_ERROR)
+    logger.error('列出目录失败:', err)
+    return fail(res, '查询失败', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -120,8 +120,8 @@ export const removeItem = async (req, res) => {
 
     return success(res, null, '删除成功')
   } catch (err) {
-    console.error('删除失败:', err)
-    return fail(res, err.message || '删除失败', ErrorCode.SYSTEM_ERROR)
+    logger.error('删除失败:', err)
+    return fail(res, '删除失败', ErrorCode.SYSTEM_ERROR)
   }
 }
 

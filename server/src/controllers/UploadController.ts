@@ -1,7 +1,8 @@
 import path from 'path'
 import fs from 'fs'
 import crypto from 'crypto'
-import { success, fail, MAX_PAGE_SIZE } from '../utils/response.js'
+import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
+import { logger } from '../utils/logger.js'
 
 const UPLOAD_DIR = 'uploads/common'
 
@@ -33,8 +34,8 @@ export const uploadImage = async (req, res) => {
     const url = `/${UPLOAD_DIR}/${newName}`
     return success(res, { url, name: newName }, '上传成功')
   } catch (err) {
-    console.error('图片上传失败:', err)
-    return fail(res, err.message || '上传失败')
+    logger.error('图片上传失败:', err)
+    return fail(res, '上传失败', ErrorCode.SYSTEM_ERROR)
   }
 }
 

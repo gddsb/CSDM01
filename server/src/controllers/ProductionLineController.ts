@@ -79,16 +79,27 @@ export const detail = async (req, res) => {
   }
 }
 
+const PRODUCTION_LINE_WRITABLE_FIELDS = ['line_code', 'line_name', 'workshop', 'line_leader', 'sort_order', 'status']
+
+function pickProductionLineFields(body) {
+  const data = {}
+  for (const field of PRODUCTION_LINE_WRITABLE_FIELDS) {
+    if (body[field] !== undefined) data[field] = body[field]
+  }
+  return data
+}
+
 // 创建产线
 export const create = async (req, res) => {
   try {
     const { line_code, line_name } = req.body
     if (!line_code || !line_name) {
-      return fail(res, '产线编码和名称不能为空')
+      return fail(res, '产线编码和名称不能为空', ErrorCode.PARAM_INVALID)
     }
     const exists = await ProductionLine.findOne({ where: { line_code } })
-    if (exists) return fail(res, '产线编码已存在')
-    const line = await ProductionLine.create(req.body)
+    if (exists) return fail(res, '产线编码已存在', ErrorCode.RECORD_EXISTS)
+    const data = pickProductionLineFields(req.body)
+    const line = await ProductionLine.create(data)
     return success(res, line, '创建成功')
   } catch (err) {
     console.error('创建产线失败:', err)
@@ -102,13 +113,14 @@ export const update = async (req, res) => {
     const { id } = req.params
     const line = await ProductionLine.findOne({ where: { line_id: id } })
     if (!line) return fail(res, '产线不存在', ErrorCode.RECORD_NOT_FOUND)
-    if (req.body.line_code && req.body.line_code !== line.line_code) {
+    const data = pickProductionLineFields(req.body)
+    if (data.line_code && data.line_code !== line.line_code) {
       const exists = await ProductionLine.findOne({
-        where: { line_code: req.body.line_code, line_id: { [Op.ne]: id } },
+        where: { line_code: data.line_code, line_id: { [Op.ne]: id } },
       })
-      if (exists) return fail(res, '产线编码已存在')
+      if (exists) return fail(res, '产线编码已存在', ErrorCode.RECORD_EXISTS)
     }
-    await line.update(req.body)
+    await line.update(data)
     return success(res, line, '修改成功')
   } catch (err) {
     console.error('修改产线失败:', err)

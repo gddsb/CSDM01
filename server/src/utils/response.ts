@@ -7,6 +7,7 @@ export enum ErrorCode {
   DUPLICATE_REQUEST = 10003,
   PERMISSION_DENIED = 10004,
   UNAUTHORIZED = 10005,
+  RECORD_EXISTS = 10007,
   BUSINESS_ERROR = 20001,
   SYSTEM_ERROR = 50000,
 }
@@ -18,6 +19,7 @@ function errorCodeToHttpStatus(errorCode: number): number {
     case ErrorCode.PERMISSION_DENIED: return 403
     case ErrorCode.RECORD_NOT_FOUND: return 404
     case ErrorCode.DUPLICATE_REQUEST: return 409
+    case ErrorCode.RECORD_EXISTS: return 409
     case ErrorCode.SYSTEM_ERROR: return 500
     default: return 400
   }

@@ -52,14 +52,19 @@ export const getConfig = async (req, res) => {
   }
 }
 
+const ALLOWED_CONFIG_KEYS = new Set(defaultConfigs.map(d => d.config_key).filter(k => k !== 'system_version'))
+
 // 保存系统配置（system_version 只读，不允许通过此接口修改）
 export const saveConfig = async (req, res) => {
   try {
     const configs = { ...req.body }
-    // 系统版本只读，强制忽略前端传入的值
     delete configs.system_version
     const username = req.user?.username || 'system'
     for (const [key, value] of Object.entries(configs)) {
+      if (!ALLOWED_CONFIG_KEYS.has(key)) {
+        logger.warn(`[saveConfig] 拒绝写入未知配置项: ${key}`)
+        continue
+      }
       const val = typeof value === 'object' ? JSON.stringify(value) : String(value)
       const [config, created] = await SystemConfig.findOrCreate({
         where: { config_key: key },
@@ -872,7 +877,11 @@ export const getDatabaseInfo = async (req, res) => {
       info.connection_status = 'connected'
     } catch (e) {
       info.connection_status = 'error'
-      info.connection_error = e.message
+      const rawMsg = e.message || '连接失败'
+      info.connection_error = rawMsg
+        .replace(/(password|pwd|passwd|secret)[=:]['"]?[^&,\s'"]*/gi, '$1=***')
+        .replace(/\/\/[^:@\s]+:[^@\s]+@/g, '//***:***@')
+      logger.error('[getDatabaseInfo] 数据库连接失败:', rawMsg)
     }
 
     const { tables, columnsMap } = await collectDatabaseSchema()
@@ -1197,7 +1206,7 @@ export const migrateDatabase = async (req, res) => {
         logger.warn('[SilentCatch] 静默异常被捕获', err?.message)
     }
 
-    // 5. 更新 .env 文件，使下次启动时使用新数据库
+    // 5. 更新 .env 文件，使下次启动时使用新数据库（密码不回写，需手动配置）
     let envContent = readEnvFile()
     const setEnv = (key, value) => { envContent = updateEnvLine(envContent, key, value) }
     setEnv('DB_DIALECT', target)
@@ -1208,7 +1217,6 @@ export const migrateDatabase = async (req, res) => {
       setEnv('DB_PORT', req.body?.port || (target === 'postgres' ? 5432 : 3306))
       setEnv('DB_NAME', req.body?.database || 'milk_can_mes')
       setEnv('DB_USER', req.body?.username || 'root')
-      setEnv('DB_PASSWORD', req.body?.password || '')
     }
     writeEnvFile(envContent)
 
@@ -1317,15 +1325,21 @@ export const listTableRecords = async (req, res) => {
       return fail(res, '非法表名')
     }
 
-    const limit = Math.min(parseInt(pageSize, 10) || 20, 200)
+    const limit = Math.min(parseInt(pageSize, 10) || 20, MAX_PAGE_SIZE)
     const offset = (Math.max(parseInt(page, 10) || 1, 1) - 1) * limit
 
     // 查询总记录数
-    const countResult = await sequelize.query(`SELECT COUNT(*) as count FROM \`${table_name}\``, { type: Sequelize.QueryTypes.SELECT })
+    const countResult = await sequelize.query("SELECT COUNT(*) as count FROM ??", { 
+      replacements: [table_name],
+      type: Sequelize.QueryTypes.SELECT 
+    })
     const total = countResult[0]?.count || 0
 
     // 查询分页数据
-    const rows = await sequelize.query(`SELECT * FROM \`${table_name}\` LIMIT ${limit} OFFSET ${offset}`, { type: Sequelize.QueryTypes.SELECT })
+    const rows = await sequelize.query("SELECT * FROM ?? LIMIT ? OFFSET ?", { 
+      replacements: [table_name, limit, offset],
+      type: Sequelize.QueryTypes.SELECT 
+    })
 
     // 查询字段信息
     const dictEntry = await DataDictionary.findOne({ where: { table_name } })

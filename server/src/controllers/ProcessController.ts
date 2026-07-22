@@ -48,16 +48,27 @@ export const detail = async (req, res) => {
   }
 }
 
+const PROCESS_WRITABLE_FIELDS = ['process_code', 'process_name', 'sort_order', 'has_material', 'status']
+
+function pickProcessFields(body) {
+  const data = {}
+  for (const field of PROCESS_WRITABLE_FIELDS) {
+    if (body[field] !== undefined) data[field] = body[field]
+  }
+  return data
+}
+
 // 创建工序
 export const create = async (req, res) => {
   try {
     const { process_code, process_name } = req.body
     if (!process_code || !process_name) {
-      return fail(res, '工序编码和名称不能为空')
+      return fail(res, '工序编码和名称不能为空', ErrorCode.PARAM_INVALID)
     }
     const exists = await Process.findOne({ where: { process_code } })
-    if (exists) return fail(res, '工序编码已存在')
-    const process = await Process.create(req.body)
+    if (exists) return fail(res, '工序编码已存在', ErrorCode.RECORD_EXISTS)
+    const data = pickProcessFields(req.body)
+    const process = await Process.create(data)
     return success(res, process, '创建成功')
   } catch (err) {
     console.error('创建工序失败:', err)
@@ -71,13 +82,14 @@ export const update = async (req, res) => {
     const { id } = req.params
     const process = await Process.findOne({ where: { process_id: id } })
     if (!process) return fail(res, '工序不存在', ErrorCode.RECORD_NOT_FOUND)
-    if (req.body.process_code && req.body.process_code !== process.process_code) {
+    const data = pickProcessFields(req.body)
+    if (data.process_code && data.process_code !== process.process_code) {
       const exists = await Process.findOne({
-        where: { process_code: req.body.process_code, process_id: { [Op.ne]: id } },
+        where: { process_code: data.process_code, process_id: { [Op.ne]: id } },
       })
-      if (exists) return fail(res, '工序编码已存在')
+      if (exists) return fail(res, '工序编码已存在', ErrorCode.RECORD_EXISTS)
     }
-    await process.update(req.body)
+    await process.update(data)
     return success(res, process, '修改成功')
   } catch (err) {
     console.error('修改工序失败:', err)
