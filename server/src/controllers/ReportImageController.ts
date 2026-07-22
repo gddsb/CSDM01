@@ -61,7 +61,7 @@ export const uploadImages = async (req, res) => {
     const dbRecords = await ReportImage.findAll({
       where: { report_order_id: reportOrder.report_order_id },
       raw: true,
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
     })
     let maxSeq = 0
     dbRecords.forEach(r => {

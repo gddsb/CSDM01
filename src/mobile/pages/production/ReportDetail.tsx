@@ -15,15 +15,20 @@ const TABS = [
 
 const genTempId = () => 'tmp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6)
 
-// 自定义下拉组件：下拉显示编码+项目，选中后只显示编码
+// 可编辑筛选下拉组件：支持输入文本快速筛选，下拉显示编码+项目，选中后只显示编码
 function DefectSelect({ value, onChange, options, placeholder, codeField, nameField, autoWidth, excludeValues = [] }) {
   const [open, setOpen] = useState(false)
+  const [searchText, setSearchText] = useState('')
   const ref = useRef(null)
+  const searchRef = useRef(null)
 
   useEffect(() => {
     if (!open) return
     const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false)
+        setSearchText('')
+      }
     }
     document.addEventListener('mousedown', handler)
     document.addEventListener('touchstart', handler)
@@ -33,24 +38,50 @@ function DefectSelect({ value, onChange, options, placeholder, codeField, nameFi
     }
   }, [open])
 
+  useEffect(() => {
+    if (open && searchRef.current) {
+      setTimeout(() => searchRef.current.focus(), 50)
+    }
+  }, [open])
+
   const selected = options.find(o => o.value === value)
-  const filteredOptions = options.filter(o => o.value === value || !excludeValues.includes(o.value))
   const codeKey = codeField || 'defect_code'
   const nameKey = nameField || 'defect_name'
+
+  const filteredOptions = options
+    .filter(o => o.value === value || !excludeValues.includes(o.value))
+    .filter(o => {
+      if (!searchText) return true
+      const code = String(o[codeKey] || '').toLowerCase()
+      const name = String(o[nameKey] || '').toLowerCase()
+      const search = searchText.toLowerCase()
+      return code.includes(search) || name.includes(search)
+    })
 
   return (
     <div className="rd-defect-select" ref={ref}>
       <div
         className={`rd-defect-select-display ${!selected ? 'placeholder' : ''}`}
-        onClick={() => setOpen(!open)}
+        onClick={() => { setOpen(!open); setSearchText('') }}
       >
         {selected ? selected[codeKey] : (placeholder || '请选择')}
         <span className="rd-defect-select-arrow"><DownOutline /></span>
       </div>
       {open && (
         <div className={`rd-defect-select-dropdown ${autoWidth ? 'auto-width' : ''}`}>
+          <div className="rd-defect-select-search-wrap">
+            <input
+              ref={searchRef}
+              type="text"
+              className="rd-defect-select-search-input"
+              placeholder="输入编码或名称筛选..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
           {filteredOptions.length === 0 && (
-            <div className="rd-defect-select-option" style={{ color: '#999' }}>无选项</div>
+            <div className="rd-defect-select-option" style={{ color: '#999' }}>无匹配项</div>
           )}
           {filteredOptions.map(o => (
             <div
@@ -59,10 +90,11 @@ function DefectSelect({ value, onChange, options, placeholder, codeField, nameFi
               onClick={() => {
                 onChange(o.value)
                 setOpen(false)
+                setSearchText('')
               }}
             >
               <span className="rd-defect-select-option-code">{o[codeKey]}</span>
-              <span className="rd-defect-select-option-type">{o.defect_type}</span>
+              {o.defect_type && <span className="rd-defect-select-option-type">{o.defect_type}</span>}
               <span className="rd-defect-select-option-name">{o[nameKey]}</span>
             </div>
           ))}
@@ -93,6 +125,18 @@ export default function ReportDetail() {
 
   const isEditable = report?.status === 0 || report?.status === '0' || report?.status === '开工'
   const currentTabNeedProcess = TABS.find(t => t.key === activeTab)?.needProcess
+
+  // 计算投入数量（第一道工序物料投入总数 - 退回总数）
+  const inputQty = (() => {
+    if (!report) return 0
+    const procs = (report.report_processes || []).slice().sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0))
+    if (procs.length === 0) return 0
+    const firstProcId = procs[0].process_id
+    const mats = (report.process_materials || []).filter(m => m.process_id === firstProcId)
+    const inputTotal = mats.filter(m => m.material_type === '投入').reduce((sum, m) => sum + Number(m.quantity || 0), 0)
+    const returnTotal = mats.filter(m => m.material_type === '退回').reduce((sum, m) => sum + Number(m.quantity || 0), 0)
+    return Math.floor(inputTotal - returnTotal)
+  })()
 
   useEffect(() => {
     Promise.all([
@@ -216,30 +260,27 @@ export default function ReportDetail() {
       <div className="mobile-page" style={{ paddingBottom: 0 }}>
         <div className="rd-header-card">
           <div className="rd-header-row">
-            <div className="rd-header-left">
-              <span className="rd-report-no">{report.report_no}</span>
-            </div>
-            <div className="rd-header-right">
-              <span className="rd-label">产线</span>
-              <span className="rd-value">{report.line_name || '-'}</span>
-            </div>
-          </div>
-          <div className="rd-header-row">
-            <div className="rd-header-left">
-              <span className="rd-label">料号</span>
-              <span className="rd-value">{report.material_code || '-'}</span>
-            </div>
-            <div className="rd-header-right">
-              <span className="rd-label">料品名称</span>
-              <span className="rd-value rd-material-name">{report.material_name || '-'}</span>
-            </div>
-          </div>
-          <div className="rd-header-row rd-qty-row">
-            <span className="rd-label">报工数量</span>
-            <span className="rd-qty">{report.report_qty || 0}</span>
+            <span className="rd-report-no">{report.report_no}</span>
+            <span className="rd-header-divider" />
+            <span className="rd-label">产线</span>
+            <span className="rd-value">{report.line_name || '-'}</span>
             <span className={`rd-status-tag ${report.status === 0 || report.status === '开工' ? 'started' : 'done'}`}>
               {report.status === 0 || report.status === '开工' ? '开工' : '完工'}
             </span>
+          </div>
+          <div className="rd-header-row">
+            <span className="rd-label">料号</span>
+            <span className="rd-value">{report.material_code || '-'}</span>
+          </div>
+          <div className="rd-header-row">
+            <span className="rd-label">料品名称</span>
+            <span className="rd-value">{report.material_name || '-'}</span>
+          </div>
+          <div className="rd-header-row rd-qty-row">
+            <span className="rd-label">报工数量</span>
+            <span className="rd-qty">{Math.floor(Number(report.report_qty) || 0)}</span>
+            <span className="rd-label" style={{ marginLeft: 16 }}>投入数量</span>
+            <span className="rd-qty">{inputQty}</span>
           </div>
         </div>
       </div>
@@ -1086,7 +1127,14 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
   }
 
   const handleChange = (recordId, field, value) => {
-    setList(prev => prev.map(item => item.id === recordId ? { ...item, [field]: value } : item))
+    setList(prev => prev.map(item => {
+      if (item.id !== recordId) return item
+      const next = { ...item, [field]: value }
+      if (field === 'exception_type' && value !== '故障维修') {
+        next.device_id = null
+      }
+      return next
+    }))
   }
 
   const handleImageUpload = async (recordId) => {
@@ -1198,7 +1246,12 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
             <span className="rd-list-item-title">
               {record.exception_type || '新增记录'}
             </span>
-            {isEditable && <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} fontSize={16} />}
+            {isEditable && (
+              <div className="rd-list-item-actions">
+                <PictureOutline color="#2196F3" onClick={() => handleImageUpload(record.id)} fontSize={18} />
+                <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} fontSize={16} />
+              </div>
+            )}
           </div>
 
           {isEditable ? (
@@ -1221,6 +1274,8 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
                     className="rd-form-input"
                     value={record.device_id || ''}
                     onChange={(e) => handleChange(record.id, 'device_id', e.target.value ? Number(e.target.value) : null)}
+                    disabled={record.exception_type !== '故障维修'}
+                    style={record.exception_type !== '故障维修' ? { opacity: 0.5, backgroundColor: '#f5f5f5' } : {}}
                   >
                     <option value="">无</option>
                     {devices.map(d => <option key={d.device_id} value={d.device_id}>{d.device_name}</option>)}
@@ -1268,23 +1323,16 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
                   onChange={(e) => handleChange(record.id, 'description', e.target.value)}
                 />
               </div>
-              <div className="rd-form-item">
-                <label className="rd-form-label">异常图片</label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <PictureOutline color="#2196F3" onClick={() => handleImageUpload(record.id)} fontSize={18} />
-                  {(record.images || []).length > 0 && <span style={{ color: '#999', fontSize: 12 }}>{(record.images || []).length}张</span>}
+              {(record.images || []).length > 0 && (
+                <div className="rd-image-list" style={{ marginTop: 8 }}>
+                  {(record.images || []).map((img, idx) => (
+                    <div key={idx} className="rd-image-item">
+                      <img src={img} alt="" className="rd-image" />
+                      <DeleteOutline color="#fff" fontSize={12} onClick={() => handleRemoveImage(record.id, idx)} className="rd-image-delete" />
+                    </div>
+                  ))}
                 </div>
-                {(record.images || []).length > 0 && (
-                  <div className="rd-image-list" style={{ marginTop: 8 }}>
-                    {(record.images || []).map((img, idx) => (
-                      <div key={idx} className="rd-image-item">
-                        <img src={img} alt="" className="rd-image" />
-                        <DeleteOutline color="#fff" fontSize={12} onClick={() => handleRemoveImage(record.id, idx)} className="rd-image-delete" />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           ) : (
             <div className="rd-list-item-body">
