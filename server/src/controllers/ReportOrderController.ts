@@ -21,6 +21,25 @@ import { logger } from '../utils/logger.js'
 // 报工单状态: 0=开工, 1=完工
 const statusMap = { '开工': 0, '完工': 1 }
 
+function isValidPositiveQty(val: any): boolean {
+  if (val === undefined || val === null) return true
+  const num = Number(val)
+  return Number.isInteger(num) && num >= 0
+}
+
+async function sumReportQty(orderId: number, excludeReportOrderId?: number): Promise<number> {
+  const where: any = { order_id: orderId }
+  if (excludeReportOrderId !== undefined) {
+    where.report_order_id = { [Op.ne]: excludeReportOrderId }
+  }
+  const rows = await ReportOrder.findAll({
+    where,
+    attributes: [[sequelize.fn('SUM', sequelize.col('report_qty')), 'total_qty']],
+    raw: true,
+  })
+  return Number(rows[0]?.total_qty || 0)
+}
+
 // 将状态参数（字符串/数字/数组）转换为整数数组
 const parseStatusParam = (status) => {
   if (status === undefined || status === '') return null
@@ -211,6 +230,10 @@ export const create = async (req, res) => {
     if (!order_id) return fail(res, '订单 ID 不能为空', ErrorCode.PARAM_INVALID)
     if (!line_id) return fail(res, '产线 ID 不能为空', ErrorCode.PARAM_INVALID)
 
+    if (!isValidPositiveQty(report_qty)) {
+      return fail(res, '报工数量必须是非负整数', ErrorCode.PARAM_INVALID)
+    }
+
     const order = await Order.findOne({ where: { order_id } })
     if (!order) return fail(res, '订单不存在', ErrorCode.RECORD_NOT_FOUND)
 
@@ -220,6 +243,14 @@ export const create = async (req, res) => {
     }
     if (orderStatus >= 4) {
       return fail(res, '订单已关闭，不允许创建报工单', ErrorCode.BUSINESS_ERROR)
+    }
+
+    const plannedQty = Number(order.getDataValue('planned_qty') || 0)
+    if (plannedQty > 0 && report_qty !== undefined) {
+      const sumQty = await sumReportQty(order_id)
+      if (sumQty + Number(report_qty) > plannedQty) {
+        return fail(res, `报工数量超出订单计划数量（已报${sumQty}，计划${plannedQty}）`, ErrorCode.BUSINESS_ERROR)
+      }
     }
 
     const line = await ProductionLine.findOne({ where: { line_id } })
@@ -306,14 +337,44 @@ export const update = async (req, res) => {
     }
 
     const { report_qty, line_id, remarks } = req.body
+
+    if (report_qty !== undefined && !isValidPositiveQty(report_qty)) {
+      return fail(res, '报工数量必须是非负整数', ErrorCode.PARAM_INVALID)
+    }
+
     const updateData: any = {}
     if (report_qty !== undefined) updateData.report_qty = report_qty
     if (remarks !== undefined) updateData.remarks = remarks
+
+    if (report_qty !== undefined) {
+      const order = await Order.findOne({ where: { order_id: reportOrder.order_id } })
+      if (order) {
+        const plannedQty = Number(order.getDataValue('planned_qty') || 0)
+        if (plannedQty > 0) {
+          const sumQty = await sumReportQty(reportOrder.order_id, Number(id))
+          if (sumQty + Number(report_qty) > plannedQty) {
+            return fail(res, `报工数量超出订单计划数量（已报${sumQty}，计划${plannedQty}）`, ErrorCode.BUSINESS_ERROR)
+          }
+        }
+      }
+    }
 
     let newLineId: number | null = null
     let newLineName: string | null = null
 
     if (line_id && line_id !== reportOrder.line_id) {
+      const [defectCount, materialCount, exceptionCount, manpowerCount, imageCount] = await Promise.all([
+        ProcessDefect.count({ where: { report_order_id: id } }),
+        ProcessMaterial.count({ where: { report_order_id: id } }),
+        ProcessException.count({ where: { report_order_id: id } }),
+        ManpowerRecord.count({ where: { report_order_id: id } }),
+        ReportImage.count({ where: { report_order_id: id } }),
+      ])
+      const total = defectCount + materialCount + exceptionCount + manpowerCount + imageCount
+      if (total > 0) {
+        return fail(res, `该报工单已存在子表记录(不良${defectCount}/物料${materialCount}/异常${exceptionCount}/人员${manpowerCount}/图片${imageCount})，不允许切换产线`, ErrorCode.BUSINESS_ERROR)
+      }
+
       const line = await ProductionLine.findOne({ where: { line_id } })
       if (!line) return fail(res, '产线不存在', ErrorCode.RECORD_NOT_FOUND)
       newLineId = line.line_id
@@ -380,9 +441,21 @@ export const remove = async (req, res) => {
 
 // 完工报工单（开工 → 完工）
 // 业务规则：报工单完工后联动订单状态：所有报工单均完工 → 订单完工
+// 完工校验：所有工序已完成 + 无未关闭异常
 export const finish = async (req, res) => {
   try {
     const { id } = req.params
+
+    const processCount = await ReportProcess.count({ where: { report_order_id: id } })
+    const openExceptionCount = await ProcessException.count({
+      where: { report_order_id: id, end_time: null },
+    })
+    if (processCount === 0) {
+      return fail(res, '报工单无工序记录，不允许完工', ErrorCode.BUSINESS_ERROR)
+    }
+    if (openExceptionCount > 0) {
+      return fail(res, `存在 ${openExceptionCount} 条未关闭的异常记录，请先关闭后再完工`, ErrorCode.BUSINESS_ERROR)
+    }
 
     const result = await sequelize.transaction(async (t) => {
       const reportOrder = await ReportOrder.findOne({
@@ -401,7 +474,7 @@ export const finish = async (req, res) => {
         throw err
       }
 
-      await Order.findOne({
+      const order = await Order.findOne({
         where: { order_id: reportOrder.order_id },
         transaction: t,
         lock: t.LOCK.UPDATE,
@@ -413,6 +486,17 @@ export const finish = async (req, res) => {
         finish_user_id: req.user?.userId || null,
         finish_user_name: req.user?.username || null,
       }, { transaction: t })
+
+      if (order) {
+        const finishedRows = await ReportOrder.findAll({
+          where: { order_id: order.order_id, status: 1 },
+          attributes: [[sequelize.fn('SUM', sequelize.col('report_qty')), 'finished_sum']],
+          transaction: t,
+          raw: true,
+        })
+        const finishedSum = Number(finishedRows[0]?.finished_sum || 0)
+        await order.update({ finished_qty: finishedSum }, { transaction: t })
+      }
 
       await syncOrderStatus(reportOrder.order_id, t)
 
