@@ -133,8 +133,8 @@ export default function ReportDetail() {
     if (procs.length === 0) return 0
     const firstProcId = procs[0].process_id
     const mats = (report.process_materials || []).filter(m => m.process_id === firstProcId)
-    const inputTotal = mats.filter(m => m.material_type === '投入').reduce((sum, m) => sum + Number(m.quantity || 0), 0)
-    const returnTotal = mats.filter(m => m.material_type === '退回').reduce((sum, m) => sum + Number(m.quantity || 0), 0)
+    const inputTotal = mats.filter(m => m.material_type === '领' || m.material_type === '投入').reduce((sum, m) => sum + Number(m.quantity || 0), 0)
+    const returnTotal = mats.filter(m => m.material_type === '退' || m.material_type === '退回').reduce((sum, m) => sum + Number(m.quantity || 0), 0)
     return Math.floor(inputTotal - returnTotal)
   })()
 
@@ -630,6 +630,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
       id: genTempId(),
       report_order_id: Number(reportOrderId),
       process_id: processId,
+      material_type: '领',
       bas_material_id: null,
       material_batch: '',
       package_no: '',
@@ -671,7 +672,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
         const payload = {
           report_order_id: m.report_order_id,
           process_id: m.process_id,
-          material_type: '投入',
+          material_type: m.material_type || '领',
           bas_material_id: m.bas_material_id,
           material_batch: m.material_batch,
           package_no: m.package_no || '',
@@ -812,6 +813,17 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
           {isEditable ? (
             <div className="rd-list-item-body">
               <div className="rd-form-row rd-material-same-row">
+                <div className="rd-form-item rd-form-item-type">
+                  <label className="rd-form-label">类型</label>
+                  <select
+                    className="rd-form-input"
+                    value={record.material_type || '领'}
+                    onChange={(e) => handleChangeMaterial(record.id, 'material_type', e.target.value)}
+                  >
+                    <option value="领">领</option>
+                    <option value="退">退</option>
+                  </select>
+                </div>
                 <div className="rd-form-item">
                   <label className="rd-form-label">料号</label>
                   <DefectSelect
@@ -865,6 +877,10 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
             </div>
           ) : (
             <div className="rd-list-item-body">
+              <div className="rd-list-row">
+                <span className="rd-list-label">类型</span>
+                <span className="rd-list-value">{record.material_type || '领'}</span>
+              </div>
               <div className="rd-list-row">
                 <span className="rd-list-label">料号</span>
                 <span className="rd-list-value">{record.material_code || '-'}</span>
