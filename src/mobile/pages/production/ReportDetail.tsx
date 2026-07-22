@@ -357,7 +357,7 @@ export default function ReportDetail() {
   )
 }
 
-// 独立图片管理页面：全屏覆盖，支持上传、查看、删除
+// 图片管理弹出页面：支持上传、查看、删除
 function ImageManagePage({ visible, images, title, reportNo, category, readOnly, onClose, onUpdate }) {
   const [preview, setPreview] = useState({ visible: false, index: 0 })
   const [uploading, setUploading] = useState(false)
@@ -404,39 +404,51 @@ function ImageManagePage({ visible, images, title, reportNo, category, readOnly,
   if (!visible) return null
 
   return (
-    <div className="rd-image-page">
-      <div className="rd-image-page-header">
-        <span className="rd-image-page-back" onClick={onClose}>‹</span>
-        <span className="rd-image-page-title">{title || '图片管理'}</span>
-        <span className="rd-image-page-count">{(images || []).length}张</span>
-      </div>
-      <div className="rd-image-page-body">
-        <div className="rd-image-page-grid">
-          {(images || []).map((img, idx) => (
-            <div key={idx} className="rd-image-page-item">
-              <img src={img} alt="" onClick={() => setPreview({ visible: true, index: idx })} />
-              {!readOnly && (
-                <DeleteOutline color="#fff" fontSize={14} onClick={() => handleDelete(idx)} className="rd-image-page-delete" />
-              )}
-            </div>
-          ))}
-          {!readOnly && (
-            <div className={`rd-image-page-upload ${uploading ? 'uploading' : ''}`} onClick={uploading ? undefined : handleUpload}>
-              <AddOutline fontSize={28} />
-              <span>{uploading ? '上传中...' : '上传图片'}</span>
-            </div>
-          )}
-          {readOnly && (images || []).length === 0 && (
-            <div className="rd-image-page-empty">暂无图片</div>
-          )}
+    <div className="rd-image-modal-mask" onClick={onClose}>
+      <div className="rd-image-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="rd-image-modal-header">
+          <span className="rd-image-modal-title">{title || '图片管理'}</span>
+          <span className="rd-image-modal-count">{(images || []).length}张</span>
+          <span className="rd-image-modal-close" onClick={onClose}>×</span>
         </div>
+        <div className="rd-image-modal-body">
+          <div className="rd-image-page-grid">
+            {(images || []).map((img, idx) => (
+              <div key={idx} className="rd-image-page-item">
+                <img src={img} alt="" onClick={() => setPreview({ visible: true, index: idx })} />
+                {!readOnly && (
+                  <DeleteOutline color="#fff" fontSize={14} onClick={() => handleDelete(idx)} className="rd-image-page-delete" />
+                )}
+              </div>
+            ))}
+            {!readOnly && (
+              <div className={`rd-image-page-upload ${uploading ? 'uploading' : ''}`} onClick={uploading ? undefined : handleUpload}>
+                <AddOutline fontSize={28} />
+                <span>{uploading ? '上传中...' : '上传图片'}</span>
+              </div>
+            )}
+            {readOnly && (images || []).length === 0 && (
+              <div className="rd-image-page-empty">暂无图片</div>
+            )}
+          </div>
+        </div>
+        <ImageViewer.Multi
+          images={images || []}
+          visible={preview.visible}
+          defaultIndex={preview.index}
+          onClose={() => setPreview(p => ({ ...p, visible: false }))}
+        />
       </div>
-      <ImageViewer.Multi
-        images={images || []}
-        visible={preview.visible}
-        defaultIndex={preview.index}
-        onClose={() => setPreview(p => ({ ...p, visible: false }))}
-      />
+    </div>
+  )
+}
+
+// 带数量徽章的图片按钮
+function ImageButton({ count, onClick, color = '#2196F3' }) {
+  return (
+    <div className="rd-image-btn-wrap" onClick={onClick}>
+      <PictureOutline color={color} fontSize={18} />
+      {(count || 0) > 0 && <span className="rd-image-btn-badge">{count}</span>}
     </div>
   )
 }
@@ -582,12 +594,19 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
             <span className="rd-list-item-title">
               {record.defect_code ? `${record.defect_code} ${record.defect_name || ''}` : '新增记录'}
             </span>
-            {isEditable && (
-              <div className="rd-list-item-actions">
-                <PictureOutline color="#2196F3" onClick={() => setImagePage({ visible: true, recordId: record.id })} fontSize={18} />
-                <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} fontSize={16} />
-              </div>
-            )}
+            <div className="rd-list-item-actions">
+              {(record.images || []).length > 0 && (
+                <ImageButton count={(record.images || []).length} onClick={() => setImagePage({ visible: true, recordId: record.id })} />
+              )}
+              {isEditable && (
+                <>
+                  {(record.images || []).length === 0 && (
+                    <ImageButton count={0} onClick={() => setImagePage({ visible: true, recordId: record.id })} />
+                  )}
+                  <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} fontSize={16} />
+                </>
+              )}
+            </div>
           </div>
 
           {isEditable ? (
@@ -630,11 +649,6 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
                   </select>
                 </div>
               </div>
-              {(record.images || []).length > 0 && (
-                <div className="rd-image-bar" onClick={() => setImagePage({ visible: true, recordId: record.id })}>
-                  <PictureOutline fontSize={14} /> 图片 {(record.images || []).length} 张，点击管理
-                </div>
-              )}
             </div>
           ) : (
             <div className="rd-list-item-body">
@@ -650,11 +664,6 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
                 <span className="rd-list-label">单位</span>
                 <span className="rd-list-value">{record.defect_unit || '-'}</span>
               </div>
-              {(record.images || []).length > 0 && (
-                <div className="rd-image-bar" onClick={() => setImagePage({ visible: true, recordId: record.id })}>
-                  <PictureOutline fontSize={14} /> 图片 {(record.images || []).length} 张，点击查看
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -819,12 +828,19 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
             <span className="rd-list-item-title">
               {record.material_code ? `${record.material_code} ${record.material_name || ''}` : '新增记录'}
             </span>
-            {isEditable && (
-              <div className="rd-list-item-actions">
-                <PictureOutline color="#2196F3" onClick={() => setImagePage({ visible: true, recordId: record.id })} fontSize={18} />
-                <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} fontSize={16} />
-              </div>
-            )}
+            <div className="rd-list-item-actions">
+              {(record.images || []).length > 0 && (
+                <ImageButton count={(record.images || []).length} onClick={() => setImagePage({ visible: true, recordId: record.id })} />
+              )}
+              {isEditable && (
+                <>
+                  {(record.images || []).length === 0 && (
+                    <ImageButton count={0} onClick={() => setImagePage({ visible: true, recordId: record.id })} />
+                  )}
+                  <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} fontSize={16} />
+                </>
+              )}
+            </div>
           </div>
 
           {isEditable ? (
@@ -881,11 +897,6 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
                   />
                 </div>
               </div>
-              {(record.images || []).length > 0 && (
-                <div className="rd-image-bar" onClick={() => setImagePage({ visible: true, recordId: record.id })}>
-                  <PictureOutline fontSize={14} /> 图片 {(record.images || []).length} 张，点击管理
-                </div>
-              )}
             </div>
           ) : (
             <div className="rd-list-item-body">
@@ -909,11 +920,6 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
                 <span className="rd-list-label">数量</span>
                 <span className="rd-list-value">{record.quantity ? Math.floor(Number(record.quantity)) : 0}</span>
               </div>
-              {(record.images || []).length > 0 && (
-                <div className="rd-image-bar" onClick={() => setImagePage({ visible: true, recordId: record.id })}>
-                  <PictureOutline fontSize={14} /> 图片 {(record.images || []).length} 张，点击查看
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -1258,12 +1264,19 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
             <span className="rd-list-item-title">
               {record.exception_type || '新增记录'}
             </span>
-            {isEditable && (
-              <div className="rd-list-item-actions">
-                <PictureOutline color="#2196F3" onClick={() => setImagePage({ visible: true, recordId: record.id })} fontSize={18} />
-                <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} fontSize={16} />
-              </div>
-            )}
+            <div className="rd-list-item-actions">
+              {(record.images || []).length > 0 && (
+                <ImageButton count={(record.images || []).length} onClick={() => setImagePage({ visible: true, recordId: record.id })} />
+              )}
+              {isEditable && (
+                <>
+                  {(record.images || []).length === 0 && (
+                    <ImageButton count={0} onClick={() => setImagePage({ visible: true, recordId: record.id })} />
+                  )}
+                  <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} fontSize={16} />
+                </>
+              )}
+            </div>
           </div>
 
           {isEditable ? (
@@ -1335,11 +1348,6 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
                   onChange={(e) => handleChange(record.id, 'description', e.target.value)}
                 />
               </div>
-              {(record.images || []).length > 0 && (
-                <div className="rd-image-bar" style={{ marginTop: 8 }} onClick={() => setImagePage({ visible: true, recordId: record.id })}>
-                  <PictureOutline fontSize={14} /> 图片 {(record.images || []).length} 张，点击管理
-                </div>
-              )}
             </div>
           ) : (
             <div className="rd-list-item-body">
@@ -1357,11 +1365,6 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
                 <div className="rd-list-row">
                   <span className="rd-list-label">描述</span>
                   <span className="rd-list-value">{record.description}</span>
-                </div>
-              )}
-              {(record.images || []).length > 0 && (
-                <div className="rd-image-bar" style={{ marginTop: 8 }} onClick={() => setImagePage({ visible: true, recordId: record.id })}>
-                  <PictureOutline fontSize={14} /> 图片 {(record.images || []).length} 张，点击查看
                 </div>
               )}
             </div>
