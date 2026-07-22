@@ -7,13 +7,14 @@ import {
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
-import { useMessage } from '../../contexts/AppContext'
+import { useMessage, useApp } from '../../contexts/AppContext'
 
 const statusColorMap = { '运行中': 'green', '维护中': 'orange', '停用': 'red' }
 const statusOptions = ['运行中', '维护中', '停用'].map(s => ({ label: s, value: s }))
 
 export default function ProductionLine() {
   const message = useMessage()
+  const { hasPermission } = useApp()
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)
@@ -308,7 +309,9 @@ export default function ProductionLine() {
       render: (_, record) => (
         <Space size="small">
           <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(record)}>查看</Button>
-          <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
+          {hasPermission('basic:line:update') && (
+            <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
+          )}
         </Space>
       ),
     },

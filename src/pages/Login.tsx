@@ -18,7 +18,6 @@ export default function Login() {
     if (result.success) {
       message.success('登录成功')
       const targetPath = result.isViewer ? '/bigscreen/production' : '/dashboard'
-      console.log('登录成功，完整链接地址：', `${window.location.origin}${targetPath}`)
       navigate(targetPath)
     } else {
       message.error(result.message)
@@ -32,7 +31,6 @@ export default function Login() {
     if (result.success) {
       message.success('登录成功')
       const targetPath = result.isViewer ? '/bigscreen/production' : '/dashboard'
-      console.log('登录成功，完整链接地址：', `${window.location.origin}${targetPath}`)
       navigate(targetPath)
     } else {
       message.error(result.message)

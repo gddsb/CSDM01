@@ -7,10 +7,11 @@ import {
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 import { formatVersionNo } from '../../utils'
-import { useMessage } from '../../contexts/AppContext'
+import { useMessage, useApp } from '../../contexts/AppContext'
 
 const MaterialManagement = () => {
   const message = useMessage()
+  const { hasPermission } = useApp()
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)
@@ -213,7 +214,9 @@ const MaterialManagement = () => {
       render: (_, record) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleDetail(record)}>查看</Button>
-          <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
+          {hasPermission('basic:material:update') && (
+            <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
+          )}
         </Space>
       ),
     },

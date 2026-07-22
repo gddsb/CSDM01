@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, InputNumber, Select, DatePicker, Space, Row, Col, Drawer, Descriptions, Popconfirm, Checkbox } from 'antd'
-import { useMessage } from '../../contexts/AppContext'
+import { useMessage, useApp } from '../../contexts/AppContext'
 import {
   FileTextOutlined, PlusOutlined, SearchOutlined, ReloadOutlined,
   SendOutlined, ClockCircleOutlined, CheckCircleOutlined
@@ -42,6 +42,7 @@ export default function OrderManagement() {
   const [form] = Form.useForm()
 
   const message = useMessage()
+  const { hasPermission } = useApp()
 
   // 筛选输入态
   const [keywordInput, setKeywordInput] = useState('')
@@ -252,16 +253,22 @@ export default function OrderManagement() {
     if (r.status === '开立') {
       return (
         <Space size={0}>
-          <Button type="link" size="small" onClick={() => handleRelease(r)}>下发</Button>
-          <Button type="link" size="small" onClick={() => handleEdit(r)}>编辑</Button>
-          <Popconfirm
-            title={`确认删除订单 ${r.order_no}？`}
-            onConfirm={() => handleDelete(r)}
-            okText="删除"
-            cancelText="取消"
-          >
-            <Button type="link" size="small" danger>删除</Button>
-          </Popconfirm>
+          {hasPermission('production:order:release') && (
+            <Button type="link" size="small" onClick={() => handleRelease(r)}>下发</Button>
+          )}
+          {hasPermission('production:order:update') && (
+            <Button type="link" size="small" onClick={() => handleEdit(r)}>编辑</Button>
+          )}
+          {hasPermission('production:order:delete') && (
+            <Popconfirm
+              title={`确认删除订单 ${r.order_no}？`}
+              onConfirm={() => handleDelete(r)}
+              okText="删除"
+              cancelText="取消"
+            >
+              <Button type="link" size="small" danger>删除</Button>
+            </Popconfirm>
+          )}
         </Space>
       )
     }
@@ -269,7 +276,9 @@ export default function OrderManagement() {
       return (
         <Space size={0}>
           <Button type="link" size="small" onClick={() => handleView(r)}>查看</Button>
-          <Button type="link" size="small" danger onClick={() => handleClose(r)}>完工</Button>
+          {hasPermission('production:order:close') && (
+            <Button type="link" size="small" danger onClick={() => handleClose(r)}>完工</Button>
+          )}
         </Space>
       )
     }
@@ -309,8 +318,10 @@ export default function OrderManagement() {
             hasAdd={false}
             hasExport={false}
             extra={[
-              <Button key="add" type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增订单</Button>,
-            ]}
+              hasPermission('production:order:create') && (
+                <Button key="add" type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增订单</Button>
+              ),
+            ].filter(Boolean)}
           />
         }
         table={

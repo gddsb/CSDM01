@@ -6,7 +6,7 @@ import {
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
-import { useMessage } from '../../contexts/AppContext'
+import { useMessage, useApp } from '../../contexts/AppContext'
 
 // 设备状态标签颜色映射（与后端 Device 模型一致：运行=1, 停用=0, 维修=2）
 const statusColorMap = { '运行': 'green', '维修': 'orange', '停用': 'red' }
@@ -15,6 +15,7 @@ const specialOptions = [{ label: '是', value: 1 }, { label: '否', value: 0 }]
 
 export default function DeviceManagement() {
   const message = useMessage()
+  const { hasPermission } = useApp()
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)
@@ -185,7 +186,9 @@ export default function DeviceManagement() {
       render: (_, record) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleDetail(record)}>查看</Button>
-          <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
+          {hasPermission('device:list:update') && (
+            <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
+          )}
         </Space>
       ),
     },

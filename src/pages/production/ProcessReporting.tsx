@@ -3,7 +3,7 @@ import {
   Table, Tag, Button, Modal, Input, InputNumber, Select, Space, Row, Col,
   Card, Divider, Popconfirm, DatePicker, TimePicker, Tabs, Upload, Drawer, Image, Form,
 } from 'antd'
-import { useMessage } from '../../contexts/AppContext'
+import { useMessage, useApp } from '../../contexts/AppContext'
 import {
   PlusOutlined, DeleteOutlined, UploadOutlined,
   PictureOutlined, SaveOutlined,
@@ -93,6 +93,7 @@ export default function ProcessReporting() {
   })
 
   const message = useMessage()
+  const { hasPermission } = useApp()
 
   // 不良类型下拉选项（必须在 fetchAllData 之前定义，避免 TDZ 错误）
   // 制程不良记录页签：检验类型=制程检验类（兼容旧数据"制程检验类型"），不良类型=制程不良或来料不良
@@ -2509,10 +2510,10 @@ export default function ProcessReporting() {
                 popupClassName="mes-select-dropdown"
                 loading={loading}
               />
-              {!hasUnfinishedReportOfOrder && (
+              {!hasUnfinishedReportOfOrder && hasPermission('production:reporting:create') && (
                 <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal}>新增报工</Button>
               )}
-              {selectedReport && isEditable && (
+              {selectedReport && isEditable && hasPermission('production:reporting:finish') && (
                 <Popconfirm title="确认完工？完工后数据将变为只读" onConfirm={handleFinishReport}>
                   <Button type="primary" loading={finishingReport}>完工</Button>
                 </Popconfirm>

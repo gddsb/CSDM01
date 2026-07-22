@@ -7,10 +7,11 @@ import {
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
-import { useMessage } from '../../contexts/AppContext'
+import { useMessage, useApp } from '../../contexts/AppContext'
 
 export default function CustomerManagement() {
   const message = useMessage()
+  const { hasPermission } = useApp()
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)
@@ -187,7 +188,9 @@ export default function CustomerManagement() {
       render: (_, record) => (
         <Space size="small">
           <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => setViewRecord(record)}>查看</Button>
-          <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
+          {hasPermission('basic:customer:update') && (
+            <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
+          )}
         </Space>
       ),
     },
@@ -322,12 +325,20 @@ export default function CustomerManagement() {
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="phone" label="联系电话">
+              <Form.Item
+                name="phone"
+                label="联系电话"
+                rules={[{ pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号' }]}
+              >
                 <Input placeholder="请输入联系电话" />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="email" label="邮箱">
+              <Form.Item
+                name="email"
+                label="邮箱"
+                rules={[{ type: 'email', message: '请输入正确的邮箱地址' }]}
+              >
                 <Input placeholder="请输入邮箱" />
               </Form.Item>
             </Col>

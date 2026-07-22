@@ -11,6 +11,7 @@ export interface User {
   email?: string
   department?: string
   role?: { role_name: string; role_code: string }
+  perm_codes?: string[]
 }
 
 interface SystemConfig {
@@ -23,6 +24,7 @@ interface AppContextType {
   login: (username: string, password: string) => Promise<{ success: boolean; isViewer?: boolean; message?: string }>
   logout: () => void
   updateUser: (updates: Partial<User>) => void
+  hasPermission: (permCode: string) => boolean
   themeKey: string
   changeTheme: (key: string) => void
   cycleTheme: () => string
@@ -127,8 +129,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const setModalApi = (api: unknown) => { setModalApiState(api) }
   const setNotificationApi = (api: unknown) => { setNotificationApiState(api) }
 
+  const hasPermission = (permCode: string): boolean => {
+    if (!currentUser) return false
+    const roleCode = currentUser.role?.role_code
+    if (roleCode === 'SUPER_ADMIN') return true
+    const permCodes = currentUser.perm_codes || []
+    if (permCodes.includes(permCode)) return true
+    const parts = permCode.split(':')
+    for (let i = parts.length - 1; i >= 1; i--) {
+      const parentCode = parts.slice(0, i).join(':')
+      if (permCodes.includes(parentCode)) return true
+    }
+    return false
+  }
+
   return (
-    <AppContext.Provider value={{ currentUser, login, logout, updateUser, themeKey, changeTheme, cycleTheme, initialized, systemConfig, loadSystemConfig, updateSystemConfig, messageApi, modalApi, notificationApi, setMessageApi, setModalApi, setNotificationApi }}>
+    <AppContext.Provider value={{ currentUser, login, logout, updateUser, hasPermission, themeKey, changeTheme, cycleTheme, initialized, systemConfig, loadSystemConfig, updateSystemConfig, messageApi, modalApi, notificationApi, setMessageApi, setModalApi, setNotificationApi }}>
       {children}
     </AppContext.Provider>
   )
@@ -141,6 +157,7 @@ export function useApp(): AppContextType {
     login: async () => ({ success: false }),
     logout: () => {},
     updateUser: () => {},
+    hasPermission: () => false,
     themeKey: 'pureMilk',
     changeTheme: () => {},
     cycleTheme: () => 'pureMilk',

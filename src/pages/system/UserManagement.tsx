@@ -6,7 +6,7 @@ import {
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
-import { useMessage } from '../../contexts/AppContext'
+import { useMessage, useApp } from '../../contexts/AppContext'
 
 interface User {
   user_id: number
@@ -40,6 +40,7 @@ interface QueryParams {
 
 export default function UserManagement() {
   const message = useMessage()
+  const { hasPermission } = useApp()
   const [data, setData] = useState<User[]>([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)
@@ -228,7 +229,9 @@ export default function UserManagement() {
       title: '操作', key: 'action', width: 200,
       render: (_: unknown, record: User) => (
         <Space size="small">
-          <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
+          {hasPermission('system:user:update') && (
+            <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
+          )}
           <Popconfirm
             title={record.status === '启用' ? '确认禁用该用户？' : '确认启用该用户？'}
             onConfirm={() => handleToggle(record)}
@@ -239,7 +242,8 @@ export default function UserManagement() {
               {record.status === '启用' ? '禁用' : '启用'}
             </Button>
           </Popconfirm>
-          <Popconfirm
+          {hasPermission('system:user:delete') && (
+            <Popconfirm
             title="确认删除该用户？"
             description="删除后不可恢复"
             onConfirm={() => handleDelete(record)}
@@ -248,6 +252,7 @@ export default function UserManagement() {
           >
             <Button type="link" size="small" danger>删除</Button>
           </Popconfirm>
+          )}
         </Space>
       ),
     },
@@ -345,12 +350,20 @@ export default function UserManagement() {
           </Row>
           <Row gutter={12}>
             <Col span={12}>
-              <Form.Item name="phone" label="手机号">
+              <Form.Item
+                name="phone"
+                label="手机号"
+                rules={[{ pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号' }]}
+              >
                 <Input placeholder="请输入手机号" />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="email" label="邮箱">
+              <Form.Item
+                name="email"
+                label="邮箱"
+                rules={[{ type: 'email', message: '请输入正确的邮箱地址' }]}
+              >
                 <Input placeholder="请输入邮箱" />
               </Form.Item>
             </Col>

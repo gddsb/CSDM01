@@ -1,7 +1,18 @@
 import bcrypt from 'bcryptjs'
-import { User, Role, OperationLog } from '../models/index.js'
+import { User, Role, OperationLog, Permission } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { generateToken } from '../utils/jwt.js'
+
+async function getUserPermissionCodes(roleId: number): Promise<string[]> {
+  const role = await Role.findOne({
+    where: { role_id: roleId },
+    include: [{ model: Permission, as: 'permissions', attributes: ['perm_code'] }],
+  })
+  if (role && (role as any).permissions) {
+    return (role as any).permissions.map((p: any) => p.perm_code)
+  }
+  return []
+}
 
 // 登录
 export const login = async (req, res) => {
@@ -63,6 +74,8 @@ export const login = async (req, res) => {
     const token = generateToken(user)
     const userWithRole = user.toJSON()
     delete userWithRole.password
+    const permCodes = await getUserPermissionCodes(user.role_id || userWithRole.role_id)
+    userWithRole.perm_codes = permCodes
 
     // 记录登录成功日志
     OperationLog.create({
@@ -95,6 +108,8 @@ export const profile = async (req, res) => {
     if (!user) return fail(res, '用户不存在', ErrorCode.RECORD_NOT_FOUND)
     const userData = user.toJSON()
     delete userData.password
+    const permCodes = await getUserPermissionCodes(user.role_id || userData.role_id)
+    userData.perm_codes = permCodes
     return success(res, userData, '获取用户信息成功')
   } catch (err) {
     console.error('获取用户信息失败:', err)

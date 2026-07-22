@@ -8,6 +8,7 @@ const STATUS_TEXT_TO_NUM: Record<string, number> = {
 }
 
 export interface ApiResponse<T = any> {
+  code: number
   success: boolean
   data?: T
   message?: string
