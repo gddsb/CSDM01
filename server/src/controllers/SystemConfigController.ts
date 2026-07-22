@@ -293,7 +293,7 @@ export const restartServer = async (req, res) => {
       estimated_time: 5000,
       restart_time: new Date().toISOString(),
     }
-    res.json({ code: 200, success: true, data: result, message: '重启指令已发送' })
+    success(res, result, '重启指令已发送')
 
     // 延迟 500ms 后启动新进程并退出当前进程
     const restartDelay = 500
