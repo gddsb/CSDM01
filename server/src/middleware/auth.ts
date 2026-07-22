@@ -1,9 +1,41 @@
 import { Request, Response, NextFunction } from 'express'
 import { verifyToken } from '../utils/jwt.js'
 import { fail, ErrorCode } from '../utils/response.js'
-import { OperationLog } from '../models/index.js'
+import { OperationLog, Role, Permission } from '../models/index.js'
+import { logger } from '../utils/logger.js'
 
 const SENSITIVE_KEYS = ['password', 'token', 'secret', 'authorization', 'pwd', 'access_token', 'refresh_token']
+
+const PERM_CACHE_TTL = 60000
+const permCache: Record<number, { codes: Set<string>; ts: number }> = {}
+
+async function loadRolePermissionCodes(roleId: number): Promise<Set<string>> {
+  const now = Date.now()
+  const cached = permCache[roleId]
+  if (cached && now - cached.ts < PERM_CACHE_TTL) {
+    return cached.codes
+  }
+  const role = await Role.findOne({
+    where: { role_id: roleId },
+    include: [{ model: Permission, as: 'permissions', attributes: ['perm_code'] }],
+  })
+  const codes = new Set<string>()
+  if (role && (role as any).permissions) {
+    for (const p of (role as any).permissions) {
+      codes.add(p.perm_code)
+    }
+  }
+  permCache[roleId] = { codes, ts: now }
+  return codes
+}
+
+export function clearPermissionCache(roleId?: number): void {
+  if (roleId !== undefined) {
+    delete permCache[roleId]
+  } else {
+    for (const key of Object.keys(permCache)) delete permCache[Number(key)]
+  }
+}
 
 function maskSensitive(obj: any, depth: number = 0): any {
   if (depth > 5 || obj == null) return obj
@@ -50,20 +82,49 @@ export function authRequired(req: Request, res: Response, next: NextFunction): a
     return fail(res, '认证令牌无效或已过期', ErrorCode.UNAUTHORIZED)
   }
 
-  (req as any).user = decoded
-  next()
+  (async () => {
+    const user: any = decoded
+    if (user.roleId) {
+      try {
+        user.permCodes = await loadRolePermissionCodes(user.roleId)
+      } catch (err: any) {
+        logger.warn('[authRequired] 加载用户权限失败:', err.message)
+        user.permCodes = new Set()
+      }
+    } else {
+      user.permCodes = new Set()
+    }
+    ;(req as any).user = user
+    next()
+  })()
 }
 
 /**
- * 权限校验中间件（暂时简化，所有登录用户都有权限）
+ * 权限校验中间件
  * @param permCode - 权限编码
  */
 export function permissionRequired(permCode: string) {
   return (req: Request, res: Response, next: NextFunction): any => {
-    if (!(req as any).user) {
+    const user = (req as any).user
+    if (!user) {
       return fail(res, '用户未登录', ErrorCode.UNAUTHORIZED)
     }
-    // 简化处理：所有登录用户都有权限
+    const permCodes: Set<string> = user.permCodes || new Set()
+    let hasPermission = permCodes.has(permCode)
+    if (!hasPermission) {
+      const parts = permCode.split(':')
+      for (let i = parts.length - 1; i >= 1; i--) {
+        const parentCode = parts.slice(0, i).join(':')
+        if (permCodes.has(parentCode)) {
+          hasPermission = true
+          break
+        }
+      }
+    }
+    if (!hasPermission) {
+      logger.warn('[permissionRequired] 权限不足', { userId: user.userId, username: user.username, requiredPerm: permCode, url: req.originalUrl })
+      return fail(res, `权限不足，缺少权限: ${permCode}`, ErrorCode.PERMISSION_DENIED)
+    }
     next()
   }
 }

@@ -1,6 +1,7 @@
 import { Op } from 'sequelize'
 import { Role, User, Permission } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
+import { clearPermissionCache } from '../middleware/auth.js'
 
 // 角色列表
 export const list = async (req, res) => {
@@ -243,6 +244,8 @@ export const assignPermissions = async (req, res) => {
     } else {
       await role.setPermissions([])
     }
+
+    clearPermissionCache(Number(id))
 
     return success(res, null, '权限分配成功')
   } catch (err) {

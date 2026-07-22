@@ -53,7 +53,7 @@ import {
   list as reportImageList,
   remove as reportImageRemove,
 } from '../controllers/ReportImageController.js'
-import { authRequired } from '../middleware/auth.js'
+import { authRequired, permissionRequired } from '../middleware/auth.js'
 
 const router = Router()
 
@@ -77,16 +77,16 @@ router.get('/orders/:id', orderDetail)
 router.post('/orders', orderCreate)
 router.put('/orders/:id', orderUpdate)
 router.delete('/orders/:id', orderRemove)
-router.post('/orders/:id/release', release)
-router.post('/orders/:id/close', close)
+router.post('/orders/:id/release', permissionRequired('production:order:release'), release)
+router.post('/orders/:id/close', permissionRequired('production:order:close'), close)
 
 // 生产报工单（状态：开工/完工；订单下发后直接创建）
 router.get('/report-orders', roList)
 router.get('/report-orders/:id', roDetail)
-router.post('/report-orders', roCreate)
+router.post('/report-orders', permissionRequired('production:reporting:create'), roCreate)
 router.put('/report-orders/:id', roUpdate)
 router.delete('/report-orders/:id', roRemove)
-router.post('/report-orders/:id/finish', roFinish)
+router.post('/report-orders/:id/finish', permissionRequired('production:reporting:finish'), roFinish)
 router.get('/report-orders/:id/processes', roGetProcesses)
 
 // 人员记录
