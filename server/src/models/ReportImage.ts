@@ -12,6 +12,7 @@ const ReportImage = sequelize.define('ReportImage', {
   report_order_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
+    index: true,
     comment: '关联生产报工单ID',
   },
   category: {

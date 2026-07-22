@@ -10,10 +10,12 @@ const ProcessDefect = sequelize.define('ProcessDefect', {
   },
   report_order_id: {
     type: DataTypes.INTEGER,
+    index: true,
     comment: '生产报工单ID',
   },
   process_id: {
     type: DataTypes.INTEGER,
+    index: true,
     comment: '工序ID',
   },
   defect_type_id: {

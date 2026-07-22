@@ -10,6 +10,7 @@ const ManpowerRecord = sequelize.define('ManpowerRecord', {
   },
   report_order_id: {
     type: DataTypes.INTEGER,
+    index: true,
     comment: '生产报工单ID',
   },
   record_date: {

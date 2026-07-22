@@ -10,6 +10,7 @@ const ProcessException = sequelize.define('ProcessException', {
   },
   report_order_id: {
     type: DataTypes.INTEGER,
+    index: true,
     comment: '生产报工单ID',
   },
   exception_type: {

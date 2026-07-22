@@ -10,10 +10,12 @@ const ProcessMaterial = sequelize.define('ProcessMaterial', {
   },
   report_order_id: {
     type: DataTypes.INTEGER,
+    index: true,
     comment: '生产报工单ID',
   },
   process_id: {
     type: DataTypes.INTEGER,
+    index: true,
     comment: '工序ID',
   },
   material_type: {

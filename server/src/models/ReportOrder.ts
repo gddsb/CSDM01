@@ -14,6 +14,7 @@ const ReportOrder = sequelize.define('ReportOrder', {
   order_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
+    index: true,
     comment: '关联生产订单ID',
   },
   order_no: {
@@ -28,6 +29,7 @@ const ReportOrder = sequelize.define('ReportOrder', {
   },
   line_id: {
     type: DataTypes.INTEGER,
+    index: true,
     comment: '生产产线ID',
   },
   line_name: {
@@ -57,6 +59,7 @@ const ReportOrder = sequelize.define('ReportOrder', {
   },
   report_time: {
     type: DataTypes.DATE,
+    index: true,
     comment: '报工时间（创建时间）',
   },
   finish_time: {
@@ -66,6 +69,7 @@ const ReportOrder = sequelize.define('ReportOrder', {
   status: {
     type: DataTypes.TINYINT,
     defaultValue: 0,
+    index: true,
     comment: '工单状态：0=开工, 1=完工',
     get() {
       const val = this.getDataValue('status')
