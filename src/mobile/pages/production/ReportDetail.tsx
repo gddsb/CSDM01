@@ -357,14 +357,93 @@ export default function ReportDetail() {
   )
 }
 
+// 独立图片管理页面：全屏覆盖，支持上传、查看、删除
+function ImageManagePage({ visible, images, title, reportNo, category, readOnly, onClose, onUpdate }) {
+  const [preview, setPreview] = useState({ visible: false, index: 0 })
+  const [uploading, setUploading] = useState(false)
+
+  const handleUpload = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.multiple = true
+    input.onchange = async (e) => {
+      const files = Array.from(e.target.files || [])
+      if (files.length === 0) return
+      if (!reportNo) {
+        Toast.show({ icon: 'fail', content: '报工单号不存在，无法上传' })
+        return
+      }
+      setUploading(true)
+      try {
+        const formData = new FormData()
+        files.forEach(file => formData.append('files', file))
+        const res = await api.post(`/production/report-images/${reportNo}/${category}/upload`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        const uploaded = res.data || []
+        if (uploaded.length > 0) {
+          onUpdate([...(images || []), ...uploaded])
+          Toast.show({ icon: 'success', content: res.message || `已上传 ${uploaded.length} 张图片` })
+        }
+      } catch (err) {
+        Toast.show({ icon: 'fail', content: err.message || '图片上传失败' })
+      } finally {
+        setUploading(false)
+      }
+    }
+    input.click()
+  }
+
+  const handleDelete = (index) => {
+    const next = [...(images || [])]
+    next.splice(index, 1)
+    onUpdate(next)
+  }
+
+  if (!visible) return null
+
+  return (
+    <div className="rd-image-page">
+      <div className="rd-image-page-header">
+        <span className="rd-image-page-back" onClick={onClose}>‹</span>
+        <span className="rd-image-page-title">{title || '图片管理'}</span>
+        <span className="rd-image-page-count">{(images || []).length}张</span>
+      </div>
+      <div className="rd-image-page-body">
+        <div className="rd-image-page-grid">
+          {(images || []).map((img, idx) => (
+            <div key={idx} className="rd-image-page-item">
+              <img src={img} alt="" onClick={() => setPreview({ visible: true, index: idx })} />
+              {!readOnly && (
+                <DeleteOutline color="#fff" fontSize={14} onClick={() => handleDelete(idx)} className="rd-image-page-delete" />
+              )}
+            </div>
+          ))}
+          {!readOnly && (
+            <div className={`rd-image-page-upload ${uploading ? 'uploading' : ''}`} onClick={uploading ? undefined : handleUpload}>
+              <AddOutline fontSize={28} />
+              <span>{uploading ? '上传中...' : '上传图片'}</span>
+            </div>
+          )}
+          {readOnly && (images || []).length === 0 && (
+            <div className="rd-image-page-empty">暂无图片</div>
+          )}
+        </div>
+      </div>
+      <ImageViewer.Multi
+        images={images || []}
+        visible={preview.visible}
+        defaultIndex={preview.index}
+        onClose={() => setPreview(p => ({ ...p, visible: false }))}
+      />
+    </div>
+  )
+}
+
 function DefectTab({ list, setList, options, isEditable, category, reportOrderId, reportNo, processId, processes, onProcessChange, showProcess }) {
   const [saving, setSaving] = useState(false)
-  const [preview, setPreview] = useState({ visible: false, images: [], index: 0 })
-
-  const handlePreview = (images, index) => {
-    if (!images || images.length === 0) return
-    setPreview({ visible: true, images, index })
-  }
+  const [imagePage, setImagePage] = useState({ visible: false, recordId: null })
 
   const handleAdd = () => {
     setList(prev => [...prev, {
@@ -443,45 +522,10 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
     }
   }
 
-  const handleImageUpload = async (recordId) => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'image/*'
-    input.multiple = true
-    input.onchange = async (e) => {
-      const files = Array.from(e.target.files || [])
-      if (files.length === 0) return
-      if (!reportNo) {
-        Toast.show({ icon: 'fail', content: '报工单号不存在，无法上传' })
-        return
-      }
-      try {
-        const formData = new FormData()
-        files.forEach(file => formData.append('files', file))
-        const res = await api.post(`/production/report-images/${reportNo}/${category}/upload`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        })
-        const uploaded = res.data || []
-        if (uploaded.length > 0) {
-          setList(prev => prev.map(item => {
-            if (item.id !== recordId) return item
-            return { ...item, images: [...(item.images || []), ...uploaded] }
-          }))
-          Toast.show({ icon: 'success', content: res.message || `已上传 ${uploaded.length} 张图片` })
-        }
-      } catch (err) {
-        Toast.show({ icon: 'fail', content: err.message || '图片上传失败' })
-      }
-    }
-    input.click()
-  }
-
-  const handleRemoveImage = (recordId, imageIndex) => {
+  const handleImageUpdate = (recordId, newImages) => {
     setList(prev => prev.map(item => {
       if (item.id !== recordId) return item
-      const images = [...(item.images || [])]
-      images.splice(imageIndex, 1)
-      return { ...item, images }
+      return { ...item, images: newImages }
     }))
   }
 
@@ -540,7 +584,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
             </span>
             {isEditable && (
               <div className="rd-list-item-actions">
-                <PictureOutline color="#2196F3" onClick={() => handleImageUpload(record.id)} fontSize={18} />
+                <PictureOutline color="#2196F3" onClick={() => setImagePage({ visible: true, recordId: record.id })} fontSize={18} />
                 <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} fontSize={16} />
               </div>
             )}
@@ -587,13 +631,8 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
                 </div>
               </div>
               {(record.images || []).length > 0 && (
-                <div className="rd-image-list">
-                  {(record.images || []).map((img, idx) => (
-                    <div key={idx} className="rd-image-item">
-                      <img src={img} alt="" className="rd-image" onClick={() => handlePreview(record.images || [], idx)} />
-                      <DeleteOutline color="#fff" fontSize={12} onClick={() => handleRemoveImage(record.id, idx)} className="rd-image-delete" />
-                    </div>
-                  ))}
+                <div className="rd-image-bar" onClick={() => setImagePage({ visible: true, recordId: record.id })}>
+                  <PictureOutline fontSize={14} /> 图片 {(record.images || []).length} 张，点击管理
                 </div>
               )}
             </div>
@@ -612,23 +651,23 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
                 <span className="rd-list-value">{record.defect_unit || '-'}</span>
               </div>
               {(record.images || []).length > 0 && (
-                <div className="rd-image-list">
-                  {(record.images || []).map((img, idx) => (
-                    <div key={idx} className="rd-image-item">
-                      <img src={img} alt="" className="rd-image" onClick={() => handlePreview(record.images || [], idx)} />
-                    </div>
-                  ))}
+                <div className="rd-image-bar" onClick={() => setImagePage({ visible: true, recordId: record.id })}>
+                  <PictureOutline fontSize={14} /> 图片 {(record.images || []).length} 张，点击查看
                 </div>
               )}
             </div>
           )}
         </div>
       ))}
-      <ImageViewer.Multi
-        images={preview.images}
-        visible={preview.visible}
-        defaultIndex={preview.index}
-        onClose={() => setPreview(p => ({ ...p, visible: false }))}
+      <ImageManagePage
+        visible={imagePage.visible}
+        images={list.find(r => r.id === imagePage.recordId)?.images || []}
+        title="不良记录图片"
+        reportNo={reportNo}
+        category={category}
+        readOnly={!isEditable}
+        onClose={() => setImagePage({ visible: false, recordId: null })}
+        onUpdate={(newImages) => handleImageUpdate(imagePage.recordId, newImages)}
       />
     </div>
   )
@@ -636,12 +675,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
 
 function MaterialTab({ list, setList, options, isEditable, reportOrderId, reportNo, processId, processes, onProcessChange, showProcess }) {
   const [saving, setSaving] = useState(false)
-  const [preview, setPreview] = useState({ visible: false, images: [], index: 0 })
-
-  const handlePreview = (images, index) => {
-    if (!images || images.length === 0) return
-    setPreview({ visible: true, images, index })
-  }
+  const [imagePage, setImagePage] = useState({ visible: false, recordId: null })
 
   const handleAdd = () => {
     setList(prev => [...prev, {
@@ -727,45 +761,10 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
     }
   }
 
-  const handleImageUpload = async (recordId) => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'image/*'
-    input.multiple = true
-    input.onchange = async (e) => {
-      const files = Array.from(e.target.files || [])
-      if (files.length === 0) return
-      if (!reportNo) {
-        Toast.show({ icon: 'fail', content: '报工单号不存在，无法上传' })
-        return
-      }
-      try {
-        const formData = new FormData()
-        files.forEach(file => formData.append('files', file))
-        const res = await api.post(`/production/report-images/${reportNo}/label/upload`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        })
-        const uploaded = res.data || []
-        if (uploaded.length > 0) {
-          setList(prev => prev.map(item => {
-            if (item.id !== recordId) return item
-            return { ...item, images: [...(item.images || []), ...uploaded] }
-          }))
-          Toast.show({ icon: 'success', content: res.message || `已上传 ${uploaded.length} 张图片` })
-        }
-      } catch (err) {
-        Toast.show({ icon: 'fail', content: err.message || '图片上传失败' })
-      }
-    }
-    input.click()
-  }
-
-  const handleRemoveImage = (recordId, imageIndex) => {
+  const handleImageUpdate = (recordId, newImages) => {
     setList(prev => prev.map(item => {
       if (item.id !== recordId) return item
-      const images = [...(item.images || [])]
-      images.splice(imageIndex, 1)
-      return { ...item, images }
+      return { ...item, images: newImages }
     }))
   }
 
@@ -822,7 +821,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
             </span>
             {isEditable && (
               <div className="rd-list-item-actions">
-                <PictureOutline color="#2196F3" onClick={() => handleImageUpload(record.id)} fontSize={18} />
+                <PictureOutline color="#2196F3" onClick={() => setImagePage({ visible: true, recordId: record.id })} fontSize={18} />
                 <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} fontSize={16} />
               </div>
             )}
@@ -883,13 +882,8 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
                 </div>
               </div>
               {(record.images || []).length > 0 && (
-                <div className="rd-image-list">
-                  {(record.images || []).map((img, idx) => (
-                    <div key={idx} className="rd-image-item">
-                      <img src={img} alt="" className="rd-image" onClick={() => handlePreview(record.images || [], idx)} />
-                      <DeleteOutline color="#fff" fontSize={12} onClick={() => handleRemoveImage(record.id, idx)} className="rd-image-delete" />
-                    </div>
-                  ))}
+                <div className="rd-image-bar" onClick={() => setImagePage({ visible: true, recordId: record.id })}>
+                  <PictureOutline fontSize={14} /> 图片 {(record.images || []).length} 张，点击管理
                 </div>
               )}
             </div>
@@ -916,23 +910,23 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
                 <span className="rd-list-value">{record.quantity ? Math.floor(Number(record.quantity)) : 0}</span>
               </div>
               {(record.images || []).length > 0 && (
-                <div className="rd-image-list">
-                  {(record.images || []).map((img, idx) => (
-                    <div key={idx} className="rd-image-item">
-                      <img src={img} alt="" className="rd-image" onClick={() => handlePreview(record.images || [], idx)} />
-                    </div>
-                  ))}
+                <div className="rd-image-bar" onClick={() => setImagePage({ visible: true, recordId: record.id })}>
+                  <PictureOutline fontSize={14} /> 图片 {(record.images || []).length} 张，点击查看
                 </div>
               )}
             </div>
           )}
         </div>
       ))}
-      <ImageViewer.Multi
-        images={preview.images}
-        visible={preview.visible}
-        defaultIndex={preview.index}
-        onClose={() => setPreview(p => ({ ...p, visible: false }))}
+      <ImageManagePage
+        visible={imagePage.visible}
+        images={list.find(r => r.id === imagePage.recordId)?.images || []}
+        title="物料记录图片"
+        reportNo={reportNo}
+        category="label"
+        readOnly={!isEditable}
+        onClose={() => setImagePage({ visible: false, recordId: null })}
+        onUpdate={(newImages) => handleImageUpdate(imagePage.recordId, newImages)}
       />
     </div>
   )
@@ -1110,13 +1104,8 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId 
 
 function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, reportNo, reportTime }) {
   const [saving, setSaving] = useState(false)
-  const [preview, setPreview] = useState({ visible: false, images: [], index: 0 })
+  const [imagePage, setImagePage] = useState({ visible: false, recordId: null })
   const exceptionCategories = ['换型换线', '停机待料', '故障维修', '其它停机']
-
-  const handlePreview = (images, index) => {
-    if (!images || images.length === 0) return
-    setPreview({ visible: true, images, index })
-  }
 
   const handleAdd = async () => {
     await handleSave()
@@ -1195,45 +1184,10 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
     }))
   }
 
-  const handleImageUpload = async (recordId) => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'image/*'
-    input.multiple = true
-    input.onchange = async (e) => {
-      const files = Array.from(e.target.files || [])
-      if (files.length === 0) return
-      if (!reportNo) {
-        Toast.show({ icon: 'fail', content: '报工单号不存在，无法上传' })
-        return
-      }
-      try {
-        const formData = new FormData()
-        files.forEach(file => formData.append('files', file))
-        const res = await api.post(`/production/report-images/${reportNo}/exception/upload`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        })
-        const uploaded = res.data || []
-        if (uploaded.length > 0) {
-          setList(prev => prev.map(item => {
-            if (item.id !== recordId) return item
-            return { ...item, images: [...(item.images || []), ...uploaded] }
-          }))
-          Toast.show({ icon: 'success', content: res.message || `已上传 ${uploaded.length} 张图片` })
-        }
-      } catch (err) {
-        Toast.show({ icon: 'fail', content: err.message || '图片上传失败' })
-      }
-    }
-    input.click()
-  }
-
-  const handleRemoveImage = (recordId, imageIndex) => {
+  const handleImageUpdate = (recordId, newImages) => {
     setList(prev => prev.map(item => {
       if (item.id !== recordId) return item
-      const images = [...(item.images || [])]
-      images.splice(imageIndex, 1)
-      return { ...item, images }
+      return { ...item, images: newImages }
     }))
   }
 
@@ -1306,7 +1260,7 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
             </span>
             {isEditable && (
               <div className="rd-list-item-actions">
-                <PictureOutline color="#2196F3" onClick={() => handleImageUpload(record.id)} fontSize={18} />
+                <PictureOutline color="#2196F3" onClick={() => setImagePage({ visible: true, recordId: record.id })} fontSize={18} />
                 <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} fontSize={16} />
               </div>
             )}
@@ -1382,13 +1336,8 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
                 />
               </div>
               {(record.images || []).length > 0 && (
-                <div className="rd-image-list" style={{ marginTop: 8 }}>
-                  {(record.images || []).map((img, idx) => (
-                    <div key={idx} className="rd-image-item">
-                      <img src={img} alt="" className="rd-image" onClick={() => handlePreview(record.images || [], idx)} />
-                      <DeleteOutline color="#fff" fontSize={12} onClick={() => handleRemoveImage(record.id, idx)} className="rd-image-delete" />
-                    </div>
-                  ))}
+                <div className="rd-image-bar" style={{ marginTop: 8 }} onClick={() => setImagePage({ visible: true, recordId: record.id })}>
+                  <PictureOutline fontSize={14} /> 图片 {(record.images || []).length} 张，点击管理
                 </div>
               )}
             </div>
@@ -1411,23 +1360,23 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
                 </div>
               )}
               {(record.images || []).length > 0 && (
-                <div className="rd-image-list" style={{ marginTop: 8 }}>
-                  {(record.images || []).map((img, idx) => (
-                    <div key={idx} className="rd-image-item">
-                      <img src={img} alt="" className="rd-image" onClick={() => handlePreview(record.images || [], idx)} />
-                    </div>
-                  ))}
+                <div className="rd-image-bar" style={{ marginTop: 8 }} onClick={() => setImagePage({ visible: true, recordId: record.id })}>
+                  <PictureOutline fontSize={14} /> 图片 {(record.images || []).length} 张，点击查看
                 </div>
               )}
             </div>
           )}
         </div>
       ))}
-      <ImageViewer.Multi
-        images={preview.images}
-        visible={preview.visible}
-        defaultIndex={preview.index}
-        onClose={() => setPreview(p => ({ ...p, visible: false }))}
+      <ImageManagePage
+        visible={imagePage.visible}
+        images={list.find(r => r.id === imagePage.recordId)?.images || []}
+        title="异常工时图片"
+        reportNo={reportNo}
+        category="exception"
+        readOnly={!isEditable}
+        onClose={() => setImagePage({ visible: false, recordId: null })}
+        onUpdate={(newImages) => handleImageUpdate(imagePage.recordId, newImages)}
       />
     </div>
   )
