@@ -1,6 +1,7 @@
 import { Op } from 'sequelize'
-import { Process } from '../models/index.js'
+import { Process, LineProcess, ReportProcess, LineDevice } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
+import { logger } from '../utils/logger.js'
 
 // 工序列表
 export const list = async (req, res) => {
@@ -103,10 +104,21 @@ export const remove = async (req, res) => {
     const { id } = req.params
     const process = await Process.findOne({ where: { process_id: id } })
     if (!process) return fail(res, '工序不存在', ErrorCode.RECORD_NOT_FOUND)
+
+    const [lineProcessCount, reportProcessCount, lineDeviceCount] = await Promise.all([
+      LineProcess.count({ where: { process_id: id } }),
+      ReportProcess.count({ where: { process_id: id } }),
+      LineDevice.count({ where: { process_id: id } }),
+    ])
+    if (lineProcessCount > 0 || reportProcessCount > 0 || lineDeviceCount > 0) {
+      return fail(res, `该工序存在关联数据，不允许删除（产线工序${lineProcessCount}条、报工工序${reportProcessCount}条、设备配置${lineDeviceCount}条）`, ErrorCode.BUSINESS_ERROR)
+    }
+
     await process.destroy()
+    logger.info(`工序已删除: process_id=${id}, process_code=${process.process_code}`)
     return success(res, null, '删除成功')
   } catch (err) {
-    console.error('删除工序失败:', err)
+    logger.error('删除工序失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }

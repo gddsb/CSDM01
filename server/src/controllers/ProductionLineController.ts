@@ -1,5 +1,5 @@
 import { Op } from 'sequelize'
-import { ProductionLine, LineProcess, LineDevice, Process, Device } from '../models/index.js'
+import { ProductionLine, LineProcess, LineDevice, Process, Device, ReportOrder } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 
 // 产线列表
@@ -134,6 +134,16 @@ export const remove = async (req, res) => {
     const { id } = req.params
     const line = await ProductionLine.findOne({ where: { line_id: id } })
     if (!line) return fail(res, '产线不存在', ErrorCode.RECORD_NOT_FOUND)
+
+    const [reportOrderCount, lineProcessCount, lineDeviceCount] = await Promise.all([
+      ReportOrder.count({ where: { line_id: id } }),
+      LineProcess.count({ where: { line_id: id } }),
+      LineDevice.count({ where: { line_id: id } }),
+    ])
+    if (reportOrderCount > 0 || lineProcessCount > 0 || lineDeviceCount > 0) {
+      return fail(res, `该产线存在关联数据，不允许删除（报工单${reportOrderCount}条、工序${lineProcessCount}条、设备${lineDeviceCount}台）`, ErrorCode.BUSINESS_ERROR)
+    }
+
     await line.destroy()
     return success(res, null, '删除成功')
   } catch (err) {

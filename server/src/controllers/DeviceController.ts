@@ -1,5 +1,5 @@
 import { Op } from 'sequelize'
-import { Device } from '../models/index.js'
+import { Device, LineDevice, ProcessException } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { logger } from '../utils/logger.js'
 
@@ -129,10 +129,20 @@ export const remove = async (req, res) => {
     const { id } = req.params
     const device = await Device.findOne({ where: { device_id: id } })
     if (!device) return fail(res, '设备不存在', ErrorCode.RECORD_NOT_FOUND)
+
+    const [lineDeviceCount, exceptionCount] = await Promise.all([
+      LineDevice.count({ where: { device_id: id } }),
+      ProcessException.count({ where: { device_id: id } }),
+    ])
+    if (lineDeviceCount > 0 || exceptionCount > 0) {
+      return fail(res, `该设备存在关联数据，不允许删除（产线配置${lineDeviceCount}条、异常工时${exceptionCount}条）`, ErrorCode.BUSINESS_ERROR)
+    }
+
     await device.destroy()
+    logger.info(`设备已删除: device_id=${id}, device_code=${device.device_code}`)
     return success(res, null, '删除成功')
   } catch (err) {
-    console.error('删除设备失败:', err)
+    logger.error('删除设备失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
