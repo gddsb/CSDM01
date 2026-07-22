@@ -423,8 +423,7 @@ function ImageManagePage({ visible, images, title, reportNo, category, readOnly,
             ))}
             {!readOnly && (
               <div className={`rd-image-page-upload ${uploading ? 'uploading' : ''}`} onClick={uploading ? undefined : handleUpload}>
-                <AddOutline fontSize={28} />
-                <span>{uploading ? '上传中...' : '上传图片'}</span>
+                <AddOutline fontSize={20} />
               </div>
             )}
             {readOnly && (images || []).length === 0 && (
