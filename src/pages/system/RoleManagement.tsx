@@ -13,11 +13,26 @@ const { Text } = Typography
 const statusOptions = [{ label: '启用', value: '启用' }, { label: '禁用', value: '禁用' }]
 const typeOptions = [{ label: '系统默认', value: '系统默认' }, { label: '可选', value: '可选' }]
 
+// 将树形权限列表扁平化为数组
+function flattenTree(nodes, result = []) {
+  nodes.forEach(n => {
+    result.push(n)
+    if (n.children && n.children.length > 0) {
+      flattenTree(n.children, result)
+    }
+  })
+  return result
+}
+
 // 根据扁平权限列表构建树形结构
 function buildPermissionTree(permissions) {
+  // 如果后端返回的已经是树形结构，先扁平化
+  const hasChildren = permissions.some(p => p.children && p.children.length > 0)
+  const flatPerms = hasChildren ? flattenTree(permissions) : permissions
+
   const map = new Map()
   const roots = []
-  permissions.forEach(p => {
+  flatPerms.forEach(p => {
     const isButton = p.type === 'button'
     const titleNode = (
       <span>
@@ -28,7 +43,7 @@ function buildPermissionTree(permissions) {
     )
     map.set(p.perm_id, { title: titleNode, key: p.perm_id, children: [], _raw: p })
   })
-  permissions.forEach(p => {
+  flatPerms.forEach(p => {
     const node = map.get(p.perm_id)
     if (!p.parent_id || p.parent_id === 0) {
       roots.push(node)

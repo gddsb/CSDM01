@@ -497,8 +497,11 @@ export const finish = async (req, res) => {
       const materialCount = await ProcessMaterial.count({
         where: { report_order_id: reportOrderId, process_id: mp.process_id },
       })
-      if (defectCount === 0 && materialCount === 0) {
-        return fail(res, `必须报工工序「${mp.process_name}(${mp.process_code})」未填写报工数据(不良/物料)`, ErrorCode.BUSINESS_ERROR)
+      if (defectCount === 0 || materialCount === 0) {
+        const missing = []
+        if (materialCount === 0) missing.push('物料记录')
+        if (defectCount === 0) missing.push('不良记录')
+        return fail(res, `必须报工工序「${mp.process_name}(${mp.process_code})」缺少：${missing.join('、')}`, ErrorCode.BUSINESS_ERROR)
       }
     }
 
@@ -562,13 +565,14 @@ export const finish = async (req, res) => {
       .reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
 
     const expectedOutput = inputQty - defectQty - scrapQty
-    const reportOrder = await ReportOrder.findOne({
+    const reportOrderRecord = await ReportOrder.findOne({
       where: { report_order_id: reportOrderId },
       attributes: ['report_qty'],
     })
-    const actualOutput = Number(reportOrder?.getDataValue('report_qty') || 0)
-    if (inputQty > 0 && Math.abs(actualOutput - expectedOutput) > 0.001) {
-      return fail(res, `投入产出不平衡：投入${inputQty} - 不良${defectQty} - 检验报废${scrapQty} = 预计产出${expectedOutput}，实际报工产出${actualOutput}`, ErrorCode.BUSINESS_ERROR)
+    const actualOutput = Number(reportOrderRecord?.getDataValue('report_qty') || 0)
+    const outputDiff = actualOutput - expectedOutput
+    if (inputQty > 0 && outputDiff < 0) {
+      return fail(res, `投入产出不平衡：投入${inputQty} - 不良${defectQty} - 检验报废${scrapQty} = 预计产出${expectedOutput}，实际报工产出${actualOutput}，实际产出不能少于预计产出`, ErrorCode.BUSINESS_ERROR)
     }
 
     const result = await sequelize.transaction(async (t) => {

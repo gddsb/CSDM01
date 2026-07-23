@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Toast, Dialog, Button, Stepper, Input, TextArea, Selector, DatePicker, Switch } from 'antd-mobile'
 import { AddOutline, DeleteOutline, CheckOutline, PictureOutline, DownOutline, CloseOutline } from 'antd-mobile-icons'
 import api from '../../../utils/api'
+import { formatFilmVersion } from '../../../utils'
 import dayjs from 'dayjs'
 import './report-detail.css'
 
@@ -475,8 +476,8 @@ export default function ReportDetail() {
             <span className="rd-label">料号</span>
             <span className="rd-value">
               {report.material_code || '-'}
-              {report.order?.film_version && report.order?.version_no && (
-                <span className="rd-film-version">（菲林版本：{report.order.film_version}{report.order.version_no}）</span>
+              {formatFilmVersion(report.order?.film_version, report.order?.version_no) && (
+                <span className="rd-film-version">（菲林版本：{formatFilmVersion(report.order?.film_version, report.order?.version_no)}）</span>
               )}
             </span>
             <span className={`rd-status-tag ${report.status === 0 || report.status === '开工' ? 'started' : 'done'}`}>

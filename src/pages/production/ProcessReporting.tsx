@@ -10,6 +10,7 @@ import {
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import api from '../../utils/api'
+import { formatFilmVersion } from '../../utils'
 
 // 报工单状态：后端模型 getter 返回中文名称 '开工'/'完工'
 const reportOrderStatusMap = {
@@ -2598,8 +2599,7 @@ export default function ProcessReporting() {
             <Col span={4}>
               <div style={{ color: '#666' }}>菲林版本</div>
               <div>
-                {selectedReport.order?.film_version || ''}{selectedReport.order?.version_no || ''}
-                {(!selectedReport.order?.film_version && !selectedReport.order?.version_no) && '-'}
+                {formatFilmVersion(selectedReport.order?.film_version, selectedReport.order?.version_no) || '-'}
               </div>
             </Col>
             <Col span={4}>
