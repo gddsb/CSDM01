@@ -3,7 +3,7 @@ import sequelize from '../config/database.js'
 
 // 生产报工单主表
 // 业务流：生产订单下发后直接创建报工单进行开工报工（无工单层）
-// 状态：0=开工, 1=完工
+// 状态：0=开工, 1=完工, 2=关闭
 const ReportOrder = sequelize.define('ReportOrder', {
   report_order_id: {
     type: DataTypes.INTEGER,
@@ -66,19 +66,23 @@ const ReportOrder = sequelize.define('ReportOrder', {
     type: DataTypes.DATE,
     comment: '完工时间',
   },
+  close_time: {
+    type: DataTypes.DATE,
+    comment: '关闭时间',
+  },
   status: {
     type: DataTypes.TINYINT,
     defaultValue: 0,
     index: true,
-    comment: '工单状态：0=开工, 1=完工',
+    comment: '工单状态：0=开工, 1=完工, 2=关闭',
     get() {
       const val = this.getDataValue('status')
-      const map = { 0: '开工', 1: '完工' }
+      const map = { 0: '开工', 1: '完工', 2: '关闭' }
       return map[val] !== undefined ? map[val] : val
     },
     set(val) {
       if (typeof val === 'string') {
-        const map = { '开工': 0, '完工': 1 }
+        const map = { '开工': 0, '完工': 1, '关闭': 2 }
         this.setDataValue('status', map[val] !== undefined ? map[val] : 0)
       } else {
         this.setDataValue('status', val)
@@ -100,6 +104,14 @@ const ReportOrder = sequelize.define('ReportOrder', {
   finish_user_name: {
     type: DataTypes.STRING(50),
     comment: '完工人员姓名（冗余）',
+  },
+  close_user_id: {
+    type: DataTypes.INTEGER,
+    comment: '关闭人员ID',
+  },
+  close_user_name: {
+    type: DataTypes.STRING(50),
+    comment: '关闭人员姓名（冗余）',
   },
   remarks: {
     type: DataTypes.STRING(500),

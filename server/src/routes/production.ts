@@ -16,6 +16,7 @@ import {
   update as roUpdate,
   remove as roRemove,
   finish as roFinish,
+  close as roClose,
   getProcesses as roGetProcesses,
 } from '../controllers/ReportOrderController.js'
 import {
@@ -87,6 +88,7 @@ router.post('/report-orders', permissionRequired('production:reporting:create'),
 router.put('/report-orders/:id', roUpdate)
 router.delete('/report-orders/:id', roRemove)
 router.post('/report-orders/:id/finish', permissionRequired('production:reporting:finish'), roFinish)
+router.post('/report-orders/:id/close', permissionRequired('production:reporting:close'), roClose)
 router.get('/report-orders/:id/processes', roGetProcesses)
 
 // 人员记录

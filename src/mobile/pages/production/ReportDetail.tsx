@@ -235,6 +235,8 @@ export default function ReportDetail() {
   const [activeTab, setActiveTab] = useState('defect')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [finishing, setFinishing] = useState(false)
+  const [closing, setClosing] = useState(false)
 
   const [defectTypes, setDefectTypes] = useState([])
   const [materials, setMaterials] = useState([])
@@ -259,6 +261,62 @@ export default function ReportDetail() {
     const returnTotal = mats.filter(m => m.material_type === '退' || m.material_type === '退回').reduce((sum, m) => sum + Number(m.quantity || 0), 0)
     return Math.floor(inputTotal - returnTotal)
   })()
+
+  // 计算预计产出/合格数量 = 投入 - 不良 - 检验报废
+  const expectedOutput = (() => {
+    if (!report) return 0
+    const defectTotal = (report.process_defects || [])
+      .filter(d => {
+        const dt = d.defect_type || (d.defect_type_info?.defect_type)
+        return dt !== '检验报废'
+      })
+      .reduce((sum, d) => sum + Number(d.quantity || 0), 0)
+    const scrapTotal = (report.process_defects || [])
+      .filter(d => {
+        const dt = d.defect_type || (d.defect_type_info?.defect_type)
+        return dt === '检验报废'
+      })
+      .reduce((sum, d) => sum + Number(d.quantity || 0), 0)
+    return Math.floor(inputQty - defectTotal - scrapTotal)
+  })()
+
+  const handleFinish = async () => {
+    if (!report) return
+    const confirmed = await Dialog.confirm({
+      title: '确认完工',
+      content: '确认完工该报工单？完工后数据将变为只读',
+    })
+    if (!confirmed) return
+    setFinishing(true)
+    try {
+      await api.post(`/production/report-orders/${report.report_order_id}/finish`)
+      Toast.show({ icon: 'success', content: '报工单已完工' })
+      fetchReport()
+    } catch (err) {
+      Toast.show({ icon: 'fail', content: err.message || '完工失败' })
+    } finally {
+      setFinishing(false)
+    }
+  }
+
+  const handleClose = async () => {
+    if (!report) return
+    const confirmed = await Dialog.confirm({
+      title: '确认关闭',
+      content: '确认关闭该报工单？关闭前需无不良记录、无物料使用记录、无检验报废记录',
+    })
+    if (!confirmed) return
+    setClosing(true)
+    try {
+      await api.post(`/production/report-orders/${report.report_order_id}/close`)
+      Toast.show({ icon: 'success', content: '报工单已关闭' })
+      fetchReport()
+    } catch (err) {
+      Toast.show({ icon: 'fail', content: err.message || '关闭失败' })
+    } finally {
+      setClosing(false)
+    }
+  }
 
   useEffect(() => {
     Promise.all([
@@ -386,8 +444,8 @@ export default function ReportDetail() {
             <span className="rd-header-divider" />
             <span className="rd-label">产线</span>
             <span className="rd-value">{report.line_name || '-'}</span>
-            <span className={`rd-status-tag ${report.status === 0 || report.status === '开工' ? 'started' : 'done'}`}>
-              {report.status === 0 || report.status === '开工' ? '开工' : '完工'}
+            <span className={`rd-status-tag ${report.status === 0 || report.status === '开工' ? 'started' : report.status === 2 || report.status === '关闭' ? 'closed' : 'done'}`}>
+              {report.status === 0 || report.status === '开工' ? '开工' : report.status === 2 || report.status === '关闭' ? '关闭' : '完工'}
             </span>
           </div>
           <div className="rd-header-row">
@@ -404,7 +462,49 @@ export default function ReportDetail() {
             <span className="rd-label" style={{ marginLeft: 16 }}>投入数量</span>
             <span className="rd-qty">{inputQty}</span>
           </div>
+          <div className="rd-header-row rd-qty-row">
+            <span className="rd-label">{report.status === 0 || report.status === '开工' ? '预计产出' : '合格数量'}</span>
+            <span className="rd-qty" style={{ color: '#13c2c2' }}>{expectedOutput}</span>
+          </div>
         </div>
+        {(report.status === 0 || report.status === '开工') && (
+          <div style={{ padding: '0 12px 12px', display: 'flex', gap: 8 }}>
+            <Button
+              block
+              color="primary"
+              size="large"
+              loading={finishing}
+              onClick={handleFinish}
+              style={{ borderRadius: 8, flex: 1 }}
+            >
+              完工
+            </Button>
+            <Button
+              block
+              color="danger"
+              size="large"
+              loading={closing}
+              onClick={handleClose}
+              style={{ borderRadius: 8, flex: 1 }}
+            >
+              关闭
+            </Button>
+          </div>
+        )}
+        {(report.status === 1 || report.status === '完工') && (
+          <div style={{ padding: '0 12px 12px' }}>
+            <Button
+              block
+              color="danger"
+              size="large"
+              loading={closing}
+              onClick={handleClose}
+              style={{ borderRadius: 8 }}
+            >
+              关闭
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="mobile-tabs" style={{ marginTop: 8 }}>

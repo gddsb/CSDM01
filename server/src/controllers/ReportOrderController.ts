@@ -13,13 +13,14 @@ import {
   ProcessException,
   ProcessMaterial,
   ReportImage,
+  DefectType,
 } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { generateReportOrderNo } from '../utils/sequence.js'
 import { logger } from '../utils/logger.js'
 
-// 报工单状态: 0=开工, 1=完工
-const statusMap = { '开工': 0, '完工': 1 }
+// 报工单状态: 0=开工, 1=完工, 2=关闭
+const statusMap = { '开工': 0, '完工': 1, '关闭': 2 }
 
 function isValidPositiveQty(val: any): boolean {
   if (val === undefined || val === null) return true
@@ -118,7 +119,10 @@ export async function syncOrderStatus(orderId: number, transaction?: any) {
 
   const statusVal = order.getDataValue('status')
 
-  const total = await ReportOrder.count({ where: { order_id: orderId }, ...countOpts })
+  const total = await ReportOrder.count({
+    where: { order_id: orderId, status: { [Op.ne]: 2 } },
+    ...countOpts,
+  })
   const finishedCount = await ReportOrder.count({
     where: { order_id: orderId, status: 1 },
     ...countOpts,
@@ -442,20 +446,113 @@ export const remove = async (req, res) => {
 
 // 完工报工单（开工 → 完工）
 // 业务规则：报工单完工后联动订单状态：所有报工单均完工 → 订单完工
-// 完工校验：所有工序已完成 + 无未关闭异常
+// 完工校验：
+//  1. 报工单必须存在且状态为开工
+//  2. 必须有工序记录
+//  3. 无未关闭的异常记录
+//  4. 必须报工的工序(must_report=1)需有不良或物料报工数据
+//  5. 投入产出平衡（投入=产出，无损耗）
+//  6. 人员记录有数据
+//  7. 异常工时记录填写完整
 export const finish = async (req, res) => {
   try {
     const { id } = req.params
+    const reportOrderId = Number(id)
 
-    const processCount = await ReportProcess.count({ where: { report_order_id: id } })
+    const processCount = await ReportProcess.count({ where: { report_order_id: reportOrderId } })
     const openExceptionCount = await ProcessException.count({
-      where: { report_order_id: id, end_time: null },
+      where: { report_order_id: reportOrderId, end_time: null },
     })
     if (processCount === 0) {
       return fail(res, '报工单无工序记录，不允许完工', ErrorCode.BUSINESS_ERROR)
     }
     if (openExceptionCount > 0) {
       return fail(res, `存在 ${openExceptionCount} 条未关闭的异常记录，请先关闭后再完工`, ErrorCode.BUSINESS_ERROR)
+    }
+
+    const mustReportProcesses = await ReportProcess.findAll({
+      where: { report_order_id: reportOrderId, must_report: 1 },
+      attributes: ['process_id', 'process_code', 'process_name'],
+    })
+    for (const mp of mustReportProcesses) {
+      const defectCount = await ProcessDefect.count({
+        where: { report_order_id: reportOrderId, process_id: mp.process_id },
+      })
+      const materialCount = await ProcessMaterial.count({
+        where: { report_order_id: reportOrderId, process_id: mp.process_id },
+      })
+      if (defectCount === 0 && materialCount === 0) {
+        return fail(res, `必须报工工序「${mp.process_name}(${mp.process_code})」未填写报工数据(不良/物料)`, ErrorCode.BUSINESS_ERROR)
+      }
+    }
+
+    const manpowerCount = await ManpowerRecord.count({ where: { report_order_id: reportOrderId } })
+    if (manpowerCount === 0) {
+      return fail(res, '人员记录不能为空，请先填写人员记录', ErrorCode.BUSINESS_ERROR)
+    }
+
+    const exceptionList = await ProcessException.findAll({
+      where: { report_order_id: reportOrderId },
+      attributes: ['exception_id', 'start_time', 'end_time', 'duration', 'exception_type'],
+    })
+    for (const exc of exceptionList) {
+      if (!exc.end_time) {
+        return fail(res, `异常记录「${exc.exception_type}」未填写恢复时间`, ErrorCode.BUSINESS_ERROR)
+      }
+      if (!exc.duration || Number(exc.duration) <= 0) {
+        return fail(res, `异常记录「${exc.exception_type}」未填写持续时长`, ErrorCode.BUSINESS_ERROR)
+      }
+    }
+
+    const reportProcesses = await ReportProcess.findAll({
+      where: { report_order_id: reportOrderId },
+      order: [['sort_order', 'ASC']],
+      attributes: ['process_id', 'sort_order'],
+    })
+    let inputQty = 0
+    if (reportProcesses.length > 0) {
+      const firstProcessId = reportProcesses[0].process_id
+      const firstProcessMaterials = await ProcessMaterial.findAll({
+        where: { report_order_id: reportOrderId, process_id: firstProcessId },
+        attributes: ['material_type', 'quantity'],
+      })
+      const investQty = firstProcessMaterials
+        .filter(m => m.material_type === '投入')
+        .reduce((sum, m) => sum + (Number(m.quantity) || 0), 0)
+      const returnQty = firstProcessMaterials
+        .filter(m => m.material_type === '退回')
+        .reduce((sum, m) => sum + (Number(m.quantity) || 0), 0)
+      inputQty = investQty - returnQty
+    }
+
+    const allDefects = await ProcessDefect.findAll({
+      where: { report_order_id: reportOrderId },
+      attributes: ['quantity'],
+      include: [{
+        model: DefectType,
+        as: 'defect_type',
+        attributes: ['defect_type'],
+        required: false,
+      }],
+    })
+    const defectQty = allDefects
+      .filter(d => {
+        const dt = (d as any).defect_type?.defect_type
+        return dt !== '检验报废'
+      })
+      .reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
+    const scrapQty = allDefects
+      .filter(d => (d as any).defect_type?.defect_type === '检验报废')
+      .reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
+
+    const expectedOutput = inputQty - defectQty - scrapQty
+    const reportOrder = await ReportOrder.findOne({
+      where: { report_order_id: reportOrderId },
+      attributes: ['report_qty'],
+    })
+    const actualOutput = Number(reportOrder?.getDataValue('report_qty') || 0)
+    if (inputQty > 0 && Math.abs(actualOutput - expectedOutput) > 0.001) {
+      return fail(res, `投入产出不平衡：投入${inputQty} - 不良${defectQty} - 检验报废${scrapQty} = 预计产出${expectedOutput}，实际报工产出${actualOutput}`, ErrorCode.BUSINESS_ERROR)
     }
 
     const result = await sequelize.transaction(async (t) => {
@@ -515,6 +612,78 @@ export const finish = async (req, res) => {
   }
 }
 
+// 关闭报工单（开工/完工 → 关闭）
+// 关闭校验：无不良记录、无物料使用记录、无检验报废记录
+export const close = async (req, res) => {
+  try {
+    const { id } = req.params
+    const reportOrderId = Number(id)
+
+    const defectCount = await ProcessDefect.count({ where: { report_order_id: reportOrderId } })
+    const materialCount = await ProcessMaterial.count({ where: { report_order_id: reportOrderId } })
+
+    const scrapCount = await ProcessDefect.count({
+      where: { report_order_id: reportOrderId },
+      include: [{
+        model: DefectType,
+        as: 'defect_type',
+        attributes: [],
+        where: { defect_type: '检验报废' },
+        required: true,
+      }],
+    })
+
+    if (defectCount > 0) {
+      return fail(res, `该报工单存在 ${defectCount} 条不良记录，不允许关闭`, ErrorCode.BUSINESS_ERROR)
+    }
+    if (materialCount > 0) {
+      return fail(res, `该报工单存在 ${materialCount} 条物料使用记录，不允许关闭`, ErrorCode.BUSINESS_ERROR)
+    }
+    if (scrapCount > 0) {
+      return fail(res, `该报工单存在 ${scrapCount} 条检验报废记录，不允许关闭`, ErrorCode.BUSINESS_ERROR)
+    }
+
+    const result = await sequelize.transaction(async (t) => {
+      const reportOrder = await ReportOrder.findOne({
+        where: { report_order_id: id },
+        transaction: t,
+        lock: t.LOCK.UPDATE,
+      })
+      if (!reportOrder) {
+        const err: any = new Error('报工单不存在')
+        err.code = ErrorCode.RECORD_NOT_FOUND
+        throw err
+      }
+      const statusVal = reportOrder.getDataValue('status')
+      if (statusVal === 2) {
+        const err: any = new Error('报工单已关闭')
+        err.code = ErrorCode.BUSINESS_ERROR
+        throw err
+      }
+
+      await reportOrder.update({
+        status: 2,
+        close_time: new Date(),
+        close_user_id: req.user?.userId || null,
+        close_user_name: req.user?.username || null,
+      }, { transaction: t })
+
+      await syncOrderStatus(reportOrder.order_id, t)
+
+      return reportOrder
+    })
+
+    logger.info('[ReportOrder.close] 报工单关闭成功', { report_order_id: id, order_id: result.order_id, report_order_no: result.report_order_no, user: req.user?.username })
+    return success(res, result, '报工单已关闭')
+  } catch (err: any) {
+    if (err && err.code) {
+      return fail(res, err.message, err.code)
+    }
+    console.error('关闭报工单失败:', err)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
+  }
+}
+
 // 获取报工单工序列表（继承自产线工序表）
 export const getProcesses = async (req, res) => {
   try {
@@ -530,4 +699,4 @@ export const getProcesses = async (req, res) => {
   }
 }
 
-export default { list, detail, create, update, remove, finish, getProcesses, syncOrderStatus }
+export default { list, detail, create, update, remove, finish, close, getProcesses, syncOrderStatus }

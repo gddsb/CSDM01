@@ -161,8 +161,9 @@ const defaultPermissions = [
   // 生产管理 - 生产报工
   { perm_id: 220, parent_id: 23, perm_name: '新增报工', perm_code: 'production:reporting:create', type: 'button', sort_order: 1 },
   { perm_id: 221, parent_id: 23, perm_name: '报工完工', perm_code: 'production:reporting:finish', type: 'button', sort_order: 2 },
-  { perm_id: 222, parent_id: 23, perm_name: '编辑报工', perm_code: 'production:reporting:update', type: 'button', sort_order: 3 },
-  { perm_id: 223, parent_id: 23, perm_name: '删除报工', perm_code: 'production:reporting:delete', type: 'button', sort_order: 4 },
+  { perm_id: 224, parent_id: 23, perm_name: '报工关闭', perm_code: 'production:reporting:close', type: 'button', sort_order: 3 },
+  { perm_id: 222, parent_id: 23, perm_name: '编辑报工', perm_code: 'production:reporting:update', type: 'button', sort_order: 4 },
+  { perm_id: 223, parent_id: 23, perm_name: '删除报工', perm_code: 'production:reporting:delete', type: 'button', sort_order: 5 },
   // 基础数据 - 产线档案
   { perm_id: 230, parent_id: 13, perm_name: '新增产线', perm_code: 'basic:line:create', type: 'button', sort_order: 1 },
   { perm_id: 231, parent_id: 13, perm_name: '编辑产线', perm_code: 'basic:line:update', type: 'button', sort_order: 2 },

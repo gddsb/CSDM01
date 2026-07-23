@@ -11,10 +11,11 @@ import {
 import dayjs from 'dayjs'
 import api from '../../utils/api'
 
-// 报工单状态：后端模型 getter 返回中文名称 '开工'/'完工'
+// 报工单状态：后端模型 getter 返回中文名称 '开工'/'完工'/'关闭'
 const reportOrderStatusMap = {
   '开工': { label: '开工', color: 'processing' },
   '完工': { label: '完工', color: 'success' },
+  '关闭': { label: '关闭', color: 'error' },
 }
 
 const exceptionCategories = [
@@ -36,6 +37,7 @@ export default function ProcessReporting() {
   const [lineProcesses, setLineProcesses] = useState([])
   const [loading, setLoading] = useState(false)
   const [finishingReport, setFinishingReport] = useState(false)
+  const [closingReport, setClosingReport] = useState(false)
 
   // 新增报工单 Modal
   const [createModalOpen, setCreateModalOpen] = useState(false)
@@ -90,6 +92,7 @@ export default function ProcessReporting() {
     defectProcess: 0,
     defectScrap: 0,
     exceptionHours: 0,
+    expectedOutput: 0,
   })
 
   const message = useMessage()
@@ -416,6 +419,8 @@ export default function ProcessReporting() {
         inputQty = investQty - returnQty
       }
 
+      const expectedOutput = inputQty - defectMaterial - defectProcess - defectScrapTotal
+
       setStats({
         inputQty: Number(inputQty.toFixed(2)),
         outputQty: Number(selectedReport?.report_qty || 0),
@@ -423,6 +428,7 @@ export default function ProcessReporting() {
         defectProcess: Number(defectProcess.toFixed(2)),
         defectScrap: Number(defectScrapTotal.toFixed(2)),
         exceptionHours: Number(exceptionHours.toFixed(2)),
+        expectedOutput: Number(expectedOutput.toFixed(2)),
       })
     } catch {
       // 静默失败
@@ -450,7 +456,7 @@ export default function ProcessReporting() {
       setExceptionList([])
       setManpowerList([])
       setMaterialList([])
-      setStats({ inputQty: 0, outputQty: 0, defectMaterial: 0, defectProcess: 0, defectScrap: 0, exceptionHours: 0 })
+      setStats({ inputQty: 0, outputQty: 0, defectMaterial: 0, defectProcess: 0, defectScrap: 0, exceptionHours: 0, expectedOutput: 0 })
       return
     }
     fetchReportProcesses(selectedReport.report_order_id)
@@ -460,7 +466,7 @@ export default function ProcessReporting() {
   // 报工单级别统计数据（当前报工单汇总，不按工序过滤）
   useEffect(() => {
     if (!selectedReport) {
-      setStats({ inputQty: 0, outputQty: 0, defectMaterial: 0, defectProcess: 0, defectScrap: 0, exceptionHours: 0 })
+      setStats({ inputQty: 0, outputQty: 0, defectMaterial: 0, defectProcess: 0, defectScrap: 0, exceptionHours: 0, expectedOutput: 0 })
       return
     }
     fetchReportStats(selectedReport.report_order_id)
@@ -585,13 +591,29 @@ export default function ProcessReporting() {
       const res = await api.post(`/production/report-orders/${selectedReport.report_order_id}/finish`)
       const updated = res.data || { ...selectedReport, status: '完工', finish_time: new Date() }
       setSelectedReport(updated)
-      // 完工后该报工单不再出现在下拉框（只显示开工状态）
       await fetchReportOrders()
       message.success(res.message || '已完工')
     } catch (err) {
       message.error(err.message || '操作失败')
     } finally {
       setFinishingReport(false)
+    }
+  }
+
+  // 关闭报工单（开工/完工 → 关闭，单向）
+  const handleCloseReport = async () => {
+    if (!selectedReport) return
+    try {
+      setClosingReport(true)
+      const res = await api.post(`/production/report-orders/${selectedReport.report_order_id}/close`)
+      const updated = res.data || { ...selectedReport, status: '关闭', close_time: new Date() }
+      setSelectedReport(updated)
+      await fetchReportOrders()
+      message.success(res.message || '已关闭')
+    } catch (err) {
+      message.error(err.message || '操作失败')
+    } finally {
+      setClosingReport(false)
     }
   }
 
@@ -2518,15 +2540,20 @@ export default function ProcessReporting() {
                   <Button type="primary" loading={finishingReport}>完工</Button>
                 </Popconfirm>
               )}
+              {selectedReport && selectedReport.status !== '关闭' && hasPermission('production:reporting:close') && (
+                <Popconfirm title="确认关闭？关闭前需无不良记录、无物料使用记录、无检验报废记录" onConfirm={handleCloseReport}>
+                  <Button danger loading={closingReport}>关闭</Button>
+                </Popconfirm>
+              )}
             </Space>
           </Col>
           {selectedReport && (
             <Col span={8} style={{ textAlign: 'right' }}>
               <Tag
-                color={reportOrderStatusMap[selectedReport.status as 0 | 1]?.color || 'default'}
+                color={reportOrderStatusMap[selectedReport.status]?.color || 'default'}
                 style={{ fontSize: 14, padding: '2px 10px' }}
               >
-                {reportOrderStatusMap[selectedReport.status as 0 | 1]?.label || '-'}
+                {reportOrderStatusMap[selectedReport.status]?.label || '-'}
               </Tag>
             </Col>
           )}
@@ -2577,17 +2604,25 @@ export default function ProcessReporting() {
               <div style={{ color: '#666' }}>报工时间</div>
               <div>{selectedReport.report_time ? dayjs(selectedReport.report_time).format('YYYY-MM-DD HH:mm') : '-'}</div>
             </Col>
-            <Col span={4}>
+            <Col span={3}>
               <div style={{ color: '#666' }}>完工时间</div>
               <div>{selectedReport.finish_time ? dayjs(selectedReport.finish_time).format('YYYY-MM-DD HH:mm') : '-'}</div>
             </Col>
-            <Col span={4}>
+            <Col span={3}>
+              <div style={{ color: '#666' }}>关闭时间</div>
+              <div>{selectedReport.close_time ? dayjs(selectedReport.close_time).format('YYYY-MM-DD HH:mm') : '-'}</div>
+            </Col>
+            <Col span={3}>
               <div style={{ color: '#666' }}>报工人</div>
               <div>{selectedReport.report_user_name || '-'}</div>
             </Col>
-            <Col span={4}>
+            <Col span={3}>
               <div style={{ color: '#666' }}>完工人</div>
               <div>{selectedReport.finish_user_name || '-'}</div>
+            </Col>
+            <Col span={3}>
+              <div style={{ color: '#666' }}>关闭人</div>
+              <div>{selectedReport.close_user_name || '-'}</div>
             </Col>
           </Row>
         )}
@@ -2607,27 +2642,31 @@ export default function ProcessReporting() {
         <Card>
           <div style={{ marginBottom: 8, fontWeight: 'bold', color: '#333' }}>报工单统计（当前报工单汇总）</div>
           <Row gutter={16} style={{ marginBottom: 16 }}>
-            <Col span={4}>
+            <Col span={3}>
               <div style={{ color: '#666' }}>投入数量</div>
               <div style={{ fontSize: 18, fontWeight: 'bold', color: '#1890ff' }}>{stats.inputQty}</div>
             </Col>
-            <Col span={4}>
+            <Col span={3}>
+              <div style={{ color: '#666' }}>{selectedReport?.status === '开工' ? '预计产出' : '合格数量'}</div>
+              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#13c2c2' }}>{stats.expectedOutput}</div>
+            </Col>
+            <Col span={3}>
               <div style={{ color: '#666' }}>报工数量</div>
               <div style={{ fontSize: 18, fontWeight: 'bold', color: '#52c41a' }}>{stats.outputQty}</div>
             </Col>
-            <Col span={4}>
+            <Col span={3}>
               <div style={{ color: '#666' }}>来料不良汇总</div>
               <div style={{ fontSize: 18, fontWeight: 'bold', color: '#faad14' }}>{stats.defectMaterial}</div>
             </Col>
-            <Col span={4}>
+            <Col span={3}>
               <div style={{ color: '#666' }}>制程不良汇总</div>
               <div style={{ fontSize: 18, fontWeight: 'bold', color: '#fa8c16' }}>{stats.defectProcess}</div>
             </Col>
-            <Col span={4}>
+            <Col span={3}>
               <div style={{ color: '#666' }}>检验报废汇总</div>
               <div style={{ fontSize: 18, fontWeight: 'bold', color: '#ff4d4f' }}>{stats.defectScrap}</div>
             </Col>
-            <Col span={4}>
+            <Col span={3}>
               <div style={{ color: '#666' }}>异常工时汇总</div>
               <div style={{ fontSize: 18, fontWeight: 'bold', color: '#722ed1' }}>{stats.exceptionHours}</div>
             </Col>
