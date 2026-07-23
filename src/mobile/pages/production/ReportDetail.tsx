@@ -269,7 +269,7 @@ export default function ReportDetail() {
         api.get('/production/process-defects', { params: { report_order_id: id, process_id: selectedProcessId, page: 1, pageSize: 1000 } }),
         api.get('/production/process-materials', { params: { report_order_id: id, process_id: selectedProcessId, page: 1, pageSize: 1000 } }),
       ])
-      setProdDefectList((defectRes.data || []).map(d => ({ ...d, id: d.defect_id || genTempId() })))
+      setProdDefectList((defectRes.data || []).map(d => ({ ...d, id: d.defect_id || genTempId(), defect_qty: d.defect_qty ? Math.floor(Number(d.defect_qty)) : 0 })))
       setMaterialList((materialRes.data || []).map(m => ({ ...m, id: m.material_id || genTempId() })))
     } catch (err) {
       Toast.show({ icon: 'fail', content: err.message || '获取数据失败' })
@@ -283,7 +283,7 @@ export default function ReportDetail() {
         api.get('/production/scrap-defects', { params: { report_order_id: id, page: 1, pageSize: 1000 } }),
         api.get('/production/process-exceptions', { params: { report_order_id: id, page: 1, pageSize: 1000 } }),
       ])
-      setScrapList((scrapRes.data || []).filter(d => d.defect_type === '检验报废').map(d => ({ ...d, id: d.scrap_id || genTempId() })))
+      setScrapList((scrapRes.data || []).filter(d => d.defect_type === '检验报废').map(d => ({ ...d, id: d.scrap_id || genTempId(), defect_qty: d.defect_qty ? Math.floor(Number(d.defect_qty)) : 0 })))
       setExceptionList((exceptionRes.data || []).map(e => ({ ...e, id: e.exception_id || genTempId() })))
     } catch (err) {
       Toast.show({ icon: 'fail', content: err.message || '获取数据失败' })
@@ -647,7 +647,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
                   <input
                     type="number"
                     className="rd-form-input"
-                    value={record.defect_qty || ''}
+                    value={record.defect_qty ? Math.floor(Number(record.defect_qty)) : ''}
                     onChange={(e) => handleChangeDefect(record.id, 'defect_qty', e.target.value ? Math.max(1, Math.floor(Number(e.target.value))) : null)}
                     min={1}
                     step={1}
