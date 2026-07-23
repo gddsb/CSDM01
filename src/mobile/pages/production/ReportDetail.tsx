@@ -276,9 +276,8 @@ export default function ReportDetail() {
     const defectTotal = (report.process_defects || [])
       .filter(d => getDefectType(d) !== '检验报废')
       .reduce((sum, d) => sum + Number(d.quantity || 0), 0)
-    const scrapTotal = (report.process_defects || [])
-      .filter(d => getDefectType(d) === '检验报废')
-      .reduce((sum, d) => sum + Number(d.quantity || 0), 0)
+    const scrapTotal = scrapList
+      .reduce((sum, d) => sum + Number(d.defect_qty || d.quantity || 0), 0)
     return Math.floor(inputQty - defectTotal - scrapTotal)
   })()
 
@@ -310,15 +309,8 @@ export default function ReportDetail() {
 
   // 检验报废汇总
   const scrapQty = (() => {
-    if (!report) return 0
-    const getDefectType = (d: any) => {
-      if (typeof d.defect_type === 'string') return d.defect_type
-      if (d.defect_type?.defect_type) return d.defect_type.defect_type
-      return ''
-    }
-    return (report.process_defects || [])
-      .filter(d => getDefectType(d) === '检验报废')
-      .reduce((sum, d) => sum + Number(d.quantity || 0), 0)
+    return scrapList
+      .reduce((sum, d) => sum + Number(d.defect_qty || d.quantity || 0), 0)
   })()
 
   // 异常工时汇总（无结束时间时取当前时间计算）
@@ -448,6 +440,10 @@ export default function ReportDetail() {
       Toast.show({ icon: 'fail', content: err.message || '获取数据失败' })
     }
   }
+
+  const refreshAllData = useCallback(async () => {
+    await Promise.all([fetchReport(), fetchGlobalData()])
+  }, [id])
 
   useEffect(() => {
     fetchReport()
@@ -616,7 +612,7 @@ export default function ReportDetail() {
             processes={processes}
             onProcessChange={setSelectedProcessId}
             showProcess={currentTabNeedProcess && processes.length > 0}
-            onDataSaved={fetchReport}
+            onDataSaved={refreshAllData}
           />
         )}
 
@@ -632,7 +628,7 @@ export default function ReportDetail() {
             processes={processes}
             onProcessChange={setSelectedProcessId}
             showProcess={currentTabNeedProcess && processes.length > 0}
-            onDataSaved={fetchReport}
+            onDataSaved={refreshAllData}
           />
         )}
 
@@ -645,7 +641,7 @@ export default function ReportDetail() {
             category="defect"
             reportOrderId={id}
             reportNo={report?.report_no}
-            onDataSaved={fetchReport}
+            onDataSaved={refreshAllData}
           />
         )}
 
@@ -658,7 +654,7 @@ export default function ReportDetail() {
             reportOrderId={id}
             reportNo={report?.report_no}
             reportTime={report.report_time}
-            onDataSaved={fetchReport}
+            onDataSaved={refreshAllData}
           />
         )}
 
@@ -671,7 +667,7 @@ export default function ReportDetail() {
             reportTime={report.report_time}
             reportStatus={report.status}
             reportFinishTime={report.finish_time}
-            onDataSaved={fetchReport}
+            onDataSaved={refreshAllData}
           />
         )}
       </div>
