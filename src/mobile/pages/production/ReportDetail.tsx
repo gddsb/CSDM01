@@ -444,13 +444,35 @@ export default function ReportDetail() {
             <span className="rd-header-divider" />
             <span className="rd-label">产线</span>
             <span className="rd-value">{report.line_name || '-'}</span>
-            <span className={`rd-status-tag ${report.status === 0 || report.status === '开工' ? 'started' : 'done'}`}>
-              {report.status === 0 || report.status === '开工' ? '开工' : '完工'}
-            </span>
+            {(report.status === 0 || report.status === '开工') && (
+              <div className="rd-header-actions">
+                <Button
+                  color="primary"
+                  size="mini"
+                  loading={finishing}
+                  onClick={handleFinish}
+                  style={{ borderRadius: 6, '--padding-left': '10px', '--padding-right': '10px', height: 28 }}
+                >
+                  完工
+                </Button>
+                <Button
+                  color="danger"
+                  size="mini"
+                  loading={closing}
+                  onClick={handleClose}
+                  style={{ borderRadius: 6, '--padding-left': '10px', '--padding-right': '10px', height: 28 }}
+                >
+                  关闭
+                </Button>
+              </div>
+            )}
           </div>
           <div className="rd-header-row">
             <span className="rd-label">料号</span>
             <span className="rd-value">{report.material_code || '-'}</span>
+            <span className={`rd-status-tag ${report.status === 0 || report.status === '开工' ? 'started' : 'done'}`}>
+              {report.status === 0 || report.status === '开工' ? '开工' : '完工'}
+            </span>
           </div>
           <div className="rd-header-row">
             <span className="rd-label">料品名称</span>
@@ -467,30 +489,6 @@ export default function ReportDetail() {
             <span className="rd-qty" style={{ color: '#13c2c2' }}>{expectedOutput}</span>
           </div>
         </div>
-        {(report.status === 0 || report.status === '开工') && (
-          <div style={{ padding: '0 12px 12px', display: 'flex', gap: 8 }}>
-            <Button
-              block
-              color="primary"
-              size="large"
-              loading={finishing}
-              onClick={handleFinish}
-              style={{ borderRadius: 8, flex: 1 }}
-            >
-              完工
-            </Button>
-            <Button
-              block
-              color="danger"
-              size="large"
-              loading={closing}
-              onClick={handleClose}
-              style={{ borderRadius: 8, flex: 1 }}
-            >
-              关闭
-            </Button>
-          </div>
-        )}
       </div>
 
       <div className="mobile-tabs" style={{ marginTop: 8 }}>
@@ -519,6 +517,7 @@ export default function ReportDetail() {
             processes={processes}
             onProcessChange={setSelectedProcessId}
             showProcess={currentTabNeedProcess && processes.length > 0}
+            onDataSaved={fetchReport}
           />
         )}
 
@@ -534,6 +533,7 @@ export default function ReportDetail() {
             processes={processes}
             onProcessChange={setSelectedProcessId}
             showProcess={currentTabNeedProcess && processes.length > 0}
+            onDataSaved={fetchReport}
           />
         )}
 
@@ -546,6 +546,7 @@ export default function ReportDetail() {
             category="defect"
             reportOrderId={id}
             reportNo={report?.report_no}
+            onDataSaved={fetchReport}
           />
         )}
 
@@ -565,7 +566,7 @@ export default function ReportDetail() {
   )
 }
 
-function DefectTab({ list, setList, options, isEditable, category, reportOrderId, reportNo, processId, processes, onProcessChange, showProcess }) {
+function DefectTab({ list, setList, options, isEditable, category, reportOrderId, reportNo, processId, processes, onProcessChange, showProcess, onDataSaved }) {
   const [saving, setSaving] = useState(false)
   const [imgModal, setImgModal] = useState({ visible: false, recordId: null })
 
@@ -624,6 +625,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
       Toast.show({ icon: 'success', content: `已保存 ${valid.length} 条记录` })
       const res = await api.get(url, { params: { report_order_id: reportOrderId, process_id: processId, page: 1, pageSize: 1000 } })
       setList((res.data || []).map(d => ({ ...d, id: d.defect_id || genTempId(), images: d.images || [] })))
+      onDataSaved && onDataSaved()
     } catch (err) {
       Toast.show({ icon: 'fail', content: err.message || '保存失败' })
     } finally {
@@ -823,7 +825,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
   )
 }
 
-function MaterialTab({ list, setList, options, isEditable, reportOrderId, reportNo, processId, processes, onProcessChange, showProcess }) {
+function MaterialTab({ list, setList, options, isEditable, reportOrderId, reportNo, processId, processes, onProcessChange, showProcess, onDataSaved }) {
   const [saving, setSaving] = useState(false)
   const [imgModal, setImgModal] = useState({ visible: false, recordId: null })
 
@@ -915,6 +917,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
       Toast.show({ icon: 'success', content: `已保存 ${valid.length} 条记录` })
       const res = await api.get('/production/process-materials', { params: { report_order_id: reportOrderId, process_id: processId, page: 1, pageSize: 1000 } })
       setList((res.data || []).map(m => ({ ...m, id: m.material_id || genTempId(), images: m.images || [] })))
+      onDataSaved && onDataSaved()
     } catch (err) {
       Toast.show({ icon: 'fail', content: err.message || '保存失败' })
     } finally {
@@ -1154,7 +1157,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
   )
 }
 
-function ScrapTab({ list, setList, options, isEditable, category, reportOrderId }) {
+function ScrapTab({ list, setList, options, isEditable, category, reportOrderId, reportNo, onDataSaved }) {
   const [saving, setSaving] = useState(false)
 
   const handleAdd = async () => {
@@ -1194,6 +1197,7 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId 
       Toast.show({ icon: 'success', content: `已保存 ${valid.length} 条记录` })
       const res = await api.get(url, { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } })
       setList((res.data || []).map(d => ({ ...d, id: d.scrap_id || genTempId() })))
+      onDataSaved && onDataSaved()
     } catch (err) {
       Toast.show({ icon: 'fail', content: err.message || '保存失败' })
     } finally {

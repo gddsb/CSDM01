@@ -83,6 +83,15 @@
   padding: 2px 8px;
   border-radius: 10px;
   font-weight: 500;
+  flex-shrink: 0;
+}
+
+.rd-header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .rd-status-tag.started {
