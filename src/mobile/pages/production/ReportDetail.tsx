@@ -268,54 +268,56 @@ export default function ReportDetail() {
   // 计算预计产出/合格数量 = 投入 - 不良 - 检验报废
   const expectedOutput = (() => {
     if (!report) return 0
+    const getDefectType = (d: any) => {
+      if (typeof d.defect_type === 'string') return d.defect_type
+      if (d.defect_type?.defect_type) return d.defect_type.defect_type
+      return ''
+    }
     const defectTotal = (report.process_defects || [])
-      .filter(d => {
-        const dt = d.defect_type || (d.defect_type_info?.defect_type)
-        return dt !== '检验报废'
-      })
+      .filter(d => getDefectType(d) !== '检验报废')
       .reduce((sum, d) => sum + Number(d.quantity || 0), 0)
     const scrapTotal = (report.process_defects || [])
-      .filter(d => {
-        const dt = d.defect_type || (d.defect_type_info?.defect_type)
-        return dt === '检验报废'
-      })
+      .filter(d => getDefectType(d) === '检验报废')
       .reduce((sum, d) => sum + Number(d.quantity || 0), 0)
     return Math.floor(inputQty - defectTotal - scrapTotal)
   })()
 
-  // 来料不良汇总（检验类型为"制程检验类型"且不良类型为"来料不良"）
+  // 来料不良汇总
   const incomingDefectQty = (() => {
     if (!report) return 0
+    const getDefectType = (d: any) => {
+      if (typeof d.defect_type === 'string') return d.defect_type
+      if (d.defect_type?.defect_type) return d.defect_type.defect_type
+      return ''
+    }
     return (report.process_defects || [])
-      .filter(d => {
-        const dt = d.defect_type || (d.defect_type_info?.defect_type)
-        const cat = d.defect_type_info?.category_name
-        return cat === '制程检验类型' && dt === '来料不良'
-      })
+      .filter(d => getDefectType(d) === '来料不良')
       .reduce((sum, d) => sum + Number(d.quantity || 0), 0)
   })()
 
-  // 制程不良汇总（检验类型为"制程检验类型"且不良类型为"制程不良"）
+  // 制程不良汇总
   const processDefectQty = (() => {
     if (!report) return 0
+    const getDefectType = (d: any) => {
+      if (typeof d.defect_type === 'string') return d.defect_type
+      if (d.defect_type?.defect_type) return d.defect_type.defect_type
+      return ''
+    }
     return (report.process_defects || [])
-      .filter(d => {
-        const dt = d.defect_type || (d.defect_type_info?.defect_type)
-        const cat = d.defect_type_info?.category_name
-        return cat === '制程检验类型' && dt === '制程不良'
-      })
+      .filter(d => getDefectType(d) === '制程不良')
       .reduce((sum, d) => sum + Number(d.quantity || 0), 0)
   })()
 
-  // 检验报废汇总（检验类型为"制程检验类型"且不良类型为"检验报废"）
+  // 检验报废汇总
   const scrapQty = (() => {
     if (!report) return 0
+    const getDefectType = (d: any) => {
+      if (typeof d.defect_type === 'string') return d.defect_type
+      if (d.defect_type?.defect_type) return d.defect_type.defect_type
+      return ''
+    }
     return (report.process_defects || [])
-      .filter(d => {
-        const dt = d.defect_type || (d.defect_type_info?.defect_type)
-        const cat = d.defect_type_info?.category_name
-        return cat === '制程检验类型' && dt === '检验报废'
-      })
+      .filter(d => getDefectType(d) === '检验报废')
       .reduce((sum, d) => sum + Number(d.quantity || 0), 0)
   })()
 
