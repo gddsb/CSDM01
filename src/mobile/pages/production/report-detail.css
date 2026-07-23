@@ -259,6 +259,7 @@
 .rd-form-item-unit {
   flex: 0 0 auto;
   width: 12em;
+  max-width: 12em;
 }
 
 .rd-defect-select-dropdown.auto-width {
