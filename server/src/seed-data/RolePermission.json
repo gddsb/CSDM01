@@ -223,5 +223,115 @@
     "id": 48,
     "role_id": 1,
     "perm_id": 76
+  },
+  {
+    "id": 49,
+    "role_id": 1,
+    "perm_id": 101
+  },
+  {
+    "id": 50,
+    "role_id": 1,
+    "perm_id": 102
+  },
+  {
+    "id": 51,
+    "role_id": 1,
+    "perm_id": 103
+  },
+  {
+    "id": 52,
+    "role_id": 1,
+    "perm_id": 104
+  },
+  {
+    "id": 53,
+    "role_id": 1,
+    "perm_id": 105
+  },
+  {
+    "id": 54,
+    "role_id": 1,
+    "perm_id": 111
+  },
+  {
+    "id": 55,
+    "role_id": 1,
+    "perm_id": 112
+  },
+  {
+    "id": 56,
+    "role_id": 1,
+    "perm_id": 113
+  },
+  {
+    "id": 57,
+    "role_id": 1,
+    "perm_id": 114
+  },
+  {
+    "id": 58,
+    "role_id": 1,
+    "perm_id": 115
+  },
+  {
+    "id": 59,
+    "role_id": 1,
+    "perm_id": 116
+  },
+  {
+    "id": 60,
+    "role_id": 1,
+    "perm_id": 117
+  },
+  {
+    "id": 61,
+    "role_id": 1,
+    "perm_id": 118
+  },
+  {
+    "id": 62,
+    "role_id": 1,
+    "perm_id": 119
+  },
+  {
+    "id": 63,
+    "role_id": 1,
+    "perm_id": 120
+  },
+  {
+    "id": 64,
+    "role_id": 1,
+    "perm_id": 121
+  },
+  {
+    "id": 65,
+    "role_id": 1,
+    "perm_id": 122
+  },
+  {
+    "id": 66,
+    "role_id": 1,
+    "perm_id": 123
+  },
+  {
+    "id": 67,
+    "role_id": 1,
+    "perm_id": 124
+  },
+  {
+    "id": 68,
+    "role_id": 1,
+    "perm_id": 125
+  },
+  {
+    "id": 69,
+    "role_id": 1,
+    "perm_id": 126
+  },
+  {
+    "id": 70,
+    "role_id": 1,
+    "perm_id": 127
   }
 ]

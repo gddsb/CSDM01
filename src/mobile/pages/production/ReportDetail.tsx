@@ -710,7 +710,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
       id: genTempId(),
       report_order_id: Number(reportOrderId),
       process_id: processId,
-      material_type: '领',
+      material_type: '投入',
       bas_material_id: null,
       material_batch: '',
       package_no: '',
@@ -752,7 +752,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
         const payload = {
           report_order_id: m.report_order_id,
           process_id: m.process_id,
-          material_type: m.material_type || '领',
+          material_type: m.material_type || '投入',
           bas_material_id: m.bas_material_id,
           material_batch: m.material_batch,
           package_no: m.package_no || '',
@@ -865,8 +865,10 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
 
       {list.length === 0 && <div className="mobile-empty">暂无记录</div>}
 
-      {list.map(record => (
-        <div key={record.id} className="rd-list-item">
+      {list.map(record => {
+        const isReturn = record.material_type === '退回' || record.material_type === '退'
+        return (
+        <div key={record.id} className={`rd-list-item ${isReturn ? 'rd-mat-return' : 'rd-mat-input'}`}>
           <div className="rd-list-item-header">
             <span className="rd-list-item-title">
               {record.material_code ? `${record.material_code} ${record.material_name || ''}` : '新增记录'}
@@ -892,19 +894,19 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
 
           {isEditable ? (
             <div className="rd-list-item-body">
-              <div className="rd-form-row rd-material-same-row">
-                <div className="rd-form-item rd-form-item-type">
+              <div className="rd-form-row rd-material-row-1">
+                <div className="rd-form-item rd-form-item-type-5">
                   <label className="rd-form-label">类型</label>
                   <select
                     className="rd-form-input"
-                    value={record.material_type || '领'}
+                    value={record.material_type || '投入'}
                     onChange={(e) => handleChangeMaterial(record.id, 'material_type', e.target.value)}
                   >
-                    <option value="领">领</option>
-                    <option value="退">退</option>
+                    <option value="投入">投入</option>
+                    <option value="退回">退回</option>
                   </select>
                 </div>
-                <div className="rd-form-item rd-form-item-code-mat">
+                <div className="rd-form-item rd-form-item-code-auto">
                   <label className="rd-form-label">料号</label>
                   <DefectSelect
                     value={record.bas_material_id}
@@ -916,7 +918,9 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
                     autoWidth={true}
                   />
                 </div>
-                <div className="rd-form-item rd-form-item-batch">
+              </div>
+              <div className="rd-form-row rd-material-row-2">
+                <div className="rd-form-item">
                   <label className="rd-form-label">批号</label>
                   <input
                     className="rd-form-input"
@@ -924,7 +928,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
                     onChange={(e) => handleChangeMaterial(record.id, 'material_batch', e.target.value)}
                   />
                 </div>
-                <div className="rd-form-item rd-form-item-pkg">
+                <div className="rd-form-item">
                   <label className="rd-form-label">包号</label>
                   <input
                     className="rd-form-input"
@@ -932,7 +936,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
                     onChange={(e) => handleChangeMaterial(record.id, 'package_no', e.target.value)}
                   />
                 </div>
-                <div className="rd-form-item rd-form-item-qty-wide">
+                <div className="rd-form-item">
                   <label className="rd-form-label">数量</label>
                   <input
                     type="number"
@@ -949,7 +953,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
             <div className="rd-list-item-body">
               <div className="rd-list-row">
                 <span className="rd-list-label">类型</span>
-                <span className="rd-list-value">{record.material_type || '领'}</span>
+                <span className="rd-list-value">{record.material_type || '投入'}</span>
               </div>
               <div className="rd-list-row">
                 <span className="rd-list-label">料号</span>
@@ -970,7 +974,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
             </div>
           )}
         </div>
-      ))}
+      )})}
 
       <ImageManagerModal
         visible={imgModal.visible}

@@ -442,3 +442,54 @@
   border-top: 1px solid #f0f0f0;
   flex-shrink: 0;
 }
+
+/* 物料记录：第一行（类型+料号） */
+.rd-material-row-1 {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.rd-material-row-1 .rd-form-item {
+  min-width: 0;
+}
+
+/* 物料记录：类型列宽5个字符 */
+.rd-form-item-type-5 {
+  flex: 0 0 auto;
+  width: 5em;
+}
+
+/* 物料记录：料号自动宽度 */
+.rd-form-item-code-auto {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* 物料记录：第二行（批号+包号+数量） */
+.rd-material-row-2 {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.rd-material-row-2 .rd-form-item {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 物料记录：投入记录底色 */
+.rd-mat-input {
+  border-left: 3px solid #52c41a;
+}
+
+/* 物料记录：退回记录反差色 */
+.rd-mat-return {
+  border-left: 3px solid #f5222d;
+  background: #fff1f0;
+}
+
+.rd-mat-return .rd-list-item-header {
+  background: #fff1f0;
+}
