@@ -255,11 +255,10 @@
   min-width: 0;
 }
 
-/* 不良记录/检验报废：单位列宽12个字符 */
+/* 不良记录/检验报废：单位自动宽度 */
 .rd-form-item-unit {
-  flex: 0 0 auto;
-  width: 12em;
-  max-width: 12em;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .rd-defect-select-dropdown.auto-width {
@@ -504,4 +503,45 @@
 
 .rd-mat-return .rd-list-item-header {
   background: #fff1f0;
+}
+
+/* 上传方式选择 ActionSheet */
+.rd-actionsheet-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.rd-actionsheet {
+  width: 100%;
+  max-width: 500px;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+}
+
+.rd-actionsheet-item {
+  padding: 16px;
+  text-align: center;
+  font-size: 16px;
+  color: #212121;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+}
+
+.rd-actionsheet-item:active {
+  background: #f5f5f5;
+}
+
+.rd-actionsheet-cancel {
+  color: #999;
+  border-bottom: none;
+  background: #fafafa;
 }

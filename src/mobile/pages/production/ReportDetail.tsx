@@ -106,9 +106,21 @@ function DefectSelect({ value, onChange, options, placeholder, codeField, nameFi
 
 function ImageManagerModal({ visible, onClose, images, onUpload, onRemove, title, reportNo, category }) {
   const fileInputRef = useRef(null)
+  const cameraInputRef = useRef(null)
+  const [showActionSheet, setShowActionSheet] = useState(false)
 
   const handleUploadClick = () => {
+    setShowActionSheet(true)
+  }
+
+  const handleSelectAlbum = () => {
+    setShowActionSheet(false)
     fileInputRef.current?.click()
+  }
+
+  const handleSelectCamera = () => {
+    setShowActionSheet(false)
+    cameraInputRef.current?.click()
   }
 
   const handleFileChange = async (e) => {
@@ -133,6 +145,7 @@ function ImageManagerModal({ visible, onClose, images, onUpload, onRemove, title
       Toast.show({ icon: 'fail', content: err.message || '图片上传失败' })
     } finally {
       if (fileInputRef.current) fileInputRef.current.value = ''
+      if (cameraInputRef.current) cameraInputRef.current.value = ''
     }
   }
 
@@ -185,6 +198,29 @@ function ImageManagerModal({ visible, onClose, images, onUpload, onRemove, title
           style={{ display: 'none' }}
           onChange={handleFileChange}
         />
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
+        {showActionSheet && (
+          <div className="rd-actionsheet-mask" onClick={() => setShowActionSheet(false)}>
+            <div className="rd-actionsheet" onClick={(e) => e.stopPropagation()}>
+              <div className="rd-actionsheet-item" onClick={handleSelectCamera}>
+                拍照上传
+              </div>
+              <div className="rd-actionsheet-item" onClick={handleSelectAlbum}>
+                从相册选择
+              </div>
+              <div className="rd-actionsheet-item rd-actionsheet-cancel" onClick={() => setShowActionSheet(false)}>
+                取消
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

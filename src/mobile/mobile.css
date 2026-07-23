@@ -707,11 +707,13 @@
 }
 
 .rd-form-item-qty {
-  max-width: 80px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .rd-form-item-unit {
-  max-width: 12em;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .rd-form-label {
