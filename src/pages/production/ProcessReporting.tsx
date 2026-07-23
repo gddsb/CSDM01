@@ -2292,11 +2292,11 @@ export default function ProcessReporting() {
   ]
 
   const tabItems = [
-    { key: 'production-defect', label: '生产不良记录' },
-    { key: 'production-material', label: '生产物料记录' },
-    { key: 'scrap-defect', label: '检验报废记录' },
-    { key: 'exception', label: '异常工时记录' },
-    { key: 'manpower', label: '人员工时记录' },
+    { key: 'production-defect', label: '不良记录' },
+    { key: 'production-material', label: '物料记录' },
+    { key: 'scrap-defect', label: '检验报废' },
+    { key: 'exception', label: '工时记录' },
+    { key: 'manpower', label: '人员记录' },
   ]
 
   const renderTabContent = (key) => {
