@@ -473,24 +473,33 @@ export default function ReportDetail() {
           </div>
           <div className="rd-header-row">
             <span className="rd-label">料号</span>
-            <span className="rd-value">{report.material_code || '-'}</span>
+            <span className="rd-value">
+              {report.material_code || '-'}
+              {report.order?.film_version && report.order?.version_no && (
+                <span className="rd-film-version">（菲林版本：{report.order.film_version}{report.order.version_no}）</span>
+              )}
+            </span>
             <span className={`rd-status-tag ${report.status === 0 || report.status === '开工' ? 'started' : 'done'}`}>
               {report.status === 0 || report.status === '开工' ? '开工' : '完工'}
             </span>
           </div>
           <div className="rd-header-row">
             <span className="rd-label">料品名称</span>
-            <span className="rd-value">{report.material_name || '-'}</span>
+            <span className="rd-value rd-material-name">{report.material_name || '-'}</span>
           </div>
           <div className="rd-header-row rd-qty-row">
-            <span className="rd-label">报工数量</span>
-            <span className="rd-qty">{Math.floor(Number(report.report_qty) || 0)}</span>
-            <span className="rd-label" style={{ marginLeft: 16 }}>投入数量</span>
-            <span className="rd-qty">{inputQty}</span>
-          </div>
-          <div className="rd-header-row rd-qty-row">
-            <span className="rd-label">{report.status === 0 || report.status === '开工' ? '预计产出' : '合格数量'}</span>
-            <span className="rd-qty" style={{ color: '#13c2c2' }}>{expectedOutput}</span>
+            <div className="rd-qty-item">
+              <span className="rd-label">报工</span>
+              <span className="rd-qty" style={{ color: '#1677ff' }}>{Math.floor(Number(report.report_qty) || 0)}</span>
+            </div>
+            <div className="rd-qty-item">
+              <span className="rd-label">投入</span>
+              <span className="rd-qty" style={{ color: '#52c41a' }}>{inputQty}</span>
+            </div>
+            <div className="rd-qty-item">
+              <span className="rd-label">{report.status === 0 || report.status === '开工' ? '预计产出' : '合格数量'}</span>
+              <span className="rd-qty" style={{ color: '#fa8c16' }}>{expectedOutput}</span>
+            </div>
           </div>
         </div>
       </div>

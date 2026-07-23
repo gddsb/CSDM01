@@ -2578,14 +2578,6 @@ export default function ProcessReporting() {
                 {reportOrderStatusMap[selectedReport.status as 0 | 1]?.label || '-'}
               </Tag>
             </Col>
-            <Col span={4}>
-              <div style={{ color: '#666' }}>物料名称</div>
-              <div>{selectedReport.material_name || '-'}</div>
-            </Col>
-            <Col span={4}>
-              <div style={{ color: '#666' }}>报工数量</div>
-              <div>{selectedReport.report_qty ?? 0}</div>
-            </Col>
           </Row>
         )}
 
@@ -2595,31 +2587,47 @@ export default function ProcessReporting() {
               <div style={{ color: '#666' }}>物料编码</div>
               <div>{selectedReport.material_code || '-'}</div>
             </Col>
+            <Col span={5}>
+              <div style={{ color: '#666' }}>产品名称</div>
+              <div>{selectedReport.material_name || '-'}</div>
+            </Col>
             <Col span={4}>
               <div style={{ color: '#666' }}>规格</div>
               <div>{selectedReport.specification || '-'}</div>
             </Col>
             <Col span={4}>
+              <div style={{ color: '#666' }}>菲林版本</div>
+              <div>
+                {selectedReport.order?.film_version || ''}{selectedReport.order?.version_no || ''}
+                {(!selectedReport.order?.film_version && !selectedReport.order?.version_no) && '-'}
+              </div>
+            </Col>
+            <Col span={4}>
+              <div style={{ color: '#666' }}>条形码</div>
+              <div>{selectedReport.order?.barcode || '-'}</div>
+            </Col>
+          </Row>
+        )}
+
+        {selectedReport && (
+          <Row gutter={16} style={{ marginTop: 12 }}>
+            <Col span={4}>
               <div style={{ color: '#666' }}>报工时间</div>
               <div>{selectedReport.report_time ? dayjs(selectedReport.report_time).format('YYYY-MM-DD HH:mm') : '-'}</div>
             </Col>
-            <Col span={3}>
+            <Col span={4}>
               <div style={{ color: '#666' }}>完工时间</div>
               <div>{selectedReport.finish_time ? dayjs(selectedReport.finish_time).format('YYYY-MM-DD HH:mm') : '-'}</div>
             </Col>
-            <Col span={3}>
-              <div style={{ color: '#666' }}>关闭时间</div>
-              <div>{selectedReport.close_time ? dayjs(selectedReport.close_time).format('YYYY-MM-DD HH:mm') : '-'}</div>
-            </Col>
-            <Col span={3}>
+            <Col span={4}>
               <div style={{ color: '#666' }}>报工人</div>
               <div>{selectedReport.report_user_name || '-'}</div>
             </Col>
-            <Col span={3}>
+            <Col span={4}>
               <div style={{ color: '#666' }}>完工人</div>
               <div>{selectedReport.finish_user_name || '-'}</div>
             </Col>
-            <Col span={3}>
+            <Col span={4}>
               <div style={{ color: '#666' }}>关闭人</div>
               <div>{selectedReport.close_user_name || '-'}</div>
             </Col>
@@ -2642,16 +2650,16 @@ export default function ProcessReporting() {
           <div style={{ marginBottom: 8, fontWeight: 'bold', color: '#333' }}>报工单统计（当前报工单汇总）</div>
           <Row gutter={16} style={{ marginBottom: 16 }}>
             <Col span={3}>
+              <div style={{ color: '#666' }}>报工数量</div>
+              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#52c41a' }}>{stats.outputQty}</div>
+            </Col>
+            <Col span={3}>
               <div style={{ color: '#666' }}>投入数量</div>
               <div style={{ fontSize: 18, fontWeight: 'bold', color: '#1890ff' }}>{stats.inputQty}</div>
             </Col>
             <Col span={3}>
               <div style={{ color: '#666' }}>{selectedReport?.status === '开工' ? '预计产出' : '合格数量'}</div>
               <div style={{ fontSize: 18, fontWeight: 'bold', color: '#13c2c2' }}>{stats.expectedOutput}</div>
-            </Col>
-            <Col span={3}>
-              <div style={{ color: '#666' }}>报工数量</div>
-              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#52c41a' }}>{stats.outputQty}</div>
             </Col>
             <Col span={3}>
               <div style={{ color: '#666' }}>来料不良汇总</div>

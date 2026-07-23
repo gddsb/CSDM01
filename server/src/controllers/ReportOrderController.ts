@@ -189,6 +189,12 @@ export const list = async (req, res) => {
           attributes: ['material_code', 'specification', 'unit_name'],
           required: false,
         },
+        {
+          model: Order,
+          as: 'order',
+          attributes: ['film_version', 'version_no', 'barcode'],
+          required: false,
+        },
       ],
       limit,
       offset,
@@ -317,6 +323,17 @@ export const create = async (req, res) => {
         record_user_name: req.user?.real_name || req.user?.username || null,
       }, { transaction: t })
 
+      await ProcessException.create({
+        report_order_id: reportOrder.report_order_id,
+        exception_type: '换型换线',
+        start_time: now,
+        end_time: null,
+        duration: 0,
+        description: '报工单创建时自动生成',
+        record_user: req.user?.username || null,
+        record_user_name: req.user?.real_name || req.user?.username || null,
+      }, { transaction: t })
+
       await syncOrderStatus(order_id, t)
 
       return reportOrder
@@ -417,21 +434,20 @@ export const remove = async (req, res) => {
 
     const orderId = reportOrder.order_id
 
-    const [defectCount, materialCount, exceptionCount, manpowerCount, imageCount] = await Promise.all([
+    const [defectCount, materialCount, imageCount] = await Promise.all([
       ProcessDefect.count({ where: { report_order_id: id } }),
       ProcessMaterial.count({ where: { report_order_id: id } }),
-      ProcessException.count({ where: { report_order_id: id } }),
-      ManpowerRecord.count({ where: { report_order_id: id } }),
       ReportImage.count({ where: { report_order_id: id } }),
     ])
-    const total = defectCount + materialCount + exceptionCount + manpowerCount + imageCount
+    const total = defectCount + materialCount + imageCount
     if (total > 0) {
-      return fail(res, `该报工单存在关联记录(不良${defectCount}/物料${materialCount}/异常${exceptionCount}/人员${manpowerCount}/图片${imageCount})，无法删除`, ErrorCode.BUSINESS_ERROR)
+      return fail(res, `该报工单存在关联记录(不良${defectCount}/物料${materialCount}/图片${imageCount})，无法删除`, ErrorCode.BUSINESS_ERROR)
     }
 
     await sequelize.transaction(async (t) => {
       await ReportProcess.destroy({ where: { report_order_id: id }, transaction: t })
       await ManpowerRecord.destroy({ where: { report_order_id: id }, transaction: t })
+      await ProcessException.destroy({ where: { report_order_id: id }, transaction: t })
       await reportOrder.destroy({ transaction: t })
       await syncOrderStatus(orderId, t)
     })

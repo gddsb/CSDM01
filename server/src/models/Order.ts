@@ -31,6 +31,10 @@ const Order = sequelize.define('Order', {
   version_no: {
     type: DataTypes.STRING(50),
   },
+  barcode: {
+    type: DataTypes.STRING(100),
+    comment: '条形码',
+  },
   planned_qty: {
     type: DataTypes.DECIMAL(12, 2),
     defaultValue: 0,

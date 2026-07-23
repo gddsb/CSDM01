@@ -188,6 +188,9 @@ export const remove = async (req, res) => {
     const { id } = req.params
     const exception = await ProcessException.findOne({ where: { exception_id: id } })
     if (!exception) return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)
+    if (exception.exception_type === '换型换线' && exception.description === '报工单创建时自动生成') {
+      return fail(res, '系统自动创建的换型换线记录不允许删除', ErrorCode.BUSINESS_ERROR)
+    }
     await exception.destroy()
     return success(res, null, '删除成功')
   } catch (err) {

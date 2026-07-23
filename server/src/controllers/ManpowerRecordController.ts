@@ -117,32 +117,7 @@ export const detail = async (req, res) => {
 }
 
 export const create = async (req, res) => {
-  try {
-    const { report_order_id } = req.body
-    if (!report_order_id) return fail(res, '报工单 ID 不能为空')
-
-    const reportOrder = await ReportOrder.findOne({ where: { report_order_id } })
-    if (!reportOrder) return fail(res, '报工单不存在', ErrorCode.RECORD_NOT_FOUND)
-
-    // 每个报工单仅允许一条人员工时记录（开工时自动创建），禁止重复创建
-    const existing = await ManpowerRecord.findOne({ where: { report_order_id } })
-    if (existing) {
-      return fail(res, '该报工单已存在人员工时记录，请直接修改')
-    }
-
-    const data = await buildRecordData(req.body)
-    const record = await ManpowerRecord.create({
-      ...data,
-      report_order_id: reportOrder.report_order_id,
-      record_user: req.user?.username || null,
-      record_user_name: req.user?.real_name || req.user?.username || null,
-    })
-
-    return success(res, record, '创建成功')
-  } catch (err) {
-    console.error('创建人员记录失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
-  }
+  return fail(res, '人员工时记录由系统自动创建，不允许手动新增', ErrorCode.BUSINESS_ERROR)
 }
 
 export const update = async (req, res) => {
@@ -161,17 +136,7 @@ export const update = async (req, res) => {
 }
 
 export const remove = async (req, res) => {
-  try {
-    const { id } = req.params
-    const record = await ManpowerRecord.findOne({ where: { record_id: id } })
-    if (!record) return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)
-
-    await record.destroy()
-    return success(res, null, '删除成功')
-  } catch (err) {
-    console.error('删除人员记录失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
-  }
+  return fail(res, '人员工时记录由系统自动创建，不允许删除', ErrorCode.BUSINESS_ERROR)
 }
 
 // 按报工单汇总人员记录

@@ -138,8 +138,8 @@ export const create = async (req, res) => {
       material_code: material.material_code,
       material_name: material.material_name,
       specification: material.specification,
-      film_version: material.film_no,
       version_no: material.version_no,
+      barcode: material.barcode,
       planned_qty: Number(planned_qty),
       plan_start_time,
       plan_end_time,
@@ -195,8 +195,8 @@ export const update = async (req, res) => {
       updateData.material_code = material.material_code
       updateData.material_name = material.material_name
       updateData.specification = material.specification
-      updateData.film_version = material.film_no
       updateData.version_no = material.version_no
+      updateData.barcode = material.barcode
     }
     await order.update(updateData)
     return success(res, order, '修改成功')

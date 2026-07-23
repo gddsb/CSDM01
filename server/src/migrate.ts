@@ -73,6 +73,15 @@ const migrations = [
     table: 'bas_material',
     columns: [
       ['customer_id', 'INTEGER'],
+      ['barcode', 'VARCHAR(100)'],
+    ],
+  },
+  {
+    table: 'production_order',
+    columns: [
+      ['film_version', 'VARCHAR(50)'],
+      ['version_no', 'VARCHAR(50)'],
+      ['barcode', 'VARCHAR(100)'],
     ],
   },
   {

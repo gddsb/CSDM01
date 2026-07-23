@@ -64,11 +64,42 @@
 }
 
 .rd-material-name {
-  max-width: 120px;
+  max-width: none;
+  white-space: normal;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.rd-film-version {
+  font-size: 11px;
+  color: #8c8c8c;
+  margin-left: 4px;
+  flex-shrink: 0;
 }
 
 .rd-qty-row {
   gap: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rd-qty-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+  border-right: 1px solid #f0f0f0;
+}
+
+.rd-qty-item:last-child {
+  border-right: none;
+}
+
+.rd-qty-item .rd-label {
+  font-size: 11px;
 }
 
 .rd-qty {
