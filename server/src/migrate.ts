@@ -87,6 +87,12 @@ const migrations = [
       ['file_hash', 'VARCHAR(64)'],
     ],
   },
+  {
+    table: 'master_process',
+    columns: [
+      ['must_report', 'TINYINT DEFAULT 0'],
+    ],
+  },
   // 生产报工单主表（订单下发后直接创建）
   {
     table: 'production_report_order',
@@ -115,6 +121,7 @@ const migrations = [
       ['process_code', 'VARCHAR(30) NOT NULL'],
       ['process_name', 'VARCHAR(50) NOT NULL'],
       ['has_material', 'TINYINT DEFAULT 0'],
+      ['must_report', 'TINYINT DEFAULT 0'],
       ['sort_order', 'INTEGER DEFAULT 0'],
     ],
   },

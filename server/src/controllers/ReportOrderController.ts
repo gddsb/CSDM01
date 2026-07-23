@@ -90,6 +90,7 @@ async function syncReportProcesses(reportOrderId: number, lineId: number, transa
         process_code: process.process_code,
         process_name: process.process_name,
         has_material: process.getDataValue('has_material'),
+        must_report: process.getDataValue('must_report'),
         sort_order: lp.sort_order,
       })
     }

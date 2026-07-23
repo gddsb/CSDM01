@@ -34,6 +34,11 @@ const ReportProcess = sequelize.define('ReportProcess', {
     defaultValue: 0,
     comment: '是否引入物料：0=否, 1=是',
   },
+  must_report: {
+    type: DataTypes.TINYINT,
+    defaultValue: 0,
+    comment: '是否必须报工：0=否, 1=是',
+  },
   sort_order: {
     type: DataTypes.INTEGER,
     defaultValue: 0,

@@ -49,7 +49,7 @@ export const detail = async (req, res) => {
   }
 }
 
-const PROCESS_WRITABLE_FIELDS = ['process_code', 'process_name', 'sort_order', 'has_material', 'status']
+const PROCESS_WRITABLE_FIELDS = ['process_code', 'process_name', 'sort_order', 'has_material', 'must_report', 'status']
 
 function pickProcessFields(body) {
   const data = {}

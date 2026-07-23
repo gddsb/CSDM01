@@ -110,10 +110,11 @@ export default function ProcessManagement() {
         process_name: editing.process_name,
         sort_order: editing.sort_order,
         has_material: editing.has_material === '是' || editing.has_material === 1,
+        must_report: editing.must_report === '是' || editing.must_report === 1,
         status: editing.status === '启用' ? '启用' : '停用',
       })
     } else {
-      form.setFieldsValue({ status: '启用', sort_order: total + 1, has_material: false })
+      form.setFieldsValue({ status: '启用', sort_order: total + 1, has_material: false, must_report: false })
     }
   }
 
@@ -159,6 +160,7 @@ export default function ProcessManagement() {
       setSubmitting(true)
       const payload = { ...values }
       payload.has_material = values.has_material ? '是' : '否'
+      payload.must_report = values.must_report ? '是' : '否'
       if (editing) {
         const res = await api.put(`/basic/processes/${editing.process_id}`, payload)
         message.success(res.message || '工序编辑成功')
@@ -193,6 +195,10 @@ export default function ProcessManagement() {
     {
       title: '是否引入物料', dataIndex: 'has_material', key: 'has_material', width: 110,
       render: v => <Tag color={v === '是' || v === 1 ? 'blue' : 'default'}>{v === '是' || v === 1 ? '是' : '否'}</Tag>,
+    },
+    {
+      title: '是否必须报工', dataIndex: 'must_report', key: 'must_report', width: 110,
+      render: v => <Tag color={v === '是' || v === 1 ? 'orange' : 'default'}>{v === '是' || v === 1 ? '是' : '否'}</Tag>,
     },
     {
       title: '状态', dataIndex: 'status', key: 'status', width: 100,
@@ -287,6 +293,9 @@ export default function ProcessManagement() {
             <Input placeholder="请输入工序名称" />
           </Form.Item>
           <Form.Item name="has_material" label="是否引入物料" valuePropName="checked">
+            <Switch checkedChildren="是" unCheckedChildren="否" />
+          </Form.Item>
+          <Form.Item name="must_report" label="是否必须报工" valuePropName="checked">
             <Switch checkedChildren="是" unCheckedChildren="否" />
           </Form.Item>
           <Row gutter={12}>

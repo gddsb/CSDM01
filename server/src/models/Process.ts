@@ -35,6 +35,21 @@ const Process = sequelize.define('Process', {
       }
     },
   },
+  must_report: {
+    type: DataTypes.TINYINT,
+    defaultValue: 0,
+    get() {
+      const val = this.getDataValue('must_report')
+      return val === 1 ? '是' : val === 0 ? '否' : val
+    },
+    set(val) {
+      if (typeof val === 'string') {
+        this.setDataValue('must_report', val === '是' ? 1 : 0)
+      } else {
+        this.setDataValue('must_report', val)
+      }
+    },
+  },
   status: {
     type: DataTypes.TINYINT,
     defaultValue: 1,
