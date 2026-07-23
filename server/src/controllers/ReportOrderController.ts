@@ -120,7 +120,7 @@ export async function syncOrderStatus(orderId: number, transaction?: any) {
   const statusVal = order.getDataValue('status')
 
   const total = await ReportOrder.count({
-    where: { order_id: orderId, status: { [Op.ne]: 2 } },
+    where: { order_id: orderId },
     ...countOpts,
   })
   const finishedCount = await ReportOrder.count({
@@ -612,7 +612,7 @@ export const finish = async (req, res) => {
   }
 }
 
-// 关闭报工单（开工/完工 → 关闭）
+// 关闭报工单（开工 → 完工）
 // 关闭校验：无不良记录、无物料使用记录、无检验报废记录
 export const close = async (req, res) => {
   try {
@@ -655,14 +655,14 @@ export const close = async (req, res) => {
         throw err
       }
       const statusVal = reportOrder.getDataValue('status')
-      if (statusVal === 2) {
-        const err: any = new Error('报工单已关闭')
+      if (statusVal === 1) {
+        const err: any = new Error('报工单已完工')
         err.code = ErrorCode.BUSINESS_ERROR
         throw err
       }
 
       await reportOrder.update({
-        status: 2,
+        status: 1,
         close_time: new Date(),
         close_user_id: req.user?.userId || null,
         close_user_name: req.user?.username || null,

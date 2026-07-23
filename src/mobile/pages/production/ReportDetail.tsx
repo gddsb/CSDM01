@@ -444,8 +444,8 @@ export default function ReportDetail() {
             <span className="rd-header-divider" />
             <span className="rd-label">产线</span>
             <span className="rd-value">{report.line_name || '-'}</span>
-            <span className={`rd-status-tag ${report.status === 0 || report.status === '开工' ? 'started' : report.status === 2 || report.status === '关闭' ? 'closed' : 'done'}`}>
-              {report.status === 0 || report.status === '开工' ? '开工' : report.status === 2 || report.status === '关闭' ? '关闭' : '完工'}
+            <span className={`rd-status-tag ${report.status === 0 || report.status === '开工' ? 'started' : 'done'}`}>
+              {report.status === 0 || report.status === '开工' ? '开工' : '完工'}
             </span>
           </div>
           <div className="rd-header-row">
@@ -486,20 +486,6 @@ export default function ReportDetail() {
               loading={closing}
               onClick={handleClose}
               style={{ borderRadius: 8, flex: 1 }}
-            >
-              关闭
-            </Button>
-          </div>
-        )}
-        {(report.status === 1 || report.status === '完工') && (
-          <div style={{ padding: '0 12px 12px' }}>
-            <Button
-              block
-              color="danger"
-              size="large"
-              loading={closing}
-              onClick={handleClose}
-              style={{ borderRadius: 8 }}
             >
               关闭
             </Button>

@@ -3,7 +3,7 @@ import sequelize from '../config/database.js'
 
 // 生产报工单主表
 // 业务流：生产订单下发后直接创建报工单进行开工报工（无工单层）
-// 状态：0=开工, 1=完工, 2=关闭
+// 状态：0=开工, 1=完工
 const ReportOrder = sequelize.define('ReportOrder', {
   report_order_id: {
     type: DataTypes.INTEGER,
@@ -74,15 +74,15 @@ const ReportOrder = sequelize.define('ReportOrder', {
     type: DataTypes.TINYINT,
     defaultValue: 0,
     index: true,
-    comment: '工单状态：0=开工, 1=完工, 2=关闭',
+    comment: '工单状态：0=开工, 1=完工',
     get() {
       const val = this.getDataValue('status')
-      const map = { 0: '开工', 1: '完工', 2: '关闭' }
+      const map = { 0: '开工', 1: '完工' }
       return map[val] !== undefined ? map[val] : val
     },
     set(val) {
       if (typeof val === 'string') {
-        const map = { '开工': 0, '完工': 1, '关闭': 2 }
+        const map = { '开工': 0, '完工': 1 }
         this.setDataValue('status', map[val] !== undefined ? map[val] : 0)
       } else {
         this.setDataValue('status', val)

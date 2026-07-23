@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, InputNumber, Select, DatePicker, Space, Row, Col, Drawer, Descriptions, Popconfirm, Checkbox } from 'antd'
+import { useNavigate } from 'react-router-dom'
 import { useMessage, useApp } from '../../contexts/AppContext'
 import {
   FileTextOutlined, PlusOutlined, SearchOutlined, ReloadOutlined,
@@ -40,6 +41,7 @@ export default function OrderManagement() {
   const [editing, setEditing] = useState(null)
   const [selectedMaterial, setSelectedMaterial] = useState(null)
   const [form] = Form.useForm()
+  const navigate = useNavigate()
 
   const message = useMessage()
   const { hasPermission } = useApp()
@@ -141,6 +143,25 @@ export default function OrderManagement() {
 
   const handleClose = (r) => {
     Modal.confirm({
+      title: '确认关闭',
+      content: `确认关闭订单 ${r.order_no}？关闭后将不可恢复`,
+      okText: '确认关闭',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        try {
+          const res = await api.post(`/production/orders/${r.order_id}/close`)
+          message.success(res.message || '订单已关闭')
+          refresh()
+        } catch (err) {
+          message.error(err.message || '关闭失败')
+        }
+      },
+    })
+  }
+
+  const handleFinish = (r) => {
+    Modal.confirm({
       title: '确认完工',
       content: `确认完工订单 ${r.order_no}？完工后将不可恢复`,
       okText: '确认完工',
@@ -148,7 +169,7 @@ export default function OrderManagement() {
       cancelText: '取消',
       onOk: async () => {
         try {
-          const res = await api.post(`/production/orders/${r.order_id}/close`)
+          const res = await api.post(`/production/orders/${r.order_id}/finish`)
           message.success(res.message || '订单已完工')
           refresh()
         } catch (err) {
@@ -156,6 +177,10 @@ export default function OrderManagement() {
         }
       },
     })
+  }
+
+  const handleStart = (r) => {
+    navigate('/production/reporting')
   }
 
   const handleDelete = (r) => {
@@ -269,16 +294,38 @@ export default function OrderManagement() {
               <Button type="link" size="small" danger>删除</Button>
             </Popconfirm>
           )}
+          <Button type="link" size="small" onClick={() => handleView(r)}>查看</Button>
         </Space>
       )
     }
-    if (r.status === '下发' || r.status === '开工') {
+    if (r.status === '下发') {
       return (
         <Space size={0}>
-          <Button type="link" size="small" onClick={() => handleView(r)}>查看</Button>
+          <Button type="link" size="small" onClick={() => handleStart(r)}>开工</Button>
           {hasPermission('production:order:close') && (
-            <Button type="link" size="small" danger onClick={() => handleClose(r)}>完工</Button>
+            <Button type="link" size="small" danger onClick={() => handleClose(r)}>关闭</Button>
           )}
+          <Button type="link" size="small" onClick={() => handleView(r)}>查看</Button>
+        </Space>
+      )
+    }
+    if (r.status === '开工') {
+      return (
+        <Space size={0}>
+          {hasPermission('production:order:finish') && (
+            <Button type="link" size="small" onClick={() => handleFinish(r)}>完工</Button>
+          )}
+          <Button type="link" size="small" onClick={() => handleView(r)}>查看</Button>
+        </Space>
+      )
+    }
+    if (r.status === '完工') {
+      return (
+        <Space size={0}>
+          {hasPermission('production:order:close') && (
+            <Button type="link" size="small" danger onClick={() => handleClose(r)}>关闭</Button>
+          )}
+          <Button type="link" size="small" onClick={() => handleView(r)}>查看</Button>
         </Space>
       )
     }

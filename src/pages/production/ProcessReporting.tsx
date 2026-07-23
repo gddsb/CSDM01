@@ -11,11 +11,10 @@ import {
 import dayjs from 'dayjs'
 import api from '../../utils/api'
 
-// 报工单状态：后端模型 getter 返回中文名称 '开工'/'完工'/'关闭'
+// 报工单状态：后端模型 getter 返回中文名称 '开工'/'完工'
 const reportOrderStatusMap = {
   '开工': { label: '开工', color: 'processing' },
   '完工': { label: '完工', color: 'success' },
-  '关闭': { label: '关闭', color: 'error' },
 }
 
 const exceptionCategories = [
@@ -600,13 +599,13 @@ export default function ProcessReporting() {
     }
   }
 
-  // 关闭报工单（开工/完工 → 关闭，单向）
+  // 关闭报工单（开工 → 完工，单向）
   const handleCloseReport = async () => {
     if (!selectedReport) return
     try {
       setClosingReport(true)
       const res = await api.post(`/production/report-orders/${selectedReport.report_order_id}/close`)
-      const updated = res.data || { ...selectedReport, status: '关闭', close_time: new Date() }
+      const updated = res.data || { ...selectedReport, status: '完工', close_time: new Date() }
       setSelectedReport(updated)
       await fetchReportOrders()
       message.success(res.message || '已关闭')
@@ -2540,7 +2539,7 @@ export default function ProcessReporting() {
                   <Button type="primary" loading={finishingReport}>完工</Button>
                 </Popconfirm>
               )}
-              {selectedReport && selectedReport.status !== '关闭' && hasPermission('production:reporting:close') && (
+              {selectedReport && isEditable && hasPermission('production:reporting:close') && (
                 <Popconfirm title="确认关闭？关闭前需无不良记录、无物料使用记录、无检验报废记录" onConfirm={handleCloseReport}>
                   <Button danger loading={closingReport}>关闭</Button>
                 </Popconfirm>

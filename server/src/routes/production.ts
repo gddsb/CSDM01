@@ -8,6 +8,7 @@ import {
   remove as orderRemove,
   release,
   close,
+  finish as orderFinish,
 } from '../controllers/OrderController.js'
 import {
   list as roList,
@@ -80,6 +81,7 @@ router.put('/orders/:id', orderUpdate)
 router.delete('/orders/:id', orderRemove)
 router.post('/orders/:id/release', permissionRequired('production:order:release'), release)
 router.post('/orders/:id/close', permissionRequired('production:order:close'), close)
+router.post('/orders/:id/finish', permissionRequired('production:order:finish'), orderFinish)
 
 // 生产报工单（状态：开工/完工；订单下发后直接创建）
 router.get('/report-orders', roList)

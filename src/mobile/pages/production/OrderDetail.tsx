@@ -22,6 +22,7 @@ export default function OrderDetail() {
   const [loading, setLoading] = useState(true)
   const [starting, setStarting] = useState(false)
   const [finishing, setFinishing] = useState(false)
+  const [closing, setClosing] = useState(false)
   const [lines, setLines] = useState([])
   const [selectedLineId, setSelectedLineId] = useState('')
   const [showLineSelect, setShowLineSelect] = useState(false)
@@ -103,28 +104,43 @@ export default function OrderDetail() {
     }
   }
 
-  // 完工（开工 → 完工）：调用报工单 finish 接口，联动订单完工
+  // 完工（开工 → 完工）：调用订单 finish 接口
   const handleFinish = async () => {
     if (!order) return
-    const reportOrder = order.report_orders?.[0]
-    if (!reportOrder) {
-      Toast.show({ icon: 'fail', content: '未找到关联报工单' })
-      return
-    }
     const confirmed = await Dialog.confirm({
       title: '确认完工',
-      content: `确认完工订单 ${order.order_no}？完工后报工数据将变为只读`,
+      content: `确认完工订单 ${order.order_no}？完工后将不可恢复`,
     })
     if (!confirmed) return
     setFinishing(true)
     try {
-      await api.post(`/production/report-orders/${reportOrder.report_order_id}/finish`)
+      await api.post(`/production/orders/${order.order_id}/finish`)
       Toast.show({ icon: 'success', content: '订单已完工' })
       fetchDetail()
     } catch (err) {
       Toast.show({ icon: 'fail', content: err.message || '完工失败' })
     } finally {
       setFinishing(false)
+    }
+  }
+
+  // 关闭订单（下发/完工 → 关闭）
+  const handleClose = async () => {
+    if (!order) return
+    const confirmed = await Dialog.confirm({
+      title: '确认关闭',
+      content: `确认关闭订单 ${order.order_no}？关闭后将不可恢复`,
+    })
+    if (!confirmed) return
+    setClosing(true)
+    try {
+      await api.post(`/production/orders/${order.order_id}/close`)
+      Toast.show({ icon: 'success', content: '订单已关闭' })
+      fetchDetail()
+    } catch (err) {
+      Toast.show({ icon: 'fail', content: err.message || '关闭失败' })
+    } finally {
+      setClosing(false)
     }
   }
 
@@ -148,7 +164,8 @@ export default function OrderDetail() {
   const statusStyle = getStatusStyle(status)
   const canRelease = status === '开立'
   const canStart = status === '下发'
-  const canFinish = status === '开工' && order.report_orders?.length > 0
+  const canFinish = status === '开工'
+  const canClose = status === '下发' || status === '完工'
   const hasReport = order.report_orders?.length > 0
 
   return (
@@ -276,15 +293,27 @@ export default function OrderDetail() {
           )}
 
           {canStart && !showLineSelect && (
-            <Button
-              block
-              color="primary"
-              size="large"
-              onClick={() => setShowLineSelect(true)}
-              style={{ borderRadius: 8, height: 44 }}
-            >
-              开工
-            </Button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button
+                block
+                color="primary"
+                size="large"
+                onClick={() => setShowLineSelect(true)}
+                style={{ borderRadius: 8, height: 44, flex: 1 }}
+              >
+                开工
+              </Button>
+              <Button
+                block
+                color="danger"
+                size="large"
+                loading={closing}
+                onClick={handleClose}
+                style={{ borderRadius: 8, height: 44, flex: 1 }}
+              >
+                关闭
+              </Button>
+            </div>
           )}
 
           {canStart && showLineSelect && (
@@ -312,19 +341,58 @@ export default function OrderDetail() {
           )}
 
           {canFinish && (
-            <Button
-              block
-              color="primary"
-              size="large"
-              loading={finishing}
-              onClick={handleFinish}
-              style={{ borderRadius: 8, height: 44 }}
-            >
-              完工
-            </Button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button
+                block
+                color="primary"
+                size="large"
+                loading={finishing}
+                onClick={handleFinish}
+                style={{ borderRadius: 8, height: 44, flex: 1 }}
+              >
+                完工
+              </Button>
+              {hasReport && (
+                <Button
+                  block
+                  color="default"
+                  size="large"
+                  onClick={handleViewReport}
+                  style={{ borderRadius: 8, height: 44, flex: 1 }}
+                >
+                  查看报工
+                </Button>
+              )}
+            </div>
           )}
 
-          {hasReport && !canFinish && !canRelease && !canStart && (
+          {canClose && !canStart && (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button
+                block
+                color="danger"
+                size="large"
+                loading={closing}
+                onClick={handleClose}
+                style={{ borderRadius: 8, height: 44, flex: 1 }}
+              >
+                关闭
+              </Button>
+              {hasReport && (
+                <Button
+                  block
+                  color="default"
+                  size="large"
+                  onClick={handleViewReport}
+                  style={{ borderRadius: 8, height: 44, flex: 1 }}
+                >
+                  查看报工
+                </Button>
+              )}
+            </div>
+          )}
+
+          {!canRelease && !canStart && !canFinish && !canClose && hasReport && (
             <Button
               block
               color="primary"
