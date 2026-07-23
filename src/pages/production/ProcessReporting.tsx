@@ -92,6 +92,7 @@ export default function ProcessReporting() {
     defectProcess: 0,
     defectScrap: 0,
     exceptionHours: 0,
+    manpowerHours: 0,
     expectedOutput: 0,
   })
 
@@ -384,16 +385,18 @@ export default function ProcessReporting() {
   const fetchReportStats = useCallback(async (reportOrderId) => {
     if (!reportOrderId) return
     try {
-      const [defectRes, scrapRes, exceptionRes, materialRes] = await Promise.all([
+      const [defectRes, scrapRes, exceptionRes, materialRes, manpowerRes] = await Promise.all([
         api.get('/production/process-defects', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } }),
         api.get('/production/scrap-defects', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } }),
         api.get('/production/process-exceptions', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } }),
         api.get('/production/process-materials', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } }),
+        api.get('/production/manpower-records', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } }),
       ])
       const allDefects = defectRes.data || []
       const allScraps = scrapRes.data || []
       const allExceptions = exceptionRes.data || []
       const allMaterials = materialRes.data || []
+      const allManpowers = manpowerRes.data || []
 
       // 来料不良
       const defectMaterial = allDefects
@@ -409,6 +412,25 @@ export default function ProcessReporting() {
         .reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
       // 异常工时
       const exceptionHours = allExceptions.reduce((sum, e) => sum + (Number(e.duration) || 0), 0)
+      // 人工工时（与移动端相同逻辑：开工状态结束时间取当前时间，完工状态取finish_time）
+      let manpowerHours = 0
+      const reportStart = selectedReport?.report_time
+      if (reportStart && allManpowers.length > 0) {
+        const start = dayjs(reportStart)
+        const end = selectedReport?.status === '完工' && selectedReport?.finish_time
+          ? dayjs(selectedReport.finish_time)
+          : dayjs()
+        const diffMs = end.valueOf() - start.valueOf()
+        const hours = diffMs > 0 ? Number((diffMs / 3600000).toFixed(2)) : 0
+        manpowerHours = allManpowers.reduce((sum, m) => {
+          const sk = Number(m.skilled_count) || 0
+          const gn = Number(m.general_count) || 0
+          const lb = Number(m.labor_count) || 0
+          const ot = Number(m.other_count) || 0
+          const total_people = sk + gn + lb + ot
+          return sum + Number((hours * total_people).toFixed(2))
+        }, 0)
+      }
       // 投入数量 = 第一道工序的投入-退回
       let inputQty = 0
       if (lineProcesses.length > 0) {
@@ -428,6 +450,7 @@ export default function ProcessReporting() {
         defectProcess: Number(defectProcess.toFixed(2)),
         defectScrap: Number(defectScrapTotal.toFixed(2)),
         exceptionHours: Number(exceptionHours.toFixed(2)),
+        manpowerHours: Number(manpowerHours.toFixed(2)),
         expectedOutput: Number(expectedOutput.toFixed(2)),
       })
     } catch {
@@ -456,7 +479,7 @@ export default function ProcessReporting() {
       setExceptionList([])
       setManpowerList([])
       setMaterialList([])
-      setStats({ inputQty: 0, outputQty: 0, defectMaterial: 0, defectProcess: 0, defectScrap: 0, exceptionHours: 0, expectedOutput: 0 })
+      setStats({ inputQty: 0, outputQty: 0, defectMaterial: 0, defectProcess: 0, defectScrap: 0, exceptionHours: 0, manpowerHours: 0, expectedOutput: 0 })
       return
     }
     fetchReportProcesses(selectedReport.report_order_id)
@@ -466,7 +489,7 @@ export default function ProcessReporting() {
   // 报工单级别统计数据（当前报工单汇总，不按工序过滤）
   useEffect(() => {
     if (!selectedReport) {
-      setStats({ inputQty: 0, outputQty: 0, defectMaterial: 0, defectProcess: 0, defectScrap: 0, exceptionHours: 0, expectedOutput: 0 })
+      setStats({ inputQty: 0, outputQty: 0, defectMaterial: 0, defectProcess: 0, defectScrap: 0, exceptionHours: 0, manpowerHours: 0, expectedOutput: 0 })
       return
     }
     fetchReportStats(selectedReport.report_order_id)
@@ -2676,6 +2699,10 @@ export default function ProcessReporting() {
             <Col span={3}>
               <div style={{ color: '#666' }}>异常工时汇总</div>
               <div style={{ fontSize: 18, fontWeight: 'bold', color: '#722ed1' }}>{stats.exceptionHours}</div>
+            </Col>
+            <Col span={3}>
+              <div style={{ color: '#666' }}>人工工时汇总</div>
+              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#13c2c2' }}>{stats.manpowerHours}</div>
             </Col>
           </Row>
 
