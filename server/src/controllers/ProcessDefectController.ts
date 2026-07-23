@@ -50,7 +50,7 @@ export const list = async (req, res) => {
       include: [{
         model: DefectType,
         as: 'defect_type',
-        attributes: ['defect_id', 'defect_code', 'defect_name', 'defect_type', 'category_name', 'defect_unit'],
+        attributes: ['defect_id', 'defect_code', 'defect_name', 'defect_type', 'category_name', 'defect_unit', 'available_units'],
         required: false,
       }],
     })
@@ -63,9 +63,10 @@ export const list = async (req, res) => {
         defect_name: defectType?.defect_name || '',
         defect_type: defectType?.defect_type || '',
         category_name: defectType?.category_name || '',
+        defect_unit: defectType?.defect_unit || json.unit || '',
+        available_units: defectType?.available_units || [],
         defect_images: json.defect_images ? JSON.parse(json.defect_images) : [],
         defect_qty: json.quantity,
-        defect_unit: json.unit || '',
         images: json.defect_images ? JSON.parse(json.defect_images) : [],
       }
     })
@@ -93,7 +94,7 @@ export const scrapList = async (req, res) => {
       include: [{
         model: DefectType,
         as: 'defect_type',
-        attributes: ['defect_id', 'defect_code', 'defect_name', 'defect_type', 'category_name', 'defect_unit'],
+        attributes: ['defect_id', 'defect_code', 'defect_name', 'defect_type', 'category_name', 'defect_unit', 'available_units'],
         where: { defect_type: '检验报废' },
         required: true,
       }],
@@ -108,9 +109,10 @@ export const scrapList = async (req, res) => {
         defect_name: defectType?.defect_name || '',
         defect_type: defectType?.defect_type || '',
         category_name: defectType?.category_name || '',
+        defect_unit: defectType?.defect_unit || json.unit || '',
+        available_units: defectType?.available_units || [],
         defect_images: json.defect_images ? JSON.parse(json.defect_images) : [],
         defect_qty: json.quantity,
-        defect_unit: json.unit || '',
         images: json.defect_images ? JSON.parse(json.defect_images) : [],
       }
     })

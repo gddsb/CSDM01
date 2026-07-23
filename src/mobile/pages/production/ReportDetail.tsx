@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Toast, Dialog, Button, Stepper, Input, TextArea, Selector, DatePicker, Switch } from 'antd-mobile'
-import { AddOutline, DeleteOutline, CheckOutline, PictureOutline, DownOutline } from 'antd-mobile-icons'
+import { AddOutline, DeleteOutline, CheckOutline, PictureOutline, DownOutline, CloseOutline } from 'antd-mobile-icons'
 import api from '../../../utils/api'
 import dayjs from 'dayjs'
 import './report-detail.css'
@@ -100,6 +100,92 @@ function DefectSelect({ value, onChange, options, placeholder, codeField, nameFi
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+function ImageManagerModal({ visible, onClose, images, onUpload, onRemove, title, reportNo, category }) {
+  const fileInputRef = useRef(null)
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (e) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+    if (!reportNo) {
+      Toast.show({ icon: 'fail', content: '报工单号不存在，无法上传' })
+      return
+    }
+    try {
+      const formData = new FormData()
+      files.forEach(file => formData.append('files', file))
+      const res = await api.post(`/production/report-images/${reportNo}/${category}/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      const uploaded = res.data || []
+      if (uploaded.length > 0) {
+        onUpload && onUpload(uploaded)
+        Toast.show({ icon: 'success', content: res.message || `已上传 ${uploaded.length} 张图片` })
+      }
+    } catch (err) {
+      Toast.show({ icon: 'fail', content: err.message || '图片上传失败' })
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const handlePreview = (img) => {
+    const imgs = Array.isArray(images) ? images : []
+    const defaultIndex = Math.max(0, imgs.indexOf(img))
+    if (typeof window !== 'undefined' && (window).ImageViewer) {
+      (window).ImageViewer.show({ images: imgs, defaultIndex })
+    } else {
+      window.open(img, '_blank')
+    }
+  }
+
+  if (!visible) return null
+
+  return (
+    <div className="rd-img-modal-mask" onClick={onClose}>
+      <div className="rd-img-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="rd-img-modal-header">
+          <span className="rd-img-modal-title">{title || '图片管理'}</span>
+          <CloseOutline className="rd-img-modal-close" onClick={onClose} fontSize={20} />
+        </div>
+        <div className="rd-img-modal-body">
+          {images.length === 0 && (
+            <div className="rd-img-empty">暂无图片，点击下方按钮上传</div>
+          )}
+          {images.length > 0 && (
+            <div className="rd-img-grid">
+              {images.map((img, idx) => (
+                <div key={idx} className="rd-img-grid-item">
+                  <img src={img} alt="" className="rd-img-thumb" onClick={() => handlePreview(img)} />
+                  <div className="rd-img-grid-remove" onClick={() => onRemove && onRemove(idx)}>
+                    <CloseOutline fontSize={12} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="rd-img-modal-footer">
+          <Button block color="primary" size="large" onClick={handleUploadClick} style={{ borderRadius: 8 }}>
+            <PictureOutline /> 上传图片 ({images.length})
+          </Button>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
+      </div>
     </div>
   )
 }
@@ -359,6 +445,7 @@ export default function ReportDetail() {
 
 function DefectTab({ list, setList, options, isEditable, category, reportOrderId, reportNo, processId, processes, onProcessChange, showProcess }) {
   const [saving, setSaving] = useState(false)
+  const [imgModal, setImgModal] = useState({ visible: false, recordId: null })
 
   const handleAdd = () => {
     setList(prev => [...prev, {
@@ -437,40 +524,26 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
     }
   }
 
-  const handleImageUpload = async (recordId) => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'image/*'
-    input.multiple = true
-    input.onchange = async (e) => {
-      const files = Array.from(e.target.files || [])
-      if (files.length === 0) return
-      if (!reportNo) {
-        Toast.show({ icon: 'fail', content: '报工单号不存在，无法上传' })
-        return
-      }
-      try {
-        const formData = new FormData()
-        files.forEach(file => formData.append('files', file))
-        const res = await api.post(`/production/report-images/${reportNo}/${category}/upload`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        })
-        const uploaded = res.data || []
-        if (uploaded.length > 0) {
-          setList(prev => prev.map(item => {
-            if (item.id !== recordId) return item
-            return { ...item, images: [...(item.images || []), ...uploaded] }
-          }))
-          Toast.show({ icon: 'success', content: res.message || `已上传 ${uploaded.length} 张图片` })
-        }
-      } catch (err) {
-        Toast.show({ icon: 'fail', content: err.message || '图片上传失败' })
-      }
-    }
-    input.click()
+  const openImgModal = (recordId) => {
+    setImgModal({ visible: true, recordId })
   }
 
-  const handleRemoveImage = (recordId, imageIndex) => {
+  const closeImgModal = () => {
+    setImgModal({ visible: false, recordId: null })
+  }
+
+  const handleModalUpload = (uploaded) => {
+    const recordId = imgModal.recordId
+    if (!recordId) return
+    setList(prev => prev.map(item => {
+      if (item.id !== recordId) return item
+      return { ...item, images: [...(item.images || []), ...uploaded] }
+    }))
+  }
+
+  const handleModalRemove = (imageIndex) => {
+    const recordId = imgModal.recordId
+    if (!recordId) return
     setList(prev => prev.map(item => {
       if (item.id !== recordId) return item
       const images = [...(item.images || [])]
@@ -478,6 +551,9 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
       return { ...item, images }
     }))
   }
+
+  const currentRecord = list.find(r => r.id === imgModal.recordId)
+  const currentImages = currentRecord?.images || []
 
   const handleChangeDefect = (recordId, field, value) => {
     setList(prev => prev.map(item => {
@@ -534,8 +610,19 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
             </span>
             {isEditable && (
               <div className="rd-list-item-actions">
-                <PictureOutline color="#2196F3" onClick={() => handleImageUpload(record.id)} fontSize={18} />
+                <div className="rd-img-btn" onClick={() => openImgModal(record.id)}>
+                  <PictureOutline color="#2196F3" fontSize={18} />
+                  {(record.images || []).length > 0 && (
+                    <span className="rd-img-badge">{(record.images || []).length}</span>
+                  )}
+                </div>
                 <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} fontSize={16} />
+              </div>
+            )}
+            {!isEditable && (record.images || []).length > 0 && (
+              <div className="rd-img-btn" onClick={() => openImgModal(record.id)}>
+                <PictureOutline color="#2196F3" fontSize={18} />
+                <span className="rd-img-badge">{(record.images || []).length}</span>
               </div>
             )}
           </div>
@@ -561,7 +648,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
                     type="number"
                     className="rd-form-input"
                     value={record.defect_qty || ''}
-                    onChange={(e) => handleChangeDefect(record.id, 'defect_qty', e.target.value ? Math.max(1, Number(e.target.value)) : null)}
+                    onChange={(e) => handleChangeDefect(record.id, 'defect_qty', e.target.value ? Math.max(1, Math.floor(Number(e.target.value))) : null)}
                     min={1}
                     step={1}
                   />
@@ -580,16 +667,6 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
                   </select>
                 </div>
               </div>
-              {(record.images || []).length > 0 && (
-                <div className="rd-image-list">
-                  {(record.images || []).map((img, idx) => (
-                    <div key={idx} className="rd-image-item">
-                      <img src={img} alt="" className="rd-image" />
-                      <DeleteOutline color="#fff" fontSize={12} onClick={() => handleRemoveImage(record.id, idx)} className="rd-image-delete" />
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           ) : (
             <div className="rd-list-item-body">
@@ -599,31 +676,34 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
               </div>
               <div className="rd-list-row">
                 <span className="rd-list-label">数量</span>
-                <span className="rd-list-value">{record.defect_qty || 0} {record.defect_unit || ''}</span>
+                <span className="rd-list-value">{record.defect_qty ? Math.floor(Number(record.defect_qty)) : 0} {record.defect_unit || ''}</span>
               </div>
               <div className="rd-list-row">
                 <span className="rd-list-label">单位</span>
                 <span className="rd-list-value">{record.defect_unit || '-'}</span>
               </div>
-              {(record.images || []).length > 0 && (
-                <div className="rd-image-list">
-                  {(record.images || []).map((img, idx) => (
-                    <div key={idx} className="rd-image-item">
-                      <img src={img} alt="" className="rd-image" />
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           )}
         </div>
       ))}
+
+      <ImageManagerModal
+        visible={imgModal.visible}
+        onClose={closeImgModal}
+        images={currentImages}
+        onUpload={handleModalUpload}
+        onRemove={handleModalRemove}
+        title="不良记录图片"
+        reportNo={reportNo}
+        category={category}
+      />
     </div>
   )
 }
 
 function MaterialTab({ list, setList, options, isEditable, reportOrderId, reportNo, processId, processes, onProcessChange, showProcess }) {
   const [saving, setSaving] = useState(false)
+  const [imgModal, setImgModal] = useState({ visible: false, recordId: null })
 
   const handleAdd = () => {
     setList(prev => [...prev, {
@@ -709,40 +789,26 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
     }
   }
 
-  const handleImageUpload = async (recordId) => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'image/*'
-    input.multiple = true
-    input.onchange = async (e) => {
-      const files = Array.from(e.target.files || [])
-      if (files.length === 0) return
-      if (!reportNo) {
-        Toast.show({ icon: 'fail', content: '报工单号不存在，无法上传' })
-        return
-      }
-      try {
-        const formData = new FormData()
-        files.forEach(file => formData.append('files', file))
-        const res = await api.post(`/production/report-images/${reportNo}/material/upload`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        })
-        const uploaded = res.data || []
-        if (uploaded.length > 0) {
-          setList(prev => prev.map(item => {
-            if (item.id !== recordId) return item
-            return { ...item, images: [...(item.images || []), ...uploaded] }
-          }))
-          Toast.show({ icon: 'success', content: res.message || `已上传 ${uploaded.length} 张图片` })
-        }
-      } catch (err) {
-        Toast.show({ icon: 'fail', content: err.message || '图片上传失败' })
-      }
-    }
-    input.click()
+  const openImgModal = (recordId) => {
+    setImgModal({ visible: true, recordId })
   }
 
-  const handleRemoveImage = (recordId, imageIndex) => {
+  const closeImgModal = () => {
+    setImgModal({ visible: false, recordId: null })
+  }
+
+  const handleModalUpload = (uploaded) => {
+    const recordId = imgModal.recordId
+    if (!recordId) return
+    setList(prev => prev.map(item => {
+      if (item.id !== recordId) return item
+      return { ...item, images: [...(item.images || []), ...uploaded] }
+    }))
+  }
+
+  const handleModalRemove = (imageIndex) => {
+    const recordId = imgModal.recordId
+    if (!recordId) return
     setList(prev => prev.map(item => {
       if (item.id !== recordId) return item
       const images = [...(item.images || [])]
@@ -750,6 +816,9 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
       return { ...item, images }
     }))
   }
+
+  const currentRecord = list.find(r => r.id === imgModal.recordId)
+  const currentImages = currentRecord?.images || []
 
   const handleChangeMaterial = (recordId, field, value) => {
     setList(prev => prev.map(item => {
@@ -804,8 +873,19 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
             </span>
             {isEditable && (
               <div className="rd-list-item-actions">
-                <PictureOutline color="#2196F3" onClick={() => handleImageUpload(record.id)} fontSize={18} />
+                <div className="rd-img-btn" onClick={() => openImgModal(record.id)}>
+                  <PictureOutline color="#2196F3" fontSize={18} />
+                  {(record.images || []).length > 0 && (
+                    <span className="rd-img-badge">{(record.images || []).length}</span>
+                  )}
+                </div>
                 <DeleteOutline color="#f5222d" onClick={() => handleDelete(record)} fontSize={16} />
+              </div>
+            )}
+            {!isEditable && (record.images || []).length > 0 && (
+              <div className="rd-img-btn" onClick={() => openImgModal(record.id)}>
+                <PictureOutline color="#2196F3" fontSize={18} />
+                <span className="rd-img-badge">{(record.images || []).length}</span>
               </div>
             )}
           </div>
@@ -858,22 +938,12 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
                     type="number"
                     className="rd-form-input"
                     value={record.quantity || ''}
-                    onChange={(e) => handleChangeMaterial(record.id, 'quantity', e.target.value ? Math.max(1, Number(e.target.value)) : null)}
+                    onChange={(e) => handleChangeMaterial(record.id, 'quantity', e.target.value ? Math.max(1, Math.floor(Number(e.target.value))) : null)}
                     min={1}
                     step={1}
                   />
                 </div>
               </div>
-              {(record.images || []).length > 0 && (
-                <div className="rd-image-list">
-                  {(record.images || []).map((img, idx) => (
-                    <div key={idx} className="rd-image-item">
-                      <img src={img} alt="" className="rd-image" />
-                      <DeleteOutline color="#fff" fontSize={12} onClick={() => handleRemoveImage(record.id, idx)} className="rd-image-delete" />
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           ) : (
             <div className="rd-list-item-body">
@@ -897,19 +967,21 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
                 <span className="rd-list-label">数量</span>
                 <span className="rd-list-value">{record.quantity ? Math.floor(Number(record.quantity)) : 0}</span>
               </div>
-              {(record.images || []).length > 0 && (
-                <div className="rd-image-list">
-                  {(record.images || []).map((img, idx) => (
-                    <div key={idx} className="rd-image-item">
-                      <img src={img} alt="" className="rd-image" />
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           )}
         </div>
       ))}
+
+      <ImageManagerModal
+        visible={imgModal.visible}
+        onClose={closeImgModal}
+        images={currentImages}
+        onUpload={handleModalUpload}
+        onRemove={handleModalRemove}
+        title="物料记录图片"
+        reportNo={reportNo}
+        category="material"
+      />
     </div>
   )
 }
