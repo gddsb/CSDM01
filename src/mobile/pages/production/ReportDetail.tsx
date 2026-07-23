@@ -283,35 +283,38 @@ export default function ReportDetail() {
     return Math.floor(inputQty - defectTotal - scrapTotal)
   })()
 
-  // 来料不良汇总
+  // 来料不良汇总（检验类型为"制程检验类型"且不良类型为"来料不良"）
   const incomingDefectQty = (() => {
     if (!report) return 0
     return (report.process_defects || [])
       .filter(d => {
         const dt = d.defect_type || (d.defect_type_info?.defect_type)
-        return dt === '来料不良'
+        const cat = d.defect_type_info?.category_name
+        return cat === '制程检验类型' && dt === '来料不良'
       })
       .reduce((sum, d) => sum + Number(d.quantity || 0), 0)
   })()
 
-  // 制程不良汇总
+  // 制程不良汇总（检验类型为"制程检验类型"且不良类型为"制程不良"）
   const processDefectQty = (() => {
     if (!report) return 0
     return (report.process_defects || [])
       .filter(d => {
         const dt = d.defect_type || (d.defect_type_info?.defect_type)
-        return dt !== '来料不良' && dt !== '检验报废'
+        const cat = d.defect_type_info?.category_name
+        return cat === '制程检验类型' && dt === '制程不良'
       })
       .reduce((sum, d) => sum + Number(d.quantity || 0), 0)
   })()
 
-  // 检验报废汇总
+  // 检验报废汇总（检验类型为"制程检验类型"且不良类型为"检验报废"）
   const scrapQty = (() => {
     if (!report) return 0
     return (report.process_defects || [])
       .filter(d => {
         const dt = d.defect_type || (d.defect_type_info?.defect_type)
-        return dt === '检验报废'
+        const cat = d.defect_type_info?.category_name
+        return cat === '制程检验类型' && dt === '检验报废'
       })
       .reduce((sum, d) => sum + Number(d.quantity || 0), 0)
   })()
@@ -653,6 +656,7 @@ export default function ReportDetail() {
             reportOrderId={id}
             reportNo={report?.report_no}
             reportTime={report.report_time}
+            onDataSaved={fetchReport}
           />
         )}
 
@@ -665,6 +669,7 @@ export default function ReportDetail() {
             reportTime={report.report_time}
             reportStatus={report.status}
             reportFinishTime={report.finish_time}
+            onDataSaved={fetchReport}
           />
         )}
       </div>
@@ -1434,7 +1439,7 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId,
   )
 }
 
-function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, reportNo, reportTime }) {
+function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, reportNo, reportTime, onDataSaved }) {
   const [saving, setSaving] = useState(false)
   const exceptionCategories = ['换型换线', '停机待料', '故障维修', '其它停机']
 
@@ -1483,6 +1488,7 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
         try { imgs = e.exception_images ? (Array.isArray(e.exception_images) ? e.exception_images : JSON.parse(e.exception_images)) : [] } catch {}
         return { ...e, id: e.exception_id || genTempId(), images: imgs }
       }))
+      onDataSaved && onDataSaved()
     } catch (err) {
       Toast.show({ icon: 'fail', content: err.message || '保存失败' })
     } finally {
@@ -1747,7 +1753,7 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
   )
 }
 
-function ManpowerTab({ list, setList, isEditable, reportOrderId, reportTime, reportStatus, reportFinishTime }) {
+function ManpowerTab({ list, setList, isEditable, reportOrderId, reportTime, reportStatus, reportFinishTime, onDataSaved }) {
   const [saving, setSaving] = useState(false)
 
   const calcManpowerHours = () => {
@@ -1822,6 +1828,7 @@ function ManpowerTab({ list, setList, isEditable, reportOrderId, reportTime, rep
       Toast.show({ icon: 'success', content: `已保存 ${recordsToSave.length} 条记录` })
       const res = await api.get('/production/manpower-records', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } })
       setList((res.data || []).map(m => ({ ...m, id: m.record_id || genTempId() })))
+      onDataSaved && onDataSaved()
     } catch (err) {
       Toast.show({ icon: 'fail', content: err.message || '保存失败' })
     } finally {

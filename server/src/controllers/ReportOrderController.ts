@@ -116,7 +116,7 @@ async function syncReportProcesses(reportOrderId: number, lineId: number, transa
 /**
  * 检查并联动更新订单状态
  * - 报工单创建后：若订单为"下发"，自动转为"开工"
- * - 报工单完工后：若该订单下所有报工单均"完工"，订单自动转为"完工"
+ * - 报工单完工后：若该订单下所有报工单均"完工" 且 完工数量 >= 计划数量，订单自动转为"完工"
  * - 报工单删除后：若无剩余报工单且订单为"开工"，可回退为"下发"
  */
 export async function syncOrderStatus(orderId: number, transaction?: any) {
@@ -127,6 +127,7 @@ export async function syncOrderStatus(orderId: number, transaction?: any) {
   if (!order) return
 
   const statusVal = order.getDataValue('status')
+  const plannedQty = Number(order.getDataValue('planned_qty') || 0)
 
   const total = await ReportOrder.count({
     where: { order_id: orderId },
@@ -136,13 +137,21 @@ export async function syncOrderStatus(orderId: number, transaction?: any) {
     where: { order_id: orderId, status: 1 },
     ...countOpts,
   })
+  const finishedRows = await ReportOrder.findAll({
+    where: { order_id: orderId, status: 1 },
+    attributes: [[sequelize.fn('SUM', sequelize.col('report_qty')), 'finished_sum']],
+    ...countOpts,
+    raw: true,
+  })
+  const finishedSum = Number(finishedRows[0]?.finished_sum || 0)
 
   if (total > 0 && statusVal === 1) {
     await order.update({ status: 2 }, { transaction })
     return
   }
 
-  if (total > 0 && finishedCount === total && statusVal === 2) {
+  // 只有所有报工单完工 且 完工数量 >= 计划数量，订单才自动转为"完工"
+  if (total > 0 && finishedCount === total && finishedSum >= plannedQty && statusVal === 2) {
     await order.update({ status: 3, close_time: new Date() }, { transaction })
     return
   }
@@ -228,7 +237,7 @@ export const detail = async (req, res) => {
         { model: ReportProcess, as: 'report_processes', order: [['sort_order', 'ASC']] as any },
         { model: ManpowerRecord, as: 'manpower_records' },
         { model: ProcessException, as: 'process_exceptions' },
-        { model: ProcessDefect, as: 'process_defects' },
+        { model: ProcessDefect, as: 'process_defects', include: [{ model: DefectType, as: 'defect_type', attributes: ['defect_type', 'category_name', 'defect_name'], required: false }] },
         { model: ProcessMaterial, as: 'process_materials' },
         { model: ReportImage, as: 'report_images' },
       ],
