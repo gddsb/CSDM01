@@ -283,6 +283,61 @@ export default function ReportDetail() {
     return Math.floor(inputQty - defectTotal - scrapTotal)
   })()
 
+  // 来料不良汇总
+  const incomingDefectQty = (() => {
+    if (!report) return 0
+    return (report.process_defects || [])
+      .filter(d => {
+        const dt = d.defect_type || (d.defect_type_info?.defect_type)
+        return dt === '来料不良'
+      })
+      .reduce((sum, d) => sum + Number(d.quantity || 0), 0)
+  })()
+
+  // 制程不良汇总
+  const processDefectQty = (() => {
+    if (!report) return 0
+    return (report.process_defects || [])
+      .filter(d => {
+        const dt = d.defect_type || (d.defect_type_info?.defect_type)
+        return dt !== '来料不良' && dt !== '检验报废'
+      })
+      .reduce((sum, d) => sum + Number(d.quantity || 0), 0)
+  })()
+
+  // 检验报废汇总
+  const scrapQty = (() => {
+    if (!report) return 0
+    return (report.process_defects || [])
+      .filter(d => {
+        const dt = d.defect_type || (d.defect_type_info?.defect_type)
+        return dt === '检验报废'
+      })
+      .reduce((sum, d) => sum + Number(d.quantity || 0), 0)
+  })()
+
+  // 异常工时汇总（无结束时间时取当前时间计算）
+  const exceptionHours = (() => {
+    if (!report) return 0
+    const now = Date.now()
+    return (report.process_exceptions || [])
+      .reduce((sum, e) => {
+        const start = e.start_time ? new Date(e.start_time).getTime() : 0
+        const end = e.end_time ? new Date(e.end_time).getTime() : now
+        if (start > 0 && end > start) {
+          return sum + (end - start) / 3600000
+        }
+        return sum + (Number(e.duration) || 0)
+      }, 0)
+  })()
+
+  // 人工工时汇总（开工状态取当前时间，完工状态取完工时间）
+  const manpowerHours = (() => {
+    if (!report) return 0
+    return (report.manpower_records || [])
+      .reduce((sum, m) => sum + (Number(m.man_hours) || Number(m.work_hours) || 0), 0)
+  })()
+
   const handleFinish = async () => {
     if (!report) return
     const confirmed = await Dialog.confirm({
@@ -501,6 +556,31 @@ export default function ReportDetail() {
               <span className="rd-label">{report.status === 0 || report.status === '开工' ? '预计产出' : '合格数量'}</span>
               <span className="rd-qty" style={{ color: '#fa8c16' }}>{expectedOutput}</span>
             </div>
+          </div>
+          <div className="rd-header-row rd-qty-row">
+            <div className="rd-qty-item">
+              <span className="rd-label">来料不良</span>
+              <span className="rd-qty" style={{ color: '#ff4d4f' }}>{incomingDefectQty}</span>
+            </div>
+            <div className="rd-qty-item">
+              <span className="rd-label">制程不良</span>
+              <span className="rd-qty" style={{ color: '#faad14' }}>{processDefectQty}</span>
+            </div>
+            <div className="rd-qty-item">
+              <span className="rd-label">检验报废</span>
+              <span className="rd-qty" style={{ color: '#722ed1' }}>{scrapQty}</span>
+            </div>
+          </div>
+          <div className="rd-header-row rd-qty-row">
+            <div className="rd-qty-item">
+              <span className="rd-label">异常工时</span>
+              <span className="rd-qty" style={{ color: '#eb2f96' }}>{exceptionHours.toFixed(1)}h</span>
+            </div>
+            <div className="rd-qty-item">
+              <span className="rd-label">人工工时</span>
+              <span className="rd-qty" style={{ color: '#13c2c2' }}>{manpowerHours.toFixed(1)}h</span>
+            </div>
+            <div className="rd-qty-item" />
           </div>
         </div>
       </div>

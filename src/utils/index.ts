@@ -8,6 +8,6 @@ export function formatVersionNo(version: string | number | undefined): string {
 export function formatFilmVersion(filmVersion: string | undefined, versionNo: string | undefined): string {
   if (!filmVersion && !versionNo) return ''
   const filmPart = filmVersion ? filmVersion.replace(/[^A-Za-z0-9]/g, '') : ''
-  const versionPart = versionNo ? 'F' + formatVersionNo(versionNo.replace(/^[Vv]/, '')) : ''
+  const versionPart = versionNo ? formatVersionNo(versionNo.replace(/^[Vv]/, '')) : ''
   return filmPart + versionPart
 }

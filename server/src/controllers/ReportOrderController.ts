@@ -28,6 +28,15 @@ function isValidPositiveQty(val: any): boolean {
   return Number.isInteger(num) && num >= 0
 }
 
+async function getReportOrderWithOrder(reportOrderId: number) {
+  return ReportOrder.findOne({
+    where: { report_order_id: reportOrderId },
+    include: [
+      { model: Order, as: 'order', attributes: ['film_version', 'version_no', 'barcode'], required: false },
+    ],
+  })
+}
+
 async function sumReportQty(orderId: number, excludeReportOrderId?: number): Promise<number> {
   const where: any = { order_id: orderId }
   if (excludeReportOrderId !== undefined) {
@@ -340,7 +349,8 @@ export const create = async (req, res) => {
     })
 
     logger.info('[ReportOrder.create] 报工单创建成功', { report_order_id: result.report_order_id, order_id, report_no: result.report_no, user: req.user?.username })
-    return success(res, result, '创建成功')
+    const fullResult = await getReportOrderWithOrder(result.report_order_id)
+    return success(res, fullResult || result, '创建成功')
   } catch (err) {
     console.error('创建报工单失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
@@ -622,7 +632,8 @@ export const finish = async (req, res) => {
     })
 
     logger.info('[ReportOrder.finish] 报工单完工成功', { report_order_id: id, order_id: result.order_id, report_order_no: result.report_order_no, user: req.user?.username })
-    return success(res, result, '报工单已完工')
+    const fullResultFinish = await getReportOrderWithOrder(id)
+    return success(res, fullResultFinish || result, '报工单已完工')
   } catch (err: any) {
     if (err && err.code) {
       return fail(res, err.message, err.code)
@@ -694,7 +705,8 @@ export const close = async (req, res) => {
     })
 
     logger.info('[ReportOrder.close] 报工单关闭成功', { report_order_id: id, order_id: result.order_id, report_order_no: result.report_order_no, user: req.user?.username })
-    return success(res, result, '报工单已关闭')
+    const fullResultClose = await getReportOrderWithOrder(id)
+    return success(res, fullResultClose || result, '报工单已关闭')
   } catch (err: any) {
     if (err && err.code) {
       return fail(res, err.message, err.code)
