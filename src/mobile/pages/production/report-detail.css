@@ -255,10 +255,10 @@
   min-width: 0;
 }
 
-/* 不良记录/检验报废：单位自动宽度 */
+/* 不良记录/检验报废：单位列宽12个字符 */
 .rd-form-item-unit {
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 0 0 auto;
+  width: 12em;
 }
 
 .rd-defect-select-dropdown.auto-width {
