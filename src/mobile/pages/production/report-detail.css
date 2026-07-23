@@ -249,16 +249,16 @@
   width: 8em;
 }
 
-/* 不良记录/检验报废：数量列宽10个字符 */
+/* 不良记录/检验报废：数量自动宽度 */
 .rd-form-item-qty {
-  flex: 0 0 auto;
-  width: 10em;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
-/* 不良记录/检验报废：单位列宽8个字符 */
+/* 不良记录/检验报废：单位自动宽度 */
 .rd-form-item-unit {
-  flex: 0 0 auto;
-  width: 8em;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .rd-defect-select-dropdown.auto-width {
@@ -464,6 +464,17 @@
 .rd-form-item-code-auto {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+/* 物料记录：单位列（来自料品档案） */
+.rd-form-item-unit-mat {
+  flex: 0 0 auto;
+  width: 5em;
+}
+
+.rd-form-item-unit-mat .rd-form-input {
+  background: #f5f5f5;
+  color: #666;
 }
 
 /* 物料记录：第二行（批号+包号+数量） */

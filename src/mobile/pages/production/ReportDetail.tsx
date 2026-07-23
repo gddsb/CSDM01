@@ -830,6 +830,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
           next.material_code = opt.material_code
           next.material_name = opt.material_name
           next.specification = opt.specification
+          next.unit_name = opt.unit_name || ''
         }
       }
       return next
@@ -918,6 +919,15 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
                     autoWidth={true}
                   />
                 </div>
+                <div className="rd-form-item rd-form-item-unit-mat">
+                  <label className="rd-form-label">单位</label>
+                  <input
+                    className="rd-form-input"
+                    value={record.unit_name || ''}
+                    readOnly
+                    placeholder="-"
+                  />
+                </div>
               </div>
               <div className="rd-form-row rd-material-row-2">
                 <div className="rd-form-item">
@@ -958,6 +968,10 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
               <div className="rd-list-row">
                 <span className="rd-list-label">料号</span>
                 <span className="rd-list-value">{record.material_code || '-'}</span>
+              </div>
+              <div className="rd-list-row">
+                <span className="rd-list-label">单位</span>
+                <span className="rd-list-value">{record.unit_name || '-'}</span>
               </div>
               <div className="rd-list-row">
                 <span className="rd-list-label">批号</span>
