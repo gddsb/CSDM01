@@ -65,6 +65,15 @@ export const create = async (req, res) => {
     if (!exception_type) return fail(res, '异常类型不能为空', ErrorCode.PARAM_INVALID)
     if (!start_time) return fail(res, '开始时间不能为空', ErrorCode.PARAM_INVALID)
 
+    if (exception_type === '换型换线') {
+      const existing = await ProcessException.count({
+        where: { report_order_id, exception_type: '换型换线' },
+      })
+      if (existing > 0) {
+        return fail(res, '该报工单已存在换型换线记录，不允许重复创建', ErrorCode.BUSINESS_ERROR)
+      }
+    }
+
     const timeCheck = validateTimeRange(start_time, end_time)
     if (!timeCheck.valid) {
       return fail(res, timeCheck.message!, ErrorCode.PARAM_INVALID)
