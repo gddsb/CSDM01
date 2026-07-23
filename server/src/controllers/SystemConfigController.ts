@@ -1328,16 +1328,19 @@ export const listTableRecords = async (req, res) => {
     const limit = Math.min(parseInt(pageSize, 10) || 20, MAX_PAGE_SIZE)
     const offset = (Math.max(parseInt(page, 10) || 1, 1) - 1) * limit
 
+    const dialect = process.env.DB_DIALECT || 'sqlite'
+    const quoteChar = dialect === 'mysql' || dialect === 'mariadb' ? '`' : '"'
+    const safeTableName = table_name
+
     // 查询总记录数
-    const countResult = await sequelize.query("SELECT COUNT(*) as count FROM ??", { 
-      replacements: [table_name],
+    const countResult = await sequelize.query(`SELECT COUNT(*) as count FROM ${quoteChar}${safeTableName}${quoteChar}`, { 
       type: Sequelize.QueryTypes.SELECT 
     })
     const total = countResult[0]?.count || 0
 
     // 查询分页数据
-    const rows = await sequelize.query("SELECT * FROM ?? LIMIT ? OFFSET ?", { 
-      replacements: [table_name, limit, offset],
+    const rows = await sequelize.query(`SELECT * FROM ${quoteChar}${safeTableName}${quoteChar} LIMIT ? OFFSET ?`, { 
+      replacements: [limit, offset],
       type: Sequelize.QueryTypes.SELECT 
     })
 
