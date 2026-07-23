@@ -741,7 +741,32 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
   const [saving, setSaving] = useState(false)
   const [imgModal, setImgModal] = useState({ visible: false, recordId: null })
 
+  const currentProcess = processes.find(p => p.process_id === processId)
+  const hasMaterial = currentProcess ? (currentProcess.has_material === 1 || currentProcess.has_material === true) : true
+  const currentProcessCode = currentProcess?.process_code || ''
+
+  const MATERIAL_PREFIX_RULES = {
+    'P-01': ['T', 'Y20', 'D1'],
+    'P-06': ['P2', 'P', 'P4'],
+    'P-10': ['B'],
+  }
+
+  const filterOptionsByProcess = (opts, procCode) => {
+    const prefixes = MATERIAL_PREFIX_RULES[procCode]
+    if (!prefixes || prefixes.length === 0) return opts
+    return opts.filter(o => {
+      const code = o.material_code || ''
+      return prefixes.some(p => code.startsWith(p))
+    })
+  }
+
+  const filteredOptions = filterOptionsByProcess(options, currentProcessCode)
+
   const handleAdd = () => {
+    if (!hasMaterial) {
+      Toast.show({ icon: 'fail', content: '当前工序不允许引入物料' })
+      return
+    }
     setList(prev => [...prev, {
       id: genTempId(),
       report_order_id: Number(reportOrderId),
@@ -861,7 +886,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
       if (item.id !== recordId) return item
       const next = { ...item, [field]: value }
       if (field === 'bas_material_id') {
-        const opt = options.find(o => o.value === value)
+        const opt = filteredOptions.find(o => o.value === value)
         if (opt) {
           next.material_code = opt.material_code
           next.material_name = opt.material_name
@@ -893,14 +918,17 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
             <Button fill="outline" size="small" onClick={handleSave} loading={saving}>
               <CheckOutline /> 保存
             </Button>
-            <Button color="primary" size="small" onClick={handleAdd}>
-              <AddOutline /> 添加
-            </Button>
+            {hasMaterial && (
+              <Button color="primary" size="small" onClick={handleAdd}>
+                <AddOutline /> 添加
+              </Button>
+            )}
           </div>
         )}
       </div>
 
-      {list.length === 0 && <div className="mobile-empty">暂无记录</div>}
+      {!hasMaterial && <div className="mobile-empty">当前工序不允许引入物料</div>}
+      {hasMaterial && list.length === 0 && <div className="mobile-empty">暂无记录</div>}
 
       {list.map(record => {
         const isReturn = record.material_type === '退回' || record.material_type === '退'
@@ -948,7 +976,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
                   <DefectSelect
                     value={record.bas_material_id}
                     onChange={(val) => handleChangeMaterial(record.id, 'bas_material_id', val)}
-                    options={options}
+                    options={filteredOptions}
                     placeholder="请选择"
                     codeField="material_code"
                     nameField="material_name"
