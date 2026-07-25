@@ -1931,7 +1931,7 @@ function ManpowerTab({ list, setList, isEditable, reportOrderId, reportTime, rep
       Toast.show({ icon: 'success', content: `已保存 ${recordsToSave.length} 条记录` })
       const res = await api.get('/production/manpower-records', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } })
       setList((res.data || []).map(m => ({ ...m, id: m.record_id || genTempId() })))
-      onDataSaved && onDataSaved()
+      if (onDataSaved) await onDataSaved()
     } catch (err) {
       Toast.show({ icon: 'fail', content: err.message || '保存失败' })
     } finally {

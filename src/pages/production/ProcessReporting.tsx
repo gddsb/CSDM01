@@ -2099,6 +2099,9 @@ export default function ProcessReporting() {
       }
       if (item.record_id) {
         await api.put(`/production/manpower-records/${item.record_id}`, payload)
+        setManpowerList(prev => prev.map(m =>
+          m.id === item.id ? { ...m, ...payload } : m
+        ))
       } else {
         const res = await api.post('/production/manpower-records', payload)
         setManpowerList(prev => prev.map(m =>
@@ -2191,7 +2194,7 @@ export default function ProcessReporting() {
         savedIds.push(record.id)
       }
       clearDirty(savedIds)
-      fetchReportStats(selectedReport.report_order_id)
+      await fetchReportStats(selectedReport.report_order_id)
       message.success(`已保存 ${recordsToSave.length} 条记录`)
     } catch (err) {
       message.error(err.message || '保存失败')
