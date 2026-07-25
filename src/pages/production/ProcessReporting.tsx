@@ -2084,16 +2084,21 @@ export default function ProcessReporting() {
     },
     { title: '时长(小时)', dataIndex: 'duration', key: 'duration', width: 100 },
     {
-      title: '异常描述', dataIndex: 'description', key: 'description', width: 200,
+      title: '异常描述', dataIndex: 'description', key: 'description', width: 240,
       render: (val, record) => isEditable ? (
-        <Input
+        <Input.TextArea
           placeholder="请输入异常描述"
           value={val || ''}
           onChange={(e) => handleExceptionChange(record.id, 'description', e.target.value)}
           size="small"
           maxLength={200}
+          autoSize={{ minRows: 1, maxRows: 3 }}
         />
-      ) : val || '-',
+      ) : (
+        <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', display: 'block' }}>
+          {val || '-'}
+        </span>
+      ),
     },
     {
       title: '图片', dataIndex: 'exception_images', key: 'exception_images', width: 100,
