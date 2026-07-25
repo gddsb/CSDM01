@@ -360,26 +360,29 @@ export default function InspectionStandard() {
       >
         <Form form={form} layout="vertical" className="compact-form" preserve={false}>
           <Row gutter={12}>
-            <Col span={8}>
+            <Col span={5}>
               <Form.Item name="standard_no" label="标准编号" rules={[{ required: true, message: '请输入标准编号' }]}>
                 {viewMode ? disabledInput : <Input disabled placeholder="系统自动生成" />}
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col span={5}>
               <Form.Item name="inspection_type" label="检验类型" rules={[{ required: true, message: '请选择检验类型' }]}>
                 <Select placeholder="请选择检验类型" options={inspectionTypeOptions} onChange={handleInspectionTypeChange} disabled={viewMode} />
               </Form.Item>
             </Col>
-            <Col span={8}>
-              <Form.Item name="standard_type" label="标准类型" rules={[{ required: true, message: '请选择标准类型' }]}>
+            <Col span={5}>
+              <Form.Item name="standard_type" label="检验标准" rules={[{ required: true, message: '请选择标准类型' }]}>
                 <Select placeholder="请选择标准类型" options={standardTypeOptions} onChange={handleStandardTypeChange} disabled={viewMode} />
               </Form.Item>
             </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={24}>
-              <Form.Item name="standard_name" label="标准名称" rules={[{ required: true, message: '请输入标准名称' }]}>
-                <Input placeholder="请输入标准名称" disabled={viewMode} />
+            <Col span={4}>
+              <Form.Item name="version" label="版本号" rules={[{ required: true, message: '请输入版本号' }]}>
+                {viewMode ? disabledInput : <Input disabled placeholder="系统自动生成" />}
+              </Form.Item>
+            </Col>
+            <Col span={5}>
+              <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
+                <Select placeholder="请选择状态" options={statusOptions} disabled />
               </Form.Item>
             </Col>
           </Row>
@@ -397,14 +400,9 @@ export default function InspectionStandard() {
                 />
               </Form.Item>
             </Col>
-            <Col span={8}>
-              <Form.Item name="version" label="版本号" rules={[{ required: true, message: '请输入版本号' }]}>
-                {viewMode ? disabledInput : <Input disabled placeholder="系统自动生成" />}
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
-                <Select placeholder="请选择状态" options={statusOptions} disabled={viewMode} />
+            <Col span={16}>
+              <Form.Item name="standard_name" label="标准名称" rules={[{ required: true, message: '请输入标准名称' }]}>
+                <Input placeholder="请输入标准名称" disabled={viewMode} />
               </Form.Item>
             </Col>
           </Row>
