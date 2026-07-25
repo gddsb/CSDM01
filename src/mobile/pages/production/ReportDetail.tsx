@@ -348,11 +348,14 @@ export default function ReportDetail() {
       }, 0)
   })()
 
-  // 人工工时汇总（与PC端一致：开工状态取当前时间，完工状态取完工时间，按时间差×人数计算）
+  // 人工工时汇总（与PC端一致：优先使用本地manpowerList以实现保存后立即更新，其次使用report.manpower_records）
   const manpowerHours = (() => {
     if (!report) return 0
     const reportStart = report.report_time
-    const allManpowers = report.manpower_records || []
+    // 优先使用本地manpowerList（保存后立即更新），其次使用report.manpower_records
+    const allManpowers = (manpowerList && manpowerList.length > 0)
+      ? manpowerList
+      : (report.manpower_records || [])
     if (!reportStart || allManpowers.length === 0) return 0
     const start = dayjs(reportStart)
     const end = (report.status === '完工' || report.status === 1) && report.finish_time

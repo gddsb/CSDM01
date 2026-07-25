@@ -381,6 +381,25 @@ export default function ProcessReporting() {
     }
   }, [selectedProcessId, defectTypeOptions, scrapTypeOptions, materialOptions])
 
+  // 根据报工单信息和人员记录列表计算人工工时（本地计算，用于保存后立即更新）
+  const calcManpowerHoursLocal = useCallback((manpowerRecords, reportInfo) => {
+    if (!reportInfo || !reportInfo.report_time || !manpowerRecords || manpowerRecords.length === 0) return 0
+    const start = dayjs(reportInfo.report_time)
+    const end = reportInfo.status === '完工' && reportInfo.finish_time
+      ? dayjs(reportInfo.finish_time)
+      : dayjs()
+    const diffMs = end.valueOf() - start.valueOf()
+    const hours = diffMs > 0 ? Number((diffMs / 3600000).toFixed(2)) : 0
+    const total = manpowerRecords.reduce((sum, m) => {
+      const sk = Number(m.skilled_count) || 0
+      const gn = Number(m.general_count) || 0
+      const lb = Number(m.labor_count) || 0
+      const ot = Number(m.other_count) || 0
+      return sum + Number((hours * (sk + gn + lb + ot)).toFixed(2))
+    }, 0)
+    return Number(total.toFixed(2))
+  }, [])
+
   // 获取整个报工单的统计数据（不按工序过滤）
   const fetchReportStats = useCallback(async (reportOrderId) => {
     if (!reportOrderId) return
@@ -2194,6 +2213,16 @@ export default function ProcessReporting() {
         savedIds.push(record.id)
       }
       clearDirty(savedIds)
+      // 立即用本地数据更新人工工时统计（用户感知"立即更新"）
+      setStats(prev => ({
+        ...prev,
+        manpowerHours: calcManpowerHoursLocal(manpowerList, {
+          report_time: selectedReport.report_time,
+          status: selectedReport.status,
+          finish_time: selectedReport.finish_time,
+        }),
+      }))
+      // 再从服务器同步所有统计数据（确保一致性）
       await fetchReportStats(selectedReport.report_order_id)
       message.success(`已保存 ${recordsToSave.length} 条记录`)
     } catch (err) {
