@@ -3,7 +3,7 @@ import { Tag } from 'antd'
 import { ArrowLeftOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import * as echarts from 'echarts'
-import { workOrders, processReports, productionLines, devices, orders } from '../../mock/data'
+import { workOrders, processReports, productionLines, devices, orders, processes } from '../../mock/data'
 import '../../styles/bigscreen.css'
 
 // 数据刷新间隔（毫秒）—— 工序产出与工单进度定期更新
@@ -146,12 +146,31 @@ export default function ProductionBigScreen() {
   // ============ 数据计算（基于 activeDate 当日数据） ============
   const dateWorkOrders = filterByDate(workOrders, activeDate, 'start_time', 'created_at')
   const dateProcessReports = filterByDate(processReports, activeDate, 'report_time')
-  // 订单：当天有关的（创建或下达时间），如果当天没有订单，则展示所有订单
-  const dateOrders = filterByDate(orders, activeDate, 'created_at', 'release_time')
-  const displayOrders = dateOrders.length > 0 ? dateOrders : orders
+  // 生产订单概览：只显示当日开工、完工、下发的订单
+  const displayOrders = orders.filter(o => {
+    if (!activeDate) return false
+    // 当日下发
+    const releasedToday = o.release_time && o.release_time.startsWith(activeDate) && o.status === '下发'
+    // 当日开工（有当日报工记录的订单）
+    const todayWorkOrderIds = workOrders
+      .filter(w => w.start_time && w.start_time.startsWith(activeDate))
+      .map(w => w.order_id)
+    const startedToday = todayWorkOrderIds.includes(o.order_id)
+    // 当日完工
+    const finishedToday = workOrders
+      .filter(w => w.finish_time && w.finish_time.startsWith(activeDate))
+      .some(w => w.order_id === o.order_id)
+    return releasedToday || startedToday || finishedToday
+  })
 
-  // 工单进度（开工/完工/开立）
+  // 工单进度（只显示当日开工/完工，未完工的）
   const chartWorkOrders = workOrders
+    .filter(w => {
+      // 只显示当日开工或当日完工的工单
+      const startMatch = activeDate && w.start_time && w.start_time.startsWith(activeDate)
+      const finishMatch = activeDate && w.finish_time && w.finish_time.startsWith(activeDate)
+      return startMatch || finishMatch
+    })
     .filter(w => w.status !== '完工')
     .map(w => {
       // 用当日报工数据计算进度，没有当日数据则用累计数据
@@ -162,7 +181,7 @@ export default function ProductionBigScreen() {
       return { ...w, reported, pct }
     })
 
-  const activeWorkOrders = workOrders.filter(w => w.status === '已开工')
+  const activeWorkOrders = workOrders.filter(w => w.status === '开工' || w.status === '已开工')
   const totalTarget = activeWorkOrders.reduce((s, w) => s + w.target_qty, 0)
   // 当日产出
   const totalOutput = dateProcessReports.reduce((s, r) => s + r.output_qty, 0)
@@ -173,7 +192,7 @@ export default function ProductionBigScreen() {
   const faultDevices = devices.filter(d => d.status === '故障')
 
   const kpiData = [
-    { label: '生效工单', value: activeWorkOrders.length, unit: '个', color: '#58A6FF' },
+    { label: '开工工单', value: activeWorkOrders.length, unit: '个', color: '#58A6FF' },
     { label: '今日产出', value: totalOutput, unit: '件', color: '#3FB950' },
     { label: '今日投入', value: totalInput, unit: '件', color: '#F0883E' },
     { label: '不良总数', value: totalDefect, unit: '件', color: '#F85149' },
@@ -181,9 +200,11 @@ export default function ProductionBigScreen() {
     { label: '运行产线', value: runningLines.length, unit: '条', color: '#58A6FF' },
   ]
 
-  // 工序产出统计聚合（当日数据）
+  // 工序产出统计聚合（当日数据）- 只显示必须报工工序
+  const mustReportProcessNames = processes.filter(p => Number(p.must_report) === 1).map(p => p.process_name)
   const processStats = {}
   dateProcessReports.forEach(r => {
+    if (!mustReportProcessNames.includes(r.process_name)) return
     if (!processStats[r.process_name]) {
       processStats[r.process_name] = { name: r.process_name, input: 0, output: 0, defect: 0 }
     }
@@ -215,15 +236,33 @@ export default function ProductionBigScreen() {
   // 通用图表配置：禁用动画（用户要求"定期更新数据不要动画"）
   const noAnimation = { animation: false, animationDuration: 0, animationDurationUpdate: 0, animationEasingUpdate: 'linear' }
 
-  // 1. 产线产出趋势 - 折线图
+  // 1. 产线产出趋势 - 折线图（只显示非停用产线）
+  const activeLines = productionLines.filter(l => l.status !== '停用')
   useEffect(() => {
     if (!lineChartRef.current) return
     const chart = echarts.init(lineChartRef.current)
     lineChartRef2.current = chart
     const hours = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00']
-    const lineA = [520, 580, 610, 590, 540, 480, 560, 600, 620, 580, 530, 450, 380]
-    const lineB = [480, 520, 550, 530, 500, 460, 510, 540, 560, 530, 490, 420, 360]
-    const lineC = [0, 0, 0, 0, 0, 0, 0, 360, 420, 440, 410, 350, 0]
+    const allLineData = {
+      'A线': { data: [520, 580, 610, 590, 540, 480, 560, 600, 620, 580, 530, 450, 380], color: '#00d4ff' },
+      'B线': { data: [480, 520, 550, 530, 500, 460, 510, 540, 560, 530, 490, 420, 360], color: '#00ff88' },
+      'C线': { data: [0, 0, 0, 0, 0, 0, 0, 360, 420, 440, 410, 350, 0], color: '#a78bfa' },
+    }
+    const legendData = activeLines.map(l => l.line_name)
+    const series = activeLines.map(l => {
+      const d = allLineData[l.line_name] || { data: [], color: '#58A6FF' }
+      return {
+        name: l.line_name, type: 'line', smooth: true, symbol: 'circle', symbolSize: 7, data: d.data,
+        lineStyle: { color: d.color, width: 3 },
+        itemStyle: { color: d.color },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: d.color + '55' },
+            { offset: 1, color: d.color + '00' },
+          ]),
+        },
+      }
+    })
     chart.setOption({
       ...noAnimation,
       backgroundColor: 'transparent',
@@ -239,7 +278,7 @@ export default function ProductionBigScreen() {
         itemWidth: 14,
         itemHeight: 4,
         textStyle: { color: '#8B949E', fontSize: 12 },
-        data: ['A线', 'B线', 'C线'],
+        data: legendData,
       },
       grid: { left: '6%', right: '5%', top: '22%', bottom: '12%', containLabel: true },
       xAxis: {
@@ -257,41 +296,7 @@ export default function ProductionBigScreen() {
         axisLabel: { color: '#8B949E' },
         splitLine: { lineStyle: { color: 'rgba(88,166,255,0.08)' } },
       },
-      series: [
-        {
-          name: 'A线', type: 'line', smooth: true, symbol: 'circle', symbolSize: 7, data: lineA,
-          lineStyle: { color: '#00d4ff', width: 3 },
-          itemStyle: { color: '#00d4ff' },
-          areaStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(0,212,255,0.35)' },
-              { offset: 1, color: 'rgba(0,212,255,0)' },
-            ]),
-          },
-        },
-        {
-          name: 'B线', type: 'line', smooth: true, symbol: 'circle', symbolSize: 7, data: lineB,
-          lineStyle: { color: '#00ff88', width: 3 },
-          itemStyle: { color: '#00ff88' },
-          areaStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(0,255,136,0.3)' },
-              { offset: 1, color: 'rgba(0,255,136,0)' },
-            ]),
-          },
-        },
-        {
-          name: 'C线', type: 'line', smooth: true, symbol: 'circle', symbolSize: 7, data: lineC,
-          lineStyle: { color: '#a78bfa', width: 3 },
-          itemStyle: { color: '#a78bfa' },
-          areaStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(167,139,250,0.3)' },
-              { offset: 1, color: 'rgba(167,139,250,0)' },
-            ]),
-          },
-        },
-      ],
+      series: series,
     })
     const handleResize = () => chart.resize()
     window.addEventListener('resize', handleResize)
@@ -613,11 +618,11 @@ export default function ProductionBigScreen() {
       <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {/* 第一行：产线状态 | 产出趋势折线 | 不良分布饼图 */}
         <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10 }}>
-          {/* 左：产线运行状态 + 设备状态概览（不显示滚动条） */}
-          <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div className="bs-panel bs-no-scrollbar" style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+          {/* 左：产线运行状态（只显示非停用产线） */}
+          <div style={{ flex: 1, minWidth: 0, minHeight: 0 }}>
+            <div className="bs-panel bs-no-scrollbar" style={{ height: '100%', minHeight: 0, overflow: 'hidden' }}>
               <div className="bs-panel-title">产线运行状态</div>
-              {productionLines.map(line => (
+              {activeLines.map(line => (
                 <div key={line.line_id} className="bs-line-status" style={{
                   borderLeftColor: line.status === '运行中' ? '#3FB950' : line.status === '维护中' ? '#D29922' : '#F85149'
                 }}>
@@ -632,21 +637,6 @@ export default function ProductionBigScreen() {
                   </div>
                 </div>
               ))}
-            </div>
-
-            <div className="bs-panel bs-no-scrollbar" style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-              <div className="bs-panel-title">设备状态概览</div>
-              {devices.map(d => (
-                <div key={d.device_id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid rgba(88,166,255,0.06)', fontSize: 12 }}>
-                  <span style={{ color: '#C9D1D9' }}>{d.device_name}</span>
-                  <Tag color={d.status === '运行' ? 'success' : d.status === '故障' ? 'error' : 'default'} style={{ fontSize: 11 }}>{d.status}</Tag>
-                </div>
-              ))}
-              {faultDevices.length > 0 && (
-                <div style={{ marginTop: 8, padding: 8, background: 'rgba(248,81,73,0.1)', borderRadius: 6, fontSize: 12, color: '#F85149' }}>
-                  ⚠ 当前 {faultDevices.length} 台设备故障，请及时处理
-                </div>
-              )}
             </div>
           </div>
 

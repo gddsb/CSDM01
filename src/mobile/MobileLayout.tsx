@@ -17,7 +17,7 @@ import './mobile.css'
 const SYSTEM_VERSION = 'V1.0.1.722'
 
 const tabs = [
-  { key: '/mobile/orders', title: '工单', icon: <UnorderedListOutline /> },
+  { key: '/mobile/bigscreen', title: '看板', icon: <UnorderedListOutline /> },
   { key: '/mobile/device', title: '设备', icon: <SetOutline /> },
   { key: '/mobile/home', title: '首页', icon: <AppOutline /> },
   { key: '/mobile/messages', title: '消息', icon: <MessageOutline /> },
@@ -51,14 +51,6 @@ export default function MobileLayout() {
   }, [])
 
   useEffect(() => {
-    if (
-      location.pathname === '/mobile/orders' ||
-      location.pathname.startsWith('/mobile/orders/') ||
-      location.pathname.startsWith('/mobile/reporting')
-    ) {
-      setActiveKey('/mobile/orders')
-      return
-    }
     const matched = tabs.find(t => location.pathname === t.key || location.pathname.startsWith(t.key + '/'))
     if (matched) setActiveKey(matched.key)
   }, [location.pathname])

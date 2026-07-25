@@ -28,17 +28,17 @@ export const users = [
 
 // 11道默认工序
 export const processes = [
-  { process_id: 'p1', process_code: 'P-01', process_name: '裁剪下料', sort_order: 1, status: '启用' },
-  { process_id: 'p2', process_code: 'P-02', process_name: '小料检测', sort_order: 2, status: '启用' },
-  { process_id: 'p3', process_code: 'P-03', process_name: '成圆焊接', sort_order: 3, status: '启用' },
-  { process_id: 'p4', process_code: 'P-04', process_name: '补涂烘干', sort_order: 4, status: '启用' },
-  { process_id: 'p5', process_code: 'P-05', process_name: '倒罐检测', sort_order: 5, status: '启用' },
-  { process_id: 'p6', process_code: 'P-06', process_name: '翻边封口', sort_order: 6, status: '启用' },
-  { process_id: 'p7', process_code: 'P-07', process_name: '正压测漏', sort_order: 7, status: '启用' },
-  { process_id: 'p8', process_code: 'P-08', process_name: '在线光检测', sort_order: 8, status: '启用' },
-  { process_id: 'p9', process_code: 'P-09', process_name: '人工全检', sort_order: 9, status: '启用' },
-  { process_id: 'p10', process_code: 'P-10', process_name: '码垛包装', sort_order: 10, status: '启用' },
-  { process_id: 'p11', process_code: 'P-11', process_name: '成品检验', sort_order: 11, status: '启用' },
+  { process_id: 'p1', process_code: 'P-01', process_name: '裁剪下料', sort_order: 1, status: '启用', must_report: 1 },
+  { process_id: 'p2', process_code: 'P-02', process_name: '小料检测', sort_order: 2, status: '启用', must_report: 1 },
+  { process_id: 'p3', process_code: 'P-03', process_name: '成圆焊接', sort_order: 3, status: '启用', must_report: 1 },
+  { process_id: 'p4', process_code: 'P-04', process_name: '补涂烘干', sort_order: 4, status: '启用', must_report: 0 },
+  { process_id: 'p5', process_code: 'P-05', process_name: '倒罐检测', sort_order: 5, status: '启用', must_report: 1 },
+  { process_id: 'p6', process_code: 'P-06', process_name: '翻边封口', sort_order: 6, status: '启用', must_report: 1 },
+  { process_id: 'p7', process_code: 'P-07', process_name: '正压测漏', sort_order: 7, status: '启用', must_report: 1 },
+  { process_id: 'p8', process_code: 'P-08', process_name: '在线光检测', sort_order: 8, status: '启用', must_report: 0 },
+  { process_id: 'p9', process_code: 'P-09', process_name: '人工全检', sort_order: 9, status: '启用', must_report: 0 },
+  { process_id: 'p10', process_code: 'P-10', process_name: '码垛包装', sort_order: 10, status: '启用', must_report: 1 },
+  { process_id: 'p11', process_code: 'P-11', process_name: '成品检验', sort_order: 11, status: '启用', must_report: 1 },
 ]
 
 // 料品档案

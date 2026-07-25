@@ -10,6 +10,7 @@ import ReportList from './pages/production/ReportList'
 import ReportDetail from './pages/production/ReportDetail'
 import PlaceholderPage from './pages/PlaceholderPage'
 import ProfilePage from './pages/ProfilePage'
+import MobileBigScreen from './pages/bigscreen/MobileBigScreen'
 
 // 移动端鉴权路由（复用 PC 端 JWT）
 function MobileProtectedRoute({ children }) {
@@ -30,6 +31,7 @@ export default function MobileRoutes() {
       <Route path="/mobile" element={<MobileProtectedRoute><MobileLayout /></MobileProtectedRoute>}>
         <Route index element={<MobileHome />} />
         <Route path="home" element={<MobileHome />} />
+        <Route path="bigscreen" element={<MobileBigScreen />} />
         <Route path="orders" element={<OrderList />} />
         <Route path="orders/:id" element={<OrderDetail />} />
         <Route path="reporting" element={<ReportList />} />
