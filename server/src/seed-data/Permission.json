@@ -268,7 +268,7 @@
   {
     "perm_id": 31,
     "parent_id": 30,
-    "perm_name": "检验标准管理",
+    "perm_name": "检验标准",
     "perm_code": "quality:standard",
     "type": "menu",
     "icon": "SafetyCertificateOutlined",
@@ -324,7 +324,7 @@
   {
     "perm_id": 35,
     "parent_id": 30,
-    "perm_name": "产品微生物检验",
+    "perm_name": "微生物检验",
     "perm_code": "quality:microbe",
     "type": "menu",
     "icon": "ExperimentOutlined",
