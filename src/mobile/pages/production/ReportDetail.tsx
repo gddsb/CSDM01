@@ -546,11 +546,11 @@ export default function ReportDetail() {
           </div>
           <div className="rd-header-row rd-qty-row">
             <div className="rd-qty-item">
-              <span className="rd-label">报工</span>
+              <span className="rd-label">报工数量</span>
               <span className="rd-qty" style={{ color: '#1677ff' }}>{Math.floor(Number(report.report_qty) || 0)}</span>
             </div>
             <div className="rd-qty-item">
-              <span className="rd-label">投入</span>
+              <span className="rd-label">投入数量</span>
               <span className="rd-qty" style={{ color: '#52c41a' }}>{inputQty}</span>
             </div>
             <div className="rd-qty-item">

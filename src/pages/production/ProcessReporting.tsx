@@ -2694,49 +2694,49 @@ export default function ProcessReporting() {
           <Row gutter={16} style={{ marginBottom: 16 }}>
             <Col span={3}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold' }}>报工数量</span>
+                <span style={{ color: '#666' }}>报工数量</span>
                 <span style={{ fontSize: 18, fontWeight: 'bold', color: '#52c41a', whiteSpace: 'nowrap' }}>{stats.outputQty}</span>
               </Space>
             </Col>
             <Col span={3}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold' }}>投入数量</span>
+                <span style={{ color: '#666' }}>投入数量</span>
                 <span style={{ fontSize: 18, fontWeight: 'bold', color: '#1890ff', whiteSpace: 'nowrap' }}>{stats.inputQty}</span>
               </Space>
             </Col>
             <Col span={3}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold' }}>{selectedReport?.status === '开工' ? '预计产出' : '合格数量'}</span>
+                <span style={{ color: '#666' }}>{selectedReport?.status === '开工' ? '预计产出' : '合格数量'}</span>
                 <span style={{ fontSize: 18, fontWeight: 'bold', color: '#13c2c2', whiteSpace: 'nowrap' }}>{stats.expectedOutput}</span>
               </Space>
             </Col>
             <Col span={3}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold' }}>来料不良汇总</span>
+                <span style={{ color: '#666' }}>来料不良汇总</span>
                 <span style={{ fontSize: 18, fontWeight: 'bold', color: '#faad14', whiteSpace: 'nowrap' }}>{stats.defectMaterial}</span>
               </Space>
             </Col>
             <Col span={3}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold' }}>制程不良汇总</span>
+                <span style={{ color: '#666' }}>制程不良汇总</span>
                 <span style={{ fontSize: 18, fontWeight: 'bold', color: '#fa8c16', whiteSpace: 'nowrap' }}>{stats.defectProcess}</span>
               </Space>
             </Col>
             <Col span={3}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold' }}>检验报废汇总</span>
+                <span style={{ color: '#666' }}>检验报废汇总</span>
                 <span style={{ fontSize: 18, fontWeight: 'bold', color: '#ff4d4f', whiteSpace: 'nowrap' }}>{stats.defectScrap}</span>
               </Space>
             </Col>
             <Col span={3}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold' }}>总异常工时</span>
+                <span style={{ color: '#666' }}>总异常工时</span>
                 <span style={{ fontSize: 18, fontWeight: 'bold', color: '#722ed1', whiteSpace: 'nowrap' }}>{stats.exceptionHours}</span>
               </Space>
             </Col>
             <Col span={3}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold' }}>总人工工时</span>
+                <span style={{ color: '#666' }}>总人工工时</span>
                 <span style={{ fontSize: 18, fontWeight: 'bold', color: '#13c2c2', whiteSpace: 'nowrap' }}>{stats.manpowerHours}</span>
               </Space>
             </Col>

@@ -632,3 +632,15 @@ body {
 [data-dark="true"] .ant-select-item-option-disabled {
   color: var(--text-secondary) !important;
 }
+
+/* Tabs活动页签对比色（PC端） */
+.ant-tabs-nav .ant-tabs-tab.ant-tabs-tab-active {
+  background: #1677ff;
+  color: #fff;
+  border-radius: 6px 6px 0 0;
+  padding: 8px 16px;
+}
+.ant-tabs-nav .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #fff;
+  font-weight: 600;
+}
