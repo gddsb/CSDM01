@@ -137,10 +137,10 @@ export const exceptionRecords = [
 
 // 检验标准
 export const inspectionStandards = [
-  { standard_id: 's1', standard_no: 'STD-900-A', standard_name: '900g奶粉罐成品检验标准', standard_type: '通用标准', customer_code: '-', material_id: 'm1', material_name: '900g奶粉罐', version_no: 'V3', effective_date: '2026-01-01', status: '生效', created_by: 'u4' },
-  { standard_id: 's2', standard_no: 'STD-400-B', standard_name: '400g奶粉罐成品检验标准', standard_type: '通用标准', customer_code: '-', material_id: 'm2', material_name: '400g奶粉罐', version_no: 'V2', effective_date: '2026-01-01', status: '生效', created_by: 'u4' },
-  { standard_id: 's3', standard_no: 'STD-900-YL', standard_name: '伊利专用900g检验标准', standard_type: '客户专用标准', customer_code: 'CUST-001', material_id: 'm1', material_name: '900g奶粉罐', version_no: 'V1', effective_date: '2026-03-15', status: '生效', created_by: 'u4' },
-  { standard_id: 's4', standard_no: 'STD-MAT-M', standard_name: '马口铁基材来料检验标准', standard_type: '通用标准', customer_code: '-', material_id: 'm5', material_name: '马口铁基材', version_no: 'V2', effective_date: '2026-01-01', status: '生效', created_by: 'u4' },
+  { standard_id: 's1', standard_no: 'IPQC-000-001', standard_name: '900g奶粉罐成品检验标准', standard_type: '通用标准', customer_code: '-', material_id: 'm1', material_name: '900g奶粉罐', version_no: 'V3', effective_date: '2026-01-01', status: '生效', created_by: 'u4', inspection_type: '产品检验', description: '产品通用检验标准' },
+  { standard_id: 's2', standard_no: 'IPQC-000-002', standard_name: '400g奶粉罐成品检验标准', standard_type: '通用标准', customer_code: '-', material_id: 'm2', material_name: '400g奶粉罐', version_no: 'V2', effective_date: '2026-01-01', status: '生效', created_by: 'u4', inspection_type: '产品检验', description: '产品通用检验标准' },
+  { standard_id: 's3', standard_no: 'IPQC-ML--001', standard_name: '伊利专用900g检验标准', standard_type: '专用标准', customer_code: 'CUST-001', material_id: 'm1', material_name: '900g奶粉罐', version_no: 'V1', effective_date: '2026-03-15', status: '开立', created_by: 'u4', inspection_type: '产品检验', description: '伊利客户专用检验标准' },
+  { standard_id: 's4', standard_no: 'IQC-000-001', standard_name: '马口铁基材来料检验标准', standard_type: '通用标准', customer_code: '-', material_id: 'm5', material_name: '马口铁基材', version_no: 'V2', effective_date: '2026-01-01', status: '生效', created_by: 'u4', inspection_type: '材料检验', description: '材料通用检验标准' },
 ]
 
 // 来料检验

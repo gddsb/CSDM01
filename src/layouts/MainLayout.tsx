@@ -74,7 +74,6 @@ const defaultMenuItems = [
   {
     key: 'quality', icon: <ExperimentOutlined />, label: '质量管理',
     children: [
-      { key: '/quality/standards', icon: <SafetyCertificateOutlined />, label: '检验标准管理' },
       { key: '/quality/incoming', icon: <ExperimentOutlined />, label: '来料检验' },
       { key: '/quality/process', icon: <ExperimentOutlined />, label: '过程检验' },
       { key: '/quality/finished', icon: <ExperimentOutlined />, label: '成品检验' },
@@ -88,6 +87,8 @@ const defaultMenuItems = [
         ]
       },
       { key: '/quality/instruments', icon: <ToolOutlined />, label: '检测仪器管理' },
+      { key: '/quality/standards', icon: <SafetyCertificateOutlined />, label: '检验标准管理' },
+      { key: '/quality/standard-items', icon: <FileSearchOutlined />, label: '检验标准项目维护' },
     ]
   },
   {

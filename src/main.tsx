@@ -35,6 +35,7 @@ import EnvironmentInspection from './pages/quality/EnvironmentInspection'
 import ComplaintManagement from './pages/quality/ComplaintManagement'
 import SupplierComplaint from './pages/quality/SupplierComplaint'
 import InstrumentManagement from './pages/quality/InstrumentManagement'
+import InspectionStandardItem from './pages/quality/InspectionStandardItem'
 import DeviceArchive from './pages/device/DeviceManagement'
 import CheckRecord from './pages/device/CheckRecord'
 import Maintenance from './pages/device/Maintenance'
@@ -104,6 +105,8 @@ function AppRoutes() {
         <Route path="/quality/complaints" element={<ComplaintManagement />} />
         <Route path="/quality/supplier" element={<SupplierComplaint />} />
         <Route path="/quality/instruments" element={<InstrumentManagement />} />
+        <Route path="/quality/standards" element={<InspectionStandard />} />
+        <Route path="/quality/standard-items" element={<InspectionStandardItem />} />
         <Route path="/device/list" element={<DeviceArchive />} />
         <Route path="/device/check-records" element={<CheckRecord />} />
         <Route path="/device/maintenance" element={<Maintenance />} />
