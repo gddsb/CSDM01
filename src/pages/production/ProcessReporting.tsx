@@ -2191,6 +2191,7 @@ export default function ProcessReporting() {
         savedIds.push(record.id)
       }
       clearDirty(savedIds)
+      fetchReportStats(selectedReport.report_order_id)
       message.success(`已保存 ${recordsToSave.length} 条记录`)
     } catch (err) {
       message.error(err.message || '保存失败')

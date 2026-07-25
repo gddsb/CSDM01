@@ -250,6 +250,26 @@ export default function ReportDetail() {
   const [exceptionList, setExceptionList] = useState([])
   const [manpowerList, setManpowerList] = useState([])
 
+  const [dirtyIds, setDirtyIds] = useState(new Set())
+
+  const markDirty = (id) => {
+    if (!id) return
+    setDirtyIds(prev => {
+      if (prev.has(id)) return prev
+      const next = new Set(prev)
+      next.add(id)
+      return next
+    })
+  }
+
+  const clearDirty = (ids) => {
+    setDirtyIds(prev => {
+      const next = new Set(prev)
+      ;(ids || []).forEach(id => next.delete(id))
+      return next
+    })
+  }
+
   const isEditable = report?.status === 0 || report?.status === '0' || report?.status === '开工'
   const currentTabNeedProcess = TABS.find(t => t.key === activeTab)?.needProcess
 
@@ -328,12 +348,75 @@ export default function ReportDetail() {
       }, 0)
   })()
 
-  // 人工工时汇总（开工状态取当前时间，完工状态取完工时间）
+  // 人工工时汇总（与PC端一致：开工状态取当前时间，完工状态取完工时间，按时间差×人数计算）
   const manpowerHours = (() => {
     if (!report) return 0
-    return (report.manpower_records || [])
-      .reduce((sum, m) => sum + (Number(m.man_hours) || Number(m.work_hours) || 0), 0)
+    const reportStart = report.report_time
+    const allManpowers = report.manpower_records || []
+    if (!reportStart || allManpowers.length === 0) return 0
+    const start = dayjs(reportStart)
+    const end = (report.status === '完工' || report.status === 1) && report.finish_time
+      ? dayjs(report.finish_time)
+      : dayjs()
+    const diffMs = end.valueOf() - start.valueOf()
+    const hours = diffMs > 0 ? Number((diffMs / 3600000).toFixed(2)) : 0
+    return allManpowers.reduce((sum, m) => {
+      const sk = Number(m.skilled_count) || 0
+      const gn = Number(m.general_count) || 0
+      const lb = Number(m.labor_count) || 0
+      const ot = Number(m.other_count) || 0
+      const total_people = sk + gn + lb + ot
+      return sum + Number((hours * total_people).toFixed(2))
+    }, 0)
   })()
+
+  // 检查是否有未保存的记录
+  const hasUnsavedChanges = (() => {
+    if (!isEditable) return false
+    if (dirtyIds.size > 0) return true
+    if (activeTab === 'defect') {
+      return prodDefectList.some(d => String(d.id).startsWith('tmp_'))
+    }
+    if (activeTab === 'material') {
+      return materialList.some(m => String(m.id).startsWith('tmp_'))
+    }
+    if (activeTab === 'scrap') {
+      return scrapList.some(d => String(d.id).startsWith('tmp_'))
+    }
+    if (activeTab === 'exception') {
+      return exceptionList.some(e => String(e.id).startsWith('tmp_'))
+    }
+    return false
+  })()
+
+  // 监听浏览器关闭/刷新（仅在有未保存记录时提示）
+  useEffect(() => {
+    if (!hasUnsavedChanges) return
+    const handler = (e) => {
+      e.preventDefault()
+      e.returnValue = ''
+      return ''
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [hasUnsavedChanges])
+
+  // 切换页签前若有未保存记录则提示
+  const handleTabChange = async (newTab) => {
+    if (!hasUnsavedChanges || newTab === activeTab) {
+      setActiveTab(newTab)
+      return
+    }
+    const confirmed = await Dialog.confirm({
+      title: '存在未保存的记录',
+      content: '当前页签有未保存的记录，离开将丢失这些数据。是否确认离开？',
+      confirmText: '确认离开',
+      cancelText: '继续编辑',
+    })
+    if (confirmed) {
+      setActiveTab(newTab)
+    }
+  }
 
   const handleFinish = async () => {
     if (!report) return
@@ -442,6 +525,7 @@ export default function ReportDetail() {
   }
 
   const refreshAllData = useCallback(async () => {
+    setDirtyIds(new Set())
     await Promise.all([fetchReport(), fetchGlobalData()])
   }, [id])
 
@@ -591,7 +675,7 @@ export default function ReportDetail() {
           <div
             key={t.key}
             className={`mobile-tab ${activeTab === t.key ? 'active' : ''}`}
-            onClick={() => setActiveTab(t.key)}
+            onClick={() => handleTabChange(t.key)}
           >
             {t.title}
           </div>
@@ -613,6 +697,7 @@ export default function ReportDetail() {
             onProcessChange={setSelectedProcessId}
             showProcess={currentTabNeedProcess && processes.length > 0}
             onDataSaved={refreshAllData}
+            onDirty={markDirty}
           />
         )}
 
@@ -629,6 +714,7 @@ export default function ReportDetail() {
             onProcessChange={setSelectedProcessId}
             showProcess={currentTabNeedProcess && processes.length > 0}
             onDataSaved={refreshAllData}
+            onDirty={markDirty}
           />
         )}
 
@@ -642,6 +728,7 @@ export default function ReportDetail() {
             reportOrderId={id}
             reportNo={report?.report_no}
             onDataSaved={refreshAllData}
+            onDirty={markDirty}
           />
         )}
 
@@ -655,6 +742,7 @@ export default function ReportDetail() {
             reportNo={report?.report_no}
             reportTime={report.report_time}
             onDataSaved={refreshAllData}
+            onDirty={markDirty}
           />
         )}
 
@@ -668,6 +756,7 @@ export default function ReportDetail() {
             reportStatus={report.status}
             reportFinishTime={report.finish_time}
             onDataSaved={refreshAllData}
+            onDirty={markDirty}
           />
         )}
       </div>
@@ -675,7 +764,7 @@ export default function ReportDetail() {
   )
 }
 
-function DefectTab({ list, setList, options, isEditable, category, reportOrderId, reportNo, processId, processes, onProcessChange, showProcess, onDataSaved }) {
+function DefectTab({ list, setList, options, isEditable, category, reportOrderId, reportNo, processId, processes, onProcessChange, showProcess, onDataSaved, onDirty }) {
   const [saving, setSaving] = useState(false)
   const [imgModal, setImgModal] = useState({ visible: false, recordId: null })
 
@@ -768,6 +857,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
   const handleModalUpload = (uploaded) => {
     const recordId = imgModal.recordId
     if (!recordId) return
+    onDirty && onDirty(recordId)
     setList(prev => prev.map(item => {
       if (item.id !== recordId) return item
       return { ...item, images: [...(item.images || []), ...uploaded] }
@@ -777,6 +867,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
   const handleModalRemove = (imageIndex) => {
     const recordId = imgModal.recordId
     if (!recordId) return
+    onDirty && onDirty(recordId)
     setList(prev => prev.map(item => {
       if (item.id !== recordId) return item
       const images = [...(item.images || [])]
@@ -789,6 +880,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
   const currentImages = currentRecord?.images || []
 
   const handleChangeDefect = (recordId, field, value) => {
+    onDirty && onDirty(recordId)
     setList(prev => prev.map(item => {
       if (item.id !== recordId) return item
       const next = { ...item, [field]: value }
@@ -934,7 +1026,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
   )
 }
 
-function MaterialTab({ list, setList, options, isEditable, reportOrderId, reportNo, processId, processes, onProcessChange, showProcess, onDataSaved }) {
+function MaterialTab({ list, setList, options, isEditable, reportOrderId, reportNo, processId, processes, onProcessChange, showProcess, onDataSaved, onDirty }) {
   const [saving, setSaving] = useState(false)
   const [imgModal, setImgModal] = useState({ visible: false, recordId: null })
 
@@ -1059,6 +1151,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
   const handleModalUpload = (uploaded) => {
     const recordId = imgModal.recordId
     if (!recordId) return
+    onDirty && onDirty(recordId)
     setList(prev => prev.map(item => {
       if (item.id !== recordId) return item
       return { ...item, images: [...(item.images || []), ...uploaded] }
@@ -1068,6 +1161,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
   const handleModalRemove = (imageIndex) => {
     const recordId = imgModal.recordId
     if (!recordId) return
+    onDirty && onDirty(recordId)
     setList(prev => prev.map(item => {
       if (item.id !== recordId) return item
       const images = [...(item.images || [])]
@@ -1080,6 +1174,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
   const currentImages = currentRecord?.images || []
 
   const handleChangeMaterial = (recordId, field, value) => {
+    onDirty && onDirty(recordId)
     setList(prev => prev.map(item => {
       if (item.id !== recordId) return item
       const next = { ...item, [field]: value }
@@ -1266,7 +1361,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
   )
 }
 
-function ScrapTab({ list, setList, options, isEditable, category, reportOrderId, reportNo, onDataSaved }) {
+function ScrapTab({ list, setList, options, isEditable, category, reportOrderId, reportNo, onDataSaved, onDirty }) {
   const [saving, setSaving] = useState(false)
 
   const handleAdd = async () => {
@@ -1329,6 +1424,7 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId,
   }
 
   const handleChange = (recordId, field, value) => {
+    onDirty && onDirty(recordId)
     setList(prev => prev.map(item => {
       if (item.id !== recordId) return item
       const next = { ...item, [field]: value }
@@ -1437,7 +1533,7 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId,
   )
 }
 
-function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, reportNo, reportTime, onDataSaved }) {
+function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, reportNo, reportTime, onDataSaved, onDirty }) {
   const [saving, setSaving] = useState(false)
   const exceptionCategories = ['故障维修', '来料异常', '停机待料', '其它异常']
 
@@ -1509,6 +1605,7 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
   }
 
   const handleChange = (recordId, field, value) => {
+    onDirty && onDirty(recordId)
     setList(prev => prev.map(item => {
       if (item.id !== recordId) return item
       const next = { ...item, [field]: value }
@@ -1539,6 +1636,7 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
         })
         const uploaded = res.data || []
         if (uploaded.length > 0) {
+          onDirty && onDirty(recordId)
           setList(prev => prev.map(item => {
             if (item.id !== recordId) return item
             return { ...item, images: [...(item.images || []), ...uploaded] }
@@ -1553,6 +1651,7 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
   }
 
   const handleRemoveImage = (recordId, imageIndex) => {
+    onDirty && onDirty(recordId)
     setList(prev => prev.map(item => {
       if (item.id !== recordId) return item
       const images = [...(item.images || [])]
@@ -1572,6 +1671,11 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
 
     if (dayjs(newTime).isAfter(dayjs())) {
       Toast.show({ icon: 'fail', content: '不能选择未来时间' })
+      return
+    }
+
+    if (field === 'start_time' && reportTime && dayjs(newTime).isBefore(dayjs(reportTime))) {
+      Toast.show({ icon: 'fail', content: '开始时间不能早于报工时间' })
       return
     }
 
@@ -1751,7 +1855,7 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
   )
 }
 
-function ManpowerTab({ list, setList, isEditable, reportOrderId, reportTime, reportStatus, reportFinishTime, onDataSaved }) {
+function ManpowerTab({ list, setList, isEditable, reportOrderId, reportTime, reportStatus, reportFinishTime, onDataSaved, onDirty }) {
   const [saving, setSaving] = useState(false)
 
   const calcManpowerHours = () => {
@@ -1779,6 +1883,7 @@ function ManpowerTab({ list, setList, isEditable, reportOrderId, reportTime, rep
 
   const handleChange = (recordId, field, value) => {
     if (!isEditable) return
+    onDirty && onDirty(recordId)
     setList(prev => prev.map(item => {
       if (String(item.id) !== String(recordId)) return item
       return { ...item, [field]: value }
