@@ -195,15 +195,7 @@ const MaterialManagement = () => {
     { title: '品名', dataIndex: 'material_name', key: 'material_name' },
     { title: '规格', dataIndex: 'specification', key: 'specification', width: 120 },
     { title: '单位名称', dataIndex: 'unit_name', key: 'unit_name', width: 80 },
-    {
-      title: '关联客户', dataIndex: 'customer_id', key: 'customer_id', width: 140,
-      render: (v) => {
-        if (!v) return '-'
-        const opt = customerOptions.find(c => c.value === v)
-        return opt ? opt.label : `#${v}`
-      },
-    },
-    { title: '菲林编号', dataIndex: 'film_no', key: 'film_no', width: 100 },
+
     { title: '版本号', dataIndex: 'version_no', key: 'version_no', width: 80, render: v => formatVersionNo(v) },
     {
       title: '是否生效', dataIndex: 'is_active', key: 'is_active', width: 80,
@@ -300,41 +292,14 @@ const MaterialManagement = () => {
             </Col>
           </Row>
           <Row gutter={12}>
-            <Col span={16}>
-              <Form.Item name="customer_id" label="关联客户">
-                <Select
-                  placeholder="请选择关联客户"
-                  allowClear
-                  showSearch
-                  filterOption={(input, option) => {
-                    const keyword = input.toLowerCase()
-                    return (
-                      option.customer_code.toLowerCase().includes(keyword) ||
-                      option.customer_name.toLowerCase().includes(keyword)
-                    )
-                  }}
-                  searchValue={customerSearchValue}
-                  onSearch={v => setCustomerSearchValue(v)}
-                  options={customerOptions}
-                  style={{ width: '100%' }}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={8}>
+            <Col span={12}>
               <Form.Item name="specification" label="规格">
                 <Input placeholder="请输入规格" />
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col span={12}>
               <Form.Item name="unit_name" label="单位名称" rules={[{ required: true, message: '请输入单位名称' }]}>
                 <Input placeholder="请输入单位名称" />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="film_no" label="菲林编号">
-                <Input placeholder="请输入菲林编号" />
               </Form.Item>
             </Col>
           </Row>
@@ -455,17 +420,11 @@ const MaterialManagement = () => {
             <Descriptions.Item label="品名">{current.material_name}</Descriptions.Item>
             <Descriptions.Item label="规格">{current.specification || '-'}</Descriptions.Item>
             <Descriptions.Item label="单位名称">{current.unit_name || '-'}</Descriptions.Item>
-            <Descriptions.Item label="菲林编号">{current.film_no || '-'}</Descriptions.Item>
             <Descriptions.Item label="版本号">{formatVersionNo(current.version_no)}</Descriptions.Item>
             <Descriptions.Item label="开料尺寸">{current.cutting_size || '-'}</Descriptions.Item>
             <Descriptions.Item label="印刷工艺">{current.printing_process || '-'}</Descriptions.Item>
             <Descriptions.Item label="分色信息">{current.color_separation || '-'}</Descriptions.Item>
             <Descriptions.Item label="边角料重量(g)">{current.scrap_weight || '-'}</Descriptions.Item>
-            <Descriptions.Item label="关联客户">{(() => {
-              if (!current.customer_id) return '-'
-              const opt = customerOptions.find(c => c.value === current.customer_id)
-              return opt ? opt.label : `#${current.customer_id}`
-            })()}</Descriptions.Item>
             <Descriptions.Item label="是否生效"><Tag color={current.is_active ? 'green' : 'red'}>{current.is_active ? '生效' : '失效'}</Tag></Descriptions.Item>
             <Descriptions.Item label="生效日期">{current.effective_date?.substring(0, 16) || '-'}</Descriptions.Item>
             <Descriptions.Item label="失效日期">{current.expiry_date?.substring(0, 16) || '-'}</Descriptions.Item>
