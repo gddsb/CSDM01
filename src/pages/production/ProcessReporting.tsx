@@ -2084,6 +2084,18 @@ export default function ProcessReporting() {
     },
     { title: '时长(小时)', dataIndex: 'duration', key: 'duration', width: 100 },
     {
+      title: '异常描述', dataIndex: 'description', key: 'description', width: 200,
+      render: (val, record) => isEditable ? (
+        <Input
+          placeholder="请输入异常描述"
+          value={val || ''}
+          onChange={(e) => handleExceptionChange(record.id, 'description', e.target.value)}
+          size="small"
+          maxLength={200}
+        />
+      ) : val || '-',
+    },
+    {
       title: '图片', dataIndex: 'exception_images', key: 'exception_images', width: 100,
       render: (val, record) => (
         <Button type="link" size="small" icon={<PictureOutlined />}
