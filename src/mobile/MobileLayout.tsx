@@ -51,6 +51,14 @@ export default function MobileLayout() {
   }, [])
 
   useEffect(() => {
+    if (
+      location.pathname === '/mobile/orders' ||
+      location.pathname.startsWith('/mobile/orders/') ||
+      location.pathname.startsWith('/mobile/reporting')
+    ) {
+      setActiveKey('/mobile/orders')
+      return
+    }
     const matched = tabs.find(t => location.pathname === t.key || location.pathname.startsWith(t.key + '/'))
     if (matched) setActiveKey(matched.key)
   }, [location.pathname])
@@ -60,13 +68,6 @@ export default function MobileLayout() {
   }, [systemConfig.system_name, loadSystemConfig])
 
   const handleTabChange = (key) => {
-    if (
-      location.pathname === '/mobile/orders' ||
-      location.pathname.startsWith('/mobile/orders/') ||
-      location.pathname.startsWith('/mobile/reporting/')
-    ) {
-      return
-    }
     setActiveKey(key)
     navigate(key)
   }
