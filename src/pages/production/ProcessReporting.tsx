@@ -2585,22 +2585,30 @@ export default function ProcessReporting() {
         {selectedReport && (
           <Row gutter={16}>
             <Col span={4}>
-              <div style={{ color: '#666' }}>报工单号</div>
-              <div style={{ fontWeight: 'bold' }}>{selectedReport.report_no}</div>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>报工单号</span>
+                <span style={{ fontWeight: 'bold' }}>{selectedReport.report_no}</span>
+              </Space>
             </Col>
             <Col span={4}>
-              <div style={{ color: '#666' }}>订单编号</div>
-              <div>{selectedReport.order_no || '-'}</div>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>订单编号</span>
+                <span>{selectedReport.order_no || '-'}</span>
+              </Space>
             </Col>
             <Col span={4}>
-              <div style={{ color: '#666' }}>产线</div>
-              <div>{selectedReport.line_name || '-'}</div>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>产线</span>
+                <span>{selectedReport.line_name || '-'}</span>
+              </Space>
             </Col>
             <Col span={4}>
-              <div style={{ color: '#666' }}>报工状态</div>
-              <Tag color={reportOrderStatusMap[selectedReport.status as 0 | 1]?.color || 'default'}>
-                {reportOrderStatusMap[selectedReport.status as 0 | 1]?.label || '-'}
-              </Tag>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>报工状态</span>
+                <Tag color={reportOrderStatusMap[selectedReport.status as 0 | 1]?.color || 'default'}>
+                  {reportOrderStatusMap[selectedReport.status as 0 | 1]?.label || '-'}
+                </Tag>
+              </Space>
             </Col>
           </Row>
         )}
@@ -2608,26 +2616,36 @@ export default function ProcessReporting() {
         {selectedReport && (
           <Row gutter={16} style={{ marginTop: 12 }}>
             <Col span={4}>
-              <div style={{ color: '#666' }}>物料编码</div>
-              <div>{selectedReport.material_code || '-'}</div>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>物料编码</span>
+                <span>{selectedReport.material_code || '-'}</span>
+              </Space>
             </Col>
             <Col span={5}>
-              <div style={{ color: '#666' }}>产品名称</div>
-              <div>{selectedReport.material_name || '-'}</div>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>产品名称</span>
+                <span>{selectedReport.material_name || '-'}</span>
+              </Space>
             </Col>
             <Col span={4}>
-              <div style={{ color: '#666' }}>规格</div>
-              <div>{selectedReport.specification || '-'}</div>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>规格</span>
+                <span>{selectedReport.specification || '-'}</span>
+              </Space>
             </Col>
             <Col span={4}>
-              <div style={{ color: '#666' }}>菲林版本</div>
-              <div>
-                {formatFilmVersion(selectedReport.order?.film_version, selectedReport.order?.version_no) || '-'}
-              </div>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>菲林版本</span>
+                <span>
+                  {formatFilmVersion(selectedReport.order?.film_version, selectedReport.order?.version_no) || '-'}
+                </span>
+              </Space>
             </Col>
             <Col span={4}>
-              <div style={{ color: '#666' }}>条形码</div>
-              <div>{selectedReport.order?.barcode || '-'}</div>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>条形码</span>
+                <span>{selectedReport.order?.barcode || '-'}</span>
+              </Space>
             </Col>
           </Row>
         )}
@@ -2635,24 +2653,34 @@ export default function ProcessReporting() {
         {selectedReport && (
           <Row gutter={16} style={{ marginTop: 12 }}>
             <Col span={4}>
-              <div style={{ color: '#666' }}>报工时间</div>
-              <div>{selectedReport.report_time ? dayjs(selectedReport.report_time).format('YYYY-MM-DD HH:mm') : '-'}</div>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>报工时间</span>
+                <span>{selectedReport.report_time ? dayjs(selectedReport.report_time).format('YYYY-MM-DD HH:mm') : '-'}</span>
+              </Space>
             </Col>
             <Col span={4}>
-              <div style={{ color: '#666' }}>完工时间</div>
-              <div>{selectedReport.finish_time ? dayjs(selectedReport.finish_time).format('YYYY-MM-DD HH:mm') : '-'}</div>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>完工时间</span>
+                <span>{selectedReport.finish_time ? dayjs(selectedReport.finish_time).format('YYYY-MM-DD HH:mm') : '-'}</span>
+              </Space>
             </Col>
             <Col span={4}>
-              <div style={{ color: '#666' }}>报工人</div>
-              <div>{selectedReport.report_user_name || '-'}</div>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>报工人</span>
+                <span>{selectedReport.report_user_name || '-'}</span>
+              </Space>
             </Col>
             <Col span={4}>
-              <div style={{ color: '#666' }}>完工人</div>
-              <div>{selectedReport.finish_user_name || '-'}</div>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>完工人</span>
+                <span>{selectedReport.finish_user_name || '-'}</span>
+              </Space>
             </Col>
             <Col span={4}>
-              <div style={{ color: '#666' }}>关闭人</div>
-              <div>{selectedReport.close_user_name || '-'}</div>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>关闭人</span>
+                <span>{selectedReport.close_user_name || '-'}</span>
+              </Space>
             </Col>
           </Row>
         )}
@@ -2673,36 +2701,52 @@ export default function ProcessReporting() {
           <div style={{ marginBottom: 8, fontWeight: 'bold', color: '#333' }}>报工单统计（当前报工单汇总）</div>
           <Row gutter={16} style={{ marginBottom: 16 }}>
             <Col span={3}>
-              <div style={{ color: '#666' }}>报工数量</div>
-              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#52c41a' }}>{stats.outputQty}</div>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>报工数量</span>
+                <span style={{ fontSize: 18, fontWeight: 'bold', color: '#52c41a' }}>{stats.outputQty}</span>
+              </Space>
             </Col>
             <Col span={3}>
-              <div style={{ color: '#666' }}>投入数量</div>
-              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#1890ff' }}>{stats.inputQty}</div>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>投入数量</span>
+                <span style={{ fontSize: 18, fontWeight: 'bold', color: '#1890ff' }}>{stats.inputQty}</span>
+              </Space>
             </Col>
             <Col span={3}>
-              <div style={{ color: '#666' }}>{selectedReport?.status === '开工' ? '预计产出' : '合格数量'}</div>
-              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#13c2c2' }}>{stats.expectedOutput}</div>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>{selectedReport?.status === '开工' ? '预计产出' : '合格数量'}</span>
+                <span style={{ fontSize: 18, fontWeight: 'bold', color: '#13c2c2' }}>{stats.expectedOutput}</span>
+              </Space>
             </Col>
             <Col span={3}>
-              <div style={{ color: '#666' }}>来料不良汇总</div>
-              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#faad14' }}>{stats.defectMaterial}</div>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>来料不良汇总</span>
+                <span style={{ fontSize: 18, fontWeight: 'bold', color: '#faad14' }}>{stats.defectMaterial}</span>
+              </Space>
             </Col>
             <Col span={3}>
-              <div style={{ color: '#666' }}>制程不良汇总</div>
-              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#fa8c16' }}>{stats.defectProcess}</div>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>制程不良汇总</span>
+                <span style={{ fontSize: 18, fontWeight: 'bold', color: '#fa8c16' }}>{stats.defectProcess}</span>
+              </Space>
             </Col>
             <Col span={3}>
-              <div style={{ color: '#666' }}>检验报废汇总</div>
-              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#ff4d4f' }}>{stats.defectScrap}</div>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>检验报废汇总</span>
+                <span style={{ fontSize: 18, fontWeight: 'bold', color: '#ff4d4f' }}>{stats.defectScrap}</span>
+              </Space>
             </Col>
             <Col span={3}>
-              <div style={{ color: '#666' }}>异常工时汇总</div>
-              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#722ed1' }}>{stats.exceptionHours}</div>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>异常工时汇总</span>
+                <span style={{ fontSize: 18, fontWeight: 'bold', color: '#722ed1' }}>{stats.exceptionHours}</span>
+              </Space>
             </Col>
             <Col span={3}>
-              <div style={{ color: '#666' }}>人工工时汇总</div>
-              <div style={{ fontSize: 18, fontWeight: 'bold', color: '#13c2c2' }}>{stats.manpowerHours}</div>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>人工工时汇总</span>
+                <span style={{ fontSize: 18, fontWeight: 'bold', color: '#13c2c2' }}>{stats.manpowerHours}</span>
+              </Space>
             </Col>
           </Row>
 
