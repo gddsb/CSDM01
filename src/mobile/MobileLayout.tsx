@@ -60,6 +60,13 @@ export default function MobileLayout() {
   }, [systemConfig.system_name, loadSystemConfig])
 
   const handleTabChange = (key) => {
+    if (
+      location.pathname === '/mobile/orders' ||
+      location.pathname.startsWith('/mobile/orders/') ||
+      location.pathname.startsWith('/mobile/reporting/')
+    ) {
+      return
+    }
     setActiveKey(key)
     navigate(key)
   }

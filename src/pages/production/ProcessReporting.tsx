@@ -2604,37 +2604,6 @@ export default function ProcessReporting() {
             </Col>
             <Col span={4}>
               <Space size={4} align="baseline">
-                <span style={{ color: '#666' }}>报工状态</span>
-                <Tag color={reportOrderStatusMap[selectedReport.status as 0 | 1]?.color || 'default'}>
-                  {reportOrderStatusMap[selectedReport.status as 0 | 1]?.label || '-'}
-                </Tag>
-              </Space>
-            </Col>
-          </Row>
-        )}
-
-        {selectedReport && (
-          <Row gutter={16} style={{ marginTop: 12 }}>
-            <Col span={4}>
-              <Space size={4} align="baseline">
-                <span style={{ color: '#666' }}>物料编码</span>
-                <span>{selectedReport.material_code || '-'}</span>
-              </Space>
-            </Col>
-            <Col span={5}>
-              <Space size={4} align="baseline">
-                <span style={{ color: '#666' }}>产品名称</span>
-                <span>{selectedReport.material_name || '-'}</span>
-              </Space>
-            </Col>
-            <Col span={4}>
-              <Space size={4} align="baseline">
-                <span style={{ color: '#666' }}>规格</span>
-                <span>{selectedReport.specification || '-'}</span>
-              </Space>
-            </Col>
-            <Col span={4}>
-              <Space size={4} align="baseline">
                 <span style={{ color: '#666' }}>菲林版本</span>
                 <span>
                   {formatFilmVersion(selectedReport.order?.film_version, selectedReport.order?.version_no) || '-'}
@@ -2645,6 +2614,29 @@ export default function ProcessReporting() {
               <Space size={4} align="baseline">
                 <span style={{ color: '#666' }}>条形码</span>
                 <span>{selectedReport.order?.barcode || '-'}</span>
+              </Space>
+            </Col>
+          </Row>
+        )}
+
+        {selectedReport && (
+          <Row gutter={16} style={{ marginTop: 12 }}>
+            <Col span={4}>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>物料编号</span>
+                <span>{selectedReport.material_code || '-'}</span>
+              </Space>
+            </Col>
+            <Col span={4}>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>产品规格</span>
+                <span>{selectedReport.specification || '-'}</span>
+              </Space>
+            </Col>
+            <Col span={8}>
+              <Space size={4} align="baseline">
+                <span style={{ color: '#666' }}>产品名称</span>
+                <span>{selectedReport.material_name || '-'}</span>
               </Space>
             </Col>
           </Row>
