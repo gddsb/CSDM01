@@ -1,16 +1,13 @@
 import React, { useState } from 'react'
-import { Table, Tag, Button, Drawer, Space, Modal, Form, Input, Select, Descriptions, Typography, Row, Col } from 'antd'
+import { Table, Tag, Button, Space, Modal, Form, Input, Select, Typography, Row, Col } from 'antd'
 import { useMessage } from '../../contexts/AppContext'
 import {
   FileProtectOutlined, AppstoreOutlined, SolutionOutlined,
-  CheckCircleOutlined, CopyOutlined, UpCircleOutlined, SearchOutlined,
-  PlusOutlined, DeleteOutlined
+  CheckCircleOutlined, SearchOutlined, PlusOutlined, EyeOutlined, EditOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import { inspectionStandards, materials } from '../../mock/data'
-
-const { Text } = Typography
 
 const categoryColor: Record<string, string> = { '外观': 'blue', '理化': 'purple', '尺寸': 'cyan', '性能': 'orange', '微生物': 'green', '环境': 'geekblue' }
 
@@ -75,17 +72,10 @@ const generateStandardNo = (data: any[], inspectionType: string, standardType: s
   return `${prefix}-${typeCode}-${nextSeq}`
 }
 
-const nextVersion = (v: string): string => {
-  const match = v.match(/^V(\d+)$/i)
-  if (match) return 'V' + (parseInt(match[1], 10) + 1)
-  return 'V1'
-}
-
 export default function InspectionStandard() {
   const [data, setData] = useState(inspectionStandards)
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const [currentStandard, setCurrentStandard] = useState<any>(null)
   const [editing, setEditing] = useState<any>(null)
+  const [viewMode, setViewMode] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [itemModalVisible, setItemModalVisible] = useState(false)
   const [itemEditing, setItemEditing] = useState<any>(null)
@@ -115,13 +105,6 @@ export default function InspectionStandard() {
     { type: 'select', placeholder: '状态', options: statusOptions },
   ]
 
-  const showItems = (record: any) => {
-    setCurrentStandard(record)
-    const items = (window as any).__standardItems?.[record.standard_id] || []
-    setStandardItems(items)
-    setDrawerOpen(true)
-  }
-
   const refreshStandardNo = (vals: any) => {
     if (!vals.inspection_type || !vals.standard_type) return
     const matCode = vals.material_id ? materials.find((m: any) => m.material_id === vals.material_id)?.material_code : undefined
@@ -131,6 +114,8 @@ export default function InspectionStandard() {
 
   const handleAdd = () => {
     setEditing(null)
+    setViewMode(false)
+    setStandardItems([])
     form.resetFields()
     form.setFieldsValue({
       inspection_type: '材料检验',
@@ -143,59 +128,23 @@ export default function InspectionStandard() {
     setModalVisible(true)
   }
 
-  const handleCopy = (record: any) => {
-    setEditing({ ...record, __copy: true })
-    form.resetFields()
-    const matCode = record.material_id ? materials.find((m: any) => m.material_id === record.material_id)?.material_code : undefined
-    const newNo = generateStandardNo(data, record.inspection_type, record.standard_type, matCode)
+  const handleView = (record: any) => {
+    setEditing(record)
+    setViewMode(true)
+    const items = (window as any).__standardItems?.[record.standard_id] || []
+    setStandardItems(items)
     form.setFieldsValue({
-      inspection_type: record.inspection_type,
-      standard_type: record.standard_type,
-      material_id: record.material_id,
-      standard_no: newNo,
-      standard_name: '',
-      version: 'V1',
-      status: '开立',
-      description: record.description,
+      ...record,
+      version: record.version_no,
     })
     setModalVisible(true)
-    message.info('已复制，标准编号已重新生成，版本重置为V1，请修改标准名称')
-  }
-
-  const handleRevise = (record: any) => {
-    Modal.confirm({
-      title: '确认改版',
-      content: `确定要对标准"${record.standard_name}"进行改版吗？改版后版本将从 ${record.version_no} 升级为 ${nextVersion(record.version_no)}，旧版自动失效。`,
-      okText: '确认改版',
-      cancelText: '取消',
-      onOk: () => {
-        const matCode = record.material_id ? materials.find((m: any) => m.material_id === record.material_id)?.material_code : undefined
-        const newNo = generateStandardNo(data, record.inspection_type, record.standard_type, matCode)
-        const newVersion = nextVersion(record.version_no)
-        const newStandard = {
-          standard_id: 's' + Date.now(),
-          standard_no: newNo,
-          standard_name: record.standard_name,
-          standard_type: record.standard_type,
-          customer_code: record.customer_code,
-          material_id: record.material_id,
-          material_name: record.material_name,
-          version_no: newVersion,
-          effective_date: dayjs().format('YYYY-MM-DD'),
-          status: '开立',
-          created_by: 'u4',
-          inspection_type: record.inspection_type,
-          description: record.description,
-        }
-        setData(prev => prev.map((s: any) => s.standard_id === record.standard_id ? { ...s, status: '失效' } : s))
-        setData(prev => [newStandard, ...prev])
-        message.success(`改版成功，新版本 ${newVersion} 已创建，旧版已失效`)
-      },
-    })
   }
 
   const handleEdit = (record: any) => {
     setEditing(record)
+    setViewMode(false)
+    const items = (window as any).__standardItems?.[record.standard_id] || []
+    setStandardItems(items)
     form.setFieldsValue({
       ...record,
       version: record.version_no,
@@ -204,18 +153,21 @@ export default function InspectionStandard() {
   }
 
   const handleInspectionTypeChange = () => {
+    if (viewMode) return
     const vals = form.getFieldsValue()
-    if (!editing || editing.__copy) refreshStandardNo(vals)
+    if (!editing) refreshStandardNo(vals)
   }
 
   const handleStandardTypeChange = () => {
+    if (viewMode) return
     const vals = form.getFieldsValue()
-    if (!editing || editing.__copy) refreshStandardNo(vals)
+    if (!editing) refreshStandardNo(vals)
   }
 
   const handleMaterialChange = (val: string) => {
+    if (viewMode) return
     const vals = form.getFieldsValue()
-    if ((!editing || editing.__copy) && vals.standard_type === '专用标准') {
+    if (!editing && vals.standard_type === '专用标准') {
       const matCode = val ? materials.find((m: any) => m.material_id === val)?.material_code : undefined
       const newNo = generateStandardNo(data, vals.inspection_type, vals.standard_type, matCode)
       form.setFieldsValue({ standard_no: newNo })
@@ -226,7 +178,7 @@ export default function InspectionStandard() {
     try {
       const values = await form.validateFields()
       const material = values.material_id ? materials.find((m: any) => m.material_id === values.material_id) : null
-      if (editing && !editing.__copy) {
+      if (editing) {
         setData(prev => prev.map((s: any) => s.standard_id === editing.standard_id ? {
           ...s,
           standard_no: values.standard_no,
@@ -239,6 +191,8 @@ export default function InspectionStandard() {
           status: values.status,
           description: values.description,
         } : s))
+        if (!(window as any).__standardItems) (window as any).__standardItems = {}
+        (window as any).__standardItems[editing.standard_id] = standardItems
         message.success('检验标准编辑成功')
       } else {
         const newStandard = {
@@ -257,6 +211,8 @@ export default function InspectionStandard() {
           description: values.description,
         }
         setData(prev => [newStandard, ...prev])
+        if (!(window as any).__standardItems) (window as any).__standardItems = {}
+        (window as any).__standardItems[newStandard.standard_id] = standardItems
         message.success('检验标准新增成功')
       }
       setModalVisible(false)
@@ -290,10 +246,6 @@ export default function InspectionStandard() {
       cancelText: '取消',
       onOk: () => {
         setStandardItems(prev => prev.filter((i: any) => i.id !== record.id))
-        if (currentStandard) {
-          if (!(window as any).__standardItems) (window as any).__standardItems = {}
-          (window as any).__standardItems[currentStandard.standard_id] = standardItems.filter((i: any) => i.id !== record.id)
-        }
         message.success('删除成功')
       },
     })
@@ -309,10 +261,6 @@ export default function InspectionStandard() {
         const newItem = { id: 'it' + Date.now(), ...values }
         setStandardItems(prev => [...prev, newItem])
         message.success('检验项目新增成功')
-      }
-      if (currentStandard) {
-        if (!(window as any).__standardItems) (window as any).__standardItems = {}
-        (window as any).__standardItems[currentStandard.standard_id] = [...standardItems, !itemEditing ? { id: 'it' + Date.now(), ...values } : null].filter(Boolean)
       }
       setItemModalVisible(false)
     } catch (e) {
@@ -340,28 +288,33 @@ export default function InspectionStandard() {
       }
     },
     {
-      title: '操作', key: 'action', width: 320, fixed: 'right',
+      title: '操作', key: 'action', width: 140, fixed: 'right',
       render: (_: any, record: any) => (
         <Space size="small">
-          <Button type="link" size="small" onClick={() => showItems(record)}>项目维护</Button>
-          <Button type="link" size="small" icon={<CopyOutlined />} onClick={() => handleCopy(record)}>复制</Button>
-          <Button type="link" size="small" icon={<UpCircleOutlined />} onClick={() => handleRevise(record)} disabled={record.status === '失效'}>改版</Button>
-          <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
+          {record.status === '开立' ? (
+            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
+          ) : (
+            <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(record)}>查看</Button>
+          )}
         </Space>
       )
     },
   ]
 
-  const itemColumns = [
+  const itemTableColumns = [
     { title: '项目名称', dataIndex: 'item_name', key: 'item_name' },
     {
       title: '大类', dataIndex: 'category', key: 'category', width: 90,
       render: (v: string) => <Tag color={categoryColor[v] || 'default'}>{v}</Tag>
     },
     { title: '检验方法', dataIndex: 'method', key: 'method' },
-    { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 150 },
-    { title: '标准值', dataIndex: 'standard_value', key: 'standard_value', width: 160 },
+    { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 140 },
+    { title: '标准值', dataIndex: 'standard_value', key: 'standard_value', width: 140 },
     { title: '单位', dataIndex: 'unit', key: 'unit', width: 70 },
+  ]
+
+  const itemTableColumnsWithAction = [
+    ...itemTableColumns,
     {
       title: '操作', key: 'action', width: 140, fixed: 'right',
       render: (_: any, record: any) => (
@@ -372,6 +325,8 @@ export default function InspectionStandard() {
       )
     },
   ]
+
+  const disabledInput = <Input disabled placeholder="系统自动生成" />
 
   return (
     <>
@@ -387,18 +342,19 @@ export default function InspectionStandard() {
             dataSource={data}
             rowKey="standard_id"
             size="small"
-            scroll={{ x: 1200 }}
+            scroll={{ x: 1100 }}
             pagination={{ pageSize: 30, showSizeChanger: true, showTotal: (t: number) => `共 ${t} 条` }}
           />
         }
       />
       <Modal
-        title={editing ? (editing.__copy ? '复制检验标准' : '编辑检验标准') : '新增检验标准'}
+        title={viewMode ? '查看检验标准' : (editing ? '编辑检验标准' : '新增检验标准')}
         open={modalVisible}
-        onOk={handleSubmit}
+        onOk={viewMode ? undefined : handleSubmit}
         onCancel={() => setModalVisible(false)}
         okText="保存"
-        cancelText="取消"
+        cancelText={viewMode ? '关闭' : '取消'}
+        footer={viewMode ? [<Button key="close" onClick={() => setModalVisible(false)}>关闭</Button>] : undefined}
         width={800}
         destroyOnHidden
       >
@@ -406,24 +362,24 @@ export default function InspectionStandard() {
           <Row gutter={12}>
             <Col span={8}>
               <Form.Item name="standard_no" label="标准编号" rules={[{ required: true, message: '请输入标准编号' }]}>
-                <Input disabled placeholder="系统自动生成" />
+                {viewMode ? disabledInput : <Input disabled placeholder="系统自动生成" />}
               </Form.Item>
             </Col>
             <Col span={8}>
               <Form.Item name="inspection_type" label="检验类型" rules={[{ required: true, message: '请选择检验类型' }]}>
-                <Select placeholder="请选择检验类型" options={inspectionTypeOptions} onChange={handleInspectionTypeChange} />
+                <Select placeholder="请选择检验类型" options={inspectionTypeOptions} onChange={handleInspectionTypeChange} disabled={viewMode} />
               </Form.Item>
             </Col>
             <Col span={8}>
               <Form.Item name="standard_type" label="标准类型" rules={[{ required: true, message: '请选择标准类型' }]}>
-                <Select placeholder="请选择标准类型" options={standardTypeOptions} onChange={handleStandardTypeChange} />
+                <Select placeholder="请选择标准类型" options={standardTypeOptions} onChange={handleStandardTypeChange} disabled={viewMode} />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={12}>
             <Col span={24}>
               <Form.Item name="standard_name" label="标准名称" rules={[{ required: true, message: '请输入标准名称' }]}>
-                <Input placeholder="请输入标准名称" />
+                <Input placeholder="请输入标准名称" disabled={viewMode} />
               </Form.Item>
             </Col>
           </Row>
@@ -437,94 +393,44 @@ export default function InspectionStandard() {
                   onChange={handleMaterialChange}
                   showSearch
                   optionFilterProp="label"
+                  disabled={viewMode}
                 />
               </Form.Item>
             </Col>
             <Col span={8}>
               <Form.Item name="version" label="版本号" rules={[{ required: true, message: '请输入版本号' }]}>
-                <Input disabled placeholder="系统自动生成" />
+                {viewMode ? disabledInput : <Input disabled placeholder="系统自动生成" />}
               </Form.Item>
             </Col>
             <Col span={8}>
               <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
-                <Select placeholder="请选择状态" options={statusOptions} />
+                <Select placeholder="请选择状态" options={statusOptions} disabled={viewMode} />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={12}>
             <Col span={24}>
               <Form.Item name="description" label="描述">
-                <Input.TextArea placeholder="请输入描述" rows={2} />
+                <Input.TextArea placeholder="请输入描述" rows={2} disabled={viewMode} />
               </Form.Item>
             </Col>
           </Row>
         </Form>
-        <Typography.Title level={5} style={{ marginTop: 0 }}>检验项目列表</Typography.Title>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <Typography.Title level={5} style={{ margin: 0 }}>检验项目列表</Typography.Title>
+          {!viewMode && (
+            <Button type="primary" size="small" icon={<PlusOutlined />} onClick={handleAddItem}>新增项目</Button>
+          )}
+        </div>
         <Table
-          columns={[
-            { title: '项目名称', dataIndex: 'item_name', key: 'item_name' },
-            {
-              title: '大类', dataIndex: 'category', key: 'category', width: 90,
-              render: (v: string) => <Tag color={categoryColor[v] || 'default'}>{v}</Tag>
-            },
-            { title: '检验方法', dataIndex: 'method', key: 'method' },
-            { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 140 },
-            { title: '标准值', dataIndex: 'standard_value', key: 'standard_value', width: 140 },
-            { title: '单位', dataIndex: 'unit', key: 'unit', width: 70 },
-          ]}
-          dataSource={(editing && !editing.__copy) ? ((window as any).__standardItems?.[editing.standard_id] || []) : []}
+          columns={viewMode ? itemTableColumns : itemTableColumnsWithAction}
+          dataSource={standardItems}
           rowKey="id"
           size="small"
           pagination={false}
-          locale={{ emptyText: '暂无检验项目（保存后可在"项目维护"中添加）' }}
+          locale={{ emptyText: viewMode ? '暂无检验项目' : '暂无检验项目，点击右上角"新增项目"添加' }}
         />
       </Modal>
-      <Drawer
-        title="检验项目维护"
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        width={960}
-        destroyOnHidden
-        extra={
-          <Button type="primary" size="small" icon={<PlusOutlined />} onClick={handleAddItem}>新增项目</Button>
-        }
-      >
-        {currentStandard && (
-          <>
-            <Descriptions
-              column={2}
-              size="small"
-              bordered
-              style={{ marginBottom: 16 }}
-            >
-              <Descriptions.Item label="标准号">{currentStandard.standard_no}</Descriptions.Item>
-              <Descriptions.Item label="标准名称">{currentStandard.standard_name}</Descriptions.Item>
-              <Descriptions.Item label="检验类型">{currentStandard.inspection_type}</Descriptions.Item>
-              <Descriptions.Item label="标准类型">
-                <Tag color={currentStandard.standard_type === '通用标准' ? 'blue' : currentStandard.standard_type === '专用标准' ? 'orange' : 'purple'}>
-                  {currentStandard.standard_type}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="版本号">{currentStandard.version_no}</Descriptions.Item>
-              <Descriptions.Item label="参照料品">{currentStandard.material_name}</Descriptions.Item>
-              <Descriptions.Item label="生效日期">{currentStandard.effective_date}</Descriptions.Item>
-              <Descriptions.Item label="状态">
-                <Tag color={currentStandard.status === '生效' ? 'success' : currentStandard.status === '失效' ? 'error' : 'default'}>
-                  {currentStandard.status}
-                </Tag>
-              </Descriptions.Item>
-            </Descriptions>
-            <Table
-              columns={itemColumns}
-              dataSource={standardItems}
-              rowKey="id"
-              size="small"
-              pagination={false}
-              locale={{ emptyText: '暂无检验项目，点击右上角"新增项目"添加' }}
-            />
-          </>
-        )}
-      </Drawer>
       <Modal
         title={itemEditing ? '编辑检验项目' : '新增检验项目'}
         open={itemModalVisible}
