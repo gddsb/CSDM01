@@ -680,7 +680,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
   const [imgModal, setImgModal] = useState({ visible: false, recordId: null })
 
   const handleAdd = () => {
-    setList(prev => [...prev, {
+    setList(prev => [{
       id: genTempId(),
       report_order_id: Number(reportOrderId),
       process_id: processId,
@@ -688,7 +688,7 @@ function DefectTab({ list, setList, options, isEditable, category, reportOrderId
       defect_qty: '',
       defect_unit: '',
       images: [],
-    }])
+    }, ...prev])
   }
 
   const handleSave = async () => {
@@ -964,7 +964,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
       Toast.show({ icon: 'fail', content: '当前工序不允许引入物料' })
       return
     }
-    setList(prev => [...prev, {
+    setList(prev => [{
       id: genTempId(),
       report_order_id: Number(reportOrderId),
       process_id: processId,
@@ -974,7 +974,7 @@ function MaterialTab({ list, setList, options, isEditable, reportOrderId, report
       package_no: '',
       quantity: '',
       images: [],
-    }])
+    }, ...prev])
   }
 
   const handleSave = async () => {
@@ -1271,13 +1271,13 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId,
 
   const handleAdd = async () => {
     await handleSave()
-    setList(prev => [...prev, {
+    setList(prev => [{
       id: genTempId(),
       report_order_id: Number(reportOrderId),
       defect_type_id: null,
       defect_qty: 0,
       defect_unit: '',
-    }])
+    }, ...prev])
   }
 
   const handleSave = async () => {
@@ -1439,7 +1439,7 @@ function ScrapTab({ list, setList, options, isEditable, category, reportOrderId,
 
 function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, reportNo, reportTime, onDataSaved }) {
   const [saving, setSaving] = useState(false)
-  const exceptionCategories = ['换型换线', '停机待料', '故障维修', '其它停机']
+  const exceptionCategories = ['故障维修', '来料异常', '停机待料', '其它异常']
 
   const handleAdd = async () => {
     await handleSave()

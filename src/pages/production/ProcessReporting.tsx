@@ -19,10 +19,10 @@ const reportOrderStatusMap = {
 }
 
 const exceptionCategories = [
-  { label: '换型换线', value: '换型换线' },
-  { label: '停机待料', value: '停机待料' },
   { label: '故障维修', value: '故障维修' },
-  { label: '其它停机', value: '其它停机' },
+  { label: '来料异常', value: '来料异常' },
+  { label: '停机待料', value: '停机待料' },
+  { label: '其它异常', value: '其它异常' },
 ]
 
 const genTempId = () => 'tmp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6)
@@ -839,7 +839,7 @@ export default function ProcessReporting() {
     setProdDefectList(prev => {
       const hasEmptyRow = prev.some(d => !d.defect_type_id)
       if (hasEmptyRow) return prev
-      return [...prev, {
+      return [{
         id: genTempId(),
         report_order_id: selectedReport.report_order_id,
         process_id: selectedProcessId,
@@ -851,7 +851,7 @@ export default function ProcessReporting() {
         quantity: 0,
         unit: '',
         defect_images: [],
-      }]
+      }, ...prev]
     })
   }
 
@@ -1149,7 +1149,7 @@ export default function ProcessReporting() {
     setScrapDefectList(prev => {
       const hasEmptyRow = prev.some(d => !d.defect_type_id)
       if (hasEmptyRow) return prev
-      return [...prev, {
+      return [{
         id: genTempId(),
         report_order_id: selectedReport.report_order_id,
         defect_category: '检验报废',
@@ -1160,7 +1160,7 @@ export default function ProcessReporting() {
         quantity: 0,
         unit: '',
         defect_images: [],
-      }]
+      }, ...prev]
     })
   }
 
@@ -1367,7 +1367,7 @@ export default function ProcessReporting() {
             newItem.specification = material.specification
           }
         }
-        return [...prev, newItem]
+        return [newItem, ...prev]
       }
     })
   }
@@ -1467,7 +1467,7 @@ export default function ProcessReporting() {
     setMaterialList(prev => {
       const hasEmptyRow = prev.some(m => !m.bas_material_id)
       if (hasEmptyRow) return prev
-      return [...prev, {
+      return [{
         id: genTempId(),
         report_order_id: selectedReport.report_order_id,
         process_id: selectedProcessId,
@@ -1481,7 +1481,7 @@ export default function ProcessReporting() {
         package_no: '',
         quantity: 0,
         label_images: [],
-      }]
+      }, ...prev]
     })
   }
 
@@ -2598,7 +2598,7 @@ export default function ProcessReporting() {
             </Col>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>产线</span>
+                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>生产产线</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.line_name || '-'}</span>
               </Space>
             </Col>
@@ -2712,19 +2712,19 @@ export default function ProcessReporting() {
             </Col>
             <Col span={3}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666' }}>来料不良汇总</span>
+                <span style={{ color: '#666' }}>总来料不良</span>
                 <span style={{ fontSize: 18, fontWeight: 'bold', color: '#faad14', whiteSpace: 'nowrap' }}>{stats.defectMaterial}</span>
               </Space>
             </Col>
             <Col span={3}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666' }}>制程不良汇总</span>
+                <span style={{ color: '#666' }}>总来料不良</span>
                 <span style={{ fontSize: 18, fontWeight: 'bold', color: '#fa8c16', whiteSpace: 'nowrap' }}>{stats.defectProcess}</span>
               </Space>
             </Col>
             <Col span={3}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666' }}>检验报废汇总</span>
+                <span style={{ color: '#666' }}>总检验报废</span>
                 <span style={{ fontSize: 18, fontWeight: 'bold', color: '#ff4d4f', whiteSpace: 'nowrap' }}>{stats.defectScrap}</span>
               </Space>
             </Col>
