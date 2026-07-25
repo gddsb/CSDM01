@@ -82,6 +82,14 @@ export default function MobileBigScreen() {
 
   const dateProcessReports = filterByDate(processReports, activeDate, 'report_time')
   const activeWorkOrders = workOrders.filter(w => w.status === '开工' || w.status === '已开工')
+  const todayStartWorkOrders = workOrders.filter(w => activeDate && w.start_time && w.start_time.startsWith(activeDate))
+  const todayStartQty = todayStartWorkOrders.reduce((s, w) => s + w.target_qty, 0)
+  const currentOutput = activeWorkOrders.reduce((sum, w) => {
+    const reported = processReports
+      .filter(r => r.work_order_id === w.work_order_id)
+      .reduce((s, r) => s + r.output_qty, 0)
+    return sum + reported
+  }, 0)
   const totalOutput = dateProcessReports.reduce((s, r) => s + r.output_qty, 0)
   const totalDefect = dateProcessReports.reduce((s, r) => s + r.defect_material + r.defect_process + r.defect_scrap, 0)
   const totalInput = dateProcessReports.filter(r => r.process_name === '裁剪下料').reduce((s, r) => s + r.input_qty, 0)
@@ -90,9 +98,9 @@ export default function MobileBigScreen() {
 
   const kpiData = [
     { label: '开工工单', value: activeWorkOrders.length, unit: '个', color: '#58A6FF' },
-    { label: '今日产出', value: totalOutput, unit: '件', color: '#3FB950' },
-    { label: '今日投入', value: totalInput, unit: '件', color: '#F0883E' },
-    { label: '良率', value: yieldRate, unit: '%', color: '#3FB950' },
+    { label: '今日开工', value: todayStartQty, unit: '罐', color: '#3FB950' },
+    { label: '今日投入', value: totalInput, unit: '罐', color: '#F0883E' },
+    { label: '当前产出', value: currentOutput, unit: '罐', color: '#a78bfa' },
   ]
 
   const mustReportProcessNames = processes.filter(p => Number(p.must_report) === 1).map(p => p.process_name)
