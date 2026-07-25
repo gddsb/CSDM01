@@ -399,36 +399,36 @@ export default function InspectionStandard() {
         onCancel={() => setModalVisible(false)}
         okText="保存"
         cancelText="取消"
-        width={600}
+        width={800}
         destroyOnHidden
       >
         <Form form={form} layout="vertical" className="compact-form" preserve={false}>
           <Row gutter={12}>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item name="standard_no" label="标准编号" rules={[{ required: true, message: '请输入标准编号' }]}>
                 <Input disabled placeholder="系统自动生成" />
               </Form.Item>
             </Col>
-            <Col span={12}>
-              <Form.Item name="standard_name" label="标准名称" rules={[{ required: true, message: '请输入标准名称' }]}>
-                <Input placeholder="请输入标准名称" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item name="inspection_type" label="检验类型" rules={[{ required: true, message: '请选择检验类型' }]}>
                 <Select placeholder="请选择检验类型" options={inspectionTypeOptions} onChange={handleInspectionTypeChange} />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item name="standard_type" label="标准类型" rules={[{ required: true, message: '请选择标准类型' }]}>
                 <Select placeholder="请选择标准类型" options={standardTypeOptions} onChange={handleStandardTypeChange} />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={12}>
-            <Col span={12}>
+            <Col span={24}>
+              <Form.Item name="standard_name" label="标准名称" rules={[{ required: true, message: '请输入标准名称' }]}>
+                <Input placeholder="请输入标准名称" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={8}>
               <Form.Item name="material_id" label="参照料品">
                 <Select
                   placeholder="专用标准请参照料品(取料号前三位)"
@@ -440,14 +440,12 @@ export default function InspectionStandard() {
                 />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item name="version" label="版本号" rules={[{ required: true, message: '请输入版本号' }]}>
                 <Input disabled placeholder="系统自动生成" />
               </Form.Item>
             </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
                 <Select placeholder="请选择状态" options={statusOptions} />
               </Form.Item>
@@ -461,6 +459,25 @@ export default function InspectionStandard() {
             </Col>
           </Row>
         </Form>
+        <Typography.Title level={5} style={{ marginTop: 0 }}>检验项目列表</Typography.Title>
+        <Table
+          columns={[
+            { title: '项目名称', dataIndex: 'item_name', key: 'item_name' },
+            {
+              title: '大类', dataIndex: 'category', key: 'category', width: 90,
+              render: (v: string) => <Tag color={categoryColor[v] || 'default'}>{v}</Tag>
+            },
+            { title: '检验方法', dataIndex: 'method', key: 'method' },
+            { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 140 },
+            { title: '标准值', dataIndex: 'standard_value', key: 'standard_value', width: 140 },
+            { title: '单位', dataIndex: 'unit', key: 'unit', width: 70 },
+          ]}
+          dataSource={(editing && !editing.__copy) ? ((window as any).__standardItems?.[editing.standard_id] || []) : []}
+          rowKey="id"
+          size="small"
+          pagination={false}
+          locale={{ emptyText: '暂无检验项目（保存后可在"项目维护"中添加）' }}
+        />
       </Modal>
       <Drawer
         title="检验项目维护"
