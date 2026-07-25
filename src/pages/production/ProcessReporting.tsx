@@ -2586,25 +2586,25 @@ export default function ProcessReporting() {
           <Row gutter={16}>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold' }}>报工单号</span>
+                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>报工单号</span>
                 <span style={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}>{selectedReport.report_no}</span>
               </Space>
             </Col>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold' }}>订单编号</span>
+                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>订单编号</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.order_no || '-'}</span>
               </Space>
             </Col>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold' }}>产线</span>
+                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>产线</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.line_name || '-'}</span>
               </Space>
             </Col>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold' }}>菲林版本</span>
+                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>菲林版本</span>
                 <span style={{ whiteSpace: 'nowrap' }}>
                   {formatFilmVersion(selectedReport.order?.film_version, selectedReport.order?.version_no) || '-'}
                 </span>
@@ -2612,7 +2612,7 @@ export default function ProcessReporting() {
             </Col>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold' }}>条形码</span>
+                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>条形码</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.order?.barcode || '-'}</span>
               </Space>
             </Col>
@@ -2623,19 +2623,19 @@ export default function ProcessReporting() {
           <Row gutter={16} style={{ marginTop: 12 }}>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold' }}>物料编号</span>
+                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>物料编号</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.material_code || '-'}</span>
               </Space>
             </Col>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold' }}>产品规格</span>
+                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>产品规格</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.specification || '-'}</span>
               </Space>
             </Col>
             <Col span={8}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold' }}>产品名称</span>
+                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>产品名称</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.material_name || '-'}</span>
               </Space>
             </Col>
@@ -2646,31 +2646,31 @@ export default function ProcessReporting() {
           <Row gutter={16} style={{ marginTop: 12 }}>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold' }}>报工时间</span>
+                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>报工时间</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.report_time ? dayjs(selectedReport.report_time).format('YYYY-MM-DD HH:mm') : '-'}</span>
               </Space>
             </Col>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold' }}>完工时间</span>
+                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>完工时间</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.finish_time ? dayjs(selectedReport.finish_time).format('YYYY-MM-DD HH:mm') : '-'}</span>
               </Space>
             </Col>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold' }}>报工人</span>
+                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>报工人</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.report_user_name || '-'}</span>
               </Space>
             </Col>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold' }}>完工人</span>
+                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>完工人</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.finish_user_name || '-'}</span>
               </Space>
             </Col>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold' }}>关闭人</span>
+                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>关闭人</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.close_user_name || '-'}</span>
               </Space>
             </Col>
