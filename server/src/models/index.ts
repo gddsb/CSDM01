@@ -30,6 +30,8 @@ import DictType from './DictType.js'
 import DictData from './DictData.js'
 import DataDictionary from './DataDictionary.js'
 import UserSetting from './UserSetting.js'
+import ProductInspection from './ProductInspection.js'
+import ProductInspectionItem from './ProductInspectionItem.js'
 
 // 建立模型关联关系
 // 用户 - 角色
@@ -109,6 +111,12 @@ DefectType.hasMany(ProcessDefect, { foreignKey: 'defect_type_id', as: 'process_d
 DictType.hasMany(DictData, { foreignKey: 'dict_type', sourceKey: 'dict_type', as: 'datas' })
 DictData.belongsTo(DictType, { foreignKey: 'dict_type', targetKey: 'dict_type', as: 'dictType' })
 
+// 产品检测主表 - 报工单
+ProductInspection.belongsTo(ReportOrder, { foreignKey: 'report_order_id', as: 'report_order' })
+// 产品检测主表 - 检测项目（一对多）
+ProductInspection.hasMany(ProductInspectionItem, { foreignKey: 'inspection_id', as: 'items' })
+ProductInspectionItem.belongsTo(ProductInspection, { foreignKey: 'inspection_id', as: 'inspection' })
+
 const db = {
   sequelize,
   DataTypes,
@@ -141,6 +149,8 @@ const db = {
   DictData,
   DataDictionary,
   UserSetting,
+  ProductInspection,
+  ProductInspectionItem,
 }
 
 // 具名导出，便于按需导入
@@ -174,6 +184,8 @@ export {
   DictData,
   DataDictionary,
   UserSetting,
+  ProductInspection,
+  ProductInspectionItem,
 }
 
 export default db

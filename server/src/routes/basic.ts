@@ -62,6 +62,7 @@ import {
   audit as ruleAudit,
   preview as rulePreview,
 } from '../controllers/NumberRuleController.js'
+import ProductInspectionController from '../controllers/ProductInspectionController.js'
 import { authRequired, logOperation } from '../middleware/auth.js'
 
 const router = Router()
@@ -150,5 +151,13 @@ router.delete('/number-rules/:id', logOperation('编码管理'), ruleRemove)
 router.post('/number-rules/:id/toggle', logOperation('编码管理'), ruleToggle)
 router.post('/number-rules/:id/audit', logOperation('编码管理'), ruleAudit)
 router.get('/number-rules/:id/preview', rulePreview)
+
+// 产品检测
+router.get('/product-inspections', ProductInspectionController.list)
+router.get('/product-inspections/:id', ProductInspectionController.detail)
+router.post('/product-inspections', logOperation('产品检测'), ProductInspectionController.create)
+router.put('/product-inspections/:id', logOperation('产品检测'), ProductInspectionController.update)
+router.put('/product-inspections/:id/submit', logOperation('产品检测报审'), ProductInspectionController.submit)
+router.delete('/product-inspections/:id', logOperation('产品检测'), ProductInspectionController.delete)
 
 export default router

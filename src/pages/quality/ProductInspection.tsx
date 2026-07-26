@@ -1,80 +1,101 @@
 import ResizableTable from '../../components/ResizableTable'
-import React, { useState, useMemo } from 'react'
-import { Table, Tag, Button, Select, DatePicker, Space, Row, Col, Modal, Form, Input, Drawer, Descriptions, Typography } from 'antd'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import { Table, Tag, Button, Select, DatePicker, Space, Row, Col, Modal, Form, Input, Drawer, Descriptions, Typography, Popconfirm, Table as AntTable, InputNumber } from 'antd'
 import { useMessage } from '../../contexts/AppContext'
 import {
   ExperimentOutlined, CheckCircleOutlined, CloseCircleOutlined, PercentageOutlined,
-  PlusOutlined, ExportOutlined, ReloadOutlined, SearchOutlined, EyeOutlined
+  PlusOutlined, ExportOutlined, ReloadOutlined, SearchOutlined, EyeOutlined,
+  EditOutlined, SendOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
-import { workOrders, processes } from '../../mock/data'
+import api from '../../utils/api'
 
 const { RangePicker } = DatePicker
 const { Title } = Typography
+const { TextArea } = Input
 
 const INSPECTION_TYPES = [
   { label: '首件', value: '首件', color: 'blue' },
   { label: '制程', value: '制程', color: 'purple' },
   { label: '成品', value: '成品', color: 'green' },
+  { label: '其它', value: '其它', color: 'default' },
 ]
 
 const resultColor = { '合格': 'success', '不合格': 'error' }
 const handleColor = { '入库': 'green', '退货': 'red', '让步接收': 'orange', '报废': 'red' }
 const triggerColor = { '自动': 'blue', '手工': 'purple' }
-const statusColor = { '已完成': 'success', '检验中': 'processing', '待检': 'default' }
+const statusColor = { '待检': 'default', '检验中': 'processing', '审核中': 'warning', '已完成': 'success', '已关闭': 'default' }
 const typeColorMap = Object.fromEntries(INSPECTION_TYPES.map(t => [t.value, t.color]))
 
-const initialInspections = [
-  { inspection_id: 'pi1', inspection_no: 'CP20260630001', inspection_type: '首件', work_order_id: 'w1', work_order_no: 'WO20260630001', material_code: 'ML-900-A', material_name: '900g奶粉罐', specification: '900g奶粉罐', process_id: 'p3', process_name: '成圆焊接', item_name: '焊缝强度', standard_value: '≥200N', actual_value: '235N', result: '合格', inspector: 'u5', inspector_name: '质量检验员', inspection_time: '2026-06-30 09:10:00', trigger_type: '手工', standard_name: '900g奶粉罐检验标准V1', handle_type: '-', status: '已完成' },
-  { inspection_id: 'pi2', inspection_no: 'CP20260630002', inspection_type: '制程', work_order_id: 'w1', work_order_no: 'WO20260630001', material_code: 'ML-900-A', material_name: '900g奶粉罐', specification: '900g奶粉罐', process_id: 'p4', process_name: '补涂烘干', item_name: '涂层厚度', standard_value: '8±2μm', actual_value: '9μm', result: '合格', inspector: 'u5', inspector_name: '质量检验员', inspection_time: '2026-06-30 13:05:00', trigger_type: '手工', standard_name: '-', handle_type: '-', status: '已完成' },
-  { inspection_id: 'pi3', inspection_no: 'CP20260630003', inspection_type: '制程', work_order_id: 'w1', work_order_no: 'WO20260630001', material_code: 'ML-900-A', material_name: '900g奶粉罐', specification: '900g奶粉罐', process_id: 'p7', process_name: '正压测漏', item_name: '保压测试', standard_value: '0.1MPa保压30s无渗漏', actual_value: '保压通过', result: '合格', inspector: 'u5', inspector_name: '质量检验员', inspection_time: '2026-06-30 14:20:00', trigger_type: '自动', standard_name: '-', handle_type: '-', status: '已完成' },
-  { inspection_id: 'pi4', inspection_no: 'CP20260630004', inspection_type: '成品', work_order_id: 'w1', work_order_no: 'WO20260630001', material_code: 'ML-900-A', material_name: '900g奶粉罐', specification: '900g奶粉罐', process_id: 'p9', process_name: '人工全检', item_name: '成品全检', standard_value: '按检验标准逐项检验', actual_value: '全部合格', result: '合格', inspector: 'u5', inspector_name: '质量检验员', inspection_time: '2026-06-30 16:00:00', trigger_type: '自动', standard_name: '900g奶粉罐检验标准V1', handle_type: '入库', status: '已完成' },
-  { inspection_id: 'pi5', inspection_no: 'CP20260629001', inspection_type: '制程', work_order_id: 'w2', work_order_no: 'WO20260629001', material_code: 'ML-800-C', material_name: '800g奶粉罐', specification: '800g奶粉罐', process_id: 'p3', process_name: '成圆焊接', item_name: '焊缝强度', standard_value: '≥200N', actual_value: '185N', result: '不合格', inspector: 'u5', inspector_name: '质量检验员', inspection_time: '2026-06-29 11:00:00', trigger_type: '手工', standard_name: '-', handle_type: '-', status: '已完成' },
-  { inspection_id: 'pi6', inspection_no: 'CP20260629002', inspection_type: '制程', work_order_id: 'w2', work_order_no: 'WO20260629001', material_code: 'ML-800-C', material_name: '800g奶粉罐', specification: '800g奶粉罐', process_id: 'p1', process_name: '裁剪下料', item_name: '板材尺寸', standard_value: '800±1.0mm', actual_value: '800.2mm', result: '合格', inspector: 'u5', inspector_name: '质量检验员', inspection_time: '2026-06-29 10:15:00', trigger_type: '手工', standard_name: '-', handle_type: '-', status: '已完成' },
-  { inspection_id: 'pi7', inspection_no: 'CP20260628001', inspection_type: '成品', work_order_id: 'w3', work_order_no: 'WO20260628001', material_code: 'ML-900-A', material_name: '900g奶粉罐', specification: '900g奶粉罐', process_id: '-', process_name: '成品检验', item_name: '成品全检', standard_value: '按检验标准逐项检验', actual_value: '全部合格', result: '合格', inspector: 'u5', inspector_name: '质量检验员', inspection_time: '2026-06-28 15:30:00', trigger_type: '自动', standard_name: '900g奶粉罐检验标准V1', handle_type: '入库', status: '已完成' },
-  { inspection_id: 'pi8', inspection_no: 'CP20260701001', inspection_type: '首件', work_order_id: 'w4', work_order_no: 'WO20260701001', material_code: 'ML-400-B', material_name: '400g奶粉罐', specification: '400g奶粉罐', process_id: 'p1', process_name: '裁剪下料', item_name: '首件确认', standard_value: '按首件检验清单确认', actual_value: '待检', result: '-', inspector: '-', inspector_name: '-', inspection_time: '-', trigger_type: '手工', standard_name: '400g奶粉罐检验标准V1', handle_type: '-', status: '待检' },
-]
-
-const workOrderOptions = workOrders.map(w => ({ label: `${w.work_order_no} (${w.material_name})`, value: w.work_order_id }))
-const processOptions = processes.map(p => ({ label: p.process_name, value: p.process_id }))
+const canEdit = (status: string) => status === '待检' || status === '检验中'
+const canSubmit = (status: string) => status === '待检' || status === '检验中'
 
 export default function ProductInspection() {
-  const [data, setData] = useState(initialInspections)
-  const [inspectionType, setInspectionType] = useState(undefined)
-  const [workOrderId, setWorkOrderId] = useState(undefined)
-  const [result, setResult] = useState(undefined)
-  const [dateRange, setDateRange] = useState(null)
-  const [modalVisible, setModalVisible] = useState(false)
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const [current, setCurrent] = useState(null)
-  const [form] = Form.useForm()
+  const [data, setData] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [reportOrders, setReportOrders] = useState<any[]>([])
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 20, total: 0 })
+
+  const [inspectionType, setInspectionType] = useState<any>(undefined)
+  const [reportOrderId, setReportOrderId] = useState<any>(undefined)
+  const [resultFilter, setResultFilter] = useState<any>(undefined)
+  const [statusFilter, setStatusFilter] = useState<any>(undefined)
+  const [dateRange, setDateRange] = useState<any>(null)
+
+  const [addVisible, setAddVisible] = useState(false)
+  const [inspectDrawerOpen, setInspectDrawerOpen] = useState(false)
+  const [detailDrawerOpen, setDetailDrawerOpen] = useState(false)
+  const [current, setCurrent] = useState<any>(null)
+  const [inspectItems, setInspectItems] = useState<any[]>([])
+  const [addForm] = Form.useForm()
   const message = useMessage()
 
-  const selectedWorkOrderId = Form.useWatch('work_order_id', form)
-  const selectedWorkOrder = workOrders.find(w => w.work_order_id === selectedWorkOrderId)
+  const selectedWorkOrderId = Form.useWatch('report_order_id', addForm)
+  const selectedWorkOrder = reportOrders.find(w => w.report_order_id === selectedWorkOrderId)
 
-  const filtered = useMemo(() => {
-    return data.filter(item => {
-      const matchType = !inspectionType || item.inspection_type === inspectionType
-      const matchWo = !workOrderId || item.work_order_id === workOrderId
-      const matchResult = !result || item.result === result
-      let matchDate = true
-      if (dateRange && dateRange[0] && dateRange[1] && item.inspection_time && item.inspection_time !== '-') {
-        const t = dayjs(item.inspection_time)
-        matchDate = t.isAfter(dayjs(dateRange[0]).subtract(1, 'day')) && t.isBefore(dayjs(dateRange[1]).add(1, 'day'))
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    try {
+      const params: any = { page: pagination.current, page_size: pagination.pageSize }
+      if (inspectionType) params.inspection_type = inspectionType
+      if (reportOrderId) params.report_order_id = reportOrderId
+      if (resultFilter) params.result = resultFilter
+      if (statusFilter) params.status = statusFilter
+      if (dateRange && dateRange[0]) params.start_date = dateRange[0].format('YYYY-MM-DD')
+      if (dateRange && dateRange[1]) params.end_date = dateRange[1].format('YYYY-MM-DD')
+
+      const res = await api.get('/basic/product-inspections', { params })
+      setData(res.data?.list || [])
+      setPagination(p => ({ ...p, total: res.data?.total || 0 }))
+    } catch (e) {
+      // ignore
+    } finally {
+      setLoading(false)
+    }
+  }, [pagination.current, pagination.pageSize, inspectionType, reportOrderId, resultFilter, statusFilter, dateRange])
+
+  useEffect(() => { fetchData() }, [fetchData])
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await api.get('/production/report-orders', { params: { page: 1, page_size: 500 } })
+        setReportOrders(res.data?.list || res.data || [])
+      } catch (e) {
+        // ignore
       }
-      return matchType && matchWo && matchResult && matchDate
-    })
-  }, [data, inspectionType, workOrderId, result, dateRange])
+    }
+    load()
+  }, [])
 
-  const totalCount = filtered.length
-  const passCount = filtered.filter(i => i.result === '合格').length
-  const failCount = filtered.filter(i => i.result === '不合格').length
+  const totalCount = pagination.total
+  const passCount = data.filter(i => i.result === '合格').length
+  const failCount = data.filter(i => i.result === '不合格').length
   const passRate = totalCount > 0 ? ((passCount / totalCount) * 100).toFixed(1) : '0.0'
-  const firstPieceCount = filtered.filter(i => i.inspection_type === '首件').length
-  const processCount = filtered.filter(i => i.inspection_type === '制程').length
-  const finishedCount = filtered.filter(i => i.inspection_type === '成品').length
+  const firstPieceCount = data.filter(i => i.inspection_type === '首件').length
+  const processCount = data.filter(i => i.inspection_type === '制程').length
+  const finishedCount = data.filter(i => i.inspection_type === '成品').length
 
   const stats = [
     { label: '检验总数', value: totalCount, icon: <ExperimentOutlined />, color: '#2196F3' },
@@ -87,79 +108,197 @@ export default function ProductInspection() {
   ]
 
   const handleAdd = () => {
-    form.resetFields()
-    form.setFieldsValue({ inspector_name: '质量检验员', result: '合格', inspection_type: '制程' })
-    setModalVisible(true)
+    addForm.resetFields()
+    addForm.setFieldsValue({ inspection_type: '制程', trigger_type: '手工' })
+    setAddVisible(true)
   }
 
-  const handleSubmit = async () => {
+  const handleAddSubmit = async () => {
     try {
-      const values = await form.validateFields()
-      const wo = workOrders.find(w => w.work_order_id === values.work_order_id)
-      const proc = processes.find(p => p.process_id === values.process_id)
-      const now = Date.now()
-      const newRecord = {
-        inspection_id: 'pi' + now,
-        inspection_no: 'CP' + dayjs().format('YYYYMMDD') + String(Math.floor(Math.random() * 9000) + 1000),
+      const values = await addForm.validateFields()
+      const ro = reportOrders.find(w => w.report_order_id === values.report_order_id)
+      const payload = {
         inspection_type: values.inspection_type,
-        work_order_id: wo.work_order_id,
-        work_order_no: wo.work_order_no,
-        material_name: wo.material_name,
-        process_id: proc?.process_id || '-',
-        process_name: proc?.process_name || '-',
-        item_name: values.item_name,
-        standard_value: values.standard_value,
-        actual_value: values.actual_value,
-        result: values.result,
-        inspector: 'u5',
-        inspector_name: values.inspector_name || '质量检验员',
-        inspection_time: dayjs().format('YYYY-MM-DD HH:mm:ss'),
-        trigger_type: values.trigger_type || '手工',
-        standard_name: values.standard_name || '-',
-        handle_type: '-',
-        status: '已完成',
+        report_order_id: values.report_order_id,
+        trigger_type: values.trigger_type,
+        remarks: values.remarks,
       }
-      setData(prev => [newRecord, ...prev])
-      message.success(`已新增${values.inspection_type}检验记录`)
-      setModalVisible(false)
-    } catch (e) {
-      // 校验未通过
+      await api.post('/basic/product-inspections', payload)
+      message.success('检验记录已创建')
+      setAddVisible(false)
+      fetchData()
+    } catch (e: any) {
+      // ignore
     }
   }
 
-  const showDetail = (record) => {
+  const openInspect = async (record: any) => {
     setCurrent(record)
-    setDrawerOpen(true)
+    try {
+      const res = await api.get(`/basic/product-inspections/${record.inspection_id}`)
+      const detail = res.data || record
+      setInspectItems((detail.items || []).map((it: any, idx: number) => ({ ...it, sort_order: it.sort_order !== undefined ? it.sort_order : idx })))
+      setInspectDrawerOpen(true)
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  const handleInspectSave = async () => {
+    try {
+      const payload = { items: inspectItems }
+      await api.put(`/basic/product-inspections/${current.inspection_id}`, payload)
+      message.success('检测项目已保存')
+      setInspectDrawerOpen(false)
+      fetchData()
+    } catch (e: any) {
+      // ignore
+    }
+  }
+
+  const handleSubmit = async (record: any) => {
+    try {
+      await api.put(`/basic/product-inspections/${record.inspection_id}/submit`)
+      message.success('已报审')
+      fetchData()
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || '报审失败')
+    }
+  }
+
+  const showDetail = async (record: any) => {
+    try {
+      const res = await api.get(`/basic/product-inspections/${record.inspection_id}`)
+      setCurrent(res.data || record)
+      setDetailDrawerOpen(true)
+    } catch (e) {
+      setCurrent(record)
+      setDetailDrawerOpen(true)
+    }
+  }
+
+  const addItem = () => {
+    setInspectItems(prev => [...prev, {
+      item_id: 'new_' + Date.now(),
+      item_name: '',
+      standard_value: '',
+      actual_value: '',
+      result: null,
+      inspector_name: '',
+      inspection_time: null,
+      sort_order: prev.length,
+      _new: true,
+    }])
+  }
+
+  const updateItem = (index: number, field: string, value: any) => {
+    setInspectItems(prev => {
+      const next = [...prev]
+      next[index] = { ...next[index], [field]: value }
+      return next
+    })
+  }
+
+  const removeItem = (index: number) => {
+    setInspectItems(prev => prev.filter((_, i) => i !== index))
   }
 
   const columns = [
     { title: '检验编号', dataIndex: 'inspection_no', key: 'inspection_no', width: 150, fixed: 'left' },
     {
       title: '类型', dataIndex: 'inspection_type', key: 'inspection_type', width: 80,
-      render: v => <Tag color={typeColorMap[v] || 'default'}>{v}</Tag>
+      render: (v: string) => <Tag color={typeColorMap[v] || 'default'}>{v}</Tag>
     },
-    { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 150 },
+    { title: '工单编号', dataIndex: 'report_order_no', key: 'report_order_no', width: 160 },
     { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 130 },
     { title: '产品名称', dataIndex: 'material_name', key: 'material_name', width: 180 },
     { title: '规格', dataIndex: 'specification', key: 'specification', width: 150 },
     {
       title: '结果', dataIndex: 'result', key: 'result', width: 80,
-      render: v => v && v !== '-' ? <Tag color={resultColor[v]}>{v}</Tag> : <Tag>待检</Tag>
+      render: (v: string) => v && v !== '-' ? <Tag color={resultColor[v as keyof typeof resultColor]}>{v}</Tag> : <Tag>待检</Tag>
     },
     {
       title: '触发方式', dataIndex: 'trigger_type', key: 'trigger_type', width: 90,
-      render: v => v && v !== '-' ? <Tag color={triggerColor[v] || 'default'}>{v}</Tag> : '-'
+      render: (v: string) => v && v !== '-' ? <Tag color={triggerColor[v as keyof typeof triggerColor]}>{v}</Tag> : '-'
     },
     {
       title: '状态', dataIndex: 'status', key: 'status', width: 90,
-      render: v => <Tag color={statusColor[v] || 'default'}>{v}</Tag>
+      render: (v: string) => <Tag color={statusColor[v as keyof typeof statusColor]}>{v}</Tag>
     },
-    { title: '检验员', dataIndex: 'inspector_name', key: 'inspector_name', width: 100 },
-    { title: '检验时间', dataIndex: 'inspection_time', key: 'inspection_time', width: 160, render: v => v || '-' },
+    { title: '检验员', dataIndex: 'inspector_name', key: 'inspector_name', width: 100, render: (v: string) => v || '-' },
+    { title: '检验时间', dataIndex: 'inspection_time', key: 'inspection_time', width: 160, render: (v: string) => v || '-' },
     {
-      title: '操作', key: 'action', width: 100, fixed: 'right',
-      render: (_, record) => (
-        <Button type="link" size="small" onClick={() => showDetail(record)}>详情</Button>
+      title: '操作', key: 'action', width: 220, fixed: 'right',
+      render: (_: any, record: any) => (
+        <Space size={4}>
+          <Button type="link" size="small" onClick={() => showDetail(record)}>详情</Button>
+          {canEdit(record.status) && (
+            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openInspect(record)}>检测</Button>
+          )}
+          {canSubmit(record.status) && (
+            <Popconfirm title="确认报审？报审后数据不可修改" onConfirm={() => handleSubmit(record)} okText="确认" cancelText="取消">
+              <Button type="link" size="small" icon={<SendOutlined />}>报审</Button>
+            </Popconfirm>
+          )}
+        </Space>
+      )
+    },
+  ]
+
+  const inspectColumns = [
+    { title: '序号', dataIndex: 'sort_order', key: 'sort_order', width: 60, render: (_: any, __: any, i: number) => i + 1 },
+    {
+      title: '检测项目', dataIndex: 'item_name', key: 'item_name', width: 180,
+      render: (_: any, record: any, index: number) => (
+        <Input value={record.item_name} onChange={e => updateItem(index, 'item_name', e.target.value)} placeholder="请输入检测项目" />
+      )
+    },
+    {
+      title: '标准值', dataIndex: 'standard_value', key: 'standard_value', width: 180,
+      render: (_: any, record: any, index: number) => (
+        <Input value={record.standard_value} onChange={e => updateItem(index, 'standard_value', e.target.value)} placeholder="请输入标准值" />
+      )
+    },
+    {
+      title: '检测值', dataIndex: 'actual_value', key: 'actual_value', width: 180,
+      render: (_: any, record: any, index: number) => (
+        <Input value={record.actual_value} onChange={e => updateItem(index, 'actual_value', e.target.value)} placeholder="请输入检测值" />
+      )
+    },
+    {
+      title: '判定', dataIndex: 'result', key: 'result', width: 100,
+      render: (_: any, record: any, index: number) => (
+        <Select
+          style={{ width: '100%' }}
+          placeholder="请选择"
+          allowClear
+          value={record.result}
+          onChange={v => updateItem(index, 'result', v)}
+          options={[{ label: '合格', value: '合格' }, { label: '不合格', value: '不合格' }]}
+        />
+      )
+    },
+    {
+      title: '检测人', dataIndex: 'inspector_name', key: 'inspector_name', width: 120,
+      render: (_: any, record: any, index: number) => (
+        <Input value={record.inspector_name} onChange={e => updateItem(index, 'inspector_name', e.target.value)} placeholder="检测人" />
+      )
+    },
+    {
+      title: '检测时间', dataIndex: 'inspection_time', key: 'inspection_time', width: 170,
+      render: (_: any, record: any, index: number) => (
+        <DatePicker
+          showTime
+          style={{ width: '100%' }}
+          value={record.inspection_time ? dayjs(record.inspection_time) : null}
+          onChange={v => updateItem(index, 'inspection_time', v ? v.format('YYYY-MM-DD HH:mm:ss') : null)}
+        />
+      )
+    },
+    {
+      title: '操作', key: 'action', width: 80,
+      render: (_: any, __: any, index: number) => (
+        <Button type="link" danger size="small" onClick={() => removeItem(index)}>删除</Button>
       )
     },
   ]
@@ -179,9 +318,9 @@ export default function ProductInspection() {
         table={
           <div>
             <Row gutter={[12, 8]} style={{ marginBottom: 12 }}>
-              <Col span={5}>
+              <Col span={4}>
                 <Select
-                  placeholder="检验类型（首件/制程/成品）"
+                  placeholder="检验类型"
                   allowClear
                   style={{ width: '100%' }}
                   options={INSPECTION_TYPES}
@@ -191,65 +330,88 @@ export default function ProductInspection() {
               </Col>
               <Col span={5}>
                 <Select
-                  placeholder="工单选择"
+                  placeholder="选择报工单"
                   allowClear
+                  showSearch
+                  optionFilterProp="label"
                   style={{ width: '100%' }}
-                  options={workOrderOptions}
-                  value={workOrderId}
-                  onChange={setWorkOrderId}
+                  options={reportOrders.map(w => ({ label: `${w.report_no} (${w.material_name})`, value: w.report_order_id }))}
+                  value={reportOrderId}
+                  onChange={setReportOrderId}
                 />
               </Col>
-              <Col span={4}>
+              <Col span={3}>
                 <Select
-                  placeholder="检验结果"
+                  placeholder="结果"
+                  allowClear
+                  style={{ width: '100%' }}
+                  options={[{ label: '合格', value: '合格' }, { label: '不合格', value: '不合格' }]}
+                  value={resultFilter}
+                  onChange={setResultFilter}
+                />
+              </Col>
+              <Col span={3}>
+                <Select
+                  placeholder="状态"
                   allowClear
                   style={{ width: '100%' }}
                   options={[
-                    { label: '合格', value: '合格' },
-                    { label: '不合格', value: '不合格' },
+                    { label: '待检', value: '待检' },
+                    { label: '检验中', value: '检验中' },
+                    { label: '审核中', value: '审核中' },
+                    { label: '已完成', value: '已完成' },
                   ]}
-                  value={result}
-                  onChange={setResult}
+                  value={statusFilter}
+                  onChange={setStatusFilter}
                 />
               </Col>
-              <Col span={7}>
+              <Col span={5}>
                 <RangePicker
                   style={{ width: '100%' }}
                   value={dateRange}
                   onChange={setDateRange}
                 />
               </Col>
-              <Col span={3}>
+              <Col span={4}>
                 <Space>
-                  <Button type="primary" icon={<SearchOutlined />}>查询</Button>
-                  <Button icon={<ReloadOutlined />} onClick={() => { setInspectionType(undefined); setWorkOrderId(undefined); setResult(undefined); setDateRange(null) }}>重置</Button>
+                  <Button type="primary" icon={<SearchOutlined />} onClick={fetchData}>查询</Button>
+                  <Button icon={<ReloadOutlined />} onClick={() => {
+                    setInspectionType(undefined); setReportOrderId(undefined)
+                    setResultFilter(undefined); setStatusFilter(undefined); setDateRange(null)
+                  }}>重置</Button>
                 </Space>
               </Col>
             </Row>
             <ResizableTable
               tableKey="pages_quality_ProductInspection"
               columns={columns}
-              dataSource={filtered}
+              dataSource={data}
               rowKey="inspection_id"
               size="small"
-              scroll={{ x: 1700 }}
-              pagination={{ pageSize: 30, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
+              loading={loading}
+              scroll={{ x: 1800 }}
+              pagination={{
+                ...pagination,
+                showSizeChanger: true,
+                showTotal: t => `共 ${t} 条`,
+                onChange: (p, ps) => setPagination(v => ({ ...v, current: p, pageSize: ps })),
+              }}
             />
           </div>
         }
       />
 
       <Modal
-        title="新增产品检验"
-        open={modalVisible}
-        onOk={handleSubmit}
-        onCancel={() => setModalVisible(false)}
+        title="新增产品检测"
+        open={addVisible}
+        onOk={handleAddSubmit}
+        onCancel={() => setAddVisible(false)}
         okText="保存"
         cancelText="取消"
         width={640}
         destroyOnHidden
       >
-        <Form form={form} layout="vertical" className="compact-form" preserve={false}>
+        <Form form={addForm} layout="vertical" className="compact-form" preserve={false}>
           <Row gutter={12}>
             <Col span={12}>
               <Form.Item name="inspection_type" label="检验类型" rules={[{ required: true, message: '请选择检验类型' }]}>
@@ -257,17 +419,34 @@ export default function ProductInspection() {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item name="work_order_id" label="关联工单" rules={[{ required: true, message: '请选择工单' }]}>
-                <Select placeholder="请选择工单" options={workOrderOptions} />
+              <Form.Item name="report_order_id" label="关联报工单" rules={[{ required: true, message: '请选择报工单' }]}>
+                <Select
+                  placeholder="请选择报工单"
+                  showSearch
+                  optionFilterProp="label"
+                  options={reportOrders.map(w => ({ label: `${w.report_no} (${w.material_name})`, value: w.report_order_id }))}
+                />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item label="料品名称">
+            <Col span={8}>
+              <Form.Item label="料号">
+                <Input value={selectedWorkOrder?.material_code || '-'} disabled />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="产品名称">
                 <Input value={selectedWorkOrder?.material_name || '-'} disabled />
               </Form.Item>
             </Col>
+            <Col span={8}>
+              <Form.Item label="规格">
+                <Input value={selectedWorkOrder?.specification || '-'} disabled />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
             <Col span={12}>
               <Form.Item name="trigger_type" label="触发方式">
                 <Select
@@ -280,56 +459,41 @@ export default function ProductInspection() {
               </Form.Item>
             </Col>
           </Row>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item name="process_id" label="检验工序" rules={[{ required: true, message: '请选择检验工序' }]}>
-                <Select placeholder="请选择检验工序" options={processOptions} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="item_name" label="检验项目" rules={[{ required: true, message: '请输入检验项目' }]}>
-                <Input placeholder="请输入检验项目" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item name="standard_value" label="标准值" rules={[{ required: true, message: '请输入标准值' }]}>
-                <Input placeholder="请输入标准值" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="actual_value" label="实测值" rules={[{ required: true, message: '请输入实测值' }]}>
-                <Input placeholder="请输入实测值" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item name="result" label="检验结果" rules={[{ required: true, message: '请选择检验结果' }]}>
-                <Select
-                  placeholder="请选择检验结果"
-                  options={[
-                    { label: '合格', value: '合格' },
-                    { label: '不合格', value: '不合格' },
-                  ]}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="inspector_name" label="检验人">
-                <Input placeholder="请输入检验人" />
-              </Form.Item>
-            </Col>
-          </Row>
+          <Form.Item name="remarks" label="备注">
+            <TextArea rows={2} placeholder="请输入备注" />
+          </Form.Item>
         </Form>
       </Modal>
 
       <Drawer
-        title="检验详情"
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        width={780}
+        title={current ? `检测项目维护 - ${current.inspection_no}` : '检测项目维护'}
+        open={inspectDrawerOpen}
+        onClose={() => setInspectDrawerOpen(false)}
+        width={1100}
+        destroyOnHidden
+        extra={
+          <Space>
+            <Button onClick={() => setInspectDrawerOpen(false)}>取消</Button>
+            <Button type="primary" onClick={handleInspectSave}>保存</Button>
+          </Space>
+        }
+      >
+        <Button type="dashed" icon={<PlusOutlined />} onClick={addItem} style={{ marginBottom: 12 }}>添加检测项目</Button>
+        <AntTable
+          columns={inspectColumns}
+          dataSource={inspectItems}
+          rowKey={(r: any) => r.item_id || r._item_key || Math.random()}
+          size="small"
+          pagination={false}
+          scroll={{ x: 1100 }}
+        />
+      </Drawer>
+
+      <Drawer
+        title={current ? `检验详情 - ${current.inspection_no}` : '检验详情'}
+        open={detailDrawerOpen}
+        onClose={() => setDetailDrawerOpen(false)}
+        width={900}
         destroyOnHidden
       >
         {current && (
@@ -339,28 +503,52 @@ export default function ProductInspection() {
               <Descriptions.Item label="检验类型">
                 <Tag color={typeColorMap[current.inspection_type]}>{current.inspection_type}</Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="关联工单">{current.work_order_no}</Descriptions.Item>
+              <Descriptions.Item label="报工单号">{current.report_order_no}</Descriptions.Item>
               <Descriptions.Item label="状态">
-                <Tag color={statusColor[current.status]}>{current.status}</Tag>
+                <Tag color={statusColor[current.status as keyof typeof statusColor]}>{current.status}</Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="料品名称">{current.material_name}</Descriptions.Item>
+              <Descriptions.Item label="料号">{current.material_code}</Descriptions.Item>
+              <Descriptions.Item label="产品名称">{current.material_name}</Descriptions.Item>
+              <Descriptions.Item label="规格">{current.specification}</Descriptions.Item>
               <Descriptions.Item label="触发方式">
-                {current.trigger_type ? <Tag color={triggerColor[current.trigger_type]}>{current.trigger_type}</Tag> : '-'}
+                {current.trigger_type ? <Tag color={triggerColor[current.trigger_type as keyof typeof triggerColor]}>{current.trigger_type}</Tag> : '-'}
               </Descriptions.Item>
-              <Descriptions.Item label="检验工序">{current.process_name}</Descriptions.Item>
-              <Descriptions.Item label="检验项目">{current.item_name}</Descriptions.Item>
               <Descriptions.Item label="检验标准" span={2}>{current.standard_name || '-'}</Descriptions.Item>
-              <Descriptions.Item label="标准值">{current.standard_value}</Descriptions.Item>
-              <Descriptions.Item label="实测值">{current.actual_value}</Descriptions.Item>
-              <Descriptions.Item label="检验人">{current.inspector_name || '-'}</Descriptions.Item>
+              <Descriptions.Item label="总结果">
+                {current.result && current.result !== '-' ? <Tag color={resultColor[current.result as keyof typeof resultColor]}>{current.result}</Tag> : <Tag>待检</Tag>}
+              </Descriptions.Item>
+              <Descriptions.Item label="检验员">{current.inspector_name || '-'}</Descriptions.Item>
+              <Descriptions.Item label="审核人">{current.reviewer_name || '-'}</Descriptions.Item>
               <Descriptions.Item label="检验时间">{current.inspection_time || '-'}</Descriptions.Item>
-              <Descriptions.Item label="检验结果">
-                {current.result && current.result !== '-' ? <Tag color={resultColor[current.result]}>{current.result}</Tag> : <Tag>待检</Tag>}
-              </Descriptions.Item>
-              <Descriptions.Item label="处理方式">
-                {current.handle_type && current.handle_type !== '-' ? <Tag color={handleColor[current.handle_type]}>{current.handle_type}</Tag> : '-'}
-              </Descriptions.Item>
+              <Descriptions.Item label="审核时间">{current.review_time || '-'}</Descriptions.Item>
+              <Descriptions.Item label="创建时间">{current.created_at}</Descriptions.Item>
+              <Descriptions.Item label="备注" span={2}>{current.remarks || '-'}</Descriptions.Item>
             </Descriptions>
+
+            <Title level={5} style={{ marginTop: 8 }}>检测项目</Title>
+            <AntTable
+              size="small"
+              dataSource={current.items || []}
+              rowKey={(r: any, i: number) => r.item_id || i}
+              pagination={false}
+              scroll={{ x: 900 }}
+              columns={[
+                { title: '序号', width: 60, render: (_: any, __: any, i: number) => i + 1 },
+                { title: '检测项目', dataIndex: 'item_name', width: 180 },
+                { title: '标准值', dataIndex: 'standard_value', width: 180 },
+                { title: '检测值', dataIndex: 'actual_value', width: 180 },
+                {
+                  title: '判定', dataIndex: 'result', width: 100,
+                  render: (v: any) => v !== null && v !== undefined ? (
+                    <Tag color={v === '合格' || v === 1 ? 'success' : 'error'}>
+                      {typeof v === 'number' ? (v === 1 ? '合格' : '不合格') : v}
+                    </Tag>
+                  ) : '-'
+                },
+                { title: '检测人', dataIndex: 'inspector_name', width: 100, render: (v: string) => v || '-' },
+                { title: '检测时间', dataIndex: 'inspection_time', width: 160, render: (v: string) => v || '-' },
+              ]}
+            />
           </>
         )}
       </Drawer>

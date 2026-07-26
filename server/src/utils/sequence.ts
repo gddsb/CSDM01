@@ -46,6 +46,10 @@ const SEQ_CONFIG: any = {
   SUPPLIER_COMPLAINT:  { prefix: 'GY',    datePattern: 'YYYY',   seqWidth: 4, resetBy: 'year'   },
   STANDARD:            { prefix: 'BZ',    datePattern: 'YYYY',   seqWidth: 3, resetBy: 'year'   },
   NCR:                 { prefix: 'NCR',   datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
+  PRODUCT_INSPECTION_SJ:  { prefix: 'SJ',  datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
+  PRODUCT_INSPECTION_ZC:  { prefix: 'ZC',  datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
+  PRODUCT_INSPECTION_CP:  { prefix: 'CP',  datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
+  PRODUCT_INSPECTION_QT:  { prefix: 'QT',  datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
 }
 
 // NumberRule 字段 → SEQ_CONFIG 字段映射
@@ -187,6 +191,18 @@ export const generateSupplierComplaintNo = () => generateBizNo('SUPPLIER_COMPLAI
 export const generateStandardNo         = () => generateBizNo('STANDARD')
 export const generateNcrNo              = () => generateBizNo('NCR')
 
+const PRODUCT_INSPECTION_SEQ_KEY = {
+  '首件': 'PRODUCT_INSPECTION_SJ',
+  '制程': 'PRODUCT_INSPECTION_ZC',
+  '成品': 'PRODUCT_INSPECTION_CP',
+  '其它': 'PRODUCT_INSPECTION_QT',
+}
+
+export const generateProductInspectionNo = (type: string) => {
+  const key = PRODUCT_INSPECTION_SEQ_KEY[type] || PRODUCT_INSPECTION_SEQ_KEY['其它']
+  return generateBizNo(key)
+}
+
 // 暴露 SEQ_CONFIG 副本（供调试/读取）
 export function getSeqConfig(): any {
   return { ...SEQ_CONFIG }
@@ -209,4 +225,5 @@ export default {
   generateSupplierComplaintNo,
   generateStandardNo,
   generateNcrNo,
+  generateProductInspectionNo,
 }
