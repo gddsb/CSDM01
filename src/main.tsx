@@ -28,8 +28,7 @@ import OrderManagement from './pages/production/OrderManagement'
 import ProcessReporting from './pages/production/ProcessReporting'
 import InspectionStandard from './pages/quality/InspectionStandard'
 import IncomingInspection from './pages/quality/IncomingInspection'
-import ProcessInspection from './pages/quality/ProcessInspection'
-import FinishedInspection from './pages/quality/FinishedInspection'
+import ProductInspection from './pages/quality/ProductInspection'
 import MicrobeInspection from './pages/quality/MicrobeInspection'
 import EnvironmentInspection from './pages/quality/EnvironmentInspection'
 import ComplaintManagement from './pages/quality/ComplaintManagement'
@@ -98,8 +97,7 @@ function AppRoutes() {
         <Route path="/production/reporting" element={<ProcessReporting />} />
         <Route path="/quality/standards" element={<InspectionStandard />} />
         <Route path="/quality/incoming" element={<IncomingInspection />} />
-        <Route path="/quality/process" element={<ProcessInspection />} />
-        <Route path="/quality/finished" element={<FinishedInspection />} />
+        <Route path="/quality/product" element={<ProductInspection />} />
         <Route path="/quality/microbe" element={<MicrobeInspection />} />
         <Route path="/quality/environment" element={<EnvironmentInspection />} />
         <Route path="/quality/complaints" element={<ComplaintManagement />} />
