@@ -42,6 +42,7 @@ export default function ProductInspection() {
   const [resultFilter, setResultFilter] = useState<any>(undefined)
   const [statusFilter, setStatusFilter] = useState<any>(undefined)
   const [dateRange, setDateRange] = useState<any>(null)
+  const [standards, setStandards] = useState<any[]>([])
 
   const [addVisible, setAddVisible] = useState(false)
   const [inspectDrawerOpen, setInspectDrawerOpen] = useState(false)
@@ -95,6 +96,19 @@ export default function ProductInspection() {
     load()
   }, [])
 
+  useEffect(() => {
+    const loadStandards = async () => {
+      try {
+        const res = await api.get('/basic/standards', { params: { page: 1, page_size: 500, status: '启用' } })
+        const list = res.data?.list || res.data || []
+        setStandards(list)
+      } catch (e) {
+        // ignore
+      }
+    }
+    loadStandards()
+  }, [])
+
   const totalCount = pagination.total
   const passCount = data.filter(i => i.result === '合格').length
   const failCount = data.filter(i => i.result === '不合格').length
@@ -122,11 +136,13 @@ export default function ProductInspection() {
   const handleAddSubmit = async () => {
     try {
       const values = await addForm.validateFields()
-      const ro = reportOrders.find(w => String(w.report_order_id) === String(values.report_order_id))
+      const standard = standards.find(s => String(s.standard_id) === String(values.standard_id))
       const payload = {
         inspection_type: values.inspection_type,
         report_order_id: Number(values.report_order_id),
-        trigger_type: values.trigger_type || '手工',
+        standard_id: values.standard_id ? Number(values.standard_id) : null,
+        standard_name: standard?.standard_name || '',
+        trigger_type: '手工',
         remarks: values.remarks,
       }
       const res = await api.post('/basic/product-inspections', payload)
@@ -465,6 +481,22 @@ export default function ProductInspection() {
             <Col span={24}>
               <Form.Item label="产品名称">
                 <Input value={selectedWorkOrder?.material_name || '-'} disabled />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={24}>
+              <Form.Item name="standard_id" label="检验标准">
+                <Select
+                  placeholder="请选择检验标准"
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  options={standards.map(s => ({
+                    label: `${s.standard_no || ''} ${s.standard_name || ''}`.trim(),
+                    value: s.standard_id,
+                  }))}
+                />
               </Form.Item>
             </Col>
           </Row>
