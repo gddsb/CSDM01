@@ -15,6 +15,7 @@ import {
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useApp, useMessage, User } from '../contexts/AppContext'
 import { themeList, themes } from '../themes'
+import { useTodoStats } from '../hooks/useTodoStats'
 import api from '../utils/api'
 
 // 20 个预设头像（使用 DiceBear API 生成不同样式头像）
@@ -166,6 +167,9 @@ export default function MainLayout() {
 
   // 当前主题对象（用于显示图标和提示）
   const currentTheme = themes[themeKey] || themes.pureMilk
+
+  // 待办统计（通知徽章）
+  const { stats } = useTodoStats()
 
   const handleCycleTheme = () => {
     const nextKey = cycleTheme()
@@ -435,7 +439,7 @@ export default function MainLayout() {
             />
             {companyName && <Text strong style={{ color: 'var(--color-primary)' }}>{companyName}</Text>}
             <Text strong>欢迎，{currentUser?.real_name}</Text>
-            <Badge count={3} size="small">
+            <Badge count={stats.total} size="small" offset={[2, 2]}>
               <BellOutlined style={{ fontSize: 18, cursor: 'pointer' }} />
             </Badge>
           </Space>

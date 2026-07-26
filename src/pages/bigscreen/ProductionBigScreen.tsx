@@ -4,6 +4,7 @@ import { ArrowLeftOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import * as echarts from 'echarts'
 import { workOrders, processReports, productionLines, devices, orders, processes } from '../../mock/data'
+import { useBigScreenScale } from '../../hooks/useBigScreenScale'
 import '../../styles/bigscreen.css'
 
 // 数据刷新间隔（毫秒）—— 工序产出与工单进度定期更新
@@ -142,6 +143,8 @@ export default function ProductionBigScreen() {
     const pad = (n) => String(n).padStart(2, '0')
     return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
   }
+
+  const { style: scaleStyle } = useBigScreenScale({ designWidth: 1920, designHeight: 1080 })
 
   // ============ 数据计算（基于 activeDate 当日数据） ============
   const dateWorkOrders = filterByDate(workOrders, activeDate, 'start_time', 'created_at')
@@ -542,9 +545,18 @@ export default function ProductionBigScreen() {
 
   return (
     <div
-      className="bigscreen-container"
-      style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}
+      style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: '#0a0e1a' }}
     >
+      <div
+        className="bigscreen-container"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '1080px',
+          overflow: 'hidden',
+          ...scaleStyle,
+        }}
+      >
       {/* 顶部标题栏 */}
       <div className="bs-header">
         <div className="bs-header-left">
@@ -698,6 +710,7 @@ export default function ProductionBigScreen() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   )
 }

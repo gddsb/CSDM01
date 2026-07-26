@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Card, Form, Input, Button, Typography } from 'antd'
+import { Form, Input, Button, Typography, Checkbox } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import { useApp, useMessage } from '../contexts/AppContext'
 import { useNavigate } from 'react-router-dom'
@@ -11,6 +11,7 @@ export default function Login() {
   const { login } = useApp()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [remember, setRemember] = useState(true)
 
   const onFinish = async (values) => {
     setLoading(true)
@@ -40,36 +41,93 @@ export default function Login() {
 
   return (
     <div className="login-bg">
-      <div className="login-card">
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div className="daman-logo" style={{ marginBottom: 8 }}>
-            <span className="daman-en">daman</span>
-            <span className="daman-cn">大满</span>
+      <div className="login-orb login-orb-1" />
+      <div className="login-orb login-orb-2" />
+      <div className="login-orb login-orb-3" />
+      <div className="login-grid-overlay" />
+
+      <div className="login-wrapper">
+        <div className="login-brand-section">
+          <div className="login-brand-logo">
+            <div className="daman-logo">
+              <span className="daman-en">daman</span>
+              <span className="daman-cn">大满</span>
+            </div>
           </div>
-          <div className="login-title">奶粉罐生产管理系统</div>
-          <div className="login-subtitle">Milk Can Production Management System V1.0.1.722</div>
-        </div>
-        <Form name="login" onFinish={onFinish} size="large" initialValues={{ username: 'admin', password: '123456' }}>
-          <Form.Item name="username" rules={[{ required: true, message: '请输入用户名' }]}>
-            <Input prefix={<UserOutlined />} placeholder="用户名" />
-          </Form.Item>
-          <Form.Item name="password" rules={[{ required: true, message: '请输入密码' }]}>
-            <Input.Password prefix={<LockOutlined />} placeholder="密码" />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={loading} block style={{ height: 44 }}>
-              登 录
-            </Button>
-          </Form.Item>
-        </Form>
-        <div style={{ marginTop: 16 }}>
-          <Text type="secondary" style={{ fontSize: 12 }}>快捷登录（统一密码 123456）：</Text>
-          <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            <Button size="small" onClick={() => quickLogin('admin')} style={{ fontSize: 12 }}>
-              admin
-            </Button>
+          <h1 className="login-brand-title">奶粉罐生产管理系统</h1>
+          <p className="login-brand-subtitle">Milk Can Production Management System</p>
+          <div className="login-brand-tags">
+            <span className="login-brand-tag">智能制造</span>
+            <span className="login-brand-tag">质量追溯</span>
+            <span className="login-brand-tag">实时协同</span>
           </div>
         </div>
+
+        <div className="login-card">
+          <div className="login-card-header">
+            <h2 className="login-card-title">用户登录</h2>
+            <p className="login-card-desc">欢迎回来，请输入您的账号信息</p>
+          </div>
+
+          <Form
+            name="login"
+            onFinish={onFinish}
+            size="large"
+            initialValues={{ username: 'admin', password: '123456' }}
+            className="login-form"
+          >
+            <Form.Item name="username" rules={[{ required: true, message: '请输入用户名' }]}>
+              <Input
+                prefix={<UserOutlined className="login-input-icon" />}
+                placeholder="请输入用户名"
+                className="login-input"
+              />
+            </Form.Item>
+            <Form.Item name="password" rules={[{ required: true, message: '请输入密码' }]}>
+              <Input.Password
+                prefix={<LockOutlined className="login-input-icon" />}
+                placeholder="请输入密码"
+                className="login-input"
+              />
+            </Form.Item>
+
+            <div className="login-form-options">
+              <Checkbox checked={remember} onChange={(e) => setRemember(e.target.checked)}>
+                记住密码
+              </Checkbox>
+              <a className="login-forgot-link" onClick={() => message.info('请联系管理员重置密码')}>
+                忘记密码？
+              </a>
+            </div>
+
+            <Form.Item style={{ marginBottom: 16 }}>
+              <Button type="primary" htmlType="submit" loading={loading} block className="login-submit-btn">
+                登 录
+              </Button>
+            </Form.Item>
+          </Form>
+
+          <div className="login-quick-section">
+            <div className="login-quick-divider">
+              <span>快捷登录</span>
+            </div>
+            <div className="login-quick-btns">
+              <Button
+                size="small"
+                onClick={() => quickLogin('admin')}
+                className="login-quick-btn"
+              >
+                管理员
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="login-footer">
+        <Text type="secondary" style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
+          © 2026 大满乳业 · 长沙大满MES V1.0.1.722
+        </Text>
       </div>
     </div>
   )

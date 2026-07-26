@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Input, Button, Toast } from 'antd-mobile'
+import { Input, Button, Toast, CheckList } from 'antd-mobile'
 import { UserOutline, LockOutline } from 'antd-mobile-icons'
 import { useApp } from '../../contexts/AppContext'
 import './mobile-login.css'
@@ -12,6 +12,7 @@ export default function MobileLogin() {
   const [username, setUsername] = useState('admin')
   const [password, setPassword] = useState('123456')
   const [loading, setLoading] = useState(false)
+  const [remember, setRemember] = useState(true)
 
   useEffect(() => {
     if (currentUser) {
@@ -84,6 +85,24 @@ export default function MobileLogin() {
               clearable
               className="m-login-input"
             />
+          </div>
+
+          <div className="m-login-options">
+            <div
+              className="m-login-remember"
+              onClick={() => setRemember(!remember)}
+            >
+              <span className={`m-login-check ${remember ? 'checked' : ''}`}>
+                {remember && '✓'}
+              </span>
+              <span>记住密码</span>
+            </div>
+            <a
+              className="m-login-forgot"
+              onClick={() => Toast.show({ icon: 'info', content: '请联系管理员重置密码' })}
+            >
+              忘记密码？
+            </a>
           </div>
 
           <Button

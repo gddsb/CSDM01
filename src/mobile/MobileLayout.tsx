@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { TabBar } from 'antd-mobile'
+import { TabBar, Badge, Avatar } from 'antd-mobile'
 import {
   AppOutline,
   UnorderedListOutline,
@@ -9,8 +9,10 @@ import {
   UserOutline,
   AddOutline,
   CheckOutline,
+  BellOutline,
 } from 'antd-mobile-icons'
 import { useApp } from '../contexts/AppContext'
+import { useTodoStats } from '../hooks/useTodoStats'
 import api from '../utils/api'
 import './mobile.css'
 
@@ -36,6 +38,7 @@ export default function MobileLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { currentUser, systemConfig, loadSystemConfig } = useApp()
+  const { stats } = useTodoStats()
   const [activeKey, setActiveKey] = useState('/mobile/home')
   const [isLandscape, setIsLandscape] = useState(false)
   const [deviceType, setDeviceType] = useState('default')
@@ -84,9 +87,34 @@ export default function MobileLayout() {
     <>
       <div className={shellClass}>
         <header className="mobile-header">
-          <div className="mobile-header-title" style={{ flex: 1, justifyContent: 'center' }}>
-            <span className="mobile-header-name">{systemName}</span>
-            <span className="mobile-header-version">{SYSTEM_VERSION}</span>
+          <div className="mobile-header-left">
+            <div className="mobile-header-logo">
+              <span className="mobile-header-logo-en">DM</span>
+            </div>
+            <div className="mobile-header-brand">
+              <div className="mobile-header-system">{systemName}</div>
+              <div className="mobile-header-ver">{SYSTEM_VERSION}</div>
+            </div>
+          </div>
+          <div className="mobile-header-right">
+            <div
+              className="mobile-header-icon"
+              onClick={() => navigate('/mobile/messages')}
+            >
+              <Badge content={stats.total > 0 ? (stats.total > 99 ? '99+' : stats.total) : null}>
+                <BellOutline fontSize={20} />
+              </Badge>
+            </div>
+            <div
+              className="mobile-header-avatar"
+              onClick={() => navigate('/mobile/profile')}
+            >
+              {currentUser?.avatar_url ? (
+                <img src={currentUser.avatar_url} alt="" />
+              ) : (
+                <UserOutline fontSize={18} />
+              )}
+            </div>
           </div>
         </header>
 

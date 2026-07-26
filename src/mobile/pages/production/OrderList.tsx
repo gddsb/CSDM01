@@ -156,6 +156,12 @@ export default function OrderList() {
 
       {/* 订单列表 */}
       <div className="mobile-page" style={{ paddingTop: 8 }}>
+        <PullToRefresh
+          onRefresh={async () => {
+            setHasMore(true)
+            await fetchList(1, true)
+          }}
+        >
         {list.length === 0 && !loading && (
           <div className="mobile-empty">暂无订单数据</div>
         )}
@@ -194,6 +200,7 @@ export default function OrderList() {
         ))}
 
         <InfiniteScroll loadMore={loadMore} hasMore={hasMore} />
+        </PullToRefresh>
       </div>
     </div>
   )

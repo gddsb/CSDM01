@@ -77,16 +77,110 @@
 /* 顶部信息区 */
 .mobile-header {
   flex-shrink: 0;
-  height: 52px;
+  height: 56px;
   padding: 0 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary, #1976D2) 100%);
   color: #fff;
   font-size: 14px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
   z-index: 10;
+  transition: background 0.35s ease;
+}
+
+.mobile-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.mobile-header-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.mobile-header-logo-en {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.5px;
+}
+
+.mobile-header-brand {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  min-width: 0;
+}
+
+.mobile-header-system {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-header-ver {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.75);
+  margin-top: 2px;
+}
+
+.mobile-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.mobile-header-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: background 0.2s;
+  color: #fff;
+}
+
+.mobile-header-icon:active {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.mobile-header-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+}
+
+.mobile-header-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .mobile-header-title {
@@ -119,6 +213,7 @@
   -webkit-overflow-scrolling: touch;
   background: #f5f6f8;
   padding-bottom: 8px;
+  transition: background 0.35s ease;
 }
 
 /* 底部菜单区 */
@@ -128,6 +223,7 @@
   border-top: 1px solid #eaeaea;
   z-index: 10;
   box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.04);
+  transition: background 0.35s ease, border-color 0.35s ease;
 }
 
 /* 通用页面容器 */
@@ -150,6 +246,7 @@
   padding: 12px;
   margin-bottom: 10px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: background 0.35s ease, box-shadow 0.35s ease;
 }
 
 .mobile-card-row {

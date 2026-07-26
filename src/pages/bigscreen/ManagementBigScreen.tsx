@@ -9,6 +9,7 @@ import {
   processReports, devices, productionLines, materials
 } from '../../mock/data'
 import '../../styles/bigscreen.css'
+import { useBigScreenScale } from '../../hooks/useBigScreenScale'
 
 // 环境数据更新间隔
 const ENV_REFRESH_INTERVAL = 8 * 1000
@@ -145,6 +146,7 @@ export default function ManagementBigScreen() {
     const pad = (n) => String(n).padStart(2, '0')
     return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
   }
+  const { style: scaleStyle } = useBigScreenScale({ designWidth: 1920, designHeight: 1080 })
 
   // 通用图表配置：禁用动画（定期更新数据不要动画）
   const noAnimation = { animation: false, animationDuration: 0, animationDurationUpdate: 0, animationEasingUpdate: 'linear' }
@@ -470,7 +472,8 @@ export default function ManagementBigScreen() {
   }, [])
 
   return (
-    <div className="bigscreen-container">
+    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: '#0a0e1a' }}>
+      <div className="bigscreen-container" style={{ display: 'flex', flexDirection: 'column', height: '1080px', overflow: 'hidden', ...scaleStyle }}>
       {/* 顶部标题栏 */}
       <div className="bs-header">
         {/* 左上角：闲置态切换为系统时间显示 */}
@@ -742,6 +745,7 @@ export default function ManagementBigScreen() {
           </div>
         </Col>
       </Row>
+    </div>
     </div>
   )
 }

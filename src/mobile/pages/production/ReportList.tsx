@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Toast, InfiniteScroll } from 'antd-mobile'
+import { Toast, InfiniteScroll, PullToRefresh } from 'antd-mobile'
 import api from '../../../utils/api'
 import dayjs from 'dayjs'
 
@@ -110,6 +110,12 @@ export default function ReportList() {
 
       {/* 报工单列表 */}
       <div className="mobile-page" style={{ paddingTop: 8 }}>
+        <PullToRefresh
+          onRefresh={async () => {
+            setHasMore(true)
+            await fetchList(1, true)
+          }}
+        >
         {list.length === 0 && !loading && (
           <div className="mobile-empty">暂无报工单数据</div>
         )}
@@ -148,6 +154,7 @@ export default function ReportList() {
         ))}
 
         <InfiniteScroll loadMore={loadMore} hasMore={hasMore} />
+        </PullToRefresh>
       </div>
     </div>
   )
