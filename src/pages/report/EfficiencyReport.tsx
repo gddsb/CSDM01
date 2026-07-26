@@ -144,11 +144,12 @@ export default function EfficiencyReport() {
     ],
   }
 
-  // 折线图：效率趋势（每日 OEE）
+  const targetData = trendDays.map(() => TARGET_EFFICIENCY)
+
   const lineOption = {
     title: { text: '效率趋势（本月每日 OEE）', left: 0, top: 0, textStyle: { fontSize: 14, fontWeight: 600 } },
-    tooltip: { trigger: 'axis', formatter: '{b}<br/>OEE: {c}%' },
-    legend: { top: 0, right: 0, data: ['OEE'] },
+    tooltip: { trigger: 'axis', formatter: (p) => p.map(i => `${i.marker}${i.seriesName}: ${i.value}%`).join('<br/>') },
+    legend: { top: 0, right: 0, data: ['OEE', '目标效率'] },
     grid: { left: 45, right: 30, top: 50, bottom: 30 },
     xAxis: { type: 'category', data: trendDays, boundaryGap: false, axisLabel: { fontSize: 10 } },
     yAxis: { type: 'value', name: 'OEE(%)', min: 70, max: 100, axisLabel: { fontSize: 11 } },
@@ -160,11 +161,15 @@ export default function EfficiencyReport() {
         data: trendOee,
         itemStyle: { color: '#9C27B0' },
         areaStyle: { color: 'rgba(156,39,176,0.12)' },
-        markLine: {
-          silent: true,
-          symbol: 'none',
-          data: [{ yAxis: TARGET_EFFICIENCY, name: '目标', lineStyle: { color: '#F44336', type: 'dashed' }, label: { formatter: '目标 85%', position: 'end' } }],
-        },
+      },
+      {
+        name: '目标效率',
+        type: 'line',
+        smooth: false,
+        symbol: 'none',
+        data: targetData,
+        lineStyle: { color: '#F44336', type: 'dashed', width: 2 },
+        itemStyle: { color: '#F44336' },
       },
     ],
   }
