@@ -94,8 +94,8 @@ function ResizableTable<RecordType extends object = any>(props: ResizableTablePr
   const columns = useMemo(() => {
     return rawColumns.map(col => {
       const key = String(col.key || col.dataIndex || '')
-      const width = colWidths[key] || col.width
-      if (!key) return col
+      const width = colWidths[key] || col.width || 150
+      if (!key) return { ...col, width }
       return {
         ...col,
         width,
@@ -126,8 +126,17 @@ function ResizableTable<RecordType extends object = any>(props: ResizableTablePr
           background: var(--color-primary, #1890ff);
           opacity: 0.4;
         }
+        .resizable-table-wrapper table {
+          table-layout: fixed !important;
+        }
+        .resizable-table-wrapper .ant-table-thead > tr > th,
+        .resizable-table-wrapper .ant-table-tbody > tr > td {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
       `}</style>
-      <Table<RecordType> columns={columns} {...rest} />
+      <Table<RecordType> columns={columns} tableLayout="fixed" {...rest} />
     </div>
   )
 }
