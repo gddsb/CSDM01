@@ -68,14 +68,6 @@ export const productionLines = [
       { process_id: 'p4', device_id: 'd2' },
       { process_id: 'p5', device_id: 'd2' },
     ] },
-  { line_id: 'l3', line_code: 'LINE-C', line_name: 'C线', status: '维护中', workshop: '二号车间', line_leader: 'u6', sort_order: 3,
-    line_processes: [
-      { process_id: 'p1', device_id: 'd3' },
-      { process_id: 'p2', device_id: 'd1' },
-      { process_id: 'p3', device_id: 'd1' },
-      { process_id: 'p4', device_id: 'd2' },
-      { process_id: 'p5', device_id: 'd2' },
-    ] },
 ]
 
 // 设备档案
