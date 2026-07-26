@@ -367,6 +367,9 @@ const tableCategoryMap = {
   production_process_defect: { category: '业务表', purpose: '工序不良记录子表，仅记录外键关联，详情通过关联不良分类表查询获取' },
   production_process_material: { category: '业务表', purpose: '工序物料记录子表，仅记录外键关联，详情通过关联基础料品表查询获取' },
   production_report_image: { category: '业务表', purpose: '报工单图片记录子表，统一存储报工单关联的不良/标签/异常图片' },
+  quality_product_inspection: { category: '业务表', purpose: '产品检测主表，存储产品检测基本信息，含检验编号、类型、关联报工单、检验标准、结果、状态等，与检测项目子表一对多关联' },
+  quality_product_inspection_item: { category: '业务表', purpose: '产品检测项目子表，存储检测项目的标准值、检测值、判定结果、检测人及检测时间，与产品检测主表多对一关联' },
+  sys_user_setting: { category: '系统表', purpose: '用户个性化设置表，存储用户对表格列宽、筛选条件等个性化配置' },
 }
 
 // 表名 → { 字段名: 中文注释 }（数据库表结构元数据，模块级常量）
@@ -792,6 +795,56 @@ const columnCommentMap = {
     created_at: '创建时间',
     updated_at: '更新时间',
   },
+  sys_user_setting: {
+    setting_id: '设置ID（主键）',
+    user_id: '用户ID',
+    setting_key: '设置键',
+    setting_value: '设置值（JSON）',
+    setting_type: '设置类型（string/json/number/boolean）',
+    setting_group: '设置分组（table/filter/preference）',
+    created_at: '创建时间',
+    updated_at: '更新时间',
+  },
+  quality_product_inspection: {
+    inspection_id: '产品检测ID（主键）',
+    inspection_no: '检验编号（按类型两位前缀+日期+序号）',
+    inspection_type: '检验类型：首件/制程/成品/其它',
+    report_order_id: '关联报工单ID',
+    report_order_no: '报工单号（冗余）',
+    material_id: '料品ID（从报工单带出）',
+    material_code: '料号（从报工单带出，冗余）',
+    material_name: '产品名称/料品名称（从报工单带出，冗余）',
+    specification: '规格（从报工单带出，冗余）',
+    standard_id: '关联检验标准ID',
+    standard_name: '检验标准名称（冗余）',
+    result: '总结果：合格/不合格',
+    trigger_type: '触发方式：自动/手工',
+    status: '状态：0=待检, 1=检验中, 2=审核中, 3=已完成, 4=已关闭',
+    inspector_id: '检验人ID',
+    inspector_name: '检验人姓名（冗余）',
+    reviewer_id: '审核人ID',
+    reviewer_name: '审核人姓名（冗余）',
+    inspection_time: '检验时间',
+    review_time: '审核时间',
+    remarks: '备注',
+    created_at: '创建时间',
+    updated_at: '更新时间',
+  },
+  quality_product_inspection_item: {
+    item_id: '检测项目ID（主键）',
+    inspection_id: '关联产品检测主表ID',
+    item_name: '检测项目名称',
+    standard_value: '项目标准值',
+    actual_value: '项目检测值',
+    result: '项目判定结果：0=不合格, 1=合格',
+    inspector_id: '项目检测人ID',
+    inspector_name: '项目检测人姓名（冗余）',
+    inspection_time: '项目检测时间',
+    sort_order: '排序',
+    remarks: '备注',
+    created_at: '创建时间',
+    updated_at: '更新时间',
+  },
 }
 
 // 扫描数据库表结构，返回 { tables, columnsMap }
@@ -845,6 +898,8 @@ async function collectDatabaseSchema() {
       'production_process_defect',
       'production_process_material',
       'production_report_image',
+      'quality_product_inspection',
+      'quality_product_inspection_item',
     ]
     if (a.category === b.category && a.category === '业务表') {
       const ai = businessOrder.indexOf(a.table_name)
