@@ -162,9 +162,8 @@
 | 模块 | 路径 | 功能说明 |
 |------|------|---------|
 | 来料检验 | `/quality/incoming` | 原材料/外购件入厂检验 |
-| 过程检验 | `/quality/process` | 生产过程中的工序检验 |
-| 成品检验 | `/quality/finished` | 成品出厂前最终检验 |
-| 产品微生物检验 | `/quality/microbe` | 微生物检测记录 |
+| 产品检测 | `/quality/product` | 统一检验入口，支持**首件检验**、**制程检验**、**成品检验**三种检验类型，可按类型筛选、统计和详情查看 |
+| 微生物检验 | `/quality/microbe` | 微生物检测记录 |
 | 环境检验 | `/quality/environment` | 生产环境洁净度检测 |
 | 客诉管理 | `/quality/complaints` | 客户投诉处理与跟踪 |
 | 供应商投诉 | `/quality/supplier` | 供应商质量投诉处理 |
@@ -680,7 +679,8 @@ milk-can-mes/
 │   │   ├── logo-rect.png
 │   │   └── logo-square.png
 │   ├── components/                   # 公共组件
-│   │   └── ThreeSectionPage.tsx      # 三段式页面通用组件
+│   │   ├── ThreeSectionPage.tsx      # 三段式页面通用组件
+│   │   └── ResizableTable.tsx        # 可拖拽调整列宽的表格组件（持久化保存用户列宽配置）
 │   ├── contexts/                     # React Context
 │   │   └── AppContext.tsx            # 全局状态（用户、主题等）
 │   ├── layouts/                      # 布局组件
@@ -722,8 +722,7 @@ milk-can-mes/
 │   │   ├── quality/                  # 质量管理模块
 │   │   │   ├── InspectionStandard.tsx
 │   │   │   ├── IncomingInspection.tsx
-│   │   │   ├── ProcessInspection.tsx
-│   │   │   ├── FinishedInspection.tsx
+│   │   │   ├── ProductInspection.tsx
 │   │   │   ├── MicrobeInspection.tsx
 │   │   │   ├── EnvironmentInspection.tsx
 │   │   │   ├── ComplaintManagement.tsx
@@ -768,6 +767,7 @@ milk-can-mes/
 │   │   │   ├── PermissionController.ts  # 权限/菜单控制器
 │   │   │   ├── DictController.ts     # 数据字典控制器
 │   │   │   ├── SystemConfigController.ts  # 系统配置控制器
+│   │   │   ├── UserSettingController.ts   # 用户个性化设置控制器
 │   │   │   ├── OperationLogController.ts  # 操作日志控制器
 │   │   │   ├── MaterialController.ts # 料品档案控制器
 │   │   │   ├── CustomerController.ts # 客户档案控制器
@@ -800,6 +800,7 @@ milk-can-mes/
 │   │   │   ├── DataDictionary.ts     # 数据字典模型
 │   │   │   ├── OperationLog.ts       # 操作日志模型
 │   │   │   ├── SystemConfig.ts       # 系统配置模型
+│   │   │   ├── UserSetting.ts         # 用户个性化设置模型（列宽配置等）
 │   │   │   ├── Material.ts           # 料品档案模型
 │   │   │   ├── Customer.ts           # 客户档案模型
 │   │   │   ├── ProductionLine.ts     # 产线模型
@@ -1713,6 +1714,21 @@ type 类型：
 ---
 
 ## 更新日志
+
+### V1.0.1.722 (2026-07-26)
+
+#### P0 - 高优先级
+
+- **产品检测合并**：将「过程检验」与「成品检验」合并为「产品检测」统一入口，检验单新增 `inspection_type` 类型字段，支持**首件**、**制程**、**成品**三种类型，页面顶部按类型统计，支持按类型筛选、详情查看
+- **列表列宽拖拽调整（持久化保存）**：封装 `ResizableTable` 通用组件，所有 37 个列表页面替换为该组件，支持列头边缘拖拽调整宽度，后端新增 `sys_user_setting` 表和用户设置接口，列宽配置按用户持久化保存，后续登录自动恢复
+- **效率分析目标曲线修复**：将效率趋势图中的目标效率线从 `markLine` 改为独立折线系列，使其可在图例中切换显示
+
+#### P1 - 中优先级
+
+- **生产线精简**：删除所有生产线 C 的数据，仅保留 A、B 两条线
+- **默认权限初始化修复**：移除 `defaultPermissions` 中硬编码的 `perm_id`，改用数据库自增分配，防止权限表主键冲突导致初始化失败
+
+---
 
 ### V1.0.1.722 (2026-07-26)
 
