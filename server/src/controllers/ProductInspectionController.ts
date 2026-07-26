@@ -181,6 +181,8 @@ export default {
     try {
       const { id } = req.params
       const {
+        inspection_type,
+        report_order_id,
         standard_id,
         standard_name,
         trigger_type,
@@ -200,6 +202,17 @@ export default {
       }
 
       const updateData: any = {}
+      if (inspection_type !== undefined) updateData.inspection_type = inspection_type
+      if (report_order_id !== undefined) {
+        const reportOrder = await ReportOrder.findOne({ where: { report_order_id: report_order_id } })
+        if (!reportOrder) return fail(res, '报工单不存在', ErrorCode.PARAM_INVALID)
+        updateData.report_order_id = report_order_id
+        updateData.report_order_no = reportOrder.report_no
+        updateData.material_id = reportOrder.material_id
+        updateData.material_code = reportOrder.material_code
+        updateData.material_name = reportOrder.material_name
+        updateData.specification = reportOrder.specification
+      }
       if (standard_id !== undefined) updateData.standard_id = standard_id
       if (standard_name !== undefined) updateData.standard_name = standard_name
       if (trigger_type !== undefined) updateData.trigger_type = trigger_type

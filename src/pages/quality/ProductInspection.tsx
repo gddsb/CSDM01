@@ -45,15 +45,19 @@ export default function ProductInspection() {
   const [standards, setStandards] = useState<any[]>([])
 
   const [addVisible, setAddVisible] = useState(false)
+  const [editVisible, setEditVisible] = useState(false)
   const [inspectDrawerOpen, setInspectDrawerOpen] = useState(false)
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false)
   const [current, setCurrent] = useState<any>(null)
   const [inspectItems, setInspectItems] = useState<any[]>([])
   const [addForm] = Form.useForm()
+  const [editForm] = Form.useForm()
   const message = useMessage()
 
   const selectedWorkOrderId = Form.useWatch('report_order_id', addForm)
   const selectedWorkOrder = reportOrders.find(w => String(w.report_order_id) === String(selectedWorkOrderId))
+  const editWorkOrderId = Form.useWatch('report_order_id', editForm)
+  const editWorkOrder = reportOrders.find(w => String(w.report_order_id) === String(editWorkOrderId))
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -159,6 +163,42 @@ export default function ProductInspection() {
     }
   }
 
+  const handleEdit = (record: any) => {
+    setCurrent(record)
+    editForm.setFieldsValue({
+      inspection_type: record.inspection_type,
+      report_order_id: record.report_order_id,
+      standard_id: record.standard_id,
+      remarks: record.remarks,
+    })
+    setEditVisible(true)
+  }
+
+  const handleEditSubmit = async () => {
+    try {
+      const values = await editForm.validateFields()
+      const standard = standards.find(s => String(s.standard_id) === String(values.standard_id))
+      const payload = {
+        inspection_type: values.inspection_type,
+        report_order_id: Number(values.report_order_id),
+        standard_id: values.standard_id ? Number(values.standard_id) : null,
+        standard_name: standard?.standard_name || '',
+        remarks: values.remarks,
+      }
+      const res = await api.put(`/basic/product-inspections/${current.inspection_id}`, payload)
+      if (res.success !== false) {
+        message.success('修改成功')
+        setEditVisible(false)
+        fetchData()
+      } else {
+        message.error(res.message || '修改失败')
+      }
+    } catch (e: any) {
+      if (e?.message?.includes('validate')) return
+      message.error(e?.message || '保存失败，请重试')
+    }
+  }
+
   const openInspect = async (record: any) => {
     setCurrent(record)
     try {
@@ -255,16 +295,19 @@ export default function ProductInspection() {
     { title: '检验员', dataIndex: 'inspector_name', key: 'inspector_name', width: 100, render: (v: string) => v || '-' },
     { title: '检验时间', dataIndex: 'inspection_time', key: 'inspection_time', width: 160, render: (v: string) => v || '-' },
     {
-      title: '操作', key: 'action', width: 220, fixed: 'right',
+      title: '操作', key: 'action', width: 260, fixed: 'right',
       render: (_: any, record: any) => (
         <Space size={4}>
           <Button type="link" size="small" onClick={() => showDetail(record)}>详情</Button>
+          {record.status === '待检' && (
+            <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
+          )}
           {canEdit(record.status) && (
-            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openInspect(record)}>检测</Button>
+            <Button type="link" size="small" onClick={() => openInspect(record)}>检测</Button>
           )}
           {canSubmit(record.status) && (
             <Popconfirm title="确认报审？报审后数据不可修改" onConfirm={() => handleSubmit(record)} okText="确认" cancelText="取消">
-              <Button type="link" size="small" icon={<SendOutlined />}>报审</Button>
+              <Button type="link" size="small">报审</Button>
             </Popconfirm>
           )}
         </Space>
@@ -481,6 +524,80 @@ export default function ProductInspection() {
             <Col span={24}>
               <Form.Item label="产品名称">
                 <Input value={selectedWorkOrder?.material_name || '-'} disabled />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={24}>
+              <Form.Item name="standard_id" label="检验标准">
+                <Select
+                  placeholder="请选择检验标准"
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  options={standards.map(s => ({
+                    label: `${s.standard_no || ''} ${s.standard_name || ''}`.trim(),
+                    value: s.standard_id,
+                  }))}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item name="remarks" label="备注">
+            <TextArea rows={2} placeholder="请输入备注" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="编辑产品检测"
+        open={editVisible}
+        onOk={handleEditSubmit}
+        onCancel={() => setEditVisible(false)}
+        okText="保存"
+        cancelText="取消"
+        width={640}
+        destroyOnHidden
+      >
+        <Form form={editForm} layout="vertical" className="compact-form" preserve={false}>
+          <Row gutter={12}>
+            <Col span={8}>
+              <Form.Item name="inspection_type" label="检验类型" rules={[{ required: true, message: '请选择检验类型' }]}>
+                <Select placeholder="请选择检验类型" options={INSPECTION_TYPES} />
+              </Form.Item>
+            </Col>
+            <Col span={16}>
+              <Form.Item name="report_order_id" label="关联报工单" rules={[{ required: true, message: '请选择报工单' }]}>
+                <Select
+                  placeholder="请选择报工单"
+                  showSearch
+                  optionFilterProp="label"
+                  options={reportOrders.map(w => ({ label: `${w.report_no} (${w.material_name})`, value: w.report_order_id }))}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={8}>
+              <Form.Item label="料号">
+                <Input value={editWorkOrder?.material_code || '-'} disabled />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="规格">
+                <Input value={editWorkOrder?.specification || editWorkOrder?.spec || '-'} disabled />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="触发方式">
+                <Select disabled value="手工" options={[{ label: '手工', value: '手工' }]} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={24}>
+              <Form.Item label="产品名称">
+                <Input value={editWorkOrder?.material_name || '-'} disabled />
               </Form.Item>
             </Col>
           </Row>
