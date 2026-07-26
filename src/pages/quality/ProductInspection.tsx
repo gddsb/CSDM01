@@ -26,14 +26,14 @@ const statusColor = { '已完成': 'success', '检验中': 'processing', '待检
 const typeColorMap = Object.fromEntries(INSPECTION_TYPES.map(t => [t.value, t.color]))
 
 const initialInspections = [
-  { inspection_id: 'pi1', inspection_no: 'CP20260630001', inspection_type: '首件', work_order_id: 'w1', work_order_no: 'WO20260630001', material_name: '900g奶粉罐', process_id: 'p3', process_name: '成圆焊接', item_name: '焊缝强度', standard_value: '≥200N', actual_value: '235N', result: '合格', inspector: 'u5', inspector_name: '质量检验员', inspection_time: '2026-06-30 09:10:00', trigger_type: '手工', standard_name: '900g奶粉罐检验标准V1', handle_type: '-', status: '已完成' },
-  { inspection_id: 'pi2', inspection_no: 'CP20260630002', inspection_type: '制程', work_order_id: 'w1', work_order_no: 'WO20260630001', material_name: '900g奶粉罐', process_id: 'p4', process_name: '补涂烘干', item_name: '涂层厚度', standard_value: '8±2μm', actual_value: '9μm', result: '合格', inspector: 'u5', inspector_name: '质量检验员', inspection_time: '2026-06-30 13:05:00', trigger_type: '手工', standard_name: '-', handle_type: '-', status: '已完成' },
-  { inspection_id: 'pi3', inspection_no: 'CP20260630003', inspection_type: '制程', work_order_id: 'w1', work_order_no: 'WO20260630001', material_name: '900g奶粉罐', process_id: 'p7', process_name: '正压测漏', item_name: '保压测试', standard_value: '0.1MPa保压30s无渗漏', actual_value: '保压通过', result: '合格', inspector: 'u5', inspector_name: '质量检验员', inspection_time: '2026-06-30 14:20:00', trigger_type: '自动', standard_name: '-', handle_type: '-', status: '已完成' },
-  { inspection_id: 'pi4', inspection_no: 'CP20260630004', inspection_type: '成品', work_order_id: 'w1', work_order_no: 'WO20260630001', material_name: '900g奶粉罐', process_id: 'p9', process_name: '人工全检', item_name: '成品全检', standard_value: '按检验标准逐项检验', actual_value: '全部合格', result: '合格', inspector: 'u5', inspector_name: '质量检验员', inspection_time: '2026-06-30 16:00:00', trigger_type: '自动', standard_name: '900g奶粉罐检验标准V1', handle_type: '入库', status: '已完成' },
-  { inspection_id: 'pi5', inspection_no: 'CP20260629001', inspection_type: '制程', work_order_id: 'w2', work_order_no: 'WO20260629001', material_name: '800g奶粉罐', process_id: 'p3', process_name: '成圆焊接', item_name: '焊缝强度', standard_value: '≥200N', actual_value: '185N', result: '不合格', inspector: 'u5', inspector_name: '质量检验员', inspection_time: '2026-06-29 11:00:00', trigger_type: '手工', standard_name: '-', handle_type: '-', status: '已完成' },
-  { inspection_id: 'pi6', inspection_no: 'CP20260629002', inspection_type: '制程', work_order_id: 'w2', work_order_no: 'WO20260629001', material_name: '800g奶粉罐', process_id: 'p1', process_name: '裁剪下料', item_name: '板材尺寸', standard_value: '800±1.0mm', actual_value: '800.2mm', result: '合格', inspector: 'u5', inspector_name: '质量检验员', inspection_time: '2026-06-29 10:15:00', trigger_type: '手工', standard_name: '-', handle_type: '-', status: '已完成' },
-  { inspection_id: 'pi7', inspection_no: 'CP20260628001', inspection_type: '成品', work_order_id: 'w3', work_order_no: 'WO20260628001', material_name: '900g奶粉罐', process_id: '-', process_name: '成品检验', item_name: '成品全检', standard_value: '按检验标准逐项检验', actual_value: '全部合格', result: '合格', inspector: 'u5', inspector_name: '质量检验员', inspection_time: '2026-06-28 15:30:00', trigger_type: '自动', standard_name: '900g奶粉罐检验标准V1', handle_type: '入库', status: '已完成' },
-  { inspection_id: 'pi8', inspection_no: 'CP20260701001', inspection_type: '首件', work_order_id: 'w4', work_order_no: 'WO20260701001', material_name: '400g奶粉罐', process_id: 'p1', process_name: '裁剪下料', item_name: '首件确认', standard_value: '按首件检验清单确认', actual_value: '待检', result: '-', inspector: '-', inspector_name: '-', inspection_time: '-', trigger_type: '手工', standard_name: '400g奶粉罐检验标准V1', handle_type: '-', status: '待检' },
+  { inspection_id: 'pi1', inspection_no: 'CP20260630001', inspection_type: '首件', work_order_id: 'w1', work_order_no: 'WO20260630001', material_code: 'ML-900-A', material_name: '900g奶粉罐', specification: '900g奶粉罐', process_id: 'p3', process_name: '成圆焊接', item_name: '焊缝强度', standard_value: '≥200N', actual_value: '235N', result: '合格', inspector: 'u5', inspector_name: '质量检验员', inspection_time: '2026-06-30 09:10:00', trigger_type: '手工', standard_name: '900g奶粉罐检验标准V1', handle_type: '-', status: '已完成' },
+  { inspection_id: 'pi2', inspection_no: 'CP20260630002', inspection_type: '制程', work_order_id: 'w1', work_order_no: 'WO20260630001', material_code: 'ML-900-A', material_name: '900g奶粉罐', specification: '900g奶粉罐', process_id: 'p4', process_name: '补涂烘干', item_name: '涂层厚度', standard_value: '8±2μm', actual_value: '9μm', result: '合格', inspector: 'u5', inspector_name: '质量检验员', inspection_time: '2026-06-30 13:05:00', trigger_type: '手工', standard_name: '-', handle_type: '-', status: '已完成' },
+  { inspection_id: 'pi3', inspection_no: 'CP20260630003', inspection_type: '制程', work_order_id: 'w1', work_order_no: 'WO20260630001', material_code: 'ML-900-A', material_name: '900g奶粉罐', specification: '900g奶粉罐', process_id: 'p7', process_name: '正压测漏', item_name: '保压测试', standard_value: '0.1MPa保压30s无渗漏', actual_value: '保压通过', result: '合格', inspector: 'u5', inspector_name: '质量检验员', inspection_time: '2026-06-30 14:20:00', trigger_type: '自动', standard_name: '-', handle_type: '-', status: '已完成' },
+  { inspection_id: 'pi4', inspection_no: 'CP20260630004', inspection_type: '成品', work_order_id: 'w1', work_order_no: 'WO20260630001', material_code: 'ML-900-A', material_name: '900g奶粉罐', specification: '900g奶粉罐', process_id: 'p9', process_name: '人工全检', item_name: '成品全检', standard_value: '按检验标准逐项检验', actual_value: '全部合格', result: '合格', inspector: 'u5', inspector_name: '质量检验员', inspection_time: '2026-06-30 16:00:00', trigger_type: '自动', standard_name: '900g奶粉罐检验标准V1', handle_type: '入库', status: '已完成' },
+  { inspection_id: 'pi5', inspection_no: 'CP20260629001', inspection_type: '制程', work_order_id: 'w2', work_order_no: 'WO20260629001', material_code: 'ML-800-C', material_name: '800g奶粉罐', specification: '800g奶粉罐', process_id: 'p3', process_name: '成圆焊接', item_name: '焊缝强度', standard_value: '≥200N', actual_value: '185N', result: '不合格', inspector: 'u5', inspector_name: '质量检验员', inspection_time: '2026-06-29 11:00:00', trigger_type: '手工', standard_name: '-', handle_type: '-', status: '已完成' },
+  { inspection_id: 'pi6', inspection_no: 'CP20260629002', inspection_type: '制程', work_order_id: 'w2', work_order_no: 'WO20260629001', material_code: 'ML-800-C', material_name: '800g奶粉罐', specification: '800g奶粉罐', process_id: 'p1', process_name: '裁剪下料', item_name: '板材尺寸', standard_value: '800±1.0mm', actual_value: '800.2mm', result: '合格', inspector: 'u5', inspector_name: '质量检验员', inspection_time: '2026-06-29 10:15:00', trigger_type: '手工', standard_name: '-', handle_type: '-', status: '已完成' },
+  { inspection_id: 'pi7', inspection_no: 'CP20260628001', inspection_type: '成品', work_order_id: 'w3', work_order_no: 'WO20260628001', material_code: 'ML-900-A', material_name: '900g奶粉罐', specification: '900g奶粉罐', process_id: '-', process_name: '成品检验', item_name: '成品全检', standard_value: '按检验标准逐项检验', actual_value: '全部合格', result: '合格', inspector: 'u5', inspector_name: '质量检验员', inspection_time: '2026-06-28 15:30:00', trigger_type: '自动', standard_name: '900g奶粉罐检验标准V1', handle_type: '入库', status: '已完成' },
+  { inspection_id: 'pi8', inspection_no: 'CP20260701001', inspection_type: '首件', work_order_id: 'w4', work_order_no: 'WO20260701001', material_code: 'ML-400-B', material_name: '400g奶粉罐', specification: '400g奶粉罐', process_id: 'p1', process_name: '裁剪下料', item_name: '首件确认', standard_value: '按首件检验清单确认', actual_value: '待检', result: '-', inspector: '-', inspector_name: '-', inspection_time: '-', trigger_type: '手工', standard_name: '400g奶粉罐检验标准V1', handle_type: '-', status: '待检' },
 ]
 
 const workOrderOptions = workOrders.map(w => ({ label: `${w.work_order_no} (${w.material_name})`, value: w.work_order_id }))
@@ -139,11 +139,9 @@ export default function ProductInspection() {
       render: v => <Tag color={typeColorMap[v] || 'default'}>{v}</Tag>
     },
     { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 150 },
-    { title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 180 },
-    { title: '检验工序', dataIndex: 'process_name', key: 'process_name', width: 100 },
-    { title: '检验项目', dataIndex: 'item_name', key: 'item_name', width: 130 },
-    { title: '标准值', dataIndex: 'standard_value', key: 'standard_value', width: 180 },
-    { title: '实测值', dataIndex: 'actual_value', key: 'actual_value', width: 130 },
+    { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 130 },
+    { title: '产品名称', dataIndex: 'material_name', key: 'material_name', width: 180 },
+    { title: '规格', dataIndex: 'specification', key: 'specification', width: 150 },
     {
       title: '结果', dataIndex: 'result', key: 'result', width: 80,
       render: v => v && v !== '-' ? <Tag color={resultColor[v]}>{v}</Tag> : <Tag>待检</Tag>
@@ -152,12 +150,12 @@ export default function ProductInspection() {
       title: '触发方式', dataIndex: 'trigger_type', key: 'trigger_type', width: 90,
       render: v => v && v !== '-' ? <Tag color={triggerColor[v] || 'default'}>{v}</Tag> : '-'
     },
-    { title: '检验人', dataIndex: 'inspector_name', key: 'inspector_name', width: 100 },
-    { title: '检验时间', dataIndex: 'inspection_time', key: 'inspection_time', width: 160, render: v => v || '-' },
     {
       title: '状态', dataIndex: 'status', key: 'status', width: 90,
       render: v => <Tag color={statusColor[v] || 'default'}>{v}</Tag>
     },
+    { title: '检验员', dataIndex: 'inspector_name', key: 'inspector_name', width: 100 },
+    { title: '检验时间', dataIndex: 'inspection_time', key: 'inspection_time', width: 160, render: v => v || '-' },
     {
       title: '操作', key: 'action', width: 100, fixed: 'right',
       render: (_, record) => (
