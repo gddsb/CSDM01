@@ -89,7 +89,6 @@ const defaultMenuItems = [
       },
       { key: '/quality/instruments', icon: <ToolOutlined />, label: '检测仪器管理' },
       { key: '/quality/standards', icon: <SafetyCertificateOutlined />, label: '检验标准' },
-      { key: '/quality/standard-items', icon: <FileSearchOutlined />, label: '检验标准项目维护' },
     ]
   },
   {
