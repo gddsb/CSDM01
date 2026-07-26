@@ -8,15 +8,15 @@ import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { generateProductInspectionNo } from '../utils/sequence.js'
 import { logger } from '../utils/logger.js'
 
-const STATUS_REVERSE = { '待检': 0, '检验中': 1, '审核中': 2, '已完成': 3, '已关闭': 4 }
+const STATUS_REVERSE: Record<string, number> = { '待检': 0, '检验中': 1, '审核中': 2, '已完成': 3, '已关闭': 4 }
 
-const parseStatusParam = (status) => {
+const parseStatusParam = (status: any): number[] | null => {
   if (status === undefined || status === '' || status === null) return null
   const arr = Array.isArray(status) ? status : [status]
   const nums: number[] = []
-  arr.forEach(s => {
+  arr.forEach((s: any) => {
     if (typeof s === 'string' && s.includes(',')) {
-      s.split(',').forEach(p => {
+      s.split(',').forEach((p: string) => {
         const n = STATUS_REVERSE[p] !== undefined ? STATUS_REVERSE[p] : Number(p)
         if (!Number.isNaN(n)) nums.push(n)
       })
@@ -39,6 +39,12 @@ async function getDetail(id: number) {
       },
     ],
   })
+}
+
+const convertItemResult = (v: any) => {
+  if (v === undefined || v === null) return null
+  if (typeof v === 'string') return v === '合格' ? 1 : 0
+  return v
 }
 
 export default {
@@ -65,12 +71,12 @@ export default {
       if (trigger_type) where.trigger_type = trigger_type
 
       const statusArr = parseStatusParam(status)
-      if (statusArr) where.status = statusArr
+      if (statusArr) where.status = { [Op.in]: statusArr }
 
       if (start_date || end_date) {
         where.created_at = {}
-        if (start_date) where.created_at[Op.gte] = new Date(start_date)
-        if (end_date) where.created_at[Op.lte] = new Date(new Date(end_date).getTime() + 86400000)
+        if (start_date) where.created_at[Op.gte] = new Date(String(start_date))
+        if (end_date) where.created_at[Op.lte] = new Date(new Date(String(end_date)).getTime() + 86400000)
       }
 
       const pageNum = Math.max(1, Number(page) || 1)
@@ -83,15 +89,10 @@ export default {
         offset: (pageNum - 1) * pageSize,
       })
 
-      res.json(success({
-        list: rows,
-        total: count,
-        page: pageNum,
-        page_size: pageSize,
-      }))
+      success(res, { list: rows, total: count, page: pageNum, page_size: pageSize })
     } catch (err: any) {
       logger.error('[ProductInspection] list error:', err)
-      res.json(fail(ErrorCode.SERVER_ERROR, err.message))
+      fail(res, err.message || '查询失败', ErrorCode.SYSTEM_ERROR)
     }
   },
 
@@ -100,12 +101,12 @@ export default {
       const { id } = req.params
       const record = await getDetail(Number(id))
       if (!record) {
-        return res.json(fail(ErrorCode.NOT_FOUND, '记录不存在'))
+        return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)
       }
-      res.json(success(record))
+      success(res, record)
     } catch (err: any) {
       logger.error('[ProductInspection] detail error:', err)
-      res.json(fail(ErrorCode.SERVER_ERROR, err.message))
+      fail(res, err.message || '查询失败', ErrorCode.SYSTEM_ERROR)
     }
   },
 
@@ -122,11 +123,11 @@ export default {
         items = [],
       } = req.body
 
-      if (!inspection_type) return res.json(fail(ErrorCode.PARAM_ERROR, '检验类型不能为空'))
-      if (!report_order_id) return res.json(fail(ErrorCode.PARAM_ERROR, '关联报工单不能为空'))
+      if (!inspection_type) return fail(res, '检验类型不能为空', ErrorCode.PARAM_INVALID)
+      if (!report_order_id) return fail(res, '关联报工单不能为空', ErrorCode.PARAM_INVALID)
 
       const reportOrder = await ReportOrder.findOne({ where: { report_order_id: report_order_id } })
-      if (!reportOrder) return res.json(fail(ErrorCode.PARAM_ERROR, '报工单不存在'))
+      if (!reportOrder) return fail(res, '报工单不存在', ErrorCode.PARAM_INVALID)
 
       const inspection_no = await generateProductInspectionNo(inspection_type)
 
@@ -152,9 +153,7 @@ export default {
           item_name: item.item_name,
           standard_value: item.standard_value || '',
           actual_value: item.actual_value || '',
-          result: item.result !== undefined && item.result !== null
-            ? (typeof item.result === 'string' ? (item.result === '合格' ? 1 : 0) : item.result)
-            : null,
+          result: convertItemResult(item.result),
           inspector_id: item.inspector_id || null,
           inspector_name: item.inspector_name || '',
           inspection_time: item.inspection_time ? new Date(item.inspection_time) : null,
@@ -167,11 +166,13 @@ export default {
       await t.commit()
 
       const detail = await getDetail(record.inspection_id)
-      res.json(success(detail))
+      success(res, detail, '创建成功')
     } catch (err: any) {
-      await t.rollback()
+      if (t && !t.finished) {
+        try { await t.rollback() } catch (_) { /* ignore */ }
+      }
       logger.error('[ProductInspection] create error:', err)
-      res.json(fail(ErrorCode.SERVER_ERROR, err.message))
+      fail(res, err.message || '创建失败', ErrorCode.SYSTEM_ERROR)
     }
   },
 
@@ -190,12 +191,12 @@ export default {
 
       const record = await ProductInspection.findOne({ where: { inspection_id: id } })
       if (!record) {
-        return res.json(fail(ErrorCode.NOT_FOUND, '记录不存在'))
+        return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)
       }
 
       const statusVal = typeof record.status === 'string' ? STATUS_REVERSE[record.status] : record.status
       if (statusVal >= 2) {
-        return res.json(fail(ErrorCode.PARAM_ERROR, '审核中及以后的状态不可修改'))
+        return fail(res, '审核中及以后的状态不可修改', ErrorCode.PARAM_INVALID)
       }
 
       const updateData: any = {}
@@ -205,19 +206,19 @@ export default {
       if (remarks !== undefined) updateData.remarks = remarks
       if (result !== undefined) updateData.result = result
 
-      await record.update(updateData, { transaction: t })
+      if (Object.keys(updateData).length > 0) {
+        await record.update(updateData, { transaction: t })
+      }
 
       if (items !== undefined) {
         await ProductInspectionItem.destroy({ where: { inspection_id: id }, transaction: t })
         if (items.length > 0) {
           const itemData = items.map((item: any, idx: number) => ({
-            inspection_id: id,
+            inspection_id: Number(id),
             item_name: item.item_name,
             standard_value: item.standard_value || '',
             actual_value: item.actual_value || '',
-            result: item.result !== undefined && item.result !== null
-              ? (typeof item.result === 'string' ? (item.result === '合格' ? 1 : 0) : item.result)
-              : null,
+            result: convertItemResult(item.result),
             inspector_id: item.inspector_id || null,
             inspector_name: item.inspector_name || '',
             inspection_time: item.inspection_time ? new Date(item.inspection_time) : null,
@@ -231,11 +232,13 @@ export default {
       await t.commit()
 
       const detail = await getDetail(Number(id))
-      res.json(success(detail))
+      success(res, detail, '更新成功')
     } catch (err: any) {
-      await t.rollback()
+      if (t && !t.finished) {
+        try { await t.rollback() } catch (_) { /* ignore */ }
+      }
       logger.error('[ProductInspection] update error:', err)
-      res.json(fail(ErrorCode.SERVER_ERROR, err.message))
+      fail(res, err.message || '更新失败', ErrorCode.SYSTEM_ERROR)
     }
   },
 
@@ -244,19 +247,19 @@ export default {
       const { id } = req.params
       const record = await ProductInspection.findOne({ where: { inspection_id: id } })
       if (!record) {
-        return res.json(fail(ErrorCode.NOT_FOUND, '记录不存在'))
+        return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)
       }
 
       const statusVal = typeof record.status === 'string' ? STATUS_REVERSE[record.status] : record.status
       if (statusVal >= 2) {
-        return res.json(fail(ErrorCode.PARAM_ERROR, '已报审或已完成，不可重复报审'))
+        return fail(res, '已报审或已完成，不可重复报审', ErrorCode.PARAM_INVALID)
       }
 
       await record.update({ status: 2 })
-      res.json(success({ message: '报审成功' }))
+      success(res, { message: '报审成功' }, '报审成功')
     } catch (err: any) {
       logger.error('[ProductInspection] submit error:', err)
-      res.json(fail(ErrorCode.SERVER_ERROR, err.message))
+      fail(res, err.message || '报审失败', ErrorCode.SYSTEM_ERROR)
     }
   },
 
@@ -266,23 +269,25 @@ export default {
       const { id } = req.params
       const record = await ProductInspection.findOne({ where: { inspection_id: id } })
       if (!record) {
-        return res.json(fail(ErrorCode.NOT_FOUND, '记录不存在'))
+        return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)
       }
 
       const statusVal = typeof record.status === 'string' ? STATUS_REVERSE[record.status] : record.status
       if (statusVal >= 2) {
-        return res.json(fail(ErrorCode.PARAM_ERROR, '审核中及以后的状态不可删除'))
+        return fail(res, '审核中及以后的状态不可删除', ErrorCode.PARAM_INVALID)
       }
 
       await ProductInspectionItem.destroy({ where: { inspection_id: id }, transaction: t })
       await record.destroy({ transaction: t })
       await t.commit()
 
-      res.json(success({ message: '删除成功' }))
+      success(res, { message: '删除成功' }, '删除成功')
     } catch (err: any) {
-      await t.rollback()
+      if (t && !t.finished) {
+        try { await t.rollback() } catch (_) { /* ignore */ }
+      }
       logger.error('[ProductInspection] delete error:', err)
-      res.json(fail(ErrorCode.SERVER_ERROR, err.message))
+      fail(res, err.message || '删除失败', ErrorCode.SYSTEM_ERROR)
     }
   },
 }
