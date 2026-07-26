@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, InputNumber, Select, DatePicker, Space, Row, Col, Drawer, Descriptions, Popconfirm, Checkbox } from 'antd'
 import { useNavigate } from 'react-router-dom'
@@ -439,8 +440,7 @@ export default function OrderManagement() {
                 </Space>
               </Col>
             </Row>
-            <Table
-              columns={columns}
+            <ResizableTable tableKey="pages_production_OrderManagement"               columns={columns}
               dataSource={data}
               rowKey="order_id"
               size="small"

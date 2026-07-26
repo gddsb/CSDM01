@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback } from 'react'
 import { Table, Tag, Button, Space, Modal, Form, Input, InputNumber, Switch, Popconfirm, Row, Col, Tooltip, Typography } from 'antd'
 import {
@@ -255,8 +256,7 @@ export default function ProcessManagement() {
                 </Text>
               </Tooltip>
             </div>
-            <Table
-              columns={columns}
+            <ResizableTable tableKey="pages_basic_ProcessManagement"               columns={columns}
               dataSource={data}
               rowKey="process_id"
               size="small"

@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   Table, Tag, Button, Modal, Form, Input, Select,
@@ -341,8 +342,7 @@ export default function NumberRuleManagement() {
           />
         }
         table={
-          <Table
-            columns={columns}
+          <ResizableTable tableKey="pages_basic_NumberRuleManagement"             columns={columns}
             dataSource={data}
             rowKey="rule_id"
             size="small"

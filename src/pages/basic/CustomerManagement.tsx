@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, Select, DatePicker, Row, Col, Drawer, Descriptions, Space, Popconfirm } from 'antd'
 import dayjs from 'dayjs'
@@ -234,8 +235,7 @@ export default function CustomerManagement() {
           />
         }
         table={
-          <Table
-            columns={columns}
+          <ResizableTable tableKey="pages_basic_CustomerManagement"             columns={columns}
             dataSource={data}
             rowKey="customer_id"
             size="small"

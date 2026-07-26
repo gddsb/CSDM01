@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState } from 'react'
 import { Table, Tag, Button, Space, Modal, Form, Input, Select, Typography, Row, Col } from 'antd'
 import { useMessage } from '../../contexts/AppContext'
@@ -337,8 +338,7 @@ export default function InspectionStandard() {
         filters={filters}
         actions={<ActionButtons onAdd={handleAdd} />}
         table={
-          <Table
-            columns={columns}
+          <ResizableTable tableKey="pages_quality_InspectionStandard"             columns={columns}
             dataSource={data}
             rowKey="standard_id"
             size="small"
@@ -420,8 +420,7 @@ export default function InspectionStandard() {
             <Button type="primary" size="small" icon={<PlusOutlined />} onClick={handleAddItem}>新增项目</Button>
           )}
         </div>
-        <Table
-          columns={viewMode ? itemTableColumns : itemTableColumnsWithAction}
+        <ResizableTable tableKey="pages_quality_InspectionStandard"           columns={viewMode ? itemTableColumns : itemTableColumnsWithAction}
           dataSource={standardItems}
           rowKey="id"
           size="small"

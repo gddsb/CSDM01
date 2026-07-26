@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback } from 'react'
 import { Table, Tag, Button, Drawer, Space, Modal, Form, Input, Select, Popconfirm, Descriptions, Row, Col } from 'antd'
 import {
@@ -224,8 +225,7 @@ export default function DeviceManagement() {
           />
         }
         table={
-          <Table
-            columns={columns}
+          <ResizableTable tableKey="pages_basic_DeviceManagement"             columns={columns}
             dataSource={data}
             rowKey="device_id"
             size="small"

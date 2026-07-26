@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, Select, Drawer, Space, Popconfirm, Descriptions, Row, Col } from 'antd'
 import {
@@ -243,8 +244,7 @@ const MaterialManagement = () => {
           />
         }
         table={
-          <Table
-            columns={columns}
+          <ResizableTable tableKey="pages_basic_MaterialManagement"             columns={columns}
             dataSource={data}
             rowKey="material_id"
             size="small"

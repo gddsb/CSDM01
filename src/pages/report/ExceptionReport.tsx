@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useMemo } from 'react'
 import { Table, Tag, Button, Select, Input, Space, Row, Col, Progress, DatePicker, Card } from 'antd'
 import {
@@ -200,8 +201,7 @@ export default function ExceptionReport() {
           {/* 异常明细列表 */}
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>异常明细</div>
-            <Table
-              columns={detailColumns}
+            <ResizableTable tableKey="pages_report_ExceptionReport"               columns={detailColumns}
               dataSource={filtered}
               rowKey="record_id"
               size="small"
@@ -213,8 +213,7 @@ export default function ExceptionReport() {
           {/* 按类型汇总表 */}
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>按异常类型汇总</div>
-            <Table
-              columns={summaryColumns}
+            <ResizableTable tableKey="pages_report_ExceptionReport"               columns={summaryColumns}
               dataSource={typeSummary}
               rowKey="exception_type"
               size="small"
@@ -225,8 +224,7 @@ export default function ExceptionReport() {
           {/* 按工单汇总表 */}
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>按工单汇总</div>
-            <Table
-              columns={woColumns}
+            <ResizableTable tableKey="pages_report_ExceptionReport"               columns={woColumns}
               dataSource={workOrderSummary}
               rowKey="work_order_no"
               size="small"

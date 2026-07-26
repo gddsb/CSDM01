@@ -1,3 +1,4 @@
+import ResizableTable from '../components/ResizableTable'
 import { useState, useEffect, useMemo } from 'react'
 import { Row, Col, Table, Tag, Progress, Typography, Space } from 'antd'
 import {
@@ -212,8 +213,7 @@ export default function Dashboard() {
               <Title level={5} style={{ margin: 0 }}>生产工单概览</Title>
               <Text type="secondary">实时数据</Text>
             </div>
-            <Table
-              columns={workOrderColumns}
+            <ResizableTable tableKey="pages_Dashboard"               columns={workOrderColumns}
               dataSource={workOrders}
               rowKey="work_order_id"
               size="small"
@@ -270,13 +270,13 @@ export default function Dashboard() {
         <Col span={12}>
           <div className="dashboard-card">
             <Title level={5} style={{ marginBottom: 16 }}>生产订单</Title>
-            <Table columns={orderColumns} dataSource={orders} rowKey="order_id" size="small" loading={loading} pagination={false} />
+            <ResizableTable tableKey="pages_Dashboard" columns={orderColumns} dataSource={orders} rowKey="order_id" size="small" loading={loading} pagination={false} />
           </div>
         </Col>
         <Col span={12}>
           <div className="dashboard-card">
             <Title level={5} style={{ marginBottom: 16 }}>最近报工记录</Title>
-            <Table columns={reportColumns} dataSource={recentReports} rowKey="report_id" size="small" loading={loading} pagination={false} />
+            <ResizableTable tableKey="pages_Dashboard" columns={reportColumns} dataSource={recentReports} rowKey="report_id" size="small" loading={loading} pagination={false} />
           </div>
         </Col>
       </Row>

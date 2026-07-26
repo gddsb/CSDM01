@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, Select, Row, Col, Switch, Drawer, Descriptions, Space, Popconfirm, Upload, Image, Checkbox } from 'antd'
 import {
@@ -535,8 +536,7 @@ export default function DefectManagement() {
         table={
           <>
             {filterBar}
-            <Table
-              columns={columns}
+            <ResizableTable tableKey="pages_basic_DefectManagement"               columns={columns}
               dataSource={data}
               rowKey="defect_id"
               size="small"

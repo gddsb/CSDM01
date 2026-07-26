@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, Select, Space, Popconfirm, Row, Col, Switch } from 'antd'
 import {
@@ -277,8 +278,7 @@ export default function UserManagement() {
           />
         }
         table={
-          <Table
-            columns={columns}
+          <ResizableTable tableKey="pages_system_UserManagement"             columns={columns}
             dataSource={data}
             rowKey="user_id"
             size="small"

@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState } from 'react'
 import { Table, Tag, Button, Typography, Alert, Steps } from 'antd'
 import {
@@ -93,8 +94,7 @@ export default function SupplierComplaint() {
             style={{ marginBottom: 12 }}
             message="状态流转：已创建 → 已发出 → 已回复 → 已关闭"
           />
-          <Table
-            columns={columns}
+          <ResizableTable tableKey="pages_quality_SupplierComplaint"             columns={columns}
             dataSource={supplierComplaints}
             rowKey="complaint_id"
             size="small"

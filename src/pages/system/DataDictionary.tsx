@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback } from 'react'
 import { Table, Tag, Button, Drawer, Descriptions, Input, Select, Space } from 'antd'
 import { DatabaseOutlined, ReloadOutlined, SyncOutlined, TableOutlined } from '@ant-design/icons'
@@ -173,8 +174,7 @@ export default function DataDictionary() {
           </div>
         }
         table={
-          <Table
-            size="small"
+          <ResizableTable tableKey="pages_system_DataDictionary"             size="small"
             columns={tableColumns}
             dataSource={tableList}
             rowKey="dict_id"
@@ -216,8 +216,7 @@ export default function DataDictionary() {
             </Descriptions>
 
             <div style={{ fontWeight: 600, marginBottom: 8 }}>字段明细</div>
-            <Table
-              size="small"
+            <ResizableTable tableKey="pages_system_DataDictionary"               size="small"
               columns={[
                 { title: '序号', key: 'idx', width: 50, render: (_, __, i) => i + 1 },
                 { title: '字段名', dataIndex: 'name', key: 'name', width: 180 },
@@ -251,8 +250,7 @@ export default function DataDictionary() {
               <Descriptions.Item label="记录数">{recordsTotal}</Descriptions.Item>
               <Descriptions.Item label="说明">{recordsTable.purpose || '-'}</Descriptions.Item>
             </Descriptions>
-            <Table
-              size="small"
+            <ResizableTable tableKey="pages_system_DataDictionary"               size="small"
               columns={(recordFields.length ? recordFields : Object.keys(recordsData[0] || {}).map(name => ({ name }))).map(f => ({
                 title: (
                   <div style={{ lineHeight: 1.4 }}>

@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState } from 'react'
 import { Table, Tag, Button, Modal, Space, Typography } from 'antd'
 import {
@@ -103,8 +104,7 @@ export default function InstrumentManagement() {
         filters={filters}
         actions={<ActionButtons />}
         table={
-          <Table
-            columns={columns}
+          <ResizableTable tableKey="pages_quality_InstrumentManagement"             columns={columns}
             dataSource={instruments}
             rowKey="instrument_id"
             size="small"
@@ -142,8 +142,7 @@ export default function InstrumentManagement() {
               </div>
             </Space>
             <Title level={5}>校准历史记录</Title>
-            <Table
-              columns={historyColumns}
+            <ResizableTable tableKey="pages_quality_InstrumentManagement"               columns={historyColumns}
               dataSource={calibrationHistoryMap[current.instrument_id] || []}
               rowKey={(r, i) => i}
               size="small"

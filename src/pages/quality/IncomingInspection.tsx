@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useMemo } from 'react'
 import { Table, Tag, Button, Drawer, Descriptions, Typography } from 'antd'
 import {
@@ -128,8 +129,7 @@ export default function IncomingInspection() {
         filters={filters}
         actions={<ActionButtons />}
         table={
-          <Table
-            columns={columns}
+          <ResizableTable tableKey="pages_quality_IncomingInspection"             columns={columns}
             dataSource={filteredData}
             rowKey="inspection_id"
             size="small"
@@ -172,8 +172,7 @@ export default function IncomingInspection() {
               )}
             </Descriptions>
             <Title level={5}>检验结果明细</Title>
-            <Table
-              columns={detailColumns}
+            <ResizableTable tableKey="pages_quality_IncomingInspection"               columns={detailColumns}
               dataSource={inspectionDetailMap[current.inspection_id] || []}
               rowKey={(r, i) => i}
               size="small"

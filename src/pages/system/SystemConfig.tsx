@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback } from 'react'
 import { useApp, useMessage } from '../../contexts/AppContext'
 import {
@@ -1014,8 +1015,7 @@ export default function SystemConfig() {
           </Button>
         </Space>
       </div>
-      <Table
-        columns={backupColumns}
+      <ResizableTable tableKey="pages_system_SystemConfig"         columns={backupColumns}
         dataSource={backups}
         rowKey="filename"
         size="small"
@@ -1132,8 +1132,7 @@ export default function SystemConfig() {
           </Button>
         </Space>
       </div>
-      <Table
-        rowKey="path"
+      <ResizableTable tableKey="pages_system_SystemConfig"         rowKey="path"
         columns={fileColumns}
         dataSource={fileItems}
         loading={fileLoading}

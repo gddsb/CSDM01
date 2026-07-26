@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { Table, Tag, Button, DatePicker, Select, Space, Row, Col, Progress } from 'antd'
 import {
@@ -171,8 +172,7 @@ export default function DailyReport() {
           <div style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
             <Chart option={lineOption} height={300} />
           </div>
-          <Table
-            columns={columns}
+          <ResizableTable tableKey="pages_report_DailyReport"             columns={columns}
             dataSource={filtered}
             rowKey="work_order_id"
             size="small"

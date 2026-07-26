@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   Table, Tag, Button, Modal, Input, InputNumber, Select, Space, Row, Col,
@@ -2410,8 +2411,7 @@ export default function ProcessReporting() {
                 )}
               </Col>
             </Row>
-            <Table
-              columns={prodDefectColumns}
+            <ResizableTable tableKey="pages_production_ProcessReporting"               columns={prodDefectColumns}
               dataSource={prodDefectDisplayList}
               rowKey="id"
               size="small"
@@ -2452,8 +2452,7 @@ export default function ProcessReporting() {
                 )}
               </Col>
             </Row>
-            <Table
-              columns={materialColumns}
+            <ResizableTable tableKey="pages_production_ProcessReporting"               columns={materialColumns}
               dataSource={materialDisplayList}
               rowKey="id"
               size="small"
@@ -2486,8 +2485,7 @@ export default function ProcessReporting() {
                 )}
               </Col>
             </Row>
-            <Table
-              columns={scrapDefectColumns}
+            <ResizableTable tableKey="pages_production_ProcessReporting"               columns={scrapDefectColumns}
               dataSource={scrapDefectDisplayList}
               rowKey="id"
               size="small"
@@ -2520,8 +2518,7 @@ export default function ProcessReporting() {
                 )}
               </Col>
             </Row>
-            <Table
-              columns={exceptionColumns}
+            <ResizableTable tableKey="pages_production_ProcessReporting"               columns={exceptionColumns}
               dataSource={exceptionDisplayList}
               rowKey="id"
               size="small"
@@ -2551,8 +2548,7 @@ export default function ProcessReporting() {
                 )}
               </Col>
             </Row>
-            <Table
-              columns={manpowerColumns}
+            <ResizableTable tableKey="pages_production_ProcessReporting"               columns={manpowerColumns}
               dataSource={manpowerDisplayList}
               rowKey="id"
               size="small"

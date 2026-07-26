@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { Table, Tag, Progress } from 'antd'
 import {
@@ -155,8 +156,7 @@ export default function DeviceOEE() {
             <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, color: 'var(--text-primary)' }}>各设备OEE指标对比</div>
             <div ref={chartRef} style={{ width: '100%', height: 320 }} />
           </div>
-          <Table
-            columns={columns}
+          <ResizableTable tableKey="pages_device_DeviceOEE"             columns={columns}
             dataSource={oeeData}
             rowKey="device_id"
             size="small"

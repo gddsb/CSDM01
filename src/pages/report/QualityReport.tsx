@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useMemo } from 'react'
 import { Table, Tag, Button, Select, Input, Space, Row, Col, Progress, DatePicker, Card } from 'antd'
 import {
@@ -203,8 +204,7 @@ export default function QualityReport() {
               </Space>
             </Col>
           </Row>
-          <Table
-            columns={columns}
+          <ResizableTable tableKey="pages_report_QualityReport"             columns={columns}
             dataSource={filtered}
             rowKey={(r) => r.inspection_id}
             size="small"

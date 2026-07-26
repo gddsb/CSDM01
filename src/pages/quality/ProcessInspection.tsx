@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useMemo } from 'react'
 import { Table, Tag, Button, Select, DatePicker, Space, Row, Col, Modal, Form, Input } from 'antd'
 import { useMessage } from '../../contexts/AppContext'
@@ -170,8 +171,7 @@ export default function ProcessInspection() {
                 </Space>
               </Col>
             </Row>
-            <Table
-              columns={columns}
+            <ResizableTable tableKey="pages_quality_ProcessInspection"               columns={columns}
               dataSource={filtered}
               rowKey="inspection_id"
               size="small"

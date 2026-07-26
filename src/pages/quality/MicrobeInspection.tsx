@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useMemo } from 'react'
 import { Table, Tag, Button, Drawer, Descriptions, Typography, Alert } from 'antd'
 import {
@@ -157,8 +158,7 @@ export default function MicrobeInspection() {
               style={{ marginBottom: 12 }}
               message="不合格处理流程：正常检验 → 不合格 → 加严检验(样本翻倍) → 仍不合格 → 判退/报废"
             />
-            <Table
-              columns={columns}
+            <ResizableTable tableKey="pages_quality_MicrobeInspection"               columns={columns}
               dataSource={filteredData}
               rowKey="inspection_id"
               size="small"
@@ -199,8 +199,7 @@ export default function MicrobeInspection() {
               </Descriptions.Item>
             </Descriptions>
             <Title level={5}>检验结果明细</Title>
-            <Table
-              columns={detailColumns}
+            <ResizableTable tableKey="pages_quality_MicrobeInspection"               columns={detailColumns}
               dataSource={microbeDetailMap[current.inspection_id] || []}
               rowKey={(r, i) => i}
               size="small"

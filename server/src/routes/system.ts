@@ -28,6 +28,7 @@ import {
   removeData as dictDataRemove,
 } from '../controllers/DictController.js'
 import { listDirectory, removeItem } from '../controllers/FileManagerController.js'
+import { getUserSettings, saveUserSetting, batchSaveUserSettings } from '../controllers/UserSettingController.js'
 
 const router = Router()
 
@@ -120,5 +121,10 @@ router.delete('/config/backups/:filename', logOperation('系统配置'), deleteB
 // 文件管理
 router.get('/files', listDirectory)
 router.delete('/files/:path', logOperation('文件管理'), removeItem)
+
+// 用户个性化设置
+router.get('/user-settings', getUserSettings)
+router.put('/user-setting', logOperation('用户设置'), saveUserSetting)
+router.put('/user-settings/batch', logOperation('用户设置'), batchSaveUserSettings)
 
 export default router

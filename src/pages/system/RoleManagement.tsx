@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useMemo } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, Select, Space, Tree, InputNumber, Popconfirm, Row, Col, Typography, Spin, Switch } from 'antd'
 import {
@@ -301,8 +302,7 @@ export default function RoleManagement() {
           </Space>
         }
         table={
-          <Table
-            columns={columns}
+          <ResizableTable tableKey="pages_system_RoleManagement"             columns={columns}
             dataSource={data}
             rowKey="role_id"
             size="small"

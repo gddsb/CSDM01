@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useMemo } from 'react'
 import { Table, Tag, Button, Space } from 'antd'
 import {
@@ -116,8 +117,7 @@ export default function CheckRecord() {
         </Space>
       }
       table={
-        <Table
-          columns={columns}
+        <ResizableTable tableKey="pages_device_CheckRecord"           columns={columns}
           dataSource={filteredData}
           rowKey="check_id"
           size="small"

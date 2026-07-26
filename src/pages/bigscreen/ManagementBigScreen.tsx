@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import * as echarts from 'echarts'
 import { Row, Col, Table, Tag, Button } from 'antd'
@@ -647,8 +648,7 @@ export default function ManagementBigScreen() {
         <Col span={12}>
           <div className="bs-panel">
             <div className="bs-panel-title">质量检验综合汇总</div>
-            <Table
-              className="bs-table"
+            <ResizableTable tableKey="pages_bigscreen_ManagementBigScreen"               className="bs-table"
               columns={qualityColumns}
               dataSource={qualitySummary}
               rowKey="category"
@@ -678,8 +678,7 @@ export default function ManagementBigScreen() {
 
           <div className="bs-panel">
             <div className="bs-panel-title">客诉处理跟踪</div>
-            <Table
-              className="bs-table"
+            <ResizableTable tableKey="pages_bigscreen_ManagementBigScreen"               className="bs-table"
               columns={complaintColumns}
               dataSource={useComplaints}
               rowKey="complaint_id"

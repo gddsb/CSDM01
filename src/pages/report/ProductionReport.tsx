@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useMemo } from 'react'
 import { Table, Tag, Button, Select, Input, Space, Row, Col, Progress, DatePicker, Card, Statistic } from 'antd'
 import {
@@ -160,8 +161,7 @@ export default function ProductionReport() {
               </Space>
             </Col>
           </Row>
-          <Table
-            columns={columns}
+          <ResizableTable tableKey="pages_report_ProductionReport"             columns={columns}
             dataSource={filtered}
             rowKey="work_order_id"
             size="small"

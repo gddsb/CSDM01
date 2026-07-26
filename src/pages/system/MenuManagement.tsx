@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, InputNumber, Select, TreeSelect, Row, Col, Space, Popconfirm } from 'antd'
 import {
@@ -247,8 +248,7 @@ export default function MenuManagement() {
           />
         }
         table={
-          <Table
-            columns={columns}
+          <ResizableTable tableKey="pages_system_MenuManagement"             columns={columns}
             dataSource={data}
             rowKey="perm_id"
             size="small"

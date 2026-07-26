@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, Select, Row, Col, Space, Drawer, Descriptions, Popconfirm, Card } from 'antd'
 import {
@@ -352,8 +353,7 @@ export default function ProductionLine() {
           />
         }
         table={
-          <Table
-            columns={columns}
+          <ResizableTable tableKey="pages_basic_ProductionLine"             columns={columns}
             dataSource={data}
             rowKey="line_id"
             size="small"
@@ -489,8 +489,7 @@ export default function ProductionLine() {
               }
               size="small"
             >
-              <Table
-                columns={processColumns}
+              <ResizableTable tableKey="pages_basic_ProductionLine"                 columns={processColumns}
                 dataSource={selectedLineProcesses}
                 rowKey="process_id"
                 size="small"

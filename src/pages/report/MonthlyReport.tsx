@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { Table, Button, DatePicker, Select, Space, Row, Col, Progress } from 'antd'
 import {
@@ -187,8 +188,7 @@ export default function MonthlyReport() {
               </div>
             </Col>
           </Row>
-          <Table
-            columns={columns}
+          <ResizableTable tableKey="pages_report_MonthlyReport"             columns={columns}
             dataSource={tableData}
             rowKey="key"
             size="small"

@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, Select, Space, Row, Col, InputNumber, message } from 'antd'
 import {
@@ -162,8 +163,7 @@ export default function InspectionStandardItem() {
         filters={filters}
         actions={<ActionButtons onAdd={handleAdd} />}
         table={
-          <Table
-            columns={columns}
+          <ResizableTable tableKey="pages_quality_InspectionStandardItem"             columns={columns}
             dataSource={data}
             rowKey="id"
             size="small"

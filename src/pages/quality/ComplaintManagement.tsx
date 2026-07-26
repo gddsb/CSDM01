@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState } from 'react'
 import { Table, Tag, Button, Drawer, Descriptions, Typography, Timeline } from 'antd'
 import {
@@ -95,8 +96,7 @@ export default function ComplaintManagement() {
         filters={filters}
         actions={<ActionButtons />}
         table={
-          <Table
-            columns={columns}
+          <ResizableTable tableKey="pages_quality_ComplaintManagement"             columns={columns}
             dataSource={complaints}
             rowKey="complaint_id"
             size="small"

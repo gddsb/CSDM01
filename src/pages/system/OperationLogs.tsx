@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect } from 'react'
 import { Table, Tag, Button } from 'antd'
 import { HistoryOutlined, ReloadOutlined } from '@ant-design/icons'
@@ -109,8 +110,7 @@ export default function OperationLogs() {
         <></>
       }
       table={
-        <Table
-          columns={columns}
+        <ResizableTable tableKey="pages_system_OperationLogs"           columns={columns}
           dataSource={data}
           rowKey="log_id"
           size="small"

@@ -1,3 +1,4 @@
+import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect } from 'react'
 import { Table, Tag, Button, Select, DatePicker, Input, Space } from 'antd'
 import { BugOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
@@ -153,8 +154,7 @@ export default function SystemLogs() {
         </Space>
       }
       table={
-        <Table
-          columns={columns}
+        <ResizableTable tableKey="pages_system_SystemLogs"           columns={columns}
           dataSource={data}
           rowKey="log_id"
           size="small"
