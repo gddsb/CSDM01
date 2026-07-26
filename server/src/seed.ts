@@ -10,6 +10,7 @@ import {
   LineProcess, LineDevice, NumberRule, DefectImage,
   DictType, DictData, ProcessDefect, ProcessException,
   ProcessMaterial, DataDictionary,
+  InspectionStandard, InspectionStandardItem,
 } from './models/index.js'
 import sequelize from './config/database.js'
 import { logger } from './utils/logger.js'
@@ -46,6 +47,8 @@ const seedOrder = [
   { name: 'SystemConfig', model: SystemConfig, label: '系统配置' },
   { name: 'Sequence', model: Sequence, label: '序列号' },
   { name: 'NumberRule', model: NumberRule, label: '编码规则' },
+  { name: 'InspectionStandard', model: InspectionStandard, label: '检验标准主表' },
+  { name: 'InspectionStandardItem', model: InspectionStandardItem, label: '检验标准子表' },
   { name: 'DataDictionary', model: DataDictionary, label: '数据字典' },
   { name: 'OperationLog', model: OperationLog, label: '操作日志' },
 ]

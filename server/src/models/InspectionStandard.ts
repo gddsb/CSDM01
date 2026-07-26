@@ -22,7 +22,7 @@ const InspectionStandard = sequelize.define('InspectionStandard', {
   inspection_type: {
     type: DataTypes.STRING(20),
     allowNull: false,
-    comment: '检验类型：材料检验/产品检验/其它检验',
+    comment: '检验类型：首件/制程/成品/其它',
   },
   standard_type: {
     type: DataTypes.STRING(20),

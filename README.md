@@ -168,7 +168,7 @@
 | 客诉管理 | `/quality/complaints` | 客户投诉处理与跟踪 |
 | 供应商投诉 | `/quality/supplier` | 供应商质量投诉处理 |
 | 检测仪器管理 | `/quality/instruments` | 仪器档案、校准记录 |
-| 检验标准管理 | `/quality/standards` | 检验标准定义与版本控制，支持材料检验/产品检验/其它检验三种检验类型，通用/专用/临时三种标准类型，开立/生效/失效三种状态 |
+| 检验标准管理 | `/quality/standards` | 检验标准定义与版本控制，支持首件/制程/成品/其它四种检验类型，通用/专用/临时三种标准类型，开立/生效/失效三种状态；主表+子表结构（主表存标准基本信息含版本，子表存检验项目） |
 | 检验标准项目维护 | `/quality/standard-items` | 检验项目库维护，支持项目大类、检验方法、标准值、抽样方式等配置 |
 
 ### 5. 设备管理
@@ -1103,6 +1103,42 @@ milk-can-mes/
 | created_at | DATE | ✗ | ✗ | - | 创建时间 |
 | updated_at | DATE | ✗ | ✗ | - | 更新时间 |
 
+#### 12. 检验标准主表（quality_inspection_standard）
+
+| 字段名 | 类型 | 主键 | 必填 | 默认值 | 说明 |
+|--------|------|------|------|--------|------|
+| standard_id | INTEGER | ✓ | ✓ | 自增 | 检验标准ID |
+| standard_no | STRING(50) | ✗ | ✓ | - | 标准编号（唯一） |
+| standard_name | STRING(200) | ✗ | ✓ | - | 标准名称 |
+| inspection_type | STRING(20) | ✗ | ✓ | - | 检验类型：首件/制程/成品/其它 |
+| standard_type | STRING(20) | ✗ | ✓ | - | 标准类型：通用标准/专用标准/临时标准 |
+| customer_code | STRING(50) | ✗ | ✗ | - | 客户编码 |
+| material_id | UUID | ✗ | ✗ | - | 参照料品ID |
+| material_name | STRING(200) | ✗ | ✗ | - | 料品名称（冗余） |
+| version_no | STRING(20) | ✗ | ✗ | V1 | 版本号 |
+| effective_date | DATE | ✗ | ✗ | - | 生效日期 |
+| status | STRING(20) | ✗ | ✗ | 开立 | 状态：开立/生效/失效 |
+| created_by | INTEGER | ✗ | ✗ | - | 创建人ID |
+| description | STRING(500) | ✗ | ✗ | - | 描述 |
+| created_at | DATE | ✗ | ✗ | - | 创建时间 |
+| updated_at | DATE | ✗ | ✗ | - | 更新时间 |
+
+#### 13. 检验标准子表（quality_inspection_standard_item）
+
+| 字段名 | 类型 | 主键 | 必填 | 默认值 | 说明 |
+|--------|------|------|------|--------|------|
+| item_id | INTEGER | ✓ | ✓ | 自增 | 检验标准项目ID |
+| standard_id | INTEGER | ✗ | ✓ | - | 关联检验标准ID（外键） |
+| item_name | STRING(200) | ✗ | ✓ | - | 项目名称 |
+| category | STRING(50) | ✗ | ✗ | - | 项目大类：外观/尺寸/性能/理化/微生物/环境 |
+| method | STRING(200) | ✗ | ✗ | - | 检验方法 |
+| sample_rule | STRING(200) | ✗ | ✗ | - | 抽样方式 |
+| standard_value | STRING(200) | ✗ | ✓ | - | 标准值 |
+| unit | STRING(20) | ✗ | ✗ | - | 单位 |
+| sort_order | INTEGER | ✗ | ✗ | 0 | 排序 |
+| created_at | DATE | ✗ | ✗ | - | 创建时间 |
+| updated_at | DATE | ✗ | ✗ | - | 更新时间 |
+
 ### 数据库关联关系
 
 ```
@@ -1130,6 +1166,8 @@ production_order (1) ── (N) production_report_order
                              └── (N) production_report_image
 
 master_defect_type (1) ── (N) bas_defect_image
+
+quality_inspection_standard (1) ── (N) quality_inspection_standard_item
 ```
 
 ---
@@ -1717,6 +1755,21 @@ type 类型：
 ---
 
 ## 更新日志
+
+### V1.0.1.724 (2026-07-26)
+
+#### P0 - 高优先级
+
+- **新增检验标准主表和子表**：创建基础数据表 `quality_inspection_standard`（检验标准主表）和 `quality_inspection_standard_item`（检验标准子表），主表存放检验标准基本信息（含版本号），子表存放检验项目详情（项目名称、标准值、单位、检验方法等）
+- **检验标准种子数据**：分别生成首件、制程、成品各一份检验标准种子数据，共3条主表记录、25条子表记录，覆盖外观、尺寸、性能、理化、微生物等检验项目大类
+- **检验类型统一**：检验标准模型 `inspection_type` 字段统一为"首件/制程/成品/其它"，与产品检测模块的检验类型保持一致
+- **数据字典更新**：在系统数据字典中新增检验标准主表和子表的表分类、用途及字段注释
+
+#### P1 - 中优先级
+
+- **种子数据初始化优化**：检验标准子表数据导入顺序在主表之后，确保外键关联数据完整性
+
+---
 
 ### V1.0.1.723 (2026-07-26)
 
