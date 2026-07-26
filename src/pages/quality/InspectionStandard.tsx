@@ -1,10 +1,11 @@
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback } from 'react'
-import { Table, Tag, Button, Space, Modal, Form, Input, Select, Typography, Row, Col, Drawer, Descriptions } from 'antd'
+import { Table, Tag, Button, Space, Modal, Form, Input, Select, Typography, Row, Col, Drawer, Descriptions, Popconfirm, InputNumber, message as antMsg } from 'antd'
 import { useMessage } from '../../contexts/AppContext'
 import {
   FileProtectOutlined, AppstoreOutlined, SolutionOutlined,
-  CheckCircleOutlined, SearchOutlined, PlusOutlined, EyeOutlined, EditOutlined, ReloadOutlined
+  CheckCircleOutlined, SearchOutlined, PlusOutlined, EyeOutlined, EditOutlined,
+  DeleteOutlined, ReloadOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
@@ -40,13 +41,6 @@ const categoryOptions = [
   { label: '环境', value: '环境' },
 ]
 
-const INSPECTION_PREFIX: Record<string, string> = {
-  '首件': 'SJ',
-  '制程': 'ZC',
-  '成品': 'CP',
-  '其它': 'QT',
-}
-
 const typeColorMap: Record<string, string> = {
   '首件': 'blue', '制程': 'purple', '成品': 'green', '其它': 'default',
 }
@@ -61,12 +55,15 @@ export default function InspectionStandard() {
   const [standardType, setStandardType] = useState<any>(undefined)
   const [statusFilter, setStatusFilter] = useState<any>(undefined)
 
-  const [addVisible, setAddVisible] = useState(false)
-  const [editVisible, setEditVisible] = useState(false)
+  const [modalVisible, setModalVisible] = useState(false)
   const [viewDrawerOpen, setViewDrawerOpen] = useState(false)
+  const [editing, setEditing] = useState<any>(null)
   const [current, setCurrent] = useState<any>(null)
   const [currentItems, setCurrentItems] = useState<any[]>([])
   const [form] = Form.useForm()
+  const [itemForm] = Form.useForm()
+  const [itemModalVisible, setItemModalVisible] = useState(false)
+  const [itemEditing, setItemEditing] = useState<any>(null)
   const message = useMessage()
 
   const fetchData = useCallback(async () => {
@@ -109,7 +106,8 @@ export default function InspectionStandard() {
   ]
 
   const handleAdd = () => {
-    setCurrent(null)
+    setEditing(null)
+    setCurrentItems([])
     form.resetFields()
     form.setFieldsValue({
       inspection_type: '首件',
@@ -117,7 +115,7 @@ export default function InspectionStandard() {
       status: '开立',
       version_no: 'V1',
     })
-    setAddVisible(true)
+    setModalVisible(true)
   }
 
   const handleView = async (record: any) => {
@@ -134,38 +132,102 @@ export default function InspectionStandard() {
   }
 
   const handleEdit = async (record: any) => {
-    setCurrent(record)
+    setEditing(record)
     form.resetFields()
+    try {
+      const res = await api.get(`/basic/standards/${record.standard_id}`)
+      const detail = res.data || record
+      setCurrentItems(detail.items || [])
+    } catch (e) {
+      setCurrentItems([])
+    }
     form.setFieldsValue({
       standard_no: record.standard_no,
       standard_name: record.standard_name,
       inspection_type: record.inspection_type,
       standard_type: record.standard_type,
-      material_id: record.material_id,
+      material_id: record.material_id || undefined,
       version_no: record.version_no,
       status: record.status,
       description: record.description,
-      effective_date: record.effective_date ? dayjs(record.effective_date) : undefined,
     })
-    setEditVisible(true)
+    setModalVisible(true)
   }
 
-  const handleAddSubmit = async () => {
+  const handleDelete = async (record: any) => {
     try {
-      const values = await form.validateFields()
-      message.success('新增成功')
-      setAddVisible(false)
+      await api.delete(`/basic/standards/${record.standard_id}`)
+      message.success('删除成功')
       fetchData()
-    } catch (e) {
+    } catch (e: any) {
+      message.error(e?.message || '删除失败')
     }
   }
 
-  const handleEditSubmit = async () => {
+  const handleSubmit = async () => {
     try {
       const values = await form.validateFields()
-      message.success('编辑成功')
-      setEditVisible(false)
+      const payload = {
+        ...values,
+        items: currentItems,
+      }
+      if (editing) {
+        await api.put(`/basic/standards/${editing.standard_id}`, payload)
+        message.success('编辑成功')
+      } else {
+        await api.post('/basic/standards', payload)
+        message.success('新增成功')
+      }
+      setModalVisible(false)
       fetchData()
+    } catch (e: any) {
+      if (e?.message?.includes('validate')) return
+      message.error(e?.message || '保存失败')
+    }
+  }
+
+  const handleAddItem = () => {
+    setItemEditing(null)
+    itemForm.resetFields()
+    itemForm.setFieldsValue({
+      category: '外观',
+      sort_order: currentItems.length + 1,
+    })
+    setItemModalVisible(true)
+  }
+
+  const handleEditItem = (record: any) => {
+    setItemEditing(record)
+    itemForm.setFieldsValue({
+      item_name: record.item_name,
+      category: record.category,
+      method: record.method,
+      sample_rule: record.sample_rule,
+      standard_value: record.standard_value,
+      unit: record.unit,
+      sort_order: record.sort_order,
+    })
+    setItemModalVisible(true)
+  }
+
+  const handleDeleteItem = (record: any) => {
+    setCurrentItems(prev => prev.filter((i: any) => i._key !== record._key && i.item_id !== record.item_id))
+    antMsg.success('已删除')
+  }
+
+  const handleItemSubmit = async () => {
+    try {
+      const values = await itemForm.validateFields()
+      if (itemEditing) {
+        setCurrentItems(prev => prev.map((i: any) =>
+          (i._key === itemEditing._key || i.item_id === itemEditing.item_id)
+            ? { ...i, ...values }
+            : i
+        ))
+      } else {
+        setCurrentItems(prev => [...prev, { ...values, _key: 'new_' + Date.now() }])
+      }
+      setItemModalVisible(false)
     } catch (e) {
     }
   }
@@ -191,13 +253,17 @@ export default function InspectionStandard() {
       }
     },
     {
-      title: '操作', key: 'action', width: 140, fixed: 'right',
+      title: '操作', key: 'action', width: 220, fixed: 'right',
       render: (_: any, record: any) => (
         <Space size="small">
-          {record.status === '开立' ? (
+          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(record)}>查看</Button>
+          {record.status === '开立' && (
             <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
-          ) : (
-            <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(record)}>查看</Button>
+          )}
+          {record.status === '开立' && (
+            <Popconfirm title="确认删除？删除后不可恢复" onConfirm={() => handleDelete(record)} okText="确认" cancelText="取消">
+              <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
+            </Popconfirm>
           )}
         </Space>
       )
@@ -216,7 +282,18 @@ export default function InspectionStandard() {
     { title: '单位', dataIndex: 'unit', key: 'unit', width: 70 },
   ]
 
-  const disabledInput = <Input disabled placeholder="系统自动生成" />
+  const itemTableColumnsWithAction = [
+    ...itemTableColumns,
+    {
+      title: '操作', key: 'action', width: 140, fixed: 'right',
+      render: (_: any, record: any) => (
+        <Space size="small">
+          <Button type="link" size="small" onClick={() => handleEditItem(record)}>编辑</Button>
+          <Button type="link" size="small" danger onClick={() => handleDeleteItem(record)}>删除</Button>
+        </Space>
+      )
+    },
+  ]
 
   return (
     <>
@@ -284,7 +361,7 @@ export default function InspectionStandard() {
               rowKey="standard_id"
               size="small"
               loading={loading}
-              scroll={{ x: 1100 }}
+              scroll={{ x: 1200 }}
               pagination={{
                 ...pagination,
                 showSizeChanger: true,
@@ -296,20 +373,20 @@ export default function InspectionStandard() {
         }
       />
       <Modal
-        title="新增检验标准"
-        open={addVisible}
-        onOk={handleAddSubmit}
-        onCancel={() => setAddVisible(false)}
+        title={editing ? '编辑检验标准' : '新增检验标准'}
+        open={modalVisible}
+        onOk={handleSubmit}
+        onCancel={() => setModalVisible(false)}
         okText="保存"
         cancelText="取消"
-        width={800}
+        width={900}
         destroyOnHidden
       >
         <Form form={form} layout="vertical" className="compact-form" preserve={false}>
           <Row gutter={12}>
             <Col span={6}>
               <Form.Item name="standard_no" label="标准编号" rules={[{ required: true, message: '请输入标准编号' }]}>
-                <Input placeholder="系统自动生成" disabled />
+                <Input placeholder="请输入标准编号" disabled={!!editing} />
               </Form.Item>
             </Col>
             <Col span={6}>
@@ -348,56 +425,72 @@ export default function InspectionStandard() {
             </Col>
           </Row>
         </Form>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <Typography.Title level={5} style={{ margin: 0 }}>检验项目列表</Typography.Title>
+          <Button type="primary" size="small" icon={<PlusOutlined />} onClick={handleAddItem}>新增项目</Button>
+        </div>
+        <ResizableTable
+          tableKey="pages_quality_InspectionStandard_items_edit"
+          columns={itemTableColumnsWithAction}
+          dataSource={currentItems}
+          rowKey={(r: any) => r._key || r.item_id}
+          size="small"
+          pagination={false}
+          scroll={{ x: 900 }}
+          locale={{ emptyText: '暂无检验项目，点击右上角"新增项目"添加' }}
+        />
       </Modal>
       <Modal
-        title="编辑检验标准"
-        open={editVisible}
-        onOk={handleEditSubmit}
-        onCancel={() => setEditVisible(false)}
+        title={itemEditing ? '编辑检验项目' : '新增检验项目'}
+        open={itemModalVisible}
+        onOk={handleItemSubmit}
+        onCancel={() => setItemModalVisible(false)}
         okText="保存"
         cancelText="取消"
-        width={800}
+        width={640}
         destroyOnHidden
       >
-        <Form form={form} layout="vertical" className="compact-form" preserve={false}>
+        <Form form={itemForm} layout="vertical" className="compact-form" preserve={false}>
           <Row gutter={12}>
-            <Col span={6}>
-              <Form.Item name="standard_no" label="标准编号" rules={[{ required: true, message: '请输入标准编号' }]}>
-                <Input disabled placeholder="系统自动生成" />
+            <Col span={14}>
+              <Form.Item name="item_name" label="项目名称" rules={[{ required: true, message: '请输入项目名称' }]}>
+                <Input placeholder="请输入项目名称" />
               </Form.Item>
             </Col>
-            <Col span={6}>
-              <Form.Item name="inspection_type" label="检验类型" rules={[{ required: true, message: '请选择检验类型' }]}>
-                <Select placeholder="请选择检验类型" options={inspectionTypeOptions} />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item name="standard_type" label="标准类型" rules={[{ required: true, message: '请选择标准类型' }]}>
-                <Select placeholder="请选择标准类型" options={standardTypeOptions} />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item name="version_no" label="版本号" rules={[{ required: true, message: '请输入版本号' }]}>
-                <Input placeholder="如 V1" />
+            <Col span={10}>
+              <Form.Item name="category" label="项目大类" rules={[{ required: true, message: '请选择项目大类' }]}>
+                <Select placeholder="请选择项目大类" options={categoryOptions} />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={12}>
-            <Col span={8}>
-              <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
-                <Select placeholder="请选择状态" options={statusOptions} disabled />
+            <Col span={12}>
+              <Form.Item name="standard_value" label="标准值" rules={[{ required: true, message: '请输入标准值' }]}>
+                <Input placeholder="如 90.0±0.3、≥200 等" />
               </Form.Item>
             </Col>
-            <Col span={16}>
-              <Form.Item name="standard_name" label="标准名称" rules={[{ required: true, message: '请输入标准名称' }]}>
-                <Input placeholder="请输入标准名称" />
+            <Col span={12}>
+              <Form.Item name="unit" label="单位" rules={[{ required: true, message: '请输入单位' }]}>
+                <Input placeholder="如 mm、N、%等，无则填 -" />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={12}>
             <Col span={24}>
-              <Form.Item name="description" label="描述">
-                <Input.TextArea placeholder="请输入描述" rows={2} />
+              <Form.Item name="method" label="检验方法">
+                <Input placeholder="如 游标卡尺测量、拉力试验机等" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={14}>
+              <Form.Item name="sample_rule" label="抽样方式">
+                <Input placeholder="如 AQL 0.65、每批5个等" />
+              </Form.Item>
+            </Col>
+            <Col span={10}>
+              <Form.Item name="sort_order" label="排序号">
+                <InputNumber min={1} style={{ width: '100%' }} placeholder="数字越小越靠前" />
               </Form.Item>
             </Col>
           </Row>
@@ -430,7 +523,7 @@ export default function InspectionStandard() {
             </Descriptions>
             <Typography.Title level={5} style={{ marginTop: 8 }}>检验项目</Typography.Title>
             <ResizableTable
-              tableKey="pages_quality_InspectionStandard_items"
+              tableKey="pages_quality_InspectionStandard_items_view"
               columns={itemTableColumns}
               dataSource={currentItems}
               rowKey="item_id"

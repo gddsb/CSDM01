@@ -164,6 +164,9 @@ router.delete('/product-inspections/:id', logOperation('产品检测'), ProductI
 // 检验标准
 router.get('/standards', InspectionStandardController.list)
 router.get('/standards/:id', InspectionStandardController.detail)
+router.post('/standards', logOperation('检验标准'), InspectionStandardController.create)
+router.put('/standards/:id', logOperation('检验标准'), InspectionStandardController.update)
+router.delete('/standards/:id', logOperation('检验标准'), InspectionStandardController.remove)
 router.get('/standards/:standardId/items', InspectionStandardController.listItems)
 
 export default router
