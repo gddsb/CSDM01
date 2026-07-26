@@ -302,7 +302,7 @@ export default function ProductInspection() {
           {record.status === '待检' && (
             <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
           )}
-          {canEdit(record.status) && (
+          {record.status === '待检' && record.standard_id && (
             <Button type="link" size="small" onClick={() => openInspect(record)}>检测</Button>
           )}
           {canSubmit(record.status) && (
@@ -318,19 +318,19 @@ export default function ProductInspection() {
   const inspectColumns = [
     { title: '序号', dataIndex: 'sort_order', key: 'sort_order', width: 60, render: (_: any, __: any, i: number) => i + 1 },
     {
-      title: '检测项目', dataIndex: 'item_name', key: 'item_name', width: 180,
-      render: (_: any, record: any, index: number) => (
-        <Input value={record.item_name} onChange={e => updateItem(index, 'item_name', e.target.value)} placeholder="请输入检测项目" />
+      title: '检测项目', dataIndex: 'item_name', key: 'item_name', width: 200,
+      render: (_: any, record: any) => (
+        <Input value={record.item_name} disabled placeholder="检测项目" />
       )
     },
     {
-      title: '标准值', dataIndex: 'standard_value', key: 'standard_value', width: 180,
-      render: (_: any, record: any, index: number) => (
-        <Input value={record.standard_value} onChange={e => updateItem(index, 'standard_value', e.target.value)} placeholder="请输入标准值" />
+      title: '标准值', dataIndex: 'standard_value', key: 'standard_value', width: 200,
+      render: (_: any, record: any) => (
+        <Input value={record.standard_value} disabled placeholder="标准值" />
       )
     },
     {
-      title: '检测值', dataIndex: 'actual_value', key: 'actual_value', width: 180,
+      title: '检测值', dataIndex: 'actual_value', key: 'actual_value', width: 200,
       render: (_: any, record: any, index: number) => (
         <Input value={record.actual_value} onChange={e => updateItem(index, 'actual_value', e.target.value)} placeholder="请输入检测值" />
       )
@@ -346,29 +346,6 @@ export default function ProductInspection() {
           onChange={v => updateItem(index, 'result', v)}
           options={[{ label: '合格', value: '合格' }, { label: '不合格', value: '不合格' }]}
         />
-      )
-    },
-    {
-      title: '检测人', dataIndex: 'inspector_name', key: 'inspector_name', width: 120,
-      render: (_: any, record: any, index: number) => (
-        <Input value={record.inspector_name} onChange={e => updateItem(index, 'inspector_name', e.target.value)} placeholder="检测人" />
-      )
-    },
-    {
-      title: '检测时间', dataIndex: 'inspection_time', key: 'inspection_time', width: 170,
-      render: (_: any, record: any, index: number) => (
-        <DatePicker
-          showTime
-          style={{ width: '100%' }}
-          value={record.inspection_time ? dayjs(record.inspection_time) : null}
-          onChange={v => updateItem(index, 'inspection_time', v ? v.format('YYYY-MM-DD HH:mm:ss') : null)}
-        />
-      )
-    },
-    {
-      title: '操作', key: 'action', width: 80,
-      render: (_: any, __: any, index: number) => (
-        <Button type="link" danger size="small" onClick={() => removeItem(index)}>删除</Button>
       )
     },
   ]
@@ -636,7 +613,6 @@ export default function ProductInspection() {
           </Space>
         }
       >
-        <Button type="dashed" icon={<PlusOutlined />} onClick={addItem} style={{ marginBottom: 12 }}>添加检测项目</Button>
         <AntTable
           columns={inspectColumns}
           dataSource={inspectItems}

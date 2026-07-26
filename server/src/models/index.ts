@@ -32,6 +32,8 @@ import DataDictionary from './DataDictionary.js'
 import UserSetting from './UserSetting.js'
 import ProductInspection from './ProductInspection.js'
 import ProductInspectionItem from './ProductInspectionItem.js'
+import InspectionStandard from './InspectionStandard.js'
+import InspectionStandardItem from './InspectionStandardItem.js'
 
 // 建立模型关联关系
 // 用户 - 角色
@@ -113,9 +115,15 @@ DictData.belongsTo(DictType, { foreignKey: 'dict_type', targetKey: 'dict_type', 
 
 // 产品检测主表 - 报工单
 ProductInspection.belongsTo(ReportOrder, { foreignKey: 'report_order_id', as: 'report_order' })
+// 产品检测主表 - 检验标准
+ProductInspection.belongsTo(InspectionStandard, { foreignKey: 'standard_id', as: 'standard' })
 // 产品检测主表 - 检测项目（一对多）
 ProductInspection.hasMany(ProductInspectionItem, { foreignKey: 'inspection_id', as: 'items' })
 ProductInspectionItem.belongsTo(ProductInspection, { foreignKey: 'inspection_id', as: 'inspection' })
+
+// 检验标准 - 检验标准项目（一对多）
+InspectionStandard.hasMany(InspectionStandardItem, { foreignKey: 'standard_id', as: 'items' })
+InspectionStandardItem.belongsTo(InspectionStandard, { foreignKey: 'standard_id', as: 'standard' })
 
 const db = {
   sequelize,
@@ -151,6 +159,8 @@ const db = {
   UserSetting,
   ProductInspection,
   ProductInspectionItem,
+  InspectionStandard,
+  InspectionStandardItem,
 }
 
 // 具名导出，便于按需导入
@@ -186,6 +196,8 @@ export {
   UserSetting,
   ProductInspection,
   ProductInspectionItem,
+  InspectionStandard,
+  InspectionStandardItem,
 }
 
 export default db

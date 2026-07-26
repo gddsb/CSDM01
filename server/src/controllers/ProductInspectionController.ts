@@ -3,6 +3,8 @@ import {
   ProductInspection,
   ProductInspectionItem,
   ReportOrder,
+  InspectionStandard,
+  InspectionStandardItem,
 } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { generateProductInspectionNo } from '../utils/sequence.js'
@@ -103,7 +105,29 @@ export default {
       if (!record) {
         return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)
       }
-      success(res, record)
+      const result: any = record.toJSON ? record.toJSON() : record
+      if ((!result.items || result.items.length === 0) && result.standard_id) {
+        const standardItems = await InspectionStandardItem.findAll({
+          where: { standard_id: result.standard_id },
+          order: [['sort_order', 'ASC'], ['item_id', 'ASC']],
+        })
+        result.items = standardItems.map((si: any, idx: number) => ({
+          item_id: null,
+          inspection_id: result.inspection_id,
+          item_name: si.item_name,
+          standard_value: si.standard_value || '',
+          actual_value: '',
+          result: null,
+          inspector_id: null,
+          inspector_name: '',
+          inspection_time: null,
+          sort_order: si.sort_order !== undefined ? si.sort_order : idx,
+          remarks: '',
+          category: si.category,
+          unit: si.unit,
+        }))
+      }
+      success(res, result)
     } catch (err: any) {
       logger.error('[ProductInspection] detail error:', err)
       fail(res, err.message || '查询失败', ErrorCode.SYSTEM_ERROR)
@@ -226,15 +250,17 @@ export default {
       if (items !== undefined) {
         await ProductInspectionItem.destroy({ where: { inspection_id: id }, transaction: t })
         if (items.length > 0) {
+          const user: any = req.user || {}
+          const now = new Date()
           const itemData = items.map((item: any, idx: number) => ({
             inspection_id: Number(id),
             item_name: item.item_name,
             standard_value: item.standard_value || '',
             actual_value: item.actual_value || '',
             result: convertItemResult(item.result),
-            inspector_id: item.inspector_id || null,
-            inspector_name: item.inspector_name || '',
-            inspection_time: item.inspection_time ? new Date(item.inspection_time) : null,
+            inspector_id: user.userId || null,
+            inspector_name: user.realName || user.username || '',
+            inspection_time: now,
             sort_order: item.sort_order !== undefined ? item.sort_order : idx,
             remarks: item.remarks || '',
           }))
