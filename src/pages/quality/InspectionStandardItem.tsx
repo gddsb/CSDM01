@@ -16,22 +16,23 @@ const categoryOptions = [
 ]
 
 const inspectionTypeOptions = [
-  { label: '材料检验', value: '材料检验' },
-  { label: '产品检验', value: '产品检验' },
-  { label: '其它检验', value: '其它检验' },
+  { label: '首件', value: '首件' },
+  { label: '制程', value: '制程' },
+  { label: '成品', value: '成品' },
+  { label: '其它', value: '其它' },
 ]
 
 const mockItems = [
-  { id: 'it1', item_code: 'APP-001', item_name: '外观-印刷色差', category: '外观', inspection_type: '产品检验', method: '目视比对标准样', sample_rule: 'AQL 0.65', standard_value: '无明显色差', unit: '-', sort_order: 1, status: '启用' },
-  { id: 'it2', item_code: 'APP-002', item_name: '外观-表面划伤', category: '外观', inspection_type: '产品检验', method: '目视检查', sample_rule: 'AQL 1.0', standard_value: '无划伤', unit: '-', sort_order: 2, status: '启用' },
-  { id: 'it3', item_code: 'DIM-001', item_name: '罐体高度', category: '尺寸', inspection_type: '产品检验', method: '游标卡尺测量', sample_rule: 'AQL 0.4', standard_value: '90.0±0.3', unit: 'mm', sort_order: 3, status: '启用' },
-  { id: 'it4', item_code: 'DIM-002', item_name: '罐体直径', category: '尺寸', inspection_type: '产品检验', method: '游标卡尺测量', sample_rule: 'AQL 0.4', standard_value: 'Φ74.0±0.2', unit: 'mm', sort_order: 4, status: '启用' },
-  { id: 'it5', item_code: 'PER-001', item_name: '焊缝强度', category: '性能', inspection_type: '产品检验', method: '拉力试验机', sample_rule: '特殊规则(每批5个)', standard_value: '≥200', unit: 'N', sort_order: 5, status: '启用' },
-  { id: 'it6', item_code: 'PER-002', item_name: '耐压性能', category: '性能', inspection_type: '产品检验', method: '正压测漏机', sample_rule: 'AQL 0.25', standard_value: '0.1MPa保压30s无渗漏', unit: '-', sort_order: 6, status: '启用' },
-  { id: 'it7', item_code: 'PHC-001', item_name: '马口铁厚度', category: '理化', inspection_type: '材料检验', method: '测厚仪', sample_rule: 'AQL 0.65', standard_value: '0.23±0.01', unit: 'mm', sort_order: 7, status: '启用' },
-  { id: 'it8', item_code: 'PHC-002', item_name: '镀锡量', category: '理化', inspection_type: '材料检验', method: '化学分析法', sample_rule: '特殊规则(每批1样)', standard_value: '≥2.8', unit: 'g/m²', sort_order: 8, status: '启用' },
-  { id: 'it9', item_code: 'ENV-001', item_name: '车间温度', category: '环境', inspection_type: '其它检验', method: '温湿度计', sample_rule: '每2小时记录', standard_value: '20-25℃', unit: '℃', sort_order: 9, status: '启用' },
-  { id: 'it10', item_code: 'ENV-002', item_name: '车间湿度', category: '环境', inspection_type: '其它检验', method: '温湿度计', sample_rule: '每2小时记录', standard_value: '45-65%RH', unit: '%RH', sort_order: 10, status: '启用' },
+  { id: 'it1', item_code: 'APP-001', item_name: '外观-印刷色差', category: '外观', inspection_type: '首件', method: '目视比对标准样', sample_rule: 'AQL 0.65', standard_value: '无明显色差', unit: '-', sort_order: 1, status: '启用' },
+  { id: 'it2', item_code: 'APP-002', item_name: '外观-表面划伤', category: '外观', inspection_type: '制程', method: '目视检查', sample_rule: 'AQL 1.0', standard_value: '无划伤', unit: '-', sort_order: 2, status: '启用' },
+  { id: 'it3', item_code: 'DIM-001', item_name: '罐体高度', category: '尺寸', inspection_type: '成品', method: '游标卡尺测量', sample_rule: 'AQL 0.4', standard_value: '90.0±0.3', unit: 'mm', sort_order: 3, status: '启用' },
+  { id: 'it4', item_code: 'DIM-002', item_name: '罐体直径', category: '尺寸', inspection_type: '首件', method: '游标卡尺测量', sample_rule: 'AQL 0.4', standard_value: 'Φ74.0±0.2', unit: 'mm', sort_order: 4, status: '启用' },
+  { id: 'it5', item_code: 'PER-001', item_name: '焊缝强度', category: '性能', inspection_type: '制程', method: '拉力试验机', sample_rule: '特殊规则(每批5个)', standard_value: '≥200', unit: 'N', sort_order: 5, status: '启用' },
+  { id: 'it6', item_code: 'PER-002', item_name: '耐压性能', category: '性能', inspection_type: '成品', method: '正压测漏机', sample_rule: 'AQL 0.25', standard_value: '0.1MPa保压30s无渗漏', unit: '-', sort_order: 6, status: '启用' },
+  { id: 'it7', item_code: 'PHC-001', item_name: '马口铁厚度', category: '理化', inspection_type: '首件', method: '测厚仪', sample_rule: 'AQL 0.65', standard_value: '0.23±0.01', unit: 'mm', sort_order: 7, status: '启用' },
+  { id: 'it8', item_code: 'PHC-002', item_name: '镀锡量', category: '理化', inspection_type: '制程', method: '化学分析法', sample_rule: '特殊规则(每批1样)', standard_value: '≥2.8', unit: 'g/m²', sort_order: 8, status: '启用' },
+  { id: 'it9', item_code: 'ENV-001', item_name: '车间温度', category: '环境', inspection_type: '其它', method: '温湿度计', sample_rule: '每2小时记录', standard_value: '20-25℃', unit: '℃', sort_order: 9, status: '启用' },
+  { id: 'it10', item_code: 'ENV-002', item_name: '车间湿度', category: '环境', inspection_type: '其它', method: '温湿度计', sample_rule: '每2小时记录', standard_value: '45-65%RH', unit: '%RH', sort_order: 10, status: '启用' },
 ]
 
 const categoryColor: Record<string, string> = { '外观': 'blue', '理化': 'purple', '尺寸': 'cyan', '性能': 'orange', '微生物': 'green', '环境': 'geekblue' }
@@ -71,7 +72,7 @@ export default function InspectionStandardItem() {
     setEditing(null)
     form.resetFields()
     form.setFieldsValue({
-      inspection_type: '产品检验',
+      inspection_type: '首件',
       category: '外观',
       status: '启用',
       sort_order: data.length + 1,
@@ -128,7 +129,7 @@ export default function InspectionStandardItem() {
     { title: '项目名称', dataIndex: 'item_name', key: 'item_name', width: 180 },
     {
       title: '检验类型', dataIndex: 'inspection_type', key: 'inspection_type', width: 100,
-      render: (v: string) => <Tag color={v === '材料检验' ? 'blue' : v === '产品检验' ? 'green' : 'purple'}>{v}</Tag>
+      render: (v: string) => <Tag color={v === '首件' ? 'blue' : v === '制程' ? 'purple' : v === '成品' ? 'green' : 'default'}>{v}</Tag>
     },
     {
       title: '大类', dataIndex: 'category', key: 'category', width: 90,

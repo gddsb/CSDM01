@@ -103,7 +103,7 @@ export default function ProductInspection() {
   useEffect(() => {
     const loadStandards = async () => {
       try {
-        const res = await api.get('/basic/standards', { params: { page: 1, page_size: 500, status: '启用' } })
+        const res = await api.get('/basic/standards', { params: { page: 1, page_size: 500, status: '生效' } })
         const list = res.data?.list || res.data || []
         setStandards(list)
       } catch (e) {
