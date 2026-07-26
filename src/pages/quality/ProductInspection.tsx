@@ -52,7 +52,7 @@ export default function ProductInspection() {
   const message = useMessage()
 
   const selectedWorkOrderId = Form.useWatch('report_order_id', addForm)
-  const selectedWorkOrder = reportOrders.find(w => w.report_order_id === selectedWorkOrderId)
+  const selectedWorkOrder = reportOrders.find(w => String(w.report_order_id) === String(selectedWorkOrderId))
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -66,10 +66,16 @@ export default function ProductInspection() {
       if (dateRange && dateRange[1]) params.end_date = dateRange[1].format('YYYY-MM-DD')
 
       const res = await api.get('/basic/product-inspections', { params })
-      setData(res.data?.list || [])
-      setPagination(p => ({ ...p, total: res.data?.total || 0 }))
-    } catch (e) {
-      // ignore
+      if (res.success !== false) {
+        setData(res.data?.list || res.data || [])
+        setPagination(p => ({ ...p, total: res.data?.total || res.total || 0 }))
+      } else {
+        setData([])
+        setPagination(p => ({ ...p, total: 0 }))
+      }
+    } catch (e: any) {
+      setData([])
+      setPagination(p => ({ ...p, total: 0 }))
     } finally {
       setLoading(false)
     }
@@ -116,19 +122,24 @@ export default function ProductInspection() {
   const handleAddSubmit = async () => {
     try {
       const values = await addForm.validateFields()
-      const ro = reportOrders.find(w => w.report_order_id === values.report_order_id)
+      const ro = reportOrders.find(w => String(w.report_order_id) === String(values.report_order_id))
       const payload = {
         inspection_type: values.inspection_type,
-        report_order_id: values.report_order_id,
-        trigger_type: values.trigger_type,
+        report_order_id: Number(values.report_order_id),
+        trigger_type: values.trigger_type || '手工',
         remarks: values.remarks,
       }
-      await api.post('/basic/product-inspections', payload)
-      message.success('检验记录已创建')
-      setAddVisible(false)
-      fetchData()
+      const res = await api.post('/basic/product-inspections', payload)
+      if (res.success !== false) {
+        message.success('检验记录已创建')
+        setAddVisible(false)
+        fetchData()
+      } else {
+        message.error(res.message || '创建失败')
+      }
     } catch (e: any) {
-      // ignore
+      if (e?.message?.includes('validate')) return
+      message.error(e?.message || '保存失败，请重试')
     }
   }
 
@@ -413,12 +424,12 @@ export default function ProductInspection() {
       >
         <Form form={addForm} layout="vertical" className="compact-form" preserve={false}>
           <Row gutter={12}>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item name="inspection_type" label="检验类型" rules={[{ required: true, message: '请选择检验类型' }]}>
                 <Select placeholder="请选择检验类型" options={INSPECTION_TYPES} />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={16}>
               <Form.Item name="report_order_id" label="关联报工单" rules={[{ required: true, message: '请选择报工单' }]}>
                 <Select
                   placeholder="请选择报工单"
@@ -436,26 +447,24 @@ export default function ProductInspection() {
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item label="产品名称">
-                <Input value={selectedWorkOrder?.material_name || '-'} disabled />
+              <Form.Item label="规格">
+                <Input value={selectedWorkOrder?.specification || selectedWorkOrder?.spec || '-'} disabled />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item label="规格">
-                <Input value={selectedWorkOrder?.specification || '-'} disabled />
+              <Form.Item name="trigger_type" label="触发方式">
+                <Select
+                  disabled
+                  value="手工"
+                  options={[{ label: '手工', value: '手工' }]}
+                />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={12}>
-            <Col span={12}>
-              <Form.Item name="trigger_type" label="触发方式">
-                <Select
-                  placeholder="请选择触发方式"
-                  options={[
-                    { label: '手工', value: '手工' },
-                    { label: '自动', value: '自动' },
-                  ]}
-                />
+            <Col span={24}>
+              <Form.Item label="产品名称">
+                <Input value={selectedWorkOrder?.material_name || '-'} disabled />
               </Form.Item>
             </Col>
           </Row>
