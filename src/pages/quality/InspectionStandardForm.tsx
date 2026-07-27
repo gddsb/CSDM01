@@ -208,13 +208,14 @@ export default function InspectionStandardForm() {
 
   const itemTableColumns = [
     {
-      title: '项目分类', dataIndex: 'category', key: 'category', width: 100,
+      title: '项目大类', dataIndex: 'category', key: 'category', width: 100,
       render: (v: string) => <span style={{ color: categoryColor[v] || '#999' }}>{v}</span>
     },
-    { title: '检验项目', dataIndex: 'item_name', key: 'item_name' },
+    { title: '项目类型', dataIndex: 'item_name', key: 'item_name' },
+    { title: '排序号', dataIndex: 'sort_order', key: 'sort_order', width: 80 },
     { title: '标准值', dataIndex: 'standard_value', key: 'standard_value', width: 140 },
-    { title: '检验方法', dataIndex: 'method', key: 'method' },
     { title: '单位', dataIndex: 'unit', key: 'unit', width: 70 },
+    { title: '检验方法', dataIndex: 'method', key: 'method' },
     { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 140 },
     {
       title: '操作', key: 'action', width: 140, fixed: 'right',
@@ -369,24 +370,29 @@ export default function InspectionStandardForm() {
       >
         <Form form={itemForm} layout="vertical" className="compact-form" preserve={false}>
           <Row gutter={12}>
-            <Col span={14}>
-              <Form.Item name="item_name" label="项目名称" rules={[{ required: true, message: '请输入项目名称' }]}>
-                <Input placeholder="请输入项目名称" />
-              </Form.Item>
-            </Col>
-            <Col span={10}>
+            <Col span={12}>
               <Form.Item name="category" label="项目大类" rules={[{ required: true, message: '请选择项目大类' }]}>
                 <Select placeholder="请选择项目大类" options={categoryOptions} />
               </Form.Item>
             </Col>
+            <Col span={12}>
+              <Form.Item name="item_name" label="项目类型" rules={[{ required: true, message: '请输入项目类型' }]}>
+                <Input placeholder="请输入项目类型" />
+              </Form.Item>
+            </Col>
           </Row>
           <Row gutter={12}>
-            <Col span={12}>
+            <Col span={8}>
+              <Form.Item name="sort_order" label="排序号">
+                <InputNumber min={1} style={{ width: '100%' }} placeholder="数字越小越靠前" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
               <Form.Item name="standard_value" label="标准值" rules={[{ required: true, message: '请输入标准值' }]}>
                 <Input placeholder="如 90.0±0.3、≥200 等" />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item name="unit" label="单位" rules={[{ required: true, message: '请输入单位' }]}>
                 <Input placeholder="如 mm、N、%等，无则填 -" />
               </Form.Item>
@@ -400,14 +406,9 @@ export default function InspectionStandardForm() {
             </Col>
           </Row>
           <Row gutter={12}>
-            <Col span={14}>
+            <Col span={24}>
               <Form.Item name="sample_rule" label="抽样方式">
                 <Input placeholder="如 AQL 0.65、每批5个等" />
-              </Form.Item>
-            </Col>
-            <Col span={10}>
-              <Form.Item name="sort_order" label="排序号">
-                <InputNumber min={1} style={{ width: '100%' }} placeholder="数字越小越靠前" />
               </Form.Item>
             </Col>
           </Row>
