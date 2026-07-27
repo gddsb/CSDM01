@@ -649,7 +649,7 @@ export default function ProductInspection() {
         <AntTable
           columns={inspectColumns}
           dataSource={inspectItems}
-          rowKey={(r: any) => r.item_id || r._item_key || Math.random()}
+          rowKey={(r: any, i: number) => r.item_id || `row-${i}`}
           size="small"
           pagination={false}
         />
