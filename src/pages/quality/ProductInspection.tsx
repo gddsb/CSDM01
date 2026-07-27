@@ -200,14 +200,15 @@ export default function ProductInspection() {
   }
 
   const openInspect = async (record: any) => {
-    setCurrent(record)
     try {
       const res = await api.get(`/basic/product-inspections/${record.inspection_id}`)
       const detail = res.data || record
+      setCurrent(detail)
       setInspectItems((detail.items || []).map((it: any, idx: number) => ({ ...it, sort_order: it.sort_order !== undefined ? it.sort_order : idx })))
       setInspectDrawerOpen(true)
     } catch (e) {
-      // ignore
+      setCurrent(record)
+      setInspectDrawerOpen(true)
     }
   }
 
@@ -358,7 +359,8 @@ export default function ProductInspection() {
     {
       title: '检验结果', dataIndex: 'actual_value', key: 'actual_value', width: 100,
       render: (v: any, record: any, index: number) => {
-        const isEditing = current?.status === '检验中'
+        const st = current?.status
+        const isEditing = st === '检验中' || st === 1
         if (!isEditing) return v || '-'
         return (
           <Input value={v} onChange={e => updateItem(index, 'actual_value', e.target.value)} placeholder="请输入检验结果" />
@@ -368,9 +370,10 @@ export default function ProductInspection() {
     {
       title: '判定结论', dataIndex: 'result', key: 'result', width: 100,
       render: (v: any, record: any, index: number) => {
-        const isEditing = current?.status === '检验中'
+        const st = current?.status
+        const isEditing = st === '检验中' || st === 1
         if (!isEditing) {
-          return v ? <Tag color={v === '合格' ? 'success' : 'error'}>{v}</Tag> : '-'
+          return v ? <Tag color={v === '合格' || v === 1 ? 'success' : 'error'}>{typeof v === 'number' ? (v === 1 ? '合格' : '不合格') : v}</Tag> : '-'
         }
         return (
           <Select
