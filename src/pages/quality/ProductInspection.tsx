@@ -692,74 +692,72 @@ export default function ProductInspection() {
         onClose={() => setDetailDrawerOpen(false)}
         width={900}
         destroyOnHidden
+        extra={
+          current?.status === '审核中' ? (
+            <Space>
+              <Popconfirm title="确认审核通过？" onConfirm={() => handleReview('合格')} okText="确认" cancelText="取消">
+                <Button type="primary">审核通过</Button>
+              </Popconfirm>
+              <Popconfirm title="确认审核不通过？" onConfirm={() => handleReview('不合格')} okText="确认" cancelText="取消">
+                <Button danger>审核不通过</Button>
+              </Popconfirm>
+            </Space>
+          ) : null
+        }
       >
         {current && (
           <>
-            <Descriptions column={2} size="small" bordered style={{ marginBottom: 16 }}>
+            <Descriptions column={4} size="small" bordered style={{ marginBottom: 16 }}>
               <Descriptions.Item label="检验编号">{current.inspection_no}</Descriptions.Item>
               <Descriptions.Item label="检验类型">
                 <Tag color={typeColorMap[current.inspection_type]}>{current.inspection_type}</Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="报工单号">{current.report_order_no}</Descriptions.Item>
-              <Descriptions.Item label="状态">
-                <Tag color={statusColor[current.status as keyof typeof statusColor]}>{current.status}</Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="料号">{current.material_code}</Descriptions.Item>
-              <Descriptions.Item label="产品名称">{current.material_name}</Descriptions.Item>
-              <Descriptions.Item label="规格">{current.specification}</Descriptions.Item>
               <Descriptions.Item label="触发方式">
                 {current.trigger_type ? <Tag color={triggerColor[current.trigger_type as keyof typeof triggerColor]}>{current.trigger_type}</Tag> : '-'}
               </Descriptions.Item>
-              <Descriptions.Item label="检验标准" span={2}>{current.standard_name || '-'}</Descriptions.Item>
+              <Descriptions.Item label="状态">
+                <Tag color={statusColor[current.status as keyof typeof statusColor]}>{current.status}</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="报工单号">{current.report_order_no}</Descriptions.Item>
+              <Descriptions.Item label="料号">{current.material_code}</Descriptions.Item>
+              <Descriptions.Item label="规格">{current.specification || '-'}</Descriptions.Item>
               <Descriptions.Item label="总结果">
                 {current.result && current.result !== '-' ? <Tag color={resultColor[current.result as keyof typeof resultColor]}>{current.result}</Tag> : <Tag>待检</Tag>}
               </Descriptions.Item>
+              <Descriptions.Item label="产品名称" span={2}>{current.material_name}</Descriptions.Item>
+              <Descriptions.Item label="检验标准" span={2}>{current.standard_name || '-'}</Descriptions.Item>
               <Descriptions.Item label="检验员">{current.inspector_name || '-'}</Descriptions.Item>
-              <Descriptions.Item label="审核人">{current.reviewer_name || '-'}</Descriptions.Item>
               <Descriptions.Item label="检验时间">{formatDateTime(current.inspection_time)}</Descriptions.Item>
+              <Descriptions.Item label="审核人">{current.reviewer_name || '-'}</Descriptions.Item>
               <Descriptions.Item label="审核时间">{formatDateTime(current.review_time)}</Descriptions.Item>
-              <Descriptions.Item label="创建时间">{formatDateTime(current.created_at)}</Descriptions.Item>
-              <Descriptions.Item label="备注" span={2}>{current.remarks || '-'}</Descriptions.Item>
             </Descriptions>
 
             <Title level={5} style={{ marginTop: 8 }}>检测项目</Title>
-            <AntTable
-              size="small"
-              dataSource={current.items || []}
-              rowKey={(r: any, i: number) => r.item_id || i}
-              pagination={false}
-              scroll={{ x: 900 }}
-              columns={[
-                { title: '序号', width: 60, render: (_: any, __: any, i: number) => i + 1 },
-                { title: '检测项目', dataIndex: 'item_name', width: 180 },
-                { title: '标准要求', dataIndex: 'standard_value', width: 180 },
-                { title: '检测值', dataIndex: 'actual_value', width: 180 },
-                {
-                  title: '判定', dataIndex: 'result', width: 100,
-                  render: (v: any) => v !== null && v !== undefined ? (
-                    <Tag color={v === '合格' || v === 1 ? 'success' : 'error'}>
-                      {typeof v === 'number' ? (v === 1 ? '合格' : '不合格') : v}
-                    </Tag>
-                  ) : '-'
-                },
-                { title: '检测人', dataIndex: 'inspector_name', width: 100, render: (v: string) => v || '-' },
-                { title: '检测时间', dataIndex: 'inspection_time', width: 160, render: formatDateTime },
-              ]}
-            />
-
-            {current.status === '审核中' && (
-              <div style={{ marginTop: 16, padding: 16, border: '1px solid #e8e8e8', borderRadius: 6, background: '#fafafa' }}>
-                <div style={{ marginBottom: 12, fontWeight: 500 }}>审核操作</div>
-                <Space>
-                  <Popconfirm title="确认审核通过？" onConfirm={() => handleReview('合格')} okText="确认" cancelText="取消">
-                    <Button type="primary">审核通过</Button>
-                  </Popconfirm>
-                  <Popconfirm title="确认审核不通过？" onConfirm={() => handleReview('不合格')} okText="确认" cancelText="取消">
-                    <Button danger>审核不通过</Button>
-                  </Popconfirm>
-                </Space>
-              </div>
-            )}
+            <div style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 420px)' }}>
+              <AntTable
+                size="small"
+                dataSource={current.items || []}
+                rowKey={(r: any, i: number) => r.item_id || i}
+                pagination={false}
+                tableLayout="auto"
+                columns={[
+                  { title: '序号', width: 60, render: (_: any, __: any, i: number) => i + 1 },
+                  { title: '检测项目', dataIndex: 'item_name' },
+                  { title: '标准要求', dataIndex: 'standard_value' },
+                  { title: '检测值', dataIndex: 'actual_value' },
+                  {
+                    title: '判定', dataIndex: 'result', width: 100,
+                    render: (v: any) => v !== null && v !== undefined ? (
+                      <Tag color={v === '合格' || v === 1 ? 'success' : 'error'}>
+                        {typeof v === 'number' ? (v === 1 ? '合格' : '不合格') : v}
+                      </Tag>
+                    ) : '-'
+                  },
+                  { title: '检测人', dataIndex: 'inspector_name', render: (v: string) => v || '-' },
+                  { title: '检测时间', dataIndex: 'inspection_time', width: 160, render: formatDateTime },
+                ]}
+              />
+            </div>
           </>
         )}
       </Drawer>
