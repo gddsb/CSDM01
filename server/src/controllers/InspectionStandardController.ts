@@ -3,6 +3,34 @@ import { InspectionStandard, InspectionStandardItem } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { logger } from '../utils/logger.js'
 
+const TYPE_PREFIX: Record<string, string> = { '首件': 'SJ', '制程': 'ZC', '成品': 'CP', '其它': 'QT' }
+const STANDARD_TYPE_PREFIX: Record<string, string> = { '通用标准': 'TY', '专用标准': 'ZY', '临时标准': 'LS' }
+
+export const generateNo = async (req: any, res: any) => {
+  try {
+    const { inspection_type, standard_type } = req.query
+    if (!inspection_type || !standard_type) {
+      return fail(res, '检验类型和标准类型不能为空')
+    }
+    const year = new Date().getFullYear()
+    const prefix = `${TYPE_PREFIX[inspection_type] || 'QT'}-${STANDARD_TYPE_PREFIX[standard_type] || 'TY'}-${year}-`
+    const lastRecord = await InspectionStandard.findOne({
+      where: { standard_no: { [Op.like]: `${prefix}%` } },
+      order: [['standard_no', 'DESC']],
+    })
+    let seq = 1
+    if (lastRecord) {
+      const match = lastRecord.standard_no.match(/-(\d{3})$/)
+      if (match) seq = parseInt(match[1], 10) + 1
+    }
+    const standardNo = `${prefix}${String(seq).padStart(3, '0')}`
+    success(res, { standard_no: standardNo })
+  } catch (err: any) {
+    logger.error('[InspectionStandard] generateNo error:', err)
+    fail(res, err.message || '生成编号失败', ErrorCode.SYSTEM_ERROR)
+  }
+}
+
 export const list = async (req: any, res: any) => {
   try {
     const { page = 1, page_size = 20, status, inspection_type, keyword } = req.query
@@ -159,4 +187,4 @@ export const listItems = async (req: any, res: any) => {
   }
 }
 
-export default { list, detail, create, update, remove, listItems }
+export default { list, detail, create, update, remove, listItems, generateNo }

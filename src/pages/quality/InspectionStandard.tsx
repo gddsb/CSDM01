@@ -1,5 +1,5 @@
 import ResizableTable from '../../components/ResizableTable'
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Table, Tag, Button, Space, Modal, Form, Input, Select, Typography, Row, Col, Drawer, Descriptions, Popconfirm, InputNumber, message as antMsg } from 'antd'
 import { useMessage } from '../../contexts/AppContext'
 import {
@@ -55,16 +55,43 @@ export default function InspectionStandard() {
   const [standardType, setStandardType] = useState<any>(undefined)
   const [statusFilter, setStatusFilter] = useState<any>(undefined)
 
-  const [modalVisible, setModalVisible] = useState(false)
+  const [editDrawerOpen, setEditDrawerOpen] = useState(false)
   const [viewDrawerOpen, setViewDrawerOpen] = useState(false)
   const [editing, setEditing] = useState<any>(null)
   const [current, setCurrent] = useState<any>(null)
   const [currentItems, setCurrentItems] = useState<any[]>([])
+  const [isGeneratingNo, setIsGeneratingNo] = useState(false)
   const [form] = Form.useForm()
   const [itemForm] = Form.useForm()
   const [itemModalVisible, setItemModalVisible] = useState(false)
   const [itemEditing, setItemEditing] = useState<any>(null)
   const message = useMessage()
+  const generatingRef = useRef(false)
+
+  const formInspectionType = Form.useWatch('inspection_type', form)
+  const formStandardType = Form.useWatch('standard_type', form)
+
+  const generateStandardNo = useCallback(async (it: string, st: string) => {
+    if (!it || !st || generatingRef.current) return
+    generatingRef.current = true
+    setIsGeneratingNo(true)
+    try {
+      const res = await api.get('/basic/standards/generate/no', { params: { inspection_type: it, standard_type: st } })
+      if (res.success !== false && res.data?.standard_no) {
+        form.setFieldsValue({ standard_no: res.data.standard_no })
+      }
+    } catch (e) {
+    } finally {
+      setIsGeneratingNo(false)
+      generatingRef.current = false
+    }
+  }, [form])
+
+  useEffect(() => {
+    if (!editing && editDrawerOpen && formInspectionType && formStandardType) {
+      generateStandardNo(formInspectionType, formStandardType)
+    }
+  }, [formInspectionType, formStandardType, editDrawerOpen, editing, generateStandardNo])
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -115,7 +142,7 @@ export default function InspectionStandard() {
       status: '开立',
       version_no: 'V1',
     })
-    setModalVisible(true)
+    setEditDrawerOpen(true)
   }
 
   const handleView = async (record: any) => {
@@ -151,7 +178,7 @@ export default function InspectionStandard() {
       status: record.status,
       description: record.description,
     })
-    setModalVisible(true)
+    setEditDrawerOpen(true)
   }
 
   const handleDelete = async (record: any) => {
@@ -175,10 +202,17 @@ export default function InspectionStandard() {
         await api.put(`/basic/standards/${editing.standard_id}`, payload)
         message.success('编辑成功')
       } else {
-        await api.post('/basic/standards', payload)
+        const res = await api.post('/basic/standards', payload)
+        if (res.success === false && res.message?.includes('已存在')) {
+          if (formInspectionType && formStandardType) {
+            await generateStandardNo(formInspectionType, formStandardType)
+          }
+          message.warning('标准编号已存在，已自动重新生成，请确认后再保存')
+          return
+        }
         message.success('新增成功')
       }
-      setModalVisible(false)
+      setEditDrawerOpen(false)
       fetchData()
     } catch (e: any) {
       if (e?.message?.includes('validate')) return
@@ -253,7 +287,7 @@ export default function InspectionStandard() {
       }
     },
     {
-      title: '操作', key: 'action', width: 220, fixed: 'right',
+      title: '操作', key: 'action', fixed: 'right',
       render: (_: any, record: any) => (
         <Space size="small">
           <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(record)}>查看</Button>
@@ -294,6 +328,15 @@ export default function InspectionStandard() {
       )
     },
   ]
+
+  const renderEditFooter = () => (
+    <div style={{ textAlign: 'right' }}>
+      <Space>
+        <Button onClick={() => setEditDrawerOpen(false)}>取消</Button>
+        <Button type="primary" loading={isGeneratingNo} onClick={handleSubmit}>保存</Button>
+      </Space>
+    </div>
+  )
 
   return (
     <>
@@ -372,46 +415,46 @@ export default function InspectionStandard() {
           </div>
         }
       />
-      <Modal
+      <Drawer
         title={editing ? '编辑检验标准' : '新增检验标准'}
-        open={modalVisible}
-        onOk={handleSubmit}
-        onCancel={() => setModalVisible(false)}
-        okText="保存"
-        cancelText="取消"
-        width={900}
+        open={editDrawerOpen}
+        onClose={() => setEditDrawerOpen(false)}
+        width={720}
         destroyOnHidden
+        footer={renderEditFooter()}
       >
         <Form form={form} layout="vertical" className="compact-form" preserve={false}>
           <Row gutter={12}>
-            <Col span={6}>
-              <Form.Item name="standard_no" label="标准编号" rules={[{ required: true, message: '请输入标准编号' }]}>
-                <Input placeholder="请输入标准编号" disabled={!!editing} />
+            <Col span={12}>
+              <Form.Item name="standard_no" label="标准编号" rules={[{ required: true, message: '请选择检验类型和标准类型自动生成' }]}>
+                <Input placeholder="选择检验类型和标准类型后自动生成" disabled />
               </Form.Item>
             </Col>
-            <Col span={6}>
-              <Form.Item name="inspection_type" label="检验类型" rules={[{ required: true, message: '请选择检验类型' }]}>
-                <Select placeholder="请选择检验类型" options={inspectionTypeOptions} />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item name="standard_type" label="标准类型" rules={[{ required: true, message: '请选择标准类型' }]}>
-                <Select placeholder="请选择标准类型" options={standardTypeOptions} />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
+            <Col span={12}>
               <Form.Item name="version_no" label="版本号" rules={[{ required: true, message: '请输入版本号' }]}>
-                <Input placeholder="如 V1" />
+                <Input disabled={!editing} placeholder="新增默认 V1" />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={12}>
-            <Col span={8}>
+            <Col span={12}>
+              <Form.Item name="inspection_type" label="检验类型" rules={[{ required: true, message: '请选择检验类型' }]}>
+                <Select placeholder="请选择检验类型" options={inspectionTypeOptions} disabled={!!editing} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="standard_type" label="标准类型" rules={[{ required: true, message: '请选择标准类型' }]}>
+                <Select placeholder="请选择标准类型" options={standardTypeOptions} disabled={!!editing} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={12}>
               <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
                 <Select placeholder="请选择状态" options={statusOptions} disabled />
               </Form.Item>
             </Col>
-            <Col span={16}>
+            <Col span={12}>
               <Form.Item name="standard_name" label="标准名称" rules={[{ required: true, message: '请输入标准名称' }]}>
                 <Input placeholder="请输入标准名称" />
               </Form.Item>
@@ -425,21 +468,23 @@ export default function InspectionStandard() {
             </Col>
           </Row>
         </Form>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, marginTop: 8 }}>
           <Typography.Title level={5} style={{ margin: 0 }}>检验项目列表</Typography.Title>
           <Button type="primary" size="small" icon={<PlusOutlined />} onClick={handleAddItem}>新增项目</Button>
         </div>
-        <ResizableTable
-          tableKey="pages_quality_InspectionStandard_items_edit"
-          columns={itemTableColumnsWithAction}
-          dataSource={currentItems}
-          rowKey={(r: any) => r._key || r.item_id}
-          size="small"
-          pagination={false}
-          scroll={{ x: 900 }}
-          locale={{ emptyText: '暂无检验项目，点击右上角"新增项目"添加' }}
-        />
-      </Modal>
+        <div style={{ maxHeight: 320, overflowY: 'auto', border: '1px solid #f0f0f0', borderRadius: 4 }}>
+          <ResizableTable
+            tableKey="pages_quality_InspectionStandard_items_edit"
+            columns={itemTableColumnsWithAction}
+            dataSource={currentItems}
+            rowKey={(r: any) => r._key || r.item_id}
+            size="small"
+            pagination={false}
+            scroll={{ x: 900 }}
+            locale={{ emptyText: '暂无检验项目，点击右上角"新增项目"添加' }}
+          />
+        </div>
+      </Drawer>
       <Modal
         title={itemEditing ? '编辑检验项目' : '新增检验项目'}
         open={itemModalVisible}
