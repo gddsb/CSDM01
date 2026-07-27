@@ -103,6 +103,7 @@ export const create = async (req: any, res: any) => {
         sample_rule: it.sample_rule || null,
         standard_value: it.standard_value,
         unit: it.unit || null,
+        defect_level: it.defect_level || null,
         sort_order: it.sort_order || 0,
       }))
       await InspectionStandardItem.bulkCreate(itemRecords)

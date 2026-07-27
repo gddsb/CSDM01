@@ -133,7 +133,7 @@ export default function MicrobeInspection() {
 
   const detailColumns = [
     { title: '检验项目', dataIndex: 'item_name', key: 'item_name' },
-    { title: '标准值', dataIndex: 'standard_value', key: 'standard_value' },
+    { title: '标准要求', dataIndex: 'standard_value', key: 'standard_value' },
     { title: '实测值', dataIndex: 'actual_value', key: 'actual_value' },
     { title: '单位', dataIndex: 'unit', key: 'unit', width: 80 },
     {

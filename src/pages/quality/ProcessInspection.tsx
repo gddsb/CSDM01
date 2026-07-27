@@ -109,7 +109,7 @@ export default function ProcessInspection() {
     { title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 120 },
     { title: '检验工序', dataIndex: 'process_name', key: 'process_name', width: 100 },
     { title: '检验项目', dataIndex: 'item_name', key: 'item_name', width: 110 },
-    { title: '标准值', dataIndex: 'standard_value', key: 'standard_value', width: 160 },
+    { title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 160 },
     { title: '实测值', dataIndex: 'actual_value', key: 'actual_value', width: 120 },
     {
       title: '检验结果', dataIndex: 'result', key: 'result', width: 90,
@@ -219,8 +219,8 @@ export default function ProcessInspection() {
           </Row>
           <Row gutter={12}>
             <Col span={12}>
-              <Form.Item name="standard_value" label="标准值" rules={[{ required: true, message: '请输入标准值' }]}>
-                <Input placeholder="请输入标准值" />
+              <Form.Item name="standard_value" label="标准要求" rules={[{ required: true, message: '请输入标准要求' }]}>
+                <Input placeholder="请输入标准要求" />
               </Form.Item>
             </Col>
             <Col span={12}>

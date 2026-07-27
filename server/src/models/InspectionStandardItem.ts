@@ -40,6 +40,10 @@ const InspectionStandardItem = sequelize.define('InspectionStandardItem', {
     type: DataTypes.STRING(20),
     comment: '单位',
   },
+  defect_level: {
+    type: DataTypes.STRING(20),
+    comment: '缺陷等级：A类致命缺陷、B类严重缺陷、C类次要缺陷',
+  },
   sort_order: {
     type: DataTypes.INTEGER,
     defaultValue: 0,

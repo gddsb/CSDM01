@@ -1,6 +1,6 @@
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { Button, Space, Form, Input, Select, Typography, Row, Col, Modal, Breadcrumb, Card, InputNumber, message as antMsg, Alert } from 'antd'
+import { Button, Space, Form, Input, Select, Typography, Row, Col, Modal, Breadcrumb, Card, InputNumber, message as antMsg, Alert, Tag } from 'antd'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useMessage } from '../../contexts/AppContext'
 import { PlusOutlined, ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons'
@@ -166,6 +166,7 @@ export default function InspectionStandardForm() {
     itemForm.setFieldsValue({
       category: '外观',
       sort_order: currentItems.length + 1,
+      defect_level: 'B类严重缺陷',
     })
     setItemModalVisible(true)
   }
@@ -180,6 +181,7 @@ export default function InspectionStandardForm() {
       standard_value: record.standard_value,
       unit: record.unit,
       sort_order: record.sort_order,
+      defect_level: record.defect_level,
     })
     setItemModalVisible(true)
   }
@@ -213,8 +215,15 @@ export default function InspectionStandardForm() {
     },
     { title: '检验项目', dataIndex: 'item_name', key: 'item_name' },
     { title: '排序号', dataIndex: 'sort_order', key: 'sort_order', width: 80 },
-    { title: '标准值', dataIndex: 'standard_value', key: 'standard_value', width: 140 },
+    { title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 180 },
     { title: '单位', dataIndex: 'unit', key: 'unit', width: 70 },
+    {
+      title: '缺陷等级', dataIndex: 'defect_level', key: 'defect_level', width: 120,
+      render: (v: string) => {
+        const colorMap: any = { 'A类致命缺陷': 'red', 'B类严重缺陷': 'orange', 'C类次要缺陷': 'blue' }
+        return v ? <Tag color={colorMap[v] || 'default'}>{v}</Tag> : '-'
+      }
+    },
     { title: '检验方法', dataIndex: 'method', key: 'method' },
     { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 140 },
     {
@@ -351,7 +360,7 @@ export default function InspectionStandardForm() {
               rowKey={(r: any) => r._key || r.item_id}
               size="small"
               pagination={false}
-              scroll={{ x: 1000 }}
+              scroll={{ x: 1300 }}
               locale={{ emptyText: '暂无检验项目，点击右上角"新增项目"添加' }}
             />
           </div>
@@ -388,7 +397,7 @@ export default function InspectionStandardForm() {
           </Row>
           <Row gutter={12}>
             <Col span={10}>
-              <Form.Item name="standard_value" label="标准值" rules={[{ required: true, message: '请输入标准值' }]}>
+              <Form.Item name="standard_value" label="标准要求" rules={[{ required: true, message: '请输入标准要求' }]}>
                 <Input placeholder="如 90.0±0.3、≥200 等" />
               </Form.Item>
             </Col>
@@ -398,13 +407,26 @@ export default function InspectionStandardForm() {
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="sample_rule" label="抽样方式">
-                <Input placeholder="如 AQL 0.65、每批5个等" />
+              <Form.Item name="defect_level" label="缺陷等级">
+                <Select
+                  placeholder="请选择缺陷等级"
+                  allowClear
+                  options={[
+                    { label: 'A类致命缺陷', value: 'A类致命缺陷' },
+                    { label: 'B类严重缺陷', value: 'B类严重缺陷' },
+                    { label: 'C类次要缺陷', value: 'C类次要缺陷' },
+                  ]}
+                />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={12}>
-            <Col span={24}>
+            <Col span={14}>
+              <Form.Item name="sample_rule" label="抽样方式">
+                <Input placeholder="如 AQL 0.65、每批5个等" />
+              </Form.Item>
+            </Col>
+            <Col span={10}>
               <Form.Item name="method" label="检验方法">
                 <Input placeholder="如 游标卡尺测量、拉力试验机等" />
               </Form.Item>

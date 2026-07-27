@@ -324,9 +324,9 @@ export default function ProductInspection() {
       )
     },
     {
-      title: '标准值', dataIndex: 'standard_value', key: 'standard_value', width: 200,
+      title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 200,
       render: (_: any, record: any) => (
-        <Input value={record.standard_value} disabled placeholder="标准值" />
+        <Input value={record.standard_value} disabled placeholder="标准要求" />
       )
     },
     {
@@ -669,7 +669,7 @@ export default function ProductInspection() {
               columns={[
                 { title: '序号', width: 60, render: (_: any, __: any, i: number) => i + 1 },
                 { title: '检测项目', dataIndex: 'item_name', width: 180 },
-                { title: '标准值', dataIndex: 'standard_value', width: 180 },
+                { title: '标准要求', dataIndex: 'standard_value', width: 180 },
                 { title: '检测值', dataIndex: 'actual_value', width: 180 },
                 {
                   title: '判定', dataIndex: 'result', width: 100,

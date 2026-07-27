@@ -163,8 +163,15 @@ export default function InspectionStandard() {
     },
     { title: '检验项目', dataIndex: 'item_name', key: 'item_name' },
     { title: '排序号', dataIndex: 'sort_order', key: 'sort_order', width: 80 },
-    { title: '标准值', dataIndex: 'standard_value', key: 'standard_value', width: 140 },
+    { title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 180 },
     { title: '单位', dataIndex: 'unit', key: 'unit', width: 70 },
+    {
+      title: '缺陷等级', dataIndex: 'defect_level', key: 'defect_level', width: 120,
+      render: (v: string) => {
+        const colorMap: any = { 'A类致命缺陷': 'red', 'B类严重缺陷': 'orange', 'C类次要缺陷': 'blue' }
+        return v ? <Tag color={colorMap[v] || 'default'}>{v}</Tag> : '-'
+      }
+    },
     { title: '检验方法', dataIndex: 'method', key: 'method' },
     { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 140 },
   ]
@@ -280,7 +287,7 @@ export default function InspectionStandard() {
               rowKey="item_id"
               size="small"
               pagination={false}
-              scroll={{ x: 900 }}
+              scroll={{ x: 1200 }}
             />
           </>
         )}
