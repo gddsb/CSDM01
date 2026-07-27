@@ -4,7 +4,8 @@ import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 
 export const list = async (req, res) => {
   try {
-    const { keyword, is_active, category_name, dateStart, dateEnd, page = 1, pageSize = 20 } = req.query
+    const { keyword, is_active, category_name, dateStart, dateEnd, page = 1, pageSize = 20, page_size } = req.query
+    const actualPageSize = page_size || pageSize
     const where = {}
     if (keyword) {
       where[Op.or] = [
@@ -21,7 +22,7 @@ export const list = async (req, res) => {
       if (dateEnd) where.created_at[Op.lte] = new Date(dateEnd + ' 23:59:59')
     }
 
-    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
+    const limit = Math.min(Number(actualPageSize), MAX_PAGE_SIZE)
     const offset = (Number(page) - 1) * limit
     const { rows, count } = await Material.findAndCountAll({
       where,
