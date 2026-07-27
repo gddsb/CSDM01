@@ -279,41 +279,41 @@ export default function InspectionStandardForm() {
             }
           `}</style>
           <Row wrap={false} style={{ display: 'flex', flexWrap: 'nowrap', marginLeft: -2, marginRight: -2 }} className="standard-header-form">
-            <Col flex="none" style={{ padding: '0 2px', width: 300 }}>
+            <Col flex="none" style={{ padding: '0 2px', width: 220 }}>
               <Form.Item name="standard_no" label="标准编号" rules={[{ required: true, message: '请选择检验类型和标准类型自动生成' }]}>
-                <Input placeholder="自动生成" disabled size="small" style={{ width: 210 }} />
+                <Input placeholder="自动生成" disabled size="small" style={{ width: 140 }} />
               </Form.Item>
             </Col>
-            <Col flex="none" style={{ padding: '0 2px', width: 180 }}>
+            <Col flex="none" style={{ padding: '0 2px', width: 170 }}>
               <Form.Item name="inspection_type" label="检验类型" rules={[{ required: true, message: '请选择检验类型' }]}>
                 <Select placeholder="请选择" options={inspectionTypeOptions} disabled={isEdit} size="small" style={{ width: 90 }} />
               </Form.Item>
             </Col>
-            <Col flex="none" style={{ padding: '0 2px', width: 230 }}>
+            <Col flex="none" style={{ padding: '0 2px', width: 220 }}>
               <Form.Item name="standard_type" label="标准类型" rules={[{ required: true, message: '请选择标准类型' }]}>
                 <Select placeholder="请选择" options={standardTypeOptions} disabled={isEdit} size="small" style={{ width: 140 }} />
               </Form.Item>
             </Col>
-            <Col flex="none" style={{ padding: '0 2px', width: 150 }}>
+            <Col flex="none" style={{ padding: '0 2px', width: 140 }}>
               <Form.Item name="version_no" label="版本号" rules={[{ required: true, message: '请输入版本号' }]}>
-                <Input disabled={!isEdit} placeholder="V1" size="small" style={{ width: 70 }} />
+                <Input disabled={!isEdit} placeholder="V1" size="small" style={{ width: 60 }} />
               </Form.Item>
             </Col>
-            <Col flex="none" style={{ padding: '0 2px', width: 160 }}>
+            <Col flex="none" style={{ padding: '0 2px', width: 140 }}>
               <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
-                <Select placeholder="请选择状态" options={[{ label: '开立', value: '开立' }, { label: '生效', value: '生效' }, { label: '失效', value: '失效' }]} disabled size="small" style={{ width: 80 }} />
+                <Select placeholder="请选择状态" options={[{ label: '开立', value: '开立' }, { label: '生效', value: '生效' }, { label: '失效', value: '失效' }]} disabled size="small" style={{ width: 60 }} />
               </Form.Item>
             </Col>
           </Row>
           <Row wrap={false} style={{ display: 'flex', flexWrap: 'nowrap', marginLeft: -2, marginRight: -2 }} className="standard-header-form">
-            <Col flex="none" style={{ padding: '0 2px', width: 540 }}>
+            <Col flex="none" style={{ padding: '0 2px', width: 360 }}>
               <Form.Item name="material_id" label="参照料品">
                 <Select
                   placeholder="请选择参照料品（可选）"
                   showSearch
                   allowClear
                   size="small"
-                  style={{ width: 420 }}
+                  style={{ width: 280 }}
                   filterOption={(input, option) =>
                     (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
                   }
@@ -322,9 +322,9 @@ export default function InspectionStandardForm() {
                 />
               </Form.Item>
             </Col>
-            <Col flex="none" style={{ padding: '0 2px', width: 540 }}>
+            <Col flex="none" style={{ padding: '0 2px', width: 440 }}>
               <Form.Item name="standard_name" label="标准名称" rules={[{ required: true, message: '请输入标准名称' }]}>
-                <Input placeholder="请输入标准名称" size="small" style={{ width: 420 }} />
+                <Input placeholder="请输入标准名称" size="small" style={{ width: 360 }} />
               </Form.Item>
             </Col>
             <Col flex="auto" style={{ padding: '0 2px', minWidth: 0 }}>
