@@ -340,7 +340,7 @@ export default function ProductInspection() {
   const inspectColumns = [
     { title: '序号', dataIndex: 'sort_order', key: 'sort_order', width: 60, render: (_: any, __: any, i: number) => i + 1 },
     {
-      title: '项目分类', dataIndex: 'category', key: 'category', width: 120,
+      title: '项目分类', dataIndex: 'category', key: 'category', width: 60,
       render: (_: any, record: any) => (
         <Input value={record.category} disabled placeholder="项目分类" />
       )
@@ -360,7 +360,7 @@ export default function ProductInspection() {
       )
     },
     {
-      title: '检验结果', dataIndex: 'actual_value', key: 'actual_value', width: 200,
+      title: '检验结果', dataIndex: 'actual_value', key: 'actual_value', width: 100,
       render: (_: any, record: any, index: number) => (
         <Input value={record.actual_value} onChange={e => updateItem(index, 'actual_value', e.target.value)} placeholder="请输入检验结果" />
       )
