@@ -253,37 +253,55 @@ export default function InspectionStandardForm() {
           </Space>
         }
       >
-        <Form form={form} layout="horizontal" className="compact-form" preserve={false} labelCol={{ style: { flex: '0 0 56px', width: 56 } }} wrapperCol={{ style: { flex: 1, minWidth: 0 } }} style={{ rowGap: 0 }}>
-          <Row gutter={4} wrap={false} style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap', display: 'flex' }}>
-            <Col flex="1 1 0" style={{ minWidth: 0, flex: 1 }}>
-              <Form.Item name="standard_no" label="标准编号" rules={[{ required: true, message: '请选择检验类型和标准类型自动生成' }]} style={{ marginBottom: 4 }}>
+        <Form form={form} layout="horizontal" className="compact-form" preserve={false} style={{ rowGap: 0 }} labelCol={{ flex: '56px', style: { width: 56, whiteSpace: 'nowrap', overflow: 'hidden', flexShrink: 0 } }} wrapperCol={{ flex: 1, style: { minWidth: 0, overflow: 'hidden' } }}>
+          <style>{`
+            .standard-header-form .ant-form-item {
+              margin-bottom: 4px !important;
+              flex-wrap: nowrap !important;
+            }
+            .standard-header-form .ant-form-item-row {
+              flex-wrap: nowrap !important;
+            }
+            .standard-header-form .ant-form-item-label {
+              white-space: nowrap !important;
+              overflow: hidden !important;
+              flex-shrink: 0 !important;
+            }
+            .standard-header-form .ant-form-item-control {
+              min-width: 0 !important;
+              overflow: hidden !important;
+            }
+          `}</style>
+          <Row wrap={false} style={{ display: 'flex', flexWrap: 'nowrap', marginLeft: -2, marginRight: -2 }} className="standard-header-form">
+            <Col flex="1 1 20%" style={{ padding: '0 2px', minWidth: 0 }}>
+              <Form.Item name="standard_no" label="标准编号" rules={[{ required: true, message: '请选择检验类型和标准类型自动生成' }]}>
                 <Input placeholder="自动生成" disabled size="small" />
               </Form.Item>
             </Col>
-            <Col flex="1 1 0" style={{ minWidth: 0, flex: 1 }}>
-              <Form.Item name="inspection_type" label="检验类型" rules={[{ required: true, message: '请选择检验类型' }]} style={{ marginBottom: 4 }}>
+            <Col flex="1 1 18%" style={{ padding: '0 2px', minWidth: 0 }}>
+              <Form.Item name="inspection_type" label="检验类型" rules={[{ required: true, message: '请选择检验类型' }]}>
                 <Select placeholder="请选择" options={inspectionTypeOptions} disabled={isEdit} size="small" />
               </Form.Item>
             </Col>
-            <Col flex="1 1 0" style={{ minWidth: 0, flex: 1 }}>
-              <Form.Item name="standard_type" label="标准类型" rules={[{ required: true, message: '请选择标准类型' }]} style={{ marginBottom: 4 }}>
+            <Col flex="1 1 18%" style={{ padding: '0 2px', minWidth: 0 }}>
+              <Form.Item name="standard_type" label="标准类型" rules={[{ required: true, message: '请选择标准类型' }]}>
                 <Select placeholder="请选择" options={standardTypeOptions} disabled={isEdit} size="small" />
               </Form.Item>
             </Col>
-            <Col flex="0.7 1 0" style={{ minWidth: 0, flex: 0.7 }}>
-              <Form.Item name="version_no" label="版本号" rules={[{ required: true, message: '请输入版本号' }]} style={{ marginBottom: 4 }}>
+            <Col flex="0 0 14%" style={{ padding: '0 2px', minWidth: 0 }}>
+              <Form.Item name="version_no" label="版本号" rules={[{ required: true, message: '请输入版本号' }]}>
                 <Input disabled={!isEdit} placeholder="V1" size="small" />
               </Form.Item>
             </Col>
-            <Col flex="0.7 1 0" style={{ minWidth: 0, flex: 0.7 }}>
-              <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]} style={{ marginBottom: 4 }}>
+            <Col flex="0 0 14%" style={{ padding: '0 2px', minWidth: 0 }}>
+              <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
                 <Select placeholder="请选择状态" options={[{ label: '开立', value: '开立' }, { label: '生效', value: '生效' }, { label: '失效', value: '失效' }]} disabled size="small" />
               </Form.Item>
             </Col>
           </Row>
-          <Row gutter={4} wrap={false} style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap', display: 'flex' }}>
-            <Col flex="1.2 1 0" style={{ minWidth: 0, flex: 1.2 }}>
-              <Form.Item name="material_id" label="参照料品" style={{ marginBottom: 4 }}>
+          <Row wrap={false} style={{ display: 'flex', flexWrap: 'nowrap', marginLeft: -2, marginRight: -2 }} className="standard-header-form">
+            <Col flex="1 1 35%" style={{ padding: '0 2px', minWidth: 0 }}>
+              <Form.Item name="material_id" label="参照料品">
                 <Select
                   placeholder="请选择参照料品（可选）"
                   showSearch
@@ -297,13 +315,13 @@ export default function InspectionStandardForm() {
                 />
               </Form.Item>
             </Col>
-            <Col flex="1.5 1 0" style={{ minWidth: 0, flex: 1.5 }}>
-              <Form.Item name="standard_name" label="标准名称" rules={[{ required: true, message: '请输入标准名称' }]} style={{ marginBottom: 4 }}>
+            <Col flex="1 1 30%" style={{ padding: '0 2px', minWidth: 0 }}>
+              <Form.Item name="standard_name" label="标准名称" rules={[{ required: true, message: '请输入标准名称' }]}>
                 <Input placeholder="请输入标准名称" size="small" />
               </Form.Item>
             </Col>
-            <Col flex="1.5 1 0" style={{ minWidth: 0, flex: 1.5 }}>
-              <Form.Item name="description" label="描述" style={{ marginBottom: 4 }}>
+            <Col flex="1 1 35%" style={{ padding: '0 2px', minWidth: 0 }}>
+              <Form.Item name="description" label="描述">
                 <Input placeholder="请输入描述" size="small" />
               </Form.Item>
             </Col>
