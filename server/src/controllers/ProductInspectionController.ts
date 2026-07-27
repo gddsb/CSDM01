@@ -326,6 +326,44 @@ export default {
     }
   },
 
+  async review(req: any, res: any) {
+    try {
+      const { id } = req.params
+      const { result, remarks } = req.body
+      const user: any = req.user || {}
+
+      if (result !== '合格' && result !== '不合格') {
+        return fail(res, '审核结果必须为合格或不合格', ErrorCode.PARAM_INVALID)
+      }
+
+      const record = await ProductInspection.findOne({ where: { inspection_id: id } })
+      if (!record) {
+        return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)
+      }
+
+      const statusVal = typeof record.status === 'string' ? STATUS_REVERSE[record.status] : record.status
+      if (statusVal !== 2) {
+        return fail(res, '只有审核中状态可以审核', ErrorCode.PARAM_INVALID)
+      }
+
+      const now = new Date()
+      await record.update({
+        status: 3,
+        result,
+        reviewer_id: user.userId || null,
+        reviewer_name: user.realName || user.username || '',
+        review_time: now,
+        remarks: remarks !== undefined ? remarks : record.remarks,
+      })
+
+      const detail = await getDetail(Number(id))
+      success(res, detail, '审核成功')
+    } catch (err: any) {
+      logger.error('[ProductInspection] review error:', err)
+      fail(res, err.message || '审核失败', ErrorCode.SYSTEM_ERROR)
+    }
+  },
+
   async delete(req: any, res: any) {
     const t = await ProductInspection.sequelize.transaction()
     try {

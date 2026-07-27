@@ -249,6 +249,21 @@ export default function ProductInspection() {
     }
   }
 
+  const handleReview = async (result: '合格' | '不合格') => {
+    try {
+      const res = await api.put(`/basic/product-inspections/${current.inspection_id}/review`, { result })
+      if (res.success !== false) {
+        message.success(`审核${result}成功`)
+        setDetailDrawerOpen(false)
+        fetchData()
+      } else {
+        message.error(res.message || '审核失败')
+      }
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || '审核失败')
+    }
+  }
+
   const showDetail = async (record: any) => {
     try {
       const res = await api.get(`/basic/product-inspections/${record.inspection_id}`)
@@ -712,6 +727,20 @@ export default function ProductInspection() {
                 { title: '检测时间', dataIndex: 'inspection_time', width: 160, render: formatDateTime },
               ]}
             />
+
+            {current.status === '审核中' && (
+              <div style={{ marginTop: 16, padding: 16, border: '1px solid #e8e8e8', borderRadius: 6, background: '#fafafa' }}>
+                <div style={{ marginBottom: 12, fontWeight: 500 }}>审核操作</div>
+                <Space>
+                  <Popconfirm title="确认审核通过？" onConfirm={() => handleReview('合格')} okText="确认" cancelText="取消">
+                    <Button type="primary">审核通过</Button>
+                  </Popconfirm>
+                  <Popconfirm title="确认审核不通过？" onConfirm={() => handleReview('不合格')} okText="确认" cancelText="取消">
+                    <Button danger>审核不通过</Button>
+                  </Popconfirm>
+                </Space>
+              </div>
+            )}
           </>
         )}
       </Drawer>
