@@ -358,34 +358,22 @@ export default function ProductInspection() {
     },
     {
       title: '检验结果', dataIndex: 'actual_value', key: 'actual_value', width: 100,
-      render: (v: any, record: any, index: number) => {
-        const st = current?.status
-        const isEditing = st === '检验中' || st === 1
-        if (!isEditing) return v || '-'
-        return (
-          <Input value={v} onChange={e => updateItem(index, 'actual_value', e.target.value)} placeholder="请输入检验结果" />
-        )
-      },
+      render: (v: any, record: any, index: number) => (
+        <Input value={v} onChange={e => updateItem(index, 'actual_value', e.target.value)} placeholder="请输入检验结果" />
+      ),
     },
     {
       title: '判定结论', dataIndex: 'result', key: 'result', width: 100,
-      render: (v: any, record: any, index: number) => {
-        const st = current?.status
-        const isEditing = st === '检验中' || st === 1
-        if (!isEditing) {
-          return v ? <Tag color={v === '合格' || v === 1 ? 'success' : 'error'}>{typeof v === 'number' ? (v === 1 ? '合格' : '不合格') : v}</Tag> : '-'
-        }
-        return (
-          <Select
-            style={{ width: '100%' }}
-            placeholder="请选择"
-            allowClear
-            value={v}
-            onChange={val => updateItem(index, 'result', val)}
-            options={[{ label: '合格', value: '合格' }, { label: '不合格', value: '不合格' }]}
-          />
-        )
-      },
+      render: (v: any, record: any, index: number) => (
+        <Select
+          style={{ width: '100%' }}
+          placeholder="请选择"
+          allowClear
+          value={v}
+          onChange={val => updateItem(index, 'result', val)}
+          options={[{ label: '合格', value: '合格' }, { label: '不合格', value: '不合格' }]}
+        />
+      ),
     },
   ]
 
