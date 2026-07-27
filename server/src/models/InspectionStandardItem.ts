@@ -49,6 +49,10 @@ const InspectionStandardItem = sequelize.define('InspectionStandardItem', {
     defaultValue: 0,
     comment: '排序',
   },
+  inspection_types: {
+    type: DataTypes.STRING(200),
+    comment: '检验类型（多选，逗号分隔：首件,制程,成品,来料,其它）',
+  },
 }, {
   tableName: 'quality_inspection_standard_item',
   timestamps: true,

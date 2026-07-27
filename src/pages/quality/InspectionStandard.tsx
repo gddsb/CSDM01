@@ -18,6 +18,7 @@ const inspectionTypeOptions = [
   { label: '首件', value: '首件' },
   { label: '制程', value: '制程' },
   { label: '成品', value: '成品' },
+  { label: '来料', value: '来料' },
   { label: '其它', value: '其它' },
 ]
 
@@ -44,7 +45,6 @@ export default function InspectionStandard() {
   const [pagination, setPagination] = useState({ current: 1, pageSize: 20, total: 0 })
 
   const [keyword, setKeyword] = useState('')
-  const [inspectionType, setInspectionType] = useState<any>(undefined)
   const [standardType, setStandardType] = useState<any>(undefined)
   const [statusFilter, setStatusFilter] = useState<any>(undefined)
 
@@ -58,7 +58,6 @@ export default function InspectionStandard() {
     try {
       const params: any = { page: pagination.current, page_size: pagination.pageSize }
       if (keyword) params.keyword = keyword
-      if (inspectionType) params.inspection_type = inspectionType
       if (standardType) params.standard_type = standardType
       if (statusFilter) params.status = statusFilter
       const res = await api.get('/basic/standards', { params })
@@ -75,7 +74,7 @@ export default function InspectionStandard() {
     } finally {
       setLoading(false)
     }
-  }, [pagination.current, pagination.pageSize, keyword, inspectionType, standardType, statusFilter])
+  }, [pagination.current, pagination.pageSize, keyword, standardType, statusFilter])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -125,10 +124,6 @@ export default function InspectionStandard() {
       render: (v: string) => <div style={{ whiteSpace: 'normal', wordBreak: 'break-all', lineHeight: 1.5 }}>{v}</div>
     },
     {
-      title: '检验类型', dataIndex: 'inspection_type', key: 'inspection_type', width: 90,
-      render: (v: string) => <Tag color={typeColorMap[v] || 'default'}>{v}</Tag>
-    },
-    {
       title: '标准类型', dataIndex: 'standard_type', key: 'standard_type', width: 100,
       render: (v: string) => <Tag color={v === '通用标准' ? 'blue' : v === '专用标准' ? 'orange' : 'purple'}>{v}</Tag>
     },
@@ -165,7 +160,14 @@ export default function InspectionStandard() {
       render: (v: string) => <Tag color={categoryColor[v] || 'default'}>{v}</Tag>
     },
     { title: '检验项目', dataIndex: 'item_name', key: 'item_name' },
-    { title: '排序号', dataIndex: 'sort_order', key: 'sort_order', width: 80 },
+    {
+      title: '检验类型', dataIndex: 'inspection_types', key: 'inspection_types', width: 180,
+      render: (v: string) => {
+        if (!v) return '-'
+        const types = v.split(',')
+        return <Space wrap size={4}>{types.map(t => <Tag key={t} color={typeColorMap[t] || 'default'}>{t}</Tag>)}</Space>
+      }
+    },
     { title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 180 },
     { title: '单位', dataIndex: 'unit', key: 'unit', width: 70 },
     {
@@ -198,17 +200,7 @@ export default function InspectionStandard() {
                 onChange={e => setKeyword(e.target.value)}
               />
               </Col>
-              <Col span={4}>
-                <Select
-                  placeholder="检验类型"
-                  allowClear
-                  style={{ width: '100%' }}
-                  options={inspectionTypeOptions}
-                  value={inspectionType}
-                  onChange={setInspectionType}
-                />
-              </Col>
-              <Col span={4}>
+              <Col span={6}>
                 <Select
                   placeholder="标准类型"
                   allowClear
@@ -228,12 +220,11 @@ export default function InspectionStandard() {
                   onChange={setStatusFilter}
                 />
               </Col>
-              <Col span={6}>
+              <Col span={8}>
                 <Space>
                   <Button type="primary" icon={<SearchOutlined />} onClick={fetchData}>查询</Button>
                   <Button icon={<ReloadOutlined />} onClick={() => {
-                    setKeyword(''); setInspectionType(undefined)
-                    setStandardType(undefined); setStatusFilter(undefined)
+                    setKeyword(''); setStandardType(undefined); setStatusFilter(undefined)
                   }}>重置</Button>
                 </Space>
               </Col>
@@ -268,9 +259,6 @@ export default function InspectionStandard() {
             <Descriptions column={2} size="small" bordered style={{ marginBottom: 16 }}>
               <Descriptions.Item label="标准编号">{current.standard_no}</Descriptions.Item>
               <Descriptions.Item label="版本号">{current.version_no}</Descriptions.Item>
-              <Descriptions.Item label="检验类型">
-                <Tag color={typeColorMap[current.inspection_type]}>{current.inspection_type}</Tag>
-              </Descriptions.Item>
               <Descriptions.Item label="标准类型">
                 <Tag color={current.standard_type === '通用标准' ? 'blue' : current.standard_type === '专用标准' ? 'orange' : 'purple'}>{current.standard_type}</Tag>
               </Descriptions.Item>
@@ -278,7 +266,7 @@ export default function InspectionStandard() {
                 <Tag color={current.status === '生效' ? 'success' : current.status === '失效' ? 'error' : 'default'}>{current.status}</Tag>
               </Descriptions.Item>
               <Descriptions.Item label="生效日期">{formatDate(current.effective_date)}</Descriptions.Item>
-              <Descriptions.Item label="参照料品" span={2}>{current.material_name ? `${current.material_name} (ID: ${current.material_id})` : '-'}</Descriptions.Item>
+              <Descriptions.Item label="参照料品">{current.material_name ? `${current.material_name} (ID: ${current.material_id})` : '-'}</Descriptions.Item>
               <Descriptions.Item label="标准名称" span={2}>{current.standard_name}</Descriptions.Item>
               <Descriptions.Item label="描述" span={2}>{current.description || '-'}</Descriptions.Item>
             </Descriptions>

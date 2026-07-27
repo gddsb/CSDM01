@@ -1,6 +1,6 @@
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { Button, Space, Form, Input, Select, Typography, Row, Col, Modal, Breadcrumb, Card, InputNumber, message as antMsg, Alert, Tag, Popconfirm } from 'antd'
+import { Button, Space, Form, Input, Select, Typography, Row, Col, Modal, Breadcrumb, Card, message as antMsg, Alert, Tag, Popconfirm } from 'antd'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useMessage } from '../../contexts/AppContext'
 import { PlusOutlined, ArrowLeftOutlined, SaveOutlined, CheckCircleOutlined } from '@ant-design/icons'
@@ -12,6 +12,7 @@ const inspectionTypeOptions = [
   { label: '首件', value: '首件' },
   { label: '制程', value: '制程' },
   { label: '成品', value: '成品' },
+  { label: '来料', value: '来料' },
   { label: '其它', value: '其它' },
 ]
 
@@ -48,15 +49,14 @@ export default function InspectionStandardForm() {
   const message = useMessage()
   const generatingRef = useRef(false)
 
-  const formInspectionType = Form.useWatch('inspection_type', form)
   const formStandardType = Form.useWatch('standard_type', form)
 
-  const generateStandardNo = useCallback(async (it: string, st: string) => {
-    if (!it || !st || generatingRef.current) return
+  const generateStandardNo = useCallback(async (st: string) => {
+    if (!st || generatingRef.current) return
     generatingRef.current = true
     setIsGeneratingNo(true)
     try {
-      const res = await api.get('/basic/standards/generate/no', { params: { inspection_type: it, standard_type: st } })
+      const res = await api.get('/basic/standards/generate/no', { params: { standard_type: st } })
       if (res.success !== false && res.data?.standard_no) {
         form.setFieldsValue({ standard_no: res.data.standard_no })
       }
@@ -68,10 +68,10 @@ export default function InspectionStandardForm() {
   }, [form])
 
   useEffect(() => {
-    if (!isEdit && formInspectionType && formStandardType) {
-      generateStandardNo(formInspectionType, formStandardType)
+    if (!isEdit && formStandardType) {
+      generateStandardNo(formStandardType)
     }
-  }, [formInspectionType, formStandardType, isEdit, generateStandardNo])
+  }, [formStandardType, isEdit, generateStandardNo])
 
   const fetchMaterials = useCallback(async () => {
     try {
@@ -98,14 +98,16 @@ export default function InspectionStandardForm() {
         form.setFieldsValue({
           standard_no: detail.standard_no,
           standard_name: detail.standard_name,
-          inspection_type: detail.inspection_type,
           standard_type: detail.standard_type,
           material_id: detail.material_id || undefined,
           version_no: detail.version_no,
           status: detail.status,
           description: detail.description,
         })
-        setCurrentItems(detail.items || [])
+        setCurrentItems(detail.items ? detail.items.map((it: any) => ({
+          ...it,
+          inspection_types: it.inspection_types ? it.inspection_types.split(',').filter(Boolean) : [],
+        })) : [])
         setCurrentStatus(detail.status || '')
       }).catch(() => {
         message.error('加载数据失败')
@@ -113,7 +115,6 @@ export default function InspectionStandardForm() {
     } else {
       form.resetFields()
       form.setFieldsValue({
-        inspection_type: '首件',
         standard_type: '通用标准',
         status: '开立',
         version_no: 'V1',
@@ -146,8 +147,8 @@ export default function InspectionStandardForm() {
       } else {
         const res = await api.post('/basic/standards', payload)
         if (res.success === false && res.message?.includes('已存在')) {
-          if (formInspectionType && formStandardType) {
-            await generateStandardNo(formInspectionType, formStandardType)
+          if (formStandardType) {
+            await generateStandardNo(formStandardType)
           }
           message.warning('标准编号已存在，已自动重新生成，请确认后再保存')
           setSaving(false)
@@ -183,8 +184,8 @@ export default function InspectionStandardForm() {
     itemForm.resetFields()
     itemForm.setFieldsValue({
       category: '外观',
-      sort_order: currentItems.length + 1,
       defect_level: 'B类严重缺陷',
+      inspection_types: [],
     })
     setItemModalVisible(true)
   }
@@ -198,8 +199,8 @@ export default function InspectionStandardForm() {
       sample_rule: record.sample_rule,
       standard_value: record.standard_value,
       unit: record.unit,
-      sort_order: record.sort_order,
       defect_level: record.defect_level,
+      inspection_types: record.inspection_types || [],
     })
     setItemModalVisible(true)
   }
@@ -232,7 +233,14 @@ export default function InspectionStandardForm() {
       render: (v: string) => <span style={{ color: categoryColor[v] || '#999' }}>{v}</span>
     },
     { title: '检验项目', dataIndex: 'item_name', key: 'item_name' },
-    { title: '排序号', dataIndex: 'sort_order', key: 'sort_order', width: 80 },
+    {
+      title: '检验类型', dataIndex: 'inspection_types', key: 'inspection_types', width: 180,
+      render: (v: string[] | string) => {
+        if (!v || (Array.isArray(v) && v.length === 0)) return '-'
+        const types = Array.isArray(v) ? v : String(v).split(',')
+        return <Space wrap size={4}>{types.map(t => <Tag key={t}>{t}</Tag>)}</Space>
+      }
+    },
     { title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 180 },
     { title: '单位', dataIndex: 'unit', key: 'unit', width: 70 },
     {
@@ -313,13 +321,8 @@ export default function InspectionStandardForm() {
           `}</style>
           <Row wrap={false} style={{ display: 'flex', flexWrap: 'nowrap', marginLeft: -2, marginRight: -2 }} className="standard-header-form">
             <Col flex="none" style={{ padding: '0 2px', width: 220 }}>
-              <Form.Item name="standard_no" label="标准编号" rules={[{ required: true, message: '请选择检验类型和标准类型自动生成' }]}>
+              <Form.Item name="standard_no" label="标准编号" rules={[{ required: true, message: '请选择标准类型自动生成' }]}>
                 <Input placeholder="自动生成" disabled size="small" style={{ width: 140 }} />
-              </Form.Item>
-            </Col>
-            <Col flex="none" style={{ padding: '0 2px', width: 170 }}>
-              <Form.Item name="inspection_type" label="检验类型" rules={[{ required: true, message: '请选择检验类型' }]}>
-                <Select placeholder="请选择" options={inspectionTypeOptions} disabled={isEdit} size="small" style={{ width: 90 }} />
               </Form.Item>
             </Col>
             <Col flex="none" style={{ padding: '0 2px', width: 220 }}>
@@ -413,8 +416,16 @@ export default function InspectionStandardForm() {
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item name="sort_order" label="排序号">
-                <InputNumber min={1} style={{ width: '100%' }} placeholder="数字越小越靠前" />
+              <Form.Item name="defect_level" label="缺陷等级">
+                <Select
+                  placeholder="请选择缺陷等级"
+                  allowClear
+                  options={[
+                    { label: 'A类致命缺陷', value: 'A类致命缺陷' },
+                    { label: 'B类严重缺陷', value: 'B类严重缺陷' },
+                    { label: 'C类次要缺陷', value: 'C类次要缺陷' },
+                  ]}
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -430,15 +441,12 @@ export default function InspectionStandardForm() {
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="defect_level" label="缺陷等级">
+              <Form.Item name="inspection_types" label="检验类型">
                 <Select
-                  placeholder="请选择缺陷等级"
+                  mode="multiple"
+                  placeholder="请选择检验类型（可多选）"
                   allowClear
-                  options={[
-                    { label: 'A类致命缺陷', value: 'A类致命缺陷' },
-                    { label: 'B类严重缺陷', value: 'B类严重缺陷' },
-                    { label: 'C类次要缺陷', value: 'C类次要缺陷' },
-                  ]}
+                  options={inspectionTypeOptions}
                 />
               </Form.Item>
             </Col>

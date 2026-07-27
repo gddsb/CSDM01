@@ -3,17 +3,17 @@ import { InspectionStandard, InspectionStandardItem } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { logger } from '../utils/logger.js'
 
-const TYPE_PREFIX: Record<string, string> = { '首件': 'SJ', '制程': 'ZC', '成品': 'CP', '其它': 'QT' }
+const TYPE_PREFIX: Record<string, string> = { '首件': 'SJ', '制程': 'ZC', '成品': 'CP', '来料': 'LL', '其它': 'QT' }
 const STANDARD_TYPE_PREFIX: Record<string, string> = { '通用标准': 'TY', '专用标准': 'ZY', '临时标准': 'LS' }
 
 export const generateNo = async (req: any, res: any) => {
   try {
-    const { inspection_type, standard_type } = req.query
-    if (!inspection_type || !standard_type) {
-      return fail(res, '检验类型和标准类型不能为空')
+    const { standard_type } = req.query
+    if (!standard_type) {
+      return fail(res, '标准类型不能为空')
     }
     const year = new Date().getFullYear()
-    const prefix = `${TYPE_PREFIX[inspection_type] || 'QT'}-${STANDARD_TYPE_PREFIX[standard_type] || 'TY'}-${year}-`
+    const prefix = `BZ-${STANDARD_TYPE_PREFIX[standard_type] || 'TY'}-${year}-`
     const lastRecord = await InspectionStandard.findOne({
       where: { standard_no: { [Op.like]: `${prefix}%` } },
       order: [['standard_no', 'DESC']],
@@ -33,12 +33,11 @@ export const generateNo = async (req: any, res: any) => {
 
 export const list = async (req: any, res: any) => {
   try {
-    const { page = 1, page_size = 20, status, inspection_type, keyword } = req.query
+    const { page = 1, page_size = 20, status, keyword } = req.query
     const pageNum = parseInt(page, 10)
     const pageSize = Math.min(parseInt(page_size, 10), MAX_PAGE_SIZE)
     const where: any = {}
     if (status) where.status = status
-    if (inspection_type) where.inspection_type = inspection_type
     if (keyword) {
       where[Op.or] = [
         { standard_no: { [Op.like]: `%${keyword}%` } },
@@ -77,14 +76,14 @@ export const detail = async (req: any, res: any) => {
 
 export const create = async (req: any, res: any) => {
   try {
-    const { standard_no, standard_name, inspection_type, standard_type, customer_code, material_id, material_name, version_no, effective_date, status, created_by, description, items } = req.body
-    if (!standard_no || !standard_name || !inspection_type || !standard_type) {
-      return fail(res, '标准编号、标准名称、检验类型、标准类型不能为空')
+    const { standard_no, standard_name, standard_type, customer_code, material_id, material_name, version_no, effective_date, status, created_by, description, items } = req.body
+    if (!standard_no || !standard_name || !standard_type) {
+      return fail(res, '标准编号、标准名称、标准类型不能为空')
     }
     const exists = await InspectionStandard.findOne({ where: { standard_no } })
     if (exists) return fail(res, '标准编号已存在')
     const record = await InspectionStandard.create({
-      standard_no, standard_name, inspection_type, standard_type,
+      standard_no, standard_name, standard_type,
       customer_code: customer_code || null,
       material_id: material_id || null,
       material_name: material_name || null,
@@ -105,6 +104,7 @@ export const create = async (req: any, res: any) => {
         unit: it.unit || null,
         defect_level: it.defect_level || null,
         sort_order: it.sort_order || 0,
+        inspection_types: Array.isArray(it.inspection_types) ? it.inspection_types.join(',') : (it.inspection_types || null),
       }))
       await InspectionStandardItem.bulkCreate(itemRecords)
     }
@@ -126,9 +126,9 @@ export const update = async (req: any, res: any) => {
       })
       if (exists) return fail(res, '标准编号已存在')
     }
-    const { standard_no, standard_name, inspection_type, standard_type, customer_code, material_id, material_name, version_no, effective_date, status, description, items } = req.body
+    const { standard_no, standard_name, standard_type, customer_code, material_id, material_name, version_no, effective_date, status, description, items } = req.body
     await record.update({
-      standard_no, standard_name, inspection_type, standard_type,
+      standard_no, standard_name, standard_type,
       customer_code: customer_code || null,
       material_id: material_id || null,
       material_name: material_name || null,
@@ -148,7 +148,9 @@ export const update = async (req: any, res: any) => {
           sample_rule: it.sample_rule || null,
           standard_value: it.standard_value,
           unit: it.unit || null,
+          defect_level: it.defect_level || null,
           sort_order: it.sort_order || 0,
+          inspection_types: Array.isArray(it.inspection_types) ? it.inspection_types.join(',') : (it.inspection_types || null),
         }))
         await InspectionStandardItem.bulkCreate(itemRecords)
       }
