@@ -76,9 +76,9 @@ export default function InspectionStandardForm() {
       const res = await api.get('/basic/materials', { params: { page_size: 500 } })
       const list = res.data?.list || res.data || []
       setMaterials(list.map((m: any) => ({
-        label: `${m.material_no} - ${m.material_name}`,
+        label: `${m.material_code} - ${m.material_name}`,
         value: m.material_id,
-        material_no: m.material_no,
+        material_code: m.material_code,
         material_name: m.material_name,
       })))
     } catch (e) {
@@ -253,36 +253,36 @@ export default function InspectionStandardForm() {
           </Space>
         }
       >
-        <Form form={form} layout="horizontal" className="compact-form" preserve={false} labelCol={{ flex: '70px' }} wrapperCol={{ flex: 1 }} style={{ rowGap: 2 }}>
-          <Row gutter={6}>
-            <Col span={4}>
+        <Form form={form} layout="horizontal" className="compact-form" preserve={false} labelCol={{ style: { flex: '0 0 56px', width: 56 } }} wrapperCol={{ style: { flex: 1, minWidth: 0 } }} style={{ rowGap: 0 }}>
+          <Row gutter={4} wrap={false} style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap', display: 'flex' }}>
+            <Col flex="1 1 0" style={{ minWidth: 0, flex: 1 }}>
               <Form.Item name="standard_no" label="标准编号" rules={[{ required: true, message: '请选择检验类型和标准类型自动生成' }]} style={{ marginBottom: 4 }}>
                 <Input placeholder="自动生成" disabled size="small" />
               </Form.Item>
             </Col>
-            <Col span={4}>
+            <Col flex="1 1 0" style={{ minWidth: 0, flex: 1 }}>
               <Form.Item name="inspection_type" label="检验类型" rules={[{ required: true, message: '请选择检验类型' }]} style={{ marginBottom: 4 }}>
                 <Select placeholder="请选择" options={inspectionTypeOptions} disabled={isEdit} size="small" />
               </Form.Item>
             </Col>
-            <Col span={4}>
+            <Col flex="1 1 0" style={{ minWidth: 0, flex: 1 }}>
               <Form.Item name="standard_type" label="标准类型" rules={[{ required: true, message: '请选择标准类型' }]} style={{ marginBottom: 4 }}>
                 <Select placeholder="请选择" options={standardTypeOptions} disabled={isEdit} size="small" />
               </Form.Item>
             </Col>
-            <Col span={3}>
+            <Col flex="0.7 1 0" style={{ minWidth: 0, flex: 0.7 }}>
               <Form.Item name="version_no" label="版本号" rules={[{ required: true, message: '请输入版本号' }]} style={{ marginBottom: 4 }}>
                 <Input disabled={!isEdit} placeholder="V1" size="small" />
               </Form.Item>
             </Col>
-            <Col span={3}>
+            <Col flex="0.7 1 0" style={{ minWidth: 0, flex: 0.7 }}>
               <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]} style={{ marginBottom: 4 }}>
                 <Select placeholder="请选择状态" options={[{ label: '开立', value: '开立' }, { label: '生效', value: '生效' }, { label: '失效', value: '失效' }]} disabled size="small" />
               </Form.Item>
             </Col>
           </Row>
-          <Row gutter={6}>
-            <Col span={6}>
+          <Row gutter={4} wrap={false} style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap', display: 'flex' }}>
+            <Col flex="1.2 1 0" style={{ minWidth: 0, flex: 1.2 }}>
               <Form.Item name="material_id" label="参照料品" style={{ marginBottom: 4 }}>
                 <Select
                   placeholder="请选择参照料品（可选）"
@@ -297,12 +297,12 @@ export default function InspectionStandardForm() {
                 />
               </Form.Item>
             </Col>
-            <Col span={9}>
+            <Col flex="1.5 1 0" style={{ minWidth: 0, flex: 1.5 }}>
               <Form.Item name="standard_name" label="标准名称" rules={[{ required: true, message: '请输入标准名称' }]} style={{ marginBottom: 4 }}>
                 <Input placeholder="请输入标准名称" size="small" />
               </Form.Item>
             </Col>
-            <Col span={9}>
+            <Col flex="1.5 1 0" style={{ minWidth: 0, flex: 1.5 }}>
               <Form.Item name="description" label="描述" style={{ marginBottom: 4 }}>
                 <Input placeholder="请输入描述" size="small" />
               </Form.Item>
