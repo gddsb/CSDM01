@@ -299,32 +299,34 @@ export default function InspectionStandardForm() {
                 <Input disabled={!isEdit} placeholder="V1" size="small" style={{ width: 60 }} />
               </Form.Item>
             </Col>
-            <Col flex="none" style={{ padding: '0 2px', width: 140 }}>
+            <Col flex="none" style={{ padding: '0 2px', width: 160 }}>
               <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
-                <Select placeholder="请选择状态" options={[{ label: '开立', value: '开立' }, { label: '生效', value: '生效' }, { label: '失效', value: '失效' }]} disabled size="small" style={{ width: 60 }} />
+                <Select placeholder="请选择状态" options={[{ label: '开立', value: '开立' }, { label: '生效', value: '生效' }, { label: '失效', value: '失效' }]} disabled size="small" style={{ width: 84 }} />
               </Form.Item>
             </Col>
           </Row>
           <Row wrap={false} style={{ display: 'flex', flexWrap: 'nowrap', marginLeft: -2, marginRight: -2 }} className="standard-header-form">
-            <Col flex="none" style={{ padding: '0 2px', width: 360 }}>
+            <Col flex="none" style={{ padding: '0 2px', width: 500 }}>
+              <Form.Item name="standard_name" label="标准名称" rules={[{ required: true, message: '请输入标准名称' }]}>
+                <Input placeholder="请输入标准名称" size="small" style={{ width: 420 }} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row wrap={false} style={{ display: 'flex', flexWrap: 'nowrap', marginLeft: -2, marginRight: -2 }} className="standard-header-form">
+            <Col flex="none" style={{ padding: '0 2px', width: 500 }}>
               <Form.Item name="material_id" label="参照料品">
                 <Select
                   placeholder="请选择参照料品（可选）"
                   showSearch
                   allowClear
                   size="small"
-                  style={{ width: 280 }}
+                  style={{ width: 420 }}
                   filterOption={(input, option) =>
                     (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
                   }
                   options={materials}
                   onChange={handleMaterialChange}
                 />
-              </Form.Item>
-            </Col>
-            <Col flex="none" style={{ padding: '0 2px', width: 440 }}>
-              <Form.Item name="standard_name" label="标准名称" rules={[{ required: true, message: '请输入标准名称' }]}>
-                <Input placeholder="请输入标准名称" size="small" style={{ width: 360 }} />
               </Form.Item>
             </Col>
             <Col flex="auto" style={{ padding: '0 2px', minWidth: 0 }}>
