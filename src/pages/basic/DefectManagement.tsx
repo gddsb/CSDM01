@@ -414,7 +414,7 @@ export default function DefectManagement() {
       render: v => <Tag color={v === '启用' ? 'green' : 'red'}>{v}</Tag>,
     },
     {
-      title: '操作', key: 'action', width: 130, fixed: 'right',
+      title: '操作', key: 'action', fixed: 'right',
       render: (_, record) => (
         <Space size="small">
           <Button type="link" size="small" onClick={async () => {

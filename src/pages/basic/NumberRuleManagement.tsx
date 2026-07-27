@@ -277,17 +277,16 @@ export default function NumberRuleManagement() {
       render: v => <Tag color={v === 1 ? 'green' : 'default'}>{v === 1 ? '启用' : '停用'}</Tag>,
     },
     {
-      title: '操作', key: 'action', width: 200, fixed: 'right',
+      title: '操作', key: 'action', fixed: 'right',
       render: (_, record) => (
         <Space size="small" wrap>
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => setViewRecord(record)}>查看</Button>
-          <Button type="link" size="small" icon={<ThunderboltOutlined />} onClick={() => handlePreview(record)}>预览</Button>
+          <Button type="link" size="small" onClick={() => setViewRecord(record)}>查看</Button>
+          <Button type="link" size="small" onClick={() => handlePreview(record)}>预览</Button>
           {record.is_locked !== 1 && (
             <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
           )}
           <Button
             type="link" size="small"
-            icon={record.status === 1 ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
             onClick={() => handleToggle(record)}
           >
             {record.status === 1 ? '停用' : '启用'}

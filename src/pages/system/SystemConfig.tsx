@@ -981,7 +981,7 @@ export default function SystemConfig() {
       render: formatDateTime,
     },
     {
-      title: '操作', key: 'action', width: 180,
+      title: '操作', key: 'action',
       render: (_: unknown, record: BackupRecord) => (
         <Space size="small">
           <Popconfirm
@@ -990,7 +990,7 @@ export default function SystemConfig() {
             okText="确认还原"
             cancelText="取消"
           >
-            <Button type="link" size="small" icon={<RollbackOutlined />}>还原</Button>
+            <Button type="link" size="small">还原</Button>
           </Popconfirm>
           <Popconfirm
             title="确认删除该备份文件？"
@@ -998,7 +998,7 @@ export default function SystemConfig() {
             okText="确认"
             cancelText="取消"
           >
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
+            <Button type="link" size="small" danger>删除</Button>
           </Popconfirm>
         </Space>
       ),
@@ -1082,14 +1082,12 @@ export default function SystemConfig() {
     {
       title: '操作',
       key: 'action',
-      width: 150,
       render: (_: any, record: any) => (
         <Space size="small">
           {!record.isDirectory && (
             <Button
               type="link"
               size="small"
-              icon={<EyeOutlined />}
               onClick={() => handleFilePreview(record)}
             >
               查看
@@ -1099,7 +1097,6 @@ export default function SystemConfig() {
             type="link"
             size="small"
             danger
-            icon={<DeleteOutlined />}
             onClick={() => handleFileDelete(record)}
           >
             删除

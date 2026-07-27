@@ -203,7 +203,7 @@ const MaterialManagement = () => {
       render: v => <Tag color={v ? 'green' : 'red'}>{v ? '生效' : '失效'}</Tag>,
     },
     {
-      title: '操作', key: 'action', width: 140,
+      title: '操作', key: 'action',
       render: (_, record) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleDetail(record)}>查看</Button>

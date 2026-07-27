@@ -129,7 +129,7 @@ export default function DataDictionary() {
       render: formatDateTime,
     },
     {
-      title: '操作', key: 'action', width: 130, fixed: 'right',
+      title: '操作', key: 'action', fixed: 'right',
       render: (_, record) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleViewDetail(record)}>结构</Button>

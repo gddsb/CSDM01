@@ -183,7 +183,7 @@ export default function DeviceManagement() {
     { title: '上次检定', dataIndex: 'last_inspection_date', key: 'last_inspection_date', width: 120 },
     { title: '下次检定', dataIndex: 'next_inspection_date', key: 'next_inspection_date', width: 120 },
     {
-      title: '操作', key: 'action', width: 140,
+      title: '操作', key: 'action',
       render: (_, record) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleDetail(record)}>查看</Button>

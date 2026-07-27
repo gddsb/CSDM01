@@ -992,7 +992,7 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '操作', key: 'action', width: 120,
+      title: '操作', key: 'action',
       render: (_, record) => isEditable ? (
         <Popconfirm title="确认删除？" onConfirm={() => handleDeleteProdDefect(record)}>
           <Button type="link" size="small" danger>删除</Button>
@@ -1301,7 +1301,7 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '操作', key: 'action', width: 120,
+      title: '操作', key: 'action',
       render: (_, record) => isEditable ? (
         <Popconfirm title="确认删除？" onConfirm={() => handleDeleteScrapDefect(record)}>
           <Button type="link" size="small" danger>删除</Button>
@@ -1722,7 +1722,7 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '操作', key: 'action', width: 80,
+      title: '操作', key: 'action',
       render: (_, record) => isEditable ? (
         <Popconfirm title="确认删除？" onConfirm={() => handleDeleteMaterial(record)}>
           <Button type="link" size="small" danger>删除</Button>
@@ -2111,7 +2111,7 @@ export default function ProcessReporting() {
       ),
     },
     {
-      title: '操作', key: 'action', width: 80,
+      title: '操作', key: 'action',
       render: (_, record) => isEditable ? (
         <Popconfirm title="确认删除？" onConfirm={() => handleDeleteException(record)}>
           <Button type="link" size="small" danger>删除</Button>

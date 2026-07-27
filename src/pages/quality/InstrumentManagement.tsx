@@ -78,7 +78,7 @@ export default function InstrumentManagement() {
       render: v => <Tag color={statusColor[v] || 'default'}>{v}</Tag>
     },
     {
-      title: '操作', key: 'action', width: 150, fixed: 'right',
+      title: '操作', key: 'action', fixed: 'right',
       render: (_, record) => (
         <Button type="link" size="small" onClick={() => showHistory(record)}>校准记录</Button>
       )

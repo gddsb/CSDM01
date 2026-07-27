@@ -265,7 +265,7 @@ export default function RoleManagement() {
     },
     { title: '排序', dataIndex: 'sort_order', key: 'sort_order', width: 60 },
     {
-      title: '操作', key: 'action', width: 220,
+      title: '操作', key: 'action',
       render: (_, record) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleConfigPerms(record)}>配置权限</Button>

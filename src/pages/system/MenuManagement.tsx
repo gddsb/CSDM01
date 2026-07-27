@@ -187,7 +187,7 @@ export default function MenuManagement() {
       render: v => <Tag color={v === 1 ? 'green' : 'red'}>{v === 1 ? '启用' : '停用'}</Tag>,
     },
     {
-      title: '操作', key: 'action', width: 200, fixed: 'right',
+      title: '操作', key: 'action', fixed: 'right',
       render: (_, record) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleAddChild(record)}>新增子项</Button>

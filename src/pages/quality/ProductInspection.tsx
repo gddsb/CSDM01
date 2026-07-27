@@ -316,7 +316,7 @@ export default function ProductInspection() {
     { title: '检验员', dataIndex: 'inspector_name', key: 'inspector_name', width: 100, render: (v: string) => v || '-' },
     { title: '检验时间', dataIndex: 'inspection_time', key: 'inspection_time', width: 160, render: formatDateTime },
     {
-      title: '操作', key: 'action', width: 260, fixed: 'right',
+      title: '操作', key: 'action', fixed: 'right',
       render: (_: any, record: any) => (
         <Space size={4}>
           <Button type="link" size="small" onClick={() => showDetail(record)}>详情</Button>

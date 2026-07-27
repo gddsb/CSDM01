@@ -245,7 +245,7 @@ export default function InspectionStandardForm() {
     { title: '检验方法', dataIndex: 'method', key: 'method' },
     { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 140 },
     {
-      title: '操作', key: 'action', width: 140, fixed: 'right',
+      title: '操作', key: 'action', fixed: 'right',
       render: (_: any, record: any) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleEditItem(record)}>编辑</Button>

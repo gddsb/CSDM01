@@ -142,7 +142,7 @@ export default function InspectionStandard() {
       }
     },
     {
-      title: '操作', key: 'action', fixed: 'right', width: 180,
+      title: '操作', key: 'action', fixed: 'right',
       render: (_: any, record: any) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleView(record)}>查看</Button>

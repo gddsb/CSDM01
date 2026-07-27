@@ -306,10 +306,10 @@ export default function ProductionLine() {
     { title: '所属车间', dataIndex: 'workshop', key: 'workshop', width: 110 },
     { title: '排序号', dataIndex: 'sort_order', key: 'sort_order', width: 80 },
     {
-      title: '操作', key: 'action', width: 140,
+      title: '操作', key: 'action',
       render: (_, record) => (
         <Space size="small">
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(record)}>查看</Button>
+          <Button type="link" size="small" onClick={() => handleView(record)}>查看</Button>
           {hasPermission('basic:line:update') && (
             <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
           )}

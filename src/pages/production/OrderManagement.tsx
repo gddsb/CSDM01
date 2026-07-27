@@ -352,7 +352,7 @@ export default function OrderManagement() {
       render: (_, r) => <span style={{ fontSize: 12 }}>{formatDate(r.plan_start_time)}<br />~ {formatDate(r.plan_end_time)}</span>,
     },
     { title: '状态', dataIndex: 'status', key: 'status', width: 80, render: v => <Tag color={statusColorMap[v]}>{v}</Tag> },
-    { title: '操作', key: 'action', width: 180, render: (_, r) => renderActions(r) },
+    { title: '操作', key: 'action', render: (_, r) => renderActions(r) },
   ]
 
   return (

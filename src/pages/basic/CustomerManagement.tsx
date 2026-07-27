@@ -185,10 +185,10 @@ export default function CustomerManagement() {
       },
     },
     {
-      title: '操作', key: 'action', width: 130, fixed: 'right',
+      title: '操作', key: 'action', fixed: 'right',
       render: (_, record) => (
         <Space size="small">
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => setViewRecord(record)}>查看</Button>
+          <Button type="link" size="small" onClick={() => setViewRecord(record)}>查看</Button>
           {hasPermission('basic:customer:update') && (
             <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
           )}

@@ -227,7 +227,7 @@ export default function UserManagement() {
       render: (v: string) => v ? String(v).replace('T', ' ').slice(0, 19) : '-',
     },
     {
-      title: '操作', key: 'action', width: 200,
+      title: '操作', key: 'action',
       render: (_: unknown, record: User) => (
         <Space size="small">
           {hasPermission('system:user:update') && (
