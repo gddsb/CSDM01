@@ -1,9 +1,9 @@
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { Button, Space, Form, Input, Select, Typography, Row, Col, Modal, Breadcrumb, Card, InputNumber, message as antMsg, Alert, Tag } from 'antd'
+import { Button, Space, Form, Input, Select, Typography, Row, Col, Modal, Breadcrumb, Card, InputNumber, message as antMsg, Alert, Tag, Popconfirm } from 'antd'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useMessage } from '../../contexts/AppContext'
-import { PlusOutlined, ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons'
+import { PlusOutlined, ArrowLeftOutlined, SaveOutlined, CheckCircleOutlined } from '@ant-design/icons'
 import api from '../../utils/api'
 
 const categoryColor: Record<string, string> = { '外观': 'blue', '理化': 'purple', '尺寸': 'cyan', '性能': 'orange', '微生物': 'green', '环境': 'geekblue' }
@@ -38,6 +38,8 @@ export default function InspectionStandardForm() {
   const [itemForm] = Form.useForm()
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [auditing, setAuditing] = useState(false)
+  const [currentStatus, setCurrentStatus] = useState<string>('')
   const [currentItems, setCurrentItems] = useState<any[]>([])
   const [itemModalVisible, setItemModalVisible] = useState(false)
   const [itemEditing, setItemEditing] = useState<any>(null)
@@ -104,6 +106,7 @@ export default function InspectionStandardForm() {
           description: detail.description,
         })
         setCurrentItems(detail.items || [])
+        setCurrentStatus(detail.status || '')
       }).catch(() => {
         message.error('加载数据失败')
       }).finally(() => setLoading(false))
@@ -116,6 +119,7 @@ export default function InspectionStandardForm() {
         version_no: 'V1',
       })
       setCurrentItems([])
+      setCurrentStatus('开立')
     }
   }, [isEdit, id, form, message])
 
@@ -157,6 +161,20 @@ export default function InspectionStandardForm() {
       message.error(e?.message || '保存失败')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleAudit = async () => {
+    try {
+      setAuditing(true)
+      await api.put(`/basic/standards/${id}`, { status: '生效' })
+      message.success('审核通过，标准已生效')
+      setCurrentStatus('生效')
+      form.setFieldsValue({ status: '生效' })
+    } catch (e: any) {
+      message.error(e?.message || '审核失败')
+    } finally {
+      setAuditing(false)
     }
   }
 
@@ -258,6 +276,11 @@ export default function InspectionStandardForm() {
         }
         extra={
           <Space>
+            {isEdit && currentStatus === '开立' && (
+              <Popconfirm title="确认审核通过？审核后标准状态将变为生效，不可再编辑" onConfirm={handleAudit} okText="确认审核" cancelText="取消">
+                <Button type="primary" icon={<CheckCircleOutlined />} loading={auditing}>审核</Button>
+              </Popconfirm>
+            )}
             <Button onClick={() => navigate('/quality/standards')}>取消</Button>
             <Button type="primary" icon={<SaveOutlined />} loading={saving || isGeneratingNo} onClick={handleSubmit}>保存</Button>
           </Space>

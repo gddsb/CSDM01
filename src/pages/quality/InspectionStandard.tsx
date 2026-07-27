@@ -5,8 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMessage } from '../../contexts/AppContext'
 import {
   FileProtectOutlined, AppstoreOutlined, SolutionOutlined,
-  CheckCircleOutlined, SearchOutlined, PlusOutlined, EyeOutlined, EditOutlined,
-  DeleteOutlined, ReloadOutlined
+  CheckCircleOutlined, SearchOutlined, PlusOutlined, ReloadOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
@@ -120,7 +119,10 @@ export default function InspectionStandard() {
 
   const columns = [
     { title: '标准号', dataIndex: 'standard_no', key: 'standard_no', width: 160 },
-    { title: '标准名称', dataIndex: 'standard_name', key: 'standard_name' },
+    {
+      title: '标准名称', dataIndex: 'standard_name', key: 'standard_name', width: 260,
+      render: (v: string) => <div style={{ whiteSpace: 'normal', wordBreak: 'break-all', lineHeight: 1.5 }}>{v}</div>
+    },
     {
       title: '检验类型', dataIndex: 'inspection_type', key: 'inspection_type', width: 90,
       render: (v: string) => <Tag color={typeColorMap[v] || 'default'}>{v}</Tag>
@@ -139,16 +141,16 @@ export default function InspectionStandard() {
       }
     },
     {
-      title: '操作', key: 'action', fixed: 'right',
+      title: '操作', key: 'action', fixed: 'right', width: 180,
       render: (_: any, record: any) => (
         <Space size="small">
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleView(record)}>查看</Button>
+          <Button type="link" size="small" onClick={() => handleView(record)}>查看</Button>
           {record.status === '开立' && (
-            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
+            <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
           )}
           {record.status === '开立' && (
             <Popconfirm title="确认删除？删除后不可恢复" onConfirm={() => handleDelete(record)} okText="确认" cancelText="取消">
-              <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
+              <Button type="link" size="small" danger>删除</Button>
             </Popconfirm>
           )}
         </Space>
