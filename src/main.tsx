@@ -27,6 +27,7 @@ import MenuManagement from './pages/system/MenuManagement'
 import OrderManagement from './pages/production/OrderManagement'
 import ProcessReporting from './pages/production/ProcessReporting'
 import InspectionStandard from './pages/quality/InspectionStandard'
+import InspectionStandardForm from './pages/quality/InspectionStandardForm'
 import IncomingInspection from './pages/quality/IncomingInspection'
 import ProductInspection from './pages/quality/ProductInspection'
 import MicrobeInspection from './pages/quality/MicrobeInspection'
@@ -95,6 +96,8 @@ function AppRoutes() {
         <Route path="/production/orders" element={<OrderManagement />} />
         <Route path="/production/reporting" element={<ProcessReporting />} />
         <Route path="/quality/standards" element={<InspectionStandard />} />
+        <Route path="/quality/standards/new" element={<InspectionStandardForm />} />
+        <Route path="/quality/standards/:id/edit" element={<InspectionStandardForm />} />
         <Route path="/quality/incoming" element={<IncomingInspection />} />
         <Route path="/quality/product" element={<ProductInspection />} />
         <Route path="/quality/microbe" element={<MicrobeInspection />} />
