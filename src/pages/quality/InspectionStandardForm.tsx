@@ -207,15 +207,15 @@ export default function InspectionStandardForm() {
   }
 
   const itemTableColumns = [
-    { title: '项目名称', dataIndex: 'item_name', key: 'item_name' },
     {
-      title: '大类', dataIndex: 'category', key: 'category', width: 90,
+      title: '项目分类', dataIndex: 'category', key: 'category', width: 100,
       render: (v: string) => <span style={{ color: categoryColor[v] || '#999' }}>{v}</span>
     },
-    { title: '检验方法', dataIndex: 'method', key: 'method' },
-    { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 140 },
+    { title: '检验项目', dataIndex: 'item_name', key: 'item_name' },
     { title: '标准值', dataIndex: 'standard_value', key: 'standard_value', width: 140 },
+    { title: '检验方法', dataIndex: 'method', key: 'method' },
     { title: '单位', dataIndex: 'unit', key: 'unit', width: 70 },
+    { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 140 },
     {
       title: '操作', key: 'action', width: 140, fixed: 'right',
       render: (_: any, record: any) => (
@@ -253,46 +253,42 @@ export default function InspectionStandardForm() {
           </Space>
         }
       >
-        <Form form={form} layout="vertical" className="compact-form" preserve={false}>
-          <Row gutter={16}>
-            <Col span={6}>
+        <Form form={form} layout="horizontal" className="compact-form" preserve={false} labelCol={{ flex: '80px' }} wrapperCol={{ flex: 1 }} style={{ rowGap: 4 }}>
+          <Row gutter={8}>
+            <Col span={5}>
               <Form.Item name="standard_no" label="标准编号" rules={[{ required: true, message: '请选择检验类型和标准类型自动生成' }]}>
-                <Input placeholder="选择检验类型和标准类型后自动生成" disabled />
+                <Input placeholder="自动生成" disabled size="small" />
               </Form.Item>
             </Col>
-            <Col span={6}>
-              <Form.Item name="version_no" label="版本号" rules={[{ required: true, message: '请输入版本号' }]}>
-                <Input disabled={!isEdit} placeholder="新增默认 V1" />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
+            <Col span={4}>
               <Form.Item name="inspection_type" label="检验类型" rules={[{ required: true, message: '请选择检验类型' }]}>
-                <Select placeholder="请选择检验类型" options={inspectionTypeOptions} disabled={isEdit} />
+                <Select placeholder="请选择" options={inspectionTypeOptions} disabled={isEdit} size="small" />
+              </Form.Item>
+            </Col>
+            <Col span={4}>
+              <Form.Item name="standard_type" label="标准类型" rules={[{ required: true, message: '请选择标准类型' }]}>
+                <Select placeholder="请选择" options={standardTypeOptions} disabled={isEdit} size="small" />
+              </Form.Item>
+            </Col>
+            <Col span={5}>
+              <Form.Item name="version_no" label="版本号" rules={[{ required: true, message: '请输入版本号' }]}>
+                <Input disabled={!isEdit} placeholder="新增默认 V1" size="small" />
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item name="standard_type" label="标准类型" rules={[{ required: true, message: '请选择标准类型' }]}>
-                <Select placeholder="请选择标准类型" options={standardTypeOptions} disabled={isEdit} />
+              <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
+                <Select placeholder="请选择状态" options={[{ label: '开立', value: '开立' }, { label: '生效', value: '生效' }, { label: '失效', value: '失效' }]} disabled size="small" />
               </Form.Item>
             </Col>
           </Row>
-          <Row gutter={16}>
-            <Col span={6}>
-              <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
-                <Select placeholder="请选择状态" options={[{ label: '开立', value: '开立' }, { label: '生效', value: '生效' }, { label: '失效', value: '失效' }]} disabled />
-              </Form.Item>
-            </Col>
-            <Col span={9}>
-              <Form.Item name="standard_name" label="标准名称" rules={[{ required: true, message: '请输入标准名称' }]}>
-                <Input placeholder="请输入标准名称" />
-              </Form.Item>
-            </Col>
-            <Col span={9}>
+          <Row gutter={8}>
+            <Col span={8}>
               <Form.Item name="material_id" label="参照料品">
                 <Select
                   placeholder="请选择参照料品（可选）"
                   showSearch
                   allowClear
+                  size="small"
                   filterOption={(input, option) =>
                     (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
                   }
@@ -301,23 +297,20 @@ export default function InspectionStandardForm() {
                 />
               </Form.Item>
             </Col>
-          </Row>
-          <Row gutter={16}>
-            <Col span={24}>
+            <Col span={8}>
+              <Form.Item name="standard_name" label="标准名称" rules={[{ required: true, message: '请输入标准名称' }]}>
+                <Input placeholder="请输入标准名称" size="small" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
               <Form.Item name="description" label="描述">
-                <Input.TextArea placeholder="请输入描述" rows={3} />
+                <Input placeholder="请输入描述" size="small" />
               </Form.Item>
             </Col>
           </Row>
         </Form>
 
         <div style={{ marginTop: 8 }}>
-          <Alert
-            message="提示：新增检验标准默认版本为 V1，状态为开立，可在列表页生效后启用。"
-            type="info"
-            showIcon
-            style={{ marginBottom: 16 }}
-          />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <Typography.Title level={5} style={{ margin: 0 }}>检验项目列表</Typography.Title>
             <Button type="primary" size="small" icon={<PlusOutlined />} onClick={handleAddItem}>新增项目</Button>
