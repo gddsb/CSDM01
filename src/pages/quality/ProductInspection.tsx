@@ -317,14 +317,14 @@ export default function ProductInspection() {
   }
 
   const columns = [
-    { title: '检验编号', dataIndex: 'inspection_no', key: 'inspection_no', width: 150, fixed: 'left' },
+    { title: '检验编号', dataIndex: 'inspection_no', key: 'inspection_no', width: 110, fixed: 'left' },
     {
       title: '类型', dataIndex: 'inspection_type', key: 'inspection_type', width: 80,
       render: (v: string) => <Tag color={typeColorMap[v] || 'default'}>{v}</Tag>
     },
     { title: '工单编号', dataIndex: 'report_order_no', key: 'report_order_no', width: 160 },
     { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 130 },
-    { title: '产品名称', dataIndex: 'material_name', key: 'material_name', width: 180 },
+    { title: '产品名称', dataIndex: 'material_name', key: 'material_name', onCell: () => ({ style: { whiteSpace: 'normal', wordBreak: 'break-all', lineHeight: '22px' } }) },
     { title: '规格', dataIndex: 'specification', key: 'specification', width: 150 },
     {
       title: '结果', dataIndex: 'result', key: 'result', width: 80,
