@@ -341,42 +341,48 @@ export default function ProductInspection() {
     { title: '序号', dataIndex: 'sort_order', key: 'sort_order', width: 50, render: (_: any, __: any, i: number) => i + 1 },
     {
       title: '项目分类', dataIndex: 'category', key: 'category', width: 80,
-      render: (_: any, record: any, index: number) => (
-        <Input value={record.category} onChange={e => updateItem(index, 'category', e.target.value)} placeholder="项目分类" />
-      )
+      render: (v: any) => v || '-',
     },
     {
       title: '检验项目', dataIndex: 'item_name', key: 'item_name', width: 140,
-      render: (_: any, record: any, index: number) => (
-        <Input value={record.item_name} onChange={e => updateItem(index, 'item_name', e.target.value)} placeholder="检验项目" />
-      )
+      render: (v: any) => v || '-',
     },
     {
       title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 160,
-      render: (_: any, record: any) => (
+      render: (v: any) => (
         <div style={{ whiteSpace: 'normal', wordBreak: 'break-all', lineHeight: 1.5, padding: '4px 8px' }}>
-          {record.standard_value || '-'}
+          {v || '-'}
         </div>
-      )
+      ),
     },
     {
       title: '检验结果', dataIndex: 'actual_value', key: 'actual_value', width: 100,
-      render: (_: any, record: any, index: number) => (
-        <Input value={record.actual_value} onChange={e => updateItem(index, 'actual_value', e.target.value)} placeholder="请输入检验结果" />
-      )
+      render: (v: any, record: any, index: number) => {
+        const isEditing = current?.status === '检验中'
+        if (!isEditing) return v || '-'
+        return (
+          <Input value={v} onChange={e => updateItem(index, 'actual_value', e.target.value)} placeholder="请输入检验结果" />
+        )
+      },
     },
     {
       title: '判定结论', dataIndex: 'result', key: 'result', width: 100,
-      render: (_: any, record: any, index: number) => (
-        <Select
-          style={{ width: '100%' }}
-          placeholder="请选择"
-          allowClear
-          value={record.result}
-          onChange={v => updateItem(index, 'result', v)}
-          options={[{ label: '合格', value: '合格' }, { label: '不合格', value: '不合格' }]}
-        />
-      )
+      render: (v: any, record: any, index: number) => {
+        const isEditing = current?.status === '检验中'
+        if (!isEditing) {
+          return v ? <Tag color={v === '合格' ? 'success' : 'error'}>{v}</Tag> : '-'
+        }
+        return (
+          <Select
+            style={{ width: '100%' }}
+            placeholder="请选择"
+            allowClear
+            value={v}
+            onChange={val => updateItem(index, 'result', val)}
+            options={[{ label: '合格', value: '合格' }, { label: '不合格', value: '不合格' }]}
+          />
+        )
+      },
     },
   ]
 
