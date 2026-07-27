@@ -338,21 +338,21 @@ export default function ProductInspection() {
   ]
 
   const inspectColumns = [
-    { title: '序号', dataIndex: 'sort_order', key: 'sort_order', width: 60, render: (_: any, __: any, i: number) => i + 1 },
+    { title: '序号', dataIndex: 'sort_order', key: 'sort_order', width: 50, render: (_: any, __: any, i: number) => i + 1 },
     {
-      title: '项目分类', dataIndex: 'category', key: 'category', width: 60,
-      render: (_: any, record: any) => (
-        <Input value={record.category} disabled placeholder="项目分类" />
+      title: '项目分类', dataIndex: 'category', key: 'category', width: 80,
+      render: (_: any, record: any, index: number) => (
+        <Input value={record.category} onChange={e => updateItem(index, 'category', e.target.value)} placeholder="项目分类" />
       )
     },
     {
-      title: '检验项目', dataIndex: 'item_name', key: 'item_name', width: 200,
-      render: (_: any, record: any) => (
-        <Input value={record.item_name} disabled placeholder="检验项目" />
+      title: '检验项目', dataIndex: 'item_name', key: 'item_name', width: 140,
+      render: (_: any, record: any, index: number) => (
+        <Input value={record.item_name} onChange={e => updateItem(index, 'item_name', e.target.value)} placeholder="检验项目" />
       )
     },
     {
-      title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 220,
+      title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 160,
       render: (_: any, record: any) => (
         <div style={{ whiteSpace: 'normal', wordBreak: 'break-all', lineHeight: 1.5, padding: '4px 8px' }}>
           {record.standard_value || '-'}
@@ -366,7 +366,7 @@ export default function ProductInspection() {
       )
     },
     {
-      title: '判定结论', dataIndex: 'result', key: 'result', width: 120,
+      title: '判定结论', dataIndex: 'result', key: 'result', width: 100,
       render: (_: any, record: any, index: number) => (
         <Select
           style={{ width: '100%' }}
@@ -649,7 +649,6 @@ export default function ProductInspection() {
           rowKey={(r: any) => r.item_id || r._item_key || Math.random()}
           size="small"
           pagination={false}
-          scroll={{ x: 1100 }}
         />
       </Drawer>
 
