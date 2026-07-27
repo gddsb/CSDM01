@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Toast, Dialog, Button, Stepper, Input, TextArea, Selector, DatePicker, Switch } from 'antd-mobile'
 import { AddOutline, DeleteOutline, CheckOutline, PictureOutline, DownOutline, CloseOutline } from 'antd-mobile-icons'
 import api from '../../../utils/api'
-import { formatFilmVersion } from '../../../utils'
+import { formatFilmVersion, formatDateTime, formatTime } from '../../../utils'
 import dayjs from 'dayjs'
 import './report-detail.css'
 
@@ -1828,7 +1828,7 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
               <div className="rd-list-row">
                 <span className="rd-list-label">时间</span>
                 <span className="rd-list-value">
-                  {record.start_time ? dayjs(record.start_time).format('HH:mm') : '-'} ~ {record.end_time ? dayjs(record.end_time).format('HH:mm') : '-'}
+                  {formatTime(record.start_time)} ~ {formatTime(record.end_time)}
                 </span>
               </div>
               <div className="rd-list-row">
@@ -1971,7 +1971,7 @@ function ManpowerTab({ list, setList, isEditable, reportOrderId, reportTime, rep
                   <label className="rd-form-label">开始时间</label>
                   <input
                     className="rd-form-input"
-                    value={reportTime ? dayjs(reportTime).format('MM-DD HH:mm') : '-'}
+                    value={formatDateTime(reportTime)}
                     readOnly
                   />
                 </div>
@@ -1980,7 +1980,7 @@ function ManpowerTab({ list, setList, isEditable, reportOrderId, reportTime, rep
                   <input
                     className="rd-form-input"
                     value={(reportStatus === '完工' || reportStatus === 1) && reportFinishTime
-                      ? dayjs(reportFinishTime).format('MM-DD HH:mm')
+                      ? formatDateTime(reportFinishTime)
                       : '进行中'}
                     readOnly
                   />
@@ -2072,13 +2072,13 @@ function ManpowerTab({ list, setList, isEditable, reportOrderId, reportTime, rep
             <div className="rd-list-item-body">
               <div className="rd-list-row">
                 <span className="rd-list-label">开始时间</span>
-                <span className="rd-list-value">{reportTime ? dayjs(reportTime).format('MM-DD HH:mm') : '-'}</span>
+                <span className="rd-list-value">{formatDateTime(reportTime)}</span>
               </div>
               <div className="rd-list-row">
                 <span className="rd-list-label">结束时间</span>
                 <span className="rd-list-value">
                   {(reportStatus === '完工' || reportStatus === 1) && reportFinishTime
-                    ? dayjs(reportFinishTime).format('MM-DD HH:mm')
+                    ? formatDateTime(reportFinishTime)
                     : '进行中'}
                 </span>
               </div>

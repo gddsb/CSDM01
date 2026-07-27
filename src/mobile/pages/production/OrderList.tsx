@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { PullToRefresh, InfiniteScroll, Toast, Dialog, PullToRefreshRef } from 'antd-mobile'
 import { AddOutline, SearchOutline } from 'antd-mobile-icons'
 import api from '../../../utils/api'
+import { formatDateTime } from '../../../utils'
 import dayjs from 'dayjs'
 
 const STATUS_FILTERS = [
@@ -193,7 +194,7 @@ export default function OrderList() {
               </div>
               <div className="mobile-flex-between">
                 <span style={{ color: '#757575' }}>计划开始</span>
-                <span>{order.plan_start_time ? dayjs(order.plan_start_time).format('MM-DD HH:mm') : '-'}</span>
+                <span>{formatDateTime(order.plan_start_time)}</span>
               </div>
             </div>
           </div>

@@ -15,6 +15,7 @@ import {
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 import dayjs from 'dayjs'
+import { formatDateTime } from '../../utils'
 
 const { Title, Text, Paragraph } = Typography
 
@@ -726,7 +727,7 @@ export default function SystemConfig() {
                   <Descriptions.Item label="磁盘可用">{formatBytes(envInfo.disk_free)}</Descriptions.Item>
                   <Descriptions.Item label="磁盘挂载点">{envInfo.disk_mount || '-'}</Descriptions.Item>
                   <Descriptions.Item label="工作目录">{envInfo.cwd}</Descriptions.Item>
-                  <Descriptions.Item label="服务器时间">{dayjs(envInfo.server_time).format('YYYY-MM-DD HH:mm:ss')}</Descriptions.Item>
+                  <Descriptions.Item label="服务器时间">{formatDateTime(envInfo.server_time)}</Descriptions.Item>
                 </Descriptions>
               </Card>
             </Col>
@@ -976,8 +977,8 @@ export default function SystemConfig() {
       render: (v: number) => v < 1024 ? `${v} B` : v < 1024 * 1024 ? `${(v / 1024).toFixed(1)} KB` : `${(v / 1024 / 1024).toFixed(2)} MB`,
     },
     {
-      title: '备份时间', dataIndex: 'created_at', key: 'created_at', width: 180,
-      render: (v: string) => dayjs(v).format('YYYY-MM-DD HH:mm:ss'),
+      title: '备份时间', dataIndex: 'created_at', key: 'created_at', width: 160,
+      render: formatDateTime,
     },
     {
       title: '操作', key: 'action', width: 180,

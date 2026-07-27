@@ -9,6 +9,7 @@ import {
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
+import { formatDateTime } from '../../utils'
 import api from '../../utils/api'
 
 const { RangePicker } = DatePicker
@@ -313,7 +314,7 @@ export default function ProductInspection() {
       render: (v: string) => <Tag color={statusColor[v as keyof typeof statusColor]}>{v}</Tag>
     },
     { title: '检验员', dataIndex: 'inspector_name', key: 'inspector_name', width: 100, render: (v: string) => v || '-' },
-    { title: '检验时间', dataIndex: 'inspection_time', key: 'inspection_time', width: 160, render: (v: string) => v || '-' },
+    { title: '检验时间', dataIndex: 'inspection_time', key: 'inspection_time', width: 160, render: formatDateTime },
     {
       title: '操作', key: 'action', width: 260, fixed: 'right',
       render: (_: any, record: any) => (
@@ -685,9 +686,9 @@ export default function ProductInspection() {
               </Descriptions.Item>
               <Descriptions.Item label="检验员">{current.inspector_name || '-'}</Descriptions.Item>
               <Descriptions.Item label="审核人">{current.reviewer_name || '-'}</Descriptions.Item>
-              <Descriptions.Item label="检验时间">{current.inspection_time || '-'}</Descriptions.Item>
-              <Descriptions.Item label="审核时间">{current.review_time || '-'}</Descriptions.Item>
-              <Descriptions.Item label="创建时间">{current.created_at}</Descriptions.Item>
+              <Descriptions.Item label="检验时间">{formatDateTime(current.inspection_time)}</Descriptions.Item>
+              <Descriptions.Item label="审核时间">{formatDateTime(current.review_time)}</Descriptions.Item>
+              <Descriptions.Item label="创建时间">{formatDateTime(current.created_at)}</Descriptions.Item>
               <Descriptions.Item label="备注" span={2}>{current.remarks || '-'}</Descriptions.Item>
             </Descriptions>
 
@@ -712,7 +713,7 @@ export default function ProductInspection() {
                   ) : '-'
                 },
                 { title: '检测人', dataIndex: 'inspector_name', width: 100, render: (v: string) => v || '-' },
-                { title: '检测时间', dataIndex: 'inspection_time', width: 160, render: (v: string) => v || '-' },
+                { title: '检测时间', dataIndex: 'inspection_time', width: 160, render: formatDateTime },
               ]}
             />
           </>

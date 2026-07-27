@@ -7,6 +7,7 @@ import {
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import { formatDateTime } from '../../utils'
 import { incomingInspections } from '../../mock/data'
 
 const { Text, Title } = Typography
@@ -97,7 +98,7 @@ export default function IncomingInspection() {
       render: v => v ? <Tag color={handleColor[v] || 'default'}>{v}</Tag> : <Text type="secondary">-</Text>
     },
     { title: '检验人', dataIndex: 'inspector_name', key: 'inspector_name', width: 100 },
-    { title: '检验时间', dataIndex: 'inspection_time', key: 'inspection_time', width: 160, render: v => v || '-' },
+    { title: '检验时间', dataIndex: 'inspection_time', key: 'inspection_time', width: 160, render: formatDateTime },
     {
       title: '状态', dataIndex: 'status', key: 'status', width: 90,
       render: v => <Tag color={statusColor[v] || 'default'}>{v}</Tag>
@@ -160,7 +161,7 @@ export default function IncomingInspection() {
               <Descriptions.Item label="到货日期">{current.arrival_date}</Descriptions.Item>
               <Descriptions.Item label="检验标准">{current.standard_name}</Descriptions.Item>
               <Descriptions.Item label="检验人">{current.inspector_name}</Descriptions.Item>
-              <Descriptions.Item label="检验时间">{current.inspection_time || '-'}</Descriptions.Item>
+              <Descriptions.Item label="检验时间">{formatDateTime(current.inspection_time)}</Descriptions.Item>
               <Descriptions.Item label="检验结果">
                 {current.result ? <Tag color={resultColor[current.result]}>{current.result}</Tag> : <Tag>待检</Tag>}
               </Descriptions.Item>

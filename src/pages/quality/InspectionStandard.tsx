@@ -10,6 +10,7 @@ import {
 import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
+import { formatDate } from '../../utils'
 
 const categoryColor: Record<string, string> = { '外观': 'blue', '理化': 'purple', '尺寸': 'cyan', '性能': 'orange', '微生物': 'green', '环境': 'geekblue' }
 
@@ -132,7 +133,7 @@ export default function InspectionStandard() {
       render: (v: string) => <Tag color={v === '通用标准' ? 'blue' : v === '专用标准' ? 'orange' : 'purple'}>{v}</Tag>
     },
     { title: '版本号', dataIndex: 'version_no', key: 'version_no', width: 80 },
-    { title: '生效日期', dataIndex: 'effective_date', key: 'effective_date', width: 110, render: (v: string) => v ? dayjs(v).format('YYYY-MM-DD') : '-' },
+    { title: '生效日期', dataIndex: 'effective_date', key: 'effective_date', width: 110, render: formatDate },
     {
       title: '状态', dataIndex: 'status', key: 'status', width: 80,
       render: (v: string) => {
@@ -276,7 +277,7 @@ export default function InspectionStandard() {
               <Descriptions.Item label="状态">
                 <Tag color={current.status === '生效' ? 'success' : current.status === '失效' ? 'error' : 'default'}>{current.status}</Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="生效日期">{current.effective_date ? dayjs(current.effective_date).format('YYYY-MM-DD') : '-'}</Descriptions.Item>
+              <Descriptions.Item label="生效日期">{formatDate(current.effective_date)}</Descriptions.Item>
               <Descriptions.Item label="参照料品" span={2}>{current.material_name ? `${current.material_name} (ID: ${current.material_id})` : '-'}</Descriptions.Item>
               <Descriptions.Item label="标准名称" span={2}>{current.standard_name}</Descriptions.Item>
               <Descriptions.Item label="描述" span={2}>{current.description || '-'}</Descriptions.Item>

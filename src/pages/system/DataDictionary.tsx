@@ -6,6 +6,7 @@ import ThreeSectionPage from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 import dayjs from 'dayjs'
 import { useMessage } from '../../contexts/AppContext'
+import { formatDateTime } from '../../utils'
 
 const categoryColorMap = {
   '系统表': 'blue',
@@ -124,8 +125,8 @@ export default function DataDictionary() {
     { title: '记录数', dataIndex: 'record_count', key: 'record_count', width: 100 },
     { title: '说明', dataIndex: 'purpose', key: 'purpose', ellipsis: true },
     {
-      title: '最后更新', dataIndex: 'last_update', key: 'last_update', width: 170,
-      render: v => v ? dayjs(v).format('YYYY-MM-DD HH:mm:ss') : '-',
+      title: '最后更新', dataIndex: 'last_update', key: 'last_update', width: 160,
+      render: formatDateTime,
     },
     {
       title: '操作', key: 'action', width: 130, fixed: 'right',
@@ -210,7 +211,7 @@ export default function DataDictionary() {
               <Descriptions.Item label="字段数">{currentTable.field_count}</Descriptions.Item>
               <Descriptions.Item label="记录数">{currentTable.record_count}</Descriptions.Item>
               <Descriptions.Item label="最后更新">
-                {currentTable.last_update ? dayjs(currentTable.last_update).format('YYYY-MM-DD HH:mm:ss') : '-'}
+                {formatDateTime(currentTable.last_update)}
               </Descriptions.Item>
               <Descriptions.Item label="说明" span={2}>{currentTable.purpose || '-'}</Descriptions.Item>
             </Descriptions>

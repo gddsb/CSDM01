@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Toast, InfiniteScroll, PullToRefresh } from 'antd-mobile'
 import api from '../../../utils/api'
+import { formatDateTime } from '../../../utils'
 import dayjs from 'dayjs'
 
 const STATUS_FILTERS = [
@@ -147,7 +148,7 @@ export default function ReportList() {
               </div>
               <div className="mobile-flex-between">
                 <span style={{ color: '#757575' }}>报工时间</span>
-                <span>{ro.report_time ? dayjs(ro.report_time).format('MM-DD HH:mm') : '-'}</span>
+                <span>{formatDateTime(ro.report_time)}</span>
               </div>
             </div>
           </div>

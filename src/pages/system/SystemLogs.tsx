@@ -6,6 +6,7 @@ import ThreeSectionPage from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 import { useMessage } from '../../contexts/AppContext'
 import dayjs from 'dayjs'
+import { formatDateTime } from '../../utils'
 
 const { RangePicker } = DatePicker
 
@@ -25,11 +26,6 @@ function getLevelColor(level: string) {
     case 'ERROR': return 'red'
     default: return 'default'
   }
-}
-
-function formatTime(v: string) {
-  if (!v) return '-'
-  return dayjs(v).format('YYYY-MM-DD HH:mm:ss')
 }
 
 export default function SystemLogs() {
@@ -122,8 +118,8 @@ export default function SystemLogs() {
 
   const columns = [
     {
-      title: '时间', dataIndex: 'timestamp', key: 'timestamp', width: 180,
-      render: formatTime,
+      title: '时间', dataIndex: 'timestamp', key: 'timestamp', width: 170,
+      render: formatDateTime,
     },
     {
       title: '级别', dataIndex: 'level', key: 'level', width: 90,

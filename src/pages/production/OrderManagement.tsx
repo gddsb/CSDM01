@@ -10,7 +10,7 @@ import {
 import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
-import { formatVersionNo } from '../../utils'
+import { formatVersionNo, formatDateTime, formatDate } from '../../utils'
 
 const { RangePicker } = DatePicker
 
@@ -349,7 +349,7 @@ export default function OrderManagement() {
     },
     {
       title: '计划时间', key: 'plan_time', width: 160,
-      render: (_, r) => <span style={{ fontSize: 12 }}>{r.plan_start_time ? String(r.plan_start_time).substring(0, 10) : '-'}<br />~ {r.plan_end_time ? String(r.plan_end_time).substring(0, 10) : '-'}</span>,
+      render: (_, r) => <span style={{ fontSize: 12 }}>{formatDate(r.plan_start_time)}<br />~ {formatDate(r.plan_end_time)}</span>,
     },
     { title: '状态', dataIndex: 'status', key: 'status', width: 80, render: v => <Tag color={statusColorMap[v]}>{v}</Tag> },
     { title: '操作', key: 'action', width: 180, render: (_, r) => renderActions(r) },
@@ -571,12 +571,12 @@ export default function OrderManagement() {
             <Descriptions.Item label="版本号">{formatVersionNo(currentOrder.version_no)}</Descriptions.Item>
             <Descriptions.Item label="计划数量">{(currentOrder.planned_qty || 0).toLocaleString()}</Descriptions.Item>
             <Descriptions.Item label="完工数量">{(currentOrder.finished_qty || 0).toLocaleString()}</Descriptions.Item>
-            <Descriptions.Item label="计划开始">{currentOrder.plan_start_time || '-'}</Descriptions.Item>
-            <Descriptions.Item label="计划完成">{currentOrder.plan_end_time || '-'}</Descriptions.Item>
-            <Descriptions.Item label="下发时间">{currentOrder.release_time || '-'}</Descriptions.Item>
-            <Descriptions.Item label="关闭时间">{currentOrder.close_time || '-'}</Descriptions.Item>
+            <Descriptions.Item label="计划开始">{formatDate(currentOrder.plan_start_time)}</Descriptions.Item>
+            <Descriptions.Item label="计划完成">{formatDate(currentOrder.plan_end_time)}</Descriptions.Item>
+            <Descriptions.Item label="下发时间">{formatDateTime(currentOrder.release_time)}</Descriptions.Item>
+            <Descriptions.Item label="关闭时间">{formatDateTime(currentOrder.close_time)}</Descriptions.Item>
             <Descriptions.Item label="创建人">{currentOrder.created_by || '-'}</Descriptions.Item>
-            <Descriptions.Item label="创建时间">{currentOrder.created_at || '-'}</Descriptions.Item>
+            <Descriptions.Item label="创建时间">{formatDateTime(currentOrder.created_at)}</Descriptions.Item>
           </Descriptions>
         )}
       </Drawer>

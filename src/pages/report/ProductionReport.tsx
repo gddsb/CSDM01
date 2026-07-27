@@ -7,6 +7,7 @@ import {
   RiseOutlined, FallOutlined
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import { formatDateTime } from '../../utils'
 import { orders, workOrders, processReports, productionLines } from '../../mock/data'
 
 const { RangePicker } = DatePicker
@@ -93,8 +94,8 @@ export default function ProductionReport() {
     },
     { title: '报工工序数', dataIndex: 'process_count', key: 'process_count', width: 90 },
     { title: '工单状态', dataIndex: 'status', key: 'status', width: 90, render: v => <Tag color={statusColorMap[v]}>{v}</Tag> },
-    { title: '开工时间', dataIndex: 'start_time', key: 'start_time', width: 150 },
-    { title: '完工时间', dataIndex: 'finish_time', key: 'finish_time', width: 150, render: v => v || '-' },
+    { title: '开工时间', dataIndex: 'start_time', key: 'start_time', width: 150, render: v => formatDateTime(v) },
+    { title: '完工时间', dataIndex: 'finish_time', key: 'finish_time', width: 150, render: v => formatDateTime(v) },
   ]
 
   return (

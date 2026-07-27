@@ -7,6 +7,7 @@ import {
   RiseOutlined
 } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
+import { formatDateTime } from '../../utils'
 import {
   incomingInspections, finishedInspections, microbeInspections,
   envInspections, complaints
@@ -106,7 +107,7 @@ export default function QualityReport() {
     { title: '检验结果', dataIndex: 'result', key: 'result', width: 90, render: v => v ? <Tag color={resultColorMap[v]}>{v}</Tag> : <Tag>检验中</Tag> },
     { title: '处理方式', dataIndex: 'handle_type', key: 'handle_type', width: 90, render: v => v || '-' },
     { title: '检验人', dataIndex: 'inspector_name', key: 'inspector_name', width: 90 },
-    { title: '检验时间', dataIndex: 'inspection_time', key: 'inspection_time', width: 160, render: v => v || '-' },
+    { title: '检验时间', dataIndex: 'inspection_time', key: 'inspection_time', width: 160, render: v => formatDateTime(v) },
     { title: '状态', dataIndex: 'status', key: 'status', width: 90, render: v => <Tag color={v === '已完成' ? 'success' : 'processing'}>{v}</Tag> },
   ]
 

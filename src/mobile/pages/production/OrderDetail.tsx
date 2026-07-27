@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Toast, Dialog, Button } from 'antd-mobile'
 import api from '../../../utils/api'
+import { formatDateTime } from '../../../utils'
 import dayjs from 'dayjs'
 
 const getStatusStyle = (status) => {
@@ -217,13 +218,13 @@ export default function OrderDetail() {
           <div className="mobile-detail-row">
             <div className="mobile-detail-label">计划开始</div>
             <div className="mobile-detail-value">
-              {order.plan_start_time ? dayjs(order.plan_start_time).format('YYYY-MM-DD HH:mm') : '-'}
+              {formatDateTime(order.plan_start_time)}
             </div>
           </div>
           <div className="mobile-detail-row">
             <div className="mobile-detail-label">计划结束</div>
             <div className="mobile-detail-value">
-              {order.plan_end_time ? dayjs(order.plan_end_time).format('YYYY-MM-DD HH:mm') : '-'}
+              {formatDateTime(order.plan_end_time)}
             </div>
           </div>
           <div className="mobile-detail-row">
@@ -246,7 +247,7 @@ export default function OrderDetail() {
                     {order.report_orders[0].report_no}
                   </div>
                   <div style={{ fontSize: 12, color: '#757575', marginTop: 4 }}>
-                    报工时间：{order.report_orders[0].report_time ? dayjs(order.report_orders[0].report_time).format('MM-DD HH:mm') : '-'}
+                    报工时间：{formatDateTime(order.report_orders[0].report_time)}
                   </div>
                 </div>
                 <div style={{ color: '#BDBDBD', fontSize: 18 }}>›</div>

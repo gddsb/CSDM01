@@ -7,6 +7,7 @@ import {
   FallOutlined
 } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
+import { formatDateTime } from '../../utils'
 import { exceptionRecords, workOrders } from '../../mock/data'
 
 const { RangePicker } = DatePicker
@@ -87,8 +88,8 @@ export default function ExceptionReport() {
     }},
     { title: '异常名称', dataIndex: 'exception_type_name', key: 'exception_type_name', width: 100 },
     { title: '设备', dataIndex: 'device_name', key: 'device_name', width: 130, render: v => v || '-' },
-    { title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 150 },
-    { title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 150 },
+    { title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 150, render: v => formatDateTime(v) },
+    { title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 150, render: v => formatDateTime(v) },
     {
       title: '持续时长', dataIndex: 'duration', key: 'duration', width: 100,
       render: v => {

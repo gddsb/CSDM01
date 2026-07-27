@@ -11,7 +11,7 @@ import {
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import api from '../../utils/api'
-import { formatFilmVersion } from '../../utils'
+import { formatFilmVersion, formatDateTime, formatTime, formatDate } from '../../utils'
 
 // 报工单状态：后端模型 getter 返回中文名称 '开工'/'完工'
 const reportOrderStatusMap = {
@@ -2013,7 +2013,7 @@ export default function ProcessReporting() {
             }
           }}
         />
-      ) : val ? dayjs(val).format('MM-DD HH:mm') : '-',
+      ) : formatDateTime(val),
     },
     {
       title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 150,
@@ -2081,7 +2081,7 @@ export default function ProcessReporting() {
             }
           }}
         />
-      ) : val ? dayjs(val).format('MM-DD HH:mm') : '-',
+      ) : formatDateTime(val),
     },
     { title: '时长(小时)', dataIndex: 'duration', key: 'duration', width: 100 },
     {
@@ -2299,7 +2299,7 @@ export default function ProcessReporting() {
       title: '开始时间', dataIndex: 'report_start_time', key: 'report_start_time', width: 150,
       render: (val) => {
         const t = selectedReport?.report_time
-        return t ? dayjs(t).format('MM-DD HH:mm') : '-'
+        return formatDateTime(t)
       },
     },
     {
@@ -2308,7 +2308,7 @@ export default function ProcessReporting() {
         // 完工状态显示 finish_time；开工状态显示"进行中"（结束时间实时取当前时间）
         if (selectedReport?.status === '完工') {
           const t = selectedReport?.finish_time
-          return t ? dayjs(t).format('MM-DD HH:mm') : '-'
+          return formatDateTime(t)
         }
         return <Tag color="processing">进行中</Tag>
       },
@@ -2693,13 +2693,13 @@ export default function ProcessReporting() {
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
                 <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>报工时间</span>
-                <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.report_time ? dayjs(selectedReport.report_time).format('YYYY-MM-DD HH:mm') : '-'}</span>
+                <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(selectedReport.report_time)}</span>
               </Space>
             </Col>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
                 <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>完工时间</span>
-                <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.finish_time ? dayjs(selectedReport.finish_time).format('YYYY-MM-DD HH:mm') : '-'}</span>
+                <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(selectedReport.finish_time)}</span>
               </Space>
             </Col>
             <Col span={4}>

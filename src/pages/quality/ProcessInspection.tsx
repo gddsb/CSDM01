@@ -8,6 +8,7 @@ import {
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ThreeSectionPage, { } from '../../components/ThreeSectionPage'
+import { formatDateTime } from '../../utils'
 import { workOrders, processes } from '../../mock/data'
 
 const { RangePicker } = DatePicker
@@ -116,7 +117,7 @@ export default function ProcessInspection() {
       render: v => <Tag color={resultColor[v]}>{v}</Tag>
     },
     { title: '检验人', dataIndex: 'inspector_name', key: 'inspector_name', width: 100 },
-    { title: '检验时间', dataIndex: 'inspection_time', key: 'inspection_time', width: 160 },
+    { title: '检验时间', dataIndex: 'inspection_time', key: 'inspection_time', width: 160, render: formatDateTime },
   ]
 
   return (
