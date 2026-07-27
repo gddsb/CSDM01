@@ -753,8 +753,6 @@ export default function ProductInspection() {
                       </Tag>
                     ) : '-'
                   },
-                  { title: '检测人', dataIndex: 'inspector_name', render: (v: string) => v || '-' },
-                  { title: '检测时间', dataIndex: 'inspection_time', width: 160, render: formatDateTime },
                 ]}
               />
             </div>

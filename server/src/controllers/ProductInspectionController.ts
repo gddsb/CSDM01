@@ -286,6 +286,7 @@ export default {
   async start(req: any, res: any) {
     try {
       const { id } = req.params
+      const user: any = req.user || {}
       const record = await ProductInspection.findOne({ where: { inspection_id: id } })
       if (!record) {
         return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)
@@ -296,7 +297,13 @@ export default {
         return fail(res, '只有待检状态可以开检', ErrorCode.PARAM_INVALID)
       }
 
-      await record.update({ status: 1 })
+      const now = new Date()
+      await record.update({
+        status: 1,
+        inspector_id: user.userId || null,
+        inspector_name: user.realName || user.username || '',
+        inspection_time: now,
+      })
       const detail = await getDetail(Number(id))
       success(res, detail, '开检成功')
     } catch (err: any) {
