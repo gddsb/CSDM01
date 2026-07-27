@@ -317,7 +317,7 @@ export default function ProductInspection() {
   }
 
   const columns = [
-    { title: '检验编号', dataIndex: 'inspection_no', key: 'inspection_no', width: 110, fixed: 'left' },
+    { title: '检验编号', dataIndex: 'inspection_no', key: 'inspection_no', width: 60, fixed: 'left' },
     {
       title: '类型', dataIndex: 'inspection_type', key: 'inspection_type', width: 80,
       render: (v: string) => <Tag color={typeColorMap[v] || 'default'}>{v}</Tag>
