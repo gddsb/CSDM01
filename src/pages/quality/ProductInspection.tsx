@@ -30,7 +30,7 @@ const statusColor = { '待检': 'default', '检验中': 'processing', '审核中
 const typeColorMap = Object.fromEntries(INSPECTION_TYPES.map(t => [t.value, t.color]))
 
 const canEdit = (status: string) => status === '待检' || status === '检验中'
-const canSubmit = (status: string) => status === '待检'
+const canSubmit = (status: string) => status === '检验中'
 
 export default function ProductInspection() {
   const [data, setData] = useState<any[]>([])
@@ -249,6 +249,20 @@ export default function ProductInspection() {
     }
   }
 
+  const handleDelete = async (record: any) => {
+    try {
+      const res = await api.delete(`/basic/product-inspections/${record.inspection_id}`)
+      if (res.success !== false) {
+        message.success('删除成功')
+        fetchData()
+      } else {
+        message.error(res.message || '删除失败')
+      }
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || '删除失败')
+    }
+  }
+
   const handleReview = async (result: '合格' | '不合格') => {
     try {
       const res = await api.put(`/basic/product-inspections/${current.inspection_id}/review`, { result })
@@ -337,12 +351,17 @@ export default function ProductInspection() {
           {record.status === '待检' && record.standard_id && (
             <Button type="link" size="small" onClick={() => handleStart(record)}>开检</Button>
           )}
-          {record.status === '检验中' && record.standard_id && (
+          {record.status === '检验中' && (
             <Button type="link" size="small" onClick={() => openInspect(record)}>检测</Button>
           )}
           {canSubmit(record.status) && (
             <Popconfirm title="确认报审？报审后数据不可修改" onConfirm={() => handleSubmit(record)} okText="确认" cancelText="取消">
               <Button type="link" size="small">报审</Button>
+            </Popconfirm>
+          )}
+          {record.status === '待检' && record.trigger_type === '手工' && (
+            <Popconfirm title="确认删除？" onConfirm={() => handleDelete(record)} okText="确认" cancelText="取消">
+              <Button type="link" size="small" danger>删除</Button>
             </Popconfirm>
           )}
         </Space>

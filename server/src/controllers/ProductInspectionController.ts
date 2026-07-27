@@ -314,8 +314,8 @@ export default {
       }
 
       const statusVal = typeof record.status === 'string' ? STATUS_REVERSE[record.status] : record.status
-      if (statusVal >= 2) {
-        return fail(res, '已报审或已完成，不可重复报审', ErrorCode.PARAM_INVALID)
+      if (statusVal !== 1) {
+        return fail(res, '只有检验中状态可以报审', ErrorCode.PARAM_INVALID)
       }
 
       await record.update({ status: 2 })
@@ -375,8 +375,12 @@ export default {
       }
 
       const statusVal = typeof record.status === 'string' ? STATUS_REVERSE[record.status] : record.status
-      if (statusVal >= 2) {
-        return fail(res, '审核中及以后的状态不可删除', ErrorCode.PARAM_INVALID)
+      if (statusVal !== 0) {
+        return fail(res, '只有待检状态可以删除', ErrorCode.PARAM_INVALID)
+      }
+
+      if (record.trigger_type !== '手工') {
+        return fail(res, '只有手工触发的记录可以删除', ErrorCode.PARAM_INVALID)
       }
 
       await ProductInspectionItem.destroy({ where: { inspection_id: id }, transaction: t })
