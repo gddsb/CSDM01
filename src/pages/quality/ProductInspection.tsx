@@ -278,13 +278,13 @@ export default function ProductInspection() {
     }])
   }
 
-  const updateItem = (index: number, field: string, value: any) => {
+  const updateItem = useCallback((index: number, field: string, value: any) => {
     setInspectItems(prev => {
       const next = [...prev]
       next[index] = { ...next[index], [field]: value }
       return next
     })
-  }
+  }, [])
 
   const removeItem = (index: number) => {
     setInspectItems(prev => prev.filter((_, i) => i !== index))
@@ -338,7 +338,7 @@ export default function ProductInspection() {
     },
   ]
 
-  const inspectColumns = [
+  const inspectColumns = useMemo(() => [
     { title: '序号', dataIndex: 'sort_order', key: 'sort_order', width: 50, render: (_: any, __: any, i: number) => i + 1 },
     {
       title: '项目分类', dataIndex: 'category', key: 'category', width: 80,
@@ -359,13 +359,19 @@ export default function ProductInspection() {
     {
       title: '检验结果', dataIndex: 'actual_value', key: 'actual_value', width: 100,
       render: (v: any, record: any, index: number) => (
-        <Input value={v} onChange={e => updateItem(index, 'actual_value', e.target.value)} placeholder="请输入检验结果" />
+        <Input
+          key={`input-actual-${record.item_id || index}`}
+          value={v}
+          onChange={e => updateItem(index, 'actual_value', e.target.value)}
+          placeholder="请输入检验结果"
+        />
       ),
     },
     {
       title: '判定结论', dataIndex: 'result', key: 'result', width: 100,
       render: (v: any, record: any, index: number) => (
         <Select
+          key={`select-result-${record.item_id || index}`}
           style={{ width: '100%' }}
           placeholder="请选择"
           allowClear
@@ -375,7 +381,7 @@ export default function ProductInspection() {
         />
       ),
     },
-  ]
+  ], [updateItem])
 
   return (
     <>
