@@ -30,7 +30,7 @@ const statusColor = { '待检': 'default', '检验中': 'processing', '审核中
 const typeColorMap = Object.fromEntries(INSPECTION_TYPES.map(t => [t.value, t.color]))
 
 const canEdit = (status: string) => status === '待检' || status === '检验中'
-const canSubmit = (status: string) => status === '待检' || status === '检验中'
+const canSubmit = (status: string) => status === '待检'
 
 export default function ProductInspection() {
   const [data, setData] = useState<any[]>([])
@@ -218,10 +218,6 @@ export default function ProductInspection() {
       const res = await api.put(`/basic/product-inspections/${record.inspection_id}/start`)
       if (res.success !== false) {
         message.success('已开检')
-        const detail = res.data || record
-        setCurrent(detail)
-        setInspectItems((detail.items || []).map((it: any, idx: number) => ({ ...it, sort_order: it.sort_order !== undefined ? it.sort_order : idx })))
-        setInspectDrawerOpen(true)
         fetchData()
       } else {
         message.error(res.message || '开检失败')
