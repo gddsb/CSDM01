@@ -157,15 +157,16 @@ export default function InspectionStandard() {
   ]
 
   const itemTableColumns = [
-    { title: '项目名称', dataIndex: 'item_name', key: 'item_name' },
     {
-      title: '大类', dataIndex: 'category', key: 'category', width: 90,
+      title: '项目大类', dataIndex: 'category', key: 'category', width: 100,
       render: (v: string) => <Tag color={categoryColor[v] || 'default'}>{v}</Tag>
     },
-    { title: '检验方法', dataIndex: 'method', key: 'method' },
-    { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 140 },
+    { title: '检验项目', dataIndex: 'item_name', key: 'item_name' },
+    { title: '排序号', dataIndex: 'sort_order', key: 'sort_order', width: 80 },
     { title: '标准值', dataIndex: 'standard_value', key: 'standard_value', width: 140 },
     { title: '单位', dataIndex: 'unit', key: 'unit', width: 70 },
+    { title: '检验方法', dataIndex: 'method', key: 'method' },
+    { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 140 },
   ]
 
   return (
