@@ -64,23 +64,72 @@ function ResizableTable<RecordType extends object = any>(props: ResizableTablePr
     return () => { cancelled = true }
   }, [tableKey])
 
+  const colInfo = useMemo(() => {
+    const cols: Array<{ key: string; index: number; fixed?: string | boolean; isAction: boolean }> = []
+    rawColumns.forEach((col: any, index: number) => {
+      const key = String(col.key || col.dataIndex || '')
+      const isAction = key === 'action' || col.key === 'action'
+      cols.push({ key, index, fixed: col.fixed, isAction })
+    })
+    return cols
+  }, [rawColumns])
+
+  const elasticColKeys = useMemo(() => {
+    const keys: string[] = []
+    let actionIndex = -1
+    colInfo.forEach((c, i) => {
+      if (c.isAction) actionIndex = i
+    })
+    if (actionIndex >= 0) {
+      const actionCol = colInfo[actionIndex]
+      if (actionCol.key) keys.push(actionCol.key)
+      const leftNeighbor = actionIndex > 0 ? colInfo[actionIndex - 1] : null
+      if (leftNeighbor && leftNeighbor.key) keys.push(leftNeighbor.key)
+    }
+    return keys
+  }, [colInfo])
+
   const handleResize = useCallback((key: React.Key) => (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     const startX = e.clientX
-    const startWidth = colWidths[String(key)] || (rawColumns.find(c => String(c.key || c.dataIndex) === String(key))?.width as number) || 150
+    const targetKey = String(key)
+    const targetCol = rawColumns.find(c => String(c.key || c.dataIndex) === targetKey)
+    const startWidth = colWidths[targetKey] || (targetCol?.width as number) || 150
+
+    const elasticKeys = elasticColKeys.filter(k => k !== targetKey)
 
     const onMouseMove = (ev: MouseEvent) => {
       const diff = ev.clientX - startX
       const newWidth = Math.max(60, startWidth + diff)
-      setColWidths(prev => ({ ...prev, [String(key)]: newWidth }))
+      const actualDiff = newWidth - startWidth
+
+      setColWidths(prev => {
+        const next: Record<string, number> = { ...prev, [targetKey]: newWidth }
+
+        if (elasticKeys.length > 0 && actualDiff !== 0) {
+          const perCol = actualDiff / elasticKeys.length
+          let remaining = actualDiff
+          elasticKeys.forEach((k, idx) => {
+            const currentKWidth = prev[k] || (rawColumns.find(c => String(c.key || c.dataIndex) === k)?.width as number) || 150
+            if (idx === elasticKeys.length - 1) {
+              next[k] = Math.max(60, currentKWidth - remaining)
+            } else {
+              const adjust = Math.min(perCol, currentKWidth - 60)
+              next[k] = currentKWidth - adjust
+              remaining -= adjust
+            }
+          })
+        }
+
+        return next
+      })
     }
 
     const onMouseUp = () => {
       document.removeEventListener('mousemove', onMouseMove)
       document.removeEventListener('mouseup', onMouseUp)
       setColWidths(prev => {
-        const finalWidth = prev[String(key)] || startWidth
         const allWidths = { ...prev }
         save(`${STORAGE_PREFIX}${tableKey}`, allWidths)
         return prev
@@ -89,7 +138,7 @@ function ResizableTable<RecordType extends object = any>(props: ResizableTablePr
 
     document.addEventListener('mousemove', onMouseMove)
     document.addEventListener('mouseup', onMouseUp)
-  }, [colWidths, rawColumns, tableKey, save])
+  }, [colWidths, rawColumns, tableKey, save, elasticColKeys])
 
   const columns = useMemo(() => {
     return rawColumns.map(col => {
