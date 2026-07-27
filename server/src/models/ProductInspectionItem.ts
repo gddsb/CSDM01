@@ -58,6 +58,10 @@ const ProductInspectionItem = sequelize.define('ProductInspectionItem', {
     type: DataTypes.DATE,
     comment: '项目检测时间',
   },
+  category: {
+    type: DataTypes.STRING(50),
+    comment: '项目分类(大类)',
+  },
   sort_order: {
     type: DataTypes.INTEGER,
     defaultValue: 0,

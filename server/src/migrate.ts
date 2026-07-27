@@ -180,6 +180,13 @@ const migrations = [
       ['exception_images', 'TEXT'],
     ],
   },
+  // 产品检测项目子表：新增 category
+  {
+    table: 'quality_product_inspection_item',
+    columns: [
+      ['category', 'VARCHAR(50)'],
+    ],
+  },
   // 人员使用记录子表：新增 report_order_id（替代原 report_id/work_order_id/work_order_no）
   {
     table: 'production_manpower_record',

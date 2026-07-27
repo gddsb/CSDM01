@@ -159,6 +159,7 @@ router.get('/product-inspections/:id', ProductInspectionController.detail)
 router.post('/product-inspections', logOperation('产品检测'), ProductInspectionController.create)
 router.put('/product-inspections/:id', logOperation('产品检测'), ProductInspectionController.update)
 router.put('/product-inspections/:id/submit', logOperation('产品检测报审'), ProductInspectionController.submit)
+router.put('/product-inspections/:id/start', logOperation('产品检测开检'), ProductInspectionController.start)
 router.delete('/product-inspections/:id', logOperation('产品检测'), ProductInspectionController.delete)
 
 // 检验标准

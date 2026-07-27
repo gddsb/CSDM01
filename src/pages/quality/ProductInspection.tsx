@@ -211,6 +211,24 @@ export default function ProductInspection() {
     }
   }
 
+  const handleStart = async (record: any) => {
+    try {
+      const res = await api.put(`/basic/product-inspections/${record.inspection_id}/start`)
+      if (res.success !== false) {
+        message.success('已开检')
+        const detail = res.data || record
+        setCurrent(detail)
+        setInspectItems((detail.items || []).map((it: any, idx: number) => ({ ...it, sort_order: it.sort_order !== undefined ? it.sort_order : idx })))
+        setInspectDrawerOpen(true)
+        fetchData()
+      } else {
+        message.error(res.message || '开检失败')
+      }
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || '开检失败')
+    }
+  }
+
   const handleInspectSave = async () => {
     try {
       const payload = { items: inspectItems }
@@ -248,6 +266,7 @@ export default function ProductInspection() {
     setInspectItems(prev => [...prev, {
       item_id: 'new_' + Date.now(),
       item_name: '',
+      category: '',
       standard_value: '',
       actual_value: '',
       result: null,
@@ -303,6 +322,9 @@ export default function ProductInspection() {
             <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
           )}
           {record.status === '待检' && record.standard_id && (
+            <Button type="link" size="small" onClick={() => handleStart(record)}>开检</Button>
+          )}
+          {record.status === '检验中' && record.standard_id && (
             <Button type="link" size="small" onClick={() => openInspect(record)}>检测</Button>
           )}
           {canSubmit(record.status) && (
@@ -318,25 +340,33 @@ export default function ProductInspection() {
   const inspectColumns = [
     { title: '序号', dataIndex: 'sort_order', key: 'sort_order', width: 60, render: (_: any, __: any, i: number) => i + 1 },
     {
-      title: '检测项目', dataIndex: 'item_name', key: 'item_name', width: 200,
+      title: '项目分类', dataIndex: 'category', key: 'category', width: 120,
       render: (_: any, record: any) => (
-        <Input value={record.item_name} disabled placeholder="检测项目" />
+        <Input value={record.category} disabled placeholder="项目分类" />
       )
     },
     {
-      title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 200,
+      title: '检验项目', dataIndex: 'item_name', key: 'item_name', width: 200,
       render: (_: any, record: any) => (
-        <Input value={record.standard_value} disabled placeholder="标准要求" />
+        <Input value={record.item_name} disabled placeholder="检验项目" />
       )
     },
     {
-      title: '检测值', dataIndex: 'actual_value', key: 'actual_value', width: 200,
+      title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 220,
+      render: (_: any, record: any) => (
+        <div style={{ whiteSpace: 'normal', wordBreak: 'break-all', lineHeight: 1.5, padding: '4px 8px' }}>
+          {record.standard_value || '-'}
+        </div>
+      )
+    },
+    {
+      title: '检验结果', dataIndex: 'actual_value', key: 'actual_value', width: 200,
       render: (_: any, record: any, index: number) => (
-        <Input value={record.actual_value} onChange={e => updateItem(index, 'actual_value', e.target.value)} placeholder="请输入检测值" />
+        <Input value={record.actual_value} onChange={e => updateItem(index, 'actual_value', e.target.value)} placeholder="请输入检验结果" />
       )
     },
     {
-      title: '判定', dataIndex: 'result', key: 'result', width: 100,
+      title: '判定结论', dataIndex: 'result', key: 'result', width: 120,
       render: (_: any, record: any, index: number) => (
         <Select
           style={{ width: '100%' }}
@@ -601,7 +631,7 @@ export default function ProductInspection() {
       </Modal>
 
       <Drawer
-        title={current ? `检测项目维护 - ${current.inspection_no}` : '检测项目维护'}
+        title={current ? `产品检验 - ${current.inspection_no}` : '产品检验'}
         open={inspectDrawerOpen}
         onClose={() => setInspectDrawerOpen(false)}
         width={1100}

@@ -175,6 +175,7 @@ export default {
         const itemData = items.map((item: any, idx: number) => ({
           inspection_id: record.inspection_id,
           item_name: item.item_name,
+          category: item.category || '',
           standard_value: item.standard_value || '',
           actual_value: item.actual_value || '',
           result: convertItemResult(item.result),
@@ -255,6 +256,7 @@ export default {
           const itemData = items.map((item: any, idx: number) => ({
             inspection_id: Number(id),
             item_name: item.item_name,
+            category: item.category || '',
             standard_value: item.standard_value || '',
             actual_value: item.actual_value || '',
             result: convertItemResult(item.result),
@@ -278,6 +280,28 @@ export default {
       }
       logger.error('[ProductInspection] update error:', err)
       fail(res, err.message || '更新失败', ErrorCode.SYSTEM_ERROR)
+    }
+  },
+
+  async start(req: any, res: any) {
+    try {
+      const { id } = req.params
+      const record = await ProductInspection.findOne({ where: { inspection_id: id } })
+      if (!record) {
+        return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)
+      }
+
+      const statusVal = typeof record.status === 'string' ? STATUS_REVERSE[record.status] : record.status
+      if (statusVal !== 0) {
+        return fail(res, '只有待检状态可以开检', ErrorCode.PARAM_INVALID)
+      }
+
+      await record.update({ status: 1 })
+      const detail = await getDetail(Number(id))
+      success(res, detail, '开检成功')
+    } catch (err: any) {
+      logger.error('[ProductInspection] start error:', err)
+      fail(res, err.message || '开检失败', ErrorCode.SYSTEM_ERROR)
     }
   },
 
