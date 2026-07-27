@@ -347,8 +347,9 @@ export default {
       }
 
       const now = new Date()
+      const targetStatus = result === '合格' ? 3 : 1
       await record.update({
-        status: 3,
+        status: targetStatus,
         result,
         reviewer_id: user.userId || null,
         reviewer_name: user.realName || user.username || '',
