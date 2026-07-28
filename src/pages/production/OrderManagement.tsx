@@ -41,6 +41,8 @@ export default function OrderManagement() {
   const [currentOrder, setCurrentOrder] = useState(null)
   const [reportOrders, setReportOrders] = useState([])
   const [reportOrdersLoading, setReportOrdersLoading] = useState(false)
+  const [reportOrderDetails, setReportOrderDetails] = useState<Record<number, any>>({})
+  const [loadingDetails, setLoadingDetails] = useState<Record<number, boolean>>({})
   const [editing, setEditing] = useState(null)
   const [selectedMaterial, setSelectedMaterial] = useState(null)
   const [form] = Form.useForm()
@@ -256,10 +258,27 @@ export default function OrderManagement() {
     setCurrentOrder(r)
     setDetailOpen(true)
     setReportOrders([])
+    setReportOrderDetails({})
+    setLoadingDetails({})
     setReportOrdersLoading(true)
     try {
       const res = await api.get('/production/report-orders', { params: { order_id: r.order_id, page: 1, pageSize: 100 } })
-      setReportOrders(res.data || [])
+      const list = res.data || []
+      setReportOrders(list)
+      // 预加载所有报工单详情
+      list.forEach(async (ro) => {
+        setLoadingDetails(prev => ({ ...prev, [ro.report_order_id]: true }))
+        try {
+          const detailRes = await api.get(`/production/report-orders/${ro.report_order_id}`)
+          if (detailRes) {
+            setReportOrderDetails(prev => ({ ...prev, [ro.report_order_id]: detailRes }))
+          }
+        } catch (e) {
+          // ignore
+        } finally {
+          setLoadingDetails(prev => ({ ...prev, [ro.report_order_id]: false }))
+        }
+      })
     } catch (err) {
       setReportOrders([])
     } finally {
@@ -602,7 +621,142 @@ export default function OrderManagement() {
               dataSource={reportOrders}
               rowKey="report_order_id"
               pagination={false}
-              scroll={{ x: 650 }}
+              scroll={{ x: 700 }}
+              expandable={{
+                expandedRowRender: (record) => {
+                  const detail = reportOrderDetails[record.report_order_id]
+                  const isLoading = loadingDetails[record.report_order_id]
+                  if (isLoading) return <div style={{ padding: 16, textAlign: 'center', color: '#999' }}>加载中...</div>
+                  if (!detail) return <div style={{ padding: 16, textAlign: 'center', color: '#999' }}>暂无数据</div>
+
+                  const processes = detail.report_processes || []
+                  const materials = detail.process_materials || []
+                  const defects = detail.process_defects || []
+
+                  // 按工序聚合数据
+                  const processStats = processes.map((p: any) => {
+                    const procMaterials = materials.filter((m: any) => m.process_id === p.process_id)
+                    const inputQty = procMaterials
+                      .filter((m: any) => m.material_type === '投入')
+                      .reduce((sum: number, m: any) => sum + (Number(m.quantity) || 0), 0)
+                    const returnQty = procMaterials
+                      .filter((m: any) => m.material_type === '退回')
+                      .reduce((sum: number, m: any) => sum + (Number(m.quantity) || 0), 0)
+                    const outputQty = procMaterials
+                      .filter((m: any) => m.material_type === '产出')
+                      .reduce((sum: number, m: any) => sum + (Number(m.quantity) || 0), 0)
+                    const netInput = inputQty - returnQty
+
+                    const procDefects = defects.filter((d: any) => d.process_id === p.process_id)
+                    // 按分类汇总不良
+                    const categoryMap: Record<string, number> = {}
+                    let totalDefectQty = 0
+                    procDefects.forEach((d: any) => {
+                      const category = d.defect_type?.category_name || '其他'
+                      const qty = Number(d.quantity) || 0
+                      categoryMap[category] = (categoryMap[category] || 0) + qty
+                      totalDefectQty += qty
+                    })
+
+                    const defectRate = netInput > 0 ? ((totalDefectQty / netInput) * 100).toFixed(2) : '0.00'
+
+                    return {
+                      ...p,
+                      inputQty: netInput,
+                      outputQty,
+                      totalDefectQty,
+                      defectRate,
+                      categoryMap,
+                    }
+                  })
+
+                  // 汇总所有分类不良（报工单维度）
+                  const allCategoryMap: Record<string, number> = {}
+                  let allInputQty = 0
+                  let allOutputQty = 0
+                  let allDefectQty = 0
+                  processStats.forEach((ps: any) => {
+                    allInputQty += ps.inputQty
+                    allOutputQty += ps.outputQty
+                    allDefectQty += ps.totalDefectQty
+                    Object.entries(ps.categoryMap).forEach(([cat, qty]) => {
+                      allCategoryMap[cat] = (allCategoryMap[cat] || 0) + qty
+                    })
+                  })
+                  const allDefectRate = allInputQty > 0 ? ((allDefectQty / allInputQty) * 100).toFixed(2) : '0.00'
+
+                  const categoryColumns = Object.keys(allCategoryMap).map(cat => ({
+                    title: `${cat}数量`,
+                    dataIndex: ['categoryMap', cat],
+                    key: cat,
+                    width: 100,
+                    align: 'right',
+                    render: (v: any) => (v || 0).toLocaleString(),
+                  }))
+                  const categoryRateColumns = Object.keys(allCategoryMap).map(cat => ({
+                    title: `${cat}率`,
+                    key: `${cat}_rate`,
+                    width: 90,
+                    align: 'right',
+                    render: (_: any, record: any) => {
+                      const catQty = record.categoryMap?.[cat] || 0
+                      const rate = record.inputQty > 0 ? ((catQty / record.inputQty) * 100).toFixed(2) : '0.00'
+                      return <span style={{ color: catQty > 0 ? '#ff4d4f' : 'inherit' }}>{rate}%</span>
+                    },
+                  }))
+
+                  return (
+                    <div style={{ padding: '8px 16px' }}>
+                      <Row gutter={[16, 12]} style={{ marginBottom: 12 }}>
+                        <Col span={4}>
+                          <div style={{ fontSize: 12, color: '#999' }}>总投入数量</div>
+                          <div style={{ fontSize: 16, fontWeight: 600 }}>{allInputQty.toLocaleString()}</div>
+                        </Col>
+                        <Col span={4}>
+                          <div style={{ fontSize: 12, color: '#999' }}>总产出数量</div>
+                          <div style={{ fontSize: 16, fontWeight: 600, color: '#52c41a' }}>{allOutputQty.toLocaleString()}</div>
+                        </Col>
+                        <Col span={4}>
+                          <div style={{ fontSize: 12, color: '#999' }}>总不良数量</div>
+                          <div style={{ fontSize: 16, fontWeight: 600, color: '#ff4d4f' }}>{allDefectQty.toLocaleString()}</div>
+                        </Col>
+                        <Col span={4}>
+                          <div style={{ fontSize: 12, color: '#999' }}>总不良率</div>
+                          <div style={{ fontSize: 16, fontWeight: 600, color: allDefectQty > 0 ? '#ff4d4f' : 'inherit' }}>{allDefectRate}%</div>
+                        </Col>
+                        {Object.entries(allCategoryMap).map(([cat, qty]) => (
+                          <Col span={4} key={cat}>
+                            <div style={{ fontSize: 12, color: '#999' }}>{cat}</div>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: qty > 0 ? '#ff4d4f' : 'inherit' }}>
+                              {qty.toLocaleString()}
+                              <span style={{ fontSize: 12, color: '#999', marginLeft: 4 }}>
+                                ({allInputQty > 0 ? ((qty / allInputQty) * 100).toFixed(2) : '0.00'}%)
+                              </span>
+                            </div>
+                          </Col>
+                        ))}
+                      </Row>
+                      <Table
+                        size="small"
+                        dataSource={processStats}
+                        rowKey="process_id"
+                        pagination={false}
+                        scroll={{ x: 1000 + categoryColumns.length * 190 }}
+                        columns={[
+                          { title: '工序编码', dataIndex: 'process_code', key: 'process_code', width: 120, fixed: 'left' },
+                          { title: '工序名称', dataIndex: 'process_name', key: 'process_name', width: 140, fixed: 'left' },
+                          { title: '投入数量', dataIndex: 'inputQty', key: 'inputQty', width: 100, align: 'right', render: (v: any) => (v || 0).toLocaleString() },
+                          { title: '产出数量', dataIndex: 'outputQty', key: 'outputQty', width: 100, align: 'right', render: (v: any) => (v || 0).toLocaleString() },
+                          ...categoryColumns,
+                          ...categoryRateColumns,
+                          { title: '工序总不良', dataIndex: 'totalDefectQty', key: 'totalDefectQty', width: 100, align: 'right', render: (v: any) => <span style={{ color: v > 0 ? '#ff4d4f' : 'inherit' }}>{(v || 0).toLocaleString()}</span> },
+                          { title: '工序不良率', dataIndex: 'defectRate', key: 'defectRate', width: 100, align: 'right', render: (v: any) => <span>{v}%</span> },
+                        ]}
+                      />
+                    </div>
+                  )
+                },
+              }}
               columns={[
                 { title: '报工单号', dataIndex: 'report_no', key: 'report_no', width: 160 },
                 { title: '产线', dataIndex: 'line_name', key: 'line_name', width: 100 },
