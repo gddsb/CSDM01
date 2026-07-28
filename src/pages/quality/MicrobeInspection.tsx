@@ -12,19 +12,60 @@ import { microbeInspections, incomingInspections } from '../../mock/data'
 
 const { Text, Title } = Typography
 
-// 微生物检验结果明细 mock 数据
-const microbeDetailMap = {
-  mb1: [
-    { item_name: '菌落总数', standard_value: '≤100', actual_value: '25', unit: 'CFU/g', judge: '合格' },
-    { item_name: '大肠菌群', standard_value: '不得检出', actual_value: '未检出', unit: '-', judge: '合格' },
-    { item_name: '霉菌和酵母', standard_value: '≤50', actual_value: '12', unit: 'CFU/g', judge: '合格' },
-    { item_name: '沙门氏菌', standard_value: '不得检出', actual_value: '未检出', unit: '-', judge: '合格' },
+// 微生物检验检测项目模板（按检验对象分类）
+const microbeItemTemplates: Record<string, any[]> = {
+  '成品': [
+    { item_name: '菌落总数', standard_value: '≤100', unit: 'CFU/g' },
+    { item_name: '大肠菌群', standard_value: '≤30', unit: 'MPN/g' },
+    { item_name: '霉菌和酵母', standard_value: '≤50', unit: 'CFU/g' },
+    { item_name: '沙门氏菌', standard_value: '不得检出', unit: '-' },
+    { item_name: '金黄色葡萄球菌', standard_value: '不得检出', unit: '-' },
+    { item_name: '坂崎肠杆菌', standard_value: '不得检出', unit: '-' },
   ],
-  mb2: [
-    { item_name: '菌落总数', standard_value: '≤500', actual_value: '120', unit: 'CFU/g', judge: '合格' },
-    { item_name: '大肠菌群', standard_value: '≤30', actual_value: '<3', unit: 'MPN/g', judge: '合格' },
-    { item_name: '霉菌和酵母', standard_value: '≤100', actual_value: '30', unit: 'CFU/g', judge: '合格' },
+  '半成品': [
+    { item_name: '菌落总数', standard_value: '≤500', unit: 'CFU/g' },
+    { item_name: '大肠菌群', standard_value: '≤30', unit: 'MPN/g' },
+    { item_name: '霉菌和酵母', standard_value: '≤100', unit: 'CFU/g' },
+    { item_name: '沙门氏菌', standard_value: '不得检出', unit: '-' },
   ],
+  '原材料': [
+    { item_name: '菌落总数', standard_value: '≤1000', unit: 'CFU/g' },
+    { item_name: '大肠菌群', standard_value: '≤100', unit: 'MPN/g' },
+    { item_name: '霉菌和酵母', standard_value: '≤200', unit: 'CFU/g' },
+    { item_name: '沙门氏菌', standard_value: '不得检出', unit: '-' },
+  ],
+}
+
+// 生成微生物检验检测项的实测值和判定结果
+function generateMicrobeActualValue(std: string, unit: string, passRate = 0.9) {
+  const pass = Math.random() < passRate
+  if (std.includes('不得检出')) {
+    return { actual_value: pass ? '未检出' : '检出', unit, judge: pass ? '合格' : '不合格' }
+  }
+  if (std.includes('≤')) {
+    const num = parseFloat(std.replace(/[^0-9.]/g, ''))
+    if (isNaN(num)) {
+      return { actual_value: pass ? '符合' : '不符合', unit, judge: pass ? '合格' : '不合格' }
+    }
+    const actual = pass ? Math.floor(num * 0.3 + Math.random() * num * 0.5) : Math.floor(num * 1.2 + Math.random() * num * 0.5)
+    return { actual_value: String(actual), unit, judge: actual <= num ? '合格' : '不合格' }
+  }
+  return { actual_value: pass ? '符合' : '不符合', unit, judge: pass ? '合格' : '不合格' }
+}
+
+// 为每条微生物检验记录生成检测项目
+function getMicrobeItems(record: any) {
+  const templates = microbeItemTemplates[record.object_type] || microbeItemTemplates['成品']
+  return templates.map(tpl => {
+    const { actual_value, unit, judge } = generateMicrobeActualValue(tpl.standard_value, tpl.unit)
+    return {
+      item_name: tpl.item_name,
+      standard_value: tpl.standard_value,
+      actual_value,
+      unit,
+      judge,
+    }
+  })
 }
 
 const resultColor = { '合格': 'success', '不合格': 'error' }
@@ -201,7 +242,7 @@ export default function MicrobeInspection() {
             </Descriptions>
             <Title level={5}>检验结果明细</Title>
             <ResizableTable tableKey="pages_quality_MicrobeInspection"               columns={detailColumns}
-              dataSource={microbeDetailMap[current.inspection_id] || []}
+              dataSource={getMicrobeItems(current)}
               rowKey={(r, i) => i}
               size="small"
               pagination={false}

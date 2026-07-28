@@ -10,20 +10,82 @@ import { envInspections } from '../../mock/data'
 
 const { Text, Title } = Typography
 
-// 环境检验结果明细 mock 数据
-const envDetailMap = {
-  ev1: [
-    { item_name: '温度', standard_value: '18-26℃', actual_value: '23.5℃', judge: '合格' },
-    { item_name: '相对湿度', standard_value: '45-65%', actual_value: '55%', judge: '合格' },
-    { item_name: '沉降菌', standard_value: '≤15 CFU/皿', actual_value: '8 CFU/皿', judge: '合格' },
-    { item_name: '表面微生物', standard_value: '≤25 CFU/25cm²', actual_value: '12 CFU/25cm²', judge: '合格' },
+// 环境检验检测项目模板（按检验区域分类）
+const envItemTemplates: Record<string, any[]> = {
+  '更衣室': [
+    { item_name: '温度', standard_value: '18-26℃', unit: '℃' },
+    { item_name: '相对湿度', standard_value: '45-65%', unit: '%' },
+    { item_name: '沉降菌', standard_value: '≤15 CFU/皿', unit: 'CFU/皿' },
+    { item_name: '表面微生物', standard_value: '≤25 CFU/25cm²', unit: 'CFU/25cm²' },
+    { item_name: '紫外灯消毒记录', standard_value: '每日消毒≥30min', unit: '' },
   ],
-  ev2: [
-    { item_name: '温度', standard_value: '18-26℃', actual_value: '24.0℃', judge: '合格' },
-    { item_name: '相对湿度', standard_value: '45-65%', actual_value: '70%', judge: '不合格' },
-    { item_name: '沉降菌', standard_value: '≤15 CFU/皿', actual_value: '22 CFU/皿', judge: '不合格' },
-    { item_name: '表面微生物', standard_value: '≤25 CFU/25cm²', actual_value: '18 CFU/25cm²', judge: '合格' },
+  '一号车间': [
+    { item_name: '温度', standard_value: '18-26℃', unit: '℃' },
+    { item_name: '相对湿度', standard_value: '45-65%', unit: '%' },
+    { item_name: '沉降菌', standard_value: '≤10 CFU/皿', unit: 'CFU/皿' },
+    { item_name: '浮游菌', standard_value: '≤100 CFU/m³', unit: 'CFU/m³' },
+    { item_name: '表面微生物', standard_value: '≤10 CFU/25cm²', unit: 'CFU/25cm²' },
+    { item_name: '压差', standard_value: '≥10 Pa', unit: 'Pa' },
   ],
+  'A线': [
+    { item_name: '温度', standard_value: '20-25℃', unit: '℃' },
+    { item_name: '相对湿度', standard_value: '50-60%', unit: '%' },
+    { item_name: '沉降菌', standard_value: '≤5 CFU/皿', unit: 'CFU/皿' },
+    { item_name: '表面微生物', standard_value: '≤5 CFU/25cm²', unit: 'CFU/25cm²' },
+    { item_name: '设备清洁度', standard_value: '无可见污渍', unit: '' },
+  ],
+  'B线': [
+    { item_name: '温度', standard_value: '20-25℃', unit: '℃' },
+    { item_name: '相对湿度', standard_value: '50-60%', unit: '%' },
+    { item_name: '沉降菌', standard_value: '≤5 CFU/皿', unit: 'CFU/皿' },
+    { item_name: '表面微生物', standard_value: '≤5 CFU/25cm²', unit: 'CFU/25cm²' },
+    { item_name: '设备清洁度', standard_value: '无可见污渍', unit: '' },
+  ],
+}
+
+// 生成环境检验检测项的实测值和判定结果
+function generateEnvActualValue(std: string, unit: string, passRate = 0.9) {
+  const pass = Math.random() < passRate
+  if (std.includes('≤')) {
+    const num = parseFloat(std.replace(/[^0-9.]/g, ''))
+    if (isNaN(num)) {
+      return { actual_value: pass ? '符合' : '不符合', judge: pass ? '合格' : '不合格' }
+    }
+    const actual = pass ? (num * 0.6 + Math.random() * num * 0.3) : (num * 1.1 + Math.random() * num * 0.3)
+    return { actual_value: `${actual.toFixed(1)} ${unit}`.trim(), judge: actual <= num ? '合格' : '不合格' }
+  }
+  if (std.includes('-')) {
+    const range = std.match(/([\d.]+)-([\d.]+)/)
+    if (range) {
+      const min = parseFloat(range[1])
+      const max = parseFloat(range[2])
+      const actual = pass ? (min + Math.random() * (max - min)) : (Math.random() < 0.5 ? min - 1 : max + 1)
+      return { actual_value: `${actual.toFixed(1)} ${unit}`.trim(), judge: actual >= min && actual <= max ? '合格' : '不合格' }
+    }
+  }
+  if (std.includes('≥')) {
+    const num = parseFloat(std.replace(/[^0-9.]/g, ''))
+    if (isNaN(num)) {
+      return { actual_value: pass ? '符合' : '不符合', judge: pass ? '合格' : '不合格' }
+    }
+    const actual = pass ? (num + Math.random() * 5) : (num - 1 - Math.random() * 3)
+    return { actual_value: `${actual.toFixed(1)} ${unit}`.trim(), judge: actual >= num ? '合格' : '不合格' }
+  }
+  return { actual_value: pass ? '符合' : '不符合', judge: pass ? '合格' : '不合格' }
+}
+
+// 为每条环境检验记录生成检测项目
+function getEnvItems(record: any) {
+  const templates = envItemTemplates[record.area_name] || envItemTemplates['一号车间']
+  return templates.map(tpl => {
+    const { actual_value, judge } = generateEnvActualValue(tpl.standard_value, tpl.unit)
+    return {
+      item_name: tpl.item_name,
+      standard_value: tpl.standard_value,
+      actual_value,
+      judge,
+    }
+  })
 }
 
 const resultColor = { '合格': 'success', '不合格': 'error' }
@@ -165,7 +227,7 @@ export default function EnvironmentInspection() {
             </Descriptions>
             <Title level={5}>检验结果明细</Title>
             <ResizableTable tableKey="pages_quality_EnvironmentInspection"               columns={detailColumns}
-              dataSource={envDetailMap[current.inspection_id] || []}
+              dataSource={getEnvItems(current)}
               rowKey={(r, i) => i}
               size="small"
               pagination={false}
