@@ -593,92 +593,35 @@ export default function OrderManagement() {
       >
         {currentOrder && (
           <>
-            <div style={{ marginBottom: 20, padding: 12, background: '#fafafa', borderRadius: 6 }}>
-              {/* 第一行：完工单号、订单编号、下发时间、工单状态 */}
-              <Row gutter={[12, 8]} style={{ marginBottom: 8 }}>
-                <Col span={6}>
-                  <div style={{ fontSize: 12, color: '#999' }}>完工单号</div>
-                  <div style={{ fontSize: 14, fontWeight: 500 }}>
-                    {currentOrder.finish_order_no || '-'}
-                  </div>
-                </Col>
-                <Col span={6}>
-                  <div style={{ fontSize: 12, color: '#999' }}>订单编号</div>
-                  <div style={{ fontSize: 14, fontWeight: 500 }}>{currentOrder.order_no}</div>
-                </Col>
-                <Col span={6}>
-                  <div style={{ fontSize: 12, color: '#999' }}>下发时间</div>
-                  <div style={{ fontSize: 14 }}>{formatDateTime(currentOrder.release_time)}</div>
-                </Col>
-                <Col span={6}>
-                  <div style={{ fontSize: 12, color: '#999' }}>工单状态</div>
-                  <Tag color={statusColorMap[currentOrder.status]}>{currentOrder.status}</Tag>
-                </Col>
-              </Row>
-              {/* 第二行：产品料号、产品名称、规格 */}
-              <Row gutter={[12, 8]} style={{ marginBottom: 8 }}>
-                <Col span={8}>
-                  <div style={{ fontSize: 12, color: '#999' }}>产品料号</div>
-                  <div style={{ fontSize: 14, fontWeight: 500 }}>{currentOrder.material_code}</div>
-                </Col>
-                <Col span={8}>
-                  <div style={{ fontSize: 12, color: '#999' }}>产品名称</div>
-                  <div style={{ fontSize: 14, fontWeight: 500 }}>{currentOrder.material_name}</div>
-                </Col>
-                <Col span={8}>
-                  <div style={{ fontSize: 12, color: '#999' }}>规格</div>
-                  <div style={{ fontSize: 14 }}>{currentOrder.specification || '-'}</div>
-                </Col>
-              </Row>
-              {/* 第三行：计划数量、完工数量、不良总数、合格率 */}
-              <Row gutter={[12, 8]} style={{ marginBottom: 8 }}>
-                <Col span={6}>
-                  <div style={{ fontSize: 12, color: '#999' }}>计划数量</div>
-                  <div style={{ fontSize: 14, fontWeight: 500 }}>
-                    {(currentOrder.planned_qty || 0).toLocaleString()}
-                  </div>
-                </Col>
-                <Col span={6}>
-                  <div style={{ fontSize: 12, color: '#999' }}>完工数量</div>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: '#52c41a' }}>
-                    {(currentOrder.finished_qty || 0).toLocaleString()}
-                  </div>
-                </Col>
-                <Col span={6}>
-                  <div style={{ fontSize: 12, color: '#999' }}>不良总数</div>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: '#ff4d4f' }}>
-                    {((currentOrder.planned_qty || 0) - (currentOrder.finished_qty || 0)).toLocaleString()}
-                  </div>
-                </Col>
-                <Col span={6}>
-                  <div style={{ fontSize: 12, color: '#999' }}>合格率</div>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: '#52c41a' }}>
-                    {(currentOrder.planned_qty || 0) > 0
-                      ? (((currentOrder.finished_qty || 0) / (currentOrder.planned_qty || 0)) * 100).toFixed(2)
-                      : '0.00'}%
-                  </div>
-                </Col>
-              </Row>
-              {/* 第四行：计划开始、计划完成、创建时间、创建人 */}
-              <Row gutter={[12, 8]}>
-                <Col span={6}>
-                  <div style={{ fontSize: 12, color: '#999' }}>计划开始</div>
-                  <div style={{ fontSize: 14 }}>{formatDate(currentOrder.plan_start_time)}</div>
-                </Col>
-                <Col span={6}>
-                  <div style={{ fontSize: 12, color: '#999' }}>计划完成</div>
-                  <div style={{ fontSize: 14 }}>{formatDate(currentOrder.plan_end_time)}</div>
-                </Col>
-                <Col span={6}>
-                  <div style={{ fontSize: 12, color: '#999' }}>创建时间</div>
-                  <div style={{ fontSize: 14 }}>{formatDateTime(currentOrder.created_at)}</div>
-                </Col>
-                <Col span={6}>
-                  <div style={{ fontSize: 12, color: '#999' }}>创建人</div>
-                  <div style={{ fontSize: 14 }}>{currentOrder.created_by || '-'}</div>
-                </Col>
-              </Row>
-            </div>
+            <Descriptions column={4} bordered size="small" style={{ marginBottom: 20 }}>
+              <Descriptions.Item label="完工单号">{currentOrder.finish_order_no || '-'}</Descriptions.Item>
+              <Descriptions.Item label="订单编号">{currentOrder.order_no}</Descriptions.Item>
+              <Descriptions.Item label="下发时间">{formatDateTime(currentOrder.release_time)}</Descriptions.Item>
+              <Descriptions.Item label="工单状态"><Tag color={statusColorMap[currentOrder.status]}>{currentOrder.status}</Tag></Descriptions.Item>
+              <Descriptions.Item label="产品料号">{currentOrder.material_code}</Descriptions.Item>
+              <Descriptions.Item label="产品名称">{currentOrder.material_name}</Descriptions.Item>
+              <Descriptions.Item label="规格">{currentOrder.specification || '-'}</Descriptions.Item>
+              <Descriptions.Item label="计划数量">{(currentOrder.planned_qty || 0).toLocaleString()}</Descriptions.Item>
+              <Descriptions.Item label="完工数量">
+                <span style={{ color: '#52c41a' }}>{(currentOrder.finished_qty || 0).toLocaleString()}</span>
+              </Descriptions.Item>
+              <Descriptions.Item label="不良总数">
+                <span style={{ color: '#ff4d4f' }}>
+                  {Math.max(0, (currentOrder.planned_qty || 0) - (currentOrder.finished_qty || 0)).toLocaleString()}
+                </span>
+              </Descriptions.Item>
+              <Descriptions.Item label="合格率">
+                <span style={{ color: '#52c41a' }}>
+                  {(currentOrder.planned_qty || 0) > 0
+                    ? Math.min(100, (((currentOrder.finished_qty || 0) / (currentOrder.planned_qty || 0)) * 100)).toFixed(2)
+                    : '0.00'}%
+                </span>
+              </Descriptions.Item>
+              <Descriptions.Item label="计划开始">{formatDate(currentOrder.plan_start_time)}</Descriptions.Item>
+              <Descriptions.Item label="计划完成">{formatDate(currentOrder.plan_end_time)}</Descriptions.Item>
+              <Descriptions.Item label="创建时间">{formatDateTime(currentOrder.created_at)}</Descriptions.Item>
+              <Descriptions.Item label="创建人">{currentOrder.created_by || '-'}</Descriptions.Item>
+            </Descriptions>
 
             <Divider orientation="left" style={{ margin: '8px 0 16px' }}>
               <span style={{ fontWeight: 600 }}>报工单信息 ({reportOrders.length})</span>
@@ -795,42 +738,42 @@ export default function OrderManagement() {
                   const allScrapRate = allInputQty > 0 ? ((allScrapQty / allInputQty) * 100).toFixed(2) : '0.00'
 
                   return (
-                    <div style={{ padding: '8px 16px' }}>
-                      <Row gutter={[16, 12]} style={{ marginBottom: 12 }}>
-                        <Col span={4}>
-                          <div style={{ fontSize: 12, color: '#999' }}>总投入数量</div>
-                          <div style={{ fontSize: 16, fontWeight: 600 }}>{allInputQty.toLocaleString()}</div>
-                        </Col>
-                        <Col span={4}>
-                          <div style={{ fontSize: 12, color: '#999' }}>总产出数量</div>
-                          <div style={{ fontSize: 16, fontWeight: 600, color: '#52c41a' }}>{allOutputQty.toLocaleString()}</div>
-                        </Col>
-                        <Col span={4}>
-                          <div style={{ fontSize: 12, color: '#999' }}>总不良数量</div>
-                          <div style={{ fontSize: 16, fontWeight: 600, color: '#ff4d4f' }}>{allDefectQty.toLocaleString()}</div>
-                        </Col>
-                        <Col span={4}>
-                          <div style={{ fontSize: 12, color: '#999' }}>总不良率</div>
-                          <div style={{ fontSize: 16, fontWeight: 600, color: allDefectQty > 0 ? '#ff4d4f' : 'inherit' }}>{allDefectRate}%</div>
-                        </Col>
-                        <Col span={4}>
-                          <div style={{ fontSize: 12, color: '#999' }}>来料不良</div>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: allIncomingQty > 0 ? '#ff4d4f' : 'inherit' }}>
-                            {allIncomingQty.toLocaleString()}<span style={{ fontSize: 12, color: '#999', marginLeft: 4 }}>({allIncomingRate}%)</span>
-                          </div>
-                        </Col>
-                        <Col span={4}>
-                          <div style={{ fontSize: 12, color: '#999' }}>制程不良</div>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: allProcessQty > 0 ? '#ff4d4f' : 'inherit' }}>
-                            {allProcessQty.toLocaleString()}<span style={{ fontSize: 12, color: '#999', marginLeft: 4 }}>({allProcessRate}%)</span>
-                          </div>
-                        </Col>
-                        <Col span={4}>
-                          <div style={{ fontSize: 12, color: '#999' }}>检验报废</div>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: allScrapQty > 0 ? '#ff4d4f' : 'inherit' }}>
-                            {allScrapQty.toLocaleString()}<span style={{ fontSize: 12, color: '#999', marginLeft: 4 }}>({allScrapRate}%)</span>
-                          </div>
-                        </Col>
+                    <div style={{ padding: '8px 12px' }}>
+                      <Row style={{ marginBottom: 8, display: 'flex', flexWrap: 'nowrap', gap: 4 }}>
+                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: '#fafafa', borderRadius: 4 }}>
+                          <span style={{ fontSize: 11, color: '#999', marginRight: 4 }}>总投入</span>
+                          <span style={{ fontSize: 13, fontWeight: 600 }}>{allInputQty.toLocaleString()}</span>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: '#fafafa', borderRadius: 4 }}>
+                          <span style={{ fontSize: 11, color: '#999', marginRight: 4 }}>总产出</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#52c41a' }}>{allOutputQty.toLocaleString()}</span>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: '#fafafa', borderRadius: 4 }}>
+                          <span style={{ fontSize: 11, color: '#999', marginRight: 4 }}>总不良</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: '#ff4d4f' }}>{allDefectQty.toLocaleString()}</span>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: '#fafafa', borderRadius: 4 }}>
+                          <span style={{ fontSize: 11, color: '#999', marginRight: 4 }}>不良率</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: allDefectQty > 0 ? '#ff4d4f' : 'inherit' }}>{allDefectRate}%</span>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: '#fafafa', borderRadius: 4 }}>
+                          <span style={{ fontSize: 11, color: '#999', marginRight: 4 }}>来料不良</span>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: allIncomingQty > 0 ? '#ff4d4f' : 'inherit' }}>
+                            {allIncomingQty.toLocaleString()}<span style={{ fontSize: 10, color: '#999' }}>({allIncomingRate}%)</span>
+                          </span>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: '#fafafa', borderRadius: 4 }}>
+                          <span style={{ fontSize: 11, color: '#999', marginRight: 4 }}>制程不良</span>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: allProcessQty > 0 ? '#ff4d4f' : 'inherit' }}>
+                            {allProcessQty.toLocaleString()}<span style={{ fontSize: 10, color: '#999' }}>({allProcessRate}%)</span>
+                          </span>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: '#fafafa', borderRadius: 4 }}>
+                          <span style={{ fontSize: 11, color: '#999', marginRight: 4 }}>检验报废</span>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: allScrapQty > 0 ? '#ff4d4f' : 'inherit' }}>
+                            {allScrapQty.toLocaleString()}<span style={{ fontSize: 10, color: '#999' }}>({allScrapRate}%)</span>
+                          </span>
+                        </div>
                       </Row>
                       <Table
                         size="small"
