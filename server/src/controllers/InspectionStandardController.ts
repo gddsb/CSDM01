@@ -84,6 +84,7 @@ export const create = async (req: any, res: any) => {
     if (exists) return fail(res, '标准编号已存在')
     const record = await InspectionStandard.create({
       standard_no, standard_name, standard_type,
+      inspection_type: null,
       customer_code: customer_code || null,
       material_id: material_id || null,
       material_name: material_name || null,
@@ -129,6 +130,7 @@ export const update = async (req: any, res: any) => {
     const { standard_no, standard_name, standard_type, customer_code, material_id, material_name, version_no, effective_date, status, description, items } = req.body
     await record.update({
       standard_no, standard_name, standard_type,
+      inspection_type: null,
       customer_code: customer_code || null,
       material_id: material_id || null,
       material_name: material_name || null,
