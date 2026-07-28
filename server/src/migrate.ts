@@ -187,6 +187,14 @@ const migrations = [
       ['category', 'VARCHAR(50)'],
     ],
   },
+  // 检验标准项目子表：补齐 defect_level、inspection_types
+  {
+    table: 'quality_inspection_standard_item',
+    columns: [
+      ['defect_level', 'VARCHAR(20)'],
+      ['inspection_types', 'VARCHAR(200)'],
+    ],
+  },
   // 人员使用记录子表：新增 report_order_id（替代原 report_id/work_order_id/work_order_no）
   {
     table: 'production_manpower_record',
