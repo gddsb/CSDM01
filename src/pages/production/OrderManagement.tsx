@@ -593,23 +593,92 @@ export default function OrderManagement() {
       >
         {currentOrder && (
           <>
-            <Descriptions column={2} bordered size="small" style={{ marginBottom: 20 }}>
-              <Descriptions.Item label="订单编号">{currentOrder.order_no}</Descriptions.Item>
-              <Descriptions.Item label="状态"><Tag color={statusColorMap[currentOrder.status]}>{currentOrder.status}</Tag></Descriptions.Item>
-              <Descriptions.Item label="料号">{currentOrder.material_code}</Descriptions.Item>
-              <Descriptions.Item label="品名">{currentOrder.material_name}</Descriptions.Item>
-              <Descriptions.Item label="规格">{currentOrder.specification}</Descriptions.Item>
-              <Descriptions.Item label="菲林版本">{currentOrder.film_version}</Descriptions.Item>
-              <Descriptions.Item label="版本号">{formatVersionNo(currentOrder.version_no)}</Descriptions.Item>
-              <Descriptions.Item label="计划数量">{(currentOrder.planned_qty || 0).toLocaleString()}</Descriptions.Item>
-              <Descriptions.Item label="完工数量">{(currentOrder.finished_qty || 0).toLocaleString()}</Descriptions.Item>
-              <Descriptions.Item label="计划开始">{formatDate(currentOrder.plan_start_time)}</Descriptions.Item>
-              <Descriptions.Item label="计划完成">{formatDate(currentOrder.plan_end_time)}</Descriptions.Item>
-              <Descriptions.Item label="下发时间">{formatDateTime(currentOrder.release_time)}</Descriptions.Item>
-              <Descriptions.Item label="关闭时间">{formatDateTime(currentOrder.close_time)}</Descriptions.Item>
-              <Descriptions.Item label="创建人">{currentOrder.created_by || '-'}</Descriptions.Item>
-              <Descriptions.Item label="创建时间">{formatDateTime(currentOrder.created_at)}</Descriptions.Item>
-            </Descriptions>
+            <div style={{ marginBottom: 20, padding: 12, background: '#fafafa', borderRadius: 6 }}>
+              {/* 第一行：完工单号、订单编号、下发时间、工单状态 */}
+              <Row gutter={[12, 8]} style={{ marginBottom: 8 }}>
+                <Col span={6}>
+                  <div style={{ fontSize: 12, color: '#999' }}>完工单号</div>
+                  <div style={{ fontSize: 14, fontWeight: 500 }}>
+                    {currentOrder.finish_order_no || '-'}
+                  </div>
+                </Col>
+                <Col span={6}>
+                  <div style={{ fontSize: 12, color: '#999' }}>订单编号</div>
+                  <div style={{ fontSize: 14, fontWeight: 500 }}>{currentOrder.order_no}</div>
+                </Col>
+                <Col span={6}>
+                  <div style={{ fontSize: 12, color: '#999' }}>下发时间</div>
+                  <div style={{ fontSize: 14 }}>{formatDateTime(currentOrder.release_time)}</div>
+                </Col>
+                <Col span={6}>
+                  <div style={{ fontSize: 12, color: '#999' }}>工单状态</div>
+                  <Tag color={statusColorMap[currentOrder.status]}>{currentOrder.status}</Tag>
+                </Col>
+              </Row>
+              {/* 第二行：产品料号、产品名称、规格 */}
+              <Row gutter={[12, 8]} style={{ marginBottom: 8 }}>
+                <Col span={8}>
+                  <div style={{ fontSize: 12, color: '#999' }}>产品料号</div>
+                  <div style={{ fontSize: 14, fontWeight: 500 }}>{currentOrder.material_code}</div>
+                </Col>
+                <Col span={8}>
+                  <div style={{ fontSize: 12, color: '#999' }}>产品名称</div>
+                  <div style={{ fontSize: 14, fontWeight: 500 }}>{currentOrder.material_name}</div>
+                </Col>
+                <Col span={8}>
+                  <div style={{ fontSize: 12, color: '#999' }}>规格</div>
+                  <div style={{ fontSize: 14 }}>{currentOrder.specification || '-'}</div>
+                </Col>
+              </Row>
+              {/* 第三行：计划数量、完工数量、不良总数、合格率 */}
+              <Row gutter={[12, 8]} style={{ marginBottom: 8 }}>
+                <Col span={6}>
+                  <div style={{ fontSize: 12, color: '#999' }}>计划数量</div>
+                  <div style={{ fontSize: 14, fontWeight: 500 }}>
+                    {(currentOrder.planned_qty || 0).toLocaleString()}
+                  </div>
+                </Col>
+                <Col span={6}>
+                  <div style={{ fontSize: 12, color: '#999' }}>完工数量</div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: '#52c41a' }}>
+                    {(currentOrder.finished_qty || 0).toLocaleString()}
+                  </div>
+                </Col>
+                <Col span={6}>
+                  <div style={{ fontSize: 12, color: '#999' }}>不良总数</div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: '#ff4d4f' }}>
+                    {((currentOrder.planned_qty || 0) - (currentOrder.finished_qty || 0)).toLocaleString()}
+                  </div>
+                </Col>
+                <Col span={6}>
+                  <div style={{ fontSize: 12, color: '#999' }}>合格率</div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: '#52c41a' }}>
+                    {(currentOrder.planned_qty || 0) > 0
+                      ? (((currentOrder.finished_qty || 0) / (currentOrder.planned_qty || 0)) * 100).toFixed(2)
+                      : '0.00'}%
+                  </div>
+                </Col>
+              </Row>
+              {/* 第四行：计划开始、计划完成、创建时间、创建人 */}
+              <Row gutter={[12, 8]}>
+                <Col span={6}>
+                  <div style={{ fontSize: 12, color: '#999' }}>计划开始</div>
+                  <div style={{ fontSize: 14 }}>{formatDate(currentOrder.plan_start_time)}</div>
+                </Col>
+                <Col span={6}>
+                  <div style={{ fontSize: 12, color: '#999' }}>计划完成</div>
+                  <div style={{ fontSize: 14 }}>{formatDate(currentOrder.plan_end_time)}</div>
+                </Col>
+                <Col span={6}>
+                  <div style={{ fontSize: 12, color: '#999' }}>创建时间</div>
+                  <div style={{ fontSize: 14 }}>{formatDateTime(currentOrder.created_at)}</div>
+                </Col>
+                <Col span={6}>
+                  <div style={{ fontSize: 12, color: '#999' }}>创建人</div>
+                  <div style={{ fontSize: 14 }}>{currentOrder.created_by || '-'}</div>
+                </Col>
+              </Row>
+            </div>
 
             <Divider orientation="left" style={{ margin: '8px 0 16px' }}>
               <span style={{ fontWeight: 600 }}>报工单信息 ({reportOrders.length})</span>
@@ -633,6 +702,10 @@ export default function OrderManagement() {
                   const materials = detail.process_materials || []
                   const defects = detail.process_defects || []
 
+                  // 检验报废（process_id=null）单独统计
+                  const scrapDefects = defects.filter((d: any) => d.process_id == null)
+                  const allScrapQty = scrapDefects.reduce((s: number, d: any) => s + (Number(d.quantity) || 0), 0)
+
                   // 按工序顺序排列（按sort_order或原始顺序）
                   const sortedProcesses = [...processes].sort((a: any, b: any) =>
                     (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0)
@@ -652,13 +725,15 @@ export default function OrderManagement() {
                       .reduce((sum: number, m: any) => sum + (Number(m.quantity) || 0), 0)
 
                     const procDefects = defects.filter((d: any) => d.process_id === p.process_id)
-                    // 按分类汇总不良
-                    const categoryMap: Record<string, number> = {}
+                    // 按 defect_type 分类：来料不良、制程不良
+                    let incomingQty = 0   // 来料不良
+                    let processQty = 0    // 制程不良
                     let totalDefectQty = 0
                     procDefects.forEach((d: any) => {
-                      const category = d.defect_type?.category_name || '其他'
+                      const dt = d.defect_type?.defect_type || '其他'
                       const qty = Number(d.quantity) || 0
-                      categoryMap[category] = (categoryMap[category] || 0) + qty
+                      if (dt === '来料不良') incomingQty += qty
+                      else if (dt === '制程不良') processQty += qty
                       totalDefectQty += qty
                     })
 
@@ -685,51 +760,39 @@ export default function OrderManagement() {
                     }
 
                     const defectRate = inputQty > 0 ? ((totalDefectQty / inputQty) * 100).toFixed(2) : '0.00'
+                    const incomingRate = inputQty > 0 ? ((incomingQty / inputQty) * 100).toFixed(2) : '0.00'
+                    const processRate = inputQty > 0 ? ((processQty / inputQty) * 100).toFixed(2) : '0.00'
 
                     processStats.push({
                       ...p,
                       inputQty,
                       outputQty,
+                      incomingQty,
+                      processQty,
                       totalDefectQty,
                       defectRate,
-                      categoryMap,
+                      incomingRate,
+                      processRate,
                     })
 
                     prevOutputQty = outputQty
                   })
 
-                  // 汇总所有分类不良（报工单维度）
-                  const allCategoryMap: Record<string, number> = {}
+                  // 汇总数据（报工单维度）
                   let allInputQty = processStats[0]?.inputQty || 0
                   let allOutputQty = processStats.length > 0 ? processStats[processStats.length - 1].outputQty : 0
+                  let allIncomingQty = 0
+                  let allProcessQty = 0
                   let allDefectQty = 0
                   processStats.forEach((ps: any) => {
+                    allIncomingQty += ps.incomingQty
+                    allProcessQty += ps.processQty
                     allDefectQty += ps.totalDefectQty
-                    Object.entries(ps.categoryMap).forEach(([cat, qty]) => {
-                      allCategoryMap[cat] = (allCategoryMap[cat] || 0) + qty
-                    })
                   })
                   const allDefectRate = allInputQty > 0 ? ((allDefectQty / allInputQty) * 100).toFixed(2) : '0.00'
-
-                  const categoryColumns = Object.keys(allCategoryMap).map(cat => ({
-                    title: `${cat}数量`,
-                    dataIndex: ['categoryMap', cat],
-                    key: cat,
-                    width: 50,
-                    align: 'right',
-                    render: (v: any) => (v || 0).toLocaleString(),
-                  }))
-                  const categoryRateColumns = Object.keys(allCategoryMap).map(cat => ({
-                    title: `${cat}率`,
-                    key: `${cat}_rate`,
-                    width: 45,
-                    align: 'right',
-                    render: (_: any, record: any) => {
-                      const catQty = record.categoryMap?.[cat] || 0
-                      const rate = record.inputQty > 0 ? ((catQty / record.inputQty) * 100).toFixed(2) : '0.00'
-                      return <span style={{ color: catQty > 0 ? '#ff4d4f' : 'inherit' }}>{rate}%</span>
-                    },
-                  }))
+                  const allIncomingRate = allInputQty > 0 ? ((allIncomingQty / allInputQty) * 100).toFixed(2) : '0.00'
+                  const allProcessRate = allInputQty > 0 ? ((allProcessQty / allInputQty) * 100).toFixed(2) : '0.00'
+                  const allScrapRate = allInputQty > 0 ? ((allScrapQty / allInputQty) * 100).toFixed(2) : '0.00'
 
                   return (
                     <div style={{ padding: '8px 16px' }}>
@@ -750,33 +813,42 @@ export default function OrderManagement() {
                           <div style={{ fontSize: 12, color: '#999' }}>总不良率</div>
                           <div style={{ fontSize: 16, fontWeight: 600, color: allDefectQty > 0 ? '#ff4d4f' : 'inherit' }}>{allDefectRate}%</div>
                         </Col>
-                        {Object.entries(allCategoryMap).map(([cat, qty]) => (
-                          <Col span={4} key={cat}>
-                            <div style={{ fontSize: 12, color: '#999' }}>{cat}</div>
-                            <div style={{ fontSize: 14, fontWeight: 600, color: qty > 0 ? '#ff4d4f' : 'inherit' }}>
-                              {qty.toLocaleString()}
-                              <span style={{ fontSize: 12, color: '#999', marginLeft: 4 }}>
-                                ({allInputQty > 0 ? ((qty / allInputQty) * 100).toFixed(2) : '0.00'}%)
-                              </span>
-                            </div>
-                          </Col>
-                        ))}
+                        <Col span={4}>
+                          <div style={{ fontSize: 12, color: '#999' }}>来料不良</div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: allIncomingQty > 0 ? '#ff4d4f' : 'inherit' }}>
+                            {allIncomingQty.toLocaleString()}<span style={{ fontSize: 12, color: '#999', marginLeft: 4 }}>({allIncomingRate}%)</span>
+                          </div>
+                        </Col>
+                        <Col span={4}>
+                          <div style={{ fontSize: 12, color: '#999' }}>制程不良</div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: allProcessQty > 0 ? '#ff4d4f' : 'inherit' }}>
+                            {allProcessQty.toLocaleString()}<span style={{ fontSize: 12, color: '#999', marginLeft: 4 }}>({allProcessRate}%)</span>
+                          </div>
+                        </Col>
+                        <Col span={4}>
+                          <div style={{ fontSize: 12, color: '#999' }}>检验报废</div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: allScrapQty > 0 ? '#ff4d4f' : 'inherit' }}>
+                            {allScrapQty.toLocaleString()}<span style={{ fontSize: 12, color: '#999', marginLeft: 4 }}>({allScrapRate}%)</span>
+                          </div>
+                        </Col>
                       </Row>
                       <Table
                         size="small"
                         dataSource={processStats}
                         rowKey="process_id"
                         pagination={false}
-                        scroll={{ x: 500 + categoryColumns.length * 95 }}
+                        scroll={{ x: 820 }}
                         columns={[
                           { title: '工序编码', dataIndex: 'process_code', key: 'process_code', width: 60, fixed: 'left' },
                           { title: '工序名称', dataIndex: 'process_name', key: 'process_name', width: 70, fixed: 'left' },
                           { title: '投入数量', dataIndex: 'inputQty', key: 'inputQty', width: 50, align: 'right', render: (v: any) => (v || 0).toLocaleString() },
                           { title: '产出数量', dataIndex: 'outputQty', key: 'outputQty', width: 50, align: 'right', render: (v: any) => (v || 0).toLocaleString() },
-                          ...categoryColumns,
-                          ...categoryRateColumns,
-                          { title: '工序总不良', dataIndex: 'totalDefectQty', key: 'totalDefectQty', width: 50, align: 'right', render: (v: any) => <span style={{ color: v > 0 ? '#ff4d4f' : 'inherit' }}>{(v || 0).toLocaleString()}</span> },
-                          { title: '工序不良率', dataIndex: 'defectRate', key: 'defectRate', width: 50, align: 'right', render: (v: any) => <span>{v}%</span> },
+                          { title: '来料不良', dataIndex: 'incomingQty', key: 'incomingQty', width: 55, align: 'right', render: (v: any) => <span style={{ color: v > 0 ? '#ff4d4f' : 'inherit' }}>{(v || 0).toLocaleString()}</span> },
+                          { title: '来料不良率', dataIndex: 'incomingRate', key: 'incomingRate', width: 60, align: 'right', render: (v: any) => <span>{v}%</span> },
+                          { title: '制程不良', dataIndex: 'processQty', key: 'processQty', width: 55, align: 'right', render: (v: any) => <span style={{ color: v > 0 ? '#ff4d4f' : 'inherit' }}>{(v || 0).toLocaleString()}</span> },
+                          { title: '制程不良率', dataIndex: 'processRate', key: 'processRate', width: 60, align: 'right', render: (v: any) => <span>{v}%</span> },
+                          { title: '工序总不良', dataIndex: 'totalDefectQty', key: 'totalDefectQty', width: 55, align: 'right', render: (v: any) => <span style={{ color: v > 0 ? '#ff4d4f' : 'inherit' }}>{(v || 0).toLocaleString()}</span> },
+                          { title: '工序不良率', dataIndex: 'defectRate', key: 'defectRate', width: 55, align: 'right', render: (v: any) => <span>{v}%</span> },
                         ]}
                       />
                     </div>
