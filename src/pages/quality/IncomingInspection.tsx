@@ -97,12 +97,12 @@ export default function IncomingInspection() {
       title: '处理方式', dataIndex: 'handle_type', key: 'handle_type', width: 100,
       render: v => v ? <Tag color={handleColor[v] || 'default'}>{v}</Tag> : <Text type="secondary">-</Text>
     },
-    { title: '检验人', dataIndex: 'inspector_name', key: 'inspector_name', width: 100 },
-    { title: '检验时间', dataIndex: 'inspection_time', key: 'inspection_time', width: 160, render: formatDateTime },
     {
       title: '状态', dataIndex: 'status', key: 'status', width: 90,
       render: v => <Tag color={statusColor[v] || 'default'}>{v}</Tag>
     },
+    { title: '检验人', dataIndex: 'inspector_name', key: 'inspector_name', width: 100 },
+    { title: '检验时间', dataIndex: 'inspection_time', key: 'inspection_time', width: 160, render: formatDateTime },
     {
       title: '操作', key: 'action', fixed: 'right',
       render: (_, record) => (
