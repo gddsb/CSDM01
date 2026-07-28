@@ -715,14 +715,14 @@ export default function OrderManagement() {
                     title: `${cat}数量`,
                     dataIndex: ['categoryMap', cat],
                     key: cat,
-                    width: 100,
+                    width: 50,
                     align: 'right',
                     render: (v: any) => (v || 0).toLocaleString(),
                   }))
                   const categoryRateColumns = Object.keys(allCategoryMap).map(cat => ({
                     title: `${cat}率`,
                     key: `${cat}_rate`,
-                    width: 90,
+                    width: 45,
                     align: 'right',
                     render: (_: any, record: any) => {
                       const catQty = record.categoryMap?.[cat] || 0
@@ -767,16 +767,16 @@ export default function OrderManagement() {
                         dataSource={processStats}
                         rowKey="process_id"
                         pagination={false}
-                        scroll={{ x: 1000 + categoryColumns.length * 190 }}
+                        scroll={{ x: 500 + categoryColumns.length * 95 }}
                         columns={[
-                          { title: '工序编码', dataIndex: 'process_code', key: 'process_code', width: 120, fixed: 'left' },
-                          { title: '工序名称', dataIndex: 'process_name', key: 'process_name', width: 140, fixed: 'left' },
-                          { title: '投入数量', dataIndex: 'inputQty', key: 'inputQty', width: 100, align: 'right', render: (v: any) => (v || 0).toLocaleString() },
-                          { title: '产出数量', dataIndex: 'outputQty', key: 'outputQty', width: 100, align: 'right', render: (v: any) => (v || 0).toLocaleString() },
+                          { title: '工序编码', dataIndex: 'process_code', key: 'process_code', width: 60, fixed: 'left' },
+                          { title: '工序名称', dataIndex: 'process_name', key: 'process_name', width: 70, fixed: 'left' },
+                          { title: '投入数量', dataIndex: 'inputQty', key: 'inputQty', width: 50, align: 'right', render: (v: any) => (v || 0).toLocaleString() },
+                          { title: '产出数量', dataIndex: 'outputQty', key: 'outputQty', width: 50, align: 'right', render: (v: any) => (v || 0).toLocaleString() },
                           ...categoryColumns,
                           ...categoryRateColumns,
-                          { title: '工序总不良', dataIndex: 'totalDefectQty', key: 'totalDefectQty', width: 100, align: 'right', render: (v: any) => <span style={{ color: v > 0 ? '#ff4d4f' : 'inherit' }}>{(v || 0).toLocaleString()}</span> },
-                          { title: '工序不良率', dataIndex: 'defectRate', key: 'defectRate', width: 100, align: 'right', render: (v: any) => <span>{v}%</span> },
+                          { title: '工序总不良', dataIndex: 'totalDefectQty', key: 'totalDefectQty', width: 50, align: 'right', render: (v: any) => <span style={{ color: v > 0 ? '#ff4d4f' : 'inherit' }}>{(v || 0).toLocaleString()}</span> },
+                          { title: '工序不良率', dataIndex: 'defectRate', key: 'defectRate', width: 50, align: 'right', render: (v: any) => <span>{v}%</span> },
                         ]}
                       />
                     </div>

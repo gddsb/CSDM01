@@ -59,6 +59,7 @@ async function regenerateReportOrders() {
   const processDefects = []
   const processExceptions = []
   const processMaterials = []
+  const manpowerRecords = []
 
   const scrapDefectTypes = defectTypes.filter(d => d.defect_type === '检验报废')
   const normalDefectTypes = defectTypes.filter(d => d.defect_type !== '检验报废')
@@ -81,7 +82,8 @@ async function regenerateReportOrders() {
 
       const reportDate = randomDate(mayStart, julEnd)
       const reportTime = new Date(reportDate.getTime() + r * 3600000 * 2)
-      const finishTime = new Date(reportTime.getTime() + rand(2, 8) * 3600000)
+      const workHours = rand(2, 10) // 确保至少2小时，完工时间大于报工时间
+      const finishTime = new Date(reportTime.getTime() + workHours * 3600000)
 
       const curRP = []
       const curPD = []
@@ -218,29 +220,62 @@ async function regenerateReportOrders() {
       const firstProcessNetInput = Math.max(0, firstProcessInput - firstProcessReturn)
       const reportQty = Math.max(0, firstProcessNetInput - totalProcessDefectQty - totalScrapQty)
 
-      // 异常工时
-      if (Math.random() < 0.2 && lineDevices.length > 0) {
-        const excTypes = ['设备故障', '物料短缺', '质量异常', '人员短缺', '工艺问题']
-        const device = pick(lineDevices)
-        const confirmer = pick(maintUsers.length > 0 ? maintUsers : pmUsers)
+      // 异常工时：不少于2条，其中1条必须是"换型换线"
+      const excTypes = ['设备故障', '物料短缺', '质量异常', '人员短缺', '工艺问题', '换型换线']
+      const confirmer = pick(maintUsers.length > 0 ? maintUsers : pmUsers)
+      const excCount = rand(2, 4)
+      for (let e = 0; e < excCount; e++) {
+        const isFirst = e === 0
+        const excType = isFirst ? '换型换线' : pick(excTypes)
+        const device = lineDevices.length > 0 ? pick(lineDevices) : null
+        const excStartOffset = rand(30, 200)
+        const excDuration = rand(30, 180)
         curPE.push({
           report_order_id: roId,
-          exception_type: pick(excTypes),
-          device_id: device.device_id,
-          device_code: device.device_code,
-          device_name: device.device_name,
+          exception_type: excType,
+          device_id: device?.device_id || null,
+          device_code: device?.device_code || '',
+          device_name: device?.device_name || '',
           stop_type: pick(['计划停机', '非计划停机', '故障停机']),
           confirm_user: confirmer.username,
           confirm_user_name: confirmer.real_name || confirmer.username,
-          start_time: new Date(reportTime.getTime() + rand(30, 120) * 60000),
-          end_time: new Date(reportTime.getTime() + rand(120, 300) * 60000),
-          duration: rand(30, 180) / 60,
-          description: '模拟生成异常工时记录',
+          start_time: new Date(reportTime.getTime() + excStartOffset * 60000),
+          end_time: new Date(reportTime.getTime() + (excStartOffset + excDuration) * 60000),
+          duration: excDuration / 60,
+          description: `模拟生成${excType}异常工时记录`,
           record_user: reportUser.username,
           record_user_name: reportUser.real_name || reportUser.username,
           created_at: reportTime,
         })
       }
+
+      // 人员工时记录：每条报工单1条
+      const shiftOptions = ['早班', '中班', '晚班']
+      const selectedShift = pick(shiftOptions)
+      const workDurationMinutes = workHours * 60
+      const skilledCount = rand(1, 3)
+      const generalCount = rand(1, 5)
+      const totalPeople = skilledCount + generalCount
+      const totalManHours = Number(((totalPeople * workDurationMinutes) / 60).toFixed(2))
+
+      manpowerRecords.push({
+        report_order_id: roId,
+        record_date: reportTime,
+        shift: selectedShift,
+        start_time: reportTime,
+        end_time: finishTime,
+        hours: workHours,
+        skilled_count: skilledCount,
+        general_count: generalCount,
+        labor_count: 0,
+        other_count: 0,
+        total_people: totalPeople,
+        man_hours: totalManHours,
+        remarks: '模拟生成人员工时记录',
+        record_user: reportUser.username,
+        record_user_name: reportUser.real_name || reportUser.username,
+        created_at: reportTime,
+      })
 
       reportOrders.push({
         report_order_id: roId,
@@ -297,6 +332,10 @@ async function regenerateReportOrders() {
   if (processMaterials.length > 0) {
     await ProcessMaterial.bulkCreate(processMaterials)
     console.log('  ✅ 工序物料:', processMaterials.length, '条')
+  }
+  if (manpowerRecords.length > 0) {
+    await ManpowerRecord.bulkCreate(manpowerRecords)
+    console.log('  ✅ 人员工时:', manpowerRecords.length, '条')
   }
 
   // 同步订单状态
