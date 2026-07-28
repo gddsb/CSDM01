@@ -118,10 +118,13 @@ export default function MicrobeInspection() {
       if (res.success !== false && res.data) {
         setCurrent(res.data)
         const items = res.data.items || []
-        setDetailItems(items.map((it: any) => ({
-          ...it,
-          judge: it.result === 1 ? '合格' : it.result === 0 ? '不合格' : '待检'
-        })))
+        setDetailItems(items.map((it: any) => {
+          const r = it.result
+          let judge = '待检'
+          if (r === 1 || r === '1' || r === '合格') judge = '合格'
+          else if (r === 0 || r === '0' || r === '不合格') judge = '不合格'
+          return { ...it, judge }
+        }))
       }
     } catch (e) {
       // ignore
