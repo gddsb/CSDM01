@@ -270,8 +270,8 @@ export default function OrderManagement() {
         setLoadingDetails(prev => ({ ...prev, [ro.report_order_id]: true }))
         try {
           const detailRes = await api.get(`/production/report-orders/${ro.report_order_id}`)
-          if (detailRes) {
-            setReportOrderDetails(prev => ({ ...prev, [ro.report_order_id]: detailRes }))
+          if (detailRes && detailRes.data) {
+            setReportOrderDetails(prev => ({ ...prev, [ro.report_order_id]: detailRes.data }))
           }
         } catch (e) {
           // ignore
