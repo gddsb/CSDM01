@@ -224,84 +224,169 @@ async function generateReportOrders() {
   }
 }
 
+function parseToleranceRange(stdValue) {
+  if (!stdValue) return null
+  const m = stdValue.match(/^([\d.]+)\s*±\s*([\d.]+)$/)
+  if (m) return { nominal: parseFloat(m[1]), tol: parseFloat(m[2]), type: 'plusminus' }
+  const m2 = stdValue.match(/^≥\s*([\d.]+)$/)
+  if (m2) return { min: parseFloat(m2[1]), type: 'min' }
+  const m3 = stdValue.match(/^≤\s*([\d.]+)$/)
+  if (m3) return { max: parseFloat(m3[1]), type: 'max' }
+  const m4 = stdValue.match(/^φ?([\d.]+)\s*[x×]\s*([\d.]+)$/i)
+  if (m4) return { nominal: parseFloat(m4[1]), type: 'single' }
+  const m5 = stdValue.match(/^([\d.]+)$/)
+  if (m5) return { nominal: parseFloat(m5[1]), type: 'single' }
+  return null
+}
+
+function generateActualValueAndResult(stdSpec) {
+  if (!stdSpec) {
+    const pass = Math.random() < 0.92
+    return { actual: pass ? '符合' : '不符合', result: pass ? 1 : 0 }
+  }
+  const pass = Math.random() < 0.92
+  let actual, result
+  if (stdSpec.type === 'plusminus') {
+    const { nominal, tol } = stdSpec
+    if (pass) {
+      actual = +(nominal + (Math.random() * 2 - 1) * tol * 0.8).toFixed(3)
+    } else {
+      actual = +(nominal + (Math.random() < 0.5 ? 1 : -1) * (tol * 1.1 + Math.random() * 0.02)).toFixed(3)
+    }
+    result = Math.abs(actual - nominal) <= tol ? 1 : 0
+  } else if (stdSpec.type === 'min') {
+    if (pass) {
+      actual = +(stdSpec.min + Math.random() * stdSpec.min * 0.2).toFixed(2)
+    } else {
+      actual = +(stdSpec.min * 0.9 - Math.random() * stdSpec.min * 0.1).toFixed(2)
+    }
+    result = actual >= stdSpec.min ? 1 : 0
+  } else if (stdSpec.type === 'max') {
+    if (pass) {
+      actual = +(stdSpec.max * 0.8 + Math.random() * stdSpec.max * 0.15).toFixed(2)
+    } else {
+      actual = +(stdSpec.max * 1.05 + Math.random() * stdSpec.max * 0.1).toFixed(2)
+    }
+    result = actual <= stdSpec.max ? 1 : 0
+  } else {
+    if (pass) {
+      actual = +(stdSpec.nominal * (0.98 + Math.random() * 0.04)).toFixed(3)
+    } else {
+      actual = +(stdSpec.nominal * (Math.random() < 0.5 ? 0.94 : 1.06)).toFixed(3)
+    }
+    result = Math.abs(actual - stdSpec.nominal) / stdSpec.nominal <= 0.03 ? 1 : 0
+  }
+  return { actual: String(actual), result }
+}
+
 async function generateIncomingInspections() {
   console.log('\n=== 3. 生成来料检验记录 ===')
   const existing = await IncomingInspection.count()
   if (existing > 0) { console.log('来料检验已存在:', existing, '条，跳过'); return }
 
   const suppliers = await Supplier.findAll({ raw: true })
-  const materials = await Material.findAll({ raw: true })
+  const allMaterials = await Material.findAll({ raw: true })
+  const materials = allMaterials.filter(m => {
+    const code = (m.material_code || '').toUpperCase()
+    return code.startsWith('T') || code.startsWith('B') || code.startsWith('P')
+  })
+  console.log('  筛选T/B/P开头料品:', materials.length, '个（总数:', allMaterials.length, '）')
+
   const users = await User.findAll({ raw: true })
   const qcUsers = users.filter(u => u.role_id === 4 || u.username === 'qc')
   const qmUsers = users.filter(u => u.role_id === 3 || u.username === 'qm')
 
+  const itemTemplates = [
+    { item_name: '厚度', category: '尺寸', standard_value: '0.23±0.02', unit: 'mm' },
+    { item_name: '宽度', category: '尺寸', standard_value: '802±1.0', unit: 'mm' },
+    { item_name: '高度', category: '尺寸', standard_value: '851±1.0', unit: 'mm' },
+    { item_name: '拉伸强度', category: '性能', standard_value: '≥220', unit: 'MPa' },
+    { item_name: '涂层附着力', category: '理化', standard_value: '≥4B', unit: '级' },
+    { item_name: '外观检查', category: '外观', standard_value: '无划痕、无变形、无锈迹', unit: '' },
+    { item_name: '印刷质量', category: '外观', standard_value: '图案清晰完整、颜色均匀', unit: '' },
+  ]
+
   const inspections = []
   const items = []
+  const TARGET_COUNT = 30
 
   const mayStart = new Date(2026, 4, 1)
   const julEnd = new Date(2026, 6, 31)
   let inspId = 1
 
-  for (const supplier of suppliers) {
-    const count = rand(3, 8)
-    for (let i = 0; i < count; i++) {
-      const mat = pick(materials)
-      const inspDate = randomDate(mayStart, julEnd)
-      const inspector = pick(qcUsers)
-      const reviewer = pick(qmUsers)
-      const result = Math.random() < 0.85 ? '合格' : '不合格'
+  while (inspId <= TARGET_COUNT) {
+    const supplier = pick(suppliers)
+    const mat = pick(materials)
+    const inspDate = randomDate(mayStart, julEnd)
+    const inspector = pick(qcUsers)
+    const reviewer = pick(qmUsers)
 
-      const inspNo = 'LL' + inspDate.getFullYear().toString().slice(2) +
-        pad(inspDate.getMonth() + 1) + pad(inspDate.getDate()) + pad(inspId, 4)
+    const inspNo = 'LL' + inspDate.getFullYear().toString().slice(2) +
+      pad(inspDate.getMonth() + 1) + pad(inspDate.getDate()) + pad(inspId, 4)
 
-      inspections.push({
+    const itemResults = []
+    const selectedItems = []
+    const numItems = rand(4, 6)
+    const shuffled = [...itemTemplates].sort(() => Math.random() - 0.5)
+    for (let j = 0; j < Math.min(numItems, shuffled.length); j++) {
+      const tpl = shuffled[j]
+      const stdSpec = parseToleranceRange(tpl.standard_value)
+      const { actual, result } = generateActualValueAndResult(stdSpec)
+      itemResults.push(result)
+      selectedItems.push({
         inspection_id: inspId,
-        inspection_no: inspNo,
-        supplier_id: supplier.supplier_id,
-        supplier_name: supplier.supplier_name,
-        supplier_code: supplier.supplier_code,
-        material_id: mat.material_id,
-        material_code: mat.material_code,
-        material_name: mat.material_name,
-        specification: mat.specification || '',
-        supplier_batch_no: 'B' + pad(rand(1000, 9999)),
-        internal_batch_no: 'NB' + pad(rand(10000, 99999)),
-        quantity: rand(100, 5000),
-        arrival_date: new Date(inspDate.getTime() - 86400000),
+        item_name: tpl.item_name,
+        category: tpl.category,
+        standard_value: tpl.standard_value,
+        actual_value: actual,
+        unit: tpl.unit,
         result: result,
-        handle_type: result === '合格' ? '入库' : '退货',
-        handle_reason: result === '合格' ? '' : '检验不合格，作退货处理',
-        trigger_type: '手工',
-        status: 3,
+        sort_order: j,
         inspector_id: inspector.user_id,
         inspector_name: inspector.real_name || inspector.username,
-        reviewer_id: reviewer.user_id,
-        reviewer_name: reviewer.real_name || reviewer.username,
         inspection_time: inspDate,
-        review_time: new Date(inspDate.getTime() + 3600000),
-        remarks: '模拟生成来料检验记录',
+        remarks: '',
         created_at: inspDate,
         updated_at: inspDate
       })
-
-      const itemCount = rand(3, 5)
-      for (let j = 0; j < itemCount; j++) {
-        const itemResult = Math.random() < 0.9 ? '合格' : '不合格'
-        items.push({
-          inspection_id: inspId,
-          item_name: ['外观', '尺寸', '材质', '重量', '颜色', '包装', '标识'][j % 7],
-          standard_value: '符合标准',
-          actual_value: itemResult === '合格' ? '符合' : '不符合',
-          result: itemResult,
-          remark: '',
-          sort_order: j,
-          created_at: inspDate,
-          updated_at: inspDate
-        })
-      }
-
-      inspId++
     }
+
+    const allPass = itemResults.every(r => r === 1)
+    const result = allPass ? '合格' : '不合格'
+
+    inspections.push({
+      inspection_id: inspId,
+      inspection_no: inspNo,
+      supplier_id: supplier.supplier_id,
+      supplier_name: supplier.supplier_name,
+      supplier_code: supplier.supplier_code,
+      material_id: mat.material_id,
+      material_code: mat.material_code,
+      material_name: mat.material_name,
+      specification: mat.specification || '',
+      supplier_batch_no: 'B' + pad(rand(1000, 9999)),
+      internal_batch_no: 'NB' + pad(rand(10000, 99999)),
+      quantity: rand(100, 5000),
+      arrival_date: new Date(inspDate.getTime() - 86400000),
+      result: result,
+      handle_type: result === '合格' ? '入库' : '退货',
+      handle_reason: result === '合格' ? '' : '检验不合格，作退货处理',
+      trigger_type: '手工',
+      status: 3,
+      inspector_id: inspector.user_id,
+      inspector_name: inspector.real_name || inspector.username,
+      reviewer_id: reviewer.user_id,
+      reviewer_name: reviewer.real_name || reviewer.username,
+      inspection_time: inspDate,
+      review_time: new Date(inspDate.getTime() + 3600000),
+      remarks: '模拟生成来料检验记录',
+      created_at: inspDate,
+      updated_at: inspDate
+    })
+
+    for (const it of selectedItems) items.push(it)
+
+    inspId++
   }
 
   await IncomingInspection.bulkCreate(inspections)
