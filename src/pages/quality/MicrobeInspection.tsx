@@ -181,79 +181,67 @@ export default function MicrobeInspection() {
     },
   ]
 
+  const filters = useMemo(() => [
+    {
+      type: 'input' as const,
+      placeholder: '检验编号',
+      icon: <SearchOutlined />,
+      value: inspectionNo,
+      onChange: (e: any) => setInspectionNo(e?.target?.value !== undefined ? e.target.value : e),
+      col: { span: 4 },
+    },
+    {
+      type: 'select' as const,
+      placeholder: '检验类型',
+      options: INSPECTION_TYPES,
+      value: inspectionType,
+      onChange: setInspectionType,
+      col: { span: 3 },
+    },
+    {
+      type: 'select' as const,
+      placeholder: '检验对象',
+      options: OBJECT_TYPES,
+      value: objectType,
+      onChange: setObjectType,
+      col: { span: 3 },
+    },
+    {
+      type: 'select' as const,
+      placeholder: '检验结果',
+      options: RESULT_OPTIONS,
+      value: resultFilter,
+      onChange: setResultFilter,
+      col: { span: 3 },
+    },
+    {
+      type: 'select' as const,
+      placeholder: '状态',
+      options: STATUS_OPTIONS,
+      value: statusFilter,
+      onChange: setStatusFilter,
+      col: { span: 3 },
+    },
+    {
+      type: 'rangepicker' as const,
+      value: dateRange,
+      onChange: setDateRange,
+      col: { span: 5 },
+    },
+  ], [inspectionNo, inspectionType, objectType, resultFilter, statusFilter, dateRange])
+
   return (
     <>
       <ThreeSectionPage
         title="微生物检验"
         breadcrumbs="质量管理 / 微生物检验"
         stats={stats}
-        filters={[]}
+        filters={filters}
+        onSearch={fetchData}
+        onReset={handleReset}
         actions={<ActionButtons />}
         table={
           <div>
-            <Row gutter={[12, 8]} style={{ marginBottom: 12 }}>
-              <Col span={4}>
-                <Input
-                  placeholder="检验编号"
-                  allowClear
-                  value={inspectionNo}
-                  onChange={e => setInspectionNo(e.target.value)}
-                />
-              </Col>
-              <Col span={3}>
-                <Select
-                  placeholder="检验类型"
-                  allowClear
-                  style={{ width: '100%' }}
-                  options={INSPECTION_TYPES}
-                  value={inspectionType}
-                  onChange={setInspectionType}
-                />
-              </Col>
-              <Col span={3}>
-                <Select
-                  placeholder="检验对象"
-                  allowClear
-                  style={{ width: '100%' }}
-                  options={OBJECT_TYPES}
-                  value={objectType}
-                  onChange={setObjectType}
-                />
-              </Col>
-              <Col span={3}>
-                <Select
-                  placeholder="检验结果"
-                  allowClear
-                  style={{ width: '100%' }}
-                  options={RESULT_OPTIONS}
-                  value={resultFilter}
-                  onChange={setResultFilter}
-                />
-              </Col>
-              <Col span={3}>
-                <Select
-                  placeholder="状态"
-                  allowClear
-                  style={{ width: '100%' }}
-                  options={STATUS_OPTIONS}
-                  value={statusFilter}
-                  onChange={setStatusFilter}
-                />
-              </Col>
-              <Col span={5}>
-                <RangePicker
-                  style={{ width: '100%' }}
-                  value={dateRange}
-                  onChange={setDateRange}
-                />
-              </Col>
-              <Col span={3}>
-                <Space>
-                  <Button type="primary" icon={<SearchOutlined />} onClick={fetchData}>查询</Button>
-                  <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
-                </Space>
-              </Col>
-            </Row>
             <Alert
               type="info"
               showIcon
