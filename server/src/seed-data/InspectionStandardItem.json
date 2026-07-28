@@ -8,8 +8,10 @@
     "sample_rule": "全检",
     "standard_value": "图案清晰、完整、位置正确，无明显色差",
     "unit": "",
+    "defect_level": "C类次要缺陷",
     "sort_order": 1,
-    "defect_level": "C类次要缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 2,
@@ -20,8 +22,10 @@
     "sample_rule": "全检",
     "standard_value": "无明显划痕、凹坑、变形",
     "unit": "",
+    "defect_level": "C类次要缺陷",
     "sort_order": 2,
-    "defect_level": "C类次要缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 3,
@@ -32,8 +36,10 @@
     "sample_rule": "全检",
     "standard_value": "焊缝均匀光滑，无虚焊、漏焊、气孔",
     "unit": "",
+    "defect_level": "C类次要缺陷",
     "sort_order": 3,
-    "defect_level": "C类次要缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 4,
@@ -44,8 +50,10 @@
     "sample_rule": "每2小时抽5件",
     "standard_value": "φ99±0.2",
     "unit": "mm",
+    "defect_level": "B类严重缺陷",
     "sort_order": 4,
-    "defect_level": "B类严重缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 5,
@@ -56,8 +64,10 @@
     "sample_rule": "每2小时抽5件",
     "standard_value": "125±0.3",
     "unit": "mm",
+    "defect_level": "B类严重缺陷",
     "sort_order": 5,
-    "defect_level": "B类严重缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 6,
@@ -68,8 +78,10 @@
     "sample_rule": "每2小时抽5件",
     "standard_value": "2.8±0.2",
     "unit": "mm",
+    "defect_level": "B类严重缺陷",
     "sort_order": 6,
-    "defect_level": "B类严重缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 7,
@@ -80,8 +92,10 @@
     "sample_rule": "每批次抽3件",
     "standard_value": "无泄漏，压力衰减≤0.05MPa/30s",
     "unit": "MPa",
+    "defect_level": "A类致命缺陷",
     "sort_order": 7,
-    "defect_level": "A类致命缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 8,
@@ -92,8 +106,10 @@
     "sample_rule": "每批次抽3件",
     "standard_value": "涂层无脱落，等级≥4B",
     "unit": "",
+    "defect_level": "B类严重缺陷",
     "sort_order": 8,
-    "defect_level": "B类严重缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 9,
@@ -104,8 +120,10 @@
     "sample_rule": "每小时抽5件",
     "standard_value": "套印偏差≤0.15mm",
     "unit": "mm",
+    "defect_level": "C类次要缺陷",
     "sort_order": 1,
-    "defect_level": "C类次要缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 10,
@@ -116,8 +134,10 @@
     "sample_rule": "每小时抽5件",
     "standard_value": "覆膜平整、无气泡、无起皱",
     "unit": "",
+    "defect_level": "C类次要缺陷",
     "sort_order": 2,
-    "defect_level": "C类次要缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 11,
@@ -128,8 +148,10 @@
     "sample_rule": "每1小时抽5件",
     "standard_value": "125±0.3",
     "unit": "mm",
+    "defect_level": "B类严重缺陷",
     "sort_order": 3,
-    "defect_level": "B类严重缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 12,
@@ -140,8 +162,10 @@
     "sample_rule": "每1小时抽5件",
     "standard_value": "φ97.5±0.15",
     "unit": "mm",
+    "defect_level": "B类严重缺陷",
     "sort_order": 4,
-    "defect_level": "B类严重缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 13,
@@ -152,8 +176,10 @@
     "sample_rule": "每批次抽3件",
     "standard_value": "罐体抗拉强度≥220MPa",
     "unit": "MPa",
+    "defect_level": "A类致命缺陷",
     "sort_order": 5,
-    "defect_level": "A类致命缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 14,
@@ -164,8 +190,10 @@
     "sample_rule": "每2小时抽3件",
     "standard_value": "0.1MPa压力下保持1分钟无泄漏",
     "unit": "MPa",
+    "defect_level": "A类致命缺陷",
     "sort_order": 6,
-    "defect_level": "A类致命缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 15,
@@ -176,8 +204,10 @@
     "sample_rule": "全检",
     "standard_value": "罐体光洁、无划痕、无变形、无锈迹",
     "unit": "",
+    "defect_level": "C类次要缺陷",
     "sort_order": 1,
-    "defect_level": "C类次要缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 16,
@@ -188,8 +218,10 @@
     "sample_rule": "全检",
     "standard_value": "图案清晰完整、颜色均匀、无色差",
     "unit": "",
+    "defect_level": "C类次要缺陷",
     "sort_order": 2,
-    "defect_level": "C类次要缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 17,
@@ -200,8 +232,10 @@
     "sample_rule": "每批次抽10件",
     "standard_value": "φ99±0.2",
     "unit": "mm",
+    "defect_level": "B类严重缺陷",
     "sort_order": 3,
-    "defect_level": "B类严重缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 18,
@@ -212,8 +246,10 @@
     "sample_rule": "每批次抽10件",
     "standard_value": "125±0.3",
     "unit": "mm",
+    "defect_level": "B类严重缺陷",
     "sort_order": 4,
-    "defect_level": "B类严重缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 19,
@@ -224,8 +260,10 @@
     "sample_rule": "每批次抽10件",
     "standard_value": "0.23±0.02",
     "unit": "mm",
+    "defect_level": "B类严重缺陷",
     "sort_order": 5,
-    "defect_level": "B类严重缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 20,
@@ -236,8 +274,10 @@
     "sample_rule": "全检",
     "standard_value": "绝对压力≤5KPa，保压30秒泄漏率≤0.5KPa",
     "unit": "KPa",
+    "defect_level": "A类致命缺陷",
     "sort_order": 6,
-    "defect_level": "A类致命缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 21,
@@ -248,8 +288,10 @@
     "sample_rule": "每批次抽3件",
     "standard_value": "从1.2m高度跌落至水泥地面，罐体无破损、无泄漏",
     "unit": "m",
+    "defect_level": "A类致命缺陷",
     "sort_order": 7,
-    "defect_level": "A类致命缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 22,
@@ -260,8 +302,10 @@
     "sample_rule": "每批次抽3件",
     "standard_value": "涂层连续完整，针孔数≤3个/m²",
     "unit": "个/m²",
+    "defect_level": "B类严重缺陷",
     "sort_order": 8,
-    "defect_level": "B类严重缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 23,
@@ -272,8 +316,10 @@
     "sample_rule": "每批次抽1件",
     "standard_value": "铅≤0.5mg/kg，镉≤0.05mg/kg",
     "unit": "mg/kg",
+    "defect_level": "B类严重缺陷",
     "sort_order": 9,
-    "defect_level": "B类严重缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 24,
@@ -284,8 +330,10 @@
     "sample_rule": "每批次抽1件",
     "standard_value": "≤100CFU/g",
     "unit": "CFU/g",
+    "defect_level": "A类致命缺陷",
     "sort_order": 10,
-    "defect_level": "A类致命缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   },
   {
     "item_id": 25,
@@ -296,7 +344,9 @@
     "sample_rule": "每批次抽1件",
     "standard_value": "不得检出",
     "unit": "",
+    "defect_level": "A类致命缺陷",
     "sort_order": 11,
-    "defect_level": "A类致命缺陷"
+    "created_at": "2026-07-28T12:35:17.000Z",
+    "updated_at": "2026-07-28T12:35:17.000Z"
   }
 ]

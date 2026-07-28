@@ -6,20 +6,19 @@
     "config_type": "string",
     "config_group": "system",
     "config_desc": "系统名称",
-    "updated_by": null,
-    "createdAt": "2026-07-09 14:53:49.497 +00:00",
-    "updatedAt": "2026-07-09 14:53:49.497 +00:00"
+    "updated_by": "admin",
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-20T22:15:17.000Z"
   },
   {
     "config_id": 2,
     "config_key": "system_version",
-    "config_value": "V1.0.1.722",
+    "config_value": "V1.0.1.1",
     "config_type": "string",
     "config_group": "system",
     "config_desc": "系统版本（只读）",
-    "updated_by": null,
-    "createdAt": "2026-07-09 14:53:49.508 +00:00",
-    "updatedAt": "2026-07-09 14:53:49.508 +00:00"
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-09T06:53:49.000Z"
   },
   {
     "config_id": 3,
@@ -28,9 +27,9 @@
     "config_type": "string",
     "config_group": "system",
     "config_desc": "公司名称",
-    "updated_by": null,
-    "createdAt": "2026-07-09 14:53:49.519 +00:00",
-    "updatedAt": "2026-07-09 14:53:49.519 +00:00"
+    "updated_by": "admin",
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-20T22:15:17.000Z"
   },
   {
     "config_id": 4,
@@ -39,9 +38,9 @@
     "config_type": "string",
     "config_group": "system",
     "config_desc": "联系电话",
-    "updated_by": null,
-    "createdAt": "2026-07-09 14:53:49.526 +00:00",
-    "updatedAt": "2026-07-09 14:53:49.526 +00:00"
+    "updated_by": "admin",
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-20T22:15:17.000Z"
   },
   {
     "config_id": 5,
@@ -50,9 +49,9 @@
     "config_type": "string",
     "config_group": "system",
     "config_desc": "默认产线",
-    "updated_by": null,
-    "createdAt": "2026-07-09 14:53:49.532 +00:00",
-    "updatedAt": "2026-07-09 14:53:49.532 +00:00"
+    "updated_by": "admin",
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-20T22:15:17.000Z"
   },
   {
     "config_id": 6,
@@ -61,9 +60,9 @@
     "config_type": "string",
     "config_group": "system",
     "config_desc": "标准工时",
-    "updated_by": null,
-    "createdAt": "2026-07-09 14:53:49.538 +00:00",
-    "updatedAt": "2026-07-09 14:53:49.538 +00:00"
+    "updated_by": "admin",
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-20T22:15:17.000Z"
   },
   {
     "config_id": 7,
@@ -72,9 +71,9 @@
     "config_type": "string",
     "config_group": "system",
     "config_desc": "班次设置（默认白班）",
-    "updated_by": null,
-    "createdAt": "2026-07-09 14:53:49.549 +00:00",
-    "updatedAt": "2026-07-09 14:53:49.549 +00:00"
+    "updated_by": "admin",
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-20T22:15:17.000Z"
   },
   {
     "config_id": 8,
@@ -83,9 +82,9 @@
     "config_type": "string",
     "config_group": "system",
     "config_desc": "默认检验标准",
-    "updated_by": null,
-    "createdAt": "2026-07-09 14:53:49.556 +00:00",
-    "updatedAt": "2026-07-09 14:53:49.556 +00:00"
+    "updated_by": "admin",
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-20T22:15:17.000Z"
   },
   {
     "config_id": 9,
@@ -94,9 +93,9 @@
     "config_type": "string",
     "config_group": "system",
     "config_desc": "不良率预警阈值(%)",
-    "updated_by": null,
-    "createdAt": "2026-07-09 14:53:49.563 +00:00",
-    "updatedAt": "2026-07-09 14:53:49.563 +00:00"
+    "updated_by": "admin",
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-20T22:15:17.000Z"
   },
   {
     "config_id": 10,
@@ -105,9 +104,9 @@
     "config_type": "string",
     "config_group": "system",
     "config_desc": "微生物检测周期(天)",
-    "updated_by": null,
-    "createdAt": "2026-07-09 14:53:49.571 +00:00",
-    "updatedAt": "2026-07-09 14:53:49.571 +00:00"
+    "updated_by": "admin",
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-20T22:15:17.000Z"
   },
   {
     "config_id": 11,
@@ -116,9 +115,9 @@
     "config_type": "string",
     "config_group": "system",
     "config_desc": "设备故障报警",
-    "updated_by": null,
-    "createdAt": "2026-07-09 14:53:49.578 +00:00",
-    "updatedAt": "2026-07-09 14:53:49.578 +00:00"
+    "updated_by": "admin",
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-20T22:15:17.000Z"
   },
   {
     "config_id": 12,
@@ -127,19 +126,19 @@
     "config_type": "string",
     "config_group": "system",
     "config_desc": "质量异常报警",
-    "updated_by": null,
-    "createdAt": "2026-07-09 14:53:49.584 +00:00",
-    "updatedAt": "2026-07-09 14:53:49.584 +00:00"
+    "updated_by": "admin",
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-20T22:15:17.000Z"
   },
   {
     "config_id": 13,
     "config_key": "stock_warning",
-    "config_value": "true",
+    "config_value": "false",
     "config_type": "string",
     "config_group": "system",
     "config_desc": "库存预警",
-    "updated_by": null,
-    "createdAt": "2026-07-09 14:53:49.590 +00:00",
-    "updatedAt": "2026-07-09 14:53:49.590 +00:00"
+    "updated_by": "admin",
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-20T22:15:17.000Z"
   }
 ]

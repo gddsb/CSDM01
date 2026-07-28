@@ -7,11 +7,10 @@
     "type": "menu",
     "icon": "SettingOutlined",
     "path": "system",
-    "component": null,
     "sort_order": 7,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 2,
@@ -21,11 +20,10 @@
     "type": "menu",
     "icon": "TeamOutlined",
     "path": "/system/users",
-    "component": null,
     "sort_order": 1,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 3,
@@ -35,11 +33,10 @@
     "type": "menu",
     "icon": "SafetyCertificateOutlined",
     "path": "/system/roles",
-    "component": null,
     "sort_order": 2,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 4,
@@ -49,11 +46,10 @@
     "type": "menu",
     "icon": "MenuOutlined",
     "path": "/system/menus",
-    "component": null,
     "sort_order": 3,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 5,
@@ -63,11 +59,10 @@
     "type": "menu",
     "icon": "DatabaseOutlined",
     "path": "/system/dictionary",
-    "component": null,
     "sort_order": 4,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 6,
@@ -77,11 +72,10 @@
     "type": "menu",
     "icon": "ControlOutlined",
     "path": "/system/config",
-    "component": null,
     "sort_order": 5,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 7,
@@ -91,11 +85,10 @@
     "type": "menu",
     "icon": "FileTextOutlined",
     "path": "/system/logs",
-    "component": null,
     "sort_order": 6,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 8,
@@ -104,12 +97,24 @@
     "perm_code": "system:mobile-simulator",
     "type": "menu",
     "icon": "MobileOutlined",
-    "path": "/mobile/home",
-    "component": null,
+    "path": "/system/mobile-simulator",
     "sort_order": 7,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
+  },
+  {
+    "perm_id": 9,
+    "parent_id": 1,
+    "perm_name": "系统日志",
+    "perm_code": "system:system-log",
+    "type": "menu",
+    "icon": "BugOutlined",
+    "path": "/system/system-logs",
+    "sort_order": 8,
+    "visible": 1,
+    "status": 1,
+    "created_at": "2026-07-22T10:50:55.000Z"
   },
   {
     "perm_id": 10,
@@ -119,11 +124,10 @@
     "type": "menu",
     "icon": "ProfileOutlined",
     "path": "basic",
-    "component": null,
     "sort_order": 4,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 11,
@@ -133,11 +137,10 @@
     "type": "menu",
     "icon": "ProfileOutlined",
     "path": "/basic/materials",
-    "component": null,
     "sort_order": 1,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 12,
@@ -147,11 +150,10 @@
     "type": "menu",
     "icon": "TeamOutlined",
     "path": "/basic/customers",
-    "component": null,
     "sort_order": 2,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 13,
@@ -161,11 +163,10 @@
     "type": "menu",
     "icon": "DeploymentUnitOutlined",
     "path": "/basic/lines",
-    "component": null,
-    "sort_order": 3,
+    "sort_order": 4,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 14,
@@ -175,11 +176,10 @@
     "type": "menu",
     "icon": "DeploymentUnitOutlined",
     "path": "/basic/processes",
-    "component": null,
-    "sort_order": 4,
+    "sort_order": 5,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 15,
@@ -189,11 +189,10 @@
     "type": "menu",
     "icon": "AlertOutlined",
     "path": "/basic/defects",
-    "component": null,
-    "sort_order": 5,
+    "sort_order": 6,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 16,
@@ -203,11 +202,10 @@
     "type": "menu",
     "icon": "KeyOutlined",
     "path": "/basic/number-rules",
-    "component": null,
-    "sort_order": 6,
+    "sort_order": 7,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 20,
@@ -217,11 +215,10 @@
     "type": "menu",
     "icon": "ToolOutlined",
     "path": "production",
-    "component": null,
     "sort_order": 1,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 21,
@@ -231,11 +228,10 @@
     "type": "menu",
     "icon": "FileTextOutlined",
     "path": "/production/orders",
-    "component": null,
     "sort_order": 1,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 23,
@@ -245,11 +241,10 @@
     "type": "menu",
     "icon": "ProfileOutlined",
     "path": "/production/reporting",
-    "component": null,
     "sort_order": 2,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 30,
@@ -259,11 +254,10 @@
     "type": "menu",
     "icon": "ExperimentOutlined",
     "path": "quality",
-    "component": null,
     "sort_order": 2,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 31,
@@ -273,11 +267,10 @@
     "type": "menu",
     "icon": "SafetyCertificateOutlined",
     "path": "/quality/standards",
-    "component": null,
     "sort_order": 8,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 32,
@@ -287,25 +280,10 @@
     "type": "menu",
     "icon": "ExperimentOutlined",
     "path": "/quality/incoming",
-    "component": null,
     "sort_order": 1,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
-  },
-  {
-    "perm_id": 33,
-    "parent_id": 30,
-    "perm_name": "产品检测",
-    "perm_code": "quality:product",
-    "type": "menu",
-    "icon": "ExperimentOutlined",
-    "path": "/quality/product",
-    "component": null,
-    "sort_order": 2,
-    "visible": 1,
-    "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 35,
@@ -315,11 +293,10 @@
     "type": "menu",
     "icon": "ExperimentOutlined",
     "path": "/quality/microbe",
-    "component": null,
     "sort_order": 3,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 36,
@@ -329,11 +306,10 @@
     "type": "menu",
     "icon": "ExperimentOutlined",
     "path": "/quality/environment",
-    "component": null,
     "sort_order": 4,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 37,
@@ -342,12 +318,11 @@
     "perm_code": "quality:complaint",
     "type": "menu",
     "icon": "BellOutlined",
-    "path": "",
-    "component": null,
+    "path": "/quality/complaints",
     "sort_order": 5,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 38,
@@ -357,11 +332,10 @@
     "type": "menu",
     "icon": "BellOutlined",
     "path": "/quality/complaints",
-    "component": null,
     "sort_order": 1,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 39,
@@ -371,11 +345,10 @@
     "type": "menu",
     "icon": "TeamOutlined",
     "path": "/quality/supplier",
-    "component": null,
     "sort_order": 2,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 40,
@@ -385,11 +358,10 @@
     "type": "menu",
     "icon": "ToolOutlined",
     "path": "/quality/instruments",
-    "component": null,
     "sort_order": 6,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 50,
@@ -399,11 +371,10 @@
     "type": "menu",
     "icon": "ToolOutlined",
     "path": "device",
-    "component": null,
     "sort_order": 3,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 51,
@@ -413,11 +384,10 @@
     "type": "menu",
     "icon": "ToolOutlined",
     "path": "/device/list",
-    "component": null,
     "sort_order": 1,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 52,
@@ -427,11 +397,10 @@
     "type": "menu",
     "icon": "FileSearchOutlined",
     "path": "/device/check-records",
-    "component": null,
     "sort_order": 2,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 53,
@@ -441,11 +410,10 @@
     "type": "menu",
     "icon": "ToolOutlined",
     "path": "/device/maintenance",
-    "component": null,
     "sort_order": 3,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 54,
@@ -455,11 +423,10 @@
     "type": "menu",
     "icon": "LineChartOutlined",
     "path": "/device/oee",
-    "component": null,
     "sort_order": 4,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 60,
@@ -469,11 +436,10 @@
     "type": "menu",
     "icon": "DesktopOutlined",
     "path": "bigscreen",
-    "component": null,
     "sort_order": 6,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 61,
@@ -483,11 +449,10 @@
     "type": "menu",
     "icon": "BarChartOutlined",
     "path": "/bigscreen/production",
-    "component": null,
     "sort_order": 1,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 62,
@@ -497,11 +462,10 @@
     "type": "menu",
     "icon": "ExperimentOutlined",
     "path": "/bigscreen/quality",
-    "component": null,
     "sort_order": 2,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 63,
@@ -511,11 +475,10 @@
     "type": "menu",
     "icon": "PieChartOutlined",
     "path": "/bigscreen/management",
-    "component": null,
     "sort_order": 3,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 70,
@@ -525,11 +488,10 @@
     "type": "menu",
     "icon": "PieChartOutlined",
     "path": "report",
-    "component": null,
     "sort_order": 5,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 71,
@@ -539,11 +501,10 @@
     "type": "menu",
     "icon": "CalendarOutlined",
     "path": "/report/daily",
-    "component": null,
     "sort_order": 1,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 72,
@@ -553,11 +514,10 @@
     "type": "menu",
     "icon": "FileTextOutlined",
     "path": "/report/monthly",
-    "component": null,
     "sort_order": 2,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 73,
@@ -567,11 +527,10 @@
     "type": "menu",
     "icon": "RiseOutlined",
     "path": "/report/efficiency",
-    "component": null,
     "sort_order": 3,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 74,
@@ -581,11 +540,10 @@
     "type": "menu",
     "icon": "FileTextOutlined",
     "path": "/report/production",
-    "component": null,
     "sort_order": 4,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 75,
@@ -595,11 +553,10 @@
     "type": "menu",
     "icon": "ExperimentOutlined",
     "path": "/report/quality",
-    "component": null,
     "sort_order": 5,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "perm_id": 76,
@@ -609,332 +566,255 @@
     "type": "menu",
     "icon": "BellOutlined",
     "path": "/report/exception",
-    "component": null,
     "sort_order": 6,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-09 14:53:38.206 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
-    "perm_id": 101,
-    "parent_id": 2,
-    "perm_name": "新增用户",
-    "perm_code": "system:user:create",
-    "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
-    "sort_order": 1,
-    "visible": 1,
-    "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
-  },
-  {
-    "perm_id": 102,
-    "parent_id": 2,
-    "perm_name": "编辑用户",
-    "perm_code": "system:user:update",
-    "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
-    "sort_order": 2,
-    "visible": 1,
-    "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
-  },
-  {
-    "perm_id": 103,
-    "parent_id": 2,
-    "perm_name": "删除用户",
-    "perm_code": "system:user:delete",
-    "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
-    "sort_order": 3,
-    "visible": 1,
-    "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
-  },
-  {
-    "perm_id": 104,
+    "perm_id": 201,
     "parent_id": 3,
-    "perm_name": "编辑角色",
-    "perm_code": "system:role:update",
+    "perm_name": "分配权限",
+    "perm_code": "system:role:assign",
     "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
     "sort_order": 1,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
+    "created_at": "2026-07-22T10:50:55.000Z"
   },
   {
-    "perm_id": 105,
-    "parent_id": 3,
-    "perm_name": "删除角色",
-    "perm_code": "system:role:delete",
+    "perm_id": 210,
+    "parent_id": 21,
+    "perm_name": "订单下发",
+    "perm_code": "production:order:release",
     "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
-    "sort_order": 2,
-    "visible": 1,
-    "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
-  },
-  {
-    "perm_id": 111,
-    "parent_id": 11,
-    "perm_name": "编辑料品",
-    "perm_code": "basic:material:update",
-    "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
     "sort_order": 1,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
+    "created_at": "2026-07-22T10:50:55.000Z"
   },
   {
-    "perm_id": 112,
-    "parent_id": 11,
-    "perm_name": "删除料品",
-    "perm_code": "basic:material:delete",
+    "perm_id": 211,
+    "parent_id": 21,
+    "perm_name": "订单关闭",
+    "perm_code": "production:order:close",
     "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
     "sort_order": 2,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
+    "created_at": "2026-07-22T10:50:55.000Z"
   },
   {
-    "perm_id": 113,
-    "parent_id": 12,
-    "perm_name": "编辑客户",
-    "perm_code": "basic:customer:update",
-    "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
-    "sort_order": 1,
-    "visible": 1,
-    "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
-  },
-  {
-    "perm_id": 114,
-    "parent_id": 12,
-    "perm_name": "删除客户",
-    "perm_code": "basic:customer:delete",
-    "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
-    "sort_order": 2,
-    "visible": 1,
-    "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
-  },
-  {
-    "perm_id": 115,
-    "parent_id": 13,
-    "perm_name": "编辑产线",
-    "perm_code": "basic:line:update",
-    "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
-    "sort_order": 1,
-    "visible": 1,
-    "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
-  },
-  {
-    "perm_id": 116,
-    "parent_id": 13,
-    "perm_name": "删除产线",
-    "perm_code": "basic:line:delete",
-    "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
-    "sort_order": 2,
-    "visible": 1,
-    "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
-  },
-  {
-    "perm_id": 117,
-    "parent_id": 14,
-    "perm_name": "编辑工序",
-    "perm_code": "basic:process:update",
-    "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
-    "sort_order": 1,
-    "visible": 1,
-    "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
-  },
-  {
-    "perm_id": 118,
-    "parent_id": 14,
-    "perm_name": "删除工序",
-    "perm_code": "basic:process:delete",
-    "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
-    "sort_order": 2,
-    "visible": 1,
-    "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
-  },
-  {
-    "perm_id": 119,
-    "parent_id": 51,
-    "perm_name": "编辑设备",
-    "perm_code": "device:list:update",
-    "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
-    "sort_order": 1,
-    "visible": 1,
-    "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
-  },
-  {
-    "perm_id": 120,
-    "parent_id": 51,
-    "perm_name": "删除设备",
-    "perm_code": "device:list:delete",
-    "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
-    "sort_order": 2,
-    "visible": 1,
-    "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
-  },
-  {
-    "perm_id": 121,
+    "perm_id": 212,
     "parent_id": 21,
     "perm_name": "新增订单",
     "perm_code": "production:order:create",
     "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
-    "sort_order": 1,
+    "sort_order": 3,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
+    "created_at": "2026-07-22T10:50:55.000Z"
   },
   {
-    "perm_id": 122,
+    "perm_id": 213,
     "parent_id": 21,
     "perm_name": "编辑订单",
     "perm_code": "production:order:update",
     "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
-    "sort_order": 2,
+    "sort_order": 4,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
+    "created_at": "2026-07-22T10:50:55.000Z"
   },
   {
-    "perm_id": 123,
+    "perm_id": 214,
     "parent_id": 21,
     "perm_name": "删除订单",
     "perm_code": "production:order:delete",
     "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
-    "sort_order": 3,
-    "visible": 1,
-    "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
-  },
-  {
-    "perm_id": 124,
-    "parent_id": 21,
-    "perm_name": "下发订单",
-    "perm_code": "production:order:release",
-    "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
-    "sort_order": 4,
-    "visible": 1,
-    "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
-  },
-  {
-    "perm_id": 125,
-    "parent_id": 21,
-    "perm_name": "关闭订单",
-    "perm_code": "production:order:close",
-    "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
     "sort_order": 5,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
+    "created_at": "2026-07-22T10:50:55.000Z"
   },
   {
-    "perm_id": 126,
+    "perm_id": 220,
     "parent_id": 23,
     "perm_name": "新增报工",
     "perm_code": "production:reporting:create",
     "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
     "sort_order": 1,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
+    "created_at": "2026-07-22T10:50:55.000Z"
   },
   {
-    "perm_id": 127,
+    "perm_id": 221,
     "parent_id": 23,
-    "perm_name": "完成报工",
+    "perm_name": "报工完工",
     "perm_code": "production:reporting:finish",
     "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
     "sort_order": 2,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
+    "created_at": "2026-07-22T10:50:55.000Z"
   },
   {
-    "perm_id": 128,
+    "perm_id": 222,
     "parent_id": 23,
-    "perm_name": "关闭报工",
+    "perm_name": "编辑报工",
+    "perm_code": "production:reporting:update",
+    "type": "button",
+    "sort_order": 4,
+    "visible": 1,
+    "status": 1,
+    "created_at": "2026-07-22T10:50:55.000Z"
+  },
+  {
+    "perm_id": 223,
+    "parent_id": 23,
+    "perm_name": "删除报工",
+    "perm_code": "production:reporting:delete",
+    "type": "button",
+    "sort_order": 5,
+    "visible": 1,
+    "status": 1,
+    "created_at": "2026-07-22T10:50:55.000Z"
+  },
+  {
+    "perm_id": 224,
+    "parent_id": 23,
+    "perm_name": "报工关闭",
     "perm_code": "production:reporting:close",
     "type": "button",
-    "icon": null,
-    "path": null,
-    "component": null,
     "sort_order": 3,
     "visible": 1,
     "status": 1,
-    "created_at": "2026-07-23 00:00:00.000 +00:00"
+    "created_at": "2026-07-23T06:53:19.000Z"
+  },
+  {
+    "perm_id": 230,
+    "parent_id": 13,
+    "perm_name": "新增产线",
+    "perm_code": "basic:line:create",
+    "type": "button",
+    "sort_order": 1,
+    "visible": 1,
+    "status": 1,
+    "created_at": "2026-07-22T10:50:55.000Z"
+  },
+  {
+    "perm_id": 231,
+    "parent_id": 13,
+    "perm_name": "编辑产线",
+    "perm_code": "basic:line:update",
+    "type": "button",
+    "sort_order": 2,
+    "visible": 1,
+    "status": 1,
+    "created_at": "2026-07-22T10:50:55.000Z"
+  },
+  {
+    "perm_id": 232,
+    "parent_id": 13,
+    "perm_name": "删除产线",
+    "perm_code": "basic:line:delete",
+    "type": "button",
+    "sort_order": 3,
+    "visible": 1,
+    "status": 1,
+    "created_at": "2026-07-22T10:50:55.000Z"
+  },
+  {
+    "perm_id": 240,
+    "parent_id": 14,
+    "perm_name": "新增工序",
+    "perm_code": "basic:process:create",
+    "type": "button",
+    "sort_order": 1,
+    "visible": 1,
+    "status": 1,
+    "created_at": "2026-07-22T10:50:55.000Z"
+  },
+  {
+    "perm_id": 241,
+    "parent_id": 14,
+    "perm_name": "编辑工序",
+    "perm_code": "basic:process:update",
+    "type": "button",
+    "sort_order": 2,
+    "visible": 1,
+    "status": 1,
+    "created_at": "2026-07-22T10:50:55.000Z"
+  },
+  {
+    "perm_id": 242,
+    "parent_id": 14,
+    "perm_name": "删除工序",
+    "perm_code": "basic:process:delete",
+    "type": "button",
+    "sort_order": 3,
+    "visible": 1,
+    "status": 1,
+    "created_at": "2026-07-22T10:50:55.000Z"
+  },
+  {
+    "perm_id": 250,
+    "parent_id": 51,
+    "perm_name": "新增设备",
+    "perm_code": "device:list:create",
+    "type": "button",
+    "sort_order": 1,
+    "visible": 1,
+    "status": 1,
+    "created_at": "2026-07-22T10:50:55.000Z"
+  },
+  {
+    "perm_id": 251,
+    "parent_id": 51,
+    "perm_name": "编辑设备",
+    "perm_code": "device:list:update",
+    "type": "button",
+    "sort_order": 2,
+    "visible": 1,
+    "status": 1,
+    "created_at": "2026-07-22T10:50:55.000Z"
+  },
+  {
+    "perm_id": 252,
+    "parent_id": 51,
+    "perm_name": "删除设备",
+    "perm_code": "device:list:delete",
+    "type": "button",
+    "sort_order": 3,
+    "visible": 1,
+    "status": 1,
+    "created_at": "2026-07-22T10:50:55.000Z"
+  },
+  {
+    "perm_id": 253,
+    "parent_id": 30,
+    "perm_name": "产品检测",
+    "perm_code": "quality:product",
+    "type": "menu",
+    "icon": "ExperimentOutlined",
+    "path": "/quality/product",
+    "sort_order": 2,
+    "visible": 1,
+    "status": 1,
+    "created_at": "2026-07-25T19:28:07.000Z"
+  },
+  {
+    "perm_id": 254,
+    "parent_id": 10,
+    "perm_name": "供应商档案",
+    "perm_code": "basic:supplier",
+    "type": "menu",
+    "icon": "ShopOutlined",
+    "path": "/basic/suppliers",
+    "sort_order": 3,
+    "visible": 1,
+    "status": 1,
+    "created_at": "2026-07-28T12:30:42.000Z"
   }
 ]

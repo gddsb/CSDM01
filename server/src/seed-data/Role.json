@@ -5,12 +5,11 @@
     "role_code": "SUPER_ADMIN",
     "type": "系统默认",
     "is_system_default": 0,
-    "description": null,
     "scope": "系统全部权限，用户管理，系统配置",
     "sort_order": 1,
     "status": 1,
-    "createdAt": "2026-07-06 16:15:22.220 +00:00",
-    "updatedAt": "2026-07-06 16:15:22.220 +00:00"
+    "created_at": "2026-07-06T08:15:22.000Z",
+    "updated_at": "2026-07-06T08:15:22.000Z"
   },
   {
     "role_id": 2,
@@ -18,12 +17,11 @@
     "role_code": "PLANNER",
     "type": "系统默认",
     "is_system_default": 0,
-    "description": null,
     "scope": "生产计划制定、下达、调整，计划进度查看",
     "sort_order": 2,
     "status": 1,
-    "createdAt": "2026-07-06 16:15:22.220 +00:00",
-    "updatedAt": "2026-07-06 16:15:22.220 +00:00"
+    "created_at": "2026-07-06T08:15:22.000Z",
+    "updated_at": "2026-07-06T08:15:22.000Z"
   },
   {
     "role_id": 3,
@@ -31,12 +29,11 @@
     "role_code": "QC_MANAGER",
     "type": "系统默认",
     "is_system_default": 0,
-    "description": null,
     "scope": "质量标准制定，质量抽检审批，不合格品处置",
     "sort_order": 3,
     "status": 1,
-    "createdAt": "2026-07-06 16:15:22.220 +00:00",
-    "updatedAt": "2026-07-06 16:15:22.220 +00:00"
+    "created_at": "2026-07-06T08:15:22.000Z",
+    "updated_at": "2026-07-06T08:15:22.000Z"
   },
   {
     "role_id": 4,
@@ -44,12 +41,11 @@
     "role_code": "QC_INSPECTOR",
     "type": "系统默认",
     "is_system_default": 0,
-    "description": null,
     "scope": "质量检测执行，检测数据录入，异常上报",
     "sort_order": 4,
     "status": 1,
-    "createdAt": "2026-07-06 16:15:22.220 +00:00",
-    "updatedAt": "2026-07-06 16:15:22.220 +00:00"
+    "created_at": "2026-07-06T08:15:22.000Z",
+    "updated_at": "2026-07-06T08:15:22.000Z"
   },
   {
     "role_id": 5,
@@ -57,12 +53,11 @@
     "role_code": "PROD_MANAGER",
     "type": "系统默认",
     "is_system_default": 0,
-    "description": null,
     "scope": "生产任务管理，生产调度，人员管理，报表审批",
     "sort_order": 5,
     "status": 1,
-    "createdAt": "2026-07-06 16:15:22.220 +00:00",
-    "updatedAt": "2026-07-06 16:15:22.220 +00:00"
+    "created_at": "2026-07-06T08:15:22.000Z",
+    "updated_at": "2026-07-06T08:15:22.000Z"
   },
   {
     "role_id": 6,
@@ -70,12 +65,11 @@
     "role_code": "OPERATOR",
     "type": "系统默认",
     "is_system_default": 0,
-    "description": null,
     "scope": "本工序生产操作，数据录入，设备点检",
     "sort_order": 6,
     "status": 1,
-    "createdAt": "2026-07-06 16:15:22.220 +00:00",
-    "updatedAt": "2026-07-06 16:15:22.220 +00:00"
+    "created_at": "2026-07-06T08:15:22.000Z",
+    "updated_at": "2026-07-06T08:15:22.000Z"
   },
   {
     "role_id": 7,
@@ -83,12 +77,11 @@
     "role_code": "ADMIN",
     "type": "可选",
     "is_system_default": 0,
-    "description": null,
     "scope": "日常系统管理（权限低于超级管理员）",
     "sort_order": 7,
     "status": 1,
-    "createdAt": "2026-07-06 16:15:22.220 +00:00",
-    "updatedAt": "2026-07-06 16:15:22.220 +00:00"
+    "created_at": "2026-07-06T08:15:22.000Z",
+    "updated_at": "2026-07-06T08:15:22.000Z"
   },
   {
     "role_id": 8,
@@ -96,12 +89,11 @@
     "role_code": "MAINTENANCE",
     "type": "可选",
     "is_system_default": 0,
-    "description": null,
     "scope": "设备维修，保养记录",
     "sort_order": 8,
     "status": 1,
-    "createdAt": "2026-07-06 16:15:22.220 +00:00",
-    "updatedAt": "2026-07-06 16:15:22.220 +00:00"
+    "created_at": "2026-07-06T08:15:22.000Z",
+    "updated_at": "2026-07-06T08:15:22.000Z"
   },
   {
     "role_id": 9,
@@ -109,11 +101,10 @@
     "role_code": "DASHBOARD_VIEWER",
     "type": "可选",
     "is_system_default": 0,
-    "description": null,
     "scope": "大屏/看板只读查看",
     "sort_order": 9,
     "status": 1,
-    "createdAt": "2026-07-06 16:15:22.220 +00:00",
-    "updatedAt": "2026-07-06 16:15:22.220 +00:00"
+    "created_at": "2026-07-06T08:15:22.000Z",
+    "updated_at": "2026-07-06T08:15:22.000Z"
   }
 ]

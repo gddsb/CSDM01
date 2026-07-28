@@ -6,15 +6,15 @@
     "defect_type": "制程不良",
     "category_name": "制程检验类型",
     "parent_id": 0,
-    "defect_unit": "个",
-    "available_units": "个,片",
-    "display": 1,
+    "defect_unit": "小片",
+    "available_units": "小片,罐",
+    "display": 0,
     "sort_order": 1,
     "status": 1,
-    "related_processes": "1",
+    "related_processes": "",
     "category_desc": "材料表面有划痕",
-    "createdAt": "2026-07-06 16:15:22.278 +00:00",
-    "updatedAt": "2026-07-06 16:15:22.278 +00:00"
+    "created_at": "2026-07-06T08:15:22.000Z",
+    "updated_at": "2026-07-20T22:05:56.000Z"
   },
   {
     "defect_id": 2,
@@ -23,15 +23,15 @@
     "defect_type": "制程不良",
     "category_name": "制程检验类型",
     "parent_id": 0,
-    "defect_unit": "个",
-    "available_units": "个,片",
-    "display": 1,
+    "defect_unit": "小片",
+    "available_units": "小片,罐",
+    "display": 0,
     "sort_order": 2,
     "status": 1,
-    "related_processes": "1",
+    "related_processes": "",
     "category_desc": "材料形状变形",
-    "createdAt": "2026-07-06 16:15:22.278 +00:00",
-    "updatedAt": "2026-07-06 16:15:22.278 +00:00"
+    "created_at": "2026-07-06T08:15:22.000Z",
+    "updated_at": "2026-07-20T22:05:28.000Z"
   },
   {
     "defect_id": 3,
@@ -47,8 +47,8 @@
     "status": 1,
     "related_processes": "3",
     "category_desc": "焊接处有气孔、虚焊等",
-    "createdAt": "2026-07-06 16:15:22.278 +00:00",
-    "updatedAt": "2026-07-06 16:15:22.278 +00:00"
+    "created_at": "2026-07-06T08:15:22.000Z",
+    "updated_at": "2026-07-06T08:15:22.000Z"
   },
   {
     "defect_id": 4,
@@ -64,8 +64,8 @@
     "status": 1,
     "related_processes": "4",
     "category_desc": "补涂区域有漏涂",
-    "createdAt": "2026-07-06 16:15:22.278 +00:00",
-    "updatedAt": "2026-07-06 16:15:22.278 +00:00"
+    "created_at": "2026-07-06T08:15:22.000Z",
+    "updated_at": "2026-07-06T08:15:22.000Z"
   },
   {
     "defect_id": 5,
@@ -75,99 +75,98 @@
     "category_name": "制程检验类型",
     "parent_id": 0,
     "defect_unit": "个",
-    "available_units": null,
     "display": 0,
     "sort_order": 5,
     "status": 1,
     "related_processes": "6",
     "category_desc": "封口不严密",
-    "createdAt": "2026-07-06 16:15:22.278 +00:00",
-    "updatedAt": "2026-07-06 16:15:22.278 +00:00"
+    "created_at": "2026-07-06T08:15:22.000Z",
+    "updated_at": "2026-07-06T08:15:22.000Z"
   },
   {
     "defect_id": 6,
     "defect_code": "PC-SCR-01",
-    "defect_name": "尺寸超差",
+    "defect_name": "印刷理化测试",
     "defect_type": "检验报废",
     "category_name": "制程检验类型",
     "parent_id": 0,
-    "defect_unit": "个",
-    "available_units": "个",
+    "defect_unit": "小片",
+    "available_units": "小片",
     "display": 1,
     "sort_order": 6,
     "status": 1,
-    "related_processes": "2,5",
+    "related_processes": "",
     "category_desc": "成品尺寸超出公差范围",
-    "createdAt": "2026-07-06 16:15:22.278 +00:00",
-    "updatedAt": "2026-07-06 16:15:22.278 +00:00"
+    "created_at": "2026-07-06T08:15:22.000Z",
+    "updated_at": "2026-07-20T22:08:04.000Z"
   },
   {
     "defect_id": 7,
     "defect_code": "PC-SCR-02",
-    "defect_name": "测漏不合格",
-    "defect_type": "检验报废",
-    "category_name": "制程检验类型",
-    "parent_id": 0,
-    "defect_unit": "个",
-    "available_units": "个",
-    "display": 1,
-    "sort_order": 7,
-    "status": 1,
-    "related_processes": "5",
-    "category_desc": "正压测漏不合格",
-    "createdAt": "2026-07-06 16:15:22.278 +00:00",
-    "updatedAt": "2026-07-06 16:15:22.278 +00:00"
-  },
-  {
-    "defect_id": 8,
-    "defect_code": "PC-SCR-03",
-    "defect_name": "裁剪检测报废",
-    "defect_type": "检验报废",
-    "category_name": "制程检验类型",
-    "parent_id": 0,
-    "defect_unit": "小片",
-    "available_units": "小片",
-    "display": 1,
-    "sort_order": 8,
-    "status": 1,
-    "related_processes": "1",
-    "category_desc": "",
-    "createdAt": "2026-07-09 19:48:24.866 +00:00",
-    "updatedAt": "2026-07-09 19:48:24.866 +00:00"
-  },
-  {
-    "defect_id": 9,
-    "defect_code": "PC-SCR-04",
-    "defect_name": "焊接质量撕拉测试",
-    "defect_type": "检验报废",
-    "category_name": "制程检验类型",
-    "parent_id": 0,
-    "defect_unit": "小片",
-    "available_units": "小片",
-    "display": 1,
-    "sort_order": 9,
-    "status": 1,
-    "related_processes": "3",
-    "category_desc": "",
-    "createdAt": "2026-07-09 19:49:01.706 +00:00",
-    "updatedAt": "2026-07-09 19:49:01.706 +00:00"
-  },
-  {
-    "defect_id": 10,
-    "defect_code": "PC-SCR-05",
-    "defect_name": "密封测试与三率解剖测试",
+    "defect_name": "焊线撕拉测试",
     "defect_type": "检验报废",
     "category_name": "制程检验类型",
     "parent_id": 0,
     "defect_unit": "罐",
     "available_units": "罐",
     "display": 1,
+    "sort_order": 7,
+    "status": 1,
+    "related_processes": "",
+    "category_desc": "正压测漏不合格",
+    "created_at": "2026-07-06T08:15:22.000Z",
+    "updated_at": "2026-07-20T22:06:53.000Z"
+  },
+  {
+    "defect_id": 8,
+    "defect_code": "PC-SCR-03",
+    "defect_name": "密封/三率测试",
+    "defect_type": "检验报废",
+    "category_name": "制程检验类型",
+    "parent_id": 0,
+    "defect_unit": "罐",
+    "available_units": "罐",
+    "display": 1,
+    "sort_order": 8,
+    "status": 1,
+    "related_processes": "",
+    "category_desc": "",
+    "created_at": "2026-07-09T11:48:24.000Z",
+    "updated_at": "2026-07-21T06:38:37.000Z"
+  },
+  {
+    "defect_id": 9,
+    "defect_code": "PC-SCR-04",
+    "defect_name": "光检剔除测试",
+    "defect_type": "检验报废",
+    "category_name": "制程检验类型",
+    "parent_id": 0,
+    "defect_unit": "罐",
+    "available_units": "罐",
+    "display": 0,
+    "sort_order": 9,
+    "status": 1,
+    "related_processes": "",
+    "category_desc": "",
+    "created_at": "2026-07-09T11:49:01.000Z",
+    "updated_at": "2026-07-21T06:38:44.000Z"
+  },
+  {
+    "defect_id": 10,
+    "defect_code": "PC-SCR-05",
+    "defect_name": "其它检验测试",
+    "defect_type": "检验报废",
+    "category_name": "制程检验类型",
+    "parent_id": 0,
+    "defect_unit": "罐",
+    "available_units": "罐",
+    "display": 0,
     "sort_order": 10,
     "status": 1,
-    "related_processes": "6,7",
+    "related_processes": "",
     "category_desc": "先进行正压密封检测，然后切割进行二位投影仪检测",
-    "createdAt": "2026-07-09 19:51:21.167 +00:00",
-    "updatedAt": "2026-07-09 19:51:21.167 +00:00"
+    "created_at": "2026-07-09T11:51:21.000Z",
+    "updated_at": "2026-07-20T22:09:50.000Z"
   },
   {
     "defect_id": 45,
@@ -177,14 +176,14 @@
     "category_name": "制程检验类型",
     "parent_id": 0,
     "defect_unit": "小片",
-    "available_units": "小片",
-    "display": 1,
+    "available_units": "小片,罐",
+    "display": 0,
     "sort_order": 3,
     "status": 1,
-    "related_processes": "0",
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "related_processes": "",
+    "category_desc": "",
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-20T22:01:25.000Z"
   },
   {
     "defect_id": 46,
@@ -194,14 +193,14 @@
     "category_name": "制程检验类型",
     "parent_id": 0,
     "defect_unit": "罐",
-    "available_units": "罐",
+    "available_units": "小片,罐",
     "display": 1,
     "sort_order": 4,
     "status": 1,
-    "related_processes": "0",
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "related_processes": "",
+    "category_desc": "",
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-20T22:05:36.000Z"
   },
   {
     "defect_id": 47,
@@ -211,14 +210,14 @@
     "category_name": "制程检验类型",
     "parent_id": 0,
     "defect_unit": "小片",
-    "available_units": "小片",
-    "display": 1,
+    "available_units": "小片,罐",
+    "display": 0,
     "sort_order": 5,
     "status": 1,
-    "related_processes": "0",
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "related_processes": "",
+    "category_desc": "",
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-20T22:02:10.000Z"
   },
   {
     "defect_id": 48,
@@ -228,14 +227,14 @@
     "category_name": "制程检验类型",
     "parent_id": 0,
     "defect_unit": "小片",
-    "available_units": "小片",
-    "display": 1,
+    "available_units": "小片,罐",
+    "display": 0,
     "sort_order": 6,
     "status": 1,
-    "related_processes": "0",
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "related_processes": "",
+    "category_desc": "",
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-21T06:56:05.000Z"
   },
   {
     "defect_id": 49,
@@ -245,14 +244,14 @@
     "category_name": "制程检验类型",
     "parent_id": 0,
     "defect_unit": "罐",
-    "available_units": "罐",
-    "display": 1,
+    "available_units": "小片,罐",
+    "display": 0,
     "sort_order": 7,
     "status": 1,
-    "related_processes": "0",
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "related_processes": "",
+    "category_desc": "",
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-21T06:56:21.000Z"
   },
   {
     "defect_id": 50,
@@ -262,14 +261,14 @@
     "category_name": "制程检验类型",
     "parent_id": 0,
     "defect_unit": "罐",
-    "available_units": "罐",
-    "display": 1,
+    "available_units": "小片,罐",
+    "display": 0,
     "sort_order": 8,
     "status": 1,
-    "related_processes": "0",
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "related_processes": "",
+    "category_desc": "",
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-21T06:56:29.000Z"
   },
   {
     "defect_id": 51,
@@ -279,14 +278,14 @@
     "category_name": "制程检验类型",
     "parent_id": 0,
     "defect_unit": "罐",
-    "available_units": "罐",
-    "display": 1,
+    "available_units": "小片,罐",
+    "display": 0,
     "sort_order": 9,
     "status": 1,
-    "related_processes": "0",
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "related_processes": "",
+    "category_desc": "",
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-21T06:56:41.000Z"
   },
   {
     "defect_id": 52,
@@ -300,10 +299,8 @@
     "display": 0,
     "sort_order": 10,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-09T04:04:36.000Z"
   },
   {
     "defect_id": 53,
@@ -313,14 +310,14 @@
     "category_name": "制程检验类型",
     "parent_id": 0,
     "defect_unit": "小片",
-    "available_units": "小片",
-    "display": 1,
+    "available_units": "小片,罐",
+    "display": 0,
     "sort_order": 11,
     "status": 1,
-    "related_processes": "0",
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "related_processes": "",
+    "category_desc": "",
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-21T06:56:53.000Z"
   },
   {
     "defect_id": 54,
@@ -334,10 +331,8 @@
     "display": 0,
     "sort_order": 6,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-09T04:04:36.000Z"
   },
   {
     "defect_id": 55,
@@ -351,10 +346,8 @@
     "display": 0,
     "sort_order": 7,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-09T04:04:36.000Z"
   },
   {
     "defect_id": 56,
@@ -368,10 +361,8 @@
     "display": 0,
     "sort_order": 8,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-09T04:04:36.000Z"
   },
   {
     "defect_id": 57,
@@ -385,10 +376,8 @@
     "display": 0,
     "sort_order": 9,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-09T04:04:36.000Z"
   },
   {
     "defect_id": 58,
@@ -402,10 +391,10 @@
     "display": 0,
     "sort_order": 10,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "related_processes": "3",
+    "category_desc": "",
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-20T22:03:35.000Z"
   },
   {
     "defect_id": 59,
@@ -419,10 +408,8 @@
     "display": 0,
     "sort_order": 11,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-09T04:04:36.000Z"
   },
   {
     "defect_id": 60,
@@ -431,15 +418,15 @@
     "defect_type": "制程不良",
     "category_name": "制程检验类型",
     "parent_id": 0,
-    "defect_unit": "片",
-    "available_units": "片",
+    "defect_unit": "罐",
+    "available_units": "罐",
     "display": 0,
     "sort_order": 12,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "related_processes": "3",
+    "category_desc": "",
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-20T22:04:07.000Z"
   },
   {
     "defect_id": 61,
@@ -448,15 +435,15 @@
     "defect_type": "制程不良",
     "category_name": "制程检验类型",
     "parent_id": 0,
-    "defect_unit": "片",
-    "available_units": "片",
+    "defect_unit": "罐",
+    "available_units": "罐",
     "display": 0,
     "sort_order": 13,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "related_processes": "6",
+    "category_desc": "",
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-20T22:04:21.000Z"
   },
   {
     "defect_id": 62,
@@ -470,10 +457,8 @@
     "display": 0,
     "sort_order": 14,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-09T04:04:36.000Z"
   },
   {
     "defect_id": 63,
@@ -482,15 +467,15 @@
     "defect_type": "制程不良",
     "category_name": "制程检验类型",
     "parent_id": 0,
-    "defect_unit": "片",
-    "available_units": "片",
+    "defect_unit": "小片",
+    "available_units": "小片,罐",
     "display": 0,
     "sort_order": 15,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "related_processes": "4",
+    "category_desc": "",
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-20T22:04:38.000Z"
   },
   {
     "defect_id": 64,
@@ -499,15 +484,15 @@
     "defect_type": "制程不良",
     "category_name": "制程检验类型",
     "parent_id": 0,
-    "defect_unit": "片",
-    "available_units": "片",
+    "defect_unit": "小片",
+    "available_units": "小片,罐",
     "display": 0,
     "sort_order": 16,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "related_processes": "4",
+    "category_desc": "",
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-20T22:04:50.000Z"
   },
   {
     "defect_id": 65,
@@ -521,10 +506,8 @@
     "display": 0,
     "sort_order": 17,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-09T04:04:36.000Z"
   },
   {
     "defect_id": 66,
@@ -538,10 +521,8 @@
     "display": 0,
     "sort_order": 18,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-09T04:04:36.000Z"
   },
   {
     "defect_id": 67,
@@ -555,10 +536,8 @@
     "display": 0,
     "sort_order": 19,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-09T04:04:36.000Z"
   },
   {
     "defect_id": 68,
@@ -572,10 +551,8 @@
     "display": 0,
     "sort_order": 20,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-09T04:04:36.000Z"
   },
   {
     "defect_id": 69,
@@ -589,10 +566,8 @@
     "display": 0,
     "sort_order": 21,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-09T04:04:36.000Z"
   },
   {
     "defect_id": 70,
@@ -606,10 +581,8 @@
     "display": 0,
     "sort_order": 22,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-09T04:04:36.000Z"
   },
   {
     "defect_id": 71,
@@ -623,10 +596,8 @@
     "display": 0,
     "sort_order": 23,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-09T04:04:36.000Z"
   },
   {
     "defect_id": 72,
@@ -640,10 +611,8 @@
     "display": 0,
     "sort_order": 24,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-09T04:04:36.000Z"
   },
   {
     "defect_id": 73,
@@ -657,10 +626,8 @@
     "display": 0,
     "sort_order": 25,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-09T04:04:36.000Z"
   },
   {
     "defect_id": 74,
@@ -674,10 +641,8 @@
     "display": 0,
     "sort_order": 26,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-09T04:04:36.000Z"
   },
   {
     "defect_id": 75,
@@ -691,10 +656,8 @@
     "display": 0,
     "sort_order": 27,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-09T04:04:36.000Z"
   },
   {
     "defect_id": 76,
@@ -708,10 +671,8 @@
     "display": 0,
     "sort_order": 28,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-09T04:04:36.000Z"
   },
   {
     "defect_id": 77,
@@ -725,10 +686,8 @@
     "display": 0,
     "sort_order": 29,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-09T04:04:36.000Z"
   },
   {
     "defect_id": 78,
@@ -742,9 +701,7 @@
     "display": 0,
     "sort_order": 30,
     "status": 1,
-    "related_processes": null,
-    "category_desc": null,
-    "createdAt": "2026-07-09 20:04:36",
-    "updatedAt": "2026-07-09 20:04:36"
+    "created_at": "2026-07-09T04:04:36.000Z",
+    "updated_at": "2026-07-09T04:04:36.000Z"
   }
 ]

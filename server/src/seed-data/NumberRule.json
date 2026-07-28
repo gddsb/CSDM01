@@ -11,14 +11,11 @@
     "target_table": "production_order",
     "target_field": "order_no",
     "target_label": "生产订单编号",
-    "current_no": null,
     "used_count": 0,
     "status": 1,
     "is_locked": 1,
-    "description": null,
-    "created_by": null,
-    "created_at": "2026-07-09 14:53:49.859 +00:00",
-    "updated_at": "2026-07-09 14:53:49.859 +00:00"
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-09T06:53:49.000Z"
   },
   {
     "rule_id": 2,
@@ -32,14 +29,12 @@
     "target_table": "work_order",
     "target_field": "work_order_no",
     "target_label": "工单编号",
-    "current_no": "WO260709002",
-    "used_count": 2,
+    "current_no": "WO260726001",
+    "used_count": 7,
     "status": 1,
     "is_locked": 1,
-    "description": null,
-    "created_by": null,
-    "created_at": "2026-07-09 14:53:49.865 +00:00",
-    "updated_at": "2026-07-09 16:49:00.221 +00:00"
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-25T18:36:54.000Z"
   },
   {
     "rule_id": 3,
@@ -53,14 +48,11 @@
     "target_table": "quality_incoming",
     "target_field": "inspection_no",
     "target_label": "来料检验编号",
-    "current_no": null,
     "used_count": 0,
     "status": 1,
     "is_locked": 1,
-    "description": null,
-    "created_by": null,
-    "created_at": "2026-07-09 14:53:49.871 +00:00",
-    "updated_at": "2026-07-09 14:53:49.871 +00:00"
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-09T06:53:49.000Z"
   },
   {
     "rule_id": 4,
@@ -74,14 +66,11 @@
     "target_table": "quality_process",
     "target_field": "inspection_no",
     "target_label": "过程检验编号",
-    "current_no": null,
     "used_count": 0,
     "status": 1,
     "is_locked": 1,
-    "description": null,
-    "created_by": null,
-    "created_at": "2026-07-09 14:53:49.876 +00:00",
-    "updated_at": "2026-07-09 14:53:49.876 +00:00"
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-09T06:53:49.000Z"
   },
   {
     "rule_id": 5,
@@ -95,14 +84,11 @@
     "target_table": "quality_finished",
     "target_field": "inspection_no",
     "target_label": "成品检验编号",
-    "current_no": null,
     "used_count": 0,
     "status": 1,
     "is_locked": 1,
-    "description": null,
-    "created_by": null,
-    "created_at": "2026-07-09 14:53:49.883 +00:00",
-    "updated_at": "2026-07-09 14:53:49.883 +00:00"
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-09T06:53:49.000Z"
   },
   {
     "rule_id": 6,
@@ -116,14 +102,11 @@
     "target_table": "quality_microbe",
     "target_field": "inspection_no",
     "target_label": "微生物检验编号",
-    "current_no": null,
     "used_count": 0,
     "status": 1,
     "is_locked": 1,
-    "description": null,
-    "created_by": null,
-    "created_at": "2026-07-09 14:53:49.889 +00:00",
-    "updated_at": "2026-07-09 14:53:49.889 +00:00"
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-09T06:53:49.000Z"
   },
   {
     "rule_id": 7,
@@ -137,14 +120,11 @@
     "target_table": "quality_environment",
     "target_field": "inspection_no",
     "target_label": "环境检验编号",
-    "current_no": null,
     "used_count": 0,
     "status": 1,
     "is_locked": 1,
-    "description": null,
-    "created_by": null,
-    "created_at": "2026-07-09 14:53:49.895 +00:00",
-    "updated_at": "2026-07-09 14:53:49.895 +00:00"
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-09T06:53:49.000Z"
   },
   {
     "rule_id": 8,
@@ -158,14 +138,11 @@
     "target_table": "quality_instrument",
     "target_field": "instrument_no",
     "target_label": "检测仪器编号",
-    "current_no": null,
     "used_count": 0,
     "status": 1,
     "is_locked": 1,
-    "description": null,
-    "created_by": null,
-    "created_at": "2026-07-09 14:53:49.901 +00:00",
-    "updated_at": "2026-07-09 14:53:49.901 +00:00"
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-09T06:53:49.000Z"
   },
   {
     "rule_id": 9,
@@ -179,14 +156,11 @@
     "target_table": "quality_complaint",
     "target_field": "complaint_no",
     "target_label": "客诉编号",
-    "current_no": null,
     "used_count": 0,
     "status": 1,
     "is_locked": 1,
-    "description": null,
-    "created_by": null,
-    "created_at": "2026-07-09 14:53:49.907 +00:00",
-    "updated_at": "2026-07-09 14:53:49.907 +00:00"
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-09T06:53:49.000Z"
   },
   {
     "rule_id": 10,
@@ -200,14 +174,11 @@
     "target_table": "quality_supplier_complaint",
     "target_field": "complaint_no",
     "target_label": "供应商投诉编号",
-    "current_no": null,
     "used_count": 0,
     "status": 1,
     "is_locked": 1,
-    "description": null,
-    "created_by": null,
-    "created_at": "2026-07-09 14:53:49.913 +00:00",
-    "updated_at": "2026-07-09 14:53:49.913 +00:00"
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-09T06:53:49.000Z"
   },
   {
     "rule_id": 11,
@@ -221,14 +192,11 @@
     "target_table": "quality_standard",
     "target_field": "standard_no",
     "target_label": "检验标准编号",
-    "current_no": null,
     "used_count": 0,
     "status": 1,
     "is_locked": 1,
-    "description": null,
-    "created_by": null,
-    "created_at": "2026-07-09 14:53:49.919 +00:00",
-    "updated_at": "2026-07-09 14:53:49.919 +00:00"
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-09T06:53:49.000Z"
   },
   {
     "rule_id": 12,
@@ -242,13 +210,10 @@
     "target_table": "quality_ncr",
     "target_field": "ncr_no",
     "target_label": "不合格品处理单编号",
-    "current_no": null,
     "used_count": 0,
     "status": 1,
     "is_locked": 1,
-    "description": null,
-    "created_by": null,
-    "created_at": "2026-07-09 14:53:49.926 +00:00",
-    "updated_at": "2026-07-09 14:53:49.926 +00:00"
+    "created_at": "2026-07-09T06:53:49.000Z",
+    "updated_at": "2026-07-09T06:53:49.000Z"
   }
 ]

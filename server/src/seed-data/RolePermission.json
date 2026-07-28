@@ -35,6 +35,16 @@
     "perm_id": 7
   },
   {
+    "id": 49,
+    "role_id": 1,
+    "perm_id": 8
+  },
+  {
+    "id": 50,
+    "role_id": 1,
+    "perm_id": 9
+  },
+  {
     "id": 8,
     "role_id": 1,
     "perm_id": 10
@@ -80,11 +90,6 @@
     "perm_id": 21
   },
   {
-    "id": 17,
-    "role_id": 1,
-    "perm_id": 22
-  },
-  {
     "id": 18,
     "role_id": 1,
     "perm_id": 23
@@ -103,16 +108,6 @@
     "id": 24,
     "role_id": 1,
     "perm_id": 32
-  },
-  {
-    "id": 25,
-    "role_id": 1,
-    "perm_id": 33
-  },
-  {
-    "id": 26,
-    "role_id": 1,
-    "perm_id": 34
   },
   {
     "id": 27,
@@ -225,113 +220,118 @@
     "perm_id": 76
   },
   {
-    "id": 49,
-    "role_id": 1,
-    "perm_id": 101
-  },
-  {
-    "id": 50,
-    "role_id": 1,
-    "perm_id": 102
-  },
-  {
     "id": 51,
     "role_id": 1,
-    "perm_id": 103
+    "perm_id": 201
   },
   {
     "id": 52,
     "role_id": 1,
-    "perm_id": 104
+    "perm_id": 210
   },
   {
     "id": 53,
     "role_id": 1,
-    "perm_id": 105
+    "perm_id": 211
   },
   {
     "id": 54,
     "role_id": 1,
-    "perm_id": 111
+    "perm_id": 212
   },
   {
     "id": 55,
     "role_id": 1,
-    "perm_id": 112
+    "perm_id": 213
   },
   {
     "id": 56,
     "role_id": 1,
-    "perm_id": 113
+    "perm_id": 214
   },
   {
     "id": 57,
     "role_id": 1,
-    "perm_id": 114
+    "perm_id": 220
   },
   {
     "id": 58,
     "role_id": 1,
-    "perm_id": 115
+    "perm_id": 221
   },
   {
     "id": 59,
     "role_id": 1,
-    "perm_id": 116
+    "perm_id": 222
   },
   {
     "id": 60,
     "role_id": 1,
-    "perm_id": 117
+    "perm_id": 223
+  },
+  {
+    "id": 71,
+    "role_id": 1,
+    "perm_id": 224
   },
   {
     "id": 61,
     "role_id": 1,
-    "perm_id": 118
+    "perm_id": 230
   },
   {
     "id": 62,
     "role_id": 1,
-    "perm_id": 119
+    "perm_id": 231
   },
   {
     "id": 63,
     "role_id": 1,
-    "perm_id": 120
+    "perm_id": 232
   },
   {
     "id": 64,
     "role_id": 1,
-    "perm_id": 121
+    "perm_id": 240
   },
   {
     "id": 65,
     "role_id": 1,
-    "perm_id": 122
+    "perm_id": 241
   },
   {
     "id": 66,
     "role_id": 1,
-    "perm_id": 123
+    "perm_id": 242
   },
   {
     "id": 67,
     "role_id": 1,
-    "perm_id": 124
+    "perm_id": 250
   },
   {
     "id": 68,
     "role_id": 1,
-    "perm_id": 125
+    "perm_id": 251
   },
   {
     "id": 69,
     "role_id": 1,
-    "perm_id": 126
+    "perm_id": 252
+  },
+  {
+    "id": 73,
+    "role_id": 1,
+    "perm_id": 253
+  },
+  {
+    "id": 74,
+    "role_id": 1,
+    "perm_id": 254
   },
   {
     "id": 70,
-    "role_id": 1,
-    "perm_id": 127
+    "role_id": 2,
+    "perm_id": 30
   }
 ]

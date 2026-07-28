@@ -5,13 +5,11 @@
     "dict_label": "启用",
     "dict_value": "1",
     "dict_type": "sys_user_status",
-    "css_class": null,
     "list_class": "success",
     "is_default": 1,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 2,
@@ -19,13 +17,11 @@
     "dict_label": "禁用",
     "dict_value": "0",
     "dict_type": "sys_user_status",
-    "css_class": null,
     "list_class": "danger",
     "is_default": 0,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 3,
@@ -33,13 +29,11 @@
     "dict_label": "开立",
     "dict_value": "0",
     "dict_type": "prod_order_status",
-    "css_class": null,
     "list_class": "default",
     "is_default": 1,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 4,
@@ -47,13 +41,11 @@
     "dict_label": "下发",
     "dict_value": "1",
     "dict_type": "prod_order_status",
-    "css_class": null,
     "list_class": "processing",
     "is_default": 0,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 5,
@@ -61,13 +53,11 @@
     "dict_label": "完工",
     "dict_value": "2",
     "dict_type": "prod_order_status",
-    "css_class": null,
     "list_class": "success",
     "is_default": 0,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 6,
@@ -75,13 +65,11 @@
     "dict_label": "未开工",
     "dict_value": "0",
     "dict_type": "prod_work_order_status",
-    "css_class": null,
     "list_class": "default",
     "is_default": 1,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 7,
@@ -89,13 +77,11 @@
     "dict_label": "已开工",
     "dict_value": "1",
     "dict_type": "prod_work_order_status",
-    "css_class": null,
     "list_class": "processing",
     "is_default": 0,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 8,
@@ -103,13 +89,11 @@
     "dict_label": "已关闭",
     "dict_value": "2",
     "dict_type": "prod_work_order_status",
-    "css_class": null,
     "list_class": "warning",
     "is_default": 0,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 10,
@@ -117,13 +101,11 @@
     "dict_label": "运行中",
     "dict_value": "运行中",
     "dict_type": "bas_line_status",
-    "css_class": null,
     "list_class": "success",
     "is_default": 0,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 11,
@@ -131,13 +113,11 @@
     "dict_label": "维护中",
     "dict_value": "维护中",
     "dict_type": "bas_line_status",
-    "css_class": null,
     "list_class": "warning",
     "is_default": 0,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 12,
@@ -145,13 +125,11 @@
     "dict_label": "停用",
     "dict_value": "停用",
     "dict_type": "bas_line_status",
-    "css_class": null,
     "list_class": "danger",
     "is_default": 0,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 13,
@@ -159,13 +137,11 @@
     "dict_label": "白班",
     "dict_value": "白班",
     "dict_type": "bas_shift_type",
-    "css_class": null,
     "list_class": "blue",
     "is_default": 1,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 14,
@@ -173,13 +149,11 @@
     "dict_label": "夜班",
     "dict_value": "夜班",
     "dict_type": "bas_shift_type",
-    "css_class": null,
     "list_class": "purple",
     "is_default": 0,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 15,
@@ -187,13 +161,11 @@
     "dict_label": "来料检验类",
     "dict_value": "来料检验类",
     "dict_type": "bas_defect_category",
-    "css_class": null,
     "list_class": "blue",
     "is_default": 0,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 16,
@@ -201,13 +173,11 @@
     "dict_label": "制程检验类",
     "dict_value": "制程检验类",
     "dict_type": "bas_defect_category",
-    "css_class": null,
     "list_class": "orange",
     "is_default": 1,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 17,
@@ -215,13 +185,11 @@
     "dict_label": "来料不良",
     "dict_value": "来料不良",
     "dict_type": "bas_defect_type",
-    "css_class": null,
     "list_class": "blue",
     "is_default": 0,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 18,
@@ -229,13 +197,11 @@
     "dict_label": "制程不良",
     "dict_value": "制程不良",
     "dict_type": "bas_defect_type",
-    "css_class": null,
     "list_class": "orange",
     "is_default": 1,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 19,
@@ -243,13 +209,11 @@
     "dict_label": "检验报废",
     "dict_value": "检验报废",
     "dict_type": "bas_defect_type",
-    "css_class": null,
     "list_class": "red",
     "is_default": 0,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 20,
@@ -257,13 +221,12 @@
     "dict_label": "换型换线",
     "dict_value": "换型换线",
     "dict_type": "prod_exception_type",
-    "css_class": null,
     "list_class": "blue",
     "is_default": 0,
     "status": 1,
     "remark": "生产报工-异常工时类型：换型换线",
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 21,
@@ -271,13 +234,12 @@
     "dict_label": "停机待料",
     "dict_value": "停机待料",
     "dict_type": "prod_exception_type",
-    "css_class": null,
     "list_class": "orange",
     "is_default": 0,
     "status": 1,
     "remark": "生产报工-异常工时类型：停机待料",
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 22,
@@ -285,13 +247,12 @@
     "dict_label": "故障维修",
     "dict_value": "故障维修",
     "dict_type": "prod_exception_type",
-    "css_class": null,
     "list_class": "red",
     "is_default": 0,
     "status": 1,
     "remark": "生产报工-异常工时类型：故障维修（需选择维修设备）",
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 23,
@@ -299,13 +260,12 @@
     "dict_label": "其它停机",
     "dict_value": "其它停机",
     "dict_type": "prod_exception_type",
-    "css_class": null,
     "list_class": "default",
     "is_default": 0,
     "status": 1,
     "remark": "生产报工-异常工时类型：其它停机",
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 25,
@@ -313,13 +273,11 @@
     "dict_label": "运行",
     "dict_value": "运行",
     "dict_type": "bas_device_status",
-    "css_class": null,
     "list_class": "success",
     "is_default": 0,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 26,
@@ -327,13 +285,11 @@
     "dict_label": "停用",
     "dict_value": "停用",
     "dict_type": "bas_device_status",
-    "css_class": null,
     "list_class": "danger",
     "is_default": 0,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 27,
@@ -341,13 +297,11 @@
     "dict_label": "维修",
     "dict_value": "维修",
     "dict_type": "bas_device_status",
-    "css_class": null,
     "list_class": "warning",
     "is_default": 0,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 28,
@@ -355,13 +309,11 @@
     "dict_label": "男",
     "dict_value": "1",
     "dict_type": "sys_user_sex",
-    "css_class": null,
     "list_class": "blue",
     "is_default": 1,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   },
   {
     "dict_code": 29,
@@ -369,12 +321,10 @@
     "dict_label": "女",
     "dict_value": "2",
     "dict_type": "sys_user_sex",
-    "css_class": null,
     "list_class": "magenta",
     "is_default": 0,
     "status": 1,
-    "remark": null,
-    "created_at": "2026-07-09 14:53:38.550 +00:00",
-    "updated_at": "2026-07-09 14:53:38.550 +00:00"
+    "created_at": "2026-07-09T06:53:38.000Z",
+    "updated_at": "2026-07-09T06:53:38.000Z"
   }
 ]
