@@ -594,13 +594,12 @@ export default function OrderManagement() {
         {currentOrder && (
           <>
             <Descriptions column={4} bordered size="small" style={{ marginBottom: 20 }}>
-              <Descriptions.Item label="完工单号">{currentOrder.finish_order_no || '-'}</Descriptions.Item>
               <Descriptions.Item label="订单编号">{currentOrder.order_no}</Descriptions.Item>
               <Descriptions.Item label="下发时间">{formatDateTime(currentOrder.release_time)}</Descriptions.Item>
               <Descriptions.Item label="工单状态"><Tag color={statusColorMap[currentOrder.status]}>{currentOrder.status}</Tag></Descriptions.Item>
-              <Descriptions.Item label="产品料号">{currentOrder.material_code}</Descriptions.Item>
-              <Descriptions.Item label="产品名称">{currentOrder.material_name}</Descriptions.Item>
               <Descriptions.Item label="规格">{currentOrder.specification || '-'}</Descriptions.Item>
+              <Descriptions.Item label="产品料号" span={1}>{currentOrder.material_code}</Descriptions.Item>
+              <Descriptions.Item label="产品名称" span={3}>{currentOrder.material_name}</Descriptions.Item>
               <Descriptions.Item label="计划数量">{(currentOrder.planned_qty || 0).toLocaleString()}</Descriptions.Item>
               <Descriptions.Item label="完工数量">
                 <span style={{ color: '#52c41a' }}>{(currentOrder.finished_qty || 0).toLocaleString()}</span>
