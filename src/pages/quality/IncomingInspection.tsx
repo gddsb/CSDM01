@@ -28,6 +28,7 @@ export default function IncomingInspection() {
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [pagination, setPagination] = useState({ current: 1, pageSize: 20, total: 0 })
+  const [summaryStats, setSummaryStats] = useState<any>({ total: 0, pending: 0, inspecting: 0, reviewing: 0, pass: 0, fail: 0 })
 
   const [supplierFilter, setSupplierFilter] = useState<any>(undefined)
   const [resultFilter, setResultFilter] = useState<any>(undefined)
@@ -59,6 +60,7 @@ export default function IncomingInspection() {
       if (res.success !== false) {
         setData(res.data?.list || res.data || [])
         setPagination(p => ({ ...p, total: res.data?.total || res.total || 0 }))
+        if (res.data?.stats) setSummaryStats(res.data.stats)
       } else {
         setData([])
         setPagination(p => ({ ...p, total: 0 }))
@@ -86,12 +88,12 @@ export default function IncomingInspection() {
     loadStandards()
   }, [])
 
-  const totalCount = pagination.total
-  const passCount = data.filter(i => i.result === '合格').length
-  const failCount = data.filter(i => i.result === '不合格').length
+  const totalCount = summaryStats.total || pagination.total
+  const passCount = summaryStats.pass ?? 0
+  const failCount = summaryStats.fail ?? 0
   const passRate = totalCount > 0 ? ((passCount / totalCount) * 100).toFixed(1) : '0.0'
-  const pendingCount = data.filter(i => i.status === '待检').length
-  const inspectingCount = data.filter(i => i.status === '检验中').length
+  const pendingCount = summaryStats.pending ?? 0
+  const inspectingCount = summaryStats.inspecting ?? 0
 
   const stats = [
     { label: '检验总数', value: totalCount, icon: <ExperimentOutlined />, color: '#2196F3' },

@@ -37,6 +37,7 @@ export default function ProductInspection() {
   const [loading, setLoading] = useState(false)
   const [reportOrders, setReportOrders] = useState<any[]>([])
   const [pagination, setPagination] = useState({ current: 1, pageSize: 20, total: 0 })
+  const [summaryStats, setSummaryStats] = useState<any>({ total: 0, pending: 0, inspecting: 0, reviewing: 0, pass: 0, fail: 0, first: 0, process: 0, finished: 0 })
 
   const [inspectionType, setInspectionType] = useState<any>(undefined)
   const [reportOrderId, setReportOrderId] = useState<any>(undefined)
@@ -75,6 +76,7 @@ export default function ProductInspection() {
       if (res.success !== false) {
         setData(res.data?.list || res.data || [])
         setPagination(p => ({ ...p, total: res.data?.total || res.total || 0 }))
+        if (res.data?.stats) setSummaryStats(res.data.stats)
       } else {
         setData([])
         setPagination(p => ({ ...p, total: 0 }))
@@ -114,13 +116,13 @@ export default function ProductInspection() {
     loadStandards()
   }, [])
 
-  const totalCount = pagination.total
-  const passCount = data.filter(i => i.result === '合格').length
-  const failCount = data.filter(i => i.result === '不合格').length
+  const totalCount = summaryStats.total || pagination.total
+  const passCount = summaryStats.pass ?? 0
+  const failCount = summaryStats.fail ?? 0
   const passRate = totalCount > 0 ? ((passCount / totalCount) * 100).toFixed(1) : '0.0'
-  const firstPieceCount = data.filter(i => i.inspection_type === '首件').length
-  const processCount = data.filter(i => i.inspection_type === '制程').length
-  const finishedCount = data.filter(i => i.inspection_type === '成品').length
+  const firstPieceCount = summaryStats.first ?? 0
+  const processCount = summaryStats.process ?? 0
+  const finishedCount = summaryStats.finished ?? 0
 
   const stats = [
     { label: '检验总数', value: totalCount, icon: <ExperimentOutlined />, color: '#2196F3' },

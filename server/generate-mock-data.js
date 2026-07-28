@@ -222,6 +222,40 @@ async function generateReportOrders() {
     await ProcessMaterial.bulkCreate(processMaterials)
     console.log('✅ 生成工序物料:', processMaterials.length, '条')
   }
+
+  // 同步订单状态：根据报工单状态联动更新生产订单
+  console.log('\n  同步订单状态（报工单 → 订单联动）...')
+  const orderIds = [...new Set(reportOrders.map(r => r.order_id))]
+  let orderUpdated = 0
+  for (const orderId of orderIds) {
+    const order = await Order.findByPk(orderId)
+    if (!order) continue
+    const orderRos = reportOrders.filter(r => r.order_id === orderId)
+    const totalRO = orderRos.length
+    const finishedRO = orderRos.filter(r => r.status === 1).length
+    const finishedSum = orderRos.reduce((s, r) => s + Number(r.report_qty || 0), 0)
+    const plannedQty = Number(order.planned_qty || 0)
+
+    let targetStatus = order.getDataValue('status')
+    if (totalRO > 0 && finishedRO === totalRO && finishedSum >= plannedQty) {
+      targetStatus = 3 // 完工
+    } else if (finishedRO > 0) {
+      targetStatus = 2 // 开工（部分报工）
+    } else if (totalRO > 0) {
+      targetStatus = 2 // 开工（已有报工单）
+    }
+
+    if (targetStatus !== order.getDataValue('status')) {
+      await order.update({
+        status: targetStatus,
+        finished_qty: finishedSum,
+      })
+      orderUpdated++
+    } else {
+      await order.update({ finished_qty: finishedSum })
+    }
+  }
+  console.log('  ✅ 已同步订单状态，更新:', orderUpdated, '个订单')
 }
 
 function parseToleranceRange(stdValue) {

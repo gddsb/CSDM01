@@ -86,7 +86,17 @@ export default {
         offset: (pageNum - 1) * pageSize,
       })
 
-      success(res, { list: rows, total: count, page: pageNum, page_size: pageSize })
+      const allRows = await IncomingInspection.findAll({ where, attributes: ['result', 'status'], raw: true })
+      const stats = {
+        total: count,
+        pending: allRows.filter(r => { const s = typeof r.status === 'string' ? STATUS_REVERSE[r.status] : r.status; return s === 0 }).length,
+        inspecting: allRows.filter(r => { const s = typeof r.status === 'string' ? STATUS_REVERSE[r.status] : r.status; return s === 1 }).length,
+        reviewing: allRows.filter(r => { const s = typeof r.status === 'string' ? STATUS_REVERSE[r.status] : r.status; return s === 2 }).length,
+        pass: allRows.filter(r => r.result === '合格').length,
+        fail: allRows.filter(r => r.result === '不合格').length,
+      }
+
+      success(res, { list: rows, total: count, page: pageNum, page_size: pageSize, stats })
     } catch (err: any) {
       logger.error('[IncomingInspection] list error:', err)
       fail(res, err.message || '查询失败', ErrorCode.SYSTEM_ERROR)

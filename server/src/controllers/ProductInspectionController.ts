@@ -91,7 +91,20 @@ export default {
         offset: (pageNum - 1) * pageSize,
       })
 
-      success(res, { list: rows, total: count, page: pageNum, page_size: pageSize })
+      const allRows = await ProductInspection.findAll({ where, attributes: ['result', 'status', 'inspection_type'], raw: true })
+      const stats = {
+        total: count,
+        pending: allRows.filter(r => { const s = typeof r.status === 'string' ? STATUS_REVERSE[r.status] : r.status; return s === 0 }).length,
+        inspecting: allRows.filter(r => { const s = typeof r.status === 'string' ? STATUS_REVERSE[r.status] : r.status; return s === 1 }).length,
+        reviewing: allRows.filter(r => { const s = typeof r.status === 'string' ? STATUS_REVERSE[r.status] : r.status; return s === 2 }).length,
+        pass: allRows.filter(r => r.result === '合格').length,
+        fail: allRows.filter(r => r.result === '不合格').length,
+        first: allRows.filter(r => r.inspection_type === '首件').length,
+        process: allRows.filter(r => r.inspection_type === '制程').length,
+        finished: allRows.filter(r => r.inspection_type === '成品').length,
+      }
+
+      success(res, { list: rows, total: count, page: pageNum, page_size: pageSize, stats })
     } catch (err: any) {
       logger.error('[ProductInspection] list error:', err)
       fail(res, err.message || '查询失败', ErrorCode.SYSTEM_ERROR)
