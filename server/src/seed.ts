@@ -11,6 +11,7 @@ import {
   DictType, DictData, ProcessDefect, ProcessException,
   ProcessMaterial, DataDictionary,
   InspectionStandard, InspectionStandardItem,
+  MicrobeInspection, MicrobeInspectionItem,
 } from './models/index.js'
 import sequelize from './config/database.js'
 import { logger } from './utils/logger.js'
@@ -49,6 +50,8 @@ const seedOrder = [
   { name: 'NumberRule', model: NumberRule, label: '编码规则' },
   { name: 'InspectionStandard', model: InspectionStandard, label: '检验标准主表' },
   { name: 'InspectionStandardItem', model: InspectionStandardItem, label: '检验标准子表' },
+  { name: 'MicrobeInspection', model: MicrobeInspection, label: '微生物检验主表' },
+  { name: 'MicrobeInspectionItem', model: MicrobeInspectionItem, label: '微生物检验项目' },
   { name: 'DataDictionary', model: DataDictionary, label: '数据字典' },
   { name: 'OperationLog', model: OperationLog, label: '操作日志' },
 ]

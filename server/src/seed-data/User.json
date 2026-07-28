@@ -142,5 +142,18 @@
     "pwd_reset_required": 0,
     "created_at": "2026-07-09T06:53:38.000Z",
     "updated_at": "2026-07-28T12:32:00.000Z"
+  },
+  {
+    "user_id": 10,
+    "username": "IQC",
+    "password": "$2a$10$jhP1ljs5S4AhPX.imY/FxOg/pFCKwAqqjN7GCgfVtI1BnGDLdWAEa",
+    "real_name": "喻舒",
+    "employee_no": "CSDM009",
+    "department": "质量部",
+    "role_id": 4,
+    "status": 1,
+    "pwd_reset_required": 0,
+    "created_at": "2026-07-28T13:43:22.000Z",
+    "updated_at": "2026-07-28T13:43:22.000Z"
   }
 ]

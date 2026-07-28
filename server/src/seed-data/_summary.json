@@ -2,7 +2,7 @@
   "Role": 9,
   "Permission": 66,
   "RolePermission": 67,
-  "User": 9,
+  "User": 10,
   "Process": 11,
   "Customer": 24,
   "Material": 544,
@@ -27,6 +27,12 @@
   "NumberRule": 12,
   "InspectionStandard": 3,
   "InspectionStandardItem": 25,
+  "ProductInspection": 62,
+  "ProductInspectionItem": 524,
+  "IncomingInspection": 30,
+  "IncomingInspectionItem": 159,
+  "MicrobeInspection": 64,
+  "MicrobeInspectionItem": 324,
   "DataDictionary": 36,
-  "OperationLog": 314
+  "OperationLog": 326
 }

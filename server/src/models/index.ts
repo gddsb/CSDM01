@@ -37,6 +37,8 @@ import IncomingInspection from './IncomingInspection.js'
 import IncomingInspectionItem from './IncomingInspectionItem.js'
 import InspectionStandard from './InspectionStandard.js'
 import InspectionStandardItem from './InspectionStandardItem.js'
+import MicrobeInspection from './MicrobeInspection.js'
+import MicrobeInspectionItem from './MicrobeInspectionItem.js'
 
 // 建立模型关联关系
 // 用户 - 角色
@@ -136,6 +138,18 @@ InspectionStandardItem.belongsTo(InspectionStandard, { foreignKey: 'standard_id'
 // 检验标准 - 料品
 InspectionStandard.belongsTo(Material, { foreignKey: 'material_id', as: 'material', constraints: false })
 
+// 微生物检验主表 - 报工单
+MicrobeInspection.belongsTo(ReportOrder, { foreignKey: 'report_order_id', as: 'report_order', constraints: false })
+// 微生物检验主表 - 来料检验
+MicrobeInspection.belongsTo(IncomingInspection, { foreignKey: 'incoming_id', as: 'incoming_inspection', constraints: false })
+// 微生物检验主表 - 生产订单
+MicrobeInspection.belongsTo(Order, { foreignKey: 'order_id', as: 'order', constraints: false })
+// 微生物检验主表 - 检验标准
+MicrobeInspection.belongsTo(InspectionStandard, { foreignKey: 'standard_id', as: 'standard', constraints: false })
+// 微生物检验主表 - 检测项目（一对多）
+MicrobeInspection.hasMany(MicrobeInspectionItem, { foreignKey: 'inspection_id', as: 'items' })
+MicrobeInspectionItem.belongsTo(MicrobeInspection, { foreignKey: 'inspection_id', as: 'inspection' })
+
 const db = {
   sequelize,
   DataTypes,
@@ -175,6 +189,8 @@ const db = {
   IncomingInspectionItem,
   InspectionStandard,
   InspectionStandardItem,
+  MicrobeInspection,
+  MicrobeInspectionItem,
 }
 
 // 具名导出，便于按需导入
@@ -215,6 +231,8 @@ export {
   IncomingInspectionItem,
   InspectionStandard,
   InspectionStandardItem,
+  MicrobeInspection,
+  MicrobeInspectionItem,
 }
 
 export default db
