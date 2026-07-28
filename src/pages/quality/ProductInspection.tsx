@@ -319,27 +319,27 @@ export default function ProductInspection() {
   const columns = [
     { title: '检验编号', dataIndex: 'inspection_no', key: 'inspection_no', width: 60, fixed: 'left' },
     {
-      title: '类型', dataIndex: 'inspection_type', key: 'inspection_type', width: 80,
+      title: '类型', dataIndex: 'inspection_type', key: 'inspection_type',
       render: (v: string) => <Tag color={typeColorMap[v] || 'default'}>{v}</Tag>
     },
-    { title: '工单编号', dataIndex: 'report_order_no', key: 'report_order_no', width: 160 },
-    { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 130 },
+    { title: '工单编号', dataIndex: 'report_order_no', key: 'report_order_no' },
+    { title: '料号', dataIndex: 'material_code', key: 'material_code' },
     { title: '产品名称', dataIndex: 'material_name', key: 'material_name', onCell: () => ({ style: { whiteSpace: 'normal', wordBreak: 'break-all', lineHeight: '22px' } }) },
-    { title: '规格', dataIndex: 'specification', key: 'specification', width: 150 },
+    { title: '规格', dataIndex: 'specification', key: 'specification' },
     {
-      title: '结果', dataIndex: 'result', key: 'result', width: 80,
+      title: '结果', dataIndex: 'result', key: 'result',
       render: (v: string) => v && v !== '-' ? <Tag color={resultColor[v as keyof typeof resultColor]}>{v}</Tag> : <Tag>待检</Tag>
     },
     {
-      title: '触发方式', dataIndex: 'trigger_type', key: 'trigger_type', width: 90,
+      title: '触发方式', dataIndex: 'trigger_type', key: 'trigger_type',
       render: (v: string) => v && v !== '-' ? <Tag color={triggerColor[v as keyof typeof triggerColor]}>{v}</Tag> : '-'
     },
     {
-      title: '状态', dataIndex: 'status', key: 'status', width: 90,
+      title: '状态', dataIndex: 'status', key: 'status',
       render: (v: string) => <Tag color={statusColor[v as keyof typeof statusColor]}>{v}</Tag>
     },
-    { title: '检验员', dataIndex: 'inspector_name', key: 'inspector_name', width: 100, render: (v: string) => v || '-' },
-    { title: '检验时间', dataIndex: 'inspection_time', key: 'inspection_time', width: 160, render: formatDateTime },
+    { title: '检验员', dataIndex: 'inspector_name', key: 'inspector_name', render: (v: string) => v || '-' },
+    { title: '检验时间', dataIndex: 'inspection_time', key: 'inspection_time', render: formatDateTime },
     {
       title: '操作', key: 'action', fixed: 'right',
       render: (_: any, record: any) => (
@@ -495,12 +495,12 @@ export default function ProductInspection() {
             </Row>
             <ResizableTable
               tableKey="pages_quality_ProductInspection"
+              autoWidth
               columns={columns}
               dataSource={data}
               rowKey="inspection_id"
               size="small"
               loading={loading}
-              scroll={{ x: 1800 }}
               pagination={{
                 ...pagination,
                 showSizeChanger: true,

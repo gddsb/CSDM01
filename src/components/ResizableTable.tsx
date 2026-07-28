@@ -36,10 +36,11 @@ function useDebouncedSave() {
 
 export interface ResizableTableProps<RecordType = any> extends TableProps<RecordType> {
   tableKey: string
+  autoWidth?: boolean
 }
 
 function ResizableTable<RecordType extends object = any>(props: ResizableTableProps<RecordType>) {
-  const { tableKey, columns: rawColumns = [], ...rest } = props
+  const { tableKey, columns: rawColumns = [], autoWidth = false, ...rest } = props
   const { save } = useDebouncedSave()
   const [colWidths, setColWidths] = useState<Record<string, number>>({})
   const [loaded, setLoaded] = useState(false)
@@ -141,6 +142,12 @@ function ResizableTable<RecordType extends object = any>(props: ResizableTablePr
   }, [colWidths, rawColumns, tableKey, save, elasticColKeys])
 
   const columns = useMemo(() => {
+    if (autoWidth) {
+      return rawColumns.map(col => {
+        const { width: _w, ...restCol } = col as any
+        return { ...restCol }
+      })
+    }
     return rawColumns.map(col => {
       const key = String(col.key || col.dataIndex || '')
       const width = colWidths[key] || col.width || 150
@@ -156,7 +163,7 @@ function ResizableTable<RecordType extends object = any>(props: ResizableTablePr
         }),
       }
     })
-  }, [rawColumns, colWidths, handleResize])
+  }, [rawColumns, colWidths, handleResize, autoWidth])
 
   return (
     <div className="resizable-table-wrapper">
@@ -176,16 +183,14 @@ function ResizableTable<RecordType extends object = any>(props: ResizableTablePr
           opacity: 0.4;
         }
         .resizable-table-wrapper table {
-          table-layout: fixed !important;
+          table-layout: ${autoWidth ? 'auto' : 'fixed'} !important;
         }
         .resizable-table-wrapper .ant-table-thead > tr > th,
         .resizable-table-wrapper .ant-table-tbody > tr > td {
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+          ${autoWidth ? 'white-space: nowrap;' : 'overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'}
         }
       `}</style>
-      <Table<RecordType> columns={columns} tableLayout="fixed" {...rest} />
+      <Table<RecordType> columns={columns} tableLayout={autoWidth ? 'auto' : 'fixed'} {...rest} />
     </div>
   )
 }
