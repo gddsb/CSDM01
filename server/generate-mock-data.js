@@ -160,17 +160,66 @@ async function generateReportOrders() {
           }
         }
 
-        // 随机生成工序物料（约40%概率）
-        if (Math.random() < 0.4 && materials.length > 0) {
+        // 为每个工序生成投入/产出物料（第一道工序有投入，最后一道工序有产出）
+        const procIndex = procs.findIndex(lp => lp.process_id === proc.process_id)
+        const isFirstProcess = procIndex === 0
+        const isLastProcess = procIndex === procs.length - 1
+
+        // 第一道工序：必有投入
+        if (isFirstProcess) {
+          const investMat = materials.length > 0 ? pick(materials) : null
+          const investQty = Math.floor(order.planned_qty * (0.9 + Math.random() * 0.2))
+          processMaterials.push({
+            report_order_id: roId,
+            process_id: proc.process_id,
+            material_type: '投入',
+            bas_material_id: investMat?.material_id || null,
+            material_batch: 'B' + pad(rand(1000, 9999)),
+            package_no: 'P' + pad(rand(100, 999)),
+            quantity: investQty,
+            created_at: reportTime
+          })
+          // 少量退回（约5%概率）
+          if (Math.random() < 0.05) {
+            processMaterials.push({
+              report_order_id: roId,
+              process_id: proc.process_id,
+              material_type: '退回',
+              bas_material_id: investMat?.material_id || null,
+              material_batch: 'B' + pad(rand(1000, 9999)),
+              package_no: 'P' + pad(rand(100, 999)),
+              quantity: rand(1, 10),
+              created_at: reportTime
+            })
+          }
+        }
+
+        // 最后一道工序：必有产出
+        if (isLastProcess) {
+          const outputMat = materials.length > 0 ? pick(materials) : null
+          processMaterials.push({
+            report_order_id: roId,
+            process_id: proc.process_id,
+            material_type: '产出',
+            bas_material_id: outputMat?.material_id || order.material_id,
+            material_batch: 'B' + pad(rand(1000, 9999)),
+            package_no: 'P' + pad(rand(100, 999)),
+            quantity: reportQty,
+            created_at: reportTime
+          })
+        }
+
+        // 中间工序：随机生成辅料投入（约30%概率）
+        if (!isFirstProcess && !isLastProcess && Math.random() < 0.3 && materials.length > 0) {
           const mat = pick(materials)
           processMaterials.push({
             report_order_id: roId,
             process_id: proc.process_id,
-            material_type: mat.material_category || '辅料',
+            material_type: '投入',
             bas_material_id: mat.material_id,
             material_batch: 'B' + pad(rand(1000, 9999)),
             package_no: 'P' + pad(rand(100, 999)),
-            quantity: rand(10, 500),
+            quantity: rand(10, 200),
             created_at: reportTime
           })
         }
