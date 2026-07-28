@@ -1,16 +1,17 @@
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { Table, Tag, Button, Drawer, Descriptions, Typography, Alert } from 'antd'
+import { Table, Tag, Button, Select, DatePicker, Space, Row, Col, Input, Drawer, Descriptions, Typography, Alert } from 'antd'
 import {
   ExperimentOutlined, SafetyCertificateOutlined, WarningOutlined,
-  CheckCircleOutlined, EyeOutlined
+  CheckCircleOutlined, EyeOutlined, SearchOutlined, ReloadOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import { formatDateTime } from '../../utils'
 import api from '../../utils/api'
 
-const { Text, Title } = Typography
+const { RangePicker } = DatePicker
+const { Title } = Typography
 
 const resultColor = { '合格': 'success', '不合格': 'error' } as Record<string, string>
 const typeColor = { '正常': 'success', '加严': 'warning', '复检': 'processing' } as Record<string, string>
@@ -20,6 +21,29 @@ const handleColor = { '入库': 'green', '判退': 'red', '报废': 'red', '让�
 
 const STATUS_MAP: Record<number, string> = { 0: '待检', 1: '检验中', 2: '审核中', 3: '已完成', 4: '已关闭' }
 
+const INSPECTION_TYPES = [
+  { label: '正常', value: '正常' },
+  { label: '加严', value: '加严' },
+  { label: '复检', value: '复检' },
+]
+
+const OBJECT_TYPES = [
+  { label: '成品检验', value: '成品检验' },
+  { label: '来料检验', value: '来料检验' },
+]
+
+const RESULT_OPTIONS = [
+  { label: '合格', value: '合格' },
+  { label: '不合格', value: '不合格' },
+]
+
+const STATUS_OPTIONS = [
+  { label: '待检', value: '待检' },
+  { label: '检验中', value: '检验中' },
+  { label: '审核中', value: '审核中' },
+  { label: '已完成', value: '已完成' },
+]
+
 export default function MicrobeInspection() {
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -28,10 +52,25 @@ export default function MicrobeInspection() {
   const [current, setCurrent] = useState<any>(null)
   const [detailItems, setDetailItems] = useState<any[]>([])
 
+  const [inspectionNo, setInspectionNo] = useState<any>(undefined)
+  const [inspectionType, setInspectionType] = useState<any>(undefined)
+  const [objectType, setObjectType] = useState<any>(undefined)
+  const [resultFilter, setResultFilter] = useState<any>(undefined)
+  const [statusFilter, setStatusFilter] = useState<any>(undefined)
+  const [dateRange, setDateRange] = useState<any>(null)
+
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
       const params: any = { page: pagination.current, page_size: pagination.pageSize }
+      if (inspectionNo) params.inspection_no = inspectionNo
+      if (inspectionType) params.inspection_type = inspectionType
+      if (objectType) params.object_type = objectType
+      if (resultFilter) params.result = resultFilter
+      if (statusFilter) params.status = statusFilter
+      if (dateRange && dateRange[0]) params.start_date = dateRange[0].format('YYYY-MM-DD')
+      if (dateRange && dateRange[1]) params.end_date = dateRange[1].format('YYYY-MM-DD')
+
       const res = await api.get('/basic/microbe-inspections', { params })
       if (res.success !== false) {
         setData(res.data?.list || res.data || [])
@@ -46,7 +85,7 @@ export default function MicrobeInspection() {
     } finally {
       setLoading(false)
     }
-  }, [pagination.current, pagination.pageSize])
+  }, [pagination.current, pagination.pageSize, inspectionNo, inspectionType, objectType, resultFilter, statusFilter, dateRange])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -87,6 +126,15 @@ export default function MicrobeInspection() {
     } catch (e) {
       // ignore
     }
+  }
+
+  const handleReset = () => {
+    setInspectionNo(undefined)
+    setInspectionType(undefined)
+    setObjectType(undefined)
+    setResultFilter(undefined)
+    setStatusFilter(undefined)
+    setDateRange(null)
   }
 
   const columns = [
@@ -142,7 +190,70 @@ export default function MicrobeInspection() {
         filters={[]}
         actions={<ActionButtons />}
         table={
-          <>
+          <div>
+            <Row gutter={[12, 8]} style={{ marginBottom: 12 }}>
+              <Col span={4}>
+                <Input
+                  placeholder="检验编号"
+                  allowClear
+                  value={inspectionNo}
+                  onChange={e => setInspectionNo(e.target.value)}
+                />
+              </Col>
+              <Col span={3}>
+                <Select
+                  placeholder="检验类型"
+                  allowClear
+                  style={{ width: '100%' }}
+                  options={INSPECTION_TYPES}
+                  value={inspectionType}
+                  onChange={setInspectionType}
+                />
+              </Col>
+              <Col span={3}>
+                <Select
+                  placeholder="检验对象"
+                  allowClear
+                  style={{ width: '100%' }}
+                  options={OBJECT_TYPES}
+                  value={objectType}
+                  onChange={setObjectType}
+                />
+              </Col>
+              <Col span={3}>
+                <Select
+                  placeholder="检验结果"
+                  allowClear
+                  style={{ width: '100%' }}
+                  options={RESULT_OPTIONS}
+                  value={resultFilter}
+                  onChange={setResultFilter}
+                />
+              </Col>
+              <Col span={3}>
+                <Select
+                  placeholder="状态"
+                  allowClear
+                  style={{ width: '100%' }}
+                  options={STATUS_OPTIONS}
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                />
+              </Col>
+              <Col span={5}>
+                <RangePicker
+                  style={{ width: '100%' }}
+                  value={dateRange}
+                  onChange={setDateRange}
+                />
+              </Col>
+              <Col span={3}>
+                <Space>
+                  <Button type="primary" icon={<SearchOutlined />} onClick={fetchData}>查询</Button>
+                  <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
+                </Space>
+              </Col>
+            </Row>
             <Alert
               type="info"
               showIcon
@@ -165,7 +276,7 @@ export default function MicrobeInspection() {
                 onChange: (page: number, pageSize: number) => setPagination(p => ({ ...p, current: page, pageSize })),
               }}
             />
-          </>
+          </div>
         }
       />
       <Drawer
