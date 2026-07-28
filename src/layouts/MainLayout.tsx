@@ -10,7 +10,7 @@ import {
   ControlOutlined, DesktopOutlined, LineChartOutlined, CalendarOutlined,
   RiseOutlined, AlertOutlined, ContainerOutlined,
   LockOutlined, KeyOutlined, MenuOutlined, SkinOutlined, MobileOutlined,
-  FolderOutlined,
+  FolderOutlined, ShopOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useApp, useMessage, User } from '../contexts/AppContext'
@@ -54,7 +54,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   PieChartOutlined, FileSearchOutlined, FundProjectionScreenOutlined,
   ControlOutlined, DesktopOutlined, LineChartOutlined, CalendarOutlined,
   RiseOutlined, AlertOutlined, ContainerOutlined,
-  LockOutlined, KeyOutlined, MenuOutlined, MobileOutlined,
+  LockOutlined, KeyOutlined, MenuOutlined, MobileOutlined, ShopOutlined,
 }
 function resolveIcon(name?: string): React.ReactNode {
   if (!name) return undefined
@@ -105,6 +105,7 @@ const defaultMenuItems = [
     children: [
       { key: '/basic/materials', icon: <ProfileOutlined />, label: '料品档案' },
       { key: '/basic/customers', icon: <TeamOutlined />, label: '客户档案' },
+      { key: '/basic/suppliers', icon: <ShopOutlined />, label: '供应商档案' },
       { key: '/basic/lines', icon: <DeploymentUnitOutlined />, label: '产线档案' },
       { key: '/basic/processes', icon: <DeploymentUnitOutlined />, label: '工序档案' },
       { key: '/basic/defects', icon: <AlertOutlined />, label: '不良分类' },

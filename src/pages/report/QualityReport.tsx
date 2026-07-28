@@ -1,6 +1,6 @@
 import ResizableTable from '../../components/ResizableTable'
-import React, { useState, useMemo } from 'react'
-import { Table, Tag, Button, Select, Input, Space, Row, Col, Progress, DatePicker, Card } from 'antd'
+import React, { useState, useMemo, useEffect } from 'react'
+import { Table, Tag, Button, Select, Input, Space, Row, Col, Progress, DatePicker, Card, Spin, message } from 'antd'
 import {
   ExperimentOutlined, ExportOutlined, SearchOutlined, ReloadOutlined,
   CheckCircleOutlined, CloseCircleOutlined, SafetyCertificateOutlined,
@@ -8,9 +8,11 @@ import {
 } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import { formatDateTime } from '../../utils'
+import api from '../../utils/api'
 import {
-  incomingInspections, finishedInspections, microbeInspections,
-  envInspections, complaints
+  microbeInspections as mockMicrobe,
+  envInspections as mockEnv,
+  complaints as mockComplaints,
 } from '../../mock/data'
 
 const { RangePicker } = DatePicker
@@ -22,9 +24,57 @@ const resultColorMap = {
 }
 
 export default function QualityReport() {
-  const [typeFilter, setTypeFilter] = useState('all')
-  const [resultFilter, setResultFilter] = useState(undefined)
+  const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [resultFilter, setResultFilter] = useState<string | undefined>(undefined)
   const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [incomingInspections, setIncomingInspections] = useState<any[]>([])
+  const [finishedInspections, setFinishedInspections] = useState<any[]>([])
+  const [microbeInspections, setMicrobeInspections] = useState<any[]>([])
+  const [envInspections, setEnvInspections] = useState<any[]>([])
+  const [complaints, setComplaints] = useState<any[]>([])
+
+  const loadData = async () => {
+    setLoading(true)
+    try {
+      const [incRes, finRes] = await Promise.all([
+        api.get('/basic/incoming-inspections', { params: { pageSize: 200 } }),
+        api.get('/basic/product-inspections', { params: { pageSize: 200 } }),
+      ])
+      if (incRes.success && incRes.data) {
+        setIncomingInspections(incRes.data.map((i: any) => ({
+          ...i,
+          inspection_id: i.incoming_id || i.inspection_id,
+          inspection_no: i.incoming_no || i.inspection_no,
+          inspector_name: i.inspector_name || i.inspector || '',
+          result: i.final_result || i.result,
+          status: i.status,
+        })))
+      }
+      if (finRes.success && finRes.data) {
+        setFinishedInspections(finRes.data.map((i: any) => ({
+          ...i,
+          inspection_id: i.product_id || i.inspection_id,
+          inspection_no: i.product_no || i.inspection_no,
+          work_order_no: i.report_order_no || i.work_order_no,
+          inspector_name: i.inspector_name || i.inspector || '',
+          result: i.final_result || i.result,
+          status: i.status,
+        })))
+      }
+      setMicrobeInspections(mockMicrobe)
+      setEnvInspections(mockEnv)
+      setComplaints(mockComplaints)
+    } catch (err: any) {
+      message.error(err.message || '加载数据失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [])
 
   // 汇总所有检验数据
   const allInspections = useMemo(() => {
@@ -57,9 +107,9 @@ export default function QualityReport() {
       qty: null,
     }))
     return [...incoming, ...finished, ...microbe, ...env]
-  }, [])
+  }, [incomingInspections, finishedInspections, microbeInspections, envInspections])
 
-  const filtered = allInspections.filter(r => {
+  const filtered = allInspections.filter((r: any) => {
     const matchType = typeFilter === 'all' || r.inspection_category === typeFilter
     const matchResult = !resultFilter || r.result === resultFilter
     const matchSearch = !search || (r.inspection_no && r.inspection_no.toLowerCase().includes(search.toLowerCase()))
@@ -68,9 +118,9 @@ export default function QualityReport() {
 
   // 统计
   const totalInspections = filtered.length
-  const passCount = filtered.filter(r => r.result === '合格').length
-  const failCount = filtered.filter(r => r.result === '不合格').length
-  const pendingCount = filtered.filter(r => r.result === null).length
+  const passCount = filtered.filter((r: any) => r.result === '合格').length
+  const failCount = filtered.filter((r: any) => r.result === '不合格').length
+  const pendingCount = filtered.filter((r: any) => r.result === null || r.result === undefined).length
   const passRate = totalInspections > 0 ? ((passCount / (passCount + failCount || 1)) * 100).toFixed(1) : '0.0'
   const complaintCount = complaints.length
 
@@ -118,7 +168,8 @@ export default function QualityReport() {
       stats={stats}
       actions={<Button icon={<ExportOutlined />}>导出Excel</Button>}
       table={
-        <div>
+        <Spin spinning={loading} tip="加载中...">
+          <div>
           {/* 按类别汇总 */}
           <Row gutter={12} style={{ marginBottom: 12 }}>
             {categorySummary.map((cs, i) => (
@@ -200,8 +251,8 @@ export default function QualityReport() {
             </Col>
             <Col>
               <Space>
-                <Button type="primary" icon={<SearchOutlined />}>查询</Button>
-                <Button icon={<ReloadOutlined />} onClick={() => { setSearch(''); setTypeFilter('all'); setResultFilter(undefined) }}>重置</Button>
+                <Button type="primary" icon={<SearchOutlined />} onClick={loadData}>查询</Button>
+                <Button icon={<ReloadOutlined />} onClick={() => { setSearch(''); setTypeFilter('all'); setResultFilter(undefined); loadData() }}>重置</Button>
               </Space>
             </Col>
           </Row>
@@ -212,7 +263,8 @@ export default function QualityReport() {
             scroll={{ x: 1600 }}
             pagination={{ pageSize: 30, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
           />
-        </div>
+          </div>
+        </Spin>
       }
     />
   )

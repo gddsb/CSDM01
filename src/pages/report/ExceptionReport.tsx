@@ -1,6 +1,6 @@
 import ResizableTable from '../../components/ResizableTable'
-import React, { useState, useMemo } from 'react'
-import { Table, Tag, Button, Select, Input, Space, Row, Col, Progress, DatePicker, Card } from 'antd'
+import React, { useState, useMemo, useEffect } from 'react'
+import { Table, Tag, Button, Select, Input, Space, Row, Col, Progress, DatePicker, Card, Spin, message } from 'antd'
 import {
   BellOutlined, ExportOutlined, SearchOutlined, ReloadOutlined,
   ClockCircleOutlined, WarningOutlined, ToolOutlined,
@@ -8,7 +8,10 @@ import {
 } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import { formatDateTime } from '../../utils'
-import { exceptionRecords, workOrders } from '../../mock/data'
+import api from '../../utils/api'
+
+// 工单状态映射：0=开工, 1=完工, 2=关闭
+const woStatusNumToText: Record<number, string> = { 0: '开工', 1: '完工', 2: '关闭' }
 
 const { RangePicker } = DatePicker
 
@@ -21,10 +24,50 @@ const exceptionTypeMap = {
 }
 
 export default function ExceptionReport() {
-  const [typeFilter, setTypeFilter] = useState(undefined)
+  const [typeFilter, setTypeFilter] = useState<string | undefined>(undefined)
   const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [exceptionRecords, setExceptionRecords] = useState<any[]>([])
+  const [workOrders, setWorkOrders] = useState<any[]>([])
 
-  const filtered = exceptionRecords.filter(r => {
+  const loadData = async () => {
+    setLoading(true)
+    try {
+      const [excRes, woRes] = await Promise.all([
+        api.get('/production/process-exceptions', { params: { pageSize: 500 } }),
+        api.get('/production/report-orders', { params: { pageSize: 100 } }),
+      ])
+      if (excRes.success && excRes.data) {
+        setExceptionRecords(excRes.data.map((e: any) => ({
+          ...e,
+          record_id: e.exception_id,
+          work_order_id: e.report_order_id,
+          work_order_no: e.report_order_no || '',
+          duration: Number(e.duration) || 0,
+        })))
+      }
+      if (woRes.success && woRes.data) {
+        setWorkOrders(woRes.data.map((item: any) => ({
+          work_order_id: item.report_order_id,
+          work_order_no: item.report_no,
+          line_id: item.line_id,
+          line_name: item.line_name,
+          material_name: item.material_name,
+          status: woStatusNumToText[item.status] ?? '开工',
+        })))
+      }
+    } catch (err: any) {
+      message.error(err.message || '加载数据失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const filtered = exceptionRecords.filter((r: any) => {
     const matchType = !typeFilter || r.exception_type === typeFilter
     const matchSearch = !search || r.work_order_no.toLowerCase().includes(search.toLowerCase()) || (r.device_name && r.device_name.includes(search))
     return matchType && matchSearch
@@ -32,14 +75,14 @@ export default function ExceptionReport() {
 
   // 统计汇总
   const totalExceptions = filtered.length
-  const totalDuration = filtered.reduce((s, r) => s + r.duration, 0)
+  const totalDuration = filtered.reduce((s: number, r: any) => s + (Number(r.duration) || 0), 0)
   const avgDuration = totalExceptions > 0 ? (totalDuration / totalExceptions).toFixed(0) : '0'
 
   // 按异常类型汇总
   const typeSummary = useMemo(() => {
     return Object.entries(exceptionTypeMap).map(([code, info]) => {
-      const items = exceptionRecords.filter(r => r.exception_type === code)
-      const totalDur = items.reduce((s, r) => s + r.duration, 0)
+      const items = exceptionRecords.filter((r: any) => r.exception_type === code)
+      const totalDur = items.reduce((s: number, r: any) => s + (Number(r.duration) || 0), 0)
       const avgDur = items.length > 0 ? (totalDur / items.length).toFixed(0) : '0'
       return {
         exception_type: code,
@@ -56,9 +99,9 @@ export default function ExceptionReport() {
   // 按工单汇总
   const workOrderSummary = useMemo(() => {
     return workOrders.map(wo => {
-      const exceptions = exceptionRecords.filter(r => r.work_order_id === wo.work_order_id)
-      const totalDur = exceptions.reduce((s, r) => s + r.duration, 0)
-      const types = [...new Set(exceptions.map(r => r.exception_type))]
+      const exceptions = exceptionRecords.filter((r: any) => r.work_order_id === wo.work_order_id)
+      const totalDur = exceptions.reduce((s: number, r: any) => s + (Number(r.duration) || 0), 0)
+      const types = [...new Set(exceptions.map((r: any) => r.exception_type))]
       return {
         work_order_no: wo.work_order_no,
         line_name: wo.line_name,
@@ -69,7 +112,7 @@ export default function ExceptionReport() {
         status: wo.status,
       }
     }).filter(w => w.exception_count > 0)
-  }, [])
+  }, [workOrders, exceptionRecords])
 
   const stats = [
     { label: '异常总数', value: totalExceptions, icon: <BellOutlined />, color: '#F44336' },
@@ -137,8 +180,9 @@ export default function ExceptionReport() {
       stats={stats}
       actions={<Button icon={<ExportOutlined />}>导出Excel</Button>}
       table={
-        <div>
-          {/* 按异常类型汇总卡片 */}
+        <Spin spinning={loading} tip="加载中...">
+          <div>
+            {/* 按异常类型汇总卡片 */}
           <Row gutter={12} style={{ marginBottom: 12 }}>
             {typeSummary.map((ts, i) => (
               <Col key={i} span={Math.floor(24 / typeSummary.length) || 6}>
@@ -193,8 +237,8 @@ export default function ExceptionReport() {
             </Col>
             <Col>
               <Space>
-                <Button type="primary" icon={<SearchOutlined />}>查询</Button>
-                <Button icon={<ReloadOutlined />} onClick={() => { setSearch(''); setTypeFilter(undefined) }}>重置</Button>
+                <Button type="primary" icon={<SearchOutlined />} onClick={loadData}>查询</Button>
+                <Button icon={<ReloadOutlined />} onClick={() => { setSearch(''); setTypeFilter(undefined); loadData() }}>重置</Button>
               </Space>
             </Col>
           </Row>
@@ -232,7 +276,8 @@ export default function ExceptionReport() {
               pagination={{ pageSize: 30, showTotal: t => `共 ${t} 条` }}
             />
           </div>
-        </div>
+          </div>
+        </Spin>
       }
     />
   )

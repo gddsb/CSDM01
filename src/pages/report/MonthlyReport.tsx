@@ -1,6 +1,6 @@
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useMemo, useRef, useEffect } from 'react'
-import { Table, Button, DatePicker, Select, Space, Row, Col, Progress } from 'antd'
+import { Table, Button, DatePicker, Select, Space, Row, Col, Progress, Spin, message } from 'antd'
 import {
   AuditOutlined, CheckCircleOutlined, CloseCircleOutlined,
   PercentageOutlined, ExportOutlined, ReloadOutlined, SearchOutlined
@@ -8,8 +8,10 @@ import {
 import dayjs from 'dayjs'
 import * as echarts from 'echarts'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
+import api from '../../utils/api'
 import {
-  incomingInspections, finishedInspections, microbeInspections, envInspections
+  microbeInspections as mockMicrobe,
+  envInspections as mockEnv,
 } from '../../mock/data'
 
 // ECharts 通用封装
@@ -39,7 +41,48 @@ function Chart({ option, height = 320 }) {
 
 export default function MonthlyReport() {
   const [month, setMonth] = useState(dayjs())
-  const [category, setCategory] = useState(undefined)
+  const [category, setCategory] = useState<string | undefined>(undefined)
+  const [loading, setLoading] = useState(false)
+  const [incomingInspections, setIncomingInspections] = useState<any[]>([])
+  const [finishedInspections, setFinishedInspections] = useState<any[]>([])
+  const [microbeInspections, setMicrobeInspections] = useState<any[]>([])
+  const [envInspections, setEnvInspections] = useState<any[]>([])
+
+  const loadData = async () => {
+    setLoading(true)
+    try {
+      const [incRes, finRes] = await Promise.all([
+        api.get('/basic/incoming-inspections', { params: { pageSize: 200 } }),
+        api.get('/basic/product-inspections', { params: { pageSize: 200 } }),
+      ])
+      if (incRes.success && incRes.data) {
+        setIncomingInspections(incRes.data.map((i: any) => ({
+          ...i,
+          inspection_id: i.incoming_id || i.inspection_id,
+          inspection_no: i.incoming_no || i.inspection_no,
+          result: i.final_result || i.result,
+        })))
+      }
+      if (finRes.success && finRes.data) {
+        setFinishedInspections(finRes.data.map((i: any) => ({
+          ...i,
+          inspection_id: i.product_id || i.inspection_id,
+          inspection_no: i.product_no || i.inspection_no,
+          result: i.final_result || i.result,
+        })))
+      }
+      setMicrobeInspections(mockMicrobe)
+      setEnvInspections(mockEnv)
+    } catch (err: any) {
+      message.error(err.message || '加载数据失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [])
 
   // 汇总所有检验数据，标注检验类别
   const allInspections = useMemo(() => {
@@ -49,15 +92,15 @@ export default function MonthlyReport() {
       ...microbeInspections.map(i => ({ ...i, category: '微生物检验' })),
       ...envInspections.map(i => ({ ...i, category: '环境检验' })),
     ]
-  }, [])
+  }, [incomingInspections, finishedInspections, microbeInspections, envInspections])
 
-  const filtered = allInspections.filter(i => !category || i.category === category)
+  const filtered = allInspections.filter((i: any) => !category || i.category === category)
 
   const totalCount = filtered.length
-  const passCount = filtered.filter(i => i.result === '合格').length
-  const failCount = filtered.filter(i => i.result === '不合格').length
+  const passCount = filtered.filter((i: any) => i.result === '合格').length
+  const failCount = filtered.filter((i: any) => i.result === '不合格').length
   // 让步接收：不合格但经评估让步接收入库（处理方式为让步接收）
-  const concessionCount = filtered.filter(i => i.handle_type === '让步接收').length
+  const concessionCount = filtered.filter((i: any) => i.handle_type === '让步接收').length
   const passRate = (passCount + failCount) > 0
     ? ((passCount / (passCount + failCount)) * 100).toFixed(1)
     : '0.0'
@@ -148,7 +191,8 @@ export default function MonthlyReport() {
         </>
       }
       table={
-        <div>
+        <Spin spinning={loading} tip="加载中...">
+          <div>
           <Row gutter={[12, 8]} style={{ marginBottom: 12 }}>
             <Col span={6}>
               <DatePicker
@@ -171,8 +215,8 @@ export default function MonthlyReport() {
             </Col>
             <Col>
               <Space>
-                <Button type="primary" icon={<SearchOutlined />}>查询</Button>
-                <Button icon={<ReloadOutlined />} onClick={() => { setCategory(undefined); setMonth(dayjs()) }}>重置</Button>
+                <Button type="primary" icon={<SearchOutlined />} onClick={loadData}>查询</Button>
+                <Button icon={<ReloadOutlined />} onClick={() => { setCategory(undefined); setMonth(dayjs()); loadData() }}>重置</Button>
               </Space>
             </Col>
           </Row>
@@ -194,7 +238,8 @@ export default function MonthlyReport() {
             size="small"
             pagination={false}
           />
-        </div>
+          </div>
+        </Spin>
       }
     />
   )

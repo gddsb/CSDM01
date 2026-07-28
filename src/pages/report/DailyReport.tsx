@@ -1,6 +1,6 @@
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useMemo, useRef, useEffect } from 'react'
-import { Table, Tag, Button, DatePicker, Select, Space, Row, Col, Progress } from 'antd'
+import { Table, Tag, Button, DatePicker, Select, Space, Row, Col, Progress, Spin, message } from 'antd'
 import {
   FileTextOutlined, RiseOutlined, CheckCircleOutlined, WarningOutlined,
   FallOutlined, ExportOutlined, ReloadOutlined, SearchOutlined
@@ -8,7 +8,8 @@ import {
 import dayjs from 'dayjs'
 import * as echarts from 'echarts'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
-import { workOrders, processReports, productionLines } from '../../mock/data'
+import api from '../../utils/api'
+import { processReports as mockProcessReports } from '../../mock/data'
 
 const statusColorMap = {
   '开立': 'default',
@@ -47,17 +48,108 @@ function Chart({ option, height = 320 }) {
   return <div ref={containerRef} style={{ width: '100%', height }} />
 }
 
+// 状态数字映射：0=开工, 1=完工, 2=关闭
+const statusNumToText: Record<number, string> = { 0: '开工', 1: '完工', 2: '关闭' }
+
 export default function DailyReport() {
   const [date, setDate] = useState(dayjs())
   const [lineId, setLineId] = useState(undefined)
+  const [loading, setLoading] = useState(false)
+  const [workOrders, setWorkOrders] = useState<any[]>([])
+  const [productionLines, setProductionLines] = useState<any[]>([])
+  const [processDefects, setProcessDefects] = useState<any[]>([])
+
+  // 加载数据
+  const loadData = async () => {
+    setLoading(true)
+    try {
+      const [woRes, lineRes, defectRes] = await Promise.all([
+        api.get('/production/report-orders', { params: { pageSize: 100 } }),
+        api.get('/basic/production-lines'),
+        api.get('/production/process-defects', { params: { pageSize: 500 } }),
+      ])
+      if (woRes.success && woRes.data) {
+        setWorkOrders(woRes.data.map((item: any) => ({
+          work_order_id: item.report_order_id,
+          work_order_no: item.report_no,
+          order_id: item.order_id,
+          order_no: item.order_no,
+          line_id: item.line_id,
+          line_name: item.line_name,
+          material_id: item.material_id,
+          material_name: item.material_name,
+          target_qty: item.report_qty,
+          start_time: item.report_time,
+          finish_time: item.finish_time,
+          status: statusNumToText[item.status] ?? '开工',
+          created_by: item.report_user_id,
+          created_at: item.report_time,
+        })))
+      }
+      if (lineRes.success && lineRes.data) {
+        setProductionLines(lineRes.data)
+      }
+      if (defectRes.success && defectRes.data) {
+        setProcessDefects(defectRes.data)
+      }
+    } catch (err: any) {
+      message.error(err.message || '加载数据失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  // 将工序不良记录转换为报表所需的 processReports 格式
+  const processReports = useMemo(() => {
+    if (processDefects.length === 0) return mockProcessReports
+    const grouped: Record<string, any> = {}
+    processDefects.forEach((d: any) => {
+      const key = `${d.report_order_id}_${d.process_id}`
+      if (!grouped[key]) {
+        grouped[key] = {
+          report_id: `rp_${d.report_order_id}_${d.process_id}`,
+          work_order_id: d.report_order_id,
+          work_order_no: d.report_order_no || '',
+          process_id: d.process_id,
+          process_name: d.process_name || '',
+          input_qty: 0,
+          defect_material: 0,
+          defect_process: 0,
+          defect_scrap: 0,
+          output_qty: 0,
+          device_id: d.device_id,
+          device_name: d.device_name || '-',
+          report_user: d.report_user,
+          report_user_name: d.report_user_name || '',
+          report_time: d.created_at || new Date().toISOString(),
+        }
+      }
+      const defectType = d.defect_type?.defect_type || d.category_name || ''
+      const qty = Number(d.quantity) || 0
+      if (defectType === '来料不良') {
+        grouped[key].defect_material += qty
+      } else if (defectType === '制程不良') {
+        grouped[key].defect_process += qty
+      } else if (defectType === '检验报废') {
+        grouped[key].defect_scrap += qty
+      } else {
+        grouped[key].defect_process += qty
+      }
+    })
+    return Object.values(grouped)
+  }, [processDefects])
 
   // 按工单汇总生产数据
   const reportData = useMemo(() => {
     return workOrders.map(wo => {
-      const reports = processReports.filter(r => r.work_order_id === wo.work_order_id)
-      const totalInput = reports.reduce((s, r) => s + r.input_qty, 0)
-      const totalOutput = reports.reduce((s, r) => s + r.output_qty, 0)
-      const totalDefect = reports.reduce((s, r) => s + r.defect_material + r.defect_process + r.defect_scrap, 0)
+      const reports = processReports.filter((r: any) => r.work_order_id === wo.work_order_id)
+      const totalDefect = reports.reduce((s: number, r: any) => s + r.defect_material + r.defect_process + r.defect_scrap, 0)
+      const totalOutput = Number(wo.target_qty) || 0
+      const totalInput = totalOutput + totalDefect
       const yieldRate = totalInput > 0 ? ((totalOutput / totalInput) * 100).toFixed(1) : '0.0'
       return {
         ...wo,
@@ -67,9 +159,9 @@ export default function DailyReport() {
         yield_rate: parseFloat(yieldRate),
       }
     })
-  }, [])
+  }, [workOrders, processReports])
 
-  const filtered = reportData.filter(r => !lineId || r.line_id === lineId)
+  const filtered = reportData.filter((r: any) => !lineId || r.line_id === lineId)
 
   // 统计汇总
   const todayOrders = filtered.length
@@ -142,44 +234,46 @@ export default function DailyReport() {
         </>
       }
       table={
-        <div>
-          <Row gutter={[12, 8]} style={{ marginBottom: 12 }}>
-            <Col span={6}>
-              <DatePicker
-                style={{ width: '100%' }}
-                value={date}
-                onChange={v => setDate(v)}
-                allowClear={false}
-              />
-            </Col>
-            <Col span={6}>
-              <Select
-                placeholder="产线选择"
-                allowClear
-                style={{ width: '100%' }}
-                options={productionLines.map(l => ({ label: l.line_name, value: l.line_id }))}
-                value={lineId}
-                onChange={setLineId}
-              />
-            </Col>
-            <Col>
-              <Space>
-                <Button type="primary" icon={<SearchOutlined />}>查询</Button>
-                <Button icon={<ReloadOutlined />} onClick={() => { setLineId(undefined); setDate(dayjs()) }}>重置</Button>
-              </Space>
-            </Col>
-          </Row>
-          <div style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
-            <Chart option={lineOption} height={300} />
+        <Spin spinning={loading} tip="加载中...">
+          <div>
+            <Row gutter={[12, 8]} style={{ marginBottom: 12 }}>
+              <Col span={6}>
+                <DatePicker
+                  style={{ width: '100%' }}
+                  value={date}
+                  onChange={v => setDate(v)}
+                  allowClear={false}
+                />
+              </Col>
+              <Col span={6}>
+                <Select
+                  placeholder="产线选择"
+                  allowClear
+                  style={{ width: '100%' }}
+                  options={productionLines.map(l => ({ label: l.line_name, value: l.line_id }))}
+                  value={lineId}
+                  onChange={setLineId}
+                />
+              </Col>
+              <Col>
+                <Space>
+                  <Button type="primary" icon={<SearchOutlined />} onClick={loadData}>查询</Button>
+                  <Button icon={<ReloadOutlined />} onClick={() => { setLineId(undefined); setDate(dayjs()); loadData() }}>重置</Button>
+                </Space>
+              </Col>
+            </Row>
+            <div style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
+              <Chart option={lineOption} height={300} />
+            </div>
+            <ResizableTable tableKey="pages_report_DailyReport"             columns={columns}
+              dataSource={filtered}
+              rowKey="work_order_id"
+              size="small"
+              scroll={{ x: 1000 }}
+              pagination={{ pageSize: 30, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
+            />
           </div>
-          <ResizableTable tableKey="pages_report_DailyReport"             columns={columns}
-            dataSource={filtered}
-            rowKey="work_order_id"
-            size="small"
-            scroll={{ x: 1000 }}
-            pagination={{ pageSize: 30, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
-          />
-        </div>
+        </Spin>
       }
     />
   )
