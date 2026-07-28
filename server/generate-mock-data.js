@@ -1,7 +1,7 @@
 import sequelize from './src/config/database.js'
 import {
   Order, Supplier, Customer, Device, ProductionLine,
-  Process, Material, User, InspectionStandard,
+  Process, Material, User, InspectionStandard, InspectionStandardItem,
   ReportOrder, ReportProcess, LineProcess, DefectType,
   ProcessException, ProcessDefect, ProcessMaterial
 } from './src/models/index.js'
@@ -319,9 +319,16 @@ async function generateProductInspections() {
 
   const reportOrders = await ReportOrder.findAll({ raw: true })
   const standards = await InspectionStandard.findAll({ raw: true })
+  const standardItems = await InspectionStandardItem.findAll({ raw: true })
   const users = await User.findAll({ raw: true })
   const qcUsers = users.filter(u => u.role_id === 4 || u.username === 'qc')
   const qmUsers = users.filter(u => u.role_id === 3 || u.username === 'qm')
+
+  const itemsByStandard = {}
+  for (const si of standardItems) {
+    if (!itemsByStandard[si.standard_id]) itemsByStandard[si.standard_id] = []
+    itemsByStandard[si.standard_id].push(si)
+  }
 
   const inspections = []
   const items = []
@@ -341,6 +348,7 @@ async function generateProductInspections() {
       usedTypes.add(type)
 
       const standard = standards.find(s => s.inspection_type === type) || standards[0]
+      const stdItems = itemsByStandard[standard?.standard_id] || []
       const finishTime = ro.finish_time ? new Date(ro.finish_time) : new Date(ro.report_time)
       const inspDate = new Date(finishTime.getTime() - rand(0, 120) * 60000)
       const inspector = pick(qcUsers)
@@ -377,18 +385,24 @@ async function generateProductInspections() {
         updated_at: inspDate
       })
 
-      const itemCount = rand(3, 6)
-      const itemNames = ['外观', '尺寸', '密封性', '印刷质量', '卷封质量', '焊接质量', '耐冲击性', '涂层厚度']
-      for (let j = 0; j < itemCount; j++) {
+      for (let j = 0; j < stdItems.length; j++) {
+        const si = stdItems[j]
         const itemResult = Math.random() < 0.92 ? '合格' : '不合格'
+        const actualValue = itemResult === '合格'
+          ? (si.unit ? si.standard_value : '符合')
+          : (si.unit ? si.standard_value + '（超标）' : '不符合')
         items.push({
           inspection_id: inspId,
-          item_name: itemNames[j % itemNames.length],
-          standard_value: '符合检验标准',
-          actual_value: itemResult === '合格' ? '实测合格' : '实测超标',
+          item_name: si.item_name,
+          category: si.category || '',
+          standard_value: si.standard_value || '',
+          actual_value: actualValue,
           result: itemResult,
-          remark: itemResult === '合格' ? '' : '需返工处理',
-          sort_order: j,
+          remarks: itemResult === '合格' ? '' : '需返工处理',
+          sort_order: si.sort_order || j,
+          inspector_id: inspector.user_id,
+          inspector_name: inspector.real_name || inspector.username,
+          inspection_time: inspDate,
           created_at: inspDate,
           updated_at: inspDate
         })
