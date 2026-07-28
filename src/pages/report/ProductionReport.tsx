@@ -52,7 +52,8 @@ export default function ProductionReport() {
           line_name: item.line_name,
           material_id: item.material_id,
           material_name: item.material_name,
-          target_qty: item.report_qty || 0,
+          target_qty: Number(item.order?.planned_qty || item.report_qty || 0),
+          actual_output_qty: Number(item.report_qty || 0),
           start_time: item.report_time,
           finish_time: item.finish_time,
           status: woStatusNumToText[item.status] ?? '开工',
@@ -125,7 +126,7 @@ export default function ProductionReport() {
       const totalDefectProcess = reports.reduce((sum: number, r: any) => sum + r.defect_process, 0)
       const totalDefectScrap = reports.reduce((sum: number, r: any) => sum + r.defect_scrap, 0)
       const totalDefect = totalDefectMaterial + totalDefectProcess + totalDefectScrap
-      const totalOutput = Number(wo.target_qty) || 0
+      const totalOutput = Number(wo.actual_output_qty || 0)
       const totalInput = totalOutput + totalDefect
       const yieldRate = totalInput > 0 ? ((totalOutput / totalInput) * 100).toFixed(1) : '0.0'
       const completionRate = wo.target_qty > 0 ? ((totalOutput / wo.target_qty) * 100).toFixed(1) : '0.0'

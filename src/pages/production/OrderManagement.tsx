@@ -779,6 +779,12 @@ export default function OrderManagement() {
                     allScrapRate,
                   } = stats
 
+                  const exceptions = detail.process_exceptions || []
+                  const manpowerRecords = detail.manpower_records || []
+                  const totalExceptionHours = exceptions.reduce((s: number, e: any) => s + Number(e.duration || 0), 0)
+                  const totalManHours = manpowerRecords.reduce((s: number, m: any) => s + Number(m.man_hours || 0), 0)
+                  const totalPeople = manpowerRecords.reduce((s: number, m: any) => s + Number(m.total_people || 0), 0)
+
                   return (
                     <div style={{ padding: '8px 12px' }}>
                       <Row style={{ marginBottom: 8, display: 'flex', flexWrap: 'nowrap', gap: 4 }}>
@@ -817,6 +823,24 @@ export default function OrderManagement() {
                           </span>
                         </div>
                       </Row>
+                      <Row style={{ marginBottom: 8, display: 'flex', flexWrap: 'nowrap', gap: 4 }}>
+                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: '#f0f5ff', borderRadius: 4 }}>
+                          <span style={{ fontSize: 11, color: '#999', marginRight: 4 }}>异常工时</span>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: totalExceptionHours > 0 ? '#faad14' : 'inherit' }}>
+                            {totalExceptionHours.toFixed(2)}<span style={{ fontSize: 10, color: '#999' }}>h</span>
+                          </span>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: '#f0f5ff', borderRadius: 4 }}>
+                          <span style={{ fontSize: 11, color: '#999', marginRight: 4 }}>总人时</span>
+                          <span style={{ fontSize: 12, fontWeight: 600 }}>
+                            {totalManHours.toFixed(2)}<span style={{ fontSize: 10, color: '#999' }}>h</span>
+                          </span>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: '#f0f5ff', borderRadius: 4 }}>
+                          <span style={{ fontSize: 11, color: '#999', marginRight: 4 }}>投入人次</span>
+                          <span style={{ fontSize: 12, fontWeight: 600 }}>{totalPeople}</span>
+                        </div>
+                      </Row>
                       <Table
                         size="small"
                         dataSource={processStats}
@@ -836,6 +860,58 @@ export default function OrderManagement() {
                           { title: '不良率', dataIndex: 'defectRate', key: 'defectRate', width: 55, align: 'right', render: (v: any) => <span>{v}%</span> },
                         ]}
                       />
+                      {exceptions.length > 0 && (
+                        <>
+                          <div style={{ fontSize: 12, fontWeight: 600, margin: '12px 0 6px', color: '#666' }}>
+                            异常工时记录 ({exceptions.length})
+                          </div>
+                          <Table
+                            size="small"
+                            dataSource={exceptions}
+                            rowKey="exception_id"
+                            pagination={false}
+                            scroll={{ x: 700 }}
+                            columns={[
+                              { title: '异常类型', dataIndex: 'exception_type', key: 'exception_type', width: 100 },
+                              { title: '停机类型', dataIndex: 'stop_type', key: 'stop_type', width: 100 },
+                              { title: '设备', dataIndex: 'device_name', key: 'device_name', width: 100, render: v => v || '-' },
+                              { title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 150, render: formatDateTime },
+                              { title: '恢复时间', dataIndex: 'end_time', key: 'end_time', width: 150, render: v => v ? formatDateTime(v) : '-' },
+                              { title: '持续时长', dataIndex: 'duration', key: 'duration', width: 80, align: 'right', render: (v: any) => <span style={{ color: '#faad14', fontWeight: 600 }}>{Number(v || 0).toFixed(2)}h</span> },
+                              { title: '确认人', dataIndex: 'confirm_user_name', key: 'confirm_user_name', width: 80, render: v => v || '-' },
+                              { title: '异常描述', dataIndex: 'description', key: 'description', render: v => v || '-' },
+                            ]}
+                          />
+                        </>
+                      )}
+                      {manpowerRecords.length > 0 && (
+                        <>
+                          <div style={{ fontSize: 12, fontWeight: 600, margin: '12px 0 6px', color: '#666' }}>
+                            人员工时记录 ({manpowerRecords.length})
+                          </div>
+                          <Table
+                            size="small"
+                            dataSource={manpowerRecords}
+                            rowKey="record_id"
+                            pagination={false}
+                            scroll={{ x: 700 }}
+                            columns={[
+                              { title: '记录日期', dataIndex: 'record_date', key: 'record_date', width: 100 },
+                              { title: '班次', dataIndex: 'shift', key: 'shift', width: 70 },
+                              { title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 150, render: formatDateTime },
+                              { title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 150, render: v => v ? formatDateTime(v) : '-' },
+                              { title: '工时', dataIndex: 'hours', key: 'hours', width: 70, align: 'right', render: (v: any) => `${Number(v || 0).toFixed(2)}h` },
+                              { title: '熟手', dataIndex: 'skilled_count', key: 'skilled_count', width: 60, align: 'right', render: (v: any) => v || 0 },
+                              { title: '普工', dataIndex: 'general_count', key: 'general_count', width: 60, align: 'right', render: (v: any) => v || 0 },
+                              { title: '劳务', dataIndex: 'labor_count', key: 'labor_count', width: 60, align: 'right', render: (v: any) => v || 0 },
+                              { title: '总人数', dataIndex: 'total_people', key: 'total_people', width: 70, align: 'right', render: (v: any) => <strong>{v || 0}</strong> },
+                              { title: '人时', dataIndex: 'man_hours', key: 'man_hours', width: 80, align: 'right', render: (v: any) => <span style={{ color: '#1890ff', fontWeight: 600 }}>{Number(v || 0).toFixed(2)}h</span> },
+                              { title: '记录人', dataIndex: 'record_user_name', key: 'record_user_name', width: 80, render: v => v || '-' },
+                              { title: '备注', dataIndex: 'remarks', key: 'remarks', render: v => v || '-' },
+                            ]}
+                          />
+                        </>
+                      )}
                     </div>
                   )
                 },
