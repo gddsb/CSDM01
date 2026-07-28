@@ -22,6 +22,7 @@ import SystemConfig from './SystemConfig.js'
 import RolePermission from './RolePermission.js'
 import Sequence from './Sequence.js'
 import Customer from './Customer.js'
+import Supplier from './Supplier.js'
 import LineProcess from './LineProcess.js'
 import LineDevice from './LineDevice.js'
 import NumberRule from './NumberRule.js'
@@ -159,6 +160,7 @@ const db = {
   RolePermission,
   Sequence,
   Customer,
+  Supplier,
   LineProcess,
   LineDevice,
   NumberRule,
@@ -198,6 +200,7 @@ export {
   RolePermission,
   Sequence,
   Customer,
+  Supplier,
   LineProcess,
   LineDevice,
   NumberRule,

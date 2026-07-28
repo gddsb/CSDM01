@@ -52,6 +52,7 @@ import {
   update as customerUpdate,
   remove as customerRemove,
 } from '../controllers/CustomerController.js'
+import SupplierController from '../controllers/SupplierController.js'
 import {
   list as ruleList,
   detail as ruleDetail,
@@ -143,6 +144,14 @@ router.get('/customers/:id', customerDetail)
 router.post('/customers', customerCreate)
 router.put('/customers/:id', customerUpdate)
 router.delete('/customers/:id', customerRemove)
+
+// 供应商档案
+router.get('/suppliers', SupplierController.list)
+router.get('/suppliers/:id', SupplierController.detail)
+router.post('/suppliers', logOperation('供应商档案'), SupplierController.create)
+router.put('/suppliers/:id', logOperation('供应商档案'), SupplierController.update)
+router.delete('/suppliers/:id', logOperation('供应商档案'), SupplierController.remove)
+router.post('/suppliers/seed', SupplierController.seed)
 
 // 编号规则（编码管理）
 router.get('/number-rules', ruleList)
