@@ -6,6 +6,7 @@ import {
   CheckCircleOutlined, WarningOutlined,
   RiseOutlined, FallOutlined
 } from '@ant-design/icons'
+import * as XLSX from 'xlsx'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import { formatDateTime } from '../../utils'
 import api, { extractList } from '../../utils/api'
@@ -122,7 +123,7 @@ export default function ProductionReport() {
     setLoading(true)
     try {
       const [woRes, lineRes] = await Promise.all([
-        api.get('/production/report-orders', { params: { pageSize: 100 } }),
+        api.get('/production/report-orders', { params: { pageSize: 20, sort: 'report_time,desc' } }),
         api.get('/basic/production-lines'),
       ])
 
@@ -247,6 +248,38 @@ export default function ProductionReport() {
     } else {
       message.info('该工单暂无详细数据')
     }
+  }
+
+  const handleExport = () => {
+    if (filtered.length === 0) {
+      message.warning('没有可导出的数据')
+      return
+    }
+    const exportData = filtered.map(r => ({
+      '工单编号': r.work_order_no,
+      '订单编号': r.order_no,
+      '产线': r.line_name,
+      '产品名称': r.material_name,
+      '目标数量': r.target_qty,
+      '投入数量': r.total_input,
+      '产出数量': r.total_output,
+      '来料不良': r.defect_material,
+      '制程不良': r.defect_process,
+      '报废数': r.defect_scrap,
+      '不良合计': r.total_defect,
+      '良率(%)': r.yield_rate,
+      '完成率(%)': r.completion_rate,
+      '报工工序数': r.process_count,
+      '工单状态': r.status,
+      '报工人': r.report_user_name,
+      '开工时间': r.start_time ? formatDateTime(r.start_time) : '',
+      '完工时间': r.finish_time ? formatDateTime(r.finish_time) : '',
+    }))
+    const ws = XLSX.utils.json_to_sheet(exportData)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, '生产报表')
+    XLSX.writeFile(wb, `生产报表_${new Date().toISOString().slice(0, 10)}.xlsx`)
+    message.success('导出成功')
   }
 
   const columns = [
@@ -413,18 +446,7 @@ export default function ProductionReport() {
         title="生产报表"
         breadcrumbs="报表中心 / 生产报表"
         stats={stats}
-        actions={<Button icon={<ExportOutlined />}>导出Excel</Button>}
-        filters={[
-          { type: 'input', placeholder: '搜索工单号/产品名称', col: { span: 6 } },
-          { type: 'select', placeholder: '产线筛选', col: { span: 5 }, options: productionLines.map(l => ({ label: l.line_name, value: l.line_id })) },
-          { type: 'select', placeholder: '工单状态', col: { span: 5 }, options: [
-            { label: '开立', value: '开立' },
-            { label: '开工', value: '开工' },
-            { label: '关闭', value: '关闭' },
-            { label: '完工', value: '完工' },
-          ]},
-          { type: 'rangepicker', col: { span: 6 } },
-        ]}
+        actions={<Button icon={<ExportOutlined />} onClick={handleExport}>导出Excel</Button>}
         table={
           <Spin spinning={loading} tip="加载中...">
             <div>
@@ -479,7 +501,7 @@ export default function ProductionReport() {
                 rowKey="work_order_id"
                 size="small"
                 scroll={{ x: 1900 }}
-                pagination={{ pageSize: 30, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
+                pagination={{ pageSize: 20, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
                 onRow={(record: any) => ({
                   onDoubleClick: () => handleRowDoubleClick(record),
                   style: { cursor: 'pointer' },
