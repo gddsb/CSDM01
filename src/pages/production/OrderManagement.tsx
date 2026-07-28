@@ -790,8 +790,8 @@ export default function OrderManagement() {
                           { title: '来料不良率', dataIndex: 'incomingRate', key: 'incomingRate', width: 60, align: 'right', render: (v: any) => <span>{v}%</span> },
                           { title: '制程不良', dataIndex: 'processQty', key: 'processQty', width: 55, align: 'right', render: (v: any) => <span style={{ color: v > 0 ? '#ff4d4f' : 'inherit' }}>{(v || 0).toLocaleString()}</span> },
                           { title: '制程不良率', dataIndex: 'processRate', key: 'processRate', width: 60, align: 'right', render: (v: any) => <span>{v}%</span> },
-                          { title: '工序总不良', dataIndex: 'totalDefectQty', key: 'totalDefectQty', width: 55, align: 'right', render: (v: any) => <span style={{ color: v > 0 ? '#ff4d4f' : 'inherit' }}>{(v || 0).toLocaleString()}</span> },
-                          { title: '工序不良率', dataIndex: 'defectRate', key: 'defectRate', width: 55, align: 'right', render: (v: any) => <span>{v}%</span> },
+                          { title: '工序不良', dataIndex: 'totalDefectQty', key: 'totalDefectQty', width: 55, align: 'right', render: (v: any) => <span style={{ color: v > 0 ? '#ff4d4f' : 'inherit' }}>{(v || 0).toLocaleString()}</span> },
+                          { title: '不良率', dataIndex: 'defectRate', key: 'defectRate', width: 55, align: 'right', render: (v: any) => <span>{v}%</span> },
                         ]}
                       />
                     </div>
