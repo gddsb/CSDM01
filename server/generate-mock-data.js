@@ -593,6 +593,10 @@ async function main() {
   const startTime = Date.now()
 
   try {
+    // 先同步所有需要的表（确保缺失的表被创建）
+    await sequelize.sync()
+    console.log('✅ 数据库表同步完成')
+
     await generateSuppliers()
     await generateReportOrders()
     await generateIncomingInspections()
