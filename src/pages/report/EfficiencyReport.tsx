@@ -8,7 +8,7 @@ import {
 import dayjs from 'dayjs'
 import * as echarts from 'echarts'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
-import api from '../../utils/api'
+import api, { extractList } from '../../utils/api'
 import { processReports as mockProcessReports } from '../../mock/data'
 
 // 工单状态映射：0=开工, 1=完工, 2=关闭
@@ -72,7 +72,7 @@ export default function EfficiencyReport() {
         api.get('/production/process-defects', { params: { pageSize: 500 } }),
       ])
       if (woRes.success && woRes.data) {
-        setWorkOrders(woRes.data.map((item: any) => ({
+        setWorkOrders(extractList(woRes.data).map((item: any) => ({
           work_order_id: item.report_order_id,
           work_order_no: item.report_no,
           order_id: item.order_id,
@@ -89,9 +89,9 @@ export default function EfficiencyReport() {
           created_at: item.report_time,
         })))
       }
-      if (lineRes.success && lineRes.data) setProductionLines(lineRes.data)
+      if (lineRes.success && lineRes.data) setProductionLines(extractList(lineRes.data))
       if (mpRes.success && mpRes.data) {
-        setManpowerRecords(mpRes.data.map((m: any) => ({
+        setManpowerRecords(extractList(mpRes.data).map((m: any) => ({
           ...m,
           work_order_id: m.report_order_id,
           skilled_workers: m.skilled_count || 0,
@@ -101,13 +101,13 @@ export default function EfficiencyReport() {
         })))
       }
       if (excRes.success && excRes.data) {
-        setExceptionRecords(excRes.data.map((e: any) => ({
+        setExceptionRecords(extractList(excRes.data).map((e: any) => ({
           ...e,
           work_order_id: e.report_order_id,
           work_order_no: e.report_order_no || '',
         })))
       }
-      if (defectRes.success && defectRes.data) setProcessDefects(defectRes.data)
+      if (defectRes.success && defectRes.data) setProcessDefects(extractList(defectRes.data))
     } catch (err: any) {
       message.error(err.message || '加载数据失败')
     } finally {

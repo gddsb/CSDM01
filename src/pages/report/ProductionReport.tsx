@@ -8,7 +8,7 @@ import {
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import { formatDateTime } from '../../utils'
-import api from '../../utils/api'
+import api, { extractList } from '../../utils/api'
 import { processReports as mockProcessReports } from '../../mock/data'
 
 // 订单状态映射：0=开立, 1=下发, 2=开工, 3=完工, 4=关闭
@@ -43,7 +43,7 @@ export default function ProductionReport() {
         api.get('/production/process-defects', { params: { pageSize: 500 } }),
       ])
       if (woRes.success && woRes.data) {
-        setWorkOrders(woRes.data.map((item: any) => ({
+        setWorkOrders(extractList(woRes.data).map((item: any) => ({
           work_order_id: item.report_order_id,
           work_order_no: item.report_no,
           order_id: item.order_id,
@@ -61,10 +61,10 @@ export default function ProductionReport() {
         })))
       }
       if (lineRes.success && lineRes.data) {
-        setProductionLines(lineRes.data)
+        setProductionLines(extractList(lineRes.data))
       }
       if (defectRes.success && defectRes.data) {
-        setProcessDefects(defectRes.data)
+        setProcessDefects(extractList(defectRes.data))
       }
     } catch (err: any) {
       message.error(err.message || '加载数据失败')

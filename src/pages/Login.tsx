@@ -57,9 +57,9 @@ export default function Login() {
           <h1 className="login-brand-title">奶粉罐生产管理系统</h1>
           <p className="login-brand-subtitle">Milk Can Production Management System</p>
           <div className="login-brand-tags">
-            <span className="login-brand-tag">智能制造</span>
-            <span className="login-brand-tag">质量追溯</span>
-            <span className="login-brand-tag">实时协同</span>
+            <span className="login-brand-tag">精益生产</span>
+            <span className="login-brand-tag">品质管控</span>
+            <span className="login-brand-tag">全程追溯</span>
           </div>
         </div>
 
@@ -126,7 +126,7 @@ export default function Login() {
 
       <div className="login-footer">
         <Text type="secondary" style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
-          © 2026 大满乳业 · 长沙大满MES V1.0.1.722
+          © 2026 大满包装 · 长沙大满MES V1.0.1.722
         </Text>
       </div>
     </div>

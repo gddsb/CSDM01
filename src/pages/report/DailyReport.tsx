@@ -8,7 +8,7 @@ import {
 import dayjs from 'dayjs'
 import * as echarts from 'echarts'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
-import api from '../../utils/api'
+import api, { extractList } from '../../utils/api'
 import { processReports as mockProcessReports } from '../../mock/data'
 
 const statusColorMap = {
@@ -69,7 +69,7 @@ export default function DailyReport() {
         api.get('/production/process-defects', { params: { pageSize: 500 } }),
       ])
       if (woRes.success && woRes.data) {
-        setWorkOrders(woRes.data.map((item: any) => ({
+        setWorkOrders(extractList(woRes.data).map((item: any) => ({
           work_order_id: item.report_order_id,
           work_order_no: item.report_no,
           order_id: item.order_id,
@@ -87,10 +87,10 @@ export default function DailyReport() {
         })))
       }
       if (lineRes.success && lineRes.data) {
-        setProductionLines(lineRes.data)
+        setProductionLines(extractList(lineRes.data))
       }
       if (defectRes.success && defectRes.data) {
-        setProcessDefects(defectRes.data)
+        setProcessDefects(extractList(defectRes.data))
       }
     } catch (err: any) {
       message.error(err.message || '加载数据失败')

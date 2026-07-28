@@ -8,7 +8,7 @@ import {
 } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import { formatDateTime } from '../../utils'
-import api from '../../utils/api'
+import api, { extractList } from '../../utils/api'
 
 // 工单状态映射：0=开工, 1=完工, 2=关闭
 const woStatusNumToText: Record<number, string> = { 0: '开工', 1: '完工', 2: '关闭' }
@@ -38,7 +38,7 @@ export default function ExceptionReport() {
         api.get('/production/report-orders', { params: { pageSize: 100 } }),
       ])
       if (excRes.success && excRes.data) {
-        setExceptionRecords(excRes.data.map((e: any) => ({
+        setExceptionRecords(extractList(excRes.data).map((e: any) => ({
           ...e,
           record_id: e.exception_id,
           work_order_id: e.report_order_id,
@@ -47,7 +47,7 @@ export default function ExceptionReport() {
         })))
       }
       if (woRes.success && woRes.data) {
-        setWorkOrders(woRes.data.map((item: any) => ({
+        setWorkOrders(extractList(woRes.data).map((item: any) => ({
           work_order_id: item.report_order_id,
           work_order_no: item.report_no,
           line_id: item.line_id,

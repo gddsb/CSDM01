@@ -118,7 +118,7 @@ export default function MobileLogin() {
         </div>
 
         <div className="m-login-footer">
-          © 2026 大满乳业 · 长沙大满MES
+          © 2026 大满包装 · 长沙大满MES
         </div>
       </div>
     </div>

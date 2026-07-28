@@ -117,4 +117,11 @@ axiosInstance.interceptors.response.use(
   }
 )
 
+// 归一化列表数据：支持 data: [...] 和 data: { list: [...] } 两种格式
+export function extractList(data: any): any[] {
+  if (Array.isArray(data)) return data
+  if (data && Array.isArray(data.list)) return data.list
+  return []
+}
+
 export default api

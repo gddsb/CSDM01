@@ -8,7 +8,7 @@ import {
 import dayjs from 'dayjs'
 import * as echarts from 'echarts'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
-import api from '../../utils/api'
+import api, { extractList } from '../../utils/api'
 import {
   microbeInspections as mockMicrobe,
   envInspections as mockEnv,
@@ -56,7 +56,7 @@ export default function MonthlyReport() {
         api.get('/basic/product-inspections', { params: { pageSize: 200 } }),
       ])
       if (incRes.success && incRes.data) {
-        setIncomingInspections(incRes.data.map((i: any) => ({
+        setIncomingInspections(extractList(incRes.data).map((i: any) => ({
           ...i,
           inspection_id: i.incoming_id || i.inspection_id,
           inspection_no: i.incoming_no || i.inspection_no,
@@ -64,7 +64,7 @@ export default function MonthlyReport() {
         })))
       }
       if (finRes.success && finRes.data) {
-        setFinishedInspections(finRes.data.map((i: any) => ({
+        setFinishedInspections(extractList(finRes.data).map((i: any) => ({
           ...i,
           inspection_id: i.product_id || i.inspection_id,
           inspection_no: i.product_no || i.inspection_no,
