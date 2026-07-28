@@ -232,28 +232,28 @@ export default function InspectionStandardForm() {
       title: '项目大类', dataIndex: 'category', key: 'category', width: 100,
       render: (v: string) => <span style={{ color: categoryColor[v] || '#999' }}>{v}</span>
     },
-    { title: '检验项目', dataIndex: 'item_name', key: 'item_name' },
+    { title: '检验项目', dataIndex: 'item_name', key: 'item_name', width: 160 },
     {
-      title: '检验类型', dataIndex: 'inspection_types', key: 'inspection_types', width: 180,
+      title: '检验类型', dataIndex: 'inspection_types', key: 'inspection_types', width: 220,
       render: (v: string[] | string) => {
         if (!v || (Array.isArray(v) && v.length === 0)) return '-'
         const types = Array.isArray(v) ? v : String(v).split(',')
         return <Space wrap size={4}>{types.map(t => <Tag key={t}>{t}</Tag>)}</Space>
       }
     },
-    { title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 180 },
-    { title: '单位', dataIndex: 'unit', key: 'unit', width: 70 },
+    { title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 220 },
+    { title: '单位', dataIndex: 'unit', key: 'unit', width: 80 },
     {
-      title: '缺陷等级', dataIndex: 'defect_level', key: 'defect_level', width: 120,
+      title: '缺陷等级', dataIndex: 'defect_level', key: 'defect_level', width: 130,
       render: (v: string) => {
         const colorMap: any = { 'A类致命缺陷': 'red', 'B类严重缺陷': 'orange', 'C类次要缺陷': 'blue' }
         return v ? <Tag color={colorMap[v] || 'default'}>{v}</Tag> : '-'
       }
     },
-    { title: '检验方法', dataIndex: 'method', key: 'method' },
-    { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 140 },
+    { title: '检验方法', dataIndex: 'method', key: 'method', width: 180 },
+    { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 180 },
     {
-      title: '操作', key: 'action', fixed: 'right',
+      title: '操作', key: 'action', fixed: 'right', width: 120,
       render: (_: any, record: any) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleEditItem(record)}>编辑</Button>
@@ -386,7 +386,7 @@ export default function InspectionStandardForm() {
               rowKey={(r: any) => r._key || r.item_id}
               size="small"
               pagination={false}
-              scroll={{ x: 1300 }}
+              scroll={{ x: 1500 }}
               locale={{ emptyText: '暂无检验项目，点击右上角"新增项目"添加' }}
             />
           </div>

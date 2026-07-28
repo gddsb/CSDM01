@@ -159,26 +159,26 @@ export default function InspectionStandard() {
       title: '项目大类', dataIndex: 'category', key: 'category', width: 100,
       render: (v: string) => <Tag color={categoryColor[v] || 'default'}>{v}</Tag>
     },
-    { title: '检验项目', dataIndex: 'item_name', key: 'item_name' },
+    { title: '检验项目', dataIndex: 'item_name', key: 'item_name', width: 160 },
     {
-      title: '检验类型', dataIndex: 'inspection_types', key: 'inspection_types', width: 180,
+      title: '检验类型', dataIndex: 'inspection_types', key: 'inspection_types', width: 220,
       render: (v: string) => {
         if (!v) return '-'
         const types = v.split(',')
         return <Space wrap size={4}>{types.map(t => <Tag key={t} color={typeColorMap[t] || 'default'}>{t}</Tag>)}</Space>
       }
     },
-    { title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 180 },
-    { title: '单位', dataIndex: 'unit', key: 'unit', width: 70 },
+    { title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 220 },
+    { title: '单位', dataIndex: 'unit', key: 'unit', width: 80 },
     {
-      title: '缺陷等级', dataIndex: 'defect_level', key: 'defect_level', width: 120,
+      title: '缺陷等级', dataIndex: 'defect_level', key: 'defect_level', width: 130,
       render: (v: string) => {
         const colorMap: any = { 'A类致命缺陷': 'red', 'B类严重缺陷': 'orange', 'C类次要缺陷': 'blue' }
         return v ? <Tag color={colorMap[v] || 'default'}>{v}</Tag> : '-'
       }
     },
-    { title: '检验方法', dataIndex: 'method', key: 'method' },
-    { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 140 },
+    { title: '检验方法', dataIndex: 'method', key: 'method', width: 180 },
+    { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 180 },
   ]
 
   return (
@@ -236,7 +236,7 @@ export default function InspectionStandard() {
               rowKey="standard_id"
               size="small"
               loading={loading}
-              scroll={{ x: 1200 }}
+              scroll={{ x: 1400 }}
               pagination={{
                 ...pagination,
                 showSizeChanger: true,
@@ -290,7 +290,7 @@ export default function InspectionStandard() {
               rowKey="item_id"
               size="small"
               pagination={false}
-              scroll={{ x: 1200 }}
+              scroll={{ x: 1400 }}
             />
           </>
         )}
