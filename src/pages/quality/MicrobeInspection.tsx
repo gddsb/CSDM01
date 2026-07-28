@@ -1,11 +1,10 @@
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { Table, Tag, Button, Select, DatePicker, Space, Row, Col, Input, Drawer, Descriptions, Typography, Alert } from 'antd'
+import { Tag, Button, Select, DatePicker, Space, Row, Col, Input, Drawer, Descriptions, Typography, Alert } from 'antd'
 import {
   ExperimentOutlined, SafetyCertificateOutlined, WarningOutlined,
-  CheckCircleOutlined, EyeOutlined, SearchOutlined, ReloadOutlined
+  CheckCircleOutlined, SearchOutlined, ReloadOutlined
 } from '@ant-design/icons'
-import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import { formatDateTime } from '../../utils'
 import api from '../../utils/api'
