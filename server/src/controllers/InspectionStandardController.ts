@@ -1,5 +1,5 @@
 import { Op } from 'sequelize'
-import { InspectionStandard, InspectionStandardItem } from '../models/index.js'
+import { InspectionStandard, InspectionStandardItem, Material } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { logger } from '../utils/logger.js'
 
@@ -62,7 +62,10 @@ export const detail = async (req: any, res: any) => {
     const { id } = req.params
     const record = await InspectionStandard.findOne({
       where: { standard_id: id },
-      include: [{ model: InspectionStandardItem, as: 'items', order: [['sort_order', 'ASC'], ['item_id', 'ASC']] }],
+      include: [
+        { model: InspectionStandardItem, as: 'items', order: [['sort_order', 'ASC'], ['item_id', 'ASC']] },
+        { model: Material, as: 'material', attributes: ['material_id', 'material_code', 'material_name', 'specification'] },
+      ],
     })
     if (!record) {
       return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)

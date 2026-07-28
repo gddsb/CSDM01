@@ -124,6 +124,8 @@ ProductInspectionItem.belongsTo(ProductInspection, { foreignKey: 'inspection_id'
 // 检验标准 - 检验标准项目（一对多）
 InspectionStandard.hasMany(InspectionStandardItem, { foreignKey: 'standard_id', as: 'items' })
 InspectionStandardItem.belongsTo(InspectionStandard, { foreignKey: 'standard_id', as: 'standard' })
+// 检验标准 - 料品
+InspectionStandard.belongsTo(Material, { foreignKey: 'material_id', as: 'material', constraints: false })
 
 const db = {
   sequelize,

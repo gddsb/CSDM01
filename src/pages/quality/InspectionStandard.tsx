@@ -256,7 +256,13 @@ export default function InspectionStandard() {
       >
         {current && (
           <>
-            <Descriptions column={2} size="small" bordered style={{ marginBottom: 16 }}>
+            <Descriptions 
+              column={2} 
+              size="small" 
+              bordered 
+              style={{ marginBottom: 16 }}
+              labelStyle={{ width: 96, textAlign: 'right', whiteSpace: 'nowrap' }}
+            >
               <Descriptions.Item label="标准编号">{current.standard_no}</Descriptions.Item>
               <Descriptions.Item label="版本号">{current.version_no}</Descriptions.Item>
               <Descriptions.Item label="标准类型">
@@ -266,8 +272,14 @@ export default function InspectionStandard() {
                 <Tag color={current.status === '生效' ? 'success' : current.status === '失效' ? 'error' : 'default'}>{current.status}</Tag>
               </Descriptions.Item>
               <Descriptions.Item label="生效日期">{formatDate(current.effective_date)}</Descriptions.Item>
-              <Descriptions.Item label="参照料品">{current.material_name ? `${current.material_name} (ID: ${current.material_id})` : '-'}</Descriptions.Item>
-              <Descriptions.Item label="标准名称" span={2}>{current.standard_name}</Descriptions.Item>
+              <Descriptions.Item label="参照料品">
+                {current.material
+                  ? `${current.material.material_code} ${current.material.material_name}`
+                  : (current.material_name ? `${current.material_name}` : '-')}
+              </Descriptions.Item>
+              <Descriptions.Item label="标准名称" span={2}>
+                {current.standard_no} {current.standard_name} ({current.version_no})
+              </Descriptions.Item>
               <Descriptions.Item label="描述" span={2}>{current.description || '-'}</Descriptions.Item>
             </Descriptions>
             <div style={{ marginBottom: 8 }}>检验项目</div>
