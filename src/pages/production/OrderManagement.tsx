@@ -43,6 +43,7 @@ export default function OrderManagement() {
   const [reportOrdersLoading, setReportOrdersLoading] = useState(false)
   const [reportOrderDetails, setReportOrderDetails] = useState<Record<number, any>>({})
   const [loadingDetails, setLoadingDetails] = useState<Record<number, boolean>>({})
+  const [orderSummary, setOrderSummary] = useState<{ totalInput: number; totalDefect: number; totalFinished: number } | null>(null)
   const [editing, setEditing] = useState(null)
   const [selectedMaterial, setSelectedMaterial] = useState(null)
   const [form] = Form.useForm()
@@ -254,31 +255,146 @@ export default function OrderManagement() {
     }
   }
 
+  // 计算单个报工单的工序统计和汇总数据
+  const calcReportOrderStats = (detail: any) => {
+    const processes = detail.report_processes || []
+    const materials = detail.process_materials || []
+    const defects = detail.process_defects || []
+
+    // 检验报废（process_id=null）单独统计
+    const scrapDefects = defects.filter((d: any) => d.process_id == null)
+    const allScrapQty = scrapDefects.reduce((s: number, d: any) => s + (Number(d.quantity) || 0), 0)
+
+    // 按工序顺序排列
+    const sortedProcesses = [...processes].sort((a: any, b: any) =>
+      (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0)
+    )
+
+    const processStats: any[] = []
+    let prevOutputQty = 0
+    let allIncomingQty = 0
+    let allProcessQty = 0
+    let allDefectQty = 0
+
+    sortedProcesses.forEach((p: any, idx: number) => {
+      const procMaterials = materials.filter((m: any) => m.process_id === p.process_id)
+      const investQty = procMaterials
+        .filter((m: any) => m.material_type === '投入')
+        .reduce((sum: number, m: any) => sum + (Number(m.quantity) || 0), 0)
+      const returnQty = procMaterials
+        .filter((m: any) => m.material_type === '退回')
+        .reduce((sum: number, m: any) => sum + (Number(m.quantity) || 0), 0)
+
+      const procDefects = defects.filter((d: any) => d.process_id === p.process_id)
+      let incomingQty = 0
+      let processQty = 0
+      let totalDefectQty = 0
+      procDefects.forEach((d: any) => {
+        const dt = d.defect_type?.defect_type || '其他'
+        const qty = Number(d.quantity) || 0
+        if (dt === '来料不良') incomingQty += qty
+        else if (dt === '制程不良') processQty += qty
+        totalDefectQty += qty
+      })
+
+      const hasReport = investQty > 0 || returnQty > 0 || totalDefectQty > 0
+      let inputQty: number
+      let outputQty: number
+
+      if (idx === 0) {
+        inputQty = investQty - returnQty
+      } else {
+        inputQty = prevOutputQty
+      }
+
+      if (!hasReport) {
+        outputQty = inputQty
+      } else {
+        outputQty = Math.max(0, inputQty - totalDefectQty)
+      }
+
+      allIncomingQty += incomingQty
+      allProcessQty += processQty
+      allDefectQty += totalDefectQty
+
+      processStats.push({
+        ...p,
+        inputQty,
+        outputQty,
+        incomingQty,
+        processQty,
+        totalDefectQty,
+        defectRate: inputQty > 0 ? ((totalDefectQty / inputQty) * 100).toFixed(2) : '0.00',
+        incomingRate: inputQty > 0 ? ((incomingQty / inputQty) * 100).toFixed(2) : '0.00',
+        processRate: inputQty > 0 ? ((processQty / inputQty) * 100).toFixed(2) : '0.00',
+      })
+
+      prevOutputQty = outputQty
+    })
+
+    const allInputQty = processStats[0]?.inputQty || 0
+    const allOutputQty = processStats.length > 0 ? processStats[processStats.length - 1].outputQty : 0
+    const allDefectRate = allInputQty > 0 ? ((allDefectQty / allInputQty) * 100).toFixed(2) : '0.00'
+    const allIncomingRate = allInputQty > 0 ? ((allIncomingQty / allInputQty) * 100).toFixed(2) : '0.00'
+    const allProcessRate = allInputQty > 0 ? ((allProcessQty / allInputQty) * 100).toFixed(2) : '0.00'
+    const allScrapRate = allInputQty > 0 ? ((allScrapQty / allInputQty) * 100).toFixed(2) : '0.00'
+
+    return {
+      processStats,
+      allInputQty,
+      allOutputQty,
+      allIncomingQty,
+      allProcessQty,
+      allDefectQty,
+      allScrapQty,
+      allDefectRate,
+      allIncomingRate,
+      allProcessRate,
+      allScrapRate,
+    }
+  }
+
   const handleView = async (r) => {
     setCurrentOrder(r)
     setDetailOpen(true)
     setReportOrders([])
     setReportOrderDetails({})
     setLoadingDetails({})
+    setOrderSummary(null)
     setReportOrdersLoading(true)
     try {
       const res = await api.get('/production/report-orders', { params: { order_id: r.order_id, page: 1, pageSize: 100 } })
       const list = res.data || []
       setReportOrders(list)
       // 预加载所有报工单详情
-      list.forEach(async (ro) => {
+      const detailPromises = list.map(async (ro) => {
         setLoadingDetails(prev => ({ ...prev, [ro.report_order_id]: true }))
         try {
           const detailRes = await api.get(`/production/report-orders/${ro.report_order_id}`)
           if (detailRes && detailRes.data) {
-            setReportOrderDetails(prev => ({ ...prev, [ro.report_order_id]: detailRes.data }))
+            return detailRes.data
           }
         } catch (e) {
           // ignore
         } finally {
           setLoadingDetails(prev => ({ ...prev, [ro.report_order_id]: false }))
         }
+        return null
       })
+      const allDetails = await Promise.all(detailPromises)
+      // 计算订单级汇总：总投入、总不良（来料+制程+检验报废）、总产出（完工数量）
+      let totalInput = 0
+      let totalDefect = 0
+      let totalFinished = 0
+      allDetails.forEach((d: any) => {
+        if (!d) return
+        const stats = calcReportOrderStats(d)
+        totalInput += stats.allInputQty
+        totalDefect += stats.allIncomingQty + stats.allProcessQty + stats.allScrapQty
+        totalFinished += stats.allOutputQty
+        setReportOrderDetails(prev => ({ ...prev, [d.report_order_id]: d }))
+      })
+      setOrderSummary({ totalInput, totalDefect, totalFinished })
     } catch (err) {
       setReportOrders([])
     } finally {
@@ -602,18 +718,26 @@ export default function OrderManagement() {
               <Descriptions.Item label="产品名称" span={3}>{currentOrder.material_name}</Descriptions.Item>
               <Descriptions.Item label="计划数量">{(currentOrder.planned_qty || 0).toLocaleString()}</Descriptions.Item>
               <Descriptions.Item label="完工数量">
-                <span style={{ color: '#52c41a' }}>{(currentOrder.finished_qty || 0).toLocaleString()}</span>
+                <span style={{ color: '#52c41a' }}>
+                  {(orderSummary ? orderSummary.totalFinished : (currentOrder.finished_qty || 0)).toLocaleString()}
+                </span>
               </Descriptions.Item>
               <Descriptions.Item label="不良总数">
                 <span style={{ color: '#ff4d4f' }}>
-                  {Math.max(0, (currentOrder.planned_qty || 0) - (currentOrder.finished_qty || 0)).toLocaleString()}
+                  {orderSummary
+                    ? orderSummary.totalDefect.toLocaleString()
+                    : Math.max(0, (currentOrder.planned_qty || 0) - (currentOrder.finished_qty || 0)).toLocaleString()}
                 </span>
               </Descriptions.Item>
               <Descriptions.Item label="合格率">
                 <span style={{ color: '#52c41a' }}>
-                  {(currentOrder.planned_qty || 0) > 0
-                    ? Math.min(100, (((currentOrder.finished_qty || 0) / (currentOrder.planned_qty || 0)) * 100)).toFixed(2)
-                    : '0.00'}%
+                  {orderSummary
+                    ? (orderSummary.totalInput > 0
+                        ? Math.min(100, ((orderSummary.totalFinished / orderSummary.totalInput) * 100)).toFixed(2)
+                        : '0.00')
+                    : ((currentOrder.planned_qty || 0) > 0
+                        ? Math.min(100, (((currentOrder.finished_qty || 0) / (currentOrder.planned_qty || 0)) * 100)).toFixed(2)
+                        : '0.00')}%
                 </span>
               </Descriptions.Item>
               <Descriptions.Item label="计划开始">{formatDate(currentOrder.plan_start_time)}</Descriptions.Item>
@@ -640,101 +764,20 @@ export default function OrderManagement() {
                   if (isLoading) return <div style={{ padding: 16, textAlign: 'center', color: '#999' }}>加载中...</div>
                   if (!detail) return <div style={{ padding: 16, textAlign: 'center', color: '#999' }}>暂无数据</div>
 
-                  const processes = detail.report_processes || []
-                  const materials = detail.process_materials || []
-                  const defects = detail.process_defects || []
-
-                  // 检验报废（process_id=null）单独统计
-                  const scrapDefects = defects.filter((d: any) => d.process_id == null)
-                  const allScrapQty = scrapDefects.reduce((s: number, d: any) => s + (Number(d.quantity) || 0), 0)
-
-                  // 按工序顺序排列（按sort_order或原始顺序）
-                  const sortedProcesses = [...processes].sort((a: any, b: any) =>
-                    (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0)
-                  )
-
-                  // 按工序聚合数据（按新规则计算）
-                  const processStats: any[] = []
-                  let prevOutputQty = 0
-
-                  sortedProcesses.forEach((p: any, idx: number) => {
-                    const procMaterials = materials.filter((m: any) => m.process_id === p.process_id)
-                    const investQty = procMaterials
-                      .filter((m: any) => m.material_type === '投入')
-                      .reduce((sum: number, m: any) => sum + (Number(m.quantity) || 0), 0)
-                    const returnQty = procMaterials
-                      .filter((m: any) => m.material_type === '退回')
-                      .reduce((sum: number, m: any) => sum + (Number(m.quantity) || 0), 0)
-
-                    const procDefects = defects.filter((d: any) => d.process_id === p.process_id)
-                    // 按 defect_type 分类：来料不良、制程不良
-                    let incomingQty = 0   // 来料不良
-                    let processQty = 0    // 制程不良
-                    let totalDefectQty = 0
-                    procDefects.forEach((d: any) => {
-                      const dt = d.defect_type?.defect_type || '其他'
-                      const qty = Number(d.quantity) || 0
-                      if (dt === '来料不良') incomingQty += qty
-                      else if (dt === '制程不良') processQty += qty
-                      totalDefectQty += qty
-                    })
-
-                    // 是否无报工（没有物料记录且没有不良记录）
-                    const hasReport = investQty > 0 || returnQty > 0 || totalDefectQty > 0
-
-                    let inputQty: number
-                    let outputQty: number
-
-                    if (idx === 0) {
-                      // 第一道工序：投入 = 投入 - 退回
-                      inputQty = investQty - returnQty
-                    } else {
-                      // 其它工序：投入 = 上道工序产出
-                      inputQty = prevOutputQty
-                    }
-
-                    if (!hasReport) {
-                      // 无报工工序：投入 = 产出
-                      outputQty = inputQty
-                    } else {
-                      // 产出 = 本工序投入 - 不良总数
-                      outputQty = Math.max(0, inputQty - totalDefectQty)
-                    }
-
-                    const defectRate = inputQty > 0 ? ((totalDefectQty / inputQty) * 100).toFixed(2) : '0.00'
-                    const incomingRate = inputQty > 0 ? ((incomingQty / inputQty) * 100).toFixed(2) : '0.00'
-                    const processRate = inputQty > 0 ? ((processQty / inputQty) * 100).toFixed(2) : '0.00'
-
-                    processStats.push({
-                      ...p,
-                      inputQty,
-                      outputQty,
-                      incomingQty,
-                      processQty,
-                      totalDefectQty,
-                      defectRate,
-                      incomingRate,
-                      processRate,
-                    })
-
-                    prevOutputQty = outputQty
-                  })
-
-                  // 汇总数据（报工单维度）
-                  let allInputQty = processStats[0]?.inputQty || 0
-                  let allOutputQty = processStats.length > 0 ? processStats[processStats.length - 1].outputQty : 0
-                  let allIncomingQty = 0
-                  let allProcessQty = 0
-                  let allDefectQty = 0
-                  processStats.forEach((ps: any) => {
-                    allIncomingQty += ps.incomingQty
-                    allProcessQty += ps.processQty
-                    allDefectQty += ps.totalDefectQty
-                  })
-                  const allDefectRate = allInputQty > 0 ? ((allDefectQty / allInputQty) * 100).toFixed(2) : '0.00'
-                  const allIncomingRate = allInputQty > 0 ? ((allIncomingQty / allInputQty) * 100).toFixed(2) : '0.00'
-                  const allProcessRate = allInputQty > 0 ? ((allProcessQty / allInputQty) * 100).toFixed(2) : '0.00'
-                  const allScrapRate = allInputQty > 0 ? ((allScrapQty / allInputQty) * 100).toFixed(2) : '0.00'
+                  const stats = calcReportOrderStats(detail)
+                  const {
+                    processStats,
+                    allInputQty,
+                    allOutputQty,
+                    allIncomingQty,
+                    allProcessQty,
+                    allDefectQty,
+                    allScrapQty,
+                    allDefectRate,
+                    allIncomingRate,
+                    allProcessRate,
+                    allScrapRate,
+                  } = stats
 
                   return (
                     <div style={{ padding: '8px 12px' }}>
