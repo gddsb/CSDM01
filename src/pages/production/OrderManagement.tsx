@@ -1,6 +1,6 @@
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, InputNumber, Select, DatePicker, Space, Row, Col, Drawer, Descriptions, Popconfirm, Checkbox } from 'antd'
+import { Table, Tag, Button, Modal, Form, Input, InputNumber, Select, DatePicker, Space, Row, Col, Drawer, Descriptions, Popconfirm, Checkbox, Divider } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import { useMessage, useApp } from '../../contexts/AppContext'
 import {
@@ -39,6 +39,8 @@ export default function OrderManagement() {
   const [addOpen, setAddOpen] = useState(false)
   const [detailOpen, setDetailOpen] = useState(false)
   const [currentOrder, setCurrentOrder] = useState(null)
+  const [reportOrders, setReportOrders] = useState([])
+  const [reportOrdersLoading, setReportOrdersLoading] = useState(false)
   const [editing, setEditing] = useState(null)
   const [selectedMaterial, setSelectedMaterial] = useState(null)
   const [form] = Form.useForm()
@@ -250,9 +252,19 @@ export default function OrderManagement() {
     }
   }
 
-  const handleView = (r) => {
+  const handleView = async (r) => {
     setCurrentOrder(r)
     setDetailOpen(true)
+    setReportOrders([])
+    setReportOrdersLoading(true)
+    try {
+      const res = await api.get('/production/report-orders', { params: { order_id: r.order_id, page: 1, pageSize: 100 } })
+      setReportOrders(res.data || [])
+    } catch (err) {
+      setReportOrders([])
+    } finally {
+      setReportOrdersLoading(false)
+    }
   }
 
   const handleSearch = useCallback(() => {
@@ -558,26 +570,56 @@ export default function OrderManagement() {
         title="订单详情"
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
-        width="40%"
+        width="45%"
       >
         {currentOrder && (
-          <Descriptions column={2} bordered size="small">
-            <Descriptions.Item label="订单编号">{currentOrder.order_no}</Descriptions.Item>
-            <Descriptions.Item label="状态"><Tag color={statusColorMap[currentOrder.status]}>{currentOrder.status}</Tag></Descriptions.Item>
-            <Descriptions.Item label="料号">{currentOrder.material_code}</Descriptions.Item>
-            <Descriptions.Item label="品名">{currentOrder.material_name}</Descriptions.Item>
-            <Descriptions.Item label="规格">{currentOrder.specification}</Descriptions.Item>
-            <Descriptions.Item label="菲林版本">{currentOrder.film_version}</Descriptions.Item>
-            <Descriptions.Item label="版本号">{formatVersionNo(currentOrder.version_no)}</Descriptions.Item>
-            <Descriptions.Item label="计划数量">{(currentOrder.planned_qty || 0).toLocaleString()}</Descriptions.Item>
-            <Descriptions.Item label="完工数量">{(currentOrder.finished_qty || 0).toLocaleString()}</Descriptions.Item>
-            <Descriptions.Item label="计划开始">{formatDate(currentOrder.plan_start_time)}</Descriptions.Item>
-            <Descriptions.Item label="计划完成">{formatDate(currentOrder.plan_end_time)}</Descriptions.Item>
-            <Descriptions.Item label="下发时间">{formatDateTime(currentOrder.release_time)}</Descriptions.Item>
-            <Descriptions.Item label="关闭时间">{formatDateTime(currentOrder.close_time)}</Descriptions.Item>
-            <Descriptions.Item label="创建人">{currentOrder.created_by || '-'}</Descriptions.Item>
-            <Descriptions.Item label="创建时间">{formatDateTime(currentOrder.created_at)}</Descriptions.Item>
-          </Descriptions>
+          <>
+            <Descriptions column={2} bordered size="small" style={{ marginBottom: 20 }}>
+              <Descriptions.Item label="订单编号">{currentOrder.order_no}</Descriptions.Item>
+              <Descriptions.Item label="状态"><Tag color={statusColorMap[currentOrder.status]}>{currentOrder.status}</Tag></Descriptions.Item>
+              <Descriptions.Item label="料号">{currentOrder.material_code}</Descriptions.Item>
+              <Descriptions.Item label="品名">{currentOrder.material_name}</Descriptions.Item>
+              <Descriptions.Item label="规格">{currentOrder.specification}</Descriptions.Item>
+              <Descriptions.Item label="菲林版本">{currentOrder.film_version}</Descriptions.Item>
+              <Descriptions.Item label="版本号">{formatVersionNo(currentOrder.version_no)}</Descriptions.Item>
+              <Descriptions.Item label="计划数量">{(currentOrder.planned_qty || 0).toLocaleString()}</Descriptions.Item>
+              <Descriptions.Item label="完工数量">{(currentOrder.finished_qty || 0).toLocaleString()}</Descriptions.Item>
+              <Descriptions.Item label="计划开始">{formatDate(currentOrder.plan_start_time)}</Descriptions.Item>
+              <Descriptions.Item label="计划完成">{formatDate(currentOrder.plan_end_time)}</Descriptions.Item>
+              <Descriptions.Item label="下发时间">{formatDateTime(currentOrder.release_time)}</Descriptions.Item>
+              <Descriptions.Item label="关闭时间">{formatDateTime(currentOrder.close_time)}</Descriptions.Item>
+              <Descriptions.Item label="创建人">{currentOrder.created_by || '-'}</Descriptions.Item>
+              <Descriptions.Item label="创建时间">{formatDateTime(currentOrder.created_at)}</Descriptions.Item>
+            </Descriptions>
+
+            <Divider orientation="left" style={{ margin: '8px 0 16px' }}>
+              <span style={{ fontWeight: 600 }}>报工单信息 ({reportOrders.length})</span>
+            </Divider>
+
+            <Table
+              size="small"
+              loading={reportOrdersLoading}
+              dataSource={reportOrders}
+              rowKey="report_order_id"
+              pagination={false}
+              scroll={{ x: 650 }}
+              columns={[
+                { title: '报工单号', dataIndex: 'report_no', key: 'report_no', width: 160 },
+                { title: '产线', dataIndex: 'line_name', key: 'line_name', width: 100 },
+                {
+                  title: '状态', dataIndex: 'status', key: 'status', width: 70,
+                  render: (v: string) => <Tag color={v === '完工' ? 'success' : 'processing'}>{v}</Tag>
+                },
+                {
+                  title: '报工数量', dataIndex: 'report_qty', key: 'report_qty', width: 90, align: 'right',
+                  render: (v: any) => (v || 0).toLocaleString()
+                },
+                { title: '报工时间', dataIndex: 'report_time', key: 'report_time', width: 150, render: formatDateTime },
+                { title: '完工时间', dataIndex: 'finish_time', key: 'finish_time', width: 150, render: (v: any) => v ? formatDateTime(v) : '-' },
+                { title: '报工人', dataIndex: 'report_user_name', key: 'report_user_name', width: 80 },
+              ]}
+            />
+          </>
         )}
       </Drawer>
     </>
