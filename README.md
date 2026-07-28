@@ -1,6 +1,6 @@
 # 奶粉罐生产管理系统 (Milk Can MES)
 
-> 版本：V1.0.1.726
+> 版本：V1.0.1.727
 >
 > 东莞市大满包装实业有限公司长沙分公司 — 奶粉罐生产制造执行系统
 
@@ -194,12 +194,14 @@
 
 | 模块 | 路径 | 功能说明 |
 |------|------|---------|
-| 生产日报 | `/report/daily` | 每日生产数据汇总 |
-| 质量月报 | `/report/monthly` | 月度质量数据统计 |
-| 效率分析 | `/report/efficiency` | 生产效率多维度分析 |
-| 生产报表 | `/report/production` | 生产数据综合报表 |
-| 质量报表 | `/report/quality` | 质量数据综合报表 |
-| 异常分析报表 | `/report/exception` | 异常数据统计与分析 |
+| 生产日报 | `/report/daily` | 每日生产数据汇总（实时API数据） |
+| 质量月报 | `/report/monthly` | 月度质量数据统计（实时API数据） |
+| 效率分析 | `/report/efficiency` | 生产效率多维度分析（实时API数据） |
+| 生产报表 | `/report/production` | 生产数据综合报表（实时API数据） |
+| 质量报表 | `/report/quality` | 质量数据综合报表（实时API数据） |
+| 异常分析报表 | `/report/exception` | 异常数据统计与分析（实时API数据） |
+
+> **报表数据来源**：所有报表页面均通过后端 API 接口实时获取项目已有数据（供应商、客户、订单、产线、设备、检验等），不再使用模拟数据。
 
 ### 8. 工作台
 
@@ -1296,14 +1298,72 @@ pm2 start ecosystem.config.cjs
 
 ### PM2 配置
 
-项目根目录提供 `ecosystem.config.cjs` 配置文件，包含两个应用：
+项目根目录提供 `ecosystem.config.cjs` 配置文件，默认包含后端 API 服务：
 
 - `milk-can-mes-api`：后端 API 服务（端口 3001）
-- `milk-can-mes-web`：前端静态文件服务（端口 5173）
+
+> **前端服务说明**：推荐使用 Nginx 直接提供前端静态文件服务（见下方 Nginx 配置），无需单独通过 PM2 启动前端服务。
 
 ### Nginx 反向代理（推荐）
 
-生产环境建议使用 Nginx 作为反向代理，可参考 `setup.sh` 中的 Nginx 配置。
+生产环境建议使用 Nginx 作为反向代理和静态文件服务。核心配置要点：
+
+#### 1. 前端静态文件与 SPA 路由回退
+
+由于前端是 React SPA（单页应用），所有路由都在客户端处理。浏览器刷新页面时，Nginx 需要将所有请求回退到 `index.html`，否则会返回 404 错误。
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    # 前端静态文件（SPA路由回退配置）
+    root /opt/milk-can-mes/dist;
+    index index.html;
+
+    # 关键：SPA 路由回退，防止刷新页面 404
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 后端 API 反向代理
+    location /api/ {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # 文件上传大小限制
+    client_max_body_size 50M;
+}
+```
+
+#### 2. 部署步骤（使用 Nginx）
+
+```bash
+# 1. 构建前端
+cd /path/to/milk-can-mes
+npm install
+npm run build
+
+# 2. 复制构建产物到 Nginx 服务目录
+mkdir -p /opt/milk-can-mes/dist
+cp -r dist/* /opt/milk-can-mes/dist/
+
+# 3. 后端安装与启动
+cd server
+npm install
+npm run seed   # 初始化数据库
+cd ..
+pm2 start ecosystem.config.cjs --only milk-can-mes-api
+
+# 4. 配置并重启 Nginx
+# 将上方 Nginx 配置写入 /etc/nginx/sites-available/milk-can-mes
+# ln -s /etc/nginx/sites-available/milk-can-mes /etc/nginx/sites-enabled/
+nginx -t && systemctl reload nginx
+```
 
 ---
 
@@ -1758,9 +1818,34 @@ type 类型：
 - 请确保先选择"检验类型"，不良类型选项会根据检验类型动态变化
 - 状态默认值为"启用"
 
+### 9. 浏览器刷新页面返回 404 错误？
+
+这不是安全限制，而是 **SPA（单页应用）的路由机制问题**。前端使用 React SPA，所有路由都在客户端处理。当用户刷新浏览器时，服务器收到的是实际路径（如 `/report/daily`），但服务器上并不存在这个物理文件，因此返回 404。
+
+**解决方案**：
+
+- **使用 Nginx**：配置 `try_files $uri $uri/ /index.html`，将所有找不到的路径回退到 `index.html`
+- **开发环境**：Vite dev server 已内置 SPA 路由回退，无需额外配置
+- **PM2 + serve**：如果使用 `npx serve dist`，需添加 `-s` 参数（单页模式）：`npx serve -s dist`
+
 ---
 
 ## 更新日志
+
+### V1.0.1.727 (2026-07-29)
+
+#### P0 - 高优先级
+
+- **供应商档案菜单图标**：为基础数据菜单下的"供应商档案"菜单项添加 `ShopOutlined` 图标显示
+- **浏览器刷新 404 问题修复**：解决 SPA 单页应用刷新页面返回 Next.js 默认 404 的问题。根本原因是前端静态文件服务缺少 SPA 路由回退配置。修复方案：使用 Nginx 直接提供前端静态文件，配置 `try_files $uri $uri/ /index.html` 实现路由回退，将所有未匹配的路径回退到 `index.html`，由前端路由接管
+- **报表中心模拟数据替换为真实数据**：所有 6 个报表页面（生产日报、质量月报、效率分析、生产报表、质量报表、异常分析）的供应商信息、客户信息、订单信息、产线信息、设备信息、检验数据全部从 `mock/data.ts` 模拟数据替换为后端 API 实时数据。各页面调用的 API 接口：
+  - 生产日报/生产报表：`/production/report-orders`、`/basic/production-lines`、`/production/process-defects`
+  - 效率分析报表：`/production/report-orders`、`/basic/production-lines`、`/production/process-exceptions`
+  - 异常分析报表：`/production/process-exceptions`、`/basic/production-lines`、`/basic/devices`
+  - 质量报表/质量月报：`/basic/incoming-inspections`、`/basic/product-inspections`
+- **报表页面增强**：所有报表页面新增加载状态（Spin）、错误处理（message.error 提示）、查询/重置按钮绑定数据加载函数、后端字段名映射适配
+
+---
 
 ### V1.0.1.726 (2026-07-28)
 
