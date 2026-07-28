@@ -63,6 +63,7 @@ import {
   preview as rulePreview,
 } from '../controllers/NumberRuleController.js'
 import ProductInspectionController from '../controllers/ProductInspectionController.js'
+import IncomingInspectionController from '../controllers/IncomingInspectionController.js'
 import InspectionStandardController from '../controllers/InspectionStandardController.js'
 import { authRequired, logOperation } from '../middleware/auth.js'
 
@@ -162,6 +163,16 @@ router.put('/product-inspections/:id/submit', logOperation('产品检测报审')
 router.put('/product-inspections/:id/start', logOperation('产品检测开检'), ProductInspectionController.start)
 router.put('/product-inspections/:id/review', logOperation('产品检测审核'), ProductInspectionController.review)
 router.delete('/product-inspections/:id', logOperation('产品检测'), ProductInspectionController.delete)
+
+// 来料检验
+router.get('/incoming-inspections', IncomingInspectionController.list)
+router.get('/incoming-inspections/:id', IncomingInspectionController.detail)
+router.post('/incoming-inspections', logOperation('来料检验'), IncomingInspectionController.create)
+router.put('/incoming-inspections/:id', logOperation('来料检验'), IncomingInspectionController.update)
+router.put('/incoming-inspections/:id/submit', logOperation('来料检验报审'), IncomingInspectionController.submit)
+router.put('/incoming-inspections/:id/start', logOperation('来料检验开检'), IncomingInspectionController.start)
+router.put('/incoming-inspections/:id/review', logOperation('来料检验审核'), IncomingInspectionController.review)
+router.delete('/incoming-inspections/:id', logOperation('来料检验'), IncomingInspectionController.delete)
 
 // 检验标准
 router.get('/standards', InspectionStandardController.list)

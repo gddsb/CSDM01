@@ -32,6 +32,8 @@ import DataDictionary from './DataDictionary.js'
 import UserSetting from './UserSetting.js'
 import ProductInspection from './ProductInspection.js'
 import ProductInspectionItem from './ProductInspectionItem.js'
+import IncomingInspection from './IncomingInspection.js'
+import IncomingInspectionItem from './IncomingInspectionItem.js'
 import InspectionStandard from './InspectionStandard.js'
 import InspectionStandardItem from './InspectionStandardItem.js'
 
@@ -121,6 +123,12 @@ ProductInspection.belongsTo(InspectionStandard, { foreignKey: 'standard_id', as:
 ProductInspection.hasMany(ProductInspectionItem, { foreignKey: 'inspection_id', as: 'items' })
 ProductInspectionItem.belongsTo(ProductInspection, { foreignKey: 'inspection_id', as: 'inspection' })
 
+// 来料检验主表 - 检验标准
+IncomingInspection.belongsTo(InspectionStandard, { foreignKey: 'standard_id', as: 'standard' })
+// 来料检验主表 - 检验项目（一对多）
+IncomingInspection.hasMany(IncomingInspectionItem, { foreignKey: 'inspection_id', as: 'items' })
+IncomingInspectionItem.belongsTo(IncomingInspection, { foreignKey: 'inspection_id', as: 'inspection' })
+
 // 检验标准 - 检验标准项目（一对多）
 InspectionStandard.hasMany(InspectionStandardItem, { foreignKey: 'standard_id', as: 'items' })
 InspectionStandardItem.belongsTo(InspectionStandard, { foreignKey: 'standard_id', as: 'standard' })
@@ -161,6 +169,8 @@ const db = {
   UserSetting,
   ProductInspection,
   ProductInspectionItem,
+  IncomingInspection,
+  IncomingInspectionItem,
   InspectionStandard,
   InspectionStandardItem,
 }
@@ -198,6 +208,8 @@ export {
   UserSetting,
   ProductInspection,
   ProductInspectionItem,
+  IncomingInspection,
+  IncomingInspectionItem,
   InspectionStandard,
   InspectionStandardItem,
 }
