@@ -66,6 +66,7 @@ import {
 import ProductInspectionController from '../controllers/ProductInspectionController.js'
 import IncomingInspectionController from '../controllers/IncomingInspectionController.js'
 import InspectionStandardController from '../controllers/InspectionStandardController.js'
+import MicrobeInspectionController from '../controllers/MicrobeInspectionController.js'
 import { authRequired, logOperation } from '../middleware/auth.js'
 
 const router = Router()
@@ -191,5 +192,12 @@ router.post('/standards', logOperation('检验标准'), InspectionStandardContro
 router.put('/standards/:id', logOperation('检验标准'), InspectionStandardController.update)
 router.delete('/standards/:id', logOperation('检验标准'), InspectionStandardController.remove)
 router.get('/standards/:standardId/items', InspectionStandardController.listItems)
+
+// 微生物检验
+router.get('/microbe-inspections', MicrobeInspectionController.list)
+router.get('/microbe-inspections/:id', MicrobeInspectionController.detail)
+router.post('/microbe-inspections', logOperation('微生物检验'), MicrobeInspectionController.create)
+router.put('/microbe-inspections/:id', logOperation('微生物检验'), MicrobeInspectionController.update)
+router.delete('/microbe-inspections/:id', logOperation('微生物检验'), MicrobeInspectionController.delete)
 
 export default router

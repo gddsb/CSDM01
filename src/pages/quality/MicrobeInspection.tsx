@@ -1,173 +1,122 @@
 import ResizableTable from '../../components/ResizableTable'
-import React, { useState, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { Table, Tag, Button, Drawer, Descriptions, Typography, Alert } from 'antd'
 import {
   ExperimentOutlined, SafetyCertificateOutlined, WarningOutlined,
-  CheckCircleOutlined, EyeOutlined, SearchOutlined
+  CheckCircleOutlined, EyeOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import { formatDateTime } from '../../utils'
-import { microbeInspections, incomingInspections } from '../../mock/data'
+import api from '../../utils/api'
 
 const { Text, Title } = Typography
 
-// 微生物检验检测项目模板（按检验对象分类）
-const microbeItemTemplates: Record<string, any[]> = {
-  '成品': [
-    { item_name: '菌落总数', standard_value: '≤100', unit: 'CFU/g' },
-    { item_name: '大肠菌群', standard_value: '≤30', unit: 'MPN/g' },
-    { item_name: '霉菌和酵母', standard_value: '≤50', unit: 'CFU/g' },
-    { item_name: '沙门氏菌', standard_value: '不得检出', unit: '-' },
-    { item_name: '金黄色葡萄球菌', standard_value: '不得检出', unit: '-' },
-    { item_name: '坂崎肠杆菌', standard_value: '不得检出', unit: '-' },
-  ],
-  '半成品': [
-    { item_name: '菌落总数', standard_value: '≤500', unit: 'CFU/g' },
-    { item_name: '大肠菌群', standard_value: '≤30', unit: 'MPN/g' },
-    { item_name: '霉菌和酵母', standard_value: '≤100', unit: 'CFU/g' },
-    { item_name: '沙门氏菌', standard_value: '不得检出', unit: '-' },
-  ],
-  '原材料': [
-    { item_name: '菌落总数', standard_value: '≤1000', unit: 'CFU/g' },
-    { item_name: '大肠菌群', standard_value: '≤100', unit: 'MPN/g' },
-    { item_name: '霉菌和酵母', standard_value: '≤200', unit: 'CFU/g' },
-    { item_name: '沙门氏菌', standard_value: '不得检出', unit: '-' },
-  ],
-}
+const resultColor = { '合格': 'success', '不合格': 'error' } as Record<string, string>
+const typeColor = { '正常': 'success', '加严': 'warning', '复检': 'processing' } as Record<string, string>
+const objectColor = { '成品检验': 'blue', '来料检验': 'cyan' } as Record<string, string>
+const statusColor = { '待检': 'default', '检验中': 'processing', '审核中': 'warning', '已完成': 'success', '已关闭': 'default' } as Record<string, string>
+const handleColor = { '入库': 'green', '判退': 'red', '报废': 'red', '让步接收': 'orange' } as Record<string, string>
 
-// 生成微生物检验检测项的实测值和判定结果
-function generateMicrobeActualValue(std: string, unit: string, passRate = 0.9) {
-  const pass = Math.random() < passRate
-  if (std.includes('不得检出')) {
-    return { actual_value: pass ? '未检出' : '检出', unit, judge: pass ? '合格' : '不合格' }
-  }
-  if (std.includes('≤')) {
-    const num = parseFloat(std.replace(/[^0-9.]/g, ''))
-    if (isNaN(num)) {
-      return { actual_value: pass ? '符合' : '不符合', unit, judge: pass ? '合格' : '不合格' }
-    }
-    const actual = pass ? Math.floor(num * 0.3 + Math.random() * num * 0.5) : Math.floor(num * 1.2 + Math.random() * num * 0.5)
-    return { actual_value: String(actual), unit, judge: actual <= num ? '合格' : '不合格' }
-  }
-  return { actual_value: pass ? '符合' : '不符合', unit, judge: pass ? '合格' : '不合格' }
-}
-
-// 为每条微生物检验记录生成检测项目
-function getMicrobeItems(record: any) {
-  const templates = microbeItemTemplates[record.object_type] || microbeItemTemplates['成品']
-  return templates.map(tpl => {
-    const { actual_value, unit, judge } = generateMicrobeActualValue(tpl.standard_value, tpl.unit)
-    return {
-      item_name: tpl.item_name,
-      standard_value: tpl.standard_value,
-      actual_value,
-      unit,
-      judge,
-    }
-  })
-}
-
-const resultColor = { '合格': 'success', '不合格': 'error' }
-const typeColor = { '正常': 'success', '加严': 'warning' }
-const objectColor = { '成品': 'blue', '原材料': 'cyan' }
-const statusColor = { '已完成': 'success', '检验中': 'processing' }
-const handleColor = { '入库': 'green', '判退': 'red', '报废': 'red', '让步接收': 'orange' }
-
-// 处理方式映射（mock）
-const handleMap = {
-  mb1: '入库',
-  mb2: '入库',
-}
+const STATUS_MAP: Record<number, string> = { 0: '待检', 1: '检验中', 2: '审核中', 3: '已完成', 4: '已关闭' }
 
 export default function MicrobeInspection() {
+  const [data, setData] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 20, total: 0 })
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [current, setCurrent] = useState(null)
+  const [current, setCurrent] = useState<any>(null)
+  const [detailItems, setDetailItems] = useState<any[]>([])
 
-  const filteredData = useMemo(() => {
-    return microbeInspections
-  }, [])
-
-  const normalCount = filteredData.filter(i => i.inspection_type === '正常').length
-  const strictCount = filteredData.filter(i => i.inspection_type === '加严').length
-  const passCount = filteredData.filter(i => i.result === '合格').length
-  const passRate = filteredData.length > 0
-    ? Math.round((passCount / filteredData.length) * 100)
-    : 0
-
-  const stats = [
-    { label: '总检验数', value: filteredData.length, icon: <ExperimentOutlined />, color: '#2196F3' },
-    { label: '正常检验', value: normalCount, icon: <SafetyCertificateOutlined />, color: '#4CAF50' },
-    { label: '加严检验', value: strictCount, icon: <WarningOutlined />, color: '#FF9800' },
-    { label: '合格率', value: `${passRate}%`, icon: <CheckCircleOutlined />, color: '#00BCD4' },
-  ]
-
-  const filters = [
-    { type: 'input', placeholder: '检验编号', icon: <SearchOutlined /> },
-    {
-      type: 'select', placeholder: '检验对象', options: [
-        { label: '成品', value: '成品' },
-        { label: '原材料', value: '原材料' },
-      ]
-    },
-    {
-      type: 'select', placeholder: '检验结果', options: [
-        { label: '合格', value: '合格' },
-        { label: '不合格', value: '不合格' },
-      ]
-    },
-  ]
-
-  const getRelatedNo = (record) => {
-    if (record.object_type === '成品' && record.work_order_no) {
-      return record.work_order_no
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    try {
+      const params: any = { page: pagination.current, page_size: pagination.pageSize }
+      const res = await api.get('/basic/microbe-inspections', { params })
+      if (res.success !== false) {
+        setData(res.data?.list || res.data || [])
+        setPagination(p => ({ ...p, total: res.data?.total || res.total || 0 }))
+      } else {
+        setData([])
+        setPagination(p => ({ ...p, total: 0 }))
+      }
+    } catch (e) {
+      setData([])
+      setPagination(p => ({ ...p, total: 0 }))
+    } finally {
+      setLoading(false)
     }
-    if (record.object_type === '原材料' && record.incoming_id) {
-      const inc = incomingInspections.find(i => i.inspection_id === record.incoming_id)
-      return inc ? inc.inspection_no : '-'
-    }
-    return '-'
+  }, [pagination.current, pagination.pageSize])
+
+  useEffect(() => { fetchData() }, [fetchData])
+
+  const stats = useMemo(() => {
+    return [
+      { label: '总检验数', value: data.length, icon: <ExperimentOutlined />, color: '#2196F3' },
+      { label: '成品检验', value: data.filter(i => i.object_type === '成品检验').length, icon: <SafetyCertificateOutlined />, color: '#4CAF50' },
+      { label: '来料检验', value: data.filter(i => i.object_type === '来料检验').length, icon: <WarningOutlined />, color: '#FF9800' },
+      { label: '合格率', value: data.length > 0 ? `${Math.round((data.filter(i => i.result === '合格').length / data.length) * 100)}%` : '0%', icon: <CheckCircleOutlined />, color: '#00BCD4' },
+    ]
+  }, [data])
+
+  const getStatusText = (s: any) => {
+    if (typeof s === 'number') return STATUS_MAP[s] || String(s)
+    return s
   }
 
-  const showDetail = (record) => {
+  const getRelatedNo = (record: any) => {
+    if (record.report_order_no) return record.report_order_no
+    if (record.incoming_no) return record.incoming_no
+    return record.order_no || '-'
+  }
+
+  const showDetail = async (record: any) => {
     setCurrent(record)
+    setDetailItems([])
     setDrawerOpen(true)
+    try {
+      const res = await api.get(`/basic/microbe-inspections/${record.inspection_id}`)
+      if (res.success !== false && res.data) {
+        setCurrent(res.data)
+        const items = res.data.items || []
+        setDetailItems(items.map((it: any) => ({
+          ...it,
+          judge: it.result === 1 ? '合格' : it.result === 0 ? '不合格' : '待检'
+        })))
+      }
+    } catch (e) {
+      // ignore
+    }
   }
 
   const columns = [
-    { title: '检验编号', dataIndex: 'inspection_no', key: 'inspection_no', width: 150, fixed: 'left' },
+    { title: '检验编号', dataIndex: 'inspection_no', key: 'inspection_no', width: 150, fixed: 'left' as const },
     {
       title: '检验类型', dataIndex: 'inspection_type', key: 'inspection_type', width: 90,
-      render: v => <Tag color={typeColor[v] || 'default'}>{v}</Tag>
+      render: (v: string) => <Tag color={typeColor[v] || 'default'}>{v}</Tag>
     },
     {
-      title: '检验对象', dataIndex: 'object_type', key: 'object_type', width: 90,
-      render: v => <Tag color={objectColor[v] || 'default'}>{v}</Tag>
+      title: '检验对象', dataIndex: 'object_type', key: 'object_type', width: 100,
+      render: (v: string) => <Tag color={objectColor[v] || 'default'}>{v}</Tag>
     },
     {
-      title: '关联工单/来料', key: 'related_no', width: 170,
-      render: (_, record) => getRelatedNo(record)
+      title: '关联单号', key: 'related_no', width: 170,
+      render: (_: any, record: any) => getRelatedNo(record)
     },
+    { title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 160, ellipsis: true },
     {
       title: '检验结果', dataIndex: 'result', key: 'result', width: 90,
-      render: v => v ? <Tag color={resultColor[v]}>{v}</Tag> : <Tag>待检</Tag>
-    },
-    {
-      title: '处理方式', key: 'handle_type', width: 100,
-      render: (_, record) => {
-        const h = handleMap[record.inspection_id]
-        return h ? <Tag color={handleColor[h] || 'default'}>{h}</Tag> : <Text type="secondary">-</Text>
-      }
+      render: (v: string) => v ? <Tag color={resultColor[v]}>{v}</Tag> : <Tag>待检</Tag>
     },
     { title: '检验人', dataIndex: 'inspector_name', key: 'inspector_name', width: 100 },
     { title: '检验时间', dataIndex: 'inspection_time', key: 'inspection_time', width: 160, render: formatDateTime },
     {
       title: '状态', dataIndex: 'status', key: 'status', width: 90,
-      render: v => <Tag color={statusColor[v] || 'default'}>{v}</Tag>
+      render: (v: any) => <Tag color={statusColor[getStatusText(v)] || 'default'}>{getStatusText(v)}</Tag>
     },
     {
-      title: '操作', key: 'action', fixed: 'right',
-      render: (_, record) => (
+      title: '操作', key: 'action', fixed: 'right' as const,
+      render: (_: any, record: any) => (
         <Button type="link" size="small" onClick={() => showDetail(record)}>查看详情</Button>
       )
     },
@@ -180,7 +129,7 @@ export default function MicrobeInspection() {
     { title: '单位', dataIndex: 'unit', key: 'unit', width: 80 },
     {
       title: '判定', dataIndex: 'judge', key: 'judge', width: 90,
-      render: v => <Tag color={v === '合格' ? 'success' : v === '不合格' ? 'error' : 'default'}>{v}</Tag>
+      render: (v: string) => <Tag color={v === '合格' ? 'success' : v === '不合格' ? 'error' : 'default'}>{v}</Tag>
     },
   ]
 
@@ -190,7 +139,7 @@ export default function MicrobeInspection() {
         title="微生物检验"
         breadcrumbs="质量管理 / 微生物检验"
         stats={stats}
-        filters={filters}
+        filters={[]}
         actions={<ActionButtons />}
         table={
           <>
@@ -200,12 +149,21 @@ export default function MicrobeInspection() {
               style={{ marginBottom: 12 }}
               message="不合格处理流程：正常检验 → 不合格 → 加严检验(样本翻倍) → 仍不合格 → 判退/报废"
             />
-            <ResizableTable tableKey="pages_quality_MicrobeInspection"               columns={columns}
-              dataSource={filteredData}
+            <ResizableTable tableKey="pages_quality_MicrobeInspection"
+              columns={columns}
+              dataSource={data}
               rowKey="inspection_id"
+              loading={loading}
               size="small"
               scroll={{ x: 1300 }}
-              pagination={{ pageSize: 30, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
+              pagination={{
+                current: pagination.current,
+                pageSize: pagination.pageSize,
+                total: pagination.total,
+                showSizeChanger: true,
+                showTotal: (t: number) => `共 ${t} 条`,
+                onChange: (page: number, pageSize: number) => setPagination(p => ({ ...p, current: page, pageSize })),
+              }}
             />
           </>
         }
@@ -222,7 +180,7 @@ export default function MicrobeInspection() {
             <Descriptions column={2} size="small" bordered style={{ marginBottom: 16 }}>
               <Descriptions.Item label="检验编号">{current.inspection_no}</Descriptions.Item>
               <Descriptions.Item label="状态">
-                <Tag color={statusColor[current.status] || 'default'}>{current.status}</Tag>
+                <Tag color={statusColor[getStatusText(current.status)] || 'default'}>{getStatusText(current.status)}</Tag>
               </Descriptions.Item>
               <Descriptions.Item label="检验类型">
                 <Tag color={typeColor[current.inspection_type] || 'default'}>{current.inspection_type}</Tag>
@@ -230,20 +188,23 @@ export default function MicrobeInspection() {
               <Descriptions.Item label="检验对象">
                 <Tag color={objectColor[current.object_type] || 'default'}>{current.object_type}</Tag>
               </Descriptions.Item>
-              <Descriptions.Item label="关联工单/来料" span={2}>{getRelatedNo(current)}</Descriptions.Item>
-              <Descriptions.Item label="检验人">{current.inspector_name}</Descriptions.Item>
+              <Descriptions.Item label="关联单号" span={2}>{getRelatedNo(current)}</Descriptions.Item>
+              <Descriptions.Item label="料品名称">{current.material_name || '-'}</Descriptions.Item>
+              <Descriptions.Item label="规格型号">{current.specification || '-'}</Descriptions.Item>
+              <Descriptions.Item label="检验人">{current.inspector_name || '-'}</Descriptions.Item>
               <Descriptions.Item label="检验时间">{formatDateTime(current.inspection_time)}</Descriptions.Item>
               <Descriptions.Item label="检验结果">
                 {current.result ? <Tag color={resultColor[current.result]}>{current.result}</Tag> : <Tag>待检</Tag>}
               </Descriptions.Item>
               <Descriptions.Item label="处理方式">
-                {(() => { const h = handleMap[current.inspection_id]; return h ? <Tag color={handleColor[h] || 'default'}>{h}</Tag> : '-' })()}
+                {current.handle_type ? <Tag color={handleColor[current.handle_type] || 'default'}>{current.handle_type}</Tag> : '-'}
               </Descriptions.Item>
             </Descriptions>
             <Title level={5}>检验结果明细</Title>
-            <ResizableTable tableKey="pages_quality_MicrobeInspection"               columns={detailColumns}
-              dataSource={getMicrobeItems(current)}
-              rowKey={(r, i) => i}
+            <ResizableTable tableKey="pages_quality_MicrobeInspection_detail"
+              columns={detailColumns}
+              dataSource={detailItems}
+              rowKey={(r: any, i: number) => r.item_id || i}
               size="small"
               pagination={false}
             />
