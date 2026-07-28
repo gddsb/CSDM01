@@ -81,6 +81,10 @@ async function generateReportOrders() {
   const mayStart = new Date(2026, 4, 1)
   const julEnd = new Date(2026, 6, 31)
 
+  // 筛选"检验报废"类型的不良类型
+  const scrapDefectTypes = defectTypes.filter(d => d.defect_type === '检验报废')
+  const normalDefectTypes = defectTypes.filter(d => d.defect_type !== '检验报废')
+
   for (const order of orders) {
     const line = pick(lines)
     const lineId = line.line_id
@@ -92,11 +96,179 @@ async function generateReportOrders() {
       const reportUser = pick(opUsers)
       const finishUser = pick(pmUsers)
 
-      const reportQty = Math.floor(order.planned_qty * (0.7 + Math.random() * 0.3))
       const reportDate = randomDate(mayStart, julEnd)
       const reportTime = new Date(reportDate.getTime() + r * 3600000 * 2)
       const finishTime = new Date(reportTime.getTime() + rand(2, 8) * 3600000)
 
+      // 当前报工单的临时数据容器
+      const curReportProcesses = []
+      const curProcessDefects = []   // 工序不良（来料+制程，非检验报废）
+      const curScrapDefects = []     // 检验报废（process_id=null）
+      const curProcessMaterials = []
+      const curProcessExceptions = []
+
+      // 首道工序投入和退回（用于计算报工单产出）
+      let firstProcessInput = 0
+      let firstProcessReturn = 0
+
+      // 生成报工工序
+      const procs = lineProcesses.filter(lp => lp.line_id === lineId)
+      for (const lp of procs) {
+        const proc = await Process.findByPk(lp.process_id, { raw: true })
+        if (!proc) continue
+
+        const hasMat = proc.has_material === 1 || proc.has_material === true ? 1 : 0
+        const mustRep = proc.must_report === 1 || proc.must_report === true ? 1 : 0
+
+        curReportProcesses.push({
+          report_order_id: roId,
+          process_id: proc.process_id,
+          process_code: proc.process_code,
+          process_name: proc.process_name,
+          has_material: hasMat,
+          must_report: mustRep,
+          sort_order: lp.sort_order,
+          created_at: reportTime,
+          updated_at: reportTime
+        })
+
+        // 必须报工(must_report=1)的工序必须有不良记录；其它工序随机（约30%概率）
+        const needDefect = mustRep === 1 || Math.random() < 0.3
+        if (needDefect) {
+          const defectCount = mustRep === 1 ? rand(1, 3) : rand(1, 2)
+          for (let d = 0; d < defectCount; d++) {
+            const def = pick(normalDefectTypes.length > 0 ? normalDefectTypes : defectTypes)
+            curProcessDefects.push({
+              report_order_id: roId,
+              process_id: proc.process_id,
+              defect_type_id: def.defect_id,
+              quantity: rand(1, 20),
+              unit: '个',
+              created_at: reportTime
+            })
+          }
+        }
+
+        // 为工序生成投入/退回物料（不生成产出类型，产出按规则计算）
+        const procIndex = procs.findIndex(lp => lp.process_id === proc.process_id)
+        const isFirstProcess = procIndex === 0
+
+        // 引入物料(has_material=1)的工序必须有物料记录
+        const needMaterial = hasMat === 1
+
+        // 第一道工序：必有投入
+        if (isFirstProcess) {
+          const investMat = materials.length > 0 ? pick(materials) : null
+          const investQty = Math.floor(order.planned_qty * (0.9 + Math.random() * 0.2))
+          firstProcessInput = investQty
+          curProcessMaterials.push({
+            report_order_id: roId,
+            process_id: proc.process_id,
+            material_type: '投入',
+            bas_material_id: investMat?.material_id || null,
+            material_batch: 'B' + pad(rand(1000, 9999)),
+            package_no: 'P' + pad(rand(100, 999)),
+            quantity: investQty,
+            created_at: reportTime
+          })
+          // 少量退回（约5%概率）
+          if (Math.random() < 0.05) {
+            const retQty = rand(1, 10)
+            firstProcessReturn = retQty
+            curProcessMaterials.push({
+              report_order_id: roId,
+              process_id: proc.process_id,
+              material_type: '退回',
+              bas_material_id: investMat?.material_id || null,
+              material_batch: 'B' + pad(rand(1000, 9999)),
+              package_no: 'P' + pad(rand(100, 999)),
+              quantity: retQty,
+              created_at: reportTime
+            })
+          }
+        }
+
+        // 中间工序/末道工序：引入物料的工序必须有投入记录，其它工序随机辅料投入
+        if (!isFirstProcess) {
+          if (needMaterial) {
+            const mat = materials.length > 0 ? pick(materials) : null
+            curProcessMaterials.push({
+              report_order_id: roId,
+              process_id: proc.process_id,
+              material_type: '投入',
+              bas_material_id: mat?.material_id || null,
+              material_batch: 'B' + pad(rand(1000, 9999)),
+              package_no: 'P' + pad(rand(100, 999)),
+              quantity: rand(10, 200),
+              created_at: reportTime
+            })
+          } else if (Math.random() < 0.3 && materials.length > 0) {
+            const mat = pick(materials)
+            curProcessMaterials.push({
+              report_order_id: roId,
+              process_id: proc.process_id,
+              material_type: '投入',
+              bas_material_id: mat.material_id,
+              material_batch: 'B' + pad(rand(1000, 9999)),
+              package_no: 'P' + pad(rand(100, 999)),
+              quantity: rand(10, 200),
+              created_at: reportTime
+            })
+          }
+        }
+      }
+
+      // 计算所有工序不良总和（非检验报废）
+      const totalProcessDefectQty = curProcessDefects.reduce((s, d) => s + Number(d.quantity || 0), 0)
+
+      // 生成检验报废（约30%概率，process_id=null）
+      let totalScrapQty = 0
+      if (Math.random() < 0.3 && scrapDefectTypes.length > 0) {
+        const scrapCount = rand(1, 2)
+        for (let s = 0; s < scrapCount; s++) {
+          const def = pick(scrapDefectTypes)
+          const qty = rand(1, 15)
+          totalScrapQty += qty
+          curScrapDefects.push({
+            report_order_id: roId,
+            process_id: null,
+            defect_type_id: def.defect_id,
+            quantity: qty,
+            unit: '个',
+            created_at: reportTime
+          })
+        }
+      }
+
+      // 计算报工单产出数量 = 首道工序投入 - 首道退回 - 所有工序不良总和 - 检验报废总和
+      const firstProcessNetInput = Math.max(0, firstProcessInput - firstProcessReturn)
+      const reportQty = Math.max(0, firstProcessNetInput - totalProcessDefectQty - totalScrapQty)
+
+      // 随机生成异常工时（约20%概率）
+      if (Math.random() < 0.2 && lineDevices.length > 0) {
+        const excTypes = ['设备故障', '物料短缺', '质量异常', '人员短缺', '工艺问题']
+        const device = pick(lineDevices)
+        const confirmer = pick(maintUsers.length > 0 ? maintUsers : pmUsers)
+        curProcessExceptions.push({
+          report_order_id: roId,
+          exception_type: pick(excTypes),
+          device_id: device.device_id,
+          device_code: device.device_code,
+          device_name: device.device_name,
+          stop_type: pick(['计划停机', '非计划停机', '故障停机']),
+          confirm_user: confirmer.username,
+          confirm_user_name: confirmer.real_name || confirmer.username,
+          start_time: new Date(reportTime.getTime() + rand(30, 120) * 60000),
+          end_time: new Date(reportTime.getTime() + rand(120, 300) * 60000),
+          duration: rand(30, 180) / 60,
+          description: '模拟生成异常工时记录',
+          record_user: reportUser.username,
+          record_user_name: reportUser.real_name || reportUser.username,
+          created_at: reportTime
+        })
+      }
+
+      // 创建报工单
       const ro = {
         report_order_id: roId,
         order_id: order.order_id,
@@ -126,128 +298,11 @@ async function generateReportOrders() {
       }
       reportOrders.push(ro)
 
-      // 生成报工工序
-      const procs = lineProcesses.filter(lp => lp.line_id === lineId)
-      for (const lp of procs) {
-        const proc = await Process.findByPk(lp.process_id, { raw: true })
-        if (!proc) continue
-
-        reportProcesses.push({
-          report_order_id: roId,
-          process_id: proc.process_id,
-          process_code: proc.process_code,
-          process_name: proc.process_name,
-          has_material: proc.process_code === 'WLD' || proc.process_code === 'BCT' ? 1 : 0,
-          must_report: 1,
-          sort_order: lp.sort_order,
-          created_at: reportTime,
-          updated_at: reportTime
-        })
-
-        // 随机生成工序不良（约30%概率）
-        if (Math.random() < 0.3) {
-          const defectCount = rand(1, 2)
-          for (let d = 0; d < defectCount; d++) {
-            const def = pick(defectTypes)
-            processDefects.push({
-              report_order_id: roId,
-              process_id: proc.process_id,
-              defect_type_id: def.defect_id,
-              quantity: rand(1, 20),
-              unit: '个',
-              created_at: reportTime
-            })
-          }
-        }
-
-        // 为每个工序生成投入/产出物料（第一道工序有投入，最后一道工序有产出）
-        const procIndex = procs.findIndex(lp => lp.process_id === proc.process_id)
-        const isFirstProcess = procIndex === 0
-        const isLastProcess = procIndex === procs.length - 1
-
-        // 第一道工序：必有投入
-        if (isFirstProcess) {
-          const investMat = materials.length > 0 ? pick(materials) : null
-          const investQty = Math.floor(order.planned_qty * (0.9 + Math.random() * 0.2))
-          processMaterials.push({
-            report_order_id: roId,
-            process_id: proc.process_id,
-            material_type: '投入',
-            bas_material_id: investMat?.material_id || null,
-            material_batch: 'B' + pad(rand(1000, 9999)),
-            package_no: 'P' + pad(rand(100, 999)),
-            quantity: investQty,
-            created_at: reportTime
-          })
-          // 少量退回（约5%概率）
-          if (Math.random() < 0.05) {
-            processMaterials.push({
-              report_order_id: roId,
-              process_id: proc.process_id,
-              material_type: '退回',
-              bas_material_id: investMat?.material_id || null,
-              material_batch: 'B' + pad(rand(1000, 9999)),
-              package_no: 'P' + pad(rand(100, 999)),
-              quantity: rand(1, 10),
-              created_at: reportTime
-            })
-          }
-        }
-
-        // 最后一道工序：必有产出
-        if (isLastProcess) {
-          const outputMat = materials.length > 0 ? pick(materials) : null
-          processMaterials.push({
-            report_order_id: roId,
-            process_id: proc.process_id,
-            material_type: '产出',
-            bas_material_id: outputMat?.material_id || order.material_id,
-            material_batch: 'B' + pad(rand(1000, 9999)),
-            package_no: 'P' + pad(rand(100, 999)),
-            quantity: reportQty,
-            created_at: reportTime
-          })
-        }
-
-        // 中间工序：随机生成辅料投入（约30%概率）
-        if (!isFirstProcess && !isLastProcess && Math.random() < 0.3 && materials.length > 0) {
-          const mat = pick(materials)
-          processMaterials.push({
-            report_order_id: roId,
-            process_id: proc.process_id,
-            material_type: '投入',
-            bas_material_id: mat.material_id,
-            material_batch: 'B' + pad(rand(1000, 9999)),
-            package_no: 'P' + pad(rand(100, 999)),
-            quantity: rand(10, 200),
-            created_at: reportTime
-          })
-        }
-      }
-
-      // 随机生成异常工时（约20%概率）
-      if (Math.random() < 0.2 && lineDevices.length > 0) {
-        const excTypes = ['设备故障', '物料短缺', '质量异常', '人员短缺', '工艺问题']
-        const device = pick(lineDevices)
-        const confirmer = pick(maintUsers.length > 0 ? maintUsers : pmUsers)
-        processExceptions.push({
-          report_order_id: roId,
-          exception_type: pick(excTypes),
-          device_id: device.device_id,
-          device_code: device.device_code,
-          device_name: device.device_name,
-          stop_type: pick(['计划停机', '非计划停机', '故障停机']),
-          confirm_user: confirmer.username,
-          confirm_user_name: confirmer.real_name || confirmer.username,
-          start_time: new Date(reportTime.getTime() + rand(30, 120) * 60000),
-          end_time: new Date(reportTime.getTime() + rand(120, 300) * 60000),
-          duration: rand(30, 180) / 60,
-          description: '模拟生成异常工时记录',
-          record_user: reportUser.username,
-          record_user_name: reportUser.real_name || reportUser.username,
-          created_at: reportTime
-        })
-      }
+      // 合并临时数据到总数组
+      reportProcesses.push(...curReportProcesses)
+      processDefects.push(...curProcessDefects, ...curScrapDefects)
+      processMaterials.push(...curProcessMaterials)
+      processExceptions.push(...curProcessExceptions)
 
       roId++
     }

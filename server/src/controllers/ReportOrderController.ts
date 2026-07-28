@@ -505,6 +505,7 @@ export const finish = async (req, res) => {
       return fail(res, `存在 ${openExceptionCount} 条未关闭的异常记录，请先关闭后再完工`, ErrorCode.BUSINESS_ERROR)
     }
 
+    // 必须报工(must_report=1)的工序：必须有不良记录
     const mustReportProcesses = await ReportProcess.findAll({
       where: { report_order_id: reportOrderId, must_report: 1 },
       attributes: ['process_id', 'process_code', 'process_name'],
@@ -513,14 +514,22 @@ export const finish = async (req, res) => {
       const defectCount = await ProcessDefect.count({
         where: { report_order_id: reportOrderId, process_id: mp.process_id },
       })
+      if (defectCount === 0) {
+        return fail(res, `必须报工工序「${mp.process_name}(${mp.process_code})」缺少：不良记录`, ErrorCode.BUSINESS_ERROR)
+      }
+    }
+
+    // 引入物料(has_material=1)的工序：必须有物料记录
+    const hasMaterialProcesses = await ReportProcess.findAll({
+      where: { report_order_id: reportOrderId, has_material: 1 },
+      attributes: ['process_id', 'process_code', 'process_name'],
+    })
+    for (const hp of hasMaterialProcesses) {
       const materialCount = await ProcessMaterial.count({
-        where: { report_order_id: reportOrderId, process_id: mp.process_id },
+        where: { report_order_id: reportOrderId, process_id: hp.process_id },
       })
-      if (defectCount === 0 || materialCount === 0) {
-        const missing = []
-        if (materialCount === 0) missing.push('物料记录')
-        if (defectCount === 0) missing.push('不良记录')
-        return fail(res, `必须报工工序「${mp.process_name}(${mp.process_code})」缺少：${missing.join('、')}`, ErrorCode.BUSINESS_ERROR)
+      if (materialCount === 0) {
+        return fail(res, `引入物料工序「${hp.process_name}(${hp.process_code})」缺少：物料记录`, ErrorCode.BUSINESS_ERROR)
       }
     }
 

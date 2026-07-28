@@ -633,19 +633,23 @@ export default function OrderManagement() {
                   const materials = detail.process_materials || []
                   const defects = detail.process_defects || []
 
-                  // 按工序聚合数据
-                  const processStats = processes.map((p: any) => {
+                  // 按工序顺序排列（按sort_order或原始顺序）
+                  const sortedProcesses = [...processes].sort((a: any, b: any) =>
+                    (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0)
+                  )
+
+                  // 按工序聚合数据（按新规则计算）
+                  const processStats: any[] = []
+                  let prevOutputQty = 0
+
+                  sortedProcesses.forEach((p: any, idx: number) => {
                     const procMaterials = materials.filter((m: any) => m.process_id === p.process_id)
-                    const inputQty = procMaterials
+                    const investQty = procMaterials
                       .filter((m: any) => m.material_type === '投入')
                       .reduce((sum: number, m: any) => sum + (Number(m.quantity) || 0), 0)
                     const returnQty = procMaterials
                       .filter((m: any) => m.material_type === '退回')
                       .reduce((sum: number, m: any) => sum + (Number(m.quantity) || 0), 0)
-                    const outputQty = procMaterials
-                      .filter((m: any) => m.material_type === '产出')
-                      .reduce((sum: number, m: any) => sum + (Number(m.quantity) || 0), 0)
-                    const netInput = inputQty - returnQty
 
                     const procDefects = defects.filter((d: any) => d.process_id === p.process_id)
                     // 按分类汇总不良
@@ -658,26 +662,48 @@ export default function OrderManagement() {
                       totalDefectQty += qty
                     })
 
-                    const defectRate = netInput > 0 ? ((totalDefectQty / netInput) * 100).toFixed(2) : '0.00'
+                    // 是否无报工（没有物料记录且没有不良记录）
+                    const hasReport = investQty > 0 || returnQty > 0 || totalDefectQty > 0
 
-                    return {
+                    let inputQty: number
+                    let outputQty: number
+
+                    if (idx === 0) {
+                      // 第一道工序：投入 = 投入 - 退回
+                      inputQty = investQty - returnQty
+                    } else {
+                      // 其它工序：投入 = 上道工序产出
+                      inputQty = prevOutputQty
+                    }
+
+                    if (!hasReport) {
+                      // 无报工工序：投入 = 产出
+                      outputQty = inputQty
+                    } else {
+                      // 产出 = 本工序投入 - 不良总数
+                      outputQty = Math.max(0, inputQty - totalDefectQty)
+                    }
+
+                    const defectRate = inputQty > 0 ? ((totalDefectQty / inputQty) * 100).toFixed(2) : '0.00'
+
+                    processStats.push({
                       ...p,
-                      inputQty: netInput,
+                      inputQty,
                       outputQty,
                       totalDefectQty,
                       defectRate,
                       categoryMap,
-                    }
+                    })
+
+                    prevOutputQty = outputQty
                   })
 
                   // 汇总所有分类不良（报工单维度）
                   const allCategoryMap: Record<string, number> = {}
-                  let allInputQty = 0
-                  let allOutputQty = 0
+                  let allInputQty = processStats[0]?.inputQty || 0
+                  let allOutputQty = processStats.length > 0 ? processStats[processStats.length - 1].outputQty : 0
                   let allDefectQty = 0
                   processStats.forEach((ps: any) => {
-                    allInputQty += ps.inputQty
-                    allOutputQty += ps.outputQty
                     allDefectQty += ps.totalDefectQty
                     Object.entries(ps.categoryMap).forEach(([cat, qty]) => {
                       allCategoryMap[cat] = (allCategoryMap[cat] || 0) + qty
