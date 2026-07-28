@@ -77,15 +77,11 @@ function ResizableTable<RecordType extends object = any>(props: ResizableTablePr
 
   const elasticColKeys = useMemo(() => {
     const keys: string[] = []
-    let actionIndex = -1
-    colInfo.forEach((c, i) => {
-      if (c.isAction) actionIndex = i
-    })
-    if (actionIndex >= 0) {
-      const actionCol = colInfo[actionIndex]
-      if (actionCol.key) keys.push(actionCol.key)
-      const leftNeighbor = actionIndex > 0 ? colInfo[actionIndex - 1] : null
-      if (leftNeighbor && leftNeighbor.key) keys.push(leftNeighbor.key)
+    const normalCols = colInfo.filter(c => !c.fixed)
+    if (normalCols.length >= 2) {
+      for (let i = normalCols.length - 1; i >= Math.max(0, normalCols.length - 2); i--) {
+        if (normalCols[i].key) keys.unshift(normalCols[i].key)
+      }
     }
     return keys
   }, [colInfo])
@@ -97,8 +93,9 @@ function ResizableTable<RecordType extends object = any>(props: ResizableTablePr
     const targetKey = String(key)
     const targetCol = rawColumns.find(c => String(c.key || c.dataIndex) === targetKey)
     const startWidth = colWidths[targetKey] || (targetCol?.width as number) || 150
+    const isTargetFixed = !!(targetCol as any)?.fixed
 
-    const elasticKeys = elasticColKeys.filter(k => k !== targetKey)
+    const elasticKeys = isTargetFixed ? [] : elasticColKeys.filter(k => k !== targetKey)
 
     const onMouseMove = (ev: MouseEvent) => {
       const diff = ev.clientX - startX
