@@ -74,31 +74,45 @@ export default function OrderDetail() {
     }
   }
 
-  // 开工（下发 → 开工）：选择产线并创建报工单
-  const handleStart = async () => {
+  // 开工：选择产线并创建报工单（支持超额二次确认）
+  const handleStart = async (confirmed?: boolean) => {
     if (!order) return
     if (!selectedLineId) {
       Toast.show({ icon: 'fail', content: '请选择生产产线' })
       return
     }
     const line = lines.find(l => String(l.line_id) === String(selectedLineId))
-    const confirmed = await Dialog.confirm({
-      title: '确认开工',
-      content: `确认使用产线【${line?.line_name || ''}】开工订单 ${order.order_no}？将创建对应报工单`,
-    })
-    if (!confirmed) return
+    if (!confirmed) {
+      const ok = await Dialog.confirm({
+        title: '确认开工',
+        content: `确认使用产线【${line?.line_name || ''}】开工订单 ${order.order_no}？将创建对应报工单`,
+      })
+      if (!ok) return
+    }
     setStarting(true)
     try {
       await api.post('/production/report-orders', {
         order_id: order.order_id,
         line_id: Number(selectedLineId),
         report_qty: order.planned_qty || 0,
+        confirmed: !!confirmed,
       })
       Toast.show({ icon: 'success', content: '订单已开工' })
       setShowLineSelect(false)
       setSelectedLineId('')
       fetchDetail()
-    } catch (err) {
+    } catch (err: any) {
+      // 后端返回需要二次确认
+      if (err?.need_confirm) {
+        const ok = await Dialog.confirm({
+          title: '确认超额报工',
+          content: err.message,
+        })
+        if (ok) {
+          handleStart(true)
+        }
+        return
+      }
       Toast.show({ icon: 'fail', content: err.message || '开工失败' })
     } finally {
       setStarting(false)
@@ -164,7 +178,8 @@ export default function OrderDetail() {
   const status = order.status
   const statusStyle = getStatusStyle(status)
   const canRelease = status === '开立'
-  const canStart = status === '下发'
+  const canStart = status === '下发' || status === '开工' ||
+    (status === '完工' && Number(order.finished_qty || 0) < Number(order.planned_qty || 0))
   const canFinish = status === '开工'
   const canClose = status === '下发' || status === '完工'
   const hasReport = order.report_orders?.length > 0

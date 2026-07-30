@@ -31,9 +31,11 @@ export function success(res: Response, data: any = null, message: string = '操�
   return res.json(result)
 }
 
-export function fail(res: Response, message: string = '操作失败', errorCode: number = ErrorCode.PARAM_INVALID, httpStatus?: number) {
+export function fail(res: Response, message: string = '操作失败', errorCode: number = ErrorCode.PARAM_INVALID, extra?: any, httpStatus?: number) {
   const status = httpStatus ?? errorCodeToHttpStatus(errorCode)
-  return res.status(status).json({ success: false, code: errorCode, message })
+  const result: any = { success: false, code: errorCode, message }
+  if (extra) Object.assign(result, extra)
+  return res.status(status).json(result)
 }
 
 export const MAX_PAGE_SIZE = 200

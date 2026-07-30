@@ -600,8 +600,8 @@ export default function ProcessReporting() {
     setCreateModalOpen(true)
   }
 
-  // 提交新增报工单
-  const handleCreateReport = async () => {
+  // 提交新增报工单（支持超额二次确认）
+  const handleCreateReport = async (confirmed?: boolean) => {
     try {
       const values = await createForm.validateFields()
       setCreatingReport(true)
@@ -610,6 +610,7 @@ export default function ProcessReporting() {
         line_id: values.line_id,
         report_qty: values.report_qty,
         remarks: values.remarks || '',
+        confirmed: !!confirmed,
       })
       message.success('报工单创建成功')
       setCreateModalOpen(false)
@@ -618,8 +619,19 @@ export default function ProcessReporting() {
         // 创建后端会自动从产线工序继承到 report_processes 子表
         setSelectedReport(res.data)
       }
-    } catch (err) {
+    } catch (err: any) {
       if (err?.errorFields) return // 表单校验失败
+      // 后端返回需要二次确认
+      if (err?.need_confirm) {
+        Modal.confirm({
+          title: '确认超额报工',
+          content: err.message,
+          okText: '确认提交',
+          cancelText: '取消',
+          onOk: () => handleCreateReport(true),
+        })
+        return
+      }
       message.error(err.message || '创建报工单失败')
     } finally {
       setCreatingReport(false)
@@ -664,17 +676,27 @@ export default function ProcessReporting() {
     return devices.map(d => ({ label: `${d.device_code} ${d.device_name}`, value: d.device_id }))
   }, [devices])
 
-  // 新增报工 Modal 的订单下拉选项（仅"下发"状态可创建报工单）
+  // 新增报工 Modal 的订单下拉选项（"下发"、"开工"、"完工"(但数量未达标) 状态可创建报工单）
   const orderOptions = useMemo(() => {
     return orders
-      .filter(o => o.status === '下发')
+      .filter(o => {
+        if (o.status === '下发' || o.status === '开工') return true
+        if (o.status === '完工') {
+          const planned = Number(o.planned_qty || 0)
+          const finished = Number(o.finished_qty || 0)
+          return finished < planned
+        }
+        return false
+      })
       .map(o => ({
-        label: `${o.order_no} (${o.material_name || '-'})`,
+        label: `${o.order_no} (${o.material_name || '-'}) [${o.status}]`,
         value: o.order_id,
         order_no: o.order_no || '',
         material_code: o.material_code || '',
         material_name: o.material_name || '',
         specification: o.specification || '',
+        planned_qty: o.planned_qty || 0,
+        finished_qty: o.finished_qty || 0,
       }))
   }, [orders])
 

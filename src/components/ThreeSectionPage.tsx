@@ -58,6 +58,7 @@ export default function ThreeSectionPage({
     const handleChange = (v: unknown) => {
       f.onChange?.(v)
       onFilterChange?.(f.field || '', v)
+      onSearch?.()
     }
     if (f.type === 'input') {
       return (

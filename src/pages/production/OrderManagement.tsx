@@ -420,10 +420,28 @@ export default function OrderManagement() {
     setMonthQuick(v)
     const range = getMonthRange(v)
     setPlanDateRange(range)
+    setQuery(q => ({
+      ...q,
+      page: 1,
+      keyword: keywordInput,
+      materialCode: materialCodeInput,
+      status: statusInput,
+      planDateStart: range?.[0]?.format('YYYY-MM-DD') || '',
+      planDateEnd: range?.[1]?.format('YYYY-MM-DD') || '',
+    }))
   }
   const handleRangeChange = (v: any) => {
     setMonthQuick(undefined)
     setPlanDateRange(v)
+    setQuery(q => ({
+      ...q,
+      page: 1,
+      keyword: keywordInput,
+      materialCode: materialCodeInput,
+      status: statusInput,
+      planDateStart: v?.[0]?.format('YYYY-MM-DD') || '',
+      planDateEnd: v?.[1]?.format('YYYY-MM-DD') || '',
+    }))
   }
 
   const handleSearch = useCallback(() => {

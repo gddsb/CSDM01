@@ -153,6 +153,14 @@ export async function syncOrderStatus(orderId: number, transaction?: any) {
   // 只有所有报工单完工 且 完工数量 >= 计划数量，订单才自动转为"完工"
   if (total > 0 && finishedCount === total && finishedSum >= plannedQty && statusVal === 2) {
     await order.update({ status: 3, close_time: new Date() }, { transaction })
+    // 额外规则：订单完工且完工数量 >= 计划数量时，自动变为关闭
+    await order.update({ status: 4 }, { transaction })
+    return
+  }
+
+  // 如果订单已处于"完工"状态，检查完工数量是否 >= 计划数量，若是则自动关闭
+  if (statusVal === 3 && finishedSum >= plannedQty) {
+    await order.update({ status: 4 }, { transaction })
     return
   }
 
@@ -253,9 +261,10 @@ export const detail = async (req, res) => {
 // 创建报工单（自动生成报工单号 WO-16+YYMMDD+3位序号）
 // 业务规则：仅"下发"/"开工"状态的订单可创建报工单；创建时从所选产线继承工序
 // 幂等：同一 order_id + line_id + 当日 已存在则返回已有
+// 超额报工：报工数量超过未完工数量一定阈值时需要二次确认（confirmed=true）
 export const create = async (req, res) => {
   try {
-    const { order_id, line_id, report_qty, remarks } = req.body
+    const { order_id, line_id, report_qty, remarks, confirmed } = req.body
     if (!order_id) return fail(res, '订单 ID 不能为空', ErrorCode.PARAM_INVALID)
     if (!line_id) return fail(res, '产线 ID 不能为空', ErrorCode.PARAM_INVALID)
 
@@ -275,10 +284,29 @@ export const create = async (req, res) => {
     }
 
     const plannedQty = Number(order.getDataValue('planned_qty') || 0)
-    if (plannedQty > 0 && report_qty !== undefined) {
+    if (plannedQty > 0 && report_qty !== undefined && Number(report_qty) > 0) {
       const sumQty = await sumReportQty(order_id)
-      if (sumQty + Number(report_qty) > plannedQty) {
-        return fail(res, `报工数量超出订单计划数量（已报${sumQty}，计划${plannedQty}）`, ErrorCode.BUSINESS_ERROR)
+      const remainingQty = Math.max(0, plannedQty - sumQty)
+      const newReportQty = Number(report_qty)
+
+      // 超额阈值判断：计划数量 >= 10000，超过5%；计划数量 < 10000，超过500
+      let needConfirm = false
+      let confirmMsg = ''
+      if (plannedQty >= 10000) {
+        const threshold = remainingQty * 1.05
+        if (newReportQty > threshold && remainingQty > 0) {
+          needConfirm = true
+          confirmMsg = `报工数量(${newReportQty})超过未完工数量(${remainingQty})的5%，请确认是否继续`
+        }
+      } else {
+        if (newReportQty - remainingQty > 500 && remainingQty > 0) {
+          needConfirm = true
+          confirmMsg = `报工数量(${newReportQty})超过未完工数量(${remainingQty})500以上，请确认是否继续`
+        }
+      }
+
+      if (needConfirm && !confirmed) {
+        return fail(res, confirmMsg, ErrorCode.BUSINESS_ERROR, { need_confirm: true, remaining_qty: remainingQty })
       }
     }
 

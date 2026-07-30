@@ -112,8 +112,18 @@ axiosInstance.interceptors.response.use(
       window.location.href = '/login'
       return Promise.reject(new Error('登录已过期，请重新登录'))
     }
-    const msg = error.response?.data?.message || error.message || '请求失败'
-    return Promise.reject(new Error(msg))
+    const respData = error.response?.data || {}
+    const msg = respData.message || error.message || '请求失败'
+    const err: any = new Error(msg)
+    // 将后端返回的额外字段（如 need_confirm）附加到错误对象
+    if (respData && typeof respData === 'object') {
+      Object.keys(respData).forEach(k => {
+        if (!['message', 'code', 'success'].includes(k)) {
+          err[k] = respData[k]
+        }
+      })
+    }
+    return Promise.reject(err)
   }
 )
 
