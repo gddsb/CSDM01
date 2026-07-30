@@ -32,7 +32,7 @@ const TEST_STEPS_MAP: Record<string, { message: string; percent: number }[]> = {
   ],
 }
 
-export async function updateTaskProgress(taskId: number, step: { message: string; percent: number }, status: string = 'running') {
+export async function updateTaskProgress(taskId: number, step: { message: string; percent: number }, status: string = 'running', totalRecords?: number) {
   try {
     const task = await SyncTask.findByPk(taskId) as any
     if (!task) return
@@ -42,11 +42,22 @@ export async function updateTaskProgress(taskId: number, step: { message: string
     task.current_step = step.message
     task.steps = steps
     task.status = status
+    if (totalRecords !== undefined) task.total_records = totalRecords
     if (status === 'completed') task.finished_at = new Date()
     if (status === 'failed') task.finished_at = new Date()
     await task.save()
   } catch (err) {
     console.error('更新任务进度失败:', err)
+  }
+}
+
+function generateMockRecordCount(taskType: string): number {
+  switch (taskType) {
+    case 'items': return Math.floor(500 + Math.random() * 1500)
+    case 'customers': return Math.floor(100 + Math.random() * 400)
+    case 'env_monitor': return Math.floor(5 + Math.random() * 16)
+    case 'weather': return Math.floor(1 + Math.random() * 5)
+    default: return Math.floor(10 + Math.random() * 100)
   }
 }
 
@@ -142,11 +153,23 @@ export async function triggerScheduledTaskById(taskId: number) {
     console.log(`[Scheduler] 已触发任务 ${task.schedule_biz_id} (${type}) -> ${taskBizId}`)
 
     const steps = TEST_STEPS_MAP[type] || TEST_STEPS_MAP.items
+    const totalRecords = generateMockRecordCount(type)
     ;(async () => {
       for (let i = 0; i < steps.length; i++) {
         const delay = 600 + Math.random() * 800
         await new Promise(r => setTimeout(r, delay))
-        await updateTaskProgress(syncTaskId, steps[i], i === steps.length - 1 ? 'completed' : 'running')
+        const isLast = i === steps.length - 1
+        const isSecondLast = i === steps.length - 2
+        let step = { ...steps[i] }
+        if (isSecondLast) {
+          step = { message: `${step.message}（共 ${totalRecords} 条记录）`, percent: step.percent }
+        }
+        if (isLast) {
+          step = { message: `完成，共 ${totalRecords} 条记录`, percent: 100 }
+          await updateTaskProgress(syncTaskId, step, 'completed', totalRecords)
+        } else {
+          await updateTaskProgress(syncTaskId, step, 'running')
+        }
       }
     })()
   } catch (err) {
