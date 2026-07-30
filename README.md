@@ -179,6 +179,8 @@
 
 ### 6. 自动任务
 
+> **菜单顺序**：自动任务菜单显示在「系统管理」菜单之前（`sort_order=6`），使用 `parent_code` 机制动态关联父子菜单，避免硬编码 `parent_id` 导致子菜单不显示的问题。
+
 | 模块 | 路径 | 功能说明 |
 |------|------|---------|
 | 任务设置 | `/auto/task-settings` | 自动任务配置管理，支持任务类型、名称、数据源URL、执行参数、启用/停用等配置；内置料品数据同步、客户数据同步、环境监测采集、气象信息抓取4个任务 |
@@ -205,9 +207,16 @@
 | 生产实时看板 | `/bigscreen/production` | 工单进度、产线状态、产出统计、环境数据 |
 | 质量分析看板 | `/bigscreen/quality` | 质量趋势、不良分析、检验合格率 |
 | 管理驾驶舱 | `/bigscreen/management` | 综合数据展示、关键指标概览 |
-| 环境看板 | `/bigscreen/environment` | 车间环境监测数据可视化，展示温湿度等实时采集数据、监测因子统计及报警记录 |
+| 环境看板 | `/bigscreen/environment` | 从原项目迁移的环境监测大屏，展示生产车间和仓库的温湿度仪表盘（含阈值告警色）、最近12小时温湿度趋势曲线（双Y轴，带温度/湿度阈值标线）、每30秒自动刷新、实时显示最后更新时间；数据来自环境监测实时采集接口和趋势聚合接口 |
 
 > 大屏页面为独立全屏页面，不使用主布局，支持 F11 全屏展示。
+
+**环境看板数据接口：**
+
+| 接口 | 说明 |
+|------|------|
+| `GET /auto/dashboard/overview` | 环境监测概览数据（各区域监测因子最新值、报警统计、最后更新时间） |
+| `GET /auto/dashboard/trend` | 最近12小时温湿度趋势数据（整点聚合、车间/仓库分组、4条系列曲线） |
 
 ### 8. 报表中心
 
@@ -711,6 +720,16 @@ POST /api/production/report-images/:report_no/:category/upload
 | `production:orders:release` | 订单下发 |
 | `production:reporting` | 生产报工 |
 | `production:reporting:finish` | 报工完工 |
+
+##### 菜单初始化与父子关联机制
+
+系统启动时自动初始化默认权限（菜单），采用以下机制确保菜单结构正确：
+
+| 机制 | 说明 |
+|------|------|
+| **`parent_code` 动态关联** | 子菜单配置使用 `parent_code` 字段（如 `parent_code: 'auto'`）引用父菜单的 `perm_code`，而非硬编码 `parent_id`，避免因数据库自增 ID 不一致导致子菜单不显示的问题 |
+| **两阶段创建** | 先创建所有顶级菜单（`parent_id=0`）并建立 `perm_code → perm_id` 映射，再通过映射查找父级 ID 创建子菜单 |
+| **`sort_order` 排序** | 菜单位置由 `sort_order` 字段控制，数值越小越靠前；自动任务菜单 `sort_order=6`，系统管理菜单 `sort_order=7`，确保自动任务显示在系统管理之前 |
 
 #### 4.3 操作日志
 
@@ -1587,6 +1606,21 @@ JWT_EXPIRES_IN=7d
 | GET/POST/PUT/DELETE | `/production/material-records` | 物料记录 |
 | GET/POST/DELETE | `/production/report-images` | 报工图片 |
 | POST | `/production/report-images/:report_no/:category/upload` | 上传报工图片 |
+
+### 自动任务接口
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET/POST/PUT/DELETE | `/auto/task-settings` | 自动任务设置 |
+| GET | `/auto/task-settings/u9-orgs` | 获取U9组织列表 |
+| GET/POST/PUT/DELETE | `/auto/scheduled-tasks` | 定时任务管理 |
+| GET | `/auto/task-logs` | 任务执行日志 |
+| GET | `/auto/sync-tasks` | 同步任务列表 |
+| GET | `/auto/sync-tasks/:id` | 同步任务详情 |
+| GET | `/auto/archive/:type` | 档案数据浏览（料品/客户） |
+| PUT | `/auto/env-alarm/:id/handle` | 环境报警处理 |
+| GET | `/auto/dashboard/overview` | 环境看板概览数据 |
+| GET | `/auto/dashboard/trend` | 环境看板趋势数据（最近12小时整点聚合） |
 
 ### 通用上传接口
 
