@@ -39,6 +39,14 @@ import InspectionStandard from './InspectionStandard.js'
 import InspectionStandardItem from './InspectionStandardItem.js'
 import MicrobeInspection from './MicrobeInspection.js'
 import MicrobeInspectionItem from './MicrobeInspectionItem.js'
+import TaskSetting from './TaskSetting.js'
+import SyncTask from './SyncTask.js'
+import ScheduledTask from './ScheduledTask.js'
+import U9Item from './U9Item.js'
+import U9Customer from './U9Customer.js'
+import EnvMonitor from './EnvMonitor.js'
+import EnvAlarm from './EnvAlarm.js'
+import WeatherInfo from './WeatherInfo.js'
 
 // 建立模型关联关系
 // 用户 - 角色
@@ -191,6 +199,14 @@ const db = {
   InspectionStandardItem,
   MicrobeInspection,
   MicrobeInspectionItem,
+  TaskSetting,
+  SyncTask,
+  ScheduledTask,
+  U9Item,
+  U9Customer,
+  EnvMonitor,
+  EnvAlarm,
+  WeatherInfo,
 }
 
 // 具名导出，便于按需导入
@@ -233,6 +249,14 @@ export {
   InspectionStandardItem,
   MicrobeInspection,
   MicrobeInspectionItem,
+  TaskSetting,
+  SyncTask,
+  ScheduledTask,
+  U9Item,
+  U9Customer,
+  EnvMonitor,
+  EnvAlarm,
+  WeatherInfo,
 }
 
 export default db

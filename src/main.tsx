@@ -49,6 +49,11 @@ import EfficiencyReport from './pages/report/EfficiencyReport'
 import ProductionBigScreen from './pages/bigscreen/ProductionBigScreen'
 import ManagementBigScreen from './pages/bigscreen/ManagementBigScreen'
 import QualityBigScreen from './pages/bigscreen/QualityBigScreen'
+import TaskSettingsPage from './pages/auto/TaskSettingsPage'
+import SyncTaskPage from './pages/auto/SyncTaskPage'
+import ScheduledTaskPage from './pages/auto/ScheduledTaskPage'
+import DataArchivePage from './pages/auto/DataArchivePage'
+import EnvDashboardPage from './pages/auto/EnvDashboardPage'
 import MobileRoutes from './mobile/MobileRoutes'
 
 dayjs.locale('zh-cn')
@@ -117,6 +122,11 @@ function AppRoutes() {
         <Route path="/report/production" element={<ProductionReport />} />
         <Route path="/report/quality" element={<QualityReport />} />
         <Route path="/report/exception" element={<ExceptionReport />} />
+        <Route path="/auto/task-settings" element={<TaskSettingsPage />} />
+        <Route path="/auto/sync-tasks" element={<SyncTaskPage />} />
+        <Route path="/auto/scheduled-tasks" element={<ScheduledTaskPage />} />
+        <Route path="/auto/data-archive" element={<DataArchivePage />} />
+        <Route path="/auto/env-dashboard" element={<EnvDashboardPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

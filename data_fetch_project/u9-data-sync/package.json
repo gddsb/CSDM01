@@ -1,0 +1,17 @@
+{
+  "name": "u9-data-sync",
+  "version": "1.0.0",
+  "private": true,
+  "description": "U9 ERP 数据获取后台任务系统（React 18 + Antd 5 + Express + SQLite）",
+  "scripts": {
+    "dev": "concurrently -k -n SERVER,WEB -c blue,green \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:web": "cd web && npm run dev",
+    "install:all": "npm install && cd server && npm install && cd ../web && npm install",
+    "build": "cd server && npm run build && cd ../web && npm run build",
+    "start": "cd server && npm start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
