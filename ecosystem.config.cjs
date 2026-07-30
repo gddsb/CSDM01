@@ -5,6 +5,7 @@ module.exports = {
     args: 'start',
     cwd: '/opt/milk-can-mes/server',
     instances: 1,
+    exec_mode: 'fork',
     autorestart: true,
     watch: false,
     max_memory_restart: '1G',
