@@ -1,6 +1,6 @@
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, InputNumber, Select, DatePicker, Space, Row, Col, Drawer, Descriptions, Popconfirm, Checkbox, Divider } from 'antd'
+import { Table, Tag, Button, Modal, Form, Input, InputNumber, Select, DatePicker, Space, Row, Col, Drawer, Descriptions, Popconfirm, Checkbox, Divider, Alert } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import { useMessage, useApp } from '../../contexts/AppContext'
 import {
@@ -11,6 +11,7 @@ import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 import { formatVersionNo, formatDateTime, formatDate } from '../../utils'
+import { MONTH_QUICK_OPTIONS, getMonthRange, validateRange, getThisMonth } from '../../utils/monthQuick'
 
 const { RangePicker } = DatePicker
 
@@ -56,9 +57,11 @@ export default function OrderManagement() {
   const [keywordInput, setKeywordInput] = useState('')
   const [materialCodeInput, setMaterialCodeInput] = useState('')
   const [statusInput, setStatusInput] = useState(['开立', '下发', '开工', '完工', '关闭'])
-  const [planDateRange, setPlanDateRange] = useState(null)
+  const [planDateRange, setPlanDateRange] = useState<any>(getThisMonth())
+  const [monthQuick, setMonthQuick] = useState<string>('this_month')
+  const [rangeWarn, setRangeWarn] = useState(false)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', materialCode: '', status: ['开立', '下发', '开工', '完工', '关闭'], planDateStart: '', planDateEnd: '' })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', materialCode: '', status: ['开立', '下发', '开工', '完工', '关闭'], planDateStart: getThisMonth()[0].format('YYYY-MM-DD'), planDateEnd: getThisMonth()[1].format('YYYY-MM-DD') })
 
   // 获取订单列表
   useEffect(() => {
@@ -71,6 +74,17 @@ export default function OrderManagement() {
     let cancelled = false
     const run = async () => {
       setLoading(true)
+      if (planDateRange) {
+        const check = validateRange(planDateRange)
+        if (!check.ok) {
+          message.warning(check.msg)
+          setLoading(false)
+          return
+        }
+        setRangeWarn(!!check.warn)
+      } else {
+        setRangeWarn(false)
+      }
       try {
         const params = { page: query.page, pageSize: query.pageSize }
         if (query.keyword) params.keyword = query.keyword
@@ -402,6 +416,16 @@ export default function OrderManagement() {
     }
   }
 
+  const handleMonthQuick = (v: string) => {
+    setMonthQuick(v)
+    const range = getMonthRange(v)
+    setPlanDateRange(range)
+  }
+  const handleRangeChange = (v: any) => {
+    setMonthQuick(undefined)
+    setPlanDateRange(v)
+  }
+
   const handleSearch = useCallback(() => {
     setQuery(q => ({
       ...q,
@@ -418,8 +442,9 @@ export default function OrderManagement() {
     setKeywordInput('')
     setMaterialCodeInput('')
     setStatusInput(['开立', '下发', '开工', '完工', '关闭'])
-    setPlanDateRange(null)
-    setQuery(q => ({ ...q, page: 1, keyword: '', materialCode: '', status: ['开立', '下发', '开工', '完工', '关闭'], planDateStart: '', planDateEnd: '' }))
+    setMonthQuick('this_month')
+    setPlanDateRange(getThisMonth())
+    setQuery(q => ({ ...q, page: 1, keyword: '', materialCode: '', status: ['开立', '下发', '开工', '完工', '关闭'], planDateStart: getThisMonth()[0].format('YYYY-MM-DD'), planDateEnd: getThisMonth()[1].format('YYYY-MM-DD') }))
   }
 
   const renderActions = (r) => {
@@ -561,23 +586,22 @@ export default function OrderManagement() {
                   }}
                 />
               </Col>
+              <Col flex="160px">
+                <Select
+                  placeholder="快速选择月份"
+                  allowClear
+                  style={{ width: '100%' }}
+                  value={monthQuick || undefined}
+                  onChange={handleMonthQuick}
+                  options={MONTH_QUICK_OPTIONS}
+                />
+              </Col>
               <Col flex="260px">
                 <RangePicker
                   placeholder={['计划开始', '计划结束']}
                   style={{ width: '100%' }}
                   value={planDateRange}
-                  onChange={(v) => {
-                    setPlanDateRange(v)
-                    setQuery(q => ({
-                      ...q,
-                      page: 1,
-                      keyword: keywordInput,
-                      materialCode: materialCodeInput,
-                      status: statusInput,
-                      planDateStart: v?.[0]?.format('YYYY-MM-DD') || '',
-                      planDateEnd: v?.[1]?.format('YYYY-MM-DD') || '',
-                    }))
-                  }}
+                  onChange={handleRangeChange}
                 />
               </Col>
               <Col>
@@ -587,6 +611,10 @@ export default function OrderManagement() {
                 </Space>
               </Col>
             </Row>
+            {rangeWarn && (
+              <Alert type="warning" showIcon style={{ marginBottom: 12 }}
+                message="查询跨度时间较长，后台需要较长时间执行查询，可能造成页面假死状态" />
+            )}
             <ResizableTable tableKey="pages_production_OrderManagement"               columns={columns}
               dataSource={data}
               rowKey="order_id"

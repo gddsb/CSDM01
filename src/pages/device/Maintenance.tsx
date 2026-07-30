@@ -1,13 +1,14 @@
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useMemo } from 'react'
-import { Table, Tag, Button, Space } from 'antd'
+import { Table, Tag, Button, Space, Alert, message } from 'antd'
 import {
   ScheduleOutlined, ClockCircleOutlined, ToolOutlined, DollarOutlined,
   ExportOutlined, ReloadOutlined,
 } from '@ant-design/icons'
-import ThreeSectionPage from '../../components/ThreeSectionPage'
+import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import { devices } from '../../mock/data'
 import { useMessage } from '../../contexts/AppContext'
+import { MONTH_QUICK_OPTIONS, getMonthRange, validateRange, getThisMonth } from '../../utils/monthQuick'
 
 // 基于设备档案生成的维修保养记录 Mock 数据
 const maintenanceData = [
@@ -33,6 +34,19 @@ export default function Maintenance() {
   const [deviceFilter, setDeviceFilter] = useState(undefined)
   const [typeFilter, setTypeFilter] = useState(undefined)
   const [statusFilter, setStatusFilter] = useState(undefined)
+  const [dateRange, setDateRange] = useState<any>(getThisMonth())
+  const [monthQuick, setMonthQuick] = useState<string>('this_month')
+  const [rangeWarn, setRangeWarn] = useState(false)
+
+  const handleMonthQuick = (v: string) => {
+    setMonthQuick(v)
+    const range = getMonthRange(v)
+    setDateRange(range)
+  }
+  const handleRangeChange = (v: any) => {
+    setMonthQuick(undefined)
+    setDateRange(v)
+  }
 
   const deviceOptions = devices.map(d => ({ label: d.device_name, value: d.device_name }))
   const typeOptions = [
@@ -50,13 +64,27 @@ export default function Maintenance() {
 
   // 过滤后的数据
   const filteredData = useMemo(() => {
+    if (dateRange) {
+      const check = validateRange(dateRange)
+      if (!check.ok) {
+        message.warning(check.msg)
+      }
+      setRangeWarn(!!check.warn)
+    } else {
+      setRangeWarn(false)
+    }
     return data.filter(r => {
       if (deviceFilter && r.device_name !== deviceFilter) return false
       if (typeFilter && typeFilter !== '全部' && r.mt_type !== typeFilter) return false
       if (statusFilter && statusFilter !== '全部' && r.status !== statusFilter) return false
+      if (dateRange && dateRange.length === 2 && r.plan_date) {
+        const start = dateRange[0].format('YYYY-MM-DD')
+        const end = dateRange[1].format('YYYY-MM-DD')
+        if (r.plan_date < start || r.plan_date > end) return false
+      }
       return true
     })
-  }, [data, deviceFilter, typeFilter, statusFilter])
+  }, [data, deviceFilter, typeFilter, statusFilter, dateRange])
 
   // 统计数据
   const maintainCount = data.filter(r => isMaintenance(r.mt_type)).length
@@ -74,15 +102,19 @@ export default function Maintenance() {
   ]
 
   const filters = [
-    { type: 'select', placeholder: '选择设备', options: deviceOptions, value: deviceFilter, onChange: setDeviceFilter, col: { span: 6 } },
-    { type: 'select', placeholder: '维护类型', options: typeOptions, value: typeFilter, onChange: setTypeFilter, col: { span: 6 } },
-    { type: 'select', placeholder: '状态', options: statusOptions, value: statusFilter, onChange: setStatusFilter, col: { span: 6 } },
+    { type: 'select', placeholder: '选择设备', options: deviceOptions, value: deviceFilter, onChange: setDeviceFilter, col: { span: 3 } },
+    { type: 'select', placeholder: '维护类型', options: typeOptions, value: typeFilter, onChange: setTypeFilter, col: { span: 3 } },
+    { type: 'select', placeholder: '状态', options: statusOptions, value: statusFilter, onChange: setStatusFilter, col: { span: 3 } },
+    { type: 'select', placeholder: '快速选择月份', options: MONTH_QUICK_OPTIONS, value: monthQuick || undefined, onChange: handleMonthQuick, col: { span: 4 } },
+    { type: 'rangepicker', value: dateRange, onChange: handleRangeChange, col: { span: 6 } },
   ]
 
   const handleReset = () => {
     setDeviceFilter(undefined)
     setTypeFilter(undefined)
     setStatusFilter(undefined)
+    setMonthQuick('this_month')
+    setDateRange(getThisMonth())
   }
 
   const handleExport = () => {
@@ -124,18 +156,20 @@ export default function Maintenance() {
       stats={stats}
       filters={filters}
       onReset={handleReset}
-      actions={
-        <Space>
-          <Button icon={<ExportOutlined />} onClick={handleExport}>导出</Button>
-        </Space>
-      }
+      actions={<ActionButtons hasAdd={false} extra={[<Button key="export" icon={<ExportOutlined />} onClick={handleExport}>导出</Button>]} />}
       table={
-        <ResizableTable tableKey="pages_device_Maintenance"           columns={columns}
-          dataSource={filteredData}
-          rowKey="mt_id"
-          size="small"
-          pagination={{ pageSize: 30, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
-        />
+        <div>
+          {rangeWarn && (
+            <Alert type="warning" showIcon style={{ marginBottom: 12 }}
+              message="查询跨度时间较长，后台需要较长时间执行查询，可能造成页面假死状态" />
+          )}
+          <ResizableTable tableKey="pages_device_Maintenance"           columns={columns}
+            dataSource={filteredData}
+            rowKey="mt_id"
+            size="small"
+            pagination={{ pageSize: 30, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
+          />
+        </div>
       }
     />
   )

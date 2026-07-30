@@ -1,12 +1,13 @@
 import ResizableTable from '../../components/ResizableTable'
-import React, { useState, useMemo, useEffect, useRef } from 'react'
-import { Table, Tag, Progress } from 'antd'
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { Table, Tag, Progress, Alert, message } from 'antd'
 import {
   DashboardOutlined, ArrowUpOutlined, ArrowDownOutlined, PercentageOutlined,
 } from '@ant-design/icons'
 import * as echarts from 'echarts'
-import ThreeSectionPage from '../../components/ThreeSectionPage'
+import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import { devices } from '../../mock/data'
+import { MONTH_QUICK_OPTIONS, getMonthRange, validateRange, getThisMonth } from '../../utils/monthQuick'
 
 // 各设备 OEE 基准指标（百分比）
 const baseRates = {
@@ -16,32 +17,54 @@ const baseRates = {
   d4: { availability: 65, performance: 80, quality: 90 },
 }
 
-// 不同时间范围下的指标偏移量
-const rangeFactor = {
-  '本周': { a: -3, p: -2, q: 0 },
-  '本月': { a: 0, p: 0, q: 0 },
-  '本季度': { a: 2, p: 1, q: 1 },
-}
-
-const timeRangeOptions = [
-  { label: '本周', value: '本周' },
-  { label: '本月', value: '本月' },
-  { label: '本季度', value: '本季度' },
-]
-
 const clamp = (v) => Math.max(0, Math.min(100, v))
 
 // 根据 OEE 判定状态
 const getStatus = (oee) => oee >= 85 ? '优秀' : oee >= 70 ? '良好' : oee >= 60 ? '一般' : '预警'
 const statusColorMap = { '优秀': 'green', '良好': 'blue', '一般': 'orange', '预警': 'red' }
 
+// 根据月份范围计算偏移因子
+const getFactorByRange = (range: any) => {
+  if (!range || !range[0] || !range[1]) return { a: 0, p: 0, q: 0 }
+  const months = range[1].endOf('month').diff(range[0].startOf('month'), 'month') + 1
+  if (months <= 1) return { a: 0, p: 0, q: 0 }
+  if (months <= 3) return { a: 1, p: 1, q: 0 }
+  if (months <= 6) return { a: 2, p: 1, q: 1 }
+  return { a: 3, p: 2, q: 1 }
+}
+
 export default function DeviceOEE() {
-  const [timeRange, setTimeRange] = useState('本月')
+  const [dateRange, setDateRange] = useState<any>(getThisMonth())
+  const [monthQuick, setMonthQuick] = useState<string>('this_month')
+  const [rangeWarn, setRangeWarn] = useState(false)
   const chartRef = useRef(null)
+
+  const handleMonthQuick = (v: string) => {
+    setMonthQuick(v)
+    const range = getMonthRange(v)
+    setDateRange(range)
+  }
+  const handleRangeChange = (v: any) => {
+    setMonthQuick(undefined)
+    setDateRange(v)
+  }
+
+  // 日期验证
+  useEffect(() => {
+    if (dateRange) {
+      const check = validateRange(dateRange)
+      if (!check.ok) {
+        message.warning(check.msg)
+      }
+      setRangeWarn(!!check.warn)
+    } else {
+      setRangeWarn(false)
+    }
+  }, [dateRange])
 
   // 根据时间范围计算各设备 OEE 数据
   const oeeData = useMemo(() => {
-    const f = rangeFactor[timeRange] || rangeFactor['本月']
+    const f = getFactorByRange(dateRange)
     return devices.map(d => {
       const b = baseRates[d.device_id]
       const availability = clamp(b.availability + f.a)
@@ -66,8 +89,14 @@ export default function DeviceOEE() {
     { label: '平均可用率', value: `${avgAvailability}%`, icon: <PercentageOutlined />, color: '#FF9800' },
   ]
 
+  const handleReset = () => {
+    setMonthQuick('this_month')
+    setDateRange(getThisMonth())
+  }
+
   const filters = [
-    { type: 'select', placeholder: '时间范围', options: timeRangeOptions, value: timeRange, onChange: setTimeRange, col: { span: 6 } },
+    { type: 'select', placeholder: '快速选择月份', options: MONTH_QUICK_OPTIONS, value: monthQuick || undefined, onChange: handleMonthQuick, col: { span: 6 } },
+    { type: 'rangepicker', value: dateRange, onChange: handleRangeChange, col: { span: 8 } },
   ]
 
   // OEE 颜色
@@ -150,8 +179,14 @@ export default function DeviceOEE() {
       breadcrumbs="设备管理 / 设备OEE"
       stats={stats}
       filters={filters}
+      onReset={handleReset}
+      actions={<ActionButtons hasAdd={false} />}
       table={
-        <>
+        <div>
+          {rangeWarn && (
+            <Alert type="warning" showIcon style={{ marginBottom: 12 }}
+              message="查询跨度时间较长，后台需要较长时间执行查询，可能造成页面假死状态" />
+          )}
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, color: 'var(--text-primary)' }}>各设备OEE指标对比</div>
             <div ref={chartRef} style={{ width: '100%', height: 320 }} />
@@ -162,7 +197,7 @@ export default function DeviceOEE() {
             size="small"
             pagination={false}
           />
-        </>
+        </div>
       }
     />
   )
