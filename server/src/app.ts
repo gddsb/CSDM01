@@ -166,7 +166,7 @@ app.use((err: any, req: any, res: any, next: any) => {
 
 async function start() {
   await initDatabase()
-  startTaskScheduler()
+  await startTaskScheduler()
   app.listen(PORT, () => {
     console.log(`\n🚀 Milk Can MES API Server`)
     console.log(`   运行地址: http://localhost:${PORT}`)

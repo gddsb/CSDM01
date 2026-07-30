@@ -95,9 +95,26 @@ export async function triggerScheduledTaskById(taskId: number) {
 
 let schedulerTimer: NodeJS.Timeout | null = null
 
-export function startTaskScheduler() {
+export async function startTaskScheduler() {
   if (schedulerTimer) return
   console.log('⏰ 定时任务调度器已启动（每30秒扫描）')
+
+  try {
+    const pending = await ScheduledTask.findAll({
+      where: { is_enabled: 1, next_run_at: null },
+    })
+    for (const t of pending) {
+      const task = t as any
+      const nextAt = calcNextRunAt(task.exec_mode, task.config)
+      if (nextAt) {
+        task.next_run_at = nextAt
+        await task.save()
+        console.log(`[Scheduler] 修复任务 ${task.schedule_biz_id} next_run_at -> ${nextAt.toISOString()}`)
+      }
+    }
+  } catch (err) {
+    console.error('[Scheduler] 修复缺失 next_run_at 失败:', err)
+  }
 
   const tick = async () => {
     try {
