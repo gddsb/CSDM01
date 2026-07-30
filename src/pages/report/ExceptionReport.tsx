@@ -111,6 +111,7 @@ export default function ExceptionReport() {
       message.error(err.message || '加载数据失败')
     } finally {
       setLoading(false)
+      setRangeWarn(false)
     }
   }, [dateRange])
 
@@ -193,7 +194,7 @@ export default function ExceptionReport() {
     { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 150, fixed: 'left' },
     { title: '异常类型', dataIndex: 'exception_type', key: 'exception_type', width: 100, render: (v: string) => {
       const info = exceptionTypeMap[v] || { name: v, color: '#8c8c8c' }
-      return <Tag color={info.color}>{v} {info.name}</Tag>
+      return <Tag color={info.color}>{info.name}</Tag>
     }},
     { title: '设备', dataIndex: 'device_name', key: 'device_name', width: 130, render: (v: string) => v || '-' },
     { title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 150, render: (v: any) => formatDateTime(v) },
@@ -212,7 +213,7 @@ export default function ExceptionReport() {
   const typeColumns = [
     { title: '异常类型', dataIndex: 'exception_type', key: 'exception_type', width: 100, render: (v: string) => {
       const info = exceptionTypeMap[v] || { name: v, color: '#8c8c8c' }
-      return <Tag color={info.color}>{v}</Tag>
+      return <Tag color={info.color}>{info.name}</Tag>
     }},
     { title: '异常名称', dataIndex: 'exception_type_name', key: 'exception_type_name', width: 120 },
     { title: '发生次数', dataIndex: 'count', key: 'count', width: 100, render: (v: number) => <strong style={{ fontSize: 16 }}>{v}</strong> },
@@ -269,7 +270,7 @@ export default function ExceptionReport() {
             {typeSummary.map((ts, i) => (
               <Col key={i} span={Math.floor(24 / typeSummary.length) || 6}>
                 <Card size="small" style={{ borderRadius: 8, borderLeft: `3px solid ${ts.color}` }}>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{ts.exception_type} {ts.exception_type_name}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{ts.exception_type_name}</div>
                   <Row gutter={4} style={{ marginTop: 8 }}>
                     <Col span={8}>
                       <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>次数</div>
@@ -359,7 +360,7 @@ export default function ExceptionReport() {
                 value={summaryMode}
                 onChange={v => setSummaryMode(v as SummaryMode)}
                 options={[
-                  { label: '按类型汇总', value: 'type' },
+                  { label: '异常类型汇总', value: 'type' },
                   { label: '按工单汇总', value: 'workorder' },
                   { label: '按设备汇总', value: 'device' },
                 ]}

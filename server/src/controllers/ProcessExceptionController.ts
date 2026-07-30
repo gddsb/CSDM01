@@ -1,5 +1,5 @@
 import { Op } from 'sequelize'
-import { ProcessException, Device } from '../models/index.js'
+import { ProcessException, Device, ReportOrder } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { logger } from '../utils/logger.js'
 
@@ -34,14 +34,19 @@ export const list = async (req, res) => {
     const offset = (Number(page) - 1) * limit
     const { rows, count } = await ProcessException.findAndCountAll({
       where,
+      include: [{ model: ReportOrder, as: 'report_order', attributes: ['report_no'], required: false }],
       limit,
       offset,
       order: [['created_at', 'DESC']],
     })
-    const data = rows.map(r => ({
-      ...r.toJSON(),
-      exception_images: r.exception_images ? JSON.parse(r.exception_images) : [],
-    }))
+    const data = rows.map(r => {
+      const json = r.toJSON()
+      return {
+        ...json,
+        report_order_no: json.report_order?.report_no || '',
+        exception_images: json.exception_images ? JSON.parse(json.exception_images) : [],
+      }
+    })
     return success(res, data, '查询成功', count)
   } catch (err) {
     console.error('查询异常工时列表失败:', err)
