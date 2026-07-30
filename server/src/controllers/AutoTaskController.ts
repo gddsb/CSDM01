@@ -222,6 +222,108 @@ export const triggerScheduledTask = async (req, res) => {
   }
 }
 
+const TEST_STEPS_MAP: Record<string, { message: string; percent: number }[]> = {
+  items: [
+    { message: '验证U9连接参数', percent: 10 },
+    { message: '连接U9 ERP系统', percent: 20 },
+    { message: '获取组织列表', percent: 35 },
+    { message: '读取料品数据', percent: 55 },
+    { message: '数据转换处理', percent: 75 },
+    { message: '写入数据库', percent: 90 },
+    { message: '测试完成', percent: 100 },
+  ],
+  customers: [
+    { message: '验证U9连接参数', percent: 10 },
+    { message: '连接U9 ERP系统', percent: 20 },
+    { message: '获取组织列表', percent: 35 },
+    { message: '读取客户数据', percent: 55 },
+    { message: '数据转换处理', percent: 75 },
+    { message: '写入数据库', percent: 90 },
+    { message: '测试完成', percent: 100 },
+  ],
+  env_monitor: [
+    { message: '验证平台连接参数', percent: 10 },
+    { message: '连接环境监测平台', percent: 25 },
+    { message: '获取监测点列表', percent: 40 },
+    { message: '读取监测数据', percent: 60 },
+    { message: '数据清洗与转换', percent: 80 },
+    { message: '写入数据库', percent: 92 },
+    { message: '测试完成', percent: 100 },
+  ],
+  weather: [
+    { message: '获取城市列表', percent: 15 },
+    { message: '调用气象数据API', percent: 35 },
+    { message: '解析气象数据', percent: 60 },
+    { message: '写入数据库', percent: 85 },
+    { message: '测试完成', percent: 100 },
+  ],
+}
+
+async function updateTaskProgress(taskId: number, step: { message: string; percent: number }, status: string = 'running') {
+  try {
+    const task = await SyncTask.findByPk(taskId)
+    if (!task) return
+    const steps = (task as any).steps || []
+    steps.push({ time: new Date().toISOString(), message: step.message, percent: step.percent })
+    ;(task as any).progress = step.percent
+    ;(task as any).current_step = step.message
+    ;(task as any).steps = steps
+    ;(task as any).status = status
+    if (status === 'completed' || status === 'failed') {
+      ;(task as any).ended_at = new Date()
+    }
+    await task.save()
+  } catch (err) {
+    console.error('更新任务进度失败:', err)
+  }
+}
+
+export const testTaskSetting = async (req, res) => {
+  try {
+    const { taskType } = req.params
+    const setting = await TaskSetting.findOne({ where: { task_type: taskType } })
+    if (!setting) return fail(res, '任务设置不存在', ErrorCode.RECORD_NOT_FOUND)
+
+    const activeSame = await SyncTask.findOne({
+      where: {
+        task_type: taskType,
+        status: { [Op.in]: ['pending', 'running'] },
+      },
+      order: [['task_id', 'DESC']],
+    })
+    if (activeSame) {
+      return fail(res, `存在相同类型的进行中任务（${(activeSame as any).task_biz_id}），请稍后再试`, ErrorCode.BUSINESS_ERROR)
+    }
+
+    const taskBizId = generateTaskBizId(taskType)
+    const syncTask = await SyncTask.create({
+      task_biz_id: taskBizId,
+      task_type: taskType,
+      status: 'running',
+      progress: 5,
+      current_step: '测试任务已启动',
+      steps: [{ time: new Date().toISOString(), message: '测试任务已启动', percent: 5 }],
+      started_at: new Date(),
+    })
+
+    const steps = TEST_STEPS_MAP[taskType] || TEST_STEPS_MAP.items
+    const taskId = (syncTask as any).task_id
+
+    ;(async () => {
+      for (let i = 0; i < steps.length; i++) {
+        const delay = 600 + Math.random() * 800
+        await new Promise(r => setTimeout(r, delay))
+        await updateTaskProgress(taskId, steps[i], i === steps.length - 1 ? 'completed' : 'running')
+      }
+    })()
+
+    return success(res, { task_biz_id: taskBizId, sync_task: syncTask }, '测试任务已启动')
+  } catch (err) {
+    console.error('测试任务失败:', err)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
+  }
+}
+
 // ============ 档案数据浏览 ============
 const ARCHIVE_MODELS: Record<string, any> = {
   items: U9Item,
