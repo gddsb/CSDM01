@@ -192,6 +192,24 @@ const defaultPermissions = [
 ]
 
 export const initDefaultPermissions = async () => {
+  // 硬编码 parent_id → perm_code 映射（兼容旧配置，避免因数据库自增ID不一致导致菜单丢失）
+  const LEGACY_PARENT_MAP: Record<number, string> = {
+    1: 'system',
+    3: 'system:role',
+    10: 'basic',
+    13: 'basic:line',
+    14: 'basic:process',
+    20: 'production',
+    21: 'production:order',
+    23: 'production:reporting',
+    30: 'quality',
+    37: 'quality:complaint',
+    50: 'device',
+    51: 'device:list',
+    60: 'bigscreen',
+    70: 'report',
+  }
+
   const defaultCodes = defaultPermissions.map(p => p.perm_code)
   // 先建立 perm_code -> perm_id 的映射
   const codeToId: Record<string, number> = {}
@@ -204,6 +222,13 @@ export const initDefaultPermissions = async () => {
       defaults: perm,
     })
     codeToId[perm.perm_code] = record.perm_id
+  }
+  // 预填充：所有菜单都先查一遍，建立完整的 code→id 映射（含子菜单，用于嵌套 parent_code 查找）
+  for (const perm of defaultPermissions) {
+    if (!codeToId[perm.perm_code]) {
+      const rec = await Permission.findOne({ where: { perm_code: perm.perm_code } })
+      if (rec) codeToId[perm.perm_code] = rec.perm_id
+    }
   }
   for (const perm of defaultPermissions) {
     if (topLevels.includes(perm)) continue
@@ -220,6 +245,15 @@ export const initDefaultPermissions = async () => {
           finalPerm.parent_id = parentRec.perm_id
           codeToId[finalPerm.parent_code] = parentRec.perm_id
         }
+      }
+    } else if (finalPerm.parent_id && LEGACY_PARENT_MAP[finalPerm.parent_id]) {
+      // 兼容旧的硬编码 parent_id：通过映射表查找正确的 perm_code，再解析实际 parent_id
+      const parentCode = LEGACY_PARENT_MAP[finalPerm.parent_id]
+      const parentId = codeToId[parentCode]
+        || (await Permission.findOne({ where: { perm_code: parentCode } }))?.perm_id
+      if (parentId) {
+        finalPerm.parent_id = parentId
+        codeToId[parentCode] = parentId
       }
     }
     const [record, created] = await Permission.findOrCreate({
