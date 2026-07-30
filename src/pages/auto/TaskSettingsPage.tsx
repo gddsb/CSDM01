@@ -270,7 +270,9 @@ export default function TaskSettingsPage() {
       </Space>
     )},
     { title: '任务名称', dataIndex: 'name', key: 'name', width: 140 },
-    { title: '描述', dataIndex: 'description', key: 'description' },
+    { title: '描述', dataIndex: 'description', key: 'description', width: 150, render: (v: string) => (
+      <div style={{ whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.5 }}>{v || '-'}</div>
+    )},
     { title: '数据源', dataIndex: 'source_url', key: 'source_url', width: 180, ellipsis: true, render: (v: string) => v ? v : '-' },
     { title: '参数配置', key: 'params', width: 100, render: (_: any, r: TaskSetting) => {
       const fields = PARAM_FIELDS[r.task_type] || []
@@ -291,7 +293,6 @@ export default function TaskSettingsPage() {
         <Tooltip title="测试任务">
           <Button
             type="link"
-            icon={<PlayCircleOutlined />}
             onClick={() => handleTest(record)}
             loading={testingTaskType === record.task_type}
             disabled={testingTaskType !== null && testingTaskType !== record.task_type}
@@ -299,7 +300,7 @@ export default function TaskSettingsPage() {
             测试
           </Button>
         </Tooltip>
-        <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
+        <Button type="link" onClick={() => handleEdit(record)}>编辑</Button>
       </Space>
     )},
   ]

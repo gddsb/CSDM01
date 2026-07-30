@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useMessage } from '../../contexts/AppContext'
 import { Table, Button, Form, Input, InputNumber, Select, Switch, Modal, Space, Tag, Card, Row, Col, Popconfirm, DatePicker, TimePicker } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, PlayCircleOutlined, PauseCircleOutlined, CalendarOutlined } from '@ant-design/icons'
+import { PlusOutlined, ReloadOutlined, CalendarOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import api from '../../utils/api'
 import { formatDateTime } from '../../utils'
@@ -197,16 +197,16 @@ export default function ScheduledTaskPage() {
   }
 
   const columns = [
-    { title: '计划ID', dataIndex: 'schedule_biz_id', key: 'schedule_biz_id', width: 200, render: (v: string) => <code style={{ fontSize: 12 }}>{v}</code> },
-    { title: '名称', dataIndex: 'name', key: 'name', width: 150 },
+    { title: '计划ID', dataIndex: 'schedule_biz_id', key: 'schedule_biz_id', width: 220, render: (v: string) => <code style={{ fontSize: 12 }}>{v}</code> },
+    { title: '名称', dataIndex: 'name', key: 'name', width: 160 },
     { title: '任务类型', dataIndex: 'task_type', key: 'task_type', width: 100, render: (t: string) => <Tag color="blue">{TYPE_LABELS[t] || t}</Tag> },
-    { title: '执行方式', dataIndex: 'exec_mode', key: 'exec_mode', width: 100, render: (m: string) => <Tag color={MODE_COLORS[m]}>{MODE_LABELS[m] || m}</Tag> },
-    { title: '配置', key: 'config', width: 200, render: (_: any, r: ScheduledTask) => <span style={{ color: '#666' }}>{formatConfig(r)}</span> },
-    { title: '下次执行', dataIndex: 'next_run_at', key: 'next_run_at', width: 150, render: (v: string, r: ScheduledTask) => {
+    { title: '执行方式', dataIndex: 'exec_mode', key: 'exec_mode', width: 110, render: (m: string) => <Tag color={MODE_COLORS[m]}>{MODE_LABELS[m] || m}</Tag> },
+    { title: '配置', key: 'config', width: 240, render: (_: any, r: ScheduledTask) => <span style={{ color: '#666' }}>{formatConfig(r)}</span> },
+    { title: '下次执行', dataIndex: 'next_run_at', key: 'next_run_at', width: 170, render: (v: string, r: ScheduledTask) => {
       if (r.is_enabled !== 1) return <Tag>已停用</Tag>
       return v ? formatDateTime(v) : <Tag>无</Tag>
     }},
-    { title: '上次执行', dataIndex: 'last_run_at', key: 'last_run_at', width: 150, render: (v: string, r: ScheduledTask) => {
+    { title: '上次执行', dataIndex: 'last_run_at', key: 'last_run_at', width: 200, render: (v: string, r: ScheduledTask) => {
       if (!v) return '-'
       return (
         <Space direction="vertical" size={0}>
@@ -220,10 +220,10 @@ export default function ScheduledTaskPage() {
     )},
     { title: '操作', key: 'action', width: 200, fixed: 'right' as const, render: (_: any, record: ScheduledTask) => (
       <Space>
-        <Button type="link" icon={<PlayCircleOutlined />} onClick={() => handleTrigger(record)}>执行</Button>
-        <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
+        <Button type="link" onClick={() => handleTrigger(record)}>执行</Button>
+        <Button type="link" onClick={() => handleEdit(record)}>编辑</Button>
         <Popconfirm title="确认删除？" onConfirm={() => handleDelete(record)}>
-          <Button type="link" danger icon={<DeleteOutlined />}>删除</Button>
+          <Button type="link" danger>删除</Button>
         </Popconfirm>
       </Space>
     )},
@@ -254,7 +254,7 @@ export default function ScheduledTaskPage() {
         dataSource={data}
         loading={loading}
         pagination={{ pageSize: 20, showSizeChanger: true }}
-        scroll={{ x: 1300 }}
+        scroll={{ x: 1500 }}
       />
       <Modal
         title={editing ? '编辑定时任务' : '新建定时任务'}

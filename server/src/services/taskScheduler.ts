@@ -180,6 +180,32 @@ export async function startTaskScheduler() {
   const tick = async () => {
     try {
       const now = new Date()
+
+      // 1. 超时检查：超过3分钟未完成的任务自动终止
+      const threeMinAgo = new Date(now.getTime() - 3 * 60 * 1000)
+      const timeoutTasks = await SyncTask.findAll({
+        where: {
+          status: { [Op.in]: ['pending', 'running'] },
+          started_at: { [Op.lte]: threeMinAgo },
+        },
+      })
+      for (const t of timeoutTasks) {
+        const task = t as any
+        const steps = Array.isArray(task.steps) ? [...task.steps] : []
+        steps.push({ time: new Date().toISOString(), message: '任务执行超时（超过3分钟），已自动终止', percent: task.progress || 0 })
+        await SyncTask.update(
+          {
+            status: 'failed',
+            error_msg: '任务执行超时（超过3分钟），已自动终止',
+            steps,
+            finished_at: new Date(),
+          },
+          { where: { task_id: task.task_id } }
+        )
+        console.log(`[Scheduler] 超时终止任务 ${task.task_biz_id}`)
+      }
+
+      // 2. 触发到期任务
       const dueTasks = await ScheduledTask.findAll({
         where: {
           is_enabled: 1,

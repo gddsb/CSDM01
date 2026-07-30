@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useMessage } from '../../contexts/AppContext'
 import { Table, Button, Select, Tag, Space, Card, Row, Col, Progress, Descriptions, Modal, Popconfirm } from 'antd'
-import { ReloadOutlined, EyeOutlined, ClockCircleOutlined, DeleteOutlined } from '@ant-design/icons'
+import { ReloadOutlined, ClockCircleOutlined } from '@ant-design/icons'
 import api from '../../utils/api'
 import { formatDateTime } from '../../utils'
 
@@ -79,27 +79,27 @@ export default function TaskLogPage() {
   const columns = [
     { title: '任务ID', dataIndex: 'task_biz_id', key: 'task_biz_id', width: 220, render: (v: string) => <code style={{ fontSize: 12 }}>{v}</code> },
     { title: '类型', dataIndex: 'task_type', key: 'task_type', width: 100, render: (t: string) => <Tag>{TYPE_LABELS[t] || t}</Tag> },
-    { title: '状态', dataIndex: 'status', key: 'status', width: 100, render: (s: string) => {
+    { title: '状态', dataIndex: 'status', key: 'status', width: 90, render: (s: string) => {
       const m = STATUS_MAP[s] || { color: 'default', text: s }
       return <Tag color={m.color}>{m.text}</Tag>
     }},
     { title: '进度', dataIndex: 'progress', key: 'progress', width: 180, render: (p: number) => <Progress percent={p} size="small" status={p === 100 ? 'success' : undefined} /> },
-    { title: '当前步骤', dataIndex: 'current_step', key: 'current_step', ellipsis: true },
+    { title: '当前步骤', dataIndex: 'current_step', key: 'current_step', width: 200, ellipsis: true },
     { title: '记录数', dataIndex: 'total_records', key: 'total_records', width: 80, align: 'center' as const },
-    { title: '开始时间', dataIndex: 'started_at', key: 'started_at', width: 160, render: (v: string) => v ? formatDateTime(v) : '-' },
+    { title: '开始时间', dataIndex: 'started_at', key: 'started_at', width: 170, render: (v: string) => v ? formatDateTime(v) : '-' },
     { title: '操作', key: 'action', width: 140, fixed: 'right' as const, render: (_: any, r: SyncTask) => (
       <Space>
-        <Button type="link" icon={<EyeOutlined />} onClick={() => showDetail(r)}>详情</Button>
-        {(r.status === 'failed' || r.status === 'completed') && (
+        <Button type="link" onClick={() => showDetail(r)}>详情</Button>
+        {r.status === 'failed' && (
           <Popconfirm
             title="确定删除此任务日志？"
-            description={r.status === 'failed' ? '删除后无法恢复' : '已完成的任务日志删除后无法恢复'}
+            description="删除后无法恢复"
             onConfirm={() => handleDelete(r)}
             okText="删除"
             cancelText="取消"
             okButtonProps={{ danger: true }}
           >
-            <Button type="link" danger icon={<DeleteOutlined />}>删除</Button>
+            <Button type="link" danger>删除</Button>
           </Popconfirm>
         )}
       </Space>
@@ -137,7 +137,7 @@ export default function TaskLogPage() {
         dataSource={data}
         loading={loading}
         pagination={{ pageSize: 20, showSizeChanger: true, showTotal: (t) => `共 ${t} 条` }}
-        scroll={{ x: 1100 }}
+        scroll={{ x: 1200 }}
       />
       <Modal
         title="任务详情"

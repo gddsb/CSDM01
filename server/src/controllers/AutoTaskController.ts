@@ -99,8 +99,8 @@ export const deleteSyncTask = async (req, res) => {
     const task = await SyncTask.findOne({ where: { task_biz_id: id } })
       || await SyncTask.findByPk(id)
     if (!task) return fail(res, '任务不存在', ErrorCode.RECORD_NOT_FOUND)
-    if ((task as any).status === 'running' || (task as any).status === 'pending') {
-      return fail(res, '进行中的任务无法删除', ErrorCode.BUSINESS_ERROR)
+    if ((task as any).status !== 'failed') {
+      return fail(res, '仅失败状态的任务可删除', ErrorCode.BUSINESS_ERROR)
     }
     await task.destroy()
     return success(res, null, '删除成功')
