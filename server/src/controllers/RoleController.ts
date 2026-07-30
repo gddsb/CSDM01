@@ -147,6 +147,13 @@ const defaultPermissions = [
   { parent_id: 60, perm_name: '生产实时看板', perm_code: 'bigscreen:production', type: 'menu', icon: 'BarChartOutlined', path: '/bigscreen/production', sort_order: 1 },
   { parent_id: 60, perm_name: '质量分析看板', perm_code: 'bigscreen:quality', type: 'menu', icon: 'ExperimentOutlined', path: '/bigscreen/quality', sort_order: 2 },
   { parent_id: 60, perm_name: '管理驾驶舱', perm_code: 'bigscreen:management', type: 'menu', icon: 'PieChartOutlined', path: '/bigscreen/management', sort_order: 3 },
+  { parent_id: 60, perm_name: '环境看板', perm_code: 'bigscreen:environment', type: 'menu', icon: 'EnvironmentOutlined', path: '/bigscreen/environment', sort_order: 4 },
+  { parent_id: 60, perm_name: '看板设置', perm_code: 'bigscreen:setting', type: 'menu', icon: 'SettingOutlined', path: '/bigscreen/settings', sort_order: 5 },
+  // 自动任务
+  { parent_id: 0, perm_name: '自动任务', perm_code: 'auto', type: 'menu', icon: 'ControlOutlined', path: 'auto', sort_order: 7 },
+  { parent_id: 300, perm_name: '任务设置', perm_code: 'auto:task-setting', type: 'menu', icon: 'SettingOutlined', path: '/auto/task-settings', sort_order: 1 },
+  { parent_id: 300, perm_name: '定时任务', perm_code: 'auto:scheduled-task', type: 'menu', icon: 'CalendarOutlined', path: '/auto/scheduled-tasks', sort_order: 2 },
+  { parent_id: 300, perm_name: '任务日志', perm_code: 'auto:task-log', type: 'menu', icon: 'ClockCircleOutlined', path: '/auto/task-logs', sort_order: 3 },
   // 报表中心
   { parent_id: 0, perm_name: '报表中心', perm_code: 'report', type: 'menu', icon: 'PieChartOutlined', path: 'report', sort_order: 5 },
   { parent_id: 70, perm_name: '生产日报', perm_code: 'report:daily', type: 'menu', icon: 'CalendarOutlined', path: '/report/daily', sort_order: 1 },

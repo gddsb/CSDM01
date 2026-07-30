@@ -53,6 +53,8 @@ import TaskSettingsPage from './pages/auto/TaskSettingsPage'
 import TaskLogPage from './pages/auto/TaskLogPage'
 import ScheduledTaskPage from './pages/auto/ScheduledTaskPage'
 import EnvironmentBigScreen from './pages/bigscreen/EnvironmentBigScreen'
+import DashboardSettings from './pages/bigscreen/DashboardSettings'
+import RotateDashboard from './pages/bigscreen/RotateDashboard'
 import MobileRoutes from './mobile/MobileRoutes'
 
 dayjs.locale('zh-cn')
@@ -80,6 +82,8 @@ function AppRoutes() {
       <Route path="/bigscreen/management" element={<ProtectedRoute><ManagementBigScreen /></ProtectedRoute>} />
       <Route path="/bigscreen/quality" element={<ProtectedRoute><QualityBigScreen /></ProtectedRoute>} />
       <Route path="/bigscreen/environment" element={<ProtectedRoute><EnvironmentBigScreen /></ProtectedRoute>} />
+      {/* 滚动看板页面 - 公开访问（无需登录） */}
+      <Route path="/bigscreen/rotate" element={<RotateDashboard />} />
       {/* 移动端模拟器入口（兼容后端动态菜单的旧路径，统一重定向到 /mobile/home） */}
       <Route path="/system/mobile-simulator" element={<Navigate to="/mobile/home" replace />} />
       <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
@@ -122,6 +126,7 @@ function AppRoutes() {
         <Route path="/report/production" element={<ProductionReport />} />
         <Route path="/report/quality" element={<QualityReport />} />
         <Route path="/report/exception" element={<ExceptionReport />} />
+        <Route path="/bigscreen/settings" element={<DashboardSettings />} />
         <Route path="/auto/task-settings" element={<TaskSettingsPage />} />
         <Route path="/auto/scheduled-tasks" element={<ScheduledTaskPage />} />
         <Route path="/auto/task-logs" element={<TaskLogPage />} />

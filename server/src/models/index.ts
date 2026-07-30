@@ -47,6 +47,8 @@ import U9Customer from './U9Customer.js'
 import EnvMonitor from './EnvMonitor.js'
 import EnvAlarm from './EnvAlarm.js'
 import WeatherInfo from './WeatherInfo.js'
+import DashboardConfig from './DashboardConfig.js'
+import DashboardShare from './DashboardShare.js'
 
 // 建立模型关联关系
 // 用户 - 角色
@@ -207,6 +209,8 @@ const db = {
   EnvMonitor,
   EnvAlarm,
   WeatherInfo,
+  DashboardConfig,
+  DashboardShare,
 }
 
 // 具名导出，便于按需导入
@@ -257,6 +261,8 @@ export {
   EnvMonitor,
   EnvAlarm,
   WeatherInfo,
+  DashboardConfig,
+  DashboardShare,
 }
 
 export default db
