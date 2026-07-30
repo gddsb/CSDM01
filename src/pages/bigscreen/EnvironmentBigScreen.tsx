@@ -382,132 +382,143 @@ export default function EnvironmentBigScreen() {
     [warehouseTH, trend?.times],
   )
 
-  const screenStyle: React.CSSProperties = {
-    background: 'linear-gradient(135deg, #0d1117 0%, #161b28 50%, #0d1117 100%)',
-    minHeight: '100vh',
-    padding: '20px 24px',
-    color: '#e0e0e0',
-  }
-
-  const cardStyle: React.CSSProperties = {
-    background: 'rgba(22,27,40,0.85)',
-    border: '1px solid rgba(255,255,255,0.06)',
-    borderRadius: 12,
-    boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-  }
-
-  const titleStyle: React.CSSProperties = {
-    color: '#e0e0e0',
-    fontSize: 15,
-    fontWeight: 600,
-    margin: 0,
-  }
-
   return (
-    <div style={screenStyle}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-        <Title level={3} style={{ margin: 0, color: '#fff', letterSpacing: 2 }}>
-          <DashboardOutlined style={{ marginRight: 8 }} />
-          环境监测大屏
-        </Title>
-        <Space size="large">
-          {overview?.lastUpdate && (
-            <Text style={{ color: '#888', fontSize: 12 }}>
-              <ClockCircleOutlined /> 最后更新: {fmtTime(overview.lastUpdate)}
-            </Text>
-          )}
-          <a onClick={loadAll} style={{ color: '#1890ff', cursor: 'pointer', fontSize: 12 }}>
-            <ReloadOutlined spin={loading} /> 刷新
-          </a>
-        </Space>
-      </div>
+    <div
+      style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: '#0a0e1a' }}
+    >
+      <div
+        className="bigscreen-container"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '1080px',
+          overflow: 'hidden',
+          ...scaleStyle,
+        }}
+      >
+        {/* 顶部标题栏 */}
+        <div className="bs-header">
+          <div className="bs-header-left">
+            <span
+              style={{ color: '#8B949E', cursor: 'pointer', fontSize: 16 }}
+              onClick={() => navigate('/dashboard')}
+              title="返回工作台"
+            >
+              <ArrowLeftOutlined />
+            </span>
+            <div className="bs-screen-tabs">
+              <div className="bs-screen-tab" onClick={() => navigate('/bigscreen/production')}>生产大屏</div>
+              <div className="bs-screen-tab active">环境大屏</div>
+              <div className="bs-screen-tab" onClick={() => navigate('/bigscreen/management')}>管理大屏</div>
+            </div>
+          </div>
+          <div className="bs-header-center">
+            <div className="bs-title">环境监测大屏</div>
+          </div>
+          <div className="bs-header-right">
+            {overview?.lastUpdate && (
+              <Space size="small">
+                <ClockCircleOutlined style={{ color: '#8B949E' }} />
+                <span style={{ color: '#8B949E', fontSize: 12 }}>最后更新: {fmtTime(overview.lastUpdate)}</span>
+              </Space>
+            )}
+            <span
+              style={{ color: '#3FB950', cursor: 'pointer', fontSize: 14 }}
+              onClick={loadAll}
+              title="刷新数据"
+            >
+              <ReloadOutlined spin={loading} />
+            </span>
+            <div className="bs-time">{formatTime(currentTime)}</div>
+          </div>
+        </div>
 
-      <Spin spinning={loading && !overview}>
-        <Row gutter={[16, 16]}>
-          <Col xs={24} sm={12}>
-            <div style={cardStyle}>
-              <div style={{ padding: '14px 20px 6px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <ShopOutlined style={{ color: '#722ed1', fontSize: 18 }} />
-                <span style={titleStyle}>生产车间</span>
-                <span style={{ color: '#555', fontSize: 12 }}>
+        <Spin spinning={loading && !overview} style={{ flex: 1, minHeight: 0 }}>
+          {/* 第一行：生产车间仪表盘 | 仓库仪表盘 */}
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10, marginBottom: 10 }}>
+            {/* 左：生产车间 */}
+            <div className="bs-panel" style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <div className="bs-panel-title">
+                <ShopOutlined style={{ color: '#722ed1', fontSize: 16 }} />
+                生产车间
+                <span style={{ color: '#8B949E', fontSize: 12, fontWeight: 400, marginLeft: 8 }}>
                   {overview?.areas.find((a) => a.name === '生产车间')?.factors.length ?? 0} 个监测点
                 </span>
               </div>
-              <Row>
+              <Row style={{ flex: 1, minHeight: 0 }}>
                 <Col xs={12}>
                   <div style={{ textAlign: 'center', paddingTop: 4 }}>
-                    <Text style={{ color: '#ff7875', fontSize: 13 }}>
+                    <div style={{ color: '#ff7875', fontSize: 13, marginBottom: 4 }}>
                       <FireOutlined /> 温度
-                    </Text>
+                    </div>
                     <div ref={workshopTempRef} style={{ height: 220 }} />
                   </div>
                 </Col>
                 <Col xs={12}>
                   <div style={{ textAlign: 'center', paddingTop: 4 }}>
-                    <Text style={{ color: '#69c0ff', fontSize: 13 }}>
+                    <div style={{ color: '#69c0ff', fontSize: 13, marginBottom: 4 }}>
                       <CloudOutlined /> 湿度
-                    </Text>
+                    </div>
                     <div ref={workshopHumRef} style={{ height: 220 }} />
                   </div>
                 </Col>
               </Row>
             </div>
-          </Col>
 
-          <Col xs={24} sm={12}>
-            <div style={cardStyle}>
-              <div style={{ padding: '14px 20px 6px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <HomeOutlined style={{ color: '#13c2c2', fontSize: 18 }} />
-                <span style={titleStyle}>仓库</span>
-                <span style={{ color: '#555', fontSize: 12 }}>
+            {/* 右：仓库 */}
+            <div className="bs-panel" style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <div className="bs-panel-title">
+                <HomeOutlined style={{ color: '#13c2c2', fontSize: 16 }} />
+                仓库
+                <span style={{ color: '#8B949E', fontSize: 12, fontWeight: 400, marginLeft: 8 }}>
                   {overview?.areas.find((a) => a.name === '仓库')?.factors.length ?? 0} 个监测点
                 </span>
               </div>
-              <Row>
+              <Row style={{ flex: 1, minHeight: 0 }}>
                 <Col xs={12}>
                   <div style={{ textAlign: 'center', paddingTop: 4 }}>
-                    <Text style={{ color: '#ff7875', fontSize: 13 }}>
+                    <div style={{ color: '#ff7875', fontSize: 13, marginBottom: 4 }}>
                       <FireOutlined /> 温度
-                    </Text>
+                    </div>
                     <div ref={warehouseTempRef} style={{ height: 220 }} />
                   </div>
                 </Col>
                 <Col xs={12}>
                   <div style={{ textAlign: 'center', paddingTop: 4 }}>
-                    <Text style={{ color: '#69c0ff', fontSize: 13 }}>
+                    <div style={{ color: '#69c0ff', fontSize: 13, marginBottom: 4 }}>
                       <CloudOutlined /> 湿度
-                    </Text>
+                    </div>
                     <div ref={warehouseHumRef} style={{ height: 220 }} />
                   </div>
                 </Col>
               </Row>
             </div>
-          </Col>
-        </Row>
+          </div>
 
-        <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-          <Col xs={24} sm={12}>
-            <div style={cardStyle}>
-              <div style={{ padding: '14px 20px 4px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* 第二行：温湿度趋势 */}
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10 }}>
+            {/* 左：生产车间趋势 */}
+            <div className="bs-panel" style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <div className="bs-panel-title">
                 <ShopOutlined style={{ color: '#722ed1', fontSize: 16 }} />
-                <span style={titleStyle}>生产车间 · 温湿度趋势</span>
-                <span style={{ color: '#555', fontSize: 11 }}>（最近12h）</span>
+                生产车间 · 温湿度趋势
+                <span style={{ color: '#8B949E', fontSize: 11, fontWeight: 400, marginLeft: 8 }}>（最近12h）</span>
               </div>
-              <div ref={workshopTrendRef} style={{ height: 280, padding: '0 8px 8px' }} />
+              <div ref={workshopTrendRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
             </div>
-          </Col>
-          <Col xs={24} sm={12}>
-            <div style={cardStyle}>
-              <div style={{ padding: '14px 20px 4px', display: 'flex', alignItems: 'center', gap: 8 }}>
+
+            {/* 右：仓库趋势 */}
+            <div className="bs-panel" style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <div className="bs-panel-title">
                 <HomeOutlined style={{ color: '#13c2c2', fontSize: 16 }} />
-                <span style={titleStyle}>仓库 · 温湿度趋势</span>
-                <span style={{ color: '#555', fontSize: 11 }}>（最近12h）</span>
+                仓库 · 温湿度趋势
+                <span style={{ color: '#8B949E', fontSize: 11, fontWeight: 400, marginLeft: 8 }}>（最近12h）</span>
               </div>
-              <div ref={warehouseTrendRef} style={{ height: 280, padding: '0 8px 8px' }} />
+              <div ref={warehouseTrendRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
             </div>
-          </Col>
-        </Row>
-      </Spin>
+          </div>
+        </Spin>
+      </div>
     </div>
   )
 }
