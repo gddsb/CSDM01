@@ -100,6 +100,7 @@ export default function ProductInspection() {
       setPagination(p => ({ ...p, total: 0 }))
     } finally {
       setLoading(false)
+      setRangeWarn(false)
     }
   }, [pagination.current, pagination.pageSize, inspectionType, reportOrderId, resultFilter, statusFilter, dateRange])
 

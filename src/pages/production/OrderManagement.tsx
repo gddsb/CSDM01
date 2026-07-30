@@ -105,6 +105,7 @@ export default function OrderManagement() {
         }
       } finally {
         if (!cancelled) setLoading(false)
+        setRangeWarn(false)
       }
     }
     run()

@@ -12,7 +12,9 @@ import api, { extractList } from '../../utils/api'
 import { processReports as mockProcessReports } from '../../mock/data'
 
 // 订单状态映射：0=开立, 1=下发, 2=开工, 3=完工, 4=关闭
-const woStatusNumToText: Record<number, string> = { 0: '开立', 1: '下发', 2: '开工', 3: '完工', 4: '关闭' }
+const orderStatusNumToText: Record<number, string> = { 0: '开立', 1: '下发', 2: '开工', 3: '完工', 4: '关闭' }
+// 报工单状态映射：0=开工, 1=完工
+const reportStatusNumToText: Record<number, string> = { 0: '开工', 1: '完工' }
 
 // 工时按0.5小时取值（四舍五入到最近的0.5）
 const roundHalf = (h) => Math.round(h * 2) / 2
@@ -84,7 +86,7 @@ export default function EfficiencyReport() {
           target_qty: item.report_qty || 0,
           start_time: item.report_time,
           finish_time: item.finish_time,
-          status: item.order?.status ?? woStatusNumToText[item.status] ?? '开工',
+          status: item.order?.status ?? reportStatusNumToText[item.status] ?? '开工',
           created_by: item.report_user_id,
           created_at: item.report_time,
         })))
@@ -112,6 +114,7 @@ export default function EfficiencyReport() {
       message.error(err.message || '加载数据失败')
     } finally {
       setLoading(false)
+      setRangeWarn(false)
     }
   }
 

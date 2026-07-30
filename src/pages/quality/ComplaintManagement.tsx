@@ -49,7 +49,7 @@ export default function ComplaintManagement() {
         message.warning(check.msg)
         return
       }
-      setRangeWarn(!!check.warn)
+      setRangeWarn(check.warn || false)
     } else {
       setRangeWarn(false)
     }

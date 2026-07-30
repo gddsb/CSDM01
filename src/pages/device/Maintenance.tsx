@@ -69,7 +69,7 @@ export default function Maintenance() {
       if (!check.ok) {
         message.warning(check.msg)
       }
-      setRangeWarn(!!check.warn)
+      setRangeWarn(check.warn || false)
     } else {
       setRangeWarn(false)
     }

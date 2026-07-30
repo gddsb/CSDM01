@@ -97,6 +97,7 @@ export default function MicrobeInspection() {
       setPagination(p => ({ ...p, total: 0 }))
     } finally {
       setLoading(false)
+      setRangeWarn(false)
     }
   }, [pagination.current, pagination.pageSize, inspectionNo, inspectionType, objectType, resultFilter, statusFilter, dateRange])
 

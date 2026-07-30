@@ -84,6 +84,7 @@ export default function IncomingInspection() {
       setPagination(p => ({ ...p, total: 0 }))
     } finally {
       setLoading(false)
+      setRangeWarn(false)
     }
   }, [pagination.current, pagination.pageSize, supplierFilter, resultFilter, statusFilter, dateRange])
 

@@ -112,7 +112,7 @@ export default function EnvironmentInspection() {
         message.warning(check.msg)
         return
       }
-      setRangeWarn(!!check.warn)
+      setRangeWarn(check.warn || false)
     } else {
       setRangeWarn(false)
     }

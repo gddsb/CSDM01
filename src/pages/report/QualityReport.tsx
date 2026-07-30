@@ -85,6 +85,7 @@ export default function QualityReport() {
       message.error(err.message || '加载数据失败')
     } finally {
       setLoading(false)
+      setRangeWarn(false)
     }
   }
 
