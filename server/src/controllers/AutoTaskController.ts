@@ -307,11 +307,11 @@ async function updateTaskProgress(taskId: number, step: { message: string; perce
 
 function generateMockRecordCount(taskType: string): number {
   switch (taskType) {
-    case 'items': return Math.floor(500 + Math.random() * 1500)
-    case 'customers': return Math.floor(100 + Math.random() * 400)
-    case 'env_monitor': return Math.floor(5 + Math.random() * 16)
-    case 'weather': return Math.floor(1 + Math.random() * 5)
-    default: return Math.floor(10 + Math.random() * 100)
+    case 'items': return Math.floor(500 + Math.random() * 100)
+    case 'customers': return Math.floor(20 + Math.random() * 10)
+    case 'env_monitor': return Math.floor(8 + Math.random() * 5)
+    case 'weather': return Math.floor(3 + Math.random() * 6)
+    default: return Math.floor(10 + Math.random() * 20)
   }
 }
 
