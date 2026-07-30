@@ -1,5 +1,6 @@
 import { Op } from 'sequelize'
-import { ScheduledTask, SyncTask } from '../models/index.js'
+import { ScheduledTask, SyncTask, TaskSetting } from '../models/index.js'
+import { executeRealTask } from './taskExecutor.js'
 
 function pad(n: number) { return String(n).padStart(2, '0') }
 
@@ -152,25 +153,18 @@ export async function triggerScheduledTaskById(taskId: number) {
 
     console.log(`[Scheduler] 已触发任务 ${task.schedule_biz_id} (${type}) -> ${taskBizId}`)
 
-    const steps = TEST_STEPS_MAP[type] || TEST_STEPS_MAP.items
-    const totalRecords = generateMockRecordCount(type)
+    // 获取任务设置参数
+    let taskParams: Record<string, any> = {}
+    try {
+      const setting = await TaskSetting.findOne({ where: { task_type: type } })
+      if (setting) taskParams = (setting as any).params || {}
+    } catch (e) {
+      console.warn('[Scheduler] 读取任务设置失败，使用默认参数:', e)
+    }
+
+    // 异步执行真实采集任务
     ;(async () => {
-      for (let i = 0; i < steps.length; i++) {
-        const delay = 600 + Math.random() * 800
-        await new Promise(r => setTimeout(r, delay))
-        const isLast = i === steps.length - 1
-        const isSecondLast = i === steps.length - 2
-        let step = { ...steps[i] }
-        if (isSecondLast) {
-          step = { message: `${step.message}（共 ${totalRecords} 条记录）`, percent: step.percent }
-        }
-        if (isLast) {
-          step = { message: `完成，共 ${totalRecords} 条记录`, percent: 100 }
-          await updateTaskProgress(syncTaskId, step, 'completed', totalRecords)
-        } else {
-          await updateTaskProgress(syncTaskId, step, 'running')
-        }
-      }
+      await executeRealTask(type, taskBizId, syncTaskId, taskParams)
     })()
   } catch (err) {
     console.error('[Scheduler] 触发任务失败:', err)

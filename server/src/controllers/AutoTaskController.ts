@@ -7,6 +7,7 @@ import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { encryptParamsObj, decryptParamsObj } from '../utils/crypto.js'
 import { fetchU9Orgs, DEFAULT_U9_CONFIG } from '../services/u9Service.js'
 import { calcNextRunAt } from '../services/taskScheduler.js'
+import { executeRealTask } from '../services/taskExecutor.js'
 
 // ============ 任务设置 ============
 export const listTaskSettings = async (req, res) => {
@@ -338,37 +339,22 @@ export const testTaskSetting = async (req, res) => {
       task_type: taskType,
       status: 'running',
       progress: 5,
-      current_step: '测试任务已启动',
-      steps: [{ time: new Date().toISOString(), message: '测试任务已启动', percent: 5 }],
+      current_step: '任务已启动，准备采集...',
+      steps: [{ time: new Date().toISOString(), message: '任务已启动，准备采集...', percent: 5 }],
       started_at: new Date(),
     })
 
-    const steps = TEST_STEPS_MAP[taskType] || TEST_STEPS_MAP.items
     const taskId = (syncTask as any).task_id
-    const totalRecords = generateMockRecordCount(taskType)
+    const settingParams = (setting as any).params || {}
 
+    // 异步执行真实采集任务
     ;(async () => {
-      for (let i = 0; i < steps.length; i++) {
-        const delay = 600 + Math.random() * 800
-        await new Promise(r => setTimeout(r, delay))
-        const isLast = i === steps.length - 1
-        const isSecondLast = i === steps.length - 2
-        let step = { ...steps[i] }
-        if (isSecondLast) {
-          step = { message: `${step.message}（共 ${totalRecords} 条记录）`, percent: step.percent }
-        }
-        if (isLast) {
-          step = { message: `完成，共 ${totalRecords} 条记录`, percent: 100 }
-          await updateTaskProgress(taskId, step, 'completed', totalRecords)
-        } else {
-          await updateTaskProgress(taskId, step, 'running')
-        }
-      }
+      await executeRealTask(taskType, taskBizId, taskId, settingParams)
     })()
 
-    return success(res, { task_biz_id: taskBizId, sync_task: syncTask }, '测试任务已启动')
+    return success(res, { task_biz_id: taskBizId, sync_task: syncTask }, '任务已启动，正在采集中...')
   } catch (err) {
-    console.error('测试任务失败:', err)
+    console.error('启动任务失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
