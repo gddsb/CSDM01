@@ -1,13 +1,16 @@
 import ResizableTable from '../../components/ResizableTable'
-import React, { useState, useMemo } from 'react'
-import { Table, Tag, Button, Drawer, Descriptions, Typography } from 'antd'
+import React, { useState, useMemo, useCallback, useEffect } from 'react'
+import { Table, Tag, Button, Drawer, Descriptions, Typography, Select, DatePicker, Space, Row, Col, Input, Alert, message } from 'antd'
 import {
   EnvironmentOutlined, CheckCircleOutlined, CloseCircleOutlined,
-  EyeOutlined, SearchOutlined
+  EyeOutlined, SearchOutlined, ReloadOutlined
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import { envInspections } from '../../mock/data'
+import { MONTH_QUICK_OPTIONS, getMonthRange, validateRange, getThisMonth } from '../../utils/monthQuick'
+import dayjs from 'dayjs'
 
+const { RangePicker } = DatePicker
 const { Text, Title } = Typography
 
 // 环境检验检测项目模板（按检验区域分类）
@@ -43,7 +46,6 @@ const envItemTemplates: Record<string, any[]> = {
   ],
 }
 
-// 生成环境检验检测项的实测值和判定结果
 function generateEnvActualValue(std: string, unit: string, passRate = 0.9) {
   const pass = Math.random() < passRate
   if (std.includes('≤')) {
@@ -74,7 +76,6 @@ function generateEnvActualValue(std: string, unit: string, passRate = 0.9) {
   return { actual_value: pass ? '符合' : '不符合', judge: pass ? '合格' : '不合格' }
 }
 
-// 为每条环境检验记录生成检测项目
 function getEnvItems(record: any) {
   const templates = envItemTemplates[record.area_name] || envItemTemplates['一号车间']
   return templates.map(tpl => {
@@ -88,18 +89,51 @@ function getEnvItems(record: any) {
   })
 }
 
-const resultColor = { '合格': 'success', '不合格': 'error' }
-const triggerColor = { '自动': 'blue', '手工': 'purple' }
-const statusColor = { '已完成': 'success', '检验中': 'processing' }
+const resultColor = { '合格': 'success', '不合格': 'error' } as Record<string, string>
+const triggerColor = { '自动': 'blue', '手工': 'purple' } as Record<string, string>
+const statusColor = { '已完成': 'success', '检验中': 'processing' } as Record<string, string>
 
 export default function EnvironmentInspection() {
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [current, setCurrent] = useState(null)
+  const [current, setCurrent] = useState<any>(null)
   const [currentItems, setCurrentItems] = useState<any[]>([])
 
+  const [inspectionNo, setInspectionNo] = useState<any>(undefined)
+  const [areaFilter, setAreaFilter] = useState<any>(undefined)
+  const [resultFilter, setResultFilter] = useState<any>(undefined)
+  const [dateRange, setDateRange] = useState<any>(getThisMonth())
+  const [monthQuick, setMonthQuick] = useState<string>('this_month')
+  const [rangeWarn, setRangeWarn] = useState(false)
+
+  const fetchData = useCallback(() => {
+    if (dateRange) {
+      const check = validateRange(dateRange)
+      if (!check.ok) {
+        message.warning(check.msg)
+        return
+      }
+      setRangeWarn(!!check.warn)
+    } else {
+      setRangeWarn(false)
+    }
+  }, [dateRange])
+
+  useEffect(() => { fetchData() }, [fetchData])
+
   const filteredData = useMemo(() => {
-    return envInspections
-  }, [])
+    return envInspections.filter((r: any) => {
+      if (inspectionNo && !r.inspection_no?.includes(inspectionNo)) return false
+      if (areaFilter && r.area_name !== areaFilter) return false
+      if (resultFilter && r.result !== resultFilter) return false
+      if (dateRange && dateRange[0] && dateRange[1] && r.inspection_date) {
+        const t = dayjs(r.inspection_date)
+        if (!t.isAfter(dateRange[0].subtract(1, 'day')) || !t.isBefore(dateRange[1].add(1, 'day'))) {
+          return false
+        }
+      }
+      return true
+    })
+  }, [inspectionNo, areaFilter, resultFilter, dateRange])
 
   const passCount = filteredData.filter(i => i.result === '合格').length
   const failCount = filteredData.filter(i => i.result === '不合格').length
@@ -114,55 +148,67 @@ export default function EnvironmentInspection() {
     { label: '合格率', value: `${passRate}%`, icon: <CheckCircleOutlined />, color: '#00BCD4' },
   ]
 
-  const filters = [
-    { type: 'input', placeholder: '检验编号', icon: <SearchOutlined /> },
-    { type: 'input', placeholder: '检验区域' },
-    {
-      type: 'select', placeholder: '检验结果', options: [
-        { label: '合格', value: '合格' },
-        { label: '不合格', value: '不合格' },
-      ]
-    },
-  ]
+  const areaOptions = useMemo(() => {
+    const areas = Array.from(new Set(envInspections.map((i: any) => i.area_name)))
+    return areas.map(a => ({ label: a, value: a }))
+  }, [])
 
-  const showDetail = (record) => {
+  const handleMonthQuick = (v: string) => {
+    setMonthQuick(v)
+    const range = getMonthRange(v)
+    setDateRange(range)
+  }
+  const handleRangeChange = (v: any) => {
+    setMonthQuick(undefined)
+    setDateRange(v)
+  }
+
+  const handleReset = () => {
+    setInspectionNo(undefined)
+    setAreaFilter(undefined)
+    setResultFilter(undefined)
+    setMonthQuick('this_month')
+    setDateRange(getThisMonth())
+  }
+
+  const showDetail = (record: any) => {
     setCurrent(record)
     setCurrentItems(getEnvItems(record))
     setDrawerOpen(true)
   }
 
   const columns = [
-    { title: '检验编号', dataIndex: 'inspection_no', key: 'inspection_no', width: 160, fixed: 'left' },
+    { title: '检验编号', dataIndex: 'inspection_no', key: 'inspection_no', width: 160, fixed: 'left' as const },
     { title: '检验区域', dataIndex: 'area_name', key: 'area_name', width: 120 },
     {
       title: '触发方式', dataIndex: 'trigger_type', key: 'trigger_type', width: 100,
-      render: v => <Tag color={triggerColor[v] || 'default'}>{v}</Tag>
+      render: (v: string) => <Tag color={triggerColor[v] || 'default'}>{v}</Tag>
     },
     {
       title: '检验结果', dataIndex: 'result', key: 'result', width: 90,
-      render: v => v ? <Tag color={resultColor[v]}>{v}</Tag> : <Tag>待检</Tag>
+      render: (v: string) => v ? <Tag color={resultColor[v]}>{v}</Tag> : <Tag>待检</Tag>
     },
     {
       title: '纠正措施', dataIndex: 'correction_action', key: 'correction_action', width: 220,
-      render: v => v ? v : <Text type="secondary">-</Text>
+      render: (v: string) => v ? v : <Text type="secondary">-</Text>
     },
     {
       title: '复查日期', dataIndex: 'recheck_date', key: 'recheck_date', width: 110,
-      render: v => v || <Text type="secondary">-</Text>
+      render: (v: string) => v || <Text type="secondary">-</Text>
     },
     {
       title: '复查结果', dataIndex: 'recheck_result', key: 'recheck_result', width: 100,
-      render: v => v ? <Tag color={resultColor[v] || 'default'}>{v}</Tag> : <Text type="secondary">-</Text>
+      render: (v: string) => v ? <Tag color={resultColor[v] || 'default'}>{v}</Tag> : <Text type="secondary">-</Text>
     },
     { title: '检验人', dataIndex: 'inspector_name', key: 'inspector_name', width: 100 },
     { title: '检验日期', dataIndex: 'inspection_date', key: 'inspection_date', width: 110 },
     {
       title: '状态', dataIndex: 'status', key: 'status', width: 90,
-      render: v => <Tag color={statusColor[v] || 'default'}>{v}</Tag>
+      render: (v: string) => <Tag color={statusColor[v] || 'default'}>{v}</Tag>
     },
     {
-      title: '操作', key: 'action', fixed: 'right',
-      render: (_, record) => (
+      title: '操作', key: 'action', fixed: 'right' as const,
+      render: (_: any, record: any) => (
         <Button type="link" size="small" onClick={() => showDetail(record)}>查看详情</Button>
       )
     },
@@ -174,9 +220,53 @@ export default function EnvironmentInspection() {
     { title: '实测值', dataIndex: 'actual_value', key: 'actual_value' },
     {
       title: '判定', dataIndex: 'judge', key: 'judge', width: 90,
-      render: v => <Tag color={v === '合格' ? 'success' : v === '不合格' ? 'error' : 'default'}>{v}</Tag>
+      render: (v: string) => <Tag color={v === '合格' ? 'success' : v === '不合格' ? 'error' : 'default'}>{v}</Tag>
     },
   ]
+
+  const filters = useMemo(() => [
+    {
+      type: 'input' as const,
+      placeholder: '检验编号',
+      icon: <SearchOutlined />,
+      value: inspectionNo,
+      onChange: (e: any) => setInspectionNo(e?.target?.value !== undefined ? e.target.value : e),
+      col: { span: 4 },
+    },
+    {
+      type: 'select' as const,
+      placeholder: '检验区域',
+      options: areaOptions,
+      value: areaFilter,
+      onChange: setAreaFilter,
+      col: { span: 3 },
+    },
+    {
+      type: 'select' as const,
+      placeholder: '检验结果',
+      options: [
+        { label: '合格', value: '合格' },
+        { label: '不合格', value: '不合格' },
+      ],
+      value: resultFilter,
+      onChange: setResultFilter,
+      col: { span: 3 },
+    },
+    {
+      type: 'select' as const,
+      placeholder: '快速选择月份',
+      options: MONTH_QUICK_OPTIONS,
+      value: monthQuick || undefined,
+      onChange: handleMonthQuick,
+      col: { span: 4 },
+    },
+    {
+      type: 'rangepicker' as const,
+      value: dateRange,
+      onChange: handleRangeChange,
+      col: { span: 5 },
+    },
+  ], [inspectionNo, areaFilter, resultFilter, dateRange, monthQuick, areaOptions])
 
   return (
     <>
@@ -185,15 +275,28 @@ export default function EnvironmentInspection() {
         breadcrumbs="质量管理 / 环境检验"
         stats={stats}
         filters={filters}
+        onSearch={fetchData}
+        onReset={handleReset}
         actions={<ActionButtons />}
         table={
-          <ResizableTable tableKey="pages_quality_EnvironmentInspection"             columns={columns}
-            dataSource={filteredData}
-            rowKey="inspection_id"
-            size="small"
-            scroll={{ x: 1400 }}
-            pagination={{ pageSize: 30, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
-          />
+          <div>
+            {rangeWarn && (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginBottom: 12 }}
+                message="查询跨度时间较长，后台需要较长时间执行查询，可能造成页面假死状态"
+              />
+            )}
+            <ResizableTable tableKey="pages_quality_EnvironmentInspection"
+              columns={columns}
+              dataSource={filteredData}
+              rowKey="inspection_id"
+              size="small"
+              scroll={{ x: 1400 }}
+              pagination={{ pageSize: 30, showSizeChanger: true, showTotal: (t: number) => `共 ${t} 条` }}
+            />
+          </div>
         }
       />
       <Drawer
@@ -228,9 +331,10 @@ export default function EnvironmentInspection() {
               </Descriptions.Item>
             </Descriptions>
             <Title level={5}>检验结果明细</Title>
-            <ResizableTable tableKey="pages_quality_EnvironmentInspection"               columns={detailColumns}
+            <ResizableTable tableKey="pages_quality_EnvironmentInspection_detail"
+              columns={detailColumns}
               dataSource={currentItems}
-              rowKey={(r, i) => i}
+              rowKey={(r: any, i: number) => i}
               size="small"
               pagination={false}
             />

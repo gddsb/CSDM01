@@ -1,6 +1,6 @@
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useMemo, useEffect } from 'react'
-import { Table, Tag, Button, Select, Input, Space, Row, Col, Progress, DatePicker, Card, Spin, message } from 'antd'
+import { Table, Tag, Button, Select, Input, Space, Row, Col, Progress, DatePicker, Card, Spin, message, Alert } from 'antd'
 import {
   ExperimentOutlined, ExportOutlined, SearchOutlined, ReloadOutlined,
   CheckCircleOutlined, CloseCircleOutlined, SafetyCertificateOutlined,
@@ -9,6 +9,8 @@ import {
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import { formatDateTime } from '../../utils'
 import api, { extractList } from '../../utils/api'
+import { MONTH_QUICK_OPTIONS, getMonthRange, validateRange, getThisMonth } from '../../utils/monthQuick'
+import dayjs from 'dayjs'
 import {
   microbeInspections as mockMicrobe,
   envInspections as mockEnv,
@@ -33,13 +35,27 @@ export default function QualityReport() {
   const [microbeInspections, setMicrobeInspections] = useState<any[]>([])
   const [envInspections, setEnvInspections] = useState<any[]>([])
   const [complaints, setComplaints] = useState<any[]>([])
+  const [dateRange, setDateRange] = useState<any>(getThisMonth())
+  const [monthQuick, setMonthQuick] = useState<string>('this_month')
+  const [rangeWarn, setRangeWarn] = useState(false)
 
   const loadData = async () => {
     setLoading(true)
+    if (dateRange) {
+      const check = validateRange(dateRange)
+      if (!check.ok) {
+        message.warning(check.msg)
+        setLoading(false)
+        return
+      }
+      setRangeWarn(!!check.warn)
+    } else {
+      setRangeWarn(false)
+    }
     try {
       const [incRes, finRes] = await Promise.all([
-        api.get('/basic/incoming-inspections', { params: { pageSize: 200 } }),
-        api.get('/basic/product-inspections', { params: { pageSize: 200 } }),
+        api.get('/basic/incoming-inspections', { params: { pageSize: 200, ...(dateRange ? { dateStart: dateRange[0].format('YYYY-MM-DD'), dateEnd: dateRange[1].format('YYYY-MM-DD') } : {}) } }),
+        api.get('/basic/product-inspections', { params: { pageSize: 200, ...(dateRange ? { dateStart: dateRange[0].format('YYYY-MM-DD'), dateEnd: dateRange[1].format('YYYY-MM-DD') } : {}) } }),
       ])
       if (incRes.success && incRes.data) {
         setIncomingInspections(extractList(incRes.data).map((i: any) => ({
@@ -70,6 +86,16 @@ export default function QualityReport() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleMonthQuick = (v: string) => {
+    setMonthQuick(v)
+    const range = getMonthRange(v)
+    setDateRange(range)
+  }
+  const handleRangeChange = (v: any) => {
+    setMonthQuick(undefined)
+    setDateRange(v)
   }
 
   useEffect(() => {
@@ -113,7 +139,12 @@ export default function QualityReport() {
     const matchType = typeFilter === 'all' || r.inspection_category === typeFilter
     const matchResult = !resultFilter || r.result === resultFilter
     const matchSearch = !search || (r.inspection_no && r.inspection_no.toLowerCase().includes(search.toLowerCase()))
-    return matchType && matchResult && matchSearch
+    let matchDate = true
+    if (dateRange && dateRange[0] && dateRange[1] && r.inspection_time) {
+      const t = dayjs(r.inspection_time)
+      matchDate = t.isAfter(dateRange[0].subtract(1, 'day')) && t.isBefore(dateRange[1].add(1, 'day'))
+    }
+    return matchType && matchResult && matchSearch && matchDate
   })
 
   // 统计
@@ -246,16 +277,30 @@ export default function QualityReport() {
                 ]}
               />
             </Col>
+            <Col span={4}>
+              <Select
+                placeholder="快速选择月份"
+                allowClear
+                style={{ width: '100%' }}
+                value={monthQuick || undefined}
+                onChange={handleMonthQuick}
+                options={MONTH_QUICK_OPTIONS}
+              />
+            </Col>
             <Col span={6}>
-              <RangePicker style={{ width: '100%' }} />
+              <RangePicker style={{ width: '100%' }} value={dateRange} onChange={handleRangeChange} />
             </Col>
             <Col>
               <Space>
                 <Button type="primary" icon={<SearchOutlined />} onClick={loadData}>查询</Button>
-                <Button icon={<ReloadOutlined />} onClick={() => { setSearch(''); setTypeFilter('all'); setResultFilter(undefined); loadData() }}>重置</Button>
+                <Button icon={<ReloadOutlined />} onClick={() => { setSearch(''); setTypeFilter('all'); setResultFilter(undefined); setMonthQuick('this_month'); setDateRange(getThisMonth()); loadData() }}>重置</Button>
               </Space>
             </Col>
           </Row>
+          {rangeWarn && (
+            <Alert type="warning" showIcon style={{ marginBottom: 12 }}
+              message="查询跨度时间较长，后台需要较长时间执行查询，可能造成页面假死状态" />
+          )}
           <ResizableTable tableKey="pages_report_QualityReport"             columns={columns}
             dataSource={filtered}
             rowKey={(r) => r.inspection_id}

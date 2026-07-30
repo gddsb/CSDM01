@@ -1,6 +1,6 @@
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { Table, Tag, Button, Select, DatePicker, Space, Row, Col, Modal, Form, Input, Drawer, Descriptions, Typography, Popconfirm, Table as AntTable, InputNumber } from 'antd'
+import { Table, Tag, Button, Select, DatePicker, Space, Row, Col, Modal, Form, Input, Drawer, Descriptions, Typography, Popconfirm, Table as AntTable, InputNumber, Alert } from 'antd'
 import { useMessage } from '../../contexts/AppContext'
 import {
   ExperimentOutlined, CheckCircleOutlined, CloseCircleOutlined, PercentageOutlined,
@@ -11,6 +11,7 @@ import dayjs from 'dayjs'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import { formatDateTime } from '../../utils'
 import api from '../../utils/api'
+import { MONTH_QUICK_OPTIONS, getMonthRange, validateRange, getThisMonth } from '../../utils/monthQuick'
 
 const { RangePicker } = DatePicker
 const { Title } = Typography
@@ -43,7 +44,9 @@ export default function ProductInspection() {
   const [reportOrderId, setReportOrderId] = useState<any>(undefined)
   const [resultFilter, setResultFilter] = useState<any>(undefined)
   const [statusFilter, setStatusFilter] = useState<any>(undefined)
-  const [dateRange, setDateRange] = useState<any>(null)
+  const [dateRange, setDateRange] = useState<any>(getThisMonth())
+  const [monthQuick, setMonthQuick] = useState<string>('this_month')
+  const [rangeWarn, setRangeWarn] = useState(false)
   const [standards, setStandards] = useState<any[]>([])
 
   const [addVisible, setAddVisible] = useState(false)
@@ -63,6 +66,17 @@ export default function ProductInspection() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
+    if (dateRange) {
+      const check = validateRange(dateRange)
+      if (!check.ok) {
+        message.warning(check.msg)
+        setLoading(false)
+        return
+      }
+      setRangeWarn(!!check.warn)
+    } else {
+      setRangeWarn(false)
+    }
     try {
       const params: any = { page: pagination.current, page_size: pagination.pageSize }
       if (inspectionType) params.inspection_type = inspectionType
@@ -88,6 +102,16 @@ export default function ProductInspection() {
       setLoading(false)
     }
   }, [pagination.current, pagination.pageSize, inspectionType, reportOrderId, resultFilter, statusFilter, dateRange])
+
+  const handleMonthQuick = (v: string) => {
+    setMonthQuick(v)
+    const range = getMonthRange(v)
+    setDateRange(range)
+  }
+  const handleRangeChange = (v: any) => {
+    setMonthQuick(undefined)
+    setDateRange(v)
+  }
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -478,11 +502,21 @@ export default function ProductInspection() {
                   onChange={setStatusFilter}
                 />
               </Col>
+              <Col span={4}>
+                <Select
+                  placeholder="快速选择月份"
+                  allowClear
+                  style={{ width: '100%' }}
+                  value={monthQuick || undefined}
+                  onChange={handleMonthQuick}
+                  options={MONTH_QUICK_OPTIONS}
+                />
+              </Col>
               <Col span={5}>
                 <RangePicker
                   style={{ width: '100%' }}
                   value={dateRange}
-                  onChange={setDateRange}
+                  onChange={handleRangeChange}
                 />
               </Col>
               <Col span={4}>
@@ -490,11 +524,15 @@ export default function ProductInspection() {
                   <Button type="primary" icon={<SearchOutlined />} onClick={fetchData}>查询</Button>
                   <Button icon={<ReloadOutlined />} onClick={() => {
                     setInspectionType(undefined); setReportOrderId(undefined)
-                    setResultFilter(undefined); setStatusFilter(undefined); setDateRange(null)
+                    setResultFilter(undefined); setStatusFilter(undefined); setMonthQuick('this_month'); setDateRange(getThisMonth())
                   }}>重置</Button>
                 </Space>
               </Col>
             </Row>
+            {rangeWarn && (
+              <Alert type="warning" showIcon style={{ marginBottom: 12 }}
+                message="查询跨度时间较长，后台需要较长时间执行查询，可能造成页面假死状态" />
+            )}
             <ResizableTable
               tableKey="pages_quality_ProductInspection"
               autoWidth

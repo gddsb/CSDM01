@@ -1,6 +1,6 @@
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { Tag, Button, Select, DatePicker, Space, Row, Col, Input, Drawer, Descriptions, Typography, Alert } from 'antd'
+import { Tag, Button, Select, DatePicker, Space, Row, Col, Input, Drawer, Descriptions, Typography, Alert, message } from 'antd'
 import {
   ExperimentOutlined, SafetyCertificateOutlined, WarningOutlined,
   CheckCircleOutlined, SearchOutlined, ReloadOutlined
@@ -8,6 +8,7 @@ import {
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import { formatDateTime } from '../../utils'
 import api from '../../utils/api'
+import { MONTH_QUICK_OPTIONS, getMonthRange, validateRange, getThisMonth } from '../../utils/monthQuick'
 
 const { RangePicker } = DatePicker
 const { Title } = Typography
@@ -56,10 +57,23 @@ export default function MicrobeInspection() {
   const [objectType, setObjectType] = useState<any>(undefined)
   const [resultFilter, setResultFilter] = useState<any>(undefined)
   const [statusFilter, setStatusFilter] = useState<any>(undefined)
-  const [dateRange, setDateRange] = useState<any>(null)
+  const [dateRange, setDateRange] = useState<any>(getThisMonth())
+  const [monthQuick, setMonthQuick] = useState<string>('this_month')
+  const [rangeWarn, setRangeWarn] = useState(false)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
+    if (dateRange) {
+      const check = validateRange(dateRange)
+      if (!check.ok) {
+        message.warning(check.msg)
+        setLoading(false)
+        return
+      }
+      setRangeWarn(!!check.warn)
+    } else {
+      setRangeWarn(false)
+    }
     try {
       const params: any = { page: pagination.current, page_size: pagination.pageSize }
       if (inspectionNo) params.inspection_no = inspectionNo
@@ -136,7 +150,17 @@ export default function MicrobeInspection() {
     setObjectType(undefined)
     setResultFilter(undefined)
     setStatusFilter(undefined)
-    setDateRange(null)
+    setMonthQuick('this_month'); setDateRange(getThisMonth())
+  }
+
+  const handleMonthQuick = (v: string) => {
+    setMonthQuick(v)
+    const range = getMonthRange(v)
+    setDateRange(range)
+  }
+  const handleRangeChange = (v: any) => {
+    setMonthQuick(undefined)
+    setDateRange(v)
   }
 
   const columns = [
@@ -225,12 +249,20 @@ export default function MicrobeInspection() {
       col: { span: 3 },
     },
     {
+      type: 'select' as const,
+      placeholder: '快速选择月份',
+      options: MONTH_QUICK_OPTIONS,
+      value: monthQuick || undefined,
+      onChange: handleMonthQuick,
+      col: { span: 4 },
+    },
+    {
       type: 'rangepicker' as const,
       value: dateRange,
-      onChange: setDateRange,
+      onChange: handleRangeChange,
       col: { span: 5 },
     },
-  ], [inspectionNo, inspectionType, objectType, resultFilter, statusFilter, dateRange])
+  ], [inspectionNo, inspectionType, objectType, resultFilter, statusFilter, dateRange, monthQuick])
 
   return (
     <>
@@ -244,6 +276,14 @@ export default function MicrobeInspection() {
         actions={<ActionButtons />}
         table={
           <div>
+            {rangeWarn && (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginBottom: 12 }}
+                message="查询跨度时间较长，后台需要较长时间执行查询，可能造成页面假死状态"
+              />
+            )}
             <Alert
               type="info"
               showIcon

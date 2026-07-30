@@ -1,17 +1,19 @@
 import ResizableTable from '../../components/ResizableTable'
-import React, { useState } from 'react'
-import { Table, Tag, Button, Drawer, Descriptions, Typography, Timeline } from 'antd'
+import React, { useState, useMemo, useCallback, useEffect } from 'react'
+import { Table, Tag, Button, Drawer, Descriptions, Typography, Timeline, Select, DatePicker, Input, Alert, message } from 'antd'
 import {
   MessageOutlined, ClockCircleOutlined, CheckCircleOutlined,
   MailOutlined, EyeOutlined, SearchOutlined
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import { complaints } from '../../mock/data'
+import { MONTH_QUICK_OPTIONS, getMonthRange, validateRange, getThisMonth } from '../../utils/monthQuick'
+import dayjs from 'dayjs'
 
+const { RangePicker } = DatePicker
 const { Text, Title } = Typography
 
-// 处理记录时间线 mock 数据（按客诉id分组）
-const timelineMap = {
+const timelineMap: Record<string, any[]> = {
   cp1: [
     { stage: '调查', time: '2026-06-25 11:00:00', user: '质量管理员', content: '确认投诉批次 WO20260620001，调取生产及检验记录' },
     { stage: '处理', time: '2026-06-26 09:30:00', user: '质量管理员', content: '对库存批次进行全检，隔离疑似问题批次' },
@@ -26,42 +28,86 @@ const timelineMap = {
   ],
 }
 
-const stageColor = { '调查': 'blue', '处理': 'orange', '原因分析': 'purple', '回复客户': 'cyan', '客户反馈': 'green' }
-const statusColor = { '已关闭': 'success', '处理中': 'processing' }
+const stageColor: Record<string, string> = { '调查': 'blue', '处理': 'orange', '原因分析': 'purple', '回复客户': 'cyan', '客户反馈': 'green' }
+const statusColor: Record<string, string> = { '已关闭': 'success', '处理中': 'processing' }
 
 export default function ComplaintManagement() {
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [current, setCurrent] = useState(null)
+  const [current, setCurrent] = useState<any>(null)
 
-  const processingCount = complaints.filter(c => c.status === '处理中').length
-  const closedCount = complaints.filter(c => c.status === '已关闭').length
-  const replyCount = complaints.filter(c => c.require_reply === 1).length
+  const [complaintNo, setComplaintNo] = useState<any>(undefined)
+  const [customerFilter, setCustomerFilter] = useState<any>(undefined)
+  const [statusFilter, setStatusFilter] = useState<any>(undefined)
+  const [dateRange, setDateRange] = useState<any>(getThisMonth())
+  const [monthQuick, setMonthQuick] = useState<string>('this_month')
+  const [rangeWarn, setRangeWarn] = useState(false)
+
+  const fetchData = useCallback(() => {
+    if (dateRange) {
+      const check = validateRange(dateRange)
+      if (!check.ok) {
+        message.warning(check.msg)
+        return
+      }
+      setRangeWarn(!!check.warn)
+    } else {
+      setRangeWarn(false)
+    }
+  }, [dateRange])
+
+  useEffect(() => { fetchData() }, [fetchData])
+
+  const filteredData = useMemo(() => {
+    return complaints.filter((r: any) => {
+      if (complaintNo && !r.complaint_no?.includes(complaintNo)) return false
+      if (customerFilter && !r.customer_name?.includes(customerFilter)) return false
+      if (statusFilter && r.status !== statusFilter) return false
+      if (dateRange && dateRange[0] && dateRange[1] && r.complaint_time) {
+        const t = dayjs(r.complaint_time)
+        if (!t.isAfter(dateRange[0].subtract(1, 'day')) || !t.isBefore(dateRange[1].add(1, 'day'))) {
+          return false
+        }
+      }
+      return true
+    })
+  }, [complaintNo, customerFilter, statusFilter, dateRange])
+
+  const processingCount = filteredData.filter((c: any) => c.status === '处理中').length
+  const closedCount = filteredData.filter((c: any) => c.status === '已关闭').length
+  const replyCount = filteredData.filter((c: any) => c.require_reply === 1).length
 
   const stats = [
-    { label: '总客诉数', value: complaints.length, icon: <MessageOutlined />, color: '#2196F3' },
+    { label: '总客诉数', value: filteredData.length, icon: <MessageOutlined />, color: '#2196F3' },
     { label: '处理中', value: processingCount, icon: <ClockCircleOutlined />, color: '#FF9800' },
     { label: '已关闭', value: closedCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
     { label: '要求回复数', value: replyCount, icon: <MailOutlined />, color: '#00BCD4' },
   ]
 
-  const filters = [
-    { type: 'input', placeholder: '客诉编号', icon: <SearchOutlined /> },
-    { type: 'input', placeholder: '客户名称' },
-    {
-      type: 'select', placeholder: '状态', options: [
-        { label: '处理中', value: '处理中' },
-        { label: '已关闭', value: '已关闭' },
-      ]
-    },
-  ]
+  const handleMonthQuick = (v: string) => {
+    setMonthQuick(v)
+    const range = getMonthRange(v)
+    setDateRange(range)
+  }
+  const handleRangeChange = (v: any) => {
+    setMonthQuick(undefined)
+    setDateRange(v)
+  }
 
-  const showDetail = (record) => {
+  const handleReset = () => {
+    setComplaintNo(undefined)
+    setCustomerFilter(undefined)
+    setStatusFilter(undefined)
+    setMonthQuick('this_month')
+    setDateRange(getThisMonth())
+  }
+
+  const showDetail = (record: any) => {
     setCurrent(record)
     setDrawerOpen(true)
   }
 
   const columns = [
-    { title: '客诉编号', dataIndex: 'complaint_no', key: 'complaint_no', width: 130, fixed: 'left' },
+    { title: '客诉编号', dataIndex: 'complaint_no', key: 'complaint_no', width: 130, fixed: 'left' as const },
     { title: '来源', dataIndex: 'source', key: 'source', width: 100 },
     { title: '客户名称', dataIndex: 'customer_name', key: 'customer_name', width: 110 },
     { title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 130 },
@@ -71,21 +117,64 @@ export default function ComplaintManagement() {
     { title: '投诉方式', dataIndex: 'complaint_method', key: 'complaint_method', width: 90 },
     {
       title: '要求回复', dataIndex: 'require_reply', key: 'require_reply', width: 90,
-      render: v => v === 1 ? <Tag color="orange">是</Tag> : <Tag>否</Tag>
+      render: (v: any) => v === 1 ? <Tag color="orange">是</Tag> : <Tag>否</Tag>
     },
     { title: '回复截止', dataIndex: 'reply_deadline', key: 'reply_deadline', width: 110 },
     { title: '处理方向', dataIndex: 'handle_direction', key: 'handle_direction', width: 120 },
     {
       title: '状态', dataIndex: 'status', key: 'status', width: 90,
-      render: v => <Tag color={statusColor[v] || 'default'}>{v}</Tag>
+      render: (v: string) => <Tag color={statusColor[v] || 'default'}>{v}</Tag>
     },
     {
-      title: '操作', key: 'action', fixed: 'right',
-      render: (_, record) => (
+      title: '操作', key: 'action', fixed: 'right' as const,
+      render: (_: any, record: any) => (
         <Button type="link" size="small" onClick={() => showDetail(record)}>查看详情</Button>
       )
     },
   ]
+
+  const filters = useMemo(() => [
+    {
+      type: 'input' as const,
+      placeholder: '客诉编号',
+      icon: <SearchOutlined />,
+      value: complaintNo,
+      onChange: (e: any) => setComplaintNo(e?.target?.value !== undefined ? e.target.value : e),
+      col: { span: 4 },
+    },
+    {
+      type: 'input' as const,
+      placeholder: '客户名称',
+      value: customerFilter,
+      onChange: (e: any) => setCustomerFilter(e?.target?.value !== undefined ? e.target.value : e),
+      col: { span: 4 },
+    },
+    {
+      type: 'select' as const,
+      placeholder: '状态',
+      options: [
+        { label: '处理中', value: '处理中' },
+        { label: '已关闭', value: '已关闭' },
+      ],
+      value: statusFilter,
+      onChange: setStatusFilter,
+      col: { span: 3 },
+    },
+    {
+      type: 'select' as const,
+      placeholder: '快速选择月份',
+      options: MONTH_QUICK_OPTIONS,
+      value: monthQuick || undefined,
+      onChange: handleMonthQuick,
+      col: { span: 4 },
+    },
+    {
+      type: 'rangepicker' as const,
+      value: dateRange,
+      onChange: handleRangeChange,
+      col: { span: 5 },
+    },
+  ], [complaintNo, customerFilter, statusFilter, dateRange, monthQuick])
 
   return (
     <>
@@ -94,15 +183,28 @@ export default function ComplaintManagement() {
         breadcrumbs="质量管理 / 客诉管理"
         stats={stats}
         filters={filters}
+        onSearch={fetchData}
+        onReset={handleReset}
         actions={<ActionButtons />}
         table={
-          <ResizableTable tableKey="pages_quality_ComplaintManagement"             columns={columns}
-            dataSource={complaints}
-            rowKey="complaint_id"
-            size="small"
-            scroll={{ x: 1700 }}
-            pagination={{ pageSize: 30, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
-          />
+          <div>
+            {rangeWarn && (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginBottom: 12 }}
+                message="查询跨度时间较长，后台需要较长时间执行查询，可能造成页面假死状态"
+              />
+            )}
+            <ResizableTable tableKey="pages_quality_ComplaintManagement"
+              columns={columns}
+              dataSource={filteredData}
+              rowKey="complaint_id"
+              size="small"
+              scroll={{ x: 1700 }}
+              pagination={{ pageSize: 30, showSizeChanger: true, showTotal: (t: number) => `共 ${t} 条` }}
+            />
+          </div>
         }
       />
       <Drawer
