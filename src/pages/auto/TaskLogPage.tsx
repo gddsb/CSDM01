@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useMessage } from '../../contexts/AppContext'
-import { Table, Button, Select, Tag, Space, Card, Row, Col, Progress, Descriptions, Modal } from 'antd'
-import { ReloadOutlined, EyeOutlined, ClockCircleOutlined } from '@ant-design/icons'
+import { Table, Button, Select, Tag, Space, Card, Row, Col, Progress, Descriptions, Modal, Popconfirm } from 'antd'
+import { ReloadOutlined, EyeOutlined, ClockCircleOutlined, DeleteOutlined } from '@ant-design/icons'
 import api from '../../utils/api'
 import { formatDateTime } from '../../utils'
 
@@ -66,6 +66,16 @@ export default function TaskLogPage() {
     }
   }
 
+  const handleDelete = async (record: SyncTask) => {
+    try {
+      await api.delete(`/auto/sync-tasks/${record.task_biz_id || record.task_id}`)
+      message.success('删除成功')
+      loadData()
+    } catch (err: any) {
+      message.error(err.message || '删除失败')
+    }
+  }
+
   const columns = [
     { title: '任务ID', dataIndex: 'task_biz_id', key: 'task_biz_id', width: 220, render: (v: string) => <code style={{ fontSize: 12 }}>{v}</code> },
     { title: '类型', dataIndex: 'task_type', key: 'task_type', width: 100, render: (t: string) => <Tag>{TYPE_LABELS[t] || t}</Tag> },
@@ -77,8 +87,22 @@ export default function TaskLogPage() {
     { title: '当前步骤', dataIndex: 'current_step', key: 'current_step', ellipsis: true },
     { title: '记录数', dataIndex: 'total_records', key: 'total_records', width: 80, align: 'center' as const },
     { title: '开始时间', dataIndex: 'started_at', key: 'started_at', width: 160, render: (v: string) => v ? formatDateTime(v) : '-' },
-    { title: '操作', key: 'action', width: 80, fixed: 'right' as const, render: (_: any, r: SyncTask) => (
-      <Button type="link" icon={<EyeOutlined />} onClick={() => showDetail(r)}>详情</Button>
+    { title: '操作', key: 'action', width: 140, fixed: 'right' as const, render: (_: any, r: SyncTask) => (
+      <Space>
+        <Button type="link" icon={<EyeOutlined />} onClick={() => showDetail(r)}>详情</Button>
+        {(r.status === 'failed' || r.status === 'completed') && (
+          <Popconfirm
+            title="确定删除此任务日志？"
+            description={r.status === 'failed' ? '删除后无法恢复' : '已完成的任务日志删除后无法恢复'}
+            onConfirm={() => handleDelete(r)}
+            okText="删除"
+            cancelText="取消"
+            okButtonProps={{ danger: true }}
+          >
+            <Button type="link" danger icon={<DeleteOutlined />}>删除</Button>
+          </Popconfirm>
+        )}
+      </Space>
     )},
   ]
 

@@ -92,6 +92,23 @@ export const getSyncTask = async (req, res) => {
   }
 }
 
+export const deleteSyncTask = async (req, res) => {
+  try {
+    const { id } = req.params
+    const task = await SyncTask.findOne({ where: { task_biz_id: id } })
+      || await SyncTask.findByPk(id)
+    if (!task) return fail(res, '任务不存在', ErrorCode.RECORD_NOT_FOUND)
+    if ((task as any).status === 'running' || (task as any).status === 'pending') {
+      return fail(res, '进行中的任务无法删除', ErrorCode.BUSINESS_ERROR)
+    }
+    await task.destroy()
+    return success(res, null, '删除成功')
+  } catch (err) {
+    console.error('删除同步任务失败:', err)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
+  }
+}
+
 // ============ 定时任务 ============
 function generateScheduleId(): string {
   const now = new Date()

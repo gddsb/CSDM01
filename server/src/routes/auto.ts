@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { authRequired, logOperation } from '../middleware/auth.js'
 import {
   listTaskSettings, updateTaskSetting, getU9Orgs, testTaskSetting,
-  listSyncTasks, getSyncTask,
+  listSyncTasks, getSyncTask, deleteSyncTask,
   listScheduledTasks, createScheduledTask, updateScheduledTask, deleteScheduledTask, triggerScheduledTask,
   listArchiveData, handleAlarm,
   dashboardOverview,
@@ -22,6 +22,7 @@ router.get('/u9-orgs', getU9Orgs)
 // 同步任务
 router.get('/sync-tasks', listSyncTasks)
 router.get('/sync-tasks/:id', getSyncTask)
+router.delete('/sync-tasks/:id', logOperation('删除同步任务'), deleteSyncTask)
 
 // 定时任务
 router.get('/scheduled-tasks', listScheduledTasks)
