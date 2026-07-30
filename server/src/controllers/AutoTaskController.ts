@@ -283,3 +283,97 @@ export const dashboardOverview = async (req, res) => {
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
+
+// 趋势数据（最近12小时整点）
+export const dashboardTrend = async (req, res) => {
+  try {
+    const now = new Date()
+    const currentHour = new Date(now)
+    currentHour.setMinutes(0, 0, 0)
+    const startTime = new Date(currentHour)
+    startTime.setHours(startTime.getHours() - 11)
+
+    const rows = await EnvMonitor.findAll({
+      where: { collect_time: { [Op.gte]: startTime, [Op.lte]: now } },
+      order: [['collect_time', 'ASC']],
+      raw: true,
+    })
+
+    const hourMarks: Date[] = []
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(currentHour)
+      d.setHours(d.getHours() - i)
+      hourMarks.push(d)
+    }
+    const times = hourMarks.map((d) => d.toISOString())
+
+    const getArea = (factorName: string): 'workshop' | 'warehouse' | 'other' => {
+      if (factorName.includes('车间')) return 'workshop'
+      if (factorName.includes('仓库')) return 'warehouse'
+      return 'other'
+    }
+
+    type Rec = { time: Date; value: number }
+    const grouped = new Map<string, Rec[]>()
+    for (const r of rows as any[]) {
+      if (!r.factor_name) continue
+      const area = getArea(r.factor_name as string)
+      const factorType = (r as any).factor_name.includes('温度') ? 'temperature'
+        : (r as any).factor_name.includes('湿度') ? 'humidity' : null
+      if (!factorType) continue
+      const key = `${area}|${factorType}`
+      if (!grouped.has(key)) grouped.set(key, [])
+      grouped.get(key)!.push({ time: new Date((r as any).collect_time), value: (r as any).value })
+    }
+
+    function closestValue(recs: any[], target: Date): number | null {
+      if (recs.length === 0) return null
+      let best = recs[0]
+      let bestDiff = Math.abs(best.time.getTime() - target.getTime())
+      for (const r of recs as any) {
+        const diff = Math.abs(r.time.getTime() - target.getTime())
+        if (diff < bestDiff) { best = r; bestDiff = diff }
+      }
+      return best.value
+    }
+
+    const areas = ['workshop', 'warehouse'] as const
+    const areaHourly: Record<string, { temp: (number | null)[]; hum: (number | null)[] }> = {}
+    for (const area of areas) {
+      const tempRecs = (grouped.get(`${area}|temperature`) as any) || []
+      const humRecs = (grouped.get(`${area}|humidity`) as any) || []
+      const temp: (number | null)[] = []
+      const hum: (number | null)[] = []
+      for (const mark of hourMarks) {
+        const tv = closestValue(tempRecs, mark)
+        const hv = closestValue(humRecs, mark)
+        temp.push(tv !== null ? Number(Number(tv).toFixed(2)) : null)
+        hum.push(hv !== null ? Number(Number(hv).toFixed(2)) : null)
+      }
+      areaHourly[area] = { temp, hum }
+    }
+
+    const seriesDefs = [
+      { area: 'workshop', factor: 'temperature', label: '车间温度', color: '#ff4d4f' },
+      { area: 'workshop', factor: 'humidity', label: '车间湿度', color: '#1890ff' },
+      { area: 'warehouse', factor: 'temperature', label: '仓库温度', color: '#fa8c16' },
+      { area: 'warehouse', factor: 'humidity', label: '仓库湿度', color: '#13c2c2' },
+    ]
+
+    const series: { name: string; color: string; data: (number | null)[] }[] = []
+    for (const s of seriesDefs) {
+      const data: (number | null)[] = []
+      const hourly = areaHourly[s.area] as any
+      for (let i = 0; i < 12; i++) {
+        if (s.factor === 'temperature') data.push(hourly.temp[i])
+        else if (s.factor === 'humidity') data.push(hourly.hum[i])
+      }
+      series.push({ name: s.label, color: s.color, data })
+    }
+
+    return success(res, { hours: 12, times, series })
+  } catch (err) {
+    console.error('获取趋势数据失败:', err)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
+  }
+}

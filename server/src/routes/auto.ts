@@ -6,6 +6,7 @@ import {
   listScheduledTasks, createScheduledTask, updateScheduledTask, deleteScheduledTask,
   listArchiveData, handleAlarm,
   dashboardOverview,
+  dashboardTrend,
 } from '../controllers/AutoTaskController.js'
 
 const router = Router()
@@ -33,5 +34,6 @@ router.put('/env-alarm/:id/handle', logOperation('环境报警处理'), handleAl
 
 // 环境监测仪表盘
 router.get('/dashboard/overview', dashboardOverview)
+router.get('/dashboard/trend', dashboardTrend)
 
 export default router

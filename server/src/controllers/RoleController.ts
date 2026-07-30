@@ -150,10 +150,10 @@ const defaultPermissions = [
   { parent_id: 60, perm_name: '环境看板', perm_code: 'bigscreen:environment', type: 'menu', icon: 'EnvironmentOutlined', path: '/bigscreen/environment', sort_order: 4 },
   { parent_id: 60, perm_name: '看板设置', perm_code: 'bigscreen:setting', type: 'menu', icon: 'SettingOutlined', path: '/bigscreen/settings', sort_order: 5 },
   // 自动任务
-  { parent_id: 0, perm_name: '自动任务', perm_code: 'auto', type: 'menu', icon: 'ControlOutlined', path: 'auto', sort_order: 7 },
-  { parent_id: 300, perm_name: '任务设置', perm_code: 'auto:task-setting', type: 'menu', icon: 'SettingOutlined', path: '/auto/task-settings', sort_order: 1 },
-  { parent_id: 300, perm_name: '定时任务', perm_code: 'auto:scheduled-task', type: 'menu', icon: 'CalendarOutlined', path: '/auto/scheduled-tasks', sort_order: 2 },
-  { parent_id: 300, perm_name: '任务日志', perm_code: 'auto:task-log', type: 'menu', icon: 'ClockCircleOutlined', path: '/auto/task-logs', sort_order: 3 },
+  { parent_id: 0, perm_name: '自动任务', perm_code: 'auto', type: 'menu', icon: 'ControlOutlined', path: 'auto', sort_order: 6 },
+  { parent_id: 0, parent_code: 'auto', perm_name: '任务设置', perm_code: 'auto:task-setting', type: 'menu', icon: 'SettingOutlined', path: '/auto/task-settings', sort_order: 1 },
+  { parent_id: 0, parent_code: 'auto', perm_name: '定时任务', perm_code: 'auto:scheduled-task', type: 'menu', icon: 'CalendarOutlined', path: '/auto/scheduled-tasks', sort_order: 2 },
+  { parent_id: 0, parent_code: 'auto', perm_name: '任务日志', perm_code: 'auto:task-log', type: 'menu', icon: 'ClockCircleOutlined', path: '/auto/task-logs', sort_order: 3 },
   // 报表中心
   { parent_id: 0, perm_name: '报表中心', perm_code: 'report', type: 'menu', icon: 'PieChartOutlined', path: 'report', sort_order: 5 },
   { parent_id: 70, perm_name: '生产日报', perm_code: 'report:daily', type: 'menu', icon: 'CalendarOutlined', path: '/report/daily', sort_order: 1 },
@@ -193,22 +193,51 @@ const defaultPermissions = [
 
 export const initDefaultPermissions = async () => {
   const defaultCodes = defaultPermissions.map(p => p.perm_code)
-  for (const perm of defaultPermissions) {
-    const [record, created] = await Permission.findOrCreate({
+  // 先建立 perm_code -> perm_id 的映射
+  const codeToId: Record<string, number> = {}
+  // 先创建所有顶级菜单(parent_id=0)，确保有perm_id后再创建子菜单
+  const topLevels = defaultPermissions.filter(p => p.parent_id === 0 && !(p as any).parent_code)
+  const others = defaultPermissions.filter(p => p.parent_id !== 0 || (p as any).parent_code)
+  for (const perm of topLevels) {
+    const [record] = await Permission.findOrCreate({
       where: { perm_code: perm.perm_code },
       defaults: perm,
     })
+    codeToId[perm.perm_code] = record.perm_id
+  }
+  for (const perm of defaultPermissions) {
+    if (topLevels.includes(perm)) continue
+    let finalPerm = { ...perm } as any
+    // 如果指定了 parent_code，用它查找实际的 parent_id
+    if (finalPerm.parent_code) {
+      const parentId = codeToId[finalPerm.parent_code]
+      if (parentId) {
+        finalPerm.parent_id = parentId
+      } else {
+        // 如果映射里还没有，查一下数据库
+        const parentRec = await Permission.findOne({ where: { perm_code: finalPerm.parent_code } })
+        if (parentRec) {
+          finalPerm.parent_id = parentRec.perm_id
+          codeToId[finalPerm.parent_code] = parentRec.perm_id
+        }
+      }
+    }
+    const [record, created] = await Permission.findOrCreate({
+      where: { perm_code: perm.perm_code },
+      defaults: finalPerm,
+    })
+    codeToId[perm.perm_code] = record.perm_id
     if (!created) {
       await record.update({
-        perm_name: perm.perm_name,
-        parent_id: perm.parent_id,
-        icon: perm.icon,
-        path: perm.path,
-        sort_order: perm.sort_order,
-        type: perm.type,
-        visible: perm.visible !== undefined ? perm.visible : 1,
-        status: perm.status !== undefined ? perm.status : 1,
-        component: perm.component || null,
+        perm_name: finalPerm.perm_name,
+        parent_id: finalPerm.parent_id,
+        icon: finalPerm.icon,
+        path: finalPerm.path,
+        sort_order: finalPerm.sort_order,
+        type: finalPerm.type,
+        visible: finalPerm.visible !== undefined ? finalPerm.visible : 1,
+        status: finalPerm.status !== undefined ? finalPerm.status : 1,
+        component: finalPerm.component || null,
       })
     }
   }
