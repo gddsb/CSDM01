@@ -4,6 +4,8 @@ import {
   EnvMonitor, EnvAlarm, WeatherInfo,
 } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
+import { encryptParamsObj, decryptParamsObj } from '../utils/crypto.js'
+import { fetchU9Orgs, DEFAULT_U9_CONFIG } from '../services/u9Service.js'
 
 // ============ 任务设置 ============
 export const listTaskSettings = async (req, res) => {
@@ -27,12 +29,34 @@ export const updateTaskSetting = async (req, res) => {
     if (source_url !== undefined) setting.source_url = source_url
     if (field_count !== undefined) setting.field_count = field_count
     if (is_active !== undefined) setting.is_active = is_active
-    if (params !== undefined) setting.params = params
+    if (params !== undefined) {
+      const existingParams = setting.params || {}
+      const newParams: Record<string, any> = { ...existingParams }
+      for (const [k, v] of Object.entries(params as Record<string, any>)) {
+        if (v !== undefined && v !== '') {
+          newParams[k] = v
+        }
+      }
+      setting.params = encryptParamsObj(newParams)
+    }
     await setting.save()
     return success(res, setting, '修改成功')
   } catch (err) {
     console.error('更新任务设置失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
+  }
+}
+
+export const getU9Orgs = async (req, res) => {
+  try {
+    const { username } = req.query
+    if (!username) return fail(res, '请输入用户名', ErrorCode.PARAM_INVALID)
+    const cfg = { ...DEFAULT_U9_CONFIG, username: username as string }
+    const orgs = await fetchU9Orgs(cfg)
+    return success(res, orgs, '获取成功', orgs.length)
+  } catch (err: any) {
+    console.error('获取U9组织列表失败:', err)
+    return fail(res, err.message || '获取组织列表失败', ErrorCode.SYSTEM_ERROR)
   }
 }
 
@@ -95,6 +119,8 @@ export const createScheduledTask = async (req, res) => {
   try {
     const { name, task_type, exec_mode, config, is_enabled } = req.body
     if (!name || !task_type) return fail(res, '名称和任务类型不能为空')
+    const existing = await ScheduledTask.findOne({ where: { task_type, is_enabled: 1 } })
+    if (existing) return fail(res, `该任务类型「${task_type}」已存在启用的定时任务，不能重复添加`, ErrorCode.PARAM_INVALID)
     const task = await ScheduledTask.create({
       schedule_biz_id: generateScheduleId(),
       name,

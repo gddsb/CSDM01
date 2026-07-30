@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { authRequired, logOperation } from '../middleware/auth.js'
 import {
-  listTaskSettings, updateTaskSetting,
+  listTaskSettings, updateTaskSetting, getU9Orgs,
   listSyncTasks, getSyncTask,
   listScheduledTasks, createScheduledTask, updateScheduledTask, deleteScheduledTask,
   listArchiveData, handleAlarm,
@@ -15,6 +15,7 @@ router.use(authRequired)
 // 任务设置
 router.get('/task-settings', listTaskSettings)
 router.put('/task-settings/:taskType', logOperation('自动任务设置'), updateTaskSetting)
+router.get('/u9-orgs', getU9Orgs)
 
 // 同步任务
 router.get('/sync-tasks', listSyncTasks)

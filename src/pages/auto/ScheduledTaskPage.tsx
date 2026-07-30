@@ -274,7 +274,12 @@ export default function ScheduledTaskPage() {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item label="任务类型" name="task_type" rules={[{ required: true }]}>
-                <Select options={Object.entries(TYPE_LABELS).map(([k, v]) => ({ value: k, label: v }))} />
+                <Select
+                  options={Object.entries(TYPE_LABELS).map(([k, v]) => {
+                    const used = !editing && data.some(d => d.task_type === k && d.is_enabled === 1)
+                    return { value: k, label: v, disabled: used }
+                  })}
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
