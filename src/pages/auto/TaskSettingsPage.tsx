@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useMessage } from '../../contexts/AppContext'
-import { Table, Button, Switch, Form, Input, Modal, Space, Tag, Card, Row, Col, Descriptions, Tooltip } from 'antd'
-import { EditOutlined, ReloadOutlined, SettingOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
+import { Table, Button, Switch, Form, Input, Modal, Space, Tag, Card, Row, Col, Tooltip } from 'antd'
+import { EditOutlined, ReloadOutlined, SettingOutlined, CheckCircleOutlined, CloseCircleOutlined, DatabaseOutlined, TeamOutlined, DashboardOutlined, EnvironmentOutlined } from '@ant-design/icons'
 import api from '../../utils/api'
 import { formatDateTime } from '../../utils'
 
@@ -23,6 +23,29 @@ const TYPE_LABELS: Record<string, string> = {
   customers: '客户数据',
   env_monitor: '环境监测',
   weather: '气象信息',
+}
+
+const TYPE_ICONS: Record<string, React.ReactNode> = {
+  items: <DatabaseOutlined style={{ color: '#1677ff', fontSize: 18 }} />,
+  customers: <TeamOutlined style={{ color: '#52c41a', fontSize: 18 }} />,
+  env_monitor: <DashboardOutlined style={{ color: '#722ed1', fontSize: 18 }} />,
+  weather: <EnvironmentOutlined style={{ color: '#13c2c2', fontSize: 18 }} />,
+}
+
+const PARAM_FIELDS: Record<string, { key: string; label: string; type: 'text' | 'password'; placeholder?: string }[]> = {
+  items: [
+    { key: 'loginName', label: 'U9登录用户名', type: 'text', placeholder: 'U9 ERP登录账号' },
+    { key: 'password', label: 'U9登录密码', type: 'password', placeholder: 'U9 ERP登录密码' },
+  ],
+  customers: [
+    { key: 'loginName', label: 'U9登录用户名', type: 'text', placeholder: 'U9 ERP登录账号' },
+    { key: 'password', label: 'U9登录密码', type: 'password', placeholder: 'U9 ERP登录密码' },
+  ],
+  env_monitor: [
+    { key: 'loginName', label: '平台登录用户名', type: 'text', placeholder: '0531yun登录账号' },
+    { key: 'password', label: '平台登录密码', type: 'password', placeholder: '0531yun登录密码' },
+  ],
+  weather: [],
 }
 
 export default function TaskSettingsPage() {
@@ -49,26 +72,36 @@ export default function TaskSettingsPage() {
 
   const handleEdit = (record: TaskSetting) => {
     setEditing(record)
-    form.setFieldsValue({
+    const vals: any = {
       name: record.name,
       description: record.description,
       source_url: record.source_url,
-      field_count: record.field_count,
-      is_active: record.is_active === 1,
-      params: record.params ? JSON.stringify(record.params, null, 2) : '',
-    })
+    }
+    const paramFields = PARAM_FIELDS[record.task_type] || []
+    for (const f of paramFields) {
+      vals[f.key] = record.params?.[f.key] || ''
+    }
+    form.setFieldsValue(vals)
     setEditOpen(true)
   }
 
   const handleSave = async () => {
     try {
       const values = await form.validateFields()
-      const payload = { ...values, is_active: values.is_active ? 1 : 0 }
-      if (values.params) {
-        try { payload.params = JSON.parse(values.params) } catch { payload.params = null }
-      } else {
-        payload.params = null
+      const payload: any = {
+        name: values.name,
+        description: values.description,
+        source_url: values.source_url,
+        is_active: editing!.is_active,
       }
+      const paramFields = PARAM_FIELDS[editing!.task_type] || []
+      const params: Record<string, any> = {}
+      for (const f of paramFields) {
+        if (values[f.key] !== undefined && values[f.key] !== '') {
+          params[f.key] = values[f.key]
+        }
+      }
+      payload.params = Object.keys(params).length > 0 ? params : null
       await api.put(`/auto/task-settings/${editing!.task_type}`, payload)
       message.success('保存成功')
       setEditOpen(false)
@@ -78,15 +111,42 @@ export default function TaskSettingsPage() {
     }
   }
 
+  const handleToggleActive = async (record: TaskSetting) => {
+    try {
+      await api.put(`/auto/task-settings/${record.task_type}`, { is_active: record.is_active === 1 ? 0 : 1 })
+      message.success('操作成功')
+      loadData()
+    } catch (err: any) {
+      message.error(err.message || '操作失败')
+    }
+  }
+
+  const paramFields = editing ? (PARAM_FIELDS[editing.task_type] || []) : []
+
   const columns = [
-    { title: '任务类型', dataIndex: 'task_type', key: 'task_type', width: 100, render: (t: string) => <Tag color="blue">{TYPE_LABELS[t] || t}</Tag> },
+    { title: '任务类型', dataIndex: 'task_type', key: 'task_type', width: 120, render: (t: string) => (
+      <Space>
+        {TYPE_ICONS[t]}
+        <Tag color="blue">{TYPE_LABELS[t] || t}</Tag>
+      </Space>
+    )},
     { title: '任务名称', dataIndex: 'name', key: 'name', width: 150 },
     { title: '描述', dataIndex: 'description', key: 'description', ellipsis: true },
     { title: '数据源', dataIndex: 'source_url', key: 'source_url', width: 200, ellipsis: true, render: (v: string) => v ? <Tooltip title={v}>{v}</Tooltip> : '-' },
-    { title: '字段数', dataIndex: 'field_count', key: 'field_count', width: 80, align: 'center' as const },
-    { title: '状态', dataIndex: 'is_active', key: 'is_active', width: 100, align: 'center' as const, render: (v: number) => v === 1 ? <Tag icon={<CheckCircleOutlined />} color="success">启用</Tag> : <Tag icon={<CloseCircleOutlined />} color="default">停用</Tag> },
+    { title: '参数配置', key: 'params', width: 110, render: (_: any, r: TaskSetting) => {
+      const fields = PARAM_FIELDS[r.task_type] || []
+      const configured = fields.filter(f => r.params?.[f.key]).length
+      return fields.length > 0 ? (
+        <Tag color={configured === fields.length ? 'success' : configured > 0 ? 'orange' : 'default'}>
+          {configured}/{fields.length} 已配置
+        </Tag>
+      ) : <Tag>无需配置</Tag>
+    }},
+    { title: '状态', dataIndex: 'is_active', key: 'is_active', width: 80, align: 'center' as const, render: (v: number, r: TaskSetting) => (
+      <Switch checked={v === 1} onChange={() => handleToggleActive(r)} size="small" />
+    )},
     { title: '更新时间', dataIndex: 'updated_at', key: 'updated_at', width: 160, render: (v: string) => formatDateTime(v) },
-    { title: '操作', key: 'action', width: 100, fixed: 'right' as const, render: (_: any, record: TaskSetting) => (
+    { title: '操作', key: 'action', width: 80, fixed: 'right' as const, render: (_: any, record: TaskSetting) => (
       <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
     )},
   ]
@@ -113,7 +173,7 @@ export default function TaskSettingsPage() {
         dataSource={data}
         loading={loading}
         pagination={false}
-        scroll={{ x: 1000 }}
+        scroll={{ x: 1100 }}
       />
       <Modal
         title={`编辑 - ${editing?.name || ''}`}
@@ -122,7 +182,7 @@ export default function TaskSettingsPage() {
         onCancel={() => setEditOpen(false)}
         okText="保存"
         cancelText="取消"
-        width={600}
+        width={520}
         destroyOnClose
       >
         <Form form={form} layout="vertical" preserve={false}>
@@ -132,24 +192,27 @@ export default function TaskSettingsPage() {
           <Form.Item label="描述" name="description">
             <Input.TextArea rows={2} />
           </Form.Item>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item label="数据源URL" name="source_url">
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="字段数量" name="field_count">
-                <Input type="number" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Form.Item label="执行参数 (JSON)" name="params">
-            <Input.TextArea rows={4} placeholder='{"username": "...", "password": "..."}' />
+          <Form.Item label="数据源URL" name="source_url">
+            <Input />
           </Form.Item>
-          <Form.Item label="启用状态" name="is_active" valuePropName="checked">
-            <Switch />
-          </Form.Item>
+
+          {paramFields.length > 0 && (
+            <>
+              <div style={{ marginTop: 8, marginBottom: 12, padding: '8px 12px', background: '#fafafa', borderRadius: 6 }}>
+                <span style={{ fontWeight: 600 }}>执行参数</span>
+                <span style={{ color: '#999', marginLeft: 8, fontSize: 12 }}>密码将加密存储</span>
+              </div>
+              {paramFields.map((f) => (
+                <Form.Item key={f.key} name={f.key} label={f.label}>
+                  {f.type === 'password' ? (
+                    <Input.Password placeholder={f.placeholder || ''} visibilityToggle />
+                  ) : (
+                    <Input placeholder={f.placeholder || ''} />
+                  )}
+                </Form.Item>
+              ))}
+            </>
+          )}
         </Form>
       </Modal>
     </div>
