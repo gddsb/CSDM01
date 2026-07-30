@@ -1,6 +1,6 @@
 import sqlite3 from 'sqlite3'
-import { open } from 'sqlite'
 import mysql from 'mysql2/promise'
+import { promisify } from 'util'
 import 'dotenv/config'
 
 const SQLITE_PATH = process.env.SQLITE_PATH || '/tmp/u9-orig/u9-data-sync/data/u9tasks.db'
@@ -8,25 +8,25 @@ const SQLITE_PATH = process.env.SQLITE_PATH || '/tmp/u9-orig/u9-data-sync/data/u
 async function main() {
   console.log('=== 开始数据迁移 (SQLite → MySQL) ===')
 
-  const sqlite = await open({ filename: SQLITE_PATH, driver: sqlite3.Database })
+  const sqliteDb = new sqlite3.Database(SQLITE_PATH)
+  const all = promisify(sqliteDb.all.bind(sqliteDb))
+
   const mysqlConn = await mysql.createConnection({
     host: process.env.DB_HOST,
     port: Number(process.env.DB_PORT || 3306),
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    namedPlaceholders: true,
   })
-  mysqlConn.config.namedPlaceholders = true
 
   let totalMigrated = 0
 
   // ---- 1. u9_task_settings → u9_task_setting ----
   console.log('\n[1/7] 迁移任务设置...')
-  const settings = await sqlite.all('SELECT * FROM u9_task_settings')
+  const settings = await all('SELECT * FROM u9_task_settings') as any[]
   console.log(`  SQLite 共 ${settings.length} 条`)
   for (const s of settings) {
-    const [existing] = await mysqlConn.execute(
+    const [existing]: any = await mysqlConn.execute(
       'SELECT setting_id FROM u9_task_setting WHERE task_type = ?',
       [s.taskType]
     )
@@ -45,10 +45,10 @@ async function main() {
 
   // ---- 2. u9_scheduled_tasks → u9_scheduled_task ----
   console.log('\n[2/7] 迁移定时任务...')
-  const scheds = await sqlite.all('SELECT * FROM u9_scheduled_tasks')
+  const scheds = await all('SELECT * FROM u9_scheduled_tasks') as any[]
   console.log(`  SQLite 共 ${scheds.length} 条`)
   for (const s of scheds) {
-    const [existing] = await mysqlConn.execute(
+    const [existing]: any = await mysqlConn.execute(
       'SELECT schedule_id FROM u9_scheduled_task WHERE schedule_biz_id = ?',
       [s.scheduleId]
     )
@@ -67,10 +67,10 @@ async function main() {
 
   // ---- 3. u9_tasks → u9_sync_task ----
   console.log('\n[3/7] 迁移同步任务...')
-  const tasks = await sqlite.all('SELECT * FROM u9_tasks')
+  const tasks = await all('SELECT * FROM u9_tasks') as any[]
   console.log(`  SQLite 共 ${tasks.length} 条`)
   for (const t of tasks) {
-    const [existing] = await mysqlConn.execute(
+    const [existing]: any = await mysqlConn.execute(
       'SELECT task_id FROM u9_sync_task WHERE task_biz_id = ?',
       [t.taskId]
     )
@@ -89,11 +89,11 @@ async function main() {
 
   // ---- 4. u9_items → u9_item ----
   console.log('\n[4/7] 迁移料品数据...')
-  const items = await sqlite.all('SELECT * FROM u9_items')
+  const items = await all('SELECT * FROM u9_items') as any[]
   console.log(`  SQLite 共 ${items.length} 条`)
   let itemMigrated = 0, itemSkipped = 0
   for (const it of items) {
-    const [existing] = await mysqlConn.execute(
+    const [existing]: any = await mysqlConn.execute(
       'SELECT item_id FROM u9_item WHERE item_code = ?',
       [it.itemCode]
     )
@@ -113,11 +113,11 @@ async function main() {
 
   // ---- 5. u9_customers → u9_customer ----
   console.log('\n[5/7] 迁移客户数据...')
-  const customers = await sqlite.all('SELECT * FROM u9_customers')
+  const customers = await all('SELECT * FROM u9_customers') as any[]
   console.log(`  SQLite 共 ${customers.length} 条`)
   let custMigrated = 0, custSkipped = 0
   for (const c of customers) {
-    const [existing] = await mysqlConn.execute(
+    const [existing]: any = await mysqlConn.execute(
       'SELECT customer_id FROM u9_customer WHERE customer_code = ?',
       [c.customerCode]
     )
@@ -137,11 +137,11 @@ async function main() {
 
   // ---- 6. env_monitor_data → env_monitor_data ----
   console.log('\n[6/7] 迁移环境监测数据...')
-  const monitors = await sqlite.all('SELECT * FROM env_monitor_data')
+  const monitors = await all('SELECT * FROM env_monitor_data') as any[]
   console.log(`  SQLite 共 ${monitors.length} 条`)
   let monMigrated = 0, monSkipped = 0
   for (const m of monitors) {
-    const [existing] = await mysqlConn.execute(
+    const [existing]: any = await mysqlConn.execute(
       'SELECT monitor_id FROM env_monitor_data WHERE factor_id = ? AND collect_time = ?',
       [m.factorId, m.collectTime]
     )
@@ -161,11 +161,11 @@ async function main() {
 
   // ---- 7. env_alarm_records → env_alarm_record ----
   console.log('\n[7/7] 迁移环境报警记录...')
-  const alarms = await sqlite.all('SELECT * FROM env_alarm_records')
+  const alarms = await all('SELECT * FROM env_alarm_records') as any[]
   console.log(`  SQLite 共 ${alarms.length} 条`)
   let alarmMigrated = 0, alarmSkipped = 0
   for (const a of alarms) {
-    const [existing] = await mysqlConn.execute(
+    const [existing]: any = await mysqlConn.execute(
       'SELECT alarm_id FROM env_alarm_record WHERE factor_id = ? AND alarm_time = ?',
       [a.factorId, a.alarmTime]
     )
@@ -183,7 +183,7 @@ async function main() {
   console.log(`  ✓ 迁移: ${alarmMigrated} 条, 跳过(已存在): ${alarmSkipped} 条`)
   totalMigrated += alarmMigrated
 
-  await sqlite.close()
+  sqliteDb.close()
   await mysqlConn.end()
 
   console.log(`\n=== 迁移完成！共新迁移 ${totalMigrated} 条记录 ===`)
