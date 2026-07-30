@@ -1014,7 +1014,15 @@ milk-can-mes/
 │   │   │   ├── jwt.ts                # JWT 签发与验证
 │   │   │   ├── response.ts           # 统一响应格式
 │   │   │   ├── sequence.ts           # 序号生成器
-│   │   │   └── statusMap.ts          # 状态码映射
+│   │   │   ├── statusMap.ts          # 状态码映射
+│   │   │   └── crypto.ts             # 加解密工具（AES/MD5/参数加密）
+│   │   ├── services/                 # 业务服务层
+│   │   │   ├── taskExecutor.ts       # 统一任务执行器（调度+测试共用）
+│   │   │   ├── taskScheduler.ts      # 定时任务调度服务
+│   │   │   ├── weatherCollector.ts   # 气象信息采集服务（中国天气网+备用站点）
+│   │   │   ├── envCollector.ts       # 环境监测采集服务（0531yun 物联网平台）
+│   │   │   ├── u9Login.ts            # U9 ERP 登录认证服务（MD5+AES）
+│   │   │   └── u9Exporter.ts         # U9 料品/客户数据导出服务
 │   │   ├── app.ts                    # 应用入口（Express 实例化）
 │   │   ├── seed.ts                   # 数据初始化脚本
 │   │   └── migrate.ts                # 数据库列迁移
@@ -1415,7 +1423,7 @@ npm run seed
 在 `server/.env` 文件中可配置以下环境变量：
 
 ```env
-# 数据库配置
+# ==================== 数据库配置 ====================
 DB_DIALECT=sqlite      # 数据库类型：sqlite / mysql
 DB_HOST=localhost      # MySQL 主机
 DB_PORT=3306           # MySQL 端口
@@ -1423,13 +1431,29 @@ DB_NAME=mes            # 数据库名
 DB_USER=root           # MySQL 用户名
 DB_PASSWORD=           # MySQL 密码
 
-# 服务配置
+# ==================== 服务配置 ====================
 PORT=3001              # 服务端口
 
-# JWT 配置
+# ==================== JWT 配置 ====================
 JWT_SECRET=your-secret-key
 JWT_EXPIRES_IN=7d
+
+# ==================== 环境监测采集配置（0531yun 平台） ====================
+ENV_LOGIN_NAME=13800138000    # 0531yun 平台登录账号
+ENV_PASSWORD=123456            # 0531yun 平台登录密码
+
+# ==================== U9 ERP 系统配置 ====================
+U9_BASE_URL=http://120.79.24.179/U9/mvc       # U9 系统基础地址
+U9_ERP_URL=http://120.79.24.179/U9/erp/display.aspx  # U9 ERP 页面地址
+U9_ENTERPRISE_ID=01          # 企业ID
+U9_ENTERPRISE_NAME=大满包装   # 企业名称
+U9_USERNAME=20021            # U9 登录用户名
+U9_PASSWORD=654321           # U9 登录密码
+U9_ORG_CODE=160              # 组织编码
+U9_AES_KEY=dad52b5719e3202e32a6619e14d0ccec   # AES 加密密钥（16进制）
 ```
+
+> **采集任务配置优先级**：任务设置表（`u9_task_setting`）中的加密参数 > 环境变量 > 代码默认值。敏感参数（账号、密码、密钥）在任务设置表中使用 AES 加密存储。
 
 ---
 
@@ -1613,7 +1637,9 @@ JWT_EXPIRES_IN=7d
 |------|------|------|
 | GET/POST/PUT/DELETE | `/auto/task-settings` | 自动任务设置 |
 | GET | `/auto/task-settings/u9-orgs` | 获取U9组织列表 |
+| **POST** | **`/auto/task/test/:taskType`** | **触发真实采集测试（items/customers/env_monitor/weather）** |
 | GET/POST/PUT/DELETE | `/auto/scheduled-tasks` | 定时任务管理 |
+| POST | `/auto/scheduled-tasks/:id/trigger` | 立即触发定时任务（执行真实采集） |
 | GET | `/auto/task-logs` | 任务执行日志 |
 | GET | `/auto/sync-tasks` | 同步任务列表 |
 | GET | `/auto/sync-tasks/:id` | 同步任务详情 |
@@ -1621,6 +1647,8 @@ JWT_EXPIRES_IN=7d
 | PUT | `/auto/env-alarm/:id/handle` | 环境报警处理 |
 | GET | `/auto/dashboard/overview` | 环境看板概览数据 |
 | GET | `/auto/dashboard/trend` | 环境看板趋势数据（最近12小时整点聚合） |
+
+> **真实采集任务类型**：`items`（U9料品数据）、`customers`（U9客户数据）、`env_monitor`（环境监测数据）、`weather`（气象信息）。所有采集任务均调用真实外部接口，执行进度实时更新到同步任务日志表。
 
 ### 通用上传接口
 
