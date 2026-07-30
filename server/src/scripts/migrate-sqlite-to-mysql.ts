@@ -85,7 +85,7 @@ async function main() {
     const [existing]: any = await mysqlConn.execute('SELECT item_id FROM u9_item WHERE item_code = ?', [it.itemCode])
     if (existing.length > 0) { itemSkipped++; continue }
     await mysqlConn.execute(
-      `INSERT INTO u9_item (task_id, main_category_code, category_name, item_code, item_name, specification, unit_name, film_no, cutting_size, print_process, color_info, blank_diameter, material_thickness, material_width, material_height, scrap_weight, stock_unit_weight, stock_unit_volume, weight_unit, volume_unit, inventory_category, unit_code, is_active, effective_date, expiration_date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO u9_item SET task_id=?, main_category_code=?, category_name=?, item_code=?, item_name=?, specification=?, unit_name=?, film_no=?, cutting_size=?, print_process=?, color_info=?, blank_diameter=?, material_thickness=?, material_width=?, material_height=?, scrap_weight=?, stock_unit_weight=?, stock_unit_volume=?, weight_unit=?, volume_unit=?, inventory_category=?, unit_code=?, is_active=?, effective_date=?, expiration_date=?, created_at=?, updated_at=?`,
       [it.taskId, it.mainCategoryCode, it.categoryName, it.itemCode, it.itemName, it.specification, it.unitName, it.filmNo, it.cuttingSize, it.printProcess, it.colorInfo, it.blankDiameter, it.materialThickness, it.materialWidth, it.materialHeight, it.scrapWeight, it.stockUnitWeight, it.stockUnitVolume, it.weightUnit, it.volumeUnit, it.inventoryCategory, it.unitCode, it.isActive, it.effectiveDate, it.expirationDate, cleanDate(it.createdAt), cleanDate(it.updatedAt)]
     )
     itemMigrated++
