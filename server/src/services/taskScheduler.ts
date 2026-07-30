@@ -3,6 +3,53 @@ import { ScheduledTask, SyncTask } from '../models/index.js'
 
 function pad(n: number) { return String(n).padStart(2, '0') }
 
+const TEST_STEPS_MAP: Record<string, { message: string; percent: number }[]> = {
+  items: [
+    { message: '连接U9系统', percent: 15 },
+    { message: '获取料品列表', percent: 35 },
+    { message: '解析料品数据', percent: 55 },
+    { message: '同步到本地数据库', percent: 80 },
+    { message: '同步完成', percent: 100 },
+  ],
+  customers: [
+    { message: '连接U9系统', percent: 15 },
+    { message: '获取客户列表', percent: 35 },
+    { message: '解析客户数据', percent: 55 },
+    { message: '同步到本地数据库', percent: 80 },
+    { message: '同步完成', percent: 100 },
+  ],
+  env_monitor: [
+    { message: '连接环境监测设备', percent: 20 },
+    { message: '采集温湿度数据', percent: 50 },
+    { message: '检测异常阈值', percent: 75 },
+    { message: '数据入库完成', percent: 100 },
+  ],
+  weather: [
+    { message: '连接气象数据源', percent: 20 },
+    { message: '获取实时气象信息', percent: 50 },
+    { message: '解析气象数据', percent: 75 },
+    { message: '数据入库完成', percent: 100 },
+  ],
+}
+
+export async function updateTaskProgress(taskId: number, step: { message: string; percent: number }, status: string = 'running') {
+  try {
+    const task = await SyncTask.findByPk(taskId) as any
+    if (!task) return
+    const steps = Array.isArray(task.steps) ? [...task.steps] : []
+    steps.push({ time: new Date().toISOString(), message: step.message, percent: step.percent })
+    task.progress = step.percent
+    task.current_step = step.message
+    task.steps = steps
+    task.status = status
+    if (status === 'completed') task.finished_at = new Date()
+    if (status === 'failed') task.finished_at = new Date()
+    await task.save()
+  } catch (err) {
+    console.error('更新任务进度失败:', err)
+  }
+}
+
 export function calcNextRunAt(execMode: string, config: any, from: Date = new Date()): Date | null {
   if (!config) return null
   const base = new Date(from.getTime() + 1000)
@@ -59,6 +106,8 @@ export async function triggerScheduledTaskById(taskId: number) {
     const task = await ScheduledTask.findByPk(taskId) as any
     if (!task) return
     const type = task.task_type as string
+    const execMode = task.exec_mode as string
+    const cfg = task.config
 
     const activeSame = await SyncTask.findOne({
       where: { task_type: type, status: { [Op.in]: ['pending', 'running'] } },
@@ -70,7 +119,7 @@ export async function triggerScheduledTaskById(taskId: number) {
     }
 
     const taskBizId = generateTaskBizId(type)
-    await SyncTask.create({
+    const syncTask = await SyncTask.create({
       task_biz_id: taskBizId,
       task_type: type,
       status: 'running',
@@ -79,15 +128,27 @@ export async function triggerScheduledTaskById(taskId: number) {
       steps: [{ time: new Date().toISOString(), message: '定时触发，任务已启动', percent: 5 }],
       started_at: new Date(),
     })
+    const syncTaskId = (syncTask as any).task_id
 
-    task.last_run_at = new Date()
-    task.last_run_result = '定时触发成功'
-    const nextAt = calcNextRunAt(task.exec_mode, task.config)
-    if (nextAt) task.next_run_at = nextAt
-    else if (task.exec_mode === 'once') task.is_enabled = 0
-    await task.save()
+    const nextAt = calcNextRunAt(execMode, cfg)
+    const updateData: any = {
+      last_run_at: new Date(),
+      last_run_result: '定时触发成功',
+    }
+    if (nextAt) updateData.next_run_at = nextAt
+    else if (execMode === 'once') updateData.is_enabled = 0
+    await ScheduledTask.update(updateData, { where: { schedule_id: taskId } })
 
     console.log(`[Scheduler] 已触发任务 ${task.schedule_biz_id} (${type}) -> ${taskBizId}`)
+
+    const steps = TEST_STEPS_MAP[type] || TEST_STEPS_MAP.items
+    ;(async () => {
+      for (let i = 0; i < steps.length; i++) {
+        const delay = 600 + Math.random() * 800
+        await new Promise(r => setTimeout(r, delay))
+        await updateTaskProgress(syncTaskId, steps[i], i === steps.length - 1 ? 'completed' : 'running')
+      }
+    })()
   } catch (err) {
     console.error('[Scheduler] 触发任务失败:', err)
   }
