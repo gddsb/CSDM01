@@ -181,11 +181,9 @@
 
 | 模块 | 路径 | 功能说明 |
 |------|------|---------|
-| 任务设置 | `/auto/task-settings` | 自动任务配置管理，支持任务类型、名称、数据源URL、执行参数、启用/停用等配置 |
-| 同步任务日志 | `/auto/sync-tasks` | 数据同步任务执行日志查看，展示任务状态、进度、步骤日志、执行结果及错误信息 |
+| 任务设置 | `/auto/task-settings` | 自动任务配置管理，支持任务类型、名称、数据源URL、执行参数、启用/停用等配置；内置料品数据同步、客户数据同步、环境监测采集、气象信息抓取4个任务 |
 | 定时任务 | `/auto/scheduled-tasks` | 定时任务计划管理，支持周期性/定时/单次任务的调度配置、执行时间设置及上次执行结果查看 |
-| 数据档案 | `/auto/data-archive` | U9料品档案、客户档案浏览，支持搜索筛选、分页查看同步数据 |
-| 环境监测仪表盘 | `/auto/env-dashboard` | 车间环境监测数据可视化，展示温湿度等实时采集数据、历史趋势及报警记录 |
+| 任务日志 | `/auto/task-logs` | 任务执行日志查看，展示任务状态、进度、步骤日志、执行结果及错误信息 |
 
 **自动任务模块包含8张数据表：**
 
@@ -207,6 +205,7 @@
 | 生产实时看板 | `/bigscreen/production` | 工单进度、产线状态、产出统计、环境数据 |
 | 质量分析看板 | `/bigscreen/quality` | 质量趋势、不良分析、检验合格率 |
 | 管理驾驶舱 | `/bigscreen/management` | 综合数据展示、关键指标概览 |
+| 环境看板 | `/bigscreen/environment` | 车间环境监测数据可视化，展示温湿度等实时采集数据、监测因子统计及报警记录 |
 
 > 大屏页面为独立全屏页面，不使用主布局，支持 F11 全屏展示。
 
@@ -843,10 +842,8 @@ milk-can-mes/
 │   ├── pages/                        # PC端页面组件
 │   │   ├── auto/                     # 自动任务模块
 │   │   │   ├── TaskSettingsPage.tsx
-│   │   │   ├── SyncTaskPage.tsx
 │   │   │   ├── ScheduledTaskPage.tsx
-│   │   │   ├── DataArchivePage.tsx
-│   │   │   └── EnvDashboardPage.tsx
+│   │   │   └── TaskLogPage.tsx
 │   │   ├── basic/                    # 基础数据模块
 │   │   │   ├── MaterialManagement.tsx
 │   │   │   ├── CustomerManagement.tsx
@@ -859,7 +856,8 @@ milk-can-mes/
 │   │   ├── bigscreen/                # 数据大屏模块
 │   │   │   ├── ProductionBigScreen.tsx
 │   │   │   ├── QualityBigScreen.tsx
-│   │   │   └── ManagementBigScreen.tsx
+│   │   │   ├── ManagementBigScreen.tsx
+│   │   │   └── EnvironmentBigScreen.tsx
 │   │   ├── device/                   # 设备管理模块
 │   │   │   ├── DeviceManagement.tsx
 │   │   │   ├── CheckRecord.tsx

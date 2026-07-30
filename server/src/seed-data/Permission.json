@@ -442,7 +442,7 @@
     "created_at": "2026-07-09T06:53:38.000Z"
   },
   {
-    "perm_id": 61,
+    "perm_id": 64,
     "parent_id": 60,
     "perm_name": "生产实时看板",
     "perm_code": "bigscreen:production",
@@ -818,6 +818,19 @@
     "created_at": "2026-07-28T12:30:42.000Z"
   },
   {
+    "perm_id": 64,
+    "parent_id": 60,
+    "perm_name": "环境看板",
+    "perm_code": "bigscreen:environment",
+    "type": "menu",
+    "icon": "EnvironmentOutlined",
+    "path": "/bigscreen/environment",
+    "sort_order": 4,
+    "visible": 1,
+    "status": 1,
+    "created_at": "2026-07-31T00:00:00.000Z"
+  },
+  {
     "perm_id": 300,
     "parent_id": 0,
     "perm_name": "自动任务",
@@ -846,11 +859,11 @@
   {
     "perm_id": 302,
     "parent_id": 300,
-    "perm_name": "同步任务日志",
-    "perm_code": "auto:sync-task",
+    "perm_name": "定时任务",
+    "perm_code": "auto:scheduled-task",
     "type": "menu",
-    "icon": "ClockCircleOutlined",
-    "path": "/auto/sync-tasks",
+    "icon": "CalendarOutlined",
+    "path": "/auto/scheduled-tasks",
     "sort_order": 2,
     "visible": 1,
     "status": 1,
@@ -859,38 +872,12 @@
   {
     "perm_id": 303,
     "parent_id": 300,
-    "perm_name": "定时任务",
-    "perm_code": "auto:scheduled-task",
+    "perm_name": "任务日志",
+    "perm_code": "auto:task-log",
     "type": "menu",
-    "icon": "CalendarOutlined",
-    "path": "/auto/scheduled-tasks",
+    "icon": "ClockCircleOutlined",
+    "path": "/auto/task-logs",
     "sort_order": 3,
-    "visible": 1,
-    "status": 1,
-    "created_at": "2026-07-31T00:00:00.000Z"
-  },
-  {
-    "perm_id": 304,
-    "parent_id": 300,
-    "perm_name": "数据档案",
-    "perm_code": "auto:data-archive",
-    "type": "menu",
-    "icon": "DatabaseOutlined",
-    "path": "/auto/data-archive",
-    "sort_order": 4,
-    "visible": 1,
-    "status": 1,
-    "created_at": "2026-07-31T00:00:00.000Z"
-  },
-  {
-    "perm_id": 305,
-    "parent_id": 300,
-    "perm_name": "环境监测仪表盘",
-    "perm_code": "auto:env-dashboard",
-    "type": "menu",
-    "icon": "EnvironmentOutlined",
-    "path": "/auto/env-dashboard",
-    "sort_order": 5,
     "visible": 1,
     "status": 1,
     "created_at": "2026-07-31T00:00:00.000Z"

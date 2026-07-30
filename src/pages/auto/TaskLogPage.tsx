@@ -34,7 +34,7 @@ const TYPE_LABELS: Record<string, string> = {
   weather: '气象信息',
 }
 
-export default function SyncTaskPage() {
+export default function TaskLogPage() {
   const message = useMessage()
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<SyncTask[]>([])
@@ -89,7 +89,7 @@ export default function SyncTaskPage() {
           <Col>
             <Space>
               <ClockCircleOutlined style={{ fontSize: 20, color: '#1890ff' }} />
-              <span style={{ fontSize: 16, fontWeight: 600 }}>同步任务日志</span>
+              <span style={{ fontSize: 16, fontWeight: 600 }}>任务日志</span>
             </Space>
           </Col>
           <Col>

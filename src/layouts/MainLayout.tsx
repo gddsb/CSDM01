@@ -131,16 +131,15 @@ const defaultMenuItems = [
       { key: '/bigscreen/production', icon: <BarChartOutlined />, label: '生产实时看板' },
       { key: '/bigscreen/quality', icon: <ExperimentOutlined />, label: '质量分析看板' },
       { key: '/bigscreen/management', icon: <PieChartOutlined />, label: '管理驾驶舱' },
+      { key: '/bigscreen/environment', icon: <EnvironmentOutlined />, label: '环境看板' },
     ]
   },
   {
     key: 'auto', icon: <ControlOutlined />, label: '自动任务',
     children: [
       { key: '/auto/task-settings', icon: <SettingOutlined />, label: '任务设置' },
-      { key: '/auto/sync-tasks', icon: <ClockCircleOutlined />, label: '同步任务日志' },
       { key: '/auto/scheduled-tasks', icon: <CalendarOutlined />, label: '定时任务' },
-      { key: '/auto/data-archive', icon: <DatabaseOutlined />, label: '数据档案' },
-      { key: '/auto/env-dashboard', icon: <EnvironmentOutlined />, label: '环境监测仪表盘' },
+      { key: '/auto/task-logs', icon: <ClockCircleOutlined />, label: '任务日志' },
     ]
   },
   {

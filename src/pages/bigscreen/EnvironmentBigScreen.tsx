@@ -29,7 +29,7 @@ interface AlarmData {
   is_handled: number
 }
 
-export default function EnvDashboardPage() {
+export default function EnvironmentBigScreen() {
   const message = useMessage()
   const [loading, setLoading] = useState(false)
   const [factors, setFactors] = useState<FactorData[]>([])
