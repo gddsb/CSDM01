@@ -56,12 +56,12 @@ export default function OrderManagement() {
   // 筛选输入态
   const [keywordInput, setKeywordInput] = useState('')
   const [materialCodeInput, setMaterialCodeInput] = useState('')
-  const [statusInput, setStatusInput] = useState(['开立', '下发', '开工', '完工', '关闭'])
+  const [statusInput, setStatusInput] = useState(['开立', '下发', '开工', '完工'])
   const [planDateRange, setPlanDateRange] = useState<any>(getThisMonth())
   const [monthQuick, setMonthQuick] = useState<string>('this_month')
   const [rangeWarn, setRangeWarn] = useState(false)
   // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', materialCode: '', status: ['开立', '下发', '开工', '完工', '关闭'], planDateStart: getThisMonth()[0].format('YYYY-MM-DD'), planDateEnd: getThisMonth()[1].format('YYYY-MM-DD') })
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', materialCode: '', status: ['开立', '下发', '开工', '完工'], planDateStart: getThisMonth()[0].format('YYYY-MM-DD'), planDateEnd: getThisMonth()[1].format('YYYY-MM-DD') })
 
   // 获取订单列表
   useEffect(() => {
@@ -460,10 +460,10 @@ export default function OrderManagement() {
   const handleReset = () => {
     setKeywordInput('')
     setMaterialCodeInput('')
-    setStatusInput(['开立', '下发', '开工', '完工', '关闭'])
+    setStatusInput(['开立', '下发', '开工', '完工'])
     setMonthQuick('this_month')
     setPlanDateRange(getThisMonth())
-    setQuery(q => ({ ...q, page: 1, keyword: '', materialCode: '', status: ['开立', '下发', '开工', '完工', '关闭'], planDateStart: getThisMonth()[0].format('YYYY-MM-DD'), planDateEnd: getThisMonth()[1].format('YYYY-MM-DD') }))
+    setQuery(q => ({ ...q, page: 1, keyword: '', materialCode: '', status: ['开立', '下发', '开工', '完工'], planDateStart: getThisMonth()[0].format('YYYY-MM-DD'), planDateEnd: getThisMonth()[1].format('YYYY-MM-DD') }))
   }
 
   const renderActions = (r) => {

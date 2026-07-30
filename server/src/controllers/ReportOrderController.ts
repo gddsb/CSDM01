@@ -150,11 +150,13 @@ export async function syncOrderStatus(orderId: number, transaction?: any) {
     return
   }
 
-  // 只有所有报工单完工 且 完工数量 >= 计划数量，订单才自动转为"完工"
-  if (total > 0 && finishedCount === total && finishedSum >= plannedQty && statusVal === 2) {
+  // 所有报工单都完工时，订单自动转为"完工"
+  if (total > 0 && finishedCount === total && statusVal === 2) {
     await order.update({ status: 3, close_time: new Date() }, { transaction })
     // 额外规则：订单完工且完工数量 >= 计划数量时，自动变为关闭
-    await order.update({ status: 4 }, { transaction })
+    if (finishedSum >= plannedQty) {
+      await order.update({ status: 4 }, { transaction })
+    }
     return
   }
 
