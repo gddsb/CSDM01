@@ -1,14 +1,15 @@
 import ResizableTable from '../../components/ResizableTable'
-import React, { useState, useMemo, useEffect } from 'react'
-import { Table, Tag, Button, Select, Input, Space, Row, Col, Progress, DatePicker, Spin, message, Modal, Tabs } from 'antd'
+import React, { useState, useMemo, useEffect, useCallback } from 'react'
+import { Table, Tag, Button, Select, Input, Space, Row, Col, Progress, DatePicker, Spin, message, Modal, Tabs, Alert } from 'antd'
 import {
   FileTextOutlined, ExportOutlined, SearchOutlined, ReloadOutlined,
   CheckCircleOutlined, WarningOutlined,
   RiseOutlined, FallOutlined
 } from '@ant-design/icons'
 import * as XLSX from 'xlsx'
+import dayjs, { Dayjs } from 'dayjs'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
-import { formatDateTime } from '../../utils'
+import { formatDateTime, MONTH_QUICK_OPTIONS, getMonthRange, validateDateRange } from '../../utils'
 import api, { extractList } from '../../utils/api'
 
 const woStatusNumToText: Record<number, string> = { 0: '开工', 1: '完工', 2: '关闭' }
@@ -119,11 +120,31 @@ export default function ProductionReport() {
   const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [selectedDetail, setSelectedDetail] = useState<any>(null)
 
-  const loadData = async () => {
+  const thisMonth: [Dayjs, Dayjs] = [dayjs().startOf('month'), dayjs().endOf('month')]
+  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(thisMonth)
+  const [monthQuick, setMonthQuick] = useState<string>('this_month')
+  const [rangeWarn, setRangeWarn] = useState(false)
+
+  const loadData = useCallback(async () => {
+    if (dateRange) {
+      const check = validateDateRange(dateRange)
+      if (!check.ok) {
+        message.warning(check.msg)
+        return
+      }
+      setRangeWarn(!!check.warn)
+    } else {
+      setRangeWarn(false)
+    }
+
     setLoading(true)
     try {
+      const params: any = { pageSize: 200, sort: 'report_time,desc' }
+      if (dateRange?.[0]) params.dateStart = dateRange[0].format('YYYY-MM-DD')
+      if (dateRange?.[1]) params.dateEnd = dateRange[1].format('YYYY-MM-DD')
+
       const [woRes, lineRes] = await Promise.all([
-        api.get('/production/report-orders', { params: { pageSize: 20, sort: 'report_time,desc' } }),
+        api.get('/production/report-orders', { params }),
         api.get('/basic/production-lines'),
       ])
 
@@ -133,7 +154,6 @@ export default function ProductionReport() {
 
       if (woRes.success && woRes.data) {
         const list = extractList(woRes.data)
-        // 并发加载所有报工单详情
         const detailPromises = list.map(async (item: any) => {
           try {
             const res = await api.get(`/production/report-orders/${item.report_order_id}`)
@@ -171,11 +191,9 @@ export default function ProductionReport() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [dateRange])
 
-  useEffect(() => {
-    loadData()
-  }, [])
+  useEffect(() => { loadData() }, [loadData])
 
   const reportData = useMemo(() => {
     return workOrders.map(wo => {
@@ -451,7 +469,7 @@ export default function ProductionReport() {
           <Spin spinning={loading} tip="加载中...">
             <div>
               <Row gutter={[12, 8]} style={{ marginBottom: 12 }}>
-                <Col span={6}>
+                <Col span={5}>
                   <Input
                     placeholder="搜索工单号/产品名称"
                     allowClear
@@ -460,7 +478,7 @@ export default function ProductionReport() {
                     onChange={e => setSearch(e.target.value)}
                   />
                 </Col>
-                <Col span={5}>
+                <Col span={4}>
                   <Select
                     placeholder="产线筛选"
                     allowClear
@@ -470,7 +488,7 @@ export default function ProductionReport() {
                     onChange={setLineFilter}
                   />
                 </Col>
-                <Col span={5}>
+                <Col span={4}>
                   <Select
                     placeholder="工单状态"
                     allowClear
@@ -485,16 +503,42 @@ export default function ProductionReport() {
                     onChange={setStatusFilter}
                   />
                 </Col>
-                <Col span={6}>
-                  <RangePicker style={{ width: '100%' }} />
+                <Col span={4}>
+                  <Select
+                    placeholder="快速选择月份"
+                    allowClear
+                    style={{ width: '100%' }}
+                    value={monthQuick || undefined}
+                    onChange={val => {
+                      setMonthQuick(val)
+                      const range = getMonthRange(val)
+                      if (range) setDateRange(range)
+                    }}
+                    options={MONTH_QUICK_OPTIONS}
+                  />
+                </Col>
+                <Col span={5}>
+                  <RangePicker
+                    style={{ width: '100%' }}
+                    value={dateRange}
+                    onChange={val => { setDateRange(val as any); setMonthQuick('') }}
+                  />
                 </Col>
                 <Col>
                   <Space>
                     <Button type="primary" icon={<SearchOutlined />} onClick={loadData}>查询</Button>
-                    <Button icon={<ReloadOutlined />} onClick={() => { setSearch(''); setLineFilter(undefined); setStatusFilter(undefined); loadData() }}>重置</Button>
+                    <Button icon={<ReloadOutlined />} onClick={() => {
+                      setSearch(''); setLineFilter(undefined); setStatusFilter(undefined)
+                      setMonthQuick('this_month'); setDateRange(thisMonth); setRangeWarn(false)
+                    }}>重置</Button>
                   </Space>
                 </Col>
               </Row>
+
+              {rangeWarn && (
+                <Alert type="warning" showIcon style={{ marginBottom: 12 }}
+                  message="查询跨度时间较长，后台需要较长时间执行查询，可能造成页面假死状态" />
+              )}
               <ResizableTable tableKey="pages_report_ProductionReport"
                 columns={columns}
                 dataSource={filtered}

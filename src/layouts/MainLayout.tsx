@@ -120,7 +120,7 @@ const defaultMenuItems = [
       { key: '/report/efficiency', icon: <RiseOutlined />, label: '效率分析' },
       { key: '/report/production', icon: <FileTextOutlined />, label: '生产报表' },
       { key: '/report/quality', icon: <ExperimentOutlined />, label: '质量报表' },
-      { key: '/report/exception', icon: <BellOutlined />, label: '异常分析报表' },
+      { key: '/report/exception', icon: <BellOutlined />, label: '异常报表' },
     ]
   },
   {

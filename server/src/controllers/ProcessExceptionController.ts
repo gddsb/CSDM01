@@ -18,12 +18,17 @@ function validateTimeRange(start, end): { valid: boolean; message?: string; dura
 
 export const list = async (req, res) => {
   try {
-    const { report_order_id, exception_type, device_id, stop_type, page = 1, pageSize = 20 } = req.query
+    const { report_order_id, exception_type, device_id, stop_type, dateStart, dateEnd, page = 1, pageSize = 20 } = req.query
     const where: any = {}
     if (report_order_id) where.report_order_id = Number(report_order_id)
     if (exception_type) where.exception_type = exception_type
     if (device_id) where.device_id = Number(device_id)
     if (stop_type) where.stop_type = { [Op.like]: `%${stop_type}%` }
+    if (dateStart || dateEnd) {
+      where.start_time = {}
+      if (dateStart) where.start_time[Op.gte] = new Date(String(dateStart))
+      if (dateEnd) where.start_time[Op.lte] = new Date(String(dateEnd) + ' 23:59:59')
+    }
 
     const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
     const offset = (Number(page) - 1) * limit
