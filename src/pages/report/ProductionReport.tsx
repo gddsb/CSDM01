@@ -12,7 +12,7 @@ import ThreeSectionPage from '../../components/ThreeSectionPage'
 import { formatDateTime, MONTH_QUICK_OPTIONS, getMonthRange, validateDateRange } from '../../utils'
 import api, { extractList } from '../../utils/api'
 
-const woStatusNumToText: Record<number, string> = { 0: '开工', 1: '完工', 2: '关闭' }
+const woStatusNumToText: Record<number, string> = { 0: '开立', 1: '下发', 2: '开工', 3: '完工', 4: '关闭' }
 
 const { RangePicker } = DatePicker
 
@@ -182,7 +182,7 @@ export default function ProductionReport() {
           actual_output_qty: Number(item.report_qty || 0),
           start_time: item.report_time,
           finish_time: item.finish_time,
-          status: woStatusNumToText[item.status] ?? '开工',
+          status: item.order?.status ?? woStatusNumToText[item.status] ?? '开工',
           report_user_name: item.report_user_name,
         })))
       }

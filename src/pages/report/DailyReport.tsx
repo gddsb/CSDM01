@@ -48,8 +48,8 @@ function Chart({ option, height = 320 }) {
   return <div ref={containerRef} style={{ width: '100%', height }} />
 }
 
-// 状态数字映射：0=开工, 1=完工, 2=关闭
-const statusNumToText: Record<number, string> = { 0: '开工', 1: '完工', 2: '关闭' }
+// 状态数字映射：0=开立, 1=下发, 2=开工, 3=完工, 4=关闭
+const statusNumToText: Record<number, string> = { 0: '开立', 1: '下发', 2: '开工', 3: '完工', 4: '关闭' }
 
 export default function DailyReport() {
   const [date, setDate] = useState(dayjs())
@@ -81,7 +81,7 @@ export default function DailyReport() {
           target_qty: item.report_qty,
           start_time: item.report_time,
           finish_time: item.finish_time,
-          status: statusNumToText[item.status] ?? '开工',
+          status: item.order?.status ?? statusNumToText[item.status] ?? '开工',
           created_by: item.report_user_id,
           created_at: item.report_time,
         })))

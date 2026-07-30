@@ -11,7 +11,7 @@ import ThreeSectionPage from '../../components/ThreeSectionPage'
 import { formatDateTime } from '../../utils'
 import api, { extractList } from '../../utils/api'
 
-const woStatusNumToText: Record<number, string> = { 0: '开工', 1: '完工', 2: '关闭' }
+const woStatusNumToText: Record<number, string> = { 0: '开立', 1: '下发', 2: '开工', 3: '完工', 4: '关闭' }
 const { RangePicker } = DatePicker
 
 const exceptionTypeMap: Record<string, { name: string; color: string }> = {
@@ -110,7 +110,7 @@ export default function ExceptionReport() {
           line_id: item.line_id,
           line_name: item.line_name,
           material_name: item.material_name,
-          status: woStatusNumToText[item.status] ?? '开工',
+          status: item.order?.status ?? woStatusNumToText[item.status] ?? '开工',
         })))
       }
     } catch (err: any) {

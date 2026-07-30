@@ -218,7 +218,7 @@ export const list = async (req, res) => {
         {
           model: Order,
           as: 'order',
-          attributes: ['film_version', 'version_no', 'barcode', 'planned_qty'],
+          attributes: ['film_version', 'version_no', 'barcode', 'planned_qty', 'status'],
           required: false,
         },
       ],
