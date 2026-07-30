@@ -185,7 +185,7 @@ export default function TaskSettingsPage() {
       <Switch checked={v === 1} onChange={() => handleToggleActive(r)} size="small" />
     )},
     { title: '更新时间', dataIndex: 'updated_at', key: 'updated_at', width: 150, render: (v: string) => formatDateTime(v) },
-    { title: '操作', key: 'action', width: 60, fixed: 'right' as const, render: (_: any, record: TaskSetting) => (
+    { title: '操作', key: 'action', width: 90, fixed: 'right' as const, render: (_: any, record: TaskSetting) => (
       <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
     )},
   ]
@@ -212,6 +212,7 @@ export default function TaskSettingsPage() {
         dataSource={data}
         loading={loading}
         pagination={false}
+        scroll={{ x: 1000 }}
       />
       <Modal
         title={`编辑 - ${editing?.name || ''}`}
