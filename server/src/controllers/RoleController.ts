@@ -64,6 +64,9 @@ export const update = async (req, res) => {
     const { id } = req.params
     const role = await Role.findOne({ where: { role_id: id } })
     if (!role) return fail(res, '角色不存在', ErrorCode.RECORD_NOT_FOUND)
+    if (role.role_code === 'SUPER_ADMIN' || role.is_system_default === 1) {
+      return fail(res, '系统默认角色禁止编辑', ErrorCode.PERMISSION_DENIED)
+    }
     const { role_name, role_code, type, scope, sort_order, status } = req.body
     if (role_code && role_code !== role.role_code) {
       const exists = await Role.findOne({ where: { role_code, role_id: { [Op.ne]: id } } })
@@ -83,6 +86,9 @@ export const remove = async (req, res) => {
     const { id } = req.params
     const role = await Role.findOne({ where: { role_id: id } })
     if (!role) return fail(res, '角色不存在', ErrorCode.RECORD_NOT_FOUND)
+    if (role.role_code === 'SUPER_ADMIN' || role.is_system_default === 1) {
+      return fail(res, '系统默认角色禁止删除', ErrorCode.PERMISSION_DENIED)
+    }
     // 检查是否有用户使用该角色
     const userCount = await User.count({ where: { role_id: id } })
     if (userCount > 0) return fail(res, `该角色下存在 ${userCount} 个用户，无法删除`)
@@ -252,6 +258,9 @@ export const assignPermissions = async (req, res) => {
     const { perm_ids } = req.body
     const role = await Role.findOne({ where: { role_id: id } })
     if (!role) return fail(res, '角色不存在', ErrorCode.RECORD_NOT_FOUND)
+    if (role.role_code === 'SUPER_ADMIN' || role.is_system_default === 1) {
+      return fail(res, '系统默认角色禁止修改权限', ErrorCode.PERMISSION_DENIED)
+    }
 
     const ids = perm_ids || []
     if (!Array.isArray(ids)) {

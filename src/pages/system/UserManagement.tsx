@@ -127,6 +127,10 @@ export default function UserManagement() {
   }
 
   const handleEdit = (record: User) => {
+    if (record.username === 'sysadmin') {
+      message.warning('系统默认账户禁止编辑')
+      return
+    }
     setEditingUser(record)
     setModalOpen(true)
   }
@@ -154,6 +158,10 @@ export default function UserManagement() {
   }
 
   const handleToggle = async (record: User) => {
+    if (record.username === 'sysadmin') {
+      message.warning('系统默认账户禁止启停')
+      return
+    }
     try {
       const res = await api.post(`/system/users/${record.user_id}/toggle`)
       message.success(res.message || (record.status === '启用' ? '已禁用该用户' : '已启用该用户'))
@@ -164,6 +172,10 @@ export default function UserManagement() {
   }
 
   const handleDelete = async (record: User) => {
+    if (record.username === 'sysadmin') {
+      message.warning('系统默认账户禁止删除')
+      return
+    }
     try {
       const res = await api.delete(`/system/users/${record.user_id}`)
       message.success(res.message || '删除成功')
@@ -228,34 +240,44 @@ export default function UserManagement() {
     },
     {
       title: '操作', key: 'action',
-      render: (_: unknown, record: User) => (
-        <Space size="small">
-          {hasPermission('system:user:update') && (
-            <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
-          )}
-          <Popconfirm
-            title={record.status === '启用' ? '确认禁用该用户？' : '确认启用该用户？'}
-            onConfirm={() => handleToggle(record)}
-            okText="确认"
-            cancelText="取消"
-          >
-            <Button type="link" size="small" danger={record.status === '启用'}>
-              {record.status === '启用' ? '禁用' : '启用'}
-            </Button>
-          </Popconfirm>
-          {hasPermission('system:user:delete') && (
+      render: (_: unknown, record: User) => {
+        const isProtected = record.username === 'sysadmin'
+        return (
+          <Space size="small">
+            {hasPermission('system:user:update') && (
+              <Button type="link" size="small" disabled={isProtected} onClick={() => handleEdit(record)}>编辑</Button>
+            )}
             <Popconfirm
-            title="确认删除该用户？"
-            description="删除后不可恢复"
-            onConfirm={() => handleDelete(record)}
-            okText="确认"
-            cancelText="取消"
-          >
-            <Button type="link" size="small" danger>删除</Button>
-          </Popconfirm>
-          )}
-        </Space>
-      ),
+              title={isProtected ? '系统默认账户禁止操作' : (record.status === '启用' ? '确认禁用该用户？' : '确认启用该用户？')}
+              onConfirm={() => handleToggle(record)}
+              okText="确认"
+              cancelText="取消"
+              disabled={isProtected}
+            >
+              <Button
+                type="link"
+                size="small"
+                danger={record.status === '启用'}
+                disabled={isProtected}
+              >
+                {record.status === '启用' ? '禁用' : '启用'}
+              </Button>
+            </Popconfirm>
+            {hasPermission('system:user:delete') && (
+              <Popconfirm
+                title={isProtected ? '系统默认账户禁止删除' : '确认删除该用户？'}
+                description={isProtected ? undefined : '删除后不可恢复'}
+                onConfirm={() => handleDelete(record)}
+                okText="确认"
+                cancelText="取消"
+                disabled={isProtected}
+              >
+                <Button type="link" size="small" danger disabled={isProtected}>删除</Button>
+              </Popconfirm>
+            )}
+          </Space>
+        )
+      },
     },
   ]
 

@@ -145,6 +145,10 @@ export default function RoleManagement() {
   }
 
   const handleEdit = (record) => {
+    if (record.role_code === 'SUPER_ADMIN' || record.is_system_default === 1) {
+      message.warning('系统默认角色禁止编辑')
+      return
+    }
     setEditing(record)
     setModalVisible(true)
   }
@@ -194,6 +198,10 @@ export default function RoleManagement() {
   }
 
   const handleDelete = async (record) => {
+    if (record.role_code === 'SUPER_ADMIN' || record.is_system_default === 1) {
+      message.warning('系统默认角色禁止删除')
+      return
+    }
     try {
       const res = await api.delete(`/system/roles/${record.role_id}`)
       message.success(res.message || '删除成功')
@@ -205,6 +213,10 @@ export default function RoleManagement() {
 
   // 打开权限配置 Modal
   const handleConfigPerms = async (record) => {
+    if (record.role_code === 'SUPER_ADMIN' || record.is_system_default === 1) {
+      message.warning('系统默认角色禁止修改权限')
+      return
+    }
     setPermRole(record)
     setPermModalVisible(true)
     setCheckedKeys([])
@@ -266,24 +278,42 @@ export default function RoleManagement() {
     { title: '排序', dataIndex: 'sort_order', key: 'sort_order', width: 60 },
     {
       title: '操作', key: 'action',
-      render: (_, record) => (
-        <Space size="small">
-          <Button type="link" size="small" onClick={() => handleConfigPerms(record)}>配置权限</Button>
-          {hasPermission('system:role:update') && (
-            <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
-          )}
-          {hasPermission('system:role:delete') && (
-            <Popconfirm
-            title="确认删除该角色？"
-            onConfirm={() => handleDelete(record)}
-            okText="确认"
-            cancelText="取消"
-          >
-            <Button type="link" size="small" danger>删除</Button>
-          </Popconfirm>
-          )}
-        </Space>
-      ),
+      render: (_, record) => {
+        const isProtected = record.role_code === 'SUPER_ADMIN' || record.is_system_default === 1
+        return (
+          <Space size="small">
+            <Button
+              type="link"
+              size="small"
+              disabled={isProtected}
+              onClick={() => handleConfigPerms(record)}
+            >
+              配置权限
+            </Button>
+            {hasPermission('system:role:update') && (
+              <Button
+                type="link"
+                size="small"
+                disabled={isProtected}
+                onClick={() => handleEdit(record)}
+              >
+                编辑
+              </Button>
+            )}
+            {hasPermission('system:role:delete') && (
+              <Popconfirm
+                title="确认删除该角色？"
+                onConfirm={() => handleDelete(record)}
+                okText="确认"
+                cancelText="取消"
+                disabled={isProtected}
+              >
+                <Button type="link" size="small" danger disabled={isProtected}>删除</Button>
+              </Popconfirm>
+            )}
+          </Space>
+        )
+      },
     },
   ]
 

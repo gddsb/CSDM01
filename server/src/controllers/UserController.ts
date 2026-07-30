@@ -123,6 +123,9 @@ export const update = async (req, res) => {
     const { id } = req.params
     const user = await User.findOne({ where: { user_id: id } })
     if (!user) return fail(res, '用户不存在', ErrorCode.RECORD_NOT_FOUND)
+    if (user.username === 'sysadmin') {
+      return fail(res, '系统默认账户禁止编辑', ErrorCode.PERMISSION_DENIED)
+    }
     const { username, password, real_name, employee_no, department, role_id, phone, email, status } = req.body
 
     if (email !== undefined) {
@@ -170,6 +173,9 @@ export const remove = async (req, res) => {
     const { id } = req.params
     const user = await User.findOne({ where: { user_id: id } })
     if (!user) return fail(res, '用户不存在', ErrorCode.RECORD_NOT_FOUND)
+    if (user.username === 'sysadmin') {
+      return fail(res, '系统默认账户禁止删除', ErrorCode.PERMISSION_DENIED)
+    }
     await user.destroy()
     return success(res, null, '删除成功')
   } catch (err) {
@@ -184,6 +190,9 @@ export const toggle = async (req, res) => {
     const { id } = req.params
     const user = await User.findOne({ where: { user_id: id } })
     if (!user) return fail(res, '用户不存在', ErrorCode.RECORD_NOT_FOUND)
+    if (user.username === 'sysadmin') {
+      return fail(res, '系统默认账户禁止启停', ErrorCode.PERMISSION_DENIED)
+    }
     const newStatus = user.status === '启用' ? '禁用' : '启用'
     await user.update({ status: newStatus })
     return success(res, { user_id: user.user_id, status: newStatus }, newStatus === '启用' ? '已启用' : '已禁用')
