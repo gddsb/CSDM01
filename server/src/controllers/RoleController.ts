@@ -103,7 +103,7 @@ export const remove = async (req, res) => {
 // 初始化默认权限数据
 const defaultPermissions = [
   // 系统管理
-  { parent_id: 0, perm_name: '系统管理', perm_code: 'system', type: 'menu', icon: 'SettingOutlined', path: 'system', sort_order: 7 },
+  { parent_id: 0, perm_name: '系统管理', perm_code: 'system', type: 'menu', icon: 'SettingOutlined', path: 'system', sort_order: 8 },
   { parent_id: 0, parent_code: 'system', perm_name: '用户管理', perm_code: 'system:user', type: 'menu', icon: 'TeamOutlined', path: '/system/users', sort_order: 1 },
   { parent_id: 0, parent_code: 'system', perm_name: '角色权限', perm_code: 'system:role', type: 'menu', icon: 'SafetyCertificateOutlined', path: '/system/roles', sort_order: 2 },
   { parent_id: 0, parent_code: 'system', perm_name: '菜单管理', perm_code: 'system:menu', type: 'menu', icon: 'MenuOutlined', path: '/system/menus', sort_order: 3 },
@@ -142,8 +142,21 @@ const defaultPermissions = [
   { parent_id: 0, parent_code: 'device', perm_name: '点检记录', perm_code: 'device:check-record', type: 'menu', icon: 'FileSearchOutlined', path: '/device/check-records', sort_order: 2 },
   { parent_id: 0, parent_code: 'device', perm_name: '维修保养', perm_code: 'device:maintenance', type: 'menu', icon: 'ToolOutlined', path: '/device/maintenance', sort_order: 3 },
   { parent_id: 0, parent_code: 'device', perm_name: '设备OEE', perm_code: 'device:oee', type: 'menu', icon: 'LineChartOutlined', path: '/device/oee', sort_order: 4 },
+  // 报表中心
+  { parent_id: 0, perm_name: '报表中心', perm_code: 'report', type: 'menu', icon: 'PieChartOutlined', path: 'report', sort_order: 5 },
+  { parent_id: 0, parent_code: 'report', perm_name: '生产日报', perm_code: 'report:daily', type: 'menu', icon: 'CalendarOutlined', path: '/report/daily', sort_order: 1 },
+  { parent_id: 0, parent_code: 'report', perm_name: '质量月报', perm_code: 'report:monthly', type: 'menu', icon: 'FileTextOutlined', path: '/report/monthly', sort_order: 2 },
+  { parent_id: 0, parent_code: 'report', perm_name: '效率分析', perm_code: 'report:efficiency', type: 'menu', icon: 'RiseOutlined', path: '/report/efficiency', sort_order: 3 },
+  { parent_id: 0, parent_code: 'report', perm_name: '生产报表', perm_code: 'report:production', type: 'menu', icon: 'FileTextOutlined', path: '/report/production', sort_order: 4 },
+  { parent_id: 0, parent_code: 'report', perm_name: '质量报表', perm_code: 'report:quality', type: 'menu', icon: 'ExperimentOutlined', path: '/report/quality', sort_order: 5 },
+  { parent_id: 0, parent_code: 'report', perm_name: '异常分析', perm_code: 'report:exception', type: 'menu', icon: 'BellOutlined', path: '/report/exception', sort_order: 6 },
+  // 自动任务
+  { parent_id: 0, perm_name: '自动任务', perm_code: 'auto', type: 'menu', icon: 'ControlOutlined', path: 'auto', sort_order: 6 },
+  { parent_id: 0, parent_code: 'auto', perm_name: '任务设置', perm_code: 'auto:task-setting', type: 'menu', icon: 'SettingOutlined', path: '/auto/task-settings', sort_order: 1 },
+  { parent_id: 0, parent_code: 'auto', perm_name: '定时任务', perm_code: 'auto:scheduled-task', type: 'menu', icon: 'CalendarOutlined', path: '/auto/scheduled-tasks', sort_order: 2 },
+  { parent_id: 0, parent_code: 'auto', perm_name: '任务日志', perm_code: 'auto:task-log', type: 'menu', icon: 'ClockCircleOutlined', path: '/auto/task-logs', sort_order: 3 },
   // 数据大屏
-  { parent_id: 0, perm_name: '数据大屏', perm_code: 'bigscreen', type: 'menu', icon: 'DesktopOutlined', path: 'bigscreen', sort_order: 6 },
+  { parent_id: 0, perm_name: '数据大屏', perm_code: 'bigscreen', type: 'menu', icon: 'DesktopOutlined', path: 'bigscreen', sort_order: 7 },
   { parent_id: 0, parent_code: 'bigscreen', perm_name: '生产实时看板', perm_code: 'bigscreen:production', type: 'menu', icon: 'BarChartOutlined', path: '/bigscreen/production', sort_order: 1 },
   { parent_id: 0, parent_code: 'bigscreen', perm_name: '质量分析看板', perm_code: 'bigscreen:quality', type: 'menu', icon: 'ExperimentOutlined', path: '/bigscreen/quality', sort_order: 2 },
   { parent_id: 0, parent_code: 'bigscreen', perm_name: '管理驾驶舱', perm_code: 'bigscreen:management', type: 'menu', icon: 'PieChartOutlined', path: '/bigscreen/management', sort_order: 3 },
