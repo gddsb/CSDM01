@@ -11,6 +11,7 @@ import { initDefaultConfigs, refreshDictionaryData } from './controllers/SystemC
 import { initDefaultPermissions } from './controllers/RoleController.js'
 import { initDefaultRules } from './controllers/NumberRuleController.js'
 import { runMigrations } from './migrate.js'
+import { startTaskScheduler } from './services/taskScheduler.js'
 
 dotenv.config()
 
@@ -165,6 +166,7 @@ app.use((err: any, req: any, res: any, next: any) => {
 
 async function start() {
   await initDatabase()
+  startTaskScheduler()
   app.listen(PORT, () => {
     console.log(`\n🚀 Milk Can MES API Server`)
     console.log(`   运行地址: http://localhost:${PORT}`)

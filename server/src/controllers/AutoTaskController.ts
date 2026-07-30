@@ -6,6 +6,7 @@ import {
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { encryptParamsObj, decryptParamsObj } from '../utils/crypto.js'
 import { fetchU9Orgs, DEFAULT_U9_CONFIG } from '../services/u9Service.js'
+import { calcNextRunAt } from '../services/taskScheduler.js'
 
 // ============ 任务设置 ============
 export const listTaskSettings = async (req, res) => {
@@ -138,12 +139,16 @@ export const createScheduledTask = async (req, res) => {
     if (!name || !task_type) return fail(res, '名称和任务类型不能为空')
     const existing = await ScheduledTask.findOne({ where: { task_type, is_enabled: 1 } })
     if (existing) return fail(res, `该任务类型「${task_type}」已存在启用的定时任务，不能重复添加`, ErrorCode.PARAM_INVALID)
+    const mode = exec_mode || 'periodic'
+    const cfg = config || {}
+    const nextAt = calcNextRunAt(mode, cfg)
     const task = await ScheduledTask.create({
       schedule_biz_id: generateScheduleId(),
       name,
       task_type,
-      exec_mode: exec_mode || 'periodic',
-      config: config || {},
+      exec_mode: mode,
+      config: cfg,
+      next_run_at: nextAt,
       is_enabled: is_enabled !== false,
     })
     return success(res, task, '创建成功')
@@ -160,10 +165,12 @@ export const updateScheduledTask = async (req, res) => {
       || await ScheduledTask.findOne({ where: { schedule_biz_id: id } })
     if (!task) return fail(res, '定时任务不存在', ErrorCode.RECORD_NOT_FOUND)
     const { name, exec_mode, config, is_enabled } = req.body
-    if (name !== undefined) task.name = name
-    if (exec_mode !== undefined) task.exec_mode = exec_mode
-    if (config !== undefined) task.config = config
-    if (is_enabled !== undefined) task.is_enabled = is_enabled
+    if (name !== undefined) (task as any).name = name
+    if (exec_mode !== undefined) (task as any).exec_mode = exec_mode
+    if (config !== undefined) (task as any).config = config
+    if (is_enabled !== undefined) (task as any).is_enabled = is_enabled
+    const nextAt = calcNextRunAt((task as any).exec_mode, (task as any).config)
+    if (nextAt) (task as any).next_run_at = nextAt
     await task.save()
     return success(res, task, '修改成功')
   } catch (err) {
