@@ -3,7 +3,7 @@ import { authRequired, logOperation } from '../middleware/auth.js'
 import {
   listTaskSettings, updateTaskSetting, getU9Orgs,
   listSyncTasks, getSyncTask,
-  listScheduledTasks, createScheduledTask, updateScheduledTask, deleteScheduledTask,
+  listScheduledTasks, createScheduledTask, updateScheduledTask, deleteScheduledTask, triggerScheduledTask,
   listArchiveData, handleAlarm,
   dashboardOverview,
   dashboardTrend,
@@ -25,6 +25,7 @@ router.get('/sync-tasks/:id', getSyncTask)
 // 定时任务
 router.get('/scheduled-tasks', listScheduledTasks)
 router.post('/scheduled-tasks', logOperation('定时任务'), createScheduledTask)
+router.post('/scheduled-tasks/:id/trigger', logOperation('定时任务触发'), triggerScheduledTask)
 router.put('/scheduled-tasks/:id', logOperation('定时任务'), updateScheduledTask)
 router.delete('/scheduled-tasks/:id', logOperation('定时任务'), deleteScheduledTask)
 

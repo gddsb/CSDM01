@@ -169,6 +169,59 @@ export const deleteScheduledTask = async (req, res) => {
   }
 }
 
+function generateTaskBizId(type: string): string {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  const datePart = `${y}${m}${d}`
+  const prefix = type === 'items' ? 'SCHI' : type === 'customers' ? 'SCHC' : type === 'env_monitor' ? 'SCHE' : 'SCHW'
+  const rand = String(Math.floor(Math.random() * 900) + 100)
+  return `${prefix}${datePart}${rand}`
+}
+
+export const triggerScheduledTask = async (req, res) => {
+  try {
+    const { id } = req.params
+    const task = await ScheduledTask.findByPk(id)
+      || await ScheduledTask.findOne({ where: { schedule_biz_id: id } })
+    if (!task) return fail(res, '定时任务不存在', ErrorCode.RECORD_NOT_FOUND)
+
+    const type = (task as any).task_type as string
+
+    const activeSame = await SyncTask.findOne({
+      where: {
+        task_type: type,
+        status: { [Op.in]: ['pending', 'running'] },
+      },
+      order: [['task_id', 'DESC']],
+    })
+    if (activeSame) {
+      return fail(res, `存在相同类型的进行中任务（${(activeSame as any).task_biz_id}），请稍后再试`, ErrorCode.BUSINESS_ERROR)
+    }
+
+    const taskBizId = generateTaskBizId(type)
+    const syncTask = await SyncTask.create({
+      task_biz_id: taskBizId,
+      task_type: type,
+      status: 'pending',
+      progress: 0,
+      current_step: '任务已创建，等待执行...',
+      steps: [{ time: new Date().toISOString(), message: '手动触发，任务已创建', percent: 0 }],
+      started_at: new Date(),
+    })
+
+    ;(task as any).last_run_at = new Date()
+    ;(task as any).last_run_result = '手动触发成功'
+    await task.save()
+
+    return success(res, { task_biz_id: taskBizId, sync_task: syncTask }, '已手动触发')
+  } catch (err) {
+    console.error('触发定时任务失败:', err)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
+  }
+}
+
 // ============ 档案数据浏览 ============
 const ARCHIVE_MODELS: Record<string, any> = {
   items: U9Item,
