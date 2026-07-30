@@ -13,6 +13,7 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 3001,
+        DB_DIALECT: 'mysql',
         DB_HOST: 'localhost',
         DB_PORT: 3306,
         DB_NAME: 'milk_can_mes',
