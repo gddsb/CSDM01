@@ -2,7 +2,6 @@
   {
     "user_id": 1,
     "username": "admin",
-    "password": "$2a$10$RyQVqjxcm3x7rbj06zVZ0eMAy3IwnL4VzLYBXb.IU5SMRmAWwAGBC",
     "real_name": "管理员",
     "employee_no": "CSDM001",
     "department": "总经办",
@@ -13,12 +12,12 @@
     "last_login_time": "2026-07-28T13:34:01.000Z",
     "pwd_reset_required": 0,
     "created_at": "2026-07-09T06:53:38.000Z",
-    "updated_at": "2026-07-28T13:34:01.000Z"
+    "updated_at": "2026-07-28T13:34:01.000Z",
+    "user_pwd": "$pbkdf2$10000$HoGldRehJNuqE/GVyflTug==$8V98lJFuNCWSLHfK5DftbvMnLi8sna0/NHkgWU8QsxU="
   },
   {
     "user_id": 2,
     "username": "sysadmin",
-    "password": "$2a$10$RyQVqjxcm3x7rbj06zVZ0eMAy3IwnL4VzLYBXb.IU5SMRmAWwAGBC",
     "real_name": "系统管理员",
     "employee_no": "CSDM002",
     "department": "总经办",
@@ -29,12 +28,12 @@
     "last_login_time": "2026-06-29T09:20:00.000Z",
     "pwd_reset_required": 0,
     "created_at": "2026-07-09T06:53:38.000Z",
-    "updated_at": "2026-07-09T06:53:38.000Z"
+    "updated_at": "2026-07-09T06:53:38.000Z",
+    "user_pwd": "$pbkdf2$10000$Xq1W9MqM/ZinQMTyE9LRpg==$K5wrE+OU9u6vVgXD1e6iVuy4F933jc0PYjGGymBo8oY="
   },
   {
     "user_id": 3,
     "username": "planner",
-    "password": "$2a$10$RyQVqjxcm3x7rbj06zVZ0eMAy3IwnL4VzLYBXb.IU5SMRmAWwAGBC",
     "real_name": "朱红丽",
     "employee_no": "CSDM003",
     "department": "经营部",
@@ -45,12 +44,12 @@
     "last_login_time": "2026-06-30T01:00:00.000Z",
     "pwd_reset_required": 0,
     "created_at": "2026-07-09T06:53:38.000Z",
-    "updated_at": "2026-07-09T06:53:38.000Z"
+    "updated_at": "2026-07-09T06:53:38.000Z",
+    "user_pwd": "$pbkdf2$10000$9/VexuOOAYtsbP9W/9fiyQ==$OqLIf7GgT+ZnMUnwf7V5Hc/stQvMHjvHFKu6Co/PrdM="
   },
   {
     "user_id": 4,
     "username": "qm",
-    "password": "$2a$10$RyQVqjxcm3x7rbj06zVZ0eMAy3IwnL4VzLYBXb.IU5SMRmAWwAGBC",
     "real_name": "马红军",
     "employee_no": "CSDMP004",
     "department": "质量部",
@@ -61,12 +60,12 @@
     "last_login_time": "2026-06-30T00:45:00.000Z",
     "pwd_reset_required": 0,
     "created_at": "2026-07-09T06:53:38.000Z",
-    "updated_at": "2026-07-09T06:53:38.000Z"
+    "updated_at": "2026-07-09T06:53:38.000Z",
+    "user_pwd": "$pbkdf2$10000$yAkEedkR3lMLdoy/yABnUg==$eR+cmDQaS7+xk3zbojBZdo1mSX6P/aT2GwyrQ0YoelY="
   },
   {
     "user_id": 5,
     "username": "qc",
-    "password": "$2a$10$RyQVqjxcm3x7rbj06zVZ0eMAy3IwnL4VzLYBXb.IU5SMRmAWwAGBC",
     "real_name": "庞卫芳",
     "employee_no": "CSDM005",
     "department": "质量部",
@@ -77,12 +76,12 @@
     "last_login_time": "2026-07-28T12:32:00.000Z",
     "pwd_reset_required": 0,
     "created_at": "2026-07-09T06:53:38.000Z",
-    "updated_at": "2026-07-28T12:32:00.000Z"
+    "updated_at": "2026-07-28T12:32:00.000Z",
+    "user_pwd": "$pbkdf2$10000$+PLLHc4WlD1PxCSWR14gwQ==$QyPt10CP8r8vKSM/jkUB/kqodDiY7GiLU6KUFnngbSQ="
   },
   {
     "user_id": 6,
     "username": "pm",
-    "password": "$2a$10$RyQVqjxcm3x7rbj06zVZ0eMAy3IwnL4VzLYBXb.IU5SMRmAWwAGBC",
     "real_name": "何志强",
     "employee_no": "CSDM006",
     "department": "生产部",
@@ -93,12 +92,12 @@
     "last_login_time": "2026-07-28T12:32:00.000Z",
     "pwd_reset_required": 0,
     "created_at": "2026-07-09T06:53:38.000Z",
-    "updated_at": "2026-07-28T12:32:00.000Z"
+    "updated_at": "2026-07-28T12:32:00.000Z",
+    "user_pwd": "$pbkdf2$10000$vXDCfRXpuMG7nd/QGClkTw==$oGOnZ6G/qhMlyv+2zYEw66oqf2+pxFmKUM+ybe6v06Y="
   },
   {
     "user_id": 7,
     "username": "op",
-    "password": "$2a$10$RyQVqjxcm3x7rbj06zVZ0eMAy3IwnL4VzLYBXb.IU5SMRmAWwAGBC",
     "real_name": "李杰",
     "employee_no": "EMP007",
     "department": "生产部",
@@ -109,12 +108,12 @@
     "last_login_time": "2026-06-29T23:30:00.000Z",
     "pwd_reset_required": 0,
     "created_at": "2026-07-09T06:53:38.000Z",
-    "updated_at": "2026-07-09T06:53:38.000Z"
+    "updated_at": "2026-07-09T06:53:38.000Z",
+    "user_pwd": "$pbkdf2$10000$X2k1zpRe4pF+GdYVorTHuQ==$HlJ5qjg2cFJpXQ2ffuX9aFNcjs/MT0W/YzVjLwQmR44="
   },
   {
     "user_id": 8,
     "username": "maint",
-    "password": "$2a$10$RyQVqjxcm3x7rbj06zVZ0eMAy3IwnL4VzLYBXb.IU5SMRmAWwAGBC",
     "real_name": "设备维护员",
     "employee_no": "CSDM008",
     "department": "设备部",
@@ -125,12 +124,12 @@
     "last_login_time": "2026-06-29T08:00:00.000Z",
     "pwd_reset_required": 0,
     "created_at": "2026-07-09T06:53:38.000Z",
-    "updated_at": "2026-07-09T06:53:38.000Z"
+    "updated_at": "2026-07-09T06:53:38.000Z",
+    "user_pwd": "$pbkdf2$10000$7Zdefp/KlYakbmO1CuC49Q==$jw1Y/sa7qEhMS7aOH6ojh9yZHvTRDM9NhxSJDRjSqGI="
   },
   {
     "user_id": 9,
     "username": "viewer",
-    "password": "$2a$10$RyQVqjxcm3x7rbj06zVZ0eMAy3IwnL4VzLYBXb.IU5SMRmAWwAGBC",
     "real_name": "看板查看者",
     "employee_no": "EMP009",
     "department": "生产部",
@@ -141,12 +140,12 @@
     "last_login_time": "2026-07-28T12:32:00.000Z",
     "pwd_reset_required": 0,
     "created_at": "2026-07-09T06:53:38.000Z",
-    "updated_at": "2026-07-28T12:32:00.000Z"
+    "updated_at": "2026-07-28T12:32:00.000Z",
+    "user_pwd": "$pbkdf2$10000$6k7QcpOuvN5jsOmPsGAwZQ==$yiFMil1MIEYrN3D9WS8tdq+dCJvMd1P0DW3Q8JBMxQQ="
   },
   {
     "user_id": 10,
     "username": "IQC",
-    "password": "$2a$10$jhP1ljs5S4AhPX.imY/FxOg/pFCKwAqqjN7GCgfVtI1BnGDLdWAEa",
     "real_name": "喻舒",
     "employee_no": "CSDM009",
     "department": "质量部",
@@ -154,6 +153,7 @@
     "status": 1,
     "pwd_reset_required": 0,
     "created_at": "2026-07-28T13:43:22.000Z",
-    "updated_at": "2026-07-28T13:43:22.000Z"
+    "updated_at": "2026-07-28T13:43:22.000Z",
+    "user_pwd": "$pbkdf2$10000$DmHT23IVM1UC6Fx1EuiAog==$PJlPuwSqugZJnMgDPTvbsfVrM3PMFfgB3hb1lAZI4Qc="
   }
 ]

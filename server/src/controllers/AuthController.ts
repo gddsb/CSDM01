@@ -1,7 +1,7 @@
-import bcrypt from 'bcryptjs'
 import { User, Role, OperationLog, Permission } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { generateToken } from '../utils/jwt.js'
+import { verifyPassword } from '../utils/password.js'
 
 async function getUserPermissionCodes(roleId: number): Promise<string[]> {
   const role = await Role.findOne({
@@ -28,32 +28,23 @@ export const login = async (req, res) => {
     const forwarded = req.headers['x-forwarded-for']
     const ip = (forwarded && forwarded.split(',')[0].trim()) || req.ip || req.socket?.remoteAddress || ''
 
-    if (!user) {
+    let valid = false
+    if (user) {
+      valid = verifyPassword(password, user.user_pwd)
+    }
+
+    if (!user || !valid) {
       OperationLog.create({
-        user_id: null,
+        user_id: user?.user_id || null,
         username: username || '未知',
         module: '系统登录',
-        operation: '登录失败（用户不存在）',
+        operation: '登录失败（账号或密码错误）',
         method: 'POST',
         params: '',
         ip,
         status: 0,
       }).catch(() => {})
-      return fail(res, '用户名不存在', ErrorCode.RECORD_NOT_FOUND)
-    }
-    const valid = await bcrypt.compare(password, user.password)
-    if (!valid) {
-      OperationLog.create({
-        user_id: user.user_id,
-        username: user.username,
-        module: '系统登录',
-        operation: '登录失败（密码错误）',
-        method: 'POST',
-        params: '',
-        ip,
-        status: 0,
-      }).catch(() => {})
-      return fail(res, '密码错误')
+      return fail(res, '账号或密码错误')
     }
     if (user.status !== '启用') {
       OperationLog.create({
@@ -73,7 +64,7 @@ export const login = async (req, res) => {
     // 生成 token
     const token = generateToken(user)
     const userWithRole = user.toJSON()
-    delete userWithRole.password
+    delete userWithRole.user_pwd
     const permCodes = await getUserPermissionCodes(user.role_id || userWithRole.role_id)
     userWithRole.perm_codes = permCodes
 
@@ -107,7 +98,7 @@ export const profile = async (req, res) => {
     })
     if (!user) return fail(res, '用户不存在', ErrorCode.RECORD_NOT_FOUND)
     const userData = user.toJSON()
-    delete userData.password
+    delete userData.user_pwd
     const permCodes = await getUserPermissionCodes(user.role_id || userData.role_id)
     userData.perm_codes = permCodes
     return success(res, userData, '获取用户信息成功')

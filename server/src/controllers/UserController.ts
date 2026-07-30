@@ -1,10 +1,10 @@
-import bcrypt from 'bcryptjs'
 import { Op } from 'sequelize'
 import { User, Role } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import path from 'path'
 import fs from 'fs'
 import { logger } from '../utils/logger.js'
+import { hashPassword } from '../utils/password.js'
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
 const PHONE_REGEX = /^1[3-9]\d{9}$|^0\d{2,3}-?\d{7,8}$/
@@ -51,7 +51,7 @@ export const list = async (req, res) => {
     })
     const list = rows.map(u => {
       const item = u.toJSON()
-      delete item.password
+      delete item.user_pwd
       return item
     })
     return success(res, list, '查询成功', count)
@@ -71,7 +71,7 @@ export const detail = async (req, res) => {
     })
     if (!user) return fail(res, '用户不存在', ErrorCode.RECORD_NOT_FOUND)
     const data = user.toJSON()
-    delete data.password
+    delete data.user_pwd
     return success(res, data, '查询成功')
   } catch (err) {
     console.error('查询用户详情失败:', err)
@@ -95,11 +95,10 @@ export const create = async (req, res) => {
 
     const exists = await User.findOne({ where: { username } })
     if (exists) return fail(res, '用户名已存在', ErrorCode.RECORD_EXISTS)
-    const salt = bcrypt.genSaltSync(10)
-    const hashedPassword = bcrypt.hashSync(password, salt)
+    const hashedPassword = hashPassword(password)
     const user = await User.create({
       username,
-      password: hashedPassword,
+      user_pwd: hashedPassword,
       real_name,
       employee_no,
       department,
@@ -109,7 +108,7 @@ export const create = async (req, res) => {
       status: status !== undefined ? status : 1,
     })
     const data = user.toJSON()
-    delete data.password
+    delete data.user_pwd
     return success(res, data, '创建成功')
   } catch (err) {
     console.error('创建用户失败:', err)
@@ -154,12 +153,11 @@ export const update = async (req, res) => {
     }
     // 密码非空才更新
     if (password) {
-      const salt = bcrypt.genSaltSync(10)
-      updateData.password = bcrypt.hashSync(password, salt)
+      updateData.user_pwd = hashPassword(password)
     }
     await user.update(updateData)
     const data = user.toJSON()
-    delete data.password
+    delete data.user_pwd
     return success(res, data, '修改成功')
   } catch (err) {
     console.error('修改用户失败:', err)
@@ -246,7 +244,7 @@ export const uploadMyAvatar = async (req, res) => {
     }
     await user.update({ avatar_url: avatarUrl })
     const data = user.toJSON()
-    delete data.password
+    delete data.user_pwd
     return success(res, { avatar_url: avatarUrl, user: data }, '头像上传成功')
   } catch (err) {
     console.error('上传头像失败:', err)
@@ -284,7 +282,7 @@ export const setMyAvatar = async (req, res) => {
     }
     await user.update({ avatar_url })
     const data = user.toJSON()
-    delete data.password
+    delete data.user_pwd
     return success(res, { avatar_url, user: data }, '头像设置成功')
   } catch (err) {
     console.error('设置头像失败:', err)
@@ -316,7 +314,7 @@ export const updateMyProfile = async (req, res) => {
     if (email !== undefined) updateData.email = email
     await user.update(updateData)
     const data = user.toJSON()
-    delete data.password
+    delete data.user_pwd
     return success(res, data, '个人信息已更新')
   } catch (err) {
     console.error('更新个人信息失败:', err)

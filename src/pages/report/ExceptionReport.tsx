@@ -214,7 +214,7 @@ export default function ExceptionReport() {
         return <span style={{ color, fontWeight: 600 }}>{Math.floor(v)}</span>
       }
     },
-    { title: '异常原因', dataIndex: 'reason', key: 'reason', ellipsis: true },
+    { title: '异常描述', dataIndex: 'description', key: 'description', ellipsis: true },
     { title: '记录人', dataIndex: 'record_user_name', key: 'record_user_name', width: 90 },
   ]
 
