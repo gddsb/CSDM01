@@ -1,15 +1,16 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react'
-import { Row, Col, Spin, Typography, Space } from 'antd'
+import { Row, Col, Spin, Space } from 'antd'
+import { ArrowLeftOutlined, ReloadOutlined, ClockCircleOutlined } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
 import * as echarts from 'echarts'
 import type { EChartsOption } from 'echarts'
 import {
-  DashboardOutlined, ReloadOutlined, ClockCircleOutlined,
   ShopOutlined, HomeOutlined, FireOutlined, CloudOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import api from '../../utils/api'
-
-const { Title, Text } = Typography
+import { useBigScreenScale } from '../../hooks/useBigScreenScale'
+import '../../styles/bigscreen.css'
 
 interface FactorItem {
   factor_name: string
@@ -258,10 +259,25 @@ function useChart(option: EChartsOption | null, deps: any[] = []) {
 }
 
 export default function EnvironmentBigScreen() {
+  const navigate = useNavigate()
+  const [currentTime, setCurrentTime] = useState(new Date())
   const [overview, setOverview] = useState<OverviewData | null>(null)
   const [trend, setTrend] = useState<TrendData | null>(null)
   const [loading, setLoading] = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const { style: scaleStyle } = useBigScreenScale({ designWidth: 1920, designHeight: 1080 })
+
+  // 时钟
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const formatTime = (d) => {
+    const pad = (n) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  }
 
   const loadAll = useCallback(async () => {
     setLoading(true)
