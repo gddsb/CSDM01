@@ -154,7 +154,7 @@ const defaultPermissions = [
   { parent_id: 70, perm_name: '效率分析', perm_code: 'report:efficiency', type: 'menu', icon: 'RiseOutlined', path: '/report/efficiency', sort_order: 3 },
   { parent_id: 70, perm_name: '生产报表', perm_code: 'report:production', type: 'menu', icon: 'FileTextOutlined', path: '/report/production', sort_order: 4 },
   { parent_id: 70, perm_name: '质量报表', perm_code: 'report:quality', type: 'menu', icon: 'ExperimentOutlined', path: '/report/quality', sort_order: 5 },
-  { parent_id: 70, perm_name: '异常分析报表', perm_code: 'report:exception', type: 'menu', icon: 'BellOutlined', path: '/report/exception', sort_order: 6 },
+  { parent_id: 70, perm_name: '异常分析', perm_code: 'report:exception', type: 'menu', icon: 'BellOutlined', path: '/report/exception', sort_order: 6 },
   // ===== 按钮级权限（type: button）=====
   // 系统管理 - 角色权限
   { parent_id: 3, perm_name: '分配权限', perm_code: 'system:role:assign', type: 'button', sort_order: 1 },

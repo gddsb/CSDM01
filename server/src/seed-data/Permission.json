@@ -561,7 +561,7 @@
   {
     "perm_id": 76,
     "parent_id": 70,
-    "perm_name": "异常分析报表",
+    "perm_name": "异常分析",
     "perm_code": "report:exception",
     "type": "menu",
     "icon": "BellOutlined",

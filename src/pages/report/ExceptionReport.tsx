@@ -14,12 +14,18 @@ import api, { extractList } from '../../utils/api'
 const woStatusNumToText: Record<number, string> = { 0: '开工', 1: '完工', 2: '关闭' }
 const { RangePicker } = DatePicker
 
-const exceptionTypeMap = {
+const exceptionTypeMap: Record<string, { name: string; color: string }> = {
   '换型换线': { name: '换型换线', color: '#1890ff' },
   '停机待料': { name: '停机待料', color: '#faad14' },
   '故障维修': { name: '故障维修', color: '#ff4d4f' },
   '其它停机': { name: '其它停机', color: '#8c8c8c' },
+  '物料短缺': { name: '物料短缺', color: '#fa8c16' },
+  '人员短缺': { name: '人员短缺', color: '#722ed1' },
+  '质量异常': { name: '质量异常', color: '#f5222d' },
+  '设备故障': { name: '设备故障', color: '#eb2f96' },
+  '工艺问题': { name: '工艺问题', color: '#13c2c2' },
 }
+const DEFAULT_TYPE_COLOR = '#8c8c8c'
 
 const MONTH_QUICK_OPTIONS = [
   { label: '本月', value: 'this_month' },
@@ -94,7 +100,7 @@ export default function ExceptionReport() {
           record_id: e.exception_id,
           work_order_id: e.report_order_id,
           work_order_no: e.report_order_no || '',
-          duration: Math.floor(Number(e.duration) || 0),
+          duration: Math.floor(Number(e.duration || 0) * 60),
         })))
       }
       if (woRes.success && woRes.data) {
@@ -128,10 +134,12 @@ export default function ExceptionReport() {
   const avgDuration = totalExceptions > 0 ? Math.floor(totalDuration / totalExceptions) : 0
 
   const typeSummary = useMemo(() => {
-    return Object.entries(exceptionTypeMap).map(([code, info]) => {
+    const types = [...new Set(filtered.map((r: any) => r.exception_type).filter(Boolean))]
+    return types.map(code => {
       const items = filtered.filter((r: any) => r.exception_type === code)
       const totalDur = Math.floor(items.reduce((s: number, r: any) => s + (Number(r.duration) || 0), 0))
       const avgDur = items.length > 0 ? Math.floor(totalDur / items.length) : 0
+      const info = exceptionTypeMap[code] || { name: code, color: DEFAULT_TYPE_COLOR }
       return {
         exception_type: code,
         exception_type_name: info.name,
@@ -141,7 +149,7 @@ export default function ExceptionReport() {
         avg_duration: avgDur,
         percentage: totalExceptions > 0 ? ((items.length / totalExceptions) * 100).toFixed(1) : '0.0',
       }
-    }).filter(t => t.count > 0)
+    }).sort((a, b) => b.count - a.count)
   }, [filtered, totalExceptions])
 
   const workOrderSummary = useMemo(() => {
@@ -314,8 +322,8 @@ export default function ExceptionReport() {
 
   return (
     <ThreeSectionPage
-      title="异常报表"
-      breadcrumbs="报表中心 / 异常报表"
+      title="异常分析"
+      breadcrumbs="报表中心 / 异常分析"
       stats={stats}
       actions={<Button icon={<ExportOutlined />}>导出Excel</Button>}
       table={
@@ -330,7 +338,7 @@ export default function ExceptionReport() {
                 <Select placeholder="异常类型筛选" allowClear style={{ width: '100%' }}
                   value={typeFilter} onChange={setTypeFilter}
                   options={Object.entries(exceptionTypeMap).map(([code, info]) => ({
-                    label: `${code} ${info.name}`, value: code,
+                    label: info.name, value: code,
                   }))} />
               </Col>
               <Col span={4}>
