@@ -333,5 +333,53 @@
     "id": 70,
     "role_id": 2,
     "perm_id": 30
+  },
+  {
+    "role_id": 1,
+    "perm_id": 300
+  },
+  {
+    "role_id": 1,
+    "perm_id": 301
+  },
+  {
+    "role_id": 1,
+    "perm_id": 302
+  },
+  {
+    "role_id": 1,
+    "perm_id": 303
+  },
+  {
+    "role_id": 1,
+    "perm_id": 304
+  },
+  {
+    "role_id": 1,
+    "perm_id": 305
+  },
+  {
+    "role_id": 2,
+    "perm_id": 300
+  },
+  {
+    "role_id": 2,
+    "perm_id": 301
+  },
+  {
+    "role_id": 2,
+    "perm_id": 302
+  },
+  {
+    "role_id": 2,
+    "perm_id": 303
+  },
+  {
+    "role_id": 2,
+    "perm_id": 304
+  },
+  {
+    "role_id": 2,
+    "perm_id": 305
   }
 ]
