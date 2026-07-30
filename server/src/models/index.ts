@@ -49,6 +49,7 @@ import EnvAlarm from './EnvAlarm.js'
 import WeatherInfo from './WeatherInfo.js'
 import DashboardConfig from './DashboardConfig.js'
 import DashboardShare from './DashboardShare.js'
+import DashboardAccessLog from './DashboardAccessLog.js'
 
 // 建立模型关联关系
 // 用户 - 角色
@@ -211,6 +212,7 @@ const db = {
   WeatherInfo,
   DashboardConfig,
   DashboardShare,
+  DashboardAccessLog,
 }
 
 // 具名导出，便于按需导入
@@ -263,6 +265,7 @@ export {
   WeatherInfo,
   DashboardConfig,
   DashboardShare,
+  DashboardAccessLog,
 }
 
 export default db

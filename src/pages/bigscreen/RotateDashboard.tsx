@@ -32,6 +32,7 @@ export default function RotateDashboardPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const token = searchParams.get('token')
+  const sig = searchParams.get('sig') || ''
   const [config, setConfig] = useState<DashboardConfig | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -44,17 +45,26 @@ export default function RotateDashboardPage() {
       setLoading(false)
       return
     }
+    // 前端先做一次签名格式校验
+    if (sig && !/^[0-9a-f]{64}$/i.test(sig)) {
+      setError('链接签名格式错误，链接可能被篡改')
+      setLoading(false)
+      return
+    }
     try {
       setLoading(true)
       setError(null)
-      const res = await api.get(`/dashboard/dashboards/share/${token}`)
+      const url = sig
+        ? `/dashboard/dashboards/share/${token}?sig=${encodeURIComponent(sig)}`
+        : `/dashboard/dashboards/share/${token}`
+      const res = await api.get(url)
       setConfig(res.data?.config || null)
     } catch (err: any) {
       setError(err.message || '加载看板配置失败')
     } finally {
       setLoading(false)
     }
-  }, [token])
+  }, [token, sig])
 
   useEffect(() => {
     loadConfig()

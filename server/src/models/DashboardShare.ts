@@ -44,6 +44,10 @@ const DashboardShare = sequelize.define('DashboardShare', {
     type: DataTypes.DATE,
     comment: '最后访问时间',
   },
+  creator_signature: {
+    type: DataTypes.STRING(128),
+    comment: '创建人签名(HMAC-SHA256，用于防篡改验证)',
+  },
 }, {
   tableName: 'dashboard_share',
   timestamps: true,
