@@ -95,6 +95,7 @@ const statusColor = { '已完成': 'success', '检验中': 'processing' }
 export default function EnvironmentInspection() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [current, setCurrent] = useState(null)
+  const [currentItems, setCurrentItems] = useState<any[]>([])
 
   const filteredData = useMemo(() => {
     return envInspections
@@ -126,6 +127,7 @@ export default function EnvironmentInspection() {
 
   const showDetail = (record) => {
     setCurrent(record)
+    setCurrentItems(getEnvItems(record))
     setDrawerOpen(true)
   }
 
@@ -227,7 +229,7 @@ export default function EnvironmentInspection() {
             </Descriptions>
             <Title level={5}>检验结果明细</Title>
             <ResizableTable tableKey="pages_quality_EnvironmentInspection"               columns={detailColumns}
-              dataSource={getEnvItems(current)}
+              dataSource={currentItems}
               rowKey={(r, i) => i}
               size="small"
               pagination={false}
