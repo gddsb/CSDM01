@@ -480,10 +480,11 @@ export default function EnvironmentBigScreen() {
           </div>
         </div>
 
-        <Spin spinning={loading && !overview} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
+          <Spin spinning={loading && !overview} style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           {/* 第一行：生产车间仪表盘 | 仓库仪表盘 */}
-          <div style={{ flex: '0 0 auto', height: '48%', minHeight: 0, display: 'flex', gap: 10, marginBottom: 10 }}>
+          <div style={{ flex: '0 0 420px', display: 'flex', gap: 10, marginBottom: 10 }}>
             {/* 左：生产车间 */}
             <div className="bs-panel" style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
               <div className="bs-panel-title">
@@ -581,7 +582,8 @@ export default function EnvironmentBigScreen() {
             </div>
           </div>
           </div>
-        </Spin>
+          </Spin>
+        </div>
       </div>
     </div>
   )
