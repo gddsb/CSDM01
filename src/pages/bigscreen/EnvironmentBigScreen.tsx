@@ -349,7 +349,7 @@ export default function EnvironmentBigScreen() {
           if (ws.factors.length > 0) areas.push(ws)
           if (wh.factors.length > 0) areas.push(wh)
         }
-        setOverview({ areas, alarms: raw.alarms || { total: 0, unhandled: 0, today: 0, recent: [] }, lastUpdate: raw.lastUpdate || null })
+        setOverview({ areas, alarms: raw.alarms || { total: 0, unhandled: 0, today: 0, recent: [] }, dew_points: raw.dew_points || {}, lastUpdate: raw.lastUpdate || null })
       }
       if (t && t.data) setTrend(t.data as TrendData)
     } catch (err: any) {
