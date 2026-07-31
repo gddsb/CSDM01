@@ -9,6 +9,18 @@ import { fetchU9Orgs, DEFAULT_U9_CONFIG } from '../services/u9Service.js'
 import { calcNextRunAt } from '../services/taskScheduler.js'
 import { executeRealTask } from '../services/taskExecutor.js'
 
+// 露点温度计算（Magnus 公式近似，T:摄氏温度, RH:相对湿度%）
+function calcDewPoint(T: number, RH: number): number | null {
+  if (T == null || RH == null || Number.isNaN(T) || Number.isNaN(RH)) return null
+  const es = 6.112 * Math.exp((17.67 * T) / (T + 243.5))
+  const e = es * RH / 100
+  if (e <= 0) return null
+  const lnE = Math.log(e / 6.112)
+  const Td = (243.5 * lnE) / (17.67 - lnE)
+  if (Number.isNaN(Td) || !isFinite(Td)) return null
+  return Math.round(Td * 10) / 10
+}
+
 // ============ 任务设置 ============
 export const listTaskSettings = async (req, res) => {
   try {
@@ -451,6 +463,24 @@ export const dashboardOverview = async (req, res) => {
       if (!factorLatest.has(r.factor_name)) factorLatest.set(r.factor_name, r)
     }
 
+    // 计算各区域的平均温度、湿度和露点温度
+    const areaStats: Record<string, { temps: number[]; hums: number[] }> = {}
+    for (const f of factorLatest.values()) {
+      const name: string = f.factor_name || ''
+      if (!name.includes('温度') && !name.includes('湿度')) continue
+      const area = name.includes('车间') ? 'workshop' : name.includes('仓库') ? 'warehouse' : null
+      if (!area) continue
+      if (!areaStats[area]) areaStats[area] = { temps: [], hums: [] }
+      if (name.includes('温度') && typeof f.value === 'number') areaStats[area].temps.push(f.value)
+      if (name.includes('湿度') && typeof f.value === 'number') areaStats[area].hums.push(f.value)
+    }
+    const dewPoints: Record<string, number | null> = {}
+    for (const [area, s] of Object.entries(areaStats)) {
+      const avgT = s.temps.length ? s.temps.reduce((a, b) => a + b, 0) / s.temps.length : NaN
+      const avgH = s.hums.length ? s.hums.reduce((a, b) => a + b, 0) / s.hums.length : NaN
+      dewPoints[area] = calcDewPoint(avgT, avgH)
+    }
+
     const totalAlarms = await EnvAlarm.count()
     const unhandledAlarms = await EnvAlarm.count({ where: { is_handled: 0 } })
     const todayStart = new Date()
@@ -466,6 +496,7 @@ export const dashboardOverview = async (req, res) => {
     return success(res, {
       factors: Array.from(factorLatest.values()),
       alarms: { total: totalAlarms, unhandled: unhandledAlarms, today: todayAlarms, recent: recentAlarms },
+      dew_points: dewPoints,
       lastUpdate: latestBatch[0]?.collect_time || null,
     })
   } catch (err) {
@@ -528,26 +559,32 @@ export const dashboardTrend = async (req, res) => {
     }
 
     const areas = ['workshop', 'warehouse'] as const
-    const areaHourly: Record<string, { temp: (number | null)[]; hum: (number | null)[] }> = {}
+    const areaHourly: Record<string, { temp: (number | null)[]; hum: (number | null)[]; dew: (number | null)[] }> = {}
     for (const area of areas) {
       const tempRecs = (grouped.get(`${area}|temperature`) as any) || []
       const humRecs = (grouped.get(`${area}|humidity`) as any) || []
       const temp: (number | null)[] = []
       const hum: (number | null)[] = []
+      const dew: (number | null)[] = []
       for (const mark of hourMarks) {
         const tv = closestValue(tempRecs, mark)
         const hv = closestValue(humRecs, mark)
-        temp.push(tv !== null ? Number(Number(tv).toFixed(2)) : null)
-        hum.push(hv !== null ? Number(Number(hv).toFixed(2)) : null)
+        const t = tv !== null ? Number(Number(tv).toFixed(2)) : null
+        const h = hv !== null ? Number(Number(hv).toFixed(2)) : null
+        temp.push(t)
+        hum.push(h)
+        dew.push(t !== null && h !== null ? calcDewPoint(t, h) : null)
       }
-      areaHourly[area] = { temp, hum }
+      areaHourly[area] = { temp, hum, dew }
     }
 
     const seriesDefs = [
       { area: 'workshop', factor: 'temperature', label: '车间温度', color: '#ff4d4f' },
       { area: 'workshop', factor: 'humidity', label: '车间湿度', color: '#1890ff' },
+      { area: 'workshop', factor: 'dew', label: '车间露点', color: '#a855f7' },
       { area: 'warehouse', factor: 'temperature', label: '仓库温度', color: '#fa8c16' },
       { area: 'warehouse', factor: 'humidity', label: '仓库湿度', color: '#13c2c2' },
+      { area: 'warehouse', factor: 'dew', label: '仓库露点', color: '#f59e0b' },
     ]
 
     const series: { name: string; color: string; data: (number | null)[] }[] = []
@@ -557,6 +594,7 @@ export const dashboardTrend = async (req, res) => {
       for (let i = 0; i < 12; i++) {
         if (s.factor === 'temperature') data.push(hourly.temp[i])
         else if (s.factor === 'humidity') data.push(hourly.hum[i])
+        else if (s.factor === 'dew') data.push(hourly.dew[i])
       }
       series.push({ name: s.label, color: s.color, data })
     }
