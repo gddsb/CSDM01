@@ -533,14 +533,15 @@ export const dashboardOverview = async (req, res) => {
   }
 }
 
-// 趋势数据（最近12小时整点）
+// 趋势数据（最近12小时，10分钟间隔）
 export const dashboardTrend = async (req, res) => {
   try {
     const now = new Date()
-    const currentHour = new Date(now)
-    currentHour.setMinutes(0, 0, 0)
-    const startTime = new Date(currentHour)
-    startTime.setHours(startTime.getHours() - 11)
+    const currentSlot = new Date(now)
+    currentSlot.setSeconds(0, 0)
+    currentSlot.setMinutes(Math.floor(currentSlot.getMinutes() / 10) * 10)
+    const startTime = new Date(currentSlot)
+    startTime.setMinutes(startTime.getMinutes() - 11 * 60 - 50)
 
     const rows = await EnvMonitor.findAll({
       where: { collect_time: { [Op.gte]: startTime, [Op.lte]: now } },
@@ -548,13 +549,13 @@ export const dashboardTrend = async (req, res) => {
       raw: true,
     })
 
-    const hourMarks: Date[] = []
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(currentHour)
-      d.setHours(d.getHours() - i)
-      hourMarks.push(d)
+    const slotMarks: Date[] = []
+    for (let i = 71; i >= 0; i--) {
+      const d = new Date(currentSlot)
+      d.setMinutes(d.getMinutes() - i * 10)
+      slotMarks.push(d)
     }
-    const times = hourMarks.map((d) => d.toISOString())
+    const times = slotMarks.map((d) => d.toISOString())
 
     const getArea = (factorName: string): 'workshop' | 'warehouse' | 'other' => {
       if (factorName.includes('车间')) return 'workshop'
@@ -575,35 +576,45 @@ export const dashboardTrend = async (req, res) => {
       grouped.get(key)!.push({ time: new Date((r as any).collect_time), value: (r as any).value })
     }
 
-    function closestValue(recs: any[], target: Date): number | null {
+    function bucketAvg(recs: Rec[], target: Date, windowMs: number = 10 * 60 * 1000): number | null {
       if (recs.length === 0) return null
-      let best = recs[0]
-      let bestDiff = Math.abs(best.time.getTime() - target.getTime())
-      for (const r of recs as any) {
-        const diff = Math.abs(r.time.getTime() - target.getTime())
-        if (diff < bestDiff) { best = r; bestDiff = diff }
+      const targetTs = target.getTime()
+      let sum = 0
+      let count = 0
+      let fallback: Rec | null = null
+      let fallbackDiff = Infinity
+      for (const r of recs) {
+        const diff = Math.abs(r.time.getTime() - targetTs)
+        if (diff <= windowMs / 2) {
+          sum += r.value
+          count++
+        }
+        if (diff < fallbackDiff) {
+          fallback = r
+          fallbackDiff = diff
+        }
       }
-      return best.value
+      if (count > 0) return Number((sum / count).toFixed(2))
+      if (fallback && fallbackDiff <= windowMs) return Number(Number(fallback.value).toFixed(2))
+      return null
     }
 
     const areas = ['workshop', 'warehouse'] as const
-    const areaHourly: Record<string, { temp: (number | null)[]; hum: (number | null)[]; dew: (number | null)[] }> = {}
+    const areaSlots: Record<string, { temp: (number | null)[]; hum: (number | null)[]; dew: (number | null)[] }> = {}
     for (const area of areas) {
-      const tempRecs = (grouped.get(`${area}|temperature`) as any) || []
-      const humRecs = (grouped.get(`${area}|humidity`) as any) || []
+      const tempRecs = grouped.get(`${area}|temperature`) || []
+      const humRecs = grouped.get(`${area}|humidity`) || []
       const temp: (number | null)[] = []
       const hum: (number | null)[] = []
       const dew: (number | null)[] = []
-      for (const mark of hourMarks) {
-        const tv = closestValue(tempRecs, mark)
-        const hv = closestValue(humRecs, mark)
-        const t = tv !== null ? Number(Number(tv).toFixed(2)) : null
-        const h = hv !== null ? Number(Number(hv).toFixed(2)) : null
-        temp.push(t)
-        hum.push(h)
-        dew.push(t !== null && h !== null ? calcDewPoint(t, h) : null)
+      for (const mark of slotMarks) {
+        const tv = bucketAvg(tempRecs, mark)
+        const hv = bucketAvg(humRecs, mark)
+        temp.push(tv)
+        hum.push(hv)
+        dew.push(tv !== null && hv !== null ? calcDewPoint(tv, hv) : null)
       }
-      areaHourly[area] = { temp, hum, dew }
+      areaSlots[area] = { temp, hum, dew }
     }
 
     const seriesDefs = [
@@ -618,16 +629,16 @@ export const dashboardTrend = async (req, res) => {
     const series: { name: string; color: string; data: (number | null)[] }[] = []
     for (const s of seriesDefs) {
       const data: (number | null)[] = []
-      const hourly = areaHourly[s.area] as any
-      for (let i = 0; i < 12; i++) {
-        if (s.factor === 'temperature') data.push(hourly.temp[i])
-        else if (s.factor === 'humidity') data.push(hourly.hum[i])
-        else if (s.factor === 'dew') data.push(hourly.dew[i])
+      const slots = areaSlots[s.area] as any
+      for (let i = 0; i < 72; i++) {
+        if (s.factor === 'temperature') data.push(slots.temp[i])
+        else if (s.factor === 'humidity') data.push(slots.hum[i])
+        else if (s.factor === 'dew') data.push(slots.dew[i])
       }
       series.push({ name: s.label, color: s.color, data })
     }
 
-    return success(res, { hours: 12, times, series })
+    return success(res, { hours: 12, intervalMinutes: 10, times, series })
   } catch (err) {
     console.error('获取趋势数据失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)

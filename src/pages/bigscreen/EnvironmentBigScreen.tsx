@@ -173,7 +173,13 @@ function trendOption(
   times: string[],
   cfg: TrendConfig,
 ): EChartsOption {
-  const xData = times.map((t) => dayjs(t).format('HH:00'))
+  const xData = times.map((t) => dayjs(t).format('HH:mm'))
+  const labelInterval = (index: number) => {
+    const t = times[index]
+    if (!t) return false
+    const d = dayjs(t)
+    return d.minute() === 0
+  }
 
   const leftVals: number[] = []
   const rightVals: number[] = []
@@ -200,7 +206,7 @@ function trendOption(
       trigger: 'axis',
       formatter: (params: any) => {
         const full = times[params[0].dataIndex]
-          ? dayjs(times[params[0].dataIndex]).format('YYYY-MM-DD HH:00')
+          ? dayjs(times[params[0].dataIndex]).format('YYYY-MM-DD HH:mm')
           : params[0].name
         let html = full + '<br/>'
         for (const p of params) {
@@ -213,7 +219,7 @@ function trendOption(
     grid: { left: 52, right: 58, top: 35, bottom: 32 },
     xAxis: {
       type: 'category', data: xData, boundaryGap: false,
-      axisLabel: { color: '#888', fontSize: 10, hideOverlap: true },
+      axisLabel: { color: '#888', fontSize: 10, hideOverlap: false, interval: labelInterval },
       axisLine: { lineStyle: { color: '#333' } },
     },
     yAxis: [
