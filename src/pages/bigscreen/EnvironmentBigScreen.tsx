@@ -386,33 +386,31 @@ export default function EnvironmentBigScreen() {
     }
   }, [overview])
 
-  const isTH = (n: string) => n.includes('温度') || n.includes('湿度') || n.includes('露点')
-  const workshopTH = useMemo(() =>
-    (trend?.series || []).filter((s) => s.name.includes('车间') && isTH(s.name)), [trend])
-  const warehouseTH = useMemo(() =>
-    (trend?.series || []).filter((s) => s.name.includes('仓库') && isTH(s.name)), [trend])
+  const isTemp = (n: string) => n.includes('温度') && !n.includes('露点')
+  const isHum = (n: string) => n.includes('湿度')
+  const tempSeries = useMemo(() =>
+    (trend?.series || []).filter((s) => isTemp(s.name)), [trend])
+  const humSeries = useMemo(() =>
+    (trend?.series || []).filter((s) => isHum(s.name)), [trend])
 
-  const workshopTHConfig: TrendConfig = {
-    leftName: '温度/露点(℃)',
-    rightName: '湿度(%)',
-    rightMin: 0, rightMax: 100,
-    isLeftAxis: (n) => n.includes('温度') || n.includes('露点'),
+  const tempTrendConfig: TrendConfig = {
+    leftName: '温度(℃)',
+    rightName: '温度(℃)',
+    isLeftAxis: () => true,
     markLines: [
-      { yAxis: 18, label: '温度下限18', color: '#1890ff' },
-      { yAxis: 25, label: '温度上限25', color: '#ff4d4f' },
-      { yAxis: 65, label: '湿度限值65%', color: '#ff4d4f' },
+      { yAxis: 18, label: '下限18', color: '#1890ff' },
+      { yAxis: 25, label: '车间上限25', color: '#ff4d4f' },
+      { yAxis: 35, label: '仓库上限35', color: '#fa8c16' },
     ],
   }
 
-  const warehouseTHConfig: TrendConfig = {
-    leftName: '温度/露点(℃)',
+  const humTrendConfig: TrendConfig = {
+    leftName: '湿度(%)',
     rightName: '湿度(%)',
     rightMin: 0, rightMax: 100,
-    isLeftAxis: (n) => n.includes('温度') || n.includes('露点'),
+    isLeftAxis: () => true,
     markLines: [
-      { yAxis: 18, label: '温度下限18', color: '#1890ff' },
-      { yAxis: 35, label: '温度上限35', color: '#ff4d4f' },
-      { yAxis: 65, label: '湿度限值65%', color: '#ff4d4f' },
+      { yAxis: 65, label: '限值65%', color: '#ff4d4f' },
     ],
   }
 
@@ -422,13 +420,13 @@ export default function EnvironmentBigScreen() {
   const warehouseTempRef = useChart(gaugeTempOption(areaAvg.warehouseTemp, 'warehouse'), [areaAvg.warehouseTemp])
   const warehouseHumRef = useChart(gaugeHumOption(areaAvg.warehouseHum), [areaAvg.warehouseHum])
   const warehouseDewRef = useChart(gaugeDewOption(areaAvg.warehouseDew ?? 0), [areaAvg.warehouseDew])
-  const workshopTrendRef = useChart(
-    workshopTH.length > 0 ? trendOption(workshopTH, trend?.times || [], workshopTHConfig) : null,
-    [workshopTH, trend?.times],
+  const tempTrendRef = useChart(
+    tempSeries.length > 0 ? trendOption(tempSeries, trend?.times || [], tempTrendConfig) : null,
+    [tempSeries, trend?.times],
   )
-  const warehouseTrendRef = useChart(
-    warehouseTH.length > 0 ? trendOption(warehouseTH, trend?.times || [], warehouseTHConfig) : null,
-    [warehouseTH, trend?.times],
+  const humTrendRef = useChart(
+    humSeries.length > 0 ? trendOption(humSeries, trend?.times || [], humTrendConfig) : null,
+    [humSeries, trend?.times],
   )
 
   return (
@@ -560,26 +558,26 @@ export default function EnvironmentBigScreen() {
             </div>
           </div>
 
-          {/* 第二行：温湿度露点趋势 */}
+          {/* 第二行：温度趋势 | 湿度趋势（最近12小时） */}
           <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10 }}>
-            {/* 左：生产车间趋势 */}
+            {/* 左：温度趋势 */}
             <div className="bs-panel" style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
               <div className="bs-panel-title">
-                <ShopOutlined style={{ color: '#722ed1', fontSize: 16 }} />
-                生产车间 · 温湿度露点趋势
+                <FireOutlined style={{ color: '#ff4d4f', fontSize: 16 }} />
+                温度趋势
                 <span style={{ color: '#8B949E', fontSize: 11, fontWeight: 400, marginLeft: 8 }}>（最近12h）</span>
               </div>
-              <div ref={workshopTrendRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
+              <div ref={tempTrendRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
             </div>
 
-            {/* 右：仓库趋势 */}
+            {/* 右：湿度趋势 */}
             <div className="bs-panel" style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
               <div className="bs-panel-title">
-                <HomeOutlined style={{ color: '#13c2c2', fontSize: 16 }} />
-                仓库 · 温湿度露点趋势
+                <CloudOutlined style={{ color: '#1890ff', fontSize: 16 }} />
+                湿度趋势
                 <span style={{ color: '#8B949E', fontSize: 11, fontWeight: 400, marginLeft: 8 }}>（最近12h）</span>
               </div>
-              <div ref={warehouseTrendRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
+              <div ref={humTrendRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
             </div>
           </div>
         </Spin>

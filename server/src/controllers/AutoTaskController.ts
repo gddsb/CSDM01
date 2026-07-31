@@ -9,12 +9,28 @@ import { fetchU9Orgs, DEFAULT_U9_CONFIG } from '../services/u9Service.js'
 import { calcNextRunAt } from '../services/taskScheduler.js'
 import { executeRealTask } from '../services/taskExecutor.js'
 
-// 露点温度计算（Magnus 公式近似，T:摄氏温度, RH:相对湿度%）
-function calcDewPoint(T: number, RH: number): number | null {
+// 露点温度计算（考虑大气压的增强版 Magnus 公式）
+// T:摄氏温度, RH:相对湿度%, P:大气压(hPa，默认1013.25)
+function calcDewPoint(T: number, RH: number, P: number = 1013.25): number | null {
   if (T == null || RH == null || Number.isNaN(T) || Number.isNaN(RH)) return null
+  // 饱和水汽压（Magnus公式）
   const es = 6.112 * Math.exp((17.67 * T) / (T + 243.5))
-  const e = es * RH / 100
-  if (e <= 0) return null
+  // 增强因子（考虑大气压对饱和水汽压的修正）
+  const fw = 1.0016 + 3.15e-6 * P - 0.074 / P
+  // 修正后的饱和水汽压
+  const ew = fw * es
+  // 实际水汽压
+  const e = ew * RH / 100
+  if (e <= 0 || e >= ew) {
+    // RH异常时退化为标准Magnus
+    const es2 = 6.112 * Math.exp((17.67 * T) / (T + 243.5))
+    const e2 = es2 * Math.min(100, Math.max(0, RH)) / 100
+    if (e2 <= 0) return null
+    const lnE2 = Math.log(e2 / 6.112)
+    const Td2 = (243.5 * lnE2) / (17.67 - lnE2)
+    if (Number.isNaN(Td2) || !isFinite(Td2)) return null
+    return Math.round(Td2 * 10) / 10
+  }
   const lnE = Math.log(e / 6.112)
   const Td = (243.5 * lnE) / (17.67 - lnE)
   if (Number.isNaN(Td) || !isFinite(Td)) return null
@@ -463,7 +479,19 @@ export const dashboardOverview = async (req, res) => {
       if (!factorLatest.has(r.factor_name)) factorLatest.set(r.factor_name, r)
     }
 
-    // 计算各区域的平均温度、湿度和露点温度
+    // 获取最新大气压（weather_info 表）
+    let pressure = 1013.25
+    try {
+      const latestWeather = await WeatherInfo.findOne({
+        order: [['weather_time', 'DESC']],
+        raw: true,
+      }) as any
+      if (latestWeather && latestWeather.pressure) pressure = Number(latestWeather.pressure)
+    } catch (e) {
+      console.warn('[dashboardOverview] 读取大气压失败，使用默认值:', (e as any).message)
+    }
+
+    // 计算各区域的平均温度、湿度和露点温度（考虑大气压）
     const areaStats: Record<string, { temps: number[]; hums: number[] }> = {}
     for (const f of factorLatest.values()) {
       const name: string = f.factor_name || ''
@@ -478,7 +506,7 @@ export const dashboardOverview = async (req, res) => {
     for (const [area, s] of Object.entries(areaStats)) {
       const avgT = s.temps.length ? s.temps.reduce((a, b) => a + b, 0) / s.temps.length : NaN
       const avgH = s.hums.length ? s.hums.reduce((a, b) => a + b, 0) / s.hums.length : NaN
-      dewPoints[area] = calcDewPoint(avgT, avgH)
+      dewPoints[area] = calcDewPoint(avgT, avgH, pressure)
     }
 
     const totalAlarms = await EnvAlarm.count()
