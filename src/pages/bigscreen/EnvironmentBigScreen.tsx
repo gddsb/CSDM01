@@ -480,9 +480,10 @@ export default function EnvironmentBigScreen() {
           </div>
         </div>
 
-        <Spin spinning={loading && !overview} style={{ flex: 1, minHeight: 0 }}>
+        <Spin spinning={loading && !overview} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           {/* 第一行：生产车间仪表盘 | 仓库仪表盘 */}
-          <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10, marginBottom: 10 }}>
+          <div style={{ flex: '0 0 auto', height: '48%', minHeight: 0, display: 'flex', gap: 10, marginBottom: 10 }}>
             {/* 左：生产车间 */}
             <div className="bs-panel" style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
               <div className="bs-panel-title">
@@ -560,7 +561,6 @@ export default function EnvironmentBigScreen() {
 
           {/* 第二行：温度趋势 | 湿度趋势（最近12小时） */}
           <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10 }}>
-            {/* 左：温度趋势 */}
             <div className="bs-panel" style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
               <div className="bs-panel-title">
                 <FireOutlined style={{ color: '#ff4d4f', fontSize: 16 }} />
@@ -579,6 +579,7 @@ export default function EnvironmentBigScreen() {
               </div>
               <div ref={humTrendRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
             </div>
+          </div>
           </div>
         </Spin>
       </div>
