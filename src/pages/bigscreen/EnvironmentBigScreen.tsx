@@ -480,9 +480,12 @@ export default function EnvironmentBigScreen() {
           </div>
         </div>
 
-        <div style={{ flex: 1, minHeight: 0, position: 'relative' }}>
-          <Spin spinning={loading && !overview} style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+          {loading && !overview && (
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(10,14,26,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+              <Spin size="large" />
+            </div>
+          )}
           {/* 第一行：生产车间仪表盘 | 仓库仪表盘 */}
           <div style={{ flex: '0 0 420px', display: 'flex', gap: 10, marginBottom: 10 }}>
             {/* 左：生产车间 */}
@@ -581,8 +584,6 @@ export default function EnvironmentBigScreen() {
               <div ref={humTrendRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
             </div>
           </div>
-          </div>
-          </Spin>
         </div>
       </div>
     </div>
