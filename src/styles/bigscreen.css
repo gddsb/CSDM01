@@ -42,24 +42,41 @@
 }
 
 /* ============================================================
-   大屏头部样式 - 参考"环境监测中心"科技风
-   深蓝色带 + 横向光带 + 斜切装饰旗 + 白色标题光晕
+   大屏头部样式 - 参考"生产监控看板"流动曲线科技风
+   深蓝色带 + 横向光带 + SVG流动曲线 + 白色标题光晕
    ============================================================ */
 
 /* 头部容器：深海军蓝渐变带 */
 .bs-header {
   position: relative;
-  padding: 16px 40px 0;
+  padding: 12px 40px 0;
   background:
     linear-gradient(180deg,
-      #0a1a3a 0%,
-      #0c2347 30%,
-      #0e2a52 55%,
+      #081530 0%,
+      #0a1a3a 20%,
+      #0c2347 40%,
+      #0e2a52 60%,
       #0a1e40 80%,
       #081530 100%);
   z-index: 5;
   overflow: hidden;
-  border-bottom: 1px solid rgba(0, 180, 255, 0.2);
+  border-bottom: 1px solid rgba(0, 180, 255, 0.25);
+}
+
+/* 底部发光线 */
+.bs-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(0, 212, 255, 0.1) 15%,
+    rgba(0, 212, 255, 0.5) 50%,
+    rgba(0, 212, 255, 0.1) 85%,
+    transparent 100%);
 }
 
 /* 背景装饰层：横向光带 */
@@ -77,30 +94,30 @@
   height: 1px;
   background: linear-gradient(90deg,
     transparent 0%,
-    rgba(0, 212, 255, 0.15) 15%,
-    rgba(0, 212, 255, 0.35) 45%,
-    rgba(0, 212, 255, 0.45) 50%,
-    rgba(0, 212, 255, 0.35) 55%,
-    rgba(0, 212, 255, 0.15) 85%,
+    rgba(0, 212, 255, 0.1) 15%,
+    rgba(0, 212, 255, 0.3) 45%,
+    rgba(0, 212, 255, 0.4) 50%,
+    rgba(0, 212, 255, 0.3) 55%,
+    rgba(0, 212, 255, 0.1) 85%,
     transparent 100%);
 }
 
 .bs-header-streak.s1 {
-  top: 20%;
-  height: 2px;
-  opacity: 0.7;
+  top: 25%;
+  height: 1.5px;
+  opacity: 0.6;
 }
 
 .bs-header-streak.s2 {
-  top: 50%;
+  top: 55%;
   height: 1px;
-  opacity: 0.5;
+  opacity: 0.4;
 }
 
 .bs-header-streak.s3 {
   top: 80%;
-  height: 1.5px;
-  opacity: 0.6;
+  height: 1px;
+  opacity: 0.5;
 }
 
 /* 顶部主行：左右 + 中间标题 */
@@ -110,7 +127,7 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  min-height: 64px;
+  min-height: 56px;
   z-index: 2;
 }
 
@@ -118,7 +135,7 @@
 .bs-header-side {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   min-width: 280px;
   flex-shrink: 0;
 }
@@ -127,39 +144,28 @@
   justify-content: flex-end;
 }
 
-/* 装饰旗（斜切平行四边形） */
-.bs-header-flag {
-  position: relative;
+/* 流动曲线 SVG（左右两侧大装饰） */
+.bs-flow-curve {
   width: 180px;
-  height: 48px;
-  background: linear-gradient(135deg,
-    rgba(0, 140, 220, 0.35) 0%,
-    rgba(0, 180, 255, 0.5) 40%,
-    rgba(0, 212, 255, 0.6) 100%);
-  clip-path: polygon(0 0, 100% 0, 85% 100%, 0 100%);
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3), inset 0 0 20px rgba(0, 212, 255, 0.1);
-  overflow: hidden;
+  height: 50px;
+  flex-shrink: 0;
+  pointer-events: none;
 }
 
-.bs-header-flag::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.08) 50%,
-    transparent 100%);
+.bs-flow-curve--left {
+  margin-right: -20px;
 }
 
-.bs-header-flag--mirror {
-  clip-path: polygon(15% 0, 100% 0, 100% 100%, 0 100%);
-  background: linear-gradient(225deg,
-    rgba(0, 140, 220, 0.35) 0%,
-    rgba(0, 180, 255, 0.5) 40%,
-    rgba(0, 212, 255, 0.6) 100%);
+.bs-flow-curve--right {
+  margin-left: -20px;
+}
+
+/* 标题两侧小流动曲线 */
+.bs-title-flow {
+  width: 100px;
+  height: 16px;
+  flex-shrink: 0;
+  pointer-events: none;
 }
 
 /* 左右内容区 */
@@ -222,83 +228,50 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 0 24px;
+  padding: 0 16px;
 }
 
 .bs-title-wrap {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
 }
 
-/* 标题左右装饰线 */
-.bs-title-deco-left,
-.bs-title-deco-right {
-  position: relative;
-  width: 100px;
-  height: 3px;
-  background: linear-gradient(90deg, transparent, #00d4ff, transparent);
-  flex-shrink: 0;
-}
-
-.bs-title-deco-left {
-  box-shadow: 0 0 10px rgba(0, 212, 255, 0.6);
-}
-
-.bs-title-deco-right {
-  background: linear-gradient(90deg, transparent, #00d4ff, transparent);
-  box-shadow: 0 0 10px rgba(0, 212, 255, 0.6);
-}
-
-.bs-title-deco-left::before,
-.bs-title-deco-right::before {
-  content: '';
-  position: absolute;
-  top: -3px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 9px;
-  height: 9px;
-  background: #00d4ff;
-  border-radius: 50%;
-  box-shadow: 0 0 10px #00d4ff, 0 0 20px rgba(0, 212, 255, 0.6);
-}
-
-/* 主标题文字 - 白色带蓝色光晕 */
+/* 主标题文字 */
 .bs-title {
-  font-size: 42px;
-  font-weight: 800;
-  letter-spacing: 10px;
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: 12px;
   color: #ffffff;
   text-shadow:
-    0 0 10px rgba(0, 212, 255, 0.6),
-    0 0 20px rgba(0, 180, 255, 0.4),
-    0 0 40px rgba(0, 150, 255, 0.2);
+    0 0 8px rgba(0, 212, 255, 0.5),
+    0 0 16px rgba(0, 180, 255, 0.3),
+    0 0 30px rgba(0, 150, 255, 0.15);
   line-height: 1.1;
   white-space: nowrap;
   margin: 0;
-  padding: 4px 0;
+  padding: 2px 0;
   position: relative;
   font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
-/* 标题下方装饰线（发光线） */
+/* 标题下方发光装饰线 */
 .bs-title-wrap::after {
   content: '';
   position: absolute;
-  bottom: -8px;
+  bottom: -6px;
   left: 50%;
   transform: translateX(-50%);
-  width: 70%;
-  height: 2px;
+  width: 50%;
+  height: 1.5px;
   background: linear-gradient(90deg,
     transparent 0%,
-    rgba(0, 212, 255, 0.4) 20%,
-    #00d4ff 50%,
-    rgba(0, 212, 255, 0.4) 80%,
+    rgba(0, 212, 255, 0.3) 25%,
+    rgba(0, 212, 255, 0.7) 50%,
+    rgba(0, 212, 255, 0.3) 75%,
     transparent 100%);
-  box-shadow: 0 0 12px rgba(0, 212, 255, 0.5);
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
 }
 
 /* 标题下方：温湿度/压差 行 */
@@ -306,7 +279,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 14px 0 10px;
+  padding: 12px 0 10px;
   width: 100%;
   gap: 20px;
   position: relative;
@@ -318,12 +291,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   color: #5b8ca8;
   cursor: pointer;
   transition: all 0.2s;
-  font-size: 16px;
+  font-size: 15px;
   border-radius: 4px;
   border: 1px solid rgba(0, 212, 255, 0.2);
   background: rgba(0, 50, 80, 0.4);
@@ -749,20 +722,18 @@
 
 /* ============ 响应式调整 ============ */
 @media (max-width: 1600px) {
-  .bs-title { font-size: 34px; letter-spacing: 8px; }
-  .bs-title-deco-left,
-  .bs-title-deco-right { width: 70px; }
-  .bs-header-flag { width: 140px; height: 40px; }
+  .bs-title { font-size: 34px; letter-spacing: 10px; }
+  .bs-title-flow { width: 80px; }
+  .bs-flow-curve { width: 140px; height: 44px; }
 }
 
 @media (max-width: 1366px) {
-  .bs-header { padding: 12px 24px 0; }
-  .bs-title { font-size: 28px; letter-spacing: 6px; }
-  .bs-title-deco-left,
-  .bs-title-deco-right { width: 50px; }
-  .bs-header-flag { width: 110px; height: 36px; }
-  .bs-header-side { min-width: 220px; }
+  .bs-header { padding: 10px 24px 0; }
+  .bs-title { font-size: 28px; letter-spacing: 8px; }
+  .bs-title-flow { width: 60px; height: 12px; }
+  .bs-flow-curve { width: 110px; height: 38px; }
+  .bs-header-side { min-width: 200px; }
   .bs-header-date-main,
   .bs-header-update-time { font-size: 15px; letter-spacing: 1px; }
-  .bs-header-row { min-height: 52px; }
+  .bs-header-row { min-height: 48px; }
 }
