@@ -215,7 +215,7 @@ export class EnergyMeterCollector {
       const body = JSON.stringify({ pageIndex: 1, pageSize: 1000, search: '' });
       const res = await axios.post(`${API_BASE}${GET_AMMETER_ALL_PATH}`, body, {
         headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
+          'Content-Type': 'application/json',
           Token: token,
           Authorization: `Bearer ${token}`,
         },
@@ -307,7 +307,7 @@ export class EnergyMeterCollector {
           });
           const first = await axios.post(`${API_BASE}${YGDL_PAGE_PATH}`, firstBody, {
             headers: {
-              'Content-Type': 'text/plain; charset=utf-8',
+              'Content-Type': 'application/json',
               Token: token,
               Authorization: `Bearer ${token}`,
             },
@@ -349,7 +349,7 @@ export class EnergyMeterCollector {
               rest.push(
                 axios.post(`${API_BASE}${YGDL_PAGE_PATH}`, pb, {
                   headers: {
-                    'Content-Type': 'text/plain; charset=utf-8',
+                    'Content-Type': 'application/json',
                     Token: token,
                     Authorization: `Bearer ${token}`,
                   },
