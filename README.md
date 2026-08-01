@@ -1,6 +1,6 @@
 # 奶粉罐生产管理系统 (Milk Can MES)
 
-> 版本：V1.0.1.731
+> 版本：V1.0.1.732
 >
 > 东莞市大满包装实业有限公司长沙分公司 — 奶粉罐生产制造执行系统
 
@@ -734,6 +734,7 @@ POST /api/production/report-images/:report_no/:category/upload
 | **`parent_code` 动态关联** | 子菜单配置使用 `parent_code` 字段（如 `parent_code: 'auto'`）引用父菜单的 `perm_code`，而非硬编码 `parent_id`，避免因数据库自增 ID 不一致导致子菜单不显示的问题 |
 | **两阶段创建** | 先创建所有顶级菜单（`parent_id=0`）并建立 `perm_code → perm_id` 映射，再通过映射查找父级 ID 创建子菜单 |
 | **`sort_order` 排序** | 菜单位置由 `sort_order` 字段控制，数值越小越靠前；自动任务菜单 `sort_order=6`，系统管理菜单 `sort_order=7`，确保自动任务显示在系统管理之前 |
+| **前端菜单严格从数据库读取，无硬编码兜底** | 前端 `MainLayout` 只通过 `GET /system/permissions/menu` 获取菜单并渲染，若接口失败仅展示加载失败提示，**不允许任何前端硬编码默认菜单作为兜底**；新增/调整菜单必须在菜单管理中维护并入库 |
 
 #### 4.3 操作日志
 
@@ -743,9 +744,72 @@ POST /api/production/report-images/:report_no/:category/upload
 
 #### 4.4 数据字典
 
-- 自动读取数据库中所有数据表结构
-- 展示表名、字段名、字段类型、是否主键、是否允许空、默认值、字段注释
-- 方便开发人员快速了解数据库结构
+> 模块路径：`/system/dictionary`；核心 API 前缀：`/api/system/config/data-dictionary`
+
+##### 4.4.1 功能概述
+
+- 自动读取数据库中所有数据表结构，展示表名、引擎、近似记录数、字段名、字段类型、是否主键、是否允许空、默认值、字段注释
+- 前端按表分类浏览，支持关键字 / 数据库类型（数据表/配置表/字典表/基础档案/业务表/日志表/业务档案）筛选，双击行可查看表记录明细
+- 开发人员可快速了解数据库结构与生产环境表规模
+
+##### 4.4.2 刷新接口异步化与进度轮询
+
+数据字典的「更新」按钮触发的刷新操作是一个**跨所有业务表的结构扫描 + 行数统计**长耗时操作，已改为异步任务模式以避免 HTTP 超时与前端假死：
+
+| 阶段 | 说明 |
+|------|------|
+| **POST /refresh（非阻塞）** | 前端点击「更新」调用 `POST /api/system/config/data-dictionary/refresh`，接口**立即返回 `taskId`**（不等待扫描结束），HTTP 耗时通常 < 200ms |
+| **后台分批扫描** | 后端接收请求后将任务推入内存任务存储（`dictRefreshTaskStore`），通过 `runDictRefreshAsync` 异步执行，不阻塞当前请求线程 |
+| **前端进度轮询** | 前端拿到 `taskId` 后每 **1.5 秒**轮询 `GET /api/system/config/data-dictionary/refresh/:taskId` 查询当前进度 |
+| **进度结束判定** | 任务状态为 `success` 或 `failed` 时自动停止轮询；连续失败 3 次视为网络异常，停止轮询并提示用户手动刷新列表 |
+
+进度接口返回字段：
+- `taskId`：任务唯一 ID
+- `status`：`pending` / `running` / `success` / `failed`
+- `progress`：`{ done, total, percent, currentTable, message, persisted, persistedTotal }`
+- `result`：成功时返回 `{ total, tables, concurrent, durationMs, estimatedRows }`
+- `createdAt` / `startedAt` / `finishedAt`：时间戳（ms）
+
+##### 4.4.3 并发化与性能优化
+
+扫描表结构 + 行数统计阶段采用**并发控制**策略，将串行耗时 `Σ` 降为 `max`：
+
+| 优化项 | 规则 |
+|--------|------|
+| **并发执行模型** | `collectDatabaseSchema` 使用 `runConcurrently(items, worker, concurrency=8)` 工作池模式，默认并发数 **8**（可配置），防止一次性并发打满 MySQL 连接池 |
+| **MySQL 大表近似行数** | 对 MySQL 先通过 `information_schema.TABLES.TABLE_ROWS` 取近似行数；**> 10 万行**的大表直接使用近似值（`record_count` 同时打上 `estimated=1` 标记），不再执行 `COUNT(*)` 全表扫描 |
+| **中小表精确 COUNT** | 近似行数 ≤ 10 万的表，再执行 `SELECT COUNT(*) FROM \`table\`` 得到精确行数 |
+| **SQLite 策略** | SQLite 开发环境表量少，所有表统一并发精确 COUNT |
+| **展示容忍度** | 行数以展示/评估规模为目标，近似值可接受；若需精确值可单独对目标表查询 |
+
+##### 4.4.4 读缓存与刷新频率限制
+
+| 策略 | 规则 |
+|------|------|
+| **列表接口读缓存** | `GET /config/data-dictionary` 直接读取 `sys_data_dictionary` 表（含分页与筛选），不做实时扫描；读接口保持高性能 |
+| **刷新最小间隔** | 同一服务实例内两次 `POST /refresh` 之间必须间隔 ≥ **60 秒**；调用过密返回 `code=10042 RATE_LIMITED`（HTTP 429），前端收到时弹出黄色警告"刷新操作过于频繁" |
+| **单实例串行** | 同一时刻只允许 1 个后台刷新任务运行（`dictRefreshRunning` 标记），重复调用返回"已有刷新任务正在执行"错误，避免数据库压力叠加 |
+
+##### 4.4.5 服务启动的条件初始化
+
+为避免每次服务重启都触发全表扫描，字典初始化采用"空表时才刷新"策略：
+
+| 场景 | 行为 |
+|------|------|
+| `sys_data_dictionary` 记录数 = 0 | 服务启动时自动执行 `refreshDictionaryData()` 全量扫描并入库（用于首次部署/全新环境） |
+| `sys_data_dictionary` 记录数 > 0 | **跳过全量扫描**，仅打印日志 `[DataDictionary] 字典表已有 N 条记录，跳过初始化扫描`，秒级完成初始化 |
+| 手动更新 | 必须通过页面「更新」按钮触发异步刷新，或运维手动调用 `POST /api/system/config/data-dictionary/refresh` 接口 |
+
+##### 4.4.6 前端交互约束
+
+数据字典页面的「更新」属于全局级长耗时管理操作，前端需满足以下交互规则：
+
+| 规则项 | 说明 |
+|--------|------|
+| **刷新中按钮全部禁用** | 刷新期间：搜索框、分类下拉、查询按钮、重置按钮、刷新按钮、更新按钮、表格分页器全部 `disabled=true`，防止重复提交或干扰查询状态 |
+| **进度条可见** | 通过 `Progress` 组件实时展示 `percent%`，`Alert` 显示当前信息（例："扫描表结构 5/47（当前: sys_user）"），并在 `info` 中提示"扫描期间界面将被锁定，请勿关闭页面" |
+| **差异化超时** | 长耗时管理接口单独放宽超时：POST /refresh（15s，实际异步瞬时返回）、进度查询（10s）；不沿用默认 5s 配置 |
+| **错误恢复** | 刷新失败或轮询异常后，禁用状态立即解除并允许重试；频率限制时按钮不解锁以符合规则 |
 
 ---
 
@@ -1596,7 +1660,12 @@ U9_AES_KEY=dad52b5719e3202e32a6619e14d0ccec   # AES 加密密钥（16进制）
 | GET/POST/PUT/DELETE | `/system/users` | 用户管理 |
 | GET/POST/PUT/DELETE | `/system/roles` | 角色管理 |
 | GET/POST/PUT/DELETE | `/system/menus` | 菜单管理 |
-| GET | `/system/dictionary` | 数据字典 |
+| GET | `/system/permissions/menu` | 动态菜单树（前端唯一读取源，**无前端硬编码兜底**） |
+| GET | `/system/config/data-dictionary` | 数据字典列表（分页、关键字 / 类型筛选；直接读表，不做实时扫描） |
+| **POST** | **`/system/config/data-dictionary/refresh`** | **数据字典刷新（异步非阻塞）：立即返回 `taskId`，后台分批扫描；返回 body: `{ taskId, status }`** |
+| **GET** | **`/system/config/data-dictionary/refresh/:taskId`** | **刷新任务进度查询：轮询进度 `progress{done,total,percent,currentTable}` 与状态 `pending/running/success/failed`** |
+| GET | `/system/config/data-dictionary/:table_name/records` | 数据字典单表记录预览（前 100 条） |
+| GET | `/system/dictionary` | 数据字典（旧路径，兼容别名） |
 | GET/PUT | `/system/config` | 系统配置 |
 | GET | `/system/config/health` | 健康检查 |
 | GET/POST/DELETE | `/system/config/backups` | 备份管理 |
@@ -1697,6 +1766,7 @@ U9_AES_KEY=dad52b5719e3202e32a6619e14d0ccec   # AES 加密密钥（16进制）
 | 40401 | 404 | RECORD_NOT_FOUND | 记录不存在 |
 | 40901 | 409 | RECORD_EXISTS | 记录已存在 |
 | 40902 | 409 | BUSINESS_ERROR | 业务规则校验失败（如关联数据存在、超量报工等） |
+| 10042 | 429 | RATE_LIMITED | 刷新接口调用过于频繁（最小间隔 60s），请稍后重试 |
 | 50001 | 500 | SYSTEM_ERROR | 服务器内部错误 |
 
 > 所有错误响应均包含 `code`（业务错误码）和 `message`（错误描述），敏感信息已自动脱敏处理。
