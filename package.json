@@ -3,6 +3,14 @@
   "version": "1.0.1.730",
   "description": "奶粉罐生产管理系统",
   "type": "module",
+  "browserslist": [
+    "> 0.2%",
+    "Chrome >= 86",
+    "Firefox >= 80",
+    "Safari >= 14",
+    "Edge >= 86",
+    "not dead"
+  ],
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5173",
     "build": "vite build",
