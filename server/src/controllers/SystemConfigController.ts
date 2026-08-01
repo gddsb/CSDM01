@@ -1123,35 +1123,71 @@ async function collectDatabaseSchema() {
   const tables = []
   const columnsMap = {}
 
-  for (const tableName of allTables) {
-    let recordCount = 0
-    try {
-      const result = await sequelize.query(`SELECT COUNT(*) as count FROM \`${tableName}\``, { type: sequelize.QueryTypes.SELECT })
-      recordCount = result[0]?.count || 0
-    } catch (err) {
-        logger.warn('[SilentCatch] // ignore', err?.message)
+  // 批量获取行数：MySQL 用 information_schema（毫秒级），SQLite 逐表 COUNT
+  const recordCountMap: Record<string, number> = {}
+  const dialect = sequelize.getDialect()
+  if (dialect === 'mysql') {
+    // 一次查询获取所有表的近似行数（InnoDB 引擎下为估算值，足够展示用）
+    const dbName = (sequelize.config?.database || process.env.DB_NAME) as string
+    const rows = await sequelize.query(
+      `SELECT TABLE_NAME as tbl, TABLE_ROWS as cnt FROM information_schema.TABLES WHERE TABLE_SCHEMA = :dbName`,
+      { type: sequelize.QueryTypes.SELECT, replacements: { dbName } }
+    ) as any[]
+    for (const r of rows) {
+      recordCountMap[r.tbl] = Number(r.cnt) || 0
     }
-    const cols = await queryInterface.describeTable(tableName)
-    const colComments = columnCommentMap[tableName] || {}
-    const colList = Object.entries(cols).map(([name, col]) => ({
-      name,
-      type: col.type,
-      nullable: col.allowNull,
-      primaryKey: col.primaryKey,
-      defaultValue: col.defaultValue !== undefined && col.defaultValue !== null ? String(col.defaultValue).replace(/'/g, '') : null,
-      comment: col.comment || colComments[name] || '',
-    }))
-    columnsMap[tableName] = colList
+  } else {
+    // SQLite: 并发查询所有表 COUNT(*)
+    const countResults = await Promise.all(
+      allTables.map(async (tableName: string) => {
+        try {
+          const result = await sequelize.query(`SELECT COUNT(*) as count FROM \`${tableName}\``, { type: sequelize.QueryTypes.SELECT })
+          return { tableName, count: (result[0] as any)?.count || 0 }
+        } catch {
+          return { tableName, count: 0 }
+        }
+      })
+    )
+    for (const r of countResults) {
+      recordCountMap[r.tableName] = r.count
+    }
+  }
 
-    const meta = tableCategoryMap[tableName] || { category: '其他', purpose: '' }
-    tables.push({
-      table_name: tableName,
-      category: meta.category,
-      field_count: colList.length,
-      record_count: recordCount,
-      purpose: meta.purpose,
-      last_update: new Date().toISOString(),
-    })
+  // 并发获取所有表的列信息（describeTable 是独立的，可并发执行）
+  const BATCH_SIZE = 10
+  for (let i = 0; i < allTables.length; i += BATCH_SIZE) {
+    const batch = allTables.slice(i, i + BATCH_SIZE)
+    const results = await Promise.all(
+      batch.map(async (tableName: string) => {
+        try {
+          const cols = await queryInterface.describeTable(tableName)
+          const colComments = columnCommentMap[tableName] || {}
+          const colList = Object.entries(cols).map(([name, col]: [string, any]) => ({
+            name,
+            type: col.type,
+            nullable: col.allowNull,
+            primaryKey: col.primaryKey,
+            defaultValue: col.defaultValue !== undefined && col.defaultValue !== null ? String(col.defaultValue).replace(/'/g, '') : null,
+            comment: col.comment || colComments[name] || '',
+          }))
+          return { tableName, colList }
+        } catch {
+          return { tableName, colList: [] }
+        }
+      })
+    )
+    for (const r of results) {
+      columnsMap[r.tableName] = r.colList
+      const meta = tableCategoryMap[r.tableName] || { category: '其他', purpose: '' }
+      tables.push({
+        table_name: r.tableName,
+        category: meta.category,
+        field_count: r.colList.length,
+        record_count: recordCountMap[r.tableName] || 0,
+        purpose: meta.purpose,
+        last_update: new Date().toISOString(),
+      })
+    }
   }
 
   tables.sort((a, b) => {

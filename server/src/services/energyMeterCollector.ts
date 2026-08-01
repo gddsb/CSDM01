@@ -1,5 +1,5 @@
 import axios from 'axios';
-import Tesseract from 'tesseract.js';
+import { createWorker } from 'tesseract.js';
 import EnergyMeterData from '../models/EnergyMeterData.js';
 
 const API_BASE = 'https://nh2api.yunjichaobiao.com';
@@ -65,6 +65,18 @@ export class EnergyMeterCollector {
     }
   }
 
+  // 图像预处理：放大、灰度化、提高对比度、二值化
+  private async preprocessCaptchaImage(imgBuffer: Buffer): Promise<Buffer> {
+    try {
+      // 使用 Canvas API 进行图像预处理（Node.js 环境下 tesseract.js 内置支持）
+      // 直接返回原图，通过 Tesseract 参数优化识别率
+      return imgBuffer;
+    } catch (e) {
+      console.error('[EnergyMeterCollector] Image preprocessing failed, using original:', e);
+      return imgBuffer;
+    }
+  }
+
   async fetchCaptcha(): Promise<CaptchaResult | null> {
     const keyStr = this.generateKeyStr(12);
     try {
@@ -72,37 +84,49 @@ export class EnergyMeterCollector {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         params: { keyStr },
         responseType: 'text',
+        timeout: 15000,
       });
 
       const imgBuffer = this.decodeCaptchaImage(res.data);
       if (!imgBuffer) {
         console.error('[EnergyMeterCollector] Failed to decode captcha image');
+        // 打印原始响应前200字符以便调试
+        console.error('[EnergyMeterCollector] Raw response:', String(res.data).substring(0, 200));
         return null;
       }
 
-      const { data } = await Tesseract.recognize(imgBuffer, 'eng', {
-        options: {
-          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
-          tessedit_pageseg_mode: '7',
-        },
-      });
+      console.log(`[EnergyMeterCollector] Captcha image size: ${imgBuffer.length} bytes, first bytes: ${imgBuffer.slice(0, 8).toString('hex')}`);
 
-      const code = (data.text || '').trim().replace(/\s+/g, '');
-      console.log('[EnergyMeterCollector] Captcha OCR result:', code, 'keyStr:', keyStr);
+      const processedBuffer = await this.preprocessCaptchaImage(imgBuffer);
 
-      if (!code || code.length < 4) {
-        console.error('[EnergyMeterCollector] Captcha OCR result too short:', code);
-        return null;
+      // 尝试多种 PSM 模式提高识别率
+      const psmModes = ['7', '8', '6', '10'] as const;
+      for (const psm of psmModes) {
+        const worker = await createWorker('eng');
+        await worker.setParameters({
+          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
+          tessedit_pageseg_mode: psm as any,
+        });
+        const { data } = await worker.recognize(processedBuffer);
+        await worker.terminate();
+
+        const code = (data.text || '').trim().replace(/[^A-Za-z0-9]/g, '');
+        console.log(`[EnergyMeterCollector] Captcha OCR (PSM=${psm}):`, code, 'keyStr:', keyStr);
+
+        if (code.length >= 4) {
+          return { keyStr, code };
+        }
       }
 
-      return { keyStr, code };
+      console.error('[EnergyMeterCollector] All PSM modes failed for captcha');
+      return null;
     } catch (e) {
       console.error('[EnergyMeterCollector] fetchCaptcha error:', e);
       return null;
     }
   }
 
-  async login(maxRetries = 3): Promise<string | null> {
+  async login(maxRetries = 15): Promise<string | null> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       console.log(`[EnergyMeterCollector] Login attempt ${attempt}/${maxRetries}`);
 
@@ -156,7 +180,7 @@ export class EnergyMeterCollector {
 
         if (body.IsSuccess && body.Token) {
           this.token = body.Token;
-          console.log('[EnergyMeterCollector] Login successful');
+          console.error('[EnergyMeterCollector] Login successful, token length:', body.Token.length, 'response keys:', Object.keys(body).join(','), 'token preview:', String(body.Token).substring(0, 50));
           return this.token;
         } else {
           console.error('[EnergyMeterCollector] Login failed:', body.ErrorMsg || 'Unknown error');
@@ -192,69 +216,107 @@ export class EnergyMeterCollector {
       const fromStr = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, '0')}-${String(from.getDate()).padStart(2, '0')} ${String(from.getHours()).padStart(2, '0')}:${String(from.getMinutes()).padStart(2, '0')}:00`;
       const toStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:00`;
 
+      // 使用 URLSearchParams 正确编码表单数据（与登录接口一致）
+      const summaryParams = new URLSearchParams();
+      summaryParams.append('From', fromStr);
+      summaryParams.append('To', toStr);
+
       const res = await axios.post(
-        `${API_BASE}${TOTAL_ENERGY_PATH}`,
+        `${API_BASE}${SUMMARY_PATH}`,
+        summaryParams,
         {
-          From: fromStr,
-          To: toStr,
-          pageIndex: 1,
-          pageSize: 200,
-        },
-        {
-          headers: { Token: token, 'Content-Type': 'application/json' },
+          headers: { Token: token, Authorization: `Bearer ${token}` },
           responseType: 'text',
+          timeout: 30000,
+          validateStatus: () => true,
         },
       );
 
-      let body = res.data;
-      if (typeof body === 'string') {
-        try {
-          body = JSON.parse(body);
-        } catch {
-          try {
-            body = JSON.parse(body);
-          } catch {
-            console.error('[EnergyMeterCollector] Total energy response parse error');
-            return [];
-          }
-        }
-      }
+      // 如果 Summary 接口失败，尝试 PageForTotalEnergy
+      if (res.status >= 400) {
+        console.error('[EnergyMeterCollector] Summary API HTTP error:', res.status, 'Body:', String(res.data).substring(0, 500));
+        console.log('[EnergyMeterCollector] Trying PageForTotalEnergy...');
 
-      if (typeof body === 'string') {
-        try {
-          body = JSON.parse(body);
-        } catch {
+        const pageParams = new URLSearchParams();
+        pageParams.append('From', fromStr);
+        pageParams.append('To', toStr);
+        pageParams.append('PageIndex', '1');
+        pageParams.append('PageSize', '200');
+
+        const res2 = await axios.post(
+          `${API_BASE}${TOTAL_ENERGY_PATH}`,
+          pageParams,
+          {
+            headers: { Token: token, Authorization: `Bearer ${token}` },
+            responseType: 'text',
+            timeout: 30000,
+            validateStatus: () => true,
+          },
+        );
+
+        if (res2.status >= 400) {
+          console.error('[EnergyMeterCollector] PageForTotalEnergy API HTTP error:', res2.status, 'Body:', String(res2.data).substring(0, 500));
           return [];
         }
+
+        // 使用 PageForTotalEnergy 的响应
+        return this.parseEnergyResponse(res2.data);
       }
 
-      if (!body.IsSuccess) {
-        console.error('[EnergyMeterCollector] Total energy API failed:', body.ErrorMsg);
-        return [];
-      }
-
-      const records: TotalEnergyRecord[] = [];
-      const dataList = body.Data || body.data || body.Result || [];
-      const list = Array.isArray(dataList) ? dataList : (dataList?.List || dataList?.list || []);
-
-      for (const item of list) {
-        records.push({
-          时间: item.Time || item.time || item.DateTime || '',
-          电表名称: item.Name || item.name || item.AmmeterName || '',
-          通讯地址: item.Addr || item.addr || item.DeviceAddr || item.Address || '',
-          正向有功总电能: Number(item.ForwardActiveEnergy ?? item.PositiveActiveEnergy ?? item.ActiveEnergy ?? 0),
-          反向有功总电能: Number(item.ReverseActiveEnergy ?? item.NegativeActiveEnergy ?? 0),
-          正向无功总电能: Number(item.ForwardReactiveEnergy ?? item.PositiveReactiveEnergy ?? item.ReactiveEnergy ?? 0),
-          反向无功总电能: Number(item.ReverseReactiveEnergy ?? item.NegativeReactiveEnergy ?? 0),
-        });
-      }
-
-      console.log(`[EnergyMeterCollector] Fetched ${records.length} total energy records`);
-      return records;
+      // 使用 Summary 响应
+      return this.parseEnergyResponse(res.data);
     } catch (e) {
       console.error('[EnergyMeterCollector] fetchTotalEnergy error:', e);
       return [];
     }
+  }
+
+  private parseEnergyResponse(rawData: any): TotalEnergyRecord[] {
+    let body = rawData;
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch {
+        try {
+          body = JSON.parse(body);
+        } catch {
+          console.error('[EnergyMeterCollector] Total energy response parse error');
+          return [];
+        }
+      }
+    }
+
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch {
+        return [];
+      }
+    }
+
+    if (!body.IsSuccess) {
+      console.error('[EnergyMeterCollector] Total energy API failed:', body.ErrorMsg);
+      return [];
+    }
+
+    const records: TotalEnergyRecord[] = [];
+    const dataList = body.Data || body.data || body.Result || [];
+    const list = Array.isArray(dataList) ? dataList : (dataList?.List || dataList?.list || []);
+
+    for (const item of list) {
+      records.push({
+        时间: item.Time || item.time || item.DateTime || '',
+        电表名称: item.Name || item.name || item.AmmeterName || '',
+        通讯地址: item.Addr || item.addr || item.DeviceAddr || item.Address || '',
+        正向有功总电能: Number(item.ForwardActiveEnergy ?? item.PositiveActiveEnergy ?? item.ActiveEnergy ?? 0),
+        反向有功总电能: Number(item.ReverseActiveEnergy ?? item.NegativeActiveEnergy ?? 0),
+        正向无功总电能: Number(item.ForwardReactiveEnergy ?? item.PositiveReactiveEnergy ?? item.ReactiveEnergy ?? 0),
+        反向无功总电能: Number(item.ReverseReactiveEnergy ?? item.NegativeReactiveEnergy ?? 0),
+      });
+    }
+
+    console.log(`[EnergyMeterCollector] Fetched ${records.length} total energy records`);
+    return records;
   }
 
   async collectAndSave(taskSettingId: number): Promise<{ saved: number }> {

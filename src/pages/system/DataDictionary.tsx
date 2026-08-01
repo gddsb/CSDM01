@@ -101,7 +101,7 @@ export default function DataDictionary() {
   const handleRefreshDictionary = async () => {
     setRefreshing(true)
     try {
-      const res = await api.post('/system/config/data-dictionary/refresh')
+      const res = await api.post('/system/config/data-dictionary/refresh', undefined, { timeout: 60000 })
       message.success(res.message || '数据字典更新成功')
       setQuery(q => ({ ...q, page: 1 }))
     } catch (err) {
