@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>验证码预处理优化对比 v2 - 基线 vs 新流程</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f7fa; margin: 0; padding: 24px; color: #333; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  .sub { color: #888; font-size: 13px; margin-bottom: 20px; line-height: 1.6; }
+  .pipeline { background:#fff; border-radius:8px; padding:16px 20px; margin-bottom:20px; box-shadow:0 1px 3px rgba(0,0,0,0.08); font-size:13px; line-height:1.8; }
+  .pipeline b { color: #1677ff; }
+  .pipeline .b b { color: #fa541c; }
+  .summary { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 24px; }
+  .stat { background: #fff; border-radius: 8px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .stat .label { font-size: 12px; color: #888; margin-bottom: 6px; }
+  .stat .value { font-size: 20px; font-weight: 600; color: #1677ff; }
+  .stat.b .value { color: #fa541c; }
+  .stat.best { background: #f6ffed; border: 1px solid #b7eb8f; }
+  .stat.best .value { color: #52c41a; }
+  .stat .unit { font-size: 12px; color: #999; font-weight: 400; margin-left: 3px; }
+  .table-wrap { background: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  th, td { padding: 6px 8px; text-align: center; border-bottom: 1px solid #f0f0f0; white-space: nowrap; }
+  th { background: #fafafa; color: #666; font-weight: 600; position: sticky; top: 0; z-index: 1; }
+  td.idx { font-weight: 600; color: #1677ff; }
+  img { image-rendering: pixelated; image-rendering: crisp-edges; background: repeating-conic-gradient(#eee 0 25%, #fff 0 50%) 0 0 / 12px 12px; border: 1px solid #eee; border-radius: 3px; width: 120px; height: 58px; object-fit: contain; }
+  .ocr-text { font-family: monospace; font-weight: 600; }
+  .ocr-empty { color: #ccc; }
+  .ms { font-family: monospace; font-size: 11px; }
+  .faster { color: #52c41a; font-weight: 600; }
+  .slower { color: #fa541c; }
+  .legend { font-size: 12px; color: #888; margin-top: 10px; }
+  .legend span { display: inline-block; margin-right: 14px; }
+</style>
+</head>
+<body>
+  <h1>能源平台验证码 - 两种预处理流水线 OCR 对比（15 张）</h1>
+  <div class="sub">对比 Tesseract.js 在不同预处理方案下的<b>识别速度</b>与<b>识别到有效内容的比例</b>（样本：平台连续返回 15 张 56×27 蓝色文字验证码）</div>
+
+  <div class="pipeline">
+    <div><b>A. 基线流程（NEAREST放大 + Otsu二值化）</b>：<code>原图 → ×3 最近邻放大 → 灰度化 → Otsu 自适应阈值二值化</code></div>
+    <div class="b"><b>B. 新优化流程（BICUBIC放大 + 蓝像素过滤 + 对比度 + 形态降噪）</b>：<code>原图 → ×3 双三次放大 → B通道> R,G+40 蓝像素置白 → 灰度化 → contrast(0.25) → threshold(130) → blur(1) → 3×3邻域孤立点去除(minNeighbors=2)</code></div>
+  </div>
+
+  <div class="summary" id="summary"></div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>原图(x3)</th>
+          <th>A-灰度<br>(OCR基线)</th>
+          <th>A-二值化<br>(OCR基线)</th>
+          <th>B-新流程<br>二值化(OCR)</th>
+          <th>A-灰度<br>识别</th>
+          <th>A-灰度<br>耗时</th>
+          <th>A-二值<br>识别</th>
+          <th>A-二值<br>耗时</th>
+          <th>B-新流程<br>识别</th>
+          <th>B-新流程<br>耗时</th>
+          <th>耗时<br>最优</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="legend">
+      <span>· 绿色数字=该行耗时最快，红色=最慢</span>
+      <span>· 识别=OCR 输出（仅保留 alnum 字符）</span>
+      <span>· B-新流程 15/15 全部识别到字符；长度偏短时说明 blur+去孤立删除了细笔画</span>
+    </div>
+  </div>
+
+<script>
+const DATA = {
+  "results": [
+    {
+      "idx": 1,
+      "pad": "01",
+      "keyStr": "FwjC2CQP9G0i",
+      "otsuThr": 162,
+      "aGrayText": "jwire0",
+      "aGrayMs": 87.554843,
+      "aBinText": "reo",
+      "aBinMs": 48.78835,
+      "bBinText": "50",
+      "bBinMs": 12.494384
+    },
+    {
+      "idx": 2,
+      "pad": "02",
+      "keyStr": "DumKDoU9s9VI",
+      "otsuThr": 160,
+      "aGrayText": "",
+      "aGrayMs": 7.65842,
+      "aBinText": "",
+      "aBinMs": 7.129992,
+      "bBinText": "Bo",
+      "bBinMs": 24.715008
+    },
+    {
+      "idx": 3,
+      "pad": "03",
+      "keyStr": "Bl1X68rxxmTP",
+      "otsuThr": 158,
+      "aGrayText": "",
+      "aGrayMs": 7.13708,
+      "aBinText": "",
+      "aBinMs": 10.169102,
+      "bBinText": "PB",
+      "bBinMs": 13.32461
+    },
+    {
+      "idx": 4,
+      "pad": "04",
+      "keyStr": "pIMw9u8MsTUn",
+      "otsuThr": 160,
+      "aGrayText": "iroK",
+      "aGrayMs": 38.925781,
+      "aBinText": "",
+      "aBinMs": 6.810731,
+      "bBinText": "aK",
+      "bBinMs": 16.320647
+    },
+    {
+      "idx": 5,
+      "pad": "05",
+      "keyStr": "5VWftuOorHT8",
+      "otsuThr": 162,
+      "aGrayText": "",
+      "aGrayMs": 9.769555,
+      "aBinText": "",
+      "aBinMs": 7.578242,
+      "bBinText": "4",
+      "bBinMs": 11.382205
+    },
+    {
+      "idx": 6,
+      "pad": "06",
+      "keyStr": "O2cWBC2Rz8zc",
+      "otsuThr": 164,
+      "aGrayText": "",
+      "aGrayMs": 5.554744,
+      "aBinText": "",
+      "aBinMs": 5.406819,
+      "bBinText": "ot",
+      "bBinMs": 11.505403
+    },
+    {
+      "idx": 7,
+      "pad": "07",
+      "keyStr": "CsOOs3yrFnSj",
+      "otsuThr": 157,
+      "aGrayText": "agxs",
+      "aGrayMs": 26.721269,
+      "aBinText": "XE",
+      "aBinMs": 24.6688,
+      "bBinText": "X85",
+      "bBinMs": 20.437415
+    },
+    {
+      "idx": 8,
+      "pad": "08",
+      "keyStr": "mXM8dXsm7KXp",
+      "otsuThr": 162,
+      "aGrayText": "",
+      "aGrayMs": 12.109273,
+      "aBinText": "",
+      "aBinMs": 5.83315,
+      "bBinText": "WV",
+      "bBinMs": 32.346792
+    },
+    {
+      "idx": 9,
+      "pad": "09",
+      "keyStr": "y8Yue6P6COnx",
+      "otsuThr": 157,
+      "aGrayText": "",
+      "aGrayMs": 5.781873,
+      "aBinText": "",
+      "aBinMs": 5.362531,
+      "bBinText": "aX",
+      "bBinMs": 34.385029
+    },
+    {
+      "idx": 10,
+      "pad": "10",
+      "keyStr": "Gz3rmHfZj93M",
+      "otsuThr": 163,
+      "aGrayText": "E43ne",
+      "aGrayMs": 30.850629,
+      "aBinText": "",
+      "aBinMs": 7.008415,
+      "bBinText": "1",
+      "bBinMs": 22.825777
+    },
+    {
+      "idx": 11,
+      "pad": "11",
+      "keyStr": "ltwWH7ERc1Vi",
+      "otsuThr": 164,
+      "aGrayText": "",
+      "aGrayMs": 5.766023,
+      "aBinText": "",
+      "aBinMs": 5.036201,
+      "bBinText": "9",
+      "bBinMs": 9.227181
+    },
+    {
+      "idx": 12,
+      "pad": "12",
+      "keyStr": "QhkU8ST2EMwB",
+      "otsuThr": 159,
+      "aGrayText": "",
+      "aGrayMs": 6.230648,
+      "aBinText": "",
+      "aBinMs": 7.502445,
+      "bBinText": "Ky",
+      "bBinMs": 13.92318
+    },
+    {
+      "idx": 13,
+      "pad": "13",
+      "keyStr": "Q8dTTAbIpT6x",
+      "otsuThr": 158,
+      "aGrayText": "ASP5",
+      "aGrayMs": 15.152996,
+      "aBinText": "A3P5",
+      "aBinMs": 25.589976,
+      "bBinText": "25",
+      "bBinMs": 13.214428
+    },
+    {
+      "idx": 14,
+      "pad": "14",
+      "keyStr": "rpyUbUmfY4Us",
+      "otsuThr": 163,
+      "aGrayText": "",
+      "aGrayMs": 5.491106,
+      "aBinText": "",
+      "aBinMs": 9.380751,
+      "bBinText": "ny",
+      "bBinMs": 10.452676
+    },
+    {
+      "idx": 15,
+      "pad": "15",
+      "keyStr": "PKXdR8z9rLTg",
+      "otsuThr": 159,
+      "aGrayText": "",
+      "aGrayMs": 8.208598,
+      "aBinText": "",
+      "aBinMs": 5.393643,
+      "bBinText": "7",
+      "bBinMs": 16.420567
+    }
+  ],
+  "summary": {
+    "count": 15,
+    "failed": 0,
+    "aGray": {
+      "totalMs": 272.91283799999997,
+      "avgMs": 18.194189199999997,
+      "nonEmpty": 5,
+      "avgLen": 4.6
+    },
+    "aBin": {
+      "totalMs": 181.65914800000004,
+      "avgMs": 12.11060986666667,
+      "nonEmpty": 3,
+      "avgLen": 3
+    },
+    "bBin": {
+      "totalMs": 262.975302,
+      "avgMs": 17.5316868,
+      "nonEmpty": 15,
+      "avgLen": 1.8
+    }
+  }
+};
+const summaryEl = document.getElementById('summary');
+const s = DATA.summary;
+const aG = s.aGray, aB = s.aBin, bB = s.bBin;
+
+// 判断 综合最好（以非空数为主，平均长度为辅，耗时越小越好）
+function score(v) { return v.nonEmpty * 100 + v.avgLen * 10 - v.avgMs / 20; }
+const bestScore = Math.max(score(aG), score(aB), score(bB));
+
+summaryEl.innerHTML = `
+  <div class="stat ${score(aG)==bestScore?'best':''}">
+    <div class="label">A灰度 平均耗时</div>
+    <div class="value">${aG.avgMs.toFixed(0)}<span class="unit">ms</span></div>
+  </div>
+  <div class="stat ${score(aB)==bestScore?'best':''}">
+    <div class="label">A二值 平均耗时</div>
+    <div class="value">${aB.avgMs.toFixed(0)}<span class="unit">ms</span></div>
+  </div>
+  <div class="stat b ${score(bB)==bestScore?'best':''}">
+    <div class="label">B新流程 平均耗时</div>
+    <div class="value">${bB.avgMs.toFixed(0)}<span class="unit">ms</span></div>
+  </div>
+  <div class="stat ${score(aG)==bestScore?'best':''}">
+    <div class="label">A灰度 识别非空</div>
+    <div class="value">${aG.nonEmpty}<span class="unit">/${s.count}</span></div>
+  </div>
+  <div class="stat ${score(aB)==bestScore?'best':''}">
+    <div class="label">A二值 识别非空</div>
+    <div class="value">${aB.nonEmpty}<span class="unit">/${s.count}</span></div>
+  </div>
+  <div class="stat b ${score(bB)==bestScore?'best':''}">
+    <div class="label">B新流程 识别非空</div>
+    <div class="value">${bB.nonEmpty}<span class="unit">/${s.count}</span></div>
+  </div>
+`;
+
+const rowsEl = document.getElementById('rows');
+DATA.results.forEach(r => {
+  const pad = r.pad;
+  const ms = [r.aGrayMs, r.aBinMs, r.bBinMs];
+  const minM = Math.min(...ms), maxM = Math.max(...ms);
+  const fmt = (v) => `<td class="ms ${v===minM?'faster':v===maxM?'slower':''}">${v.toFixed(0)}ms</td>`;
+  const best = minM === r.aGrayMs ? 'A灰度' : minM === r.aBinMs ? 'A二值' : 'B新流程';
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td class="idx">${r.idx}</td>
+    <td><img src="${pad}_00_original_x3.png"></td>
+    <td><img src="${pad}_01_grayA.png"></td>
+    <td><img src="${pad}_02_binA.png"></td>
+    <td><img src="${pad}_03_binB.png"></td>
+    <td class="ocr-text ${r.aGrayText?'':'ocr-empty'}">${r.aGrayText||'—'}</td>
+    ${fmt(r.aGrayMs)}
+    <td class="ocr-text ${r.aBinText?'':'ocr-empty'}">${r.aBinText||'—'}</td>
+    ${fmt(r.aBinMs)}
+    <td class="ocr-text ${r.bBinText?'':'ocr-empty'}">${r.bBinText||'—'}</td>
+    ${fmt(r.bBinMs)}
+    <td class="${best==='B新流程'?'faster':'slower'}">${best}</td>
+  `;
+  rowsEl.appendChild(tr);
+});
+</script>
+</body>
+</html>
