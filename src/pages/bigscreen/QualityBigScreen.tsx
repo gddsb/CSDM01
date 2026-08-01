@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { Button } from 'antd'
-import { ArrowLeftOutlined, ReloadOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import * as echarts from 'echarts'
 import {
@@ -13,15 +11,21 @@ import {
   inspectionStandards,
   materials,
 } from '../../mock/data'
+import BigScreenHeader from '../../components/BigScreenHeader'
+import BigScreenPanel from '../../components/BigScreenPanel'
 import '../../styles/bigscreen.css'
 import { useBigScreenScale } from '../../hooks/useBigScreenScale'
 
-// 环境数据更新间隔
 const ENV_REFRESH_INTERVAL = 8 * 1000
-// 无操作自动隐藏阈值
 const IDLE_THRESHOLD = 15 * 1000
 
-// 提取数据中所有日期
+const TABS = [
+  { key: 'production', label: '生产大屏', path: '/bigscreen/production' },
+  { key: 'quality', label: '质量大屏', path: '/bigscreen/quality' },
+  { key: 'environment', label: '环境监测中心', path: '/bigscreen/environment' },
+  { key: 'management', label: '管理大屏', path: '/bigscreen/management' },
+]
+
 function extractDates(items, ...fields) {
   const set = new Set()
   items.forEach(item => {
@@ -36,7 +40,6 @@ function extractDates(items, ...fields) {
   return Array.from(set).sort()
 }
 
-// 获取当日数据日期：今天优先，无数据则取最近有数据的日期
 function getActiveDate() {
   const allDates = []
     .concat(extractDates(incomingInspections, 'inspection_time', 'arrival_date'))
@@ -78,7 +81,6 @@ export default function QualityBigScreen() {
   const [idle, setIdle] = useState(false)
   const [envData, setEnvData] = useState({ temperature: 21.5, humidity: 60.5, pressure: 18.0 })
 
-  // ECharts 图表容器 ref
   const barChartRef = useRef(null)
   const pieChartRef = useRef(null)
   const lineChartRef = useRef(null)
@@ -107,7 +109,6 @@ export default function QualityBigScreen() {
     }
   }, [resetIdle])
 
-  // 定期更新环境数据
   useEffect(() => {
     const timer = setInterval(() => {
       setEnvData(prev => ({
@@ -129,13 +130,15 @@ export default function QualityBigScreen() {
   }
   const { style: scaleStyle } = useBigScreenScale({ designWidth: 1920, designHeight: 1080 })
 
-  // 按当日过滤数据
+  const onTab = useCallback((key, path) => {
+    if (path) navigate(path)
+  }, [navigate])
+
   const dateIncoming = filterByDate(incomingInspections, activeDate, 'inspection_time', 'arrival_date')
   const dateFinished = filterByDate(finishedInspections, activeDate, 'inspection_time')
   const dateMicrobe = filterByDate(microbeInspections, activeDate, 'inspection_time')
   const dateEnv = filterByDate(envInspections, activeDate, 'inspection_date')
   const dateComplaints = filterByDate(complaints, activeDate, 'complaint_time')
-  // 当日无任何数据时回退到全部
   const hasDateData = dateIncoming.length > 0 || dateFinished.length > 0 || dateMicrobe.length > 0 || dateEnv.length > 0
   const useIncoming = hasDateData ? dateIncoming : incomingInspections
   const useFinished = hasDateData ? dateFinished : finishedInspections
@@ -143,9 +146,6 @@ export default function QualityBigScreen() {
   const useEnv = hasDateData ? dateEnv : envInspections
   const useComplaints = dateComplaints.length > 0 ? dateComplaints : complaints
 
-  // ============ 数据计算 ============
-
-  // 合格率计算：只统计已完成且有检验结果的记录
   const calcPassRate = (list) => {
     const completed = list.filter((i) => i.result === '合格' || i.result === '不合格')
     if (completed.length === 0) return 0
@@ -159,24 +159,20 @@ export default function QualityBigScreen() {
   const envRate = calcPassRate(useEnv)
   const activeComplaints = useComplaints.filter((c) => c.status === '处理中').length
 
-  // 检验标准覆盖率：被生效标准覆盖的料品数 / 料品总数
   const materialsWithStandard = new Set(
     inspectionStandards.filter((s) => s.status === '生效').map((s) => s.material_id)
   )
   const standardCoverage =
     materials.length > 0 ? Math.round((materialsWithStandard.size / materials.length) * 100) : 0
 
-  // 标准生效率
   const activeStandards = inspectionStandards.filter((s) => s.status === '生效').length
   const standardActiveRate =
     inspectionStandards.length > 0 ? Math.round((activeStandards / inspectionStandards.length) * 100) : 0
 
-  // 仪器有效校准率（正常 + 即将到期视为有效）
   const validInstruments = instruments.filter((i) => i.status === '正常' || i.status === '即将到期').length
   const instrumentValidRate =
     instruments.length > 0 ? Math.round((validInstruments / instruments.length) * 100) : 0
 
-  // KPI 指标行
   const kpiData = [
     { label: '来料合格率', value: incomingRate, unit: '%', color: '#00d4ff' },
     { label: '成品合格率', value: finishedRate, unit: '%', color: '#00ff88' },
@@ -185,12 +181,8 @@ export default function QualityBigScreen() {
     { label: '活跃客诉数', value: activeComplaints, unit: '件', color: '#ff6b6b' },
   ]
 
-  // ============ ECharts 图表初始化 ============
-
-  // 通用图表配置：禁用动画（定期更新数据不要动画）
   const noAnimation = { animation: false, animationDuration: 0, animationDurationUpdate: 0, animationEasingUpdate: 'linear' }
 
-  // 1. 来料/成品/微生物/环境合格率对比 - 柱状图
   useEffect(() => {
     if (!barChartRef.current) return
     const chart = echarts.init(barChartRef.current)
@@ -203,7 +195,7 @@ export default function QualityBigScreen() {
         trigger: 'axis',
         axisPointer: { type: 'shadow' },
         backgroundColor: 'rgba(13,27,42,0.92)',
-        borderColor: 'rgba(88,166,255,0.4)',
+        borderColor: 'rgba(0,212,255,0.4)',
         textStyle: { color: '#E6EDF3' },
         formatter: '{b}<br/>合格率：{c}%',
       },
@@ -211,7 +203,7 @@ export default function QualityBigScreen() {
       xAxis: {
         type: 'category',
         data: ['来料', '成品', '微生物', '环境'],
-        axisLine: { lineStyle: { color: 'rgba(88,166,255,0.3)' } },
+        axisLine: { lineStyle: { color: 'rgba(0,212,255,0.3)' } },
         axisTick: { show: false },
         axisLabel: { color: '#C9D1D9', fontSize: 13, fontWeight: 600 },
       },
@@ -221,7 +213,7 @@ export default function QualityBigScreen() {
         axisLine: { show: false },
         axisTick: { show: false },
         axisLabel: { color: '#8B949E', formatter: '{value}%' },
-        splitLine: { lineStyle: { color: 'rgba(88,166,255,0.08)' } },
+        splitLine: { lineStyle: { color: 'rgba(0,212,255,0.08)' } },
       },
       series: [
         {
@@ -262,11 +254,9 @@ export default function QualityBigScreen() {
     }
   }, [incomingRate, finishedRate, microbeRate, envRate])
 
-  // 2. 各检验类别不合格分布 - 饼图（环形）
   useEffect(() => {
     if (!pieChartRef.current) return
     const chart = echarts.init(pieChartRef.current)
-    // 当日不合格聚合数据（基于过滤后的数据）
     const unqualifiedData = [
       { name: '来料检验', value: useIncoming.filter(i => i.result === '不合格').length || 0 },
       { name: '成品检验', value: useFinished.filter(i => i.result === '不合格').length || 0 },
@@ -282,7 +272,7 @@ export default function QualityBigScreen() {
       tooltip: {
         trigger: 'item',
         backgroundColor: 'rgba(13,27,42,0.92)',
-        borderColor: 'rgba(88,166,255,0.4)',
+        borderColor: 'rgba(0,212,255,0.4)',
         textStyle: { color: '#E6EDF3' },
         formatter: '{b}<br/>不合格：{c}件 ({d}%)',
       },
@@ -345,7 +335,6 @@ export default function QualityBigScreen() {
     }
   }, [useIncoming, useFinished, useMicrobe, useEnv])
 
-  // 3. 客诉趋势 - 折线图
   useEffect(() => {
     if (!lineChartRef.current) return
     const chart = echarts.init(lineChartRef.current)
@@ -358,7 +347,7 @@ export default function QualityBigScreen() {
       tooltip: {
         trigger: 'axis',
         backgroundColor: 'rgba(13,27,42,0.92)',
-        borderColor: 'rgba(88,166,255,0.4)',
+        borderColor: 'rgba(0,212,255,0.4)',
         textStyle: { color: '#E6EDF3' },
       },
       legend: {
@@ -374,7 +363,7 @@ export default function QualityBigScreen() {
         type: 'category',
         boundaryGap: false,
         data: months,
-        axisLine: { lineStyle: { color: 'rgba(88,166,255,0.3)' } },
+        axisLine: { lineStyle: { color: 'rgba(0,212,255,0.3)' } },
         axisTick: { show: false },
         axisLabel: { color: '#C9D1D9' },
       },
@@ -383,7 +372,7 @@ export default function QualityBigScreen() {
         axisLine: { show: false },
         axisTick: { show: false },
         axisLabel: { color: '#8B949E' },
-        splitLine: { lineStyle: { color: 'rgba(88,166,255,0.08)' } },
+        splitLine: { lineStyle: { color: 'rgba(0,212,255,0.08)' } },
       },
       series: [
         {
@@ -428,7 +417,6 @@ export default function QualityBigScreen() {
     }
   }, [])
 
-  // 4. 检验标准覆盖率 - 径向柱状图
   useEffect(() => {
     if (!gaugeChartRef.current) return
     const chart = echarts.init(gaugeChartRef.current)
@@ -439,7 +427,7 @@ export default function QualityBigScreen() {
       tooltip: {
         trigger: 'item',
         backgroundColor: 'rgba(13,27,42,0.92)',
-        borderColor: 'rgba(88,166,255,0.4)',
+        borderColor: 'rgba(0,212,255,0.4)',
         textStyle: { color: '#E6EDF3' },
         formatter: '{b}: {c}%',
       },
@@ -496,108 +484,77 @@ export default function QualityBigScreen() {
     }
   }, [standardCoverage, standardActiveRate, instrumentValidRate])
 
+  const idleClock = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 16, color: '#8B949E', fontFamily: "'Courier New', monospace", fontSize: 16 }}>
+      <span style={{ color: '#3FB950' }}>●</span>
+      <span>{formatClock(currentTime)}</span>
+      <span style={{ fontSize: 12, opacity: 0.6 }}>系统时间</span>
+    </div>
+  )
+
+  const envGroup = (
+    <div className="bs-env-group">
+      <span className="bs-env-item" title="温度">
+        <span className="bs-env-label" style={{ color: '#00d4ff' }}>温度</span>
+        <span className="bs-env-value">{envData.temperature.toFixed(1)}°C</span>
+      </span>
+      <span className="bs-env-item" title="湿度">
+        <span className="bs-env-label" style={{ color: '#3FB950' }}>湿度</span>
+        <span className="bs-env-value">{envData.humidity.toFixed(1)}%</span>
+      </span>
+      <span className="bs-env-item" title="压差">
+        <span className="bs-env-label" style={{ color: '#F0883E' }}>压差</span>
+        <span className="bs-env-value">{envData.pressure.toFixed(1)}Pa</span>
+      </span>
+    </div>
+  )
+
   return (
     <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: '#0a0e1a' }}>
       <div className="bigscreen-container" style={{ display: 'flex', flexDirection: 'column', height: '1080px', overflow: 'hidden', ...scaleStyle }}>
-      {/* 顶部标题栏 */}
-      <div className="bs-header">
-        {/* 左上角：闲置态切换为系统时间显示 */}
-        <div className="bs-header-left">
-          {!idle ? (
-            <>
-              <Button
-                type="text"
-                icon={<ArrowLeftOutlined />}
-                onClick={() => navigate('/dashboard')}
-                style={{ color: '#8B949E' }}
-              />
-              <div className="bs-screen-tabs">
-                <div className="bs-screen-tab" onClick={() => navigate('/bigscreen/production')}>生产大屏</div>
-                <div className="bs-screen-tab" onClick={() => navigate('/bigscreen/management')}>管理大屏</div>
-                <div className="bs-screen-tab active">质量大屏</div>
-              </div>
-            </>
-          ) : (
-            <div className="bs-idle-clock">
-              <span style={{ color: '#3FB950' }}>●</span>
-              <span>{formatClock(currentTime)}</span>
-              <span style={{ fontSize: 12, color: '#8B949E' }}>系统时间</span>
-            </div>
-          )}
-        </div>
-        <div className="bs-header-center">
-          <div className="bs-title">
-            <div className="daman-logo" style={{ display: 'inline-flex', flexDirection: 'row', gap: 4, marginRight: 12, verticalAlign: 'middle' }}>
-              <span className="daman-en" style={{ fontSize: 24, fontWeight: 800, color: '#fff' }}>daman</span>
-              <span className="daman-cn" style={{ fontSize: 14, fontWeight: 700, color: '#fff', letterSpacing: 2 }}>大满</span>
-            </div>
-            质量分析看板
-          </div>
-        </div>
-        {/* 右上角：环境数据（温度/湿度/压差）+ 时间 */}
-        <div className="bs-header-right">
-          <div className="bs-env-group">
-            <span className="bs-env-item" title="温度">
-              <span className="bs-env-label" style={{ color: '#58A6FF' }}>温度</span>
-              <span className="bs-env-value">{envData.temperature.toFixed(1)}°C</span>
-            </span>
-            <span className="bs-env-item" title="湿度">
-              <span className="bs-env-label" style={{ color: '#3FB950' }}>湿度</span>
-              <span className="bs-env-value">{envData.humidity.toFixed(1)}%</span>
-            </span>
-            <span className="bs-env-item" title="压差">
-              <span className="bs-env-label" style={{ color: '#F0883E' }}>压差</span>
-              <span className="bs-env-value">{envData.pressure.toFixed(1)}Pa</span>
-            </span>
-          </div>
-          <ReloadOutlined style={{ color: '#3FB950' }} className="bs-blink" />
-          <div className="bs-time">{formatTime(currentTime)}</div>
-        </div>
-      </div>
+        <BigScreenHeader
+          title="质量检测中心"
+          tabs={idle ? [] : TABS}
+          activeTab="quality"
+          onTabChange={onTab}
+          showBack={!idle}
+          extraRight={envGroup}
+          extraLeft={idle ? idleClock : null}
+        />
 
-      {/* KPI 指标行 */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexShrink: 0 }}>
-        {kpiData.map((kpi, i) => (
-          <div key={i} className="bs-panel" style={{ flex: 1 }}>
-            <div className="bs-kpi-card">
-              <div className="bs-kpi-value bs-number-glow" style={{ color: kpi.color }}>
-                {kpi.value}
-                <span style={{ fontSize: 16, marginLeft: 2 }}>{kpi.unit}</span>
+        <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexShrink: 0 }}>
+          {kpiData.map((kpi, i) => (
+            <BigScreenPanel key={i} style={{ flex: 1 }}>
+              <div className="bs-kpi-card">
+                <div className="bs-kpi-value bs-number-glow" style={{ color: kpi.color }}>
+                  {kpi.value}
+                  <span style={{ fontSize: 16, marginLeft: 2 }}>{kpi.unit}</span>
+                </div>
+                <div className="bs-kpi-label">{kpi.label}</div>
               </div>
-              <div className="bs-kpi-label">{kpi.label}</div>
-            </div>
-          </div>
-        ))}
-      </div>
+            </BigScreenPanel>
+          ))}
+        </div>
 
-      {/* 图表区域 - 2x2 网格 */}
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10 }}>
-          {/* 来料/成品/微生物/环境合格率对比 */}
-          <div className="bs-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div className="bs-panel-title">来料 / 成品 / 微生物 / 环境合格率对比</div>
-            <div ref={barChartRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10 }}>
+            <BigScreenPanel title="来料 / 成品 / 微生物 / 环境合格率对比" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div ref={barChartRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
+            </BigScreenPanel>
+            <BigScreenPanel title="各检验类别不合格分布" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div ref={pieChartRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
+            </BigScreenPanel>
           </div>
-          {/* 各检验类别不合格分布 */}
-          <div className="bs-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div className="bs-panel-title">各检验类别不合格分布</div>
-            <div ref={pieChartRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
-          </div>
-        </div>
-        <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10 }}>
-          {/* 客诉趋势 */}
-          <div className="bs-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div className="bs-panel-title">客诉趋势</div>
-            <div ref={lineChartRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
-          </div>
-          {/* 检验标准覆盖率 */}
-          <div className="bs-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div className="bs-panel-title">检验标准覆盖率</div>
-            <div ref={gaugeChartRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10 }}>
+            <BigScreenPanel title="客诉趋势" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div ref={lineChartRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
+            </BigScreenPanel>
+            <BigScreenPanel title="检验标准覆盖率" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div ref={gaugeChartRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
+            </BigScreenPanel>
           </div>
         </div>
       </div>
-    </div>
     </div>
   )
 }
