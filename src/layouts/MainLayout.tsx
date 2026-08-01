@@ -79,7 +79,7 @@ const defaultMenuItems = [
     children: [
       { key: '/quality/incoming', icon: <ExperimentOutlined />, label: '来料检验' },
       { key: '/quality/process', icon: <ExperimentOutlined />, label: '过程检验' },
-      { key: '/quality/finished', icon: <ExperimentOutlined />, label: '成品检验' },
+      { key: '/quality/product', icon: <ExperimentOutlined />, label: '成品检验' },
       { key: '/quality/microbe', icon: <ExperimentOutlined />, label: '微生物检验' },
       { key: '/quality/environment', icon: <ExperimentOutlined />, label: '环境检验' },
       {
@@ -154,7 +154,7 @@ const defaultMenuItems = [
     ]
   },
   {
-    key: 'system-link', icon: <DesktopOutlined />, label: '系统关联',
+    key: 'system-link', icon: <DesktopOutlined />, label: '关联系统',
     children: [
       { key: '/mobile/home', icon: <MobileOutlined />, label: '移动端模拟器' },
     ]

@@ -373,5 +373,13 @@
   {
     "role_id": 2,
     "perm_id": 303
+  },
+  {
+    "role_id": 1,
+    "perm_id": 33
+  },
+  {
+    "role_id": 1,
+    "perm_id": 400
   }
 ]

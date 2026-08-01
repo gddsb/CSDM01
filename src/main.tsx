@@ -31,6 +31,7 @@ import InspectionStandard from './pages/quality/InspectionStandard'
 import InspectionStandardForm from './pages/quality/InspectionStandardForm'
 import IncomingInspection from './pages/quality/IncomingInspection'
 import ProductInspection from './pages/quality/ProductInspection'
+import ProcessInspection from './pages/quality/ProcessInspection'
 import MicrobeInspection from './pages/quality/MicrobeInspection'
 import EnvironmentInspection from './pages/quality/EnvironmentInspection'
 import ComplaintManagement from './pages/quality/ComplaintManagement'
@@ -106,6 +107,7 @@ function AppRoutes() {
         <Route path="/quality/standards/new" element={<InspectionStandardForm />} />
         <Route path="/quality/standards/:id/edit" element={<InspectionStandardForm />} />
         <Route path="/quality/incoming" element={<IncomingInspection />} />
+      <Route path="/quality/process" element={<ProcessInspection />} />
         <Route path="/quality/product" element={<ProductInspection />} />
         <Route path="/quality/microbe" element={<MicrobeInspection />} />
         <Route path="/quality/environment" element={<EnvironmentInspection />} />
