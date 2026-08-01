@@ -3,14 +3,15 @@ import { createWorker } from 'tesseract.js';
 import { Jimp } from 'jimp';
 import EnergyMeterData from '../models/EnergyMeterData.js';
 
-// 验证码预处理参数（最优方案：5x + Otsu-25 + PSM8 + 反色 + 蓝滤40 + 对比度0.25）
-// 测试服务器 30 样本严格4字符识别率 26.7% (原A7方案3x+PSM7+Otsu-20 仅 0%)
-const CAPTCHA_SCALE = 5;
-const CAPTCHA_OTSU_OFFSET = -25;
-const CAPTCHA_PSM = '8';
-const CAPTCHA_INVERT = true; // 反色（白底黑字→黑底白字）
-const CAPTCHA_BLUE_FILTER = 40; // 蓝色干扰线过滤阈值（B > R+X && B > G+X → 替换为白色）
-const CAPTCHA_CONTRAST = 0.25; // 对比度增强
+// 验证码预处理参数（最优方案：3x + CT0.2 + Otsu-30 + PSM7 + 不反色 + 无蓝滤）
+// 测试服务器 100 样本严格4字符识别率 92% (上一版本5x+反色+蓝滤仅10%)
+// 流水线：3x放大 → 灰度化 → 对比度0.2 → Otsu二值化(offset-30) → PSM7识别
+const CAPTCHA_SCALE = 3;
+const CAPTCHA_OTSU_OFFSET = -30;
+const CAPTCHA_PSM = '7';
+const CAPTCHA_INVERT = false; // 不反色（白底黑字直接识别，反色会严重降低识别率）
+const CAPTCHA_BLUE_FILTER = 0; // 无蓝色过滤（加蓝滤会破坏文字像素，严重降低识别率）
+const CAPTCHA_CONTRAST = 0.2; // 对比度增强（0.2最优，可提升约20%识别率）
 const CAPTCHA_WHITELIST = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
 const API_BASE = 'https://nh2api.yunjichaobiao.com';
