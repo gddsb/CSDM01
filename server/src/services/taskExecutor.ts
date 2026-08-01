@@ -89,6 +89,7 @@ export async function executeRealTask(
         const password = decryptedParams.password
         const presetToken = decryptedParams.token
         const captchaSchemeId = decryptedParams.captchaSchemeId
+        console.log(`[TaskExecutor] 能源采集任务参数: token=${presetToken ? '已设置' : '未设置'}, loginName=${loginName || '未设置'}, captchaSchemeId=${captchaSchemeId || '未设置'}`)
         // 支持 token 直连模式（跳过登录+验证码），也支持账号密码登录
         if (!presetToken && (!loginName || !password)) {
           const msg = '缺少能源平台凭据：请在任务设置中配置 token 或 loginName+password（推荐 token 模式，因验证码 OCR 识别率低）'

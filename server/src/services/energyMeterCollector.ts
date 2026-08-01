@@ -132,15 +132,23 @@ export class EnergyMeterCollector {
 
   constructor(config: EnergyConfig) {
     this.config = config;
-    // 应用验证码识别方案
-    if (config.captchaSchemeId) {
-      applyCaptchaScheme(config.captchaSchemeId);
-      console.log(`[EnergyMeterCollector] 使用验证码方案: ${config.captchaSchemeId}`);
-    }
+    // 应用验证码识别方案：优先使用自定义参数，其次使用指定方案，都没有则默认 optimal
+    let appliedScheme = config.captchaSchemeId;
     if (config.captchaParams) {
       applyCaptchaCustomParams(config.captchaParams);
+      appliedScheme = appliedScheme || 'custom';
       console.log(`[EnergyMeterCollector] 应用自定义验证码参数:`, JSON.stringify(config.captchaParams));
+    } else if (config.captchaSchemeId) {
+      applyCaptchaScheme(config.captchaSchemeId);
+      console.log(`[EnergyMeterCollector] 使用验证码方案: ${config.captchaSchemeId}`);
+    } else {
+      // 未配置方案时默认使用最优方案（optimal）
+      applyCaptchaScheme('optimal');
+      appliedScheme = 'optimal';
+      console.log(`[EnergyMeterCollector] 未配置验证码方案，默认使用: optimal（最优方案）`);
     }
+    // 输出当前验证码参数便于排查
+    console.log(`[EnergyMeterCollector] 当前验证码参数: scale=${CAPTCHA_SCALE}, otsuOffset=${CAPTCHA_OTSU_OFFSET}, psm=${CAPTCHA_PSM}, invert=${CAPTCHA_INVERT}, blueFilter=${CAPTCHA_BLUE_FILTER}, contrast=${CAPTCHA_CONTRAST}`);
     // 如果直接传入了 token，跳过登录
     if (config.token) {
       this.token = config.token;
@@ -650,8 +658,13 @@ export async function testCaptchaScheme(
       schemeName = `自定义(${JSON.stringify(schemeIdOrParams)})`;
     }
 
-    // 创建临时 collector 用于获取验证码
-    const tempCollector = new EnergyMeterCollector({ loginName: '', password: '' });
+    // 创建临时 collector 用于获取验证码（传入对应方案ID，避免被默认方案覆盖）
+    const tempCollector = new EnergyMeterCollector({
+      loginName: '',
+      password: '',
+      captchaSchemeId: typeof schemeIdOrParams === 'string' ? schemeIdOrParams : undefined,
+      captchaParams: typeof schemeIdOrParams === 'string' ? undefined : schemeIdOrParams,
+    });
 
     // 初始化 OCR worker
     const worker = await createWorker('eng');
