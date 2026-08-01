@@ -1090,7 +1090,7 @@ milk-can-mes/
 │   │   │   ├── taskScheduler.ts      # 定时任务调度服务
 │   │   │   ├── weatherCollector.ts   # 气象信息采集服务（中国天气网+备用站点）
 │   │   │   ├── envCollector.ts       # 环境监测采集服务（0531yun 物联网平台）
-│   │   │   ├── energyMeterCollector.ts # 能源采集服务（云集云能源平台，含验证码OCR识别）
+│   │   │   ├── energyMeterCollector.ts # 能源采集服务（云集云能源平台，支持Token直连+验证码A7方案OCR）
 │   │   │   ├── u9Login.ts            # U9 ERP 登录认证服务（MD5+AES）
 │   │   │   └── u9Exporter.ts         # U9 料品/客户数据导出服务
 │   │   ├── app.ts                    # 应用入口（Express 实例化）
@@ -1511,6 +1511,15 @@ JWT_EXPIRES_IN=7d
 # ==================== 环境监测采集配置（0531yun 平台） ====================
 ENV_LOGIN_NAME=13800138000    # 0531yun 平台登录账号
 ENV_PASSWORD=123456            # 0531yun 平台登录密码
+
+# ==================== 能源采集配置（云集云能源平台 nh2.yunjichaobiao.com） ====================
+# 支持两种凭据模式（在「任务设置 → 能源采集」中配置）：
+#   1. Token 直连模式（推荐）：配置 token 后跳过登录+验证码识别，直接调用业务接口
+#   2. 账号密码模式：配置 loginName+password，自动登录并 OCR 识别验证码
+# Token 可从浏览器开发者工具 → Network → 任意 API 请求头中复制 Token 值
+# 验证码 OCR 预处理参数（A7 方案，实测完整识别率约 75-93%）：
+#   放大3倍 → 灰度化 → Otsu自适应阈值-20偏移二值化 → PSM=7 单行文本识别
+#   参数详见 server/src/services/energyMeterCollector.ts 顶部常量
 
 # ==================== U9 ERP 系统配置 ====================
 U9_BASE_URL=http://120.79.24.179/U9/mvc       # U9 系统基础地址
