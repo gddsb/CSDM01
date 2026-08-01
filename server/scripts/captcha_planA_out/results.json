@@ -1,0 +1,1350 @@
+{
+  "results": [
+    {
+      "idx": 1,
+      "pad": "01",
+      "keyStr": "w2l4TDio23oT",
+      "variants": {
+        "A1": {
+          "text": "",
+          "ms": 52.683639,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 162,
+          "thr": 162
+        },
+        "A2": {
+          "text": "",
+          "ms": 21.129803,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 165,
+          "thr": 165
+        },
+        "A3": {
+          "text": "",
+          "ms": 33.449727,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 164,
+          "thr": 164
+        },
+        "A4": {
+          "text": "",
+          "ms": 12.082134,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 162,
+          "thr": 162
+        },
+        "A5": {
+          "text": "W3By",
+          "ms": 57.634289,
+          "conf": 1,
+          "len": 4,
+          "complete": true,
+          "otsu": 162,
+          "thr": 162
+        },
+        "A6": {
+          "text": "W3By",
+          "ms": 22.494644,
+          "conf": 1,
+          "len": 4,
+          "complete": true,
+          "otsu": 162,
+          "thr": 162
+        },
+        "A7": {
+          "text": "v3By",
+          "ms": 21.68663,
+          "conf": 6,
+          "len": 4,
+          "complete": true,
+          "otsu": 162,
+          "thr": 142
+        },
+        "A8": {
+          "text": "",
+          "ms": 8.591248,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 162,
+          "thr": 182
+        }
+      }
+    },
+    {
+      "idx": 2,
+      "pad": "02",
+      "keyStr": "sqdtgrvPxzbf",
+      "variants": {
+        "A1": {
+          "text": "",
+          "ms": 7.118523,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 160,
+          "thr": 160
+        },
+        "A2": {
+          "text": "",
+          "ms": 11.031198,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 161,
+          "thr": 161
+        },
+        "A3": {
+          "text": "",
+          "ms": 37.945333,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 162,
+          "thr": 162
+        },
+        "A4": {
+          "text": "",
+          "ms": 5.93542,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 160,
+          "thr": 160
+        },
+        "A5": {
+          "text": "Ran",
+          "ms": 35.511556,
+          "conf": 30,
+          "len": 3,
+          "complete": false,
+          "otsu": 160,
+          "thr": 160
+        },
+        "A6": {
+          "text": "Ran",
+          "ms": 40.193322,
+          "conf": 30,
+          "len": 3,
+          "complete": false,
+          "otsu": 160,
+          "thr": 160
+        },
+        "A7": {
+          "text": "NJQn",
+          "ms": 34.30074,
+          "conf": 10,
+          "len": 4,
+          "complete": true,
+          "otsu": 160,
+          "thr": 140
+        },
+        "A8": {
+          "text": "",
+          "ms": 6.912269,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 160,
+          "thr": 180
+        }
+      }
+    },
+    {
+      "idx": 3,
+      "pad": "03",
+      "keyStr": "Yc2RH01a00sM",
+      "variants": {
+        "A1": {
+          "text": "",
+          "ms": 6.043996,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 158,
+          "thr": 158
+        },
+        "A2": {
+          "text": "",
+          "ms": 12.689467,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 157,
+          "thr": 157
+        },
+        "A3": {
+          "text": "",
+          "ms": 16.941275,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 157,
+          "thr": 157
+        },
+        "A4": {
+          "text": "",
+          "ms": 12.769469,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 158,
+          "thr": 158
+        },
+        "A5": {
+          "text": "pU",
+          "ms": 29.132067,
+          "conf": 0,
+          "len": 2,
+          "complete": false,
+          "otsu": 158,
+          "thr": 158
+        },
+        "A6": {
+          "text": "pU",
+          "ms": 37.989223,
+          "conf": 0,
+          "len": 2,
+          "complete": false,
+          "otsu": 158,
+          "thr": 158
+        },
+        "A7": {
+          "text": "2gdU",
+          "ms": 21.450739,
+          "conf": 20,
+          "len": 4,
+          "complete": true,
+          "otsu": 158,
+          "thr": 138
+        },
+        "A8": {
+          "text": "",
+          "ms": 10.195608,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 158,
+          "thr": 178
+        }
+      }
+    },
+    {
+      "idx": 4,
+      "pad": "04",
+      "keyStr": "V7485K15zaLE",
+      "variants": {
+        "A1": {
+          "text": "",
+          "ms": 5.371463,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 157,
+          "thr": 157
+        },
+        "A2": {
+          "text": "",
+          "ms": 7.903162,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 156,
+          "thr": 156
+        },
+        "A3": {
+          "text": "BAD",
+          "ms": 34.677892,
+          "conf": 76,
+          "len": 3,
+          "complete": false,
+          "otsu": 156,
+          "thr": 156
+        },
+        "A4": {
+          "text": "",
+          "ms": 10.306789,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 157,
+          "thr": 157
+        },
+        "A5": {
+          "text": "BAD",
+          "ms": 41.375357,
+          "conf": 47,
+          "len": 3,
+          "complete": false,
+          "otsu": 157,
+          "thr": 157
+        },
+        "A6": {
+          "text": "BAD",
+          "ms": 29.574134,
+          "conf": 47,
+          "len": 3,
+          "complete": false,
+          "otsu": 157,
+          "thr": 157
+        },
+        "A7": {
+          "text": "3A9D",
+          "ms": 14.620578,
+          "conf": 90,
+          "len": 4,
+          "complete": true,
+          "otsu": 157,
+          "thr": 137
+        },
+        "A8": {
+          "text": "",
+          "ms": 11.991788,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 157,
+          "thr": 177
+        }
+      }
+    },
+    {
+      "idx": 5,
+      "pad": "05",
+      "keyStr": "oCIbj0ulfzne",
+      "variants": {
+        "A1": {
+          "text": "",
+          "ms": 5.989541,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 155,
+          "thr": 155
+        },
+        "A2": {
+          "text": "",
+          "ms": 6.789912,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 150,
+          "thr": 150
+        },
+        "A3": {
+          "text": "NKmh",
+          "ms": 33.669265,
+          "conf": 22,
+          "len": 4,
+          "complete": true,
+          "otsu": 154,
+          "thr": 154
+        },
+        "A4": {
+          "text": "",
+          "ms": 6.900746,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 155,
+          "thr": 155
+        },
+        "A5": {
+          "text": "NKkmh",
+          "ms": 24.620274,
+          "conf": 0,
+          "len": 5,
+          "complete": false,
+          "otsu": 155,
+          "thr": 155
+        },
+        "A6": {
+          "text": "NKkmh",
+          "ms": 20.733894,
+          "conf": 0,
+          "len": 5,
+          "complete": false,
+          "otsu": 155,
+          "thr": 155
+        },
+        "A7": {
+          "text": "NXmh",
+          "ms": 16.570359,
+          "conf": 90,
+          "len": 4,
+          "complete": true,
+          "otsu": 155,
+          "thr": 135
+        },
+        "A8": {
+          "text": "",
+          "ms": 7.688729,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 155,
+          "thr": 175
+        }
+      }
+    },
+    {
+      "idx": 6,
+      "pad": "06",
+      "keyStr": "OHzIZ0jWCotc",
+      "variants": {
+        "A1": {
+          "text": "",
+          "ms": 5.694349,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 164,
+          "thr": 164
+        },
+        "A2": {
+          "text": "Lies",
+          "ms": 28.283772,
+          "conf": 11,
+          "len": 4,
+          "complete": true,
+          "otsu": 168,
+          "thr": 168
+        },
+        "A3": {
+          "text": "",
+          "ms": 12.298762,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 167,
+          "thr": 167
+        },
+        "A4": {
+          "text": "",
+          "ms": 5.439573,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 164,
+          "thr": 164
+        },
+        "A5": {
+          "text": "Les",
+          "ms": 31.345478,
+          "conf": 0,
+          "len": 3,
+          "complete": false,
+          "otsu": 164,
+          "thr": 164
+        },
+        "A6": {
+          "text": "Les",
+          "ms": 24.655255,
+          "conf": 0,
+          "len": 3,
+          "complete": false,
+          "otsu": 164,
+          "thr": 164
+        },
+        "A7": {
+          "text": "Jed",
+          "ms": 14.431301,
+          "conf": 0,
+          "len": 3,
+          "complete": false,
+          "otsu": 164,
+          "thr": 144
+        },
+        "A8": {
+          "text": "lfc",
+          "ms": 28.27959,
+          "conf": 25,
+          "len": 3,
+          "complete": false,
+          "otsu": 164,
+          "thr": 184
+        }
+      }
+    },
+    {
+      "idx": 7,
+      "pad": "07",
+      "keyStr": "Ye2JCpzZhu2h",
+      "variants": {
+        "A1": {
+          "text": "dd",
+          "ms": 31.322835,
+          "conf": 39,
+          "len": 2,
+          "complete": false,
+          "otsu": 157,
+          "thr": 157
+        },
+        "A2": {
+          "text": "WET",
+          "ms": 30.178034,
+          "conf": 0,
+          "len": 3,
+          "complete": false,
+          "otsu": 157,
+          "thr": 157
+        },
+        "A3": {
+          "text": "WETN",
+          "ms": 35.295224,
+          "conf": 24,
+          "len": 4,
+          "complete": true,
+          "otsu": 156,
+          "thr": 156
+        },
+        "A4": {
+          "text": "rorJaa4",
+          "ms": 89.382584,
+          "conf": 20,
+          "len": 7,
+          "complete": false,
+          "otsu": 157,
+          "thr": 157
+        },
+        "A5": {
+          "text": "dd",
+          "ms": 35.057173,
+          "conf": 39,
+          "len": 2,
+          "complete": false,
+          "otsu": 157,
+          "thr": 157
+        },
+        "A6": {
+          "text": "dd",
+          "ms": 29.659175,
+          "conf": 39,
+          "len": 2,
+          "complete": false,
+          "otsu": 157,
+          "thr": 157
+        },
+        "A7": {
+          "text": "wK7M",
+          "ms": 17.928654,
+          "conf": 64,
+          "len": 4,
+          "complete": true,
+          "otsu": 157,
+          "thr": 137
+        },
+        "A8": {
+          "text": "WET",
+          "ms": 30.152346,
+          "conf": 32,
+          "len": 3,
+          "complete": false,
+          "otsu": 157,
+          "thr": 177
+        }
+      }
+    },
+    {
+      "idx": 8,
+      "pad": "08",
+      "keyStr": "mOtcq7aGb4M9",
+      "variants": {
+        "A1": {
+          "text": "",
+          "ms": 5.185414,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 160,
+          "thr": 160
+        },
+        "A2": {
+          "text": "",
+          "ms": 10.795402,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 161,
+          "thr": 161
+        },
+        "A3": {
+          "text": "",
+          "ms": 11.428617,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 162,
+          "thr": 162
+        },
+        "A4": {
+          "text": "",
+          "ms": 5.349812,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 160,
+          "thr": 160
+        },
+        "A5": {
+          "text": "apA9",
+          "ms": 29.175182,
+          "conf": 0,
+          "len": 4,
+          "complete": true,
+          "otsu": 160,
+          "thr": 160
+        },
+        "A6": {
+          "text": "apA9",
+          "ms": 37.736366,
+          "conf": 0,
+          "len": 4,
+          "complete": true,
+          "otsu": 160,
+          "thr": 160
+        },
+        "A7": {
+          "text": "avA9",
+          "ms": 26.078841,
+          "conf": 84,
+          "len": 4,
+          "complete": true,
+          "otsu": 160,
+          "thr": 140
+        },
+        "A8": {
+          "text": "",
+          "ms": 6.771391,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 160,
+          "thr": 180
+        }
+      }
+    },
+    {
+      "idx": 9,
+      "pad": "09",
+      "keyStr": "c5XjY6X0W6ta",
+      "variants": {
+        "A1": {
+          "text": "",
+          "ms": 7.427397,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 161,
+          "thr": 161
+        },
+        "A2": {
+          "text": "",
+          "ms": 8.253185,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 164,
+          "thr": 164
+        },
+        "A3": {
+          "text": "",
+          "ms": 18.315796,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 163,
+          "thr": 163
+        },
+        "A4": {
+          "text": "LyFoLTT",
+          "ms": 121.931813,
+          "conf": 18,
+          "len": 7,
+          "complete": false,
+          "otsu": 161,
+          "thr": 161
+        },
+        "A5": {
+          "text": "me",
+          "ms": 37.904054,
+          "conf": 0,
+          "len": 2,
+          "complete": false,
+          "otsu": 161,
+          "thr": 161
+        },
+        "A6": {
+          "text": "me",
+          "ms": 33.701996,
+          "conf": 0,
+          "len": 2,
+          "complete": false,
+          "otsu": 161,
+          "thr": 161
+        },
+        "A7": {
+          "text": "heYe",
+          "ms": 17.411274,
+          "conf": 20,
+          "len": 4,
+          "complete": true,
+          "otsu": 161,
+          "thr": 141
+        },
+        "A8": {
+          "text": "",
+          "ms": 9.269248,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 161,
+          "thr": 181
+        }
+      }
+    },
+    {
+      "idx": 10,
+      "pad": "10",
+      "keyStr": "NcDsZauRVUbL",
+      "variants": {
+        "A1": {
+          "text": "",
+          "ms": 6.506853,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 158,
+          "thr": 158
+        },
+        "A2": {
+          "text": "",
+          "ms": 7.903693,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 158,
+          "thr": 158
+        },
+        "A3": {
+          "text": "",
+          "ms": 13.194997,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 160,
+          "thr": 160
+        },
+        "A4": {
+          "text": "",
+          "ms": 6.918823,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 158,
+          "thr": 158
+        },
+        "A5": {
+          "text": "Agsq",
+          "ms": 26.518772,
+          "conf": 13,
+          "len": 4,
+          "complete": true,
+          "otsu": 158,
+          "thr": 158
+        },
+        "A6": {
+          "text": "Agsq",
+          "ms": 15.581974,
+          "conf": 13,
+          "len": 4,
+          "complete": true,
+          "otsu": 158,
+          "thr": 158
+        },
+        "A7": {
+          "text": "Adsq",
+          "ms": 19.264468,
+          "conf": 0,
+          "len": 4,
+          "complete": true,
+          "otsu": 158,
+          "thr": 138
+        },
+        "A8": {
+          "text": "",
+          "ms": 5.746152,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 158,
+          "thr": 178
+        }
+      }
+    },
+    {
+      "idx": 11,
+      "pad": "11",
+      "keyStr": "4y3RlouIxCRq",
+      "variants": {
+        "A1": {
+          "text": "",
+          "ms": 6.530077,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 160,
+          "thr": 160
+        },
+        "A2": {
+          "text": "",
+          "ms": 13.970297,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 160,
+          "thr": 160
+        },
+        "A3": {
+          "text": "",
+          "ms": 13.057652,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 162,
+          "thr": 162
+        },
+        "A4": {
+          "text": "",
+          "ms": 5.525981,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 160,
+          "thr": 160
+        },
+        "A5": {
+          "text": "Ae",
+          "ms": 28.72434,
+          "conf": 16,
+          "len": 2,
+          "complete": false,
+          "otsu": 160,
+          "thr": 160
+        },
+        "A6": {
+          "text": "Ae",
+          "ms": 25.132274,
+          "conf": 16,
+          "len": 2,
+          "complete": false,
+          "otsu": 160,
+          "thr": 160
+        },
+        "A7": {
+          "text": "GyA9",
+          "ms": 30.30804,
+          "conf": 11,
+          "len": 4,
+          "complete": true,
+          "otsu": 160,
+          "thr": 140
+        },
+        "A8": {
+          "text": "",
+          "ms": 6.047624,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 160,
+          "thr": 180
+        }
+      }
+    },
+    {
+      "idx": 12,
+      "pad": "12",
+      "keyStr": "GyI3mBPzf0fg",
+      "variants": {
+        "A1": {
+          "text": "",
+          "ms": 6.261954,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 158,
+          "thr": 158
+        },
+        "A2": {
+          "text": "",
+          "ms": 6.728794,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 158,
+          "thr": 158
+        },
+        "A3": {
+          "text": "IBRP",
+          "ms": 20.187037,
+          "conf": 0,
+          "len": 4,
+          "complete": true,
+          "otsu": 160,
+          "thr": 160
+        },
+        "A4": {
+          "text": "",
+          "ms": 4.948537,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 158,
+          "thr": 158
+        },
+        "A5": {
+          "text": "IERP",
+          "ms": 26.692816,
+          "conf": 0,
+          "len": 4,
+          "complete": true,
+          "otsu": 158,
+          "thr": 158
+        },
+        "A6": {
+          "text": "IERP",
+          "ms": 26.291733,
+          "conf": 0,
+          "len": 4,
+          "complete": true,
+          "otsu": 158,
+          "thr": 158
+        },
+        "A7": {
+          "text": "75RP",
+          "ms": 14.528192,
+          "conf": 38,
+          "len": 4,
+          "complete": true,
+          "otsu": 158,
+          "thr": 138
+        },
+        "A8": {
+          "text": "",
+          "ms": 6.46748,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 158,
+          "thr": 178
+        }
+      }
+    },
+    {
+      "idx": 13,
+      "pad": "13",
+      "keyStr": "Yq6ZoV58tfza",
+      "variants": {
+        "A1": {
+          "text": "",
+          "ms": 7.366351,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 161,
+          "thr": 161
+        },
+        "A2": {
+          "text": "",
+          "ms": 7.181447,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 161,
+          "thr": 161
+        },
+        "A3": {
+          "text": "fST",
+          "ms": 55.134873,
+          "conf": 7,
+          "len": 3,
+          "complete": false,
+          "otsu": 162,
+          "thr": 162
+        },
+        "A4": {
+          "text": "",
+          "ms": 5.21684,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 161,
+          "thr": 161
+        },
+        "A5": {
+          "text": "S7SM",
+          "ms": 29.235692,
+          "conf": 0,
+          "len": 4,
+          "complete": true,
+          "otsu": 161,
+          "thr": 161
+        },
+        "A6": {
+          "text": "S7SM",
+          "ms": 30.635109,
+          "conf": 0,
+          "len": 4,
+          "complete": true,
+          "otsu": 161,
+          "thr": 161
+        },
+        "A7": {
+          "text": "sZSM",
+          "ms": 27.647147,
+          "conf": 0,
+          "len": 4,
+          "complete": true,
+          "otsu": 161,
+          "thr": 141
+        },
+        "A8": {
+          "text": "",
+          "ms": 7.863016,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 161,
+          "thr": 181
+        }
+      }
+    },
+    {
+      "idx": 14,
+      "pad": "14",
+      "keyStr": "D1YP5nE18rGY",
+      "variants": {
+        "A1": {
+          "text": "",
+          "ms": 4.804665,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 160,
+          "thr": 160
+        },
+        "A2": {
+          "text": "",
+          "ms": 6.784144,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 161,
+          "thr": 161
+        },
+        "A3": {
+          "text": "",
+          "ms": 13.077403,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 162,
+          "thr": 162
+        },
+        "A4": {
+          "text": "",
+          "ms": 12.713565,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 160,
+          "thr": 160
+        },
+        "A5": {
+          "text": "bape",
+          "ms": 26.648392,
+          "conf": 18,
+          "len": 4,
+          "complete": true,
+          "otsu": 160,
+          "thr": 160
+        },
+        "A6": {
+          "text": "bape",
+          "ms": 28.561231,
+          "conf": 18,
+          "len": 4,
+          "complete": true,
+          "otsu": 160,
+          "thr": 160
+        },
+        "A7": {
+          "text": "n8bO",
+          "ms": 15.778118,
+          "conf": 67,
+          "len": 4,
+          "complete": true,
+          "otsu": 160,
+          "thr": 140
+        },
+        "A8": {
+          "text": "",
+          "ms": 12.315639,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 160,
+          "thr": 180
+        }
+      }
+    },
+    {
+      "idx": 15,
+      "pad": "15",
+      "keyStr": "wld3qvDRTwdO",
+      "variants": {
+        "A1": {
+          "text": "",
+          "ms": 5.036355,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 163,
+          "thr": 163
+        },
+        "A2": {
+          "text": "",
+          "ms": 7.582704,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 167,
+          "thr": 167
+        },
+        "A3": {
+          "text": "",
+          "ms": 12.793979,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 166,
+          "thr": 166
+        },
+        "A4": {
+          "text": "",
+          "ms": 5.174323,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 163,
+          "thr": 163
+        },
+        "A5": {
+          "text": "7dyg",
+          "ms": 24.202145,
+          "conf": 18,
+          "len": 4,
+          "complete": true,
+          "otsu": 163,
+          "thr": 163
+        },
+        "A6": {
+          "text": "7dyg",
+          "ms": 25.85964,
+          "conf": 18,
+          "len": 4,
+          "complete": true,
+          "otsu": 163,
+          "thr": 163
+        },
+        "A7": {
+          "text": "Toyq",
+          "ms": 28.043788,
+          "conf": 0,
+          "len": 4,
+          "complete": true,
+          "otsu": 163,
+          "thr": 143
+        },
+        "A8": {
+          "text": "",
+          "ms": 5.364965,
+          "conf": 0,
+          "len": 0,
+          "complete": false,
+          "otsu": 163,
+          "thr": 183
+        }
+      }
+    }
+  ],
+  "summary": {
+    "count": 15,
+    "failed": 0,
+    "expectLen": 4,
+    "variants": {
+      "A1": {
+        "name": "3x PSM7  Otsu",
+        "completeN": 0,
+        "completePct": 0,
+        "nonEmpty": 1,
+        "avgLenOfNonEmpty": 2,
+        "totalMs": 163.343412,
+        "avgMs": 10.8895608,
+        "avgConf": 2.6
+      },
+      "A2": {
+        "name": "4x PSM7  Otsu",
+        "completeN": 1,
+        "completePct": 6.666666666666667,
+        "nonEmpty": 2,
+        "avgLenOfNonEmpty": 3.5,
+        "totalMs": 187.20501399999998,
+        "avgMs": 12.480334266666665,
+        "avgConf": 0.7333333333333333
+      },
+      "A3": {
+        "name": "5x PSM7  Otsu",
+        "completeN": 3,
+        "completePct": 20,
+        "nonEmpty": 5,
+        "avgLenOfNonEmpty": 3.6,
+        "totalMs": 361.467832,
+        "avgMs": 24.097855466666665,
+        "avgConf": 8.6
+      },
+      "A4": {
+        "name": "3x PSM6  Otsu",
+        "completeN": 0,
+        "completePct": 0,
+        "nonEmpty": 2,
+        "avgLenOfNonEmpty": 7,
+        "totalMs": 310.596409,
+        "avgMs": 20.706427266666665,
+        "avgConf": 2.533333333333333
+      },
+      "A5": {
+        "name": "3x PSM8  Otsu",
+        "completeN": 7,
+        "completePct": 46.666666666666664,
+        "nonEmpty": 15,
+        "avgLenOfNonEmpty": 3.3333333333333335,
+        "totalMs": 483.77758700000004,
+        "avgMs": 32.251839133333334,
+        "avgConf": 12.133333333333333
+      },
+      "A6": {
+        "name": "3x PSM13 Otsu",
+        "completeN": 7,
+        "completePct": 46.666666666666664,
+        "nonEmpty": 15,
+        "avgLenOfNonEmpty": 3.3333333333333335,
+        "totalMs": 428.7999700000001,
+        "avgMs": 28.58666466666667,
+        "avgConf": 12.133333333333333
+      },
+      "A7": {
+        "name": "3x PSM7  Otsu-20",
+        "completeN": 14,
+        "completePct": 93.33333333333333,
+        "nonEmpty": 15,
+        "avgLenOfNonEmpty": 3.933333333333333,
+        "totalMs": 320.048869,
+        "avgMs": 21.33659126666667,
+        "avgConf": 33.333333333333336
+      },
+      "A8": {
+        "name": "3x PSM7  Otsu+20",
+        "completeN": 0,
+        "completePct": 0,
+        "nonEmpty": 2,
+        "avgLenOfNonEmpty": 3,
+        "totalMs": 163.657093,
+        "avgMs": 10.910472866666668,
+        "avgConf": 3.8
+      }
+    }
+  },
+  "variants": [
+    {
+      "key": "A1",
+      "name": "3x PSM7  Otsu",
+      "opts": {
+        "scale": 3,
+        "thrOffset": 0
+      },
+      "psm": "7"
+    },
+    {
+      "key": "A2",
+      "name": "4x PSM7  Otsu",
+      "opts": {
+        "scale": 4,
+        "thrOffset": 0
+      },
+      "psm": "7"
+    },
+    {
+      "key": "A3",
+      "name": "5x PSM7  Otsu",
+      "opts": {
+        "scale": 5,
+        "thrOffset": 0
+      },
+      "psm": "7"
+    },
+    {
+      "key": "A4",
+      "name": "3x PSM6  Otsu",
+      "opts": {
+        "scale": 3,
+        "thrOffset": 0
+      },
+      "psm": "6"
+    },
+    {
+      "key": "A5",
+      "name": "3x PSM8  Otsu",
+      "opts": {
+        "scale": 3,
+        "thrOffset": 0
+      },
+      "psm": "8"
+    },
+    {
+      "key": "A6",
+      "name": "3x PSM13 Otsu",
+      "opts": {
+        "scale": 3,
+        "thrOffset": 0
+      },
+      "psm": "13"
+    },
+    {
+      "key": "A7",
+      "name": "3x PSM7  Otsu-20",
+      "opts": {
+        "scale": 3,
+        "thrOffset": -20
+      },
+      "psm": "7"
+    },
+    {
+      "key": "A8",
+      "name": "3x PSM7  Otsu+20",
+      "opts": {
+        "scale": 3,
+        "thrOffset": 20
+      },
+      "psm": "7"
+    }
+  ]
+}
