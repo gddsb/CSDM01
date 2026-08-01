@@ -205,7 +205,7 @@ export class EnergyMeterCollector {
     }
 
     console.error('[EnergyMeterCollector] Login failed after all retries:', lastError);
-    throw new Error(`能源平台登录失败：${lastError}（已重试 ${maxRetries} 次）`);
+    throw new Error(`能源平台登录失败：${lastError}（已重试 ${maxRetries} 次）。建议在任务设置中配置「访问令牌(Token)」直连模式以跳过验证码识别（验证码 OCR 识别率较低，账号密码登录易失败）`);
   }
 
   async ensureToken(): Promise<string> {

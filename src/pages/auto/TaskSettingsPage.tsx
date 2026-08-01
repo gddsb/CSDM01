@@ -56,7 +56,7 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
   energy_meter: <SettingOutlined style={{ color: '#fa541c', fontSize: 18 }} />,
 }
 
-const PARAM_FIELDS: Record<string, { key: string; label: string; type: 'text' | 'password' | 'select'; placeholder?: string; dependsOn?: string; noEcho?: boolean }[]> = {
+const PARAM_FIELDS: Record<string, { key: string; label: string; type: 'text' | 'password' | 'select'; placeholder?: string; dependsOn?: string; noEcho?: boolean; optional?: boolean }[]> = {
   items: [
     { key: 'loginName', label: 'U9登录用户名', type: 'text', placeholder: 'U9 ERP登录账号', noEcho: true },
     { key: 'password', label: 'U9登录密码', type: 'password', placeholder: 'U9 ERP登录密码' },
@@ -73,8 +73,9 @@ const PARAM_FIELDS: Record<string, { key: string; label: string; type: 'text' | 
   ],
   weather: [],
   energy_meter: [
-    { key: 'loginName', label: '平台登录用户名', type: 'text', placeholder: '云集云能源平台账号', noEcho: true },
-    { key: 'password', label: '平台登录密码', type: 'password', placeholder: '云集云能源平台密码' },
+    { key: 'loginName', label: '平台登录用户名', type: 'text', placeholder: '云集云能源平台账号（与 token 二选一）', noEcho: true, optional: true },
+    { key: 'password', label: '平台登录密码', type: 'password', placeholder: '云集云能源平台密码（与 token 二选一）', optional: true },
+    { key: 'token', label: '访问令牌(Token)', type: 'password', placeholder: '推荐：配置后跳过登录+验证码识别，从浏览器开发者工具复制', optional: true },
   ],
 }
 
@@ -282,8 +283,17 @@ export default function TaskSettingsPage() {
     { title: '数据源', dataIndex: 'source_url', key: 'source_url', width: 180, ellipsis: true, render: (v: string) => v ? v : '-' },
     { title: '参数配置', key: 'params', width: 100, render: (_: any, r: TaskSetting) => {
       const fields = PARAM_FIELDS[r.task_type] || []
-      const requiredCount = fields.filter(f => f.type === 'password' || f.key === 'loginName').length
-      const configured = fields.filter(f => f.type === 'password' ? true : r.params?.[f.key]).length
+      if (r.task_type === 'energy_meter') {
+        const hasToken = !!r.params?.token
+        const hasAccount = !!r.params?.loginName && !!r.params?.password
+        return (
+          <Tag color={hasToken ? 'success' : hasAccount ? 'orange' : 'default'}>
+            {hasToken ? '已配置(Token)' : hasAccount ? '已配置(账号)' : '待完善'}
+          </Tag>
+        )
+      }
+      const requiredCount = fields.filter(f => !f.optional && (f.type === 'password' || f.key === 'loginName')).length
+      const configured = fields.filter(f => !f.optional && (f.type === 'password' ? true : r.params?.[f.key])).length
       return fields.length > 0 ? (
         <Tag color={configured >= requiredCount ? 'success' : configured > 0 ? 'orange' : 'default'}>
           {configured >= requiredCount ? '已配置' : '待完善'}
