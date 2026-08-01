@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react'
 import { Spin, Row, Col } from 'antd'
-import { useNavigate } from 'react-router-dom'
 import * as echarts from 'echarts'
 import type { EChartsOption } from 'echarts'
 import {
@@ -42,13 +41,6 @@ interface TrendData {
 function fmtTime(s?: string | null) {
   return s ? dayjs(s).format('YYYY-MM-DD HH:mm:ss') : '-'
 }
-
-const TABS = [
-  { key: 'production', label: '生产大屏', path: '/bigscreen/production' },
-  { key: 'quality', label: '质量大屏', path: '/bigscreen/quality' },
-  { key: 'environment', label: '环境监测中心' },
-  { key: 'management', label: '管理大屏', path: '/bigscreen/management' },
-]
 
 function gaugeTemp(value: number, area: 'workshop' | 'warehouse'): EChartsOption {
   const upper = area === 'workshop' ? 25 : 35
@@ -315,7 +307,6 @@ function useChart(option: EChartsOption | null, deps: any[] = []) {
 }
 
 export default function EnvironmentBigScreen() {
-  const navigate = useNavigate()
   const [overview, setOverview] = useState<OverviewData | null>(null)
   const [trend, setTrend] = useState<TrendData | null>(null)
   const [loading, setLoading] = useState(false)
@@ -405,8 +396,6 @@ export default function EnvironmentBigScreen() {
   const tempRef = useChart(tempSeries.length ? trendOption(tempSeries, trend?.times || [], tempCfg) : null, [tempSeries, trend?.times])
   const humRef = useChart(humSeries.length ? trendOption(humSeries, trend?.times || [], humCfg) : null, [humSeries, trend?.times])
 
-  const onTab = (_key: string, path?: string) => { if (path) navigate(path) }
-
   const alarms = overview?.alarms
   const hasAlarm = (alarms?.unhandled || 0) > 0
 
@@ -415,13 +404,8 @@ export default function EnvironmentBigScreen() {
       <div className="bigscreen-container" style={{ display: 'flex', flexDirection: 'column', height: '1080px', overflow: 'hidden', ...scaleStyle }}>
         <BigScreenHeader
           title="环境监测中心"
-          tabs={TABS}
-          activeTab="environment"
-          onTabChange={onTab}
           onRefresh={loadAll}
           refreshing={loading}
-          lastUpdate={overview?.lastUpdate}
-          showBack
         />
 
         {/* 主体三栏布局 */}

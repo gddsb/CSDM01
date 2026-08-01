@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
 import * as echarts from 'echarts'
 import {
   incomingInspections,
@@ -18,13 +17,6 @@ import { useBigScreenScale } from '../../hooks/useBigScreenScale'
 
 const ENV_REFRESH_INTERVAL = 8 * 1000
 const IDLE_THRESHOLD = 15 * 1000
-
-const TABS = [
-  { key: 'production', label: '生产大屏', path: '/bigscreen/production' },
-  { key: 'quality', label: '质量大屏', path: '/bigscreen/quality' },
-  { key: 'environment', label: '环境监测中心', path: '/bigscreen/environment' },
-  { key: 'management', label: '管理大屏', path: '/bigscreen/management' },
-]
 
 function extractDates(items, ...fields) {
   const set = new Set()
@@ -75,7 +67,6 @@ function nextEnvValue(prev, min, max) {
 }
 
 export default function QualityBigScreen() {
-  const navigate = useNavigate()
   const [currentTime, setCurrentTime] = useState(new Date())
   const [activeDate, setActiveDate] = useState(getActiveDate())
   const [idle, setIdle] = useState(false)
@@ -129,10 +120,6 @@ export default function QualityBigScreen() {
     return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
   }
   const { style: scaleStyle } = useBigScreenScale({ designWidth: 1920, designHeight: 1080 })
-
-  const onTab = useCallback((key, path) => {
-    if (path) navigate(path)
-  }, [navigate])
 
   const dateIncoming = filterByDate(incomingInspections, activeDate, 'inspection_time', 'arrival_date')
   const dateFinished = filterByDate(finishedInspections, activeDate, 'inspection_time')
@@ -514,10 +501,6 @@ export default function QualityBigScreen() {
       <div className="bigscreen-container" style={{ display: 'flex', flexDirection: 'column', height: '1080px', overflow: 'hidden', ...scaleStyle }}>
         <BigScreenHeader
           title="质量检测中心"
-          tabs={idle ? [] : TABS}
-          activeTab="quality"
-          onTabChange={onTab}
-          showBack={!idle}
           extraRight={envGroup}
           extraLeft={idle ? idleClock : null}
         />

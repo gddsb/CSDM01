@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Tag } from 'antd'
-import { useNavigate } from 'react-router-dom'
 import * as echarts from 'echarts'
 import { workOrders, processReports, productionLines, devices, orders, processes } from '../../mock/data'
 import { useBigScreenScale } from '../../hooks/useBigScreenScale'
@@ -11,13 +10,6 @@ import '../../styles/bigscreen.css'
 const DATA_REFRESH_INTERVAL = 30 * 1000
 const ENV_REFRESH_INTERVAL = 8 * 1000
 const IDLE_THRESHOLD = 15 * 1000
-
-const TABS = [
-  { key: 'production', label: '生产大屏', path: '/bigscreen/production' },
-  { key: 'quality', label: '质量大屏', path: '/bigscreen/quality' },
-  { key: 'environment', label: '环境监测中心', path: '/bigscreen/environment' },
-  { key: 'management', label: '管理大屏', path: '/bigscreen/management' },
-]
 
 function extractDates(items, ...fields) {
   const set = new Set()
@@ -65,7 +57,6 @@ function nextEnvValue(prev, min, max) {
 }
 
 export default function ProductionBigScreen() {
-  const navigate = useNavigate()
   const [currentTime, setCurrentTime] = useState(new Date())
   const [activeDate, setActiveDate] = useState(getActiveDate())
   const [dataVersion, setDataVersion] = useState(0)
@@ -134,10 +125,6 @@ export default function ProductionBigScreen() {
   }
 
   const { style: scaleStyle } = useBigScreenScale({ designWidth: 1920, designHeight: 1080 })
-
-  const onTab = useCallback((key, path) => {
-    if (path) navigate(path)
-  }, [navigate])
 
   const dateWorkOrders = filterByDate(workOrders, activeDate, 'start_time', 'created_at')
   const dateProcessReports = filterByDate(processReports, activeDate, 'report_time')
@@ -556,10 +543,6 @@ export default function ProductionBigScreen() {
       >
         <BigScreenHeader
           title="生产实时监控中心"
-          tabs={idle ? [] : TABS}
-          activeTab="production"
-          onTabChange={onTab}
-          showBack={!idle}
           extraRight={envGroup}
           extraLeft={idle ? idleClock : null}
         />

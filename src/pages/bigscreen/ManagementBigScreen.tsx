@@ -2,7 +2,6 @@ import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import * as echarts from 'echarts'
 import { Row, Col, Table, Tag } from 'antd'
-import { useNavigate } from 'react-router-dom'
 import {
   workOrders, orders, incomingInspections, finishedInspections,
   microbeInspections, envInspections, complaints, instruments,
@@ -15,13 +14,6 @@ import { useBigScreenScale } from '../../hooks/useBigScreenScale'
 
 const ENV_REFRESH_INTERVAL = 8 * 1000
 const IDLE_THRESHOLD = 15 * 1000
-
-const TABS = [
-  { key: 'production', label: '生产大屏', path: '/bigscreen/production' },
-  { key: 'quality', label: '质量大屏', path: '/bigscreen/quality' },
-  { key: 'environment', label: '环境监测中心', path: '/bigscreen/environment' },
-  { key: 'management', label: '管理大屏', path: '/bigscreen/management' },
-]
 
 function extractDates(items, ...fields) {
   const set = new Set()
@@ -92,7 +84,6 @@ const DEVICE_STATUS_COLOR = {
 }
 
 export default function ManagementBigScreen() {
-  const navigate = useNavigate()
   const [currentTime, setCurrentTime] = useState(new Date())
   const [activeDate, setActiveDate] = useState(getActiveDate())
   const [idle, setIdle] = useState(false)
@@ -147,10 +138,6 @@ export default function ManagementBigScreen() {
     return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
   }
   const { style: scaleStyle } = useBigScreenScale({ designWidth: 1920, designHeight: 1080 })
-
-  const onTab = useCallback((key, path) => {
-    if (path) navigate(path)
-  }, [navigate])
 
   const noAnimation = { animation: false, animationDuration: 0, animationDurationUpdate: 0, animationEasingUpdate: 'linear' }
 
@@ -487,10 +474,6 @@ export default function ManagementBigScreen() {
       <div className="bigscreen-container" style={{ display: 'flex', flexDirection: 'column', height: '1080px', overflow: 'hidden', ...scaleStyle }}>
         <BigScreenHeader
           title="经营管理中心"
-          tabs={idle ? [] : TABS}
-          activeTab="management"
-          onTabChange={onTab}
-          showBack={!idle}
           extraRight={envGroup}
           extraLeft={idle ? idleClock : null}
         />
