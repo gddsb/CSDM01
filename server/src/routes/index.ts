@@ -5,7 +5,6 @@ import systemRoutes from './system.js'
 import basicRoutes from './basic.js'
 import productionRoutes from './production.js'
 import autoRoutes from './auto.js'
-import dashboardRoutes from './dashboard.js'
 import { uploadImage } from '../controllers/UploadController.js'
 import { authRequired } from '../middleware/auth.js'
 
@@ -29,6 +28,5 @@ router.use('/system', systemRoutes)
 router.use('/basic', basicRoutes)
 router.use('/production', productionRoutes)
 router.use('/auto', autoRoutes)
-router.use('/dashboard', dashboardRoutes)
 
 export default router

@@ -161,7 +161,6 @@ const defaultPermissions = [
   { parent_id: 0, parent_code: 'bigscreen', perm_name: '质量分析看板', perm_code: 'bigscreen:quality', type: 'menu', icon: 'ExperimentOutlined', path: '/bigscreen/quality', sort_order: 2 },
   { parent_id: 0, parent_code: 'bigscreen', perm_name: '管理驾驶舱', perm_code: 'bigscreen:management', type: 'menu', icon: 'PieChartOutlined', path: '/bigscreen/management', sort_order: 3 },
   { parent_id: 0, parent_code: 'bigscreen', perm_name: '环境看板', perm_code: 'bigscreen:environment', type: 'menu', icon: 'EnvironmentOutlined', path: '/bigscreen/environment', sort_order: 4 },
-  { parent_id: 0, parent_code: 'bigscreen', perm_name: '看板设置', perm_code: 'bigscreen:setting', type: 'menu', icon: 'SettingOutlined', path: '/bigscreen/settings', sort_order: 5 },
   // 报表中心
   { parent_id: 0, perm_name: '报表中心', perm_code: 'report', type: 'menu', icon: 'PieChartOutlined', path: 'report', sort_order: 5 },
   { parent_id: 0, parent_code: 'report', perm_name: '生产日报', perm_code: 'report:daily', type: 'menu', icon: 'CalendarOutlined', path: '/report/daily', sort_order: 1 },

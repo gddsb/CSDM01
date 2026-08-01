@@ -94,17 +94,5 @@
     "status": 1,
     "created_at": "2026-07-06T08:15:22.000Z",
     "updated_at": "2026-07-06T08:15:22.000Z"
-  },
-  {
-    "role_id": 9,
-    "role_name": "看板查看者",
-    "role_code": "DASHBOARD_VIEWER",
-    "type": "可选",
-    "is_system_default": 0,
-    "scope": "大屏/看板只读查看",
-    "sort_order": 9,
-    "status": 1,
-    "created_at": "2026-07-06T08:15:22.000Z",
-    "updated_at": "2026-07-06T08:15:22.000Z"
   }
 ]

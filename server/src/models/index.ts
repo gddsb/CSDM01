@@ -48,9 +48,6 @@ import EnvMonitor from './EnvMonitor.js'
 import EnvAlarm from './EnvAlarm.js'
 import WeatherInfo from './WeatherInfo.js'
 import EnergyMeterData from './EnergyMeterData.js'
-import DashboardConfig from './DashboardConfig.js'
-import DashboardShare from './DashboardShare.js'
-import DashboardAccessLog from './DashboardAccessLog.js'
 
 // 建立模型关联关系
 // 用户 - 角色
@@ -212,9 +209,6 @@ const db = {
   EnvAlarm,
   WeatherInfo,
   EnergyMeterData,
-  DashboardConfig,
-  DashboardShare,
-  DashboardAccessLog,
 }
 
 // 具名导出，便于按需导入
@@ -266,9 +260,6 @@ export {
   EnvAlarm,
   WeatherInfo,
   EnergyMeterData,
-  DashboardConfig,
-  DashboardShare,
-  DashboardAccessLog,
 }
 
 export default db
