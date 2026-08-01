@@ -12,6 +12,7 @@ const GET_AMMETER_ALL_PATH = '/api/SetMeter/GetAmmeterAll';
 interface EnergyConfig {
   loginName: string;
   password: string;
+  token?: string; // 直接传入已有 token，跳过登录+验证码
 }
 
 interface CaptchaResult {
@@ -46,6 +47,11 @@ export class EnergyMeterCollector {
 
   constructor(config: EnergyConfig) {
     this.config = config;
+    // 如果直接传入了 token，跳过登录
+    if (config.token) {
+      this.token = config.token;
+      console.log('[EnergyMeterCollector] 使用预置 token 模式（跳过登录+验证码），token preview:', String(config.token).substring(0, 50));
+    }
   }
 
   private generateKeyStr(length = 12): string {
@@ -204,6 +210,10 @@ export class EnergyMeterCollector {
 
   async ensureToken(): Promise<string> {
     if (this.token) return this.token;
+    // 如果没有登录凭据，直接报错
+    if (!this.config.loginName || !this.config.password) {
+      throw new Error('未提供 token 且缺少登录凭据（loginName/password），无法获取能源平台访问令牌');
+    }
     return this.login();
   }
 
