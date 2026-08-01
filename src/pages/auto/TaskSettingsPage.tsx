@@ -105,6 +105,9 @@ export default function TaskSettingsPage() {
   const [testProgress, setTestProgress] = useState<TestProgress | null>(null)
   const [testingTaskType, setTestingTaskType] = useState<string | null>(null)
   const [loginMode, setLoginMode] = useState<'token' | 'account' | null>(null)
+  const [captchaSchemes, setCaptchaSchemes] = useState<any[]>([])
+  const [captchaTestResult, setCaptchaTestResult] = useState<any>(null)
+  const [testingCaptcha, setTestingCaptcha] = useState(false)
   const pollRef = useRef<number | null>(null)
 
   const loadData = async () => {
@@ -152,14 +155,26 @@ export default function TaskSettingsPage() {
     }
   }, [message])
 
+  const loadCaptchaSchemes = async () => {
+    try {
+      const res = await api.get('/auto/captcha-schemes')
+      setCaptchaSchemes(res.data || [])
+    } catch (err: any) {
+      console.error('加载验证码方案失败:', err)
+    }
+  }
+
   const handleEdit = (record: TaskSetting) => {
     setEditing(record)
     setOrgOptions([])
+    setCaptchaTestResult(null)
     // 能源采集任务：根据已有参数判断登录方式
     if (record.task_type === 'energy_meter') {
       if (record.params?.token) setLoginMode('token')
       else if (record.params?.loginName) setLoginMode('account')
       else setLoginMode(null)
+      // 加载验证码方案列表
+      loadCaptchaSchemes()
     } else {
       setLoginMode(null)
     }
@@ -175,6 +190,12 @@ export default function TaskSettingsPage() {
       } else {
         vals[f.key] = record.params?.[f.key] || ''
       }
+    }
+    // 验证码方案ID
+    if (record.task_type === 'energy_meter' && record.params?.captchaSchemeId) {
+      vals.captchaSchemeId = record.params.captchaSchemeId
+    } else {
+      vals.captchaSchemeId = 'optimal'
     }
     form.setFieldsValue(vals)
     setEditOpen(true)
@@ -202,7 +223,7 @@ export default function TaskSettingsPage() {
           params.loginName = ''
           params.password = ''
         } else if (loginMode === 'account') {
-          // 账号方式：传账号密码（非空才更新），清除token
+          // 账号方式：传账号密码（非空才更新），清除token，保存验证码方案
           if (values.loginName !== undefined && values.loginName !== '') {
             params.loginName = values.loginName
           }
@@ -210,6 +231,9 @@ export default function TaskSettingsPage() {
             params.password = values.password
           }
           params.token = ''
+          if (values.captchaSchemeId) {
+            params.captchaSchemeId = values.captchaSchemeId
+          }
         }
       } else {
         // 其他任务或未选择登录方式：只传非空值（保持不变）
@@ -237,6 +261,30 @@ export default function TaskSettingsPage() {
       loadData()
     } catch (err: any) {
       message.error(err.message || '操作失败')
+    }
+  }
+
+  const handleTestCaptchaScheme = async () => {
+    try {
+      const schemeId = form.getFieldValue('captchaSchemeId')
+      if (!schemeId) {
+        message.warning('请先选择验证码识别方案')
+        return
+      }
+      setTestingCaptcha(true)
+      setCaptchaTestResult(null)
+      message.info('正在测试验证码识别方案，15组样本约需30-60秒...')
+      const res = await api.post('/auto/captcha-schemes/test', { schemeId, numSamples: 15 })
+      setCaptchaTestResult(res.data)
+      if (res.data?.error) {
+        message.error(`测试失败: ${res.data.error}`)
+      } else {
+        message.success(`测试完成，识别率: ${res.data?.rate || 0}%`)
+      }
+    } catch (err: any) {
+      message.error(err.message || '测试失败')
+    } finally {
+      setTestingCaptcha(false)
     }
   }
 
@@ -571,6 +619,73 @@ export default function TaskSettingsPage() {
                   </Form.Item>
                 )
               })}
+
+              {editing?.task_type === 'energy_meter' && loginMode === 'account' && (
+                <>
+                  <Form.Item label="验证码识别方案" name="captchaSchemeId" rules={[{ required: true, message: '请选择验证码识别方案' }]}>
+                    <Select
+                      placeholder="请选择验证码识别方案"
+                      options={captchaSchemes.map(s => ({
+                        value: s.id,
+                        label: `${s.name}`,
+                        description: s.description,
+                      }))}
+                      optionRender={(option: any) => (
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontWeight: 500 }}>{option.label}</span>
+                          <span style={{ fontSize: 12, color: '#999' }}>{option.data?.description}</span>
+                        </div>
+                      )}
+                      suffixIcon={
+                        <Space>
+                          <Button
+                            type="primary"
+                            size="small"
+                            loading={testingCaptcha}
+                            onClick={(e) => { e.stopPropagation(); handleTestCaptchaScheme() }}
+                            style={{ marginRight: 8 }}
+                          >
+                            {testingCaptcha ? '测试中...' : '测试识别率'}
+                          </Button>
+                        </Space>
+                      }
+                    />
+                  </Form.Item>
+
+                  {captchaTestResult && (
+                    <div style={{
+                      marginBottom: 16,
+                      padding: '12px 16px',
+                      background: captchaTestResult.error ? '#fff1f0' : '#f6ffed',
+                      border: `1px solid ${captchaTestResult.error ? '#ffa39e' : '#b7eb8f'}`,
+                      borderRadius: 6,
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <strong style={{ fontSize: 14 }}>
+                          {captchaTestResult.error ? '❌ 测试失败' : `✅ 测试结果 - ${captchaTestResult.schemeName}`}
+                        </strong>
+                        {!captchaTestResult.error && (
+                          <Tag color={captchaTestResult.rate >= 80 ? 'green' : captchaTestResult.rate >= 50 ? 'orange' : 'red'} style={{ fontSize: 14, padding: '2px 10px' }}>
+                            识别率: {captchaTestResult.rate}% ({captchaTestResult.ok4}/{captchaTestResult.total})
+                          </Tag>
+                        )}
+                      </div>
+                      {captchaTestResult.error ? (
+                        <div style={{ color: '#cf1322' }}>{captchaTestResult.error}</div>
+                      ) : (
+                        <>
+                          <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>
+                            恰好4字符: {captchaTestResult.ok4} | 少于4字符: {captchaTestResult.under4} | 多于4字符: {captchaTestResult.over4}
+                          </div>
+                          <div style={{ fontSize: 12, color: '#999' }}>
+                            识别示例: {captchaTestResult.samples?.filter((s: any) => s.ok).slice(0, 8).map((s: any) => s.code).join(', ') || '无'}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
             </>
           )}
         </Form>

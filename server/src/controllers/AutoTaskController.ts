@@ -940,3 +940,30 @@ export const managementDashboard = async (req, res) => {
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
+
+// ============ 验证码识别方案 ============
+import { CAPTCHA_SCHEMES, testCaptchaScheme } from '../services/energyMeterCollector.js'
+
+export const listCaptchaSchemes = async (req, res) => {
+  try {
+    return success(res, CAPTCHA_SCHEMES, '查询成功', CAPTCHA_SCHEMES.length)
+  } catch (err) {
+    console.error('[listCaptchaSchemes] 失败:', err)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
+  }
+}
+
+export const testCaptchaSchemes = async (req, res) => {
+  try {
+    const { schemeId, numSamples } = req.body
+    if (!schemeId) {
+      return fail(res, '缺少方案ID (schemeId)', ErrorCode.PARAM_ERROR)
+    }
+    const samples = Math.min(30, Math.max(5, Number(numSamples) || 15))
+    const result = await testCaptchaScheme(schemeId, samples)
+    return success(res, result, '测试完成')
+  } catch (err) {
+    console.error('[testCaptchaSchemes] 失败:', err)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
+  }
+}

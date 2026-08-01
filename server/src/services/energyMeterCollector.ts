@@ -6,13 +6,84 @@ import EnergyMeterData from '../models/EnergyMeterData.js';
 // 验证码预处理参数（最优方案：3x + CT0.2 + Otsu-30 + PSM7 + 不反色 + 无蓝滤）
 // 测试服务器 100 样本严格4字符识别率 92% (上一版本5x+反色+蓝滤仅10%)
 // 流水线：3x放大 → 灰度化 → 对比度0.2 → Otsu二值化(offset-30) → PSM7识别
-const CAPTCHA_SCALE = 3;
-const CAPTCHA_OTSU_OFFSET = -30;
-const CAPTCHA_PSM = '7';
-const CAPTCHA_INVERT = false; // 不反色（白底黑字直接识别，反色会严重降低识别率）
-const CAPTCHA_BLUE_FILTER = 0; // 无蓝色过滤（加蓝滤会破坏文字像素，严重降低识别率）
-const CAPTCHA_CONTRAST = 0.2; // 对比度增强（0.2最优，可提升约20%识别率）
+let CAPTCHA_SCALE = 3;
+let CAPTCHA_OTSU_OFFSET = -30;
+let CAPTCHA_PSM = '7';
+let CAPTCHA_INVERT = false; // 不反色（白底黑字直接识别，反色会严重降低识别率）
+let CAPTCHA_BLUE_FILTER = 0; // 无蓝色过滤（加蓝滤会破坏文字像素，严重降低识别率）
+let CAPTCHA_CONTRAST = 0.2; // 对比度增强（0.2最优，可提升约20%识别率）
 const CAPTCHA_WHITELIST = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
+// ========== 验证码识别预设方案 ==========
+export interface CaptchaScheme {
+  id: string;
+  name: string;
+  description: string;
+  params: {
+    scale: number;
+    otsuOffset: number;
+    psm: string;
+    invert: boolean;
+    blueFilter: number;
+    contrast: number;
+  };
+}
+
+export const CAPTCHA_SCHEMES: CaptchaScheme[] = [
+  {
+    id: 'optimal',
+    name: '最优方案（推荐）',
+    description: '3x放大 + 对比度0.2 + Otsu-30 + PSM7，100样本识别率92%',
+    params: { scale: 3, otsuOffset: -30, psm: '7', invert: false, blueFilter: 0, contrast: 0.2 },
+  },
+  {
+    id: 'balanced',
+    name: '均衡方案',
+    description: '3x放大 + 对比度0.2 + Otsu-20 + PSM7，80样本识别率67%',
+    params: { scale: 3, otsuOffset: -20, psm: '7', invert: false, blueFilter: 0, contrast: 0.2 },
+  },
+  {
+    id: 'high_contrast',
+    name: '高对比方案',
+    description: '3x放大 + 对比度0.25 + Otsu-20 + PSM7，100样本识别率89%',
+    params: { scale: 3, otsuOffset: -20, psm: '7', invert: false, blueFilter: 0, contrast: 0.25 },
+  },
+  {
+    id: 'psm8',
+    name: 'PSM8方案',
+    description: '3x放大 + Otsu-20 + PSM8，80样本识别率79%',
+    params: { scale: 3, otsuOffset: -20, psm: '8', invert: false, blueFilter: 0, contrast: 0 },
+  },
+  {
+    id: 'aggressive',
+    name: '激进方案',
+    description: '4x放大 + 反色 + 蓝滤 + Otsu-25 + PSM10，100样本识别率约14%（不推荐）',
+    params: { scale: 4, otsuOffset: -25, psm: '10', invert: true, blueFilter: 45, contrast: 0.25 },
+  },
+];
+
+// 应用方案参数（覆盖全局默认值）
+export function applyCaptchaScheme(schemeId: string) {
+  const scheme = CAPTCHA_SCHEMES.find(s => s.id === schemeId);
+  if (scheme) {
+    CAPTCHA_SCALE = scheme.params.scale;
+    CAPTCHA_OTSU_OFFSET = scheme.params.otsuOffset;
+    CAPTCHA_PSM = scheme.params.psm;
+    CAPTCHA_INVERT = scheme.params.invert;
+    CAPTCHA_BLUE_FILTER = scheme.params.blueFilter;
+    CAPTCHA_CONTRAST = scheme.params.contrast;
+  }
+}
+
+// 应用自定义参数
+export function applyCaptchaCustomParams(p: Partial<CaptchaScheme['params']>) {
+  if (p.scale !== undefined) CAPTCHA_SCALE = p.scale;
+  if (p.otsuOffset !== undefined) CAPTCHA_OTSU_OFFSET = p.otsuOffset;
+  if (p.psm !== undefined) CAPTCHA_PSM = p.psm;
+  if (p.invert !== undefined) CAPTCHA_INVERT = p.invert;
+  if (p.blueFilter !== undefined) CAPTCHA_BLUE_FILTER = p.blueFilter;
+  if (p.contrast !== undefined) CAPTCHA_CONTRAST = p.contrast;
+}
 
 const API_BASE = 'https://nh2api.yunjichaobiao.com';
 const LOGIN_PATH = '/api/Account/Login';
@@ -25,6 +96,8 @@ interface EnergyConfig {
   loginName: string;
   password: string;
   token?: string; // 直接传入已有 token，跳过登录+验证码
+  captchaSchemeId?: string; // 验证码识别方案ID
+  captchaParams?: Partial<CaptchaScheme['params']>; // 自定义验证码参数（优先级高于 schemeId）
 }
 
 interface CaptchaResult {
@@ -59,6 +132,15 @@ export class EnergyMeterCollector {
 
   constructor(config: EnergyConfig) {
     this.config = config;
+    // 应用验证码识别方案
+    if (config.captchaSchemeId) {
+      applyCaptchaScheme(config.captchaSchemeId);
+      console.log(`[EnergyMeterCollector] 使用验证码方案: ${config.captchaSchemeId}`);
+    }
+    if (config.captchaParams) {
+      applyCaptchaCustomParams(config.captchaParams);
+      console.log(`[EnergyMeterCollector] 应用自定义验证码参数:`, JSON.stringify(config.captchaParams));
+    }
     // 如果直接传入了 token，跳过登录
     if (config.token) {
       this.token = config.token;
@@ -516,4 +598,143 @@ function parseJsonTwice(raw: any): any {
   try { out = JSON.parse(raw); } catch { return raw; }
   if (typeof out === 'string') { try { out = JSON.parse(out); } catch { /* keep */ } }
   return out;
+}
+
+// ========== 验证码方案测试 ==========
+export interface CaptchaTestResult {
+  schemeId: string;
+  schemeName: string;
+  total: number;
+  ok4: number;      // 恰好4字符的数量
+  under4: number;   // 少于4字符
+  over4: number;    // 多于4字符
+  rate: number;     // 识别率(%)
+  samples: { index: number; code: string; length: number; ok: boolean }[];
+  error?: string;
+}
+
+/**
+ * 测试指定验证码识别方案的识别率
+ * @param schemeIdOrParams 方案ID或自定义参数
+ * @param numSamples 测试样本数（默认15）
+ */
+export async function testCaptchaScheme(
+  schemeIdOrParams: string | Partial<CaptchaScheme['params']>,
+  numSamples = 15
+): Promise<CaptchaTestResult> {
+  // 保存原参数，测试完恢复
+  const origParams = {
+    scale: CAPTCHA_SCALE,
+    otsuOffset: CAPTCHA_OTSU_OFFSET,
+    psm: CAPTCHA_PSM,
+    invert: CAPTCHA_INVERT,
+    blueFilter: CAPTCHA_BLUE_FILTER,
+    contrast: CAPTCHA_CONTRAST,
+  };
+
+  let schemeId = 'custom';
+  let schemeName = '自定义参数';
+
+  try {
+    // 应用测试方案
+    if (typeof schemeIdOrParams === 'string') {
+      const scheme = CAPTCHA_SCHEMES.find(s => s.id === schemeIdOrParams);
+      if (!scheme) {
+        throw new Error(`方案不存在: ${schemeIdOrParams}`);
+      }
+      schemeId = scheme.id;
+      schemeName = scheme.name;
+      applyCaptchaScheme(scheme.id);
+    } else {
+      applyCaptchaCustomParams(schemeIdOrParams);
+      schemeName = `自定义(${JSON.stringify(schemeIdOrParams)})`;
+    }
+
+    // 创建临时 collector 用于获取验证码
+    const tempCollector = new EnergyMeterCollector({ loginName: '', password: '' });
+
+    // 初始化 OCR worker
+    const worker = await createWorker('eng');
+    try {
+      await worker.setParameters({
+        tessedit_char_whitelist: CAPTCHA_WHITELIST,
+        tessedit_pageseg_mode: CAPTCHA_PSM as any,
+      });
+
+      const samples: CaptchaTestResult['samples'] = [];
+      let ok4 = 0, under4 = 0, over4 = 0;
+
+      for (let i = 1; i <= numSamples; i++) {
+        try {
+          // 获取验证码图片
+          const keyStr = tempCollector['generateKeyStr'](12);
+          const res = await axios.post(`${API_BASE}${CAPTCHA_PATH}?keyStr=${keyStr}`, null, {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            params: { keyStr },
+            responseType: 'text',
+            timeout: 15000,
+          });
+
+          const imgBuffer = tempCollector['decodeCaptchaImage'](res.data);
+          if (!imgBuffer) {
+            samples.push({ index: i, code: '', length: 0, ok: false });
+            under4++;
+            continue;
+          }
+
+          // 预处理
+          const processedBuffer = await tempCollector['preprocessCaptchaImage'](imgBuffer);
+
+          // OCR识别
+          const { data } = await worker.recognize(processedBuffer);
+          const code = (data.text || '').trim().replace(/[^A-Za-z0-9]/g, '');
+          const len = code.length;
+          const ok = len === 4;
+
+          samples.push({ index: i, code, length: len, ok });
+          if (ok) ok4++;
+          else if (len < 4) under4++;
+          else over4++;
+        } catch (e: any) {
+          console.error(`[CaptchaTest] 样本 ${i} 失败:`, e?.message || e);
+          samples.push({ index: i, code: `ERROR:${e?.message || 'unknown'}`, length: 0, ok: false });
+          under4++;
+        }
+      }
+
+      const rate = numSamples > 0 ? (ok4 / numSamples) * 100 : 0;
+      return {
+        schemeId,
+        schemeName,
+        total: numSamples,
+        ok4,
+        under4,
+        over4,
+        rate: Math.round(rate * 10) / 10,
+        samples,
+      };
+    } finally {
+      await worker.terminate();
+    }
+  } catch (e: any) {
+    return {
+      schemeId,
+      schemeName,
+      total: 0,
+      ok4: 0,
+      under4: 0,
+      over4: 0,
+      rate: 0,
+      samples: [],
+      error: e?.message || '测试失败',
+    };
+  } finally {
+    // 恢复原参数
+    CAPTCHA_SCALE = origParams.scale;
+    CAPTCHA_OTSU_OFFSET = origParams.otsuOffset;
+    CAPTCHA_PSM = origParams.psm;
+    CAPTCHA_INVERT = origParams.invert;
+    CAPTCHA_BLUE_FILTER = origParams.blueFilter;
+    CAPTCHA_CONTRAST = origParams.contrast;
+  }
 }
