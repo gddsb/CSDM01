@@ -90,6 +90,10 @@ export async function executeRealTask(
         if (!loginName || !password) {
           const msg = '缺少用户名或密码参数（请在任务设置中配置云集云能源平台账号）'
           await updateProgress(msg, 100, 'failed', 0)
+          try {
+            const task = await SyncTask.findByPk(taskId) as any
+            if (task) { task.error_msg = msg; await task.save() }
+          } catch (_) { /* noop */ }
           return { success: false, error: msg }
         }
         const collector = new EnergyMeterCollector({ loginName, password })
