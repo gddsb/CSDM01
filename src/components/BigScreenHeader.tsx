@@ -20,52 +20,105 @@ export default function BigScreenHeader({
 }: BigScreenHeaderProps) {
   return (
     <div className="bs-header">
-      {/* 背景装饰：横向光带 */}
-      <div className="bs-header-bg" aria-hidden="true">
-        <span className="bs-header-streak s1" />
-        <span className="bs-header-streak s2" />
-        <span className="bs-header-streak s3" />
-      </div>
+      {/* 背景渐变层（纯深蓝，无横向条纹） */}
+      <div className="bs-header-bg" aria-hidden="true" />
 
       {/* 顶部主行 */}
       <div className="bs-header-row">
-        {/* 左侧：流动曲线 + 日期时间 */}
+        {/* 左侧：闭合带状装饰 + 日期时间 */}
         <div className="bs-header-side bs-header-side--left">
           <svg
-            className="bs-flow-curve bs-flow-curve--left"
-            viewBox="0 0 200 60"
+            className="bs-flow-band bs-flow-band--left"
+            viewBox="0 0 220 70"
             preserveAspectRatio="none"
             aria-hidden="true"
           >
             <defs>
-              <linearGradient id="flowLeft" x1="0" y1="0" x2="1" y2="0">
+              {/* 外带渐变填充 */}
+              <linearGradient id="outerBandL" x1="0" y1="0" x2="1" y2="0">
                 <stop offset="0%" stopColor="rgba(0,212,255,0)" />
-                <stop offset="40%" stopColor="rgba(0,212,255,0.6)" />
-                <stop offset="100%" stopColor="rgba(0,180,255,0.8)" />
+                <stop offset="30%" stopColor="rgba(0,212,255,0.18)" />
+                <stop offset="55%" stopColor="rgba(0,212,255,0.35)" />
+                <stop offset="80%" stopColor="rgba(0,180,255,0.5)" />
+                <stop offset="100%" stopColor="rgba(0,180,255,0.6)" />
               </linearGradient>
-              <filter id="glowLeft">
-                <feGaussianBlur stdDeviation="2" result="blur" />
+              {/* 内带渐变填充 */}
+              <linearGradient id="innerBandL" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="rgba(0,212,255,0)" />
+                <stop offset="40%" stopColor="rgba(0,212,255,0.08)" />
+                <stop offset="65%" stopColor="rgba(0,212,255,0.22)" />
+                <stop offset="100%" stopColor="rgba(0,212,255,0.35)" />
+              </linearGradient>
+              {/* 外发光 */}
+              <filter id="bandGlowL" x="-20%" y="-50%" width="140%" height="200%">
+                <feGaussianBlur stdDeviation="2.5" result="blur" />
                 <feMerge>
                   <feMergeNode in="blur" />
                   <feMergeNode in="SourceGraphic" />
                 </feMerge>
               </filter>
             </defs>
+
+            {/* 外层 S 形闭合带 */}
             <path
-              d="M0,30 C40,30 50,10 80,10 C110,10 120,50 150,50 C170,50 180,40 200,35"
-              fill="none"
-              stroke="url(#flowLeft)"
-              strokeWidth="1.5"
-              filter="url(#glowLeft)"
+              d="
+                M0,36
+                C30,36 38,14 72,14
+                C102,14 110,58 142,58
+                C168,58 182,44 220,40
+                L220,32
+                C188,36 172,50 150,50
+                C118,50 108,18 78,18
+                C46,18 34,40 0,42
+                Z
+              "
+              fill="url(#outerBandL)"
+              filter="url(#bandGlowL)"
+              opacity="0.9"
             />
+
+            {/* 内层 S 形闭合带（平行，更窄） */}
             <path
-              d="M0,38 C30,38 45,20 75,18 C105,16 125,42 155,44 C175,45 185,38 200,32"
+              d="
+                M0,44
+                C26,44 32,30 58,30
+                C84,30 90,50 118,50
+                C142,50 154,42 220,38
+                L220,34
+                C158,36 144,44 122,44
+                C94,44 88,26 62,26
+                C38,26 28,40 0,42
+                Z
+              "
+              fill="url(#innerBandL)"
+              opacity="0.85"
+            />
+
+            {/* 顶部亮边（描边高光） */}
+            <path
+              d="
+                M0,40
+                C32,38 44,20 76,20
+                C106,20 114,56 146,56
+                C170,56 186,42 220,36
+              "
               fill="none"
-              stroke="rgba(0,212,255,0.3)"
+              stroke="rgba(0,230,255,0.6)"
+              strokeWidth="1"
+            />
+
+            {/* 底部亮边（描边高光） */}
+            <path
+              d="
+                M0,42
+                C30,44 46,28 74,28
+                C100,28 108,48 136,48
+                C158,48 172,40 220,38
+              "
+              fill="none"
+              stroke="rgba(0,200,255,0.4)"
               strokeWidth="0.8"
             />
-            <circle cx="80" cy="10" r="2.5" fill="#00d4ff" filter="url(#glowLeft)" />
-            <circle cx="150" cy="50" r="2" fill="#00d4ff" filter="url(#glowLeft)" />
           </svg>
 
           <div className="bs-header-left-content">
@@ -73,58 +126,88 @@ export default function BigScreenHeader({
           </div>
         </div>
 
-        {/* 中间：标题 + 流动曲线装饰 */}
+        {/* 中间：标题 + 小S形装饰 */}
         <div className="bs-header-center">
           <div className="bs-title-wrap">
+            {/* 标题左装饰（小S形闭合带） */}
             <svg
-              className="bs-title-flow bs-title-flow--left"
-              viewBox="0 0 120 20"
+              className="bs-title-band bs-title-band--left"
+              viewBox="0 0 120 28"
               preserveAspectRatio="none"
               aria-hidden="true"
             >
               <defs>
-                <linearGradient id="titleFlowL" x1="0" y1="0" x2="1" y2="0">
+                <linearGradient id="titleBandL" x1="0" y1="0" x2="1" y2="0">
                   <stop offset="0%" stopColor="rgba(0,212,255,0)" />
-                  <stop offset="100%" stopColor="rgba(0,212,255,0.8)" />
+                  <stop offset="50%" stopColor="rgba(0,212,255,0.25)" />
+                  <stop offset="100%" stopColor="rgba(0,212,255,0.55)" />
                 </linearGradient>
               </defs>
               <path
-                d="M0,10 C20,10 30,3 50,3 C70,3 80,17 100,17 C110,17 115,14 120,12"
-                fill="none"
-                stroke="url(#titleFlowL)"
-                strokeWidth="1.2"
+                d="
+                  M0,14
+                  C20,14 26,6 46,6
+                  C66,6 72,22 92,22
+                  C104,22 112,18 120,16
+                  L120,12
+                  C112,13 102,18 92,18
+                  C74,18 68,4 48,4
+                  C30,4 22,12 0,14
+                  Z
+                "
+                fill="url(#titleBandL)"
+                opacity="0.95"
               />
-              <circle cx="50" cy="3" r="1.5" fill="#00d4ff" />
-              <circle cx="100" cy="17" r="1.2" fill="#00d4ff" />
+              <path
+                d="M0,12 C22,12 28,4 48,4 C68,4 74,20 94,20 C104,20 112,18 120,16"
+                fill="none"
+                stroke="rgba(0,230,255,0.7)"
+                strokeWidth="0.8"
+              />
             </svg>
 
             <h1 className="bs-title">{title}</h1>
 
+            {/* 标题右装饰（镜像小S形闭合带） */}
             <svg
-              className="bs-title-flow bs-title-flow--right"
-              viewBox="0 0 120 20"
+              className="bs-title-band bs-title-band--right"
+              viewBox="0 0 120 28"
               preserveAspectRatio="none"
               aria-hidden="true"
             >
               <defs>
-                <linearGradient id="titleFlowR" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="rgba(0,212,255,0.8)" />
+                <linearGradient id="titleBandR" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="rgba(0,212,255,0.55)" />
+                  <stop offset="50%" stopColor="rgba(0,212,255,0.25)" />
                   <stop offset="100%" stopColor="rgba(0,212,255,0)" />
                 </linearGradient>
               </defs>
               <path
-                d="M0,12 C5,14 10,17 20,17 C40,17 50,3 70,3 C90,3 100,10 120,10"
-                fill="none"
-                stroke="url(#titleFlowR)"
-                strokeWidth="1.2"
+                d="
+                  M0,12
+                  C8,14 16,18 28,18
+                  C48,18 54,4 74,4
+                  C94,4 100,12 120,12
+                  L120,16
+                  C100,18 94,22 72,22
+                  C52,22 46,6 26,6
+                  C14,6 0,14 0,14
+                  Z
+                "
+                fill="url(#titleBandR)"
+                opacity="0.95"
               />
-              <circle cx="20" cy="17" r="1.2" fill="#00d4ff" />
-              <circle cx="70" cy="3" r="1.5" fill="#00d4ff" />
+              <path
+                d="M0,16 C16,20 26,20 46,20 C66,20 72,4 92,4 C100,4 108,12 120,12"
+                fill="none"
+                stroke="rgba(0,230,255,0.7)"
+                strokeWidth="0.8"
+              />
             </svg>
           </div>
         </div>
 
-        {/* 右侧：更新时间 + 流动曲线 + 刷新 */}
+        {/* 右侧：镜像闭合带状装饰 + 更新时间 */}
         <div className="bs-header-side bs-header-side--right">
           <div className="bs-header-right-content">
             {extraRight}
@@ -140,40 +223,94 @@ export default function BigScreenHeader({
           </div>
 
           <svg
-            className="bs-flow-curve bs-flow-curve--right"
-            viewBox="0 0 200 60"
+            className="bs-flow-band bs-flow-band--right"
+            viewBox="0 0 220 70"
             preserveAspectRatio="none"
             aria-hidden="true"
           >
             <defs>
-              <linearGradient id="flowRight" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="rgba(0,180,255,0.8)" />
-                <stop offset="60%" stopColor="rgba(0,212,255,0.6)" />
+              <linearGradient id="outerBandR" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="rgba(0,180,255,0.6)" />
+                <stop offset="20%" stopColor="rgba(0,180,255,0.5)" />
+                <stop offset="45%" stopColor="rgba(0,212,255,0.35)" />
+                <stop offset="70%" stopColor="rgba(0,212,255,0.18)" />
                 <stop offset="100%" stopColor="rgba(0,212,255,0)" />
               </linearGradient>
-              <filter id="glowRight">
-                <feGaussianBlur stdDeviation="2" result="blur" />
+              <linearGradient id="innerBandR" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="rgba(0,212,255,0.35)" />
+                <stop offset="35%" stopColor="rgba(0,212,255,0.22)" />
+                <stop offset="60%" stopColor="rgba(0,212,255,0.08)" />
+                <stop offset="100%" stopColor="rgba(0,212,255,0)" />
+              </linearGradient>
+              <filter id="bandGlowR" x="-20%" y="-50%" width="140%" height="200%">
+                <feGaussianBlur stdDeviation="2.5" result="blur" />
                 <feMerge>
                   <feMergeNode in="blur" />
                   <feMergeNode in="SourceGraphic" />
                 </feMerge>
               </filter>
             </defs>
+
+            {/* 外层 S 形闭合带（镜像） */}
             <path
-              d="M0,25 C20,20 30,10 50,10 C80,10 90,50 120,50 C150,50 160,30 200,30"
-              fill="none"
-              stroke="url(#flowRight)"
-              strokeWidth="1.5"
-              filter="url(#glowRight)"
+              d="
+                M0,30
+                C38,34 52,50 78,50
+                C110,50 118,14 148,14
+                C182,14 190,36 220,36
+                L220,44
+                C190,42 174,58 146,58
+                C114,58 106,14 74,14
+                C46,14 36,40 0,40
+                Z
+              "
+              fill="url(#outerBandR)"
+              filter="url(#bandGlowR)"
+              opacity="0.9"
             />
+
+            {/* 内层 S 形闭合带（镜像，更窄） */}
             <path
-              d="M0,32 C25,28 40,18 60,16 C90,14 100,44 130,46 C155,47 170,35 200,28"
+              d="
+                M0,38
+                C36,40 58,50 86,50
+                C112,50 120,30 148,30
+                C176,30 186,36 220,34
+                L220,38
+                C186,40 174,44 150,44
+                C124,44 116,26 88,26
+                C62,26 52,40 0,42
+                Z
+              "
+              fill="url(#innerBandR)"
+              opacity="0.85"
+            />
+
+            {/* 顶部亮边 */}
+            <path
+              d="
+                M0,36
+                C34,34 50,56 82,56
+                C112,56 120,20 152,20
+                C178,20 190,38 220,38
+              "
               fill="none"
-              stroke="rgba(0,212,255,0.3)"
+              stroke="rgba(0,230,255,0.6)"
+              strokeWidth="1"
+            />
+
+            {/* 底部亮边 */}
+            <path
+              d="
+                M0,38
+                C30,40 54,48 84,48
+                C112,48 120,28 148,28
+                C174,28 188,36 220,38
+              "
+              fill="none"
+              stroke="rgba(0,200,255,0.4)"
               strokeWidth="0.8"
             />
-            <circle cx="50" cy="10" r="2.5" fill="#00d4ff" filter="url(#glowRight)" />
-            <circle cx="120" cy="50" r="2" fill="#00d4ff" filter="url(#glowRight)" />
           </svg>
         </div>
       </div>

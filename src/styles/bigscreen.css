@@ -42,92 +42,69 @@
 }
 
 /* ============================================================
-   大屏头部样式 - 参考"生产监控看板"流动曲线科技风
-   深蓝色带 + 横向光带 + SVG流动曲线 + 白色标题光晕
+   大屏头部样式 - 严格对齐参考图"生产监控看板"
+   纯净深蓝渐变 + 闭合S形带状填充装饰 + 白色标题光晕
    ============================================================ */
 
-/* 头部容器：深海军蓝渐变带 */
+/* 头部容器：纯净深蓝渐变（无横向条纹） */
 .bs-header {
   position: relative;
-  padding: 12px 40px 0;
+  padding: 10px 48px 0;
   background:
     linear-gradient(180deg,
-      #081530 0%,
-      #0a1a3a 20%,
-      #0c2347 40%,
-      #0e2a52 60%,
-      #0a1e40 80%,
-      #081530 100%);
+      #06102a 0%,
+      #0a1e40 18%,
+      #0c2a58 35%,
+      #0f3568 50%,
+      #0c2a58 65%,
+      #0a1e40 82%,
+      #06102a 100%);
   z-index: 5;
   overflow: hidden;
-  border-bottom: 1px solid rgba(0, 180, 255, 0.25);
+  border-bottom: 1px solid rgba(0, 190, 255, 0.18);
 }
 
-/* 底部发光线 */
+/* 底部细发光线（参考图风格） */
 .bs-header::after {
   content: '';
   position: absolute;
   bottom: 0;
-  left: 0;
-  right: 0;
+  left: 5%;
+  right: 5%;
   height: 1px;
   background: linear-gradient(90deg,
     transparent 0%,
-    rgba(0, 212, 255, 0.1) 15%,
-    rgba(0, 212, 255, 0.5) 50%,
-    rgba(0, 212, 255, 0.1) 85%,
+    rgba(0, 212, 255, 0.15) 20%,
+    rgba(0, 212, 255, 0.55) 50%,
+    rgba(0, 212, 255, 0.15) 80%,
     transparent 100%);
+  box-shadow: 0 0 6px rgba(0, 212, 255, 0.35);
 }
 
-/* 背景装饰层：横向光带 */
+/* 背景层：纯渐变占位（无条纹） */
 .bs-header-bg {
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(0, 160, 255, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 50%, rgba(0, 160, 255, 0.06) 0%, transparent 60%);
 }
 
-.bs-header-streak {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(0, 212, 255, 0.1) 15%,
-    rgba(0, 212, 255, 0.3) 45%,
-    rgba(0, 212, 255, 0.4) 50%,
-    rgba(0, 212, 255, 0.3) 55%,
-    rgba(0, 212, 255, 0.1) 85%,
-    transparent 100%);
+/* 背景层的子元素（旧条纹标记）全部隐藏 */
+.bs-header-bg > * {
+  display: none;
 }
 
-.bs-header-streak.s1 {
-  top: 25%;
-  height: 1.5px;
-  opacity: 0.6;
-}
-
-.bs-header-streak.s2 {
-  top: 55%;
-  height: 1px;
-  opacity: 0.4;
-}
-
-.bs-header-streak.s3 {
-  top: 80%;
-  height: 1px;
-  opacity: 0.5;
-}
-
-/* 顶部主行：左右 + 中间标题 */
+/* 顶部主行 */
 .bs-header-row {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  min-height: 56px;
+  min-height: 58px;
   z-index: 2;
 }
 
@@ -135,8 +112,8 @@
 .bs-header-side {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-width: 280px;
+  gap: 10px;
+  min-width: 260px;
   flex-shrink: 0;
 }
 
@@ -144,26 +121,26 @@
   justify-content: flex-end;
 }
 
-/* 流动曲线 SVG（左右两侧大装饰） */
-.bs-flow-curve {
-  width: 180px;
-  height: 50px;
+/* 大S形闭合带（左右两侧装饰） */
+.bs-flow-band {
+  width: 200px;
+  height: 58px;
   flex-shrink: 0;
   pointer-events: none;
 }
 
-.bs-flow-curve--left {
-  margin-right: -20px;
+.bs-flow-band--left {
+  margin-right: -16px;
 }
 
-.bs-flow-curve--right {
-  margin-left: -20px;
+.bs-flow-band--right {
+  margin-left: -16px;
 }
 
-/* 标题两侧小流动曲线 */
-.bs-title-flow {
-  width: 100px;
-  height: 16px;
+/* 标题两侧小S形闭合带 */
+.bs-title-band {
+  width: 96px;
+  height: 24px;
   flex-shrink: 0;
   pointer-events: none;
 }
@@ -188,20 +165,20 @@
 .bs-header-date {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 .bs-header-date-main {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  color: #8adfff;
+  color: #6fc4e8;
   letter-spacing: 2px;
-  text-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+  text-shadow: 0 0 6px rgba(0, 212, 255, 0.35);
 }
 
 .bs-header-date-week {
-  font-size: 14px;
-  color: #5b8ca8;
+  font-size: 13px;
+  color: #4a7592;
   letter-spacing: 1px;
 }
 
@@ -210,16 +187,16 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
-  color: #5b8ca8;
+  font-size: 13px;
+  color: #4a7592;
 }
 
 .bs-header-update-time {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  color: #8adfff;
+  color: #6fc4e8;
   letter-spacing: 2px;
-  text-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+  text-shadow: 0 0 6px rgba(0, 212, 255, 0.35);
 }
 
 /* 中央标题区 */
@@ -228,50 +205,50 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 12px;
 }
 
 .bs-title-wrap {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 /* 主标题文字 */
 .bs-title {
-  font-size: 40px;
+  font-size: 38px;
   font-weight: 700;
-  letter-spacing: 12px;
+  letter-spacing: 14px;
   color: #ffffff;
   text-shadow:
-    0 0 8px rgba(0, 212, 255, 0.5),
-    0 0 16px rgba(0, 180, 255, 0.3),
-    0 0 30px rgba(0, 150, 255, 0.15);
-  line-height: 1.1;
+    0 0 6px rgba(0, 212, 255, 0.45),
+    0 0 14px rgba(0, 180, 255, 0.28),
+    0 0 28px rgba(0, 150, 255, 0.12);
+  line-height: 1.15;
   white-space: nowrap;
   margin: 0;
-  padding: 2px 0;
+  padding: 0;
   position: relative;
   font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
-/* 标题下方发光装饰线 */
+/* 标题下方发光装饰线（更细更短） */
 .bs-title-wrap::after {
   content: '';
   position: absolute;
-  bottom: -6px;
+  bottom: -4px;
   left: 50%;
   transform: translateX(-50%);
-  width: 50%;
-  height: 1.5px;
+  width: 40%;
+  height: 1px;
   background: linear-gradient(90deg,
     transparent 0%,
-    rgba(0, 212, 255, 0.3) 25%,
-    rgba(0, 212, 255, 0.7) 50%,
-    rgba(0, 212, 255, 0.3) 75%,
+    rgba(0, 212, 255, 0.25) 30%,
+    rgba(0, 212, 255, 0.6) 50%,
+    rgba(0, 212, 255, 0.25) 70%,
     transparent 100%);
-  box-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+  box-shadow: 0 0 6px rgba(0, 212, 255, 0.3);
 }
 
 /* 标题下方：温湿度/压差 行 */
@@ -279,7 +256,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 0 10px;
+  padding: 10px 0 10px;
   width: 100%;
   gap: 20px;
   position: relative;
@@ -291,22 +268,22 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  color: #5b8ca8;
+  width: 28px;
+  height: 28px;
+  color: #4a7592;
   cursor: pointer;
   transition: all 0.2s;
-  font-size: 15px;
+  font-size: 14px;
   border-radius: 4px;
-  border: 1px solid rgba(0, 212, 255, 0.2);
-  background: rgba(0, 50, 80, 0.4);
+  border: 1px solid rgba(0, 212, 255, 0.18);
+  background: rgba(0, 50, 80, 0.35);
 }
 
 .bs-refresh-btn:hover {
   color: #00d4ff;
-  background: rgba(0, 180, 255, 0.15);
-  border-color: rgba(0, 212, 255, 0.5);
-  box-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
+  background: rgba(0, 180, 255, 0.12);
+  border-color: rgba(0, 212, 255, 0.45);
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.25);
 }
 
 /* ============ 面板卡片 (切角科技风) ============ */
@@ -722,18 +699,18 @@
 
 /* ============ 响应式调整 ============ */
 @media (max-width: 1600px) {
-  .bs-title { font-size: 34px; letter-spacing: 10px; }
-  .bs-title-flow { width: 80px; }
-  .bs-flow-curve { width: 140px; height: 44px; }
+  .bs-title { font-size: 32px; letter-spacing: 12px; }
+  .bs-title-band { width: 80px; height: 20px; }
+  .bs-flow-band { width: 160px; height: 50px; }
 }
 
 @media (max-width: 1366px) {
-  .bs-header { padding: 10px 24px 0; }
-  .bs-title { font-size: 28px; letter-spacing: 8px; }
-  .bs-title-flow { width: 60px; height: 12px; }
-  .bs-flow-curve { width: 110px; height: 38px; }
+  .bs-header { padding: 8px 28px 0; }
+  .bs-title { font-size: 26px; letter-spacing: 10px; }
+  .bs-title-band { width: 60px; height: 16px; }
+  .bs-flow-band { width: 120px; height: 42px; }
   .bs-header-side { min-width: 200px; }
   .bs-header-date-main,
-  .bs-header-update-time { font-size: 15px; letter-spacing: 1px; }
-  .bs-header-row { min-height: 48px; }
+  .bs-header-update-time { font-size: 14px; letter-spacing: 1px; }
+  .bs-header-row { min-height: 46px; }
 }
