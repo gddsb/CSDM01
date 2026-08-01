@@ -622,34 +622,33 @@ export default function TaskSettingsPage() {
 
               {editing?.task_type === 'energy_meter' && loginMode === 'account' && (
                 <>
-                  <Form.Item label="验证码识别方案" name="captchaSchemeId" rules={[{ required: true, message: '请选择验证码识别方案' }]}>
-                    <Select
-                      placeholder="请选择验证码识别方案"
-                      options={captchaSchemes.map(s => ({
-                        value: s.id,
-                        label: `${s.name}`,
-                        description: s.description,
-                      }))}
-                      optionRender={(option: any) => (
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontWeight: 500 }}>{option.label}</span>
-                          <span style={{ fontSize: 12, color: '#999' }}>{option.data?.description}</span>
-                        </div>
-                      )}
-                      suffixIcon={
-                        <Space>
-                          <Button
-                            type="primary"
-                            size="small"
-                            loading={testingCaptcha}
-                            onClick={(e) => { e.stopPropagation(); handleTestCaptchaScheme() }}
-                            style={{ marginRight: 8 }}
-                          >
-                            {testingCaptcha ? '测试中...' : '测试识别率'}
-                          </Button>
-                        </Space>
-                      }
-                    />
+                  <Form.Item label="验证码识别方案" required>
+                    <Space.Compact style={{ width: '100%' }}>
+                      <Form.Item name="captchaSchemeId" noStyle rules={[{ required: true, message: '请选择验证码识别方案' }]}>
+                        <Select
+                          placeholder="请选择验证码识别方案"
+                          style={{ width: '100%' }}
+                          options={captchaSchemes.map(s => ({
+                            value: s.id,
+                            label: `${s.name}`,
+                            description: s.description,
+                          }))}
+                          optionRender={(option: any) => (
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <span style={{ fontWeight: 500 }}>{option.label}</span>
+                              <span style={{ fontSize: 12, color: '#999' }}>{option.data?.description}</span>
+                            </div>
+                          )}
+                        />
+                      </Form.Item>
+                      <Button
+                        type="primary"
+                        loading={testingCaptcha}
+                        onClick={handleTestCaptchaScheme}
+                      >
+                        {testingCaptcha ? '测试中...' : '测试识别率'}
+                      </Button>
+                    </Space.Compact>
                   </Form.Item>
 
                   {captchaTestResult && (
