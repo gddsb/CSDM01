@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useMessage } from '../../contexts/AppContext'
-import { Table, Button, Switch, Form, Input, Modal, Space, Tag, Card, Row, Col, Select, Progress, Timeline, Tooltip } from 'antd'
+import { Table, Button, Switch, Form, Input, Modal, Space, Tag, Card, Row, Col, Select, Progress, Timeline, Tooltip, Radio } from 'antd'
 import { EditOutlined, ReloadOutlined, SettingOutlined, DatabaseOutlined, TeamOutlined, DashboardOutlined, EnvironmentOutlined, PlayCircleOutlined, CheckCircleOutlined, ClockCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
 import api from '../../utils/api'
 import { formatDateTime } from '../../utils'
@@ -104,6 +104,7 @@ export default function TaskSettingsPage() {
   const [orgOptions, setOrgOptions] = useState<U9Org[]>([])
   const [testProgress, setTestProgress] = useState<TestProgress | null>(null)
   const [testingTaskType, setTestingTaskType] = useState<string | null>(null)
+  const [loginMode, setLoginMode] = useState<'token' | 'account' | null>(null)
   const pollRef = useRef<number | null>(null)
 
   const loadData = async () => {
@@ -154,6 +155,14 @@ export default function TaskSettingsPage() {
   const handleEdit = (record: TaskSetting) => {
     setEditing(record)
     setOrgOptions([])
+    // 能源采集任务：根据已有参数判断登录方式
+    if (record.task_type === 'energy_meter') {
+      if (record.params?.token) setLoginMode('token')
+      else if (record.params?.loginName) setLoginMode('account')
+      else setLoginMode(null)
+    } else {
+      setLoginMode(null)
+    }
     const vals: any = {
       name: record.name,
       description: record.description,
@@ -182,11 +191,35 @@ export default function TaskSettingsPage() {
       }
       const paramFields = PARAM_FIELDS[editing!.task_type] || []
       const params: Record<string, any> = {}
-      for (const f of paramFields) {
-        if (values[f.key] !== undefined && values[f.key] !== '') {
-          params[f.key] = values[f.key]
+
+      if (editing!.task_type === 'energy_meter' && loginMode) {
+        // 能源采集任务：根据登录方式处理，空字符串表示清除该字段
+        if (loginMode === 'token') {
+          // Token方式：传token（非空才更新），清除账号密码
+          if (values.token !== undefined && values.token !== '') {
+            params.token = values.token
+          }
+          params.loginName = ''
+          params.password = ''
+        } else if (loginMode === 'account') {
+          // 账号方式：传账号密码（非空才更新），清除token
+          if (values.loginName !== undefined && values.loginName !== '') {
+            params.loginName = values.loginName
+          }
+          if (values.password !== undefined && values.password !== '') {
+            params.password = values.password
+          }
+          params.token = ''
+        }
+      } else {
+        // 其他任务或未选择登录方式：只传非空值（保持不变）
+        for (const f of paramFields) {
+          if (values[f.key] !== undefined && values[f.key] !== '') {
+            params[f.key] = values[f.key]
+          }
         }
       }
+
       payload.params = Object.keys(params).length > 0 ? params : null
       await api.put(`/auto/task-settings/${editing!.task_type}`, payload)
       message.success('保存成功')
@@ -459,10 +492,34 @@ export default function TaskSettingsPage() {
                 <span style={{ fontWeight: 600 }}>执行参数</span>
                 <span style={{ color: '#999', marginLeft: 8, fontSize: 12 }}>密码将加密存储，编辑时不回显</span>
               </div>
+
+              {editing?.task_type === 'energy_meter' && (
+                <Form.Item label="登录方式" required>
+                  <Radio.Group
+                    value={loginMode}
+                    onChange={(e) => setLoginMode(e.target.value)}
+                    optionType="button"
+                    buttonStyle="solid"
+                  >
+                    <Radio.Button value="token">访问令牌(Token)</Radio.Button>
+                    <Radio.Button value="account">用户名 + 密码</Radio.Button>
+                  </Radio.Group>
+                  {!loginMode && (
+                    <div style={{ color: '#fa8c16', fontSize: 12, marginTop: 4 }}>请选择登录方式</div>
+                  )}
+                </Form.Item>
+              )}
+
               {paramFields.map((f) => {
+                // 能源采集任务：根据登录方式显示对应字段
+                if (editing?.task_type === 'energy_meter') {
+                  if (loginMode === 'token' && f.key !== 'token') return null
+                  if (loginMode === 'account' && (f.key === 'token')) return null
+                  if (!loginMode) return null
+                }
                 if (f.type === 'password') {
                   return (
-                    <Form.Item key={f.key} name={f.key} label={f.label}>
+                    <Form.Item key={f.key} name={f.key} label={f.label} rules={loginMode ? [{ required: true, message: `请输入${f.label}` }] : []}>
                       <Input.Password placeholder={f.placeholder || ''} visibilityToggle />
                     </Form.Item>
                   )
@@ -497,6 +554,14 @@ export default function TaskSettingsPage() {
                           获取组织
                         </Button>
                       </Space.Compact>
+                    </Form.Item>
+                  )
+                }
+                // 能源采集的 loginName（账号方式下）需要加必填规则
+                if (editing?.task_type === 'energy_meter' && f.key === 'loginName' && loginMode === 'account') {
+                  return (
+                    <Form.Item key={f.key} name={f.key} label={f.label} rules={[{ required: true, message: '请输入用户名' }]}>
+                      <Input placeholder={f.placeholder || ''} />
                     </Form.Item>
                   )
                 }

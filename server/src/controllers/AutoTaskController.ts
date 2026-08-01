@@ -67,7 +67,9 @@ export const updateTaskSetting = async (req, res) => {
       const existingParams = setting.params || {}
       const newParams: Record<string, any> = { ...existingParams }
       for (const [k, v] of Object.entries(params as Record<string, any>)) {
-        if (v !== undefined && v !== '') {
+        if (v === undefined || v === '') {
+          delete newParams[k]
+        } else {
           newParams[k] = v
         }
       }
