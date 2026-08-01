@@ -3,13 +3,14 @@ import { createWorker } from 'tesseract.js';
 import { Jimp } from 'jimp';
 import EnergyMeterData from '../models/EnergyMeterData.js';
 
-// 验证码预处理参数（优化方案：5x 放大 + PSM8 + Otsu-20 偏移 + 反色）
-// 测试服务器 30 样本严格4字符识别率 13.3% (原方案 3x+PSM7+Otsu-20 仅 6.7%)
-// 注：严格4字符很难达到，因为验证码干扰线常被OCR识别为额外字符
+// 验证码预处理参数（最优方案：5x + Otsu-25 + PSM8 + 反色 + 蓝滤40 + 对比度0.25）
+// 测试服务器 30 样本严格4字符识别率 26.7% (原A7方案3x+PSM7+Otsu-20 仅 0%)
 const CAPTCHA_SCALE = 5;
-const CAPTCHA_OTSU_OFFSET = -20;
+const CAPTCHA_OTSU_OFFSET = -25;
 const CAPTCHA_PSM = '8';
-const CAPTCHA_INVERT = true; // 反色（白底黑字→黑底白字），减少干扰线影响
+const CAPTCHA_INVERT = true; // 反色（白底黑字→黑底白字）
+const CAPTCHA_BLUE_FILTER = 40; // 蓝色干扰线过滤阈值（B > R+X && B > G+X → 替换为白色）
+const CAPTCHA_CONTRAST = 0.25; // 对比度增强
 const CAPTCHA_WHITELIST = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
 const API_BASE = 'https://nh2api.yunjichaobiao.com';
@@ -93,25 +94,45 @@ export class EnergyMeterCollector {
     }
   }
 
-  // 验证码预处理：5x 放大 → 灰度化 → Otsu 自适应阈值二值化 → 可选反色
+  // 验证码预处理：放大 → 蓝色干扰线过滤 → 灰度化 → 对比度增强 → Otsu二值化 → 反色
   private async preprocessCaptchaImage(imgBuffer: Buffer): Promise<Buffer> {
     try {
       const img = await Jimp.read(imgBuffer);
+      // Step 1: 放大（优先放大，避免二值化后锯齿）
       img.scale(CAPTCHA_SCALE);
-      img.greyscale();
-      // Otsu 自适应阈值
       const w = img.bitmap.width, h = img.bitmap.height, d = img.bitmap.data;
+      
+      // Step 2: 蓝色干扰线过滤（灰度化前做，保留颜色信息）
+      if (CAPTCHA_BLUE_FILTER > 0) {
+        for (let i = 0; i < d.length; i += 4) {
+          const r = d[i], g = d[i + 1], b = d[i + 2];
+          if (b > r + CAPTCHA_BLUE_FILTER && b > g + CAPTCHA_BLUE_FILTER) {
+            d[i] = 255; d[i + 1] = 255; d[i + 2] = 255;
+          }
+        }
+      }
+      
+      // Step 3: 灰度化
+      img.greyscale();
+      
+      // Step 4: 对比度增强（拉开文字和背景差距）
+      if (CAPTCHA_CONTRAST !== 0) {
+        img.contrast(CAPTCHA_CONTRAST);
+      }
+      
+      // Step 5: Otsu 自适应阈值二值化
+      const d2 = img.bitmap.data;
       const hist = new Array(256).fill(0);
-      for (let i = 0; i < d.length; i += 4) hist[d[i]]++;
+      for (let i = 0; i < d2.length; i += 4) hist[d2[i]]++;
       const otsu = this.otsuThreshold(hist, w * h);
       const thr = Math.min(255, Math.max(0, otsu + CAPTCHA_OTSU_OFFSET));
-      for (let i = 0; i < d.length; i += 4) {
-        let val = d[i] < thr ? 0 : 255;
+      for (let i = 0; i < d2.length; i += 4) {
+        let val = d2[i] < thr ? 0 : 255;
         if (CAPTCHA_INVERT) val = 255 - val; // 反色
-        d[i] = val; d[i + 1] = val; d[i + 2] = val;
+        d2[i] = val; d2[i + 1] = val; d2[i + 2] = val;
       }
       const out = await img.getBuffer('image/png');
-      console.log(`[EnergyMeterCollector] 预处理完成: ${w}x${h}, Otsu=${otsu}, thr=${thr}(offset ${CAPTCHA_OTSU_OFFSET}), invert=${CAPTCHA_INVERT}`);
+      console.log(`[EnergyMeterCollector] 预处理完成: ${w}x${h}, Otsu=${otsu}, thr=${thr}(offset ${CAPTCHA_OTSU_OFFSET}), invert=${CAPTCHA_INVERT}, blueFilter=${CAPTCHA_BLUE_FILTER}, contrast=${CAPTCHA_CONTRAST}`);
       return out;
     } catch (e) {
       console.error('[EnergyMeterCollector] 预处理失败，回退原图:', e);
