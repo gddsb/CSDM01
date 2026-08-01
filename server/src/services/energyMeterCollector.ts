@@ -1,6 +1,15 @@
 import axios from 'axios';
 import { createWorker } from 'tesseract.js';
+import { Jimp } from 'jimp';
 import EnergyMeterData from '../models/EnergyMeterData.js';
+
+// 验证码预处理参数（A7 方案：3x 放大(jimp默认mode) + PSM7 + Otsu-20 偏移）
+// 实测完整识别率约 75-93%，详见 server/scripts/captcha_planA.mjs
+// 注：jimp v1 的 scale(factor, mode) 第二参数会被忽略，默认mode实测优于NEAREST
+const CAPTCHA_SCALE = 3;
+const CAPTCHA_OTSU_OFFSET = -20;
+const CAPTCHA_PSM = '7';
+const CAPTCHA_WHITELIST = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
 const API_BASE = 'https://nh2api.yunjichaobiao.com';
 const LOGIN_PATH = '/api/Account/Login';
@@ -83,13 +92,46 @@ export class EnergyMeterCollector {
     }
   }
 
+  // 验证码预处理（A7 方案）：3x 放大(jimp默认mode) → 灰度化 → Otsu 自适应阈值-20 二值化
+  // Otsu 偏移 -20 让阈值更严格，只保留最深字符像素、去除浅色干扰，
+  // 实测完整识别率约 75-93%（A7 方案，与方案B的+25偏移方向相反）
   private async preprocessCaptchaImage(imgBuffer: Buffer): Promise<Buffer> {
     try {
-      return imgBuffer;
+      const img = await Jimp.read(imgBuffer);
+      img.scale(CAPTCHA_SCALE);
+      img.greyscale();
+      // Otsu 自适应阈值
+      const w = img.bitmap.width, h = img.bitmap.height, d = img.bitmap.data;
+      const hist = new Array(256).fill(0);
+      for (let i = 0; i < d.length; i += 4) hist[d[i]]++;
+      const otsu = this.otsuThreshold(hist, w * h);
+      const thr = Math.min(255, Math.max(0, otsu + CAPTCHA_OTSU_OFFSET));
+      for (let i = 0; i < d.length; i += 4) {
+        const v = d[i] < thr ? 0 : 255;
+        d[i] = v; d[i + 1] = v; d[i + 2] = v;
+      }
+      const out = await img.getBuffer('image/png');
+      console.log(`[EnergyMeterCollector] 预处理完成: ${w}x${h}, Otsu=${otsu}, thr=${thr}(offset ${CAPTCHA_OTSU_OFFSET})`);
+      return out;
     } catch (e) {
-      console.error('[EnergyMeterCollector] Image preprocessing failed, using original:', e);
+      console.error('[EnergyMeterCollector] 预处理失败，回退原图:', e);
       return imgBuffer;
     }
+  }
+
+  // Otsu 自适应阈值算法
+  private otsuThreshold(hist: number[], total: number): number {
+    let sum = 0; for (let t = 0; t < 256; t++) sum += t * hist[t];
+    let sumB = 0, wB = 0, max = 0, threshold = 127;
+    for (let t = 0; t < 256; t++) {
+      wB += hist[t]; if (wB === 0) continue;
+      const wF = total - wB; if (wF === 0) break;
+      sumB += t * hist[t];
+      const mB = sumB / wB, mF = (sum - sumB) / wF;
+      const between = wB * wF * (mB - mF) * (mB - mF);
+      if (between > max) { max = between; threshold = t; }
+    }
+    return threshold;
   }
 
   async fetchCaptcha(): Promise<CaptchaResult | null> {
@@ -113,26 +155,24 @@ export class EnergyMeterCollector {
 
       const processedBuffer = await this.preprocessCaptchaImage(imgBuffer);
 
-      const psmModes = ['7', '8', '6', '10'] as const;
-      for (const psm of psmModes) {
-        const worker = await createWorker('eng');
+      // A7 方案：固定 PSM=7（单行文本），实测优于 PSM 6/8/13
+      const worker = await createWorker('eng');
+      try {
         await worker.setParameters({
-          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',
-          tessedit_pageseg_mode: psm as any,
+          tessedit_char_whitelist: CAPTCHA_WHITELIST,
+          tessedit_pageseg_mode: CAPTCHA_PSM as any,
         });
         const { data } = await worker.recognize(processedBuffer);
-        await worker.terminate();
-
         const code = (data.text || '').trim().replace(/[^A-Za-z0-9]/g, '');
-        console.log(`[EnergyMeterCollector] Captcha OCR (PSM=${psm}):`, code, 'keyStr:', keyStr);
-
+        console.log(`[EnergyMeterCollector] Captcha OCR (PSM=${CAPTCHA_PSM}):`, code, 'keyStr:', keyStr);
         if (code.length >= 4) {
           return { keyStr, code };
         }
+        console.error('[EnergyMeterCollector] Captcha OCR 识别长度不足4，识别结果:', code);
+        return null;
+      } finally {
+        await worker.terminate();
       }
-
-      console.error('[EnergyMeterCollector] All PSM modes failed for captcha');
-      return null;
     } catch (e: any) {
       console.error('[EnergyMeterCollector] fetchCaptcha error:', e?.message || e);
       return null;
