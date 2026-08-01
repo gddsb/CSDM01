@@ -436,11 +436,9 @@ export default function TaskSettingsPage() {
           <Form.Item label="描述" name="description">
             <Input.TextArea rows={2} />
           </Form.Item>
-          {editing?.task_type !== 'energy_meter' && (
-            <Form.Item label="数据源URL" name="source_url">
-              <Input />
-            </Form.Item>
-          )}
+          <Form.Item label="数据源URL" name="source_url">
+            <Input />
+          </Form.Item>
 
           {paramFields.length > 0 && (
             <>
