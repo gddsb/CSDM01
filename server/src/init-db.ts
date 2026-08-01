@@ -47,11 +47,17 @@ async function main() {
     }
     console.log('✅ 任务设置初始化完成')
 
-    // 清理无用角色
+    // 清理无用角色（先删除关联的 user_role 记录，避免外键约束失败）
     const badRoles = await Role.findAll({ where: { role_code: { [Op.in]: ['DASHBOARD_VIEWER', 'DASHBOARD_ADMIN'] } } })
     for (const r of badRoles) {
       console.log(`  🗑 删除角色 ${r.role_name} (${r.role_code})`)
-      await r.destroy()
+      try {
+        // 先删除关联的用户-角色记录，避免外键约束失败
+        await sequelize.query(`DELETE FROM sys_user_role WHERE role_id = :rid`, { replacements: { rid: r.role_id } })
+        await r.destroy()
+      } catch (e: any) {
+        console.log(`    ⚠️ 删除角色失败: ${e.message}，跳过`)
+      }
     }
     console.log(`✅ 清理 ${badRoles.length} 个无用角色`)
 
