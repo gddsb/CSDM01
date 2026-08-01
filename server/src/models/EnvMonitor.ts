@@ -66,7 +66,7 @@ const EnvMonitor = sequelize.define('EnvMonitor', {
     comment: '数据时间(系统采集时间)',
   },
 }, {
-  tableName: 'env_monitor_data',
+  tableName: 'task_env_monitor_data',
   timestamps: true,
   underscored: true,
   createdAt: 'created_at',

@@ -372,14 +372,15 @@ const tableCategoryMap = {
   quality_product_inspection: { category: '业务表', purpose: '产品检测主表，存储产品检测基本信息，含检验编号、类型、关联报工单、检验标准、结果、状态等，与检测项目子表一对多关联' },
   quality_product_inspection_item: { category: '业务表', purpose: '产品检测项目子表，存储检测项目的标准值、检测值、判定结果、检测人及检测时间，与产品检测主表多对一关联' },
   sys_user_setting: { category: '系统表', purpose: '用户个性化设置表，存储用户对表格列宽、筛选条件等个性化配置' },
-  u9_task_setting: { category: '业务表', purpose: '自动任务设置表，存储任务类型、名称、数据源URL、执行参数等配置信息' },
-  u9_sync_task: { category: '业务表', purpose: '同步任务日志表，记录数据同步任务的执行状态、进度、步骤日志及结果信息' },
-  u9_scheduled_task: { category: '业务表', purpose: '定时任务计划表，存储周期性/定时/单次任务的调度配置、执行时间及上次执行结果' },
-  u9_item: { category: '业务表', purpose: 'U9料品档案表，存储从U9系统同步的料品基础信息、规格参数及分类信息' },
-  u9_customer: { category: '业务表', purpose: 'U9客户档案表，存储从U9系统同步的客户基本信息、分类及信用状态' },
-  env_monitor_data: { category: '业务表', purpose: '环境监测数据表，存储车间环境监测因子（温湿度等）的实时采集数据' },
-  env_alarm_record: { category: '业务表', purpose: '环境报警记录表，存储环境监测超限的报警信息、级别及处理状态' },
-  weather_info: { category: '业务表', purpose: '气象信息表，存储城市/区域的实时天气数据（温度、湿度、大气压等）' },
+  task_setting: { category: '业务表', purpose: '自动任务设置表，存储任务类型、名称、数据源URL、执行参数等配置信息' },
+  task_sync_log: { category: '业务表', purpose: '同步任务日志表，记录数据同步任务的执行状态、进度、步骤日志及结果信息' },
+  task_scheduled: { category: '业务表', purpose: '定时任务计划表，存储周期性/定时/单次任务的调度配置、执行时间及上次执行结果' },
+  task_item: { category: '业务表', purpose: 'U9料品档案表，存储从U9系统同步的料品基础信息、规格参数及分类信息' },
+  task_customer: { category: '业务表', purpose: 'U9客户档案表，存储从U9系统同步的客户基本信息、分类及信用状态' },
+  task_env_monitor_data: { category: '业务表', purpose: '环境监测数据表，存储车间环境监测因子（温湿度等）的实时采集数据' },
+  task_env_alarm_record: { category: '业务表', purpose: '环境报警记录表，存储环境监测超限的报警信息、级别及处理状态' },
+  task_weather_info: { category: '业务表', purpose: '气象信息表，存储城市/区域的实时天气数据（温度、湿度、大气压等）' },
+  task_energy_meter_data: { category: '业务表', purpose: '能源采集数据表，存储从云集云能源平台采集的总表有功/无功总电能历史记录' },
 }
 
 // 表名 → { 字段名: 中文注释 }（数据库表结构元数据，模块级常量）
@@ -886,7 +887,7 @@ const columnCommentMap = {
     created_at: '创建时间',
     updated_at: '更新时间',
   },
-  u9_task_setting: {
+  task_setting: {
     setting_id: '设置ID（主键）',
     task_type: '任务类型（items/customers/env_monitor/weather）',
     name: '任务名称',
@@ -898,7 +899,7 @@ const columnCommentMap = {
     created_at: '创建时间',
     updated_at: '更新时间',
   },
-  u9_sync_task: {
+  task_sync_log: {
     task_id: '任务ID（主键）',
     task_biz_id: '业务任务ID（UUID）',
     task_type: '任务类型（items/customers/env_monitor/weather）',
@@ -915,7 +916,7 @@ const columnCommentMap = {
     created_at: '创建时间',
     updated_at: '更新时间',
   },
-  u9_scheduled_task: {
+  task_scheduled: {
     schedule_id: '计划ID（主键）',
     schedule_biz_id: '计划业务ID',
     name: '计划名称',
@@ -929,7 +930,7 @@ const columnCommentMap = {
     created_at: '创建时间',
     updated_at: '更新时间',
   },
-  u9_item: {
+  task_item: {
     item_id: '料品ID（主键）',
     task_id: '来源同步任务ID',
     main_category_code: '主分类代码',
@@ -959,7 +960,7 @@ const columnCommentMap = {
     created_at: '创建时间',
     updated_at: '更新时间',
   },
-  u9_customer: {
+  task_customer: {
     customer_id: '客户ID（主键）',
     task_id: '来源同步任务ID',
     customer_code: '客户编码',
@@ -973,7 +974,7 @@ const columnCommentMap = {
     created_at: '创建时间',
     updated_at: '更新时间',
   },
-  env_monitor_data: {
+  task_env_monitor_data: {
     monitor_id: '监测ID（主键）',
     factor_id: '因子ID',
     device_addr: '设备地址',
@@ -991,7 +992,7 @@ const columnCommentMap = {
     created_at: '创建时间',
     updated_at: '更新时间',
   },
-  env_alarm_record: {
+  task_env_alarm_record: {
     alarm_id: '报警ID（主键）',
     factor_id: '因子ID',
     device_addr: '设备地址',
@@ -1010,7 +1011,7 @@ const columnCommentMap = {
     created_at: '创建时间',
     updated_at: '更新时间',
   },
-  weather_info: {
+  task_weather_info: {
     weather_id: '气象ID（主键）',
     city: '城市/区县名称',
     temperature: '温度（℃）',
@@ -1019,6 +1020,19 @@ const columnCommentMap = {
     weather_time: '气象发布/观测时间',
     source: '数据来源站点',
     raw_data: '原始片段（调试用）',
+    created_at: '创建时间',
+    updated_at: '更新时间',
+  },
+  task_energy_meter_data: {
+    id: '主键ID',
+    task_setting_id: '关联任务设置ID',
+    device_addr: '电表通讯地址',
+    device_name: '电表名称',
+    forward_active_energy: '正向有功总电能(kWh)',
+    forward_reactive_energy: '正向无功总电能(kvarh)',
+    reverse_active_energy: '反向有功总电能(kWh)',
+    reverse_reactive_energy: '反向无功总电能(kvarh)',
+    record_time: '数据记录时间',
     created_at: '创建时间',
     updated_at: '更新时间',
   },

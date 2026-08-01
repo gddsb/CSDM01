@@ -72,7 +72,7 @@ const SyncTask = sequelize.define('SyncTask', {
     comment: '结束时间',
   },
 }, {
-  tableName: 'u9_sync_task',
+  tableName: 'task_sync_log',
   timestamps: true,
   underscored: true,
   createdAt: 'created_at',

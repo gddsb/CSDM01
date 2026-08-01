@@ -111,7 +111,7 @@ const U9Item = sequelize.define('U9Item', {
     comment: '失效日期',
   },
 }, {
-  tableName: 'u9_item',
+  tableName: 'task_item',
   timestamps: true,
   underscored: true,
   createdAt: 'created_at',

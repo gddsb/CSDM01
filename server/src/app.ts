@@ -12,6 +12,7 @@ import { initDefaultPermissions } from './controllers/RoleController.js'
 import { initDefaultRules } from './controllers/NumberRuleController.js'
 import { runMigrations } from './migrate.js'
 import { startTaskScheduler } from './services/taskScheduler.js'
+import { TaskSetting } from './models/index.js'
 
 dotenv.config()
 
@@ -41,6 +42,20 @@ if (!fs.existsSync(defectsDir)) fs.mkdirSync(defectsDir, { recursive: true })
 if (!fs.existsSync(appsDir)) fs.mkdirSync(appsDir, { recursive: true })
 if (!fs.existsSync(reportsDir)) fs.mkdirSync(reportsDir, { recursive: true })
 
+// 初始化默认任务设置
+async function initTaskSettings() {
+  const defaultTasks = [
+    { task_type: 'items', name: '料品数据同步', description: '从U9 ERP系统同步料品基础档案数据', source_url: '', field_count: 24, is_active: 1 },
+    { task_type: 'customers', name: '客户数据同步', description: '从U9 ERP系统同步客户基础档案数据', source_url: '', field_count: 11, is_active: 1 },
+    { task_type: 'env_monitor', name: '环境监测采集', description: '从0531yun物联网平台采集车间环境监测数据', source_url: '', field_count: 15, is_active: 1 },
+    { task_type: 'weather', name: '气象信息抓取', description: '从中国天气网抓取城市/区域实时气象数据', source_url: '', field_count: 8, is_active: 1 },
+    { task_type: 'energy_meter', name: '能源采集', description: '从云集云能源平台采集总表有功/无功总电能历史记录', source_url: '', field_count: 11, is_active: 1 },
+  ]
+  for (const t of defaultTasks) {
+    await TaskSetting.findOrCreate({ where: { task_type: t.task_type }, defaults: t })
+  }
+}
+
 // 同步数据库表
 async function initDatabase() {
   try {
@@ -59,6 +74,9 @@ async function initDatabase() {
     // 初始化默认编号规则
     await initDefaultRules()
     console.log('✅ 默认编号规则初始化完成')
+    // 初始化默认任务设置
+    await initTaskSettings()
+    console.log('✅ 默认任务设置初始化完成')
     // 初始化数据字典（扫描数据库表结构并持久化）
     await refreshDictionaryData()
     console.log('✅ 数据字典初始化完成')

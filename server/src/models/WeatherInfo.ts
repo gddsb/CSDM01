@@ -42,7 +42,7 @@ const WeatherInfo = sequelize.define('WeatherInfo', {
     comment: '原始片段(调试用)',
   },
 }, {
-  tableName: 'weather_info',
+  tableName: 'task_weather_info',
   timestamps: true,
   underscored: true,
   createdAt: 'created_at',

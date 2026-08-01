@@ -60,7 +60,7 @@ const ScheduledTask = sequelize.define('ScheduledTask', {
     comment: '是否启用：1-启用 0-停用',
   },
 }, {
-  tableName: 'u9_scheduled_task',
+  tableName: 'task_scheduled',
   timestamps: true,
   underscored: true,
   createdAt: 'created_at',

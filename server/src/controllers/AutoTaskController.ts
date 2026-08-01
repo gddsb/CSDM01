@@ -490,7 +490,7 @@ export const dashboardOverview = async (req, res) => {
       if (!factorLatest.has(r.factor_name)) factorLatest.set(r.factor_name, r)
     }
 
-    // 获取最新大气压（weather_info 表）
+    // 获取最新大气压（task_weather_info 表）
     let pressure = 1013.25
     try {
       const latestWeather = await WeatherInfo.findOne({

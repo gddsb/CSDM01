@@ -47,7 +47,7 @@ const U9Customer = sequelize.define('U9Customer', {
     comment: '生效日期',
   },
 }, {
-  tableName: 'u9_customer',
+  tableName: 'task_customer',
   timestamps: true,
   underscored: true,
   createdAt: 'created_at',

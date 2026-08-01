@@ -53,7 +53,7 @@ const EnergyMeterData = sequelize.define('EnergyMeterData', {
   },
 }, {
   sequelize,
-  tableName: 'u9_energy_meter_data',
+  tableName: 'task_energy_meter_data',
   timestamps: true,
   underscored: true,
   createdAt: 'created_at',

@@ -74,7 +74,7 @@ const EnvAlarm = sequelize.define('EnvAlarm', {
     comment: '处理意见',
   },
 }, {
-  tableName: 'env_alarm_record',
+  tableName: 'task_env_alarm_record',
   timestamps: true,
   underscored: true,
   createdAt: 'created_at',
