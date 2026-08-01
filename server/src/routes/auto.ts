@@ -7,6 +7,9 @@ import {
   listArchiveData, handleAlarm,
   dashboardOverview,
   dashboardTrend,
+  productionDashboard,
+  qualityDashboard,
+  managementDashboard,
 } from '../controllers/AutoTaskController.js'
 
 const router = Router()
@@ -38,5 +41,10 @@ router.put('/env-alarm/:id/handle', logOperation('环境报警处理'), handleAl
 // 环境监测仪表盘
 router.get('/dashboard/overview', dashboardOverview)
 router.get('/dashboard/trend', dashboardTrend)
+
+// 三个业务看板API
+router.get('/dashboard/production', productionDashboard)
+router.get('/dashboard/quality', qualityDashboard)
+router.get('/dashboard/management', managementDashboard)
 
 export default router

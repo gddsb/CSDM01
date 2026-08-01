@@ -183,7 +183,6 @@ function miniGauge(value: number, unit: string, type: 'temp' | 'hum' | 'dew'): E
         offsetCenter: [0, '65%'],
         formatter: (v: number) => `${v.toFixed(1)}`,
         fontSize: 20, fontWeight: 700, color: mainColor,
-        textShadowColor: mainColor, textShadowBlur: 10,
       },
       data: [{ value: Math.round(value * 10) / 10 }],
     }],

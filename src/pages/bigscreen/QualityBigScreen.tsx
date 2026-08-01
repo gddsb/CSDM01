@@ -1,28 +1,19 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import * as echarts from 'echarts'
-import {
-  incomingInspections,
-  finishedInspections,
-  microbeInspections,
-  envInspections,
-  complaints,
-  instruments,
-  inspectionStandards,
-  materials,
-} from '../../mock/data'
+import api from '../../utils/api'
 import BigScreenHeader from '../../components/BigScreenHeader'
 import BigScreenPanel from '../../components/BigScreenPanel'
 import '../../styles/bigscreen.css'
 import { useBigScreenScale } from '../../hooks/useBigScreenScale'
 
-const ENV_REFRESH_INTERVAL = 8 * 1000
+const DATA_REFRESH_INTERVAL = 60 * 1000
 const IDLE_THRESHOLD = 15 * 1000
 
-function extractDates(items, ...fields) {
-  const set = new Set()
-  items.forEach(item => {
+function extractDates(items: any[], ...fields: string[]) {
+  const set = new Set<string>()
+  ;(items || []).forEach(item => {
     fields.forEach(f => {
-      const v = item[f]
+      const v = item?.[f]
       if (v && typeof v === 'string') {
         const m = v.match(/^(\d{4}-\d{2}-\d{2})/)
         if (m) set.add(m[1])
@@ -32,14 +23,18 @@ function extractDates(items, ...fields) {
   return Array.from(set).sort()
 }
 
-function getActiveDate() {
+function getActiveDateFromData(data: any) {
+  const { incomingInspections = [], finishedInspections = [], microbeInspections = [], envInspections = [], complaints = [] } = data || {}
   const allDates = []
-    .concat(extractDates(incomingInspections, 'inspection_time', 'arrival_date'))
-    .concat(extractDates(finishedInspections, 'inspection_time'))
-    .concat(extractDates(microbeInspections, 'inspection_time'))
-    .concat(extractDates(envInspections, 'inspection_date'))
-    .concat(extractDates(complaints, 'complaint_time'))
-  if (allDates.length === 0) return null
+    .concat(extractDates(incomingInspections, 'inspection_time', 'arrival_date', 'created_at'))
+    .concat(extractDates(finishedInspections, 'inspection_time', 'created_at'))
+    .concat(extractDates(microbeInspections, 'inspection_time', 'created_at'))
+    .concat(extractDates(envInspections, 'inspection_date', 'inspection_time', 'created_at'))
+    .concat(extractDates(complaints, 'complaint_time', 'created_at'))
+  if (allDates.length === 0) {
+    const t = new Date()
+    return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`
+  }
   const today = new Date()
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
   if (allDates.includes(todayStr)) return todayStr
@@ -47,43 +42,75 @@ function getActiveDate() {
   return pastDates.length > 0 ? pastDates[pastDates.length - 1] : allDates[allDates.length - 1]
 }
 
-function filterByDate(items, dateStr, ...fields) {
-  if (!dateStr) return items
-  return items.filter(item =>
+function filterByDate(items: any[], dateStr: string, ...fields: string[]) {
+  if (!dateStr) return items || []
+  return (items || []).filter(item =>
     fields.some(f => {
-      const v = item[f]
+      const v = item?.[f]
       return v && typeof v === 'string' && v.startsWith(dateStr)
     })
   )
 }
 
-function nextEnvValue(prev, min, max) {
-  let delta = (Math.random() * 4 - 2)
-  let next = prev + delta
-  if (next < min) next = min + (min - next)
-  if (next > max) next = max - (next - max)
-  next = Math.max(min, Math.min(max, next))
-  return Number(next.toFixed(1))
-}
-
 export default function QualityBigScreen() {
   const [currentTime, setCurrentTime] = useState(new Date())
-  const [activeDate, setActiveDate] = useState(getActiveDate())
+  const [activeDate, setActiveDate] = useState<string>(() => {
+    const t = new Date()
+    return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`
+  })
   const [idle, setIdle] = useState(false)
-  const [envData, setEnvData] = useState({ temperature: 21.5, humidity: 60.5, pressure: 18.0 })
+  const [dashboardData, setDashboardData] = useState<any>({
+    incomingInspections: [],
+    finishedInspections: [],
+    microbeInspections: [],
+    envInspections: [],
+    complaints: [],
+    instruments: [],
+    inspectionStandards: [],
+    materials: [],
+  })
+  const [dataVersion, setDataVersion] = useState(0)
+  const [loading, setLoading] = useState(false)
 
   const barChartRef = useRef(null)
   const pieChartRef = useRef(null)
   const lineChartRef = useRef(null)
   const gaugeChartRef = useRef(null)
 
-  const idleTimerRef = useRef(null)
+  const barChartRef2 = useRef<any>(null)
+  const pieChartRef2 = useRef<any>(null)
+  const lineChartRef2 = useRef<any>(null)
+  const gaugeChartRef2 = useRef<any>(null)
+
+  const idleTimerRef = useRef<any>(null)
 
   const resetIdle = useCallback(() => {
     setIdle(false)
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current)
     idleTimerRef.current = setTimeout(() => setIdle(true), IDLE_THRESHOLD)
   }, [])
+
+  const loadData = useCallback(async () => {
+    setLoading(true)
+    try {
+      const resp = await api.get('/auto/dashboard/quality')
+      if (resp?.data) {
+        setDashboardData(resp.data)
+        setActiveDate(resp.data.activeDate || getActiveDateFromData(resp.data))
+        setDataVersion(v => v + 1)
+      }
+    } catch (err) {
+      console.error('加载质量看板数据失败:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadData()
+    const timer = setInterval(loadData, DATA_REFRESH_INTERVAL)
+    return () => clearInterval(timer)
+  }, [loadData])
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000)
@@ -100,32 +127,28 @@ export default function QualityBigScreen() {
     }
   }, [resetIdle])
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setEnvData(prev => ({
-        temperature: nextEnvValue(prev.temperature, 20, 23),
-        humidity: nextEnvValue(prev.humidity, 58, 63),
-        pressure: nextEnvValue(prev.pressure, 15, 21),
-      }))
-    }, ENV_REFRESH_INTERVAL)
-    return () => clearInterval(timer)
-  }, [])
-
-  const formatTime = (d) => {
-    const pad = (n) => String(n).padStart(2, '0')
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
-  }
   const formatClock = (d) => {
     const pad = (n) => String(n).padStart(2, '0')
     return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
   }
   const { style: scaleStyle } = useBigScreenScale({ designWidth: 1920, designHeight: 1080 })
 
-  const dateIncoming = filterByDate(incomingInspections, activeDate, 'inspection_time', 'arrival_date')
-  const dateFinished = filterByDate(finishedInspections, activeDate, 'inspection_time')
-  const dateMicrobe = filterByDate(microbeInspections, activeDate, 'inspection_time')
-  const dateEnv = filterByDate(envInspections, activeDate, 'inspection_date')
-  const dateComplaints = filterByDate(complaints, activeDate, 'complaint_time')
+  const {
+    incomingInspections = [],
+    finishedInspections = [],
+    microbeInspections = [],
+    envInspections = [],
+    complaints = [],
+    instruments = [],
+    inspectionStandards = [],
+    materials = [],
+  } = dashboardData || {}
+
+  const dateIncoming = filterByDate(incomingInspections, activeDate, 'inspection_time', 'arrival_date', 'created_at')
+  const dateFinished = filterByDate(finishedInspections, activeDate, 'inspection_time', 'created_at')
+  const dateMicrobe = filterByDate(microbeInspections, activeDate, 'inspection_time', 'created_at')
+  const dateEnv = filterByDate(envInspections, activeDate, 'inspection_date', 'inspection_time', 'created_at')
+  const dateComplaints = filterByDate(complaints, activeDate, 'complaint_time', 'created_at')
   const hasDateData = dateIncoming.length > 0 || dateFinished.length > 0 || dateMicrobe.length > 0 || dateEnv.length > 0
   const useIncoming = hasDateData ? dateIncoming : incomingInspections
   const useFinished = hasDateData ? dateFinished : finishedInspections
@@ -133,10 +156,18 @@ export default function QualityBigScreen() {
   const useEnv = hasDateData ? dateEnv : envInspections
   const useComplaints = dateComplaints.length > 0 ? dateComplaints : complaints
 
+  // 规范化检验结果字段
+  const getResult = (item: any) => {
+    const r = item?.result || item?.inspection_result || item?.conclusion || item?.status
+    if (r === '合格' || r === 'Pass' || r === 'pass' || r === 'OK' || r === 1 || r === '通过') return '合格'
+    if (r === '不合格' || r === 'Fail' || r === 'fail' || r === 'NG' || r === 0 || r === '不通过') return '不合格'
+    return r || '待检'
+  }
+
   const calcPassRate = (list) => {
-    const completed = list.filter((i) => i.result === '合格' || i.result === '不合格')
+    const completed = list.filter((i) => getResult(i) === '合格' || getResult(i) === '不合格')
     if (completed.length === 0) return 0
-    const pass = completed.filter((i) => i.result === '合格').length
+    const pass = completed.filter((i) => getResult(i) === '合格').length
     return Number(((pass / completed.length) * 100).toFixed(1))
   }
 
@@ -144,15 +175,15 @@ export default function QualityBigScreen() {
   const finishedRate = calcPassRate(useFinished)
   const microbeRate = calcPassRate(useMicrobe)
   const envRate = calcPassRate(useEnv)
-  const activeComplaints = useComplaints.filter((c) => c.status === '处理中').length
+  const activeComplaints = useComplaints.filter((c) => (c.status || '处理中') !== '已关闭' && (c.status || '处理中') !== 'closed').length
 
   const materialsWithStandard = new Set(
-    inspectionStandards.filter((s) => s.status === '生效').map((s) => s.material_id)
+    inspectionStandards.filter((s) => (s.status === 1 || s.status === '生效' || s.status === '启用')).map((s) => s.material_id)
   )
   const standardCoverage =
     materials.length > 0 ? Math.round((materialsWithStandard.size / materials.length) * 100) : 0
 
-  const activeStandards = inspectionStandards.filter((s) => s.status === '生效').length
+  const activeStandards = inspectionStandards.filter((s) => s.status === 1 || s.status === '生效' || s.status === '启用').length
   const standardActiveRate =
     inspectionStandards.length > 0 ? Math.round((activeStandards / inspectionStandards.length) * 100) : 0
 
@@ -172,7 +203,11 @@ export default function QualityBigScreen() {
 
   useEffect(() => {
     if (!barChartRef.current) return
-    const chart = echarts.init(barChartRef.current)
+    let chart = barChartRef2.current
+    if (!chart) {
+      chart = echarts.init(barChartRef.current)
+      barChartRef2.current = chart
+    }
     const barColors = ['#00d4ff', '#00ff88', '#ffd93d', '#ff6b6b']
     const rates = [incomingRate, finishedRate, microbeRate, envRate]
     chart.setOption({
@@ -233,22 +268,23 @@ export default function QualityBigScreen() {
         },
       ],
     })
-    const handleResize = () => chart.resize()
+    const handleResize = () => chart && chart.resize()
     window.addEventListener('resize', handleResize)
-    return () => {
-      chart.dispose()
-      window.removeEventListener('resize', handleResize)
-    }
-  }, [incomingRate, finishedRate, microbeRate, envRate])
+    return () => { window.removeEventListener('resize', handleResize) }
+  }, [incomingRate, finishedRate, microbeRate, envRate, dataVersion])
 
   useEffect(() => {
     if (!pieChartRef.current) return
-    const chart = echarts.init(pieChartRef.current)
+    let chart = pieChartRef2.current
+    if (!chart) {
+      chart = echarts.init(pieChartRef.current)
+      pieChartRef2.current = chart
+    }
     const unqualifiedData = [
-      { name: '来料检验', value: useIncoming.filter(i => i.result === '不合格').length || 0 },
-      { name: '成品检验', value: useFinished.filter(i => i.result === '不合格').length || 0 },
-      { name: '微生物检验', value: useMicrobe.filter(i => i.result === '不合格').length || 0 },
-      { name: '环境检验', value: useEnv.filter(i => i.result === '不合格').length || 0 },
+      { name: '来料检验', value: useIncoming.filter(i => getResult(i) === '不合格').length || 0 },
+      { name: '成品检验', value: useFinished.filter(i => getResult(i) === '不合格').length || 0 },
+      { name: '微生物检验', value: useMicrobe.filter(i => getResult(i) === '不合格').length || 0 },
+      { name: '环境检验', value: useEnv.filter(i => getResult(i) === '不合格').length || 0 },
     ].filter(d => d.value > 0)
     const fallback = unqualifiedData.length > 0 ? unqualifiedData : [{ name: '暂无数据', value: 1 }]
     const pieColors = ['#00d4ff', '#00ff88', '#ffd93d', '#ff6b6b']
@@ -314,20 +350,45 @@ export default function QualityBigScreen() {
         },
       ],
     })
-    const handleResize = () => chart.resize()
+    const handleResize = () => chart && chart.resize()
     window.addEventListener('resize', handleResize)
-    return () => {
-      chart.dispose()
-      window.removeEventListener('resize', handleResize)
-    }
-  }, [useIncoming, useFinished, useMicrobe, useEnv])
+    return () => { window.removeEventListener('resize', handleResize) }
+  }, [useIncoming, useFinished, useMicrobe, useEnv, dataVersion])
+
+  // 客诉趋势：优先根据真实 complaints 按月计算，无真实数据时显示演示值
+  const computeComplaintTrend = () => {
+    const months = ['1月', '2月', '3月', '4月', '5月', '6月']
+    const newArr = new Array(6).fill(0)
+    const closedArr = new Array(6).fill(0)
+    const today = new Date()
+    const curYear = today.getFullYear()
+    const curMonth = today.getMonth()
+    useComplaints.forEach(c => {
+      const t = c.complaint_time || c.created_at
+      if (!t) return
+      const d = new Date(t)
+      if (isNaN(d.getTime())) return
+      const monthOffset = (curYear - d.getFullYear()) * 12 + (curMonth - d.getMonth())
+      if (monthOffset >= 0 && monthOffset < 6) {
+        const idx = 5 - monthOffset
+        newArr[idx] += 1
+        const st = c.status
+        if (st === '已关闭' || st === 'closed' || st === '已解决' || st === 3) closedArr[idx] += 1
+      }
+    })
+    const hasReal = newArr.some(v => v > 0) || closedArr.some(v => v > 0)
+    if (hasReal) return { months, newComplaints: newArr, closedComplaints: closedArr }
+    return { months, newComplaints: [3, 2, 4, 3, 5, 2], closedComplaints: [2, 2, 3, 4, 4, 2] }
+  }
 
   useEffect(() => {
     if (!lineChartRef.current) return
-    const chart = echarts.init(lineChartRef.current)
-    const months = ['1月', '2月', '3月', '4月', '5月', '6月']
-    const newComplaints = [3, 2, 4, 3, 5, 2]
-    const closedComplaints = [2, 2, 3, 4, 4, 2]
+    let chart = lineChartRef2.current
+    if (!chart) {
+      chart = echarts.init(lineChartRef.current)
+      lineChartRef2.current = chart
+    }
+    const { months, newComplaints, closedComplaints } = computeComplaintTrend()
     chart.setOption({
       ...noAnimation,
       backgroundColor: 'transparent',
@@ -369,7 +430,7 @@ export default function QualityBigScreen() {
           symbol: 'circle',
           symbolSize: 8,
           data: newComplaints,
-          lineStyle: { color: '#ff6b6b', width: 3, shadowColor: 'rgba(255,107,107,0.5)', shadowBlur: 8 },
+          lineStyle: { color: '#ff6b6b', width: 3 },
           itemStyle: { color: '#ff6b6b', borderColor: '#0d1b2a', borderWidth: 2 },
           areaStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
@@ -385,7 +446,7 @@ export default function QualityBigScreen() {
           symbol: 'circle',
           symbolSize: 8,
           data: closedComplaints,
-          lineStyle: { color: '#00ff88', width: 3, shadowColor: 'rgba(0,255,136,0.5)', shadowBlur: 8 },
+          lineStyle: { color: '#00ff88', width: 3 },
           itemStyle: { color: '#00ff88', borderColor: '#0d1b2a', borderWidth: 2 },
           areaStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
@@ -396,17 +457,18 @@ export default function QualityBigScreen() {
         },
       ],
     })
-    const handleResize = () => chart.resize()
+    const handleResize = () => chart && chart.resize()
     window.addEventListener('resize', handleResize)
-    return () => {
-      chart.dispose()
-      window.removeEventListener('resize', handleResize)
-    }
-  }, [])
+    return () => { window.removeEventListener('resize', handleResize) }
+  }, [dataVersion, activeDate])
 
   useEffect(() => {
     if (!gaugeChartRef.current) return
-    const chart = echarts.init(gaugeChartRef.current)
+    let chart = gaugeChartRef2.current
+    if (!chart) {
+      chart = echarts.init(gaugeChartRef.current)
+      gaugeChartRef2.current = chart
+    }
     const gaugeColors = ['#00d4ff', '#00ff88', '#ffd93d']
     chart.setOption({
       ...noAnimation,
@@ -463,13 +525,10 @@ export default function QualityBigScreen() {
         },
       ],
     })
-    const handleResize = () => chart.resize()
+    const handleResize = () => chart && chart.resize()
     window.addEventListener('resize', handleResize)
-    return () => {
-      chart.dispose()
-      window.removeEventListener('resize', handleResize)
-    }
-  }, [standardCoverage, standardActiveRate, instrumentValidRate])
+    return () => { window.removeEventListener('resize', handleResize) }
+  }, [standardCoverage, standardActiveRate, instrumentValidRate, dataVersion])
 
   const idleClock = (
     <div style={{ display: 'flex', alignItems: 'center', gap: 16, color: '#8B949E', fontFamily: "'Courier New', monospace", fontSize: 16 }}>
@@ -479,31 +538,20 @@ export default function QualityBigScreen() {
     </div>
   )
 
-  const envGroup = (
-    <div className="bs-env-group">
-      <span className="bs-env-item" title="温度">
-        <span className="bs-env-label" style={{ color: '#00d4ff' }}>温度</span>
-        <span className="bs-env-value">{envData.temperature.toFixed(1)}°C</span>
-      </span>
-      <span className="bs-env-item" title="湿度">
-        <span className="bs-env-label" style={{ color: '#3FB950' }}>湿度</span>
-        <span className="bs-env-value">{envData.humidity.toFixed(1)}%</span>
-      </span>
-      <span className="bs-env-item" title="压差">
-        <span className="bs-env-label" style={{ color: '#F0883E' }}>压差</span>
-        <span className="bs-env-value">{envData.pressure.toFixed(1)}Pa</span>
-      </span>
-    </div>
-  )
-
   return (
     <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: '#0a0e1a' }}>
       <div className="bigscreen-container" style={{ display: 'flex', flexDirection: 'column', height: '1080px', overflow: 'hidden', ...scaleStyle }}>
         <BigScreenHeader
           title="质量检测中心"
-          extraRight={envGroup}
           extraLeft={idle ? idleClock : null}
         />
+
+        {activeDate && (
+          <div style={{ fontSize: 12, color: '#8B949E', marginBottom: 6, padding: '0 4px' }}>
+            数据日期：<span style={{ color: '#00d4ff', fontFamily: "'Courier New', monospace" }}>{activeDate}</span>
+            <span style={{ marginLeft: 8, opacity: 0.7 }}>（当日无数据时显示最近有数据的日期，每 60 秒自动刷新）</span>
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexShrink: 0 }}>
           {kpiData.map((kpi, i) => (

@@ -7,6 +7,8 @@ interface BigScreenHeaderProps {
   refreshing?: boolean
   extraLeft?: ReactNode
   extraRight?: ReactNode
+  /** 标题下方一行：显示温湿度/压差/时钟等 */
+  envBar?: ReactNode
 }
 
 export default function BigScreenHeader({
@@ -15,38 +17,53 @@ export default function BigScreenHeader({
   refreshing = false,
   extraLeft,
   extraRight,
+  envBar,
 }: BigScreenHeaderProps) {
   return (
     <div className="bs-header">
-      {/* 左侧：扩展内容 */}
-      <div className="bs-header-left">
-        {extraLeft}
-      </div>
+      {/* 顶部第一行 */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          width: '100%',
+          minHeight: 80,
+        }}
+      >
+        <div className="bs-header-left">
+          {extraLeft}
+        </div>
 
-      {/* 中间：主标题 */}
-      <div className="bs-header-center">
-        <div className="bs-title">
-          {title}
-          <span className="bs-title-deco">
-            <span></span><span></span><span></span><span></span><span></span>
-          </span>
+        <div className="bs-header-center">
+          <div className="bs-title">
+            {title}
+            <span className="bs-title-deco">
+              <span></span><span></span><span></span><span></span><span></span>
+            </span>
+          </div>
+        </div>
+
+        <div className="bs-header-right">
+          {extraRight}
+          {onRefresh && (
+            <span
+              className="bs-refresh-btn"
+              onClick={onRefresh}
+              title="刷新数据"
+            >
+              <ReloadOutlined spin={refreshing} />
+            </span>
+          )}
         </div>
       </div>
 
-      {/* 右侧：刷新 + 扩展内容 */}
-      <div className="bs-header-right">
-        {extraRight}
-
-        {onRefresh && (
-          <span
-            className="bs-refresh-btn"
-            onClick={onRefresh}
-            title="刷新数据"
-          >
-            <ReloadOutlined spin={refreshing} />
-          </span>
-        )}
-      </div>
+      {/* 标题下方：温湿度/压差 行 */}
+      {envBar && (
+        <div className="bs-header-envbar">
+          {envBar}
+        </div>
+      )}
     </div>
   )
 }

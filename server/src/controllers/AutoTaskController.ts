@@ -1,7 +1,11 @@
-import { Op } from 'sequelize'
+import { Op, fn, col, where as seqWhere } from 'sequelize'
 import {
   TaskSetting, SyncTask, ScheduledTask, U9Item, U9Customer,
   EnvMonitor, EnvAlarm, WeatherInfo, EnergyMeterData,
+  Order, ReportOrder, ReportProcess, ProcessDefect,
+  ProductionLine, Device, Material, Process, Customer,
+  ProductInspection, IncomingInspection, MicrobeInspection,
+  InspectionStandard,
 } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { encryptParamsObj, decryptParamsObj } from '../utils/crypto.js'
@@ -652,6 +656,285 @@ export const dashboardTrend = async (req, res) => {
     return success(res, { hours: 12, intervalMinutes: 10, times, series })
   } catch (err) {
     console.error('获取趋势数据失败:', err)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
+  }
+}
+
+// ============ 生产实时看板数据 ============
+export const productionDashboard = async (req, res) => {
+  try {
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    const now = new Date()
+
+    // 1. 基础数据：产线、工序、设备
+    const productionLines = await ProductionLine.findAll({ order: [['sort_order', 'ASC']], raw: true })
+    const devices = await Device.findAll({ raw: true })
+    const processes = await Process.findAll({ order: [['sort_order', 'ASC']], raw: true })
+    const materials = await Material.findAll({ limit: 50, raw: true })
+
+    // 2. 订单和报工单（工单元数据）
+    const orders = await Order.findAll({
+      where: {
+        [Op.or]: [
+          { created_at: { [Op.gte]: todayStart } },
+          { release_time: { [Op.gte]: todayStart } },
+          { status: { [Op.in]: [0, 1, 2] } }, // 开立/下发/开工
+        ],
+      },
+      order: [['created_at', 'DESC']],
+      limit: 200,
+      raw: true,
+    })
+
+    const workOrders = await ReportOrder.findAll({
+      where: {
+        [Op.or]: [
+          { report_time: { [Op.gte]: todayStart } },
+          { status: { [Op.in]: [0] } }, // 开工中
+        ],
+      },
+      order: [['report_time', 'DESC']],
+      limit: 500,
+      raw: true,
+    })
+
+    // 3. 工序报工数据（含投入产出不良）
+    const processReports = await ReportProcess.findAll({
+      where: { created_at: { [Op.gte]: todayStart } },
+      order: [['created_at', 'DESC']],
+      limit: 2000,
+      raw: true,
+    })
+
+    // 工序报工数据补全：关联ReportOrder获取产出和投入
+    const reportOrderIds = processReports.map(p => p.report_order_id).filter(Boolean)
+    const processReportOrders = reportOrderIds.length > 0
+      ? await ReportOrder.findAll({
+          where: { report_order_id: { [Op.in]: reportOrderIds } },
+          raw: true,
+        })
+      : []
+
+    // 合并产出/投入数据
+    const roMap = new Map()
+    processReportOrders.forEach(ro => roMap.set(ro.report_order_id, ro))
+    const processReportsWithQty = processReports.map(pr => {
+      const ro = roMap.get(pr.report_order_id)
+      return {
+        ...pr,
+        report_time: ro?.report_time || pr.created_at,
+        work_order_id: pr.report_order_id,
+        work_order_no: ro?.report_no,
+        process_name: pr.process_name,
+        input_qty: Number(ro?.report_qty || 0),
+        output_qty: Number(ro?.report_qty || 0),
+        defect_material: 0,
+        defect_process: 0,
+        defect_scrap: 0,
+      }
+    })
+
+    // 4. 不良数据
+    const defects = await ProcessDefect.findAll({
+      where: { record_time: { [Op.gte]: todayStart } },
+      raw: true,
+    })
+
+    // 将不良分配到工序
+    defects.forEach(df => {
+      const pr = processReportsWithQty.find(p => p.report_order_id === df.report_order_id && p.process_id === df.process_id)
+      const qty = Number(df.quantity || 0)
+      if (pr) {
+        pr.defect_process += qty
+      } else if (processReportsWithQty.length > 0) {
+        processReportsWithQty[0].defect_material += qty
+      }
+    })
+
+    return success(res, {
+      productionLines,
+      devices,
+      processes,
+      materials,
+      orders,
+      workOrders,
+      processReports: processReportsWithQty,
+      queryTime: now.toISOString(),
+      activeDate: `${todayStart.getFullYear()}-${String(todayStart.getMonth() + 1).padStart(2, '0')}-${String(todayStart.getDate()).padStart(2, '0')}`,
+    })
+  } catch (err) {
+    console.error('[productionDashboard] 生产看板数据失败:', err)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
+  }
+}
+
+// ============ 质量检测中心看板数据 ============
+export const qualityDashboard = async (req, res) => {
+  try {
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    const sevenDaysAgo = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000)
+
+    // 1. 四类检验数据
+    const [incomingInspections, productInspections, microbeInspections] = await Promise.all([
+      IncomingInspection.findAll({
+        where: { created_at: { [Op.gte]: sevenDaysAgo } },
+        order: [['created_at', 'DESC']],
+        limit: 500,
+        raw: true,
+      }),
+      ProductInspection.findAll({
+        where: { created_at: { [Op.gte]: sevenDaysAgo } },
+        order: [['created_at', 'DESC']],
+        limit: 500,
+        raw: true,
+      }),
+      MicrobeInspection.findAll({
+        where: { created_at: { [Op.gte]: sevenDaysAgo } },
+        order: [['created_at', 'DESC']],
+        limit: 500,
+        raw: true,
+      }),
+    ])
+
+    // 成品/环境检验分开
+    const finishedInspections = productInspections.filter(i => i.inspection_type === '成品' || i.inspection_type === '制程')
+    const envMicrobe = microbeInspections.filter(i => i.object_type === '来料检验' || true)
+
+    // 拆分微生物和环境检验（基于object_type粗略区分）
+    const envInspections = microbeInspections.filter(i => i.object_type === '来料检验' ? false : true)
+
+    // 2. 客诉（暂无对应表，返回空数组）
+    const complaints: any[] = []
+
+    // 3. 仪器校准（使用Device近似模拟，设备下次校准日期）
+    const instrumentsAll = await Device.findAll({ raw: true })
+    const instruments = instrumentsAll.map(d => ({
+      instrument_id: d.device_id,
+      instrument_name: d.device_name,
+      instrument_code: d.device_code,
+      next_calibration_date: d.next_inspection_date,
+      last_calibration_date: d.last_inspection_date,
+      status:
+        d.status === '运行' ? '正常' :
+        d.next_inspection_date && new Date(d.next_inspection_date) < todayStart ? '已超期' :
+        d.next_inspection_date && new Date(d.next_inspection_date).getTime() - todayStart.getTime() < 30 * 86400000 ? '即将到期' : '正常',
+    }))
+
+    // 4. 检验标准和料品
+    const inspectionStandards = await InspectionStandard.findAll({ where: { status: 1 }, raw: true })
+    const materials = await Material.findAll({ limit: 200, raw: true })
+
+    return success(res, {
+      incomingInspections,
+      finishedInspections,
+      microbeInspections,
+      envInspections,
+      complaints,
+      instruments,
+      inspectionStandards,
+      materials,
+    })
+  } catch (err) {
+    console.error('[qualityDashboard] 质量看板数据失败:', err)
+    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
+  }
+}
+
+// ============ 经营管理中心看板数据 ============
+export const managementDashboard = async (req, res) => {
+  try {
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    const monthStart = new Date(todayStart.getFullYear(), todayStart.getMonth(), 1)
+    const sixMonthsAgo = new Date(todayStart)
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5)
+    sixMonthsAgo.setDate(1)
+
+    // 1. 基础数据
+    const [
+      orders, workOrders, processReports, productionLines, devices,
+      incomingInspections, finishedInspections, microbeInspections, envInspections,
+      materials, customers, inspectionStandards,
+    ] = await Promise.all([
+      Order.findAll({ where: { created_at: { [Op.gte]: sixMonthsAgo } }, order: [['created_at', 'DESC']], limit: 1000, raw: true }),
+      ReportOrder.findAll({ where: { report_time: { [Op.gte]: sixMonthsAgo } }, order: [['report_time', 'DESC']], limit: 3000, raw: true }),
+      ReportProcess.findAll({ where: { created_at: { [Op.gte]: monthStart } }, limit: 3000, raw: true }),
+      ProductionLine.findAll({ order: [['sort_order', 'ASC']], raw: true }),
+      Device.findAll({ raw: true }),
+      IncomingInspection.findAll({ where: { created_at: { [Op.gte]: sixMonthsAgo } }, limit: 1000, raw: true }),
+      ProductInspection.findAll({ where: { created_at: { [Op.gte]: sixMonthsAgo } }, limit: 1000, raw: true }),
+      MicrobeInspection.findAll({ where: { created_at: { [Op.gte]: sixMonthsAgo } }, limit: 1000, raw: true }),
+      MicrobeInspection.findAll({ where: { created_at: { [Op.gte]: sixMonthsAgo } }, limit: 500, raw: true }),
+      Material.findAll({ limit: 200, raw: true }),
+      Customer.findAll({ limit: 100, raw: true }),
+      InspectionStandard.findAll({ raw: true }),
+    ])
+
+    // 工序报工合并数据
+    const reportOrderIds = processReports.map(p => p.report_order_id).filter(Boolean)
+    const roMap = new Map()
+    if (reportOrderIds.length > 0) {
+      const ros = await ReportOrder.findAll({ where: { report_order_id: { [Op.in]: reportOrderIds } }, raw: true })
+      ros.forEach(ro => roMap.set(ro.report_order_id, ro))
+    }
+    const processReportsWithQty = processReports.map(pr => {
+      const ro = roMap.get(pr.report_order_id)
+      return {
+        ...pr,
+        report_time: ro?.report_time || pr.created_at,
+        work_order_id: pr.report_order_id,
+        work_order_no: ro?.report_no,
+        process_name: pr.process_name,
+        input_qty: Number(ro?.report_qty || 0),
+        output_qty: Number(ro?.report_qty || 0),
+        defect_material: 0,
+        defect_process: 0,
+        defect_scrap: 0,
+      }
+    })
+
+    // 不良数据
+    const defects = await ProcessDefect.findAll({ where: { record_time: { [Op.gte]: monthStart } }, raw: true })
+    defects.forEach(df => {
+      const pr = processReportsWithQty.find(p => p.report_order_id === df.report_order_id && p.process_id === df.process_id)
+      const qty = Number(df.quantity || 0)
+      if (pr) pr.defect_process += qty
+      else if (processReportsWithQty.length > 0) processReportsWithQty[0].defect_material += qty
+    })
+
+    // 客诉（暂无对应表）
+    const complaints: any[] = []
+
+    // 仪器（设备校准状态）
+    const instruments = devices.map(d => ({
+      instrument_id: d.device_id,
+      instrument_name: d.device_name,
+      next_calibration_date: d.next_inspection_date,
+      status:
+        d.next_inspection_date && new Date(d.next_inspection_date) < todayStart ? '已超期' :
+        d.next_inspection_date && new Date(d.next_inspection_date).getTime() - todayStart.getTime() < 30 * 86400000 ? '即将到期' : '正常',
+    }))
+
+    return success(res, {
+      orders,
+      workOrders,
+      processReports: processReportsWithQty,
+      productionLines,
+      devices,
+      incomingInspections,
+      finishedInspections,
+      microbeInspections,
+      envInspections,
+      complaints,
+      instruments,
+      materials,
+      customers,
+      inspectionStandards,
+    })
+  } catch (err) {
+    console.error('[managementDashboard] 经营看板数据失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
