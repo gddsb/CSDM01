@@ -3,11 +3,13 @@ import { createWorker } from 'tesseract.js';
 import { Jimp } from 'jimp';
 import EnergyMeterData from '../models/EnergyMeterData.js';
 
-// 验证码预处理参数（优化方案：5x 放大 + PSM7 + Otsu-25 偏移）
-// 测试服务器实测 12 样本识别率 92% (11/12)
+// 验证码预处理参数（优化方案：5x 放大 + PSM8 + Otsu-20 偏移 + 反色）
+// 测试服务器 30 样本严格4字符识别率 13.3% (原方案 3x+PSM7+Otsu-20 仅 6.7%)
+// 注：严格4字符很难达到，因为验证码干扰线常被OCR识别为额外字符
 const CAPTCHA_SCALE = 5;
-const CAPTCHA_OTSU_OFFSET = -25;
-const CAPTCHA_PSM = '7';
+const CAPTCHA_OTSU_OFFSET = -20;
+const CAPTCHA_PSM = '8';
+const CAPTCHA_INVERT = true; // 反色（白底黑字→黑底白字），减少干扰线影响
 const CAPTCHA_WHITELIST = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
 const API_BASE = 'https://nh2api.yunjichaobiao.com';
@@ -91,9 +93,7 @@ export class EnergyMeterCollector {
     }
   }
 
-  // 验证码预处理（A7 方案）：3x 放大(jimp默认mode) → 灰度化 → Otsu 自适应阈值-20 二值化
-  // Otsu 偏移 -20 让阈值更严格，只保留最深字符像素、去除浅色干扰，
-  // 实测完整识别率约 75-93%（A7 方案，与方案B的+25偏移方向相反）
+  // 验证码预处理：5x 放大 → 灰度化 → Otsu 自适应阈值二值化 → 可选反色
   private async preprocessCaptchaImage(imgBuffer: Buffer): Promise<Buffer> {
     try {
       const img = await Jimp.read(imgBuffer);
@@ -106,11 +106,12 @@ export class EnergyMeterCollector {
       const otsu = this.otsuThreshold(hist, w * h);
       const thr = Math.min(255, Math.max(0, otsu + CAPTCHA_OTSU_OFFSET));
       for (let i = 0; i < d.length; i += 4) {
-        const v = d[i] < thr ? 0 : 255;
-        d[i] = v; d[i + 1] = v; d[i + 2] = v;
+        let val = d[i] < thr ? 0 : 255;
+        if (CAPTCHA_INVERT) val = 255 - val; // 反色
+        d[i] = val; d[i + 1] = val; d[i + 2] = val;
       }
       const out = await img.getBuffer('image/png');
-      console.log(`[EnergyMeterCollector] 预处理完成: ${w}x${h}, Otsu=${otsu}, thr=${thr}(offset ${CAPTCHA_OTSU_OFFSET})`);
+      console.log(`[EnergyMeterCollector] 预处理完成: ${w}x${h}, Otsu=${otsu}, thr=${thr}(offset ${CAPTCHA_OTSU_OFFSET}), invert=${CAPTCHA_INVERT}`);
       return out;
     } catch (e) {
       console.error('[EnergyMeterCollector] 预处理失败，回退原图:', e);
@@ -162,15 +163,12 @@ export class EnergyMeterCollector {
           tessedit_pageseg_mode: CAPTCHA_PSM as any,
         });
         const { data } = await worker.recognize(processedBuffer);
-        const raw = (data.text || '').trim().replace(/[^A-Za-z0-9]/g, '');
-        // 验证码实际是4字符，OCR可能把干扰线识别成额外字符
-        // 策略：识别出>=4字符时取前4个，确保最终验证码严格为4字符
-        const code = raw.length >= 4 ? raw.substring(0, 4) : '';
-        console.log(`[EnergyMeterCollector] Captcha OCR (PSM=${CAPTCHA_PSM}): raw="${raw}" -> code="${code}" keyStr:`, keyStr);
+        const code = (data.text || '').trim().replace(/[^A-Za-z0-9]/g, '');
+        console.log(`[EnergyMeterCollector] Captcha OCR (PSM=${CAPTCHA_PSM}):`, code, 'keyStr:', keyStr);
         if (code.length === 4) {
           return { keyStr, code };
         }
-        console.error('[EnergyMeterCollector] Captcha OCR 识别长度不足4，原始结果:', raw);
+        console.error('[EnergyMeterCollector] Captcha OCR 识别长度不是4（少于或多于），识别结果:', code);
         return null;
       } finally {
         await worker.terminate();
