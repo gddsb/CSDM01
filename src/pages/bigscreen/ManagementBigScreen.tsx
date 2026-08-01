@@ -667,76 +667,72 @@ export default function ManagementBigScreen() {
           extraRight={rightUpdateTime}
         />
 
-        <Row gutter={[10, 10]} style={{ marginBottom: 10 }}>
+        {/* KPI 行 - 固定高度 */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexShrink: 0 }}>
           {kpiData.map((kpi, i) => (
-            <Col key={i} span={4}>
-              <BigScreenPanel>
-                <div className="bs-kpi-card">
-                  <div className="bs-kpi-value bs-number-glow" style={{ color: kpi.color }}>
-                    {kpi.icon} {kpi.value}<span style={{ fontSize: 16, marginLeft: 2 }}>{kpi.unit}</span>
-                  </div>
-                  <div className="bs-kpi-label">{kpi.label}</div>
+            <BigScreenPanel key={i} style={{ flex: 1 }}>
+              <div className="bs-kpi-card">
+                <div className="bs-kpi-value bs-number-glow" style={{ color: kpi.color, fontSize: 32 }}>
+                  {kpi.icon} {kpi.value}<span style={{ fontSize: 14, marginLeft: 2 }}>{kpi.unit}</span>
                 </div>
-              </BigScreenPanel>
-            </Col>
+                <div className="bs-kpi-label" style={{ fontSize: 12 }}>{kpi.label}</div>
+              </div>
+            </BigScreenPanel>
           ))}
-        </Row>
+        </div>
 
-        <Row gutter={[10, 10]} style={{ marginBottom: 10 }}>
-          <Col span={12}>
-            <BigScreenPanel title="订单完成趋势">
-              <div ref={orderTrendRef} style={{ width: '100%', height: 260 }} />
+        {/* 中间图表区 - flex 1 自适应 */}
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {/* 第一行图表 */}
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10 }}>
+            <BigScreenPanel title="订单完成趋势" style={{ flex: 2, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <div ref={orderTrendRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
             </BigScreenPanel>
-          </Col>
-          <Col span={6}>
-            <BigScreenPanel title="设备运行状态分布">
-              <div ref={deviceStatusRef} style={{ width: '100%', height: 260 }} />
+            <BigScreenPanel title="设备运行状态分布" style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <div ref={deviceStatusRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
             </BigScreenPanel>
-          </Col>
-          <Col span={6}>
-            <BigScreenPanel title="产线利用率">
-              <div ref={lineUtilRef} style={{ width: '100%', height: 260 }} />
+            <BigScreenPanel title="产线利用率" style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <div ref={lineUtilRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
             </BigScreenPanel>
-          </Col>
-        </Row>
+          </div>
 
-        <Row gutter={[10, 10]} style={{ marginBottom: 10 }}>
-          <Col span={14}>
-            <BigScreenPanel title="质量合格率趋势">
-              <div ref={qualityTrendRef} style={{ width: '100%', height: 260 }} />
+          {/* 第二行图表 */}
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10 }}>
+            <BigScreenPanel title="质量合格率趋势" style={{ flex: 3, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <div ref={qualityTrendRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
             </BigScreenPanel>
-          </Col>
-          <Col span={10}>
-            <BigScreenPanel title="各产线产出对比">
-              <div ref={lineOutputRef} style={{ width: '100%', height: 260 }} />
+            <BigScreenPanel title="各产线产出对比" style={{ flex: 2, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <div ref={lineOutputRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
             </BigScreenPanel>
-          </Col>
-        </Row>
+          </div>
+        </div>
 
-        <Row gutter={[10, 10]} className="bs-main-row">
-          <Col span={6}>
-            <BigScreenPanel title="生产概况">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <div style={{ textAlign: 'center', padding: 12, background: 'rgba(0,212,255,0.06)', borderRadius: 6 }}>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: '#00d4ff' }}>{activeOrders}</div>
-                  <div style={{ fontSize: 12, color: '#8B949E' }}>活跃订单</div>
+        {/* 底部主区 - flex 1 自适应 */}
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10, marginTop: 10 }}>
+          {/* 左列 */}
+          <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <BigScreenPanel title="生产概况" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <div style={{ textAlign: 'center', padding: 10, background: 'rgba(0,212,255,0.06)', borderRadius: 6 }}>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: '#00d4ff' }}>{activeOrders}</div>
+                  <div style={{ fontSize: 11, color: '#8B949E' }}>活跃订单</div>
                 </div>
-                <div style={{ textAlign: 'center', padding: 12, background: 'rgba(63,185,80,0.06)', borderRadius: 6 }}>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: '#3FB950' }}>{activeWorkOrders}</div>
-                  <div style={{ fontSize: 12, color: '#8B949E' }}>生效工单</div>
+                <div style={{ textAlign: 'center', padding: 10, background: 'rgba(63,185,80,0.06)', borderRadius: 6 }}>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: '#3FB950' }}>{activeWorkOrders}</div>
+                  <div style={{ fontSize: 11, color: '#8B949E' }}>生效工单</div>
                 </div>
-                <div style={{ textAlign: 'center', padding: 12, background: 'rgba(240,136,62,0.06)', borderRadius: 6 }}>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: '#F0883E' }}>{Number(totalOutput).toLocaleString()}</div>
-                  <div style={{ fontSize: 12, color: '#8B949E' }}>累计产出</div>
+                <div style={{ textAlign: 'center', padding: 10, background: 'rgba(240,136,62,0.06)', borderRadius: 6 }}>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: '#F0883E' }}>{Number(totalOutput).toLocaleString()}</div>
+                  <div style={{ fontSize: 11, color: '#8B949E' }}>累计产出</div>
                 </div>
-                <div style={{ textAlign: 'center', padding: 12, background: 'rgba(248,81,73,0.06)', borderRadius: 6 }}>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: '#F85149' }}>{totalDefect}</div>
-                  <div style={{ fontSize: 12, color: '#8B949E' }}>不良总数</div>
+                <div style={{ textAlign: 'center', padding: 10, background: 'rgba(248,81,73,0.06)', borderRadius: 6 }}>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: '#F85149' }}>{totalDefect}</div>
+                  <div style={{ fontSize: 11, color: '#8B949E' }}>不良总数</div>
                 </div>
               </div>
             </BigScreenPanel>
 
-            <BigScreenPanel title="产线利用率" className="bs-no-scrollbar" style={{ overflow: 'auto', marginTop: 10 }}>
+            <BigScreenPanel title="产线利用率" className="bs-no-scrollbar" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
               {(productionLines.length > 0 ? productionLines : [{ line_id: 'nodata', line_name: '暂无产线数据', workshop: '-' }]).map(line => {
                 const ln = line.line_name || ''
                 const lineDevices = devices.filter(d =>
@@ -747,8 +743,8 @@ export default function ManagementBigScreen() {
                 const running = lineDevices.filter(d => d.status === '运行' || d.status === '运行中').length
                 const utilization = lineDevices.length > 0 ? (running / lineDevices.length * 100) : 0
                 return (
-                  <div key={line.line_id} style={{ marginBottom: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 12 }}>
+                  <div key={line.line_id} style={{ marginBottom: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3, fontSize: 11 }}>
                       <span style={{ color: '#C9D1D9' }}>{ln || line.line_name}</span>
                       <span style={{ color: '#8B949E' }}>{utilization.toFixed(0)}%</span>
                     </div>
@@ -763,18 +759,19 @@ export default function ManagementBigScreen() {
               })}
             </BigScreenPanel>
 
-            <BigScreenPanel title="料品库存预警" style={{ marginTop: 10 }}>
+            <BigScreenPanel title="料品库存预警" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
               {(materials.length > 0 ? materials.slice(0, 10) : [{ material_id: 'nodata', material_name: '暂无料品', status: '-' }]).map(m => (
-                <div key={m.material_id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid rgba(0,212,255,0.06)', fontSize: 12 }}>
+                <div key={m.material_id} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid rgba(0,212,255,0.06)', fontSize: 11 }}>
                   <span style={{ color: '#C9D1D9' }}>{m.material_name}</span>
-                  <Tag color={m.status === '启用' || m.status === 1 ? 'success' : m.status === '试产' ? 'warning' : 'default'} style={{ fontSize: 11 }}>{typeof m.status === 'number' ? ({ 0: '停用', 1: '启用', 2: '试产' } as any)[m.status] : (m.status || '-')}</Tag>
+                  <Tag color={m.status === '启用' || m.status === 1 ? 'success' : m.status === '试产' ? 'warning' : 'default'} style={{ fontSize: 10 }}>{typeof m.status === 'number' ? ({ 0: '停用', 1: '启用', 2: '试产' } as any)[m.status] : (m.status || '-')}</Tag>
                 </div>
               ))}
             </BigScreenPanel>
-          </Col>
+          </div>
 
-          <Col span={12}>
-            <BigScreenPanel title="质量检验综合汇总">
+          {/* 中列 */}
+          <div style={{ flex: 2, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <BigScreenPanel title="质量检验综合汇总" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
               <ResizableTable tableKey="pages_bigscreen_ManagementBigScreen_quality"
                 className="bs-table"
                 columns={qualityColumns}
@@ -785,25 +782,23 @@ export default function ManagementBigScreen() {
               />
             </BigScreenPanel>
 
-            <BigScreenPanel title="各检验类别合格率对比" style={{ marginTop: 10 }}>
-              <Row gutter={[12, 12]}>
+            <BigScreenPanel title="各检验类别合格率对比" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
                 {qualitySummary.map((q, i) => {
                   const rate = q.total > 0 ? (q.pass / q.total * 100) : 0
                   const color = rate >= 90 ? '#3FB950' : rate >= 70 ? '#D29922' : '#F85149'
                   return (
-                    <Col key={i} span={6}>
-                      <div style={{ textAlign: 'center', padding: 16, background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
-                        <div style={{ fontSize: 32, fontWeight: 700, color }} className="bs-number-glow">{rate.toFixed(0)}%</div>
-                        <div style={{ fontSize: 12, color: '#8B949E', marginTop: 4 }}>{q.category}</div>
-                        <div style={{ fontSize: 11, color: '#8B949E' }}>合格{q.pass}/总计{q.total}</div>
-                      </div>
-                    </Col>
+                    <div key={i} style={{ textAlign: 'center', padding: 10, background: 'rgba(255,255,255,0.03)', borderRadius: 6 }}>
+                      <div style={{ fontSize: 24, fontWeight: 700, color }} className="bs-number-glow">{rate.toFixed(0)}%</div>
+                      <div style={{ fontSize: 11, color: '#8B949E', marginTop: 2 }}>{q.category}</div>
+                      <div style={{ fontSize: 10, color: '#8B949E' }}>合格{q.pass}/总计{q.total}</div>
+                    </div>
                   )
                 })}
-              </Row>
+              </div>
             </BigScreenPanel>
 
-            <BigScreenPanel title="客诉处理跟踪" style={{ marginTop: 10 }}>
+            <BigScreenPanel title="客诉处理跟踪" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
               <ResizableTable tableKey="pages_bigscreen_ManagementBigScreen_complaint"
                 className="bs-table"
                 columns={complaintColumns}
@@ -814,42 +809,43 @@ export default function ManagementBigScreen() {
                 scroll={{ y: 'calc(100% - 40px)' }}
               />
             </BigScreenPanel>
-          </Col>
+          </div>
 
-          <Col span={6}>
-            <BigScreenPanel title="设备运行状态" className="bs-no-scrollbar" style={{ overflow: 'auto' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
-                <div style={{ textAlign: 'center', padding: 10, background: 'rgba(63,185,80,0.08)', borderRadius: 6 }}>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: '#3FB950' }}>{runningDevices}</div>
-                  <div style={{ fontSize: 11, color: '#8B949E' }}>运行</div>
+          {/* 右列 */}
+          <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <BigScreenPanel title="设备运行状态" className="bs-no-scrollbar" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 8 }}>
+                <div style={{ textAlign: 'center', padding: 8, background: 'rgba(63,185,80,0.08)', borderRadius: 6 }}>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: '#3FB950' }}>{runningDevices}</div>
+                  <div style={{ fontSize: 10, color: '#8B949E' }}>运行</div>
                 </div>
-                <div style={{ textAlign: 'center', padding: 10, background: 'rgba(139,148,158,0.08)', borderRadius: 6 }}>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: '#8B949E' }}>{standbyDevices}</div>
-                  <div style={{ fontSize: 11, color: '#8B949E' }}>待机</div>
+                <div style={{ textAlign: 'center', padding: 8, background: 'rgba(139,148,158,0.08)', borderRadius: 6 }}>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: '#8B949E' }}>{standbyDevices}</div>
+                  <div style={{ fontSize: 10, color: '#8B949E' }}>待机</div>
                 </div>
-                <div style={{ textAlign: 'center', padding: 10, background: 'rgba(248,81,73,0.08)', borderRadius: 6 }}>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: '#F85149' }} className="bs-blink">{faultDevices}</div>
-                  <div style={{ fontSize: 11, color: '#8B949E' }}>故障</div>
+                <div style={{ textAlign: 'center', padding: 8, background: 'rgba(248,81,73,0.08)', borderRadius: 6 }}>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: '#F85149' }} className="bs-blink">{faultDevices}</div>
+                  <div style={{ fontSize: 10, color: '#8B949E' }}>故障</div>
                 </div>
               </div>
-              <div style={{ padding: 10, background: 'rgba(0,212,255,0.06)', borderRadius: 6, textAlign: 'center' }}>
-                <div style={{ fontSize: 28, fontWeight: 700, color: '#00d4ff' }} className="bs-number-glow">{deviceUtilization}%</div>
-                <div style={{ fontSize: 12, color: '#8B949E' }}>设备综合利用率</div>
+              <div style={{ padding: 8, background: 'rgba(0,212,255,0.06)', borderRadius: 6, textAlign: 'center' }}>
+                <div style={{ fontSize: 24, fontWeight: 700, color: '#00d4ff' }} className="bs-number-glow">{deviceUtilization}%</div>
+                <div style={{ fontSize: 11, color: '#8B949E' }}>设备综合利用率</div>
               </div>
             </BigScreenPanel>
 
-            <BigScreenPanel title="检测仪器校准状态" className="bs-no-scrollbar" style={{ overflow: 'auto', marginTop: 10 }}>
+            <BigScreenPanel title="检测仪器校准状态" className="bs-no-scrollbar" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
               {(instruments.length > 0 ? instruments.slice(0, 15) : [{ instrument_id: 'nodata', instrument_name: '暂无仪器数据', next_calibration_date: '-', status: '正常' }]).map(inst => (
-                <div key={inst.instrument_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(0,212,255,0.06)', fontSize: 12 }}>
+                <div key={inst.instrument_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(0,212,255,0.06)', fontSize: 11 }}>
                   <div>
                     <div style={{ color: '#C9D1D9' }}>{inst.instrument_name}</div>
-                    <div style={{ color: '#8B949E', fontSize: 11 }}>下次校准: {inst.next_calibration_date || '-'}</div>
+                    <div style={{ color: '#8B949E', fontSize: 10 }}>下次校准: {inst.next_calibration_date || '-'}</div>
                   </div>
-                  <Tag color={inst.status === '正常' ? 'success' : inst.status === '即将到期' ? 'warning' : 'error'} style={{ fontSize: 11 }}>{inst.status || '-'}</Tag>
+                  <Tag color={inst.status === '正常' ? 'success' : inst.status === '即将到期' ? 'warning' : 'error'} style={{ fontSize: 10 }}>{inst.status || '-'}</Tag>
                 </div>
               ))}
               {(normalInstruments + expiringInstruments + expiredInstruments > 0) && (
-                <div style={{ marginTop: 8, padding: 8, background: 'rgba(0,212,255,0.05)', borderRadius: 4, display: 'flex', justifyContent: 'space-around', fontSize: 11 }}>
+                <div style={{ marginTop: 6, padding: 6, background: 'rgba(0,212,255,0.05)', borderRadius: 4, display: 'flex', justifyContent: 'space-around', fontSize: 10 }}>
                   <span style={{ color: '#3FB950' }}>正常 {normalInstruments}</span>
                   <span style={{ color: '#D29922' }}>即将到期 {expiringInstruments}</span>
                   <span style={{ color: '#F85149' }}>已超期 {expiredInstruments}</span>
@@ -857,23 +853,23 @@ export default function ManagementBigScreen() {
               )}
             </BigScreenPanel>
 
-            <BigScreenPanel title="订单完成情况" style={{ marginTop: 10 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                <div style={{ textAlign: 'center', padding: 12, background: 'rgba(0,212,255,0.06)', borderRadius: 6 }}>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: '#00d4ff' }}>{activeOrders}</div>
-                  <div style={{ fontSize: 12, color: '#8B949E' }}>进行中</div>
+            <BigScreenPanel title="订单完成情况" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                <div style={{ textAlign: 'center', padding: 8, background: 'rgba(0,212,255,0.06)', borderRadius: 6 }}>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: '#00d4ff' }}>{activeOrders}</div>
+                  <div style={{ fontSize: 11, color: '#8B949E' }}>进行中</div>
                 </div>
-                <div style={{ textAlign: 'center', padding: 12, background: 'rgba(63,185,80,0.06)', borderRadius: 6 }}>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: '#3FB950' }}>{closedOrders}</div>
-                  <div style={{ fontSize: 12, color: '#8B949E' }}>已关闭</div>
+                <div style={{ textAlign: 'center', padding: 8, background: 'rgba(63,185,80,0.06)', borderRadius: 6 }}>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: '#3FB950' }}>{closedOrders}</div>
+                  <div style={{ fontSize: 11, color: '#8B949E' }}>已关闭</div>
                 </div>
               </div>
-              <div style={{ marginTop: 10, fontSize: 12, color: '#8B949E', textAlign: 'center' }}>
-                本月已完成工单 <span style={{ color: '#3FB950', fontWeight: 600, fontSize: 16 }}>{completedWorkOrders}</span> 个
+              <div style={{ marginTop: 8, fontSize: 11, color: '#8B949E', textAlign: 'center' }}>
+                本月已完成工单 <span style={{ color: '#3FB950', fontWeight: 600, fontSize: 14 }}>{completedWorkOrders}</span> 个
               </div>
             </BigScreenPanel>
-          </Col>
-        </Row>
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -161,6 +161,62 @@ export default function BigScreenHeader({
       {/* 背景渐变层 */}
       <div className="bs-header-bg" aria-hidden="true" />
 
+      {/* 顶部波浪装饰线（跨全宽） */}
+      <svg
+        className="bs-header-wave"
+        viewBox="0 0 1920 24"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient id="waveGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="rgba(0,212,255,0)" />
+            <stop offset="10%" stopColor="rgba(0,212,255,0.18)" />
+            <stop offset="30%" stopColor="rgba(0,230,255,0.5)" />
+            <stop offset="50%" stopColor="rgba(100,200,255,0.7)" />
+            <stop offset="70%" stopColor="rgba(0,230,255,0.5)" />
+            <stop offset="90%" stopColor="rgba(0,212,255,0.18)" />
+            <stop offset="100%" stopColor="rgba(0,212,255,0)" />
+          </linearGradient>
+          <linearGradient id="waveGradInner" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="rgba(0,212,255,0)" />
+            <stop offset="20%" stopColor="rgba(0,212,255,0.08)" />
+            <stop offset="50%" stopColor="rgba(0,200,255,0.3)" />
+            <stop offset="80%" stopColor="rgba(0,212,255,0.08)" />
+            <stop offset="100%" stopColor="rgba(0,212,255,0)" />
+          </linearGradient>
+          <filter id="waveGlow" x="-5%" y="-50%" width="110%" height="200%">
+            <feGaussianBlur stdDeviation="2" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        {/* 外层波浪带 */}
+        <path
+          d="M0,14 C200,6 360,22 560,14 C760,6 920,22 1120,14 C1320,6 1480,22 1680,14 C1780,10 1860,16 1920,12 L1920,18 C1860,22 1780,18 1680,22 C1480,30 1320,14 1120,22 C920,30 760,14 560,22 C360,30 200,14 0,22 Z"
+          fill="url(#waveGrad)"
+          filter="url(#waveGlow)"
+          opacity="0.85"
+        />
+        {/* 内层波浪线 */}
+        <path
+          d="M0,16 C200,10 360,20 560,16 C760,10 920,20 1120,16 C1320,10 1480,20 1680,16 C1780,14 1860,18 1920,16"
+          fill="none"
+          stroke="url(#waveGradInner)"
+          strokeWidth="0.8"
+          opacity="0.7"
+        />
+        {/* 顶部亮线 */}
+        <path
+          d="M0,12 C200,4 360,20 560,12 C760,4 920,20 1120,12 C1320,4 1480,20 1680,12 C1780,8 1860,14 1920,10"
+          fill="none"
+          stroke="rgba(180,240,255,0.5)"
+          strokeWidth="0.6"
+        />
+      </svg>
+
       {/* 顶部主行：左装饰 + 标题 + 右装饰（完全对称） */}
       <div className="bs-header-row">
         {/* 左侧对称装饰 */}
