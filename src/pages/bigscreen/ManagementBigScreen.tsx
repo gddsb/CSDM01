@@ -89,6 +89,7 @@ export default function ManagementBigScreen() {
     complaints: [], instruments: [], materials: [],
   })
   const [dataVersion, setDataVersion] = useState(0)
+  const [dataUpdateTime, setDataUpdateTime] = useState<string>('')
 
   const orderTrendRef = useRef(null)
   const lineUtilRef = useRef(null)
@@ -116,6 +117,7 @@ export default function ManagementBigScreen() {
       if (resp?.data) {
         setDashboardData(resp.data)
         setActiveDate(resp.data.activeDate || getActiveDateFromData(resp.data))
+        setDataUpdateTime(resp.data.queryTime || new Date().toISOString())
         setDataVersion(v => v + 1)
       }
     } catch (err) {
@@ -153,6 +155,13 @@ export default function ManagementBigScreen() {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
   }
   const getWeekday = (d) => ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][d.getDay()]
+  const formatQueryTime = (iso) => {
+    if (!iso) return '--:--:--'
+    const d = new Date(iso)
+    if (isNaN(d.getTime())) return '--:--:--'
+    const pad = (n) => String(n).padStart(2, '0')
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  }
   const { style: scaleStyle } = useBigScreenScale({ designWidth: 1920, designHeight: 1080 })
 
   const noAnimation = { animation: false, animationDuration: 0, animationDurationUpdate: 0, animationEasingUpdate: 'linear' }
@@ -645,7 +654,7 @@ export default function ManagementBigScreen() {
   const rightUpdateTime = (
     <div className="bs-header-update">
       <span>更新时间</span>
-      <span className="bs-header-update-time">{formatClock(currentTime)}</span>
+      <span className="bs-header-update-time">{formatQueryTime(dataUpdateTime)}</span>
     </div>
   )
 
@@ -657,13 +666,6 @@ export default function ManagementBigScreen() {
           extraLeft={leftDateTime}
           extraRight={rightUpdateTime}
         />
-
-        {activeDate && (
-          <div style={{ fontSize: 12, color: '#8B949E', marginBottom: 6, padding: '0 4px' }}>
-            数据日期：<span style={{ color: '#00d4ff', fontFamily: "'Courier New', monospace" }}>{activeDate}</span>
-            <span style={{ marginLeft: 8, opacity: 0.7 }}>（当日无数据时显示最近有数据的日期，每 60 秒自动刷新）</span>
-          </div>
-        )}
 
         <Row gutter={[10, 10]} style={{ marginBottom: 10 }}>
           {kpiData.map((kpi, i) => (
