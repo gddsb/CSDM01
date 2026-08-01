@@ -72,7 +72,10 @@ const PARAM_FIELDS: Record<string, { key: string; label: string; type: 'text' | 
     { key: 'password', label: '平台登录密码', type: 'password', placeholder: '0531yun登录密码' },
   ],
   weather: [],
-  energy_meter: [],
+  energy_meter: [
+    { key: 'loginName', label: '平台登录用户名', type: 'text', placeholder: '云集云能源平台账号', noEcho: true },
+    { key: 'password', label: '平台登录密码', type: 'password', placeholder: '云集云能源平台密码' },
+  ],
 }
 
 const STATUS_COLOR: Record<string, string> = {
