@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>验证码批量处理对比 - 灰度图 vs 二值化图</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f7fa; margin: 0; padding: 24px; color: #333; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  .sub { color: #888; font-size: 13px; margin-bottom: 20px; }
+  .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .stat { background: #fff; border-radius: 8px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .stat .label { font-size: 12px; color: #888; margin-bottom: 6px; }
+  .stat .value { font-size: 22px; font-weight: 600; color: #1677ff; }
+  .stat .value.bin { color: #fa541c; }
+  .stat .unit { font-size: 13px; color: #999; font-weight: 400; margin-left: 4px; }
+  .winner { background: #f6ffed; border: 1px solid #b7eb8f; }
+  .winner .value { color: #52c41a; }
+  .table-wrap { background: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { padding: 8px 10px; text-align: center; border-bottom: 1px solid #f0f0f0; }
+  th { background: #fafafa; color: #666; font-weight: 600; position: sticky; top: 0; }
+  td.idx { font-weight: 600; color: #1677ff; }
+  img { image-rendering: pixelated; image-rendering: crisp-edges; background: repeating-conic-gradient(#eee 0 25%, #fff 0 50%) 0 0 / 12px 12px; border: 1px solid #eee; border-radius: 3px; width: 100px; height: 48px; object-fit: contain; }
+  .ocr-text { font-family: monospace; font-weight: 600; }
+  .ocr-empty { color: #ccc; }
+  .ms { font-family: monospace; font-size: 12px; }
+  .faster { color: #52c41a; font-weight: 600; }
+  .slower { color: #fa541c; }
+  .legend { font-size: 12px; color: #888; margin-top: 10px; }
+  .legend span { display: inline-block; margin-right: 16px; }
+</style>
+</head>
+<body>
+  <h1>能源平台验证码 - 批量处理 OCR 对比（15 张）</h1>
+  <div class="sub">原图 56×27 → 放大 3 倍至 168×81（nearest neighbor）→ 灰度 / Otsu 二值化 → Tesseract.js OCR（PSM=7，白名单 alnum）</div>
+
+  <div class="summary" id="summary"></div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>原始验证码</th>
+          <th>放大3倍 灰度图</th>
+          <th>放大3倍 二值化图</th>
+          <th>阈值</th>
+          <th>灰度 OCR</th>
+          <th>灰度耗时</th>
+          <th>二值化 OCR</th>
+          <th>二值化耗时</th>
+          <th>更快方</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="legend">
+      <span>· 绿色 = 该行更快</span>
+      <span>· 空字符串 = OCR 未识别出内容</span>
+      <span>· 阈值 = Otsu 自动计算的二值化阈值</span>
+    </div>
+  </div>
+
+<script>
+const DATA = {
+  "results": [
+    {
+      "idx": 1,
+      "keyStr": "ssZREzlGCIpG",
+      "thr": 158,
+      "w": 168,
+      "h": 81,
+      "grayText": "LdiGiN",
+      "grayMs": 136.83422,
+      "binText": "Syxho",
+      "binMs": 47.490816
+    },
+    {
+      "idx": 2,
+      "keyStr": "Zv5h6gNg3fnP",
+      "thr": 162,
+      "w": 168,
+      "h": 81,
+      "grayText": "",
+      "grayMs": 7.283172,
+      "binText": "",
+      "binMs": 8.206248
+    },
+    {
+      "idx": 3,
+      "keyStr": "SnvgMB9F4NLI",
+      "thr": 162,
+      "w": 168,
+      "h": 81,
+      "grayText": "8NN",
+      "grayMs": 53.236985,
+      "binText": "5jo6",
+      "binMs": 32.165718
+    },
+    {
+      "idx": 4,
+      "keyStr": "ALjOfxTQzCdJ",
+      "thr": 159,
+      "w": 168,
+      "h": 81,
+      "grayText": "2gKS",
+      "grayMs": 26.254061,
+      "binText": "",
+      "binMs": 10.361743
+    },
+    {
+      "idx": 5,
+      "keyStr": "7PRbVtUjck1A",
+      "thr": 156,
+      "w": 168,
+      "h": 81,
+      "grayText": "",
+      "grayMs": 8.077249,
+      "binText": "",
+      "binMs": 13.436455
+    },
+    {
+      "idx": 6,
+      "keyStr": "tdcwtOrBNUCh",
+      "thr": 156,
+      "w": 168,
+      "h": 81,
+      "grayText": "",
+      "grayMs": 9.500056,
+      "binText": "hea",
+      "binMs": 14.726871
+    },
+    {
+      "idx": 7,
+      "keyStr": "FF27JVQXw1aQ",
+      "thr": 158,
+      "w": 168,
+      "h": 81,
+      "grayText": "",
+      "grayMs": 5.930843,
+      "binText": "2095",
+      "binMs": 25.664248
+    },
+    {
+      "idx": 8,
+      "keyStr": "tQrffllOkiJL",
+      "thr": 158,
+      "w": 168,
+      "h": 81,
+      "grayText": "",
+      "grayMs": 5.861335,
+      "binText": "",
+      "binMs": 6.313748
+    },
+    {
+      "idx": 9,
+      "keyStr": "XK2wj8XrEVET",
+      "thr": 158,
+      "w": 168,
+      "h": 81,
+      "grayText": "",
+      "grayMs": 5.346927,
+      "binText": "",
+      "binMs": 6.293239
+    },
+    {
+      "idx": 10,
+      "keyStr": "g3qZc0VeC9hu",
+      "thr": 163,
+      "w": 168,
+      "h": 81,
+      "grayText": "BILK",
+      "grayMs": 25.913916,
+      "binText": "BYh",
+      "binMs": 19.957634
+    },
+    {
+      "idx": 11,
+      "keyStr": "7RCgFPDulK8d",
+      "thr": 163,
+      "w": 168,
+      "h": 81,
+      "grayText": "",
+      "grayMs": 6.307342,
+      "binText": "EToo",
+      "binMs": 50.665201
+    },
+    {
+      "idx": 12,
+      "keyStr": "e3obIEW9KzyU",
+      "thr": 161,
+      "w": 168,
+      "h": 81,
+      "grayText": "",
+      "grayMs": 12.125876,
+      "binText": "iIe",
+      "binMs": 42.456567
+    },
+    {
+      "idx": 13,
+      "keyStr": "hxPGSn1wyQv1",
+      "thr": 158,
+      "w": 168,
+      "h": 81,
+      "grayText": "",
+      "grayMs": 6.581334,
+      "binText": "xsa",
+      "binMs": 46.18619
+    },
+    {
+      "idx": 14,
+      "keyStr": "9hTeSST9eFcN",
+      "thr": 158,
+      "w": 168,
+      "h": 81,
+      "grayText": "",
+      "grayMs": 11.135113,
+      "binText": "",
+      "binMs": 5.674684
+    },
+    {
+      "idx": 15,
+      "keyStr": "k41x9aQsMffX",
+      "thr": 161,
+      "w": 168,
+      "h": 81,
+      "grayText": "",
+      "grayMs": 5.698111,
+      "binText": "",
+      "binMs": 5.397579
+    }
+  ],
+  "summary": {
+    "count": 15,
+    "gray": {
+      "totalMs": 326.08654000000007,
+      "avgMs": 21.73910266666667,
+      "minMs": 5.346927,
+      "maxMs": 136.83422
+    },
+    "bin": {
+      "totalMs": 334.996941,
+      "avgMs": 22.3331294,
+      "minMs": 5.397579,
+      "maxMs": 50.665201
+    },
+    "binFaster": false,
+    "diffPct": -2.732526463680452
+  }
+};
+
+const summaryEl = document.getElementById('summary');
+const s = DATA.summary;
+const grayNonEmpty = DATA.results.filter(r => r.grayText).length;
+const binNonEmpty = DATA.results.filter(r => r.binText).length;
+
+summaryEl.innerHTML = `
+  <div class="stat ${s.binFaster ? '' : 'winner'}">
+    <div class="label">灰度图 平均耗时</div>
+    <div class="value">${s.gray.avgMs.toFixed(1)}<span class="unit">ms</span></div>
+  </div>
+  <div class="stat ${s.binFaster ? 'winner' : ''}">
+    <div class="label">二值化 平均耗时</div>
+    <div class="value bin">${s.bin.avgMs.toFixed(1)}<span class="unit">ms</span></div>
+  </div>
+  <div class="stat">
+    <div class="label">灰度图 识别非空</div>
+    <div class="value">${grayNonEmpty}<span class="unit">/ ${s.count}</span></div>
+  </div>
+  <div class="stat">
+    <div class="label">二值化 识别非空</div>
+    <div class="value bin">${binNonEmpty}<span class="unit">/ ${s.count}</span></div>
+  </div>
+`;
+
+const rowsEl = document.getElementById('rows');
+DATA.results.forEach(r => {
+  const grayFaster = r.grayMs < r.binMs;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td class="idx">${r.idx}</td>
+    <td><img src="${pad(r.idx)}_original.png" alt="原"></td>
+    <td><img src="${pad(r.idx)}_gray.png" alt="灰"></td>
+    <td><img src="${pad(r.idx)}_bin.png" alt="二"></td>
+    <td>${r.thr}</td>
+    <td class="ocr-text ${r.grayText ? '' : 'ocr-empty'}">${r.grayText || '—'}</td>
+    <td class="ms ${grayFaster ? 'faster' : 'slower'}">${r.grayMs.toFixed(0)}ms</td>
+    <td class="ocr-text ${r.binText ? '' : 'ocr-empty'}">${r.binText || '—'}</td>
+    <td class="ms ${!grayFaster ? 'faster' : 'slower'}">${r.binMs.toFixed(0)}ms</td>
+    <td class="${grayFaster ? 'faster' : 'slower'}">${grayFaster ? '灰度' : '二值化'}</td>
+  `;
+  rowsEl.appendChild(tr);
+});
+
+function pad(n) { return String(n).padStart(2, '0'); }
+</script>
+</body>
+</html>
