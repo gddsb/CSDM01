@@ -164,10 +164,10 @@ export class EnergyMeterCollector {
         const { data } = await worker.recognize(processedBuffer);
         const code = (data.text || '').trim().replace(/[^A-Za-z0-9]/g, '');
         console.log(`[EnergyMeterCollector] Captcha OCR (PSM=${CAPTCHA_PSM}):`, code, 'keyStr:', keyStr);
-        if (code.length >= 4) {
+        if (code.length === 4) {
           return { keyStr, code };
         }
-        console.error('[EnergyMeterCollector] Captcha OCR 识别长度不足4，识别结果:', code);
+        console.error('[EnergyMeterCollector] Captcha OCR 识别长度不是4，识别结果:', code);
         return null;
       } finally {
         await worker.terminate();
@@ -305,13 +305,18 @@ export class EnergyMeterCollector {
     const token = await this.ensureToken();
 
     // 构造时间范围：最近 3 天（与平台一致，默认 dateType=mi15）
+    // 使用北京时间（东八区）
     const now = new Date();
-    const from = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+    const beijingOffset = 8 * 60; // UTC+8
+    const localOffset = now.getTimezoneOffset(); // 本地时区偏移（分钟，注意符号）
+    const offsetDiff = beijingOffset + localOffset; // 转换为北京时间需要加的分钟数
+    const beijingNow = new Date(now.getTime() + offsetDiff * 60 * 1000);
+    const beijingFrom = new Date(beijingNow.getTime() - 3 * 24 * 60 * 60 * 1000);
     const pad = (n: number) => String(n).padStart(2, '0');
     // 注意：真实平台 startTime/endTime 精度是 "YYYY-MM-DD HH:mm"
-    const startTime = `${from.getFullYear()}-${pad(from.getMonth() + 1)}-${pad(from.getDate())} ${pad(from.getHours())}:${pad(from.getMinutes())}`;
-    const endTime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-    console.log(`[EnergyMeterCollector] 查询范围: ${startTime} ~ ${endTime}`);
+    const startTime = `${beijingFrom.getFullYear()}-${pad(beijingFrom.getMonth() + 1)}-${pad(beijingFrom.getDate())} ${pad(beijingFrom.getHours())}:${pad(beijingFrom.getMinutes())}`;
+    const endTime = `${beijingNow.getFullYear()}-${pad(beijingNow.getMonth() + 1)}-${pad(beijingNow.getDate())} ${pad(beijingNow.getHours())}:${pad(beijingNow.getMinutes())}`;
+    console.log(`[EnergyMeterCollector] 查询范围(北京时间): ${startTime} ~ ${endTime}`);
 
     // 先获取所有电表（含 areaID / ammeterID）
     const ammeters = await this.fetchAmmeterList();
