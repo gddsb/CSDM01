@@ -42,7 +42,7 @@ export function decryptParam(encrypted: string): string {
   }
 }
 
-export function encryptParamsObj(obj: Record<string, any>, sensitiveKeys: string[] = ['password', 'loginName']): Record<string, any> {
+export function encryptParamsObj(obj: Record<string, any>, sensitiveKeys: string[] = ['password', 'loginName', 'token']): Record<string, any> {
   const result: Record<string, any> = {}
   for (const [k, v] of Object.entries(obj || {})) {
     if (v !== undefined && v !== '' && sensitiveKeys.includes(k) && typeof v === 'string') {
@@ -54,7 +54,7 @@ export function encryptParamsObj(obj: Record<string, any>, sensitiveKeys: string
   return result
 }
 
-export function decryptParamsObj(obj: Record<string, any>, sensitiveKeys: string[] = ['password', 'loginName']): Record<string, any> {
+export function decryptParamsObj(obj: Record<string, any>, sensitiveKeys: string[] = ['password', 'loginName', 'token']): Record<string, any> {
   const result: Record<string, any> = {}
   for (const [k, v] of Object.entries(obj || {})) {
     if (sensitiveKeys.includes(k) && typeof v === 'string') {
