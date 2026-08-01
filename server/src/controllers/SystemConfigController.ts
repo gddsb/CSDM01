@@ -1050,7 +1050,7 @@ async function collectDatabaseSchema() {
   for (const tableName of allTables) {
     let recordCount = 0
     try {
-      const result = await sequelize.query(`SELECT COUNT(*) as count FROM "${tableName}"`, { type: sequelize.QueryTypes.SELECT })
+      const result = await sequelize.query(`SELECT COUNT(*) as count FROM \`${tableName}\``, { type: sequelize.QueryTypes.SELECT })
       recordCount = result[0]?.count || 0
     } catch (err) {
         logger.warn('[SilentCatch] // ignore', err?.message)
