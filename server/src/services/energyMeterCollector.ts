@@ -162,12 +162,15 @@ export class EnergyMeterCollector {
           tessedit_pageseg_mode: CAPTCHA_PSM as any,
         });
         const { data } = await worker.recognize(processedBuffer);
-        const code = (data.text || '').trim().replace(/[^A-Za-z0-9]/g, '');
-        console.log(`[EnergyMeterCollector] Captcha OCR (PSM=${CAPTCHA_PSM}):`, code, 'keyStr:', keyStr);
+        const raw = (data.text || '').trim().replace(/[^A-Za-z0-9]/g, '');
+        // 验证码实际是4字符，OCR可能把干扰线识别成额外字符
+        // 策略：识别出>=4字符时取前4个，确保最终验证码严格为4字符
+        const code = raw.length >= 4 ? raw.substring(0, 4) : '';
+        console.log(`[EnergyMeterCollector] Captcha OCR (PSM=${CAPTCHA_PSM}): raw="${raw}" -> code="${code}" keyStr:`, keyStr);
         if (code.length === 4) {
           return { keyStr, code };
         }
-        console.error('[EnergyMeterCollector] Captcha OCR 识别长度不是4，识别结果:', code);
+        console.error('[EnergyMeterCollector] Captcha OCR 识别长度不足4，原始结果:', raw);
         return null;
       } finally {
         await worker.terminate();
