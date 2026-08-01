@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Layout, Menu, Dropdown, Avatar, Space, Typography, Badge, Button, Modal, Form, Input, Tooltip, Upload } from 'antd'
+import { Layout, Menu, Dropdown, Avatar, Space, Typography, Badge, Button, Modal, Form, Input, Tooltip, Upload, Spin } from 'antd'
 import type { MenuProps } from 'antd'
 import {
   DashboardOutlined, TeamOutlined, DatabaseOutlined, SettingOutlined,
@@ -64,103 +64,6 @@ function resolveIcon(name?: string): React.ReactNode {
   return Comp ? <Comp /> : undefined
 }
 
-// 默认菜单（兜底，当后端菜单接口不可用时使用）
-const defaultMenuItems = [
-  { key: '/dashboard', icon: <DashboardOutlined />, label: '工作台' },
-  {
-      key: 'production', icon: <ToolOutlined />, label: '生产管理',
-      children: [
-        { key: '/production/orders', icon: <FileTextOutlined />, label: '生产订单' },
-        { key: '/production/reporting', icon: <ProfileOutlined />, label: '生产报工' },
-      ]
-    },
-  {
-    key: 'quality', icon: <ExperimentOutlined />, label: '质量管理',
-    children: [
-      { key: '/quality/incoming', icon: <ExperimentOutlined />, label: '来料检验' },
-      { key: '/quality/process', icon: <ExperimentOutlined />, label: '过程检验' },
-      { key: '/quality/product', icon: <ExperimentOutlined />, label: '成品检验' },
-      { key: '/quality/microbe', icon: <ExperimentOutlined />, label: '微生物检验' },
-      { key: '/quality/environment', icon: <ExperimentOutlined />, label: '环境检验' },
-      {
-        key: 'quality-complaint', icon: <BellOutlined />, label: '投诉管理',
-        children: [
-          { key: '/quality/complaints', icon: <BellOutlined />, label: '客诉管理' },
-          { key: '/quality/supplier', icon: <TeamOutlined />, label: '供应商投诉' },
-        ]
-      },
-      { key: '/quality/instruments', icon: <ToolOutlined />, label: '检测仪器管理' },
-      { key: '/quality/standards', icon: <SafetyCertificateOutlined />, label: '检验标准' },
-    ]
-  },
-  {
-    key: 'device', icon: <ToolOutlined />, label: '设备管理',
-    children: [
-      { key: '/device/list', icon: <ToolOutlined />, label: '设备档案' },
-      { key: '/device/check-records', icon: <FileSearchOutlined />, label: '点检记录' },
-      { key: '/device/maintenance', icon: <ToolOutlined />, label: '维修保养' },
-      { key: '/device/oee', icon: <LineChartOutlined />, label: '设备OEE' },
-    ]
-  },
-  {
-    key: 'basic', icon: <ProfileOutlined />, label: '基础数据',
-    children: [
-      { key: '/basic/materials', icon: <ProfileOutlined />, label: '料品档案' },
-      { key: '/basic/customers', icon: <TeamOutlined />, label: '客户档案' },
-      { key: '/basic/suppliers', icon: <ShopOutlined />, label: '供应商档案' },
-      { key: '/basic/lines', icon: <DeploymentUnitOutlined />, label: '产线档案' },
-      { key: '/basic/processes', icon: <DeploymentUnitOutlined />, label: '工序档案' },
-      { key: '/basic/defects', icon: <AlertOutlined />, label: '不良分类' },
-      { key: '/basic/number-rules', icon: <KeyOutlined />, label: '编码管理' },
-    ]
-  },
-  {
-    key: 'report', icon: <PieChartOutlined />, label: '报表中心',
-    children: [
-      { key: '/report/daily', icon: <CalendarOutlined />, label: '生产日报' },
-      { key: '/report/monthly', icon: <FileTextOutlined />, label: '质量月报' },
-      { key: '/report/efficiency', icon: <RiseOutlined />, label: '效率分析' },
-      { key: '/report/production', icon: <FileTextOutlined />, label: '生产报表' },
-      { key: '/report/quality', icon: <ExperimentOutlined />, label: '质量报表' },
-      { key: '/report/exception', icon: <BellOutlined />, label: '异常分析' },
-    ]
-  },
-  {
-    key: 'bigscreen', icon: <DesktopOutlined />, label: '数据大屏',
-    children: [
-      { key: '/bigscreen/production', icon: <BarChartOutlined />, label: '生产实时看板' },
-      { key: '/bigscreen/quality', icon: <ExperimentOutlined />, label: '质量分析看板' },
-      { key: '/bigscreen/management', icon: <PieChartOutlined />, label: '管理驾驶舱' },
-      { key: '/bigscreen/environment', icon: <EnvironmentOutlined />, label: '环境看板' },
-    ]
-  },
-  {
-    key: 'auto', icon: <ControlOutlined />, label: '自动任务',
-    children: [
-      { key: '/auto/task-settings', icon: <SettingOutlined />, label: '任务设置' },
-      { key: '/auto/scheduled-tasks', icon: <CalendarOutlined />, label: '定时任务' },
-      { key: '/auto/task-logs', icon: <ClockCircleOutlined />, label: '任务日志' },
-    ]
-  },
-  {
-    key: 'system', icon: <SettingOutlined />, label: '系统管理',
-    children: [
-      { key: '/system/users', icon: <TeamOutlined />, label: '用户管理' },
-      { key: '/system/roles', icon: <SafetyCertificateOutlined />, label: '角色权限' },
-      { key: '/system/menus', icon: <MenuOutlined />, label: '菜单管理' },
-      { key: '/system/dictionary', icon: <DatabaseOutlined />, label: '数据字典' },
-      { key: '/system/config', icon: <ControlOutlined />, label: '系统配置' },
-      { key: '/system/logs', icon: <FileTextOutlined />, label: '操作日志' },
-    ]
-  },
-  {
-    key: 'system-link', icon: <DesktopOutlined />, label: '关联系统',
-    children: [
-      { key: '/mobile/home', icon: <MobileOutlined />, label: '移动端模拟器' },
-    ]
-  },
-]
-
 export default function MainLayout() {
   const message = useMessage()
   const { currentUser, logout, updateUser, themeKey, cycleTheme, systemConfig, loadSystemConfig } = useApp()
@@ -173,8 +76,11 @@ export default function MainLayout() {
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [profileForm] = Form.useForm()
   const [pwdForm] = Form.useForm()
-  // 动态菜单（从后端拉取；为 null 时使用默认 menuItems 兜底）
-  const [dynamicMenu, setDynamicMenu] = useState(null)
+
+  // 动态菜单：严格从数据库读取（通过 /system/permissions/menu 接口），无兜底硬编码
+  const [dynamicMenu, setDynamicMenu] = useState<any[]>([])
+  const [menuLoading, setMenuLoading] = useState(true)
+  const [menuError, setMenuError] = useState<string | null>(null)
 
   // 当前主题对象（用于显示图标和提示）
   const currentTheme = themes[themeKey] || themes.pureMilk
@@ -245,16 +151,24 @@ export default function MainLayout() {
     loadSystemConfig()
   }, [loadSystemConfig])
 
-  // 获取动态菜单（按当前用户角色权限）
+  // 获取动态菜单（按当前用户角色权限）—— 严格从数据库读取，失败不使用硬编码兜底
   const fetchMenu = useCallback(async () => {
+    setMenuLoading(true)
+    setMenuError(null)
     try {
-      const res = await api.get('/system/permissions/menu')
+      const res = await api.get('/system/permissions/menu', { timeout: 15000 })
       const tree = res.data || []
-      if (Array.isArray(tree) && tree.length > 0) {
+      if (Array.isArray(tree)) {
         setDynamicMenu(tree)
+      } else {
+        setDynamicMenu([])
       }
-    } catch (err) {
-      // 静默失败，使用默认菜单兜底
+    } catch (err: any) {
+      console.error('[MainLayout] 加载菜单失败:', err?.message)
+      setMenuError(err?.message || '菜单加载失败')
+      setDynamicMenu([])
+    } finally {
+      setMenuLoading(false)
     }
   }, [])
 
@@ -300,26 +214,26 @@ export default function MainLayout() {
       })
   }
 
-  // 当前生效的菜单：优先使用后端菜单，否则使用默认菜单
-  // 后端菜单前置工作台入口（工作台不依赖权限分配，所有登录用户均可见）
-  const menuItems = dynamicMenu
-    ? [{ key: '/dashboard', icon: <DashboardOutlined />, label: '工作台' }, ...buildMenuItems(dynamicMenu)]
-    : defaultMenuItems
+  // 严格从数据库读取菜单：前置工作台入口（所有用户可见） + 后端返回的菜单树
+  const menuItems: MenuProps['items'] = [
+    { key: '/dashboard', icon: <DashboardOutlined />, label: '工作台' },
+    ...buildMenuItems(dynamicMenu),
+  ]
 
   const getOpenKeys = () => {
     const path = location.pathname
-    for (const item of menuItems as MenuProps['items']) {
+    for (const item of menuItems) {
       if ('children' in item && item.children) {
         for (const child of item.children) {
           if (!('key' in child)) continue
-          if (child.key === path) return [item.key]
+          if (child.key === path) return [item.key as string]
           if ('children' in child && child.children) {
             for (const grandchild of child.children) {
               if (!('key' in grandchild)) continue
-              if (path.startsWith(grandchild.key)) return [item.key, child.key]
+              if (path.startsWith(grandchild.key as string)) return [item.key as string, child.key as string]
             }
           }
-          if (child.key.startsWith('/') && path.startsWith(child.key)) return [item.key]
+          if (typeof child.key === 'string' && child.key.startsWith('/') && path.startsWith(child.key)) return [item.key as string]
         }
       }
     }
@@ -328,20 +242,20 @@ export default function MainLayout() {
 
   const getSelectedKeys = () => {
     const path = location.pathname
-    for (const item of menuItems as MenuProps['items']) {
+    for (const item of menuItems) {
       if (!('key' in item)) continue
       if (item.key === path) return [path]
       if ('children' in item && item.children) {
         for (const child of item.children) {
           if (!('key' in child)) continue
-          if (child.key === path) return [child.key]
+          if (child.key === path) return [child.key as string]
           if ('children' in child && child.children) {
             for (const grandchild of child.children) {
               if (!('key' in grandchild)) continue
-              if (path.startsWith(grandchild.key)) return [grandchild.key]
+              if (path.startsWith(grandchild.key as string)) return [grandchild.key as string]
             }
           }
-          if (child.key.startsWith('/') && path.startsWith(child.key)) return [child.key]
+          if (typeof child.key === 'string' && child.key.startsWith('/') && path.startsWith(child.key)) return [child.key as string]
         }
       }
     }
@@ -407,26 +321,31 @@ export default function MainLayout() {
       if (key === 'logout') logout()
       if (key === 'profile') openProfile()
       if (key === 'password') { pwdForm.resetFields(); setPwdOpen(true) }
-    }
+    },
   }
 
-  return (
-    <Layout className={`app-layout ${collapsed ? 'collapsed' : ''}`}>
-      <Sider
-        className="app-sider"
-        trigger={null}
-        collapsible
-        collapsed={collapsed}
-        width={220}
-        style={{ background: 'var(--nav-bg)' }}
-      >
-        <div className="logo" style={{ color: 'var(--nav-text)' }}>
-          <div className="daman-logo">
-            <span className="daman-en">daman</span>
-            <span className="daman-cn">大满</span>
-          </div>
-          {!collapsed && <span>{systemName}</span>}
+  const siderContent = (
+    <>
+      <div className="logo" style={{ color: 'var(--nav-text)' }}>
+        <div className="daman-logo">
+          <span className="daman-en">daman</span>
+          <span className="daman-cn">大满</span>
         </div>
+        {!collapsed && <span>{systemName}</span>}
+      </div>
+      {menuLoading ? (
+        <div style={{ textAlign: 'center', paddingTop: 60 }}>
+          <Spin tip="加载菜单中..." />
+        </div>
+      ) : menuError ? (
+        <div style={{ textAlign: 'center', padding: 20, fontSize: 12, color: '#f5222d' }}>
+          <div>菜单加载失败</div>
+          <div style={{ marginTop: 8, color: 'var(--nav-text)', opacity: 0.7 }}>{menuError}</div>
+          <Button size="small" type="link" onClick={fetchMenu} style={{ marginTop: 12, padding: 0 }}>
+            点击重试
+          </Button>
+        </div>
+      ) : (
         <Menu
           mode="inline"
           selectedKeys={getSelectedKeys()}
@@ -439,6 +358,21 @@ export default function MainLayout() {
             borderRight: 'none',
           }}
         />
+      )}
+    </>
+  )
+
+  return (
+    <Layout className={`app-layout ${collapsed ? 'collapsed' : ''}`}>
+      <Sider
+        className="app-sider"
+        trigger={null}
+        collapsible
+        collapsed={collapsed}
+        width={220}
+        style={{ background: 'var(--nav-bg)' }}
+      >
+        {siderContent}
       </Sider>
       <Layout>
         <Header className="app-header">

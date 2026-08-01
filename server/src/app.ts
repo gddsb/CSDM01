@@ -7,7 +7,7 @@ import fs from 'fs'
 import httpProxy from 'http-proxy'
 import routes from './routes/index.js'
 import sequelize from './config/database.js'
-import { initDefaultConfigs, refreshDictionaryData } from './controllers/SystemConfigController.js'
+import { initDefaultConfigs, refreshDictionaryDataIfEmpty } from './controllers/SystemConfigController.js'
 import { initDefaultPermissions } from './controllers/RoleController.js'
 import { initDefaultRules } from './controllers/NumberRuleController.js'
 import { runMigrations } from './migrate.js'
@@ -77,9 +77,9 @@ async function initDatabase() {
     // 初始化默认任务设置
     await initTaskSettings()
     console.log('✅ 默认任务设置初始化完成')
-    // 初始化数据字典（扫描数据库表结构并持久化）
-    await refreshDictionaryData()
-    console.log('✅ 数据字典初始化完成')
+    // 初始化数据字典（仅当字典表为空时才扫描数据库，避免每次重启全表扫描）
+    await refreshDictionaryDataIfEmpty()
+    console.log('✅ 数据字典初始化完成（仅空表时刷新）')
   } catch (err) {
     console.error('❌ 数据库初始化失败:', err.message)
     if (err.errors) {

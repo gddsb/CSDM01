@@ -34,9 +34,14 @@ interface ThreeSectionPageProps {
   title: string
   breadcrumbs: string
   stats?: StatItem[]
+  /** 结构化过滤器（FilterItem 数组）—— 推荐写法 */
   filters?: FilterItem[]
+  /** 自定义过滤器 ReactNode（DataDictionary 等页面使用完全自定义 filter 布局时使用）；与 filters 二选一 */
+  filter?: React.ReactNode
   actions?: React.ReactNode
   table: React.ReactNode
+  /** 额外内容区（放在 filter 与 table 之间，或 stats 之后 filter 之前）；用于异步刷新进度条等 */
+  extra?: React.ReactNode
   onSearch?: () => void
   onReset?: () => void
   onFilterChange?: (field: string, value: unknown) => void
@@ -47,8 +52,10 @@ export default function ThreeSectionPage({
   breadcrumbs,
   stats,
   filters,
+  filter,
   actions,
   table,
+  extra,
   onSearch,
   onReset,
   onFilterChange,
@@ -139,6 +146,8 @@ export default function ThreeSectionPage({
             ))}
           </Row>
         )}
+
+        {extra}
       </div>
 
       {filters && (
@@ -158,6 +167,12 @@ export default function ThreeSectionPage({
               </Col>
             </Row>
           </div>
+        </div>
+      )}
+
+      {filter && !filters && (
+        <div className="section-filter">
+          <div className="section-filter-body">{filter}</div>
         </div>
       )}
 

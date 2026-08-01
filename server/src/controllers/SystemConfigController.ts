@@ -9,6 +9,62 @@ import http from 'http'
 import net from 'net'
 import { logger } from '../utils/logger.js'
 
+// ============= 数据字典刷新：异步任务进度 + 频率限制 =============
+type DictRefreshStatus = 'pending' | 'running' | 'success' | 'failed'
+interface DictRefreshTask {
+  taskId: string
+  status: DictRefreshStatus
+  totalTables: number
+  processedTables: number
+  currentTable: string
+  message: string
+  startedAt: number
+  finishedAt?: number
+  error?: string
+  result?: { total: number; refreshed_at: string }
+}
+const dictRefreshTaskStore = new Map<string, DictRefreshTask>()
+// 频率限制：上次刷新完成或开始的时间戳（至少 60s 才允许再次刷新）
+let dictRefreshLastAt = 0
+const DICT_REFRESH_MIN_INTERVAL_MS = 60 * 1000
+// 允许同时只有一个刷新任务
+let dictRefreshRunning = false
+
+function generateTaskId(): string {
+  return `dict_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+}
+
+// 并发控制工具：将 items 切分为多批次并发执行，每批 concurrency 个
+async function runConcurrently<T, R>(
+  items: T[],
+  worker: (item: T, idx: number) => Promise<R>,
+  concurrency: number = 8,
+  onProgress?: (done: number, total: number, currentItem?: T) => void,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length)
+  let idx = 0
+  let done = 0
+  const next = async (workerIdx: number) => {
+    while (idx < items.length) {
+      const currentIdx = idx++
+      const item = items[currentIdx]
+      try {
+        results[currentIdx] = await worker(item, currentIdx)
+      } catch (e) {
+        results[currentIdx] = e as R
+      }
+      done++
+      if (onProgress) onProgress(done, items.length, item)
+    }
+  }
+  const workers = Array.from(
+    { length: Math.min(concurrency, items.length) },
+    (_, i) => next(i),
+  )
+  await Promise.all(workers)
+  return results
+}
+
 
 // 默认配置（设计文档 §2.2.2 系统配置表）
 const defaultConfigs = [
@@ -1117,81 +1173,137 @@ const columnCommentMap = {
 // 扫描数据库表结构，返回 { tables, columnsMap }
 // tables: [{ table_name, category, purpose, field_count, record_count, last_update }]
 // columnsMap: { [tableName]: [{ name, type, nullable, primaryKey, defaultValue, comment }] }
-async function collectDatabaseSchema() {
+interface CollectSchemaOptions {
+  /** 并发数（避免打满连接池），默认 8 */
+  concurrency?: number
+  /** MySQL 大表阈值（行数），超过则用 information_schema.TABLE_ROWS 近似值，避免全表 COUNT。默认 100_000 */
+  mysqlApproxThreshold?: number
+  /** 进度回调：用于刷新任务的状态更新 */
+  onProgress?: (done: number, total: number, currentTable?: string) => void
+}
+
+async function collectDatabaseSchema(options: CollectSchemaOptions = {}) {
+  const { concurrency = 8, mysqlApproxThreshold = 100_000, onProgress } = options
   const queryInterface = sequelize.getQueryInterface()
   const allTables = await queryInterface.showAllTables()
-  const tables = []
-  const columnsMap = {}
+  const tables: any[] = []
+  const columnsMap: Record<string, any[]> = {}
+  const total = allTables.length
+  let processed = 0
 
-  // 批量获取行数：MySQL 用 information_schema（毫秒级），SQLite 逐表 COUNT
-  const recordCountMap: Record<string, number> = {}
-  const dialect = sequelize.getDialect()
-  if (dialect === 'mysql') {
-    // 一次查询获取所有表的近似行数（InnoDB 引擎下为估算值，足够展示用）
-    const dbName = (sequelize.config?.database || process.env.DB_NAME) as string
-    const rows = await sequelize.query(
-      `SELECT TABLE_NAME as tbl, TABLE_ROWS as cnt FROM information_schema.TABLES WHERE TABLE_SCHEMA = :dbName`,
-      { type: sequelize.QueryTypes.SELECT, replacements: { dbName } }
-    ) as any[]
-    for (const r of rows) {
-      recordCountMap[r.tbl] = Number(r.cnt) || 0
-    }
-  } else {
-    // SQLite: 并发查询所有表 COUNT(*)
-    const countResults = await Promise.all(
-      allTables.map(async (tableName: string) => {
-        try {
-          const result = await sequelize.query(`SELECT COUNT(*) as count FROM \`${tableName}\``, { type: sequelize.QueryTypes.SELECT })
-          return { tableName, count: (result[0] as any)?.count || 0 }
-        } catch {
-          return { tableName, count: 0 }
-        }
-      })
-    )
-    for (const r of countResults) {
-      recordCountMap[r.tableName] = r.count
-    }
+  const updateProgress = (currentTable?: string) => {
+    processed++
+    onProgress?.(processed, total, currentTable)
   }
 
-  // 并发获取所有表的列信息（describeTable 是独立的，可并发执行）
-  const BATCH_SIZE = 10
-  for (let i = 0; i < allTables.length; i += BATCH_SIZE) {
-    const batch = allTables.slice(i, i + BATCH_SIZE)
-    const results = await Promise.all(
-      batch.map(async (tableName: string) => {
-        try {
-          const cols = await queryInterface.describeTable(tableName)
-          const colComments = columnCommentMap[tableName] || {}
-          const colList = Object.entries(cols).map(([name, col]: [string, any]) => ({
-            name,
-            type: col.type,
-            nullable: col.allowNull,
-            primaryKey: col.primaryKey,
-            defaultValue: col.defaultValue !== undefined && col.defaultValue !== null ? String(col.defaultValue).replace(/'/g, '') : null,
-            comment: col.comment || colComments[name] || '',
-          }))
-          return { tableName, colList }
-        } catch {
-          return { tableName, colList: [] }
-        }
-      })
-    )
-    for (const r of results) {
-      columnsMap[r.tableName] = r.colList
-      const meta = tableCategoryMap[r.tableName] || { category: '其他', purpose: '' }
-      tables.push({
-        table_name: r.tableName,
-        category: meta.category,
-        field_count: r.colList.length,
-        record_count: recordCountMap[r.tableName] || 0,
-        purpose: meta.purpose,
-        last_update: new Date().toISOString(),
-      })
+  // ====== 1) 批量获取行数：策略按 DB 类型区分 ======
+  const recordCountMap: Record<string, number> = {}
+  const dialect = sequelize.getDialect()
+
+  if (dialect === 'mysql') {
+    // MySQL: 先从 information_schema 拿近似行数（毫秒级，TABLE_ROWS 是 InnoDB 估算值）
+    const dbName = (sequelize.config?.database || process.env.DB_NAME) as string
+    let approxRows: any[] = []
+    try {
+      approxRows = (await sequelize.query(
+        `SELECT TABLE_NAME as tbl, TABLE_ROWS as cnt FROM information_schema.TABLES WHERE TABLE_SCHEMA = :dbName`,
+        { type: sequelize.QueryTypes.SELECT, replacements: { dbName } },
+      )) as any[]
+    } catch (e) {
+      logger.warn('[collectDatabaseSchema] information_schema 查询失败，退化为逐表 COUNT:', e?.message)
+      approxRows = []
     }
+    const approxMap: Record<string, number> = {}
+    for (const r of approxRows) approxMap[r.tbl] = Number(r.cnt) || 0
+
+    // 大表（超过阈值）直接用近似值；小表用精确 COUNT(*)；未知表也用精确 COUNT
+    const tablesNeedExactCount = allTables.filter((t: string) => {
+      const approx = approxMap[t] ?? -1
+      return approx < 0 || approx <= mysqlApproxThreshold
+    })
+
+    // 并发精确 COUNT
+    if (tablesNeedExactCount.length > 0) {
+      const exactResults = await runConcurrently(
+        tablesNeedExactCount,
+        async (t: string) => {
+          try {
+            const r = await sequelize.query(`SELECT COUNT(*) as count FROM \`${t}\``, { type: sequelize.QueryTypes.SELECT })
+            return { table: t, count: Number((r[0] as any)?.count ?? 0) }
+          } catch {
+            return { table: t, count: approxMap[t] || 0 }
+          }
+        },
+        concurrency,
+      )
+      for (const r of exactResults) {
+        recordCountMap[r.table] = r.count
+      }
+    }
+    // 大表用近似值填充
+    for (const t of allTables) {
+      if (recordCountMap[t] === undefined) recordCountMap[t] = approxMap[t] || 0
+    }
+  } else {
+    // SQLite: 逐表并发 COUNT (*)
+    const countResults = await runConcurrently(
+      allTables,
+      async (t: string) => {
+        try {
+          const r = await sequelize.query(`SELECT COUNT(*) as count FROM "${t}"`, { type: sequelize.QueryTypes.SELECT })
+          return { table: t, count: Number((r[0] as any)?.count ?? 0) }
+        } catch {
+          return { table: t, count: 0 }
+        }
+      },
+      concurrency,
+    )
+    for (const r of countResults) recordCountMap[r.table] = r.count
+  }
+
+  // ====== 2) 并发获取所有表结构 describeTable ======
+  const describeResults = await runConcurrently(
+    allTables,
+    async (t: string) => {
+      try {
+        const cols = await queryInterface.describeTable(t)
+        const colComments = columnCommentMap[t] || {}
+        const colList = Object.entries(cols).map(([name, col]: [string, any]) => ({
+          name,
+          type: col.type,
+          nullable: col.allowNull,
+          primaryKey: col.primaryKey,
+          defaultValue:
+            col.defaultValue !== undefined && col.defaultValue !== null
+              ? String(col.defaultValue).replace(/'/g, '')
+              : null,
+          comment: col.comment || colComments[name] || '',
+        }))
+        return { table: t, cols: colList, ok: true }
+      } catch (e) {
+        return { table: t, cols: [], ok: false }
+      } finally {
+        updateProgress(t)
+      }
+    },
+    concurrency,
+  )
+
+  for (const r of describeResults) {
+    columnsMap[r.table] = r.cols
+    const meta = tableCategoryMap[r.table] || { category: '其他', purpose: '' }
+    tables.push({
+      table_name: r.table,
+      category: meta.category,
+      purpose: meta.purpose,
+      field_count: r.cols.length,
+      record_count: recordCountMap[r.table] || 0,
+      last_update: new Date().toISOString(),
+    })
   }
 
   tables.sort((a, b) => {
-    const catOrder = { '系统表': 0, '基础数据表': 1, '业务表': 2, '其他': 3 }
+    const catOrder: Record<string, number> = { '系统表': 0, '基础数据表': 1, '业务表': 2, '其他': 3 }
     const businessOrder = [
       'production_order',
       'production_report_order',
@@ -1211,7 +1323,7 @@ async function collectDatabaseSchema() {
       if (ai >= 0) return -1
       if (bi >= 0) return 1
     }
-    return (catOrder[a.category] - catOrder[b.category]) || a.table_name.localeCompare(b.table_name)
+    return (catOrder[a.category] ?? 3) - (catOrder[b.category] ?? 3) || a.table_name.localeCompare(b.table_name)
   })
 
   return { tables, columnsMap }
@@ -1591,40 +1703,176 @@ export const migrateDatabase = async (req, res) => {
 }
 
 // 刷新数据字典核心逻辑（扫描数据库表结构并持久化到 sys_data_dictionary）
-export const refreshDictionaryData = async () => {
-  const { tables, columnsMap } = await collectDatabaseSchema()
+// 带可选进度回调，用于异步任务的状态更新
+async function refreshDictionaryDataInternal(options?: {
+  concurrency?: number
+  onProgress?: (done: number, total: number, currentTable?: string) => void
+  onPersistProgress?: (done: number, total: number, currentTable?: string) => void
+}) {
+  const { concurrency, onProgress, onPersistProgress } = options || {}
+  const { tables, columnsMap } = await collectDatabaseSchema({
+    concurrency,
+    onProgress,
+  })
   const now = new Date()
+  // 并发执行 upsert（分批）
+  const total = tables.length
+  const BATCH = 16
   let upsertCount = 0
-  for (const t of tables) {
-    const fields = columnsMap[t.table_name] || []
-    await DataDictionary.upsert({
-      table_name: t.table_name,
-      category: t.category,
-      purpose: t.purpose,
-      field_count: t.field_count,
-      record_count: t.record_count,
-      fields,
-      last_update: now,
-    })
-    upsertCount++
+  for (let i = 0; i < tables.length; i += BATCH) {
+    const batch = tables.slice(i, i + BATCH)
+    await Promise.all(
+      batch.map(async (t) => {
+        const fields = columnsMap[t.table_name] || []
+        try {
+          await DataDictionary.upsert({
+            table_name: t.table_name,
+            category: t.category,
+            purpose: t.purpose,
+            field_count: t.field_count,
+            record_count: t.record_count,
+            fields,
+            last_update: now,
+          })
+        } finally {
+          upsertCount++
+          onPersistProgress?.(upsertCount, total, t.table_name)
+        }
+      }),
+    )
   }
   // 删除字典表中已不存在的表（数据库中已删除的表）
-  const allTableNames = tables.map(t => t.table_name)
+  const allTableNames = tables.map((t) => t.table_name)
   if (allTableNames.length > 0) {
     await DataDictionary.destroy({ where: { table_name: { [Op.notIn]: allTableNames } } })
   }
   return { total: upsertCount, refreshed_at: now.toISOString() }
 }
 
-// 刷新数据字典（HTTP 接口）
-export const refreshDataDictionary = async (req, res) => {
+// 旧导出（同步执行，用于 init-db 等内部场景）—— 保持向后兼容
+export const refreshDictionaryData = async () => refreshDictionaryDataInternal()
+
+// 新导出：仅当字典表为空时才刷新（用于服务启动初始化，避免每次重启全表扫描）
+export const refreshDictionaryDataIfEmpty = async () => {
   try {
-    const result = await refreshDictionaryData()
-    return success(res, result, `数据字典更新成功，共 ${result.total} 张表`)
-  } catch (err) {
-    console.error('刷新数据字典失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
+    const n = await DataDictionary.count()
+    if (n > 0) {
+      console.log(`[DataDictionary] 字典表已有 ${n} 条记录，跳过初始化扫描`)
+      return { skipped: true, existing: n }
+    }
+  } catch (e) {
+    logger.warn('[DataDictionary] 检查字典表数据失败，将执行刷新:', e?.message)
   }
+  const r = await refreshDictionaryDataInternal()
+  return { skipped: false, ...r }
+}
+
+// ============= 异步刷新任务：提交 + 进度查询 =============
+
+// 执行异步刷新后台任务（不阻塞）
+async function runDictRefreshAsync(task: DictRefreshTask) {
+  dictRefreshRunning = true
+  try {
+    task.status = 'running'
+    task.message = '开始扫描数据库表结构'
+    const result = await refreshDictionaryDataInternal({
+      concurrency: 8,
+      onProgress: (done, total, cur) => {
+        task.processedTables = done
+        task.totalTables = total
+        task.currentTable = cur || ''
+        task.message = `扫描表结构 ${done}/${total}${cur ? `（当前: ${cur}）` : ''}`
+      },
+      onPersistProgress: (done, total, cur) => {
+        task.processedTables = done
+        task.totalTables = total
+        task.currentTable = cur || ''
+        task.message = `写入字典表 ${done}/${total}${cur ? `（当前: ${cur}）` : ''}`
+      },
+    })
+    task.status = 'success'
+    task.message = `刷新完成，共 ${result.total} 张表`
+    task.result = result
+    task.finishedAt = Date.now()
+  } catch (e: any) {
+    task.status = 'failed'
+    task.error = e?.message || String(e)
+    task.message = `刷新失败：${task.error}`
+    task.finishedAt = Date.now()
+    console.error('[DataDictionary] 异步刷新失败:', e)
+  } finally {
+    dictRefreshRunning = false
+    dictRefreshLastAt = Date.now()
+  }
+}
+
+// POST /refresh —— 立即返回任务 ID，后台异步刷新
+export const refreshDataDictionary = async (req, res) => {
+  // 1) 频率限制
+  const nowTs = Date.now()
+  if (dictRefreshRunning) {
+    // 已有任务在跑，返回当前运行中的任务
+    const running = Array.from(dictRefreshTaskStore.values()).find((t) => t.status === 'running')
+    if (running) {
+      return success(
+        res,
+        { taskId: running.taskId, status: running.status, message: '已有刷新任务运行中，请稍后查询进度' },
+        '已有刷新任务运行中',
+      )
+    }
+  }
+  const elapsed = nowTs - dictRefreshLastAt
+  if (dictRefreshLastAt > 0 && elapsed < DICT_REFRESH_MIN_INTERVAL_MS) {
+    const remain = Math.ceil((DICT_REFRESH_MIN_INTERVAL_MS - elapsed) / 1000)
+    return fail(
+      res,
+      `刷新操作过于频繁，请在 ${remain} 秒后重试（已限制为每 60 秒最多一次）`,
+      ErrorCode.RATE_LIMITED,
+    )
+  }
+  // 2) 创建任务并立即返回
+  const taskId = generateTaskId()
+  const task: DictRefreshTask = {
+    taskId,
+    status: 'pending',
+    totalTables: 0,
+    processedTables: 0,
+    currentTable: '',
+    message: '任务已排队，即将开始执行',
+    startedAt: nowTs,
+  }
+  dictRefreshTaskStore.set(taskId, task)
+  // 最多保留最近 20 个任务记录
+  if (dictRefreshTaskStore.size > 20) {
+    const oldestFirst = Array.from(dictRefreshTaskStore.keys()).slice(0, dictRefreshTaskStore.size - 20)
+    oldestFirst.forEach((k) => dictRefreshTaskStore.delete(k))
+  }
+  // 异步启动（不 await）
+  setImmediate(() => runDictRefreshAsync(task))
+  return success(res, { taskId, status: task.status, message: task.message }, '刷新任务已提交，可通过 taskId 查询进度')
+}
+
+// GET /refresh/:taskId —— 查询刷新任务进度
+export const getRefreshProgress = async (req, res) => {
+  const { taskId } = req.params
+  if (!taskId) return fail(res, 'taskId 不能为空', ErrorCode.PARAM_INVALID)
+  const task = dictRefreshTaskStore.get(taskId)
+  if (!task) return fail(res, '任务不存在或已过期', ErrorCode.RECORD_NOT_FOUND)
+  const payload = {
+    taskId: task.taskId,
+    status: task.status,
+    totalTables: task.totalTables,
+    processedTables: task.processedTables,
+    currentTable: task.currentTable,
+    message: task.message,
+    progressPercent:
+      task.totalTables > 0 ? Math.min(100, Math.round((task.processedTables / task.totalTables) * 100)) : 0,
+    startedAt: task.startedAt ? new Date(task.startedAt).toISOString() : null,
+    finishedAt: task.finishedAt ? new Date(task.finishedAt).toISOString() : null,
+    error: task.error || null,
+    result: task.result || null,
+  }
+  return success(res, payload, '查询成功')
 }
 
 // 查询数据字典列表（服务端筛选+分页）
@@ -1720,7 +1968,9 @@ export default {
   getDatabaseInfo,
   listDataDictionary,
   refreshDataDictionary,
+  getRefreshProgress,
   refreshDictionaryData,
+  refreshDictionaryDataIfEmpty,
   listTableRecords,
   listBackups,
   createBackup,

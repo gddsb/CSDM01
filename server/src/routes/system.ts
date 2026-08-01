@@ -12,7 +12,7 @@ import {
 } from '../controllers/PermissionController.js'
 import { list as logList } from '../controllers/OperationLogController.js'
 import { list as systemLogList } from '../controllers/SystemLogController.js'
-import { getConfig, saveConfig, getEnvironment, getDatabaseInfo, listBackups, createBackup, restoreBackup, deleteBackup, migrateDatabase, getMigrationTargets, restartServer, listDataDictionary, refreshDataDictionary, listTableRecords } from '../controllers/SystemConfigController.js'
+import { getConfig, saveConfig, getEnvironment, getDatabaseInfo, listBackups, createBackup, restoreBackup, deleteBackup, migrateDatabase, getMigrationTargets, restartServer, listDataDictionary, refreshDataDictionary, getRefreshProgress, listTableRecords } from '../controllers/SystemConfigController.js'
 import { authRequired, logOperation } from '../middleware/auth.js'
 import {
   listType as dictTypeList,
@@ -111,6 +111,7 @@ router.post('/config/database/migrate', logOperation('系统配置'), migrateDat
 // 数据字典
 router.get('/config/data-dictionary', listDataDictionary)
 router.post('/config/data-dictionary/refresh', logOperation('系统配置'), refreshDataDictionary)
+router.get('/config/data-dictionary/refresh/:taskId', getRefreshProgress)
 router.get('/config/data-dictionary/:table_name/records', listTableRecords)
 // 备份还原
 router.get('/config/backups', listBackups)
