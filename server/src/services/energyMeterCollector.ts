@@ -3,11 +3,10 @@ import { createWorker } from 'tesseract.js';
 import { Jimp } from 'jimp';
 import EnergyMeterData from '../models/EnergyMeterData.js';
 
-// 验证码预处理参数（A7 方案：3x 放大(jimp默认mode) + PSM7 + Otsu-20 偏移）
-// 实测完整识别率约 75-93%，详见 server/scripts/captcha_planA.mjs
-// 注：jimp v1 的 scale(factor, mode) 第二参数会被忽略，默认mode实测优于NEAREST
-const CAPTCHA_SCALE = 3;
-const CAPTCHA_OTSU_OFFSET = -20;
+// 验证码预处理参数（优化方案：5x 放大 + PSM7 + Otsu-25 偏移）
+// 测试服务器实测 12 样本识别率 92% (11/12)
+const CAPTCHA_SCALE = 5;
+const CAPTCHA_OTSU_OFFSET = -25;
 const CAPTCHA_PSM = '7';
 const CAPTCHA_WHITELIST = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
