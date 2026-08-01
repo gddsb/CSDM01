@@ -72,10 +72,7 @@ const PARAM_FIELDS: Record<string, { key: string; label: string; type: 'text' | 
     { key: 'password', label: '平台登录密码', type: 'password', placeholder: '0531yun登录密码' },
   ],
   weather: [],
-  energy_meter: [
-    { key: 'loginName', label: '平台登录用户名', type: 'text', placeholder: '云集云能源平台账号', noEcho: true },
-    { key: 'password', label: '平台登录密码', type: 'password', placeholder: '云集云能源平台密码' },
-  ],
+  energy_meter: [],
 }
 
 const STATUS_COLOR: Record<string, string> = {
@@ -439,9 +436,11 @@ export default function TaskSettingsPage() {
           <Form.Item label="描述" name="description">
             <Input.TextArea rows={2} />
           </Form.Item>
-          <Form.Item label="数据源URL" name="source_url">
-            <Input />
-          </Form.Item>
+          {editing?.task_type !== 'energy_meter' && (
+            <Form.Item label="数据源URL" name="source_url">
+              <Input />
+            </Form.Item>
+          )}
 
           {paramFields.length > 0 && (
             <>
