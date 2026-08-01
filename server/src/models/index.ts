@@ -47,6 +47,7 @@ import U9Customer from './U9Customer.js'
 import EnvMonitor from './EnvMonitor.js'
 import EnvAlarm from './EnvAlarm.js'
 import WeatherInfo from './WeatherInfo.js'
+import EnergyMeterData from './EnergyMeterData.js'
 import DashboardConfig from './DashboardConfig.js'
 import DashboardShare from './DashboardShare.js'
 import DashboardAccessLog from './DashboardAccessLog.js'
@@ -210,6 +211,7 @@ const db = {
   EnvMonitor,
   EnvAlarm,
   WeatherInfo,
+  EnergyMeterData,
   DashboardConfig,
   DashboardShare,
   DashboardAccessLog,
@@ -263,6 +265,7 @@ export {
   EnvMonitor,
   EnvAlarm,
   WeatherInfo,
+  EnergyMeterData,
   DashboardConfig,
   DashboardShare,
   DashboardAccessLog,

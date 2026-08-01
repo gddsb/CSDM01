@@ -1,5 +1,6 @@
 import { SyncTask } from '../models/index.js'
 import { EnvCollector } from './envCollector.js'
+import { EnergyMeterCollector } from './energyMeterCollector.js'
 import { collectAndSaveWeather } from './weatherCollector.js'
 import { exportItems, exportCustomers } from './u9Exporter.js'
 import { decryptParamsObj } from '../utils/crypto.js'
@@ -79,6 +80,24 @@ export async function executeRealTask(
         const result = await exportCustomers(taskBizId, onProgress)
         await updateProgress(`客户同步完成，共 ${result.totalRecords} 条`, 100, 'completed', result.totalRecords)
         return { success: true, totalRecords: result.totalRecords }
+      }
+
+      case 'energy_meter': {
+        await updateProgress('连接能源采集平台...', 10)
+        const decryptedParams = decryptParamsObj(params || {})
+        const loginName = decryptedParams.loginName
+        const password = decryptedParams.password
+        if (!loginName || !password) {
+          await updateProgress('缺少用户名或密码参数', 100, 'failed')
+          return { success: false, error: '缺少用户名或密码参数' }
+        }
+        const collector = new EnergyMeterCollector({ loginName, password })
+        await updateProgress('正在登录并识别验证码...', 25)
+        await updateProgress('获取总表有功/无功总电能数据...', 50)
+        const taskSettingId = Number(taskBizId) || 0
+        const result = await collector.collectAndSave(taskSettingId)
+        await updateProgress(`能源数据写入完成（${result.saved} 条记录）`, 100, 'completed', result.saved)
+        return { success: true, totalRecords: result.saved }
       }
 
       default:

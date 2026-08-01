@@ -1,7 +1,7 @@
 import { Op } from 'sequelize'
 import {
   TaskSetting, SyncTask, ScheduledTask, U9Item, U9Customer,
-  EnvMonitor, EnvAlarm, WeatherInfo,
+  EnvMonitor, EnvAlarm, WeatherInfo, EnergyMeterData,
 } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { encryptParamsObj, decryptParamsObj } from '../utils/crypto.js'
@@ -228,7 +228,7 @@ function generateTaskBizId(type: string): string {
   const m = String(now.getMonth() + 1).padStart(2, '0')
   const d = String(now.getDate()).padStart(2, '0')
   const datePart = `${y}${m}${d}`
-  const prefix = type === 'items' ? 'SCHI' : type === 'customers' ? 'SCHC' : type === 'env_monitor' ? 'SCHE' : 'SCHW'
+  const prefix = type === 'items' ? 'SCHI' : type === 'customers' ? 'SCHC' : type === 'env_monitor' ? 'SCHE' : type === 'weather' ? 'SCHW' : type === 'energy_meter' ? 'SCHEM' : 'SCHX'
   const rand = String(Math.floor(Math.random() * 900) + 100)
   return `${prefix}${datePart}${rand}`
 }
@@ -310,6 +310,13 @@ const TEST_STEPS_MAP: Record<string, { message: string; percent: number }[]> = {
     { message: '写入数据库', percent: 85 },
     { message: '测试完成', percent: 100 },
   ],
+  energy_meter: [
+    { message: '验证平台连接参数', percent: 10 },
+    { message: '识别验证码并登录', percent: 25 },
+    { message: '获取总表有功/无功总电能', percent: 50 },
+    { message: '能源数据入库完成', percent: 85 },
+    { message: '测试完成', percent: 100 },
+  ],
 }
 
 async function updateTaskProgress(taskId: number, step: { message: string; percent: number }, status: string = 'running', totalRecords?: number) {
@@ -340,6 +347,7 @@ function generateMockRecordCount(taskType: string): number {
     case 'customers': return Math.floor(20 + Math.random() * 10)
     case 'env_monitor': return Math.floor(8 + Math.random() * 5)
     case 'weather': return Math.floor(3 + Math.random() * 6)
+    case 'energy_meter': return Math.floor(20 + Math.random() * 30)
     default: return Math.floor(10 + Math.random() * 20)
   }
 }
@@ -394,6 +402,7 @@ const ARCHIVE_MODELS: Record<string, any> = {
   env_monitor: EnvMonitor,
   env_alarm: EnvAlarm,
   weather: WeatherInfo,
+  energy_meter: EnergyMeterData,
 }
 
 const ARCHIVE_SEARCH_FIELDS: Record<string, string[]> = {
@@ -402,6 +411,7 @@ const ARCHIVE_SEARCH_FIELDS: Record<string, string[]> = {
   env_monitor: ['factor_id', 'factor_name', 'device_name'],
   env_alarm: ['factor_id', 'factor_name', 'device_name', 'alarm_info'],
   weather: ['city', 'source'],
+  energy_meter: ['device_addr', 'device_name'],
 }
 
 const ARCHIVE_ORDER: Record<string, any> = {
@@ -410,6 +420,7 @@ const ARCHIVE_ORDER: Record<string, any> = {
   env_monitor: [['collect_time', 'DESC']],
   env_alarm: [['alarm_time', 'DESC']],
   weather: [['weather_time', 'DESC']],
+  energy_meter: [['record_time', 'DESC']],
 }
 
 export const listArchiveData = async (req, res) => {
