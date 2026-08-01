@@ -1,0 +1,550 @@
+{
+  "results": [
+    {
+      "idx": 1,
+      "pad": "01",
+      "keyStr": "1biWFDKMrmz0",
+      "variants": {
+        "B1": {
+          "text": "iF",
+          "ms": 96.08509,
+          "len": 2,
+          "complete": false
+        },
+        "B2": {
+          "text": "UF",
+          "ms": 20.477821,
+          "len": 2,
+          "complete": false
+        },
+        "B3": {
+          "text": "iF",
+          "ms": 59.314234,
+          "len": 2,
+          "complete": false
+        },
+        "B4": {
+          "text": "iF",
+          "ms": 27.089289,
+          "len": 2,
+          "complete": false
+        }
+      }
+    },
+    {
+      "idx": 2,
+      "pad": "02",
+      "keyStr": "pmdr8KySD6Zk",
+      "variants": {
+        "B1": {
+          "text": "29",
+          "ms": 19.722905,
+          "len": 2,
+          "complete": false
+        },
+        "B2": {
+          "text": "",
+          "ms": 12.116225,
+          "len": 0,
+          "complete": false
+        },
+        "B3": {
+          "text": "3g",
+          "ms": 24.35669,
+          "len": 2,
+          "complete": false
+        },
+        "B4": {
+          "text": "",
+          "ms": 4.13844,
+          "len": 0,
+          "complete": false
+        }
+      }
+    },
+    {
+      "idx": 3,
+      "pad": "03",
+      "keyStr": "IyTAcv5QfxGN",
+      "variants": {
+        "B1": {
+          "text": "h",
+          "ms": 11.296633,
+          "len": 1,
+          "complete": false
+        },
+        "B2": {
+          "text": "NXh",
+          "ms": 16.13522,
+          "len": 3,
+          "complete": false
+        },
+        "B3": {
+          "text": "NXh",
+          "ms": 19.196866,
+          "len": 3,
+          "complete": false
+        },
+        "B4": {
+          "text": "NXh",
+          "ms": 17.524808,
+          "len": 3,
+          "complete": false
+        }
+      }
+    },
+    {
+      "idx": 4,
+      "pad": "04",
+      "keyStr": "2ahe3l2QkQQA",
+      "variants": {
+        "B1": {
+          "text": "M2",
+          "ms": 16.119618,
+          "len": 2,
+          "complete": false
+        },
+        "B2": {
+          "text": "M2",
+          "ms": 15.931114,
+          "len": 2,
+          "complete": false
+        },
+        "B3": {
+          "text": "M2",
+          "ms": 15.576779,
+          "len": 2,
+          "complete": false
+        },
+        "B4": {
+          "text": "M2",
+          "ms": 16.601889,
+          "len": 2,
+          "complete": false
+        }
+      }
+    },
+    {
+      "idx": 5,
+      "pad": "05",
+      "keyStr": "n8i8M9NYqoGo",
+      "variants": {
+        "B1": {
+          "text": "",
+          "ms": 11.745483,
+          "len": 0,
+          "complete": false
+        },
+        "B2": {
+          "text": "",
+          "ms": 3.700623,
+          "len": 0,
+          "complete": false
+        },
+        "B3": {
+          "text": "",
+          "ms": 3.505259,
+          "len": 0,
+          "complete": false
+        },
+        "B4": {
+          "text": "",
+          "ms": 4.43848,
+          "len": 0,
+          "complete": false
+        }
+      }
+    },
+    {
+      "idx": 6,
+      "pad": "06",
+      "keyStr": "epb64UyMHGCZ",
+      "variants": {
+        "B1": {
+          "text": "15",
+          "ms": 10.776493,
+          "len": 2,
+          "complete": false
+        },
+        "B2": {
+          "text": "1d",
+          "ms": 21.446842,
+          "len": 2,
+          "complete": false
+        },
+        "B3": {
+          "text": "1b",
+          "ms": 22.932648,
+          "len": 2,
+          "complete": false
+        },
+        "B4": {
+          "text": "1b",
+          "ms": 24.015475,
+          "len": 2,
+          "complete": false
+        }
+      }
+    },
+    {
+      "idx": 7,
+      "pad": "07",
+      "keyStr": "YURxXdOqOxrX",
+      "variants": {
+        "B1": {
+          "text": "13g",
+          "ms": 25.277192,
+          "len": 3,
+          "complete": false
+        },
+        "B2": {
+          "text": "23g",
+          "ms": 23.937892,
+          "len": 3,
+          "complete": false
+        },
+        "B3": {
+          "text": "Lag",
+          "ms": 19.031538,
+          "len": 3,
+          "complete": false
+        },
+        "B4": {
+          "text": "23g",
+          "ms": 21.134439,
+          "len": 3,
+          "complete": false
+        }
+      }
+    },
+    {
+      "idx": 8,
+      "pad": "08",
+      "keyStr": "HAA0dMRQoIaA",
+      "variants": {
+        "B1": {
+          "text": "m6",
+          "ms": 24.31311,
+          "len": 2,
+          "complete": false
+        },
+        "B2": {
+          "text": "om6",
+          "ms": 29.999443,
+          "len": 3,
+          "complete": false
+        },
+        "B3": {
+          "text": "om6",
+          "ms": 26.673024,
+          "len": 3,
+          "complete": false
+        },
+        "B4": {
+          "text": "om6",
+          "ms": 28.244443,
+          "len": 3,
+          "complete": false
+        }
+      }
+    },
+    {
+      "idx": 9,
+      "pad": "09",
+      "keyStr": "LHf48ohU5Bnb",
+      "variants": {
+        "B1": {
+          "text": "OH",
+          "ms": 12.760336,
+          "len": 2,
+          "complete": false
+        },
+        "B2": {
+          "text": "GH",
+          "ms": 13.441651,
+          "len": 2,
+          "complete": false
+        },
+        "B3": {
+          "text": "CGH",
+          "ms": 18.338068,
+          "len": 3,
+          "complete": false
+        },
+        "B4": {
+          "text": "",
+          "ms": 3.746627,
+          "len": 0,
+          "complete": false
+        }
+      }
+    },
+    {
+      "idx": 10,
+      "pad": "10",
+      "keyStr": "CeEHZOk50KOw",
+      "variants": {
+        "B1": {
+          "text": "wz",
+          "ms": 22.882268,
+          "len": 2,
+          "complete": false
+        },
+        "B2": {
+          "text": "of",
+          "ms": 23.176288,
+          "len": 2,
+          "complete": false
+        },
+        "B3": {
+          "text": "LoL",
+          "ms": 23.080146,
+          "len": 3,
+          "complete": false
+        },
+        "B4": {
+          "text": "oZ",
+          "ms": 23.569488,
+          "len": 2,
+          "complete": false
+        }
+      }
+    },
+    {
+      "idx": 11,
+      "pad": "11",
+      "keyStr": "LzPmPvPAshRo",
+      "variants": {
+        "B1": {
+          "text": "ou",
+          "ms": 10.606493,
+          "len": 2,
+          "complete": false
+        },
+        "B2": {
+          "text": "Su",
+          "ms": 13.057581,
+          "len": 2,
+          "complete": false
+        },
+        "B3": {
+          "text": "Ou",
+          "ms": 21.962604,
+          "len": 2,
+          "complete": false
+        },
+        "B4": {
+          "text": "ou",
+          "ms": 16.626728,
+          "len": 2,
+          "complete": false
+        }
+      }
+    },
+    {
+      "idx": 12,
+      "pad": "12",
+      "keyStr": "bFmSjrPGrw1J",
+      "variants": {
+        "B1": {
+          "text": "SR",
+          "ms": 12.705796,
+          "len": 2,
+          "complete": false
+        },
+        "B2": {
+          "text": "CBR",
+          "ms": 25.41149,
+          "len": 3,
+          "complete": false
+        },
+        "B3": {
+          "text": "CBR",
+          "ms": 21.812421,
+          "len": 3,
+          "complete": false
+        },
+        "B4": {
+          "text": "CBR",
+          "ms": 21.698067,
+          "len": 3,
+          "complete": false
+        }
+      }
+    },
+    {
+      "idx": 13,
+      "pad": "13",
+      "keyStr": "ArNlVxGztTdD",
+      "variants": {
+        "B1": {
+          "text": "4b",
+          "ms": 13.204308,
+          "len": 2,
+          "complete": false
+        },
+        "B2": {
+          "text": "4b",
+          "ms": 12.141967,
+          "len": 2,
+          "complete": false
+        },
+        "B3": {
+          "text": "Ab",
+          "ms": 23.096677,
+          "len": 2,
+          "complete": false
+        },
+        "B4": {
+          "text": "4b",
+          "ms": 15.736832,
+          "len": 2,
+          "complete": false
+        }
+      }
+    },
+    {
+      "idx": 14,
+      "pad": "14",
+      "keyStr": "jfKmfU7tveux",
+      "variants": {
+        "B1": {
+          "text": "HS",
+          "ms": 12.076245,
+          "len": 2,
+          "complete": false
+        },
+        "B2": {
+          "text": "HS",
+          "ms": 14.780684,
+          "len": 2,
+          "complete": false
+        },
+        "B3": {
+          "text": "HS",
+          "ms": 14.139522,
+          "len": 2,
+          "complete": false
+        },
+        "B4": {
+          "text": "HS",
+          "ms": 14.415842,
+          "len": 2,
+          "complete": false
+        }
+      }
+    },
+    {
+      "idx": 15,
+      "pad": "15",
+      "keyStr": "7vZHZmj9zXIF",
+      "variants": {
+        "B1": {
+          "text": "wb",
+          "ms": 17.222124,
+          "len": 2,
+          "complete": false
+        },
+        "B2": {
+          "text": "wh",
+          "ms": 26.01289,
+          "len": 2,
+          "complete": false
+        },
+        "B3": {
+          "text": "wh",
+          "ms": 15.046092,
+          "len": 2,
+          "complete": false
+        },
+        "B4": {
+          "text": "wh",
+          "ms": 16.192229,
+          "len": 2,
+          "complete": false
+        }
+      }
+    }
+  ],
+  "summary": {
+    "count": 15,
+    "failed": 0,
+    "expectLen": 4,
+    "variants": {
+      "B1": {
+        "name": "原参数",
+        "completeN": 0,
+        "completePct": 0,
+        "nonEmpty": 14,
+        "avgLenOfNonEmpty": 2,
+        "totalMs": 316.7940940000001,
+        "avgMs": 21.119606266666672
+      },
+      "B2": {
+        "name": "去blur+minN1",
+        "completeN": 0,
+        "completePct": 0,
+        "nonEmpty": 13,
+        "avgLenOfNonEmpty": 2.3076923076923075,
+        "totalMs": 271.767731,
+        "avgMs": 18.117848733333336
+      },
+      "B3": {
+        "name": "去blur+无去孤立",
+        "completeN": 0,
+        "completePct": 0,
+        "nonEmpty": 14,
+        "avgLenOfNonEmpty": 2.4285714285714284,
+        "totalMs": 328.06256799999994,
+        "avgMs": 21.870837866666662
+      },
+      "B4": {
+        "name": "高阈值140+minN1",
+        "completeN": 0,
+        "completePct": 0,
+        "nonEmpty": 12,
+        "avgLenOfNonEmpty": 2.3333333333333335,
+        "totalMs": 255.173076,
+        "avgMs": 17.0115384
+      }
+    }
+  },
+  "variants": [
+    {
+      "key": "B1",
+      "name": "原参数",
+      "opts": {
+        "thr": 130,
+        "blur": 1,
+        "minN": 2
+      }
+    },
+    {
+      "key": "B2",
+      "name": "去blur+minN1",
+      "opts": {
+        "thr": 130,
+        "blur": 0,
+        "minN": 1
+      }
+    },
+    {
+      "key": "B3",
+      "name": "去blur+无去孤立",
+      "opts": {
+        "thr": 140,
+        "blur": 0,
+        "minN": 0
+      }
+    },
+    {
+      "key": "B4",
+      "name": "高阈值140+minN1",
+      "opts": {
+        "thr": 140,
+        "blur": 0,
+        "minN": 1
+      }
+    }
+  ]
+}
