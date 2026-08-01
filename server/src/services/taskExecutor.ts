@@ -88,15 +88,27 @@ export async function executeRealTask(
         const loginName = decryptedParams.loginName
         const password = decryptedParams.password
         if (!loginName || !password) {
-          await updateProgress('缺少用户名或密码参数', 100, 'failed')
-          return { success: false, error: '缺少用户名或密码参数' }
+          const msg = '缺少用户名或密码参数（请在任务设置中配置云集云能源平台账号）'
+          await updateProgress(msg, 100, 'failed', 0)
+          return { success: false, error: msg }
         }
         const collector = new EnergyMeterCollector({ loginName, password })
         await updateProgress('正在登录并识别验证码...', 25)
         await updateProgress('获取总表有功/无功总电能数据...', 50)
-        const taskSettingId = Number(taskBizId) || 0
-        const result = await collector.collectAndSave(taskSettingId)
-        await updateProgress(`能源数据写入完成（${result.saved} 条记录）`, 100, 'completed', result.saved)
+        // 注意：taskBizId 形如 SCHEM20260802123，不能作为 taskSettingId，
+        // 传入 sync_task 主键 taskId 作为与采集记录关联的 trace id
+        const result = await collector.collectAndSave(Number(taskId) || 0)
+        if (result.saved === 0) {
+          const head = (result.errors || []).slice(0, 3).join('；') || '此时间段未采集到任何电能记录'
+          const msg = `采集完成但未写入任何数据（fetched=${result.fetched}）：${head}`
+          await updateProgress(msg, 100, 'failed', 0)
+          return { success: false, error: msg }
+        }
+        const warn = (result.errors && result.errors.length > 0) ? `，${result.errors.length} 条保存异常` : ''
+        await updateProgress(
+          `能源数据写入完成（采集 ${result.fetched} 条，成功 ${result.saved} 条${warn}）`,
+          100, 'completed', result.saved
+        )
         return { success: true, totalRecords: result.saved }
       }
 
