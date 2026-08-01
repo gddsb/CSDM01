@@ -28,16 +28,6 @@ const apiProxy: ProxyOptions = {
 
 export default defineConfig({
   plugins: [react()],
-  // 兼容 Chrome 86+ / Firefox 80+ / Safari 14+ / Edge 86+（约2020年后的现代浏览器）
-  build: {
-    target: 'chrome86',
-    cssTarget: 'chrome86',
-    // esbuild 目标与 build.target 保持一致，确保 ?. ?? 等新语法被降级
-    chunkSizeWarningLimit: 2048,
-  },
-  esbuild: {
-    target: 'chrome86',
-  },
   server: {
     host: '0.0.0.0',
     port: 5173,
