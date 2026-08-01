@@ -131,6 +131,11 @@ export default function QualityBigScreen() {
     const pad = (n) => String(n).padStart(2, '0')
     return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
   }
+  const formatDateTime = (d) => {
+    const pad = (n) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  }
+  const getWeekday = (d) => ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][d.getDay()]
   const { style: scaleStyle } = useBigScreenScale({ designWidth: 1920, designHeight: 1080 })
 
   const {
@@ -530,11 +535,17 @@ export default function QualityBigScreen() {
     return () => { window.removeEventListener('resize', handleResize) }
   }, [standardCoverage, standardActiveRate, instrumentValidRate, dataVersion])
 
-  const idleClock = (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 16, color: '#8B949E', fontFamily: "'Courier New', monospace", fontSize: 16 }}>
-      <span style={{ color: '#3FB950' }}>●</span>
-      <span>{formatClock(currentTime)}</span>
-      <span style={{ fontSize: 12, opacity: 0.6 }}>系统时间</span>
+  const leftDateTime = (
+    <div className="bs-header-date">
+      <span className="bs-header-date-main">{formatDateTime(currentTime)}</span>
+      <span className="bs-header-date-week">{getWeekday(currentTime)}</span>
+    </div>
+  )
+
+  const rightUpdateTime = (
+    <div className="bs-header-update">
+      <span>更新时间</span>
+      <span className="bs-header-update-time">{formatClock(currentTime)}</span>
     </div>
   )
 
@@ -543,7 +554,8 @@ export default function QualityBigScreen() {
       <div className="bigscreen-container" style={{ display: 'flex', flexDirection: 'column', height: '1080px', overflow: 'hidden', ...scaleStyle }}>
         <BigScreenHeader
           title="质量检测中心"
-          extraLeft={idle ? idleClock : null}
+          extraLeft={leftDateTime}
+          extraRight={rightUpdateTime}
         />
 
         {activeDate && (

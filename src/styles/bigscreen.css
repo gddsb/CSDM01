@@ -41,237 +41,298 @@
   z-index: 0;
 }
 
-/* 标题下方的温湿度/压差行 */
-.bs-header-envbar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 32px 12px;
-  width: 100%;
-  gap: 24px;
-  z-index: 5;
-}
+/* ============================================================
+   大屏头部样式 - 参考"环境监测中心"科技风
+   深蓝色带 + 横向光带 + 斜切装饰旗 + 白色标题光晕
+   ============================================================ */
 
-/* 头部（含可能的envbar）改为flex列容器 */
+/* 头部容器：深海军蓝渐变带 */
 .bs-header {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  padding: 0 32px;
-  background: linear-gradient(90deg,
-    rgba(0, 180, 255, 0.08) 0%,
-    rgba(0, 100, 200, 0.12) 30%,
-    rgba(0, 150, 255, 0.15) 50%,
-    rgba(0, 100, 200, 0.12) 70%,
-    rgba(0, 180, 255, 0.08) 100%);
-  border-bottom: 1px solid rgba(0, 212, 255, 0.25);
   position: relative;
+  padding: 16px 40px 0;
+  background:
+    linear-gradient(180deg,
+      #0a1a3a 0%,
+      #0c2347 30%,
+      #0e2a52 55%,
+      #0a1e40 80%,
+      #081530 100%);
   z-index: 5;
-  height: auto;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(0, 180, 255, 0.2);
 }
 
-/* 底部发光线 */
-.bs-header::after {
-  content: '';
+/* 背景装饰层：横向光带 */
+.bs-header-bg {
   position: absolute;
-  bottom: -1px;
-  left: 10%;
-  right: 10%;
-  height: 2px;
-  background: linear-gradient(90deg,
-    transparent,
-    rgba(0, 212, 255, 0.8) 50%,
-    transparent);
-  box-shadow: 0 0 12px rgba(0, 212, 255, 0.6);
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
 }
 
-.bs-header-left {
+.bs-header-streak {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(0, 212, 255, 0.15) 15%,
+    rgba(0, 212, 255, 0.35) 45%,
+    rgba(0, 212, 255, 0.45) 50%,
+    rgba(0, 212, 255, 0.35) 55%,
+    rgba(0, 212, 255, 0.15) 85%,
+    transparent 100%);
+}
+
+.bs-header-streak.s1 {
+  top: 20%;
+  height: 2px;
+  opacity: 0.7;
+}
+
+.bs-header-streak.s2 {
+  top: 50%;
+  height: 1px;
+  opacity: 0.5;
+}
+
+.bs-header-streak.s3 {
+  top: 80%;
+  height: 1.5px;
+  opacity: 0.6;
+}
+
+/* 顶部主行：左右 + 中间标题 */
+.bs-header-row {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 24px;
-  min-width: 0;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 64px;
+  z-index: 2;
+}
+
+/* 左右侧区域 */
+.bs-header-side {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 280px;
   flex-shrink: 0;
 }
 
+.bs-header-side--right {
+  justify-content: flex-end;
+}
+
+/* 装饰旗（斜切平行四边形） */
+.bs-header-flag {
+  position: relative;
+  width: 180px;
+  height: 48px;
+  background: linear-gradient(135deg,
+    rgba(0, 140, 220, 0.35) 0%,
+    rgba(0, 180, 255, 0.5) 40%,
+    rgba(0, 212, 255, 0.6) 100%);
+  clip-path: polygon(0 0, 100% 0, 85% 100%, 0 100%);
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3), inset 0 0 20px rgba(0, 212, 255, 0.1);
+  overflow: hidden;
+}
+
+.bs-header-flag::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 100%);
+}
+
+.bs-header-flag--mirror {
+  clip-path: polygon(15% 0, 100% 0, 100% 100%, 0 100%);
+  background: linear-gradient(225deg,
+    rgba(0, 140, 220, 0.35) 0%,
+    rgba(0, 180, 255, 0.5) 40%,
+    rgba(0, 212, 255, 0.6) 100%);
+}
+
+/* 左右内容区 */
+.bs-header-left-content,
+.bs-header-right-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #c8e6ff;
+  font-family: 'DIN Alternate', 'Impact', 'Courier New', monospace;
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+.bs-header-right-content {
+  justify-content: flex-end;
+}
+
+/* 日期时间样式 */
+.bs-header-date {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.bs-header-date-main {
+  font-size: 18px;
+  font-weight: 600;
+  color: #8adfff;
+  letter-spacing: 2px;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+}
+
+.bs-header-date-week {
+  font-size: 14px;
+  color: #5b8ca8;
+  letter-spacing: 1px;
+}
+
+/* 更新时间样式 */
+.bs-header-update {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #5b8ca8;
+}
+
+.bs-header-update-time {
+  font-size: 18px;
+  font-weight: 600;
+  color: #8adfff;
+  letter-spacing: 2px;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+}
+
+/* 中央标题区 */
 .bs-header-center {
   flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 0 24px;
 }
 
-.bs-header-right {
+.bs-title-wrap {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+/* 标题左右装饰线 */
+.bs-title-deco-left,
+.bs-title-deco-right {
+  position: relative;
+  width: 100px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #00d4ff, transparent);
   flex-shrink: 0;
 }
 
-/* 主标题 - 高对比科技风，弱化发光避免模糊 */
-.bs-title {
-  font-size: 40px;
-  font-weight: 800;
-  letter-spacing: 12px;
-  background: linear-gradient(180deg,
-    #ffffff 0%,
-    #8adfff 40%,
-    #00d4ff 70%,
-    #0099cc 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  line-height: 1.2;
-  text-shadow: none;
-  white-space: nowrap;
-  padding: 8px 48px;
-  position: relative;
+.bs-title-deco-left {
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.6);
 }
 
-/* 标题左右装饰 */
-.bs-title::before,
-.bs-title::after {
+.bs-title-deco-right {
+  background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.6);
+}
+
+.bs-title-deco-left::before,
+.bs-title-deco-right::before {
   content: '';
   position: absolute;
-  top: 50%;
-  width: 120px;
-  height: 2px;
-  background: linear-gradient(90deg,
-    transparent,
-    rgba(0, 212, 255, 0.8));
-  transform: translateY(-50%);
-}
-
-.bs-title::before {
-  left: -20px;
-  background: linear-gradient(90deg, transparent, #00d4ff);
-}
-
-.bs-title::after {
-  right: -20px;
-  background: linear-gradient(90deg, #00d4ff, transparent);
-}
-
-/* 标题下方装饰线 */
-.bs-title-deco {
-  position: absolute;
-  bottom: -4px;
+  top: -3px;
   left: 50%;
   transform: translateX(-50%);
-  width: 60%;
-  height: 4px;
-  display: flex;
-  gap: 4px;
+  width: 9px;
+  height: 9px;
+  background: #00d4ff;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #00d4ff, 0 0 20px rgba(0, 212, 255, 0.6);
 }
 
-.bs-title-deco span {
-  flex: 1;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, #00d4ff, transparent);
-  border-radius: 2px;
-  box-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
+/* 主标题文字 - 白色带蓝色光晕 */
+.bs-title {
+  font-size: 42px;
+  font-weight: 800;
+  letter-spacing: 10px;
+  color: #ffffff;
+  text-shadow:
+    0 0 10px rgba(0, 212, 255, 0.6),
+    0 0 20px rgba(0, 180, 255, 0.4),
+    0 0 40px rgba(0, 150, 255, 0.2);
+  line-height: 1.1;
+  white-space: nowrap;
+  margin: 0;
+  padding: 4px 0;
+  position: relative;
+  font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
-/* 时间显示 */
-.bs-date-block {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  color: #8adfff;
-  font-family: 'DIN Alternate', 'Impact', 'Courier New', monospace;
+/* 标题下方装饰线（发光线） */
+.bs-title-wrap::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70%;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(0, 212, 255, 0.4) 20%,
+    #00d4ff 50%,
+    rgba(0, 212, 255, 0.4) 80%,
+    transparent 100%);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.5);
 }
 
-.bs-date-label {
-  font-size: 12px;
-  color: #5b8ca8;
-  letter-spacing: 2px;
-}
-
-.bs-date-value {
-  font-size: 20px;
-  font-weight: 600;
-  color: #00d4ff;
-  -webkit-text-stroke: 0.1px currentColor;
-  letter-spacing: 1px;
-}
-
-.bs-time-block {
+/* 标题下方：温湿度/压差 行 */
+.bs-header-envbar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: #8adfff;
-  font-family: 'DIN Alternate', 'Courier New', monospace;
-}
-
-.bs-time-value {
-  font-size: 22px;
-  font-weight: 700;
-  color: #00d4ff;
-  -webkit-text-stroke: 0.1px currentColor;
-  letter-spacing: 2px;
-}
-
-/* 屏幕切换Tab */
-.bs-screen-tabs {
-  display: flex;
-  gap: 6px;
-}
-
-.bs-screen-tab {
-  padding: 8px 20px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 2px;
-  color: #6b93aa;
-  background: rgba(0, 50, 80, 0.4);
-  border: 1px solid rgba(0, 180, 255, 0.2);
-  border-radius: 4px;
-  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
-  transition: all 0.3s ease;
-}
-
-.bs-screen-tab:hover {
-  color: #00d4ff;
-  border-color: rgba(0, 212, 255, 0.5);
-  background: rgba(0, 180, 255, 0.1);
-}
-
-.bs-screen-tab.active {
-  color: #fff;
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.3), rgba(0, 150, 255, 0.2));
-  border-color: #00d4ff;
-  box-shadow: 0 0 12px rgba(0, 212, 255, 0.4), inset 0 0 12px rgba(0, 212, 255, 0.1);
-}
-
-/* 返回按钮 */
-.bs-back-btn {
-  color: #5b8ca8;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 16px;
-  padding: 8px;
-  border-radius: 4px;
-}
-
-.bs-back-btn:hover {
-  color: #00d4ff;
-  background: rgba(0, 212, 255, 0.1);
-  box-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
+  justify-content: center;
+  padding: 14px 0 10px;
+  width: 100%;
+  gap: 20px;
+  position: relative;
+  z-index: 2;
 }
 
 /* 刷新按钮 */
 .bs-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
   color: #5b8ca8;
   cursor: pointer;
   transition: all 0.2s;
   font-size: 16px;
-  padding: 8px;
   border-radius: 4px;
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  background: rgba(0, 50, 80, 0.4);
 }
 
 .bs-refresh-btn:hover {
   color: #00d4ff;
-  background: rgba(0, 212, 255, 0.1);
+  background: rgba(0, 180, 255, 0.15);
+  border-color: rgba(0, 212, 255, 0.5);
   box-shadow: 0 0 12px rgba(0, 212, 255, 0.3);
 }
 
@@ -688,14 +749,20 @@
 
 /* ============ 响应式调整 ============ */
 @media (max-width: 1600px) {
-  .bs-title { font-size: 32px; letter-spacing: 8px; }
-  .bs-title::before,
-  .bs-title::after { width: 80px; }
+  .bs-title { font-size: 34px; letter-spacing: 8px; }
+  .bs-title-deco-left,
+  .bs-title-deco-right { width: 70px; }
+  .bs-header-flag { width: 140px; height: 40px; }
 }
 
 @media (max-width: 1366px) {
-  .bs-title { font-size: 26px; letter-spacing: 6px; padding: 8px 32px; }
-  .bs-title::before,
-  .bs-title::after { width: 60px; }
-  .bs-header { height: 68px; padding: 0 20px; }
+  .bs-header { padding: 12px 24px 0; }
+  .bs-title { font-size: 28px; letter-spacing: 6px; }
+  .bs-title-deco-left,
+  .bs-title-deco-right { width: 50px; }
+  .bs-header-flag { width: 110px; height: 36px; }
+  .bs-header-side { min-width: 220px; }
+  .bs-header-date-main,
+  .bs-header-update-time { font-size: 15px; letter-spacing: 1px; }
+  .bs-header-row { min-height: 52px; }
 }

@@ -592,11 +592,19 @@ export default function ProductionBigScreen() {
     return () => { window.removeEventListener('resize', handleResize) }
   }, [chartWorkOrders, dataVersion])
 
-  const idleClock = (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 16, color: '#8B949E', fontFamily: "'Courier New', monospace", fontSize: 16 }}>
-      <span style={{ color: '#3FB950' }}>●</span>
-      <span>{formatClock(currentTime)}</span>
-      <span style={{ fontSize: 12, opacity: 0.6 }}>系统时间</span>
+  const getWeekday = (d: Date) => ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][d.getDay()]
+
+  const leftDateTime = (
+    <div className="bs-header-date">
+      <span className="bs-header-date-main">{formatDateTime(currentTime)}</span>
+      <span className="bs-header-date-week">{getWeekday(currentTime)}</span>
+    </div>
+  )
+
+  const rightUpdateTime = (
+    <div className="bs-header-update">
+      <span>更新时间</span>
+      <span className="bs-header-update-time">{formatClock(currentTime)}</span>
     </div>
   )
 
@@ -631,7 +639,8 @@ export default function ProductionBigScreen() {
       >
         <BigScreenHeader
           title="生产实时监控中心"
-          extraLeft={idle ? idleClock : null}
+          extraLeft={leftDateTime}
+          extraRight={rightUpdateTime}
           envBar={envGroup}
         />
 

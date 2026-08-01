@@ -309,8 +309,24 @@ export default function EnvironmentBigScreen() {
   const [overview, setOverview] = useState<OverviewData | null>(null)
   const [trend, setTrend] = useState<TrendData | null>(null)
   const [loading, setLoading] = useState(false)
+  const [currentTime, setCurrentTime] = useState(new Date())
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const { style: scaleStyle } = useBigScreenScale({ designWidth: 1920, designHeight: 1080 })
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const formatClock = (d: Date) => {
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  }
+  const formatDateTime = (d: Date) => {
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  }
+  const getWeekday = (d: Date) => ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][d.getDay()]
 
   const loadAll = useCallback(async () => {
     setLoading(true)
@@ -398,11 +414,27 @@ export default function EnvironmentBigScreen() {
   const alarms = overview?.alarms
   const hasAlarm = (alarms?.unhandled || 0) > 0
 
+  const leftDateTime = (
+    <div className="bs-header-date">
+      <span className="bs-header-date-main">{formatDateTime(currentTime)}</span>
+      <span className="bs-header-date-week">{getWeekday(currentTime)}</span>
+    </div>
+  )
+
+  const rightUpdateTime = (
+    <div className="bs-header-update">
+      <span>更新时间</span>
+      <span className="bs-header-update-time">{formatClock(currentTime)}</span>
+    </div>
+  )
+
   return (
     <div style={{ width: '100vw', height: '100vh', overflow: 'hidden' }}>
       <div className="bigscreen-container" style={{ display: 'flex', flexDirection: 'column', height: '1080px', overflow: 'hidden', ...scaleStyle }}>
         <BigScreenHeader
           title="环境监测中心"
+          extraLeft={leftDateTime}
+          extraRight={rightUpdateTime}
           onRefresh={loadAll}
           refreshing={loading}
         />
