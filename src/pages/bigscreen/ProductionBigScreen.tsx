@@ -596,7 +596,7 @@ export default function ProductionBigScreen() {
 
   const leftDateTime = (
     <div className="bs-header-date">
-      <span className="bs-header-date-main">{formatDateTime(currentTime)}</span>
+      <span className="bs-header-date-main">{formatTime(currentTime)}</span>
       <span className="bs-header-date-week">{getWeekday(currentTime)}</span>
     </div>
   )
