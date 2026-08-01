@@ -1,6 +1,6 @@
 import axios from 'axios';
 import Tesseract from 'tesseract.js';
-import { EnergyMeterData } from '../models/EnergyMeterData.js';
+import EnergyMeterData from '../models/EnergyMeterData.js';
 
 const API_BASE = 'https://nh2api.yunjichaobiao.com';
 const LOGIN_PATH = '/api/Account/Login';
