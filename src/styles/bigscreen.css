@@ -97,52 +97,75 @@
   display: none;
 }
 
-/* 顶部主行 */
+/* 顶部主行：左装饰 + 标题 + 右装饰（对称） */
 .bs-header-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 56px;
+  z-index: 2;
+}
+
+/* 左右对称装饰容器 */
+.bs-header-deco {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 320px;
+}
+
+.bs-header-deco--left {
+  justify-content: flex-end;
+  padding-right: 0;
+}
+
+.bs-header-deco--right {
+  justify-content: flex-start;
+  padding-left: 0;
+}
+
+/* 大对称装饰 SVG */
+.bs-deco-svg {
+  width: 100%;
+  max-width: 280px;
+  height: 50px;
+  pointer-events: none;
+}
+
+/* 标题两侧小对称装饰 */
+.bs-title-deco-svg {
+  width: 90px;
+  height: 20px;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+/* 标题下方信息行：左 日期时间星期 | 右 温湿度压差+更新时间 */
+.bs-header-info-row {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  min-height: 58px;
+  padding: 6px 0 8px;
   z-index: 2;
+  gap: 20px;
 }
 
-/* 左右侧区域 */
-.bs-header-side {
+.bs-header-info-left {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-width: 260px;
+  gap: 12px;
   flex-shrink: 0;
 }
 
-.bs-header-side--right {
-  justify-content: flex-end;
-}
-
-/* 大S形闭合带（左右两侧装饰） */
-.bs-flow-band {
-  width: 200px;
-  height: 58px;
+.bs-header-info-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
   flex-shrink: 0;
-  pointer-events: none;
-}
-
-.bs-flow-band--left {
-  margin-right: -16px;
-}
-
-.bs-flow-band--right {
-  margin-left: -16px;
-}
-
-/* 标题两侧小S形闭合带 */
-.bs-title-band {
-  width: 96px;
-  height: 24px;
-  flex-shrink: 0;
-  pointer-events: none;
 }
 
 /* 左右内容区 */
@@ -251,16 +274,12 @@
   box-shadow: 0 0 6px rgba(0, 212, 255, 0.3);
 }
 
-/* 标题下方：温湿度/压差 行 */
-.bs-header-envbar {
+/* 标题下方温湿度压差（在 info-right 中紧挨更新时间左侧） */
+.bs-env-group {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 10px 0 10px;
-  width: 100%;
-  gap: 20px;
-  position: relative;
-  z-index: 2;
+  gap: 16px;
+  white-space: nowrap;
 }
 
 /* 刷新按钮 */
@@ -700,16 +719,16 @@
 /* ============ 响应式调整 ============ */
 @media (max-width: 1600px) {
   .bs-title { font-size: 32px; letter-spacing: 12px; }
-  .bs-title-band { width: 80px; height: 20px; }
-  .bs-flow-band { width: 160px; height: 50px; }
+  .bs-title-deco-svg { width: 70px; }
+  .bs-deco-svg { max-width: 220px; height: 44px; }
 }
 
 @media (max-width: 1366px) {
   .bs-header { padding: 8px 28px 0; }
   .bs-title { font-size: 26px; letter-spacing: 10px; }
-  .bs-title-band { width: 60px; height: 16px; }
-  .bs-flow-band { width: 120px; height: 42px; }
-  .bs-header-side { min-width: 200px; }
+  .bs-title-deco-svg { width: 50px; height: 16px; }
+  .bs-deco-svg { max-width: 160px; height: 38px; }
+  .bs-header-deco { max-width: 220px; }
   .bs-header-date-main,
   .bs-header-update-time { font-size: 14px; letter-spacing: 1px; }
   .bs-header-row { min-height: 46px; }
