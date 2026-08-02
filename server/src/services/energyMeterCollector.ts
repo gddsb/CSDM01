@@ -751,3 +751,71 @@ export async function testCaptchaScheme(
     CAPTCHA_CONTRAST = origParams.contrast;
   }
 }
+
+// ========== 独立API：获取验证码图片（供前端展示，由用户人工识别） ==========
+export async function fetchEnergyCaptcha(): Promise<{ keyStr: string; imageBase64: string }> {
+  const keyStr = Math.random().toString(36).slice(2, 14);
+  const res = await axios.post(`${API_BASE}${CAPTCHA_PATH}?keyStr=${keyStr}`, null, {
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    params: { keyStr },
+    responseType: 'text',
+    timeout: 15000,
+  });
+
+  let parsed: any = res.data;
+  if (typeof parsed === 'string') {
+    try { parsed = JSON.parse(parsed); } catch { /* keep */ }
+  }
+  if (typeof parsed === 'string') {
+    try { parsed = JSON.parse(parsed); } catch { /* keep */ }
+  }
+  let b64 = parsed?.Data || '';
+  if (typeof b64 === 'string') {
+    if (b64.startsWith('"') && b64.endsWith('"')) b64 = b64.slice(1, -1);
+    b64 = b64.replace(/\\"/g, '"');
+  }
+  if (!b64) throw new Error('获取验证码失败：无法解码图片数据');
+  return { keyStr, imageBase64: b64 };
+}
+
+// ========== 独立API：使用账号密码+用户输入的验证码登录，获取Token ==========
+export async function loginEnergyWithCaptcha(
+  loginName: string,
+  password: string,
+  keyStr: string,
+  code: string
+): Promise<{ success: boolean; token?: string; error?: string }> {
+  try {
+    const res = await axios.post(
+      `${API_BASE}${LOGIN_PATH}`,
+      {
+        UserID: loginName,
+        Password: password,
+        client: 0,
+        KeyStr: keyStr,
+        Code: code,
+        Language: 'cn',
+      },
+      {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        responseType: 'text',
+        timeout: 20000,
+      },
+    );
+
+    let body: any = res.data;
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch { /* keep */ }
+    }
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch { /* keep */ }
+    }
+
+    if (body?.IsSuccess && body?.Token) {
+      return { success: true, token: body.Token };
+    }
+    return { success: false, error: body?.ErrorMsg || `登录失败（ErrorCode=${body?.ErrorCode || '未知'}）` };
+  } catch (e: any) {
+    return { success: false, error: `登录请求异常：${e?.message || e}` };
+  }
+}
