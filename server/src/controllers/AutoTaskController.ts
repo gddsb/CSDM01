@@ -360,6 +360,7 @@ function generateMockRecordCount(taskType: string): number {
   switch (taskType) {
     case 'items': return Math.floor(500 + Math.random() * 100)
     case 'customers': return Math.floor(20 + Math.random() * 10)
+    case 'production_orders': return Math.floor(30 + Math.random() * 50)
     case 'env_monitor': return Math.floor(8 + Math.random() * 5)
     case 'weather': return Math.floor(3 + Math.random() * 6)
     case 'energy_meter': return Math.floor(20 + Math.random() * 30)
