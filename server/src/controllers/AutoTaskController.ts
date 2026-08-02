@@ -1,6 +1,6 @@
 import { Op, fn, col, where as seqWhere } from 'sequelize'
 import {
-  TaskSetting, SyncTask, ScheduledTask, U9Item, U9Customer,
+  TaskSetting, SyncTask, ScheduledTask, U9Item, U9Customer, U9ProductionOrder,
   EnvMonitor, EnvAlarm, WeatherInfo, EnergyMeterData,
   Order, ReportOrder, ReportProcess, ProcessDefect,
   ProductionLine, Device, Material, Process, Customer,
@@ -234,7 +234,7 @@ function generateTaskBizId(type: string): string {
   const m = String(now.getMonth() + 1).padStart(2, '0')
   const d = String(now.getDate()).padStart(2, '0')
   const datePart = `${y}${m}${d}`
-  const prefix = type === 'items' ? 'SCHI' : type === 'customers' ? 'SCHC' : type === 'env_monitor' ? 'SCHE' : type === 'weather' ? 'SCHW' : type === 'energy_meter' ? 'SCHEM' : 'SCHX'
+  const prefix = type === 'items' ? 'SCHI' : type === 'customers' ? 'SCHC' : type === 'env_monitor' ? 'SCHE' : type === 'weather' ? 'SCHW' : type === 'energy_meter' ? 'SCHEM' : type === 'production_orders' ? 'SCHP' : 'SCHX'
   const rand = String(Math.floor(Math.random() * 900) + 100)
   return `${prefix}${datePart}${rand}`
 }
@@ -323,6 +323,15 @@ const TEST_STEPS_MAP: Record<string, { message: string; percent: number }[]> = {
     { message: '能源数据入库完成', percent: 85 },
     { message: '测试完成', percent: 100 },
   ],
+  production_orders: [
+    { message: '验证U9连接参数', percent: 10 },
+    { message: '连接U9 ERP系统', percent: 20 },
+    { message: '获取组织列表', percent: 35 },
+    { message: '读取生产订单数据', percent: 55 },
+    { message: '数据转换处理', percent: 75 },
+    { message: '写入数据库', percent: 90 },
+    { message: '测试完成', percent: 100 },
+  ],
 }
 
 async function updateTaskProgress(taskId: number, step: { message: string; percent: number }, status: string = 'running', totalRecords?: number) {
@@ -405,6 +414,7 @@ export const testTaskSetting = async (req, res) => {
 const ARCHIVE_MODELS: Record<string, any> = {
   items: U9Item,
   customers: U9Customer,
+  production_orders: U9ProductionOrder,
   env_monitor: EnvMonitor,
   env_alarm: EnvAlarm,
   weather: WeatherInfo,
@@ -414,6 +424,7 @@ const ARCHIVE_MODELS: Record<string, any> = {
 const ARCHIVE_SEARCH_FIELDS: Record<string, string[]> = {
   items: ['item_code', 'item_name', 'specification'],
   customers: ['customer_code', 'customer_name', 'short_name'],
+  production_orders: ['doc_no', 'item_code', 'item_name', 'doc_status'],
   env_monitor: ['factor_id', 'factor_name', 'device_name'],
   env_alarm: ['factor_id', 'factor_name', 'device_name', 'alarm_info'],
   weather: ['city', 'source'],
@@ -423,6 +434,7 @@ const ARCHIVE_SEARCH_FIELDS: Record<string, string[]> = {
 const ARCHIVE_ORDER: Record<string, any> = {
   items: [['item_id', 'DESC']],
   customers: [['customer_id', 'DESC']],
+  production_orders: [['order_id', 'DESC']],
   env_monitor: [['collect_time', 'DESC']],
   env_alarm: [['alarm_time', 'DESC']],
   weather: [['weather_time', 'DESC']],

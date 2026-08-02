@@ -48,6 +48,7 @@ import EnvMonitor from './EnvMonitor.js'
 import EnvAlarm from './EnvAlarm.js'
 import WeatherInfo from './WeatherInfo.js'
 import EnergyMeterData from './EnergyMeterData.js'
+import U9ProductionOrder from './U9ProductionOrder.js'
 
 // 建立模型关联关系
 // 用户 - 角色
@@ -209,6 +210,7 @@ const db = {
   EnvAlarm,
   WeatherInfo,
   EnergyMeterData,
+  U9ProductionOrder,
 }
 
 // 具名导出，便于按需导入
@@ -260,6 +262,7 @@ export {
   EnvAlarm,
   WeatherInfo,
   EnergyMeterData,
+  U9ProductionOrder,
 }
 
 export default db

@@ -2,7 +2,7 @@ import { SyncTask } from '../models/index.js'
 import { EnvCollector } from './envCollector.js'
 import { EnergyMeterCollector } from './energyMeterCollector.js'
 import { collectAndSaveWeather } from './weatherCollector.js'
-import { exportItems, exportCustomers } from './u9Exporter.js'
+import { exportItems, exportCustomers, exportProductionOrders } from './u9Exporter.js'
 import { decryptParamsObj } from '../utils/crypto.js'
 
 export interface TaskProgressUpdater {
@@ -79,6 +79,15 @@ export async function executeRealTask(
         }
         const result = await exportCustomers(taskBizId, onProgress)
         await updateProgress(`客户同步完成，共 ${result.totalRecords} 条`, 100, 'completed', result.totalRecords)
+        return { success: true, totalRecords: result.totalRecords }
+      }
+
+      case 'production_orders': {
+        const onProgress = async (msg: string, pct: number) => {
+          await updateProgress(msg, pct)
+        }
+        const result = await exportProductionOrders(taskBizId, onProgress)
+        await updateProgress(`生产订单同步完成，共 ${result.totalRecords} 条`, 100, 'completed', result.totalRecords)
         return { success: true, totalRecords: result.totalRecords }
       }
 

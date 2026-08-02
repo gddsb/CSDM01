@@ -3,6 +3,7 @@ import { U9_CONFIG } from './u9Login';
 import { loginU9, ProgressCallback } from './u9Login';
 import U9Item from '../models/U9Item.js';
 import U9Customer from '../models/U9Customer.js';
+import U9ProductionOrder from '../models/U9ProductionOrder.js';
 
 /** ========= 料品列表 ========= */
 export const ITEM_LIST_PARAMS: Record<string, string> = {
@@ -23,6 +24,17 @@ export const CUSTOMER_LIST_PARAMS: Record<string, string> = {
   ShowType: 'NavigatePage',
   ParentForm: 'a0e3a0ab-bf8a-4e1b-9a1b-8ffd2bbf6f2e',
   __fsk: '__SK88231*__SK88231',
+  __curOId: '1002406170039099',
+};
+
+/** ========= 生产订单列表 ========= */
+export const PRODUCTION_ORDER_LIST_PARAMS: Record<string, string> = {
+  lnk: 'CBO.Manufacture.MO.MOList',
+  sId: '3000nid',
+  bId: 'TBD',
+  ShowType: 'NavigatePage',
+  ParentForm: 'TBD',
+  __fsk: '__SKPROD*__SKPROD',
   __curOId: '1002406170039099',
 };
 
@@ -109,6 +121,32 @@ function extractCustomerRows(html: string): string[][] {
     if (tds.length >= 5) {
       const row = tds.slice(0, 8);
       while (row.length < 8) row.push('');
+      rows.push(row);
+    }
+  }
+  return rows;
+}
+
+/** 抽取生产订单单页数据（列数根据实际页面动态调整） */
+function extractProductionOrderRows(html: string): string[][] {
+  const rows: string[][] = [];
+  const trRe = /<tr\b[^>]*>[\s\S]*?<\/tr>/gi;
+  const tdRe = /<td[^>]*data-ca=\{([^}]*)\}[^>]*>/gi;
+  let tr: RegExpExecArray | null;
+  while ((tr = trRe.exec(html))) {
+    const trHtml = tr[0];
+    if (!/data-ca\s*=\s*\{[^}]*status/.test(trHtml)) continue;
+    const tds: string[] = [];
+    let m: RegExpExecArray | null;
+    while ((m = tdRe.exec(trHtml))) {
+      const tdTag = m[0];
+      if (/class\s*=\s*"[^"]*\btcc\b/.test(tdTag)) continue;
+      if (/display\s*:\s*none/i.test(tdTag)) continue;
+      tds.push(extractTdValue(m[1]));
+    }
+    if (tds.length >= 5) {
+      const row = tds.slice(0, 32);
+      while (row.length < 32) row.push('');
       rows.push(row);
     }
   }
@@ -275,18 +313,102 @@ export async function exportCustomers(taskId?: string, onProgress?: ProgressCall
   return { totalRecords: uniq.length, taskId };
 }
 
+/** ========= 生产订单列表 ========= */
+export async function exportProductionOrders(taskId?: string, onProgress?: ProgressCallback): Promise<ExportResult> {
+  const report = async (msg: string, pct: number) => { if (onProgress) await onProgress(msg, pct); };
+
+  const { http, org } = await loginU9((m, p) => report(m, Math.floor(p * 0.15)));
+  await report(`登录成功，准备拉取生产订单列表（组织: ${org.Name}）...`, 16);
+
+  const params = { ...PRODUCTION_ORDER_LIST_PARAMS, __curOId: String(org.ID) };
+  const url = buildErpUrl(params);
+
+  await report('请求生产订单列表首页...', 18);
+  const firstResp = await http.get<string>(url);
+  const firstHtml = firstResp.data;
+
+  const pg = parsePagination(firstHtml);
+  const totalPages = pg?.page_count || 1;
+  const totalRows = pg?.total_rows ?? 0;
+  await report(`解析到 ${totalRows} 条记录，共 ${totalPages} 页`, 22);
+
+  let allRows = extractProductionOrderRows(firstHtml);
+  await report(`第 1 页提取 ${allRows.length} 条`, 24);
+
+  for (let pageNum = 2; pageNum <= totalPages; pageNum++) {
+    await report(`请求第 ${pageNum}/${totalPages} 页...`, 24 + Math.floor((pageNum - 1) / totalPages * 66));
+    const h = await fetchPage(http, url, 'production_orders', pageNum);
+    const rows = extractProductionOrderRows(h);
+    allRows.push(...rows);
+    await report(`第 ${pageNum} 页提取 ${rows.length} 条（累计 ${allRows.length}）`, 24 + Math.floor(pageNum / totalPages * 66));
+  }
+
+  const seen = new Set<string>();
+  const uniq: string[][] = [];
+  for (const r of allRows) {
+    const k = r[2] || r.join('|');
+    if (!seen.has(k)) { seen.add(k); uniq.push(r); }
+  }
+
+  await report(`抓取+去重后 ${uniq.length} 条，写入数据库...`, 92);
+
+  if (U9ProductionOrder && uniq.length > 0) {
+    const records = uniq.map((r) => ({
+      task_id: taskId || '',
+      source_type: r[0] || '',
+      biz_create_date: r[1] || '',
+      doc_no: r[2] || '',
+      doc_status: r[3] || '',
+      item_code: r[4] || '',
+      item_name: r[5] || '',
+      specification: r[6] || '',
+      film_no: r[7] || '',
+      film_version: r[8] || '',
+      production_qty: r[9] || 0,
+      created_by: r[10] || '',
+      plan_start_date: r[11] || '',
+      plan_end_date: r[12] || '',
+      raw_data: JSON.stringify(r),
+    }));
+    try {
+      await U9ProductionOrder.bulkCreate(records as any, {
+        updateOnDuplicate: ['task_id', 'source_type', 'biz_create_date', 'doc_status',
+          'item_code', 'item_name', 'specification', 'film_no', 'film_version',
+          'production_qty', 'created_by', 'plan_start_date', 'plan_end_date',
+          'raw_data', 'updated_at'],
+      });
+    } catch (e: any) {
+      console.warn('[exportProductionOrders] 数据库写入警告:', e.message);
+    }
+  }
+
+  await report(`数据库写入完成，共 ${uniq.length} 条记录`, 100);
+
+  return { totalRecords: uniq.length, taskId };
+}
+
 /** 翻页 */
 async function fetchPage(
   http: AxiosInstance,
   url: string,
-  type: 'items' | 'customers',
+  type: 'items' | 'customers' | 'production_orders',
   pageNum: number
 ): Promise<string> {
   const resp = await http.get<string>(url);
   const shellHtml = resp.data;
   const { viewstate, eventvalidation } = getAspnetState(shellHtml);
-  const eventTarget = type === 'items' ? 'u$M$p0$DataGrid1' : 'u$M$p0$DataGrid0';
-  const currentForm = type === 'items' ? 'CBO.Pub.Item.ItemList' : 'CBO.Pub.Customer.CustomerList';
+  const eventTargetMap: Record<string, string> = {
+    items: 'u$M$p0$DataGrid1',
+    customers: 'u$M$p0$DataGrid0',
+    production_orders: 'u$M$p0$DataGrid1',
+  };
+  const currentFormMap: Record<string, string> = {
+    items: 'CBO.Pub.Item.ItemList',
+    customers: 'CBO.Pub.Customer.CustomerList',
+    production_orders: 'CBO.Manufacture.MO.MOList',
+  };
+  const eventTarget = eventTargetMap[type];
+  const currentForm = currentFormMap[type];
 
   const body = new URLSearchParams({
     __VIEWSTATE: viewstate,
