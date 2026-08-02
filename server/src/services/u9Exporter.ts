@@ -29,12 +29,14 @@ export const CUSTOMER_LIST_PARAMS: Record<string, string> = {
 
 /** ========= 生产订单列表 ========= */
 export const PRODUCTION_ORDER_LIST_PARAMS: Record<string, string> = {
-  lnk: 'CBO.Manufacture.MO.MOList',
-  sId: '3000nid',
-  bId: 'TBD',
+  lnk: 'MFG.MO.DiscreteMO.DiscreteMOList',
+  sId: '3025nid',
+  bId: '1001101160309210',
   ShowType: 'NavigatePage',
-  ParentForm: 'TBD',
-  __fsk: '__SKPROD*__SKPROD',
+  CardPageID: 'MFG.MO.DiscreteMO.DiscreteMO',
+  IsStartMO: '0',
+  ParentForm: '99dc1cbe-7014-45a9-b688-445dcf08a7af',
+  __fsk: '__SK52539*__SK52539',
   __curOId: '1002406170039099',
 };
 
@@ -145,8 +147,8 @@ function extractProductionOrderRows(html: string): string[][] {
       tds.push(extractTdValue(m[1]));
     }
     if (tds.length >= 5) {
-      const row = tds.slice(0, 32);
-      while (row.length < 32) row.push('');
+      const row = tds.slice(0, 20);
+      while (row.length < 20) row.push('');
       rows.push(row);
     }
   }
@@ -355,19 +357,19 @@ export async function exportProductionOrders(taskId?: string, onProgress?: Progr
   if (U9ProductionOrder && uniq.length > 0) {
     const records = uniq.map((r) => ({
       task_id: taskId || '',
-      source_type: r[0] || '',
-      biz_create_date: r[1] || '',
-      doc_no: r[2] || '',
-      doc_status: r[3] || '',
-      item_code: r[4] || '',
-      item_name: r[5] || '',
-      specification: r[6] || '',
-      film_no: r[7] || '',
-      film_version: r[8] || '',
-      production_qty: r[9] || 0,
-      created_by: r[10] || '',
+      source_type: r[1] || '',
+      biz_create_date: r[2] || '',
+      doc_no: r[3] || '',
+      doc_status: r[4] || '',
+      item_code: r[5] || '',
+      item_name: r[6] || '',
+      specification: r[7] || '',
+      film_no: r[8] || '',
+      film_version: r[9] || '',
+      production_qty: r[10] || 0,
       plan_start_date: r[11] || '',
       plan_end_date: r[12] || '',
+      created_by: r[13] || '',
       raw_data: JSON.stringify(r),
     }));
     try {
@@ -405,7 +407,7 @@ async function fetchPage(
   const currentFormMap: Record<string, string> = {
     items: 'CBO.Pub.Item.ItemList',
     customers: 'CBO.Pub.Customer.CustomerList',
-    production_orders: 'CBO.Manufacture.MO.MOList',
+    production_orders: 'MFG.MO.DiscreteMO.DiscreteMOList',
   };
   const eventTarget = eventTargetMap[type];
   const currentForm = currentFormMap[type];
