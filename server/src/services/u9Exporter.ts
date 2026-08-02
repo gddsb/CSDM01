@@ -357,6 +357,7 @@ export async function exportProductionOrders(taskId?: string, onProgress?: Progr
   if (U9ProductionOrder && uniq.length > 0) {
     const records = uniq.map((r) => ({
       task_id: taskId || '',
+      doc_type_name: r[0] || '',
       source_type: r[1] || '',
       biz_create_date: r[2] || '',
       doc_no: r[3] || '',
@@ -374,7 +375,7 @@ export async function exportProductionOrders(taskId?: string, onProgress?: Progr
     }));
     try {
       await U9ProductionOrder.bulkCreate(records as any, {
-        updateOnDuplicate: ['task_id', 'source_type', 'biz_create_date', 'doc_status',
+        updateOnDuplicate: ['task_id', 'doc_type_name', 'source_type', 'biz_create_date', 'doc_status',
           'item_code', 'item_name', 'specification', 'film_no', 'film_version',
           'production_qty', 'created_by', 'plan_start_date', 'plan_end_date',
           'raw_data', 'updated_at'],

@@ -16,6 +16,10 @@ const U9ProductionOrder = sequelize.define('U9ProductionOrder', {
     type: DataTypes.STRING(100),
     comment: '来源类型',
   },
+  doc_type_name: {
+    type: DataTypes.STRING(100),
+    comment: '单据类别名称',
+  },
   biz_create_date: {
     type: DataTypes.STRING(50),
     comment: '业务制单日期',
