@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useMessage } from '../../contexts/AppContext'
 import { Table, Button, Switch, Form, Input, Modal, Space, Tag, Card, Row, Col, Select, Progress, Timeline, Tooltip, Radio } from 'antd'
-import { EditOutlined, ReloadOutlined, SettingOutlined, DatabaseOutlined, TeamOutlined, DashboardOutlined, EnvironmentOutlined, PlayCircleOutlined, CheckCircleOutlined, ClockCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
+import { EditOutlined, ReloadOutlined, SettingOutlined, DatabaseOutlined, TeamOutlined, DashboardOutlined, EnvironmentOutlined, PlayCircleOutlined, CheckCircleOutlined, ClockCircleOutlined, CloseCircleOutlined, FileTextOutlined } from '@ant-design/icons'
 import api from '../../utils/api'
 import { formatDateTime } from '../../utils'
 
@@ -43,6 +43,7 @@ interface TestProgress {
 const TYPE_LABELS: Record<string, string> = {
   items: '料品数据',
   customers: '客户数据',
+  production_orders: '生产订单',
   env_monitor: '环境监测',
   weather: '气象信息',
   energy_meter: '能源采集',
@@ -51,6 +52,7 @@ const TYPE_LABELS: Record<string, string> = {
 const TYPE_ICONS: Record<string, React.ReactNode> = {
   items: <DatabaseOutlined style={{ color: '#1677ff', fontSize: 18 }} />,
   customers: <TeamOutlined style={{ color: '#52c41a', fontSize: 18 }} />,
+  production_orders: <FileTextOutlined style={{ color: '#fa8c16', fontSize: 18 }} />,
   env_monitor: <DashboardOutlined style={{ color: '#722ed1', fontSize: 18 }} />,
   weather: <EnvironmentOutlined style={{ color: '#13c2c2', fontSize: 18 }} />,
   energy_meter: <SettingOutlined style={{ color: '#fa541c', fontSize: 18 }} />,
@@ -63,6 +65,11 @@ const PARAM_FIELDS: Record<string, { key: string; label: string; type: 'text' | 
     { key: 'orgCode', label: '组织', type: 'select', placeholder: '请先输入用户名并获取组织列表', dependsOn: 'loginName' },
   ],
   customers: [
+    { key: 'loginName', label: 'U9登录用户名', type: 'text', placeholder: 'U9 ERP登录账号', noEcho: true },
+    { key: 'password', label: 'U9登录密码', type: 'password', placeholder: 'U9 ERP登录密码' },
+    { key: 'orgCode', label: '组织', type: 'select', placeholder: '请先输入用户名并获取组织列表', dependsOn: 'loginName' },
+  ],
+  production_orders: [
     { key: 'loginName', label: 'U9登录用户名', type: 'text', placeholder: 'U9 ERP登录账号', noEcho: true },
     { key: 'password', label: 'U9登录密码', type: 'password', placeholder: 'U9 ERP登录密码' },
     { key: 'orgCode', label: '组织', type: 'select', placeholder: '请先输入用户名并获取组织列表', dependsOn: 'loginName' },
