@@ -32,7 +32,7 @@ async function main() {
     const defaultTasks = [
       { task_type: 'items', name: '料品数据同步', description: '从U9 ERP系统同步料品基础档案数据', source_url: '', field_count: 24, is_active: 1 },
       { task_type: 'customers', name: '客户数据同步', description: '从U9 ERP系统同步客户基础档案数据', source_url: '', field_count: 11, is_active: 1 },
-      { task_type: 'production_orders', name: '生产订单同步', description: '从U9 ERP系统同步生产订单数据（制造订单MO）', source_url: '', field_count: 15, is_active: 1 },
+      { task_type: 'production_orders', name: '生产订单同步', description: '从U9 ERP系统同步生产订单数据（制造订单MO）', source_url: '', field_count: 16, is_active: 1 },
       { task_type: 'env_monitor', name: '环境监测采集', description: '从0531yun物联网平台采集车间环境监测数据', source_url: '', field_count: 15, is_active: 1 },
       { task_type: 'weather', name: '气象信息抓取', description: '从中国天气网抓取城市/区域实时气象数据', source_url: '', field_count: 8, is_active: 1 },
       { task_type: 'energy_meter', name: '电能数据采集', description: '从云集云能源平台采集总表有功/无功总电能历史记录', source_url: '', field_count: 11, is_active: 1 },
