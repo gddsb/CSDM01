@@ -69,7 +69,7 @@ function gaugeTemp(value: number, area: 'workshop' | 'warehouse'): EChartsOption
       },
       axisTick: {
         splitNumber: 5,
-        distance: -15,
+        distance: -20,
         length: 5,
         lineStyle: { color: '#ffffff', width: 1, opacity: 0.5 },
       },
@@ -126,7 +126,7 @@ function gaugeHum(value: number): EChartsOption {
       },
       axisTick: {
         splitNumber: 5,
-        distance: -15,
+        distance: -20,
         length: 5,
         lineStyle: { color: '#ffffff', width: 1, opacity: 0.5 },
       },
@@ -183,7 +183,7 @@ function gaugeDew(value: number): EChartsOption {
       },
       axisTick: {
         splitNumber: 5,
-        distance: -15,
+        distance: -20,
         length: 4,
         lineStyle: { color: '#ffffff', width: 1, opacity: 0.5 },
       },
