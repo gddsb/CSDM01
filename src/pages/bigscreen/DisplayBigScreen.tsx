@@ -12,8 +12,15 @@ const DISPLAY_DURATION = 10000
 export default function DisplayBigScreen() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [showUI, setShowUI] = useState(true)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const lastActiveRef = useRef<number>(Date.now())
   const iframesRef = useRef<(HTMLIFrameElement | null)[]>([])
+
+  const markActive = useCallback(() => {
+    lastActiveRef.current = Date.now()
+    setShowUI(true)
+  }, [])
 
   const requestFullscreen = useCallback(() => {
     const el = document.documentElement
@@ -35,6 +42,21 @@ export default function DisplayBigScreen() {
       requestFullscreen()
     }
   }, [requestFullscreen, exitFullscreen])
+
+  useEffect(() => {
+    markActive()
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll']
+    events.forEach((e) => window.addEventListener(e, markActive))
+    const checkTimer = setInterval(() => {
+      if (Date.now() - lastActiveRef.current > 15000) {
+        setShowUI(false)
+      }
+    }, 1000)
+    return () => {
+      events.forEach((e) => window.removeEventListener(e, markActive))
+      clearInterval(checkTimer)
+    }
+  }, [markActive])
 
   useEffect(() => {
     requestFullscreen()
@@ -73,6 +95,7 @@ export default function DisplayBigScreen() {
         background: '#060d1b',
         overflow: 'hidden',
         position: 'relative',
+        cursor: showUI ? 'default' : 'none',
       }}
     >
       {SCREENS.map((screen, idx) => (
@@ -88,7 +111,7 @@ export default function DisplayBigScreen() {
             height: '100%',
             border: 'none',
             opacity: idx === currentIndex ? 1 : 0,
-            pointerEvents: idx === currentIndex ? 'auto' : 'none',
+            pointerEvents: 'none',
             transition: 'opacity 0.8s ease-in-out',
             zIndex: idx === currentIndex ? 1 : 0,
           }}
@@ -96,6 +119,24 @@ export default function DisplayBigScreen() {
           allow="fullscreen"
         />
       ))}
+
+      {/* 事件捕获覆盖层 */}
+      <div
+        onMouseMove={markActive}
+        onMouseDown={markActive}
+        onKeyDown={markActive}
+        onTouchStart={markActive}
+        onClick={markActive}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: 5,
+          background: 'transparent',
+        }}
+      />
 
       {/* 底部指示器 + 控制栏 */}
       <div
@@ -112,6 +153,10 @@ export default function DisplayBigScreen() {
           gap: 12,
           zIndex: 10,
           padding: '0 24px',
+          transform: showUI ? 'translateY(0)' : 'translateY(100%)',
+          opacity: showUI ? 1 : 0,
+          pointerEvents: showUI ? 'auto' : 'none',
+          transition: 'transform 0.4s ease, opacity 0.4s ease',
         }}
       >
         {SCREENS.map((screen, idx) => (
