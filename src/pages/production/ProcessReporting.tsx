@@ -46,6 +46,7 @@ export default function ProcessReporting() {
   const [orders, setOrders] = useState([])
   const [lines, setLines] = useState([])
   const [createForm] = Form.useForm()
+  const [selectedCreateOrder, setSelectedCreateOrder] = useState<any>(null)
 
   const [selectedProcessId, setSelectedProcessId] = useState(null)
   const [activeTab, setActiveTab] = useState('production-defect')
@@ -597,6 +598,7 @@ export default function ProcessReporting() {
   const handleOpenCreateModal = () => {
     createForm.resetFields()
     createForm.setFieldsValue({ report_qty: 0, remarks: '' })
+    setSelectedCreateOrder(null)
     setCreateModalOpen(true)
   }
 
@@ -2847,6 +2849,7 @@ export default function ProcessReporting() {
               showSearch
               optionFilterProp="label"
               popupClassName="mes-select-dropdown"
+              onChange={(val, option) => setSelectedCreateOrder(option || null)}
             />
           </Form.Item>
           <Form.Item
@@ -2864,7 +2867,16 @@ export default function ProcessReporting() {
           </Form.Item>
           <Form.Item
             name="report_qty"
-            label="报工数量"
+            label={
+              <span>
+                报工数量
+                {selectedCreateOrder && (
+                  <span style={{ color: '#8c8c8c', fontSize: 12, fontWeight: 400, marginLeft: 8 }}>
+                    （计划{selectedCreateOrder.planned_qty} - 已完工{selectedCreateOrder.finished_qty} = 剩余{Number(selectedCreateOrder.planned_qty || 0) - Number(selectedCreateOrder.finished_qty || 0)}）
+                  </span>
+                )}
+              </span>
+            }
             rules={[{ required: true, message: '请填写报工数量' }]}
           >
             <InputNumber min={1} step={1} precision={0} style={{ width: '100%' }} />
