@@ -98,6 +98,7 @@ interface EnergyConfig {
   token?: string; // 直接传入已有 token，跳过登录+验证码
   captchaSchemeId?: string; // 验证码识别方案ID
   captchaParams?: Partial<CaptchaScheme['params']>; // 自定义验证码参数（优先级高于 schemeId）
+  onProgress?: (message: string, percent: number) => void; // 进度回调
 }
 
 interface CaptchaResult {
@@ -153,6 +154,12 @@ export class EnergyMeterCollector {
     if (config.token) {
       this.token = config.token;
       console.log('[EnergyMeterCollector] 使用预置 token 模式（跳过登录+验证码），token preview:', String(config.token).substring(0, 50));
+    }
+  }
+
+  private reportProgress(message: string, percent: number) {
+    if (this.config.onProgress) {
+      try { this.config.onProgress(message, percent); } catch (_) { /* noop */ }
     }
   }
 
@@ -296,13 +303,16 @@ export class EnergyMeterCollector {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       console.log(`[EnergyMeterCollector] Login attempt ${attempt}/${maxRetries}`);
 
+      this.reportProgress('正在识别验证码', 20);
       const captcha = await this.fetchCaptcha();
       if (!captcha) {
         lastError = '获取验证码失败（无法解码或OCR识别为空）';
         continue;
       }
+      this.reportProgress('验证码识别成功', 30);
 
       try {
+        this.reportProgress('正在登录', 40);
         const formData = new URLSearchParams();
         formData.append('UserID', this.config.loginName);
         formData.append('Password', this.config.password);
@@ -340,6 +350,7 @@ export class EnergyMeterCollector {
         if (body.IsSuccess && body.Token) {
           this.token = body.Token;
           console.log('[EnergyMeterCollector] Login successful, token preview:', String(body.Token).substring(0, 50));
+          this.reportProgress('登录成功', 50);
           return this.token;
         } else {
           lastError = body.ErrorMsg || `登录失败（ErrorCode=${body.ErrorCode || '未知'}）`;
@@ -566,10 +577,12 @@ export class EnergyMeterCollector {
 
   async collectAndSave(taskSettingId: number): Promise<{ saved: number; fetched: number; errors: string[] }> {
     const errors: string[] = [];
+    this.reportProgress('获取总表有功/无功总电能数据', 70);
     const records = await this.fetchTotalEnergy();
     if (records.length === 0) {
       return { saved: 0, fetched: 0, errors: ['返回记录数为 0'] };
     }
+    this.reportProgress('数据获取成功', 85);
 
     let saved = 0;
     for (const r of records) {

@@ -92,7 +92,7 @@ export async function executeRealTask(
       }
 
       case 'energy_meter': {
-        await updateProgress('连接能源采集平台...', 10)
+        await updateProgress('连接能源平台', 10)
         const decryptedParams = decryptParamsObj(params || {})
         const loginName = decryptedParams.loginName
         const password = decryptedParams.password
@@ -109,9 +109,13 @@ export async function executeRealTask(
           } catch (_) { /* noop */ }
           return { success: false, error: msg }
         }
-        const collector = new EnergyMeterCollector({ loginName, password, token: presetToken, captchaSchemeId })
-        await updateProgress(presetToken ? '使用预置 token 连接平台...' : '正在登录并识别验证码...', 25)
-        await updateProgress('获取总表有功/无功总电能数据...', 50)
+        const onProgress = async (msg: string, pct: number) => {
+          await updateProgress(msg, pct)
+        }
+        const collector = new EnergyMeterCollector({ loginName, password, token: presetToken, captchaSchemeId, onProgress })
+        if (presetToken) {
+          await updateProgress('登录成功', 50)
+        }
         // 注意：taskBizId 形如 SCHEM20260802123，不能作为 taskSettingId，
         // 传入 sync_task 主键 taskId 作为与采集记录关联的 trace id
         const result = await collector.collectAndSave(Number(taskId) || 0)
@@ -123,7 +127,7 @@ export async function executeRealTask(
         }
         const warn = (result.errors && result.errors.length > 0) ? `，${result.errors.length} 条保存异常` : ''
         await updateProgress(
-          `能源数据写入完成（采集 ${result.fetched} 条，成功 ${result.saved} 条${warn}）`,
+          `能源数据入库完成（采集 ${result.fetched} 条，成功 ${result.saved} 条${warn}）`,
           100, 'completed', result.saved
         )
         return { success: true, totalRecords: result.saved }

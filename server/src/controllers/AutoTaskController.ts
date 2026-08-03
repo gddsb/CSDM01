@@ -317,10 +317,14 @@ const TEST_STEPS_MAP: Record<string, { message: string; percent: number }[]> = {
     { message: '测试完成', percent: 100 },
   ],
   energy_meter: [
-    { message: '验证平台连接参数', percent: 10 },
-    { message: '识别验证码并登录', percent: 25 },
-    { message: '获取总表有功/无功总电能', percent: 50 },
-    { message: '能源数据入库完成', percent: 85 },
+    { message: '连接能源平台', percent: 10 },
+    { message: '正在识别验证码', percent: 20 },
+    { message: '验证码识别成功', percent: 30 },
+    { message: '正在登录', percent: 40 },
+    { message: '登录成功', percent: 50 },
+    { message: '获取总表有功/无功总电能数据', percent: 70 },
+    { message: '数据获取成功', percent: 85 },
+    { message: '能源数据入库完成', percent: 95 },
     { message: '测试完成', percent: 100 },
   ],
   production_orders: [
