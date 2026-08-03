@@ -249,7 +249,7 @@ export class EnergyMeterCollector {
   async fetchCaptcha(): Promise<CaptchaResult | null> {
     const keyStr = this.generateKeyStr(12);
     try {
-      const res = await axios.post(`${API_BASE}${CAPTCHA_PATH}?keyStr=${keyStr}`, null, {
+      const res = await axios.post(`${API_BASE}${CAPTCHA_PATH}`, null, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         params: { keyStr },
         responseType: 'text',
@@ -303,16 +303,16 @@ export class EnergyMeterCollector {
       }
 
       try {
+        const formData = new URLSearchParams();
+        formData.append('UserID', this.config.loginName);
+        formData.append('Password', this.config.password);
+        formData.append('client', '0');
+        formData.append('KeyStr', captcha.keyStr);
+        formData.append('Code', captcha.code);
+        formData.append('Language', 'cn');
         const res = await axios.post(
           `${API_BASE}${LOGIN_PATH}`,
-          {
-            UserID: this.config.loginName,
-            Password: this.config.password,
-            client: 0,
-            KeyStr: captcha.keyStr,
-            Code: captcha.code,
-            Language: 'cn',
-          },
+          formData.toString(),
           {
             // 登录接口真实也是 urlencoded
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -681,7 +681,7 @@ export async function testCaptchaScheme(
         try {
           // 获取验证码图片
           const keyStr = tempCollector['generateKeyStr'](12);
-          const res = await axios.post(`${API_BASE}${CAPTCHA_PATH}?keyStr=${keyStr}`, null, {
+          const res = await axios.post(`${API_BASE}${CAPTCHA_PATH}`, null, {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             params: { keyStr },
             responseType: 'text',
@@ -755,7 +755,7 @@ export async function testCaptchaScheme(
 // ========== 独立API：获取验证码图片（供前端展示，由用户人工识别） ==========
 export async function fetchEnergyCaptcha(): Promise<{ keyStr: string; imageBase64: string }> {
   const keyStr = Math.random().toString(36).slice(2, 14);
-  const res = await axios.post(`${API_BASE}${CAPTCHA_PATH}?keyStr=${keyStr}`, null, {
+  const res = await axios.post(`${API_BASE}${CAPTCHA_PATH}`, null, {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     params: { keyStr },
     responseType: 'text',
@@ -786,16 +786,16 @@ export async function loginEnergyWithCaptcha(
   code: string
 ): Promise<{ success: boolean; token?: string; error?: string }> {
   try {
+    const formData = new URLSearchParams();
+    formData.append('UserID', loginName);
+    formData.append('Password', password);
+    formData.append('client', '0');
+    formData.append('KeyStr', keyStr);
+    formData.append('Code', code);
+    formData.append('Language', 'cn');
     const res = await axios.post(
       `${API_BASE}${LOGIN_PATH}`,
-      {
-        UserID: loginName,
-        Password: password,
-        client: 0,
-        KeyStr: keyStr,
-        Code: code,
-        Language: 'cn',
-      },
+      formData.toString(),
       {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         responseType: 'text',
