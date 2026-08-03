@@ -16,6 +16,13 @@ import {
 
 const router = Router()
 
+// 公开的看板API（大屏展示，无需登录）
+router.get('/dashboard/overview', dashboardOverview)
+router.get('/dashboard/trend', dashboardTrend)
+router.get('/dashboard/production', productionDashboard)
+router.get('/dashboard/quality', qualityDashboard)
+router.get('/dashboard/management', managementDashboard)
+
 router.use(authRequired)
 
 // 任务设置

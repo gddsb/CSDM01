@@ -129,12 +129,7 @@ function gaugeDew(value: number): EChartsOption {
       splitLine: { length: 14, lineStyle: { color: 'auto', width: 2 } },
       axisLabel: { color: '#5b8ca8', distance: 20, fontSize: 10 },
       title: { show: false },
-      detail: {
-        valueAnimation: true,
-        offsetCenter: [0, '72%'],
-        formatter: (v: number) => `${v.toFixed(1)}℃`,
-        fontSize: 22, fontWeight: 700, color,
-      },
+      detail: { show: false },
       data: [{ value: value != null && !Number.isNaN(value) ? Math.round(value * 10) / 10 : 0 }],
     }],
   }
@@ -305,6 +300,23 @@ function useChart(option: EChartsOption | null, deps: any[] = []) {
   return ref
 }
 
+// 动态采集点表盘子组件
+function FactorGauge({ factor }: { factor: FactorItem }) {
+  const type = factor.factorType === 'temperature' ? 'temp' : 'hum'
+  const unit = factor.unit || (type === 'temp' ? '℃' : '%RH')
+  const option = miniGauge(factor.value, unit, type as any)
+  const ref = useChart(option, [factor.value])
+  const label = factor.factor_name.replace(/^车间|^仓库/, '')
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <div ref={ref} style={{ height: 120 }} />
+      <div className="bs-gauge-label" style={{ marginTop: -4, fontSize: 11 }}>
+        {label}
+      </div>
+    </div>
+  )
+}
+
 export default function EnvironmentBigScreen() {
   const [overview, setOverview] = useState<OverviewData | null>(null)
   const [trend, setTrend] = useState<TrendData | null>(null)
@@ -403,10 +415,19 @@ export default function EnvironmentBigScreen() {
   const whHumRef = useChart(gaugeHum(areaAvg.whHum), [areaAvg.whHum])
   const whDewRef = useChart(gaugeDew(areaAvg.whDew), [areaAvg.whDew])
 
-  const g1 = useChart(miniGauge(areaAvg.wsTemp, '℃', 'temp'), [areaAvg.wsTemp])
-  const g2 = useChart(miniGauge(areaAvg.wsHum, '%RH', 'hum'), [areaAvg.wsHum])
-  const g3 = useChart(miniGauge(areaAvg.whTemp, '℃', 'temp'), [areaAvg.whTemp])
-  const g4 = useChart(miniGauge(areaAvg.whHum, '%RH', 'hum'), [areaAvg.whHum])
+  // 所有温湿度采集点（排除压差等非温湿度因子）
+  const allFactors = useMemo(() => {
+    const list: FactorItem[] = []
+    if (!overview?.areas) return list
+    for (const a of overview.areas) {
+      for (const f of a.factors) {
+        const n = f.factor_name || ''
+        if (n.includes('温度') && !n.includes('露点')) list.push({ ...f, factorType: 'temperature' })
+        else if (n.includes('湿度')) list.push({ ...f, factorType: 'humidity' })
+      }
+    }
+    return list
+  }, [overview])
 
   const tempRef = useChart(tempSeries.length ? trendOption(tempSeries, trend?.times || [], tempCfg) : null, [tempSeries, trend?.times])
   const humRef = useChart(humSeries.length ? trendOption(humSeries, trend?.times || [], humCfg) : null, [humSeries, trend?.times])
@@ -527,39 +548,25 @@ export default function EnvironmentBigScreen() {
               </BigScreenPanel>
             </div>
 
-            {/* 右栏：分区监测仪表 */}
+            {/* 右栏：所有采集点仪表 */}
             <div style={{ width: 380, display: 'flex', flexDirection: 'column', gap: 12 }}>
               <BigScreenPanel
-                title="分区监测仪表"
+                title={`所有采集点 (${allFactors.length})`}
                 titleIcon={<DashboardOutlined />}
                 style={{ flex: 1 }}
-                bodyStyle={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+                bodyStyle={{ display: 'flex', flexDirection: 'column', overflow: 'auto' }}
               >
-                <Row gutter={[16, 16]}>
-                  <Col span={12}>
-                    <div style={{ textAlign: 'center' }}>
-                      <div ref={g1} style={{ height: 130 }} />
-                      <div className="bs-gauge-label" style={{ marginTop: -4 }}>车间温度</div>
-                    </div>
-                  </Col>
-                  <Col span={12}>
-                    <div style={{ textAlign: 'center' }}>
-                      <div ref={g2} style={{ height: 130 }} />
-                      <div className="bs-gauge-label" style={{ marginTop: -4 }}>车间湿度</div>
-                    </div>
-                  </Col>
-                  <Col span={12}>
-                    <div style={{ textAlign: 'center' }}>
-                      <div ref={g3} style={{ height: 130 }} />
-                      <div className="bs-gauge-label" style={{ marginTop: -4 }}>仓库温度</div>
-                    </div>
-                  </Col>
-                  <Col span={12}>
-                    <div style={{ textAlign: 'center' }}>
-                      <div ref={g4} style={{ height: 130 }} />
-                      <div className="bs-gauge-label" style={{ marginTop: -4 }}>仓库湿度</div>
-                    </div>
-                  </Col>
+                <Row gutter={[12, 12]}>
+                  {allFactors.map((f, idx) => (
+                    <Col span={12} key={`${f.factor_name}-${idx}`}>
+                      <FactorGauge factor={f} />
+                    </Col>
+                  ))}
+                  {allFactors.length === 0 && (
+                    <Col span={24}>
+                      <div style={{ textAlign: 'center', color: '#5b8ca8', padding: 30 }}>暂无采集点数据</div>
+                    </Col>
+                  )}
                 </Row>
               </BigScreenPanel>
 
