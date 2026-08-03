@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { AxiosInstance } from 'axios'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import path from 'path'
@@ -69,22 +69,66 @@ export class EnergyMeterCollector {
   private token: string | null = null
   private username: string
   private password: string
+  private http: AxiosInstance
+  private cookies = ''
 
   constructor(username: string, password: string) {
     this.username = username
     this.password = password
+    this.http = this.createSession()
   }
 
-  private async getCaptcha(keyStr: string): Promise<string> {
-    const url = `${API_HOST}/api/Account/GetCaptcha?keyStr=${keyStr}`
-    const resp = await axios.post(url, { keyStr }, {
+  private createSession(): AxiosInstance {
+    const http = axios.create({
+      timeout: 30000,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept': 'application/json, text/javascript, */*; q=0.01',
         'Origin': FRONTEND_HOST,
         'Referer': `${FRONTEND_HOST}/login.html`,
       },
-      timeout: 30000,
+    })
+
+    const setCookiesFromResp = (respHeaders: any) => {
+      const list = respHeaders?.['set-cookie'] || []
+      for (const item of list) {
+        const m = /^([^=;]+)=([^;]*)/.exec(item)
+        if (!m) continue
+        const [, name, value] = m
+        const pairs = this.cookies.split('; ').filter(Boolean)
+        const idx = pairs.findIndex((p) => p.startsWith(name + '='))
+        const nv = `${name}=${value}`
+        if (idx >= 0) pairs[idx] = nv
+        else pairs.push(nv)
+        this.cookies = pairs.join('; ')
+      }
+    }
+
+    http.interceptors.request.use((cfg) => {
+      if (this.cookies) {
+        cfg.headers = cfg.headers || {}
+        if (typeof (cfg.headers as any).set === 'function') {
+          (cfg.headers as any).set('Cookie', this.cookies)
+        } else {
+          (cfg.headers as any).Cookie = this.cookies
+        }
+      }
+      return cfg
+    })
+    http.interceptors.response.use((resp) => {
+      setCookiesFromResp(resp.headers)
+      return resp
+    })
+
+    return http
+  }
+
+  private async getCaptcha(keyStr: string): Promise<string> {
+    const url = `${API_HOST}/api/Account/GetCaptcha?keyStr=${keyStr}`
+    const resp = await this.http.post(url, new URLSearchParams({ keyStr }).toString(), {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
     })
 
     let result = resp.data
@@ -108,15 +152,10 @@ export class EnergyMeterCollector {
       Language: 'en',
     })
 
-    const resp = await axios.post(url, loginData.toString(), {
+    const resp = await this.http.post(url, loginData.toString(), {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'application/json, text/javascript, */*; q=0.01',
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Origin': FRONTEND_HOST,
-        'Referer': `${FRONTEND_HOST}/login.html`,
       },
-      timeout: 30000,
     })
 
     let result = resp.data
@@ -130,14 +169,14 @@ export class EnergyMeterCollector {
     return false
   }
 
-  async loginWithCaptcha(maxRetries = 3): Promise<boolean> {
+  async loginWithCaptcha(maxRetries = 15): Promise<boolean> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       console.log(`[EnergyCollector] 登录尝试 ${attempt}/${maxRetries}`)
       const keyStr = generateKeyStr(12)
       try {
         const base64Image = await this.getCaptcha(keyStr)
         const captchaCode = await recognizeCaptcha(base64Image)
-        if (!captchaCode || captchaCode.length < 3) {
+        if (!captchaCode || captchaCode.length !== 4) {
           console.warn('[EnergyCollector] 验证码识别结果不完整，重试')
           continue
         }
@@ -181,14 +220,12 @@ export class EnergyMeterCollector {
       PrivAddr: '',
     }
 
-    const resp = await axios.post(url, params, {
+    const resp = await this.http.post(url, params, {
       headers: {
         'Authorization': `Bearer ${this.token}`,
         'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Referer': `${FRONTEND_HOST}/Energy/ygwgzdn.html`,
       },
-      timeout: 30000,
     })
 
     let result = resp.data
