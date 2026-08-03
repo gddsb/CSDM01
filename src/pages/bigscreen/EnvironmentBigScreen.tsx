@@ -143,20 +143,20 @@ function miniGauge(value: number, unit: string, type: 'temp' | 'hum' | 'dew' | '
     pressure: value < 5 ? ['#ff4d4f', '#fa8c16', '#52c41a'] : value > 20 ? ['#ff4d4f', '#fa8c16', '#52c41a'] : ['#52c41a', '#fa8c16', '#ff4d4f'],
   }
   const ranges = {
-    temp: { min: 0, max: 40, split: 4 },
-    hum: { min: 35, max: 100, split: 2 },
-    dew: { min: -10, max: 35, split: 3 },
-    pressure: { min: 0, max: 30, split: 3 },
+    temp: { min: -20, max: 80, split: 5 },
+    hum: { min: 0, max: 100, split: 5 },
+    dew: { min: -20, max: 50, split: 5 },
+    pressure: { min: 0, max: 50, split: 5 },
   }
   const r = ranges[type]
   const cs = colors[type]
   const stops: any = type === 'temp'
-    ? [[0.45, cs[0]], [25 / 40, cs[1]], [1, cs[2]]]
+    ? [[(18 + 20) / 100, cs[0]], [(30 + 20) / 100, cs[1]], [1, cs[2]]]
     : type === 'hum'
-      ? [[0.4615, cs[0]], [1, cs[1]]]
+      ? [[0.65, cs[0]], [1, cs[1]]]
       : type === 'dew'
-        ? [[15 / 45, cs[0]], [30 / 45, cs[1]], [1, cs[2]]]
-        : [[5 / 30, cs[0]], [20 / 30, cs[1]], [1, cs[2]]]
+        ? [[25 / 70, cs[0]], [40 / 70, cs[1]], [1, cs[2]]]
+        : [[5 / 50, cs[0]], [20 / 50, cs[1]], [1, cs[2]]]
 
   const mainColor = type === 'temp'
     ? (value < 18 ? '#00d4ff' : value > 30 ? '#ff4d4f' : '#52c41a')
@@ -169,21 +169,35 @@ function miniGauge(value: number, unit: string, type: 'temp' | 'hum' | 'dew' | '
   return {
     series: [{
       type: 'gauge',
-      center: ['50%', '58%'],
-      radius: '88%',
+      center: ['50%', '68%'],
+      radius: '95%',
       min: r.min, max: r.max,
-      startAngle: 210, endAngle: -30,
-      axisLine: { lineStyle: { width: 10, color: stops } },
-      pointer: { itemStyle: { color: mainColor }, width: 3, length: '50%' },
+      startAngle: 180, endAngle: 0,
+      progress: { show: true, width: 14, itemStyle: { color: mainColor } },
+      axisLine: { lineStyle: { width: 14, color: stops } },
+      pointer: { show: false },
       axisTick: { show: false },
-      splitLine: { length: 8, lineStyle: { color: 'rgba(0,212,255,0.3)', width: 1 } },
-      axisLabel: { show: false },
+      splitLine: { show: false },
+      axisLabel: {
+        show: true,
+        distance: -24,
+        fontSize: 10,
+        color: '#5b8ca8',
+        formatter: (v: number) => {
+          if (v === r.min) return `${r.min}${unit}`
+          if (v === r.max) return `${r.max}${unit}`
+          return ''
+        },
+      },
       title: { show: false },
       detail: {
         valueAnimation: true,
-        offsetCenter: [0, '65%'],
-        formatter: (v: number) => `${v.toFixed(1)}`,
-        fontSize: 20, fontWeight: 700, color: mainColor,
+        offsetCenter: [0, '-5%'],
+        formatter: (v: number) => `{a|${v.toFixed(1)}}{b|${unit}}`,
+        rich: {
+          a: { fontSize: 28, fontWeight: 700, color: '#ffffff', padding: [0, 4, 0, 0] },
+          b: { fontSize: 14, fontWeight: 500, color: '#8adfff', padding: [0, 0, 0, 0] },
+        },
       },
       data: [{ value: Math.round(value * 10) / 10 }],
     }],
@@ -326,9 +340,9 @@ function FactorGauge({ factor }: { factor: FactorItem }) {
   const ref = useChart(option, [factor.value])
   const label = factor.factor_name
   return (
-    <div style={{ textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-      <div ref={ref} style={{ flex: 1, minHeight: 0 }} />
-      <div className="bs-gauge-label" style={{ marginTop: -2, fontSize: 11, flexShrink: 0 }}>
+    <div style={{ textAlign: 'center', height: '100%', minHeight: 100, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <div ref={ref} style={{ flex: 1, minHeight: 70, width: '100%' }} />
+      <div className="bs-gauge-label" style={{ marginTop: -4, fontSize: 12, flexShrink: 0 }}>
         {label}
       </div>
     </div>
@@ -442,7 +456,7 @@ export default function EnvironmentBigScreen() {
   const whHumRef = useChart(gaugeHum(areaAvg.whHum), [areaAvg.whHum])
   const whDewRef = useChart(gaugeDew(areaAvg.whDew), [areaAvg.whDew])
 
-  // 所有采集点（温湿度 + 压差）
+  // 所有采集点（温湿度 + 压差）- 按指定顺序排序
   const allFactors = useMemo(() => {
     const list: FactorItem[] = []
     if (!overview?.areas) return list
@@ -455,7 +469,21 @@ export default function EnvironmentBigScreen() {
         else if (n.includes('压差')) list.push({ ...f, factorType: 'pressure' })
       }
     }
-    return list
+    // 自定义排序权重
+    const getRank = (name: string) => {
+      if (name.includes('车间') && name.includes('前端') && name.includes('压差')) return 1
+      if (name.includes('车间') && (name.includes('后段') || name.includes('后端')) && name.includes('压差')) return 2
+      if (name.includes('车间') && name.includes('前端') && name.includes('温度')) return 3
+      if (name.includes('车间') && name.includes('前端') && name.includes('湿度')) return 4
+      if (name.includes('仓库') && name.includes('前端') && name.includes('温度')) return 5
+      if (name.includes('仓库') && name.includes('前端') && name.includes('湿度')) return 6
+      if (name.includes('仓库') && (name.includes('中段') || name.includes('中端')) && name.includes('温度')) return 7
+      if (name.includes('仓库') && (name.includes('中段') || name.includes('中端')) && name.includes('湿度')) return 8
+      if (name.includes('仓库') && (name.includes('后段') || name.includes('后端')) && name.includes('温度')) return 9
+      if (name.includes('仓库') && (name.includes('后段') || name.includes('后端')) && name.includes('湿度')) return 10
+      return 99
+    }
+    return list.sort((a, b) => getRank(a.factor_name) - getRank(b.factor_name))
   }, [overview])
 
   const tempRef = useChart(tempSeries.length ? trendOption(tempSeries, trend?.times || [], tempCfg) : null, [tempSeries, trend?.times])
