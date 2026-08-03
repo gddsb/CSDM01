@@ -39,7 +39,7 @@ export class EnergyMeterCollector {
     if (taskSettingId != null) args.push(String(taskSettingId))
 
     try {
-      const { stdout, stderr } = await execFileAsync('python3', args, {
+      const { stdout, stderr } = await execFileAsync('python3', [scriptPath, ...args], {
         timeout: 300000,
         maxBuffer: 10 * 1024 * 1024,
       })
