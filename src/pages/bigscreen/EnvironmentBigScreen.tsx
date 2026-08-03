@@ -48,13 +48,13 @@ function gaugeTemp(value: number, area: 'workshop' | 'warehouse'): EChartsOption
   return {
     series: [{
       type: 'gauge',
-      center: ['50%', '58%'],
-      radius: '55%',
+      center: ['50%', '56%'],
+      radius: '42%',
       min: 0, max: 40, splitNumber: 8,
       startAngle: 225, endAngle: -45,
       axisLine: {
         lineStyle: {
-          width: 10,
+          width: 12,
           color: [
             [0.45, '#00d4ff'],
             [upper / 40, '#52c41a'],
@@ -62,16 +62,16 @@ function gaugeTemp(value: number, area: 'workshop' | 'warehouse'): EChartsOption
           ],
         },
       },
-      pointer: { itemStyle: { color }, width: 3, length: '55%' },
+      pointer: { itemStyle: { color }, width: 3, length: '58%' },
       axisTick: { show: false },
-      splitLine: { length: 10, lineStyle: { color: '#ffffff', width: 2 } },
-      axisLabel: { color: '#c9e8ff', distance: 24, fontSize: 11, fontWeight: 600 },
+      splitLine: { length: 14, lineStyle: { color: '#ffffff', width: 2 } },
+      axisLabel: { color: '#e6f3ff', distance: 30, fontSize: 12, fontWeight: 600 },
       title: { show: false },
       detail: {
         valueAnimation: true,
-        offsetCenter: [0, '72%'],
+        offsetCenter: [0, '78%'],
         formatter: (v: number) => `${v.toFixed(1)}`,
-        fontSize: 18, fontWeight: 700, color,
+        fontSize: 20, fontWeight: 700, color,
       },
       data: [{ value: Math.round(value * 10) / 10 }],
     }],
@@ -83,26 +83,26 @@ function gaugeHum(value: number): EChartsOption {
   return {
     series: [{
       type: 'gauge',
-      center: ['50%', '58%'],
-      radius: '55%',
+      center: ['50%', '56%'],
+      radius: '42%',
       min: 35, max: 100, splitNumber: 5,
       startAngle: 225, endAngle: -45,
       axisLine: {
         lineStyle: {
-          width: 10,
+          width: 12,
           color: [[0.4615, '#52c41a'], [1, '#ff4d4f']],
         },
       },
-      pointer: { itemStyle: { color }, width: 3, length: '55%' },
+      pointer: { itemStyle: { color }, width: 3, length: '58%' },
       axisTick: { show: false },
-      splitLine: { length: 10, lineStyle: { color: '#ffffff', width: 2 } },
-      axisLabel: { color: '#c9e8ff', distance: 24, fontSize: 11, fontWeight: 600 },
+      splitLine: { length: 14, lineStyle: { color: '#ffffff', width: 2 } },
+      axisLabel: { color: '#e6f3ff', distance: 30, fontSize: 12, fontWeight: 600 },
       title: { show: false },
       detail: {
         valueAnimation: true,
-        offsetCenter: [0, '72%'],
+        offsetCenter: [0, '78%'],
         formatter: (v: number) => `${v.toFixed(1)}%`,
-        fontSize: 18, fontWeight: 700, color,
+        fontSize: 20, fontWeight: 700, color,
       },
       data: [{ value: Math.round(value * 10) / 10 }],
     }],
