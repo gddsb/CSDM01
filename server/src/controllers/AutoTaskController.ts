@@ -765,32 +765,22 @@ export const productionDashboard = async (req, res) => {
       }
     })
 
-    // 5. 最近30天：日产线产出数据（趋势图）
-    const processReports30d = await ReportProcess.findAll({
-      where: { created_at: { [Op.gte]: thirtyDaysAgo } },
-      order: [['created_at', 'ASC']],
+    // 5. 最近30天：日产线产出数据（趋势图）— 直接从报工单统计
+    const reportOrders30d = await ReportOrder.findAll({
+      where: { report_time: { [Op.gte]: thirtyDaysAgo } },
+      order: [['report_time', 'ASC']],
       limit: 10000,
       raw: true,
     })
-    const reportOrderIds30d = processReports30d.map(p => p.report_order_id).filter(Boolean)
-    const processReportOrders30d = reportOrderIds30d.length > 0
-      ? await ReportOrder.findAll({
-          where: { report_order_id: { [Op.in]: reportOrderIds30d } },
-          raw: true,
-        })
-      : []
-    const roMap30d = new Map()
-    processReportOrders30d.forEach(ro => roMap30d.set(ro.report_order_id, ro))
-
     const dailyOutputMap: Record<string, Record<string, number>> = {}
-    processReports30d.forEach(pr => {
-      const ro = roMap30d.get(pr.report_order_id)
-      const t = ro?.report_time || pr.created_at
+    reportOrders30d.forEach(ro => {
+      const t = ro.report_time || ro.created_at
       if (!t) return
-      const dateStr = String(t).slice(0, 10)
-      const lineName = pr.line_name || (productionLines[0]?.line_name) || '默认产线'
+      const d = t instanceof Date ? t : new Date(t)
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      const lineName = ro.line_name || (productionLines[0]?.line_name) || '默认产线'
       if (!dailyOutputMap[dateStr]) dailyOutputMap[dateStr] = {}
-      dailyOutputMap[dateStr][lineName] = (dailyOutputMap[dateStr][lineName] || 0) + Number(ro?.report_qty || 0)
+      dailyOutputMap[dateStr][lineName] = (dailyOutputMap[dateStr][lineName] || 0) + Number(ro.report_qty || 0)
     })
 
     const dateList: string[] = []
