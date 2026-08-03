@@ -49,12 +49,12 @@ function gaugeTemp(value: number, area: 'workshop' | 'warehouse'): EChartsOption
     series: [{
       type: 'gauge',
       center: ['50%', '55%'],
-      radius: '65%',
+      radius: '68%',
       min: 0, max: 40, splitNumber: 8,
       startAngle: 225, endAngle: -45,
       axisLine: {
         lineStyle: {
-          width: 14,
+          width: 12,
           color: [
             [0.45, '#36cfc9'],
             [upper / 40, '#40a9ff'],
@@ -63,36 +63,37 @@ function gaugeTemp(value: number, area: 'workshop' | 'warehouse'): EChartsOption
         },
       },
       pointer: {
-        length: '60%',
-        width: 4,
+        length: '65%',
+        width: 5,
         itemStyle: { color: '#40a9ff' },
       },
       axisTick: {
-        distance: -18,
-        length: 6,
-        lineStyle: { color: '#ffffff', width: 1, opacity: 0.6 },
+        splitNumber: 5,
+        distance: -15,
+        length: 5,
+        lineStyle: { color: '#ffffff', width: 1, opacity: 0.5 },
       },
       splitLine: {
-        distance: -22,
-        length: 12,
+        distance: -20,
+        length: 14,
         lineStyle: { color: '#ffffff', width: 2 },
       },
       axisLabel: {
         color: '#e6f3ff',
-        distance: -38,
+        distance: -36,
         fontSize: 11,
         fontWeight: 500,
       },
       title: {
         show: true,
         offsetCenter: [0, '-5%'],
-        fontSize: 13,
-        fontWeight: 500,
+        fontSize: 14,
+        fontWeight: 600,
         color: '#8adfff',
       },
       detail: {
         valueAnimation: true,
-        offsetCenter: [0, '70%'],
+        offsetCenter: [0, '68%'],
         formatter: (v: number) => `${v.toFixed(1)}℃`,
         fontSize: 22,
         fontWeight: 700,
@@ -109,46 +110,47 @@ function gaugeHum(value: number): EChartsOption {
     series: [{
       type: 'gauge',
       center: ['50%', '55%'],
-      radius: '65%',
+      radius: '68%',
       min: 35, max: 100, splitNumber: 5,
       startAngle: 225, endAngle: -45,
       axisLine: {
         lineStyle: {
-          width: 14,
+          width: 12,
           color: [[0.4615, '#36cfc9'], [1, '#ff6b6b']],
         },
       },
       pointer: {
-        length: '60%',
-        width: 4,
+        length: '65%',
+        width: 5,
         itemStyle: { color: '#40a9ff' },
       },
       axisTick: {
-        distance: -18,
-        length: 6,
-        lineStyle: { color: '#ffffff', width: 1, opacity: 0.6 },
+        splitNumber: 5,
+        distance: -15,
+        length: 5,
+        lineStyle: { color: '#ffffff', width: 1, opacity: 0.5 },
       },
       splitLine: {
-        distance: -22,
-        length: 12,
+        distance: -20,
+        length: 14,
         lineStyle: { color: '#ffffff', width: 2 },
       },
       axisLabel: {
         color: '#e6f3ff',
-        distance: -38,
+        distance: -36,
         fontSize: 11,
         fontWeight: 500,
       },
       title: {
         show: true,
         offsetCenter: [0, '-5%'],
-        fontSize: 13,
-        fontWeight: 500,
+        fontSize: 14,
+        fontWeight: 600,
         color: '#8adfff',
       },
       detail: {
         valueAnimation: true,
-        offsetCenter: [0, '70%'],
+        offsetCenter: [0, '68%'],
         formatter: (v: number) => `${v.toFixed(1)}%`,
         fontSize: 22,
         fontWeight: 700,
@@ -187,7 +189,7 @@ function gaugeDew(value: number): EChartsOption {
 
 function miniGauge(value: number, unit: string, type: 'temp' | 'hum' | 'dew' | 'pressure'): EChartsOption {
   const colors = {
-    temp: value < 18 ? ['#00d4ff', '#52c41a', '#ff4d4f'] : value > 30 ? ['#00d4ff', '#fa8c16', '#ff4d4f'] : ['#00d4ff', '#52c41a', '#ff4d4f'],
+    temp: value < 18 ? ['#00d4ff', '#52c41a', '#ff4d4f'] : value > 35 ? ['#00d4ff', '#fa8c16', '#ff4d4f'] : ['#00d4ff', '#52c41a', '#ff4d4f'],
     hum: value > 65 ? ['#52c41a', '#ff4d4f'] : ['#52c41a', '#ff4d4f'],
     dew: value < 5 ? ['#00d4ff', '#a855f7', '#fa8c16'] : value > 20 ? ['#00d4ff', '#a855f7', '#ff4d4f'] : ['#00d4ff', '#a855f7', '#fa8c16'],
     pressure: value < 5 ? ['#ff4d4f', '#fa8c16', '#52c41a'] : value > 20 ? ['#ff4d4f', '#fa8c16', '#52c41a'] : ['#52c41a', '#fa8c16', '#ff4d4f'],
@@ -201,7 +203,7 @@ function miniGauge(value: number, unit: string, type: 'temp' | 'hum' | 'dew' | '
   const r = ranges[type]
   const cs = colors[type]
   const stops: any = type === 'temp'
-    ? [[0.45, cs[0]], [25 / 40, cs[1]], [1, cs[2]]]
+    ? [[0.45, cs[0]], [35 / 40, cs[1]], [1, cs[2]]]
     : type === 'hum'
       ? [[0.4615, cs[0]], [1, cs[1]]]
       : type === 'dew'
@@ -209,7 +211,7 @@ function miniGauge(value: number, unit: string, type: 'temp' | 'hum' | 'dew' | '
         : [[5 / 30, cs[0]], [20 / 30, cs[1]], [1, cs[2]]]
 
   const mainColor = type === 'temp'
-    ? (value < 18 ? '#00d4ff' : value > 30 ? '#ff4d4f' : '#52c41a')
+    ? (value < 18 ? '#00d4ff' : value > 35 ? '#ff4d4f' : '#52c41a')
     : type === 'hum'
       ? (value > 65 ? '#ff4d4f' : '#52c41a')
       : type === 'dew'
