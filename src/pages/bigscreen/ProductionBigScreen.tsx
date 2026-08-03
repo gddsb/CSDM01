@@ -642,8 +642,11 @@ export default function ProductionBigScreen() {
         style={{
           display: 'flex',
           flexDirection: 'column',
+          width: '100%',
+          height: '100%',
+          minWidth: 1280,
+          minHeight: 720,
           overflow: 'hidden',
-          ...scaleStyle,
         }}
       >
         <BigScreenHeader
