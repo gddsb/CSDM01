@@ -143,20 +143,20 @@ function miniGauge(value: number, unit: string, type: 'temp' | 'hum' | 'dew' | '
     pressure: value < 5 ? ['#ff4d4f', '#fa8c16', '#52c41a'] : value > 20 ? ['#ff4d4f', '#fa8c16', '#52c41a'] : ['#52c41a', '#fa8c16', '#ff4d4f'],
   }
   const ranges = {
-    temp: { min: -20, max: 80, split: 5 },
-    hum: { min: 0, max: 100, split: 5 },
-    dew: { min: -20, max: 50, split: 5 },
-    pressure: { min: 0, max: 50, split: 5 },
+    temp: { min: 0, max: 40, split: 4 },
+    hum: { min: 35, max: 100, split: 2 },
+    dew: { min: -10, max: 35, split: 3 },
+    pressure: { min: 0, max: 30, split: 3 },
   }
   const r = ranges[type]
   const cs = colors[type]
   const stops: any = type === 'temp'
-    ? [[(18 + 20) / 100, cs[0]], [(30 + 20) / 100, cs[1]], [1, cs[2]]]
+    ? [[0.45, cs[0]], [25 / 40, cs[1]], [1, cs[2]]]
     : type === 'hum'
-      ? [[0.65, cs[0]], [1, cs[1]]]
+      ? [[0.4615, cs[0]], [1, cs[1]]]
       : type === 'dew'
-        ? [[25 / 70, cs[0]], [40 / 70, cs[1]], [1, cs[2]]]
-        : [[5 / 50, cs[0]], [20 / 50, cs[1]], [1, cs[2]]]
+        ? [[15 / 45, cs[0]], [30 / 45, cs[1]], [1, cs[2]]]
+        : [[5 / 30, cs[0]], [20 / 30, cs[1]], [1, cs[2]]]
 
   const mainColor = type === 'temp'
     ? (value < 18 ? '#00d4ff' : value > 30 ? '#ff4d4f' : '#52c41a')
@@ -169,35 +169,21 @@ function miniGauge(value: number, unit: string, type: 'temp' | 'hum' | 'dew' | '
   return {
     series: [{
       type: 'gauge',
-      center: ['50%', '55%'],
-      radius: '80%',
+      center: ['50%', '58%'],
+      radius: '88%',
       min: r.min, max: r.max,
-      startAngle: 180, endAngle: 0,
-      progress: { show: true, width: 12, itemStyle: { color: mainColor } },
-      axisLine: { lineStyle: { width: 12, color: stops } },
-      pointer: { show: false },
+      startAngle: 210, endAngle: -30,
+      axisLine: { lineStyle: { width: 10, color: stops } },
+      pointer: { itemStyle: { color: mainColor }, width: 3, length: '50%' },
       axisTick: { show: false },
-      splitLine: { show: false },
-      axisLabel: {
-        show: true,
-        distance: -20,
-        fontSize: 10,
-        color: '#5b8ca8',
-        formatter: (v: number) => {
-          if (v === r.min) return `${r.min}${unit}`
-          if (v === r.max) return `${r.max}${unit}`
-          return ''
-        },
-      },
+      splitLine: { length: 8, lineStyle: { color: 'rgba(0,212,255,0.3)', width: 1 } },
+      axisLabel: { show: false },
       title: { show: false },
       detail: {
         valueAnimation: true,
-        offsetCenter: [0, '30%'],
-        formatter: (v: number) => `{a|${v.toFixed(1)}}{b|${unit}}`,
-        rich: {
-          a: { fontSize: 22, fontWeight: 700, color: '#ffffff', padding: [0, 3, 0, 0] },
-          b: { fontSize: 12, fontWeight: 500, color: '#8adfff', padding: [0, 0, 0, 0] },
-        },
+        offsetCenter: [0, '65%'],
+        formatter: (v: number) => `${v.toFixed(1)}`,
+        fontSize: 20, fontWeight: 700, color: mainColor,
       },
       data: [{ value: Math.round(value * 10) / 10 }],
     }],
@@ -340,9 +326,9 @@ function FactorGauge({ factor }: { factor: FactorItem }) {
   const ref = useChart(option, [factor.value])
   const label = factor.factor_name
   return (
-    <div style={{ textAlign: 'center', height: '100%', minHeight: 100, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-      <div ref={ref} style={{ flex: 1, minHeight: 70, width: '100%' }} />
-      <div className="bs-gauge-label" style={{ marginTop: -4, fontSize: 12, flexShrink: 0 }}>
+    <div style={{ textAlign: 'center', height: '100%', minHeight: 110, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <div ref={ref} style={{ flex: 1, minHeight: 80, width: '100%' }} />
+      <div className="bs-gauge-label" style={{ marginTop: -2, fontSize: 12, flexShrink: 0 }}>
         {label}
       </div>
     </div>
@@ -507,8 +493,8 @@ export default function EnvironmentBigScreen() {
   )
 
   return (
-    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden' }}>
-      <div className="bigscreen-container" style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', overflow: 'hidden' }}>
+    <div style={{ width: '100vw', height: '100vh', minWidth: 1920, minHeight: 1080, overflow: 'hidden' }}>
+      <div className="bigscreen-container" style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', minWidth: 1920, minHeight: 1080, overflow: 'hidden' }}>
         <BigScreenHeader
           title="环境监测中心"
           extraLeft={leftDateTime}
@@ -527,7 +513,7 @@ export default function EnvironmentBigScreen() {
 
           <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 12 }}>
             {/* 左栏：生产车间 + 仓库 */}
-            <div style={{ flex: '0 0 25%', minWidth: 340, maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ flex: '0 0 22%', minWidth: 420, maxWidth: 500, display: 'flex', flexDirection: 'column', gap: 12 }}>
               <BigScreenPanel
                 title="生产车间"
                 titleIcon={<ShopOutlined />}
@@ -607,7 +593,7 @@ export default function EnvironmentBigScreen() {
             </div>
 
             {/* 右栏：所有采集点仪表 */}
-            <div style={{ flex: '0 0 25%', minWidth: 340, maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ flex: '0 0 22%', minWidth: 420, maxWidth: 500, display: 'flex', flexDirection: 'column', gap: 12 }}>
               <BigScreenPanel
                 title={`所有采集点 (${allFactors.length})`}
                 titleIcon={<DashboardOutlined />}
