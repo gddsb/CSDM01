@@ -166,20 +166,38 @@ function gaugeDew(value: number): EChartsOption {
   return {
     series: [{
       type: 'gauge',
-      center: ['50%', '52%'],
-      radius: '78%',
+      center: ['50%', '55%'],
+      radius: '68%',
       min: -10, max: 35, splitNumber: 9,
       startAngle: 225, endAngle: -45,
       axisLine: {
         lineStyle: {
           width: 12,
-          color: [[15 / 45, '#00d4ff'], [30 / 45, '#a855f7'], [1, '#fa8c16']],
+          color: [[15 / 45, '#36cfc9'], [30 / 45, '#a855f7'], [1, '#fa8c16']],
         },
       },
-      pointer: { itemStyle: { color }, width: 3, length: '60%' },
-      axisTick: { length: 5, lineStyle: { color: 'auto', width: 1 } },
-      splitLine: { length: 10, lineStyle: { color: 'auto', width: 2 } },
-      axisLabel: { color: '#5b8ca8', distance: 16, fontSize: 9 },
+      pointer: {
+        length: '65%',
+        width: 5,
+        itemStyle: { color: '#40a9ff' },
+      },
+      axisTick: {
+        splitNumber: 5,
+        distance: -15,
+        length: 4,
+        lineStyle: { color: '#ffffff', width: 1, opacity: 0.5 },
+      },
+      splitLine: {
+        distance: -20,
+        length: 12,
+        lineStyle: { color: '#ffffff', width: 2 },
+      },
+      axisLabel: {
+        color: '#e6f3ff',
+        distance: -34,
+        fontSize: 10,
+        fontWeight: 500,
+      },
       title: { show: false },
       detail: { show: false },
       data: [{ value: value != null && !Number.isNaN(value) ? Math.round(value * 10) / 10 : 0 }],
@@ -608,20 +626,21 @@ export default function EnvironmentBigScreen() {
                 </div>
               </BigScreenPanel>
 
-              {/* 合并露点温度卡片 */}
+              {/* 露点温度卡片 */}
               <div className="bs-gauge-card" style={{ padding: 8, flex: '0 0 auto' }}>
-                <div className="bs-gauge-label" style={{ marginBottom: 6, textAlign: 'center', fontSize: 13, fontWeight: 600 }}>💧 露点温度</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+                  <div style={{ fontSize: 11, color: '#8adfff', fontWeight: 500 }}>生产车间</div>
+                  <div style={{ fontSize: 11, color: '#8adfff', fontWeight: 500 }}>仓库区域</div>
+                </div>
                 <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', gap: 8 }}>
                   <div style={{ flex: 1, textAlign: 'center' }}>
-                    <div ref={wsDewRef} style={{ height: 65, width: 90, margin: '0 auto' }} />
-                    <div style={{ fontSize: 11, color: '#5b8ca8', marginTop: 2 }}>生产车间</div>
-                    <span className="bs-gauge-value" style={{ fontSize: 18, fontWeight: 700 }}>{areaAvg.wsDew.toFixed(1)}℃</span>
+                    <div ref={wsDewRef} style={{ height: 85, width: 110, margin: '0 auto' }} />
+                    <span className="bs-gauge-value" style={{ fontSize: 16, fontWeight: 700 }}>{areaAvg.wsDew.toFixed(1)}℃</span>
                   </div>
-                  <div style={{ width: 1, height: 60, background: 'rgba(0,212,255,0.2)' }} />
+                  <div style={{ width: 1, height: 70, background: 'rgba(0,212,255,0.2)' }} />
                   <div style={{ flex: 1, textAlign: 'center' }}>
-                    <div ref={whDewRef} style={{ height: 65, width: 90, margin: '0 auto' }} />
-                    <div style={{ fontSize: 11, color: '#5b8ca8', marginTop: 2 }}>仓库区域</div>
-                    <span className="bs-gauge-value" style={{ fontSize: 18, fontWeight: 700 }}>{areaAvg.whDew.toFixed(1)}℃</span>
+                    <div ref={whDewRef} style={{ height: 85, width: 110, margin: '0 auto' }} />
+                    <span className="bs-gauge-value" style={{ fontSize: 16, fontWeight: 700 }}>{areaAvg.whDew.toFixed(1)}℃</span>
                   </div>
                 </div>
               </div>
