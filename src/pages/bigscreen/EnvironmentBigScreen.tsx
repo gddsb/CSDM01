@@ -320,7 +320,7 @@ function FactorGauge({ factor }: { factor: FactorItem }) {
   const unit = factor.unit || (type === 'temp' ? '℃' : type === 'hum' ? '%RH' : type === 'pressure' ? 'Pa' : '')
   const option = miniGauge(factor.value, unit, type as any)
   const ref = useChart(option, [factor.value])
-  const label = factor.factor_name.replace(/^车间|^仓库/, '')
+  const label = factor.factor_name
   return (
     <div style={{ textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
       <div ref={ref} style={{ flex: 1, minHeight: 0 }} />
@@ -476,7 +476,7 @@ export default function EnvironmentBigScreen() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', overflow: 'hidden' }}>
-      <div className="bigscreen-container" style={{ display: 'flex', flexDirection: 'column', height: '1080px', overflow: 'hidden', ...scaleStyle }}>
+      <div className="bigscreen-container" style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', overflow: 'hidden' }}>
         <BigScreenHeader
           title="环境监测中心"
           extraLeft={leftDateTime}
@@ -495,37 +495,33 @@ export default function EnvironmentBigScreen() {
 
           <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 12 }}>
             {/* 左栏：生产车间 + 仓库 */}
-            <div style={{ width: 380, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ flex: '0 0 20%', minWidth: 280, display: 'flex', flexDirection: 'column', gap: 12 }}>
               <BigScreenPanel
                 title="生产车间"
                 titleIcon={<ShopOutlined />}
                 titleExtra={`${overview?.areas.find(a => a.name === '生产车间')?.factors.length ?? 0} 个监测点`}
                 style={{ flex: 1 }}
-                bodyStyle={{ display: 'flex', flexDirection: 'column' }}
+                bodyStyle={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
               >
-                <Row gutter={[12, 12]}>
-                  <Col span={12}>
-                    <div className="bs-gauge-card">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1, minHeight: 0 }}>
+                  <div style={{ display: 'flex', gap: 12, flex: 1, minHeight: 0 }}>
+                    <div className="bs-gauge-card" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                       <div className="bs-gauge-label"><FireOutlined /> 温度</div>
-                      <div ref={wsTempRef} style={{ height: 130 }} />
+                      <div ref={wsTempRef} style={{ flex: 1, minHeight: 0 }} />
                     </div>
-                  </Col>
-                  <Col span={12}>
-                    <div className="bs-gauge-card">
+                    <div className="bs-gauge-card" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                       <div className="bs-gauge-label"><CloudOutlined /> 湿度</div>
-                      <div ref={wsHumRef} style={{ height: 130 }} />
+                      <div ref={wsHumRef} style={{ flex: 1, minHeight: 0 }} />
                     </div>
-                  </Col>
-                  <Col span={24}>
-                    <div className="bs-gauge-card" style={{ padding: 4 }}>
-                      <div className="bs-gauge-label" style={{ textAlign: 'center', marginBottom: 2 }}>💧 露点温度</div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 8px' }}>
-                        <div ref={wsDewRef} style={{ height: 110, width: 150, flex: '0 0 auto' }} />
-                        <span className="bs-gauge-value" style={{ fontSize: 28, fontWeight: 700, flex: 1, textAlign: 'right', paddingRight: 10 }}>{areaAvg.wsDew.toFixed(1)}℃</span>
-                      </div>
+                  </div>
+                  <div className="bs-gauge-card" style={{ padding: 4, flex: '0 0 auto' }}>
+                    <div className="bs-gauge-label" style={{ textAlign: 'center', marginBottom: 2 }}>💧 露点温度</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 8px' }}>
+                      <div ref={wsDewRef} style={{ height: 110, width: 150, flex: '0 0 auto' }} />
+                      <span className="bs-gauge-value" style={{ fontSize: 28, fontWeight: 700, flex: 1, textAlign: 'right', paddingRight: 10 }}>{areaAvg.wsDew.toFixed(1)}℃</span>
                     </div>
-                  </Col>
-                </Row>
+                  </div>
+                </div>
               </BigScreenPanel>
 
               <BigScreenPanel
@@ -533,31 +529,27 @@ export default function EnvironmentBigScreen() {
                 titleIcon={<HomeOutlined />}
                 titleExtra={`${overview?.areas.find(a => a.name === '仓库区域')?.factors.length ?? 0} 个监测点`}
                 style={{ flex: 1 }}
-                bodyStyle={{ display: 'flex', flexDirection: 'column' }}
+                bodyStyle={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
               >
-                <Row gutter={[12, 12]}>
-                  <Col span={12}>
-                    <div className="bs-gauge-card">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1, minHeight: 0 }}>
+                  <div style={{ display: 'flex', gap: 12, flex: 1, minHeight: 0 }}>
+                    <div className="bs-gauge-card" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                       <div className="bs-gauge-label"><FireOutlined /> 温度</div>
-                      <div ref={whTempRef} style={{ height: 130 }} />
+                      <div ref={whTempRef} style={{ flex: 1, minHeight: 0 }} />
                     </div>
-                  </Col>
-                  <Col span={12}>
-                    <div className="bs-gauge-card">
+                    <div className="bs-gauge-card" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                       <div className="bs-gauge-label"><CloudOutlined /> 湿度</div>
-                      <div ref={whHumRef} style={{ height: 130 }} />
+                      <div ref={whHumRef} style={{ flex: 1, minHeight: 0 }} />
                     </div>
-                  </Col>
-                  <Col span={24}>
-                    <div className="bs-gauge-card" style={{ padding: 4 }}>
-                      <div className="bs-gauge-label" style={{ textAlign: 'center', marginBottom: 2 }}>💧 露点温度</div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 8px' }}>
-                        <div ref={whDewRef} style={{ height: 110, width: 150, flex: '0 0 auto' }} />
-                        <span className="bs-gauge-value" style={{ fontSize: 28, fontWeight: 700, flex: 1, textAlign: 'right', paddingRight: 10 }}>{areaAvg.whDew.toFixed(1)}℃</span>
-                      </div>
+                  </div>
+                  <div className="bs-gauge-card" style={{ padding: 4, flex: '0 0 auto' }}>
+                    <div className="bs-gauge-label" style={{ textAlign: 'center', marginBottom: 2 }}>💧 露点温度</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 8px' }}>
+                      <div ref={whDewRef} style={{ height: 110, width: 150, flex: '0 0 auto' }} />
+                      <span className="bs-gauge-value" style={{ fontSize: 28, fontWeight: 700, flex: 1, textAlign: 'right', paddingRight: 10 }}>{areaAvg.whDew.toFixed(1)}℃</span>
                     </div>
-                  </Col>
-                </Row>
+                  </div>
+                </div>
               </BigScreenPanel>
             </div>
 
@@ -583,7 +575,7 @@ export default function EnvironmentBigScreen() {
             </div>
 
             {/* 右栏：所有采集点仪表 */}
-            <div style={{ width: 380, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ flex: '0 0 20%', minWidth: 280, display: 'flex', flexDirection: 'column', gap: 12 }}>
               <BigScreenPanel
                 title={`所有采集点 (${allFactors.length})`}
                 titleIcon={<DashboardOutlined />}
