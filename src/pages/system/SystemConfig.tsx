@@ -615,7 +615,7 @@ export default function SystemConfig() {
   const EnvTab = (
     <Spin spinning={envLoading}>
       <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text type="secondary">展示当前服务运行环境信息（只读）</Text>
+        <Text strong>运行环境</Text>
         <div style={{ display: 'flex', gap: 8 }}>
           <Button icon={<ReloadOutlined />} onClick={loadEnv}>刷新</Button>
           <Button
