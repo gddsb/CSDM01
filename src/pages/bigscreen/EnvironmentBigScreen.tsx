@@ -309,7 +309,11 @@ function useChart(option: EChartsOption | null, deps: any[] = []) {
 // 动态采集点表盘子组件
 function FactorGauge({ factor }: { factor: FactorItem }) {
   const getType = (n: string, t?: string) => {
-    if (t) return t
+    if (t) {
+      if (t === 'temperature') return 'temp'
+      if (t === 'humidity') return 'hum'
+      return t
+    }
     if (n.includes('温度') && !n.includes('露点')) return 'temp'
     if (n.includes('湿度')) return 'hum'
     if (n.includes('露点')) return 'dew'
@@ -495,7 +499,7 @@ export default function EnvironmentBigScreen() {
 
           <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 12 }}>
             {/* 左栏：生产车间 + 仓库 */}
-            <div style={{ flex: '0 0 20%', minWidth: 280, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ flex: '0 0 25%', minWidth: 340, maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 12 }}>
               <BigScreenPanel
                 title="生产车间"
                 titleIcon={<ShopOutlined />}
@@ -575,7 +579,7 @@ export default function EnvironmentBigScreen() {
             </div>
 
             {/* 右栏：所有采集点仪表 */}
-            <div style={{ flex: '0 0 20%', minWidth: 280, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ flex: '0 0 25%', minWidth: 340, maxWidth: 480, display: 'flex', flexDirection: 'column', gap: 12 }}>
               <BigScreenPanel
                 title={`所有采集点 (${allFactors.length})`}
                 titleIcon={<DashboardOutlined />}
@@ -590,7 +594,7 @@ export default function EnvironmentBigScreen() {
                     <Col
                       span={12}
                       key={`${f.factor_name}-${idx}`}
-                      style={{ height: `${Math.max(85, Math.floor(100 / Math.ceil(allFactors.length / 2)))}%` }}
+                      style={{ height: `${100 / Math.ceil(allFactors.length / 2)}%` }}
                     >
                       <FactorGauge factor={f} />
                     </Col>
