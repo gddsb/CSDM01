@@ -210,7 +210,7 @@ function miniGauge(value: number, unit: string, type: 'temp' | 'hum' | 'dew' | '
     temp: value < 18 ? ['#00d4ff', '#52c41a', '#ff4d4f'] : value > 35 ? ['#00d4ff', '#fa8c16', '#ff4d4f'] : ['#00d4ff', '#52c41a', '#ff4d4f'],
     hum: value > 65 ? ['#52c41a', '#ff4d4f'] : ['#52c41a', '#ff4d4f'],
     dew: value < 5 ? ['#00d4ff', '#a855f7', '#fa8c16'] : value > 20 ? ['#00d4ff', '#a855f7', '#ff4d4f'] : ['#00d4ff', '#a855f7', '#fa8c16'],
-    pressure: value < 5 ? ['#ff4d4f', '#fa8c16', '#52c41a'] : value > 20 ? ['#ff4d4f', '#fa8c16', '#52c41a'] : ['#52c41a', '#fa8c16', '#ff4d4f'],
+    pressure: ['#ff4d4f', '#40a9ff', '#52c41a'],
   }
   const ranges = {
     temp: { min: 0, max: 40, split: 4 },
@@ -226,7 +226,7 @@ function miniGauge(value: number, unit: string, type: 'temp' | 'hum' | 'dew' | '
       ? [[0.4615, cs[0]], [1, cs[1]]]
       : type === 'dew'
         ? [[15 / 45, cs[0]], [30 / 45, cs[1]], [1, cs[2]]]
-        : [[5 / 30, cs[0]], [20 / 30, cs[1]], [1, cs[2]]]
+        : [[10 / 30, cs[0]], [15 / 30, cs[1]], [1, cs[2]]]
 
   const mainColor = type === 'temp'
     ? (value < 18 ? '#00d4ff' : value > 35 ? '#ff4d4f' : '#52c41a')
@@ -234,7 +234,7 @@ function miniGauge(value: number, unit: string, type: 'temp' | 'hum' | 'dew' | '
       ? (value > 65 ? '#ff4d4f' : '#52c41a')
       : type === 'dew'
         ? (value < 5 ? '#00d4ff' : value > 20 ? '#fa8c16' : '#a855f7')
-        : (value < 5 || value > 20 ? '#ff4d4f' : '#52c41a')
+        : (value < 10 ? '#ff4d4f' : value <= 15 ? '#40a9ff' : '#52c41a')
 
   return {
     series: [{
