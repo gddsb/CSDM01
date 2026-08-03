@@ -8,6 +8,7 @@ import {
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { generateIncomingNo } from '../utils/sequence.js'
 import { logger } from '../utils/logger.js'
+import { nowBeijingDate, parseDateOnly, parseDateTime } from '../utils/date.js'
 
 const STATUS_REVERSE: Record<string, number> = { '待检': 0, '检验中': 1, '审核中': 2, '已完成': 3, '已关闭': 4 }
 
@@ -286,7 +287,7 @@ export default {
         await IncomingInspectionItem.destroy({ where: { inspection_id: id }, transaction: t })
         if (items.length > 0) {
           const user: any = req.user || {}
-          const now = new Date()
+          const now = nowBeijingDate()
           const itemData = items.map((item: any, idx: number) => ({
             inspection_id: Number(id),
             item_name: item.item_name,
@@ -332,7 +333,7 @@ export default {
         return fail(res, '只有待检状态可以开检', ErrorCode.PARAM_INVALID)
       }
 
-      const now = new Date()
+      const now = nowBeijingDate()
       await record.update({
         status: 1,
         inspector_id: user.userId || null,
@@ -388,7 +389,7 @@ export default {
         return fail(res, '只有审核中状态可以审核', ErrorCode.PARAM_INVALID)
       }
 
-      const now = new Date()
+      const now = nowBeijingDate()
       const targetStatus = result === '合格' ? 3 : 1
       await record.update({
         status: targetStatus,

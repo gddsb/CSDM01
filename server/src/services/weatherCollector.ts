@@ -1,4 +1,5 @@
 import WeatherInfo from '../models/WeatherInfo.js'
+import { formatDateTime } from '../utils/date.js'
 
 /** 气象抓取结果结构 */
 export interface WeatherData {

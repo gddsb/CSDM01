@@ -30,3 +30,21 @@ export function nowBeijingStr(): string {
 export function nowBeijingDateStr(): string {
   return formatDate(new Date())
 }
+
+export function nowBeijingDate(): Date {
+  return toBeijingDate(new Date())
+}
+
+export function parseDateTime(s: string | null | undefined): Date | null {
+  if (s === null || s === undefined || s === '') return null
+  const d = new Date(s)
+  if (isNaN(d.getTime())) return null
+  return d
+}
+
+export function parseDateOnly(s: string | null | undefined): Date | null {
+  if (s === null || s === undefined || s === '') return null
+  const d = new Date(s + ' 00:00:00')
+  if (isNaN(d.getTime())) return null
+  return d
+}

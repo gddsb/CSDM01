@@ -1,13 +1,14 @@
 import { Op } from 'sequelize'
 import { ManpowerRecord, ReportOrder } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
+import { nowBeijingDate, parseDateTime } from '../utils/date.js'
 
 const calcHours = (start, end) => {
   if (!start || !end) return 0
-  const s = new Date(start)
-  const e = new Date(end)
+  const s = parseDateTime(start) || new Date(start)
+  const e = parseDateTime(end) || new Date(end)
   if (isNaN(s.getTime()) || isNaN(e.getTime())) return 0
-  const diff = (e - s) / (1000 * 60 * 60)
+  const diff = (e.getTime() - s.getTime()) / (1000 * 60 * 60)
   return diff > 0 ? Number(diff.toFixed(2)) : 0
 }
 
@@ -25,7 +26,7 @@ const resolveTimeFromReportOrder = (reportOrder) => {
     end_time = reportOrder.finish_time
   } else {
     // 开工状态：用当前时间作为结束时间，计算"已投入工时"
-    end_time = new Date()
+    end_time = nowBeijingDate()
   }
   const hours = calcHours(start_time, end_time)
   return { start_time, end_time, hours }

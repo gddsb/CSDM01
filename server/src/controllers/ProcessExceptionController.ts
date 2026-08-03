@@ -2,13 +2,14 @@ import { Op } from 'sequelize'
 import { ProcessException, Device, ReportOrder } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { logger } from '../utils/logger.js'
+import { parseDateTime, nowBeijingDate } from '../utils/date.js'
 
 function validateTimeRange(start, end): { valid: boolean; message?: string; duration?: number } {
   if (!start) return { valid: true }
-  const s = new Date(start)
+  const s = parseDateTime(start) || new Date(start)
   if (isNaN(s.getTime())) return { valid: false, message: '开始时间格式不正确' }
   if (!end) return { valid: true }
-  const e = new Date(end)
+  const e = parseDateTime(end) || new Date(end)
   if (isNaN(e.getTime())) return { valid: false, message: '结束时间格式不正确' }
   if (e < s) return { valid: false, message: '结束时间不能早于开始时间' }
   const dur = (e.getTime() - s.getTime()) / 3600000
@@ -105,6 +106,10 @@ export const create = async (req, res) => {
       ? (Array.isArray(exception_images) ? JSON.stringify(exception_images) : exception_images)
       : null
 
+    const serverNow = nowBeijingDate()
+    const safeStartTime = parseDateTime(start_time) || serverNow
+    const safeEndTime = end_time ? (parseDateTime(end_time) || null) : null
+
     const exception = await ProcessException.create({
       report_order_id,
       exception_type,
@@ -114,8 +119,8 @@ export const create = async (req, res) => {
       stop_type,
       confirm_user,
       confirm_user_name,
-      start_time: new Date(start_time),
-      end_time: end_time ? new Date(end_time) : null,
+      start_time: safeStartTime,
+      end_time: safeEndTime,
       duration,
       description,
       exception_images: imagesJson,
@@ -165,8 +170,8 @@ export const update = async (req, res) => {
       }
     }
 
-    const st = start_time !== undefined ? start_time : exception.start_time
-    const et = end_time !== undefined ? end_time : exception.end_time
+    const st = start_time !== undefined ? (parseDateTime(start_time) || exception.start_time) : exception.start_time
+    const et = end_time !== undefined ? (end_time ? (parseDateTime(end_time) || null) : null) : exception.end_time
     const timeCheck = validateTimeRange(st, et)
     if (!timeCheck.valid) {
       return fail(res, timeCheck.message!, ErrorCode.PARAM_INVALID)
@@ -178,6 +183,13 @@ export const update = async (req, res) => {
       imagesJson = Array.isArray(exception_images) ? JSON.stringify(exception_images) : exception_images
     }
 
+    const updateStartTime = start_time !== undefined
+      ? (parseDateTime(start_time) || exception.start_time)
+      : exception.start_time
+    const updateEndTime = end_time !== undefined
+      ? (end_time ? (parseDateTime(end_time) || null) : null)
+      : exception.end_time
+
     await exception.update({
       exception_type: exception_type !== undefined ? exception_type : exception.exception_type,
       device_id: device_id !== undefined ? (device_id || null) : exception.device_id,
@@ -186,8 +198,8 @@ export const update = async (req, res) => {
       stop_type: stop_type !== undefined ? stop_type : exception.stop_type,
       confirm_user: confirm_user !== undefined ? confirm_user : exception.confirm_user,
       confirm_user_name: confirm_user_name !== undefined ? confirm_user_name : exception.confirm_user_name,
-      start_time: start_time ? new Date(start_time) : exception.start_time,
-      end_time: end_time !== undefined ? (end_time ? new Date(end_time) : null) : exception.end_time,
+      start_time: updateStartTime,
+      end_time: updateEndTime,
       duration,
       description: description !== undefined ? description : exception.description,
       exception_images: imagesJson,

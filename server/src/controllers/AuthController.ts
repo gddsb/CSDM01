@@ -2,6 +2,7 @@ import { User, Role, OperationLog, Permission } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { generateToken } from '../utils/jwt.js'
 import { verifyPassword } from '../utils/password.js'
+import { nowBeijingDate } from '../utils/date.js'
 
 async function getUserPermissionCodes(roleId: number): Promise<string[]> {
   const role = await Role.findOne({
@@ -60,7 +61,7 @@ export const login = async (req, res) => {
       return fail(res, '账号已禁用')
     }
     // 更新最后登录时间
-    await user.update({ last_login_time: new Date() })
+    await user.update({ last_login_time: nowBeijingDate() })
     // 生成 token
     const token = generateToken(user)
     const userWithRole = user.toJSON()

@@ -12,7 +12,7 @@ import { encryptParamsObj, decryptParamsObj } from '../utils/crypto.js'
 import { fetchU9Orgs, DEFAULT_U9_CONFIG } from '../services/u9Service.js'
 import { calcNextRunAt } from '../services/taskScheduler.js'
 import { executeRealTask } from '../services/taskExecutor.js'
-import { formatDateTime, formatDate, nowBeijingStr, nowBeijingDateStr } from '../utils/date.js'
+import { formatDateTime, formatDate, nowBeijingStr, nowBeijingDateStr, nowBeijingDate } from '../utils/date.js'
 
 // 露点温度计算（考虑大气压的增强版 Magnus 公式）
 // T:摄氏温度, RH:相对湿度%, P:大气压(hPa，默认1013.25)
@@ -148,7 +148,7 @@ export const deleteSyncTask = async (req, res) => {
 
 // ============ 定时任务 ============
 function generateScheduleId(): string {
-  const now = new Date()
+  const now = nowBeijingDate()
   const y = now.getFullYear()
   const m = String(now.getMonth() + 1).padStart(2, '0')
   const d = String(now.getDate()).padStart(2, '0')
@@ -230,7 +230,7 @@ export const deleteScheduledTask = async (req, res) => {
 }
 
 function generateTaskBizId(type: string): string {
-  const now = new Date()
+  const now = nowBeijingDate()
   const y = now.getFullYear()
   const m = String(now.getMonth() + 1).padStart(2, '0')
   const d = String(now.getDate()).padStart(2, '0')
@@ -268,10 +268,10 @@ export const triggerScheduledTask = async (req, res) => {
       progress: 0,
       current_step: '任务已创建，等待执行...',
       steps: [{ time: nowBeijingStr(), message: '手动触发，任务已创建', percent: 0 }],
-      started_at: new Date(),
+      started_at: nowBeijingDate(),
     })
 
-    ;(task as any).last_run_at = new Date()
+    ;(task as any).last_run_at = nowBeijingDate()
     ;(task as any).last_run_result = '手动触发成功'
     await task.save()
 
@@ -350,7 +350,7 @@ async function updateTaskProgress(taskId: number, step: { message: string; perce
       ;(task as any).total_records = totalRecords
     }
     if (status === 'completed' || status === 'failed') {
-      ;(task as any).ended_at = new Date()
+      ;(task as any).ended_at = nowBeijingDate()
     }
     await task.save()
   } catch (err) {
@@ -395,7 +395,7 @@ export const testTaskSetting = async (req, res) => {
       progress: 5,
       current_step: '任务已启动，准备采集...',
       steps: [{ time: nowBeijingStr(), message: '任务已启动，准备采集...', percent: 5 }],
-      started_at: new Date(),
+      started_at: nowBeijingDate(),
     })
 
     const taskId = (syncTask as any).task_id
@@ -543,7 +543,7 @@ export const dashboardOverview = async (req, res) => {
 
     const totalAlarms = await EnvAlarm.count()
     const unhandledAlarms = await EnvAlarm.count({ where: { is_handled: 0 } })
-    const todayStart = new Date()
+    const todayStart = nowBeijingDate()
     todayStart.setHours(0, 0, 0, 0)
     const todayAlarms = await EnvAlarm.count({ where: { alarm_time: { [Op.gte]: todayStart } } })
 
@@ -568,7 +568,7 @@ export const dashboardOverview = async (req, res) => {
 // 趋势数据（最近12小时，10分钟间隔）
 export const dashboardTrend = async (req, res) => {
   try {
-    const now = new Date()
+    const now = nowBeijingDate()
     const currentSlot = new Date(now)
     currentSlot.setSeconds(0, 0)
     currentSlot.setMinutes(Math.floor(currentSlot.getMinutes() / 10) * 10)
@@ -680,10 +680,10 @@ export const dashboardTrend = async (req, res) => {
 // ============ 生产实时看板数据 ============
 export const productionDashboard = async (req, res) => {
   try {
-    const todayStart = new Date()
+    const todayStart = nowBeijingDate()
     todayStart.setHours(0, 0, 0, 0)
     const thirtyDaysAgo = new Date(todayStart.getTime() - 30 * 24 * 60 * 60 * 1000)
-    const now = new Date()
+    const now = nowBeijingDate()
 
     // 1. 基础数据：产线、工序、设备
     const productionLines = await ProductionLine.findAll({ order: [['sort_order', 'ASC']], raw: true })
@@ -863,7 +863,7 @@ export const productionDashboard = async (req, res) => {
 // ============ 质量检测中心看板数据 ============
 export const qualityDashboard = async (req, res) => {
   try {
-    const todayStart = new Date()
+    const todayStart = nowBeijingDate()
     todayStart.setHours(0, 0, 0, 0)
     const sevenDaysAgo = new Date(todayStart.getTime() - 7 * 24 * 60 * 60 * 1000)
 
@@ -936,7 +936,7 @@ export const qualityDashboard = async (req, res) => {
 // ============ 经营管理中心看板数据 ============
 export const managementDashboard = async (req, res) => {
   try {
-    const todayStart = new Date()
+    const todayStart = nowBeijingDate()
     todayStart.setHours(0, 0, 0, 0)
     const monthStart = new Date(todayStart.getFullYear(), todayStart.getMonth(), 1)
     const sixMonthsAgo = new Date(todayStart)

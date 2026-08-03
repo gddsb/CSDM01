@@ -1962,16 +1962,26 @@ PC端生产报工页面（`/production/reporting`）信息区采用三行布局�
 
 - **统一时区**：所有日期时间统一使用**北京时间（UTC+8）**
 - **统一格式**：`YYYY-MM-DD HH:mm:ss`，例如 `2026-08-10 01:10:00`
+- **服务器时间优先**：所有系统记录时间（报工时间、完工时间、检验时间、登录时间、创建时间等）**必须使用服务器时间**，禁止使用客户端时间。客户端传入的时间参数仅作为业务参考，不直接作为系统记录时间使用
+- **时间读写格式化**：
+  - 写入数据库前：所有时间字段必须通过日期工具函数进行格式化和校验，确保是有效的北京时间
+  - 从数据库读取后：返回给前端的时间必须统一格式化为 `YYYY-MM-DD HH:mm:ss` 字符串
 - **后端实现**：使用 `server/src/utils/date.ts` 中的工具函数：
+  - `nowBeijingDate()` - 获取当前北京时间 Date 对象（用于写入数据库）
   - `formatDateTime(d)` - 格式化日期时间为北京时间字符串
   - `formatDate(d)` - 格式化日期为 `YYYY-MM-DD`
   - `nowBeijingStr()` - 获取当前北京时间字符串
   - `nowBeijingDateStr()` - 获取当前北京日期字符串
+  - `parseDateTime(s)` - 安全解析时间字符串，解析失败返回 null
+  - `parseDateOnly(s)` - 安全解析日期字符串，解析失败返回 null
 - **前端实现**：使用 `src/utils/index.ts` 中的常量：
   - `DATE_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss'`
   - `DATE_FORMAT = 'YYYY-MM-DD'`
   - `TIME_FORMAT = 'HH:mm:ss'`
-- **禁止使用**：禁止在 API 返回中直接使用 `toISOString()`（返回 UTC 时间），必须通过日期工具函数转换为北京时间
+- **禁止使用**：
+  - 禁止在 API 返回中直接使用 `toISOString()`（返回 UTC 时间），必须通过日期工具函数转换为北京时间
+  - 禁止使用 `new Date()` 记录系统时间，必须使用 `nowBeijingDate()`
+  - 禁止相信客户端传入的时间作为系统记录时间，必须由后端生成
 
 ### 后端开发规范
 

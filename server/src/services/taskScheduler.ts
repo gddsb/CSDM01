@@ -1,6 +1,7 @@
 import { Op } from 'sequelize'
 import { ScheduledTask, SyncTask, TaskSetting } from '../models/index.js'
 import { executeRealTask } from './taskExecutor.js'
+import { nowBeijingStr, nowBeijingDate } from '../utils/date.js'
 
 function pad(n: number) { return String(n).padStart(2, '0') }
 
@@ -52,8 +53,8 @@ export async function updateTaskProgress(taskId: number, step: { message: string
     task.steps = steps
     task.status = status
     if (totalRecords !== undefined) task.total_records = totalRecords
-    if (status === 'completed') task.finished_at = new Date()
-    if (status === 'failed') task.finished_at = new Date()
+    if (status === 'completed') task.finished_at = nowBeijingDate()
+    if (status === 'failed') task.finished_at = nowBeijingDate()
     await task.save()
   } catch (err) {
     console.error('更新任务进度失败:', err)
@@ -71,7 +72,7 @@ function generateMockRecordCount(taskType: string): number {
   }
 }
 
-export function calcNextRunAt(execMode: string, config: any, from: Date = new Date()): Date | null {
+export function calcNextRunAt(execMode: string, config: any, from: Date = nowBeijingDate()): Date | null {
   if (!config) return null
   const base = new Date(from.getTime() + 1000)
 
@@ -112,7 +113,7 @@ export function calcNextRunAt(execMode: string, config: any, from: Date = new Da
 }
 
 function generateTaskBizId(type: string): string {
-  const now = new Date()
+  const now = nowBeijingDate()
   const y = now.getFullYear()
   const m = pad(now.getMonth() + 1)
   const d = pad(now.getDate())
@@ -147,13 +148,13 @@ export async function triggerScheduledTaskById(taskId: number) {
       progress: 5,
       current_step: '定时任务已启动',
       steps: [{ time: nowBeijingStr(), message: '定时触发，任务已启动', percent: 5 }],
-      started_at: new Date(),
+      started_at: nowBeijingDate(),
     })
     const syncTaskId = (syncTask as any).task_id
 
     const nextAt = calcNextRunAt(execMode, cfg)
     const updateData: any = {
-      last_run_at: new Date(),
+      last_run_at: nowBeijingDate(),
       last_run_result: '定时触发成功',
     }
     if (nextAt) updateData.next_run_at = nextAt
@@ -205,7 +206,7 @@ export async function startTaskScheduler() {
 
   const tick = async () => {
     try {
-      const now = new Date()
+      const now = nowBeijingDate()
 
       // 1. 超时检查：超过3分钟未完成的任务自动终止
       const threeMinAgo = new Date(now.getTime() - 3 * 60 * 1000)
@@ -224,7 +225,7 @@ export async function startTaskScheduler() {
             status: 'failed',
             error_msg: '任务执行超时（超过3分钟），已自动终止',
             steps,
-            finished_at: new Date(),
+            finished_at: nowBeijingDate(),
           },
           { where: { task_id: task.task_id } }
         )

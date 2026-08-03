@@ -18,7 +18,7 @@ import {
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { generateReportOrderNo } from '../utils/sequence.js'
 import { logger } from '../utils/logger.js'
-import { nowBeijingDateStr } from '../utils/date.js'
+import { nowBeijingDateStr, nowBeijingDate, formatDateTime } from '../utils/date.js'
 
 // 报工单状态: 0=开工, 1=完工, 2=关闭
 const statusMap = { '开工': 0, '完工': 1, '关闭': 2 }
@@ -159,7 +159,7 @@ export async function syncOrderStatus(orderId: number, transaction?: any) {
 
   // 所有报工单都完工时，订单自动转为"完工"
   if (total > 0 && finishedCount === total && statusVal === 2) {
-    await order.update({ status: 3, close_time: new Date() }, { transaction })
+    await order.update({ status: 3, close_time: nowBeijingDate() }, { transaction })
     // 额外规则：订单完工且完工数量 >= 计划数量时，自动变为关闭
     if (finishedSum >= plannedQty) {
       await order.update({ status: 4 }, { transaction })
@@ -174,7 +174,7 @@ export async function syncOrderStatus(orderId: number, transaction?: any) {
   }
 
   if (total === 0 && statusVal === 2) {
-    await order.update({ status: 1, release_time: order.release_time || new Date() }, { transaction })
+    await order.update({ status: 1, release_time: order.release_time || nowBeijingDate() }, { transaction })
     return
   }
 }
@@ -322,7 +322,7 @@ export const create = async (req, res) => {
     const line = await ProductionLine.findOne({ where: { line_id } })
     if (!line) return fail(res, '产线不存在', ErrorCode.RECORD_NOT_FOUND)
 
-    const now = new Date()
+    const now = nowBeijingDate()
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const tomorrowStart = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000)
 
@@ -665,7 +665,7 @@ export const finish = async (req, res) => {
 
       await reportOrder.update({
         status: 1,
-        finish_time: new Date(),
+        finish_time: nowBeijingDate(),
         finish_user_id: req.user?.userId || null,
         finish_user_name: req.user?.username || null,
       }, { transaction: t })
@@ -749,7 +749,7 @@ export const close = async (req, res) => {
 
       await reportOrder.update({
         status: 1,
-        close_time: new Date(),
+        close_time: nowBeijingDate(),
         close_user_id: req.user?.userId || null,
         close_user_name: req.user?.username || null,
       }, { transaction: t })

@@ -3,6 +3,7 @@ import { Order, ReportOrder, Material } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { generateOrderNo } from '../utils/sequence.js'
 import { logger } from '../utils/logger.js'
+import { nowBeijingDate, parseDateOnly, parseDateTime } from '../utils/date.js'
 
 // 订单状态: 0=开立, 1=下发, 2=开工, 3=完工, 4=关闭
 const statusMap = { '开立': 0, '下发': 1, '开工': 2, '完工': 3, '关闭': 4 }
@@ -113,8 +114,8 @@ export const create = async (req, res) => {
     }
     // 计划开始日期不得早于今天
     if (plan_start_time) {
-      const startDate = new Date(plan_start_time)
-      const today = new Date()
+      const startDate = parseDateOnly(plan_start_time) || new Date(plan_start_time)
+      const today = nowBeijingDate()
       today.setHours(0, 0, 0, 0)
       if (startDate < today) {
         return fail(res, '计划开始日期不得早于今天')
@@ -122,7 +123,9 @@ export const create = async (req, res) => {
     }
     // 计划完成日期不得早于计划开始日期
     if (plan_start_time && plan_end_time) {
-      if (new Date(plan_end_time) < new Date(plan_start_time)) {
+      const end = parseDateOnly(plan_end_time) || new Date(plan_end_time)
+      const start = parseDateOnly(plan_start_time) || new Date(plan_start_time)
+      if (end < start) {
         return fail(res, '计划完成日期不得早于计划开始日期')
       }
     }
@@ -170,8 +173,8 @@ export const update = async (req, res) => {
     }
     // 计划开始日期不得早于今天
     if (plan_start_time) {
-      const startDate = new Date(plan_start_time)
-      const today = new Date()
+      const startDate = parseDateOnly(plan_start_time) || new Date(plan_start_time)
+      const today = nowBeijingDate()
       today.setHours(0, 0, 0, 0)
       if (startDate < today) {
         return fail(res, '计划开始日期不得早于今天')
@@ -179,8 +182,13 @@ export const update = async (req, res) => {
     }
     // 计划完成日期不得早于计划开始日期
     const startForCheck = plan_start_time || order.plan_start_time
-    if (startForCheck && plan_end_time && new Date(plan_end_time) < new Date(startForCheck)) {
-      return fail(res, '计划完成日期不得早于计划开始日期')
+    const endForCheck = plan_end_time
+    if (startForCheck && endForCheck) {
+      const end = parseDateOnly(String(endForCheck)) || new Date(String(endForCheck))
+      const start = parseDateOnly(String(startForCheck)) || new Date(String(startForCheck))
+      if (end < start) {
+        return fail(res, '计划完成日期不得早于计划开始日期')
+      }
     }
 
     const updateData: any = {}
@@ -242,7 +250,7 @@ export const release = async (req, res) => {
     }
 
     if (statusVal !== 0) return fail(res, '只有开立状态的订单可以下发', ErrorCode.BUSINESS_ERROR)
-    await order.update({ status: 1, release_time: new Date() })
+    await order.update({ status: 1, release_time: nowBeijingDate() })
     logger.info('[Order.release] 订单下发成功', { order_id: id, order_no: order.getDataValue('order_no'), user: (req as any).user?.username })
     return success(res, order, '订单已下发')
   } catch (err) {
@@ -262,7 +270,7 @@ export const close = async (req, res) => {
     if (statusVal === 0) return fail(res, '开立状态的订单请直接下发或删除，不能关闭')
     if (statusVal === 2) return fail(res, '开工状态的订单不能关闭，请先完工')
     if (statusVal === 4) return fail(res, '订单已关闭')
-    await order.update({ status: 4, close_time: new Date() })
+    await order.update({ status: 4, close_time: nowBeijingDate() })
     logger.info('[Order.close] 订单关闭成功', { order_id: id, order_no: order.getDataValue('order_no'), user: (req as any).user?.username })
     return success(res, order, '订单已关闭')
   } catch (err) {
@@ -280,7 +288,7 @@ export const finish = async (req, res) => {
     const statusVal = order.getDataValue('status')
     if (statusVal === 3) return success(res, order, '订单已完工')
     if (statusVal !== 2) return fail(res, '只有开工状态的订单可以完工', ErrorCode.BUSINESS_ERROR)
-    await order.update({ status: 3, close_time: new Date() })
+    await order.update({ status: 3, close_time: nowBeijingDate() })
     logger.info('[Order.finish] 订单完工成功', { order_id: id, order_no: order.getDataValue('order_no'), user: (req as any).user?.username })
     return success(res, order, '订单已完工')
   } catch (err) {

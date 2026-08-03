@@ -4,6 +4,7 @@ import { collectAndSaveWeather } from './weatherCollector.js'
 import { EnergyMeterCollector } from './energyMeterCollector.js'
 import { exportItems, exportCustomers, exportProductionOrders } from './u9Exporter.js'
 import { decryptParamsObj } from '../utils/crypto.js'
+import { nowBeijingStr, nowBeijingDate } from '../utils/date.js'
 
 export interface TaskProgressUpdater {
   (message: string, percent: number, status?: string, totalRecords?: number): Promise<void>
