@@ -681,6 +681,7 @@ export const productionDashboard = async (req, res) => {
   try {
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)
+    const thirtyDaysAgo = new Date(todayStart.getTime() - 30 * 24 * 60 * 60 * 1000)
     const now = new Date()
 
     // 1. 基础数据：产线、工序、设备
@@ -695,7 +696,7 @@ export const productionDashboard = async (req, res) => {
         [Op.or]: [
           { created_at: { [Op.gte]: todayStart } },
           { release_time: { [Op.gte]: todayStart } },
-          { status: { [Op.in]: [0, 1, 2] } }, // 开立/下发/开工
+          { status: { [Op.in]: [0, 1, 2] } },
         ],
       },
       order: [['created_at', 'DESC']],
@@ -707,7 +708,7 @@ export const productionDashboard = async (req, res) => {
       where: {
         [Op.or]: [
           { report_time: { [Op.gte]: todayStart } },
-          { status: { [Op.in]: [0] } }, // 开工中
+          { status: { [Op.in]: [0] } },
         ],
       },
       order: [['report_time', 'DESC']],
@@ -715,7 +716,7 @@ export const productionDashboard = async (req, res) => {
       raw: true,
     })
 
-    // 3. 工序报工数据（含投入产出不良）
+    // 3. 工序报工数据（今日）
     const processReports = await ReportProcess.findAll({
       where: { created_at: { [Op.gte]: todayStart } },
       order: [['created_at', 'DESC']],
@@ -723,7 +724,6 @@ export const productionDashboard = async (req, res) => {
       raw: true,
     })
 
-    // 工序报工数据补全：关联ReportOrder获取产出和投入
     const reportOrderIds = processReports.map(p => p.report_order_id).filter(Boolean)
     const processReportOrders = reportOrderIds.length > 0
       ? await ReportOrder.findAll({
@@ -732,7 +732,6 @@ export const productionDashboard = async (req, res) => {
         })
       : []
 
-    // 合并产出/投入数据
     const roMap = new Map()
     processReportOrders.forEach(ro => roMap.set(ro.report_order_id, ro))
     const processReportsWithQty = processReports.map(pr => {
@@ -751,13 +750,11 @@ export const productionDashboard = async (req, res) => {
       }
     })
 
-    // 4. 不良数据
+    // 4. 不良数据（今日）
     const defects = await ProcessDefect.findAll({
       where: { record_time: { [Op.gte]: todayStart } },
       raw: true,
     })
-
-    // 将不良分配到工序
     defects.forEach(df => {
       const pr = processReportsWithQty.find(p => p.report_order_id === df.report_order_id && p.process_id === df.process_id)
       const qty = Number(df.quantity || 0)
@@ -768,6 +765,90 @@ export const productionDashboard = async (req, res) => {
       }
     })
 
+    // 5. 最近30天：日产线产出数据（趋势图）
+    const processReports30d = await ReportProcess.findAll({
+      where: { created_at: { [Op.gte]: thirtyDaysAgo } },
+      order: [['created_at', 'ASC']],
+      limit: 10000,
+      raw: true,
+    })
+    const reportOrderIds30d = processReports30d.map(p => p.report_order_id).filter(Boolean)
+    const processReportOrders30d = reportOrderIds30d.length > 0
+      ? await ReportOrder.findAll({
+          where: { report_order_id: { [Op.in]: reportOrderIds30d } },
+          raw: true,
+        })
+      : []
+    const roMap30d = new Map()
+    processReportOrders30d.forEach(ro => roMap30d.set(ro.report_order_id, ro))
+
+    const dailyOutputMap: Record<string, Record<string, number>> = {}
+    processReports30d.forEach(pr => {
+      const ro = roMap30d.get(pr.report_order_id)
+      const t = ro?.report_time || pr.created_at
+      if (!t) return
+      const dateStr = String(t).slice(0, 10)
+      const lineName = pr.line_name || (productionLines[0]?.line_name) || '默认产线'
+      if (!dailyOutputMap[dateStr]) dailyOutputMap[dateStr] = {}
+      dailyOutputMap[dateStr][lineName] = (dailyOutputMap[dateStr][lineName] || 0) + Number(ro?.report_qty || 0)
+    })
+
+    const dateList: string[] = []
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(todayStart.getTime() - i * 24 * 60 * 60 * 1000)
+      dateList.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)
+    }
+    const lineNames = productionLines.map(l => l.line_name).filter(Boolean)
+    if (lineNames.length === 0) lineNames.push('默认产线')
+    const dailyTrend: any[] = []
+    dateList.forEach(dateStr => {
+      const item: any = { date: dateStr }
+      lineNames.forEach(ln => {
+        item[ln] = dailyOutputMap[dateStr]?.[ln] || 0
+      })
+      dailyTrend.push(item)
+    })
+
+    // 6. 最近30天：日能源数据
+    const energyData30d = await EnergyMeterData.findAll({
+      where: { reading_date: { [Op.gte]: thirtyDaysAgo } },
+      order: [['reading_date', 'ASC']],
+      raw: true,
+    })
+    const dailyEnergyMap: Record<string, number> = {}
+    energyData30d.forEach(e => {
+      const t = e.reading_date
+      if (!t) return
+      const dateStr = new Date(t).toISOString().slice(0, 10)
+      const v = Number(e.forward_active_energy || 0)
+      dailyEnergyMap[dateStr] = (dailyEnergyMap[dateStr] || 0) + v
+    })
+    const dailyEnergy = dateList.map(d => ({ date: d, energy_kwh: Number((dailyEnergyMap[d] || 0).toFixed(2)) }))
+
+    // 7. 最近30天：各工序不良统计（只显示有不良的工序）
+    const defects30d = await ProcessDefect.findAll({
+      where: { record_time: { [Op.gte]: thirtyDaysAgo } },
+      raw: true,
+    })
+    const processDefectMap: Record<string, { name: string; material: number; process: number; scrap: number; total: number }> = {}
+    const processIdToName: Record<string, string> = {}
+    processes.forEach(p => { processIdToName[p.process_id] = p.process_name || p.name })
+    defects30d.forEach(df => {
+      const pname = df.process_name || processIdToName[df.process_id] || '未知工序'
+      if (!processDefectMap[pname]) {
+        processDefectMap[pname] = { name: pname, material: 0, process: 0, scrap: 0, total: 0 }
+      }
+      const qty = Number(df.quantity || 0)
+      const dtype = String(df.defect_type || df.type || '')
+      if (dtype.includes('来料') || dtype.includes('material')) processDefectMap[pname].material += qty
+      else if (dtype.includes('报废') || dtype.includes('scrap')) processDefectMap[pname].scrap += qty
+      else processDefectMap[pname].process += qty
+      processDefectMap[pname].total += qty
+    })
+    const processDefectList = Object.values(processDefectMap)
+      .filter(p => p.total > 0)
+      .sort((a, b) => b.total - a.total)
+
     return success(res, {
       productionLines,
       devices,
@@ -776,6 +857,9 @@ export const productionDashboard = async (req, res) => {
       orders,
       workOrders,
       processReports: processReportsWithQty,
+      dailyTrend,
+      dailyEnergy,
+      processDefectList,
       queryTime: now.toISOString(),
       activeDate: `${todayStart.getFullYear()}-${String(todayStart.getMonth() + 1).padStart(2, '0')}-${String(todayStart.getDate()).padStart(2, '0')}`,
     })

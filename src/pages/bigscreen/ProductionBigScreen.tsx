@@ -273,66 +273,46 @@ export default function ProductionBigScreen() {
   const noAnimation = { animation: false, animationDuration: 0, animationDurationUpdate: 0, animationEasingUpdate: 'linear' }
 
   const activeLines = productionLines.filter(l => l.status !== '停用' && l.status !== 0)
-  // 根据真实数据计算每小时产线产出（按 report_time 小时聚合），无数据时回退为0
-  const computeHourlyByLine = () => {
-    const hours = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00']
-    const hourToIdx: any = {}
-    hours.forEach((h, i) => hourToIdx[h.split(':')[0]] = i)
-    const palette = ['#00d4ff', '#00ff88', '#a78bfa', '#ffd93d', '#ff6b6b', '#F0883E']
-    const outputMap: any = {}
-    activeLines.forEach((l, idx) => {
-      outputMap[l.line_name || `L${idx}`] = {
-        data: new Array(hours.length).fill(0),
-        color: palette[idx % palette.length],
-      }
-    })
-    dateProcessReports.forEach(r => {
-      const t = r.report_time || r.created_at
-      if (!t) return
-      const m = String(t).match(/T(\d{2}):| (\d{2}):/)
-      if (!m) return
-      const hh = m[1]
-      const idx = hourToIdx[hh]
-      if (idx === undefined) return
-      // 归属产线：优先按 line_name/line_id 匹配，否则均摊到第一条产线
-      const targetLine = activeLines.find(l =>
-        (l.line_name && (r.line_name === l.line_name || r.line_id === l.line_id)) ||
-        (l.workshop && (r.workshop === l.workshop))
-      ) || activeLines[0]
-      if (!targetLine) return
-      const key = targetLine.line_name
-      if (outputMap[key]) outputMap[key].data[idx] += Number(r.output_qty || 0)
-    })
-    return { hours, outputMap }
-  }
+  const dailyTrend = dashboardData.dailyTrend || []
+  const dailyEnergy = dashboardData.dailyEnergy || []
+  const lineNamesFromTrend = dailyTrend.length > 0
+    ? Object.keys(dailyTrend[0]).filter(k => k !== 'date')
+    : activeLines.map(l => l.line_name)
+  const palette = ['#00d4ff', '#00ff88', '#a78bfa', '#ffd93d', '#ff6b6b', '#F0883E']
+  const trendDates = dailyTrend.map((d: any) => d.date ? d.date.slice(5) : '')
+  const energyData = dailyEnergy.map((d: any) => d.energy_kwh || 0)
+  const hasEnergyData = energyData.some((v: number) => v > 0)
+
   useEffect(() => {
     if (!lineChartRef.current) return
     const chart = echarts.init(lineChartRef.current)
     lineChartRef2.current = chart
-    const { hours, outputMap } = computeHourlyByLine()
-    const demoData: any = {
-      'A线': { data: [520, 580, 610, 590, 540, 480, 560, 600, 620, 580, 530, 450, 380], color: '#00d4ff' },
-      'B线': { data: [480, 520, 550, 530, 500, 460, 510, 540, 560, 530, 490, 420, 360], color: '#00ff88' },
-      'C线': { data: [0, 0, 0, 0, 0, 0, 0, 360, 420, 440, 410, 350, 0], color: '#a78bfa' },
-    }
-    const legendData = activeLines.map(l => l.line_name)
-    const hasReal = Object.values(outputMap).some((d: any) => d.data.some((v: number) => v > 0))
-    const series = activeLines.map((l, idx) => {
-      const realD = outputMap[l.line_name]
-      const useDemo = !hasReal && demoData[l.line_name]
-      const d = useDemo ? demoData[l.line_name] : (realD || { data: new Array(hours.length).fill(0), color: ['#00d4ff', '#00ff88', '#a78bfa', '#ffd93d', '#ff6b6b', '#F0883E'][idx % 6] })
+
+    const series: any[] = lineNamesFromTrend.map((ln, idx) => {
+      const color = palette[idx % palette.length]
+      const data = dailyTrend.map((d: any) => d[ln] || 0)
       return {
-        name: l.line_name, type: 'line', smooth: true, symbol: 'circle', symbolSize: 7, data: d.data,
-        lineStyle: { color: d.color, width: 3 },
-        itemStyle: { color: d.color },
+        name: ln, type: 'line', smooth: true, symbol: 'circle', symbolSize: 6, data,
+        lineStyle: { color, width: 2 },
+        itemStyle: { color },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: d.color + '55' },
-            { offset: 1, color: d.color + '00' },
+            { offset: 0, color: color + '44' },
+            { offset: 1, color: color + '00' },
           ]),
         },
       }
     })
+
+    if (hasEnergyData) {
+      series.push({
+        name: '能源(kWh)', type: 'line', smooth: true, symbol: 'diamond', symbolSize: 6,
+        data: energyData, yAxisIndex: 1,
+        lineStyle: { color: '#faad14', width: 2, type: 'dashed' },
+        itemStyle: { color: '#faad14' },
+      })
+    }
+
     chart.setOption({
       ...noAnimation,
       backgroundColor: 'transparent',
@@ -347,32 +327,46 @@ export default function ProductionBigScreen() {
         icon: 'roundRect',
         itemWidth: 14,
         itemHeight: 4,
-        textStyle: { color: '#8B949E', fontSize: 12 },
-        data: legendData,
+        textStyle: { color: '#8B949E', fontSize: 11 },
+        data: hasEnergyData ? [...lineNamesFromTrend, '能源(kWh)'] : lineNamesFromTrend,
       },
-      grid: { left: '6%', right: '5%', top: '22%', bottom: '12%', containLabel: true },
+      grid: { left: '6%', right: hasEnergyData ? '8%' : '5%', top: '22%', bottom: '12%', containLabel: true },
       xAxis: {
         type: 'category',
         boundaryGap: false,
-        data: hours,
+        data: trendDates,
         axisLine: { lineStyle: { color: 'rgba(0,212,255,0.3)' } },
         axisTick: { show: false },
-        axisLabel: { color: '#C9D1D9', fontSize: 11 },
+        axisLabel: { color: '#C9D1D9', fontSize: 10, interval: 3 },
       },
-      yAxis: {
-        type: 'value',
-        axisLine: { show: false },
-        axisTick: { show: false },
-        axisLabel: { color: '#8B949E' },
-        splitLine: { lineStyle: { color: 'rgba(0,212,255,0.08)' } },
-      },
-      series: series,
+      yAxis: [
+        {
+          type: 'value',
+          name: '产出(件)',
+          nameTextStyle: { color: '#8B949E', fontSize: 10 },
+          axisLine: { show: false },
+          axisTick: { show: false },
+          axisLabel: { color: '#8B949E' },
+          splitLine: { lineStyle: { color: 'rgba(0,212,255,0.08)' } },
+        },
+        hasEnergyData ? {
+          type: 'value',
+          name: '能源(kWh)',
+          nameTextStyle: { color: '#faad14', fontSize: 10 },
+          axisLine: { show: false },
+          axisTick: { show: false },
+          axisLabel: { color: '#faad14' },
+          splitLine: { show: false },
+        } : { show: false },
+      ],
+      series,
     })
     const handleResize = () => chart.resize()
     window.addEventListener('resize', handleResize)
     return () => { chart.dispose(); window.removeEventListener('resize', handleResize); lineChartRef2.current = null }
-  }, [])
+  }, [dailyTrend, dailyEnergy, dataVersion])
 
+  const processDefectList = dashboardData.processDefectList || []
   useEffect(() => {
     if (!processBarRef.current) return
     let chart = processBarRef2.current
@@ -380,9 +374,11 @@ export default function ProductionBigScreen() {
       chart = echarts.init(processBarRef.current)
       processBarRef2.current = chart
     }
-    const names = processList.length > 0 ? processList.map(p => p.name) : ['暂无数据']
-    const outputs = processList.length > 0 ? processList.map(p => p.output) : [0]
-    const defects = processList.length > 0 ? processList.map(p => p.defect) : [0]
+    const hasData = processDefectList.length > 0
+    const names = hasData ? processDefectList.map(p => p.name) : ['暂无不良记录']
+    const materialArr = hasData ? processDefectList.map(p => p.material) : [0]
+    const processArr = hasData ? processDefectList.map(p => p.process) : [0]
+    const scrapArr = hasData ? processDefectList.map(p => p.scrap) : [0]
     chart.setOption({
       ...noAnimation,
       backgroundColor: 'transparent',
@@ -399,7 +395,7 @@ export default function ProductionBigScreen() {
         itemWidth: 14,
         itemHeight: 4,
         textStyle: { color: '#8B949E', fontSize: 12 },
-        data: ['产出数量', '不良数量'],
+        data: ['来料不良', '制程不良', '检验报废'],
       },
       grid: { left: '6%', right: '6%', top: '22%', bottom: '14%', containLabel: true },
       xAxis: {
@@ -409,51 +405,43 @@ export default function ProductionBigScreen() {
         axisTick: { show: false },
         axisLabel: { color: '#C9D1D9', fontSize: 12 },
       },
-      yAxis: [
-        {
-          type: 'value', name: '产出(件)',
-          nameTextStyle: { color: '#8B949E', fontSize: 11 },
-          axisLine: { show: false }, axisTick: { show: false },
-          axisLabel: { color: '#8B949E' },
-          splitLine: { lineStyle: { color: 'rgba(0,212,255,0.08)' } },
-        },
-        {
-          type: 'value', name: '不良(件)',
-          nameTextStyle: { color: '#8B949E', fontSize: 11 },
-          axisLine: { show: false }, axisTick: { show: false },
-          axisLabel: { color: '#8B949E' },
-          splitLine: { show: false },
-        },
-      ],
+      yAxis: {
+        type: 'value',
+        name: '不良(件)',
+        nameTextStyle: { color: '#8B949E', fontSize: 11 },
+        axisLine: { show: false },
+        axisTick: { show: false },
+        axisLabel: { color: '#8B949E' },
+        splitLine: { lineStyle: { color: 'rgba(0,212,255,0.08)' } },
+      },
       series: [
         {
-          name: '产出数量', type: 'bar', barWidth: '38%', yAxisIndex: 0, data: outputs,
-          itemStyle: {
-            borderRadius: [6, 6, 0, 0],
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: '#00d4ff' },
-              { offset: 1, color: 'rgba(0,212,255,0.15)' },
-            ]),
-          },
-          label: { show: true, position: 'top', color: '#E6EDF3', fontSize: 11, formatter: (p) => p.value.toLocaleString() },
+          name: '来料不良', type: 'bar', stack: 'defect', barWidth: '45%', data: materialArr,
+          itemStyle: { color: '#ffd93d' },
+          label: { show: false },
         },
         {
-          name: '不良数量', type: 'bar', barWidth: '38%', yAxisIndex: 1, data: defects,
-          itemStyle: {
-            borderRadius: [6, 6, 0, 0],
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: '#ff6b6b' },
-              { offset: 1, color: 'rgba(255,107,107,0.15)' },
-            ]),
+          name: '制程不良', type: 'bar', stack: 'defect', barWidth: '45%', data: processArr,
+          itemStyle: { color: '#ff6b6b' },
+          label: { show: false },
+        },
+        {
+          name: '检验报废', type: 'bar', stack: 'defect', barWidth: '45%', data: scrapArr,
+          itemStyle: { color: '#a78bfa' },
+          label: {
+            show: true, position: 'top', color: '#ff6b6b', fontSize: 11,
+            formatter: (params: any) => {
+              const p = processDefectList[params.dataIndex]
+              return p ? String(p.total) : ''
+            },
           },
-          label: { show: true, position: 'top', color: '#ff6b6b', fontSize: 11 },
         },
       ],
     })
     const handleResize = () => chart && chart.resize()
     window.addEventListener('resize', handleResize)
     return () => { window.removeEventListener('resize', handleResize) }
-  }, [processList, dataVersion])
+  }, [processDefectList, dataVersion])
 
   useEffect(() => {
     if (!defectPieRef.current) return
@@ -707,7 +695,7 @@ export default function ProductionBigScreen() {
           </div>
 
           <div style={{ flex: 3, minHeight: 0, display: 'flex', gap: 10 }}>
-            <BigScreenPanel title="各工序产出统计" style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <BigScreenPanel title="各工序不良统计" style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
               <div ref={processBarRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
             </BigScreenPanel>
 
