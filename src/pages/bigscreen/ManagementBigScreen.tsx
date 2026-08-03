@@ -685,14 +685,11 @@ export default function ManagementBigScreen() {
         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {/* 第一行图表 */}
           <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10 }}>
-            <BigScreenPanel title="订单完成趋势" style={{ flex: 2, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <BigScreenPanel title="订单完成趋势" style={{ flex: 3, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
               <div ref={orderTrendRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
             </BigScreenPanel>
-            <BigScreenPanel title="设备运行状态分布" style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <BigScreenPanel title="设备运行状态分布" style={{ flex: 2, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
               <div ref={deviceStatusRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
-            </BigScreenPanel>
-            <BigScreenPanel title="产线利用率" style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-              <div ref={lineUtilRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
             </BigScreenPanel>
           </div>
 
@@ -732,87 +729,6 @@ export default function ManagementBigScreen() {
               </div>
             </BigScreenPanel>
 
-            <BigScreenPanel title="产线利用率" className="bs-no-scrollbar" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-              {(productionLines.length > 0 ? productionLines : [{ line_id: 'nodata', line_name: '暂无产线数据', workshop: '-' }]).map(line => {
-                const ln = line.line_name || ''
-                const lineDevices = devices.filter(d =>
-                  (d.location || '').includes(ln) ||
-                  d.production_line_id === line.line_id ||
-                  d.line_name === ln
-                )
-                const running = lineDevices.filter(d => d.status === '运行' || d.status === '运行中').length
-                const utilization = lineDevices.length > 0 ? (running / lineDevices.length * 100) : 0
-                return (
-                  <div key={line.line_id} style={{ marginBottom: 8 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3, fontSize: 11 }}>
-                      <span style={{ color: '#C9D1D9' }}>{ln || line.line_name}</span>
-                      <span style={{ color: '#8B949E' }}>{utilization.toFixed(0)}%</span>
-                    </div>
-                    <div className="bs-progress-bar">
-                      <div className="bs-progress-fill" style={{
-                        width: `${utilization}%`,
-                        background: utilization >= 75 ? '#3FB950' : utilization >= 50 ? '#00d4ff' : '#D29922'
-                      }} />
-                    </div>
-                  </div>
-                )
-              })}
-            </BigScreenPanel>
-
-            <BigScreenPanel title="料品库存预警" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-              {(materials.length > 0 ? materials.slice(0, 10) : [{ material_id: 'nodata', material_name: '暂无料品', status: '-' }]).map(m => (
-                <div key={m.material_id} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid rgba(0,212,255,0.06)', fontSize: 11 }}>
-                  <span style={{ color: '#C9D1D9' }}>{m.material_name}</span>
-                  <Tag color={m.status === '启用' || m.status === 1 ? 'success' : m.status === '试产' ? 'warning' : 'default'} style={{ fontSize: 10 }}>{typeof m.status === 'number' ? ({ 0: '停用', 1: '启用', 2: '试产' } as any)[m.status] : (m.status || '-')}</Tag>
-                </div>
-              ))}
-            </BigScreenPanel>
-          </div>
-
-          {/* 中列 */}
-          <div style={{ flex: 2, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <BigScreenPanel title="质量检验综合汇总" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-              <ResizableTable tableKey="pages_bigscreen_ManagementBigScreen_quality"
-                className="bs-table"
-                columns={qualityColumns}
-                dataSource={qualitySummary}
-                rowKey="category"
-                size="small"
-                pagination={false}
-              />
-            </BigScreenPanel>
-
-            <BigScreenPanel title="各检验类别合格率对比" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-                {qualitySummary.map((q, i) => {
-                  const rate = q.total > 0 ? (q.pass / q.total * 100) : 0
-                  const color = rate >= 90 ? '#3FB950' : rate >= 70 ? '#D29922' : '#F85149'
-                  return (
-                    <div key={i} style={{ textAlign: 'center', padding: 10, background: 'rgba(255,255,255,0.03)', borderRadius: 6 }}>
-                      <div style={{ fontSize: 20, fontWeight: 700, color }} className="bs-number-glow">{rate.toFixed(0)}%</div>
-                      <div style={{ fontSize: 11, color: '#8B949E', marginTop: 2 }}>{q.category}</div>
-                      <div style={{ fontSize: 10, color: '#8B949E' }}>合格{q.pass}/总计{q.total}</div>
-                    </div>
-                  )
-                })}
-              </div>
-            </BigScreenPanel>
-
-            <BigScreenPanel title="客诉处理跟踪" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-              <ResizableTable tableKey="pages_bigscreen_ManagementBigScreen_complaint"
-                className="bs-table"
-                columns={complaintColumns}
-                dataSource={useComplaints.slice(0, 30)}
-                rowKey={(r: any) => r.complaint_id || r.id || Math.random()}
-                size="small"
-                pagination={false}
-                scroll={{ y: 'calc(100% - 40px)' }}
-              />
-            </BigScreenPanel>
-          </div>
-
-          {/* 右列 */}
-          <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <BigScreenPanel title="设备运行状态" className="bs-no-scrollbar" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 8 }}>
                 <div style={{ textAlign: 'center', padding: 8, background: 'rgba(63,185,80,0.08)', borderRadius: 6 }}>
@@ -833,39 +749,49 @@ export default function ManagementBigScreen() {
                 <div style={{ fontSize: 11, color: '#8B949E' }}>设备综合利用率</div>
               </div>
             </BigScreenPanel>
+          </div>
 
-            <BigScreenPanel title="检测仪器校准状态" className="bs-no-scrollbar" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-              {(instruments.length > 0 ? instruments.slice(0, 15) : [{ instrument_id: 'nodata', instrument_name: '暂无仪器数据', next_calibration_date: '-', status: '正常' }]).map(inst => (
-                <div key={inst.instrument_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(0,212,255,0.06)', fontSize: 11 }}>
-                  <div>
-                    <div style={{ color: '#C9D1D9' }}>{inst.instrument_name}</div>
-                    <div style={{ color: '#8B949E', fontSize: 10 }}>下次校准: {inst.next_calibration_date || '-'}</div>
-                  </div>
-                  <Tag color={inst.status === '正常' ? 'success' : inst.status === '即将到期' ? 'warning' : 'error'} style={{ fontSize: 10 }}>{inst.status || '-'}</Tag>
-                </div>
-              ))}
-              {(normalInstruments + expiringInstruments + expiredInstruments > 0) && (
-                <div style={{ marginTop: 6, padding: 6, background: 'rgba(0,212,255,0.05)', borderRadius: 4, display: 'flex', justifyContent: 'space-around', fontSize: 10 }}>
-                  <span style={{ color: '#3FB950' }}>正常 {normalInstruments}</span>
-                  <span style={{ color: '#D29922' }}>即将到期 {expiringInstruments}</span>
-                  <span style={{ color: '#F85149' }}>已超期 {expiredInstruments}</span>
-                </div>
-              )}
+          {/* 中列 */}
+          <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <BigScreenPanel title="质量检验综合汇总" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <ResizableTable tableKey="pages_bigscreen_ManagementBigScreen_quality"
+                className="bs-table"
+                columns={qualityColumns}
+                dataSource={qualitySummary}
+                rowKey="category"
+                size="small"
+                pagination={false}
+              />
             </BigScreenPanel>
 
-            <BigScreenPanel title="订单完成情况" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                <div style={{ textAlign: 'center', padding: 8, background: 'rgba(0,212,255,0.06)', borderRadius: 6 }}>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: '#00d4ff' }}>{activeOrders}</div>
-                  <div style={{ fontSize: 11, color: '#8B949E' }}>进行中</div>
-                </div>
-                <div style={{ textAlign: 'center', padding: 8, background: 'rgba(63,185,80,0.06)', borderRadius: 6 }}>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: '#3FB950' }}>{closedOrders}</div>
-                  <div style={{ fontSize: 11, color: '#8B949E' }}>已关闭</div>
-                </div>
-              </div>
-              <div style={{ marginTop: 8, fontSize: 11, color: '#8B949E', textAlign: 'center' }}>
-                本月已完成工单 <span style={{ color: '#3FB950', fontWeight: 600, fontSize: 14 }}>{completedWorkOrders}</span> 个
+            <BigScreenPanel title="客诉处理跟踪" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <ResizableTable tableKey="pages_bigscreen_ManagementBigScreen_complaint"
+                className="bs-table"
+                columns={complaintColumns}
+                dataSource={useComplaints.slice(0, 30)}
+                rowKey={(r: any) => r.complaint_id || r.id || Math.random()}
+                size="small"
+                pagination={false}
+                scroll={{ y: 'calc(100% - 40px)' }}
+              />
+            </BigScreenPanel>
+          </div>
+
+          {/* 右列 */}
+          <div style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <BigScreenPanel title="各检验类别合格率对比" style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, padding: 4 }}>
+                {qualitySummary.map((q, i) => {
+                  const rate = q.total > 0 ? (q.pass / q.total * 100) : 0
+                  const color = rate >= 90 ? '#3FB950' : rate >= 70 ? '#D29922' : '#F85149'
+                  return (
+                    <div key={i} style={{ textAlign: 'center', padding: 14, background: 'rgba(255,255,255,0.03)', borderRadius: 6 }}>
+                      <div style={{ fontSize: 28, fontWeight: 700, color }} className="bs-number-glow">{rate.toFixed(0)}%</div>
+                      <div style={{ fontSize: 12, color: '#8B949E', marginTop: 4 }}>{q.category}</div>
+                      <div style={{ fontSize: 11, color: '#8B949E' }}>合格{q.pass}/总计{q.total}</div>
+                    </div>
+                  )
+                })}
               </div>
             </BigScreenPanel>
           </div>
