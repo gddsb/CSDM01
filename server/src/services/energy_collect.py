@@ -1,75 +1,47 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-能源采集完整脚本 - 被TypeScript调用
+能源管理系统 - 纯HTTP模式数据采集脚本（被Node.js调用版本）
 用法: python3 energy_collect.py <username> <password> [task_setting_id]
-输出: JSON格式的采集结果到stdout
+输出: stdout最后一行是JSON结果
 """
-import sys
+
+import requests
 import json
 import time
 import re
 import random
 import string
 import base64
-import io
-import requests
-import ddddocr
+import sys
+from datetime import datetime, timedelta
 
-try:
-    from PIL import Image
-    has_pil = True
-except ImportError:
-    has_pil = False
 
+# ==================== 配置区 ====================
 API_HOST = "https://nh2api.yunjichaobiao.com"
 FRONTEND_HOST = "https://nh2.yunjichaobiao.com"
 
+API_ENDPOINTS = {
+    "login": "api/Account/Login",
+    "getCaptcha": "api/Account/GetCaptcha",
+    "pageForTotalEnergy": "api/Monitor/PageForTotalEnergy",
+}
+
+COLLECT_CONFIG = {
+    "listType": "device",
+    "dateType": "mi15",
+    "areaID": 56552,
+    "ammeterID": 107799,
+    "valueType": "SJZ",
+    "pageSize": 50,
+}
+
+REQUEST_TIMEOUT = 30
 MAX_RETRIES = 15
 
-# OCR引擎初始化
-ocr_def = ddddocr.DdddOcr(show_ad=False)
-try:
-    ocr_beta = ddddocr.DdddOcr(beta=True, show_ad=False)
-except Exception:
-    ocr_beta = None
 
-
-def clean(text):
-    return re.sub(r'[^0-9A-Za-z]', '', text).upper()
-
-
-def recognize_captcha(image_bytes):
-    """多模型投票识别验证码"""
-    results = []
-    results.append(clean(ocr_def.classification(image_bytes)))
-    if ocr_beta:
-        results.append(clean(ocr_beta.classification(image_bytes)))
-    if has_pil:
-        try:
-            im = Image.open(io.BytesIO(image_bytes))
-            im = im.convert('L')
-            buf = io.BytesIO()
-            im.save(buf, format='PNG')
-            results.append(clean(ocr_def.classification(buf.getvalue())))
-        except Exception:
-            pass
-    if ocr_beta and has_pil:
-        try:
-            im = Image.open(io.BytesIO(image_bytes))
-            im = im.convert('L')
-            buf = io.BytesIO()
-            im.save(buf, format='PNG')
-            results.append(clean(ocr_beta.classification(buf.getvalue())))
-        except Exception:
-            pass
-
-    valid4 = [r for r in results if len(r) == 4]
-    if valid4:
-        from collections import Counter
-        cnt = Counter(valid4)
-        return cnt.most_common(1)[0][0]
-    return results[0] if results else ""
+def log(msg):
+    print(msg, file=sys.stderr)
 
 
 def generate_key_str(length=12):
@@ -77,165 +49,225 @@ def generate_key_str(length=12):
     return ''.join(random.choice(chars) for _ in range(length))
 
 
-def login(username, password):
-    """登录能源平台，返回 (token, error_msg)"""
-    for attempt in range(1, MAX_RETRIES + 1):
-        session = requests.Session()
-        session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+def init_ocr():
+    try:
+        import ddddocr
+        ocr = ddddocr.DdddOcr(det=False, ocr=True, show_ad=False)
+        log("[OK] ddddocr 验证码识别引擎初始化成功")
+        return ocr
+    except ImportError as e:
+        log(f"[ERROR] ddddocr 未安装: {e}")
+        sys.exit(1)
+
+
+def recognize_captcha(ocr_engine, image_bytes):
+    result = ocr_engine.classification(image_bytes)
+    result = result.strip().upper()
+    result = re.sub(r'[^0-9A-Za-z]', '', result)
+    log(f"  [OCR] 验证码识别结果: {result}")
+    return result
+
+
+class EnergyAPI:
+    def __init__(self):
+        self.session = requests.Session()
+        self.token = None
+        self.user_info = None
+        self.ocr_engine = init_ocr()
+
+        self.session.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Accept": "application/json, text/javascript, */*; q=0.01",
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+            "X-Requested-With": "XMLHttpRequest",
             "Origin": FRONTEND_HOST,
-            "Referer": FRONTEND_HOST + "/login.html",
+            "Referer": f"{FRONTEND_HOST}/login.html",
         })
 
-        key_str = generate_key_str(12)
+    def get_captcha(self, key_str):
+        url = f"{API_HOST}/{API_ENDPOINTS['getCaptcha']}?keyStr={key_str}"
+        log(f"  [请求] GET Captcha: keyStr={key_str}")
 
-        # 1. 获取验证码
-        url = API_HOST + "/api/Account/GetCaptcha?keyStr=" + key_str
-        try:
-            resp = session.post(url, data={"keyStr": key_str}, timeout=30)
-        except Exception as e:
-            print(f"[WARN] 尝试 {attempt}: 获取验证码失败: {e}", file=sys.stderr)
-            continue
+        resp = self.session.post(url, data={"keyStr": key_str}, timeout=REQUEST_TIMEOUT)
+        resp.raise_for_status()
 
         result = resp.json()
         if isinstance(result, str):
             result = json.loads(result)
-        if not result.get("IsSuccess"):
-            continue
 
-        b64 = str(result["Data"]).replace('"', '').replace('\\', '')
-        img = base64.b64decode(b64)
+        if result.get("IsSuccess"):
+            base64_data = result["Data"].replace('"', '').replace('\\', '')
+            image_bytes = base64.b64decode(base64_data)
+            log(f"  [OK] 验证码图片获取成功, 大小: {len(image_bytes)} bytes")
+            return image_bytes
+        else:
+            raise Exception(f"获取验证码失败: {result.get('ErrorMsg', 'Unknown error')}")
 
-        # 2. 识别验证码
-        captcha = recognize_captcha(img)
-        if len(captcha) != 4:
-            print(f"[WARN] 尝试 {attempt}: 验证码长度不对: [{captcha}]", file=sys.stderr)
-            continue
-
-        # 3. 登录
-        login_url = API_HOST + "/api/Account/Login"
+    def login(self, username, password, key_str, code):
+        url = f"{API_HOST}/{API_ENDPOINTS['login']}"
         login_data = {
             "UserID": username,
             "Password": password,
             "client": 0,
             "KeyStr": key_str,
-            "Code": captcha,
+            "Code": code,
             "Language": "en",
         }
-        try:
-            resp2 = session.post(login_url, data=login_data, timeout=30)
-        except Exception as e:
-            print(f"[WARN] 尝试 {attempt}: 登录请求失败: {e}", file=sys.stderr)
-            continue
+        log(f"  [请求] POST Login: UserID={username}")
 
-        r2 = resp2.json()
-        if isinstance(r2, str):
-            r2 = json.loads(r2)
-
-        if r2.get("IsSuccess"):
-            print(f"[OK] 登录成功，尝试次数: {attempt}", file=sys.stderr)
-            return session, r2.get("Token"), None
-        else:
-            err = r2.get("ErrorMsg", "Unknown")
-            print(f"[WARN] 尝试 {attempt}: 登录失败 [{captcha}]: {err}", file=sys.stderr)
-
-    return None, None, f"登录失败，已重试 {MAX_RETRIES} 次"
-
-
-def collect_data(session, token):
-    """采集电能数据"""
-    all_records = []
-    page_index = 1
-    page_size = 50
-
-    now = time.time()
-    start_ts = now - 24 * 3600
-    end_ts = now + 24 * 3600
-
-    def fmt(ts):
-        t = time.localtime(ts)
-        return f"{t.tm_year}-{t.tm_mon:02d}-{t.tm_mday:02d} {t.tm_hour:02d}:{t.tm_min:02d}"
-
-    while True:
-        url = API_HOST + "/api/Monitor/PageForTotalEnergy"
-        params = {
-            "listType": "device",
-            "pageIndex": page_index,
-            "pageSize": page_size,
-            "dateType": "mi15",
-            "areaID": 56552,
-            "ammeterID": 107799,
-            "startTime": fmt(start_ts),
-            "endTime": fmt(end_ts),
-            "valueType": "SJZ",
-            "PrivAddr": "",
-        }
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-            "Referer": FRONTEND_HOST + "/Energy/ygwgzdn.html",
-        }
-        try:
-            resp = session.post(url, data=json.dumps(params), headers=headers, timeout=30)
-        except Exception as e:
-            print(f"[WARN] 获取第{page_index}页数据失败: {e}", file=sys.stderr)
-            break
+        resp = self.session.post(url, data=login_data, timeout=REQUEST_TIMEOUT)
+        resp.raise_for_status()
 
         result = resp.json()
         if isinstance(result, str):
             result = json.loads(result)
 
-        if not result or not result.get("IsSuccess"):
-            break
+        if result.get("IsSuccess"):
+            self.user_info = result.get("Data", {})
+            self.token = result.get("Token")
+            log(f"  [OK] 登录成功!")
+            return True
+        else:
+            error_msg = result.get("ErrorMsg", "Unknown error")
+            error_code = result.get("ErrorCode", "")
+            log(f"  [FAIL] 登录失败: [{error_code}] {error_msg}")
+            return False
 
-        data = result.get("Data")
-        if isinstance(data, str):
-            data = json.loads(data)
+    def login_with_captcha(self, username, password, max_retries=MAX_RETRIES):
+        log("\n[步骤] 开始登录流程...")
 
-        if not data or not data.get("list"):
-            break
+        for attempt in range(1, max_retries + 1):
+            log(f"\n--- 登录尝试 {attempt}/{max_retries} ---")
 
-        records = data["list"]
-        all_records.extend(records)
-        total_pages = data.get("pageCount", 1)
-        print(f"[INFO] 第{page_index}/{total_pages}页: {len(records)}条, 累计{len(all_records)}/{data.get('count', 0)}条", file=sys.stderr)
+            key_str = generate_key_str(12)
+            try:
+                image_bytes = self.get_captcha(key_str)
+            except Exception as e:
+                log(f"  [ERROR] 获取验证码失败: {e}")
+                continue
 
-        if page_index >= total_pages:
-            break
-        page_index += 1
-        time.sleep(0.5)
+            captcha_code = recognize_captcha(self.ocr_engine, image_bytes)
+            if not captcha_code or len(captcha_code) < 3:
+                log(f"  [WARN] 验证码识别结果不完整, 重试...")
+                continue
 
-    return all_records
+            if self.login(username, password, key_str, captcha_code):
+                return True
+            else:
+                log(f"  [WARN] 登录失败, 可能验证码识别错误, 重试...")
+
+        log(f"\n[FAIL] 登录失败, 已重试 {max_retries} 次")
+        return False
+
+    def get_total_energy_data(self, page_index=1, page_size=50, **kwargs):
+        url = f"{API_HOST}/{API_ENDPOINTS['pageForTotalEnergy']}"
+
+        now = datetime.now()
+        start_time = (now - timedelta(days=1)).strftime("%Y-%m-%d %H:%M")
+        end_time = (now + timedelta(days=1)).strftime("%Y-%m-%d %H:%M")
+
+        params = {
+            "listType": COLLECT_CONFIG["listType"],
+            "pageIndex": page_index,
+            "pageSize": page_size,
+            "dateType": COLLECT_CONFIG["dateType"],
+            "areaID": COLLECT_CONFIG["areaID"],
+            "ammeterID": COLLECT_CONFIG["ammeterID"],
+            "startTime": start_time,
+            "endTime": end_time,
+            "valueType": COLLECT_CONFIG["valueType"],
+            "PrivAddr": "",
+        }
+        params.update(kwargs)
+
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json",
+            "Referer": f"{FRONTEND_HOST}/Energy/ygwgzdn.html",
+        }
+
+        log(f"  [请求] POST PageForTotalEnergy: page={page_index}, size={page_size}")
+
+        resp = self.session.post(url, data=json.dumps(params), headers=headers, timeout=REQUEST_TIMEOUT)
+        resp.raise_for_status()
+
+        result = resp.json()
+        if isinstance(result, str):
+            result = json.loads(result)
+
+        if result and result.get("IsSuccess"):
+            data = result.get("Data")
+            if isinstance(data, str):
+                data = json.loads(data)
+            return data
+        else:
+            error_msg = result.get("ErrorMsg", "Unknown error") if result else "Empty response"
+            error_code = result.get("ErrorCode", "") if result else ""
+            log(f"  [API ERROR] [{error_code}] {error_msg}")
+            return None
+
+    def collect_all_data(self):
+        log("\n[步骤] 开始采集数据...")
+
+        all_records = []
+        page_index = 1
+        page_size = COLLECT_CONFIG["pageSize"]
+        total_pages = 0
+
+        while True:
+            try:
+                data = self.get_total_energy_data(page_index=page_index, page_size=page_size)
+            except Exception as e:
+                log(f"  [ERROR] 获取第{page_index}页数据失败: {e}")
+                break
+
+            if not data or not data.get("list"):
+                log(f"  [INFO] 第{page_index}页无数据")
+                break
+
+            records = data["list"]
+            all_records.extend(records)
+            total_pages = data.get("pageCount", 1)
+
+            log(f"  [OK] 第{page_index}/{total_pages}页: 获取{len(records)}条, 累计{len(all_records)}/{data.get('count', 0)}条")
+
+            if page_index >= total_pages:
+                break
+
+            page_index += 1
+            time.sleep(0.5)
+
+        log(f"\n[完成] 数据采集完成: 共{len(all_records)}条记录, {total_pages}页")
+        return all_records
 
 
 def main():
     if len(sys.argv) < 3:
-        print(json.dumps({"success": False, "error": "参数不足: 需要 username password [task_setting_id]"}))
+        print(json.dumps({"success": False, "totalRecords": 0, "error": "参数不足: 需要 username password [task_setting_id]"}))
         sys.exit(1)
 
     username = sys.argv[1]
     password = sys.argv[2]
-    task_setting_id = int(sys.argv[3]) if len(sys.argv) > 3 else None
 
-    # Step 1: 登录
-    print("[步骤] 连接能源平台...", file=sys.stderr)
-    session, token, err = login(username, password)
-    if err:
-        print(json.dumps({"success": False, "totalRecords": 0, "error": err}))
+    log("=" * 70)
+    log(f"  能源管理系统 - 纯HTTP模式数据采集")
+    log(f"  目标: {API_HOST}")
+    log(f"  用户: {username}")
+    log("=" * 70)
+
+    api = EnergyAPI()
+
+    if not api.login_with_captcha(username, password):
+        result = {"success": False, "totalRecords": 0, "error": f"登录失败，已重试 {MAX_RETRIES} 次"}
+        print(json.dumps(result, ensure_ascii=False))
         sys.exit(1)
 
-    # Step 2: 采集数据
-    print("[步骤] 获取电能数据...", file=sys.stderr)
-    records = collect_data(session, token)
-    print(f"[步骤] 数据获取成功，共 {len(records)} 条", file=sys.stderr)
+    records = api.collect_all_data()
 
-    # 输出结果
     result = {
         "success": True,
         "totalRecords": len(records),
         "records": records,
-        "taskSettingId": task_setting_id,
     }
     print(json.dumps(result, ensure_ascii=False))
 
@@ -243,7 +275,11 @@ def main():
 if __name__ == "__main__":
     try:
         main()
+    except KeyboardInterrupt:
+        log("\n[中断] 用户手动中断")
+        sys.exit(0)
     except Exception as e:
+        log(f"\n[ERROR] 程序异常: {e}")
         import traceback
         traceback.print_exc(file=sys.stderr)
         print(json.dumps({"success": False, "totalRecords": 0, "error": str(e)}))
