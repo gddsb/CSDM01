@@ -16,7 +16,7 @@ import '../../styles/bigscreen.css'
 interface FactorItem {
   factor_name: string
   device_name: string
-  factorType: 'temperature' | 'humidity'
+  factorType: 'temperature' | 'humidity' | 'dew' | 'pressure'
   value: number
   unit: string
   device_status: string
@@ -135,30 +135,36 @@ function gaugeDew(value: number): EChartsOption {
   }
 }
 
-function miniGauge(value: number, unit: string, type: 'temp' | 'hum' | 'dew'): EChartsOption {
+function miniGauge(value: number, unit: string, type: 'temp' | 'hum' | 'dew' | 'pressure'): EChartsOption {
   const colors = {
     temp: value < 18 ? ['#00d4ff', '#52c41a', '#ff4d4f'] : value > 30 ? ['#00d4ff', '#fa8c16', '#ff4d4f'] : ['#00d4ff', '#52c41a', '#ff4d4f'],
     hum: value > 65 ? ['#52c41a', '#ff4d4f'] : ['#52c41a', '#ff4d4f'],
     dew: value < 5 ? ['#00d4ff', '#a855f7', '#fa8c16'] : value > 20 ? ['#00d4ff', '#a855f7', '#ff4d4f'] : ['#00d4ff', '#a855f7', '#fa8c16'],
+    pressure: value < 5 ? ['#ff4d4f', '#fa8c16', '#52c41a'] : value > 20 ? ['#ff4d4f', '#fa8c16', '#52c41a'] : ['#52c41a', '#fa8c16', '#ff4d4f'],
   }
   const ranges = {
     temp: { min: 0, max: 40, split: 4 },
     hum: { min: 35, max: 100, split: 2 },
     dew: { min: -10, max: 35, split: 3 },
+    pressure: { min: 0, max: 30, split: 3 },
   }
   const r = ranges[type]
   const cs = colors[type]
-  const stops = type === 'temp'
+  const stops: any = type === 'temp'
     ? [[0.45, cs[0]], [25 / 40, cs[1]], [1, cs[2]]]
     : type === 'hum'
       ? [[0.4615, cs[0]], [1, cs[1]]]
-      : [[15 / 45, cs[0]], [30 / 45, cs[1]], [1, cs[2]]]
+      : type === 'dew'
+        ? [[15 / 45, cs[0]], [30 / 45, cs[1]], [1, cs[2]]]
+        : [[5 / 30, cs[0]], [20 / 30, cs[1]], [1, cs[2]]]
 
   const mainColor = type === 'temp'
-    ? (value < 18 ? '#00d4ff' : value > (type === 'temp' ? 30 : 20) ? '#ff4d4f' : '#52c41a')
+    ? (value < 18 ? '#00d4ff' : value > 30 ? '#ff4d4f' : '#52c41a')
     : type === 'hum'
       ? (value > 65 ? '#ff4d4f' : '#52c41a')
-      : (value < 5 ? '#00d4ff' : value > 20 ? '#fa8c16' : '#a855f7')
+      : type === 'dew'
+        ? (value < 5 ? '#00d4ff' : value > 20 ? '#fa8c16' : '#a855f7')
+        : (value < 5 || value > 20 ? '#ff4d4f' : '#52c41a')
 
   return {
     series: [{
@@ -302,15 +308,23 @@ function useChart(option: EChartsOption | null, deps: any[] = []) {
 
 // 动态采集点表盘子组件
 function FactorGauge({ factor }: { factor: FactorItem }) {
-  const type = factor.factorType === 'temperature' ? 'temp' : 'hum'
-  const unit = factor.unit || (type === 'temp' ? '℃' : '%RH')
+  const getType = (n: string, t?: string) => {
+    if (t) return t
+    if (n.includes('温度') && !n.includes('露点')) return 'temp'
+    if (n.includes('湿度')) return 'hum'
+    if (n.includes('露点')) return 'dew'
+    if (n.includes('压差')) return 'pressure'
+    return 'temp'
+  }
+  const type = getType(factor.factor_name, factor.factorType)
+  const unit = factor.unit || (type === 'temp' ? '℃' : type === 'hum' ? '%RH' : type === 'pressure' ? 'Pa' : '')
   const option = miniGauge(factor.value, unit, type as any)
   const ref = useChart(option, [factor.value])
   const label = factor.factor_name.replace(/^车间|^仓库/, '')
   return (
-    <div style={{ textAlign: 'center' }}>
-      <div ref={ref} style={{ height: 120 }} />
-      <div className="bs-gauge-label" style={{ marginTop: -4, fontSize: 11 }}>
+    <div style={{ textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+      <div ref={ref} style={{ flex: 1, minHeight: 0 }} />
+      <div className="bs-gauge-label" style={{ marginTop: -2, fontSize: 11, flexShrink: 0 }}>
         {label}
       </div>
     </div>
@@ -355,10 +369,19 @@ export default function EnvironmentBigScreen() {
           const wh: AreaData = { name: '仓库区域', icon: 'warehouse', factors: [] }
           for (const f of raw.factors as any[]) {
             const name = f.factor_name || ''
-            if (!name.includes('温度') && !name.includes('湿度')) continue
+            const isTemp = name.includes('温度') && !name.includes('露点')
+            const isHum = name.includes('湿度')
+            const isDew = name.includes('露点')
+            const isPressure = name.includes('压差')
+            if (!isTemp && !isHum && !isDew && !isPressure) continue
+            let fType: FactorItem['factorType'] = 'temperature'
+            if (isTemp) fType = 'temperature'
+            else if (isHum) fType = 'humidity'
+            else if (isDew) fType = 'dew'
+            else if (isPressure) fType = 'pressure'
             const item: FactorItem = {
               factor_name: name, device_name: f.device_name || '',
-              factorType: name.includes('温度') ? 'temperature' : 'humidity',
+              factorType: fType,
               value: f.value, unit: f.unit || '',
               device_status: f.device_status || '', collect_time: f.collect_time,
             }
@@ -382,7 +405,7 @@ export default function EnvironmentBigScreen() {
   }, [loadAll])
 
   const areaAvg = useMemo(() => {
-    const calc = (name: string, type: 'temperature' | 'humidity') => {
+    const calc = (name: string, type: FactorItem['factorType']) => {
       const area = overview?.areas.find((a) => a.name === name)
       const fs = area?.factors.filter((f) => f.factorType === type) || []
       if (!fs.length) return 0
@@ -415,7 +438,7 @@ export default function EnvironmentBigScreen() {
   const whHumRef = useChart(gaugeHum(areaAvg.whHum), [areaAvg.whHum])
   const whDewRef = useChart(gaugeDew(areaAvg.whDew), [areaAvg.whDew])
 
-  // 所有温湿度采集点（排除压差等非温湿度因子）
+  // 所有采集点（温湿度 + 压差）
   const allFactors = useMemo(() => {
     const list: FactorItem[] = []
     if (!overview?.areas) return list
@@ -424,6 +447,8 @@ export default function EnvironmentBigScreen() {
         const n = f.factor_name || ''
         if (n.includes('温度') && !n.includes('露点')) list.push({ ...f, factorType: 'temperature' })
         else if (n.includes('湿度')) list.push({ ...f, factorType: 'humidity' })
+        else if (n.includes('露点')) list.push({ ...f, factorType: 'dew' })
+        else if (n.includes('压差')) list.push({ ...f, factorType: 'pressure' })
       }
     }
     return list
@@ -492,11 +517,11 @@ export default function EnvironmentBigScreen() {
                     </div>
                   </Col>
                   <Col span={24}>
-                    <div className="bs-gauge-card" style={{ padding: 6 }}>
-                      <div className="bs-gauge-label" style={{ textAlign: 'center' }}>💧 露点温度</div>
-                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 20 }}>
-                        <div ref={wsDewRef} style={{ height: 90, width: 120 }} />
-                        <span className="bs-gauge-value" style={{ fontSize: 22 }}>{areaAvg.wsDew.toFixed(1)}℃</span>
+                    <div className="bs-gauge-card" style={{ padding: 4 }}>
+                      <div className="bs-gauge-label" style={{ textAlign: 'center', marginBottom: 2 }}>💧 露点温度</div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 8px' }}>
+                        <div ref={wsDewRef} style={{ height: 110, width: 150, flex: '0 0 auto' }} />
+                        <span className="bs-gauge-value" style={{ fontSize: 28, fontWeight: 700, flex: 1, textAlign: 'right', paddingRight: 10 }}>{areaAvg.wsDew.toFixed(1)}℃</span>
                       </div>
                     </div>
                   </Col>
@@ -524,11 +549,11 @@ export default function EnvironmentBigScreen() {
                     </div>
                   </Col>
                   <Col span={24}>
-                    <div className="bs-gauge-card" style={{ padding: 6 }}>
-                      <div className="bs-gauge-label" style={{ textAlign: 'center' }}>💧 露点温度</div>
-                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 20 }}>
-                        <div ref={whDewRef} style={{ height: 90, width: 120 }} />
-                        <span className="bs-gauge-value" style={{ fontSize: 22 }}>{areaAvg.whDew.toFixed(1)}℃</span>
+                    <div className="bs-gauge-card" style={{ padding: 4 }}>
+                      <div className="bs-gauge-label" style={{ textAlign: 'center', marginBottom: 2 }}>💧 露点温度</div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 8px' }}>
+                        <div ref={whDewRef} style={{ height: 110, width: 150, flex: '0 0 auto' }} />
+                        <span className="bs-gauge-value" style={{ fontSize: 28, fontWeight: 700, flex: 1, textAlign: 'right', paddingRight: 10 }}>{areaAvg.whDew.toFixed(1)}℃</span>
                       </div>
                     </div>
                   </Col>
@@ -563,11 +588,18 @@ export default function EnvironmentBigScreen() {
                 title={`所有采集点 (${allFactors.length})`}
                 titleIcon={<DashboardOutlined />}
                 style={{ flex: 1 }}
-                bodyStyle={{ display: 'flex', flexDirection: 'column', overflow: 'auto' }}
+                bodyStyle={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
               >
-                <Row gutter={[12, 12]}>
+                <Row
+                  gutter={[12, 8]}
+                  style={{ flex: 1, minHeight: 0, display: 'flex', alignContent: 'flex-start' }}
+                >
                   {allFactors.map((f, idx) => (
-                    <Col span={12} key={`${f.factor_name}-${idx}`}>
+                    <Col
+                      span={12}
+                      key={`${f.factor_name}-${idx}`}
+                      style={{ height: `${Math.max(85, Math.floor(100 / Math.ceil(allFactors.length / 2)))}%` }}
+                    >
                       <FactorGauge factor={f} />
                     </Col>
                   ))}
