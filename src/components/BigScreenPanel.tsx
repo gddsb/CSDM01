@@ -20,7 +20,7 @@ export default function BigScreenPanel({
   bodyStyle,
 }: BigScreenPanelProps) {
   return (
-    <div className={`bs-panel ${className}`.trim()} style={style}>
+    <div className={`bs-panel ${className}`.trim()} style={{ display: 'flex', flexDirection: 'column', ...style }}>
       {/* 四角装饰 */}
       <span className="bs-panel-corner tl" />
       <span className="bs-panel-corner tr" />
@@ -35,7 +35,7 @@ export default function BigScreenPanel({
         </div>
       )}
 
-      <div style={{ position: 'relative', zIndex: 1, ...bodyStyle }}>
+      <div style={{ flex: 1, minHeight: 0, position: 'relative', zIndex: 1, ...bodyStyle }}>
         {children}
       </div>
     </div>

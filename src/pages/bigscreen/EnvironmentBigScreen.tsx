@@ -536,15 +536,24 @@ export default function EnvironmentBigScreen() {
               </BigScreenPanel>
             </div>
 
-            {/* 中栏：温度趋势图 */}
+            {/* 中栏：温湿度趋势图（上下堆叠） */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
               <BigScreenPanel
-                title="过去12小时温湿度趋势"
+                title="过去12小时温度趋势"
                 titleIcon={<ThunderboltOutlined />}
                 style={{ flex: 1 }}
                 bodyStyle={{ display: 'flex', flexDirection: 'column' }}
               >
-                <div ref={tempRef} className="bs-chart-container" style={{ flex: 1 }} />
+                <div ref={tempRef} className="bs-chart-container" style={{ flex: 1, minHeight: 0 }} />
+              </BigScreenPanel>
+
+              <BigScreenPanel
+                title="过去12小时湿度趋势"
+                titleIcon={<CloudOutlined />}
+                style={{ flex: 1 }}
+                bodyStyle={{ display: 'flex', flexDirection: 'column' }}
+              >
+                <div ref={humRef} className="bs-chart-container" style={{ flex: 1, minHeight: 0 }} />
               </BigScreenPanel>
             </div>
 
@@ -568,15 +577,6 @@ export default function EnvironmentBigScreen() {
                     </Col>
                   )}
                 </Row>
-              </BigScreenPanel>
-
-              <BigScreenPanel
-                title="湿度趋势"
-                titleIcon={<CloudOutlined />}
-                style={{ flex: 1 }}
-                bodyStyle={{ display: 'flex', flexDirection: 'column' }}
-              >
-                <div ref={humRef} className="bs-chart-container" style={{ flex: 1 }} />
               </BigScreenPanel>
             </div>
           </div>
