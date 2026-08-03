@@ -667,7 +667,7 @@ export default function ProductionBigScreen() {
         </div>
 
         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10 }}>
+          <div style={{ flex: 2, minHeight: 0, display: 'flex', gap: 10 }}>
             <div style={{ flex: 1, minWidth: 0, minHeight: 0 }}>
               <BigScreenPanel title="产线运行状态" className="bs-no-scrollbar" style={{ height: '100%', minHeight: 0, overflow: 'hidden' }}>
                 {(activeLines.length > 0 ? activeLines : [{ line_id: 'demo', line_name: '暂无产线数据', workshop: '-', status: '停用' }]).map(line => {
@@ -698,7 +698,7 @@ export default function ProductionBigScreen() {
             </BigScreenPanel>
           </div>
 
-          <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 10 }}>
+          <div style={{ flex: 3, minHeight: 0, display: 'flex', gap: 10 }}>
             <BigScreenPanel title="各工序产出统计" style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
               <div ref={processBarRef} style={{ flex: 1, minHeight: 0, width: '100%' }} />
             </BigScreenPanel>
