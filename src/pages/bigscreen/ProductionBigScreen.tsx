@@ -185,7 +185,7 @@ export default function ProductionBigScreen() {
       const finishMatch = activeDate && w.finish_time && w.finish_time.startsWith(activeDate)
       return startMatch || finishMatch
     })
-    .filter(w => w.status !== '完工' && w.status !== 3)
+    .filter(w => w.status !== '完工' && w.status !== 1 && w.status !== 3)
     .map(w => {
       const reported = processReports
         .filter(r => r.work_order_id === w.work_order_id || r.report_order_id === w.work_order_id || r.report_order_id === w.report_order_id)
@@ -195,9 +195,16 @@ export default function ProductionBigScreen() {
       return { ...w, reported, pct, target_qty: targetQty }
     })
 
-  const activeWorkOrders = workOrders.filter(w => w.status === '开工' || w.status === '已开工' || w.status === 2 || w.status === '已下达' || w.status === '进行中')
+  const activeWorkOrders = workOrders.filter(w => {
+    const s = w.status
+    return s === 0 || s === '开工' || s === '已开工' || s === 2 || s === '已下达' || s === '进行中'
+  })
   const totalTarget = activeWorkOrders.reduce((s, w) => s + Number(w.target_qty || w.report_qty || 0), 0)
-  const todayStartWorkOrders = workOrders.filter(w => activeDate && w.start_time && w.start_time.startsWith(activeDate))
+  const todayStartWorkOrders = workOrders.filter(w => {
+    if (!activeDate) return false
+    const t = w.start_time || w.report_time || w.created_at
+    return t && String(t).startsWith(activeDate)
+  })
   const todayStartQty = todayStartWorkOrders.reduce((s, w) => s + Number(w.target_qty || w.report_qty || 0), 0)
   const currentOutput = activeWorkOrders.reduce((sum, w) => {
     const reported = processReports
@@ -207,7 +214,7 @@ export default function ProductionBigScreen() {
   }, 0)
   const totalOutput = dateProcessReports.reduce((s, r) => s + Number(r.output_qty || 0), 0)
   const totalDefect = dateProcessReports.reduce((s, r) => s + Number(r.defect_material || 0) + Number(r.defect_process || 0) + Number(r.defect_scrap || 0), 0)
-  const totalInput = dateProcessReports.filter(r => (r.process_name || '').includes('裁剪')).reduce((s, r) => s + Number(r.input_qty || 0), 0)
+  const totalInput = todayStartWorkOrders.reduce((s, w) => s + Number(w.target_qty || w.report_qty || 0), 0)
   const yieldRate = totalInput > 0 ? ((totalInput - totalDefect) / totalInput * 100).toFixed(1) : '0.0'
   const lineRunningStatusList = ['运行中', '运行', '开工', '生产中']
   const LINE_STATUS_MAP: Record<string, string> = {

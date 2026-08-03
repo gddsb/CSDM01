@@ -150,6 +150,12 @@ export async function syncOrderStatus(orderId: number, transaction?: any) {
     return
   }
 
+  // 有未完工报工单时，订单状态从"完工"回退为"开工"（关闭状态不回退）
+  if (total > 0 && finishedCount < total && (statusVal === 3)) {
+    await order.update({ status: 2 }, { transaction })
+    return
+  }
+
   // 所有报工单都完工时，订单自动转为"完工"
   if (total > 0 && finishedCount === total && statusVal === 2) {
     await order.update({ status: 3, close_time: new Date() }, { transaction })
