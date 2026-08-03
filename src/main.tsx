@@ -54,6 +54,7 @@ import TaskSettingsPage from './pages/auto/TaskSettingsPage'
 import TaskLogPage from './pages/auto/TaskLogPage'
 import ScheduledTaskPage from './pages/auto/ScheduledTaskPage'
 import EnvironmentBigScreen from './pages/bigscreen/EnvironmentBigScreen'
+import DisplayBigScreen from './pages/bigscreen/DisplayBigScreen'
 import MobileRoutes from './mobile/MobileRoutes'
 
 dayjs.locale('zh-cn')
@@ -81,6 +82,7 @@ function AppRoutes() {
       <Route path="/bigscreen/management" element={<ProtectedRoute><ManagementBigScreen /></ProtectedRoute>} />
       <Route path="/bigscreen/quality" element={<ProtectedRoute><QualityBigScreen /></ProtectedRoute>} />
       <Route path="/bigscreen/environment" element={<ProtectedRoute><EnvironmentBigScreen /></ProtectedRoute>} />
+      <Route path="/bigscreen/display" element={<ProtectedRoute><DisplayBigScreen /></ProtectedRoute>} />
       {/* 移动端模拟器入口（兼容后端动态菜单的旧路径，统一重定向到 /mobile/home） */}
       <Route path="/system/mobile-simulator" element={<Navigate to="/mobile/home" replace />} />
       <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>

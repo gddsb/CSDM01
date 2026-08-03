@@ -214,11 +214,43 @@ export default function MainLayout() {
       })
   }
 
+  const injectDisplayMenu = (items: MenuProps['items']): MenuProps['items'] => {
+    const displayItem: MenuProps['items'][number] = {
+      key: '/bigscreen/display',
+      icon: <FundProjectionScreenOutlined />,
+      label: '展示看板',
+    }
+    let found = false
+    const result = items.map(item => {
+      if (!item || typeof item !== 'object') return item
+      const label = (item as { label?: React.ReactNode }).label
+      if (typeof label === 'string' && (label === '数据大屏' || label.includes('大屏'))) {
+        found = true
+        const cur = item as { children?: MenuProps['items'] }
+        const children = cur.children ? [...cur.children] : []
+        if (!children.some(c => c && typeof c === 'object' && (c as { key?: string }).key === '/bigscreen/display')) {
+          children.push(displayItem)
+        }
+        return { ...item, children }
+      }
+      return item
+    })
+    if (!found) {
+      result.push({
+        key: '/bigscreen',
+        icon: <FundProjectionScreenOutlined />,
+        label: '数据大屏',
+        children: [displayItem],
+      })
+    }
+    return result
+  }
+
   // 严格从数据库读取菜单：前置工作台入口（所有用户可见） + 后端返回的菜单树
-  const menuItems: MenuProps['items'] = [
+  const menuItems: MenuProps['items'] = injectDisplayMenu([
     { key: '/dashboard', icon: <DashboardOutlined />, label: '工作台' },
     ...buildMenuItems(dynamicMenu),
-  ]
+  ])
 
   const getOpenKeys = () => {
     const path = location.pathname
