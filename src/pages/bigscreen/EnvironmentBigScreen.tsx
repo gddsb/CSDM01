@@ -349,9 +349,10 @@ function trendOption(
       markLine: idx === 0 && cfg.markLines?.length
         ? {
             silent: true, symbol: 'none',
+            animation: false,
             data: cfg.markLines.map((ml) => ({
               yAxis: ml.yAxis,
-              label: { formatter: ml.label, color: ml.color, fontSize: 10 },
+              label: { formatter: ml.label, color: ml.color, fontSize: 10, position: 'insideEndTop' },
               lineStyle: { type: 'dashed', color: ml.color, width: 1, opacity: 0.6 },
             })),
           }
@@ -500,8 +501,17 @@ export default function EnvironmentBigScreen() {
   const tempSeries = useMemo(() => (trend?.series || []).filter((s) => isTemp(s.name)), [trend])
   const humSeries = useMemo(() => (trend?.series || []).filter((s) => isHum(s.name)), [trend])
 
+  const whTempColor = useMemo(() => {
+    const wh = tempSeries.find((s) => s.name.includes('仓库'))
+    return wh?.color || '#fa8c16'
+  }, [tempSeries])
+
   const tempCfg = { leftName: '温度(℃)', rightName: '温度(℃)', isLeftAxis: () => true,
-    markLines: [{ yAxis: 18, label: '下限18℃', color: '#00d4ff' }, { yAxis: 25, label: '上限25℃', color: '#ff4d4f' }] }
+    markLines: [
+      { yAxis: 18, label: '下限18℃', color: '#00d4ff' },
+      { yAxis: 25, label: '车间上限25℃', color: '#ff4d4f' },
+      { yAxis: 35, label: '仓库上限35℃', color: whTempColor },
+    ] }
   const humCfg = { leftName: '湿度(%)', rightName: '湿度(%)', isLeftAxis: () => true,
     markLines: [{ yAxis: 65, label: '限值65%', color: '#ff4d4f' }] }
 
@@ -542,7 +552,7 @@ export default function EnvironmentBigScreen() {
     return list.sort((a, b) => getRank(a.factor_name) - getRank(b.factor_name))
   }, [overview])
 
-  const tempRef = useChart(tempSeries.length ? trendOption(tempSeries, trend?.times || [], tempCfg) : null, [tempSeries, trend?.times])
+  const tempRef = useChart(tempSeries.length ? trendOption(tempSeries, trend?.times || [], tempCfg) : null, [tempSeries, trend?.times, whTempColor])
   const humRef = useChart(humSeries.length ? trendOption(humSeries, trend?.times || [], humCfg) : null, [humSeries, trend?.times])
 
   const alarms = overview?.alarms
