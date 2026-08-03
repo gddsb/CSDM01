@@ -417,6 +417,7 @@ export default function EnvironmentBigScreen() {
   const [trend, setTrend] = useState<TrendData | null>(null)
   const [loading, setLoading] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const { style: scaleStyle } = useBigScreenScale({ designWidth: 1280, designHeight: 720 })
 
@@ -476,7 +477,7 @@ export default function EnvironmentBigScreen() {
       }
       if (t?.data) setTrend(t.data as TrendData)
     } catch (err) { console.error('加载环境看板失败:', err) }
-    finally { setLoading(false) }
+    finally { setLoading(false); setLastRefreshTime(new Date()) }
   }, [])
 
   useEffect(() => {
@@ -574,7 +575,7 @@ export default function EnvironmentBigScreen() {
   const rightUpdateTime = (
     <div className="bs-header-update">
       <span>更新时间</span>
-      <span className="bs-header-update-time">{formatClock(currentTime)}</span>
+      <span className="bs-header-update-time">{lastRefreshTime ? formatDateTime(lastRefreshTime) : '--'}</span>
     </div>
   )
 
