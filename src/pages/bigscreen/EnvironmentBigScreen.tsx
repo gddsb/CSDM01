@@ -277,7 +277,13 @@ function trendOption(
   }
   const axisRange = (vals: number[]) => {
     if (!vals.length) return {}
-    const lo = Math.min(...vals); const hi = Math.max(...vals)
+    let lo = Math.min(...vals); let hi = Math.max(...vals)
+    if (cfg.markLines) {
+      for (const ml of cfg.markLines) {
+        if (ml.yAxis < lo) lo = ml.yAxis
+        if (ml.yAxis > hi) hi = ml.yAxis
+      }
+    }
     const span = hi - lo || 1; const pad = span * 0.15
     return { min: Math.floor(lo - pad), max: Math.ceil(hi + pad) }
   }
