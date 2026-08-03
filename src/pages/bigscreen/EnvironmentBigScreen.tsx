@@ -49,12 +49,12 @@ function gaugeTemp(value: number, area: 'workshop' | 'warehouse'): EChartsOption
     series: [{
       type: 'gauge',
       center: ['50%', '55%'],
-      radius: '80%',
+      radius: '70%',
       min: 0, max: 40, splitNumber: 8,
       startAngle: 225, endAngle: -45,
       axisLine: {
         lineStyle: {
-          width: 10,
+          width: 8,
           color: [
             [0.45, '#36cfc9'],
             [upper / 40, '#40a9ff'],
@@ -63,24 +63,24 @@ function gaugeTemp(value: number, area: 'workshop' | 'warehouse'): EChartsOption
         },
       },
       pointer: {
-        length: '60%',
-        width: 4,
+        length: '55%',
+        width: 3,
         itemStyle: { color: '#40a9ff' },
       },
       axisTick: {
         splitNumber: 5,
-        distance: -12,
-        length: 4,
+        distance: -8,
+        length: 3,
         lineStyle: { color: '#ffffff', width: 1, opacity: 0.5 },
       },
       splitLine: {
-        distance: -12,
-        length: 10,
+        distance: -8,
+        length: 8,
         lineStyle: { color: '#ffffff', width: 2 },
       },
       axisLabel: {
         color: '#e6f3ff',
-        distance: -24,
+        distance: -18,
         fontSize: 10,
         fontWeight: 500,
       },
@@ -110,34 +110,34 @@ function gaugeHum(value: number): EChartsOption {
     series: [{
       type: 'gauge',
       center: ['50%', '55%'],
-      radius: '80%',
+      radius: '70%',
       min: 35, max: 100, splitNumber: 5,
       startAngle: 225, endAngle: -45,
       axisLine: {
         lineStyle: {
-          width: 10,
+          width: 8,
           color: [[0.4615, '#36cfc9'], [1, '#ff6b6b']],
         },
       },
       pointer: {
-        length: '60%',
-        width: 4,
+        length: '55%',
+        width: 3,
         itemStyle: { color: '#40a9ff' },
       },
       axisTick: {
         splitNumber: 5,
-        distance: -12,
-        length: 4,
+        distance: -8,
+        length: 3,
         lineStyle: { color: '#ffffff', width: 1, opacity: 0.5 },
       },
       splitLine: {
-        distance: -12,
-        length: 10,
+        distance: -8,
+        length: 8,
         lineStyle: { color: '#ffffff', width: 2 },
       },
       axisLabel: {
         color: '#e6f3ff',
-        distance: -24,
+        distance: -18,
         fontSize: 10,
         fontWeight: 500,
       },
@@ -166,35 +166,35 @@ function gaugeDew(value: number): EChartsOption {
   return {
     series: [{
       type: 'gauge',
-      center: ['50%', '65%'],
-      radius: '95%',
+      center: ['50%', '60%'],
+      radius: '80%',
       min: -10, max: 35, splitNumber: 9,
       startAngle: 225, endAngle: -45,
       axisLine: {
         lineStyle: {
-          width: 10,
+          width: 8,
           color: [[15 / 45, '#36cfc9'], [30 / 45, '#a855f7'], [1, '#fa8c16']],
         },
       },
       pointer: {
-        length: '58%',
-        width: 4,
+        length: '55%',
+        width: 3,
         itemStyle: { color: '#40a9ff' },
       },
       axisTick: {
         splitNumber: 5,
-        distance: -10,
-        length: 4,
+        distance: -6,
+        length: 3,
         lineStyle: { color: '#ffffff', width: 1, opacity: 0.5 },
       },
       splitLine: {
-        distance: -10,
-        length: 10,
+        distance: -6,
+        length: 8,
         lineStyle: { color: '#ffffff', width: 2 },
       },
       axisLabel: {
         color: '#e6f3ff',
-        distance: -22,
+        distance: -16,
         fontSize: 9,
         fontWeight: 500,
       },
