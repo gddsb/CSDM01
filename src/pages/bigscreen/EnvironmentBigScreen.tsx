@@ -49,7 +49,7 @@ function gaugeTemp(value: number, area: 'workshop' | 'warehouse'): EChartsOption
     series: [{
       type: 'gauge',
       center: ['50%', '58%'],
-      radius: '58%',
+      radius: '55%',
       min: 0, max: 40, splitNumber: 8,
       startAngle: 225, endAngle: -45,
       axisLine: {
@@ -63,9 +63,9 @@ function gaugeTemp(value: number, area: 'workshop' | 'warehouse'): EChartsOption
         },
       },
       pointer: { itemStyle: { color }, width: 3, length: '55%' },
-      axisTick: { length: 4, lineStyle: { color: 'auto', width: 1 } },
-      splitLine: { length: 8, lineStyle: { color: 'auto', width: 2 } },
-      axisLabel: { color: '#8adfff', distance: 20, fontSize: 10 },
+      axisTick: { show: false },
+      splitLine: { length: 10, lineStyle: { color: '#ffffff', width: 2 } },
+      axisLabel: { color: '#c9e8ff', distance: 24, fontSize: 11, fontWeight: 600 },
       title: { show: false },
       detail: {
         valueAnimation: true,
@@ -84,7 +84,7 @@ function gaugeHum(value: number): EChartsOption {
     series: [{
       type: 'gauge',
       center: ['50%', '58%'],
-      radius: '58%',
+      radius: '55%',
       min: 35, max: 100, splitNumber: 5,
       startAngle: 225, endAngle: -45,
       axisLine: {
@@ -94,9 +94,9 @@ function gaugeHum(value: number): EChartsOption {
         },
       },
       pointer: { itemStyle: { color }, width: 3, length: '55%' },
-      axisTick: { length: 4, lineStyle: { color: 'auto', width: 1 } },
-      splitLine: { length: 8, lineStyle: { color: 'auto', width: 2 } },
-      axisLabel: { color: '#8adfff', distance: 20, fontSize: 10 },
+      axisTick: { show: false },
+      splitLine: { length: 10, lineStyle: { color: '#ffffff', width: 2 } },
+      axisLabel: { color: '#c9e8ff', distance: 24, fontSize: 11, fontWeight: 600 },
       title: { show: false },
       detail: {
         valueAnimation: true,

@@ -162,7 +162,7 @@ export default function ManagementBigScreen() {
     const pad = (n) => String(n).padStart(2, '0')
     return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
   }
-  const { style: scaleStyle } = useBigScreenScale({ designWidth: 1920, designHeight: 1080 })
+  const { style: scaleStyle } = useBigScreenScale({ designWidth: 1280, designHeight: 720 })
 
   const noAnimation = { animation: false, animationDuration: 0, animationDurationUpdate: 0, animationEasingUpdate: 'linear' }
 
@@ -659,8 +659,8 @@ export default function ManagementBigScreen() {
   )
 
   return (
-    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: '#0a0e1a' }}>
-      <div className="bigscreen-container" style={{ display: 'flex', flexDirection: 'column', height: '1080px', overflow: 'hidden', ...scaleStyle }}>
+    <div style={{ width: '100vw', height: '100vh', minWidth: 1280, minHeight: 720, overflow: 'hidden', background: '#0a0e1a' }}>
+      <div className="bigscreen-container" style={{ display: 'flex', flexDirection: 'column', height: '720px', overflow: 'hidden', ...scaleStyle }}>
         <BigScreenHeader
           title="经营管理中心"
           extraLeft={leftDateTime}

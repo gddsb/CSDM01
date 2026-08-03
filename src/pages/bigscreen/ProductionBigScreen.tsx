@@ -152,7 +152,7 @@ export default function ProductionBigScreen() {
     return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
   }
 
-  const { style: scaleStyle } = useBigScreenScale({ designWidth: 1920, designHeight: 1080 })
+  const { style: scaleStyle } = useBigScreenScale({ designWidth: 1280, designHeight: 720 })
 
   // 从API获取的真实数据中解构
   const {
@@ -636,13 +636,13 @@ export default function ProductionBigScreen() {
   )
 
   return (
-    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: '#0a0e1a' }}>
+    <div style={{ width: '100vw', height: '100vh', minWidth: 1280, minHeight: 720, overflow: 'hidden', background: '#0a0e1a' }}>
       <div
         className="bigscreen-container"
         style={{
           display: 'flex',
           flexDirection: 'column',
-          height: '1080px',
+          height: '720px',
           overflow: 'hidden',
           ...scaleStyle,
         }}
