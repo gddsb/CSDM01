@@ -48,8 +48,8 @@ function gaugeTemp(value: number, area: 'workshop' | 'warehouse'): EChartsOption
   return {
     series: [{
       type: 'gauge',
-      center: ['50%', '55%'],
-      radius: '70%',
+      center: ['50%', '58%'],
+      radius: '58%',
       min: 0, max: 40, splitNumber: 8,
       startAngle: 225, endAngle: -45,
       axisLine: {
@@ -65,11 +65,11 @@ function gaugeTemp(value: number, area: 'workshop' | 'warehouse'): EChartsOption
       pointer: { itemStyle: { color }, width: 3, length: '55%' },
       axisTick: { length: 4, lineStyle: { color: 'auto', width: 1 } },
       splitLine: { length: 8, lineStyle: { color: 'auto', width: 2 } },
-      axisLabel: { color: '#5b8ca8', distance: 12, fontSize: 9 },
+      axisLabel: { color: '#8adfff', distance: 20, fontSize: 10 },
       title: { show: false },
       detail: {
         valueAnimation: true,
-        offsetCenter: [0, '68%'],
+        offsetCenter: [0, '72%'],
         formatter: (v: number) => `${v.toFixed(1)}`,
         fontSize: 18, fontWeight: 700, color,
       },
@@ -83,8 +83,8 @@ function gaugeHum(value: number): EChartsOption {
   return {
     series: [{
       type: 'gauge',
-      center: ['50%', '55%'],
-      radius: '70%',
+      center: ['50%', '58%'],
+      radius: '58%',
       min: 35, max: 100, splitNumber: 5,
       startAngle: 225, endAngle: -45,
       axisLine: {
@@ -96,11 +96,11 @@ function gaugeHum(value: number): EChartsOption {
       pointer: { itemStyle: { color }, width: 3, length: '55%' },
       axisTick: { length: 4, lineStyle: { color: 'auto', width: 1 } },
       splitLine: { length: 8, lineStyle: { color: 'auto', width: 2 } },
-      axisLabel: { color: '#5b8ca8', distance: 12, fontSize: 9 },
+      axisLabel: { color: '#8adfff', distance: 20, fontSize: 10 },
       title: { show: false },
       detail: {
         valueAnimation: true,
-        offsetCenter: [0, '68%'],
+        offsetCenter: [0, '72%'],
         formatter: (v: number) => `${v.toFixed(1)}%`,
         fontSize: 18, fontWeight: 700, color,
       },
@@ -522,7 +522,7 @@ export default function EnvironmentBigScreen() {
                 bodyStyle={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
               >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1, minHeight: 0 }}>
-                  <div style={{ display: 'flex', gap: 8, flex: 2, minHeight: 110 }}>
+                  <div style={{ display: 'flex', gap: 8, flex: 1, minHeight: 120 }}>
                     <div className="bs-gauge-card" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: 6 }}>
                       <div className="bs-gauge-label" style={{ fontSize: 12, marginBottom: 2 }}><FireOutlined /> 温度</div>
                       <div ref={wsTempRef} style={{ flex: 1, minHeight: 0 }} />
@@ -530,13 +530,6 @@ export default function EnvironmentBigScreen() {
                     <div className="bs-gauge-card" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: 6 }}>
                       <div className="bs-gauge-label" style={{ fontSize: 12, marginBottom: 2 }}><CloudOutlined /> 湿度</div>
                       <div ref={wsHumRef} style={{ flex: 1, minHeight: 0 }} />
-                    </div>
-                  </div>
-                  <div className="bs-gauge-card" style={{ padding: 4, flex: '0 0 auto' }}>
-                    <div className="bs-gauge-label" style={{ marginBottom: 2, paddingLeft: 4, textAlign: 'left', fontSize: 12 }}>💧 露点温度</div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px' }}>
-                      <div ref={wsDewRef} style={{ height: 70, width: 95, flex: '0 0 auto' }} />
-                      <span className="bs-gauge-value" style={{ fontSize: 20, fontWeight: 700, flex: 1, textAlign: 'right', paddingRight: 6 }}>{areaAvg.wsDew.toFixed(1)}℃</span>
                     </div>
                   </div>
                 </div>
@@ -550,7 +543,7 @@ export default function EnvironmentBigScreen() {
                 bodyStyle={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
               >
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1, minHeight: 0 }}>
-                  <div style={{ display: 'flex', gap: 8, flex: 2, minHeight: 110 }}>
+                  <div style={{ display: 'flex', gap: 8, flex: 1, minHeight: 120 }}>
                     <div className="bs-gauge-card" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: 6 }}>
                       <div className="bs-gauge-label" style={{ fontSize: 12, marginBottom: 2 }}><FireOutlined /> 温度</div>
                       <div ref={whTempRef} style={{ flex: 1, minHeight: 0 }} />
@@ -560,15 +553,26 @@ export default function EnvironmentBigScreen() {
                       <div ref={whHumRef} style={{ flex: 1, minHeight: 0 }} />
                     </div>
                   </div>
-                  <div className="bs-gauge-card" style={{ padding: 4, flex: '0 0 auto' }}>
-                    <div className="bs-gauge-label" style={{ marginBottom: 2, paddingLeft: 4, textAlign: 'left', fontSize: 12 }}>💧 露点温度</div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px' }}>
-                      <div ref={whDewRef} style={{ height: 70, width: 95, flex: '0 0 auto' }} />
-                      <span className="bs-gauge-value" style={{ fontSize: 20, fontWeight: 700, flex: 1, textAlign: 'right', paddingRight: 6 }}>{areaAvg.whDew.toFixed(1)}℃</span>
-                    </div>
-                  </div>
                 </div>
               </BigScreenPanel>
+
+              {/* 合并露点温度卡片 */}
+              <div className="bs-gauge-card" style={{ padding: 8, flex: '0 0 auto' }}>
+                <div className="bs-gauge-label" style={{ marginBottom: 6, textAlign: 'center', fontSize: 13, fontWeight: 600 }}>💧 露点温度</div>
+                <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', gap: 8 }}>
+                  <div style={{ flex: 1, textAlign: 'center' }}>
+                    <div ref={wsDewRef} style={{ height: 65, width: 90, margin: '0 auto' }} />
+                    <div style={{ fontSize: 11, color: '#5b8ca8', marginTop: 2 }}>生产车间</div>
+                    <span className="bs-gauge-value" style={{ fontSize: 18, fontWeight: 700 }}>{areaAvg.wsDew.toFixed(1)}℃</span>
+                  </div>
+                  <div style={{ width: 1, height: 60, background: 'rgba(0,212,255,0.2)' }} />
+                  <div style={{ flex: 1, textAlign: 'center' }}>
+                    <div ref={whDewRef} style={{ height: 65, width: 90, margin: '0 auto' }} />
+                    <div style={{ fontSize: 11, color: '#5b8ca8', marginTop: 2 }}>仓库区域</div>
+                    <span className="bs-gauge-value" style={{ fontSize: 18, fontWeight: 700 }}>{areaAvg.whDew.toFixed(1)}℃</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* 中栏：温湿度趋势图（上下堆叠） */}
