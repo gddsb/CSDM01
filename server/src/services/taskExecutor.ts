@@ -1,6 +1,5 @@
 import { SyncTask } from '../models/index.js'
 import { EnvCollector } from './envCollector.js'
-import { EnergyMeterCollector } from './energyMeterCollector.js'
 import { collectAndSaveWeather } from './weatherCollector.js'
 import { exportItems, exportCustomers, exportProductionOrders } from './u9Exporter.js'
 import { decryptParamsObj } from '../utils/crypto.js'
@@ -89,42 +88,6 @@ export async function executeRealTask(
         const result = await exportProductionOrders(taskBizId, onProgress)
         await updateProgress(`生产订单同步完成，共 ${result.totalRecords} 条`, 100, 'completed', result.totalRecords)
         return { success: true, totalRecords: result.totalRecords }
-      }
-
-      case 'energy_meter': {
-        await updateProgress('连接能源平台', 10)
-        const decryptedParams = decryptParamsObj(params || {})
-        const loginName = decryptedParams.loginName
-        const password = decryptedParams.password
-        console.log(`[TaskExecutor] 能源采集任务参数: loginName=${loginName || '未设置'}`)
-        if (!loginName || !password) {
-          const msg = '缺少能源平台凭据：请在任务设置中配置用户名和密码'
-          await updateProgress(msg, 100, 'failed', 0)
-          try {
-            const task = await SyncTask.findByPk(taskId) as any
-            if (task) { task.error_msg = msg; await task.save() }
-          } catch (_) { /* noop */ }
-          return { success: false, error: msg }
-        }
-        const onProgress = async (msg: string, pct: number) => {
-          await updateProgress(msg, pct)
-        }
-        const collector = new EnergyMeterCollector({ loginName, password, onProgress })
-        // 注意：taskBizId 形如 SCHEM20260802123，不能作为 taskSettingId，
-        // 传入 sync_task 主键 taskId 作为与采集记录关联的 trace id
-        const result = await collector.collectAndSave(Number(taskId) || 0)
-        if (result.saved === 0) {
-          const head = (result.errors || []).slice(0, 3).join('；') || '此时间段未采集到任何电能记录'
-          const msg = `采集完成但未写入任何数据（fetched=${result.fetched}）：${head}`
-          await updateProgress(msg, 100, 'failed', 0)
-          return { success: false, error: msg }
-        }
-        const warn = (result.errors && result.errors.length > 0) ? `，${result.errors.length} 条保存异常` : ''
-        await updateProgress(
-          `能源数据入库完成（采集 ${result.fetched} 条，成功 ${result.saved} 条${warn}）`,
-          100, 'completed', result.saved
-        )
-        return { success: true, totalRecords: result.saved }
       }
 
       default:

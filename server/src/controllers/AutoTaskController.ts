@@ -1,7 +1,7 @@
 import { Op, fn, col, where as seqWhere } from 'sequelize'
 import {
   TaskSetting, SyncTask, ScheduledTask, U9Item, U9Customer, U9ProductionOrder,
-  EnvMonitor, EnvAlarm, WeatherInfo, EnergyMeterData,
+  EnvMonitor, EnvAlarm, WeatherInfo,
   Order, ReportOrder, ReportProcess, ProcessDefect,
   ProductionLine, Device, Material, Process, Customer,
   ProductInspection, IncomingInspection, MicrobeInspection,
@@ -234,7 +234,7 @@ function generateTaskBizId(type: string): string {
   const m = String(now.getMonth() + 1).padStart(2, '0')
   const d = String(now.getDate()).padStart(2, '0')
   const datePart = `${y}${m}${d}`
-  const prefix = type === 'items' ? 'SCHI' : type === 'customers' ? 'SCHC' : type === 'env_monitor' ? 'SCHE' : type === 'weather' ? 'SCHW' : type === 'energy_meter' ? 'SCHEM' : type === 'production_orders' ? 'SCHP' : 'SCHX'
+  const prefix = type === 'items' ? 'SCHI' : type === 'customers' ? 'SCHC' : type === 'env_monitor' ? 'SCHE' : type === 'weather' ? 'SCHW' : type === 'production_orders' ? 'SCHP' : 'SCHX'
   const rand = String(Math.floor(Math.random() * 900) + 100)
   return `${prefix}${datePart}${rand}`
 }
@@ -316,17 +316,6 @@ const TEST_STEPS_MAP: Record<string, { message: string; percent: number }[]> = {
     { message: '写入数据库', percent: 85 },
     { message: '测试完成', percent: 100 },
   ],
-  energy_meter: [
-    { message: '连接能源平台', percent: 10 },
-    { message: '正在识别验证码', percent: 20 },
-    { message: '验证码识别成功', percent: 30 },
-    { message: '正在登录', percent: 40 },
-    { message: '登录成功', percent: 50 },
-    { message: '获取总表有功/无功总电能数据', percent: 70 },
-    { message: '数据获取成功', percent: 85 },
-    { message: '能源数据入库完成', percent: 95 },
-    { message: '测试完成', percent: 100 },
-  ],
   production_orders: [
     { message: '验证U9连接参数', percent: 10 },
     { message: '连接U9 ERP系统', percent: 20 },
@@ -367,7 +356,6 @@ function generateMockRecordCount(taskType: string): number {
     case 'production_orders': return Math.floor(30 + Math.random() * 50)
     case 'env_monitor': return Math.floor(8 + Math.random() * 5)
     case 'weather': return Math.floor(3 + Math.random() * 6)
-    case 'energy_meter': return Math.floor(20 + Math.random() * 30)
     default: return Math.floor(10 + Math.random() * 20)
   }
 }
@@ -423,7 +411,6 @@ const ARCHIVE_MODELS: Record<string, any> = {
   env_monitor: EnvMonitor,
   env_alarm: EnvAlarm,
   weather: WeatherInfo,
-  energy_meter: EnergyMeterData,
 }
 
 const ARCHIVE_SEARCH_FIELDS: Record<string, string[]> = {
@@ -433,7 +420,6 @@ const ARCHIVE_SEARCH_FIELDS: Record<string, string[]> = {
   env_monitor: ['factor_id', 'factor_name', 'device_name'],
   env_alarm: ['factor_id', 'factor_name', 'device_name', 'alarm_info'],
   weather: ['city', 'source'],
-  energy_meter: ['device_addr', 'device_name'],
 }
 
 const ARCHIVE_ORDER: Record<string, any> = {
@@ -443,7 +429,6 @@ const ARCHIVE_ORDER: Record<string, any> = {
   env_monitor: [['collect_time', 'DESC']],
   env_alarm: [['alarm_time', 'DESC']],
   weather: [['weather_time', 'DESC']],
-  energy_meter: [['record_time', 'DESC']],
 }
 
 export const listArchiveData = async (req, res) => {

@@ -1,9 +1,8 @@
 /**
  * 精简初始化脚本：
  * 1. 同步表结构 + 初始化默认配置/权限/编号规则/任务设置
- * 2. 更新 energy_meter 任务名称为"电能数据采集"
- * 3. 清理 DASHBOARD_VIEWER / DASHBOARD_ADMIN 角色
- * 4. 刷新数据字典
+ * 2. 清理 DASHBOARD_VIEWER / DASHBOARD_ADMIN 角色
+ * 3. 刷新数据字典
  */
 
 import sequelize from './config/database.js'
@@ -28,14 +27,13 @@ async function main() {
     await initDefaultRules()
     console.log('✅ initDefaultRules()')
 
-    // 初始化任务设置 & 强制修正 energy_meter 名称
+    // 初始化任务设置
     const defaultTasks = [
       { task_type: 'items', name: '料品数据同步', description: '从U9 ERP系统同步料品基础档案数据', source_url: '', field_count: 24, is_active: 1 },
       { task_type: 'customers', name: '客户数据同步', description: '从U9 ERP系统同步客户基础档案数据', source_url: '', field_count: 11, is_active: 1 },
       { task_type: 'production_orders', name: '生产订单同步', description: '从U9 ERP系统同步生产订单数据（制造订单MO）', source_url: '', field_count: 16, is_active: 1 },
       { task_type: 'env_monitor', name: '环境监测采集', description: '从0531yun物联网平台采集车间环境监测数据', source_url: '', field_count: 15, is_active: 1 },
       { task_type: 'weather', name: '气象信息抓取', description: '从中国天气网抓取城市/区域实时气象数据', source_url: '', field_count: 8, is_active: 1 },
-      { task_type: 'energy_meter', name: '电能数据采集', description: '从云集云能源平台采集总表有功/无功总电能历史记录', source_url: '', field_count: 11, is_active: 1 },
     ]
     for (const t of defaultTasks) {
       const [rec, created] = await TaskSetting.findOrCreate({ where: { task_type: t.task_type }, defaults: t })

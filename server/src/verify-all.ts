@@ -5,7 +5,7 @@ import sequelize from './config/database.js'
 import {
   TaskSetting, Role, Permission, DataDictionary,
   SyncTask, ScheduledTask, U9Item, U9Customer,
-  EnvMonitor, EnvAlarm, WeatherInfo, EnergyMeterData
+  EnvMonitor, EnvAlarm, WeatherInfo
 } from './models/index.js'
 import { Op } from 'sequelize'
 
@@ -23,9 +23,6 @@ async function main() {
     for (const t of tasks) {
       console.log(`   - task_type=${t.task_type} → 名称=${t.name}, 启用=${t.is_active}`)
     }
-    const energy = tasks.find(t => t.task_type === 'energy_meter')
-    if (energy?.name === '电能数据采集') console.log('   ✅ 能源采集任务名称验证通过')
-    else console.log(`   ❌ 能源采集任务名称错误：${energy?.name}`)
 
     console.log('\n【2】模拟数据记录数验证')
     await count(SyncTask, '同步日志(task_sync_log)')
@@ -35,7 +32,6 @@ async function main() {
     await count(EnvMonitor, '环境监测数据')
     await count(EnvAlarm, '环境报警记录')
     await count(WeatherInfo, '气象数据')
-    await count(EnergyMeterData, '能源采集数据')
 
     console.log('\n【3】权限验证 - 看板设置菜单是否已清除')
     const dashboardSetting = await Permission.findOne({

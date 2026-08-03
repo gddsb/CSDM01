@@ -47,7 +47,6 @@ import U9Customer from './U9Customer.js'
 import EnvMonitor from './EnvMonitor.js'
 import EnvAlarm from './EnvAlarm.js'
 import WeatherInfo from './WeatherInfo.js'
-import EnergyMeterData from './EnergyMeterData.js'
 import U9ProductionOrder from './U9ProductionOrder.js'
 
 // 建立模型关联关系
@@ -209,7 +208,6 @@ const db = {
   EnvMonitor,
   EnvAlarm,
   WeatherInfo,
-  EnergyMeterData,
   U9ProductionOrder,
 }
 
@@ -261,7 +259,6 @@ export {
   EnvMonitor,
   EnvAlarm,
   WeatherInfo,
-  EnergyMeterData,
   U9ProductionOrder,
 }
 

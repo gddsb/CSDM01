@@ -25,7 +25,6 @@ const TYPE_LABELS: Record<string, string> = {
   customers: '客户数据',
   env_monitor: '环境监测',
   weather: '气象信息',
-  energy_meter: '能源采集',
 }
 
 const MODE_LABELS: Record<string, string> = {

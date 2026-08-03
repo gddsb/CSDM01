@@ -5,7 +5,7 @@
 import sequelize from './config/database.js'
 import {
   SyncTask, ScheduledTask, U9Item, U9Customer,
-  EnvMonitor, EnvAlarm, WeatherInfo, EnergyMeterData,
+  EnvMonitor, EnvAlarm, WeatherInfo,
   TaskSetting
 } from './models/index.js'
 
@@ -20,13 +20,12 @@ function fmt(d: Date) { return d.toISOString().slice(0, 19).replace('T', ' ') }
 
 async function seedSyncLog() {
   console.log('1. 填充同步任务日志...')
-  const taskTypes = ['items', 'customers', 'env_monitor', 'weather', 'energy_meter']
+  const taskTypes = ['items', 'customers', 'env_monitor', 'weather']
   const stepNames: Record<string, string[]> = {
     items: ['创建同步任务', '连接U9 ERP', '登录认证', '拉取料品数据', '数据写入完成'],
     customers: ['创建同步任务', '连接U9 ERP', '登录认证', '拉取客户数据', '数据写入完成'],
     env_monitor: ['创建采集任务', '连接0531yun平台', '获取设备列表', '采集监测数据', '数据写入完成'],
     weather: ['创建抓取任务', '连接中国天气网', '解析城市页面', '提取气象数据', '数据写入完成'],
-    energy_meter: ['创建采集任务', '连接云集云能源平台', '获取电表列表', '采集电能数据', '数据写入完成'],
   }
   const records: any[] = []
   for (let i = 0; i < 60; i++) {
@@ -65,7 +64,6 @@ async function seedScheduledTask() {
     { task_type: 'customers', cron: '0 3 * * *', name: '每日客户同步' },
     { task_type: 'env_monitor', cron: '*/15 * * * *', name: '每15分钟环境监测' },
     { task_type: 'weather', cron: '0 6 * * *', name: '每日气象抓取' },
-    { task_type: 'energy_meter', cron: '0 * * * *', name: '每小时电能采集' },
   ]
   const records = taskTypes.map((t, i) => {
     const isFail = Math.random() < 0.25
@@ -250,52 +248,11 @@ async function seedWeather() {
   console.log(`   ✅ 已填充 ${records.length} 条气象数据`)
 }
 
-async function seedEnergyMeter() {
-  console.log('8. 填充能源采集数据...')
-  const meters = [
-    { id: 'METER-001', name: '总配电房主电表', offset: 0 },
-    { id: 'METER-002', name: 'A线车间电表', offset: 100 },
-    { id: 'METER-003', name: 'B线车间电表', offset: 200 },
-    { id: 'METER-004', name: 'C线车间电表', offset: 300 },
-    { id: 'METER-005', name: '办公区电表', offset: 400 },
-    { id: 'METER-006', name: '冷库/仓储区电表', offset: 500 },
-  ]
-  const taskSetting = await TaskSetting.findOne({ where: { task_type: 'energy_meter' } })
-  const taskSettingId = taskSetting?.id || 1
-  const allRecords: any[] = []
-  for (const m of meters) {
-    let baseForward = 150000 + m.offset
-    let baseReactive = 40000 + Math.floor(m.offset / 3)
-    for (let d = 0; d < 5; d++) {
-      for (let h = 0; h < 24; h += 4) {
-        baseForward += 200 + h * 10 + randInt(0, 50)
-        baseReactive += 50 + h * 3 + randInt(0, 15)
-        allRecords.push({
-          taskSettingId,
-          deviceAddr: m.id,
-          deviceName: m.name,
-          forwardActiveEnergy: String(baseForward),
-          forwardReactiveEnergy: String(baseReactive),
-          reverseActiveEnergy: String(randInt(0, 5)),
-          reverseReactiveEnergy: String(randInt(0, 3)),
-          recordTime: fmt(dateOffset(d, h)),
-        })
-      }
-    }
-  }
-  for (let i = 0; i < allRecords.length; i += 30) {
-    const batch = allRecords.slice(i, i + 30)
-    await EnergyMeterData.bulkCreate(batch as any)
-  }
-  console.log(`   ✅ 已填充 ${allRecords.length} 条能源采集记录`)
-}
-
 async function main() {
   console.log('========== 开始填充模拟数据 ==========\n')
   try {
     // 先清空旧数据，避免重复执行时唯一键冲突
     console.log('0. 清空旧数据...')
-    await EnergyMeterData.destroy({ where: {}, truncate: true })
     await WeatherInfo.destroy({ where: {}, truncate: true })
     await EnvAlarm.destroy({ where: {}, truncate: true })
     await EnvMonitor.destroy({ where: {}, truncate: true })
@@ -312,7 +269,6 @@ async function main() {
     await seedEnvMonitor()
     await seedEnvAlarm()
     await seedWeather()
-    await seedEnergyMeter()
     console.log('\n🎉 所有模拟数据填充完成！')
   } catch (err: any) {
     console.error('❌ 填充失败:', err.message)
