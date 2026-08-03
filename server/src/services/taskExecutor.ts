@@ -96,12 +96,9 @@ export async function executeRealTask(
         const decryptedParams = decryptParamsObj(params || {})
         const loginName = decryptedParams.loginName
         const password = decryptedParams.password
-        const presetToken = decryptedParams.token
-        const captchaSchemeId = decryptedParams.captchaSchemeId
-        console.log(`[TaskExecutor] 能源采集任务参数: token=${presetToken ? '已设置' : '未设置'}, loginName=${loginName || '未设置'}, captchaSchemeId=${captchaSchemeId || '未设置'}`)
-        // 支持 token 直连模式（跳过登录+验证码），也支持账号密码登录
-        if (!presetToken && (!loginName || !password)) {
-          const msg = '缺少能源平台凭据：请在任务设置中配置 token 或 loginName+password（推荐 token 模式，因验证码 OCR 识别率低）'
+        console.log(`[TaskExecutor] 能源采集任务参数: loginName=${loginName || '未设置'}`)
+        if (!loginName || !password) {
+          const msg = '缺少能源平台凭据：请在任务设置中配置用户名和密码'
           await updateProgress(msg, 100, 'failed', 0)
           try {
             const task = await SyncTask.findByPk(taskId) as any
@@ -112,10 +109,7 @@ export async function executeRealTask(
         const onProgress = async (msg: string, pct: number) => {
           await updateProgress(msg, pct)
         }
-        const collector = new EnergyMeterCollector({ loginName, password, token: presetToken, captchaSchemeId, onProgress })
-        if (presetToken) {
-          await updateProgress('登录成功', 50)
-        }
+        const collector = new EnergyMeterCollector({ loginName, password, onProgress })
         // 注意：taskBizId 形如 SCHEM20260802123，不能作为 taskSettingId，
         // 传入 sync_task 主键 taskId 作为与采集记录关联的 trace id
         const result = await collector.collectAndSave(Number(taskId) || 0)

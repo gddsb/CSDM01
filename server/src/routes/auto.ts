@@ -10,8 +10,6 @@ import {
   productionDashboard,
   qualityDashboard,
   managementDashboard,
-  listCaptchaSchemes, testCaptchaSchemes,
-  getEnergyCaptcha, loginEnergyByCaptcha,
 } from '../controllers/AutoTaskController.js'
 
 const router = Router()
@@ -30,10 +28,6 @@ router.get('/task-settings', listTaskSettings)
 router.put('/task-settings/:taskType', logOperation('自动任务设置'), updateTaskSetting)
 router.post('/task-settings/:taskType/test', logOperation('任务测试'), testTaskSetting)
 router.get('/u9-orgs', getU9Orgs)
-router.get('/captcha-schemes', listCaptchaSchemes)
-router.post('/captcha-schemes/test', logOperation('验证码方案测试'), testCaptchaSchemes)
-router.get('/energy/captcha', getEnergyCaptcha)
-router.post('/energy/login', logOperation('能源采集登录获取Token'), loginEnergyByCaptcha)
 
 // 同步任务
 router.get('/sync-tasks', listSyncTasks)

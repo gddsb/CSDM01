@@ -24,6 +24,7 @@
     "morgan": "^1.10.0",
     "multer": "^2.2.0",
     "mysql2": "^3.11.0",
+    "playwright": "^1.62.1",
     "sequelize": "^6.37.3",
     "sqlite3": "^6.0.1",
     "tesseract.js": "^7.0.0",

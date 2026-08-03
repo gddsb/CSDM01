@@ -80,9 +80,8 @@ const PARAM_FIELDS: Record<string, { key: string; label: string; type: 'text' | 
   ],
   weather: [],
   energy_meter: [
-    { key: 'loginName', label: '平台登录用户名', type: 'text', placeholder: '云集云能源平台账号', noEcho: true, optional: true },
-    { key: 'password', label: '平台登录密码', type: 'password', placeholder: '云集云能源平台密码', optional: true },
-    { key: 'token', label: '访问令牌(Token)', type: 'password', placeholder: '可通过下方验证码自动获取，或从浏览器开发者工具复制', optional: true },
+    { key: 'loginName', label: '平台登录用户名', type: 'text', placeholder: '云集云能源平台账号', noEcho: true },
+    { key: 'password', label: '平台登录密码', type: 'password', placeholder: '云集云能源平台密码' },
   ],
 }
 
@@ -111,16 +110,6 @@ export default function TaskSettingsPage() {
   const [orgOptions, setOrgOptions] = useState<U9Org[]>([])
   const [testProgress, setTestProgress] = useState<TestProgress | null>(null)
   const [testingTaskType, setTestingTaskType] = useState<string | null>(null)
-  const [loginMode, setLoginMode] = useState<'token' | 'account' | null>(null)
-  const [captchaSchemes, setCaptchaSchemes] = useState<any[]>([])
-  const [captchaTestResult, setCaptchaTestResult] = useState<any>(null)
-  const [testingCaptcha, setTestingCaptcha] = useState(false)
-  // 能源采集：Token方式下的验证码交互
-  const [energyCaptchaLoading, setEnergyCaptchaLoading] = useState(false)
-  const [energyCaptchaImg, setEnergyCaptchaImg] = useState<string>('')
-  const [energyCaptchaKeyStr, setEnergyCaptchaKeyStr] = useState<string>('')
-  const [energyCaptchaInput, setEnergyCaptchaInput] = useState<string>('')
-  const [energyLoginLoading, setEnergyLoginLoading] = useState(false)
   const pollRef = useRef<number | null>(null)
 
   const loadData = async () => {
@@ -168,33 +157,9 @@ export default function TaskSettingsPage() {
     }
   }, [message])
 
-  const loadCaptchaSchemes = async () => {
-    try {
-      const res = await api.get('/auto/captcha-schemes')
-      setCaptchaSchemes(res.data || [])
-    } catch (err: any) {
-      console.error('加载验证码方案失败:', err)
-    }
-  }
-
   const handleEdit = (record: TaskSetting) => {
     setEditing(record)
     setOrgOptions([])
-    setCaptchaTestResult(null)
-    // 重置能源采集验证码相关状态
-    setEnergyCaptchaImg('')
-    setEnergyCaptchaKeyStr('')
-    setEnergyCaptchaInput('')
-    // 能源采集任务：根据已有参数判断登录方式
-    if (record.task_type === 'energy_meter') {
-      if (record.params?.token) setLoginMode('token')
-      else if (record.params?.loginName) setLoginMode('account')
-      else setLoginMode(null)
-      // 加载验证码方案列表
-      loadCaptchaSchemes()
-    } else {
-      setLoginMode(null)
-    }
     const vals: any = {
       name: record.name,
       description: record.description,
@@ -207,12 +172,6 @@ export default function TaskSettingsPage() {
       } else {
         vals[f.key] = record.params?.[f.key] || ''
       }
-    }
-    // 验证码方案ID
-    if (record.task_type === 'energy_meter' && record.params?.captchaSchemeId) {
-      vals.captchaSchemeId = record.params.captchaSchemeId
-    } else {
-      vals.captchaSchemeId = 'optimal'
     }
     form.setFieldsValue(vals)
     setEditOpen(true)
@@ -230,38 +189,9 @@ export default function TaskSettingsPage() {
       const paramFields = PARAM_FIELDS[editing!.task_type] || []
       const params: Record<string, any> = {}
 
-      if (editing!.task_type === 'energy_meter' && loginMode) {
-        // 能源采集任务：根据登录方式处理
-        if (loginMode === 'token') {
-          // Token方式：保存token（非空才更新），同时保留用户名密码（用于下次获取token）
-          if (values.token !== undefined && values.token !== '') {
-            params.token = values.token
-          }
-          if (values.loginName !== undefined && values.loginName !== '') {
-            params.loginName = values.loginName
-          }
-          if (values.password !== undefined && values.password !== '') {
-            params.password = values.password
-          }
-        } else if (loginMode === 'account') {
-          // 账号方式：传账号密码（非空才更新），清除token，保存验证码方案
-          if (values.loginName !== undefined && values.loginName !== '') {
-            params.loginName = values.loginName
-          }
-          if (values.password !== undefined && values.password !== '') {
-            params.password = values.password
-          }
-          params.token = ''
-          if (values.captchaSchemeId) {
-            params.captchaSchemeId = values.captchaSchemeId
-          }
-        }
-      } else {
-        // 其他任务或未选择登录方式：只传非空值（保持不变）
-        for (const f of paramFields) {
-          if (values[f.key] !== undefined && values[f.key] !== '') {
-            params[f.key] = values[f.key]
-          }
+      for (const f of paramFields) {
+        if (values[f.key] !== undefined && values[f.key] !== '') {
+          params[f.key] = values[f.key]
         }
       }
 
@@ -282,83 +212,6 @@ export default function TaskSettingsPage() {
       loadData()
     } catch (err: any) {
       message.error(err.message || '操作失败')
-    }
-  }
-
-  const handleTestCaptchaScheme = async () => {
-    try {
-      const schemeId = form.getFieldValue('captchaSchemeId')
-      if (!schemeId) {
-        message.warning('请先选择验证码识别方案')
-        return
-      }
-      setTestingCaptcha(true)
-      setCaptchaTestResult(null)
-      message.info('正在测试验证码识别方案，15组样本约需30-60秒...')
-      const res = await api.post('/auto/captcha-schemes/test', { schemeId, numSamples: 15 })
-      setCaptchaTestResult(res.data)
-      if (res.data?.error) {
-        message.error(`测试失败: ${res.data.error}`)
-      } else {
-        message.success(`测试完成，识别率: ${res.data?.rate || 0}%`)
-      }
-    } catch (err: any) {
-      message.error(err.message || '测试失败')
-    } finally {
-      setTestingCaptcha(false)
-    }
-  }
-
-  // ========== 能源采集：获取验证码图片 ==========
-  const handleFetchEnergyCaptcha = async () => {
-    try {
-      setEnergyCaptchaLoading(true)
-      const res = await api.get('/auto/energy/captcha')
-      if (res.data?.imageBase64) {
-        setEnergyCaptchaImg(res.data.imageBase64)
-        setEnergyCaptchaKeyStr(res.data.keyStr || '')
-        setEnergyCaptchaInput('')
-        message.success('获取验证码成功')
-      } else {
-        message.error('获取验证码失败')
-      }
-    } catch (err: any) {
-      message.error(err.message || '获取验证码失败')
-    } finally {
-      setEnergyCaptchaLoading(false)
-    }
-  }
-
-  // ========== 能源采集：使用验证码登录获取Token ==========
-  const handleEnergyLoginByCaptcha = async () => {
-    try {
-      const loginName = form.getFieldValue('loginName')
-      const password = form.getFieldValue('password')
-      if (!loginName || !password) {
-        message.warning('请先输入用户名和密码')
-        return
-      }
-      if (!energyCaptchaKeyStr || !energyCaptchaInput) {
-        message.warning('请先获取验证码并输入')
-        return
-      }
-      setEnergyLoginLoading(true)
-      const res = await api.post('/auto/energy/login', {
-        loginName,
-        password,
-        keyStr: energyCaptchaKeyStr,
-        code: energyCaptchaInput,
-      })
-      if (res.data?.token) {
-        form.setFieldsValue({ token: res.data.token })
-        message.success('登录成功，已自动填入访问令牌')
-      } else {
-        message.error('登录失败，未获取到访问令牌')
-      }
-    } catch (err: any) {
-      message.error(err.message || '登录失败')
-    } finally {
-      setEnergyLoginLoading(false)
     }
   }
 
@@ -438,15 +291,6 @@ export default function TaskSettingsPage() {
     { title: '数据源', dataIndex: 'source_url', key: 'source_url', width: 180, ellipsis: true, render: (v: string) => v ? v : '-' },
     { title: '参数配置', key: 'params', width: 100, render: (_: any, r: TaskSetting) => {
       const fields = PARAM_FIELDS[r.task_type] || []
-      if (r.task_type === 'energy_meter') {
-        const hasToken = !!r.params?.token
-        const hasAccount = !!r.params?.loginName && !!r.params?.password
-        return (
-          <Tag color={hasToken ? 'success' : hasAccount ? 'orange' : 'default'}>
-            {hasToken ? '已配置(Token)' : hasAccount ? '已配置(账号)' : '待完善'}
-          </Tag>
-        )
-      }
       const requiredCount = fields.filter(f => !f.optional && (f.type === 'password' || f.key === 'loginName')).length
       const configured = fields.filter(f => !f.optional && (f.type === 'password' ? true : r.params?.[f.key])).length
       return fields.length > 0 ? (
@@ -615,90 +459,10 @@ export default function TaskSettingsPage() {
                 <span style={{ color: '#999', marginLeft: 8, fontSize: 12 }}>密码将加密存储，编辑时不回显</span>
               </div>
 
-              {editing?.task_type === 'energy_meter' && (
-                <Form.Item label="登录方式" required>
-                  <Radio.Group
-                    value={loginMode}
-                    onChange={(e) => setLoginMode(e.target.value)}
-                    optionType="button"
-                    buttonStyle="solid"
-                  >
-                    <Radio.Button value="token">访问令牌(Token)</Radio.Button>
-                    <Radio.Button value="account">用户名 + 密码</Radio.Button>
-                  </Radio.Group>
-                  {!loginMode && (
-                    <div style={{ color: '#fa8c16', fontSize: 12, marginTop: 4 }}>请选择登录方式</div>
-                  )}
-                </Form.Item>
-              )}
-
               {paramFields.map((f) => {
-                // 能源采集任务：根据登录方式显示对应字段
-                if (editing?.task_type === 'energy_meter') {
-                  // Token方式：需要显示用户名、密码（用于登录），以及token（最终结果）
-                  if (loginMode === 'token' && !(f.key === 'loginName' || f.key === 'password' || f.key === 'token')) return null
-                  if (loginMode === 'account' && (f.key === 'token')) return null
-                  if (!loginMode) return null
-                }
                 if (f.type === 'password') {
-                  // 能源采集Token方式：在token字段后附加验证码交互
-                  if (editing?.task_type === 'energy_meter' && loginMode === 'token' && f.key === 'token') {
-                    return (
-                      <div key={f.key}>
-                        <Form.Item name={f.key} label={f.label}>
-                          <Input.Password placeholder={f.placeholder || ''} visibilityToggle />
-                        </Form.Item>
-                        {/* 验证码交互区块 */}
-                        <div style={{ marginBottom: 16, padding: '12px 16px', background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 6 }}>
-                          <div style={{ fontWeight: 600, marginBottom: 10, color: '#389e0d' }}>📷 通过验证码自动获取访问令牌</div>
-                          <Row gutter={12} align="middle">
-                            <Col span={14}>
-                              <Space.Compact style={{ width: '100%' }}>
-                                <Input
-                                  placeholder="请输入验证码"
-                                  value={energyCaptchaInput}
-                                  onChange={(e) => setEnergyCaptchaInput(e.target.value)}
-                                  maxLength={10}
-                                />
-                                <Button
-                                  type="primary"
-                                  loading={energyCaptchaLoading}
-                                  onClick={handleFetchEnergyCaptcha}
-                                >
-                                  {energyCaptchaImg ? '刷新验证码' : '获取验证码'}
-                                </Button>
-                              </Space.Compact>
-                            </Col>
-                            <Col span={10}>
-                              {energyCaptchaImg ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                  <img
-                                    src={`data:image/png;base64,${energyCaptchaImg}`}
-                                    alt="验证码"
-                                    style={{ height: 36, border: '1px solid #d9d9d9', borderRadius: 4, cursor: 'pointer' }}
-                                    onClick={handleFetchEnergyCaptcha}
-                                    title="点击刷新"
-                                  />
-                                  <Button
-                                    size="small"
-                                    type="primary"
-                                    loading={energyLoginLoading}
-                                    onClick={handleEnergyLoginByCaptcha}
-                                  >
-                                    登录获取Token
-                                  </Button>
-                                </div>
-                              ) : (
-                                <div style={{ color: '#999', fontSize: 12 }}>点击"获取验证码"按钮</div>
-                              )}
-                            </Col>
-                          </Row>
-                        </div>
-                      </div>
-                    )
-                  }
                   return (
-                    <Form.Item key={f.key} name={f.key} label={f.label} rules={loginMode ? [{ required: true, message: `请输入${f.label}` }] : []}>
+                    <Form.Item key={f.key} name={f.key} label={f.label} rules={[{ required: true, message: `请输入${f.label}` }]}>
                       <Input.Password placeholder={f.placeholder || ''} visibilityToggle />
                     </Form.Item>
                   )
@@ -736,86 +500,12 @@ export default function TaskSettingsPage() {
                     </Form.Item>
                   )
                 }
-                // 能源采集的 loginName（账号方式下）需要加必填规则
-                if (editing?.task_type === 'energy_meter' && f.key === 'loginName' && loginMode === 'account') {
-                  return (
-                    <Form.Item key={f.key} name={f.key} label={f.label} rules={[{ required: true, message: '请输入用户名' }]}>
-                      <Input placeholder={f.placeholder || ''} />
-                    </Form.Item>
-                  )
-                }
                 return (
-                  <Form.Item key={f.key} name={f.key} label={f.label}>
+                  <Form.Item key={f.key} name={f.key} label={f.label} rules={[{ required: true, message: `请输入${f.label}` }]}>
                     <Input placeholder={f.placeholder || ''} />
                   </Form.Item>
                 )
               })}
-
-              {editing?.task_type === 'energy_meter' && loginMode === 'account' && (
-                <>
-                  <Form.Item label="验证码识别方案" required>
-                    <Space.Compact style={{ width: '100%' }}>
-                      <Form.Item name="captchaSchemeId" noStyle rules={[{ required: true, message: '请选择验证码识别方案' }]}>
-                        <Select
-                          placeholder="请选择验证码识别方案"
-                          style={{ width: '100%' }}
-                          options={captchaSchemes.map(s => ({
-                            value: s.id,
-                            label: `${s.name}`,
-                            description: s.description,
-                          }))}
-                          optionRender={(option: any) => (
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                              <span style={{ fontWeight: 500 }}>{option.label}</span>
-                              <span style={{ fontSize: 12, color: '#999' }}>{option.data?.description}</span>
-                            </div>
-                          )}
-                        />
-                      </Form.Item>
-                      <Button
-                        type="primary"
-                        loading={testingCaptcha}
-                        onClick={handleTestCaptchaScheme}
-                      >
-                        {testingCaptcha ? '测试中...' : '测试识别率'}
-                      </Button>
-                    </Space.Compact>
-                  </Form.Item>
-
-                  {captchaTestResult && (
-                    <div style={{
-                      marginBottom: 16,
-                      padding: '12px 16px',
-                      background: captchaTestResult.error ? '#fff1f0' : '#f6ffed',
-                      border: `1px solid ${captchaTestResult.error ? '#ffa39e' : '#b7eb8f'}`,
-                      borderRadius: 6,
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <strong style={{ fontSize: 14 }}>
-                          {captchaTestResult.error ? '❌ 测试失败' : `✅ 测试结果 - ${captchaTestResult.schemeName}`}
-                        </strong>
-                        {!captchaTestResult.error && (
-                          <Tag color={captchaTestResult.rate >= 80 ? 'green' : captchaTestResult.rate >= 50 ? 'orange' : 'red'} style={{ fontSize: 14, padding: '2px 10px' }}>
-                            识别率: {captchaTestResult.rate}% ({captchaTestResult.ok4}/{captchaTestResult.total})
-                          </Tag>
-                        )}
-                      </div>
-                      {captchaTestResult.error ? (
-                        <div style={{ color: '#cf1322' }}>{captchaTestResult.error}</div>
-                      ) : (
-                        <>
-                          <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>
-                            恰好4字符: {captchaTestResult.ok4} | 少于4字符: {captchaTestResult.under4} | 多于4字符: {captchaTestResult.over4}
-                          </div>
-                          <div style={{ fontSize: 12, color: '#999' }}>
-                            识别示例: {captchaTestResult.samples?.filter((s: any) => s.ok).slice(0, 8).map((s: any) => s.code).join(', ') || '无'}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
             </>
           )}
         </Form>
