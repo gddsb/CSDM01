@@ -627,12 +627,10 @@ export default function EnvironmentBigScreen() {
               </BigScreenPanel>
 
               {/* 露点温度卡片 */}
-              <div className="bs-gauge-card" style={{ padding: 8, flex: '0 0 auto' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-                  <div style={{ fontSize: 11, color: '#8adfff', fontWeight: 500 }}>生产车间</div>
-                  <div style={{ fontSize: 11, color: '#8adfff', fontWeight: 500 }}>仓库区域</div>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', gap: 8 }}>
+              <div className="bs-gauge-card" style={{ padding: 4, flex: '0 0 auto', position: 'relative', minHeight: 120 }}>
+                <div style={{ position: 'absolute', top: 6, left: 10, fontSize: 11, color: '#8adfff', fontWeight: 500, zIndex: 2 }}>生产车间</div>
+                <div style={{ position: 'absolute', top: 6, right: 10, fontSize: 11, color: '#8adfff', fontWeight: 500, zIndex: 2 }}>仓库区域</div>
+                <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', gap: 8, paddingTop: 16 }}>
                   <div style={{ flex: 1, textAlign: 'center' }}>
                     <div ref={wsDewRef} style={{ height: 85, width: 110, margin: '0 auto' }} />
                     <span className="bs-gauge-value" style={{ fontSize: 16, fontWeight: 700 }}>{areaAvg.wsDew.toFixed(1)}℃</span>
