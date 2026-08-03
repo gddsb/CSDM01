@@ -3,6 +3,29 @@ dist/
 .vite/
 *.local
 .DS_Store
+*.tsbuildinfo
+
+# 数据库
 server/data/*.sqlite
-server/src.workorders-backup/
+server/data/*.db
 *.sqlite
+
+# 配置与密钥
+.env
+server/.env
+*.env.local
+
+# 上传文件
+server/uploads/
+
+# 构建产物
+server/dist/
+
+# 日志
+*.log
+server/logs/
+
+# 备份
+server/src.workorders-backup/
+*-backup/
+*.backup
