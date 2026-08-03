@@ -575,7 +575,7 @@ export default function EnvironmentBigScreen() {
   const rightUpdateTime = (
     <div className="bs-header-update">
       <span>更新时间</span>
-      <span className="bs-header-update-time">{lastRefreshTime ? formatDateTime(lastRefreshTime) : '--'}</span>
+      <span className="bs-header-update-time">{lastRefreshTime ? formatClock(lastRefreshTime) : '--'}</span>
     </div>
   )
 

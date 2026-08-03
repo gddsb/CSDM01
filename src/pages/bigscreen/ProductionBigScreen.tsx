@@ -210,7 +210,11 @@ export default function ProductionBigScreen() {
   const totalInput = dateProcessReports.filter(r => (r.process_name || '').includes('裁剪')).reduce((s, r) => s + Number(r.input_qty || 0), 0)
   const yieldRate = totalInput > 0 ? ((totalInput - totalDefect) / totalInput * 100).toFixed(1) : '0.0'
   const lineRunningStatusList = ['运行中', '运行', '开工', '生产中']
-  const runningLines = productionLines.filter(l => lineRunningStatusList.includes(l.status || ''))
+  const LINE_STATUS_MAP: Record<string, string> = {
+    '0': '停用', '1': '运行', '2': '维护中', '3': '待机',
+    '停用': '停用', '运行': '运行', '运行中': '运行中', '维护中': '维护中', '维修': '维修', '待机': '待机', '开工': '开工', '生产中': '生产中',
+  }
+  const runningLines = productionLines.filter(l => lineRunningStatusList.includes(LINE_STATUS_MAP[String(l.status || '')] || ''))
   const faultDevices = devices.filter(d => d.status === '故障' || d.status === '维修' || d.status === '异常')
 
   const kpiData = [
@@ -674,16 +678,17 @@ export default function ProductionBigScreen() {
             <div style={{ flex: 1, minWidth: 0, minHeight: 0 }}>
               <BigScreenPanel title="产线运行状态" className="bs-no-scrollbar" style={{ height: '100%', minHeight: 0, overflow: 'hidden' }}>
                 {(activeLines.length > 0 ? activeLines : [{ line_id: 'demo', line_name: '暂无产线数据', workshop: '-', status: '停用' }]).map(line => {
-                  const isRun = lineRunningStatusList.includes(line.status || '')
-                  const isMaintain = line.status === '维护中' || line.status === '维修' || line.status === '待机'
-                  const color = isRun ? '#3FB950' : isMaintain ? '#D29922' : (line.status === '停用' ? '#8B949E' : '#F85149')
+                  const statusText = LINE_STATUS_MAP[String(line.status || '')] || String(line.status || '-')
+                  const isRun = lineRunningStatusList.includes(statusText)
+                  const isMaintain = statusText === '维护中' || statusText === '维修' || statusText === '待机'
+                  const color = isRun ? '#3FB950' : isMaintain ? '#D29922' : (statusText === '停用' ? '#8B949E' : '#F85149')
                   return (
                     <div key={line.line_id} className="bs-line-status" style={{ borderLeftColor: color }}>
                       <div className="bs-line-dot" style={{ background: color }} />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 14, fontWeight: 600, color: '#E6EDF3' }}>{line.line_name} · {line.workshop || ''}</div>
                         <div style={{ fontSize: 12, color: '#8B949E' }}>
-                          状态：<Tag color={isRun ? 'success' : isMaintain ? 'warning' : 'default'} style={{ fontSize: 11 }}>{line.status || '-'}</Tag>
+                          状态：<Tag color={isRun ? 'success' : isMaintain ? 'warning' : 'default'} style={{ fontSize: 11 }}>{statusText}</Tag>
                         </div>
                       </div>
                     </div>
