@@ -11,7 +11,7 @@ const TaskSetting = sequelize.define('TaskSetting', {
     type: DataTypes.STRING(20),
     allowNull: false,
     unique: true,
-    comment: '任务类型：items/customers/env_monitor/weather',
+    comment: '任务类型：items/customers/env_monitor/weather/energy_meter',
   },
   name: {
     type: DataTypes.STRING(100),

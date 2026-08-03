@@ -20,12 +20,13 @@ function fmt(d: Date) { return d.toISOString().slice(0, 19).replace('T', ' ') }
 
 async function seedSyncLog() {
   console.log('1. 填充同步任务日志...')
-  const taskTypes = ['items', 'customers', 'env_monitor', 'weather']
+  const taskTypes = ['items', 'customers', 'env_monitor', 'weather', 'energy_meter']
   const stepNames: Record<string, string[]> = {
     items: ['创建同步任务', '连接U9 ERP', '登录认证', '拉取料品数据', '数据写入完成'],
     customers: ['创建同步任务', '连接U9 ERP', '登录认证', '拉取客户数据', '数据写入完成'],
     env_monitor: ['创建采集任务', '连接0531yun平台', '获取设备列表', '采集监测数据', '数据写入完成'],
     weather: ['创建抓取任务', '连接中国天气网', '解析城市页面', '提取气象数据', '数据写入完成'],
+    energy_meter: ['连接能源平台', '正在登录', '登录成功', '获取电能数据', '数据获取成功'],
   }
   const records: any[] = []
   for (let i = 0; i < 60; i++) {
@@ -64,6 +65,7 @@ async function seedScheduledTask() {
     { task_type: 'customers', cron: '0 3 * * *', name: '每日客户同步' },
     { task_type: 'env_monitor', cron: '*/15 * * * *', name: '每15分钟环境监测' },
     { task_type: 'weather', cron: '0 6 * * *', name: '每日气象抓取' },
+    { task_type: 'energy_meter', cron: '0 * * * *', name: '每小时能源采集' },
   ]
   const records = taskTypes.map((t, i) => {
     const isFail = Math.random() < 0.25

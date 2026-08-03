@@ -440,6 +440,7 @@ const tableCategoryMap = {
   task_env_monitor_data: { category: '业务表', purpose: '环境监测数据表，存储车间环境监测因子（温湿度等）的实时采集数据' },
   task_env_alarm_record: { category: '业务表', purpose: '环境报警记录表，存储环境监测超限的报警信息、级别及处理状态' },
   task_weather_info: { category: '业务表', purpose: '气象信息表，存储城市/区域的实时天气数据（温度、湿度、大气压等）' },
+  task_energy_meter_data: { category: '业务表', purpose: '能源采集数据表，存储从云集云能源平台采集的总表有功/无功总电能历史记录' },
 }
 
 // 表名 → { 字段名: 中文注释 }（数据库表结构元数据，模块级常量）
@@ -1079,6 +1080,20 @@ const columnCommentMap = {
     weather_time: '气象发布/观测时间',
     source: '数据来源站点',
     raw_data: '原始片段（调试用）',
+    created_at: '创建时间',
+    updated_at: '更新时间',
+  },
+  task_energy_meter_data: {
+    id: '主键ID',
+    task_setting_id: '关联任务设置ID',
+    reading_date: '采集时间',
+    device_addr: '通讯地址',
+    device_name: '电表名称',
+    forward_active_energy: '正向有功总电能(kWh)',
+    forward_reactive_energy: '正向无功总电能(kvarh)',
+    reverse_active_energy: '反向有功总电能(kWh)',
+    reverse_reactive_energy: '反向无功总电能(kvarh)',
+    raw_data: '原始数据片段(调试用)',
     created_at: '创建时间',
     updated_at: '更新时间',
   },

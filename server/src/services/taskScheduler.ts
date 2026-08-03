@@ -31,6 +31,14 @@ const TEST_STEPS_MAP: Record<string, { message: string; percent: number }[]> = {
     { message: '解析气象数据', percent: 75 },
     { message: '数据入库完成', percent: 100 },
   ],
+  energy_meter: [
+    { message: '连接能源平台', percent: 10 },
+    { message: '正在登录', percent: 25 },
+    { message: '登录成功', percent: 40 },
+    { message: '获取电能数据', percent: 60 },
+    { message: '数据获取成功', percent: 85 },
+    { message: '数据入库完成', percent: 100 },
+  ],
 }
 
 export async function updateTaskProgress(taskId: number, step: { message: string; percent: number }, status: string = 'running', totalRecords?: number) {
@@ -58,6 +66,7 @@ function generateMockRecordCount(taskType: string): number {
     case 'customers': return Math.floor(20 + Math.random() * 10)
     case 'env_monitor': return Math.floor(8 + Math.random() * 5)
     case 'weather': return Math.floor(3 + Math.random() * 6)
+    case 'energy_meter': return Math.floor(50 + Math.random() * 100)
     default: return Math.floor(10 + Math.random() * 20)
   }
 }
@@ -108,7 +117,7 @@ function generateTaskBizId(type: string): string {
   const m = pad(now.getMonth() + 1)
   const d = pad(now.getDate())
   const datePart = `${y}${m}${d}`
-  const prefix = type === 'items' ? 'SCHI' : type === 'customers' ? 'SCHC' : type === 'env_monitor' ? 'SCHE' : type === 'weather' ? 'SCHW' : 'SCHX'
+  const prefix = type === 'items' ? 'SCHI' : type === 'customers' ? 'SCHC' : type === 'env_monitor' ? 'SCHE' : type === 'weather' ? 'SCHW' : type === 'energy_meter' ? 'SCHEM' : 'SCHX'
   const rand = String(Math.floor(Math.random() * 900) + 100)
   return `${prefix}${datePart}${rand}`
 }

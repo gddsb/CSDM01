@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useMessage } from '../../contexts/AppContext'
 import { Table, Button, Switch, Form, Input, Modal, Space, Tag, Card, Row, Col, Select, Progress, Timeline, Tooltip, Radio } from 'antd'
-import { EditOutlined, ReloadOutlined, SettingOutlined, DatabaseOutlined, TeamOutlined, DashboardOutlined, EnvironmentOutlined, PlayCircleOutlined, CheckCircleOutlined, ClockCircleOutlined, CloseCircleOutlined, FileTextOutlined } from '@ant-design/icons'
+import { EditOutlined, ReloadOutlined, SettingOutlined, DatabaseOutlined, TeamOutlined, DashboardOutlined, EnvironmentOutlined, PlayCircleOutlined, CheckCircleOutlined, ClockCircleOutlined, CloseCircleOutlined, FileTextOutlined, ThunderboltOutlined } from '@ant-design/icons'
 import api from '../../utils/api'
 import { formatDateTime } from '../../utils'
 
@@ -46,6 +46,7 @@ const TYPE_LABELS: Record<string, string> = {
   production_orders: '生产订单',
   env_monitor: '环境监测',
   weather: '气象信息',
+  energy_meter: '能源采集',
 }
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
@@ -54,6 +55,7 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
   production_orders: <FileTextOutlined style={{ color: '#fa8c16', fontSize: 18 }} />,
   env_monitor: <DashboardOutlined style={{ color: '#722ed1', fontSize: 18 }} />,
   weather: <EnvironmentOutlined style={{ color: '#13c2c2', fontSize: 18 }} />,
+  energy_meter: <ThunderboltOutlined style={{ color: '#faad14', fontSize: 18 }} />,
 }
 
 const PARAM_FIELDS: Record<string, { key: string; label: string; type: 'text' | 'password' | 'select'; placeholder?: string; dependsOn?: string; noEcho?: boolean; optional?: boolean }[]> = {
@@ -77,6 +79,10 @@ const PARAM_FIELDS: Record<string, { key: string; label: string; type: 'text' | 
     { key: 'password', label: '平台登录密码', type: 'password', placeholder: '0531yun登录密码' },
   ],
   weather: [],
+  energy_meter: [
+    { key: 'loginName', label: '平台登录用户名', type: 'text', placeholder: '云集云能源平台账号', noEcho: true },
+    { key: 'password', label: '平台登录密码', type: 'password', placeholder: '云集云能源平台密码' },
+  ],
 }
 
 const STATUS_COLOR: Record<string, string> = {
