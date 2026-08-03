@@ -292,8 +292,11 @@ export default function ProductionBigScreen() {
 
   useEffect(() => {
     if (!lineChartRef.current) return
-    const chart = echarts.init(lineChartRef.current)
-    lineChartRef2.current = chart
+    let chart = lineChartRef2.current
+    if (!chart) {
+      chart = echarts.init(lineChartRef.current)
+      lineChartRef2.current = chart
+    }
 
     const series: any[] = lineNamesFromTrend.map((ln, idx) => {
       const color = palette[idx % palette.length]
@@ -367,10 +370,10 @@ export default function ProductionBigScreen() {
         } : { show: false },
       ],
       series,
-    })
-    const handleResize = () => chart.resize()
+    }, true)
+    const handleResize = () => chart && chart.resize()
     window.addEventListener('resize', handleResize)
-    return () => { chart.dispose(); window.removeEventListener('resize', handleResize); lineChartRef2.current = null }
+    return () => { window.removeEventListener('resize', handleResize) }
   }, [dailyTrend, dailyEnergy, dataVersion])
 
   const processDefectList = dashboardData.processDefectList || []
