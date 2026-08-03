@@ -842,7 +842,7 @@ export default function SystemConfig() {
           showIcon
           style={{ marginBottom: 12 }}
           message="在 SQLite / MySQL / PostgreSQL / MariaDB 等常见数据库环境之间迁移数据"
-          description="迁移前系统会自动备份当前 SQLite 数据库（可在「备份还原」中还原）。迁移完成后需要重启后端服务以使新数据库生效。"
+          description="迁移前系统会自动备份当前数据库（可在「备份还原」中还原）。迁移完成后需要重启后端服务以使新数据库生效。"
         />
         <Spin spinning={migrationLoading}>
           <Row gutter={[12, 12]}>
@@ -901,7 +901,7 @@ export default function SystemConfig() {
           type="warning"
           showIcon
           style={{ marginBottom: 16 }}
-          message="迁移前系统将自动备份当前 SQLite 数据库"
+          message="迁移前系统将自动备份当前数据库"
           description="迁移完成后，系统会更新 .env 配置文件并提示重启后端服务。"
         />
         <Form form={migrationForm} layout="vertical" preserve={false}>
@@ -1008,7 +1008,7 @@ export default function SystemConfig() {
   const BackupTab = (
     <div>
       <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text type="secondary">数据库备份与还原（仅支持 SQLite，MySQL 请使用数据库管理工具）</Text>
+        <Text type="secondary">数据库备份与还原（支持 SQLite 和 MySQL）</Text>
         <Space>
           <Button icon={<ReloadOutlined />} onClick={loadBackups}>刷新</Button>
           <Button type="primary" icon={<PlusOutlined />} loading={backupCreating} onClick={handleCreateBackup}>
