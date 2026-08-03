@@ -642,7 +642,6 @@ export default function ProductionBigScreen() {
         style={{
           display: 'flex',
           flexDirection: 'column',
-          height: '720px',
           overflow: 'hidden',
           ...scaleStyle,
         }}

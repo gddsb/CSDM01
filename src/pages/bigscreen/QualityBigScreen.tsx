@@ -560,7 +560,7 @@ export default function QualityBigScreen() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', minWidth: 1280, minHeight: 720, overflow: 'hidden', background: '#0a0e1a' }}>
-      <div className="bigscreen-container" style={{ display: 'flex', flexDirection: 'column', height: '720px', overflow: 'hidden', ...scaleStyle }}>
+      <div className="bigscreen-container" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', ...scaleStyle }}>
         <BigScreenHeader
           title="质量检测中心"
           extraLeft={leftDateTime}

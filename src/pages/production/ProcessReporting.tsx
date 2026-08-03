@@ -168,7 +168,7 @@ export default function ProcessReporting() {
         const [defectRes, devRes, ordersRes, linesRes] = await Promise.all([
           api.get('/basic/defect-types', { params: { page: 1, pageSize: 1000, status: '启用' } }),
           api.get('/basic/devices', { params: { page: 1, pageSize: 1000 } }),
-          api.get('/production/orders', { params: { page: 1, pageSize: 1000, status: '下发,开工' } }),
+          api.get('/production/orders', { params: { page: 1, pageSize: 1000 } }),
           api.get('/basic/production-lines', { params: { page: 1, pageSize: 1000 } }),
         ])
         if (cancelled) return
@@ -680,26 +680,33 @@ export default function ProcessReporting() {
 
   // 新增报工 Modal 的订单下拉选项（"下发"、"开工"、"完工"(但数量未达标) 状态可创建报工单）
   const orderOptions = useMemo(() => {
+    const STATUS_MAP: Record<string, string> = {
+      '0': '开立', '1': '下发', '2': '开工', '3': '完工', '开立': '开立', '下发': '下发', '开工': '开工', '完工': '完工',
+    }
     return orders
       .filter(o => {
-        if (o.status === '下发' || o.status === '开工') return true
-        if (o.status === '完工') {
+        const s = STATUS_MAP[String(o.status)] || String(o.status)
+        if (s === '下发' || s === '开工') return true
+        if (s === '完工') {
           const planned = Number(o.planned_qty || 0)
           const finished = Number(o.finished_qty || 0)
           return finished < planned
         }
         return false
       })
-      .map(o => ({
-        label: `${o.order_no} (${o.material_name || '-'}) [${o.status}]`,
-        value: o.order_id,
-        order_no: o.order_no || '',
-        material_code: o.material_code || '',
-        material_name: o.material_name || '',
-        specification: o.specification || '',
-        planned_qty: o.planned_qty || 0,
-        finished_qty: o.finished_qty || 0,
-      }))
+      .map(o => {
+        const s = STATUS_MAP[String(o.status)] || String(o.status)
+        return {
+          label: `${o.order_no} (${o.material_name || '-'}) [${s}]`,
+          value: o.order_id,
+          order_no: o.order_no || '',
+          material_code: o.material_code || '',
+          material_name: o.material_name || '',
+          specification: o.specification || '',
+          planned_qty: o.planned_qty || 0,
+          finished_qty: o.finished_qty || 0,
+        }
+      })
   }, [orders])
 
   // 新增报工 Modal 的产线下拉选项（仅运行中）
