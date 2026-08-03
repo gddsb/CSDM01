@@ -12,6 +12,7 @@ import { encryptParamsObj, decryptParamsObj } from '../utils/crypto.js'
 import { fetchU9Orgs, DEFAULT_U9_CONFIG } from '../services/u9Service.js'
 import { calcNextRunAt } from '../services/taskScheduler.js'
 import { executeRealTask } from '../services/taskExecutor.js'
+import { formatDateTime, formatDate, nowBeijingStr, nowBeijingDateStr } from '../utils/date.js'
 
 // 露点温度计算（考虑大气压的增强版 Magnus 公式）
 // T:摄氏温度, RH:相对湿度%, P:大气压(hPa，默认1013.25)
@@ -266,7 +267,7 @@ export const triggerScheduledTask = async (req, res) => {
       status: 'pending',
       progress: 0,
       current_step: '任务已创建，等待执行...',
-      steps: [{ time: new Date().toISOString(), message: '手动触发，任务已创建', percent: 0 }],
+      steps: [{ time: nowBeijingStr(), message: '手动触发，任务已创建', percent: 0 }],
       started_at: new Date(),
     })
 
@@ -340,7 +341,7 @@ async function updateTaskProgress(taskId: number, step: { message: string; perce
     const task = await SyncTask.findByPk(taskId)
     if (!task) return
     const steps = (task as any).steps || []
-    steps.push({ time: new Date().toISOString(), message: step.message, percent: step.percent })
+    steps.push({ time: nowBeijingStr(), message: step.message, percent: step.percent })
     ;(task as any).progress = step.percent
     ;(task as any).current_step = step.message
     ;(task as any).steps = steps
@@ -393,7 +394,7 @@ export const testTaskSetting = async (req, res) => {
       status: 'running',
       progress: 5,
       current_step: '任务已启动，准备采集...',
-      steps: [{ time: new Date().toISOString(), message: '任务已启动，准备采集...', percent: 5 }],
+      steps: [{ time: nowBeijingStr(), message: '任务已启动，准备采集...', percent: 5 }],
       started_at: new Date(),
     })
 
@@ -586,7 +587,7 @@ export const dashboardTrend = async (req, res) => {
       d.setMinutes(d.getMinutes() - i * 10)
       slotMarks.push(d)
     }
-    const times = slotMarks.map((d) => d.toISOString())
+    const times = slotMarks.map((d) => formatDateTime(d))
 
     const getArea = (factorName: string): 'workshop' | 'warehouse' | 'other' => {
       if (factorName.includes('车间')) return 'workshop'
@@ -809,7 +810,7 @@ export const productionDashboard = async (req, res) => {
     energyData30d.forEach(e => {
       const t = e.reading_date
       if (!t) return
-      const dateStr = new Date(t).toISOString().slice(0, 10)
+      const dateStr = formatDate(t)
       const v = Number(e.forward_active_energy || 0)
       dailyEnergyMap[dateStr] = (dailyEnergyMap[dateStr] || 0) + v
     })
@@ -850,8 +851,8 @@ export const productionDashboard = async (req, res) => {
       dailyTrend,
       dailyEnergy,
       processDefectList,
-      queryTime: now.toISOString(),
-      activeDate: `${todayStart.getFullYear()}-${String(todayStart.getMonth() + 1).padStart(2, '0')}-${String(todayStart.getDate()).padStart(2, '0')}`,
+      queryTime: nowBeijingStr(),
+      activeDate: formatDate(todayStart),
     })
   } catch (err) {
     console.error('[productionDashboard] 生产看板数据失败:', err)

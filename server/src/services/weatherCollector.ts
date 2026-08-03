@@ -166,7 +166,7 @@ export async function collectWeather(): Promise<CollectResult> {
     if (data) {
       console.log('[WeatherCollector] cma OK:', {
         city: data.city, temp: data.temperature, hum: data.humidity,
-        pres: data.pressure, time: data.weatherTime.toISOString(),
+        pres: data.pressure, time: formatDateTime(data.weatherTime),
       });
       return { data, source: data.source };
     }
@@ -183,7 +183,7 @@ export async function collectWeather(): Promise<CollectResult> {
     if (data) {
       console.log('[WeatherCollector] tianqic OK:', {
         city: data.city, temp: data.temperature, hum: data.humidity,
-        pres: data.pressure, time: data.weatherTime.toISOString(),
+        pres: data.pressure, time: formatDateTime(data.weatherTime),
       });
       return { data, source: data.source };
     }
@@ -200,7 +200,7 @@ export async function collectWeather(): Promise<CollectResult> {
     if (data) {
       console.log('[WeatherCollector] tianqi24 OK:', {
         city: data.city, temp: data.temperature, hum: data.humidity,
-        pres: data.pressure, time: data.weatherTime.toISOString(),
+        pres: data.pressure, time: formatDateTime(data.weatherTime),
       });
       return { data, source: data.source };
     }

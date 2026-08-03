@@ -1958,6 +1958,21 @@ PC端生产报工页面（`/production/reporting`）信息区采用三行布局�
 - 全局状态使用 React Context（AppContext）
 - 样式优先使用 CSS 变量，支持主题切换
 
+### 日期时间格式规范
+
+- **统一时区**：所有日期时间统一使用**北京时间（UTC+8）**
+- **统一格式**：`YYYY-MM-DD HH:mm:ss`，例如 `2026-08-10 01:10:00`
+- **后端实现**：使用 `server/src/utils/date.ts` 中的工具函数：
+  - `formatDateTime(d)` - 格式化日期时间为北京时间字符串
+  - `formatDate(d)` - 格式化日期为 `YYYY-MM-DD`
+  - `nowBeijingStr()` - 获取当前北京时间字符串
+  - `nowBeijingDateStr()` - 获取当前北京日期字符串
+- **前端实现**：使用 `src/utils/index.ts` 中的常量：
+  - `DATE_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss'`
+  - `DATE_FORMAT = 'YYYY-MM-DD'`
+  - `TIME_FORMAT = 'HH:mm:ss'`
+- **禁止使用**：禁止在 API 返回中直接使用 `toISOString()`（返回 UTC 时间），必须通过日期工具函数转换为北京时间
+
 ### 后端开发规范
 
 - 控制器（Controller）负责处理 HTTP 请求和响应

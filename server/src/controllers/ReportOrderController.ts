@@ -18,6 +18,7 @@ import {
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { generateReportOrderNo } from '../utils/sequence.js'
 import { logger } from '../utils/logger.js'
+import { nowBeijingDateStr } from '../utils/date.js'
 
 // 报工单状态: 0=开工, 1=完工, 2=关闭
 const statusMap = { '开工': 0, '完工': 1, '关闭': 2 }
@@ -362,7 +363,7 @@ export const create = async (req, res) => {
 
       await ManpowerRecord.create({
         report_order_id: reportOrder.report_order_id,
-        record_date: now.toISOString().slice(0, 10),
+        record_date: nowBeijingDateStr(),
         shift: '白班',
         start_time: now,
         end_time: now,

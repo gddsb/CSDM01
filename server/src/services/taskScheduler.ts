@@ -46,7 +46,7 @@ export async function updateTaskProgress(taskId: number, step: { message: string
     const task = await SyncTask.findByPk(taskId) as any
     if (!task) return
     const steps = Array.isArray(task.steps) ? [...task.steps] : []
-    steps.push({ time: new Date().toISOString(), message: step.message, percent: step.percent })
+    steps.push({ time: nowBeijingStr(), message: step.message, percent: step.percent })
     task.progress = step.percent
     task.current_step = step.message
     task.steps = steps
@@ -146,7 +146,7 @@ export async function triggerScheduledTaskById(taskId: number) {
       status: 'running',
       progress: 5,
       current_step: '定时任务已启动',
-      steps: [{ time: new Date().toISOString(), message: '定时触发，任务已启动', percent: 5 }],
+      steps: [{ time: nowBeijingStr(), message: '定时触发，任务已启动', percent: 5 }],
       started_at: new Date(),
     })
     const syncTaskId = (syncTask as any).task_id
@@ -218,7 +218,7 @@ export async function startTaskScheduler() {
       for (const t of timeoutTasks) {
         const task = t as any
         const steps = Array.isArray(task.steps) ? [...task.steps] : []
-        steps.push({ time: new Date().toISOString(), message: '任务执行超时（超过3分钟），已自动终止', percent: task.progress || 0 })
+        steps.push({ time: nowBeijingStr(), message: '任务执行超时（超过3分钟），已自动终止', percent: task.progress || 0 })
         await SyncTask.update(
           {
             status: 'failed',

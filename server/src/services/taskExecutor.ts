@@ -15,7 +15,7 @@ export function createProgressUpdater(taskId: number): TaskProgressUpdater {
       const task = await SyncTask.findByPk(taskId) as any
       if (!task) return
       const steps = Array.isArray(task.steps) ? [...task.steps] : []
-      steps.push({ time: new Date().toISOString(), message, percent })
+      steps.push({ time: nowBeijingStr(), message, percent })
       task.progress = percent
       task.current_step = message
       task.steps = steps
@@ -126,7 +126,7 @@ export async function executeRealTask(
       const task = await SyncTask.findByPk(taskId) as any
       if (task) {
         const steps = Array.isArray(task.steps) ? [...task.steps] : []
-        steps.push({ time: new Date().toISOString(), message: `失败: ${errorMsg}`, percent: task.progress || 0 })
+        steps.push({ time: nowBeijingStr(), message: `失败: ${errorMsg}`, percent: task.progress || 0 })
         task.status = 'failed'
         task.error_msg = errorMsg
         task.steps = steps

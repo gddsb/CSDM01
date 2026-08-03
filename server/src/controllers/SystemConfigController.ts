@@ -9,6 +9,7 @@ import http from 'http'
 import net from 'net'
 import { exec } from 'child_process'
 import { logger } from '../utils/logger.js'
+import { formatDateTime, nowBeijingStr } from '../utils/date.js'
 
 // ============= 数据字典刷新：异步任务进度 + 频率限制 =============
 type DictRefreshStatus = 'pending' | 'running' | 'success' | 'failed'
@@ -336,7 +337,7 @@ export const getEnvironment = async (req, res) => {
       disk_mount: disk_info.mount,
       sequelize_version: Sequelize.version || 'unknown',
       tech_stack,
-      server_time: new Date().toISOString(),
+      server_time: nowBeijingStr(),
       frontend_server: {
         name: '前端服务器 (Vite)',
         status: frontend_running ? 'running' : 'offline',
@@ -361,7 +362,7 @@ export const restartServer = async (req, res) => {
     const result = {
       message: '服务正在重启，请稍候...',
       estimated_time: 5000,
-      restart_time: new Date().toISOString(),
+      restart_time: nowBeijingStr(),
     }
     success(res, result, '重启指令已发送')
 
@@ -1300,7 +1301,7 @@ async function collectDatabaseSchema(options: CollectSchemaOptions = {}) {
       purpose: meta.purpose,
       field_count: r.cols.length,
       record_count: recordCountMap[r.table] || 0,
-      last_update: new Date().toISOString(),
+      last_update: nowBeijingStr(),
     })
   }
 
@@ -1390,7 +1391,7 @@ export const listBackups = async (req, res) => {
         return {
           filename: f,
           size: stat.size,
-          created_at: stat.mtime.toISOString(),
+          created_at: formatDateTime(stat.mtime),
         }
       })
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
@@ -1418,7 +1419,7 @@ export const createBackup = async (req, res) => {
       const target = path.join(BACKUP_DIR, filename)
       fs.copyFileSync(SQLITE_PATH, target)
       const stat = fs.statSync(target)
-      return success(res, { filename, size: stat.size, created_at: stat.mtime.toISOString() }, '备份成功')
+      return success(res, { filename, size: stat.size, created_at: formatDateTime(stat.mtime) }, '备份成功')
     } else if (dialect === 'mysql') {
       const filename = `backup_${ts}.sql`
       const target = path.join(BACKUP_DIR, filename)
@@ -1446,7 +1447,7 @@ export const createBackup = async (req, res) => {
         return fail(res, 'MySQL 备份失败，请检查 mysqldump 是否可用以及数据库连接配置', ErrorCode.SYSTEM_ERROR)
       }
       const stat = fs.statSync(target)
-      return success(res, { filename, size: stat.size, created_at: stat.mtime.toISOString() }, 'MySQL 备份成功')
+      return success(res, { filename, size: stat.size, created_at: formatDateTime(stat.mtime) }, 'MySQL 备份成功')
     } else {
       return fail(res, `当前数据库类型 ${dialect} 暂不支持界面备份`, ErrorCode.PARAM_INVALID)
     }
@@ -1638,7 +1639,7 @@ export const migrateDatabase = async (req, res) => {
         backupInfo = {
           filename: backupName,
           size: stat.size,
-          created_at: stat.mtime.toISOString(),
+          created_at: formatDateTime(stat.mtime),
         }
       } else if (currentDialect === 'mysql') {
         const backupName = `backup_${ts}.sql`
@@ -1663,7 +1664,7 @@ export const migrateDatabase = async (req, res) => {
           backupInfo = {
             filename: backupName,
             size: stat.size,
-            created_at: stat.mtime.toISOString(),
+            created_at: formatDateTime(stat.mtime),
           }
         }
       }
@@ -1827,7 +1828,7 @@ async function refreshDictionaryDataInternal(options?: {
   if (allTableNames.length > 0) {
     await DataDictionary.destroy({ where: { table_name: { [Op.notIn]: allTableNames } } })
   }
-  return { total: upsertCount, refreshed_at: now.toISOString() }
+  return { total: upsertCount, refreshed_at: formatDateTime(now) }
 }
 
 // 旧导出（同步执行，用于 init-db 等内部场景）—— 保持向后兼容
@@ -1948,8 +1949,8 @@ export const getRefreshProgress = async (req, res) => {
     message: task.message,
     progressPercent:
       task.totalTables > 0 ? Math.min(100, Math.round((task.processedTables / task.totalTables) * 100)) : 0,
-    startedAt: task.startedAt ? new Date(task.startedAt).toISOString() : null,
-    finishedAt: task.finishedAt ? new Date(task.finishedAt).toISOString() : null,
+    startedAt: task.startedAt ? formatDateTime(task.startedAt) : null,
+    finishedAt: task.finishedAt ? formatDateTime(task.finishedAt) : null,
     error: task.error || null,
     result: task.result || null,
   }

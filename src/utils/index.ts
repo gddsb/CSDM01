@@ -1,8 +1,8 @@
 import dayjs from 'dayjs'
 
-export const DATE_TIME_FORMAT = 'YYYY/MM/DD HH:mm'
-export const DATE_FORMAT = 'YYYY/MM/DD'
-export const TIME_FORMAT = 'HH:mm'
+export const DATE_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss'
+export const DATE_FORMAT = 'YYYY-MM-DD'
+export const TIME_FORMAT = 'HH:mm:ss'
 
 export function formatDateTime(value: string | number | Date | dayjs.Dayjs | undefined | null): string {
   if (!value) return '-'
