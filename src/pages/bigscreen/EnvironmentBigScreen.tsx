@@ -169,18 +169,18 @@ function miniGauge(value: number, unit: string, type: 'temp' | 'hum' | 'dew' | '
   return {
     series: [{
       type: 'gauge',
-      center: ['50%', '68%'],
-      radius: '95%',
+      center: ['50%', '55%'],
+      radius: '80%',
       min: r.min, max: r.max,
       startAngle: 180, endAngle: 0,
-      progress: { show: true, width: 14, itemStyle: { color: mainColor } },
-      axisLine: { lineStyle: { width: 14, color: stops } },
+      progress: { show: true, width: 12, itemStyle: { color: mainColor } },
+      axisLine: { lineStyle: { width: 12, color: stops } },
       pointer: { show: false },
       axisTick: { show: false },
       splitLine: { show: false },
       axisLabel: {
         show: true,
-        distance: -24,
+        distance: -20,
         fontSize: 10,
         color: '#5b8ca8',
         formatter: (v: number) => {
@@ -192,11 +192,11 @@ function miniGauge(value: number, unit: string, type: 'temp' | 'hum' | 'dew' | '
       title: { show: false },
       detail: {
         valueAnimation: true,
-        offsetCenter: [0, '-5%'],
+        offsetCenter: [0, '30%'],
         formatter: (v: number) => `{a|${v.toFixed(1)}}{b|${unit}}`,
         rich: {
-          a: { fontSize: 28, fontWeight: 700, color: '#ffffff', padding: [0, 4, 0, 0] },
-          b: { fontSize: 14, fontWeight: 500, color: '#8adfff', padding: [0, 0, 0, 0] },
+          a: { fontSize: 22, fontWeight: 700, color: '#ffffff', padding: [0, 3, 0, 0] },
+          b: { fontSize: 12, fontWeight: 500, color: '#8adfff', padding: [0, 0, 0, 0] },
         },
       },
       data: [{ value: Math.round(value * 10) / 10 }],
