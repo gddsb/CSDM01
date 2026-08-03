@@ -48,8 +48,8 @@ function gaugeTemp(value: number, area: 'workshop' | 'warehouse'): EChartsOption
   return {
     series: [{
       type: 'gauge',
-      center: ['50%', '52%'],
-      radius: '88%',
+      center: ['50%', '55%'],
+      radius: '80%',
       min: 0, max: 40, splitNumber: 8,
       startAngle: 225, endAngle: -45,
       axisLine: {
@@ -86,7 +86,7 @@ function gaugeTemp(value: number, area: 'workshop' | 'warehouse'): EChartsOption
       },
       title: {
         show: true,
-        offsetCenter: [0, '-8%'],
+        offsetCenter: [0, '-10%'],
         fontSize: 11,
         fontWeight: 600,
         color: '#8adfff',
@@ -109,8 +109,8 @@ function gaugeHum(value: number): EChartsOption {
   return {
     series: [{
       type: 'gauge',
-      center: ['50%', '52%'],
-      radius: '88%',
+      center: ['50%', '55%'],
+      radius: '80%',
       min: 35, max: 100, splitNumber: 5,
       startAngle: 225, endAngle: -45,
       axisLine: {
@@ -143,7 +143,7 @@ function gaugeHum(value: number): EChartsOption {
       },
       title: {
         show: true,
-        offsetCenter: [0, '-8%'],
+        offsetCenter: [0, '-10%'],
         fontSize: 11,
         fontWeight: 600,
         color: '#8adfff',
@@ -623,14 +623,14 @@ export default function EnvironmentBigScreen() {
                 <div style={{ position: 'absolute', top: 6, left: 10, fontSize: 11, color: '#8adfff', fontWeight: 500, zIndex: 2 }}>生产车间</div>
                 <div style={{ position: 'absolute', top: 6, right: 10, fontSize: 11, color: '#8adfff', fontWeight: 500, zIndex: 2 }}>仓库区域</div>
                 <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'stretch', gap: 8, paddingTop: 20, flex: 1, minHeight: 0 }}>
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end' }}>
                     <div ref={wsDewRef} style={{ flex: 1, width: '100%', minHeight: 0 }} />
-                    <span className="bs-gauge-value" style={{ fontSize: 15, fontWeight: 700, marginTop: -4 }}>{areaAvg.wsDew.toFixed(1)}℃</span>
+                    <span className="bs-gauge-value" style={{ fontSize: 15, fontWeight: 700, lineHeight: 1, paddingBottom: 2 }}>{areaAvg.wsDew.toFixed(1)}℃</span>
                   </div>
                   <div style={{ width: 1, background: 'rgba(0,212,255,0.2)' }} />
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end' }}>
                     <div ref={whDewRef} style={{ flex: 1, width: '100%', minHeight: 0 }} />
-                    <span className="bs-gauge-value" style={{ fontSize: 15, fontWeight: 700, marginTop: -4 }}>{areaAvg.whDew.toFixed(1)}℃</span>
+                    <span className="bs-gauge-value" style={{ fontSize: 15, fontWeight: 700, lineHeight: 1, paddingBottom: 2 }}>{areaAvg.whDew.toFixed(1)}℃</span>
                   </div>
                 </div>
               </div>
