@@ -110,6 +110,7 @@ export default function InspectionStandardForm() {
         setEffectiveDate(detail.effective_date ? formatDateTime(detail.effective_date) : '')
         setCurrentItems(detail.items ? detail.items.map((it: any) => ({
           ...it,
+          _key: it.item_id != null ? `item_${it.item_id}` : `new_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
           inspection_types: it.inspection_types ? it.inspection_types.split(',').filter(Boolean) : [],
         })) : [])
         setCurrentStatus(detail.status || '')
@@ -214,7 +215,7 @@ export default function InspectionStandardForm() {
   }
 
   const handleDeleteItem = (record: any) => {
-    setCurrentItems(prev => prev.filter((i: any) => i._key !== record._key && i.item_id !== record.item_id))
+    setCurrentItems(prev => prev.filter((i: any) => i._key !== record._key))
     antMsg.success('已删除')
   }
 
@@ -223,12 +224,12 @@ export default function InspectionStandardForm() {
       const values = await itemForm.validateFields()
       if (itemEditing) {
         setCurrentItems(prev => prev.map((i: any) =>
-          (i._key === itemEditing._key || i.item_id === itemEditing.item_id)
+          i._key === itemEditing._key
             ? { ...i, ...values }
             : i
         ))
       } else {
-        setCurrentItems(prev => [...prev, { ...values, _key: 'new_' + Date.now() }])
+        setCurrentItems(prev => [...prev, { ...values, _key: `new_${Date.now()}_${Math.random().toString(36).slice(2, 8)}` }])
       }
       setItemModalVisible(false)
     } catch (e) {
