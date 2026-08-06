@@ -1,6 +1,6 @@
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { Button, Space, Form, Input, Select, Typography, Row, Col, Modal, Breadcrumb, Card, message as antMsg, Alert, Tag, Popconfirm } from 'antd'
+import { Button, Space, Form, Input, Select, Typography, Row, Col, Modal, Breadcrumb, Card, message as antMsg, Alert, Tag, Popconfirm, Checkbox } from 'antd'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useMessage } from '../../contexts/AppContext'
 import { PlusOutlined, ArrowLeftOutlined, SaveOutlined, CheckCircleOutlined } from '@ant-design/icons'
@@ -421,14 +421,14 @@ export default function InspectionStandardForm() {
       >
         <Form form={itemForm} layout="vertical" className="compact-form" preserve={false}>
           <Row gutter={12}>
-            <Col span={10}>
-              <Form.Item name="item_name" label="项目名称" rules={[{ required: true, message: '请输入项目名称' }]}>
-                <Input placeholder="请输入项目名称" />
-              </Form.Item>
-            </Col>
             <Col span={8}>
               <Form.Item name="category" label="项目分类" rules={[{ required: true, message: '请选择项目分类' }]}>
                 <Select placeholder="请选择项目分类" options={categoryOptions} />
+              </Form.Item>
+            </Col>
+            <Col span={10}>
+              <Form.Item name="item_name" label="项目名称" rules={[{ required: true, message: '请输入项目名称' }]}>
+                <Input placeholder="请输入项目名称" />
               </Form.Item>
             </Col>
             <Col span={6}>
@@ -447,35 +447,32 @@ export default function InspectionStandardForm() {
           </Row>
           <Row gutter={12}>
             <Col span={10}>
-              <Form.Item name="standard_value" label="标准要求" rules={[{ required: true, message: '请输入标准要求' }]}>
+              <Form.Item name="standard_value" label="检验要求" rules={[{ required: true, message: '请输入检验要求' }]}>
                 <Input placeholder="如 90.0±0.3、≥200 等" />
               </Form.Item>
             </Col>
             <Col span={6}>
-              <Form.Item name="unit" label="单位" rules={[{ required: true, message: '请输入单位' }]}>
-                <Input placeholder="如 mm、N、%等，无则填 -" />
+              <Form.Item name="unit" label="单位">
+                <Input placeholder="如 mm、N、%等" />
               </Form.Item>
             </Col>
             <Col span={8}>
-              <Form.Item name="inspection_types" label="检验类型">
-                <Select
-                  mode="multiple"
-                  placeholder="请选择检验类型（可多选）"
-                  allowClear
-                  options={inspectionTypeOptions}
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={14}>
               <Form.Item name="sample_rule" label="抽样方式">
                 <Input placeholder="如 AQL 0.65、每批5个等" />
               </Form.Item>
             </Col>
-            <Col span={10}>
+          </Row>
+          <Row gutter={12}>
+            <Col span={24}>
+              <Form.Item name="inspection_types" label="检验类型" rules={[{ required: true, message: '请选择检验类型' }]}>
+                <Checkbox.Group options={inspectionTypeOptions} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={24}>
               <Form.Item name="method" label="检验方法">
-                <Input placeholder="如 游标卡尺测量、拉力试验机等" />
+                <Input.TextArea placeholder="如 游标卡尺测量、拉力试验机等" autoSize={{ minRows: 2, maxRows: 4 }} />
               </Form.Item>
             </Col>
           </Row>
