@@ -11,7 +11,6 @@ const InspectionStandard = sequelize.define('InspectionStandard', {
   standard_no: {
     type: DataTypes.STRING(50),
     allowNull: false,
-    unique: true,
     comment: '标准编号',
   },
   standard_name: {
@@ -69,7 +68,7 @@ const InspectionStandard = sequelize.define('InspectionStandard', {
   timestamps: true,
   underscored: true,
   indexes: [
-    { fields: ['standard_no'], unique: true },
+    { fields: ['standard_no', 'version_no'], unique: true, name: 'uk_standard_no_version' },
     { fields: ['inspection_type'] },
     { fields: ['standard_type'] },
     { fields: ['status'] },
