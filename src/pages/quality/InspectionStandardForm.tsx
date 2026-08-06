@@ -46,8 +46,10 @@ export default function InspectionStandardForm() {
   const [itemEditing, setItemEditing] = useState<any>(null)
   const [materials, setMaterials] = useState<any[]>([])
   const [isGeneratingNo, setIsGeneratingNo] = useState(false)
+  const [effectiveDate, setEffectiveDate] = useState<string>('')
   const message = useMessage()
   const generatingRef = useRef(false)
+  const readOnly = isEdit && currentStatus !== '开立'
 
   const formStandardType = Form.useWatch('standard_type', form)
 
@@ -104,6 +106,7 @@ export default function InspectionStandardForm() {
           status: detail.status,
           description: detail.description,
         })
+        setEffectiveDate(detail.effective_date ? String(detail.effective_date).replace('T', ' ').replace(/\.\d+Z?$/, '').slice(0, 19) : '')
         setCurrentItems(detail.items ? detail.items.map((it: any) => ({
           ...it,
           inspection_types: it.inspection_types ? it.inspection_types.split(',').filter(Boolean) : [],
@@ -170,8 +173,12 @@ export default function InspectionStandardForm() {
       setAuditing(true)
       await api.put(`/basic/standards/${id}`, { status: '生效' })
       message.success('审核通过，标准已生效')
+      // 重新加载详情，获取后端自动设置的生效日期
+      const res = await api.get(`/basic/standards/${id}`)
+      const detail = res.data || {}
+      form.setFieldsValue({ status: detail.status || '生效' })
+      setEffectiveDate(detail.effective_date ? String(detail.effective_date).replace('T', ' ').replace(/\.\d+Z?$/, '').slice(0, 19) : '')
       setCurrentStatus('生效')
-      form.setFieldsValue({ status: '生效' })
     } catch (e: any) {
       message.error(e?.message || '审核失败')
     } finally {
@@ -254,7 +261,7 @@ export default function InspectionStandardForm() {
     { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 180 },
     {
       title: '操作', key: 'action', fixed: 'right', width: 120,
-      render: (_: any, record: any) => (
+      render: (_: any, record: any) => readOnly ? '-' : (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleEditItem(record)}>编辑</Button>
           <Button type="link" size="small" danger onClick={() => handleDeleteItem(record)}>删除</Button>
@@ -289,8 +296,9 @@ export default function InspectionStandardForm() {
                 <Button type="primary" icon={<CheckCircleOutlined />} loading={auditing}>审核</Button>
               </Popconfirm>
             )}
-            <Button onClick={() => navigate('/quality/standards')}>取消</Button>
-            <Button type="primary" icon={<SaveOutlined />} loading={saving || isGeneratingNo} onClick={handleSubmit}>保存</Button>
+            {!readOnly && <Button onClick={() => navigate('/quality/standards')}>取消</Button>}
+            {!readOnly && <Button type="primary" icon={<SaveOutlined />} loading={saving || isGeneratingNo} onClick={handleSubmit}>保存</Button>}
+            {readOnly && <Button onClick={() => navigate('/quality/standards')}>返回</Button>}
           </Space>
         }
       >
@@ -340,11 +348,16 @@ export default function InspectionStandardForm() {
                 <Select placeholder="请选择状态" options={[{ label: '开立', value: '开立' }, { label: '生效', value: '生效' }, { label: '失效', value: '失效' }]} disabled size="small" style={{ width: 84 }} />
               </Form.Item>
             </Col>
+            <Col flex="none" style={{ padding: '0 2px', width: 220 }}>
+              <Form.Item label="生效日期">
+                <Input value={effectiveDate || '—'} disabled size="small" style={{ width: 160 }} />
+              </Form.Item>
+            </Col>
           </Row>
           <Row wrap={false} style={{ display: 'flex', flexWrap: 'nowrap', marginLeft: -2, marginRight: -2 }} className="standard-header-form">
             <Col flex="none" style={{ padding: '0 2px', width: 500 }}>
               <Form.Item name="standard_name" label="标准名称" rules={[{ required: true, message: '请输入标准名称' }]}>
-                <Input placeholder="请输入标准名称" size="small" style={{ width: 420 }} />
+                <Input placeholder="请输入标准名称" size="small" style={{ width: 420 }} disabled={readOnly} />
               </Form.Item>
             </Col>
           </Row>
@@ -357,6 +370,7 @@ export default function InspectionStandardForm() {
                   allowClear
                   size="small"
                   style={{ width: 420 }}
+                  disabled={readOnly}
                   filterOption={(input, option) =>
                     (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
                   }
@@ -367,7 +381,7 @@ export default function InspectionStandardForm() {
             </Col>
             <Col flex="auto" style={{ padding: '0 2px', minWidth: 0 }}>
               <Form.Item name="description" label="描述">
-                <Input placeholder="请输入描述" size="small" style={{ width: '100%' }} />
+                <Input placeholder="请输入描述" size="small" style={{ width: '100%' }} disabled={readOnly} />
               </Form.Item>
             </Col>
           </Row>
@@ -376,7 +390,7 @@ export default function InspectionStandardForm() {
         <div style={{ marginTop: 8 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <Typography.Title level={5} style={{ margin: 0 }}>检验项目列表</Typography.Title>
-            <Button type="primary" size="small" icon={<PlusOutlined />} onClick={handleAddItem}>新增项目</Button>
+            {!readOnly && <Button type="primary" size="small" icon={<PlusOutlined />} onClick={handleAddItem}>新增项目</Button>}
           </div>
           <div style={{ maxHeight: 400, overflowY: 'auto', border: '1px solid #f0f0f0', borderRadius: 4 }}>
             <ResizableTable

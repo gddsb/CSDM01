@@ -2,6 +2,7 @@ import { Op } from 'sequelize'
 import { InspectionStandard, InspectionStandardItem, Material } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { logger } from '../utils/logger.js'
+import { nowBeijingDate, formatDateTime, parseDateTime } from '../utils/date.js'
 
 const TYPE_PREFIX: Record<string, string> = { '首件': 'SJ', '制程': 'ZC', '成品': 'CP', '来料': 'LL', '其它': 'QT' }
 const STANDARD_TYPE_PREFIX: Record<string, string> = { '通用标准': 'TY', '专用标准': 'ZY', '临时标准': 'LS' }
@@ -131,16 +132,29 @@ export const update = async (req: any, res: any) => {
       if (exists) return fail(res, '标准编号已存在')
     }
     const { standard_no, standard_name, standard_type, customer_code, material_id, material_name, version_no, effective_date, status, description, items } = req.body
+
+    // 审核生效时自动设置生效日期
+    const targetStatus = status || record.status
+    let finalEffectiveDate = record.effective_date
+    if (effective_date !== undefined) {
+      finalEffectiveDate = effective_date ? (parseDateTime(effective_date) || nowBeijingDate()) : null
+    }
+    if (targetStatus === '生效' && !finalEffectiveDate) {
+      finalEffectiveDate = nowBeijingDate()
+    }
+
     await record.update({
-      standard_no, standard_name, standard_type,
+      standard_no: standard_no !== undefined ? standard_no : record.standard_no,
+      standard_name: standard_name !== undefined ? standard_name : record.standard_name,
+      standard_type: standard_type !== undefined ? standard_type : record.standard_type,
       inspection_type: '',
-      customer_code: customer_code || null,
-      material_id: material_id || null,
-      material_name: material_name || null,
-      version_no: version_no || 'V1',
-      effective_date: effective_date || null,
-      status: status || '开立',
-      description: description || null,
+      customer_code: customer_code !== undefined ? (customer_code || null) : record.customer_code,
+      material_id: material_id !== undefined ? (material_id || null) : record.material_id,
+      material_name: material_name !== undefined ? (material_name || null) : record.material_name,
+      version_no: version_no !== undefined ? version_no : record.version_no,
+      effective_date: finalEffectiveDate,
+      status: status !== undefined ? status : record.status,
+      description: description !== undefined ? description : record.description,
     })
     if (items && Array.isArray(items)) {
       await InspectionStandardItem.destroy({ where: { standard_id: id } })
