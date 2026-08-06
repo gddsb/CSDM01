@@ -151,7 +151,8 @@ export const update = async (req: any, res: any) => {
       customer_code: customer_code !== undefined ? (customer_code || null) : record.customer_code,
       material_id: material_id !== undefined ? (material_id || null) : record.material_id,
       material_name: material_name !== undefined ? (material_name || null) : record.material_name,
-      version_no: version_no !== undefined ? version_no : record.version_no,
+      // 版本号不允许通过编辑接口手动修改，只能通过复制/改版功能自动生成
+      version_no: record.version_no,
       effective_date: finalEffectiveDate,
       status: status !== undefined ? status : record.status,
       description: description !== undefined ? description : record.description,
