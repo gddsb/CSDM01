@@ -7,7 +7,7 @@ import { PlusOutlined, ArrowLeftOutlined, SaveOutlined, CheckCircleOutlined } fr
 import api from '../../utils/api'
 import { formatDateTime } from '../../utils'
 
-const categoryColor: Record<string, string> = { '外观': 'blue', '理化': 'purple', '尺寸': 'cyan', '性能': 'orange', '微生物': 'green', '环境': 'geekblue' }
+const categoryColor: Record<string, string> = { '感官要求': 'blue', '尺寸要求': 'cyan', '理化性能要求': 'purple', '微生物检测要求': 'green', '环境检测要求': 'geekblue', '其它要求': 'default' }
 
 const inspectionTypeOptions = [
   { label: '首件', value: '首件' },
@@ -24,12 +24,12 @@ const standardTypeOptions = [
 ]
 
 const categoryOptions = [
-  { label: '外观', value: '外观' },
-  { label: '尺寸', value: '尺寸' },
-  { label: '性能', value: '性能' },
-  { label: '理化', value: '理化' },
-  { label: '微生物', value: '微生物' },
-  { label: '环境', value: '环境' },
+  { label: '感官要求', value: '感官要求' },
+  { label: '尺寸要求', value: '尺寸要求' },
+  { label: '理化性能要求', value: '理化性能要求' },
+  { label: '微生物检测要求', value: '微生物检测要求' },
+  { label: '环境检测要求', value: '环境检测要求' },
+  { label: '其它要求', value: '其它要求' },
 ]
 
 export default function InspectionStandardForm() {
@@ -192,7 +192,7 @@ export default function InspectionStandardForm() {
     setItemEditing(null)
     itemForm.resetFields()
     itemForm.setFieldsValue({
-      category: '外观',
+      category: '感官要求',
       defect_level: 'B类严重缺陷',
       inspection_types: [],
     })

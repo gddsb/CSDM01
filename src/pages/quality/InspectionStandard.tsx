@@ -12,7 +12,7 @@ import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPa
 import api from '../../utils/api'
 import { formatDate } from '../../utils'
 
-const categoryColor: Record<string, string> = { '外观': 'blue', '理化': 'purple', '尺寸': 'cyan', '性能': 'orange', '微生物': 'green', '环境': 'geekblue' }
+const categoryColor: Record<string, string> = { '感官要求': 'blue', '尺寸要求': 'cyan', '理化性能要求': 'purple', '微生物检测要求': 'green', '环境检测要求': 'geekblue', '其它要求': 'default' }
 
 const inspectionTypeOptions = [
   { label: '首件', value: '首件' },
