@@ -241,7 +241,7 @@ export default function InspectionStandardForm() {
       title: '项目大类', dataIndex: 'category', key: 'category', width: 100,
       render: (v: string) => <span style={{ color: categoryColor[v] || '#999' }}>{v}</span>
     },
-    { title: '检验项目', dataIndex: 'item_name', key: 'item_name', width: 160 },
+    { title: '检验项目', dataIndex: 'item_name', key: 'item_name', width: 160, render: (v: string) => <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{v}</span> },
     {
       title: '检验类型', dataIndex: 'inspection_types', key: 'inspection_types', width: 220,
       render: (v: string[] | string) => {
@@ -250,7 +250,7 @@ export default function InspectionStandardForm() {
         return <Space wrap size={4}>{types.map(t => <Tag key={t}>{t}</Tag>)}</Space>
       }
     },
-    { title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 220 },
+    { title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 220, render: (v: string) => <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{v}</span> },
     { title: '单位', dataIndex: 'unit', key: 'unit', width: 80 },
     {
       title: '缺陷等级', dataIndex: 'defect_level', key: 'defect_level', width: 130,
@@ -259,8 +259,8 @@ export default function InspectionStandardForm() {
         return v ? <Tag color={colorMap[v] || 'default'}>{v}</Tag> : '-'
       }
     },
-    { title: '检验方法', dataIndex: 'method', key: 'method', width: 180 },
-    { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 180 },
+    { title: '检验方法', dataIndex: 'method', key: 'method', width: 180, render: (v: string) => <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{v}</span> },
+    { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 180, render: (v: string) => <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{v}</span> },
     {
       title: '操作', key: 'action', fixed: 'right', width: 120,
       render: (_: any, record: any) => readOnly ? '-' : (
@@ -446,17 +446,17 @@ export default function InspectionStandardForm() {
             </Col>
           </Row>
           <Row gutter={12}>
-            <Col span={10}>
-              <Form.Item name="standard_value" label="检验要求" rules={[{ required: true, message: '请输入检验要求' }]}>
-                <Input placeholder="如 90.0±0.3、≥200 等" />
+            <Col span={12}>
+              <Form.Item name="inspection_types" label="检验类型" rules={[{ required: true, message: '请选择检验类型' }]}>
+                <Checkbox.Group options={inspectionTypeOptions} />
               </Form.Item>
             </Col>
-            <Col span={6}>
+            <Col span={5}>
               <Form.Item name="unit" label="单位">
                 <Input placeholder="如 mm、N、%等" />
               </Form.Item>
             </Col>
-            <Col span={8}>
+            <Col span={7}>
               <Form.Item name="sample_rule" label="抽样方式">
                 <Input placeholder="如 AQL 0.65、每批5个等" />
               </Form.Item>
@@ -464,8 +464,8 @@ export default function InspectionStandardForm() {
           </Row>
           <Row gutter={12}>
             <Col span={24}>
-              <Form.Item name="inspection_types" label="检验类型" rules={[{ required: true, message: '请选择检验类型' }]}>
-                <Checkbox.Group options={inspectionTypeOptions} />
+              <Form.Item name="standard_value" label="检验要求" rules={[{ required: true, message: '请输入检验要求' }]}>
+                <Input.TextArea placeholder="如 90.0±0.3、≥200 等" autoSize={{ minRows: 2, maxRows: 4 }} />
               </Form.Item>
             </Col>
           </Row>

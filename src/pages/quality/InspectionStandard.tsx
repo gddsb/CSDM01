@@ -159,7 +159,7 @@ export default function InspectionStandard() {
       title: '项目大类', dataIndex: 'category', key: 'category', width: 100,
       render: (v: string) => <Tag color={categoryColor[v] || 'default'}>{v}</Tag>
     },
-    { title: '检验项目', dataIndex: 'item_name', key: 'item_name', width: 160 },
+    { title: '检验项目', dataIndex: 'item_name', key: 'item_name', width: 160, render: (v: string) => <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{v}</span> },
     {
       title: '检验类型', dataIndex: 'inspection_types', key: 'inspection_types', width: 220,
       render: (v: string) => {
@@ -168,7 +168,7 @@ export default function InspectionStandard() {
         return <Space wrap size={4}>{types.map(t => <Tag key={t} color={typeColorMap[t] || 'default'}>{t}</Tag>)}</Space>
       }
     },
-    { title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 220 },
+    { title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 220, render: (v: string) => <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{v}</span> },
     { title: '单位', dataIndex: 'unit', key: 'unit', width: 80 },
     {
       title: '缺陷等级', dataIndex: 'defect_level', key: 'defect_level', width: 130,
@@ -177,8 +177,8 @@ export default function InspectionStandard() {
         return v ? <Tag color={colorMap[v] || 'default'}>{v}</Tag> : '-'
       }
     },
-    { title: '检验方法', dataIndex: 'method', key: 'method', width: 180 },
-    { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 180 },
+    { title: '检验方法', dataIndex: 'method', key: 'method', width: 180, render: (v: string) => <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{v}</span> },
+    { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 180, render: (v: string) => <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{v}</span> },
   ]
 
   return (
