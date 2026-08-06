@@ -5,6 +5,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useMessage } from '../../contexts/AppContext'
 import { PlusOutlined, ArrowLeftOutlined, SaveOutlined, CheckCircleOutlined } from '@ant-design/icons'
 import api from '../../utils/api'
+import { formatDateTime } from '../../utils'
 
 const categoryColor: Record<string, string> = { '外观': 'blue', '理化': 'purple', '尺寸': 'cyan', '性能': 'orange', '微生物': 'green', '环境': 'geekblue' }
 
@@ -106,7 +107,7 @@ export default function InspectionStandardForm() {
           status: detail.status,
           description: detail.description,
         })
-        setEffectiveDate(detail.effective_date ? String(detail.effective_date).replace('T', ' ').replace(/\.\d+Z?$/, '').slice(0, 19) : '')
+        setEffectiveDate(detail.effective_date ? formatDateTime(detail.effective_date) : '')
         setCurrentItems(detail.items ? detail.items.map((it: any) => ({
           ...it,
           inspection_types: it.inspection_types ? it.inspection_types.split(',').filter(Boolean) : [],
@@ -177,7 +178,7 @@ export default function InspectionStandardForm() {
       const res = await api.get(`/basic/standards/${id}`)
       const detail = res.data || {}
       form.setFieldsValue({ status: detail.status || '生效' })
-      setEffectiveDate(detail.effective_date ? String(detail.effective_date).replace('T', ' ').replace(/\.\d+Z?$/, '').slice(0, 19) : '')
+      setEffectiveDate(detail.effective_date ? formatDateTime(detail.effective_date) : '')
       setCurrentStatus('生效')
     } catch (e: any) {
       message.error(e?.message || '审核失败')
