@@ -21,7 +21,8 @@ const InspectionStandard = sequelize.define('InspectionStandard', {
   },
   inspection_type: {
     type: DataTypes.STRING(20),
-    allowNull: true,
+    allowNull: false,
+    defaultValue: '',
     comment: '检验类型：首件/制程/成品/其它（已废弃，移至子表 inspection_types）',
   },
   standard_type: {
