@@ -196,6 +196,9 @@ const defaultPermissions = [
   { parent_id: 0, parent_code: 'device:list', perm_name: '新增设备', perm_code: 'device:list:create', type: 'button', sort_order: 1 },
   { parent_id: 0, parent_code: 'device:list', perm_name: '编辑设备', perm_code: 'device:list:update', type: 'button', sort_order: 2 },
   { parent_id: 0, parent_code: 'device:list', perm_name: '删除设备', perm_code: 'device:list:delete', type: 'button', sort_order: 3 },
+  // 质量管理 - 检验标准
+  { parent_id: 0, parent_code: 'quality:standard', perm_name: '复制标准', perm_code: 'quality:standard:copy', type: 'button', icon: 'CopyOutlined', sort_order: 1 },
+  { parent_id: 0, parent_code: 'quality:standard', perm_name: '改版标准', perm_code: 'quality:standard:revise', type: 'button', icon: 'BranchesOutlined', sort_order: 2 },
 ]
 
 export const initDefaultPermissions = async () => {

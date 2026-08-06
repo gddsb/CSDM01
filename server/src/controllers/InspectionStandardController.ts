@@ -195,6 +195,128 @@ export const remove = async (req: any, res: any) => {
   }
 }
 
+// 复制：生成新的标准号，状态为开立
+export const copy = async (req: any, res: any) => {
+  try {
+    const { id } = req.params
+    const record = await InspectionStandard.findOne({
+      where: { standard_id: id },
+      include: [{ model: InspectionStandardItem, as: 'items', order: [['sort_order', 'ASC'], ['item_id', 'ASC']] }],
+    })
+    if (!record) return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)
+
+    // 生成新标准号
+    const year = new Date().getFullYear()
+    const prefix = `BZ-${STANDARD_TYPE_PREFIX[record.standard_type] || 'TY'}-${year}-`
+    const lastRecord = await InspectionStandard.findOne({
+      where: { standard_no: { [Op.like]: `${prefix}%` } },
+      order: [['standard_no', 'DESC']],
+    })
+    let seq = 1
+    if (lastRecord) {
+      const match = lastRecord.standard_no.match(/-(\d{3})$/)
+      if (match) seq = parseInt(match[1], 10) + 1
+    }
+    const newStandardNo = `${prefix}${String(seq).padStart(3, '0')}`
+
+    const newRecord = await InspectionStandard.create({
+      standard_no: newStandardNo,
+      standard_name: record.standard_name,
+      standard_type: record.standard_type,
+      inspection_type: '',
+      customer_code: record.customer_code,
+      material_id: record.material_id,
+      material_name: record.material_name,
+      version_no: 'V1',
+      effective_date: null,
+      status: '开立',
+      created_by: req.user?.userId || null,
+      description: record.description,
+    })
+
+    const items = (record as any).items || []
+    if (items.length > 0) {
+      const itemRecords = items.map((it: any) => ({
+        standard_id: newRecord.standard_id,
+        item_name: it.item_name,
+        category: it.category || null,
+        method: it.method || null,
+        sample_rule: it.sample_rule || null,
+        standard_value: it.standard_value,
+        unit: it.unit || null,
+        defect_level: it.defect_level || null,
+        sort_order: it.sort_order || 0,
+        inspection_types: it.inspection_types || null,
+      }))
+      await InspectionStandardItem.bulkCreate(itemRecords)
+    }
+    success(res, newRecord, '复制成功')
+  } catch (err: any) {
+    logger.error('[InspectionStandard] copy error:', err)
+    fail(res, err.message || '复制失败', ErrorCode.SYSTEM_ERROR)
+  }
+}
+
+// 改版：标准号不变，版本号+1，状态为开立
+export const revise = async (req: any, res: any) => {
+  try {
+    const { id } = req.params
+    const record = await InspectionStandard.findOne({
+      where: { standard_id: id },
+      include: [{ model: InspectionStandardItem, as: 'items', order: [['sort_order', 'ASC'], ['item_id', 'ASC']] }],
+    })
+    if (!record) return fail(res, '记录不存在', ErrorCode.RECORD_NOT_FOUND)
+
+    // 查找同标准号的最新版本号
+    const allVersions = await InspectionStandard.findAll({
+      where: { standard_no: record.standard_no },
+      order: [['version_no', 'DESC']],
+    })
+    let maxVersion = 0
+    allVersions.forEach((r: any) => {
+      const match = String(r.version_no || '').match(/^V(\d+)$/i)
+      if (match) maxVersion = Math.max(maxVersion, parseInt(match[1], 10))
+    })
+    const newVersionNo = `V${maxVersion + 1}`
+
+    const newRecord = await InspectionStandard.create({
+      standard_no: record.standard_no,
+      standard_name: record.standard_name,
+      standard_type: record.standard_type,
+      inspection_type: '',
+      customer_code: record.customer_code,
+      material_id: record.material_id,
+      material_name: record.material_name,
+      version_no: newVersionNo,
+      effective_date: null,
+      status: '开立',
+      created_by: req.user?.userId || null,
+      description: record.description,
+    })
+
+    const items = (record as any).items || []
+    if (items.length > 0) {
+      const itemRecords = items.map((it: any) => ({
+        standard_id: newRecord.standard_id,
+        item_name: it.item_name,
+        category: it.category || null,
+        method: it.method || null,
+        sample_rule: it.sample_rule || null,
+        standard_value: it.standard_value,
+        unit: it.unit || null,
+        defect_level: it.defect_level || null,
+        sort_order: it.sort_order || 0,
+        inspection_types: it.inspection_types || null,
+      }))
+      await InspectionStandardItem.bulkCreate(itemRecords)
+    }
+    success(res, newRecord, '改版成功')
+  } catch (err: any) {
+    logger.error('[InspectionStandard] revise error:', err)
+    fail(res, err.message || '改版失败', ErrorCode.SYSTEM_ERROR)
+  }
+}
+
 export const listItems = async (req: any, res: any) => {
   try {
     const { standardId } = req.params
@@ -209,4 +331,4 @@ export const listItems = async (req: any, res: any) => {
   }
 }
 
-export default { list, detail, create, update, remove, listItems, generateNo }
+export default { list, detail, create, update, remove, listItems, generateNo, copy, revise }

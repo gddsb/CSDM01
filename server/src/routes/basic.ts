@@ -191,6 +191,8 @@ router.get('/standards/:id', InspectionStandardController.detail)
 router.post('/standards', logOperation('检验标准'), InspectionStandardController.create)
 router.put('/standards/:id', logOperation('检验标准'), InspectionStandardController.update)
 router.delete('/standards/:id', logOperation('检验标准'), InspectionStandardController.remove)
+router.post('/standards/:id/copy', logOperation('检验标准'), InspectionStandardController.copy)
+router.post('/standards/:id/revise', logOperation('检验标准'), InspectionStandardController.revise)
 router.get('/standards/:standardId/items', InspectionStandardController.listItems)
 
 // 微生物检验

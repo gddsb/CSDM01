@@ -2,10 +2,11 @@ import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback } from 'react'
 import { Tag, Button, Space, Input, Select, Row, Col, Drawer, Descriptions, Popconfirm } from 'antd'
 import { useNavigate } from 'react-router-dom'
-import { useMessage } from '../../contexts/AppContext'
+import { useMessage, useApp } from '../../contexts/AppContext'
 import {
   FileProtectOutlined, AppstoreOutlined, SolutionOutlined,
-  CheckCircleOutlined, SearchOutlined, PlusOutlined, ReloadOutlined
+  CheckCircleOutlined, SearchOutlined, PlusOutlined, ReloadOutlined,
+  CopyOutlined, BranchesOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
@@ -40,6 +41,7 @@ const typeColorMap: Record<string, string> = {
 
 export default function InspectionStandard() {
   const navigate = useNavigate()
+  const { hasPermission } = useApp()
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [pagination, setPagination] = useState({ current: 1, pageSize: 20, total: 0 })
@@ -117,6 +119,34 @@ export default function InspectionStandard() {
     }
   }
 
+  const handleCopy = async (record: any) => {
+    try {
+      const res = await api.post(`/basic/standards/${record.standard_id}/copy`)
+      if (res.success !== false) {
+        message.success('复制成功，已生成新标准：' + (res.data?.standard_no || ''))
+        fetchData()
+      } else {
+        message.error(res.message || '复制失败')
+      }
+    } catch (e: any) {
+      message.error(e?.message || '复制失败')
+    }
+  }
+
+  const handleRevise = async (record: any) => {
+    try {
+      const res = await api.post(`/basic/standards/${record.standard_id}/revise`)
+      if (res.success !== false) {
+        message.success('改版成功，新版本：' + (res.data?.version_no || ''))
+        fetchData()
+      } else {
+        message.error(res.message || '改版失败')
+      }
+    } catch (e: any) {
+      message.error(e?.message || '改版失败')
+    }
+  }
+
   const columns = [
     { title: '标准号', dataIndex: 'standard_no', key: 'standard_no', width: 160 },
     {
@@ -137,9 +167,9 @@ export default function InspectionStandard() {
       }
     },
     {
-      title: '操作', key: 'action', fixed: 'right',
+      title: '操作', key: 'action', fixed: 'right', width: 220,
       render: (_: any, record: any) => (
-        <Space size="small">
+        <Space size="small" wrap>
           <Button type="link" size="small" onClick={() => handleView(record)}>查看</Button>
           {record.status === '开立' && (
             <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
@@ -147,6 +177,16 @@ export default function InspectionStandard() {
           {record.status === '开立' && (
             <Popconfirm title="确认删除？删除后不可恢复" onConfirm={() => handleDelete(record)} okText="确认" cancelText="取消">
               <Button type="link" size="small" danger>删除</Button>
+            </Popconfirm>
+          )}
+          {record.status === '生效' && hasPermission('quality:standard:copy') && (
+            <Popconfirm title="确认复制？将生成一份新的检验标准（新标准号，状态为开立）" onConfirm={() => handleCopy(record)} okText="确认" cancelText="取消">
+              <Button type="link" size="small" icon={<CopyOutlined />}>复制</Button>
+            </Popconfirm>
+          )}
+          {record.status === '生效' && hasPermission('quality:standard:revise') && (
+            <Popconfirm title="确认改版？将生成新版本（标准号不变，版本号+1，状态为开立）" onConfirm={() => handleRevise(record)} okText="确认" cancelText="取消">
+              <Button type="link" size="small" icon={<BranchesOutlined />}>改版</Button>
             </Popconfirm>
           )}
         </Space>
@@ -292,6 +332,22 @@ export default function InspectionStandard() {
               pagination={false}
               scroll={{ x: 1400 }}
             />
+            {current.status === '生效' && (hasPermission('quality:standard:copy') || hasPermission('quality:standard:revise')) && (
+              <div style={{ marginTop: 16, textAlign: 'right' }}>
+                <Space>
+                  {hasPermission('quality:standard:copy') && (
+                    <Popconfirm title="确认复制？将生成一份新的检验标准（新标准号，状态为开立）" onConfirm={() => handleCopy(current)} okText="确认" cancelText="取消">
+                      <Button icon={<CopyOutlined />}>复制</Button>
+                    </Popconfirm>
+                  )}
+                  {hasPermission('quality:standard:revise') && (
+                    <Popconfirm title="确认改版？将生成新版本（标准号不变，版本号+1，状态为开立）" onConfirm={() => handleRevise(current)} okText="确认" cancelText="取消">
+                      <Button type="primary" icon={<BranchesOutlined />}>改版</Button>
+                    </Popconfirm>
+                  )}
+                </Space>
+              </div>
+            )}
           </>
         )}
       </Drawer>

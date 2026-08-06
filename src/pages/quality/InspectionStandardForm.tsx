@@ -342,7 +342,7 @@ export default function InspectionStandardForm() {
             </Col>
             <Col flex="none" style={{ padding: '0 2px', width: 140 }}>
               <Form.Item name="version_no" label="版本号" rules={[{ required: true, message: '请输入版本号' }]}>
-                <Input disabled={!isEdit} placeholder="V1" size="small" style={{ width: 60 }} />
+                <Input disabled size="small" style={{ width: 60 }} />
               </Form.Item>
             </Col>
             <Col flex="none" style={{ padding: '0 2px', width: 160 }}>
