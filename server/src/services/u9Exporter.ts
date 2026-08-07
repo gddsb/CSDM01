@@ -207,6 +207,17 @@ export async function exportItems(taskId?: string, onProgress?: ProgressCallback
 
   await report(`抓取完成，共 ${allRows.length} 条；写入数据库...`, 92);
 
+  // ===== 临时调试：打印前3行原始列数据（带索引），供用户确认列映射 =====
+  console.log('========== task_item 原始采集列数据（前3行）==========');
+  allRows.slice(0, 3).forEach((r, idx) => {
+    console.log(`--- 第 ${idx + 1} 行 (共 ${r.length} 列) ---`);
+    r.forEach((val, i) => {
+      if (i < 30) console.log(`  r[${i}] = ${JSON.stringify(val)}`);
+    });
+  });
+  console.log('========== 原始采集列数据结束 ==========');
+  // ===== 临时调试结束 =====
+
   if (U9Item && allRows.length > 0) {
     const records = allRows.map((r) => ({
       task_id: taskId || '',
@@ -361,6 +372,17 @@ export async function exportProductionOrders(taskId?: string, onProgress?: Progr
   }
 
   await report(`抓取+去重后 ${uniq.length} 条，写入数据库...`, 92);
+
+  // ===== 临时调试：打印前3行原始列数据（带索引），供用户确认列映射 =====
+  console.log('========== task_production_order 原始采集列数据（前3行）==========');
+  uniq.slice(0, 3).forEach((r, idx) => {
+    console.log(`--- 第 ${idx + 1} 行 (共 ${r.length} 列) ---`);
+    r.forEach((val, i) => {
+      if (i < 25) console.log(`  r[${i}] = ${JSON.stringify(val)}`);
+    });
+  });
+  console.log('========== 原始采集列数据结束 ==========');
+  // ===== 临时调试结束 =====
 
   if (U9ProductionOrder && uniq.length > 0) {
     const records = uniq.map((r) => ({
