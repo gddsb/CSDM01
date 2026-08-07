@@ -12,6 +12,7 @@ import { encryptParamsObj, decryptParamsObj } from '../utils/crypto.js'
 import { fetchU9Orgs, DEFAULT_U9_CONFIG } from '../services/u9Service.js'
 import { calcNextRunAt } from '../services/taskScheduler.js'
 import { executeRealTask } from '../services/taskExecutor.js'
+import { syncItemsToBasMaterial, syncProductionOrdersToOrder } from '../services/u9Exporter.js'
 import { formatDateTime, formatDate, nowBeijingStr, nowBeijingDateStr, nowBeijingDate } from '../utils/date.js'
 
 // 露点温度计算（考虑大气压的增强版 Magnus 公式）
@@ -494,6 +495,28 @@ export const handleAlarm = async (req, res) => {
   } catch (err) {
     console.error('处理报警失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
+  }
+}
+
+// ============ 采集数据 → 业务主数据迁移 ============
+// 将 task_item 同步到 bas_material、task_production_order 同步到 production_order
+export const syncToMasterData = async (req, res) => {
+  try {
+    const { type } = req.query // type: items | production_orders | all（默认 all）
+    const syncType = type || 'all'
+    const result: any = {}
+
+    if (syncType === 'items' || syncType === 'all') {
+      result.items = await syncItemsToBasMaterial()
+    }
+    if (syncType === 'production_orders' || syncType === 'all') {
+      result.production_orders = await syncProductionOrdersToOrder()
+    }
+
+    return success(res, result, '同步完成')
+  } catch (err) {
+    console.error('同步采集数据到主数据失败:', err)
+    return fail(res, err.message || '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 

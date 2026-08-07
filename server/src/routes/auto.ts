@@ -5,6 +5,7 @@ import {
   listSyncTasks, getSyncTask, deleteSyncTask,
   listScheduledTasks, createScheduledTask, updateScheduledTask, deleteScheduledTask, triggerScheduledTask,
   listArchiveData, handleAlarm,
+  syncToMasterData,
   dashboardOverview,
   dashboardTrend,
   productionDashboard,
@@ -44,6 +45,9 @@ router.delete('/scheduled-tasks/:id', logOperation('定时任务'), deleteSchedu
 // 档案数据浏览
 router.get('/archive/:type', listArchiveData)
 router.put('/env-alarm/:id/handle', logOperation('环境报警处理'), handleAlarm)
+
+// 采集数据 → 业务主数据迁移（task_item→bas_material、task_production_order→production_order）
+router.post('/sync-master', logOperation('采集数据同步主数据'), syncToMasterData)
 
 // 环境监测仪表盘
 router.get('/dashboard/overview', dashboardOverview)
