@@ -34,11 +34,12 @@ export const generateNo = async (req: any, res: any) => {
 
 export const list = async (req: any, res: any) => {
   try {
-    const { page = 1, page_size = 20, status, keyword } = req.query
+    const { page = 1, page_size = 20, status, keyword, standard_no } = req.query
     const pageNum = parseInt(page, 10)
     const pageSize = Math.min(parseInt(page_size, 10), MAX_PAGE_SIZE)
     const where: any = {}
     if (status) where.status = status
+    if (standard_no) where.standard_no = standard_no
     if (keyword) {
       where[Op.or] = [
         { standard_no: { [Op.like]: `%${keyword}%` } },

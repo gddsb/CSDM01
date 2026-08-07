@@ -207,53 +207,41 @@ export async function exportItems(taskId?: string, onProgress?: ProgressCallback
 
   await report(`抓取完成，共 ${allRows.length} 条；写入数据库...`, 92);
 
-  // ===== 临时调试：打印前3行原始列数据（带索引），供用户确认列映射 =====
-  console.log('========== task_item 原始采集列数据（前3行）==========');
-  allRows.slice(0, 3).forEach((r, idx) => {
-    console.log(`--- 第 ${idx + 1} 行 (共 ${r.length} 列) ---`);
-    r.forEach((val, i) => {
-      if (i < 30) console.log(`  r[${i}] = ${JSON.stringify(val)}`);
-    });
-  });
-  console.log('========== 原始采集列数据结束 ==========');
-  // ===== 临时调试结束 =====
-
   if (U9Item && allRows.length > 0) {
     const records = allRows.map((r) => ({
       task_id: taskId || '',
-      // U9 HTML 实际列数: 24列 (r[0]~r[23])；version_no、expiry_date U9 页面无对应列，留空
+      // U9 HTML 实际25列 (r[0]~r[24])，按范例字段顺序一一对应
       main_category_code: r[0] || '',
-      category_name: r[1] || '',
+      material_code: r[1] || '',
       material_name: r[2] || '',
       specification: r[3] || '',
       unit_name: r[4] || '',
-      material_code: r[5] || '',
-      film_no: r[6] || '',
+      film_no: r[5] || '',
+      version_no: r[6] || '',
       barcode: r[7] || '',
       cutting_size: r[8] || '',
-      color_separation: r[9] || '',
-      printing_process: r[10] || '',
-      material_thickness: r[11] || '',
-      material_width: r[12] || '',
-      material_height: r[13] || '',
-      scrap_weight: r[14] || '',
-      unit_weight: r[15] || '',
-      unit_volume: r[16] || '',
-      weight_unit: r[17] || '',
-      volume_unit: r[18] || '',
-      inventory_category: r[19] || '',
-      unit_code: r[20] || '',
-      blanking_diameter: r[21] || '',
+      printing_process: r[9] || '',
+      color_separation: r[10] || '',
+      blanking_diameter: r[11] || '',
+      material_thickness: r[12] || '',
+      material_width: r[13] || '',
+      material_height: r[14] || '',
+      scrap_weight: r[15] || '',
+      unit_weight: r[16] || '',
+      unit_volume: r[17] || '',
+      weight_unit: r[18] || '',
+      volume_unit: r[19] || '',
+      inventory_category: r[20] || '',
+      unit_code: r[21] || '',
       is_active: r[22] === 'true' ? 1 : 0,
       effective_date: r[23] || '',
-      version_no: '',
-      expiry_date: '',
+      expiry_date: r[24] || '',
     }));
     try {
       await U9Item.bulkCreate(records as any, {
-        updateOnDuplicate: ['task_id', 'main_category_code', 'category_name', 'material_name', 'specification',
-          'unit_name', 'material_code', 'film_no', 'version_no', 'barcode', 'cutting_size',
-          'color_separation', 'printing_process', 'blanking_diameter',
+        updateOnDuplicate: ['task_id', 'main_category_code', 'material_code', 'material_name', 'specification',
+          'unit_name', 'film_no', 'version_no', 'barcode', 'cutting_size',
+          'printing_process', 'color_separation', 'blanking_diameter',
           'material_thickness', 'material_width', 'material_height', 'scrap_weight',
           'unit_weight', 'unit_volume', 'weight_unit', 'volume_unit', 'inventory_category',
           'unit_code', 'is_active', 'effective_date', 'expiry_date', 'updated_at'],
@@ -373,21 +361,10 @@ export async function exportProductionOrders(taskId?: string, onProgress?: Progr
 
   await report(`抓取+去重后 ${uniq.length} 条，写入数据库...`, 92);
 
-  // ===== 临时调试：打印前3行原始列数据（带索引），供用户确认列映射 =====
-  console.log('========== task_production_order 原始采集列数据（前3行）==========');
-  uniq.slice(0, 3).forEach((r, idx) => {
-    console.log(`--- 第 ${idx + 1} 行 (共 ${r.length} 列) ---`);
-    r.forEach((val, i) => {
-      if (i < 25) console.log(`  r[${i}] = ${JSON.stringify(val)}`);
-    });
-  });
-  console.log('========== 原始采集列数据结束 ==========');
-  // ===== 临时调试结束 =====
-
   if (U9ProductionOrder && uniq.length > 0) {
     const records = uniq.map((r) => ({
       task_id: taskId || '',
-      // U9 HTML 实际列数: 14列 (r[0]~r[13])；barcode/version_no 等无对应列的留空
+      // U9 HTML 实际14列 (r[0]~r[13])，按字段含义一一对应
       doc_type_name: r[0] || '',
       source_type: r[1] || '',
       biz_create_date: r[2] || '',
@@ -397,11 +374,11 @@ export async function exportProductionOrders(taskId?: string, onProgress?: Progr
       material_name: r[6] || '',
       specification: r[7] || '',
       film_version: r[8] || '',
-      planned_qty: r[9] || 0,
-      plan_start_time: r[10] || '',
-      plan_end_time: r[11] || '',
-      created_by: r[12] || '',
-      version_no: r[13] || '',
+      version_no: r[9] || '',
+      planned_qty: r[10] || 0,
+      plan_start_time: r[11] || '',
+      plan_end_time: r[12] || '',
+      created_by: r[13] || '',
       barcode: '',
       finished_qty: 0,
       raw_data: JSON.stringify(r),
@@ -568,7 +545,9 @@ export async function syncProductionOrdersToOrder(): Promise<{ total: number; in
 
     const materialId = o.material_code ? materialMap.get(o.material_code) || null : null;
     const statusStr = String(o.status || '').trim();
-    const status = DOC_STATUS_MAP[statusStr] !== undefined ? DOC_STATUS_MAP[statusStr] : 0;
+    // 采集数据 status 可能是数字编码（如"0"）或文本（如"开立"），优先按数字处理
+    const statusNum = parseInt(statusStr, 10);
+    const status = isNaN(statusNum) ? (DOC_STATUS_MAP[statusStr] !== undefined ? DOC_STATUS_MAP[statusStr] : 0) : statusNum;
 
     // 字段命名已与 production_order 完全对齐
     const payload = {

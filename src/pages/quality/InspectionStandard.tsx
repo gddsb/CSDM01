@@ -53,6 +53,7 @@ export default function InspectionStandard() {
   const [viewDrawerOpen, setViewDrawerOpen] = useState(false)
   const [current, setCurrent] = useState<any>(null)
   const [currentItems, setCurrentItems] = useState<any[]>([])
+  const [versions, setVersions] = useState<any[]>([])
   const message = useMessage()
 
   const fetchData = useCallback(async () => {
@@ -98,15 +99,36 @@ export default function InspectionStandard() {
 
   const handleView = async (record: any) => {
     setCurrent(record)
+    setVersions([])
+    try {
+      const res = await api.get(`/basic/standards/${record.standard_id}`)
+      const detail = res.data || record
+      setCurrent(detail)
+      setCurrentItems(detail.items || [])
+      // 获取同标准号的所有版本
+      if (detail.standard_no) {
+        const verRes = await api.get('/basic/standards', {
+          params: { standard_no: detail.standard_no, page: 1, page_size: 100 }
+        })
+        const verList = verRes.data?.list || verRes.data || []
+        verList.sort((a: any, b: any) => (b.version_no || '').localeCompare(a.version_no || ''))
+        setVersions(verList)
+      }
+    } catch (e) {
+      setCurrentItems([])
+    }
+    setViewDrawerOpen(true)
+  }
+
+  const handleSwitchVersion = async (record: any) => {
     try {
       const res = await api.get(`/basic/standards/${record.standard_id}`)
       const detail = res.data || record
       setCurrent(detail)
       setCurrentItems(detail.items || [])
     } catch (e) {
-      setCurrentItems([])
+      // 保持当前
     }
-    setViewDrawerOpen(true)
   }
 
   const handleDelete = async (record: any) => {
@@ -167,7 +189,7 @@ export default function InspectionStandard() {
       }
     },
     {
-      title: '操作', key: 'action', fixed: 'right', width: 220,
+      title: '操作', key: 'action', fixed: 'right', width: 150,
       render: (_: any, record: any) => (
         <Space size="small" wrap>
           <Button type="link" size="small" onClick={() => handleView(record)}>查看</Button>
@@ -177,16 +199,6 @@ export default function InspectionStandard() {
           {record.status === '开立' && (
             <Popconfirm title="确认删除？删除后不可恢复" onConfirm={() => handleDelete(record)} okText="确认" cancelText="取消">
               <Button type="link" size="small" danger>删除</Button>
-            </Popconfirm>
-          )}
-          {record.status === '生效' && hasPermission('quality:standard:copy') && (
-            <Popconfirm title="确认复制？将生成一份新的检验标准（新标准号，状态为开立）" onConfirm={() => handleCopy(record)} okText="确认" cancelText="取消">
-              <Button type="link" size="small" icon={<CopyOutlined />}>复制</Button>
-            </Popconfirm>
-          )}
-          {record.status === '生效' && hasPermission('quality:standard:revise') && (
-            <Popconfirm title="确认改版？将生成新版本（标准号不变，版本号+1，状态为开立）" onConfirm={() => handleRevise(record)} okText="确认" cancelText="取消">
-              <Button type="link" size="small" icon={<BranchesOutlined />}>改版</Button>
             </Popconfirm>
           )}
         </Space>
@@ -293,9 +305,50 @@ export default function InspectionStandard() {
         onClose={() => setViewDrawerOpen(false)}
         width={900}
         destroyOnHidden
+        extra={
+          current?.status === '生效' && (hasPermission('quality:standard:copy') || hasPermission('quality:standard:revise')) ? (
+            <Space>
+              {hasPermission('quality:standard:copy') && (
+                <Popconfirm title="确认复制？将生成一份新的检验标准（新标准号，状态为开立）" onConfirm={() => handleCopy(current)} okText="确认" cancelText="取消">
+                  <Button icon={<CopyOutlined />}>复制</Button>
+                </Popconfirm>
+              )}
+              {hasPermission('quality:standard:revise') && (
+                <Popconfirm title="确认改版？将生成新版本（标准号不变，版本号+1，状态为开立）" onConfirm={() => handleRevise(current)} okText="确认" cancelText="取消">
+                  <Button type="primary" icon={<BranchesOutlined />}>改版</Button>
+                </Popconfirm>
+              )}
+            </Space>
+          ) : null
+        }
       >
         {current && (
           <>
+            {versions.length > 1 && (
+              <div style={{ marginBottom: 16, padding: '8px 12px', background: '#fafafa', borderRadius: 4 }}>
+                <Space wrap>
+                  <span style={{ color: '#666', fontSize: 13 }}>版本切换：</span>
+                  {versions.map((v) => {
+                    const isActive = v.standard_id === current?.standard_id
+                    return (
+                      <Tag
+                        key={v.standard_id}
+                        style={{
+                          cursor: 'pointer',
+                          padding: '2px 10px',
+                          fontSize: 13,
+                          ...(isActive ? { background: '#e6f4ff', borderColor: '#69b1ff', fontWeight: 600 } : {})
+                        }}
+                        onClick={() => handleSwitchVersion(v)}
+                      >
+                        {v.version_no}
+                        <span style={{ marginLeft: 4, fontSize: 11, opacity: 0.7 }}>({v.status})</span>
+                      </Tag>
+                    )
+                  })}
+                </Space>
+              </div>
+            )}
             <Descriptions 
               column={2} 
               size="small" 
@@ -332,22 +385,6 @@ export default function InspectionStandard() {
               pagination={false}
               scroll={{ x: 1400 }}
             />
-            {current.status === '生效' && (hasPermission('quality:standard:copy') || hasPermission('quality:standard:revise')) && (
-              <div style={{ marginTop: 16, textAlign: 'right' }}>
-                <Space>
-                  {hasPermission('quality:standard:copy') && (
-                    <Popconfirm title="确认复制？将生成一份新的检验标准（新标准号，状态为开立）" onConfirm={() => handleCopy(current)} okText="确认" cancelText="取消">
-                      <Button icon={<CopyOutlined />}>复制</Button>
-                    </Popconfirm>
-                  )}
-                  {hasPermission('quality:standard:revise') && (
-                    <Popconfirm title="确认改版？将生成新版本（标准号不变，版本号+1，状态为开立）" onConfirm={() => handleRevise(current)} okText="确认" cancelText="取消">
-                      <Button type="primary" icon={<BranchesOutlined />}>改版</Button>
-                    </Popconfirm>
-                  )}
-                </Space>
-              </div>
-            )}
           </>
         )}
       </Drawer>
