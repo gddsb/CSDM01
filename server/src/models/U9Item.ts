@@ -42,6 +42,10 @@ const U9Item = sequelize.define('U9Item', {
     type: DataTypes.STRING(100),
     comment: '菲林编号',
   },
+  barcode: {
+    type: DataTypes.STRING(100),
+    comment: '条形码',
+  },
   cutting_size: {
     type: DataTypes.STRING(200),
     comment: '开料尺寸',
