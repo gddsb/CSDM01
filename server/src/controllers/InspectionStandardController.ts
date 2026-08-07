@@ -135,13 +135,22 @@ export const update = async (req: any, res: any) => {
     const { standard_no, standard_name, standard_type, customer_code, material_id, material_name, version_no, effective_date, status, description, items } = req.body
 
     // 审核生效时自动设置生效日期
-    const targetStatus = status || record.status
+    const targetStatus = status !== undefined ? status : record.status
     let finalEffectiveDate = record.effective_date
     if (effective_date !== undefined) {
       finalEffectiveDate = effective_date ? (parseDateTime(effective_date) || nowBeijingDate()) : null
     }
     if (targetStatus === '生效' && !finalEffectiveDate) {
       finalEffectiveDate = nowBeijingDate()
+    }
+
+    // 审核生效时，将同标准号的其他"生效"版本设为"失效"并记录失效时间
+    if (targetStatus === '生效' && record.status !== '生效') {
+      const now = nowBeijingDate()
+      await InspectionStandard.update(
+        { status: '失效', expiry_date: now },
+        { where: { standard_no: record.standard_no, status: '生效', standard_id: { [Op.ne]: id } } },
+      )
     }
 
     await record.update({

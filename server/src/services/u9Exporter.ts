@@ -67,6 +67,7 @@ function decodeHtmlEntities(s: string): string {
   return s
     .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCodePoint(parseInt(h, 16)))
     .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(parseInt(d, 10)))
+    .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
@@ -93,15 +94,12 @@ function isNumericId(val: string): boolean {
   return /^\d{10,}$/.test(val);
 }
 
-/** 从完整 td 块中提取值：优先 data-ca value，若为空或长数字ID则回退到文本内容 */
+/** 从完整 td 块中提取值：优先 td 标签内显示的文本内容，其次 data-ca value */
 function extractCellvalue(tdFull: string): string {
+  const text = extractTdText(tdFull);
+  if (text) return text;
   const caMatch = tdFull.match(/data-ca=\{([^}]*)\}/);
-  let val = caMatch ? extractTdValue(caMatch[1]) : '';
-  if (!val || isNumericId(val)) {
-    const text = extractTdText(tdFull);
-    if (text) val = text;
-  }
-  return val;
+  return caMatch ? extractTdValue(caMatch[1]) : '';
 }
 
 /** 抽取料品单页数据 (25列) */
@@ -399,7 +397,7 @@ export async function exportProductionOrders(taskId?: string, onProgress?: Progr
       specification: r[7] || '',
       film_version: r[8] || '',
       version_no: r[9] || '',
-      planned_qty: r[10] || 0,
+      planned_qty: (r[10] || '0').replace(/,/g, ''),
       plan_start_time: r[11] || '',
       plan_end_time: r[12] || '',
       created_by: r[13] || '',

@@ -50,6 +50,10 @@ const InspectionStandard = sequelize.define('InspectionStandard', {
     type: DataTypes.DATE,
     comment: '生效日期',
   },
+  expiry_date: {
+    type: DataTypes.DATE,
+    comment: '失效日期',
+  },
   status: {
     type: DataTypes.STRING(20),
     defaultValue: '开立',
