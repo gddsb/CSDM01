@@ -81,22 +81,46 @@ function extractTdValue(td: string): string {
   return '';
 }
 
-/** 抽取料品单页数据 (24列) */
+/** 从完整 td HTML 中提取纯文本内容（去除嵌套标签） */
+function extractTdText(tdFull: string): string {
+  const inner = tdFull.replace(/^<td\b[^>]*>/i, '').replace(/<\/td>\s*$/i, '');
+  const text = inner.replace(/<[^>]*>/g, '').trim();
+  return text ? decodeHtmlEntities(text) : '';
+}
+
+/** 判断值是否为长数字ID（需回退到文本内容） */
+function isNumericId(val: string): boolean {
+  return /^\d{10,}$/.test(val);
+}
+
+/** 从完整 td 块中提取值：优先 data-ca value，若为空或长数字ID则回退到文本内容 */
+function extractCellvalue(tdFull: string): string {
+  const caMatch = tdFull.match(/data-ca=\{([^}]*)\}/);
+  let val = caMatch ? extractTdValue(caMatch[1]) : '';
+  if (!val || isNumericId(val)) {
+    const text = extractTdText(tdFull);
+    if (text) val = text;
+  }
+  return val;
+}
+
+/** 抽取料品单页数据 (25列) */
 function extractItemRows(html: string): string[][] {
   const rows: string[][] = [];
   const trRe = /<TR\b[^>]*>[\s\S]*?<\/TR>/gi;
-  const tdRe = /<td[^>]*data-ca=\{([^}]*)\}[^>]*>/gi;
   let tr: RegExpExecArray | null;
   while ((tr = trRe.exec(html))) {
     const trHtml = tr[0];
     if (!/data-ca\s*=\s*\{[^}]*status/.test(trHtml)) continue;
+    // 匹配完整 td 块 <td...>...</td>
+    const tdBlockRe = /<td\b[^>]*>[\s\S]*?<\/td>/gi;
     const tds: string[] = [];
     let m: RegExpExecArray | null;
-    while ((m = tdRe.exec(trHtml))) {
-      const tdTag = m[0];
-      if (/class\s*=\s*"[^"]*\btcc\b/.test(tdTag)) continue;
-      if (/display\s*:\s*none/i.test(tdTag)) continue;
-      tds.push(extractTdValue(m[1]));
+    while ((m = tdBlockRe.exec(trHtml))) {
+      const tdFull = m[0];
+      if (/class\s*=\s*"[^"]*\btcc\b/.test(tdFull)) continue;
+      if (/display\s*:\s*none/i.test(tdFull)) continue;
+      tds.push(extractCellvalue(tdFull));
     }
     if (tds.length >= 10) {
       const row = tds.slice(0, 30);
@@ -111,18 +135,18 @@ function extractItemRows(html: string): string[][] {
 function extractCustomerRows(html: string): string[][] {
   const rows: string[][] = [];
   const trRe = /<tr\b[^>]*>[\s\S]*?<\/tr>/gi;
-  const tdRe = /<td[^>]*data-ca=\{([^}]*)\}[^>]*>/gi;
   let tr: RegExpExecArray | null;
   while ((tr = trRe.exec(html))) {
     const trHtml = tr[0];
     if (!/data-ca\s*=\s*\{[^}]*status/.test(trHtml)) continue;
+    const tdBlockRe = /<td\b[^>]*>[\s\S]*?<\/td>/gi;
     const tds: string[] = [];
     let m: RegExpExecArray | null;
-    while ((m = tdRe.exec(trHtml))) {
-      const tdTag = m[0];
-      if (/class\s*=\s*"[^"]*\btcc\b/.test(tdTag)) continue;
-      if (/display\s*:\s*none/i.test(tdTag)) continue;
-      tds.push(extractTdValue(m[1]));
+    while ((m = tdBlockRe.exec(trHtml))) {
+      const tdFull = m[0];
+      if (/class\s*=\s*"[^"]*\btcc\b/.test(tdFull)) continue;
+      if (/display\s*:\s*none/i.test(tdFull)) continue;
+      tds.push(extractCellvalue(tdFull));
     }
     if (tds.length >= 5) {
       const row = tds.slice(0, 8);
@@ -137,18 +161,18 @@ function extractCustomerRows(html: string): string[][] {
 function extractProductionOrderRows(html: string): string[][] {
   const rows: string[][] = [];
   const trRe = /<tr\b[^>]*>[\s\S]*?<\/tr>/gi;
-  const tdRe = /<td[^>]*data-ca=\{([^}]*)\}[^>]*>/gi;
   let tr: RegExpExecArray | null;
   while ((tr = trRe.exec(html))) {
     const trHtml = tr[0];
     if (!/data-ca\s*=\s*\{[^}]*status/.test(trHtml)) continue;
+    const tdBlockRe = /<td\b[^>]*>[\s\S]*?<\/td>/gi;
     const tds: string[] = [];
     let m: RegExpExecArray | null;
-    while ((m = tdRe.exec(trHtml))) {
-      const tdTag = m[0];
-      if (/class\s*=\s*"[^"]*\btcc\b/.test(tdTag)) continue;
-      if (/display\s*:\s*none/i.test(tdTag)) continue;
-      tds.push(extractTdValue(m[1]));
+    while ((m = tdBlockRe.exec(trHtml))) {
+      const tdFull = m[0];
+      if (/class\s*=\s*"[^"]*\btcc\b/.test(tdFull)) continue;
+      if (/display\s*:\s*none/i.test(tdFull)) continue;
+      tds.push(extractCellvalue(tdFull));
     }
     if (tds.length >= 5) {
       const row = tds.slice(0, 20);
