@@ -1,11 +1,19 @@
 import { DataTypes } from 'sequelize'
 import sequelize from '../config/database.js'
 
+/**
+ * 采集档案表 task_item
+ * 字段命名与业务主表 bas_material 完全对齐（便于直接迁移）
+ * 采集表与业务主表的字段差异：
+ *   - 采集表保留 item_id（INT PK）、task_id、main_category_code（业务源字段）
+ *   - 采集表数据类型统一为 STRING（U9 HTML 抓取的原始字符串格式，迁移时再做类型转换）
+ */
 const U9Item = sequelize.define('U9Item', {
   item_id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
+    comment: '采集记录ID',
   },
   task_id: {
     type: DataTypes.STRING(64),
@@ -14,21 +22,22 @@ const U9Item = sequelize.define('U9Item', {
   },
   main_category_code: {
     type: DataTypes.STRING(100),
-    comment: '主分类代码',
+    comment: '主分类代码（U9来源字段）',
   },
+  // ===== 以下字段命名、含义与 bas_material 完全一致 =====
   category_name: {
     type: DataTypes.STRING(200),
     comment: '分类名称',
   },
-  item_code: {
+  material_code: {
     type: DataTypes.STRING(100),
     allowNull: false,
     unique: true,
-    comment: '料号',
+    comment: '料号（= 业务主表 material_code）',
   },
-  item_name: {
+  material_name: {
     type: DataTypes.STRING(500),
-    comment: '品名',
+    comment: '品名（= 业务主表 material_name）',
   },
   specification: {
     type: DataTypes.STRING(500),
@@ -42,6 +51,10 @@ const U9Item = sequelize.define('U9Item', {
     type: DataTypes.STRING(100),
     comment: '菲林编号',
   },
+  version_no: {
+    type: DataTypes.STRING(50),
+    comment: '版本号（对齐 bas_material.version_no）',
+  },
   barcode: {
     type: DataTypes.STRING(100),
     comment: '条形码',
@@ -50,17 +63,17 @@ const U9Item = sequelize.define('U9Item', {
     type: DataTypes.STRING(200),
     comment: '开料尺寸',
   },
-  print_process: {
+  printing_process: {
     type: DataTypes.STRING(200),
-    comment: '印刷工艺',
+    comment: '印刷工艺（对齐 bas_material.printing_process）',
   },
-  color_info: {
+  color_separation: {
     type: DataTypes.STRING(200),
-    comment: '分色信息',
+    comment: '分色信息（对齐 bas_material.color_separation）',
   },
-  blank_diameter: {
+  blanking_diameter: {
     type: DataTypes.STRING(100),
-    comment: '落料直径',
+    comment: '落料直径（对齐 bas_material.blanking_diameter，原始字符串，迁移时转 DECIMAL）',
   },
   material_thickness: {
     type: DataTypes.STRING(100),
@@ -78,13 +91,13 @@ const U9Item = sequelize.define('U9Item', {
     type: DataTypes.STRING(100),
     comment: '边角料重量',
   },
-  stock_unit_weight: {
+  unit_weight: {
     type: DataTypes.STRING(100),
-    comment: '库存单位重量',
+    comment: '单位重量（对齐 bas_material.unit_weight）',
   },
-  stock_unit_volume: {
+  unit_volume: {
     type: DataTypes.STRING(100),
-    comment: '库存单位体积',
+    comment: '单位体积（对齐 bas_material.unit_volume）',
   },
   weight_unit: {
     type: DataTypes.STRING(100),
@@ -104,15 +117,15 @@ const U9Item = sequelize.define('U9Item', {
   },
   is_active: {
     type: DataTypes.TINYINT,
-    comment: '是否生效',
+    comment: '是否生效（0/1，迁移时转 BOOLEAN）',
   },
   effective_date: {
     type: DataTypes.STRING(50),
     comment: '生效日期',
   },
-  expiration_date: {
+  expiry_date: {
     type: DataTypes.STRING(50),
-    comment: '失效日期',
+    comment: '失效日期（对齐 bas_material.expiry_date）',
   },
 }, {
   tableName: 'task_item',
@@ -121,9 +134,10 @@ const U9Item = sequelize.define('U9Item', {
   createdAt: 'created_at',
   updatedAt: 'updated_at',
   indexes: [
-    { fields: ['item_code'], unique: true },
+    { fields: ['material_code'], unique: true, name: 'uk_task_item_material_code' },
     { fields: ['task_id'] },
-    { fields: ['item_name'] },
+    { fields: ['material_name'] },
+    { fields: ['category_name'] },
   ],
 })
 

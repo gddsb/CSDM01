@@ -99,8 +99,8 @@ function extractItemRows(html: string): string[][] {
       tds.push(extractTdValue(m[1]));
     }
     if (tds.length >= 10) {
-      const row = tds.slice(0, 24);
-      while (row.length < 24) row.push('');
+      const row = tds.slice(0, 30);
+      while (row.length < 30) row.push('');
       rows.push(row);
     }
   }
@@ -212,37 +212,39 @@ export async function exportItems(taskId?: string, onProgress?: ProgressCallback
       task_id: taskId || '',
       main_category_code: r[0],
       category_name: r[1],
-      item_name: r[2],
+      material_name: r[2],
       specification: r[3],
       unit_name: r[4],
-      item_code: r[5],
+      material_code: r[5],
       film_no: r[6],
-      barcode: r[7],
-      cutting_size: r[8],
-      color_info: r[9],
-      print_process: r[10],
-      material_thickness: r[11],
-      material_width: r[12],
-      material_height: r[13],
-      scrap_weight: r[14],
-      stock_unit_weight: r[15],
-      stock_unit_volume: r[16],
-      weight_unit: r[17],
-      volume_unit: r[18],
-      inventory_category: r[19],
-      unit_code: r[20],
-      blank_diameter: r[21],
-      is_active: r[22] === 'true' ? 1 : 0,
-      effective_date: r[23],
-      expiration_date: '',
+      version_no: r[7] || '',
+      barcode: r[8] || '',
+      cutting_size: r[9] || '',
+      color_separation: r[10] || '',
+      printing_process: r[11] || '',
+      blanking_diameter: r[12] || '',
+      material_thickness: r[13] || '',
+      material_width: r[14] || '',
+      material_height: r[15] || '',
+      scrap_weight: r[16] || '',
+      unit_weight: r[17] || '',
+      unit_volume: r[18] || '',
+      weight_unit: r[19] || '',
+      volume_unit: r[20] || '',
+      inventory_category: r[21] || '',
+      unit_code: r[22] || '',
+      is_active: r[23] === 'true' ? 1 : 0,
+      effective_date: r[24] || '',
+      expiry_date: '',
     }));
     try {
       await U9Item.bulkCreate(records as any, {
-        updateOnDuplicate: ['task_id', 'main_category_code', 'category_name', 'item_name', 'specification',
-          'unit_name', 'item_code', 'film_no', 'barcode', 'cutting_size', 'color_info', 'print_process',
-          'blank_diameter', 'material_thickness', 'material_width', 'material_height', 'scrap_weight',
-          'stock_unit_weight', 'stock_unit_volume', 'weight_unit', 'volume_unit', 'inventory_category',
-          'unit_code', 'is_active', 'effective_date', 'expiration_date', 'updated_at'],
+        updateOnDuplicate: ['task_id', 'main_category_code', 'category_name', 'material_name', 'specification',
+          'unit_name', 'material_code', 'film_no', 'version_no', 'barcode', 'cutting_size',
+          'color_separation', 'printing_process', 'blanking_diameter',
+          'material_thickness', 'material_width', 'material_height', 'scrap_weight',
+          'unit_weight', 'unit_volume', 'weight_unit', 'volume_unit', 'inventory_category',
+          'unit_code', 'is_active', 'effective_date', 'expiry_date', 'updated_at'],
       });
     } catch (e: any) {
       console.warn('[exportItems] 数据库写入警告:', e.message);
@@ -365,25 +367,27 @@ export async function exportProductionOrders(taskId?: string, onProgress?: Progr
       doc_type_name: r[0] || '',
       source_type: r[1] || '',
       biz_create_date: r[2] || '',
-      doc_no: r[3] || '',
-      doc_status: r[4] || '',
-      item_code: r[5] || '',
-      item_name: r[6] || '',
+      order_no: r[3] || '',
+      status: r[4] || '',
+      material_code: r[5] || '',
+      material_name: r[6] || '',
       specification: r[7] || '',
-      film_no: r[8] || '',
-      film_version: r[9] || '',
-      production_qty: r[10] || 0,
-      plan_start_date: r[11] || '',
-      plan_end_date: r[12] || '',
-      created_by: r[13] || '',
+      film_version: r[8] || '',
+      version_no: r[9] || '',
+      barcode: r[10] || '',
+      planned_qty: r[11] || 0,
+      plan_start_time: r[12] || '',
+      plan_end_time: r[13] || '',
+      finished_qty: 0,
+      created_by: r[14] || '',
       raw_data: JSON.stringify(r),
     }));
     try {
       await U9ProductionOrder.bulkCreate(records as any, {
-        updateOnDuplicate: ['task_id', 'doc_type_name', 'source_type', 'biz_create_date', 'doc_status',
-          'item_code', 'item_name', 'specification', 'film_no', 'film_version',
-          'production_qty', 'created_by', 'plan_start_date', 'plan_end_date',
-          'raw_data', 'updated_at'],
+        updateOnDuplicate: ['task_id', 'doc_type_name', 'source_type', 'biz_create_date', 'status',
+          'material_code', 'material_name', 'specification', 'film_version', 'version_no',
+          'barcode', 'planned_qty', 'finished_qty', 'created_by',
+          'plan_start_time', 'plan_end_time', 'raw_data', 'updated_at'],
       });
     } catch (e: any) {
       console.warn('[exportProductionOrders] 数据库写入警告:', e.message);
@@ -440,12 +444,13 @@ function toNumber(val: any): number | null {
   return Number.isNaN(n) ? null : n;
 }
 
-// 远期默认失效日期（当 task_item.expiration_date 为空时使用）
+// 远期默认失效日期（当 task_item.expiry_date 为空时使用）
 const DEFAULT_EXPIRY = new Date('2099-12-31');
 
 /**
  * 将 task_item 采集数据同步到 bas_material 业务主数据表
- * 按 material_code(=item_code) 做 upsert：已存在则更新，不存在则新增
+ * 字段名已完全对齐，只需做类型转换（STRING→DECIMAL/DATE/BOOLEAN）
+ * 按 material_code 做 upsert：已存在则更新，不存在则新增
  */
 export async function syncItemsToBasMaterial(): Promise<{ total: number; inserted: number; updated: number }> {
   const items = await U9Item.findAll();
@@ -454,30 +459,32 @@ export async function syncItemsToBasMaterial(): Promise<{ total: number; inserte
 
   const now = nowBeijingDate();
   const records = items.map((it: any) => ({
-    material_code: it.item_code,
-    material_name: it.item_name || it.item_code,
+    // 字段命名已与 bas_material 完全对齐，直接赋值
+    material_code: it.material_code,
+    material_name: it.material_name || it.material_code,
     category_name: it.category_name || '未分类',
     specification: it.specification || null,
     unit_name: it.unit_name || '个',
     film_no: it.film_no || null,
+    version_no: it.version_no || null,
     barcode: it.barcode || null,
     cutting_size: it.cutting_size || null,
-    printing_process: it.print_process || null,
-    color_separation: it.color_info || null,
-    blanking_diameter: toNumber(it.blank_diameter),
+    printing_process: it.printing_process || null,
+    color_separation: it.color_separation || null,
+    blanking_diameter: toNumber(it.blanking_diameter),
     material_thickness: toNumber(it.material_thickness),
     material_width: toNumber(it.material_width),
     material_height: toNumber(it.material_height),
     scrap_weight: toNumber(it.scrap_weight),
-    unit_weight: toNumber(it.stock_unit_weight),
-    unit_volume: toNumber(it.stock_unit_volume),
+    unit_weight: toNumber(it.unit_weight),
+    unit_volume: toNumber(it.unit_volume),
     weight_unit: it.weight_unit || null,
     volume_unit: it.volume_unit || null,
     inventory_category: it.inventory_category || null,
     unit_code: it.unit_code || null,
     is_active: it.is_active === 1,
     effective_date: parseDateTime(it.effective_date) || now,
-    expiry_date: parseDateTime(it.expiration_date) || DEFAULT_EXPIRY,
+    expiry_date: parseDateTime(it.expiry_date) || DEFAULT_EXPIRY,
   }));
 
   let inserted = 0;
@@ -511,18 +518,19 @@ const DOC_STATUS_MAP: Record<string, number> = {
 
 /**
  * 将 task_production_order 采集数据同步到 production_order 业务主数据表
- * 按 order_no(=doc_no) 做 upsert：已存在则更新，不存在则新增
- * 通过 item_code 关联 bas_material 获取 material_id
+ * 字段名已完全对齐，只需做类型转换（STRING→DATE/TINYINT）
+ * 按 order_no 做 upsert：已存在则更新，不存在则新增
+ * 通过 material_code 关联 bas_material 获取 material_id
  */
 export async function syncProductionOrdersToOrder(): Promise<{ total: number; inserted: number; updated: number; skipped: number }> {
   const taskOrders = await U9ProductionOrder.findAll();
   const total = taskOrders.length;
   if (total === 0) return { total: 0, inserted: 0, updated: 0, skipped: 0 };
 
-  // 批量查询所有相关料品，构建 item_code → material_id 映射
-  const itemCodes = [...new Set(taskOrders.map((o: any) => o.item_code).filter(Boolean))];
-  const materials = itemCodes.length > 0
-    ? await Material.findAll({ where: { material_code: itemCodes }, attributes: ['material_id', 'material_code'] })
+  // 批量查询所有相关料品，构建 material_code → material_id 映射
+  const materialCodes = [...new Set(taskOrders.map((o: any) => o.material_code).filter(Boolean))];
+  const materials = materialCodes.length > 0
+    ? await Material.findAll({ where: { material_code: materialCodes }, attributes: ['material_id', 'material_code'] })
     : [];
   const materialMap = new Map(materials.map((m: any) => [m.material_code, m.material_id]));
 
@@ -531,31 +539,33 @@ export async function syncProductionOrdersToOrder(): Promise<{ total: number; in
   let skipped = 0;
 
   for (const o of taskOrders) {
-    const docNo = o.doc_no;
-    if (!docNo) { skipped++; continue; }
+    const orderNo = o.order_no;
+    if (!orderNo) { skipped++; continue; }
 
-    const materialId = o.item_code ? materialMap.get(o.item_code) || null : null;
-    const statusStr = String(o.doc_status || '').trim();
+    const materialId = o.material_code ? materialMap.get(o.material_code) || null : null;
+    const statusStr = String(o.status || '').trim();
     const status = DOC_STATUS_MAP[statusStr] !== undefined ? DOC_STATUS_MAP[statusStr] : 0;
 
+    // 字段命名已与 production_order 完全对齐
     const payload = {
-      order_no: docNo,
+      order_no: orderNo,
       material_id: materialId,
-      material_code: o.item_code || null,
-      material_name: o.item_name || null,
+      material_code: o.material_code || null,
+      material_name: o.material_name || null,
       specification: o.specification || null,
-      film_version: o.film_no || null,
-      version_no: o.film_version || null,
-      planned_qty: Number(o.production_qty) || 0,
-      finished_qty: 0,
-      plan_start_time: parseDateTime(o.plan_start_date),
-      plan_end_time: parseDateTime(o.plan_end_date),
+      film_version: o.film_version || null,
+      version_no: o.version_no || null,
+      barcode: o.barcode || null,
+      planned_qty: Number(o.planned_qty) || 0,
+      finished_qty: Number(o.finished_qty) || 0,
+      plan_start_time: parseDateTime(o.plan_start_time),
+      plan_end_time: parseDateTime(o.plan_end_time),
       status,
       created_by: o.created_by || null,
     };
 
     const [row, created] = await Order.findOrCreate({
-      where: { order_no: docNo },
+      where: { order_no: orderNo },
       defaults: payload,
     });
     if (created) {
@@ -569,7 +579,9 @@ export async function syncProductionOrdersToOrder(): Promise<{ total: number; in
         specification: payload.specification,
         film_version: payload.film_version,
         version_no: payload.version_no,
+        barcode: payload.barcode,
         planned_qty: payload.planned_qty,
+        finished_qty: payload.finished_qty,
         plan_start_time: payload.plan_start_time,
         plan_end_time: payload.plan_end_time,
         created_by: payload.created_by,
