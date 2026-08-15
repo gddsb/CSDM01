@@ -21,6 +21,7 @@ import { ReportStatsBar } from './sections/ReportStatsBar'
 import CreateReportModal from './sections/CreateReportModal'
 import ImageDrawer from './sections/ImageDrawer'
 import { calcReportStats as calcReportOrderStats, calcProcessStats as calcPersonSummary } from './reportStats'
+import { useReportDetailRecords } from './hooks/useReportDetailRecords'
 import type { DefectRecord, ExceptionRecord, ManpowerRecord, MaterialRecord } from './types'
 
 export default function ProcessReporting() {
@@ -53,11 +54,7 @@ export default function ProcessReporting() {
   const [imageUploadLoading, setImageUploadLoading] = useState(false)
   const [currentImageContext, setCurrentImageContext] = useState(null)
 
-  const [prodDefectList, setProdDefectList] = useState([])
-  const [scrapDefectList, setScrapDefectList] = useState([])
-  const [exceptionList, setExceptionList] = useState([])
-  const [manpowerList, setManpowerList] = useState([])
-  const [materialList, setMaterialList] = useState([])
+  // 明细列表与处理器由 useReportDetailRecords 提供（在 isEditable 后挂载）
   const [materials, setMaterials] = useState([])
 
   const savingRef = useRef({})
@@ -529,6 +526,24 @@ export default function ProcessReporting() {
   // 报工单状态：'开工'=可编辑，'完工'=只读
   const isEditable = selectedReport?.status === '开工'
 
+  const {
+    prodDefectList, scrapDefectList, materialList, exceptionList, manpowerList,
+    setProdDefectList, setScrapDefectList, setMaterialList, setExceptionList, setManpowerList,
+    processStats: hookProcessStats,
+    handleAddProdDefectRow, handleDeleteProdDefect, handleProdDefectChange, handleSaveAllProdDefects,
+    handleAddScrapDefectRow, handleDeleteScrapDefect, handleScrapDefectChange, handleSaveAllScrapDefects,
+    handleAddMaterialRow, handleDeleteMaterial, handleMaterialChange, handleSaveAllMaterials,
+    handleAddExceptionRow, handleDeleteException, handleExceptionChange, handleSaveAllExceptions,
+    handleManpowerChange, handleSaveAllManpowers,
+  } = useReportDetailRecords({
+    selectedReport: selectedReport as any,
+    isEditable,
+    selectedProcessId,
+    lineProcesses: lineProcesses as any,
+    openImageDrawer: openImageDrawer as any,
+    message,
+  })
+
   // 判断当前选中报工单所属的生产订单是否有未完工的报工单
   const hasUnfinishedReportOfOrder = useMemo(() => {
     if (!selectedReport?.order_id) return false
@@ -711,210 +726,12 @@ export default function ProcessReporting() {
       .map(l => ({ label: l.line_name, value: l.line_id }))
   }, [lines])
 
-  const saveProdDefectItem = async (item) => {
-    if (!selectedReport || !selectedProcessId) return
-    try {
-      if (item.defect_id) {
-        await api.put(`/production/process-defects/${item.defect_id}`, {
-          defect_name: item.defect_name,
-          defect_type_id: item.defect_type_id,
-          quantity: item.quantity,
-          unit: item.unit,
-          defect_images: item.defect_images,
-        })
-      } else {
-        const defect = defectTypeOptions.find(d => d.value === item.defect_type_id)
-        const res = await api.post('/production/process-defects', {
-          report_order_id: selectedReport.report_order_id,
-          process_id: selectedProcessId,
-          defect_category: '制程不良',
-          defect_type_id: item.defect_type_id,
-          defect_name: defect?.defect_name || item.defect_name,
-          quantity: item.quantity,
-          unit: defect?.defect_unit || item.unit,
-          defect_images: item.defect_images,
-        })
-        // 后端 create 返回不含 defect_code/defect_type/defect_name（这些来自关联表，仅 list 接口返回），
-        // 用 item 作为基底合并，保留选择时已设置好的展示字段，避免保存后显示空白需刷新
-        setProdDefectList(prev => prev.map(d =>
-          d.id === item.id ? {
-            ...item,
-            ...res.data,
-            id: res.data.defect_id,
-            defect_id: res.data.defect_id,
-            defect_code: item.defect_code,
-            defect_type: item.defect_type,
-            defect_name: item.defect_name,
-            defect_images: parseImages(res.data.defect_images),
-          } : d
-        ))
-      }
-      fetchReportStats(selectedReport.report_order_id)
-    } catch (err) {
-      message.error(err.message || '保存失败')
-    }
-  }
 
-  const handleProdDefectChange = (recordId, field, value) => {
-    if (!isEditable) return
-    markDirty(recordId)
-    setProdDefectList(prev => {
-      const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
-      let updatedItem = null
-      if (existingIndex >= 0) {
-        const newlist = prev.map(item => {
-          if (String(item.id) !== String(recordId)) return item
-          let updated = { ...item, [field]: value }
-          if (field === 'defect_type_id' && value) {
-            const defect = defectTypeOptions.find(d => String(d.value) === String(value))
-            if (defect) {
-              updated.defect_name = defect.defect_name
-              updated.defect_code = defect.defect_code
-              updated.defect_type = defect.defect_type
-            }
-          }
-          updatedItem = updated
-          return updated
-        })
-        return newlist
-      } else {
-        // 新增记录（空行情况）
-        const newItem = {
-          id: recordId,
-          report_order_id: selectedReport?.report_order_id,
-          process_id: selectedProcessId,
-          defect_category: '制程不良',
-          defect_type_id: null,
-          defect_code: '',
-          defect_type: '',
-          defect_name: '',
-          quantity: 0,
-          unit: '',
-          defect_images: [],
-        }
-        newItem[field] = value
-        if (field === 'defect_type_id' && value) {
-          const defect = defectTypeOptions.find(d => String(d.value) === String(value))
-          if (defect) {
-            newItem.defect_name = defect.defect_name
-            newItem.defect_code = defect.defect_code
-            newItem.defect_type = defect.defect_type
-          }
-        }
-        return [...prev, newItem]
-      }
-    })
-  }
 
   // 批量保存生产不良记录（新增 + 已修改）
-  const handleSaveAllProdDefects = async () => {
-    if (!selectedReport) {
-      message.warning('请先选择报工单')
-      return
-    }
-    // 筛选待保存记录：新增（有 defect_type_id 无 defect_id）或 已修改（在 dirtyIds 中）
-    const recordsToSave = prodDefectList.filter(d => {
-      if (!d.defect_type_id) return false
-      if (!d.defect_id) return true  // 新增
-      return dirtyIds.has(d.id)      // 已修改
-    })
-    if (recordsToSave.length === 0) {
-      message.info('没有需要保存的记录')
-      return
-    }
-    // 校验所有待保存记录
-    for (const record of recordsToSave) {
-      if (!record.quantity || record.quantity <= 0) {
-        message.warning(`不良编码 ${record.defect_code || ''} 的数量无效，请填写大于0的数量`)
-        return
-      }
-      if (!record.unit) {
-        message.warning(`不良编码 ${record.defect_code || ''} 的单位未选择`)
-        return
-      }
-    }
-    try {
-      const savedIds = []
-      for (const record of recordsToSave) {
-        await saveProdDefectItem(record)
-        savedIds.push(record.id)
-      }
-      clearDirty(savedIds)
-      message.success(`已保存 ${recordsToSave.length} 条记录`)
-    } catch (err) {
-      message.error(err.message || '保存失败')
-    }
-  }
 
   // 新增一条生产不良记录空行（手动触发，添加前先执行一次保存）
-  const handleAddProdDefectRow = async () => {
-    if (!selectedReport) {
-      message.warning('请先选择报工单')
-      return
-    }
-    // 添加前先执行一次保存（保存新增 + 已修改的记录）
-    const recordsToSave = prodDefectList.filter(d => {
-      if (!d.defect_type_id) return false
-      if (!d.defect_id) return true
-      return dirtyIds.has(d.id)
-    })
-    if (recordsToSave.length > 0) {
-      for (const record of recordsToSave) {
-        if (!record.quantity || record.quantity <= 0) {
-          message.warning(`请先完善不良编码 ${record.defect_code || ''} 的数量（需大于0）`)
-          return
-        }
-        if (!record.unit) {
-          message.warning(`请先选择不良编码 ${record.defect_code || ''} 的单位`)
-          return
-        }
-      }
-      try {
-        const savedIds = []
-        for (const record of recordsToSave) {
-          await saveProdDefectItem(record)
-          savedIds.push(record.id)
-        }
-        clearDirty(savedIds)
-        message.success(`已保存 ${recordsToSave.length} 条记录`)
-      } catch (err) {
-        message.error(err.message || '保存失败，无法添加新记录')
-        return
-      }
-    }
-    setProdDefectList(prev => {
-      const hasEmptyRow = prev.some(d => !d.defect_type_id)
-      if (hasEmptyRow) return prev
-      return [{
-        id: genTempId(),
-        report_order_id: selectedReport.report_order_id,
-        process_id: selectedProcessId,
-        defect_category: '制程不良',
-        defect_type_id: null,
-        defect_code: '',
-        defect_type: '',
-        defect_name: '',
-        quantity: 0,
-        unit: '',
-        defect_images: [],
-      }, ...prev]
-    })
-  }
 
-  const handleDeleteProdDefect = async (item) => {
-    if (!item.defect_id) {
-      setProdDefectList(prev => prev.filter(d => d.id !== item.id))
-      return
-    }
-    try {
-      await api.delete(`/production/process-defects/${item.defect_id}`)
-      setProdDefectList(prev => prev.filter(d => d.id !== item.id))
-      message.success('删除成功')
-      if (selectedReport) fetchReportStats(selectedReport.report_order_id)
-    } catch (err) {
-      message.error(err.message || '删除失败')
-    }
-  }
 
   const prodDefectDisplayList = useMemo(() => {
     // 改为手动添加模式，不再自动追加空行
@@ -948,203 +765,12 @@ export default function ProcessReporting() {
   })
 
 
-  const saveScrapDefectItem = async (item) => {
-    if (!selectedReport) return
-    try {
-      if (item.scrap_id) {
-        await api.put(`/production/scrap-defects/${item.scrap_id}`, {
-          defect_type_id: item.defect_type_id,
-          quantity: item.quantity,
-          unit: item.unit,
-          defect_images: item.defect_images,
-        })
-      } else {
-        const defect = scrapTypeOptions.find(d => d.value === item.defect_type_id)
-        const res = await api.post('/production/scrap-defects', {
-          report_order_id: selectedReport.report_order_id,
-          defect_type_id: item.defect_type_id,
-          quantity: item.quantity,
-          unit: defect?.defect_unit || item.unit,
-          defect_images: item.defect_images,
-        })
-        // 后端 create 返回不含 defect_code/defect_type/defect_name（这些来自关联表，仅 list 接口返回），
-        // 用 item 作为基底合并，保留选择时已设置好的展示字段，避免保存后显示空白需刷新
-        setScrapDefectList(prev => prev.map(d =>
-          d.id === item.id ? {
-            ...item,
-            ...res.data,
-            id: res.data.scrap_id,
-            scrap_id: res.data.scrap_id,
-            defect_code: item.defect_code,
-            defect_type: item.defect_type,
-            defect_name: item.defect_name,
-            defect_images: parseImages(res.data.defect_images),
-          } : d
-        ))
-      }
-      fetchReportStats(selectedReport.report_order_id)
-    } catch (err) {
-      message.error(err.message || '保存失败')
-    }
-  }
 
-  const handleScrapDefectChange = (recordId, field, value) => {
-    if (!isEditable) return
-    markDirty(recordId)
-    setScrapDefectList(prev => {
-      const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
-      let updatedItem = null
-      if (existingIndex >= 0) {
-        const newlist = prev.map(item => {
-          if (String(item.id) !== String(recordId)) return item
-          let updated = { ...item, [field]: value }
-          if (field === 'defect_type_id' && value) {
-            const defect = scrapTypeOptions.find(d => String(d.value) === String(value))
-            if (defect) {
-              updated.defect_name = defect.defect_name
-              updated.defect_code = defect.defect_code
-              updated.defect_type = defect.defect_type
-            }
-          }
-          updatedItem = updated
-          return updated
-        })
-        return newlist
-      } else {
-        // 新增记录（空行情况）
-        const newItem = {
-          id: recordId,
-          report_order_id: selectedReport?.report_order_id,
-          defect_category: '检验报废',
-          defect_type_id: null,
-          defect_code: '',
-          defect_type: '',
-          defect_name: '',
-          quantity: 0,
-          unit: '',
-          defect_images: [],
-        }
-        newItem[field] = value
-        if (field === 'defect_type_id' && value) {
-          const defect = scrapTypeOptions.find(d => String(d.value) === String(value))
-          if (defect) {
-            newItem.defect_name = defect.defect_name
-            newItem.defect_code = defect.defect_code
-            newItem.defect_type = defect.defect_type
-          }
-        }
-        return [...prev, newItem]
-      }
-    })
-  }
 
   // 批量保存检验报废记录（新增 + 已修改）
-  const handleSaveAllScrapDefects = async () => {
-    if (!selectedReport) {
-      message.warning('请先选择报工单')
-      return
-    }
-    const recordsToSave = scrapDefectList.filter(d => {
-      if (!d.defect_type_id) return false
-      if (!d.scrap_id) return true
-      return dirtyIds.has(d.id)
-    })
-    if (recordsToSave.length === 0) {
-      message.info('没有需要保存的记录')
-      return
-    }
-    // 校验所有待保存记录
-    for (const record of recordsToSave) {
-      if (!record.quantity || record.quantity <= 0) {
-        message.warning(`不良编码 ${record.defect_code || ''} 的数量无效，请填写大于0的数量`)
-        return
-      }
-      if (!record.unit) {
-        message.warning(`不良编码 ${record.defect_code || ''} 的单位未选择`)
-        return
-      }
-    }
-    try {
-      const savedIds = []
-      for (const record of recordsToSave) {
-        await saveScrapDefectItem(record)
-        savedIds.push(record.id)
-      }
-      clearDirty(savedIds)
-      message.success(`已保存 ${recordsToSave.length} 条记录`)
-    } catch (err) {
-      message.error(err.message || '保存失败')
-    }
-  }
 
   // 新增一条检验报废记录空行（手动触发，添加前先执行一次保存）
-  const handleAddScrapDefectRow = async () => {
-    if (!selectedReport) {
-      message.warning('请先选择报工单')
-      return
-    }
-    // 添加前先执行一次保存（保存新增 + 已修改的记录）
-    const recordsToSave = scrapDefectList.filter(d => {
-      if (!d.defect_type_id) return false
-      if (!d.scrap_id) return true
-      return dirtyIds.has(d.id)
-    })
-    if (recordsToSave.length > 0) {
-      for (const record of recordsToSave) {
-        if (!record.quantity || record.quantity <= 0) {
-          message.warning(`请先完善不良编码 ${record.defect_code || ''} 的数量（需大于0）`)
-          return
-        }
-        if (!record.unit) {
-          message.warning(`请先选择不良编码 ${record.defect_code || ''} 的单位`)
-          return
-        }
-      }
-      try {
-        const savedIds = []
-        for (const record of recordsToSave) {
-          await saveScrapDefectItem(record)
-          savedIds.push(record.id)
-        }
-        clearDirty(savedIds)
-        message.success(`已保存 ${recordsToSave.length} 条记录`)
-      } catch (err) {
-        message.error(err.message || '保存失败，无法添加新记录')
-        return
-      }
-    }
-    setScrapDefectList(prev => {
-      const hasEmptyRow = prev.some(d => !d.defect_type_id)
-      if (hasEmptyRow) return prev
-      return [{
-        id: genTempId(),
-        report_order_id: selectedReport.report_order_id,
-        defect_category: '检验报废',
-        defect_type_id: null,
-        defect_code: '',
-        defect_type: '',
-        defect_name: '',
-        quantity: 0,
-        unit: '',
-        defect_images: [],
-      }, ...prev]
-    })
-  }
 
-  const handleDeleteScrapDefect = async (item) => {
-    if (!item.scrap_id) {
-      setScrapDefectList(prev => prev.filter(d => d.id !== item.id))
-      return
-    }
-    try {
-      await api.delete(`/production/scrap-defects/${item.scrap_id}`)
-      setScrapDefectList(prev => prev.filter(d => d.id !== item.id))
-      message.success('删除成功')
-      if (selectedReport) fetchReportStats(selectedReport.report_order_id)
-    } catch (err) {
-      message.error(err.message || '删除失败')
-    }
-  }
 
   const scrapDefectDisplayList = useMemo(() => {
     // 改为手动添加模式，不再自动追加空行
@@ -1178,102 +804,8 @@ export default function ProcessReporting() {
   })
 
 
-  const saveMaterialItem = async (item) => {
-    if (!selectedReport || !selectedProcessId) return
-    try {
-      if (String(item.id).startsWith('tmp_') === false) {
-        await api.put(`/production/process-materials/${item.id}`, {
-          material_type: item.material_type,
-          bas_material_id: item.bas_material_id,
-          material_batch: item.material_batch,
-          package_no: item.package_no,
-          quantity: item.quantity,
-          label_images: item.label_images,
-        })
-      } else {
-        const res = await api.post('/production/process-materials', {
-          report_order_id: selectedReport.report_order_id,
-          process_id: selectedProcessId,
-          material_type: item.material_type || '投入',
-          bas_material_id: item.bas_material_id,
-          material_batch: item.material_batch,
-          package_no: item.package_no,
-          quantity: item.quantity,
-          label_images: item.label_images,
-        })
-        setMaterialList(prev => prev.map(m =>
-          m.id === item.id ? { ...res.data, id: res.data.material_id, label_images: parseImages(res.data.label_images) } : m
-        ))
-      }
-      fetchReportStats(selectedReport.report_order_id)
-    } catch (err) {
-      message.error(err.message || '保存失败')
-    }
-  }
 
-  const handleMaterialChange = (recordId, field, value) => {
-    if (!isEditable) return
-    markDirty(recordId)
-    setMaterialList(prev => {
-      const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
-      if (existingIndex >= 0) {
-        return prev.map(item => {
-          if (String(item.id) !== String(recordId)) return item
-          let updated = { ...item, [field]: value }
-          if (field === 'bas_material_id' && value) {
-            const material = materialOptions.find(m => String(m.value) === String(value))
-            if (material) {
-              updated.material_code = material.material_code
-              updated.material_name = material.material_name
-              updated.specification = material.specification
-            }
-          }
-          return updated
-        })
-      } else {
-        // 新增记录（空行情况）
-        const newItem = {
-          id: recordId,
-          report_order_id: selectedReport?.report_order_id,
-          process_id: selectedProcessId,
-          material_type: '投入',
-          bas_material_id: null,
-          material_code: '',
-          material_name: '',
-          specification: '',
-          material_batch: '',
-          package_no: '',
-          quantity: 0,
-          label_images: [],
-        }
-        newItem[field] = value
-        if (field === 'bas_material_id' && value) {
-          const material = materialOptions.find(m => String(m.value) === String(value))
-          if (material) {
-            newItem.material_code = material.material_code
-            newItem.material_name = material.material_name
-            newItem.specification = material.specification
-          }
-        }
-        return [newItem, ...prev]
-      }
-    })
-  }
 
-  const handleDeleteMaterial = async (item) => {
-    if (!item.material_id || String(item.material_id).startsWith('tmp_')) {
-      setMaterialList(prev => prev.filter(m => m.id !== item.id))
-      return
-    }
-    try {
-      await api.delete(`/production/process-materials/${item.material_id}`)
-      setMaterialList(prev => prev.filter(m => m.id !== item.id))
-      message.success('删除成功')
-      if (selectedReport) fetchReportStats(selectedReport.report_order_id)
-    } catch (err) {
-      message.error(err.message || '删除失败')
-    }
-  }
 
   // 校验单条生产物料记录（批号、数量为必填项）
   const validateMaterialRecord = (record) => {
@@ -1293,85 +825,8 @@ export default function ProcessReporting() {
   }
 
   // 批量保存生产物料记录（新增 + 已修改）
-  const handleSaveAllMaterials = async () => {
-    if (!selectedReport) {
-      message.warning('请先选择报工单')
-      return
-    }
-    const recordsToSave = materialList.filter(m => {
-      if (!m.bas_material_id) return false
-      if (!m.material_id || String(m.id).startsWith('tmp_')) return true
-      return dirtyIds.has(m.id)
-    })
-    if (recordsToSave.length === 0) {
-      message.info('没有需要保存的记录')
-      return
-    }
-    for (const record of recordsToSave) {
-      if (!validateMaterialRecord(record)) return
-    }
-    try {
-      const savedIds = []
-      for (const record of recordsToSave) {
-        await saveMaterialItem(record)
-        savedIds.push(record.id)
-      }
-      clearDirty(savedIds)
-      message.success(`已保存 ${recordsToSave.length} 条记录`)
-    } catch (err) {
-      message.error(err.message || '保存失败')
-    }
-  }
 
   // 新增一条生产物料记录空行（手动触发，添加前先执行一次保存）
-  const handleAddMaterialRow = async () => {
-    if (!selectedReport) {
-      message.warning('请先选择报工单')
-      return
-    }
-    // 添加前先执行一次保存（保存新增 + 已修改的记录）
-    const recordsToSave = materialList.filter(m => {
-      if (!m.bas_material_id) return false
-      if (!m.material_id || String(m.id).startsWith('tmp_')) return true
-      return dirtyIds.has(m.id)
-    })
-    if (recordsToSave.length > 0) {
-      for (const record of recordsToSave) {
-        if (!validateMaterialRecord(record)) return
-      }
-      try {
-        const savedIds = []
-        for (const record of recordsToSave) {
-          await saveMaterialItem(record)
-          savedIds.push(record.id)
-        }
-        clearDirty(savedIds)
-        message.success(`已保存 ${recordsToSave.length} 条记录`)
-      } catch (err) {
-        message.error(err.message || '保存失败，无法添加新记录')
-        return
-      }
-    }
-    setMaterialList(prev => {
-      const hasEmptyRow = prev.some(m => !m.bas_material_id)
-      if (hasEmptyRow) return prev
-      return [{
-        id: genTempId(),
-        report_order_id: selectedReport.report_order_id,
-        process_id: selectedProcessId,
-        material_type: '投入',
-        material_id: null,
-        bas_material_id: null,
-        material_code: '',
-        material_name: '',
-        specification: '',
-        material_batch: '',
-        package_no: '',
-        quantity: 0,
-        label_images: [],
-      }, ...prev]
-    })
-  }
 
   const materialDisplayList = useMemo(() => {
     // 改为手动添加模式，不再自动追加空行
@@ -1424,33 +879,6 @@ export default function ProcessReporting() {
   }, [selectedReport, selectedProcessId, lineProcesses, isFirstProcess])
 
   // 当前工序统计数据
-  const processStats = useMemo(() => {
-    // 制程不良
-    const processDefectQty = prodDefectList
-      .filter(d => d.defect_type === '制程不良')
-      .reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
-    // 来料不良
-    const materialDefectQty = prodDefectList
-      .filter(d => d.defect_type === '来料不良')
-      .reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
-    // 投入数量
-    let inputQty = 0
-    if (isFirstProcess) {
-      const investQty = materialList.filter(m => m.material_type === '投入').reduce((sum, m) => sum + (Number(m.quantity) || 0), 0)
-      const returnQty = materialList.filter(m => m.material_type === '退回').reduce((sum, m) => sum + (Number(m.quantity) || 0), 0)
-      inputQty = investQty - returnQty
-    } else {
-      inputQty = prevProcessQualifiedQty
-    }
-    // 合格数 = 投入 - 制程不良 - 来料不良
-    const qualifiedQty = inputQty - processDefectQty - materialDefectQty
-    return {
-      inputQty: Number(inputQty.toFixed(2)),
-      qualifiedQty: Number((qualifiedQty > 0 ? qualifiedQty : 0).toFixed(2)),
-      processDefectQty: Number(processDefectQty.toFixed(2)),
-      materialDefectQty: Number(materialDefectQty.toFixed(2)),
-    }
-  }, [prodDefectList, materialList, isFirstProcess, prevProcessQualifiedQty])
 
   const getFilteredMaterialOptions = (record) => {
     if (!isFirstProcess) return materialOptions
@@ -1475,93 +903,8 @@ export default function ProcessReporting() {
   })
 
 
-  const saveExceptionItem = async (item) => {
-    if (!selectedReport) return
-    try {
-      if (item.exception_id) {
-        await api.put(`/production/process-exceptions/${item.exception_id}`, {
-          exception_type: item.exception_type,
-          device_id: item.device_id,
-          stop_type: item.stop_type,
-          start_time: item.start_time,
-          end_time: item.end_time,
-          description: item.description,
-          exception_images: item.exception_images,
-        })
-      } else {
-        const res = await api.post('/production/process-exceptions', {
-          report_order_id: selectedReport.report_order_id,
-          exception_type: item.exception_type,
-          device_id: item.device_id,
-          stop_type: item.stop_type,
-          start_time: item.start_time,
-          end_time: item.end_time,
-          description: item.description,
-          exception_images: item.exception_images,
-        })
-        setExceptionList(prev => prev.map(e =>
-          e.id === item.id ? { ...res.data, id: res.data.exception_id, exception_images: parseImages(res.data.exception_images) } : e
-        ))
-      }
-      fetchReportStats(selectedReport.report_order_id)
-    } catch (err) {
-      message.error(err.message || '保存失败')
-    }
-  }
 
-  const handleExceptionChange = (recordId, field, value) => {
-    if (!isEditable) return
-    markDirty(recordId)
-    setExceptionList(prev => {
-      const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
-      if (existingIndex >= 0) {
-        return prev.map(item => {
-          if (String(item.id) !== String(recordId)) return item
-          const updated = { ...item, [field]: value }
-          if (field === 'start_time' || field === 'end_time') {
-            if (updated.start_time && updated.end_time) {
-              const start = new Date(updated.start_time).getTime()
-              const end = new Date(updated.end_time).getTime()
-              updated.duration = Number(((end - start) / 3600000).toFixed(2))
-            }
-          }
-          return updated
-        })
-      } else {
-        // 新增记录（空行情况）
-        const newItem = {
-          id: recordId,
-          report_order_id: selectedReport?.report_order_id,
-          exception_type: field === 'exception_type' ? value : '',
-          device_id: field === 'device_id' ? value : null,
-          device_name: '',
-          stop_type: '',
-          start_time: field === 'start_time' ? value : null,
-          end_time: field === 'end_time' ? value : null,
-          duration: 0,
-          description: '',
-          exception_images: [],
-        }
-        newItem[field] = value
-        return [...prev, newItem]
-      }
-    })
-  }
 
-  const handleDeleteException = async (item) => {
-    if (!item.exception_id) {
-      setExceptionList(prev => prev.filter(e => e.id !== item.id))
-      return
-    }
-    try {
-      await api.delete(`/production/process-exceptions/${item.exception_id}`)
-      setExceptionList(prev => prev.filter(e => e.id !== item.id))
-      message.success('删除成功')
-      if (selectedReport) fetchReportStats(selectedReport.report_order_id)
-    } catch (err) {
-      message.error(err.message || '删除失败')
-    }
-  }
 
   // 校验单条异常工时记录
   const validateExceptionRecord = (record) => {
@@ -1577,83 +920,8 @@ export default function ProcessReporting() {
   }
 
   // 批量保存异常工时记录（新增 + 已修改）
-  const handleSaveAllExceptions = async () => {
-    if (!selectedReport) {
-      message.warning('请先选择报工单')
-      return
-    }
-    const recordsToSave = exceptionList.filter(e => {
-      if (!e.exception_type) return false
-      if (!e.exception_id) return true
-      return dirtyIds.has(e.id)
-    })
-    if (recordsToSave.length === 0) {
-      message.info('没有需要保存的记录')
-      return
-    }
-    for (const record of recordsToSave) {
-      if (!validateExceptionRecord(record)) return
-    }
-    try {
-      const savedIds = []
-      for (const record of recordsToSave) {
-        await saveExceptionItem(record)
-        savedIds.push(record.id)
-      }
-      clearDirty(savedIds)
-      message.success(`已保存 ${recordsToSave.length} 条记录`)
-    } catch (err) {
-      message.error(err.message || '保存失败')
-    }
-  }
 
   // 新增一条异常工时记录空行（手动触发，添加前先执行一次保存）
-  const handleAddExceptionRow = async () => {
-    if (!selectedReport) {
-      message.warning('请先选择报工单')
-      return
-    }
-    // 添加前先执行一次保存（保存新增 + 已修改的记录）
-    const recordsToSave = exceptionList.filter(e => {
-      if (!e.exception_type) return false
-      if (!e.exception_id) return true
-      return dirtyIds.has(e.id)
-    })
-    if (recordsToSave.length > 0) {
-      for (const record of recordsToSave) {
-        if (!validateExceptionRecord(record)) return
-      }
-      try {
-        const savedIds = []
-        for (const record of recordsToSave) {
-          await saveExceptionItem(record)
-          savedIds.push(record.id)
-        }
-        clearDirty(savedIds)
-        message.success(`已保存 ${recordsToSave.length} 条记录`)
-      } catch (err) {
-        message.error(err.message || '保存失败，无法添加新记录')
-        return
-      }
-    }
-    setExceptionList(prev => {
-      const hasEmptyRow = prev.some(e => !e.exception_type)
-      if (hasEmptyRow) return prev
-      return [...prev, {
-        id: genTempId(),
-        report_order_id: selectedReport.report_order_id,
-        exception_type: '',
-        device_id: null,
-        device_name: '',
-        stop_type: '',
-        start_time: null,
-        end_time: null,
-        duration: 0,
-        description: '',
-        exception_images: [],
-      }]
-    })
-  }
 
   const exceptionDisplayList = useMemo(() => {
     // 改为手动添加模式，不再自动追加空行
@@ -1667,7 +935,7 @@ export default function ProcessReporting() {
     exceptionList,
     reportTime: selectedReport?.report_time,
     onChange: handleExceptionChange,
-    onDelete: handleDeleteException,
+    onDelete: ((record: any) => handleDeleteException(record.id)),
     openImageDrawer,
   })
 
@@ -1701,35 +969,6 @@ export default function ProcessReporting() {
     }
   }
 
-  const handleManpowerChange = (recordId, field, value) => {
-    if (!isEditable) return
-    markDirty(recordId)
-    setManpowerList(prev => {
-      const existingIndex = prev.findIndex(item => String(item.id) === String(recordId))
-      if (existingIndex >= 0) {
-        return prev.map(item => {
-          if (String(item.id) !== String(recordId)) return item
-          // 只更新字段本身，hours/total_people/man_hours 由 manpowerDisplayList 实时计算
-          return { ...item, [field]: value }
-        })
-      } else {
-        // 新增记录（空行情况）
-        const newItem = {
-          id: recordId,
-          report_order_id: selectedReport?.report_order_id,
-          record_date: dayjs().format('YYYY-MM-DD'),
-          shift: '白班',
-          skilled_count: 0,
-          general_count: 0,
-          labor_count: 0,
-          other_count: 0,
-          remarks: '',
-        }
-        newItem[field] = value
-        return [...prev, newItem]
-      }
-    })
-  }
 
   // 校验单条人员工时记录
   const validateManpowerRecord = (record) => {
@@ -1757,47 +996,6 @@ export default function ProcessReporting() {
 
   // 保存人员工时记录（每个报工单只有一条记录，由后端在开工时自动创建）
   // 前端只允许修改人数，不允许新增
-  const handleSaveAllManpowers = async () => {
-    if (!selectedReport) {
-      message.warning('请先选择报工单')
-      return
-    }
-    // 只保存被修改且已存在的记录（不允许新增）
-    const recordsToSave = manpowerList.filter(m => {
-      if (!m.record_id) return false // 不允许新增
-      if (!isManpowerRecordFilled(m)) return false
-      return dirtyIds.has(m.id)
-    })
-    if (recordsToSave.length === 0) {
-      message.info('没有需要保存的记录')
-      return
-    }
-    for (const record of recordsToSave) {
-      if (!validateManpowerRecord(record)) return
-    }
-    try {
-      const savedIds = []
-      for (const record of recordsToSave) {
-        await saveManpowerItem(record)
-        savedIds.push(record.id)
-      }
-      clearDirty(savedIds)
-      // 立即用本地数据更新人工工时统计（用户感知"立即更新"）
-      setStats(prev => ({
-        ...prev,
-        manpowerHours: calcManpowerHoursLocal(manpowerList, {
-          report_time: selectedReport.report_time,
-          status: selectedReport.status,
-          finish_time: selectedReport.finish_time,
-        }),
-      }))
-      // 再从服务器同步所有统计数据（确保一致性）
-      await fetchReportStats(selectedReport.report_order_id)
-      message.success(`已保存 ${recordsToSave.length} 条记录`)
-    } catch (err) {
-      message.error(err.message || '保存失败')
-    }
-  }
 
   // 根据报工单时间计算单条人员工时记录的 hours / man_hours
   // 开始时间 = 报工单 report_time；结束时间 = 完工状态取 finish_time，开工状态取当前时间
@@ -1856,7 +1054,7 @@ export default function ProcessReporting() {
             data={prodDefectDisplayList}
             onSave={handleSaveAllProdDefects}
             onAdd={handleAddProdDefectRow}
-            stats={processStats}
+            stats={hookProcessStats}
           />
         )
       case 'production-material':
