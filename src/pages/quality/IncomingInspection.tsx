@@ -22,7 +22,7 @@ const handleColor = { '入库': 'green', '退货': 'red', '让步接收': 'orang
 const triggerColor = { '自动': 'blue', '手工': 'purple' }
 const statusColor = { '待检': 'default', '检验中': 'processing', '审核中': 'warning', '已完成': 'success', '已关闭': 'default' }
 
-const STATUS_OPTIONS = ['待检', '检验中', '审核中', '已完成', '已关闭']
+const STATUS_OPTIONS = ['待检', '检验中', '审核中', '已完成']
 const DEFAULT_STATUS = ['待检', '检验中', '审核中']
 
 const canEdit = (status: string) => status === '待检' || status === '检验中'
@@ -35,6 +35,8 @@ export default function IncomingInspection() {
   const [summaryStats, setSummaryStats] = useState<any>({ total: 0, pending: 0, inspecting: 0, reviewing: 0, pass: 0, fail: 0 })
 
   const [supplierFilter, setSupplierFilter] = useState<any>(undefined)
+  const [materialCodeFilter, setMaterialCodeFilter] = useState<any>(undefined)
+  const [materialNameFilter, setMaterialNameFilter] = useState<any>(undefined)
   const [resultFilter, setResultFilter] = useState<any>(undefined)
   const [statusFilter, setStatusFilter] = useState<string[]>([...DEFAULT_STATUS])
   const [dateRange, setDateRange] = useState<any>(null)
@@ -67,6 +69,8 @@ export default function IncomingInspection() {
     try {
       const params: any = { page: pagination.current, page_size: pagination.pageSize }
       if (supplierFilter) params.supplier_name = supplierFilter
+      if (materialCodeFilter) params.material_code = materialCodeFilter
+      if (materialNameFilter) params.material_name = materialNameFilter
       if (resultFilter) params.result = resultFilter
       if (statusFilter && statusFilter.length > 0) params.status = statusFilter.join(',')
       if (dateRange && dateRange[0]) params.start_date = dateRange[0].format('YYYY-MM-DD')
@@ -88,7 +92,7 @@ export default function IncomingInspection() {
       setLoading(false)
       setRangeWarn(false)
     }
-  }, [pagination.current, pagination.pageSize, supplierFilter, resultFilter, statusFilter, dateRange])
+  }, [pagination.current, pagination.pageSize, supplierFilter, materialCodeFilter, materialNameFilter, resultFilter, statusFilter, dateRange])
 
   const handleMonthQuick = (v: string) => {
     setMonthQuick(v)
@@ -422,13 +426,27 @@ export default function IncomingInspection() {
           </>
         }
         filter={
-          <Space wrap style={{ width: '100%' }} size={[8, 8]} align="center">
+          <Space wrap style={{ width: '100%', rowGap: 8 }} size={[8, 0]} align="start">
             <Input
               placeholder="供应商名称"
               style={{ width: 150 }}
               allowClear
               value={supplierFilter}
               onChange={e => setSupplierFilter(e.target.value || undefined)}
+            />
+            <Input
+              placeholder="料号"
+              style={{ width: 150 }}
+              allowClear
+              value={materialCodeFilter}
+              onChange={e => setMaterialCodeFilter(e.target.value || undefined)}
+            />
+            <Input
+              placeholder="料品名称"
+              style={{ width: 200 }}
+              allowClear
+              value={materialNameFilter}
+              onChange={e => setMaterialNameFilter(e.target.value || undefined)}
             />
             <Select
               placeholder="结果"
@@ -438,12 +456,12 @@ export default function IncomingInspection() {
               value={resultFilter}
               onChange={setResultFilter}
             />
-            <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-              <span style={{ color: '#888', fontSize: 13, marginRight: 6, whiteSpace: 'nowrap' }}>状态：</span>
+            <div style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'wrap', rowGap: 4, columnGap: 8, minWidth: 0, maxWidth: '100%' }}>
+              <span style={{ color: '#888', fontSize: 13, marginRight: 6, whiteSpace: 'nowrap', flexShrink: 0 }}>状态：</span>
               <Checkbox.Group
                 value={statusFilter}
                 onChange={v => setStatusFilter(v as string[])}
-                style={{ display: 'inline-flex', gap: 8, whiteSpace: 'nowrap' }}
+                style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 8, rowGap: 4 }}
                 options={STATUS_OPTIONS}
               />
             </div>
@@ -462,8 +480,8 @@ export default function IncomingInspection() {
             />
             <Button type="primary" icon={<SearchOutlined />} onClick={fetchData}>查询</Button>
             <Button icon={<ReloadOutlined />} onClick={() => {
-              setSupplierFilter(undefined); setResultFilter(undefined)
-              setStatusFilter([...DEFAULT_STATUS]); setMonthQuick(''); setDateRange(null)
+              setSupplierFilter(undefined); setMaterialCodeFilter(undefined); setMaterialNameFilter(undefined)
+              setResultFilter(undefined); setStatusFilter([...DEFAULT_STATUS]); setMonthQuick(''); setDateRange(null)
             }}>重置</Button>
           </Space>
         }

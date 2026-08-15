@@ -60,6 +60,8 @@ export default {
         page_size = 20,
         inspection_no,
         supplier_name,
+        material_code,
+        material_name,
         result,
         status,
         start_date,
@@ -69,6 +71,8 @@ export default {
       const where: any = {}
       if (inspection_no) where.inspection_no = { [Op.like]: `%${inspection_no}%` }
       if (supplier_name) where.supplier_name = { [Op.like]: `%${supplier_name}%` }
+      if (material_code) where.material_code = { [Op.like]: `%${material_code}%` }
+      if (material_name) where.material_name = { [Op.like]: `%${material_name}%` }
       if (result) where.result = result
 
       const statusArr = parseStatusParam(status)
