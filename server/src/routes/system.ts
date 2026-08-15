@@ -12,7 +12,8 @@ import {
 } from '../controllers/PermissionController.js'
 import { list as logList } from '../controllers/OperationLogController.js'
 import { list as systemLogList } from '../controllers/SystemLogController.js'
-import { getConfig, saveConfig, getEnvironment, migrateDatabase, getMigrationTargets, restartServer, listDataDictionary, refreshDataDictionary, getRefreshProgress } from '../controllers/SystemConfigController.js'
+import { getConfig, saveConfig, migrateDatabase, getMigrationTargets, listDataDictionary, refreshDataDictionary, getRefreshProgress } from '../controllers/SystemConfigController.js'
+import { getEnvironment, restartServer } from '../modules/system-config/EnvironmentController.js'
 import { getDatabaseInfo, listBackups, createBackup, restoreBackup, deleteBackup, listTableRecords } from '../modules/system-config/DatabaseController.js'
 import { authRequired, logOperation } from '../middleware/auth.js'
 import {

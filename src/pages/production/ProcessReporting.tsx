@@ -14,6 +14,10 @@ import api from '../../utils/api'
 import { formatFilmVersion, formatDateTime, formatTime, formatDate } from '../../utils'
 import { reportOrderStatusMap, exceptionCategories, genTempId } from './constants'
 import { buildDefectColumns, buildMaterialColumns } from './processColumns'
+import { buildExceptionColumns } from './exceptionColumns'
+import { buildManpowerColumns } from './manpowerColumns'
+import { calcReportStats as calcReportOrderStats, calcProcessStats as calcPersonSummary } from './reportStats'
+import type { DefectRecord, ExceptionRecord, ManpowerRecord, MaterialRecord } from './types'
 
 export default function ProcessReporting() {
   // 顶部下拉框数据：仅开工状态(status=0)的报工单
@@ -1652,209 +1656,16 @@ export default function ProcessReporting() {
     return exceptionList
   }, [exceptionList])
 
-  const exceptionColumns = [
-    {
-      title: '异常类型', dataIndex: 'exception_type', key: 'exception_type', width: 120,
-      render: (val, record) => isEditable ? (
-        <Select
-          placeholder="请选择"
-          value={val || undefined}
-          onChange={(v) => handleExceptionChange(record.id, 'exception_type', v)}
-          options={exceptionCategories}
-          style={{ width: '100%' }}
-          size="small"
-          popupClassName="mes-select-dropdown"
-        />
-      ) : val || '-',
-    },
-    {
-      title: '设备', dataIndex: 'device_name', key: 'device_name', width: 150,
-      render: (_, record) => isEditable ? (
-        <Select
-          placeholder="请选择设备"
-          value={record.device_id || undefined}
-          onChange={(v) => handleExceptionChange(record.id, 'device_id', v)}
-          options={deviceOptions}
-          style={{ width: '100%' }}
-          showSearch
-          optionFilterProp="label"
-          size="small"
-          allowClear
-          popupClassName="mes-select-dropdown"
-        />
-      ) : record.device_name || '-',
-    },
-    {
-      title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 150,
-      render: (val, record) => isEditable ? (
-        <TimePicker
-          value={val ? dayjs(val) : null}
-          onChange={(d) => {
-            if (d) {
-              // 用报工时间的日期 + 用户选择的时分秒，避免跨天错乱
-              const reportTime = selectedReport?.report_time
-              const baseDate = reportTime ? dayjs(reportTime).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')
-              const timeStr = d.format('HH:mm:ss')
-              const newTime = `${baseDate}T${timeStr}`
-              // 校验 1：开始时间不能早于报工时间
-              if (reportTime && dayjs(newTime).isBefore(dayjs(reportTime))) {
-                message.warning('开始时间不能早于报工时间')
-                return
-              }
-              // 校验 2：开始时间不能晚于当前时间（禁止未来时间）
-              if (dayjs(newTime).isAfter(dayjs())) {
-                message.warning('开始时间不能晚于当前时间')
-                return
-              }
-              // 校验 3：与同报工单其他异常记录的时间区间不能重叠
-              const overlap = exceptionList.some(e => {
-                if (String(e.id) === String(record.id)) return false
-                if (!e.start_time) return false
-                const eStart = dayjs(e.start_time)
-                const eEnd = e.end_time ? dayjs(e.end_time) : null
-                const newStart = dayjs(newTime)
-                // 新区间为 [newStart, record.end_time 或 newStart]
-                const newEnd = record.end_time ? dayjs(record.end_time) : newStart
-                if (eEnd) {
-                  return newStart.isBefore(eEnd) && newEnd.isAfter(eStart)
-                }
-                return newEnd.isAfter(eStart) || newStart.isSame(eStart)
-              })
-              if (overlap) {
-                message.warning('开始时间与已有异常记录的时间区间重叠')
-                return
-              }
-              handleExceptionChange(record.id, 'start_time', newTime)
-            } else {
-              handleExceptionChange(record.id, 'start_time', null)
-            }
-          }}
-          format="HH:mm"
-          style={{ width: '100%' }}
-          size="small"
-          minuteStep={5}
-          disabledTime={(now) => {
-            // 禁用未来时间的小时和分钟
-            const reportTime = selectedReport?.report_time
-            const baseDate = reportTime ? dayjs(reportTime).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')
-            const today = dayjs().format('YYYY-MM-DD')
-            if (baseDate !== today) return {}
-            const current = dayjs()
-            return {
-              disabledHours: () => Array.from({ length: 24 }, (_, i) => i).filter(h => h > current.hour()),
-              disabledMinutes: (selHour) => {
-                if (selHour < current.hour()) return []
-                return Array.from({ length: 60 }, (_, i) => i).filter(m => m > current.minute())
-              },
-            }
-          }}
-        />
-      ) : formatDateTime(val),
-    },
-    {
-      title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 150,
-      render: (val, record) => isEditable ? (
-        <TimePicker
-          value={val ? dayjs(val) : null}
-          onChange={(d) => {
-            if (d) {
-              // 用报工时间的日期 + 用户选择的时分秒
-              const reportTime = selectedReport?.report_time
-              const baseDate = reportTime ? dayjs(reportTime).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')
-              const timeStr = d.format('HH:mm:ss')
-              const newTime = `${baseDate}T${timeStr}`
-              // 校验 1：结束时间不能小于开始时间
-              const startTime = record.start_time
-              if (startTime && dayjs(newTime).isBefore(dayjs(startTime))) {
-                message.warning('结束时间不能小于开始时间')
-                return
-              }
-              // 校验 2：结束时间不能晚于当前时间（禁止未来时间）
-              if (dayjs(newTime).isAfter(dayjs())) {
-                message.warning('结束时间不能晚于当前时间')
-                return
-              }
-              // 校验 3：与同报工单其他异常记录的时间区间不能重叠
-              if (startTime) {
-                const overlap = exceptionList.some(e => {
-                  if (String(e.id) === String(record.id)) return false
-                  if (!e.start_time) return false
-                  const eStart = dayjs(e.start_time)
-                  const eEnd = e.end_time ? dayjs(e.end_time) : null
-                  const newStart = dayjs(startTime)
-                  const newEnd = dayjs(newTime)
-                  if (eEnd) {
-                    return newStart.isBefore(eEnd) && newEnd.isAfter(eStart)
-                  }
-                  return newEnd.isAfter(eStart)
-                })
-                if (overlap) {
-                  message.warning('结束时间与已有异常记录的时间区间重叠')
-                  return
-                }
-              }
-              handleExceptionChange(record.id, 'end_time', newTime)
-            } else {
-              handleExceptionChange(record.id, 'end_time', null)
-            }
-          }}
-          format="HH:mm"
-          style={{ width: '100%' }}
-          size="small"
-          minuteStep={5}
-          disabledTime={(now) => {
-            const reportTime = selectedReport?.report_time
-            const baseDate = reportTime ? dayjs(reportTime).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')
-            const today = dayjs().format('YYYY-MM-DD')
-            if (baseDate !== today) return {}
-            const current = dayjs()
-            return {
-              disabledHours: () => Array.from({ length: 24 }, (_, i) => i).filter(h => h > current.hour()),
-              disabledMinutes: (selHour) => {
-                if (selHour < current.hour()) return []
-                return Array.from({ length: 60 }, (_, i) => i).filter(m => m > current.minute())
-              },
-            }
-          }}
-        />
-      ) : formatDateTime(val),
-    },
-    { title: '时长(小时)', dataIndex: 'duration', key: 'duration', width: 100 },
-    {
-      title: '异常描述', dataIndex: 'description', key: 'description', width: 240,
-      render: (val, record) => isEditable ? (
-        <Input.TextArea
-          placeholder="请输入异常描述"
-          value={val || ''}
-          onChange={(e) => handleExceptionChange(record.id, 'description', e.target.value)}
-          size="small"
-          maxLength={200}
-          autoSize={{ minRows: 1, maxRows: 3 }}
-        />
-      ) : (
-        <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', display: 'block' }}>
-          {val || '-'}
-        </span>
-      ),
-    },
-    {
-      title: '图片', dataIndex: 'exception_images', key: 'exception_images', width: 100,
-      render: (val, record) => (
-        <Button type="link" size="small" icon={<PictureOutlined />}
-          onClick={() => openImageDrawer('异常图片', val || [], { listType: 'exception', recordId: record.id, field: 'exception_images', category: 'exception' })}>
-          {(val || []).length} 张
-        </Button>
-      ),
-    },
-    {
-      title: '操作', key: 'action',
-      render: (_, record) => isEditable ? (
-        <Popconfirm title="确认删除？" onConfirm={() => handleDeleteException(record)}>
-          <Button type="link" size="small" danger>删除</Button>
-        </Popconfirm>
-      ) : null,
-    },
-  ]
+  const exceptionColumns = buildExceptionColumns({
+    isEditable,
+    deviceOptions,
+    exceptionCategories,
+    exceptionList,
+    reportTime: selectedReport?.report_time,
+    onChange: handleExceptionChange,
+    onDelete: handleDeleteException,
+    openImageDrawer,
+  })
 
   const saveManpowerItem = async (item) => {
     if (!selectedReport) return
@@ -2014,93 +1825,11 @@ export default function ProcessReporting() {
     })
   }, [manpowerList, calcManpowerHours])
 
-  const manpowerColumns = [
-    {
-      title: '班次', dataIndex: 'shift', key: 'shift', width: 100,
-      render: (val) => isEditable ? (
-        <Select
-          value={val || '白班'}
-          disabled
-          options={[
-            { label: '白班', value: '白班' },
-            { label: '夜班', value: '夜班' },
-          ]}
-          style={{ width: '100%' }}
-          size="small"
-          popupClassName="mes-select-dropdown"
-        />
-      ) : val || '-',
-    },
-    {
-      title: '开始时间', dataIndex: 'report_start_time', key: 'report_start_time', width: 150,
-      render: (val) => {
-        const t = selectedReport?.report_time
-        return formatDateTime(t)
-      },
-    },
-    {
-      title: '结束时间', dataIndex: 'report_end_time', key: 'report_end_time', width: 150,
-      render: (val) => {
-        // 完工状态显示 finish_time；开工状态显示"进行中"（结束时间实时取当前时间）
-        if (selectedReport?.status === '完工') {
-          const t = selectedReport?.finish_time
-          return formatDateTime(t)
-        }
-        return <Tag color="processing">进行中</Tag>
-      },
-    },
-    { title: '工时(小时)', dataIndex: 'hours', key: 'hours', width: 100 },
-    {
-      title: '技工', dataIndex: 'skilled_count', key: 'skilled_count', width: 90,
-      render: (val, record) => isEditable ? (
-        <InputNumber
-          min={0}
-          value={val}
-          onChange={(v) => handleManpowerChange(record.id, 'skilled_count', v || 0)}
-          style={{ width: '100%' }}
-          size="small"
-        />
-      ) : val,
-    },
-    {
-      title: '普工', dataIndex: 'general_count', key: 'general_count', width: 90,
-      render: (val, record) => isEditable ? (
-        <InputNumber
-          min={0}
-          value={val}
-          onChange={(v) => handleManpowerChange(record.id, 'general_count', v || 0)}
-          style={{ width: '100%' }}
-          size="small"
-        />
-      ) : val,
-    },
-    {
-      title: '劳务工', dataIndex: 'labor_count', key: 'labor_count', width: 90,
-      render: (val, record) => isEditable ? (
-        <InputNumber
-          min={0}
-          value={val}
-          onChange={(v) => handleManpowerChange(record.id, 'labor_count', v || 0)}
-          style={{ width: '100%' }}
-          size="small"
-        />
-      ) : val,
-    },
-    {
-      title: '其他', dataIndex: 'other_count', key: 'other_count', width: 90,
-      render: (val, record) => isEditable ? (
-        <InputNumber
-          min={0}
-          value={val}
-          onChange={(v) => handleManpowerChange(record.id, 'other_count', v || 0)}
-          style={{ width: '100%' }}
-          size="small"
-        />
-      ) : val,
-    },
-    { title: '总人数', dataIndex: 'total_people', key: 'total_people', width: 80 },
-    { title: '总工时', dataIndex: 'man_hours', key: 'man_hours', width: 100 },
-  ]
+  const manpowerColumns = buildManpowerColumns({
+    isEditable,
+    selectedReport,
+    onChange: handleManpowerChange,
+  })
 
   const tabItems = [
     { key: 'production-defect', label: '不良记录' },
