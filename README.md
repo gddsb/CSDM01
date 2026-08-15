@@ -171,7 +171,7 @@
 | 客诉管理 | `/quality/complaints` | 客户投诉处理与跟踪；**筛选区支持月份快速选择**（本月/上月/近3个月/近6个月/今年/去年），默认显示本月，查询跨度最大12个月，超3个月显示长查询警告 |
 | 供应商投诉 | `/quality/supplier` | 供应商质量投诉处理；**筛选区支持月份快速选择**（本月/上月/近3个月/近6个月/今年/去年），默认显示本月，查询跨度最大12个月，超3个月显示长查询警告 |
 | 检测仪器管理 | `/quality/instruments` | 仪器档案、校准记录 |
-| 检验标准管理 | `/quality/standards` | 检验标准定义与版本控制，支持首件/制程/成品/来料/其它五种检验类型，材料检验/产品检验/环境检验/微生物检验标准/其它检验五种标准类型，开立/生效/失效三种状态；标准编号按类型前缀自动生成（BZ-CL/BZ-CP/BZ-HJ/BZ-WS/BZ-QT + 年份 + 3位流水码）；主表+子表结构（主表存标准基本信息含版本含检验方案 inspection_plan，子表存检验项目）；在标准编辑中直接维护检验项目（新增/编辑/删除）；**来料检验页面检验标准下拉菜单仅显示材料检验标准，产品检测页面检验标准下拉菜单仅显示产品检验标准**；启动时自动迁移补齐 `quality_inspection_standard.inspection_plan` 列，避免该列缺失导致列表/下拉查询报 "Unknown column" 错误 |
+| 检验标准管理 | `/quality/standards` | 检验标准定义与版本控制，支持首件/制程/成品/来料/其它五种检验类型，材料检验/产品检验/环境检验/微生物检验标准/其它检验五种标准类型，开立/生效/失效三种状态；标准编号按类型前缀自动生成（BZ-CL/BZ-CP/BZ-HJ/BZ-WS/BZ-QT + 年份 + 3位流水码）；主表+子表结构（主表存标准基本信息含版本含检验方案 inspection_plan，子表存检验项目）；在标准编辑中直接维护检验项目（新增/编辑/删除）；**来料检验页面检验标准下拉菜单仅显示材料检验标准，产品检测页面检验标准下拉菜单仅显示产品检验标准**；启动时自动迁移补齐 `quality_inspection_standard.inspection_plan` 列，避免该列缺失导致列表/下拉查询报 "Unknown column" 错误；列表（含 Drawer 内"检验项目"子表）严格按三段式列表列宽规范配置列宽、固定列与横向滚动宽度（见「开发规范→页面布局规范→三段式列表列宽规范」章节）|
 
 ### 5. 设备管理
 
@@ -2139,6 +2139,68 @@ PC端生产报工页面（`/production/reporting`）信息区采用三行布局�
 - **生产订单列表**（`/mobile/orders`）及详情页（`/mobile/orders/:id`）：点击底部菜单不跳转
 - **生产报工单详情页**（`/mobile/reporting/:id`）：点击底部菜单不跳转
 - 其他页面（首页、设备、消息、我的）：正常响应底部菜单跳转
+
+#### 三段式列表列宽规范（ResizableTable）
+
+> 参考样板：`来料检验` 页 `src/pages/quality/IncomingInspection.tsx`；已落地页：检验标准 `src/pages/quality/InspectionStandard.tsx`、数据字典 `src/pages/system/DataDictionary.tsx`、来料检验、生产订单、生产报工等。
+
+##### 目标
+保证所有三段式页面的表格列宽**交互行为一致**：拖动某一列的右侧边框调整宽度时，**仅当前列变宽/变窄，其他列宽度保持不变**；同时列宽设置按用户/表格分别持久化，不出现跨表互相覆盖的情况。
+
+##### 强制规则（新增/改造列表页必须遵守）
+
+| 编号 | 项目 | 规则 |
+|---|---|---|
+| R1 | **表格组件选型** | 一律使用 `<ResizableTable>`（`src/components/ResizableTable.tsx`），**禁止**直接使用 Ant Design 的 `<Table>` |
+| R2 | **禁止 `autoWidth={true}`** | 严禁显式设置 `autoWidth={true}`（等价于不写，默认值 `false`）。`autoWidth=true` 会切到 `table-layout: auto` 并移除拖拽手柄，调整一列会触发浏览器整体重算 → 全表抖动，不符合"只动当前列"规范 |
+| R3 | **table-layout = fixed** | 由 R2（`autoWidth=false`）自动生效，配合每列显式 `width` 数字值，最终效果为「拖某一列右边框时，其他列像素宽度保持不变」 |
+| R4 | **每列显式 width** | 每一列（序号/文本/标签/状态/操作）都写 `width: <number>`（单位 px），禁止省略。常规列宽参考（按内容选择）：序号列 50~60、编号类 120~160、状态/标签 90、数量/人次 90（右对齐）、日期 110、时间 160、类型/分类 120~140、名称/描述 180~260、操作 220 |
+| R5 | **长文本处理** | 不省略/不强行加宽，使用单元格内换行容器：`<div style={{ wordBreak: 'break-word', whiteSpace: 'normal', lineHeight: 1.4 }}>{v || '-'}</div>`（来料检验"料品名称"列做法），短文本用 `ellipsis: true` + `title` 原生悬浮提示即可 |
+| R6 | **对齐方式** | 数量、版本号、面积等数值类一律 `align: 'right'`；状态/标签默认居中；编号/文本左对齐；不要混用造成列视觉错位 |
+| R7 | **固定列卡边** | 主标识列（如 检验编号、标准号、料号等主键/编号）`fixed: 'left'`；操作列（3 个以上按钮时）`fixed: 'right'` 宽度 ≥ 220；保证横向滚动时不丢主键不丢操作 |
+| R8 | **scroll.x 计算** | `scroll.x` 建议取「所有列 width 之和 × 0.92 ~ 1.02」并向上取整百；总列宽不足 1200 时按 1200 设置，避免空表视觉压缩；来料检验 16 列合计 ≈1880 → `scroll={{ x: 1900 }}`，检验标准主表 8 列合计 1210 → `scroll={{ x: 1300 }}`，检验项目子表 8 列合计 1390 → `scroll={{ x: 1500 }}` |
+| R9 | **tableKey 命名唯一性（非常重要）** | `<ResizableTable tableKey="...">` 必须**每个独立表格唯一命名**，格式：`pages_<模块>_<页面>[_<子表用途>]`，并与用户设置表 `sys_user_setting.key` 里 `ResizableTable/widths/<tableKey>` 前缀一一对应：<br>· 主列表 = `pages_quality_InspectionStandard_main`<br>· Drawer 内子表 = `pages_quality_InspectionStandard_items_view`<br>· 同一页多个表格（如数据字典的 主表/结构/记录）**严禁共用相同 tableKey**，否则列宽用户保存值会互相覆盖（数据字典历史问题已修复） |
+| R10 | **最小宽度兜底** | ResizableTable 内部 `handleResize` 已强制 `Math.max(60, startWidth + diff)`，防止用户把列拖成 0 宽不可见；后续若需全局统一最小宽度 80/100，直接改此处一处即可，不影响页面列定义 |
+| R11 | **弹性列禁用** | 除非特别指定某个页面需要"其余列自适应"（默认不启用），否则一律不传入 `elasticColKeys`；ResizableTable 默认不启用弹性列，符合本规范 |
+
+##### 最小模板（可直接套用）
+
+```tsx
+<ResizableTable
+  tableKey="pages_<模块>_<页面>_main"          // 按 R9 唯一命名
+  size="small"
+  columns={[
+    { title: '序号', key: 'index', width: 60,
+      render: (_: any, __: any, i: number) => (page - 1) * pageSize + i + 1 },
+    { title: '标准号', dataIndex: 'standard_no', key: 'standard_no',
+      width: 160, fixed: 'left' as const, ellipsis: true },   // R7 + R4
+    { title: '标准名称', dataIndex: 'standard_name', key: 'standard_name',
+      width: 260,                                              // R4
+      render: v => <div style={{ wordBreak: 'break-word', whiteSpace: 'normal', lineHeight: 1.4 }}>{v || '-'}</div> },  // R5
+    { title: '版本号', dataIndex: 'version_no', key: 'version_no',
+      width: 90, align: 'right' as const },                    // R6
+    { title: '生效日期', dataIndex: 'effective_date', key: 'effective_date',
+      width: 120, render: formatDate },
+    { title: '状态', dataIndex: 'status', key: 'status',
+      width: 90, render: v => <Tag color={colorMap[v]}>{v}</Tag> },
+    { title: '操作', key: 'action',
+      fixed: 'right' as const, width: 220,                     // R7 + R4 (≥220)
+      render: (_: any, r: any) => <Space size={2} wrap>
+        <Button type="link" size="small">查看</Button>
+      </Space> },
+  ]}
+  dataSource={list}
+  rowKey="standard_id"
+  loading={loading}
+  scroll={{ x: 1300 }}                                         // 按 R8 计算
+  pagination={{
+    current: page, pageSize, total,
+    showSizeChanger: true,
+    showTotal: t => `共 ${t} 条`,
+    onChange: (p, ps) => setQuery({ page: p, pageSize: ps }),
+  }}
+/>
+```
 
 ### 代码规范
 

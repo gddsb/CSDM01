@@ -184,29 +184,29 @@ export default function InspectionStandard() {
   }
 
   const columns: ColumnsType<any> = [
-    { title: '标准号', dataIndex: 'standard_no', key: 'standard_no', width: 160 },
+    { title: '标准号', dataIndex: 'standard_no', key: 'standard_no', width: 160, fixed: 'left' as const, ellipsis: true },
     {
       title: '标准名称', dataIndex: 'standard_name', key: 'standard_name', width: 260,
-      render: (v: string) => <div style={{ whiteSpace: 'normal', wordBreak: 'break-all', lineHeight: 1.5 }}>{v}</div>
+      render: (v: string) => <div style={{ wordBreak: 'break-word', whiteSpace: 'normal', lineHeight: 1.4 }}>{v || '-'}</div>
     },
     {
-      title: '标准类型', dataIndex: 'standard_type', key: 'standard_type', width: 100,
+      title: '标准类型', dataIndex: 'standard_type', key: 'standard_type', width: 140,
       render: (v: string) => <Tag color={standardTypeColorMap[v] || 'default'}>{v}</Tag>
     },
-    { title: '检验方案', dataIndex: 'inspection_plan', key: 'inspection_plan', width: 130, render: (v: string) => v || '-' },
-    { title: '版本号', dataIndex: 'version_no', key: 'version_no', width: 80 },
-    { title: '生效日期', dataIndex: 'effective_date', key: 'effective_date', width: 110, render: formatDate },
+    { title: '检验方案', dataIndex: 'inspection_plan', key: 'inspection_plan', width: 130, ellipsis: true, render: (v: string) => v || '-' },
+    { title: '版本号', dataIndex: 'version_no', key: 'version_no', width: 90, align: 'right' as const },
+    { title: '生效日期', dataIndex: 'effective_date', key: 'effective_date', width: 120, render: formatDate },
     {
-      title: '状态', dataIndex: 'status', key: 'status', width: 80,
+      title: '状态', dataIndex: 'status', key: 'status', width: 90,
       render: (v: string) => {
         const colorMap: Record<string, string> = { '开立': 'default', '生效': 'success', '失效': 'error' }
         return <Tag color={colorMap[v] || 'default'}>{v}</Tag>
       }
     },
     {
-      title: '操作', key: 'action', fixed: 'right', width: 150,
+      title: '操作', key: 'action', fixed: 'right' as const, width: 220,
       render: (_: any, record: any) => (
-        <Space size="small" wrap>
+        <Space size={2} wrap>
           <Button type="link" size="small" onClick={() => handleView(record)}>查看</Button>
           {record.status === '开立' && (
             <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
@@ -223,20 +223,20 @@ export default function InspectionStandard() {
 
   const itemTableColumns = [
     {
-      title: '项目大类', dataIndex: 'category', key: 'category', width: 100,
+      title: '项目大类', dataIndex: 'category', key: 'category', width: 120,
       render: (v: string) => <Tag color={categoryColor[v] || 'default'}>{v}</Tag>
     },
-    { title: '检验项目', dataIndex: 'item_name', key: 'item_name', width: 160, render: (v: string) => <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{v}</span> },
+    { title: '检验项目', dataIndex: 'item_name', key: 'item_name', width: 180, render: (v: string) => <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{v || '-'}</span> },
     {
-      title: '检验类型', dataIndex: 'inspection_types', key: 'inspection_types', width: 220,
+      title: '检验类型', dataIndex: 'inspection_types', key: 'inspection_types', width: 240,
       render: (v: string) => {
         if (!v) return '-'
         const types = v.split(',')
         return <Space wrap size={4}>{types.map(t => <Tag key={t} color={typeColorMap[t] || 'default'}>{t}</Tag>)}</Space>
       }
     },
-    { title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 220, render: (v: string) => <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{v}</span> },
-    { title: '单位', dataIndex: 'unit', key: 'unit', width: 80 },
+    { title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 240, render: (v: string) => <span style={{ whiteSpace: 'normal', wordBreak: 'break-all' }}>{v || '-'}</span> },
+    { title: '单位', dataIndex: 'unit', key: 'unit', width: 80, render: (v: string) => v || '-' },
     {
       title: '缺陷等级', dataIndex: 'defect_level', key: 'defect_level', width: 130,
       render: (v: string) => {
@@ -244,8 +244,8 @@ export default function InspectionStandard() {
         return v ? <Tag color={colorMap[v] || 'default'}>{v}</Tag> : '-'
       }
     },
-    { title: '检验方法', dataIndex: 'method', key: 'method', width: 180, render: (v: string) => <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{v}</span> },
-    { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 180, render: (v: string) => <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{v}</span> },
+    { title: '检验方法', dataIndex: 'method', key: 'method', width: 200, render: (v: string) => <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{v || '-'}</span> },
+    { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 200, render: (v: string) => <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{v || '-'}</span> },
   ]
 
   return (
@@ -297,13 +297,13 @@ export default function InspectionStandard() {
               </Col>
             </Row>
             <ResizableTable
-              tableKey="pages_quality_InspectionStandard"
+              tableKey="pages_quality_InspectionStandard_main"
               columns={columns}
               dataSource={data}
               rowKey="standard_id"
               size="small"
               loading={loading}
-              scroll={{ x: 1400 }}
+              scroll={{ x: 1300 }}
               pagination={{
                 ...pagination,
                 showSizeChanger: true,
@@ -399,7 +399,7 @@ export default function InspectionStandard() {
               rowKey="item_id"
               size="small"
               pagination={false}
-              scroll={{ x: 1400 }}
+              scroll={{ x: 1500 }}
             />
           </>
         )}
