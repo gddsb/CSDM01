@@ -36,80 +36,89 @@ export const getEnvironment = async (req: Request, res: Response) => {
 
     const platform = os.platform() === 'win32' ? 'Windows' : os.platform() === 'darwin' ? 'macOS' : 'Linux'
 
-    // 系统启动时间
+    // 进程运行时长
     const uptime = process.uptime()
+    const osUptime = os.uptime()
 
-    // CPU 使用率 - 使用500ms采样计算
-    let cpuUsagePercent = 0
+    // 磁盘信息
+    let diskTotal = 0, diskFree = 0, diskUsed = 0, diskUsedPercent = 0, diskMount = '/'
     try {
-      const cpus1 = os.cpus()
-      await new Promise(resolve => setTimeout(resolve, 500))
-      const cpus2 = os.cpus()
-      let totalIdle = 0, totalTick = 0
-      for (let i = 0; i < cpus2.length; i++) {
-        const c1 = cpus1[i].times, c2 = cpus2[i].times
-        const idle = c2.idle - c1.idle
-        const total = (c2.user - c1.user) + (c2.nice - c1.nice) + (c2.sys - c1.sys) +
-                      (c2.idle - c1.idle) + (c2.irq - c1.irq)
-        totalTick += total
-        totalIdle += idle
-      }
-      if (totalTick > 0) {
-        cpuUsagePercent = Math.round(((totalTick - totalIdle) / totalTick) * 100 * 10) / 10
-      }
+      const stat = fs.statfsSync(process.cwd())
+      diskTotal = Number(stat.blocks) * Number(stat.bsize)
+      diskFree = Number(stat.bavail) * Number(stat.bsize)
+      diskUsed = diskTotal - diskFree
+      diskUsedPercent = diskTotal > 0 ? Math.round((diskUsed / diskTotal) * 1000) / 10 : 0
     } catch (err: any) {
-      logger.warn('[SilentCatch] /* ignore */', err?.message)
+      logger.warn('[SilentCatch] disk stat error', err?.message)
     }
 
+    // 系统时间 (北京时间 ISO 字符串)
+    const now = new Date()
+    const serverTime = now.toISOString()
+
+    // 前端服务器信息 - 从环境变量推导
+    const frontendPort = Number(process.env.FRONTEND_PORT) || (process.env.NODE_ENV === 'production' ? 80 : 5173)
+    const backendPort = Number(process.env.PORT) || 3001
+
     return success(res, {
-      // 基础信息
-      nodeVersion: process.version,
-      platform: platform,
-      arch: os.arch(),
-      hostname: os.hostname(),
+      // 基础信息 - 与前端 EnvInfo 接口对齐（snake_case）
+      node_version: process.version,
+      env: process.env.NODE_ENV || 'development',
+      sequelize_version: getDepVersion(backendPkg, 'sequelize'),
+      pid: process.pid,
+      frontend_server: {
+        name: '前端服务器',
+        status: 'running',
+        port: frontendPort,
+      },
+      backend_server: {
+        name: '后端服务器',
+        status: 'running',
+        port: backendPort,
+      },
       uptime: uptime,
-      // 资源信息
-      memoryUsage: {
-        rss: mem.rss,
-        heapTotal: mem.heapTotal,
-        heapUsed: mem.heapUsed,
-        external: mem.external,
-      },
-      memoryTotal: os.totalmem(),
-      memoryFree: os.freemem(),
-      cpuUsage: cpuUsagePercent,
-      cpuModel: os.cpus()[0]?.model || 'N/A',
-      cpuCores: os.cpus().length,
-      // 技术栈
-      techStack: {
-        backend: {
-          runtime: 'Node.js',
-          framework: 'Express',
-          version: getDepVersion(backendPkg, 'express'),
-          orm: 'Sequelize',
-          ormVersion: getDepVersion(backendPkg, 'sequelize'),
-          database: process.env.DB_DIALECT === 'mysql' ? 'MySQL' : 'SQLite',
-        },
+      memory_rss: Math.round(mem.rss / 1024 / 1024 * 10) / 10,
+      memory_heap_used: Math.round(mem.heapUsed / 1024 / 1024 * 10) / 10,
+      memory_heap_total: Math.round(mem.heapTotal / 1024 / 1024 * 10) / 10,
+      cpu_count: os.cpus().length,
+      os_uptime: osUptime,
+      disk_used_percent: diskUsedPercent,
+      disk_free: diskFree,
+      os_version: `${platform} ${os.release()}`,
+      platform: platform,
+      os_type: os.type(),
+      os_release: os.release(),
+      os_hostname: os.hostname(),
+      cpu_model: os.cpus()[0]?.model || '',
+      disk_total: diskTotal,
+      disk_used: diskUsed,
+      disk_mount: diskMount,
+      cwd: process.cwd(),
+      server_time: serverTime,
+      tech_stack: {
         frontend: {
-          framework: 'React',
           version: getDepVersion(frontendPkg, 'react'),
-          buildTool: 'Vite',
-          buildToolVersion: getDepVersion(frontendPkg, 'vite'),
-          language: 'TypeScript',
-          tsVersion: getDepVersion(frontendPkg, 'typescript'),
-          ui: 'Ant Design',
-          uiVersion: getDepVersion(frontendPkg, 'antd'),
+          items: [
+            { category: '框架', key: 'React', version: getDepVersion(frontendPkg, 'react') },
+            { category: '语言', key: 'TypeScript', version: getDepVersion(frontendPkg, 'typescript') },
+            { category: '构建', key: 'Vite', version: getDepVersion(frontendPkg, 'vite') },
+            { category: 'UI', key: 'Ant Design', version: getDepVersion(frontendPkg, 'antd') },
+            { category: '路由', key: 'React Router', version: getDepVersion(frontendPkg, 'react-router-dom') },
+            { category: '图表', key: 'ECharts', version: getDepVersion(frontendPkg, 'echarts') },
+          ],
+        },
+        backend: {
+          version: getDepVersion(backendPkg, 'express'),
+          items: [
+            { category: '运行时', key: 'Node.js', version: process.version.replace(/^v/, '') },
+            { category: '框架', key: 'Express', version: getDepVersion(backendPkg, 'express') },
+            { category: '语言', key: 'TypeScript', version: getDepVersion(backendPkg, 'typescript') },
+            { category: 'ORM', key: 'Sequelize', version: getDepVersion(backendPkg, 'sequelize') },
+            { category: '数据库', key: process.env.DB_DIALECT === 'mysql' ? 'MySQL' : 'SQLite', version: '-' },
+            { category: '鉴权', key: 'JWT', version: getDepVersion(backendPkg, 'jsonwebtoken') },
+          ],
         },
       },
-      // 配置信息
-      config: {
-        port: process.env.PORT || 3001,
-        environment: process.env.NODE_ENV || 'development',
-        timezone: process.env.TZ || 'Asia/Shanghai',
-        logLevel: process.env.LOG_LEVEL || 'info',
-        uploadPath: process.env.UPLOAD_PATH || 'uploads',
-        jwtExpire: process.env.JWT_EXPIRE || '7d',
-      }
     }, '获取运行环境成功')
   } catch (err: any) {
     logger.error('获取运行环境失败:', err)

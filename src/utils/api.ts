@@ -21,18 +21,29 @@ function convertStatusParams(params: Record<string, unknown>): Record<string, un
   const result: Record<string, unknown> = {}
   for (const [key, val] of Object.entries(params)) {
     if (key === 'status') {
+      const tryConvertSingle = (s: string): number | string | null => {
+        const trimmed = s.trim()
+        return STATUS_TEXT_TO_NUM[trimmed] !== undefined ? STATUS_TEXT_TO_NUM[trimmed] : null
+      }
       if (Array.isArray(val)) {
-        result[key] = val.map((s: string) => {
-          return STATUS_TEXT_TO_NUM[s] !== undefined ? STATUS_TEXT_TO_NUM[s] : s
-        }).join(',')
+        const converted = val.map((s: string) => tryConvertSingle(String(s)))
+        if (converted.every((v: any) => v !== null)) {
+          result[key] = converted.join(',')
+        } else {
+          result[key] = val.map((v: any) => String(v)).join(',')
+        }
       } else if (typeof val === 'string') {
         if (val.includes(',')) {
-          result[key] = val.split(',').map((s: string) => {
-            const t = s.trim()
-            return STATUS_TEXT_TO_NUM[t] !== undefined ? STATUS_TEXT_TO_NUM[t] : s
-          }).join(',')
+          const parts = val.split(',')
+          const converted = parts.map(s => tryConvertSingle(s))
+          if (converted.every(v => v !== null)) {
+            result[key] = converted.join(',')
+          } else {
+            result[key] = val
+          }
         } else {
-          result[key] = STATUS_TEXT_TO_NUM[val] !== undefined ? STATUS_TEXT_TO_NUM[val] : val
+          const c = tryConvertSingle(val)
+          result[key] = c !== null ? c : val
         }
       } else {
         result[key] = val

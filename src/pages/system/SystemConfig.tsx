@@ -49,13 +49,17 @@ export default function SystemConfig() {
   const [fileBreadcrumbs, setFileBreadcrumbs] = useState<{ name: string; path: string }[]>([])
   const [fileLoading, setFileLoading] = useState(false)
 
-  const [migrationTargets] = useState<MigrationTarget[]>([ { name: 'SQLite', description: '本地文件数据库（开发环境）', dialect: 'sqlite', is_current: false }, { name: 'MySQL', description: '生产关系型数据库', dialect: 'mysql', is_current: false } ])
+  const [migrationTargets, setMigrationTargets] = useState<MigrationTarget[]>([
+    { name: 'SQLite', description: '本地文件数据库（开发环境）', dialect: 'sqlite', default_storage: './data/milk_can_mes.sqlite', default_port: undefined, is_current: false },
+    { name: 'MySQL', description: '生产关系型数据库', dialect: 'mysql', default_port: 3306, default_storage: undefined, is_current: false },
+  ])
+  const [selectedMigrationTarget, setSelectedMigrationTarget] = useState<string>('')
   const [migrationLoading, setMigrationLoading] = useState(false)
   const [migrationOpen, setMigrationOpen] = useState(false)
   const [migrationSubmitting, setMigrationSubmitting] = useState(false)
   const [migrationTarget, setMigrationTarget] = useState<MigrationTarget | null>(null)
   const [migrationForm] = Form.useForm()
-  const [initStorage, setInitStorage] = useState('')
+  const [initStorage, setInitStorage] = useState('mysql')
   const [initLoading, setInitLoading] = useState(false)
 
   const showSuccess = (msg: string) => message?.success(msg)
@@ -127,7 +131,17 @@ export default function SystemConfig() {
     setDbLoading(true)
     try {
       const res = await api.get('/system/config/database')
-      setDbInfo(res.data)
+      const info = res.data as DbInfo | null
+      setDbInfo(info)
+      if (info?.dialect) {
+        const currentDialect = String(info.dialect).toLowerCase()
+        setMigrationTargets(prev => prev.map(m => ({
+          ...m,
+          is_current: m.dialect.toLowerCase() === currentDialect,
+        })))
+        setSelectedMigrationTarget(currentDialect)
+        setInitStorage(prev => prev || currentDialect)
+      }
     } catch (err: unknown) {
       showError(err instanceof Error ? err.message : '加载数据库配置失败')
     } finally {
@@ -345,9 +359,14 @@ export default function SystemConfig() {
     }
   }, [initStorage, loadDb])
 
-  const selectedTarget = migrationTarget?.dialect || ''
+  const selectedTarget = selectedMigrationTarget
   const setSelectedTarget = (dialect: string) => {
-    const t = migrationTargets.find(m => m.dialect === dialect)
+    setSelectedMigrationTarget(dialect)
+    const t = migrationTargets.find(m => m.dialect.toLowerCase() === String(dialect).toLowerCase())
+    if (t) openMigrationModal(t)
+  }
+  const handleMigrateDefault = () => {
+    const t = migrationTargets.find(m => m.dialect.toLowerCase() === 'mysql')
     if (t) openMigrationModal(t)
   }
 
@@ -394,7 +413,7 @@ export default function SystemConfig() {
               {
                 key: 'db',
                 label: <span><DatabaseOutlined /> 数据库</span>,
-                children: <DbTab dbLoading={dbLoading} dbInfo={dbInfo} migrationTargets={migrationTargets} selectedTarget={initStorage} setSelectedTarget={setInitStorage} handleMigrate={() => openMigrationModal(migrationTargets[1])}migrationLoading={migrationLoading} initStorage={initStorage} setInitStorage={setInitStorage} handleInitDatabase={handleInitDatabase} initLoading={initLoading} />,
+                children: <DbTab dbLoading={dbLoading} dbInfo={dbInfo} migrationTargets={migrationTargets} selectedTarget={selectedTarget} setSelectedTarget={setSelectedTarget} handleMigrate={handleMigrateDefault} migrationLoading={migrationLoading} initStorage={initStorage} setInitStorage={setInitStorage} handleInitDatabase={handleInitDatabase} initLoading={initLoading} />,
               },
               {
                 key: 'backup',

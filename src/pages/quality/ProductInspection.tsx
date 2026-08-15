@@ -519,12 +519,12 @@ export default function ProductInspection() {
             )}
             <ResizableTable
               tableKey="pages_quality_ProductInspection"
-              autoWidth
               columns={columns}
               dataSource={data}
               rowKey="inspection_id"
               size="small"
               loading={loading}
+              scroll={{ x: 1700 }}
               pagination={{
                 ...pagination,
                 showSizeChanger: true,
