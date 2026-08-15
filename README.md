@@ -1,6 +1,6 @@
 # 奶粉罐生产管理系统 (Milk Can MES)
 
-> 版本：V1.0.1.732
+> 版本：V1.0.1.733
 >
 > 东莞市大满包装实业有限公司长沙分公司 — 奶粉罐生产制造执行系统
 
@@ -25,6 +25,7 @@
 - [安全加固](#安全加固)
 - [结构化日志](#结构化日志)
 - [开发规范](#开发规范)
+- [更新日志](#更新日志)
 
 ---
 
@@ -111,6 +112,10 @@
 | 分页参数控制 | pageSize 上限 200，防止大查询导致 OOM |
 | 事务管理 | Sequelize 事务包裹关键写操作，确保数据原子性 |
 | 幂等性校验 | 订单下发/关闭、报工完工等操作幂等保护，防重复提交 |
+| 速率限制 | 基于 express-rate-limit 的全局限流（1000 req/min）与登录限流（30 req/min），按用户名/真实 IP 生成 key |
+| 服务分层 | Controller 仅处理 HTTP，核心业务逻辑下沉到 `services/`（如 ProductionWorkflowService 统一管理订单/报工单状态流转） |
+| 数据库迁移 | `migrations/` 目录下的 SQL 文件 + `migration_version` 表记录版本，启动时按需执行（仅增不删） |
+| 外键约束 | 核心表（报工单/工序/物料/异常/设备/微生物等）补齐 10 个外键，保证引用完整性 |
 
 ---
 
@@ -927,7 +932,16 @@ milk-can-mes/
 │   │           ├── OrderList.tsx
 │   │           ├── OrderDetail.tsx
 │   │           ├── ReportList.tsx
-│   │           └── ReportDetail.tsx
+│   │           ├── ReportDetail.tsx
+│   │           └── components/       # 报工详情拆分组件
+│   │               ├── DefectTab.tsx       # 制程不良记录
+│   │               ├── ScrapTab.tsx        # 检验报废记录
+│   │               ├── MaterialTab.tsx     # 物料记录
+│   │               ├── ExceptionTab.tsx    # 异常工时记录
+│   │               ├── ManpowerTab.tsx     # 人员工时记录
+│   │               ├── ImageManagerModal.tsx # 图片管理弹窗
+│   │               ├── DefectSelect.tsx    # 不良项目选择器
+│   │               └── shared.ts           # 临时 ID 等共享工具
 │   ├── pages/                        # PC端页面组件
 │   │   ├── auto/                     # 自动任务模块
 │   │   │   ├── TaskSettingsPage.tsx
@@ -946,15 +960,34 @@ milk-can-mes/
 │   │   │   ├── ProductionBigScreen.tsx
 │   │   │   ├── QualityBigScreen.tsx
 │   │   │   ├── ManagementBigScreen.tsx
-│   │   │   └── EnvironmentBigScreen.tsx
+│   │   │   ├── EnvironmentBigScreen.tsx
+│   │   │   └── shared/               # 大屏共享层
+│   │   │       ├── useECharts.ts     # ECharts 初始化/resize/dispose 通用 hook
+│   │   │       ├── constants.ts      # 大屏配色与图表调色板
+│   │   │       └── index.ts          # barrel 导出
 │   │   ├── device/                   # 设备管理模块
 │   │   │   ├── DeviceManagement.tsx
 │   │   │   ├── CheckRecord.tsx
 │   │   │   ├── Maintenance.tsx
 │   │   │   └── DeviceOEE.tsx
 │   │   ├── production/               # 生产管理模块
-│   │   │   ├── OrderManagement.tsx
-│   │   │   └── ProcessReporting.tsx
+│   │   │   ├── OrderManagement.tsx   # 生产订单页（仅保留页面壳 + 状态）
+│   │   │   ├── ProcessReporting.tsx  # 生产报工页（已抽取明细/列/hook，主文件聚焦页面编排）
+│   │   │   ├── processColumns.tsx    # 制程不良/物料列工厂
+│   │   │   ├── exceptionColumns.tsx  # 异常工时列定义
+│   │   │   ├── manpowerColumns.tsx   # 人员工时列定义
+│   │   │   ├── reportStats.ts        # 报工统计派生数据
+│   │   │   ├── constants.ts          # 页签/常量
+│   │   │   ├── types.ts              # 明细记录相关类型
+│   │   │   ├── order/
+│   │   │   │   └── columns.tsx       # 订单列表列工厂
+│   │   │   ├── sections/             # 报工页面展示组件
+│   │   │   │   ├── ProcessTabContent.tsx  # 工序 Tab 通用内容
+│   │   │   │   ├── ReportStatsBar.tsx     # 顶部统计条
+│   │   │   │   ├── CreateReportModal.tsx  # 新增报工单弹窗
+│   │   │   │   └── ImageDrawer.tsx        # 图片预览抽屉
+│   │   │   └── hooks/
+│   │   │       └── useReportDetailRecords.ts # 5 类明细（不良/报废/物料/异常/人员）状态与 CRUD
 │   │   ├── quality/                  # 质量管理模块
 │   │   │   ├── InspectionStandard.tsx
 │   │   │   ├── IncomingInspection.tsx
@@ -976,8 +1009,18 @@ milk-can-mes/
 │   │   │   ├── RoleManagement.tsx
 │   │   │   ├── MenuManagement.tsx
 │   │   │   ├── DataDictionary.tsx
-│   │   │   ├── SystemConfig.tsx
-│   │   │   └── OperationLogs.tsx
+│   │   │   ├── SystemConfig.tsx      # 系统配置页（仅保留容器/Tab 编排）
+│   │   │   ├── OperationLogs.tsx
+│   │   │   └── config-tabs/          # 系统配置各 Tab 拆分
+│   │   │       ├── ParamsTab.tsx     # 参数配置
+│   │   │       ├── EnvTab.tsx        # 项目环境
+│   │   │       ├── DbTab.tsx         # 数据库配置
+│   │   │       ├── BackupTab.tsx     # 备份还原
+│   │   │       ├── FilesTab.tsx      # 文件查看
+│   │   │       ├── types.ts          # Tab 共享类型
+│   │   │       ├── format.ts         # 字段/字节格式化工具
+│   │   │       ├── configTransform.ts # 配置原始数据→视图模型转换
+│   │   │       └── fileColumns.tsx   # 文件列表列定义
 │   │   ├── Dashboard.tsx             # 工作台首页
 │   │   └── Login.tsx                 # 登录页
 │   ├── styles/                       # 全局样式
@@ -996,14 +1039,14 @@ milk-can-mes/
 │   ├── src/
 │   │   ├── config/                   # 配置文件
 │   │   │   └── database.ts           # 数据库配置（SQLite/MySQL 切换）
-│   │   ├── controllers/              # 控制器（业务逻辑层）
-│   │   │   ├── AutoTaskController.ts # 自动任务控制器（任务设置、同步任务、定时任务、数据档案、环境监测）
+│   │   ├── controllers/              # 控制器（HTTP 层，保持轻量，业务逻辑下沉到 services/）
+│   │   │   ├── AutoTaskController.ts # 自动任务控制器（任务设置/定时任务/日志；看板与同步已拆分到 modules/auto）
 │   │   │   ├── AuthController.ts     # 认证控制器
 │   │   │   ├── UserController.ts     # 用户管理控制器
 │   │   │   ├── RoleController.ts     # 角色管理控制器
 │   │   │   ├── PermissionController.ts  # 权限/菜单控制器
 │   │   │   ├── DictController.ts     # 数据字典控制器
-│   │   │   ├── SystemConfigController.ts  # 系统配置控制器
+│   │   │   ├── SystemConfigController.ts  # 系统配置控制器（参数/配置；环境/数据库已拆分到 modules/system-config）
 │   │   │   ├── UserSettingController.ts   # 用户个性化设置控制器
 │   │   │   ├── ProductInspectionController.ts # 产品检测控制器（主表+子表CRUD、报审）
 │   │   │   ├── OperationLogController.ts  # 操作日志控制器
@@ -1018,8 +1061,8 @@ milk-can-mes/
 │   │   │   ├── DefectTypeController.ts  # 不良项目控制器
 │   │   │   ├── DefectImageController.ts # 不良图片控制器
 │   │   │   ├── NumberRuleController.ts  # 编码规则控制器
-│   │   │   ├── OrderController.ts    # 生产订单控制器
-│   │   │   ├── ReportOrderController.ts  # 报工单控制器
+│   │   │   ├── OrderController.ts    # 生产订单控制器（下发/关闭/完工委托给 ProductionWorkflowService）
+│   │   │   ├── ReportOrderController.ts  # 报工单控制器（完工/关闭校验委托给 ProductionWorkflowService）
 │   │   │   ├── ReportImageController.ts  # 报工图片控制器
 │   │   │   ├── ManpowerRecordController.ts # 人员记录控制器
 │   │   │   ├── ProcessDefectController.ts  # 不良记录控制器
@@ -1027,8 +1070,16 @@ milk-can-mes/
 │   │   │   ├── ProcessMaterialController.ts # 物料记录控制器
 │   │   │   ├── UploadController.ts   # 通用上传控制器
 │   │   │   └── FileManagerController.ts # 文件管理控制器
+│   │   ├── modules/                  # 按领域拆分的子控制器（从巨型控制器抽离）
+│   │   │   ├── system-config/
+│   │   │   │   ├── EnvironmentController.ts # 项目环境/运行时信息/重启
+│   │   │   │   └── DatabaseController.ts    # 数据库备份/恢复/记录统计
+│   │   │   └── auto/
+│   │   │       ├── DashboardController.ts   # 数据看板/环境监测聚合接口
+│   │   │       └── SyncTaskController.ts    # 主数据/订单/采购同步任务
 │   │   ├── middleware/               # 中间件
-│   │   │   └── auth.ts               # JWT 认证、权限校验、操作日志
+│   │   │   ├── auth.ts               # JWT 认证、权限校验、操作日志（超级管理员通配放行）
+│   │   │   └── security.ts           # Helmet/CORS/速率限制/查询注入防护等安全中间件
 │   │   ├── models/                   # 数据模型（Sequelize Model）
 │   │   │   ├── index.ts              # 模型导出与关联定义
 │   │   │   ├── User.ts               # 用户模型
@@ -1086,8 +1137,12 @@ milk-can-mes/
 │   │   │   ├── response.ts           # 统一响应格式
 │   │   │   ├── sequence.ts           # 序号生成器
 │   │   │   ├── statusMap.ts          # 状态码映射
-│   │   │   └── crypto.ts             # 加解密工具（AES/MD5/参数加密）
+│   │   │   ├── crypto.ts             # 加解密工具（AES/MD5/参数加密）
+│   │   │   ├── date.ts               # 北京时间工具（nowBeijingDate/formatDateTime 等）
+│   │   │   └── controller.ts         # 模块控制器共享工具（分页/错误处理）
 │   │   ├── services/                 # 业务服务层
+│   │   │   ├── AuthService.ts        # 认证服务（登录校验、令牌签发，含单元测试）
+│   │   │   ├── ProductionWorkflowService.ts # 订单/报工单状态机（下发/开工/完工/关闭、报工完工校验与订单联动）
 │   │   │   ├── taskExecutor.ts       # 统一任务执行器（调度+测试共用）
 │   │   │   ├── taskScheduler.ts      # 定时任务调度服务
 │   │   │   ├── weatherCollector.ts   # 气象信息采集服务（中国天气网+备用站点）
@@ -1095,10 +1150,14 @@ milk-can-mes/
 │   │   │   ├── energyMeterCollector.ts # 能源采集服务（云集云能源平台，支持Token直连+验证码A7方案OCR）
 │   │   │   ├── u9Login.ts            # U9 ERP 登录认证服务（MD5+AES）
 │   │   │   └── u9Exporter.ts         # U9 料品/客户数据导出服务
+│   │   ├── migrations/               # SQL 迁移脚本（启动时按 migration_version 表执行）
+│   │   │   ├── 002-add-material-fk.sql
+│   │   │   ├── 003-add-performance-indexes.sql
+│   │   │   └── 004-add-core-foreign-keys.sql
 │   │   ├── app.ts                    # 应用入口（Express 实例化）
 │   │   ├── seed.ts                   # 数据初始化脚本
 │   │   ├── init-db.ts                # 数据库初始化脚本
-│   │   └── migrate.ts                # 数据库列迁移（启动时自动运行）
+│   │   └── migrate.ts                # 数据库迁移（启动时自动运行，含 SQL 迁移 + 性能索引幂等创建）
 │   ├── uploads/                      # 上传文件目录
 │   │   ├── avatars/                  # 用户头像
 │   │   ├── defects/                  # 不良图片
@@ -1472,6 +1531,16 @@ master_defect_type (1) ── (N) bas_defect_image
 quality_inspection_standard (1) ── (N) quality_inspection_standard_item
 ```
 
+> **外键约束**：核心表通过迁移 `004-add-core-foreign-keys.sql` 补齐物理外键，覆盖以下关系（升级前已校验无孤儿数据）：
+> - `production_report_process` → `master_process`、`production_report_order`
+> - `production_process_defect` → `master_process`
+> - `production_process_material` → `master_process`、`bas_material`（`bas_material_id` 类型已统一为 `CHAR(36) COLLATE utf8mb4_bin`）
+> - `production_process_exception` → `production_report_order`
+> - `production_manpower_record` → `master_production_line`
+> - `master_device` → `master_production_line`
+> - `quality_micro_inspection` → `production_order`、`production_report_order`
+> - `sys_operation_log` → `sys_user`
+
 ---
 
 ## 快速开始
@@ -1479,23 +1548,26 @@ quality_inspection_standard (1) ── (N) quality_inspection_standard_item
 ### 环境要求
 
 - Node.js >= 18.x（推荐 20.x LTS）
-- npm >= 9.x
-- （可选）MySQL >= 8.0（生产环境使用）
+- **pnpm >= 9.x**（项目统一包管理器，前后端各自独立 `package.json`）
+- （可选）MySQL >= 8.0（生产环境使用；沙箱默认可直接启动本地 MySQL）
 
 ### 前端开发
 
 ```bash
 # 安装依赖
-npm install
+pnpm install
 
 # 启动开发服务器（默认端口 5173）
-npm run dev
+pnpm run dev
 
-# 构建生产版本
-npm run build
+# 类型检查（独立命令，CI/构建前会自动执行）
+pnpm run typecheck
+
+# 构建生产版本（先执行 tsc --noEmit，再 vite build）
+pnpm run build
 
 # 预览生产构建
-npm run preview
+pnpm run preview
 ```
 
 前端开发服务器默认运行在 `http://localhost:5173`
@@ -1507,13 +1579,16 @@ npm run preview
 cd server
 
 # 安装依赖
-npm install
+pnpm install
 
-# 初始化数据库（创建表结构和默认数据）
-npm run seed
+# 初始化数据库（创建表结构和默认数据，仅首次需要）
+pnpm seed
 
-# 启动后端服务
-npm run dev
+# 启动后端服务（tsx 直接运行 src/app.ts）
+pnpm start
+
+# 类型检查
+pnpm run typecheck
 ```
 
 后端服务默认运行在 `http://localhost:3001`
@@ -1740,13 +1815,17 @@ mysqldump -u milk_can_mes -p milk_can_mes > /opt/backups/milk_can_mes_$(date +%Y
 
 页签列表：
 
-| 页签 | 说明 |
-|------|------|
-| 基本信息 | 报工单基本信息展示 |
-| 不良记录 | 不良记录列表，新增时筛选制程检验类型且非检验报废的不良项目 |
-| 物料记录 | 物料记录列表，料号下拉显示料号+料品名称 |
-| 检验报废 | 检验报废记录列表，筛选制程检验类型且不良类型=检验报废 |
-| 图片上传 | 报工图片上传，支持多图，MD5去重 |
+| 页签 | 说明 | 拆分组件 |
+|------|------|---------|
+| 基本信息 | 报工单基本信息展示 | - |
+| 不良记录 | 不良记录列表，新增时筛选制程检验类型且非检验报废的不良项目 | `components/DefectTab.tsx` |
+| 物料记录 | 物料记录列表，料号下拉显示料号+料品名称 | `components/MaterialTab.tsx` |
+| 检验报废 | 检验报废记录列表，筛选制程检验类型且不良类型=检验报废 | `components/ScrapTab.tsx` |
+| 异常工时 | 异常/停机工时记录，自动生成"换型换线"记录 | `components/ExceptionTab.tsx` |
+| 人员记录 | 人员工时记录（熟手/普工/劳务/其他） | `components/ManpowerTab.tsx` |
+| 图片上传 | 报工图片上传，支持多图，MD5 去重 | `components/ImageManagerModal.tsx` |
+
+> 报工详情页（`ReportDetail.tsx`）已从 2126 行精简到 500 余行，各业务 Tab 的状态与 CRUD 均下沉到对应组件，不良项目选择复用 `components/DefectSelect.tsx`，临时 ID 等工具统一在 `components/shared.ts`。
 
 #### 移动端报工单详情页签列宽规范
 
@@ -1983,9 +2062,10 @@ mysqldump -u milk_can_mes -p milk_can_mes > /opt/backups/milk_can_mes_$(date +%Y
 
 | 层级 | 说明 |
 |------|------|
-| 认证层 | 所有 `/api/*` 接口（除登录/健康检查）需携带有效 JWT Token |
-| 权限层 | 基于角色的权限控制（RBAC），关键操作强制校验权限编码 |
-| 限流层 | 登录接口防暴力破解（多次失败后延迟响应） |
+| 认证层 | 所有 `/api/*` 接口（除登录/健康检查）需携带有效 JWT Token，访问令牌 2h、刷新令牌 7d |
+| 权限层 | 基于角色的权限控制（RBAC），关键操作强制校验权限编码；超级管理员/系统管理员内置 `*` 通配权限，所有权限校验直接放行 |
+| 限流层 | 全局限流 1000 req/min，登录限流 30 req/min（按用户名/真实 IP 生成 key），防暴力破解与滥用 |
+| 安全响应头 | 通过 Helmet 设置常见安全响应头；CORS 白名单控制来源 |
 
 ### 4. 输入校验
 
@@ -2084,10 +2164,12 @@ PC端生产报工页面（`/production/reporting`）信息区采用三行布局�
 ### 代码规范
 
 - 使用 TypeScript 编写，优先使用类型安全
-- 组件使用函数式组件 + Hooks
+- 前端 `pnpm run build` 会先执行 `tsc --noEmit`，类型错误必须清零才能出包
+- 组件使用函数式组件 + Hooks，巨型页面（>1000 行）应拆分为 `sections/`、`columns`、`hooks/` 等子模块
 - API 请求统一使用 `utils/api.ts` 中的 Axios 实例
 - 全局状态使用 React Context（AppContext）
 - 样式优先使用 CSS 变量，支持主题切换
+- 大屏图表统一通过 `pages/bigscreen/shared/useECharts` hook 管理实例生命周期（init/resize/dispose）
 
 ### 日期时间格式规范
 
@@ -2116,11 +2198,14 @@ PC端生产报工页面（`/production/reporting`）信息区采用三行布局�
 
 ### 后端开发规范
 
-- 控制器（Controller）负责处理 HTTP 请求和响应
+- 控制器（Controller）负责处理 HTTP 请求和响应，**不写复杂业务逻辑**
+- 业务服务（Service）封装领域逻辑与事务，例如订单/报工单状态流转统一走 `ProductionWorkflowService`
 - 模型（Model）负责数据持久化
 - 路由（Route）负责 URL 映射
-- 中间件（Middleware）负责认证、日志等横切关注点
+- 中间件（Middleware）负责认证、日志、限流、安全响应头等横切关注点
 - 工具函数（Utils）负责通用功能
+- 巨型控制器（>1000 行）应按领域拆到 `server/src/modules/<domain>/`，主控制器只保留路由编排
+- 数据库结构变更通过 `server/src/migrations/` 下的 SQL 文件管理，启动时按 `migration_version` 表增量执行
 
 ### 项目文件管理
 
@@ -2179,6 +2264,35 @@ type 类型：
 - test: 测试相关
 - chore: 构建/工具相关
 ```
+
+---
+
+## 更新日志
+
+### V1.0.1.733（架构与质量加固）
+
+**后端**
+- **服务层抽取**：新增 `services/ProductionWorkflowService.ts`，统一管理订单下发/开工/完工/关闭与报工单完工校验、事务状态回写；`OrderController`、`ReportOrderController` 改为薄控制器。
+- **控制器按域拆分**：
+  - `SystemConfigController`（1906 行）拆出 `modules/system-config/EnvironmentController.ts`、`DatabaseController.ts`。
+  - `AutoTaskController`（1151 行）拆出 `modules/auto/DashboardController.ts`（580 行，看板/环境聚合）、`SyncTaskController.ts`（同步任务）。
+- **数据库完整性**：
+  - `production_process_material.bas_material_id` 由 `INT` 统一为 `CHAR(36) COLLATE utf8mb4_bin`，与 `bas_material.material_id` 对齐。
+  - 迁移 `004-add-core-foreign-keys.sql` 补齐 10 个核心外键（报工单/工序/物料/异常/设备/微生物/操作日志等），上线前已校验无孤儿数据。
+  - `migrate.ts` 支持 SQL 迁移 + `ensurePerformanceIndexes` 幂等创建 15 个性能索引。
+- **认证与安全**：
+  - 超级管理员/系统管理员后端权限自动放行（`perm_codes` 内置 `*`），不再需要逐项勾选菜单/按钮。
+  - 全局限流由 120/min 调整为 1000/min，登录限流由 10/min 调整为 30/min，避免正常页面切换触发 "请求过于频繁"；限流 key 按用户名/真实 IP 生成。
+- **配置修复**：重写 `.coze` TOML 数组语法（`["bash", "-c", "..."]`），解决预览启动 `Unclosed array` 报错。
+
+**前端**
+- **类型检查纳入构建卡点**：`package.json` 的 `build` 脚本改为 `tsc --noEmit && vite build`，修复此前被 esbuild 转译隐藏的约 100 处 TypeScript 错误（ColumnsType、FilterItem/StatItem、MessageInstance、`Record<string, unknown>`、`vite-env.d.ts` 全局声明等）。
+- **巨型页面拆分**：
+  - `ProcessReporting.tsx` 由 2939 行降至 1397 行，抽离 `sections/`（ProcessTabContent、ReportStatsBar、CreateReportModal、ImageDrawer）、`hooks/useReportDetailRecords.ts`（5 类明细状态与 CRUD）、`processColumns/exceptionColumns/manpowerColumns`、`reportStats.ts`、`types.ts`。
+  - 移动端 `ReportDetail.tsx` 由 2126 行降至 564 行，拆出 `components/DefectTab`、`ScrapTab`、`MaterialTab`、`ExceptionTab`、`ManpowerTab`、`ImageManagerModal`、`DefectSelect`、`shared.ts`。
+  - `SystemConfig.tsx` 由 1170 行降至 447 行，各 Tab 拆到 `config-tabs/`。
+  - `OrderManagement.tsx` 订单列拆到 `order/columns.tsx`。
+- **大屏共享层**：新增 `pages/bigscreen/shared/`（`useECharts` hook 统一 init/resize/dispose、配色常量与工具函数），避免各大屏重复实现。
 
 ---
 
