@@ -7,7 +7,7 @@
 - **架构**：前后端分离，Vite 开发服务器代理 `/api` 到 Express 后端
 - **前端**：React 18 + TypeScript 5 + Vite 5 + Ant Design 5 + Ant Design Mobile 5 + ECharts 6 + React Router 6
 - **后端**：Node.js + Express 4 + TypeScript（tsx 直接运行）+ Sequelize 6 + JWT + bcryptjs
-- **数据库**：MySQL 8.0（沙箱已安装并使用 `assets/milk_can_mes.sql` 备份恢复）；ORM 为 Sequelize，也兼容 SQLite
+- **数据库**：MySQL 8.0（沙箱已预装 `milk_can_mes` 库）；ORM 为 Sequelize，也兼容 SQLite
 - **包管理器**：**pnpm**（前后端各自独立 package.json）
 
 > **沙箱 MySQL 启动**：容器无 systemd，若 MySQL 未运行，需手动启动：
@@ -110,7 +110,7 @@ pnpm run typecheck        # 后端类型检查
 
 ### 数据库
 - 沙箱使用本地 **MySQL 8.0**：`server/.env` 中 `DB_DIALECT=mysql`，`DB_HOST=127.0.0.1`，`DB_PORT=3306`，`DB_NAME=milk_can_mes`，`DB_USER=root`，`DB_PASSWORD=123456`
-- 数据库已由 `assets/milk_can_mes.sql` 备份恢复（49 张表，含用户/角色/544 料品/200 订单等演示数据），**无需再执行 seed**
+- 沙箱 MySQL 已预装 `milk_can_mes` 库（49 张表，含用户/角色/544 料品/200 订单等演示数据），**无需再执行 seed**；新环境可通过 `server/src/seed.ts` 初始化
 - 后端启动自动 `sequelize.sync()` + `runMigrations()` 补齐表结构（只增不删）
 - SQL 迁移位于 `server/src/migrations/`，由 `migration_version` 表记录已执行版本；`004-add-core-foreign-keys.sql` 已补齐核心外键
 - 生产订单/报工单状态流转统一走 `server/src/services/ProductionWorkflowService.ts`（下发、关闭、完工、报工单完工校验与订单联动）

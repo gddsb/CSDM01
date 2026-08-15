@@ -1167,13 +1167,11 @@ milk-can-mes/
 │   ├── .env                          # 环境变量
 │   ├── tsconfig.json                 # TypeScript 配置
 │   └── package.json
-├── dist/                             # 前端构建产物
-├── data/                             # 数据目录（SQLite 开发库等）
+├── dist/                             # 前端构建产物（不入 git）
 ├── index.html                        # HTML 入口
 ├── vite.config.ts                    # Vite 配置
 ├── tsconfig.json                     # TypeScript 配置
 ├── package.json                      # 前端依赖
-├── ecosystem.config.cjs              # PM2 生产配置
 └── README.md
 ```
 
@@ -1663,7 +1661,7 @@ U9_AES_KEY=dad52b5719e3202e32a6619e14d0ccec   # AES 加密密钥（16进制）
 - Node.js 20.x
 - MySQL 8.0+
 - Nginx
-- PM2 进程管理
+- 进程守护可使用 PM2（需自行在服务器创建 `ecosystem.config.cjs`，仓库不内置生产配置与凭据）
 
 #### 部署步骤
 
@@ -1674,61 +1672,42 @@ git clone https://github.com/gddsb/CSDM01.git milk-can-mes
 cd milk-can-mes
 
 # 2. 安装前端依赖并构建
-npm install
-npm run build
+pnpm install
+pnpm run build
 
 # 3. 安装后端依赖
 cd server
-npm install
+pnpm install
 
 # 4. 配置环境变量
 cp .env.example .env
 # 编辑 .env 配置数据库连接等参数
 
 # 5. 初始化数据库
-npm run seed
+pnpm seed
 
-# 6. 使用 PM2 启动服务
+# 6. 启动服务（示例，生产推荐用 systemd / pm2 守护）
 cd /opt/milk-can-mes
-pm2 start ecosystem.config.cjs
+nohup bash -c 'cd server && pnpm start' > /var/log/mes-server.log 2>&1 &
+npx vite preview --host 0.0.0.0 --port 5000
 
 # 7. 配置 Nginx 反向代理
-# 参考项目根目录 nginx 配置
+# 按实际环境编写 server 块，将 / 指向 5000，/api 与 /uploads 反代到 3001
 ```
 
 #### 常用运维命令
 
 ```bash
-# 拉取最新代码并部署
+# 拉取最新代码并重新构建
 cd /opt/milk-can-mes
 git fetch origin main
 git reset --hard origin/main
-npm run build
-pm2 restart milk-can-mes-server
-
-# 查看服务状态
-pm2 status milk-can-mes-server
-
-# 查看日志
-pm2 logs milk-can-mes-server
+pnpm install && pnpm --dir server install
+pnpm run build
+# 按所选进程守护方式重启后端服务
 
 # 数据库备份
-mysqldump -u milk_can_mes -p milk_can_mes > /opt/backups/milk_can_mes_$(date +%Y%m%d_%H%M%S).sql
-```
-
-#### 目录说明
-
-```
-/opt/milk-can-mes/           # 项目根目录
-├── dist/                    # 前端构建产物
-├── server/                  # 后端服务
-│   ├── src/                 # 后端源码
-│   ├── data/                # 数据目录
-│   └── uploads/             # 上传文件目录
-└── ecosystem.config.cjs     # PM2 配置
-
-/opt/backups/                # 备份目录（独立于项目）
-└── milk_can_mes_*.sql       # 数据库备份文件
+mysqldump -u <user> -p milk_can_mes > /opt/backups/milk_can_mes_$(date +%Y%m%d_%H%M%S).sql
 ```
 
 ---
@@ -2222,32 +2201,34 @@ PC端生产报工页面（`/production/reporting`）信息区采用三行布局�
 | 依赖 | `node_modules/` | 前后端依赖包（已在 .gitignore 中） |
 | 种子数据 | `server/seed-data/`, `server/seeders/` | 初始化数据 |
 | 运行时迁移 | `server/src/migrate.ts` | 启动时自动迁移数据库列 |
-| 运维脚本 | `ecosystem.config.cjs` | PM2 生产配置 |
 
 #### 已清理文件（一次性/废弃）
 
-| 文件 | 清理原因 |
+| 文件/目录 | 清理原因 |
 |------|---------|
+| `assets/image.png` | 历史截图（9MB），与项目无关 |
+| `assets/milk_can_mes.sql` | 14MB 数据库完整备份，应由 DBA 管理，不入仓库 |
+| `.codegraph/` | IDE 代码索引缓存（沙箱产物） |
+| `ecosystem.config.cjs` | PM2 生产配置，含服务器路径/凭据，不内置 |
 | `deploy-prod.sh` | 临时生产部署脚本 |
 | `fix-status-trim.sh` | 临时数据修复脚本 |
 | `parse_nav.ts` | 临时导航解析脚本 |
 | `.trae-html-share-packages/` | IDE 临时目录 |
+| `package-lock.json` / `server/package-lock.json` | 项目统一使用 pnpm，冗余的 npm lockfile |
 | `server/src/migrate_inspection_type.js` | SQLite 专用迁移（生产用 MySQL） |
 | `server/src/scripts/migrate-sqlite-to-mysql.ts` | 已完成的数据库迁移 |
 | `server/src/scripts/migrate-sqlite-to-sqlite.ts` | 已完成的数据库迁移 |
 | `server/src/update-spec.ts` | 一次性数据更新脚本 |
 | `server/src/verify-all.ts` | 一次性验证脚本 |
 | `server/data/*.sqlite` | 旧 SQLite 文件（已迁移 MySQL） |
-| `server/dist/` | 旧编译产物（生产用 `npm start`） |
+| `server/dist/` | 旧编译产物（生产用 `pnpm start`） |
 | `server/tsconfig.tsbuildinfo` | TypeScript 构建缓存 |
-| `server/data/backups/` | 空目录 |
-| `server/uploads/tmp/` | 空临时目录 |
 
 #### 清理建议
 
-- 定期检查 `/opt/backups/` 下的 PM2 日志，可按需清理旧日志文件
-- 定期检查 `/opt/backups/` 下的数据库备份，保留最近的备份即可
-- 清理时保留 `server/.env`、`ecosystem.config.cjs`、`server/uploads/` 等运行时必须文件
+- 数据库备份由部署服务器上的定时任务生成至 `server/data/backups/`（已 gitignore），保留最近 N 份即可
+- `server/uploads/`（用户上传的头像、缺陷图片、报工附件等）不入 git，由服务器持久化卷管理
+- 清理时保留 `server/.env`、`server/uploads/`、`server/data/` 等运行时数据目录
 
 ### Git 提交规范
 

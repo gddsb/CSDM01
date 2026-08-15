@@ -29,3 +29,17 @@ server/logs/
 server/src.workorders-backup/
 *-backup/
 *.backup
+server/data/backups/
+
+# IDE / 沙箱
+.codegraph/
+.idea/
+.vscode/
+*.iml
+
+# 临时文件
+*.tmp
+*.bak
+*.orig
+*.rej
+*~
