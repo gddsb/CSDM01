@@ -9,6 +9,7 @@ export enum ErrorCode {
   UNAUTHORIZED = 10005,
   RECORD_EXISTS = 10007,
   RATE_LIMITED = 10042,
+  OLD_PASSWORD_ERROR = 10043,
   BUSINESS_ERROR = 20001,
   SYSTEM_ERROR = 50000,
 }
@@ -53,4 +54,8 @@ export function paginate(res: Response, data: any, total: number, pageNum: numbe
     pageNum: Number(pageNum),
     pageSize: safePageSize,
   })
+}
+
+export function sendError(res: { status: (code: number) => { json: (data: unknown) => void } }, httpStatus: number, code: number, message: string, data?: unknown) {
+  res.status(httpStatus).json({ success: false, code, message, ...(data !== undefined ? { data } : {}) });
 }

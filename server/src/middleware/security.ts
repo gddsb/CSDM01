@@ -4,13 +4,13 @@ import rateLimit from 'express-rate-limit'
 /**
  * 限流 keyGenerator：优先取反向代理后的真实 IP，回退到 req.ip（已正确处理 IPv6）
  */
-function rateLimitKeyGenerator(req: { ip?: string; headers: Record<string, unknown>; socket?: { remoteAddress?: string } }): string {
-  const forwarded = req.headers['x-forwarded-for']
+function rateLimitKeyGenerator(req: { ip?: string; headers?: Record<string, unknown>; socket?: { remoteAddress?: string } }): string {
+  const forwarded = req.headers?.['x-forwarded-for']
   if (typeof forwarded === 'string') {
     const first = forwarded.split(',')[0]?.trim()
     if (first) return first
   }
-  return req.ip || req.socket?.remoteAddress || 'unknown'
+  return req.ip || req.socket?.remoteAddress || '127.0.0.1'
 }
 
 
@@ -86,6 +86,7 @@ export const loginRateLimiter = rateLimit({
   windowMs: Number(process.env.LOGIN_RATE_WINDOW_MS || 60 * 1000),
   max: Number(process.env.LOGIN_RATE_LIMIT || 10),
   standardHeaders: true,
+  validate: false,
   legacyHeaders: false,
   keyGenerator: rateLimitKeyGenerator,
   message: {
@@ -104,6 +105,7 @@ export const apiRateLimiter = rateLimit({
   max: Number(process.env.API_RATE_LIMIT || 120),
   standardHeaders: true,
   legacyHeaders: false,
+  validate: false,
   skip: (req) => {
     // 健康检查、静态上传资源不限流
     if (req.path === '/api/health') return true

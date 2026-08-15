@@ -350,6 +350,69 @@ export async function runMigrations() {
 
   // 3. 删除废弃字段（必须在新增 report_order_id 后才能删除旧外键字段）
   await dropObsoleteColumns()
+
+  // 4. 执行 SQL 目录中的迁移（如外键补充）
+  await runSqlMigrations()
+}
+
+// 记录已执行的 SQL 迁移
+async function isSqlMigrationApplied(name: string): Promise<boolean> {
+  try {
+    const [rows] = await sequelize.query(
+      `SELECT name FROM _sql_migrations WHERE name = :name LIMIT 1`,
+      { replacements: { name } }
+    )
+    return (rows as unknown[]).length > 0
+  } catch {
+    return false
+  }
+}
+
+async function recordSqlMigration(name: string): Promise<void> {
+  await sequelize.query(
+    `INSERT INTO _sql_migrations (name, applied_at) VALUES (:name, NOW())`,
+    { replacements: { name } }
+  )
+}
+
+async function runSqlMigrations(): Promise<void> {
+  const dialect = (process.env.DB_DIALECT || 'sqlite').toLowerCase()
+  if (dialect !== 'mysql') {
+    logger.info('[Migrate] 非 MySQL 环境，跳过 SQL 迁移')
+    return
+  }
+  try {
+    const fs = await import('fs')
+    const path = await import('path')
+    const { fileURLToPath } = await import('url')
+    const __dirname = path.dirname(fileURLToPath(import.meta.url))
+    const dir = path.join(__dirname, 'migrations')
+
+    if (!fs.existsSync(dir)) return
+    const files = fs
+      .readdirSync(dir)
+      .filter((f) => f.endsWith('.sql'))
+      .sort()
+
+    for (const file of files) {
+      const applied = await isSqlMigrationApplied(file)
+      if (applied) continue
+      logger.info(`[Migrate] 执行 SQL 迁移: ${file}`)
+      const sql = fs.readFileSync(path.join(dir, file), 'utf-8')
+      // 按分号拆分为多条语句并逐条执行（忽略空行和注释）
+      const statements = sql
+        .split(/;\s*(?:\r?\n|$)/)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0 && !s.startsWith('--'))
+      for (const stmt of statements) {
+        await sequelize.query(stmt)
+      }
+      await recordSqlMigration(file)
+      logger.info(`[Migrate] 完成: ${file}`)
+    }
+  } catch (err) {
+    logger.warn('[Migrate] SQL 迁移执行出错（可忽略）:', err)
+  }
 }
 
 export default { runMigrations }

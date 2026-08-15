@@ -9,6 +9,8 @@
     "dev": "tsx watch src/app.ts",
     "seed": "tsx src/seed.ts",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "build": "tsc --build",
     "prod": "node dist/app.js"
   },
@@ -27,7 +29,9 @@
     "mysql2": "^3.11.0",
     "sequelize": "^6.37.3",
     "sqlite3": "^6.0.1",
-    "tsx": "^4.23.1"
+    "tsx": "^4.23.1",
+    "umzug": "^3.8.3",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -38,6 +42,9 @@
     "@types/morgan": "^1.9.10",
     "@types/multer": "^2.2.0",
     "@types/node": "^26.1.1",
-    "typescript": "~5.6.0"
+    "@types/supertest": "^7.2.1",
+    "supertest": "^7.2.2",
+    "typescript": "~5.6.0",
+    "vitest": "^4.1.10"
   }
 }

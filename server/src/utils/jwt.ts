@@ -23,9 +23,11 @@ const expiresIn: string = process.env.JWT_EXPIRES_IN || '2h'
 const refreshExpiresIn: string = process.env.JWT_REFRESH_EXPIRES_IN || '7d'
 
 // 生成 access token
-export function generateToken(user: any): string {
+export function generateToken(user: { user_id?: number; username?: string; role_id?: number; userId?: number; roleId?: number; [k: string]: unknown }): string {
+  const userId = user.user_id ?? user.userId;
+  const roleId = user.role_id ?? user.roleId;
   return jwt.sign(
-    { userId: user.user_id, username: user.username, roleId: user.role_id },
+    { userId, username: user.username, roleId },
     secret,
     { expiresIn } as SignOptions
   )
@@ -48,3 +50,7 @@ export function verifyToken(token: string): any {
     return null
   }
 }
+
+// 别名导出，兼容测试
+const signToken = generateToken;
+export { signToken };

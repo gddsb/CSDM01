@@ -7,6 +7,8 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/zh-cn'
 import './styles/global.css'
 import { AppProvider, useApp } from './contexts/AppContext'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { queryClient } from './queryClient'
 import MainLayout from './layouts/MainLayout'
 
 // 首屏关键页面同步加载（避免白屏）
@@ -192,8 +194,10 @@ function AppInner({ setMessageApi, setModalApi, setNotificationApi }: {
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <AppProvider>
-      <App />
-    </AppProvider>
+    <QueryClientProvider client={queryClient}>
+      <AppProvider>
+        <App />
+      </AppProvider>
+    </QueryClientProvider>
   </React.StrictMode>
 )

@@ -268,4 +268,9 @@ export {
   U9PurchaseReceipt,
 }
 
+// 别名：统一以模型业务名对外暴露，兼容控制器与测试中的既有引用
+export const UserModel = User
+export const ProcessMaterialModel = ProcessMaterial
+export const MaterialModel = Material
+
 export default db
