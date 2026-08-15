@@ -97,12 +97,17 @@ export const updateLineProcessSort = async (req, res) => {
 
     if (!items || !Array.isArray(items)) return fail(res, '参数错误')
 
-    for (const item of items) {
-      await LineProcess.update(
-        { sort_order: item.sort_order },
-        { where: { id: item.id } }
-      )
-    }
+    // 批量并发更新排序，避免逐条 await 形成串行 N 次 UPDATE
+    await Promise.all(
+      items
+        .filter((item: any) => item?.id != null)
+        .map((item: any) =>
+          LineProcess.update(
+            { sort_order: item.sort_order },
+            { where: { id: item.id } }
+          )
+        )
+    )
 
     return success(res, null, '排序更新成功')
   } catch (err) {

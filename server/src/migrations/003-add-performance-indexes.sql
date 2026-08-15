@@ -1,0 +1,11 @@
+-- 性能索引由 migrate.ts 中的 ensurePerformanceIndexes() 通过 information_schema 幂等创建，
+-- 保留此文件作为迁移版本记录与索引清单文档。
+-- 索引清单：
+-- 1) production_order: idx_order_dates(plan_start_date, plan_end_date), idx_order_material(material_id)
+-- 2) production_report_order: idx_report_order(order_id), idx_report_line_status(report_date, line_id, status)
+-- 3) report_process: idx_rp_report(report_id), idx_rp_order_line(order_id, line_id, process_id), idx_rp_status(progress_status)
+-- 4) process_material: idx_pm_report(report_id), idx_pm_order_process(order_id, process_id)
+-- 5) process_defect: idx_pd_report(report_id), idx_pd_category_date(defect_category_id, defect_date)
+-- 6) process_abnormal: idx_pa_report(report_id), idx_pa_date(abnormal_date)
+-- 7) sys_user: idx_user_role(role_id)
+-- 8) operation_log: idx_oplog_user_time(user_id, created_at), idx_oplog_module_time(module, created_at)

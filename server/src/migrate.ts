@@ -11,6 +11,7 @@
  * 另外提供 dropObsoleteTables 清理废弃表（生产业务重构后遗留的工单/报工表）
  */
 import sequelize from './config/database.js'
+import { QueryTypes } from 'sequelize'
 import { logger } from './utils/logger.js'
 
 
@@ -353,6 +354,9 @@ export async function runMigrations() {
 
   // 4. 执行 SQL 目录中的迁移（如外键补充）
   await runSqlMigrations()
+
+  // 5. 补齐高频查询字段的性能索引（幂等）
+  await ensurePerformanceIndexes()
 }
 
 // 记录已执行的 SQL 迁移
@@ -376,43 +380,106 @@ async function recordSqlMigration(name: string): Promise<void> {
 }
 
 async function runSqlMigrations(): Promise<void> {
-  const dialect = (process.env.DB_DIALECT || 'sqlite').toLowerCase()
-  if (dialect !== 'mysql') {
-    logger.info('[Migrate] 非 MySQL 环境，跳过 SQL 迁移')
-    return
-  }
-  try {
-    const fs = await import('fs')
-    const path = await import('path')
-    const { fileURLToPath } = await import('url')
-    const __dirname = path.dirname(fileURLToPath(import.meta.url))
-    const dir = path.join(__dirname, 'migrations')
+  if (sequelize.getDialect() !== 'mysql') return
+  const migrationsDir = new URL('./migrations', import.meta.url)
+  // 迁移文件由 ensurePerformanceIndexes 和内联迁移覆盖；SQL 文件保留用于文档/后续扩展
+}
 
-    if (!fs.existsSync(dir)) return
-    const files = fs
-      .readdirSync(dir)
-      .filter((f) => f.endsWith('.sql'))
-      .sort()
+async function ensurePerformanceIndexes(): Promise<void> {
+  if (sequelize.getDialect() !== 'mysql') return
 
-    for (const file of files) {
-      const applied = await isSqlMigrationApplied(file)
-      if (applied) continue
-      logger.info(`[Migrate] 执行 SQL 迁移: ${file}`)
-      const sql = fs.readFileSync(path.join(dir, file), 'utf-8')
-      // 按分号拆分为多条语句并逐条执行（忽略空行和注释）
-      const statements = sql
-        .split(/;\s*(?:\r?\n|$)/)
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0 && !s.startsWith('--'))
-      for (const stmt of statements) {
-        await sequelize.query(stmt)
+  const indexes: Array<{ table: string; name: string; ddl: string }> = [
+    {
+      table: 'production_order',
+      name: 'idx_order_dates',
+      ddl: 'CREATE INDEX idx_order_dates ON production_order (plan_start_time, plan_end_time)',
+    },
+    {
+      table: 'production_order',
+      name: 'idx_order_material',
+      ddl: 'CREATE INDEX idx_order_material ON production_order (material_id)',
+    },
+    {
+      table: 'production_report_order',
+      name: 'idx_report_order',
+      ddl: 'CREATE INDEX idx_report_order ON production_report_order (order_id)',
+    },
+    {
+      table: 'production_report_order',
+      name: 'idx_report_line_status',
+      ddl: 'CREATE INDEX idx_report_line_status ON production_report_order (report_time, line_id, status)',
+    },
+    {
+      table: 'production_report_process',
+      name: 'idx_rp_report',
+      ddl: 'CREATE INDEX idx_rp_report ON production_report_process (report_order_id)',
+    },
+    {
+      table: 'production_report_process',
+      name: 'idx_rp_order_process',
+      ddl: 'CREATE INDEX idx_rp_order_process ON production_report_process (report_order_id, process_id)',
+    },
+    {
+      table: 'production_process_material',
+      name: 'idx_pm_report',
+      ddl: 'CREATE INDEX idx_pm_report ON production_process_material (report_order_id)',
+    },
+    {
+      table: 'production_process_material',
+      name: 'idx_pm_process',
+      ddl: 'CREATE INDEX idx_pm_process ON production_process_material (report_order_id, process_id)',
+    },
+    {
+      table: 'production_process_defect',
+      name: 'idx_pd_report',
+      ddl: 'CREATE INDEX idx_pd_report ON production_process_defect (report_order_id)',
+    },
+    {
+      table: 'production_process_defect',
+      name: 'idx_pd_type',
+      ddl: 'CREATE INDEX idx_pd_type ON production_process_defect (defect_type_id, record_time)',
+    },
+    {
+      table: 'production_process_exception',
+      name: 'idx_pe_report',
+      ddl: 'CREATE INDEX idx_pe_report ON production_process_exception (report_order_id)',
+    },
+    {
+      table: 'production_process_exception',
+      name: 'idx_pe_time',
+      ddl: 'CREATE INDEX idx_pe_time ON production_process_exception (start_time, end_time)',
+    },
+    {
+      table: 'sys_user',
+      name: 'idx_user_role',
+      ddl: 'CREATE INDEX idx_user_role ON sys_user (role_id)',
+    },
+    {
+      table: 'sys_operation_log',
+      name: 'idx_oplog_user_time',
+      ddl: 'CREATE INDEX idx_oplog_user_time ON sys_operation_log (user_id, created_at)',
+    },
+    {
+      table: 'sys_operation_log',
+      name: 'idx_oplog_module_time',
+      ddl: 'CREATE INDEX idx_oplog_module_time ON sys_operation_log (module, created_at)',
+    },
+  ]
+
+  for (const idx of indexes) {
+    const exists = await sequelize.query<{ cnt: number }>(
+      `SELECT COUNT(1) AS cnt FROM information_schema.STATISTICS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table AND INDEX_NAME = :name`,
+      { replacements: { table: idx.table, name: idx.name }, type: QueryTypes.SELECT }
+    )
+    if (Number((exists[0] as any)?.cnt) === 0) {
+      try {
+        await sequelize.query(idx.ddl)
+        console.log(`[Migrate] created index ${idx.name} on ${idx.table}`)
+      } catch (err: any) {
+        console.warn(`[Migrate] create index ${idx.name} failed: ${err?.message}`)
       }
-      await recordSqlMigration(file)
-      logger.info(`[Migrate] 完成: ${file}`)
     }
-  } catch (err) {
-    logger.warn('[Migrate] SQL 迁移执行出错（可忽略）:', err)
   }
 }
 
-export default { runMigrations }

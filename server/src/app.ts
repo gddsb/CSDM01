@@ -15,6 +15,7 @@ import { runMigrations } from './migrate.js'
 import { startTaskScheduler } from './services/taskScheduler.js'
 import { TaskSetting } from './models/index.js'
 import { corsOptions, apiRateLimiter, AppError } from './middleware/security.js'
+import { performanceMonitor } from './middleware/performance.js'
 import logger from './utils/logger.js'
 
 dotenv.config()
@@ -115,6 +116,7 @@ app.use(
 app.use(cors(corsOptions()))
 app.use(express.json({ limit: '20mb' }))
 app.use(express.urlencoded({ extended: true, limit: '20mb' }))
+app.use(performanceMonitor)
 
 // 全局限流（登录接口在 auth 路由内单独配置更严格的限流）
 app.use('/api', apiRateLimiter)

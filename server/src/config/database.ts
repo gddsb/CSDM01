@@ -6,12 +6,22 @@ dotenv.config()
 
 const dialect: string = process.env.DB_DIALECT || 'mysql'
 
+const SLOW_SQL_MS = Number(process.env.SLOW_SQL_MS || 800)
+
 const baseOptions = {
-  logging: false,
+  logging: process.env.DB_LOGGING === 'true'
+    ? (sql: string, timing?: number) => {
+        const duration = typeof timing === 'number' ? timing : undefined
+        if (duration !== undefined && duration >= SLOW_SQL_MS) {
+          console.warn(`[SLOW SQL ${duration}ms] ${sql}`)
+        }
+      }
+    : false,
   define: {
     timestamps: true,
     underscored: true,
   },
+  benchmark: true,
 }
 
 let sequelizeInstance: Sequelize
