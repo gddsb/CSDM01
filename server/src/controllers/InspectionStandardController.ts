@@ -7,6 +7,20 @@ import { nowBeijingDate, formatDateTime, parseDateTime } from '../utils/date.js'
 const TYPE_PREFIX: Record<string, string> = { '首件': 'SJ', '制程': 'ZC', '成品': 'CP', '来料': 'LL', '其它': 'QT' }
 const STANDARD_TYPE_PREFIX: Record<string, string> = { '材料检验': 'CL', '产品检验': 'CP', '环境检验': 'HJ', '微生物检验标准': 'WS', '其它检验': 'QT' }
 
+// 检验标准 status 存中文（开立/生效/失效），这里建立「可能传入的别名 ↔ DB 中文字」双向兼容表
+// 兼容：0/"0"/"开立"→开立；1/"1"/"生效"→生效；2/"2"/"失效"→失效；其他中文字保留原值
+const STATUS_VALUE_TO_DB: Record<string, string> = {
+  '0': '开立', '开立': '开立', 'open': '开立',
+  '1': '生效', '生效': '生效', 'active': '生效', '启用': '生效',
+  '2': '失效', '失效': '失效', 'inactive': '失效', '停用': '失效', '禁用': '失效',
+}
+function normalizeStandardStatusValue(raw: string): string {
+  if (raw === null || raw === undefined) return ''
+  const key = String(raw).trim()
+  if (!key) return ''
+  return STATUS_VALUE_TO_DB[key] !== undefined ? STATUS_VALUE_TO_DB[key] : key
+}
+
 // 检验标准自动编号：BZ-{类型前缀}-{YYYY}-{3位流水码}  yearly 按年重置
 // 例：BZ-CL-2026-001、BZ-CP-2026-002、BZ-WS-2026-001
 // 与 sys_number_rule 配置对齐：前缀 BZ-CL / BZ-CP / BZ-HJ / BZ-WS / BZ-QT，date_format=YYYY，separator=-，seq_width=3，reset_by=yearly
@@ -42,9 +56,14 @@ export const list = async (req: any, res: any) => {
     const pageNum = parseInt(page, 10)
     const pageSize = Math.min(parseInt(page_size, 10), MAX_PAGE_SIZE)
     const where: any = {}
-    if (status) {
-      const statusList = String(status).split(',').map(s => s.trim()).filter(Boolean)
-      where.status = statusList.length > 1 ? { [Op.in]: statusList } : statusList[0]
+    if (status !== undefined && status !== null && status !== '') {
+      const statusList = String(status)
+        .split(',')
+        .map(s => normalizeStandardStatusValue(s))
+        .filter(Boolean)
+      if (statusList.length > 0) {
+        where.status = statusList.length > 1 ? { [Op.in]: statusList } : statusList[0]
+      }
     }
     if (standard_no) where.standard_no = standard_no
     if (standard_type) where.standard_type = standard_type

@@ -17,34 +17,17 @@ export interface ApiResponse<T = any> {
 }
 
 function convertStatusParams(params: Record<string, unknown>): Record<string, unknown> {
+  // 注意：状态字段的「中文 ↔ 数字」转换必须放到各后端 controller 内部处理，
+  // 不同模块 status 存储格式不一致（生产订单存数字，检验标准存中文），
+  // 在请求层统一转换会误杀。这里只做数组→逗号分隔字符串的标准化，保证后端收到一致格式。
   if (!params) return params
   const result: Record<string, unknown> = {}
   for (const [key, val] of Object.entries(params)) {
     if (key === 'status') {
-      const tryConvertSingle = (s: string): number | string | null => {
-        const trimmed = s.trim()
-        return STATUS_TEXT_TO_NUM[trimmed] !== undefined ? STATUS_TEXT_TO_NUM[trimmed] : null
-      }
       if (Array.isArray(val)) {
-        const converted = val.map((s: string) => tryConvertSingle(String(s)))
-        if (converted.every((v: any) => v !== null)) {
-          result[key] = converted.join(',')
-        } else {
-          result[key] = val.map((v: any) => String(v)).join(',')
-        }
+        result[key] = val.map(v => String(v)).join(',')
       } else if (typeof val === 'string') {
-        if (val.includes(',')) {
-          const parts = val.split(',')
-          const converted = parts.map(s => tryConvertSingle(s))
-          if (converted.every(v => v !== null)) {
-            result[key] = converted.join(',')
-          } else {
-            result[key] = val
-          }
-        } else {
-          const c = tryConvertSingle(val)
-          result[key] = c !== null ? c : val
-        }
+        result[key] = val
       } else {
         result[key] = val
       }
