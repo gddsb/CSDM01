@@ -1,6 +1,5 @@
 import React from 'react'
 import { Tag, Button, Space, Tooltip } from 'antd'
-import { EyeOutlined, EditOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { formatVersionNo, formatDate } from '../../../utils'
 import type { ColumnsType } from 'antd/es/table'
@@ -30,9 +29,9 @@ interface BuildColumnsArgs {
 export function buildOrderColumns({ onView, onEdit, canEdit }: BuildColumnsArgs): ColumnsType<any> {
   const renderActions = (r: any) => (
     <Space size="small">
-      <Tooltip title="查看"><Button type="link" size="small" icon={<EyeOutlined />} onClick={() => onView(r)} /></Tooltip>
+      <Tooltip title="查看"><Button type="link" size="small" onClick={() => onView(r)}>查看</Button></Tooltip>
       {canEdit && ['开立', '下发'].includes(r.status) && (
-        <Tooltip title="编辑"><Button type="link" size="small" icon={<EditOutlined />} onClick={() => onEdit(r)} /></Tooltip>
+        <Tooltip title="编辑"><Button type="link" size="small" onClick={() => onEdit(r)}>编辑</Button></Tooltip>
       )}
     </Space>
   )
