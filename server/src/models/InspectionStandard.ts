@@ -1,0 +1,86 @@
+import { DataTypes } from 'sequelize'
+import sequelize from '../config/database.js'
+
+const InspectionStandard = sequelize.define('InspectionStandard', {
+  standard_id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+    comment: '检验标准ID',
+  },
+  standard_no: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    comment: '标准编号',
+  },
+  standard_name: {
+    type: DataTypes.STRING(200),
+    allowNull: false,
+    comment: '标准名称',
+  },
+  inspection_type: {
+    type: DataTypes.STRING(20),
+    allowNull: false,
+    defaultValue: '',
+    comment: '检验类型：首件/制程/成品/其它（已废弃，移至子表 inspection_types）',
+  },
+  standard_type: {
+    type: DataTypes.STRING(20),
+    allowNull: false,
+    comment: '标准类型：材料检验/产品检验/环境检验/微生物检验标准/其它检验',
+  },
+  inspection_plan: {
+    type: DataTypes.STRING(50),
+    comment: '检验方案：逐批计数抽样/连续生产抽样/孤立批抽样/全检不抽样',
+  },
+  customer_code: {
+    type: DataTypes.STRING(50),
+    comment: '客户编码',
+  },
+  material_id: {
+    type: DataTypes.UUID,
+    comment: '参照料品ID',
+  },
+  material_name: {
+    type: DataTypes.STRING(200),
+    comment: '料品名称（冗余）',
+  },
+  version_no: {
+    type: DataTypes.STRING(20),
+    defaultValue: 'V1',
+    comment: '版本号',
+  },
+  effective_date: {
+    type: DataTypes.DATE,
+    comment: '生效日期',
+  },
+  expiry_date: {
+    type: DataTypes.DATE,
+    comment: '失效日期',
+  },
+  status: {
+    type: DataTypes.STRING(20),
+    defaultValue: '开立',
+    comment: '状态：开立/生效/失效',
+  },
+  created_by: {
+    type: DataTypes.INTEGER,
+    comment: '创建人ID',
+  },
+  description: {
+    type: DataTypes.STRING(500),
+    comment: '描述',
+  },
+}, {
+  tableName: 'quality_inspection_standard',
+  timestamps: true,
+  underscored: true,
+  indexes: [
+    { fields: ['standard_no', 'version_no'], unique: true, name: 'uk_standard_no_version' },
+    { fields: ['inspection_type'] },
+    { fields: ['standard_type'] },
+    { fields: ['status'] },
+  ],
+})
+
+export default InspectionStandard

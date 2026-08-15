@@ -1,0 +1,628 @@
+.mobile-card .mobile-form-item:last-child {
+  margin-bottom: 0;
+}
+
+.mobile-tabs {
+  scrollbar-width: none;
+  display: flex;
+  overflow-x: auto;
+  gap: 0;
+  background: #fff;
+  border-radius: 8px;
+  padding: 0 4px;
+}
+
+.mobile-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-tab {
+  flex: 0 0 auto;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #666;
+  white-space: nowrap;
+  position: relative;
+  cursor: pointer;
+}
+
+.mobile-tab.active {
+  color: #fff;
+  background: #1677ff;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+.mobile-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 2px;
+  background: #2196F3;
+  border-radius: 1px;
+}
+
+.rd-header-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px 14px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.rd-header-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0;
+}
+
+.rd-header-row + .rd-header-row {
+  border-top: 1px dashed #f0f0f0;
+}
+
+.rd-header-left,
+.rd-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.rd-header-right {
+  justify-content: flex-end;
+}
+
+.rd-header-divider {
+  width: 1px;
+  height: 14px;
+  background: #e0e0e0;
+  margin: 0 4px;
+}
+
+.rd-report-no {
+  font-size: 16px;
+  font-weight: 600;
+  color: #212121;
+}
+
+.rd-label {
+  font-size: 12px;
+  color: #9e9e9e;
+  flex-shrink: 0;
+}
+
+.rd-value {
+  font-size: 13px;
+  color: #424242;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rd-material-name {
+  max-width: none;
+  white-space: normal;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.rd-film-version {
+  font-size: 11px;
+  color: #8c8c8c;
+  margin-left: 4px;
+  flex-shrink: 0;
+}
+
+.rd-qty-row {
+  gap: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0 !important;
+}
+
+.rd-qty-item {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 4px 6px;
+  border-right: 1px solid #f0f0f0;
+}
+
+.rd-qty-item:last-child {
+  border-right: none;
+}
+
+.rd-qty-item .rd-label {
+  font-size: 11px;
+}
+
+.rd-qty {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2196F3;
+}
+
+.rd-status-tag {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.rd-header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.rd-status-tag.started {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.rd-status-tag.done {
+  background: #f0f0f0;
+  color: #595959;
+}
+
+.rd-process-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0 12px;
+  scrollbar-width: none;
+}
+
+.rd-process-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.rd-process-chip {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: #616161;
+  background: #f5f6f8;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rd-process-chip.active {
+  background: #2196F3;
+  color: #fff;
+  font-weight: 500;
+}
+
+.rd-defect-select {
+  position: relative;
+  width: 100%;
+}
+
+.rd-defect-select-display {
+  width: 100%;
+  height: 32px;
+  padding: 0 24px 0 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 13px;
+  color: #212121;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rd-defect-select-display.placeholder {
+  color: #bbb;
+}
+
+.rd-defect-select-arrow {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+  font-size: 10px;
+  pointer-events: none;
+}
+
+.rd-defect-select-dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.rd-defect-select-search-wrap {
+  padding: 6px 8px;
+  border-bottom: 1px solid #f0f0f0;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+}
+
+.rd-defect-select-search-input {
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.rd-defect-select-search-input:focus {
+  border-color: #2196F3;
+}
+
+.rd-defect-select-option {
+  padding: 8px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  border-bottom: 1px solid #f5f5f5;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.rd-defect-select-option:last-child {
+  border-bottom: none;
+}
+
+.rd-defect-select-option:hover {
+  background: #f5f6f8;
+}
+
+.rd-defect-select-option.selected {
+  background: #e6f4ff;
+  color: #2196F3;
+}
+
+.rd-defect-select-option-code {
+  font-weight: 600;
+  color: #212121;
+  flex-shrink: 0;
+}
+
+.rd-defect-select-option-type {
+  color: #9E9E9E;
+  font-size: 11px;
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
+.rd-defect-select-option-name {
+  color: #757575;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 不良记录/检验报废：不良编码列宽8个字符 */
+.rd-form-item-code {
+  flex: 0 0 auto;
+  width: 8em;
+}
+
+/* 不良记录/检验报废：数量自动宽度 */
+.rd-form-item-qty {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* 不良记录/检验报废：单位自动宽度 */
+.rd-form-item-unit {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.rd-defect-select-dropdown.auto-width {
+  left: 0;
+  right: auto;
+  min-width: 100%;
+  width: max-content;
+  max-width: 280px;
+}
+
+.rd-material-same-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.rd-material-same-row .rd-form-item {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 物料记录：料号列宽8个字符 */
+.rd-material-same-row .rd-form-item-code-mat {
+  flex: 0 0 auto;
+  width: 8em;
+}
+
+/* 物料记录：类型列宽4个字符 */
+.rd-material-same-row .rd-form-item-type {
+  flex: 0 0 auto;
+  width: 4em;
+}
+
+/* 物料记录：批号自动列宽 */
+.rd-material-same-row .rd-form-item-batch {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* 物料记录：包号自动列宽 */
+.rd-material-same-row .rd-form-item-pkg {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* 物料记录：数量自动列宽 */
+.rd-material-same-row .rd-form-item-qty-wide {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* 图片按钮带徽章 */
+.rd-img-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 2px;
+}
+
+.rd-img-badge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: #f5222d;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* 图片管理弹窗 */
+.rd-img-modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.rd-img-modal {
+  width: 100%;
+  max-width: 500px;
+  max-height: 85vh;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.rd-img-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0;
+}
+
+.rd-img-modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #212121;
+}
+
+.rd-img-modal-close {
+  color: #999;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.rd-img-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.rd-img-empty {
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+  padding: 40px 0;
+}
+
+.rd-img-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.rd-img-grid-item {
+  position: relative;
+  width: 100%;
+  padding-top: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f5f5f5;
+}
+
+.rd-img-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.rd-img-grid-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.rd-img-modal-footer {
+  padding: 12px 16px;
+  border-top: 1px solid #f0f0f0;
+  flex-shrink: 0;
+}
+
+/* 物料记录：第一行（类型+料号） */
+.rd-material-row-1 {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.rd-material-row-1 .rd-form-item {
+  min-width: 0;
+}
+
+/* 物料记录：类型列宽5个字符 */
+.rd-form-item-type-5 {
+  flex: 0 0 auto;
+  width: 5em;
+}
+
+/* 物料记录：料号自动宽度 */
+.rd-form-item-code-auto {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* 物料记录：单位列（来自料品档案） */
+.rd-form-item-unit-mat {
+  flex: 0 0 auto;
+  width: 5em;
+}
+
+.rd-form-item-unit-mat .rd-form-input {
+  background: #f5f5f5;
+  color: #666;
+}
+
+/* 物料记录：第二行（批号+包号+数量） */
+.rd-material-row-2 {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.rd-material-row-2 .rd-form-item {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 物料记录：投入记录底色 */
+.rd-mat-input {
+  border-left: 3px solid #52c41a;
+}
+
+/* 物料记录：退回记录反差色 */
+.rd-mat-return {
+  border-left: 3px solid #f5222d;
+  background: #fff1f0;
+}
+
+.rd-mat-return .rd-list-item-header {
+  background: #fff1f0;
+}
+
+/* 上传方式选择 ActionSheet */
+.rd-actionsheet-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.rd-actionsheet {
+  width: 100%;
+  max-width: 500px;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+}
+
+.rd-actionsheet-item {
+  padding: 16px;
+  text-align: center;
+  font-size: 16px;
+  color: #212121;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+}
+
+.rd-actionsheet-item:active {
+  background: #f5f5f5;
+}
+
+.rd-actionsheet-cancel {
+  color: #999;
+  border-bottom: none;
+  background: #fafafa;
+}

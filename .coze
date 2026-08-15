@@ -1,0 +1,10 @@
+[project]
+requires = ["nodejs-24"]
+
+[dev]
+build = ["bash", "-c "pnpm install && pnpm --dir server install"]
+run = ["bash", "-c "cd server && (nohup pnpm start > /app/work/logs/bypass/server.log 2>&1 &) && cd .. && node_modules/.bin/vite --host 0.0.0.0 --port ${DEPLOY_RUN_PORT}"]
+
+[deploy]
+build = ["bash", "-c "pnpm install && pnpm --dir server install && pnpm run build"]
+run = ["bash", "-c "cd server && (nohup pnpm start > /app/work/logs/bypass/server.log 2>&1 &) && cd .. && npx vite preview --host 0.0.0.0 --port ${DEPLOY_RUN_PORT}"]

@@ -1,0 +1,4131 @@
+[
+  {
+    "defect_id": 29,
+    "report_order_id": 1,
+    "process_id": 1,
+    "defect_type_id": 51,
+    "quantity": "15.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 30,
+    "report_order_id": 1,
+    "process_id": 1,
+    "defect_type_id": 56,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 31,
+    "report_order_id": 1,
+    "process_id": 1,
+    "defect_type_id": 50,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 32,
+    "report_order_id": 1,
+    "process_id": 2,
+    "defect_type_id": 76,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 33,
+    "report_order_id": 1,
+    "process_id": 3,
+    "defect_type_id": 56,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 34,
+    "report_order_id": 1,
+    "process_id": 3,
+    "defect_type_id": 71,
+    "quantity": "11.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 35,
+    "report_order_id": 1,
+    "process_id": 3,
+    "defect_type_id": 59,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 36,
+    "report_order_id": 1,
+    "process_id": 4,
+    "defect_type_id": 63,
+    "quantity": "15.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 37,
+    "report_order_id": 1,
+    "process_id": 6,
+    "defect_type_id": 57,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 38,
+    "report_order_id": 1,
+    "process_id": 6,
+    "defect_type_id": 58,
+    "quantity": "20.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 39,
+    "report_order_id": 1,
+    "process_id": 7,
+    "defect_type_id": 66,
+    "quantity": "6.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 40,
+    "report_order_id": 1,
+    "process_id": 7,
+    "defect_type_id": 47,
+    "quantity": "3.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 41,
+    "report_order_id": 1,
+    "process_id": 8,
+    "defect_type_id": 76,
+    "quantity": "20.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 42,
+    "report_order_id": 1,
+    "process_id": 9,
+    "defect_type_id": 4,
+    "quantity": "6.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 43,
+    "report_order_id": 1,
+    "process_id": 9,
+    "defect_type_id": 71,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 44,
+    "report_order_id": 1,
+    "defect_type_id": 9,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 45,
+    "report_order_id": 2,
+    "process_id": 1,
+    "defect_type_id": 47,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 46,
+    "report_order_id": 2,
+    "process_id": 2,
+    "defect_type_id": 70,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 47,
+    "report_order_id": 2,
+    "process_id": 2,
+    "defect_type_id": 52,
+    "quantity": "20.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 48,
+    "report_order_id": 2,
+    "process_id": 2,
+    "defect_type_id": 71,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 49,
+    "report_order_id": 2,
+    "process_id": 3,
+    "defect_type_id": 58,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 50,
+    "report_order_id": 2,
+    "process_id": 5,
+    "defect_type_id": 60,
+    "quantity": "15.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 51,
+    "report_order_id": 2,
+    "process_id": 5,
+    "defect_type_id": 74,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 52,
+    "report_order_id": 2,
+    "process_id": 6,
+    "defect_type_id": 3,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 53,
+    "report_order_id": 2,
+    "process_id": 6,
+    "defect_type_id": 70,
+    "quantity": "5.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 54,
+    "report_order_id": 2,
+    "process_id": 8,
+    "defect_type_id": 60,
+    "quantity": "19.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 55,
+    "report_order_id": 2,
+    "process_id": 8,
+    "defect_type_id": 2,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 56,
+    "report_order_id": 2,
+    "process_id": 9,
+    "defect_type_id": 45,
+    "quantity": "20.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 57,
+    "report_order_id": 2,
+    "process_id": 9,
+    "defect_type_id": 52,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 58,
+    "report_order_id": 2,
+    "process_id": 9,
+    "defect_type_id": 2,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 59,
+    "report_order_id": 3,
+    "process_id": 1,
+    "defect_type_id": 47,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 60,
+    "report_order_id": 3,
+    "process_id": 1,
+    "defect_type_id": 64,
+    "quantity": "3.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 61,
+    "report_order_id": 3,
+    "process_id": 2,
+    "defect_type_id": 62,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 62,
+    "report_order_id": 3,
+    "process_id": 2,
+    "defect_type_id": 48,
+    "quantity": "6.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 63,
+    "report_order_id": 3,
+    "process_id": 2,
+    "defect_type_id": 77,
+    "quantity": "2.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 64,
+    "report_order_id": 3,
+    "process_id": 3,
+    "defect_type_id": 54,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 65,
+    "report_order_id": 3,
+    "process_id": 3,
+    "defect_type_id": 77,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 66,
+    "report_order_id": 3,
+    "process_id": 6,
+    "defect_type_id": 75,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 67,
+    "report_order_id": 3,
+    "process_id": 9,
+    "defect_type_id": 66,
+    "quantity": "11.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 68,
+    "report_order_id": 3,
+    "defect_type_id": 10,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 69,
+    "report_order_id": 4,
+    "process_id": 1,
+    "defect_type_id": 48,
+    "quantity": "2.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 70,
+    "report_order_id": 4,
+    "process_id": 1,
+    "defect_type_id": 78,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 71,
+    "report_order_id": 4,
+    "process_id": 1,
+    "defect_type_id": 54,
+    "quantity": "20.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 72,
+    "report_order_id": 4,
+    "process_id": 2,
+    "defect_type_id": 58,
+    "quantity": "15.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 73,
+    "report_order_id": 4,
+    "process_id": 2,
+    "defect_type_id": 70,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 74,
+    "report_order_id": 4,
+    "process_id": 3,
+    "defect_type_id": 46,
+    "quantity": "15.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 75,
+    "report_order_id": 4,
+    "process_id": 5,
+    "defect_type_id": 75,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 76,
+    "report_order_id": 4,
+    "process_id": 6,
+    "defect_type_id": 67,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 77,
+    "report_order_id": 4,
+    "process_id": 7,
+    "defect_type_id": 65,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 78,
+    "report_order_id": 4,
+    "process_id": 7,
+    "defect_type_id": 69,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 79,
+    "report_order_id": 4,
+    "process_id": 9,
+    "defect_type_id": 47,
+    "quantity": "18.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 80,
+    "report_order_id": 4,
+    "process_id": 9,
+    "defect_type_id": 70,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 81,
+    "report_order_id": 4,
+    "process_id": 9,
+    "defect_type_id": 62,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 82,
+    "report_order_id": 4,
+    "process_id": 11,
+    "defect_type_id": 72,
+    "quantity": "18.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 83,
+    "report_order_id": 5,
+    "process_id": 1,
+    "defect_type_id": 68,
+    "quantity": "19.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 84,
+    "report_order_id": 5,
+    "process_id": 2,
+    "defect_type_id": 66,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 85,
+    "report_order_id": 5,
+    "process_id": 2,
+    "defect_type_id": 49,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 86,
+    "report_order_id": 5,
+    "process_id": 2,
+    "defect_type_id": 57,
+    "quantity": "20.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 87,
+    "report_order_id": 5,
+    "process_id": 3,
+    "defect_type_id": 57,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 88,
+    "report_order_id": 5,
+    "process_id": 4,
+    "defect_type_id": 61,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 89,
+    "report_order_id": 5,
+    "process_id": 6,
+    "defect_type_id": 2,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 90,
+    "report_order_id": 5,
+    "process_id": 6,
+    "defect_type_id": 45,
+    "quantity": "20.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 91,
+    "report_order_id": 5,
+    "process_id": 6,
+    "defect_type_id": 77,
+    "quantity": "20.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 92,
+    "report_order_id": 5,
+    "process_id": 7,
+    "defect_type_id": 57,
+    "quantity": "2.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 93,
+    "report_order_id": 5,
+    "process_id": 9,
+    "defect_type_id": 65,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 94,
+    "report_order_id": 5,
+    "process_id": 9,
+    "defect_type_id": 76,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 95,
+    "report_order_id": 5,
+    "process_id": 11,
+    "defect_type_id": 5,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 96,
+    "report_order_id": 5,
+    "process_id": 11,
+    "defect_type_id": 47,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 97,
+    "report_order_id": 5,
+    "defect_type_id": 7,
+    "quantity": "15.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 98,
+    "report_order_id": 5,
+    "defect_type_id": 9,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 99,
+    "report_order_id": 6,
+    "process_id": 1,
+    "defect_type_id": 3,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 100,
+    "report_order_id": 6,
+    "process_id": 1,
+    "defect_type_id": 54,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 101,
+    "report_order_id": 6,
+    "process_id": 1,
+    "defect_type_id": 78,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 102,
+    "report_order_id": 6,
+    "process_id": 2,
+    "defect_type_id": 52,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 103,
+    "report_order_id": 6,
+    "process_id": 2,
+    "defect_type_id": 61,
+    "quantity": "20.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 104,
+    "report_order_id": 6,
+    "process_id": 2,
+    "defect_type_id": 67,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 105,
+    "report_order_id": 6,
+    "process_id": 3,
+    "defect_type_id": 51,
+    "quantity": "11.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 106,
+    "report_order_id": 6,
+    "process_id": 6,
+    "defect_type_id": 60,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 107,
+    "report_order_id": 6,
+    "process_id": 9,
+    "defect_type_id": 71,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 108,
+    "report_order_id": 6,
+    "process_id": 9,
+    "defect_type_id": 57,
+    "quantity": "18.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 109,
+    "report_order_id": 6,
+    "defect_type_id": 8,
+    "quantity": "2.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 110,
+    "report_order_id": 6,
+    "defect_type_id": 10,
+    "quantity": "2.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 111,
+    "report_order_id": 7,
+    "process_id": 1,
+    "defect_type_id": 46,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 112,
+    "report_order_id": 7,
+    "process_id": 1,
+    "defect_type_id": 75,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 113,
+    "report_order_id": 7,
+    "process_id": 1,
+    "defect_type_id": 2,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 114,
+    "report_order_id": 7,
+    "process_id": 2,
+    "defect_type_id": 62,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 115,
+    "report_order_id": 7,
+    "process_id": 2,
+    "defect_type_id": 1,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 116,
+    "report_order_id": 7,
+    "process_id": 3,
+    "defect_type_id": 53,
+    "quantity": "6.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 117,
+    "report_order_id": 7,
+    "process_id": 3,
+    "defect_type_id": 47,
+    "quantity": "5.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 118,
+    "report_order_id": 7,
+    "process_id": 4,
+    "defect_type_id": 57,
+    "quantity": "18.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 119,
+    "report_order_id": 7,
+    "process_id": 6,
+    "defect_type_id": 56,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 120,
+    "report_order_id": 7,
+    "process_id": 6,
+    "defect_type_id": 51,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 121,
+    "report_order_id": 7,
+    "process_id": 6,
+    "defect_type_id": 77,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 122,
+    "report_order_id": 7,
+    "process_id": 9,
+    "defect_type_id": 49,
+    "quantity": "2.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 123,
+    "report_order_id": 7,
+    "process_id": 9,
+    "defect_type_id": 52,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 124,
+    "report_order_id": 7,
+    "process_id": 11,
+    "defect_type_id": 74,
+    "quantity": "3.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 125,
+    "report_order_id": 7,
+    "process_id": 11,
+    "defect_type_id": 3,
+    "quantity": "15.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 126,
+    "report_order_id": 8,
+    "process_id": 1,
+    "defect_type_id": 52,
+    "quantity": "18.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 127,
+    "report_order_id": 8,
+    "process_id": 2,
+    "defect_type_id": 56,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 128,
+    "report_order_id": 8,
+    "process_id": 2,
+    "defect_type_id": 68,
+    "quantity": "11.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 129,
+    "report_order_id": 8,
+    "process_id": 3,
+    "defect_type_id": 54,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 130,
+    "report_order_id": 8,
+    "process_id": 6,
+    "defect_type_id": 5,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 131,
+    "report_order_id": 8,
+    "process_id": 6,
+    "defect_type_id": 1,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 132,
+    "report_order_id": 8,
+    "process_id": 7,
+    "defect_type_id": 70,
+    "quantity": "3.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 133,
+    "report_order_id": 8,
+    "process_id": 9,
+    "defect_type_id": 78,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 134,
+    "report_order_id": 8,
+    "process_id": 9,
+    "defect_type_id": 53,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 135,
+    "report_order_id": 8,
+    "process_id": 11,
+    "defect_type_id": 77,
+    "quantity": "20.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 136,
+    "report_order_id": 9,
+    "process_id": 1,
+    "defect_type_id": 1,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 137,
+    "report_order_id": 9,
+    "process_id": 1,
+    "defect_type_id": 63,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 138,
+    "report_order_id": 9,
+    "process_id": 1,
+    "defect_type_id": 71,
+    "quantity": "20.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 139,
+    "report_order_id": 9,
+    "process_id": 2,
+    "defect_type_id": 51,
+    "quantity": "2.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 140,
+    "report_order_id": 9,
+    "process_id": 3,
+    "defect_type_id": 55,
+    "quantity": "11.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 141,
+    "report_order_id": 9,
+    "process_id": 3,
+    "defect_type_id": 62,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 142,
+    "report_order_id": 9,
+    "process_id": 3,
+    "defect_type_id": 45,
+    "quantity": "20.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 143,
+    "report_order_id": 9,
+    "process_id": 4,
+    "defect_type_id": 47,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 144,
+    "report_order_id": 9,
+    "process_id": 4,
+    "defect_type_id": 67,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 145,
+    "report_order_id": 9,
+    "process_id": 5,
+    "defect_type_id": 53,
+    "quantity": "6.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 146,
+    "report_order_id": 9,
+    "process_id": 5,
+    "defect_type_id": 75,
+    "quantity": "18.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 147,
+    "report_order_id": 9,
+    "process_id": 6,
+    "defect_type_id": 58,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 148,
+    "report_order_id": 9,
+    "process_id": 6,
+    "defect_type_id": 57,
+    "quantity": "6.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 149,
+    "report_order_id": 9,
+    "process_id": 7,
+    "defect_type_id": 49,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 150,
+    "report_order_id": 9,
+    "process_id": 7,
+    "defect_type_id": 64,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 151,
+    "report_order_id": 9,
+    "process_id": 9,
+    "defect_type_id": 62,
+    "quantity": "18.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 152,
+    "report_order_id": 9,
+    "process_id": 10,
+    "defect_type_id": 53,
+    "quantity": "11.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 153,
+    "report_order_id": 9,
+    "process_id": 10,
+    "defect_type_id": 69,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 154,
+    "report_order_id": 10,
+    "process_id": 1,
+    "defect_type_id": 53,
+    "quantity": "19.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 155,
+    "report_order_id": 10,
+    "process_id": 2,
+    "defect_type_id": 57,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 156,
+    "report_order_id": 10,
+    "process_id": 2,
+    "defect_type_id": 62,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 157,
+    "report_order_id": 10,
+    "process_id": 2,
+    "defect_type_id": 48,
+    "quantity": "3.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 158,
+    "report_order_id": 10,
+    "process_id": 3,
+    "defect_type_id": 73,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 159,
+    "report_order_id": 10,
+    "process_id": 3,
+    "defect_type_id": 5,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 160,
+    "report_order_id": 10,
+    "process_id": 3,
+    "defect_type_id": 69,
+    "quantity": "15.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 161,
+    "report_order_id": 10,
+    "process_id": 4,
+    "defect_type_id": 50,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 162,
+    "report_order_id": 10,
+    "process_id": 4,
+    "defect_type_id": 51,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 163,
+    "report_order_id": 10,
+    "process_id": 6,
+    "defect_type_id": 61,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 164,
+    "report_order_id": 10,
+    "process_id": 6,
+    "defect_type_id": 55,
+    "quantity": "18.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 165,
+    "report_order_id": 10,
+    "process_id": 9,
+    "defect_type_id": 61,
+    "quantity": "19.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 166,
+    "report_order_id": 10,
+    "process_id": 9,
+    "defect_type_id": 71,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 167,
+    "report_order_id": 10,
+    "process_id": 11,
+    "defect_type_id": 2,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 168,
+    "report_order_id": 10,
+    "process_id": 11,
+    "defect_type_id": 60,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 169,
+    "report_order_id": 10,
+    "defect_type_id": 9,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 170,
+    "report_order_id": 10,
+    "defect_type_id": 9,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 171,
+    "report_order_id": 11,
+    "process_id": 1,
+    "defect_type_id": 56,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 172,
+    "report_order_id": 11,
+    "process_id": 1,
+    "defect_type_id": 51,
+    "quantity": "11.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 173,
+    "report_order_id": 11,
+    "process_id": 1,
+    "defect_type_id": 72,
+    "quantity": "11.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 174,
+    "report_order_id": 11,
+    "process_id": 2,
+    "defect_type_id": 50,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 175,
+    "report_order_id": 11,
+    "process_id": 3,
+    "defect_type_id": 4,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 176,
+    "report_order_id": 11,
+    "process_id": 4,
+    "defect_type_id": 74,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 177,
+    "report_order_id": 11,
+    "process_id": 4,
+    "defect_type_id": 60,
+    "quantity": "18.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 178,
+    "report_order_id": 11,
+    "process_id": 6,
+    "defect_type_id": 74,
+    "quantity": "18.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 179,
+    "report_order_id": 11,
+    "process_id": 6,
+    "defect_type_id": 64,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 180,
+    "report_order_id": 11,
+    "process_id": 9,
+    "defect_type_id": 67,
+    "quantity": "18.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 181,
+    "report_order_id": 11,
+    "process_id": 9,
+    "defect_type_id": 46,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 182,
+    "report_order_id": 12,
+    "process_id": 1,
+    "defect_type_id": 51,
+    "quantity": "15.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 183,
+    "report_order_id": 12,
+    "process_id": 2,
+    "defect_type_id": 74,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 184,
+    "report_order_id": 12,
+    "process_id": 3,
+    "defect_type_id": 63,
+    "quantity": "20.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 185,
+    "report_order_id": 12,
+    "process_id": 3,
+    "defect_type_id": 58,
+    "quantity": "2.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 186,
+    "report_order_id": 12,
+    "process_id": 4,
+    "defect_type_id": 1,
+    "quantity": "15.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 187,
+    "report_order_id": 12,
+    "process_id": 6,
+    "defect_type_id": 46,
+    "quantity": "20.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 188,
+    "report_order_id": 12,
+    "process_id": 7,
+    "defect_type_id": 58,
+    "quantity": "11.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 189,
+    "report_order_id": 12,
+    "process_id": 9,
+    "defect_type_id": 54,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 190,
+    "report_order_id": 12,
+    "process_id": 9,
+    "defect_type_id": 54,
+    "quantity": "6.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 191,
+    "report_order_id": 13,
+    "process_id": 1,
+    "defect_type_id": 3,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 192,
+    "report_order_id": 13,
+    "process_id": 2,
+    "defect_type_id": 60,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 193,
+    "report_order_id": 13,
+    "process_id": 2,
+    "defect_type_id": 49,
+    "quantity": "11.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 194,
+    "report_order_id": 13,
+    "process_id": 3,
+    "defect_type_id": 2,
+    "quantity": "5.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 195,
+    "report_order_id": 13,
+    "process_id": 3,
+    "defect_type_id": 77,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 196,
+    "report_order_id": 13,
+    "process_id": 5,
+    "defect_type_id": 53,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 197,
+    "report_order_id": 13,
+    "process_id": 5,
+    "defect_type_id": 47,
+    "quantity": "18.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 198,
+    "report_order_id": 13,
+    "process_id": 6,
+    "defect_type_id": 74,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 199,
+    "report_order_id": 13,
+    "process_id": 8,
+    "defect_type_id": 1,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 200,
+    "report_order_id": 13,
+    "process_id": 9,
+    "defect_type_id": 54,
+    "quantity": "2.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 201,
+    "report_order_id": 13,
+    "process_id": 11,
+    "defect_type_id": 69,
+    "quantity": "19.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 202,
+    "report_order_id": 13,
+    "process_id": 11,
+    "defect_type_id": 55,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 203,
+    "report_order_id": 14,
+    "process_id": 1,
+    "defect_type_id": 74,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 204,
+    "report_order_id": 14,
+    "process_id": 1,
+    "defect_type_id": 2,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 205,
+    "report_order_id": 14,
+    "process_id": 2,
+    "defect_type_id": 55,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 206,
+    "report_order_id": 14,
+    "process_id": 2,
+    "defect_type_id": 61,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 207,
+    "report_order_id": 14,
+    "process_id": 3,
+    "defect_type_id": 46,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 208,
+    "report_order_id": 14,
+    "process_id": 4,
+    "defect_type_id": 60,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 209,
+    "report_order_id": 14,
+    "process_id": 6,
+    "defect_type_id": 70,
+    "quantity": "15.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 210,
+    "report_order_id": 14,
+    "process_id": 6,
+    "defect_type_id": 1,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 211,
+    "report_order_id": 14,
+    "process_id": 9,
+    "defect_type_id": 47,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 212,
+    "report_order_id": 14,
+    "process_id": 9,
+    "defect_type_id": 47,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 213,
+    "report_order_id": 14,
+    "process_id": 10,
+    "defect_type_id": 56,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 214,
+    "report_order_id": 14,
+    "process_id": 11,
+    "defect_type_id": 62,
+    "quantity": "18.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 215,
+    "report_order_id": 14,
+    "process_id": 11,
+    "defect_type_id": 48,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 216,
+    "report_order_id": 15,
+    "process_id": 1,
+    "defect_type_id": 73,
+    "quantity": "3.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 217,
+    "report_order_id": 15,
+    "process_id": 1,
+    "defect_type_id": 46,
+    "quantity": "2.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 218,
+    "report_order_id": 15,
+    "process_id": 2,
+    "defect_type_id": 48,
+    "quantity": "5.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 219,
+    "report_order_id": 15,
+    "process_id": 2,
+    "defect_type_id": 71,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 220,
+    "report_order_id": 15,
+    "process_id": 2,
+    "defect_type_id": 78,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 221,
+    "report_order_id": 15,
+    "process_id": 3,
+    "defect_type_id": 54,
+    "quantity": "20.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 222,
+    "report_order_id": 15,
+    "process_id": 6,
+    "defect_type_id": 67,
+    "quantity": "2.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 223,
+    "report_order_id": 15,
+    "process_id": 9,
+    "defect_type_id": 68,
+    "quantity": "11.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 224,
+    "report_order_id": 15,
+    "process_id": 9,
+    "defect_type_id": 58,
+    "quantity": "19.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 225,
+    "report_order_id": 15,
+    "process_id": 9,
+    "defect_type_id": 53,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 226,
+    "report_order_id": 15,
+    "process_id": 10,
+    "defect_type_id": 63,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 227,
+    "report_order_id": 15,
+    "process_id": 10,
+    "defect_type_id": 52,
+    "quantity": "3.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 228,
+    "report_order_id": 16,
+    "process_id": 1,
+    "defect_type_id": 51,
+    "quantity": "2.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 229,
+    "report_order_id": 16,
+    "process_id": 1,
+    "defect_type_id": 54,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 230,
+    "report_order_id": 16,
+    "process_id": 2,
+    "defect_type_id": 48,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 231,
+    "report_order_id": 16,
+    "process_id": 2,
+    "defect_type_id": 2,
+    "quantity": "19.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 232,
+    "report_order_id": 16,
+    "process_id": 2,
+    "defect_type_id": 67,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 233,
+    "report_order_id": 16,
+    "process_id": 3,
+    "defect_type_id": 4,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 234,
+    "report_order_id": 16,
+    "process_id": 4,
+    "defect_type_id": 3,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 235,
+    "report_order_id": 16,
+    "process_id": 6,
+    "defect_type_id": 65,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 236,
+    "report_order_id": 16,
+    "process_id": 8,
+    "defect_type_id": 49,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 237,
+    "report_order_id": 16,
+    "process_id": 8,
+    "defect_type_id": 64,
+    "quantity": "19.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 238,
+    "report_order_id": 16,
+    "process_id": 9,
+    "defect_type_id": 50,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 239,
+    "report_order_id": 17,
+    "process_id": 1,
+    "defect_type_id": 59,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 240,
+    "report_order_id": 17,
+    "process_id": 1,
+    "defect_type_id": 50,
+    "quantity": "15.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 241,
+    "report_order_id": 17,
+    "process_id": 1,
+    "defect_type_id": 56,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 242,
+    "report_order_id": 17,
+    "process_id": 2,
+    "defect_type_id": 58,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 243,
+    "report_order_id": 17,
+    "process_id": 2,
+    "defect_type_id": 69,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 244,
+    "report_order_id": 17,
+    "process_id": 3,
+    "defect_type_id": 49,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 245,
+    "report_order_id": 17,
+    "process_id": 3,
+    "defect_type_id": 57,
+    "quantity": "19.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 246,
+    "report_order_id": 17,
+    "process_id": 6,
+    "defect_type_id": 1,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 247,
+    "report_order_id": 17,
+    "process_id": 6,
+    "defect_type_id": 5,
+    "quantity": "5.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 248,
+    "report_order_id": 17,
+    "process_id": 6,
+    "defect_type_id": 48,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 249,
+    "report_order_id": 17,
+    "process_id": 7,
+    "defect_type_id": 49,
+    "quantity": "20.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 250,
+    "report_order_id": 17,
+    "process_id": 7,
+    "defect_type_id": 53,
+    "quantity": "19.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 251,
+    "report_order_id": 17,
+    "process_id": 9,
+    "defect_type_id": 66,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 252,
+    "report_order_id": 17,
+    "process_id": 10,
+    "defect_type_id": 58,
+    "quantity": "15.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 253,
+    "report_order_id": 18,
+    "process_id": 1,
+    "defect_type_id": 47,
+    "quantity": "19.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 254,
+    "report_order_id": 18,
+    "process_id": 1,
+    "defect_type_id": 74,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 255,
+    "report_order_id": 18,
+    "process_id": 1,
+    "defect_type_id": 56,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 256,
+    "report_order_id": 18,
+    "process_id": 2,
+    "defect_type_id": 75,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 257,
+    "report_order_id": 18,
+    "process_id": 3,
+    "defect_type_id": 56,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 258,
+    "report_order_id": 18,
+    "process_id": 3,
+    "defect_type_id": 53,
+    "quantity": "2.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 259,
+    "report_order_id": 18,
+    "process_id": 4,
+    "defect_type_id": 46,
+    "quantity": "11.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 260,
+    "report_order_id": 18,
+    "process_id": 6,
+    "defect_type_id": 5,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 261,
+    "report_order_id": 18,
+    "process_id": 6,
+    "defect_type_id": 52,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 262,
+    "report_order_id": 18,
+    "process_id": 7,
+    "defect_type_id": 73,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 263,
+    "report_order_id": 18,
+    "process_id": 7,
+    "defect_type_id": 2,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 264,
+    "report_order_id": 18,
+    "process_id": 9,
+    "defect_type_id": 69,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 265,
+    "report_order_id": 18,
+    "process_id": 10,
+    "defect_type_id": 46,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 266,
+    "report_order_id": 18,
+    "process_id": 11,
+    "defect_type_id": 71,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 267,
+    "report_order_id": 18,
+    "process_id": 11,
+    "defect_type_id": 68,
+    "quantity": "19.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 268,
+    "report_order_id": 19,
+    "process_id": 1,
+    "defect_type_id": 54,
+    "quantity": "2.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 269,
+    "report_order_id": 19,
+    "process_id": 1,
+    "defect_type_id": 76,
+    "quantity": "5.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 270,
+    "report_order_id": 19,
+    "process_id": 1,
+    "defect_type_id": 3,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 271,
+    "report_order_id": 19,
+    "process_id": 2,
+    "defect_type_id": 71,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 272,
+    "report_order_id": 19,
+    "process_id": 2,
+    "defect_type_id": 73,
+    "quantity": "15.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 273,
+    "report_order_id": 19,
+    "process_id": 2,
+    "defect_type_id": 70,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 274,
+    "report_order_id": 19,
+    "process_id": 3,
+    "defect_type_id": 58,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 275,
+    "report_order_id": 19,
+    "process_id": 3,
+    "defect_type_id": 48,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 276,
+    "report_order_id": 19,
+    "process_id": 6,
+    "defect_type_id": 61,
+    "quantity": "5.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 277,
+    "report_order_id": 19,
+    "process_id": 6,
+    "defect_type_id": 76,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 278,
+    "report_order_id": 19,
+    "process_id": 6,
+    "defect_type_id": 55,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 279,
+    "report_order_id": 19,
+    "process_id": 9,
+    "defect_type_id": 46,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 280,
+    "report_order_id": 19,
+    "defect_type_id": 7,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 281,
+    "report_order_id": 19,
+    "defect_type_id": 9,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 282,
+    "report_order_id": 20,
+    "process_id": 1,
+    "defect_type_id": 45,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 283,
+    "report_order_id": 20,
+    "process_id": 1,
+    "defect_type_id": 69,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 284,
+    "report_order_id": 20,
+    "process_id": 2,
+    "defect_type_id": 69,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 285,
+    "report_order_id": 20,
+    "process_id": 2,
+    "defect_type_id": 54,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 286,
+    "report_order_id": 20,
+    "process_id": 3,
+    "defect_type_id": 75,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 287,
+    "report_order_id": 20,
+    "process_id": 3,
+    "defect_type_id": 46,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 288,
+    "report_order_id": 20,
+    "process_id": 3,
+    "defect_type_id": 59,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 289,
+    "report_order_id": 20,
+    "process_id": 6,
+    "defect_type_id": 77,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 290,
+    "report_order_id": 20,
+    "process_id": 6,
+    "defect_type_id": 55,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 291,
+    "report_order_id": 20,
+    "process_id": 9,
+    "defect_type_id": 46,
+    "quantity": "19.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 292,
+    "report_order_id": 20,
+    "process_id": 9,
+    "defect_type_id": 5,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 293,
+    "report_order_id": 20,
+    "process_id": 11,
+    "defect_type_id": 59,
+    "quantity": "5.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 294,
+    "report_order_id": 20,
+    "defect_type_id": 9,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 295,
+    "report_order_id": 21,
+    "process_id": 1,
+    "defect_type_id": 51,
+    "quantity": "19.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 296,
+    "report_order_id": 21,
+    "process_id": 1,
+    "defect_type_id": 68,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 297,
+    "report_order_id": 21,
+    "process_id": 1,
+    "defect_type_id": 68,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 298,
+    "report_order_id": 21,
+    "process_id": 2,
+    "defect_type_id": 49,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 299,
+    "report_order_id": 21,
+    "process_id": 3,
+    "defect_type_id": 1,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 300,
+    "report_order_id": 21,
+    "process_id": 3,
+    "defect_type_id": 2,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 301,
+    "report_order_id": 21,
+    "process_id": 3,
+    "defect_type_id": 65,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 302,
+    "report_order_id": 21,
+    "process_id": 5,
+    "defect_type_id": 54,
+    "quantity": "6.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 303,
+    "report_order_id": 21,
+    "process_id": 5,
+    "defect_type_id": 72,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 304,
+    "report_order_id": 21,
+    "process_id": 6,
+    "defect_type_id": 55,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 305,
+    "report_order_id": 21,
+    "process_id": 6,
+    "defect_type_id": 54,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 306,
+    "report_order_id": 21,
+    "process_id": 7,
+    "defect_type_id": 71,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 307,
+    "report_order_id": 21,
+    "process_id": 7,
+    "defect_type_id": 50,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 308,
+    "report_order_id": 21,
+    "process_id": 9,
+    "defect_type_id": 69,
+    "quantity": "2.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 309,
+    "report_order_id": 21,
+    "process_id": 9,
+    "defect_type_id": 46,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 310,
+    "report_order_id": 21,
+    "process_id": 11,
+    "defect_type_id": 46,
+    "quantity": "19.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 311,
+    "report_order_id": 22,
+    "process_id": 1,
+    "defect_type_id": 58,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 312,
+    "report_order_id": 22,
+    "process_id": 1,
+    "defect_type_id": 54,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 313,
+    "report_order_id": 22,
+    "process_id": 1,
+    "defect_type_id": 71,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 314,
+    "report_order_id": 22,
+    "process_id": 2,
+    "defect_type_id": 4,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 315,
+    "report_order_id": 22,
+    "process_id": 2,
+    "defect_type_id": 3,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 316,
+    "report_order_id": 22,
+    "process_id": 3,
+    "defect_type_id": 63,
+    "quantity": "6.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 317,
+    "report_order_id": 22,
+    "process_id": 3,
+    "defect_type_id": 61,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 318,
+    "report_order_id": 22,
+    "process_id": 3,
+    "defect_type_id": 57,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 319,
+    "report_order_id": 22,
+    "process_id": 6,
+    "defect_type_id": 75,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 320,
+    "report_order_id": 22,
+    "process_id": 8,
+    "defect_type_id": 61,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 321,
+    "report_order_id": 22,
+    "process_id": 9,
+    "defect_type_id": 63,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 322,
+    "report_order_id": 22,
+    "process_id": 10,
+    "defect_type_id": 4,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 323,
+    "report_order_id": 22,
+    "process_id": 11,
+    "defect_type_id": 65,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 324,
+    "report_order_id": 22,
+    "defect_type_id": 10,
+    "quantity": "5.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 325,
+    "report_order_id": 23,
+    "process_id": 1,
+    "defect_type_id": 69,
+    "quantity": "15.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 326,
+    "report_order_id": 23,
+    "process_id": 2,
+    "defect_type_id": 76,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 327,
+    "report_order_id": 23,
+    "process_id": 2,
+    "defect_type_id": 67,
+    "quantity": "15.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 328,
+    "report_order_id": 23,
+    "process_id": 3,
+    "defect_type_id": 70,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 329,
+    "report_order_id": 23,
+    "process_id": 6,
+    "defect_type_id": 66,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 330,
+    "report_order_id": 23,
+    "process_id": 6,
+    "defect_type_id": 67,
+    "quantity": "18.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 331,
+    "report_order_id": 23,
+    "process_id": 6,
+    "defect_type_id": 48,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 332,
+    "report_order_id": 23,
+    "process_id": 7,
+    "defect_type_id": 70,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 333,
+    "report_order_id": 23,
+    "process_id": 8,
+    "defect_type_id": 77,
+    "quantity": "18.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 334,
+    "report_order_id": 23,
+    "process_id": 8,
+    "defect_type_id": 68,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 335,
+    "report_order_id": 23,
+    "process_id": 9,
+    "defect_type_id": 77,
+    "quantity": "6.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 336,
+    "report_order_id": 23,
+    "process_id": 9,
+    "defect_type_id": 64,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 337,
+    "report_order_id": 23,
+    "process_id": 9,
+    "defect_type_id": 54,
+    "quantity": "6.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 338,
+    "report_order_id": 23,
+    "process_id": 10,
+    "defect_type_id": 52,
+    "quantity": "6.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 339,
+    "report_order_id": 24,
+    "process_id": 1,
+    "defect_type_id": 75,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 340,
+    "report_order_id": 24,
+    "process_id": 2,
+    "defect_type_id": 45,
+    "quantity": "2.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 341,
+    "report_order_id": 24,
+    "process_id": 2,
+    "defect_type_id": 66,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 342,
+    "report_order_id": 24,
+    "process_id": 2,
+    "defect_type_id": 57,
+    "quantity": "5.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 343,
+    "report_order_id": 24,
+    "process_id": 3,
+    "defect_type_id": 2,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 344,
+    "report_order_id": 24,
+    "process_id": 3,
+    "defect_type_id": 2,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 345,
+    "report_order_id": 24,
+    "process_id": 3,
+    "defect_type_id": 53,
+    "quantity": "2.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 346,
+    "report_order_id": 24,
+    "process_id": 4,
+    "defect_type_id": 54,
+    "quantity": "18.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 347,
+    "report_order_id": 24,
+    "process_id": 6,
+    "defect_type_id": 4,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 348,
+    "report_order_id": 24,
+    "process_id": 7,
+    "defect_type_id": 3,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 349,
+    "report_order_id": 24,
+    "process_id": 7,
+    "defect_type_id": 45,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 350,
+    "report_order_id": 24,
+    "process_id": 9,
+    "defect_type_id": 61,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 351,
+    "report_order_id": 25,
+    "process_id": 1,
+    "defect_type_id": 71,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 352,
+    "report_order_id": 25,
+    "process_id": 1,
+    "defect_type_id": 63,
+    "quantity": "3.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 353,
+    "report_order_id": 25,
+    "process_id": 2,
+    "defect_type_id": 48,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 354,
+    "report_order_id": 25,
+    "process_id": 2,
+    "defect_type_id": 53,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 355,
+    "report_order_id": 25,
+    "process_id": 3,
+    "defect_type_id": 70,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 356,
+    "report_order_id": 25,
+    "process_id": 3,
+    "defect_type_id": 54,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 357,
+    "report_order_id": 25,
+    "process_id": 4,
+    "defect_type_id": 66,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 358,
+    "report_order_id": 25,
+    "process_id": 4,
+    "defect_type_id": 56,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 359,
+    "report_order_id": 25,
+    "process_id": 6,
+    "defect_type_id": 68,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 360,
+    "report_order_id": 25,
+    "process_id": 6,
+    "defect_type_id": 45,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 361,
+    "report_order_id": 25,
+    "process_id": 9,
+    "defect_type_id": 67,
+    "quantity": "3.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 362,
+    "report_order_id": 26,
+    "process_id": 1,
+    "defect_type_id": 55,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 363,
+    "report_order_id": 26,
+    "process_id": 1,
+    "defect_type_id": 66,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 364,
+    "report_order_id": 26,
+    "process_id": 1,
+    "defect_type_id": 3,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 365,
+    "report_order_id": 26,
+    "process_id": 2,
+    "defect_type_id": 74,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 366,
+    "report_order_id": 26,
+    "process_id": 2,
+    "defect_type_id": 66,
+    "quantity": "5.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 367,
+    "report_order_id": 26,
+    "process_id": 2,
+    "defect_type_id": 73,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 368,
+    "report_order_id": 26,
+    "process_id": 3,
+    "defect_type_id": 56,
+    "quantity": "5.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 369,
+    "report_order_id": 26,
+    "process_id": 3,
+    "defect_type_id": 68,
+    "quantity": "20.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 370,
+    "report_order_id": 26,
+    "process_id": 4,
+    "defect_type_id": 68,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 371,
+    "report_order_id": 26,
+    "process_id": 4,
+    "defect_type_id": 74,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 372,
+    "report_order_id": 26,
+    "process_id": 6,
+    "defect_type_id": 74,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 373,
+    "report_order_id": 26,
+    "process_id": 6,
+    "defect_type_id": 49,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 374,
+    "report_order_id": 26,
+    "process_id": 7,
+    "defect_type_id": 68,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 375,
+    "report_order_id": 26,
+    "process_id": 8,
+    "defect_type_id": 46,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 376,
+    "report_order_id": 26,
+    "process_id": 9,
+    "defect_type_id": 49,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 377,
+    "report_order_id": 26,
+    "process_id": 10,
+    "defect_type_id": 64,
+    "quantity": "15.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 378,
+    "report_order_id": 26,
+    "defect_type_id": 10,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 379,
+    "report_order_id": 26,
+    "defect_type_id": 8,
+    "quantity": "5.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 380,
+    "report_order_id": 27,
+    "process_id": 1,
+    "defect_type_id": 52,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 381,
+    "report_order_id": 27,
+    "process_id": 1,
+    "defect_type_id": 72,
+    "quantity": "5.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 382,
+    "report_order_id": 27,
+    "process_id": 1,
+    "defect_type_id": 73,
+    "quantity": "15.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 383,
+    "report_order_id": 27,
+    "process_id": 2,
+    "defect_type_id": 67,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 384,
+    "report_order_id": 27,
+    "process_id": 3,
+    "defect_type_id": 1,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 385,
+    "report_order_id": 27,
+    "process_id": 3,
+    "defect_type_id": 52,
+    "quantity": "18.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 386,
+    "report_order_id": 27,
+    "process_id": 3,
+    "defect_type_id": 53,
+    "quantity": "5.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 387,
+    "report_order_id": 27,
+    "process_id": 4,
+    "defect_type_id": 52,
+    "quantity": "3.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 388,
+    "report_order_id": 27,
+    "process_id": 6,
+    "defect_type_id": 50,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 389,
+    "report_order_id": 27,
+    "process_id": 6,
+    "defect_type_id": 61,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 390,
+    "report_order_id": 27,
+    "process_id": 6,
+    "defect_type_id": 1,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 391,
+    "report_order_id": 27,
+    "process_id": 9,
+    "defect_type_id": 61,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 392,
+    "report_order_id": 27,
+    "process_id": 9,
+    "defect_type_id": 1,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 393,
+    "report_order_id": 27,
+    "process_id": 10,
+    "defect_type_id": 54,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 394,
+    "report_order_id": 27,
+    "process_id": 10,
+    "defect_type_id": 55,
+    "quantity": "5.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 395,
+    "report_order_id": 28,
+    "process_id": 1,
+    "defect_type_id": 5,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 396,
+    "report_order_id": 28,
+    "process_id": 1,
+    "defect_type_id": 77,
+    "quantity": "2.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 397,
+    "report_order_id": 28,
+    "process_id": 1,
+    "defect_type_id": 2,
+    "quantity": "3.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 398,
+    "report_order_id": 28,
+    "process_id": 2,
+    "defect_type_id": 56,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 399,
+    "report_order_id": 28,
+    "process_id": 2,
+    "defect_type_id": 77,
+    "quantity": "19.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 400,
+    "report_order_id": 28,
+    "process_id": 3,
+    "defect_type_id": 70,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 401,
+    "report_order_id": 28,
+    "process_id": 3,
+    "defect_type_id": 64,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 402,
+    "report_order_id": 28,
+    "process_id": 4,
+    "defect_type_id": 69,
+    "quantity": "19.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 403,
+    "report_order_id": 28,
+    "process_id": 4,
+    "defect_type_id": 53,
+    "quantity": "19.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 404,
+    "report_order_id": 28,
+    "process_id": 6,
+    "defect_type_id": 47,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 405,
+    "report_order_id": 28,
+    "process_id": 6,
+    "defect_type_id": 56,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 406,
+    "report_order_id": 28,
+    "process_id": 8,
+    "defect_type_id": 74,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 407,
+    "report_order_id": 28,
+    "process_id": 9,
+    "defect_type_id": 68,
+    "quantity": "15.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 408,
+    "report_order_id": 28,
+    "process_id": 9,
+    "defect_type_id": 56,
+    "quantity": "15.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 409,
+    "report_order_id": 28,
+    "process_id": 9,
+    "defect_type_id": 56,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 410,
+    "report_order_id": 28,
+    "defect_type_id": 6,
+    "quantity": "5.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 411,
+    "report_order_id": 28,
+    "defect_type_id": 10,
+    "quantity": "12.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 412,
+    "report_order_id": 29,
+    "process_id": 1,
+    "defect_type_id": 46,
+    "quantity": "20.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 413,
+    "report_order_id": 29,
+    "process_id": 1,
+    "defect_type_id": 64,
+    "quantity": "15.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 414,
+    "report_order_id": 29,
+    "process_id": 1,
+    "defect_type_id": 1,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 415,
+    "report_order_id": 29,
+    "process_id": 2,
+    "defect_type_id": 54,
+    "quantity": "19.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 416,
+    "report_order_id": 29,
+    "process_id": 2,
+    "defect_type_id": 1,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 417,
+    "report_order_id": 29,
+    "process_id": 3,
+    "defect_type_id": 77,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 418,
+    "report_order_id": 29,
+    "process_id": 6,
+    "defect_type_id": 58,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 419,
+    "report_order_id": 29,
+    "process_id": 6,
+    "defect_type_id": 65,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 420,
+    "report_order_id": 29,
+    "process_id": 8,
+    "defect_type_id": 62,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 421,
+    "report_order_id": 29,
+    "process_id": 8,
+    "defect_type_id": 52,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 422,
+    "report_order_id": 29,
+    "process_id": 9,
+    "defect_type_id": 77,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 423,
+    "report_order_id": 30,
+    "process_id": 1,
+    "defect_type_id": 72,
+    "quantity": "18.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 424,
+    "report_order_id": 30,
+    "process_id": 1,
+    "defect_type_id": 68,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 425,
+    "report_order_id": 30,
+    "process_id": 1,
+    "defect_type_id": 75,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 426,
+    "report_order_id": 30,
+    "process_id": 2,
+    "defect_type_id": 51,
+    "quantity": "15.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 427,
+    "report_order_id": 30,
+    "process_id": 2,
+    "defect_type_id": 47,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 428,
+    "report_order_id": 30,
+    "process_id": 3,
+    "defect_type_id": 58,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 429,
+    "report_order_id": 30,
+    "process_id": 3,
+    "defect_type_id": 60,
+    "quantity": "2.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 430,
+    "report_order_id": 30,
+    "process_id": 3,
+    "defect_type_id": 66,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 431,
+    "report_order_id": 30,
+    "process_id": 5,
+    "defect_type_id": 71,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 432,
+    "report_order_id": 30,
+    "process_id": 6,
+    "defect_type_id": 59,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 433,
+    "report_order_id": 30,
+    "process_id": 6,
+    "defect_type_id": 76,
+    "quantity": "11.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 434,
+    "report_order_id": 30,
+    "process_id": 6,
+    "defect_type_id": 1,
+    "quantity": "6.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 435,
+    "report_order_id": 30,
+    "process_id": 9,
+    "defect_type_id": 72,
+    "quantity": "3.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 436,
+    "report_order_id": 30,
+    "process_id": 9,
+    "defect_type_id": 76,
+    "quantity": "11.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 437,
+    "report_order_id": 30,
+    "process_id": 9,
+    "defect_type_id": 66,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 438,
+    "report_order_id": 30,
+    "process_id": 11,
+    "defect_type_id": 3,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 439,
+    "report_order_id": 31,
+    "process_id": 1,
+    "defect_type_id": 5,
+    "quantity": "3.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 440,
+    "report_order_id": 31,
+    "process_id": 1,
+    "defect_type_id": 60,
+    "quantity": "20.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 441,
+    "report_order_id": 31,
+    "process_id": 2,
+    "defect_type_id": 54,
+    "quantity": "18.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 442,
+    "report_order_id": 31,
+    "process_id": 2,
+    "defect_type_id": 62,
+    "quantity": "18.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 443,
+    "report_order_id": 31,
+    "process_id": 3,
+    "defect_type_id": 66,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 444,
+    "report_order_id": 31,
+    "process_id": 3,
+    "defect_type_id": 2,
+    "quantity": "5.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 445,
+    "report_order_id": 31,
+    "process_id": 5,
+    "defect_type_id": 69,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 446,
+    "report_order_id": 31,
+    "process_id": 6,
+    "defect_type_id": 70,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 447,
+    "report_order_id": 31,
+    "process_id": 6,
+    "defect_type_id": 74,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 448,
+    "report_order_id": 31,
+    "process_id": 9,
+    "defect_type_id": 54,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 449,
+    "report_order_id": 32,
+    "process_id": 1,
+    "defect_type_id": 52,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 450,
+    "report_order_id": 32,
+    "process_id": 2,
+    "defect_type_id": 66,
+    "quantity": "4.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 451,
+    "report_order_id": 32,
+    "process_id": 2,
+    "defect_type_id": 54,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 452,
+    "report_order_id": 32,
+    "process_id": 3,
+    "defect_type_id": 46,
+    "quantity": "5.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 453,
+    "report_order_id": 32,
+    "process_id": 6,
+    "defect_type_id": 55,
+    "quantity": "7.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 454,
+    "report_order_id": 32,
+    "process_id": 9,
+    "defect_type_id": 55,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 455,
+    "report_order_id": 32,
+    "process_id": 9,
+    "defect_type_id": 66,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 456,
+    "report_order_id": 32,
+    "process_id": 9,
+    "defect_type_id": 60,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 457,
+    "report_order_id": 32,
+    "process_id": 10,
+    "defect_type_id": 60,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 458,
+    "report_order_id": 32,
+    "process_id": 11,
+    "defect_type_id": 59,
+    "quantity": "5.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 459,
+    "report_order_id": 32,
+    "process_id": 11,
+    "defect_type_id": 59,
+    "quantity": "20.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 460,
+    "report_order_id": 32,
+    "defect_type_id": 8,
+    "quantity": "9.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 461,
+    "report_order_id": 32,
+    "defect_type_id": 7,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 462,
+    "report_order_id": 33,
+    "process_id": 1,
+    "defect_type_id": 53,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 463,
+    "report_order_id": 33,
+    "process_id": 2,
+    "defect_type_id": 59,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 464,
+    "report_order_id": 33,
+    "process_id": 2,
+    "defect_type_id": 45,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 465,
+    "report_order_id": 33,
+    "process_id": 3,
+    "defect_type_id": 55,
+    "quantity": "19.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 466,
+    "report_order_id": 33,
+    "process_id": 3,
+    "defect_type_id": 60,
+    "quantity": "3.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 467,
+    "report_order_id": 33,
+    "process_id": 3,
+    "defect_type_id": 72,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 468,
+    "report_order_id": 33,
+    "process_id": 5,
+    "defect_type_id": 74,
+    "quantity": "11.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 469,
+    "report_order_id": 33,
+    "process_id": 6,
+    "defect_type_id": 78,
+    "quantity": "6.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 470,
+    "report_order_id": 33,
+    "process_id": 6,
+    "defect_type_id": 58,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 471,
+    "report_order_id": 33,
+    "process_id": 9,
+    "defect_type_id": 65,
+    "quantity": "3.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 472,
+    "report_order_id": 33,
+    "process_id": 9,
+    "defect_type_id": 60,
+    "quantity": "11.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 473,
+    "report_order_id": 33,
+    "process_id": 9,
+    "defect_type_id": 74,
+    "quantity": "5.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 474,
+    "report_order_id": 33,
+    "defect_type_id": 9,
+    "quantity": "3.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 475,
+    "report_order_id": 33,
+    "defect_type_id": 6,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 476,
+    "report_order_id": 34,
+    "process_id": 1,
+    "defect_type_id": 66,
+    "quantity": "5.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 477,
+    "report_order_id": 34,
+    "process_id": 1,
+    "defect_type_id": 57,
+    "quantity": "1.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 478,
+    "report_order_id": 34,
+    "process_id": 1,
+    "defect_type_id": 78,
+    "quantity": "13.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 479,
+    "report_order_id": 34,
+    "process_id": 2,
+    "defect_type_id": 76,
+    "quantity": "8.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 480,
+    "report_order_id": 34,
+    "process_id": 2,
+    "defect_type_id": 56,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 481,
+    "report_order_id": 34,
+    "process_id": 2,
+    "defect_type_id": 74,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 482,
+    "report_order_id": 34,
+    "process_id": 3,
+    "defect_type_id": 75,
+    "quantity": "17.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 483,
+    "report_order_id": 34,
+    "process_id": 4,
+    "defect_type_id": 48,
+    "quantity": "11.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 484,
+    "report_order_id": 34,
+    "process_id": 5,
+    "defect_type_id": 51,
+    "quantity": "3.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 485,
+    "report_order_id": 34,
+    "process_id": 6,
+    "defect_type_id": 78,
+    "quantity": "16.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 486,
+    "report_order_id": 34,
+    "process_id": 7,
+    "defect_type_id": 71,
+    "quantity": "2.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 487,
+    "report_order_id": 34,
+    "process_id": 7,
+    "defect_type_id": 45,
+    "quantity": "11.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 488,
+    "report_order_id": 34,
+    "process_id": 8,
+    "defect_type_id": 55,
+    "quantity": "14.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  },
+  {
+    "defect_id": 489,
+    "report_order_id": 34,
+    "process_id": 9,
+    "defect_type_id": 59,
+    "quantity": "10.00",
+    "unit": "个",
+    "record_time": "2026-07-28T12:37:45.000Z"
+  }
+]
