@@ -16,6 +16,10 @@ import { reportOrderStatusMap, exceptionCategories, genTempId } from './constant
 import { buildDefectColumns, buildMaterialColumns } from './processColumns'
 import { buildExceptionColumns } from './exceptionColumns'
 import { buildManpowerColumns } from './manpowerColumns'
+import { ProcessDefectTab, GenericRecordTab } from './sections/ProcessTabContent'
+import { ReportStatsBar } from './sections/ReportStatsBar'
+import CreateReportModal from './sections/CreateReportModal'
+import ImageDrawer from './sections/ImageDrawer'
 import { calcReportStats as calcReportOrderStats, calcProcessStats as calcPersonSummary } from './reportStats'
 import type { DefectRecord, ExceptionRecord, ManpowerRecord, MaterialRecord } from './types'
 
@@ -1839,194 +1843,96 @@ export default function ProcessReporting() {
     { key: 'manpower', label: '人员记录' },
   ]
 
-  const renderTabContent = (key) => {
+  const renderTabContent = (key: string) => {
     switch (key) {
       case 'production-defect':
         return (
-          <div>
-            <Row style={{ marginBottom: 16 }} align="middle">
-              <Col span={12}>
-                <Space>
-                  <span>选择工序：</span>
-                  <Select
-                    value={selectedProcessId}
-                    onChange={setSelectedProcessId}
-                    options={lineProcesses.map(p => ({ label: p.process_name, value: p.process_id }))}
-                    style={{ width: 200 }}
-                    placeholder="请选择工序"
-                    popupClassName="mes-select-dropdown"
-                  />
-                  {isEditable && (
-                    <>
-                      <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveAllProdDefects}>保存</Button>
-                      <Button type="primary" icon={<PlusOutlined />} onClick={handleAddProdDefectRow}>添加</Button>
-                    </>
-                  )}
-                </Space>
-              </Col>
-              <Col span={12} style={{ textAlign: 'right' }}>
-                {selectedProcessId && (
-                  <Space size="large">
-                    <span style={{ color: '#999', fontSize: 12 }}>当前工序统计：</span>
-                    <span>投入数量：<b style={{ color: '#1890ff' }}>{processStats.inputQty}</b></span>
-                    <span>合格数：<b style={{ color: '#52c41a' }}>{processStats.qualifiedQty}</b></span>
-                    <span>制程不良：<b style={{ color: '#fa8c16' }}>{processStats.processDefectQty}</b></span>
-                    <span>来料不良：<b style={{ color: '#faad14' }}>{processStats.materialDefectQty}</b></span>
-                  </Space>
-                )}
-              </Col>
-            </Row>
-            <ResizableTable tableKey="pages_production_ProcessReporting"               columns={prodDefectColumns}
-              dataSource={prodDefectDisplayList}
-              rowKey="id"
-              size="small"
-              pagination={false}
-              scroll={{ x: 900 }}
-              tableLayout="fixed"
-            />
-          </div>
+          <ProcessDefectTab
+            selectedProcessId={selectedProcessId}
+            processes={lineProcesses}
+            onSelectProcess={setSelectedProcessId}
+            editable={isEditable}
+            columns={prodDefectColumns as any}
+            data={prodDefectDisplayList}
+            onSave={handleSaveAllProdDefects}
+            onAdd={handleAddProdDefectRow}
+            stats={processStats}
+          />
         )
       case 'production-material':
         return (
-          <div>
-            <Row style={{ marginBottom: 16 }}>
-              <Col span={12}>
-                <Space>
-                  <span>选择工序：</span>
-                  <Select
-                    value={selectedProcessId}
-                    onChange={setSelectedProcessId}
-                    options={lineProcesses.map(p => ({ label: p.process_name, value: p.process_id }))}
-                    style={{ width: 200 }}
-                    placeholder="请选择工序"
-                    popupClassName="mes-select-dropdown"
-                  />
-                  {isEditable && (
-                    <>
-                      <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveAllMaterials}>保存</Button>
-                      <Button type="primary" icon={<PlusOutlined />} onClick={handleAddMaterialRow}>添加</Button>
-                    </>
-                  )}
-                </Space>
-              </Col>
-              <Col span={12} style={{ textAlign: 'right' }}>
-                {isEditable ? (
-                  <Tag color="blue">点"添加"前会自动保存未提交记录；录入数据后请点"保存"提交</Tag>
-                ) : (
-                  <Tag color="default">已完工，数据只读</Tag>
-                )}
-              </Col>
-            </Row>
-            <ResizableTable tableKey="pages_production_ProcessReporting"               columns={materialColumns}
-              dataSource={materialDisplayList}
-              rowKey="id"
-              size="small"
-              pagination={false}
-              scroll={{ x: 1000 }}
-              tableLayout="fixed"
-            />
-          </div>
+          <GenericRecordTab
+            tableKey="pages_production_ProcessReporting_material"
+            title="选择工序"
+            editable={isEditable}
+            columns={materialColumns as any}
+            data={materialDisplayList}
+            onSave={handleSaveAllMaterials}
+            onAdd={handleAddMaterialRow}
+            scrollX={1000}
+          />
         )
       case 'scrap-defect':
         return (
-          <div>
-            <Row style={{ marginBottom: 16 }} align="middle">
-              <Col span={12}>
-                <Space>
-                  <span style={{ color: '#666' }}>检验报废记录</span>
-                  {isEditable && (
-                    <>
-                      <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveAllScrapDefects}>保存</Button>
-                      <Button type="primary" icon={<PlusOutlined />} onClick={handleAddScrapDefectRow}>添加</Button>
-                    </>
-                  )}
-                </Space>
-              </Col>
-              <Col span={12} style={{ textAlign: 'right' }}>
-                {isEditable ? (
-                  <Tag color="blue">点"添加"前会自动保存未提交记录；录入数据后请点"保存"提交</Tag>
-                ) : (
-                  <Tag color="default">已完工，数据只读</Tag>
-                )}
-              </Col>
-            </Row>
-            <ResizableTable tableKey="pages_production_ProcessReporting"               columns={scrapDefectColumns}
-              dataSource={scrapDefectDisplayList}
-              rowKey="id"
-              size="small"
-              pagination={false}
-              scroll={{ x: 800 }}
-              tableLayout="fixed"
-            />
-          </div>
+          <GenericRecordTab
+            tableKey="pages_production_ProcessReporting_scrap"
+            title="检验报废记录"
+            editable={isEditable}
+            columns={scrapDefectColumns as any}
+            data={scrapDefectDisplayList}
+            onSave={handleSaveAllScrapDefects}
+            onAdd={handleAddScrapDefectRow}
+            scrollX={800}
+          />
         )
       case 'exception':
         return (
-          <div>
-            <Row style={{ marginBottom: 16 }} align="middle">
-              <Col span={12}>
-                <Space>
-                  <span style={{ color: '#666' }}>异常工时记录</span>
-                  {isEditable && (
-                    <>
-                      <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveAllExceptions}>保存</Button>
-                      <Button type="primary" icon={<PlusOutlined />} onClick={handleAddExceptionRow}>添加</Button>
-                    </>
-                  )}
-                </Space>
-              </Col>
-              <Col span={12} style={{ textAlign: 'right' }}>
-                {isEditable ? (
-                  <Tag color="blue">点"添加"前会自动保存未提交记录；录入数据后请点"保存"提交</Tag>
-                ) : (
-                  <Tag color="default">已完工，数据只读</Tag>
-                )}
-              </Col>
-            </Row>
-            <ResizableTable tableKey="pages_production_ProcessReporting"               columns={exceptionColumns}
-              dataSource={exceptionDisplayList}
-              rowKey="id"
-              size="small"
-              pagination={false}
-              scroll={{ x: 900 }}
-              tableLayout="fixed"
-            />
-          </div>
+          <GenericRecordTab
+            tableKey="pages_production_ProcessReporting_exception"
+            title="异常工时记录"
+            editable={isEditable}
+            columns={exceptionColumns as any}
+            data={exceptionDisplayList}
+            onSave={handleSaveAllExceptions}
+            onAdd={handleAddExceptionRow}
+            scrollX={900}
+          />
         )
       case 'manpower':
         return (
-          <div>
-            <Row style={{ marginBottom: 16 }} align="middle">
-              <Col span={12}>
-                <Space>
-                  <span style={{ color: '#666' }}>人员工时记录</span>
-                  {isEditable && (
-                    <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveAllManpowers}>保存</Button>
-                  )}
-                </Space>
-              </Col>
-              <Col span={12} style={{ textAlign: 'right' }}>
-                {isEditable ? (
-                  <Tag color="blue">工时按报工单时间自动计算，修改人数后点"保存"提交</Tag>
-                ) : (
-                  <Tag color="default">已完工，数据只读</Tag>
-                )}
-              </Col>
-            </Row>
-            <ResizableTable tableKey="pages_production_ProcessReporting"               columns={manpowerColumns}
-              dataSource={manpowerDisplayList}
-              rowKey="id"
-              size="small"
-              pagination={false}
-              scroll={{ x: 1200 }}
-              tableLayout="fixed"
-            />
-          </div>
+          <GenericRecordTab
+            tableKey="pages_production_ProcessReporting_manpower"
+            title="人员工时记录"
+            editable={isEditable}
+            columns={manpowerColumns as any}
+            data={manpowerDisplayList}
+            onSave={handleSaveAllManpowers}
+            onAdd={() => {}}
+            hint='工时按报工单时间自动计算，修改人数后点"保存"提交'
+            scrollX={1200}
+          />
         )
       default:
         return null
     }
   }
+
+  const selectedOrderInfo = orders.find((o: any) => o.order_id === selectedReport?.order_id)
+  const balanceDiff = Number((stats.expectedOutput - stats.outputQty).toFixed(2))
+  const isBalanced = balanceDiff === 0
+  const reportStatItems = [
+    { label: '计划数量', value: selectedOrderInfo?.planned_qty ?? '-', color: '#1890ff', dynamicLabel: `计划数量 (${selectedOrderInfo?.order_no || '—'})` },
+    { label: '报工数量', value: stats.outputQty || 0, color: '#1890ff', dynamicLabel: '报工数量' },
+    { label: '投入数量', value: stats.inputQty || 0, color: '#1890ff', dynamicLabel: '投入数量' },
+    { label: '合格数量', value: stats.expectedOutput > 0 ? stats.expectedOutput : 0, color: '#52c41a', dynamicLabel: '合格数量' },
+    { label: '制程不良', value: stats.defectProcess || 0, color: '#fa8c16', dynamicLabel: '制程不良' },
+    { label: '来料不良', value: stats.defectMaterial || 0, color: '#faad14', dynamicLabel: '来料不良' },
+    { label: '物料损耗', value: 0, color: '#722ed1', dynamicLabel: '物料损耗' },
+    { label: '报废数量', value: stats.defectScrap || 0, color: '#f5222d', dynamicLabel: '报废数量' },
+    { label: '异常工时', value: `${(stats.exceptionHours || 0).toFixed(1)}min`, color: '#eb2f96', dynamicLabel: '异常工时' },
+    { label: '总工时', value: `${(stats.manpowerHours || 0).toFixed(1)}h`, color: '#13c2c2', dynamicLabel: '总工时' },
+    { label: '平衡差', value: isBalanced ? '平衡' : balanceDiff, color: isBalanced ? '#52c41a' : '#f5222d', dynamicLabel: '平衡差' },
+  ]
 
   return (
     <div style={{ padding: 16 }}>
@@ -2201,57 +2107,7 @@ export default function ProcessReporting() {
 
       {selectedReport && (
         <Card>
-          <div style={{ marginBottom: 8, fontWeight: 'bold', color: '#333' }}>报工单统计（当前报工单汇总）</div>
-          <Row gutter={16} style={{ marginBottom: 16 }}>
-            <Col span={3}>
-              <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666' }}>报工数量</span>
-                <span style={{ fontSize: 18, fontWeight: 'bold', color: '#52c41a', whiteSpace: 'nowrap' }}>{stats.outputQty}</span>
-              </Space>
-            </Col>
-            <Col span={3}>
-              <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666' }}>投入数量</span>
-                <span style={{ fontSize: 18, fontWeight: 'bold', color: '#1890ff', whiteSpace: 'nowrap' }}>{stats.inputQty}</span>
-              </Space>
-            </Col>
-            <Col span={3}>
-              <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666' }}>{selectedReport?.status === '开工' ? '预计产出' : '合格数量'}</span>
-                <span style={{ fontSize: 18, fontWeight: 'bold', color: '#13c2c2', whiteSpace: 'nowrap' }}>{stats.expectedOutput}</span>
-              </Space>
-            </Col>
-            <Col span={3}>
-              <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666' }}>总来料不良</span>
-                <span style={{ fontSize: 18, fontWeight: 'bold', color: '#faad14', whiteSpace: 'nowrap' }}>{stats.defectMaterial}</span>
-              </Space>
-            </Col>
-            <Col span={3}>
-              <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666' }}>总来料不良</span>
-                <span style={{ fontSize: 18, fontWeight: 'bold', color: '#fa8c16', whiteSpace: 'nowrap' }}>{stats.defectProcess}</span>
-              </Space>
-            </Col>
-            <Col span={3}>
-              <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666' }}>总检验报废</span>
-                <span style={{ fontSize: 18, fontWeight: 'bold', color: '#ff4d4f', whiteSpace: 'nowrap' }}>{stats.defectScrap}</span>
-              </Space>
-            </Col>
-            <Col span={3}>
-              <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666' }}>总异常工时</span>
-                <span style={{ fontSize: 18, fontWeight: 'bold', color: '#722ed1', whiteSpace: 'nowrap' }}>{stats.exceptionHours}</span>
-              </Space>
-            </Col>
-            <Col span={3}>
-              <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666' }}>总人工工时</span>
-                <span style={{ fontSize: 18, fontWeight: 'bold', color: '#13c2c2', whiteSpace: 'nowrap' }}>{stats.manpowerHours}</span>
-              </Space>
-            </Col>
-          </Row>
+    <ReportStatsBar items={reportStatItems} />
 
           <Tabs
             activeKey={activeTab}
@@ -2267,66 +2123,22 @@ export default function ProcessReporting() {
       )}
 
       {/* 新增报工单 Modal */}
-      <Modal
-        title="新增报工单"
+      <CreateReportModal
         open={createModalOpen}
-        onOk={() => { void handleCreateReport() }}
+        loading={creatingReport}
+        form={createForm}
+        orderOptions={orderOptions}
+        lineOptions={lineOptions}
+        selectedOrder={orders.find((o: any) => o.order_id === selectedReport?.order_id) || null}
+        onConfirm={() => handleCreateReport(false)}
         onCancel={() => setCreateModalOpen(false)}
-        confirmLoading={creatingReport}
-        okText="确定"
-        cancelText="取消"
-        width={520}
-        destroyOnClose
-      >
-        <Form form={createForm} layout="vertical" preserve={false}>
-          <Form.Item
-            name="order_id"
-            label="生产订单"
-            rules={[{ required: true, message: '请选择生产订单' }]}
-          >
-            <Select
-              placeholder="请选择生产订单（仅下发状态）"
-              options={orderOptions}
-              showSearch
-              optionFilterProp="label"
-              popupClassName="mes-select-dropdown"
-              onChange={(val, option) => setSelectedCreateOrder(option || null)}
-            />
-          </Form.Item>
-          <Form.Item
-            name="line_id"
-            label="产线"
-            rules={[{ required: true, message: '请选择产线' }]}
-          >
-            <Select
-              placeholder="请选择产线（仅运行中）"
-              options={lineOptions}
-              showSearch
-              optionFilterProp="label"
-              popupClassName="mes-select-dropdown"
-            />
-          </Form.Item>
-          <Form.Item
-            name="report_qty"
-            label={
-              <span>
-                报工数量
-                {selectedCreateOrder && (
-                  <span style={{ color: '#8c8c8c', fontSize: 12, fontWeight: 400, marginLeft: 8 }}>
-                    （计划{selectedCreateOrder.planned_qty} - 已完工{selectedCreateOrder.finished_qty} = 剩余{Number(selectedCreateOrder.planned_qty || 0) - Number(selectedCreateOrder.finished_qty || 0)}）
-                  </span>
-                )}
-              </span>
-            }
-            rules={[{ required: true, message: '请填写报工数量' }]}
-          >
-            <InputNumber min={1} step={1} precision={0} style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item name="remarks" label="备注">
-            <Input.TextArea rows={2} placeholder="备注（可选）" />
-          </Form.Item>
-        </Form>
-      </Modal>
+        onOrderChange={(option) => {
+          setSelectedCreateOrder(option || null)
+          if (option) {
+            createForm.setFieldsValue({ report_qty: Number(option.planned_qty || 0) - Number(option.finished_qty || 0) })
+          }
+        }}
+      />
 
       <Drawer
         title={imageDrawerTitle}
