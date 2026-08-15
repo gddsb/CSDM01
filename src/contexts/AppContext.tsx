@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import type { MessageInstance } from 'antd/es/message/interface'
 import type { ModalStaticFunctions } from 'antd/es/modal/confirm'
 import type { NotificationInstance } from 'antd/es/notification/interface'
@@ -102,7 +102,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('mes_theme', key)
   }
 
-  const loadSystemConfig = async () => {
+  const loadSystemConfig = useCallback(async () => {
     try {
       const res = await api.get('/system/config')
       const cfg = res.data || res
@@ -114,7 +114,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     } catch {
     }
-  }
+  }, [])
 
   const updateSystemConfig = (updates: Partial<SystemConfig>) => {
     setSystemConfig(prev => ({ ...prev, ...updates }))

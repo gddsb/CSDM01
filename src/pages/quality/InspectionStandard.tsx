@@ -1,5 +1,5 @@
 import ResizableTable from '../../components/ResizableTable'
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Tag, Button, Space, Input, Select, Row, Col, Drawer, Descriptions, Popconfirm, Checkbox } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import { useMessage, useApp } from '../../contexts/AppContext'
@@ -64,7 +64,10 @@ export default function InspectionStandard() {
   const [versions, setVersions] = useState<any[]>([])
   const message = useMessage()
 
+  const fetchIdRef = useRef(0)
+
   const fetchData = useCallback(async () => {
+    const fetchId = ++fetchIdRef.current
     setLoading(true)
     try {
       const params: any = { page: pagination.current, page_size: pagination.pageSize }
@@ -73,6 +76,7 @@ export default function InspectionStandard() {
       if (Array.isArray(statusFilter) && statusFilter.length) params.status = statusFilter.join(',')
       else if (statusFilter && !Array.isArray(statusFilter)) params.status = statusFilter
       const res = await api.get('/basic/standards', { params })
+      if (fetchId !== fetchIdRef.current) return
       if (res.success !== false) {
         setData(res.data?.list || res.data || [])
         setPagination(p => ({ ...p, total: res.data?.total || res.total || 0 }))
@@ -81,10 +85,11 @@ export default function InspectionStandard() {
         setPagination(p => ({ ...p, total: 0 }))
       }
     } catch (e) {
+      if (fetchId !== fetchIdRef.current) return
       setData([])
       setPagination(p => ({ ...p, total: 0 }))
     } finally {
-      setLoading(false)
+      if (fetchId === fetchIdRef.current) setLoading(false)
     }
   }, [pagination.current, pagination.pageSize, keyword, standardType, statusFilter])
 
