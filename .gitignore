@@ -36,6 +36,9 @@ server/data/backups/
 .idea/
 .vscode/
 *.iml
+.coze
+.trae-html-share-packages/
+AGENTS.md
 
 # 临时文件
 *.tmp
