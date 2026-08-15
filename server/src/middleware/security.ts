@@ -1,18 +1,28 @@
 import type { Request, Response, NextFunction, RequestHandler } from 'express'
 import rateLimit from 'express-rate-limit'
 
+interface RateLimitRequest {
+  ip?: string
+  path?: string
+  headers?: Record<string, unknown>
+  socket?: { remoteAddress?: string }
+  user?: { userId?: number; username?: string }
+}
+
 /**
- * 限流 keyGenerator：优先取反向代理后的真实 IP，回退到 req.ip（已正确处理 IPv6）
+ * 限流 keyGenerator：
+ * - 已登录用户优先使用 username，避免沙箱/反向代理后所有请求共用同一 IP 导致误限流
+ * - 未登录请求取真实 IP
  */
-function rateLimitKeyGenerator(req: { ip?: string; headers?: Record<string, unknown>; socket?: { remoteAddress?: string } }): string {
+function rateLimitKeyGenerator(req: RateLimitRequest): string {
+  if (req.user?.username) return `user:${req.user.username}`
   const forwarded = req.headers?.['x-forwarded-for']
   if (typeof forwarded === 'string') {
     const first = forwarded.split(',')[0]?.trim()
-    if (first) return first
+    if (first) return `ip:${first}`
   }
-  return req.ip || req.socket?.remoteAddress || '127.0.0.1'
+  return `ip:${req.ip || req.socket?.remoteAddress || '127.0.0.1'}`
 }
-
 
 /**
  * 通用业务异常：抛出后由全局错误中间件统一转为标准响应
@@ -66,10 +76,9 @@ export function corsOptions(): {
   const allowlist = getAllowedOrigins()
   return {
     origin(origin, cb) {
-      // 同源请求（无 Origin，如 curl、服务器内部、同源 fetch）直接放行
       if (!origin) return cb(null, true)
       if (!isProd) return cb(null, true)
-      if (allowlist.length === 0) return cb(null, true) // 未配置白名单时默认放行（兜底，生产建议配置）
+      if (allowlist.length === 0) return cb(null, true)
       if (allowlist.includes(origin)) return cb(null, true)
       return cb(new Error(`CORS 策略禁止该来源访问: ${origin}`))
     },
@@ -80,11 +89,11 @@ export function corsOptions(): {
 
 /**
  * 登录接口限流：防暴力破解
- * 默认 1 分钟内同一 IP 最多 10 次（可通过 LOGIN_RATE_LIMIT / LOGIN_RATE_WINDOW 配置）
+ * 默认 1 分钟内同一 IP 最多 30 次（可通过 LOGIN_RATE_LIMIT / LOGIN_RATE_WINDOW 配置）
  */
 export const loginRateLimiter = rateLimit({
   windowMs: Number(process.env.LOGIN_RATE_WINDOW_MS || 60 * 1000),
-  max: Number(process.env.LOGIN_RATE_LIMIT || 10),
+  max: Number(process.env.LOGIN_RATE_LIMIT || 30),
   standardHeaders: true,
   validate: false,
   legacyHeaders: false,
@@ -98,16 +107,18 @@ export const loginRateLimiter = rateLimit({
 
 /**
  * 通用 API 限流：兜底保护，防止接口被刷
- * 默认 1 分钟 120 次/IP
+ * 注意：apiRateLimiter 注册在 authRequired 之前，此时 req.user 尚未挂载，
+ * 因此这里按真实 IP 限流；已登录用户的细粒度保护由业务层/权限层承担。
+ * 默认 1 分钟 1000 次/IP（内网 MES 系统 + 反向代理场景，避免共享 IP 误杀）。
  */
 export const apiRateLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: Number(process.env.API_RATE_LIMIT || 120),
+  max: Number(process.env.API_RATE_LIMIT || 1000),
   standardHeaders: true,
   legacyHeaders: false,
   validate: false,
+  keyGenerator: rateLimitKeyGenerator,
   skip: (req) => {
-    // 健康检查、静态上传资源不限流
     if (req.path === '/api/health') return true
     if (req.path.startsWith('/uploads/')) return true
     return false

@@ -6,27 +6,44 @@ import { logger } from '../utils/logger.js'
 
 const SENSITIVE_KEYS = ['password', 'token', 'secret', 'authorization', 'pwd', 'access_token', 'refresh_token']
 
-const PERM_CACHE_TTL = 60000
-const permCache: Record<number, { codes: Set<string>; ts: number }> = {}
+const PERM_CACHE_TTL = 60_000
+const permCache: Record<number, { codes: Set<string>; roleCode: string | null; ts: number }> = {}
 
-async function loadRolePermissionCodes(roleId: number): Promise<Set<string>> {
+/** 超级管理员角色编码：这些角色直接拥有全部权限，跳过 role_permission 关联 */
+const SUPER_ROLE_CODES = new Set(['SUPER_ADMIN', 'ADMIN'])
+const WILDCARD_PERM = '*'
+
+function isSuperRoleCode(code: string | null | undefined): boolean {
+  return !!code && SUPER_ROLE_CODES.has(String(code).toUpperCase())
+}
+
+async function loadRolePermissionCodes(roleId: number): Promise<{ codes: Set<string>; roleCode: string | null }> {
   const now = Date.now()
   const cached = permCache[roleId]
   if (cached && now - cached.ts < PERM_CACHE_TTL) {
-    return cached.codes
+    return { codes: cached.codes, roleCode: cached.roleCode }
   }
+
   const role = await Role.findOne({
     where: { role_id: roleId },
+    attributes: ['role_id', 'role_code'],
     include: [{ model: Permission, as: 'permissions', attributes: ['perm_code'] }],
   })
+
+  const roleCode = role ? String((role as any).role_code ?? '') : null
   const codes = new Set<string>()
-  if (role && (role as any).permissions) {
+
+  if (isSuperRoleCode(roleCode)) {
+    // 超级管理员：写入通配符，permissionRequired 直接放行
+    codes.add(WILDCARD_PERM)
+  } else if (role && Array.isArray((role as any).permissions)) {
     for (const p of (role as any).permissions) {
-      codes.add(p.perm_code)
+      if (p?.perm_code) codes.add(p.perm_code)
     }
   }
-  permCache[roleId] = { codes, ts: now }
-  return codes
+
+  permCache[roleId] = { codes, roleCode, ts: now }
+  return { codes, roleCode }
 }
 
 export function clearPermissionCache(roleId?: number): void {
@@ -82,11 +99,13 @@ export function authRequired(req: Request, res: Response, next: NextFunction): a
     return fail(res, '认证令牌无效或已过期', ErrorCode.UNAUTHORIZED)
   }
 
-  (async () => {
+  ;(async () => {
     const user: any = decoded
     if (user.roleId) {
       try {
-        user.permCodes = await loadRolePermissionCodes(user.roleId)
+        const { codes, roleCode } = await loadRolePermissionCodes(user.roleId)
+        user.permCodes = codes
+        if (isSuperRoleCode(roleCode)) user.isSuperAdmin = true
       } catch (err: any) {
         logger.warn('[authRequired] 加载用户权限失败:', err.message)
         user.permCodes = new Set()
@@ -110,6 +129,10 @@ export function permissionRequired(permCode: string) {
       return fail(res, '用户未登录', ErrorCode.UNAUTHORIZED)
     }
     const permCodes: Set<string> = user.permCodes || new Set()
+    // 超级管理员直接放行
+    if (user.isSuperAdmin || permCodes.has(WILDCARD_PERM)) {
+      return next()
+    }
     let hasPermission = permCodes.has(permCode)
     if (!hasPermission) {
       const parts = permCode.split(':')
@@ -173,4 +196,5 @@ export function logOperation(module: string) {
   }
 }
 
+export { isSuperRoleCode, SUPER_ROLE_CODES, WILDCARD_PERM }
 export default { authRequired, permissionRequired, logOperation }
