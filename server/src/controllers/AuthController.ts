@@ -3,6 +3,10 @@ import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { generateToken } from '../utils/jwt.js'
 import { verifyPassword } from '../utils/password.js'
 import { nowBeijingDate } from '../utils/date.js'
+import type { Request, Response } from 'express'
+
+// 默认弱密码列表：命中时提醒用户修改（不阻断登录）
+const WEAK_PASSWORDS = new Set(['123456', 'admin', 'password', '111111', '888888', '000000', 'admin123'])
 
 async function getUserPermissionCodes(roleId: number): Promise<string[]> {
   const role = await Role.findOne({
@@ -16,9 +20,9 @@ async function getUserPermissionCodes(roleId: number): Promise<string[]> {
 }
 
 // 登录
-export const login = async (req, res) => {
+export const login = async (req: Request, res: Response): Promise<any> => {
   try {
-    const { username, password } = req.body
+    const { username, password } = req.body || {}
     if (!username || !password) {
       return fail(res, '用户名和密码不能为空')
     }
@@ -27,7 +31,11 @@ export const login = async (req, res) => {
       include: [{ model: Role, as: 'role' }],
     })
     const forwarded = req.headers['x-forwarded-for']
-    const ip = (forwarded && forwarded.split(',')[0].trim()) || req.ip || req.socket?.remoteAddress || ''
+    const ip =
+      (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(',')[0].trim() ||
+      req.ip ||
+      req.socket?.remoteAddress ||
+      ''
 
     let valid = false
     if (user) {
@@ -69,6 +77,10 @@ export const login = async (req, res) => {
     const permCodes = await getUserPermissionCodes(user.role_id || userWithRole.role_id)
     userWithRole.perm_codes = permCodes
 
+    // 密码安全提示：标记需改密或命中默认弱密码时，提示前端引导用户修改密码
+    const pwdResetRequired = Number(userWithRole.pwd_reset_required) === 1 || WEAK_PASSWORDS.has(String(password))
+    const securityHint = pwdResetRequired ? '当前密码为初始/弱密码，建议尽快修改密码' : undefined
+
     // 记录登录成功日志
     OperationLog.create({
       user_id: user.user_id,
@@ -81,7 +93,7 @@ export const login = async (req, res) => {
       status: 1,
     }).catch(() => {})
 
-    return success(res, { user: userWithRole, token }, '登录成功')
+    return success(res, { user: userWithRole, token, pwd_reset_required: pwdResetRequired ? 1 : 0, security_hint: securityHint }, '登录成功')
   } catch (err) {
     console.error('登录失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)

@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import morgan from 'morgan'
+import helmet from 'helmet'
 import dotenv from 'dotenv'
 import path from 'path'
 import fs from 'fs'
@@ -13,11 +14,19 @@ import { initDefaultRules } from './controllers/NumberRuleController.js'
 import { runMigrations } from './migrate.js'
 import { startTaskScheduler } from './services/taskScheduler.js'
 import { TaskSetting } from './models/index.js'
+import { corsOptions, apiRateLimiter, AppError } from './middleware/security.js'
+import logger from './utils/logger.js'
 
 dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT || 3001
+const isProd = process.env.NODE_ENV === 'production'
+
+// 启动时校验 JWT 密钥安全性（生产环境禁止使用默认弱密钥）
+if (isProd && (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'default-secret')) {
+  logger.warn('[Security] 生产环境未设置强随机 JWT_SECRET，请在 .env 中配置 JWT_SECRET')
+}
 
 const proxy = httpProxy.createProxyServer({
   target: 'http://localhost:5173',
@@ -93,10 +102,22 @@ async function initDatabase() {
   }
 }
 
+// 安全中间件：helmet 设置安全响应头（CORS 需先于 CSP 放行跨域）
+app.use(
+  helmet({
+    // 前端为独立 SPA / 由 Vite 或后端反代提供，禁用 HSTS 由反向代理统一控制更稳妥
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+)
+
 // 中间件
-app.use(cors())
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
+app.use(cors(corsOptions()))
+app.use(express.json({ limit: '20mb' }))
+app.use(express.urlencoded({ extended: true, limit: '20mb' }))
+
+// 全局限流（登录接口在 auth 路由内单独配置更严格的限流）
+app.use('/api', apiRateLimiter)
 const SENSITIVE_KEYS = ['password', 'token', 'secret', 'authorization', 'pwd', 'access_token', 'refresh_token']
 
 function maskSensitive(obj: any, depth: number = 0): any {
@@ -126,9 +147,9 @@ function getSafeReqInfo(req: any): any {
   return info
 }
 
-const isProd = process.env.NODE_ENV === 'production'
+const isProdLogger = process.env.NODE_ENV === 'production'
 
-app.use(morgan(isProd ? 'combined' : 'dev'))
+app.use(morgan(isProdLogger ? 'combined' : 'dev'))
 
 // 禁止浏览器缓存 API 响应（防止菜单排序等数据修改后刷新仍返回旧缓存）
 app.use('/api', (req, res, next) => {
@@ -174,12 +195,32 @@ app.use('/api', (req, res) => {
 // 全局错误处理
 app.use((err: any, req: any, res: any, next: any) => {
   const reqInfo = getSafeReqInfo(req)
-  console.error('[GlobalError] 未处理异常:', JSON.stringify({
+
+  // CORS 拒绝：返回 403，不记录堆栈
+  if (err && err.message && err.message.startsWith('CORS 策略禁止')) {
+    logger.warn('[Security] CORS 拒绝:', reqInfo.ip, req.headers.origin)
+    if (!res.headersSent) {
+      return res.status(403).json({ success: false, code: 40300, message: '该来源不被允许访问' })
+    }
+    return
+  }
+
+  // 业务异常：使用其自带的状态码与错误码
+  if (err instanceof AppError) {
+    logger.warn('[AppError]', JSON.stringify({ ...reqInfo, code: err.code, message: err.message }))
+    if (!res.headersSent) {
+      return res.status(err.statusCode).json({ success: false, code: err.code, message: err.message })
+    }
+    return
+  }
+
+  // 未知异常：记录完整堆栈（生产隐藏堆栈），返回通用提示
+  logger.error('[GlobalError] 未处理异常:', JSON.stringify({
     ...reqInfo,
     error: {
       message: err?.message || String(err),
       name: err?.name,
-      stack: isProd ? undefined : err?.stack,
+      stack: isProdLogger ? undefined : err?.stack,
     },
   }))
   if (!res.headersSent) {

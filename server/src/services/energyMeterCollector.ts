@@ -3,6 +3,7 @@ import { promisify } from 'util'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import EnergyMeterData from '../models/EnergyMeterData.js'
+import { isDdddocrAvailable, DDDDOCR_MISSING_HINT } from './pythonDeps.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -34,6 +35,12 @@ export class EnergyMeterCollector {
   }
 
   async collectAndSave(taskSettingId?: number): Promise<EnergyCollectResult> {
+    // 预检：ddddocr 不可用时快速失败，避免反复 spawn python 产生堆栈噪声
+    const hasDeps = await isDdddocrAvailable()
+    if (!hasDeps) {
+      return { success: false, totalRecords: 0, error: DDDDOCR_MISSING_HINT }
+    }
+
     const scriptPath = path.join(__dirname, 'energy_collect.py')
     const args = [this.username, this.password]
     if (taskSettingId != null) args.push(String(taskSettingId))
