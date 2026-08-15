@@ -122,9 +122,14 @@ export default function DataDictionary() {
         params: { page, pageSize },
         timeout: 120000,
       })
-      setRecordsData(res.data?.list || [])
-      setRecordsTotal(res.data?.total || 0)
-      setRecordFields(res.data?.fields || [])
+      // 后端同时返回 { list, total, fields }
+      const payload = (res.data || {}) as { list?: any[]; total?: number; fields?: Array<{ field: string; name?: string; data_type?: string; comment?: string; nullable?: string }> }
+      const list = payload.list ?? (Array.isArray(res.data) ? res.data : [])
+      const total = typeof payload.total === 'number' ? payload.total : (res.total ?? 0)
+      const fields = payload.fields || []
+      setRecordsData(Array.isArray(list) ? list : [])
+      setRecordsTotal(Number(total) || 0)
+      setRecordFields(Array.isArray(fields) ? fields : [])
     } catch (err: any) {
       message.error(err.message || '获取表记录失败')
       setRecordsData([])
@@ -313,7 +318,7 @@ export default function DataDictionary() {
           </div>
         }
         table={
-          <ResizableTable tableKey="pages_system_DataDictionary"
+          <ResizableTable tableKey="pages_system_DataDictionary_main"
             size="small"
             columns={tableColumns}
             dataSource={tableList}
@@ -357,7 +362,7 @@ export default function DataDictionary() {
             </Descriptions>
 
             <div style={{ fontWeight: 600, marginBottom: 8 }}>字段明细</div>
-            <ResizableTable tableKey="pages_system_DataDictionary"
+            <ResizableTable tableKey="pages_system_DataDictionary_fields"
               size="small"
               columns={[
                 { title: '序号', key: 'idx', width: 50, render: (_: any, __: any, i: number) => i + 1 },
@@ -392,25 +397,31 @@ export default function DataDictionary() {
               <Descriptions.Item label="记录数">{recordsTotal}</Descriptions.Item>
               <Descriptions.Item label="说明">{recordsTable.purpose || '-'}</Descriptions.Item>
             </Descriptions>
-            <ResizableTable tableKey="pages_system_DataDictionary"
+            <ResizableTable tableKey={`pages_system_DataDictionary_records_${recordsTable?.table_name || 'default'}`}
               size="small"
-              columns={(recordFields.length ? recordFields : Object.keys(recordsData[0] || {}).map(name => ({ name }))).map((f: any) => ({
-                title: (
-                  <div style={{ lineHeight: 1.4 }}>
-                    <div style={{ fontWeight: 600 }}>{f.name}</div>
-                    {f.comment && <div style={{ fontSize: 12, color: '#888', whiteSpace: 'normal' }}>{f.comment}</div>}
-                  </div>
-                ),
-                dataIndex: f.name,
-                key: f.name,
-                width: 160,
-                ellipsis: true,
-                render: (v: any) => {
-                  if (v === null || v === undefined) return <span style={{ color: '#bbb' }}>-</span>
-                  if (typeof v === 'object') return JSON.stringify(v)
-                  return String(v)
-                },
-              }))}
+              columns={(recordFields.length ? recordFields : Object.keys(recordsData[0] || {}).map(name => ({ field: name, name }))).map((f: any) => {
+                // 兼容后端 fields 的 field / comment / data_type 与旧结构 name
+                const fieldName: string = f.field || f.name || ''
+                const comment: string | undefined = f.comment
+                return {
+                  title: (
+                    <div style={{ lineHeight: 1.4 }}>
+                      <div style={{ fontWeight: 600 }}>{fieldName}</div>
+                      {comment && <div style={{ fontSize: 12, color: '#888', whiteSpace: 'normal' }}>{comment}</div>}
+                      {f.data_type && !comment && <div style={{ fontSize: 12, color: '#aaa', whiteSpace: 'normal' }}>{f.data_type}</div>}
+                    </div>
+                  ),
+                  dataIndex: fieldName,
+                  key: fieldName,
+                  width: 160,
+                  ellipsis: true,
+                  render: (v: any) => {
+                    if (v === null || v === undefined) return <span style={{ color: '#bbb' }}>-</span>
+                    if (typeof v === 'object') return JSON.stringify(v)
+                    return String(v)
+                  },
+                }
+              })}
               dataSource={recordsData}
               rowKey={(_: any, i: number) => i}
               loading={recordsLoading}

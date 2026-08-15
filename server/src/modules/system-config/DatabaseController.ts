@@ -213,14 +213,50 @@ export const getDatabaseInfo = async (_req: Request, res: Response) => {
 
 export const listTableRecords = async (req: Request, res: Response) => {
   try {
-    const { table } = req.params as { table: string }
+    const { table_name } = req.params as { table_name?: string }
+    const table = String(table_name || '').trim()
     if (!/^[a-zA-Z0-9_]+$/.test(table)) return fail(res, '非法表名', ErrorCode.PARAM_INVALID)
     const { page, pageSize, offset, limit } = parsePagination(req.query as Record<string, any>)
+    // 安全白名单：二次校验表名确实存在于 information_schema（防止 SQL 注入拼接反引号等绕过）
+    const dialect = process.env.DB_DIALECT || 'sqlite'
+    const dbName = process.env.DB_NAME || 'milk_can_mes'
+    let exists = false
+    if (dialect === 'mysql') {
+      const chk = await sequelize.query<{ cnt: number }>(
+        `SELECT COUNT(*) AS cnt FROM information_schema.TABLES WHERE TABLE_SCHEMA = :db AND TABLE_NAME = :t`,
+        { replacements: { db: dbName, t: table }, type: QueryTypes.SELECT }
+      )
+      exists = Number(chk?.[0]?.cnt || 0) > 0
+    } else {
+      const chk = await sequelize.query<{ name: string }>(
+        `SELECT name FROM sqlite_master WHERE type='table' AND name = :t`,
+        { replacements: { t: table }, type: QueryTypes.SELECT }
+      )
+      exists = Array.isArray(chk) && chk.length > 0
+    }
+    if (!exists) return fail(res, '表不存在', ErrorCode.RECORD_NOT_FOUND)
+
     const [{ count }] = await sequelize.query<{ count: number }>(`SELECT COUNT(*) AS count FROM \`${table}\``, { type: QueryTypes.SELECT })
     const rows = await sequelize.query(`SELECT * FROM \`${table}\` LIMIT :limit OFFSET :offset`, { replacements: { limit, offset }, type: QueryTypes.SELECT })
-    return success(res, rows, '获取成功', Number(count))
+
+    // 同时返回 fields：列的元信息（字段名列表供前端动态渲染列）
+    let fields: Array<{ field: string; data_type?: string; comment?: string; nullable?: string }> = []
+    if (dialect === 'mysql') {
+      fields = (await sequelize.query<any>(
+        `SELECT COLUMN_NAME AS field, DATA_TYPE AS data_type, IS_NULLABLE AS nullable, COLUMN_COMMENT AS comment ` +
+        `FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = :db AND TABLE_NAME = :t ORDER BY ORDINAL_POSITION`,
+        { replacements: { db: dbName, t: table }, type: QueryTypes.SELECT }
+      )) as any[]
+    } else {
+      const pragma = await sequelize.query<any>(`PRAGMA table_info(\`${table}\`)`, { type: QueryTypes.SELECT }) as any[]
+      fields = pragma.map(col => ({
+        field: col.name, data_type: col.type, nullable: col.notnull ? 'NO' : 'YES', comment: ''
+      }))
+    }
+
+    return success(res, { list: rows, total: Number(count), fields }, '获取成功')
   } catch (err: any) {
-    logger.error(`获取表数据失败: ${req.params.table}`, err)
-    return fail(res, '获取表数据失败', ErrorCode.SYSTEM_ERROR)
+    logger.error(`获取表数据失败: ${req.params?.table_name || req.params?.table}`, err)
+    return fail(res, `获取表数据失败: ${err.message || '未知错误'}`, ErrorCode.SYSTEM_ERROR)
   }
 }
