@@ -375,7 +375,7 @@ export default function DefectManagement() {
   const currentDefectTypeOptions = selectedCategory ? (defectTypeMap[selectedCategory] || []) : []
 
   const columns = [
-    { title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 110, fixed: 'left' },
+    { title: '不良编码', dataIndex: 'defect_code', key: 'defect_code', width: 110, fixed: 'left' as const },
     {
       title: '检验类型', dataIndex: 'category_name', key: 'category_name', width: 110,
       render: v => v ? <Tag color="purple">{v}</Tag> : '-',
@@ -410,11 +410,11 @@ export default function DefectManagement() {
       render: v => <div style={{ lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{v || '-'}</div>,
     },
     {
-      title: '状态', dataIndex: 'status', key: 'status', width: 90, fixed: 'right',
+      title: '状态', dataIndex: 'status', key: 'status', width: 90, fixed: 'right' as const,
       render: v => <Tag color={v === '启用' ? 'green' : 'red'}>{v}</Tag>,
     },
     {
-      title: '操作', key: 'action', fixed: 'right',
+      title: '操作', key: 'action', fixed: 'right' as const,
       render: (_, record) => (
         <Space size="small">
           <Button type="link" size="small" onClick={async () => {

@@ -1,4 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import type { MessageInstance } from 'antd/es/message/interface'
+import type { ModalStaticFunctions } from 'antd/es/modal/confirm'
+import type { NotificationInstance } from 'antd/es/notification/interface'
 import api from '../utils/api'
 import { applyTheme } from '../themes'
 
@@ -32,12 +35,12 @@ interface AppContextType {
   systemConfig: SystemConfig
   loadSystemConfig: () => Promise<void>
   updateSystemConfig: (updates: Partial<SystemConfig>) => void
-  messageApi: unknown
-  modalApi: unknown
-  notificationApi: unknown
-  setMessageApi: (api: unknown) => void
-  setModalApi: (api: unknown) => void
-  setNotificationApi: (api: unknown) => void
+  messageApi: MessageInstance | null
+  modalApi: Omit<ModalStaticFunctions, 'warn'> | null
+  notificationApi: NotificationInstance | null
+  setMessageApi: (api: MessageInstance) => void
+  setModalApi: (api: Omit<ModalStaticFunctions, 'warn'>) => void
+  setNotificationApi: (api: NotificationInstance) => void
 }
 
 const AppContext = createContext<AppContextType | null>(null)
@@ -47,9 +50,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [themeKey, setThemeKey] = useState('pureMilk')
   const [initialized, setInitialized] = useState(false)
   const [systemConfig, setSystemConfig] = useState<SystemConfig>({ system_name: '', company_name: '' })
-  const [messageApi, setMessageApiState] = useState<unknown>(null)
-  const [modalApi, setModalApiState] = useState<unknown>(null)
-  const [notificationApi, setNotificationApiState] = useState<unknown>(null)
+  const [messageApi, setMessageApiState] = useState<MessageInstance | null>(null)
+  const [modalApi, setModalApiState] = useState<Omit<ModalStaticFunctions, 'warn'> | null>(null)
+  const [notificationApi, setNotificationApiState] = useState<NotificationInstance | null>(null)
 
   useEffect(() => {
     const savedUser = localStorage.getItem('mes_user')

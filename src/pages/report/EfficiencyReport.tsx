@@ -284,7 +284,7 @@ export default function EfficiencyReport() {
   }
 
   const columns = [
-    { title: '产线', dataIndex: 'line_name', key: 'line_name', width: 80, fixed: 'left' },
+    { title: '产线', dataIndex: 'line_name', key: 'line_name', width: 80, fixed: 'left' as const },
     { title: '工单数', dataIndex: 'woCount', key: 'woCount', width: 90 },
     { title: '总产出', dataIndex: 'totalOutput', key: 'totalOutput', width: 110, render: v => v > 0 ? v.toLocaleString() : '-' },
     { title: '总工时', key: 'totalHours', width: 100, render: (_, r) => r.totalHours > 0 ? `${r.totalHours.toFixed(1)}h` : '-' },

@@ -13,6 +13,7 @@ export interface ApiResponse<T = any> {
   data?: T
   message?: string
   total?: number
+  [key: string]: any
 }
 
 function convertStatusParams(params: Record<string, unknown>): Record<string, unknown> {
@@ -63,6 +64,19 @@ const axiosInstance = axios.create({
   timeout: 60000,
 })
 
+export interface Api {
+  get<T = any>(url: string, config?: Parameters<AxiosInstance['get']>[1]): Promise<ApiResponse<T>>
+  post<T = any>(url: string, data?: any, config?: Parameters<AxiosInstance['post']>[2]): Promise<ApiResponse<T>>
+  put<T = any>(url: string, data?: any, config?: Parameters<AxiosInstance['put']>[2]): Promise<ApiResponse<T>>
+  delete<T = any>(url: string, config?: Parameters<AxiosInstance['delete']>[1]): Promise<ApiResponse<T>>
+  patch<T = any>(url: string, data?: any, config?: Parameters<AxiosInstance['patch']>[2]): Promise<ApiResponse<T>>
+  request<T = any>(config: any): Promise<ApiResponse<T>>
+  head<T = any>(url: string, config?: any): Promise<ApiResponse<T>>
+  options<T = any>(url: string, config?: any): Promise<ApiResponse<T>>
+  defaults: AxiosInstance['defaults']
+  interceptors: AxiosInstance['interceptors']
+}
+
 const api = {
   get: async <T = any>(url: string, config?: Parameters<AxiosInstance['get']>[1]): Promise<ApiResponse<T>> => {
     const response = await axiosInstance.get<ApiResponse<T>>(url, config)
@@ -84,13 +98,21 @@ const api = {
     const response = await axiosInstance.patch<ApiResponse<T>>(url, data, config)
     return response.data
   },
-} as Omit<AxiosInstance, 'get' | 'post' | 'put' | 'delete' | 'patch'> & {
-  get<T = any>(url: string, config?: Parameters<AxiosInstance['get']>[1]): Promise<ApiResponse<T>>
-  post<T = any>(url: string, data?: any, config?: Parameters<AxiosInstance['post']>[2]): Promise<ApiResponse<T>>
-  put<T = any>(url: string, data?: any, config?: Parameters<AxiosInstance['put']>[2]): Promise<ApiResponse<T>>
-  delete<T = any>(url: string, config?: Parameters<AxiosInstance['delete']>[1]): Promise<ApiResponse<T>>
-  patch<T = any>(url: string, data?: any, config?: Parameters<AxiosInstance['patch']>[2]): Promise<ApiResponse<T>>
-}
+  request: async <T = any>(config: any): Promise<ApiResponse<T>> => {
+    const response = await axiosInstance.request<ApiResponse<T>>(config)
+    return response.data
+  },
+  head: async <T = any>(url: string, config?: any): Promise<ApiResponse<T>> => {
+    const response = await axiosInstance.head<ApiResponse<T>>(url, config)
+    return response.data as unknown as ApiResponse<T>
+  },
+  options: async <T = any>(url: string, config?: any): Promise<ApiResponse<T>> => {
+    const response = await axiosInstance.options<ApiResponse<T>>(url, config)
+    return response.data as unknown as ApiResponse<T>
+  },
+  defaults: axiosInstance.defaults,
+  interceptors: axiosInstance.interceptors,
+} as Api
 
 axiosInstance.interceptors.request.use((config) => {
   const token = localStorage.getItem('mes_token')

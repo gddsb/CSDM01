@@ -68,7 +68,7 @@ export default function FinishedInspection() {
   }
 
   const columns = [
-    { title: '检验编号', dataIndex: 'inspection_no', key: 'inspection_no', width: 150, fixed: 'left' },
+    { title: '检验编号', dataIndex: 'inspection_no', key: 'inspection_no', width: 150, fixed: 'left' as const },
     { title: '关联工单', dataIndex: 'work_order_no', key: 'work_order_no', width: 160 },
     {
       title: '触发方式', dataIndex: 'trigger_type', key: 'trigger_type', width: 100,
@@ -90,7 +90,7 @@ export default function FinishedInspection() {
       render: v => <Tag color={statusColor[v] || 'default'}>{v}</Tag>
     },
     {
-      title: '操作', key: 'action', fixed: 'right',
+      title: '操作', key: 'action', fixed: 'right' as const,
       render: (_, record) => (
         <Button type="link" size="small" onClick={() => showDetail(record)}>查看详情</Button>
       )

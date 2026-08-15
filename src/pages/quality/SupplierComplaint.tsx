@@ -95,7 +95,7 @@ export default function SupplierComplaint() {
   }
 
   const columns = [
-    { title: '投诉编号', dataIndex: 'complaint_no', key: 'complaint_no', width: 140, fixed: 'left' as const },
+    { title: '投诉编号', dataIndex: 'complaint_no', key: 'complaint_no', width: 140, fixed: 'left' as const as const },
     { title: '供应商', dataIndex: 'supplier_name', key: 'supplier_name', width: 120 },
     { title: '投诉类型', dataIndex: 'complaint_type', key: 'complaint_type', width: 110 },
     { title: '投诉原因', dataIndex: 'complaint_reason', key: 'complaint_reason', width: 260 },

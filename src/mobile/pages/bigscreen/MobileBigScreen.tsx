@@ -5,9 +5,9 @@ import '../../../styles/bigscreen.css'
 
 const DATA_REFRESH_INTERVAL = 30 * 1000
 
-function extractDates(items, ...fields) {
-  const set = new Set()
-  items.forEach(item => {
+function extractDates(items: any[], ...fields: string[]): string[] {
+  const set = new Set<string>()
+  items.forEach((item: any) => {
     fields.forEach(f => {
       const v = item[f]
       if (v && typeof v === 'string') {
@@ -31,11 +31,11 @@ function getActiveDate() {
   return pastDates.length > 0 ? pastDates[pastDates.length - 1] : allDates[allDates.length - 1]
 }
 
-function filterByDate(items, dateStr, ...fields) {
+function filterByDate<T>(items: T[], dateStr: string | null, ...fields: string[]): T[] {
   if (!dateStr) return items
   return items.filter(item =>
     fields.some(f => {
-      const v = item[f]
+      const v = (item as any)[f]
       return v && typeof v === 'string' && v.startsWith(dateStr)
     })
   )
@@ -104,7 +104,7 @@ export default function MobileBigScreen() {
   ]
 
   const mustReportProcessNames = processes.filter(p => Number(p.must_report) === 1).map(p => p.process_name)
-  const processStats = {}
+  const processStats: Record<string, { name: string; input: number; output: number; defect: number }> = {}
   dateProcessReports.forEach(r => {
     if (!mustReportProcessNames.includes(r.process_name)) return
     if (!processStats[r.process_name]) {
@@ -144,7 +144,7 @@ export default function MobileBigScreen() {
     return releasedToday || startedToday || finishedToday
   })
 
-  const noAnimation = { animation: false, animationDuration: 0, animationDurationUpdate: 0, animationEasingUpdate: 'linear' }
+  const noAnimation = { animation: false, animationDuration: 0, animationDurationUpdate: 0, animationEasingUpdate: 'linear' as const as const }
 
   useEffect(() => {
     if (!lineChartRef.current) return

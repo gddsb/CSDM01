@@ -164,7 +164,7 @@ export default function ManagementBigScreen() {
   }
   const { style: scaleStyle } = useBigScreenScale({ designWidth: 1280, designHeight: 720 })
 
-  const noAnimation = { animation: false, animationDuration: 0, animationDurationUpdate: 0, animationEasingUpdate: 'linear' }
+  const noAnimation = { animation: false, animationDuration: 0, animationDurationUpdate: 0, animationEasingUpdate: 'linear' as const }
 
   // 解构真实数据
   const {

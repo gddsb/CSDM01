@@ -6,7 +6,6 @@ import {
   CheckCircleOutlined, WarningOutlined,
   RiseOutlined, FallOutlined
 } from '@ant-design/icons'
-import * as XLSX from 'xlsx'
 import dayjs, { Dayjs } from 'dayjs'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import { formatDateTime, MONTH_QUICK_OPTIONS, getMonthRange, validateDateRange } from '../../utils'
@@ -270,7 +269,7 @@ export default function ProductionReport() {
     }
   }
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (filtered.length === 0) {
       message.warning('没有可导出的数据')
       return
@@ -295,6 +294,7 @@ export default function ProductionReport() {
       '开工时间': r.start_time ? formatDateTime(r.start_time) : '',
       '完工时间': r.finish_time ? formatDateTime(r.finish_time) : '',
     }))
+    const XLSX = await import('xlsx')
     const ws = XLSX.utils.json_to_sheet(exportData)
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, '生产报表')
@@ -303,7 +303,7 @@ export default function ProductionReport() {
   }
 
   const columns = [
-    { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 150, fixed: 'left' },
+    { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 150, fixed: 'left' as const },
     { title: '订单编号', dataIndex: 'order_no', key: 'order_no', width: 150 },
     { title: '产线', dataIndex: 'line_name', key: 'line_name', width: 70 },
     { title: '产品名称', dataIndex: 'material_name', key: 'material_name', width: 120 },

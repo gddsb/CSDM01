@@ -7,7 +7,7 @@ import { logger } from '../utils/logger.js'
 export const list = async (req, res) => {
   try {
     const { keyword, status, dateStart, dateEnd, page = 1, pageSize = 50 } = req.query
-    const where = {}
+    const where: any = {}
     if (keyword) {
       where[Op.or] = [
         { process_code: { [Op.like]: `%${keyword}%` } },
@@ -51,7 +51,7 @@ export const detail = async (req, res) => {
 
 const PROCESS_WRITABLE_FIELDS = ['process_code', 'process_name', 'sort_order', 'has_material', 'must_report', 'status']
 
-function pickProcessFields(body) {
+function pickProcessFields(body: any): any {
   const data = {}
   for (const field of PROCESS_WRITABLE_FIELDS) {
     if (body[field] !== undefined) data[field] = body[field]

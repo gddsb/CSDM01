@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Table } from 'antd'
-import type { TableProps } from 'antd'
+import type { TableProps, ColumnType } from 'antd/es/table'
 import api from '../utils/api'
 
 const STORAGE_PREFIX = 'table_col_width_'
@@ -91,7 +91,10 @@ function ResizableTable<RecordType extends object = any>(props: ResizableTablePr
     e.stopPropagation()
     const startX = e.clientX
     const targetKey = String(key)
-    const targetCol = rawColumns.find(c => String(c.key || c.dataIndex) === targetKey)
+    const targetCol = rawColumns.find(c => {
+      const cc = c as ColumnType<RecordType>
+      return String(cc.key || (cc.dataIndex as string)) === targetKey
+    })
     const startWidth = colWidths[targetKey] || (targetCol?.width as number) || 150
 
     const onMouseMove = (ev: MouseEvent) => {
@@ -122,8 +125,9 @@ function ResizableTable<RecordType extends object = any>(props: ResizableTablePr
       })
     }
     return rawColumns.map(col => {
-      const key = String(col.key || col.dataIndex || '')
-      const width = colWidths[key] || col.width || 150
+      const cc = col as ColumnType<RecordType>
+      const key = String(cc.key || (cc.dataIndex as string) || '')
+      const width = colWidths[key] || cc.width || 150
       if (!key) return { ...col, width }
       return {
         ...col,

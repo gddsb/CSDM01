@@ -514,8 +514,8 @@ export default function OrderManagement() {
   }
 
   const columns = [
-    { title: '订单编号', dataIndex: 'order_no', key: 'order_no', width: 160, fixed: 'left' },
-    { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 130, fixed: 'left' },
+    { title: '订单编号', dataIndex: 'order_no', key: 'order_no', width: 160, fixed: 'left' as const },
+    { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 130, fixed: 'left' as const },
     { title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 200, render: (text) => <div style={{ wordBreak: 'break-word', whiteSpace: 'normal' }}>{text}</div> },
     { title: '规格', dataIndex: 'specification', key: 'specification', width: 120, ellipsis: true },
     { title: '菲林编号', dataIndex: 'film_version', key: 'film_version', width: 120 },
@@ -886,8 +886,8 @@ export default function OrderManagement() {
                         pagination={false}
                         scroll={{ x: 820 }}
                         columns={[
-                          { title: '工序编码', dataIndex: 'process_code', key: 'process_code', width: 60, fixed: 'left' },
-                          { title: '工序名称', dataIndex: 'process_name', key: 'process_name', width: 70, fixed: 'left' },
+                          { title: '工序编码', dataIndex: 'process_code', key: 'process_code', width: 60, fixed: 'left' as const },
+                          { title: '工序名称', dataIndex: 'process_name', key: 'process_name', width: 70, fixed: 'left' as const },
                           { title: '投入数量', dataIndex: 'inputQty', key: 'inputQty', width: 50, align: 'right', render: (v: any) => (v || 0).toLocaleString() },
                           { title: '产出数量', dataIndex: 'outputQty', key: 'outputQty', width: 50, align: 'right', render: (v: any) => (v || 0).toLocaleString() },
                           { title: '来料不良', dataIndex: 'incomingQty', key: 'incomingQty', width: 55, align: 'right', render: (v: any) => <span style={{ color: v > 0 ? '#ff4d4f' : 'inherit' }}>{(v || 0).toLocaleString()}</span> },

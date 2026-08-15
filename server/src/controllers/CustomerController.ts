@@ -10,7 +10,7 @@ const PHONE_REGEX = /^1[3-9]\d{9}$|^0\d{2,3}-?\d{7,8}$/
 export const list = async (req, res) => {
   try {
     const { keyword, status, dateStart, dateEnd, page = 1, pageSize = 50 } = req.query
-    const where = {}
+    const where: any = {}
     if (keyword) {
       where[Op.or] = [
         { customer_code: { [Op.like]: `%${keyword}%` } },
@@ -106,7 +106,7 @@ export const update = async (req, res) => {
       return fail(res, '联系电话格式不正确', ErrorCode.PARAM_INVALID)
     }
 
-    const payload = {
+    const payload: any = {
       customer_code, customer_name, short_name, customer_category, customer_type, contact_person, phone, email, address, effective_date, expiry_date, credit_level, tax_id, bank_account, bank_name, remark, sort_order,
     }
     if (status !== undefined) {

@@ -107,7 +107,7 @@ export default function ComplaintManagement() {
   }
 
   const columns = [
-    { title: '客诉编号', dataIndex: 'complaint_no', key: 'complaint_no', width: 130, fixed: 'left' as const },
+    { title: '客诉编号', dataIndex: 'complaint_no', key: 'complaint_no', width: 130, fixed: 'left' as const as const },
     { title: '来源', dataIndex: 'source', key: 'source', width: 100 },
     { title: '客户名称', dataIndex: 'customer_name', key: 'customer_name', width: 110 },
     { title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 130 },
@@ -126,7 +126,7 @@ export default function ComplaintManagement() {
       render: (v: string) => <Tag color={statusColor[v] || 'default'}>{v}</Tag>
     },
     {
-      title: '操作', key: 'action', fixed: 'right' as const,
+      title: '操作', key: 'action', fixed: 'right' as const as const,
       render: (_: any, record: any) => (
         <Button type="link" size="small" onClick={() => showDetail(record)}>查看详情</Button>
       )

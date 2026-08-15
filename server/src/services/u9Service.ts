@@ -65,7 +65,7 @@ export async function fetchU9Orgs(cfg: U9LoginConfig): Promise<U9Org[]> {
   }
   http.interceptors.request.use((c) => {
     if (cookies) {
-      c.headers = c.headers || {}
+      c.headers = (c.headers || {}) as any
       if (typeof (c.headers as any).set === 'function') {
         (c.headers as any).set('Cookie', cookies)
       } else {

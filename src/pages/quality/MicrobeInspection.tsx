@@ -167,7 +167,7 @@ export default function MicrobeInspection() {
   }
 
   const columns = [
-    { title: '检验编号', dataIndex: 'inspection_no', key: 'inspection_no', width: 150, fixed: 'left' as const },
+    { title: '检验编号', dataIndex: 'inspection_no', key: 'inspection_no', width: 150, fixed: 'left' as const as const },
     {
       title: '检验类型', dataIndex: 'inspection_type', key: 'inspection_type', width: 90,
       render: (v: string) => <Tag color={typeColor[v] || 'default'}>{v}</Tag>
@@ -192,7 +192,7 @@ export default function MicrobeInspection() {
       render: (v: any) => <Tag color={statusColor[getStatusText(v)] || 'default'}>{getStatusText(v)}</Tag>
     },
     {
-      title: '操作', key: 'action', fixed: 'right' as const,
+      title: '操作', key: 'action', fixed: 'right' as const as const,
       render: (_: any, record: any) => (
         <Button type="link" size="small" onClick={() => showDetail(record)}>查看详情</Button>
       )

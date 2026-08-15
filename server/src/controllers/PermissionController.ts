@@ -19,7 +19,7 @@ export function clearMenuCache() { menuCache.clear() }
 export const list = async (req, res) => {
   try {
     const { keyword, status, type } = req.query
-    const where = {}
+    const where: any = {}
     if (keyword) {
       where[Op.or] = [
         { perm_name: { [Op.like]: `%${keyword}%` } },

@@ -243,14 +243,14 @@ async function getExistingColumns(tableName) {
   const dialect = sequelize.getDialect()
   if (dialect === 'sqlite') {
     const [rows] = await sequelize.query(`PRAGMA table_info(${tableName})`)
-    return rows.map(r => r.name)
+    return (rows as any[]).map(r => r.name)
   }
   // mysql
   const [rows] = await sequelize.query(
     `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?`,
     { replacements: [sequelize.config.database, tableName] }
   )
-  return rows.map(r => r.COLUMN_NAME)
+  return (rows as any[]).map(r => r.COLUMN_NAME)
 }
 
 // 检查表是否存在

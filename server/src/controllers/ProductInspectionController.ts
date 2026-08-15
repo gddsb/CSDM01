@@ -207,7 +207,7 @@ export default {
       const detail = await getDetail(record.inspection_id)
       success(res, detail, '创建成功')
     } catch (err: any) {
-      if (t && !t.finished) {
+      if (t && !(t as any).finished) {
         try { await t.rollback() } catch (_) { /* ignore */ }
       }
       logger.error('[ProductInspection] create error:', err)
@@ -289,7 +289,7 @@ export default {
       const detail = await getDetail(Number(id))
       success(res, detail, '更新成功')
     } catch (err: any) {
-      if (t && !t.finished) {
+      if (t && !(t as any).finished) {
         try { await t.rollback() } catch (_) { /* ignore */ }
       }
       logger.error('[ProductInspection] update error:', err)
@@ -410,7 +410,7 @@ export default {
 
       success(res, { message: '删除成功' }, '删除成功')
     } catch (err: any) {
-      if (t && !t.finished) {
+      if (t && !(t as any).finished) {
         try { await t.rollback() } catch (_) { /* ignore */ }
       }
       logger.error('[ProductInspection] delete error:', err)

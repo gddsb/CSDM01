@@ -93,7 +93,7 @@ export default function MainLayout() {
     } catch { /* ignore */ }
     return []
   })
-  const hasInitCacheRef = useRef<boolean>(() => {
+  const hasInitCacheRef = useRef<boolean>((() => {
     try {
       const raw = localStorage.getItem(MENU_CACHE_KEY)
       if (raw) {
@@ -102,7 +102,7 @@ export default function MainLayout() {
       }
     } catch { /* ignore */ }
     return false
-  })
+  })())
   const [menuLoading, setMenuLoading] = useState<boolean>(!hasInitCacheRef.current)
   const [menuError, setMenuError] = useState<string | null>(null)
 

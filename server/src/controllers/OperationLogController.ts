@@ -6,7 +6,7 @@ import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 export const list = async (req, res) => {
   try {
     const { username, module, method, status, startDate, endDate, dateStart, dateEnd, page = 1, pageSize = 20 } = req.query
-    const where = {}
+    const where: any = {}
     if (username) where.username = { [Op.like]: `%${username}%` }
     if (module) where.module = { [Op.like]: `%${module}%` }
     if (method) where.method = method

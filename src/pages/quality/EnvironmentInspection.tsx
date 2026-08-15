@@ -178,7 +178,7 @@ export default function EnvironmentInspection() {
   }
 
   const columns = [
-    { title: '检验编号', dataIndex: 'inspection_no', key: 'inspection_no', width: 160, fixed: 'left' as const },
+    { title: '检验编号', dataIndex: 'inspection_no', key: 'inspection_no', width: 160, fixed: 'left' as const as const },
     { title: '检验区域', dataIndex: 'area_name', key: 'area_name', width: 120 },
     {
       title: '触发方式', dataIndex: 'trigger_type', key: 'trigger_type', width: 100,
@@ -207,7 +207,7 @@ export default function EnvironmentInspection() {
       render: (v: string) => <Tag color={statusColor[v] || 'default'}>{v}</Tag>
     },
     {
-      title: '操作', key: 'action', fixed: 'right' as const,
+      title: '操作', key: 'action', fixed: 'right' as const as const,
       render: (_: any, record: any) => (
         <Button type="link" size="small" onClick={() => showDetail(record)}>查看详情</Button>
       )

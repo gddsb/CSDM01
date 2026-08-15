@@ -286,7 +286,7 @@ export default function IncomingInspection() {
   }, [])
 
   const columns = [
-    { title: '检验编号', dataIndex: 'inspection_no', key: 'inspection_no', width: 150, fixed: 'left' },
+    { title: '检验编号', dataIndex: 'inspection_no', key: 'inspection_no', width: 150, fixed: 'left' as const },
     {
       title: '供应商', dataIndex: 'supplier_name', key: 'supplier_name', width: 130, ellipsis: true,
       render: (_: any, r: any) => {
@@ -336,7 +336,7 @@ export default function IncomingInspection() {
       render: v => v ? <Tag>{v}</Tag> : <span style={{ color: '#999' }}>-</span>
     },
     {
-      title: '操作', key: 'action', fixed: 'right' as const, width: 220,
+      title: '操作', key: 'action', fixed: 'right' as const as const, width: 220,
       render: (_: any, record: any) => (
         <Space size={2} wrap>
           <Button type="link" size="small" onClick={() => showDetail(record)}>详情</Button>

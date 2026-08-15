@@ -2,6 +2,19 @@ import type { Request, Response, NextFunction, RequestHandler } from 'express'
 import rateLimit from 'express-rate-limit'
 
 /**
+ * 限流 keyGenerator：优先取反向代理后的真实 IP，回退到 req.ip（已正确处理 IPv6）
+ */
+function rateLimitKeyGenerator(req: { ip?: string; headers: Record<string, unknown>; socket?: { remoteAddress?: string } }): string {
+  const forwarded = req.headers['x-forwarded-for']
+  if (typeof forwarded === 'string') {
+    const first = forwarded.split(',')[0]?.trim()
+    if (first) return first
+  }
+  return req.ip || req.socket?.remoteAddress || 'unknown'
+}
+
+
+/**
  * 通用业务异常：抛出后由全局错误中间件统一转为标准响应
  */
 export class AppError extends Error {
@@ -74,15 +87,7 @@ export const loginRateLimiter = rateLimit({
   max: Number(process.env.LOGIN_RATE_LIMIT || 10),
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    const forwarded = req.headers['x-forwarded-for']
-    const ip =
-      (typeof forwarded === 'string' && forwarded.split(',')[0].trim()) ||
-      req.ip ||
-      req.socket.remoteAddress ||
-      'unknown'
-    return ip
-  },
+  keyGenerator: rateLimitKeyGenerator,
   message: {
     success: false,
     code: 42900,

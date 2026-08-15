@@ -179,7 +179,7 @@ export default function QualityReport() {
   }, [allInspections])
 
   const columns = [
-    { title: '检验编号', dataIndex: 'inspection_no', key: 'inspection_no', width: 160, fixed: 'left' },
+    { title: '检验编号', dataIndex: 'inspection_no', key: 'inspection_no', width: 160, fixed: 'left' as const },
     { title: '检验类别', dataIndex: 'inspection_category', key: 'inspection_category', width: 100, render: v => <Tag color="blue">{v}</Tag> },
     { title: '检验对象', dataIndex: 'target', key: 'target', width: 140 },
     { title: '批次/工单号', dataIndex: 'batch_no', key: 'batch_no', width: 160 },

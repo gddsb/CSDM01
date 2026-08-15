@@ -105,7 +105,7 @@ export default function ProcessInspection() {
   }
 
   const columns = [
-    { title: '检验编号', dataIndex: 'inspection_no', key: 'inspection_no', width: 150, fixed: 'left' },
+    { title: '检验编号', dataIndex: 'inspection_no', key: 'inspection_no', width: 150, fixed: 'left' as const },
     { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 150 },
     { title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 120 },
     { title: '检验工序', dataIndex: 'process_name', key: 'process_name', width: 100 },

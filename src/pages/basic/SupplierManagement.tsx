@@ -169,7 +169,7 @@ export default function SupplierManagement() {
   }
 
   const columns = [
-    { title: '编码', dataIndex: 'supplier_code', key: 'supplier_code', width: 110, fixed: 'left' },
+    { title: '编码', dataIndex: 'supplier_code', key: 'supplier_code', width: 110, fixed: 'left' as const },
     { title: '名称', dataIndex: 'supplier_name', key: 'supplier_name', width: 260 },
     { title: '简称', dataIndex: 'short_name', key: 'short_name', width: 120 },
     { title: '分类', dataIndex: 'supplier_category', key: 'supplier_category', width: 130, render: (v: any) => v || '-' },
@@ -178,14 +178,14 @@ export default function SupplierManagement() {
     { title: '邮箱', dataIndex: 'email', key: 'email', width: 180 },
     { title: '地址', dataIndex: 'address', key: 'address', width: 240 },
     {
-      title: '状态', dataIndex: 'status', key: 'status', width: 90, fixed: 'right',
+      title: '状态', dataIndex: 'status', key: 'status', width: 90, fixed: 'right' as const,
       render: (v: any, record: any) => {
         const enabled = (record.status === 1 || record.status === '生效' || v === 1 || v === '生效')
         return <Tag color={enabled ? 'green' : 'red'}>{enabled ? '生效' : '失效'}</Tag>
       },
     },
     {
-      title: '操作', key: 'action', fixed: 'right',
+      title: '操作', key: 'action', fixed: 'right' as const,
       render: (_: any, record: any) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => setViewRecord(record)}>查看</Button>

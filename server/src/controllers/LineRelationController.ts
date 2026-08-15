@@ -126,8 +126,8 @@ export const getLineDevices = async (req, res) => {
     const processIds = [...new Set(lineDevices.map(ld => ld.process_id).filter(Boolean))]
 
     const [devices, processes] = await Promise.all([
-      deviceIds.length > 0 ? Device.findAll({ where: { device_id: deviceIds } }) : [],
-      processIds.length > 0 ? Process.findAll({ where: { process_id: processIds } }) : [],
+      deviceIds.length > 0 ? Device.findAll({ where: { device_id: deviceIds } }) : Promise.resolve([] as any[]),
+      processIds.length > 0 ? Process.findAll({ where: { process_id: processIds } }) : Promise.resolve([] as any[]),
     ])
 
     const deviceMap = new Map(devices.map(d => [d.device_id, d]))

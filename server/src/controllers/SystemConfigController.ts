@@ -6,7 +6,7 @@ let sysConfigCache: { value: Record<string, any>; expireAt: number } | null = nu
 const SYSCONFIG_CACHE_TTL = 60 * 1000
 export function clearSysConfigCache() { sysConfigCache = null }
 import sequelize from '../config/database.js'
-import { Sequelize, Op } from 'sequelize'
+import { Sequelize, Op, QueryTypes } from 'sequelize'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -158,7 +158,7 @@ export const getEnvironment = async (req, res) => {
     const mem = process.memoryUsage()
 
     // 读取后端 package.json 获取版本
-    let backendPkg = {}
+    let backendPkg: any = {}
     try {
       const pkgPath = path.resolve(process.cwd(), 'package.json')
       backendPkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
@@ -167,7 +167,7 @@ export const getEnvironment = async (req, res) => {
     }
 
     // 读取前端 package.json 获取版本
-    let frontendPkg = {}
+    let frontendPkg: any = {}
     try {
       const pkgPath = path.resolve(process.cwd(), '..', 'package.json')
       frontendPkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
@@ -175,7 +175,7 @@ export const getEnvironment = async (req, res) => {
         logger.warn('[SilentCatch] /* ignore */', err?.message)
     }
 
-    const getDepVersion = (pkg, name) => {
+    const getDepVersion = (pkg: any, name: string) => {
       if (!pkg) return 'unknown'
       let v = pkg.dependencies?.[name]
       if (!v) v = pkg.devDependencies?.[name]
@@ -203,7 +203,7 @@ export const getEnvironment = async (req, res) => {
         items: [
           { key: 'Node.js', version: process.version.replace(/^v/, ''), category: '运行环境' },
           { key: 'Express', version: getDepVersion(backendPkg, 'express'), category: 'Web框架' },
-          { key: 'Sequelize', version: Sequelize.version || getDepVersion(backendPkg, 'sequelize'), category: 'ORM框架' },
+          { key: 'Sequelize', version: getDepVersion(backendPkg, 'sequelize'), category: 'ORM框架' },
           { key: 'SQLite', version: getDepVersion(backendPkg, 'sqlite3'), category: '数据库' },
           { key: 'MySQL', version: getDepVersion(backendPkg, 'mysql2'), category: '数据库' },
           { key: 'JWT (jsonwebtoken)', version: getDepVersion(backendPkg, 'jsonwebtoken'), category: '身份认证' },
@@ -241,7 +241,7 @@ export const getEnvironment = async (req, res) => {
       const targetPath = process.cwd()
       const isWin = process.platform === 'win32'
       const { execFile } = await import('child_process')
-      await new Promise((resolve) => {
+      await new Promise<void>((resolve) => {
         if (isWin) {
           execFile('wmic', ['logicaldisk', 'where', "DeviceID='C:'", 'get', 'Size,FreeSpace', '/format:csv'], { timeout: 3000 }, (err, stdout) => {
             if (!err && stdout) {
@@ -348,7 +348,7 @@ export const getEnvironment = async (req, res) => {
       disk_used: disk_info.used,
       disk_used_percent: disk_info.used_percent,
       disk_mount: disk_info.mount,
-      sequelize_version: Sequelize.version || 'unknown',
+      sequelize_version: getDepVersion(backendPkg, 'sequelize'),
       tech_stack,
       server_time: nowBeijingStr(),
       frontend_server: {
@@ -1294,7 +1294,7 @@ async function collectDatabaseSchema(options: CollectSchemaOptions = {}) {
     try {
       approxRows = (await sequelize.query(
         `SELECT TABLE_NAME as tbl, TABLE_ROWS as cnt FROM information_schema.TABLES WHERE TABLE_SCHEMA = :dbName`,
-        { type: sequelize.QueryTypes.SELECT, replacements: { dbName } },
+        { type: QueryTypes.SELECT, replacements: { dbName } },
       )) as any[]
     } catch (e) {
       logger.warn('[collectDatabaseSchema] information_schema 查询失败，退化为逐表 COUNT:', e?.message)
@@ -1315,7 +1315,7 @@ async function collectDatabaseSchema(options: CollectSchemaOptions = {}) {
         tablesNeedExactCount,
         async (t: string) => {
           try {
-            const r = await sequelize.query(`SELECT COUNT(*) as count FROM \`${t}\``, { type: sequelize.QueryTypes.SELECT })
+            const r = await sequelize.query(`SELECT COUNT(*) as count FROM \`${t}\``, { type: QueryTypes.SELECT })
             return { table: t, count: Number((r[0] as any)?.count ?? 0) }
           } catch {
             return { table: t, count: approxMap[t] || 0 }
@@ -1337,7 +1337,7 @@ async function collectDatabaseSchema(options: CollectSchemaOptions = {}) {
       allTables,
       async (t: string) => {
         try {
-          const r = await sequelize.query(`SELECT COUNT(*) as count FROM "${t}"`, { type: sequelize.QueryTypes.SELECT })
+          const r = await sequelize.query(`SELECT COUNT(*) as count FROM "${t}"`, { type: QueryTypes.SELECT })
           return { table: t, count: Number((r[0] as any)?.count ?? 0) }
         } catch {
           return { table: t, count: 0 }
@@ -1420,7 +1420,7 @@ async function collectDatabaseSchema(options: CollectSchemaOptions = {}) {
 export const getDatabaseInfo = async (req, res) => {
   try {
     const dialect = process.env.DB_DIALECT || 'sqlite'
-    const info = {
+    const info: any = {
       dialect,
       host: process.env.DB_HOST || (dialect === 'sqlite' ? '-' : 'localhost'),
       port: process.env.DB_PORT || (dialect === 'sqlite' ? '-' : 3306),
@@ -1478,7 +1478,7 @@ export const listBackups = async (req, res) => {
           created_at: formatDateTime(stat.mtime),
         }
       })
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     return success(res, backups, '获取成功')
   } catch (err) {
     console.error('列出备份失败:', err)
@@ -2045,7 +2045,7 @@ export const getRefreshProgress = async (req, res) => {
 export const listDataDictionary = async (req, res) => {
   try {
     const { keyword, category, page = 1, pageSize = 30 } = req.query
-    const where = {}
+    const where: any = {}
     if (keyword) {
       where[Op.or] = [
         { table_name: { [Op.like]: `%${keyword}%` } },
@@ -2106,14 +2106,14 @@ export const listTableRecords = async (req, res) => {
 
     // 查询总记录数
     const countResult = await sequelize.query(`SELECT COUNT(*) as count FROM ${quoteChar}${safeTableName}${quoteChar}`, { 
-      type: Sequelize.QueryTypes.SELECT 
+      type: QueryTypes.SELECT 
     })
-    const total = countResult[0]?.count || 0
+    const total = Number((countResult[0] as any)?.count) || 0 || 0
 
     // 查询分页数据
     const rows = await sequelize.query(`SELECT * FROM ${quoteChar}${safeTableName}${quoteChar} LIMIT ? OFFSET ?`, { 
       replacements: [limit, offset],
-      type: Sequelize.QueryTypes.SELECT 
+      type: QueryTypes.SELECT 
     })
 
     // 查询字段信息

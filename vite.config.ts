@@ -37,4 +37,15 @@ export default defineConfig({
       '/uploads': apiProxy,
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'antd-vendor': ['antd', '@ant-design/icons', 'antd-mobile', 'antd-mobile-icons'],
+          'echarts-vendor': ['echarts'],
+        },
+      },
+    },
+  },
 })

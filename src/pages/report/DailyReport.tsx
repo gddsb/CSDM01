@@ -213,7 +213,7 @@ export default function DailyReport() {
   }
 
   const columns = [
-    { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 160, fixed: 'left' },
+    { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 160, fixed: 'left' as const },
     { title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 130 },
     { title: '产线', dataIndex: 'line_name', key: 'line_name', width: 70 },
     { title: '目标数量', dataIndex: 'target_qty', key: 'target_qty', width: 100, render: v => v.toLocaleString() },

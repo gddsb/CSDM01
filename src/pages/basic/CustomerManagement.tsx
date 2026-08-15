@@ -168,7 +168,7 @@ export default function CustomerManagement() {
   }
 
   const columns = [
-    { title: '客户编号', dataIndex: 'customer_code', key: 'customer_code', width: 110, fixed: 'left' },
+    { title: '客户编号', dataIndex: 'customer_code', key: 'customer_code', width: 110, fixed: 'left' as const },
     { title: '排序号', dataIndex: 'sort_order', key: 'sort_order', width: 70 },
     { title: '客户名称', dataIndex: 'customer_name', key: 'customer_name', width: 200 },
     { title: '简称', dataIndex: 'short_name', key: 'short_name', width: 110 },
@@ -178,14 +178,14 @@ export default function CustomerManagement() {
     { title: '邮箱', dataIndex: 'email', key: 'email', width: 180 },
     { title: '联系地址', dataIndex: 'address', key: 'address', width: 240 },
     {
-      title: '状态', dataIndex: 'status', key: 'status', width: 90, fixed: 'right',
+      title: '状态', dataIndex: 'status', key: 'status', width: 90, fixed: 'right' as const,
       render: (v, record) => {
         const enabled = (record.status === 1 || record.status === '启用' || v === 1 || v === '启用')
         return <Tag color={enabled ? 'green' : 'red'}>{enabled ? '启用' : '停用'}</Tag>
       },
     },
     {
-      title: '操作', key: 'action', fixed: 'right',
+      title: '操作', key: 'action', fixed: 'right' as const,
       render: (_, record) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => setViewRecord(record)}>查看</Button>

@@ -200,7 +200,7 @@ export default function ExceptionReport() {
   ]
 
   const detailColumns = [
-    { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 150, fixed: 'left' },
+    { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 150, fixed: 'left' as const },
     { title: '异常类型', dataIndex: 'exception_type', key: 'exception_type', width: 100, render: (v: string) => {
       const info = exceptionTypeMap[v] || { name: v, color: '#8c8c8c' }
       return <Tag color={info.color}>{info.name}</Tag>

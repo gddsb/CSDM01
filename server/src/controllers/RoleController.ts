@@ -7,7 +7,7 @@ import { clearPermissionCache } from '../middleware/auth.js'
 export const list = async (req, res) => {
   try {
     const { keyword, status, page = 1, pageSize = 50 } = req.query
-    const where = {}
+    const where: any = {}
     if (keyword) {
       where[Op.or] = [
         { role_name: { [Op.like]: `%${keyword}%` } },

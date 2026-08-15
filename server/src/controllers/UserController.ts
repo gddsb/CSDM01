@@ -26,7 +26,7 @@ function validatePhone(phone): { valid: boolean; message?: string } {
 export const list = async (req, res) => {
   try {
     const { keyword, status, role_id, page = 1, pageSize = 20 } = req.query
-    const where = {}
+    const where: any = {}
     if (keyword) {
       where[Op.or] = [
         { username: { [Op.like]: `%${keyword}%` } },
@@ -136,7 +136,7 @@ export const update = async (req, res) => {
       if (!phoneCheck.valid) return fail(res, phoneCheck.message!, ErrorCode.PARAM_INVALID)
     }
 
-    const updateData = {
+    const updateData: any = {
       real_name,
       employee_no,
       department,
@@ -308,7 +308,7 @@ export const updateMyProfile = async (req, res) => {
       if (!phoneCheck.valid) return fail(res, phoneCheck.message!, ErrorCode.PARAM_INVALID)
     }
 
-    const updateData = {}
+    const updateData: any = {}
     if (real_name !== undefined) updateData.real_name = real_name
     if (phone !== undefined) updateData.phone = phone
     if (email !== undefined) updateData.email = email

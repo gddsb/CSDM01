@@ -277,7 +277,7 @@ export default function ProductionBigScreen() {
     return (a.order_no || '').localeCompare(b.order_no || '')
   })
 
-  const noAnimation = { animation: false, animationDuration: 0, animationDurationUpdate: 0, animationEasingUpdate: 'linear' }
+  const noAnimation = { animation: false, animationDuration: 0, animationDurationUpdate: 0, animationEasingUpdate: 'linear' as const }
 
   const activeLines = productionLines.filter(l => l.status !== '停用' && l.status !== 0)
   const dailyTrend = dashboardData.dailyTrend || []

@@ -220,7 +220,7 @@ export default function DataDictionary() {
       title: '序号', key: 'index', width: 60,
       render: (_: any, __: any, index: number) => (query.page - 1) * query.pageSize + index + 1,
     },
-    { title: '表名', dataIndex: 'table_name', key: 'table_name', width: 220, fixed: 'left' as const },
+    { title: '表名', dataIndex: 'table_name', key: 'table_name', width: 220, fixed: 'left' as const as const },
     {
       title: '分类', dataIndex: 'category', key: 'category', width: 100,
       render: (v: string) => <Tag color={categoryColorMap[v] || 'default'}>{v}</Tag>,
@@ -233,7 +233,7 @@ export default function DataDictionary() {
       render: formatDateTime,
     },
     {
-      title: '操作', key: 'action', fixed: 'right' as const,
+      title: '操作', key: 'action', fixed: 'right' as const as const,
       render: (_: any, record: DictRow) => (
         <Space size="small">
           <Button type="link" size="small" disabled={refreshing} onClick={() => handleViewDetail(record)}>结构</Button>

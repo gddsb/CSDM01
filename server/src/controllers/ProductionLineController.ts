@@ -6,7 +6,7 @@ import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 export const list = async (req, res) => {
   try {
     const { keyword, status, workshop, dateStart, dateEnd, page = 1, pageSize = 20 } = req.query
-    const where = {}
+    const where: any = {}
     if (keyword) {
       where[Op.or] = [
         { line_code: { [Op.like]: `%${keyword}%` } },
@@ -81,7 +81,7 @@ export const detail = async (req, res) => {
 
 const PRODUCTION_LINE_WRITABLE_FIELDS = ['line_code', 'line_name', 'workshop', 'line_leader', 'sort_order', 'status']
 
-function pickProductionLineFields(body) {
+function pickProductionLineFields(body: any): any {
   const data = {}
   for (const field of PRODUCTION_LINE_WRITABLE_FIELDS) {
     if (body[field] !== undefined) data[field] = body[field]

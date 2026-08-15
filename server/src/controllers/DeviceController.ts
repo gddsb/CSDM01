@@ -9,7 +9,7 @@ const ALLOWED_DEVICE_TYPES = new Set(['生产设备', '检测设备', '辅助设
 export const list = async (req, res) => {
   try {
     const { keyword, status, device_type, line_id, is_special, dateStart, dateEnd, page = 1, pageSize = 20 } = req.query
-    const where = {}
+    const where: any = {}
     if (keyword) {
       where[Op.or] = [
         { device_code: { [Op.like]: `%${keyword}%` } },
@@ -40,7 +40,7 @@ export const list = async (req, res) => {
 
     const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
     const offset = (Number(page) - 1) * limit
-    let order = [['device_type', 'ASC'], ['device_code', 'ASC']]
+    let order: any[] = [['device_type', 'ASC'], ['device_code', 'ASC']]
     if (req.query.sortBy) {
       const allowedSortFields = ['device_code', 'device_name', 'device_type', 'device_model', 'serial_no', 'location', 'status', 'created_at', 'updated_at']
       const fields = req.query.sortBy.split(',').filter(f => allowedSortFields.includes(f))

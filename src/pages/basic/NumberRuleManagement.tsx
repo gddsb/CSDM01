@@ -247,7 +247,7 @@ export default function NumberRuleManagement() {
   }
 
   const columns = [
-    { title: '规则名称', dataIndex: 'rule_name', key: 'rule_name', width: 160, fixed: 'left' },
+    { title: '规则名称', dataIndex: 'rule_name', key: 'rule_name', width: 160, fixed: 'left' as const },
     { title: '前缀', dataIndex: 'prefix', key: 'prefix', width: 80 },
     {
       title: '日期格式', dataIndex: 'date_format', key: 'date_format', width: 110,
@@ -277,7 +277,7 @@ export default function NumberRuleManagement() {
       render: v => <Tag color={v === 1 ? 'green' : 'default'}>{v === 1 ? '启用' : '停用'}</Tag>,
     },
     {
-      title: '操作', key: 'action', fixed: 'right',
+      title: '操作', key: 'action', fixed: 'right' as const,
       render: (_, record) => (
         <Space size="small" wrap>
           <Button type="link" size="small" onClick={() => setViewRecord(record)}>查看</Button>

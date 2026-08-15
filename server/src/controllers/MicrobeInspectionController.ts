@@ -174,7 +174,7 @@ export default {
       const detail = await getDetail(record.inspection_id)
       success(res, detail, '创建成功')
     } catch (err: any) {
-      if (t && !t.finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
+      if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
       logger.error('[MicrobeInspection] create error:', err)
       fail(res, err.message || '创建失败', ErrorCode.SYSTEM_ERROR)
     }
@@ -228,7 +228,7 @@ export default {
       const detail = await getDetail(Number(id))
       success(res, detail, '更新成功')
     } catch (err: any) {
-      if (t && !t.finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
+      if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
       logger.error('[MicrobeInspection] update error:', err)
       fail(res, err.message || '更新失败', ErrorCode.SYSTEM_ERROR)
     }
@@ -247,7 +247,7 @@ export default {
       await t.commit()
       success(res, { message: '删除成功' }, '删除成功')
     } catch (err: any) {
-      if (t && !t.finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
+      if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
       logger.error('[MicrobeInspection] delete error:', err)
       fail(res, err.message || '删除失败', ErrorCode.SYSTEM_ERROR)
     }

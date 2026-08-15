@@ -4,9 +4,9 @@ import { success, fail, ErrorCode } from '../utils/response.js'
 export const getUserSettings = async (req, res) => {
   try {
     const userId = req.user?.user_id || req.user?.username
-    if (!userId) return fail(res, '用户未登录', ErrorCode.AUTH_REQUIRED)
+    if (!userId) return fail(res, '用户未登录', ErrorCode.UNAUTHORIZED)
     const { group } = req.query
-    const where = { user_id: String(userId) }
+    const where: any = { user_id: String(userId) }
     if (group) where.setting_group = String(group)
     const rows = await UserSetting.findAll({ where })
     const result = {}
@@ -27,7 +27,7 @@ export const getUserSettings = async (req, res) => {
 export const saveUserSetting = async (req, res) => {
   try {
     const userId = req.user?.user_id || req.user?.username
-    if (!userId) return fail(res, '用户未登录', ErrorCode.AUTH_REQUIRED)
+    if (!userId) return fail(res, '用户未登录', ErrorCode.UNAUTHORIZED)
     const { setting_key, setting_value, setting_group = 'table', setting_type = 'json' } = req.body
     if (!setting_key) return fail(res, 'setting_key 不能为空', ErrorCode.PARAM_INVALID)
     const val = typeof setting_value === 'object' ? JSON.stringify(setting_value) : String(setting_value)
@@ -48,7 +48,7 @@ export const saveUserSetting = async (req, res) => {
 export const batchSaveUserSettings = async (req, res) => {
   try {
     const userId = req.user?.user_id || req.user?.username
-    if (!userId) return fail(res, '用户未登录', ErrorCode.AUTH_REQUIRED)
+    if (!userId) return fail(res, '用户未登录', ErrorCode.UNAUTHORIZED)
     const { settings = {}, setting_group = 'table', setting_type = 'json' } = req.body
     const uid = String(userId)
     for (const [key, value] of Object.entries(settings)) {

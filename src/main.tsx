@@ -1,65 +1,81 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, Suspense, lazy } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { ConfigProvider, theme as antdTheme, App as AntdApp } from 'antd'
+import { ConfigProvider, Spin, theme as antdTheme, App as AntdApp } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
 import dayjs from 'dayjs'
 import 'dayjs/locale/zh-cn'
 import './styles/global.css'
 import { AppProvider, useApp } from './contexts/AppContext'
 import MainLayout from './layouts/MainLayout'
+
+// 首屏关键页面同步加载（避免白屏）
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
-import UserManagement from './pages/system/UserManagement'
-import RoleManagement from './pages/system/RoleManagement'
-import DataDictionary from './pages/system/DataDictionary'
-import OperationLogs from './pages/system/OperationLogs'
-import SystemLogs from './pages/system/SystemLogs'
-import SystemConfig from './pages/system/SystemConfig'
-import MaterialManagement from './pages/basic/MaterialManagement'
-import ProductionLine from './pages/basic/ProductionLine'
-import ProcessManagement from './pages/basic/ProcessManagement'
-import DeviceManagement from './pages/basic/DeviceManagement'
-import DefectManagement from './pages/basic/DefectManagement'
-import CustomerManagement from './pages/basic/CustomerManagement'
-import SupplierManagement from './pages/basic/SupplierManagement'
-import NumberRuleManagement from './pages/basic/NumberRuleManagement'
-import MenuManagement from './pages/system/MenuManagement'
-import OrderManagement from './pages/production/OrderManagement'
-import ProcessReporting from './pages/production/ProcessReporting'
-import InspectionStandard from './pages/quality/InspectionStandard'
-import InspectionStandardForm from './pages/quality/InspectionStandardForm'
-import IncomingInspection from './pages/quality/IncomingInspection'
-import ProductInspection from './pages/quality/ProductInspection'
-import ProcessInspection from './pages/quality/ProcessInspection'
-import MicrobeInspection from './pages/quality/MicrobeInspection'
-import EnvironmentInspection from './pages/quality/EnvironmentInspection'
-import ComplaintManagement from './pages/quality/ComplaintManagement'
-import SupplierComplaint from './pages/quality/SupplierComplaint'
-import InstrumentManagement from './pages/quality/InstrumentManagement'
-import DeviceArchive from './pages/device/DeviceManagement'
-import CheckRecord from './pages/device/CheckRecord'
-import Maintenance from './pages/device/Maintenance'
-import DeviceOEE from './pages/device/DeviceOEE'
-import ProductionReport from './pages/report/ProductionReport'
-import QualityReport from './pages/report/QualityReport'
-import ExceptionReport from './pages/report/ExceptionReport'
-import DailyReport from './pages/report/DailyReport'
-import MonthlyReport from './pages/report/MonthlyReport'
-import EfficiencyReport from './pages/report/EfficiencyReport'
-import ProductionBigScreen from './pages/bigscreen/ProductionBigScreen'
-import ManagementBigScreen from './pages/bigscreen/ManagementBigScreen'
-import QualityBigScreen from './pages/bigscreen/QualityBigScreen'
-import TaskSettingsPage from './pages/auto/TaskSettingsPage'
-import TaskLogPage from './pages/auto/TaskLogPage'
-import ScheduledTaskPage from './pages/auto/ScheduledTaskPage'
-import EnvironmentBigScreen from './pages/bigscreen/EnvironmentBigScreen'
-import DisplayBigScreen from './pages/bigscreen/DisplayBigScreen'
-import MobileRoutes from './mobile/MobileRoutes'
+
+// 业务页面按模块懒加载，自动代码分割
+const UserManagement = lazy(() => import('./pages/system/UserManagement'))
+const RoleManagement = lazy(() => import('./pages/system/RoleManagement'))
+const DataDictionary = lazy(() => import('./pages/system/DataDictionary'))
+const OperationLogs = lazy(() => import('./pages/system/OperationLogs'))
+const SystemLogs = lazy(() => import('./pages/system/SystemLogs'))
+const SystemConfig = lazy(() => import('./pages/system/SystemConfig'))
+const MenuManagement = lazy(() => import('./pages/system/MenuManagement'))
+const MaterialManagement = lazy(() => import('./pages/basic/MaterialManagement'))
+const ProductionLine = lazy(() => import('./pages/basic/ProductionLine'))
+const ProcessManagement = lazy(() => import('./pages/basic/ProcessManagement'))
+const DeviceManagement = lazy(() => import('./pages/basic/DeviceManagement'))
+const DefectManagement = lazy(() => import('./pages/basic/DefectManagement'))
+const CustomerManagement = lazy(() => import('./pages/basic/CustomerManagement'))
+const SupplierManagement = lazy(() => import('./pages/basic/SupplierManagement'))
+const NumberRuleManagement = lazy(() => import('./pages/basic/NumberRuleManagement'))
+const OrderManagement = lazy(() => import('./pages/production/OrderManagement'))
+const ProcessReporting = lazy(() => import('./pages/production/ProcessReporting'))
+const InspectionStandard = lazy(() => import('./pages/quality/InspectionStandard'))
+const InspectionStandardForm = lazy(() => import('./pages/quality/InspectionStandardForm'))
+const IncomingInspection = lazy(() => import('./pages/quality/IncomingInspection'))
+const ProductInspection = lazy(() => import('./pages/quality/ProductInspection'))
+const ProcessInspection = lazy(() => import('./pages/quality/ProcessInspection'))
+const MicrobeInspection = lazy(() => import('./pages/quality/MicrobeInspection'))
+const EnvironmentInspection = lazy(() => import('./pages/quality/EnvironmentInspection'))
+const ComplaintManagement = lazy(() => import('./pages/quality/ComplaintManagement'))
+const SupplierComplaint = lazy(() => import('./pages/quality/SupplierComplaint'))
+const InstrumentManagement = lazy(() => import('./pages/quality/InstrumentManagement'))
+const DeviceArchive = lazy(() => import('./pages/device/DeviceManagement'))
+const CheckRecord = lazy(() => import('./pages/device/CheckRecord'))
+const Maintenance = lazy(() => import('./pages/device/Maintenance'))
+const DeviceOEE = lazy(() => import('./pages/device/DeviceOEE'))
+const ProductionReport = lazy(() => import('./pages/report/ProductionReport'))
+const QualityReport = lazy(() => import('./pages/report/QualityReport'))
+const ExceptionReport = lazy(() => import('./pages/report/ExceptionReport'))
+const DailyReport = lazy(() => import('./pages/report/DailyReport'))
+const MonthlyReport = lazy(() => import('./pages/report/MonthlyReport'))
+const EfficiencyReport = lazy(() => import('./pages/report/EfficiencyReport'))
+const ProductionBigScreen = lazy(() => import('./pages/bigscreen/ProductionBigScreen'))
+const ManagementBigScreen = lazy(() => import('./pages/bigscreen/ManagementBigScreen'))
+const QualityBigScreen = lazy(() => import('./pages/bigscreen/QualityBigScreen'))
+const EnvironmentBigScreen = lazy(() => import('./pages/bigscreen/EnvironmentBigScreen'))
+const DisplayBigScreen = lazy(() => import('./pages/bigscreen/DisplayBigScreen'))
+const TaskSettingsPage = lazy(() => import('./pages/auto/TaskSettingsPage'))
+const TaskLogPage = lazy(() => import('./pages/auto/TaskLogPage'))
+const ScheduledTaskPage = lazy(() => import('./pages/auto/ScheduledTaskPage'))
+const MobileRoutes = lazy(() => import('./mobile/MobileRoutes'))
 
 dayjs.locale('zh-cn')
 
-function ProtectedRoute({ children }) {
+function PageFallback() {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', minHeight: 240 }}>
+      <Spin size="large" tip="加载中..." />
+    </div>
+  )
+}
+
+function lazyPage(node: React.ReactNode) {
+  return <Suspense fallback={<PageFallback />}>{node}</Suspense>
+}
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { currentUser, initialized } = useApp()
   if (!initialized) return null
   if (!currentUser) return <Navigate to="/login" replace />
@@ -72,63 +88,63 @@ function AppRoutes() {
   if (!initialized) return null
   // 移动端独立路由（不进入 PC 端 MainLayout）
   if (location.pathname.startsWith('/mobile')) {
-    return <MobileRoutes />
+    return lazyPage(<MobileRoutes />)
   }
   return (
     <Routes>
       <Route path="/login" element={currentUser ? <Navigate to="/dashboard" replace /> : <Login />} />
       {/* 大屏路由 - 独立全屏页面 */}
-      <Route path="/bigscreen/production" element={<ProtectedRoute><ProductionBigScreen /></ProtectedRoute>} />
-      <Route path="/bigscreen/management" element={<ProtectedRoute><ManagementBigScreen /></ProtectedRoute>} />
-      <Route path="/bigscreen/quality" element={<ProtectedRoute><QualityBigScreen /></ProtectedRoute>} />
-      <Route path="/bigscreen/environment" element={<ProtectedRoute><EnvironmentBigScreen /></ProtectedRoute>} />
-      <Route path="/bigscreen/display" element={<ProtectedRoute><DisplayBigScreen /></ProtectedRoute>} />
+      <Route path="/bigscreen/production" element={<ProtectedRoute>{lazyPage(<ProductionBigScreen />)}</ProtectedRoute>} />
+      <Route path="/bigscreen/management" element={<ProtectedRoute>{lazyPage(<ManagementBigScreen />)}</ProtectedRoute>} />
+      <Route path="/bigscreen/quality" element={<ProtectedRoute>{lazyPage(<QualityBigScreen />)}</ProtectedRoute>} />
+      <Route path="/bigscreen/environment" element={<ProtectedRoute>{lazyPage(<EnvironmentBigScreen />)}</ProtectedRoute>} />
+      <Route path="/bigscreen/display" element={<ProtectedRoute>{lazyPage(<DisplayBigScreen />)}</ProtectedRoute>} />
       {/* 移动端模拟器入口（兼容后端动态菜单的旧路径，统一重定向到 /mobile/home） */}
       <Route path="/system/mobile-simulator" element={<Navigate to="/mobile/home" replace />} />
       <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dashboard-bigscreen" element={<Dashboard />} />
-        <Route path="/system/users" element={<UserManagement />} />
-        <Route path="/system/roles" element={<RoleManagement />} />
-        <Route path="/system/menus" element={<MenuManagement />} />
-        <Route path="/system/dictionary" element={<DataDictionary />} />
-        <Route path="/system/config" element={<SystemConfig />} />
-        <Route path="/system/logs" element={<OperationLogs />} />
-        <Route path="/system/system-logs" element={<SystemLogs />} />
-        <Route path="/basic/materials" element={<MaterialManagement />} />
-        <Route path="/basic/lines" element={<ProductionLine />} />
-        <Route path="/basic/processes" element={<ProcessManagement />} />
-        <Route path="/basic/devices" element={<DeviceManagement />} />
-        <Route path="/basic/defects" element={<DefectManagement />} />
-        <Route path="/basic/customers" element={<CustomerManagement />} />
-        <Route path="/basic/suppliers" element={<SupplierManagement />} />
-        <Route path="/basic/number-rules" element={<NumberRuleManagement />} />
-        <Route path="/production/orders" element={<OrderManagement />} />
-        <Route path="/production/reporting" element={<ProcessReporting />} />
-        <Route path="/quality/standards" element={<InspectionStandard />} />
-        <Route path="/quality/standards/new" element={<InspectionStandardForm />} />
-        <Route path="/quality/standards/:id/edit" element={<InspectionStandardForm />} />
-        <Route path="/quality/incoming" element={<IncomingInspection />} />
-      <Route path="/quality/process" element={<ProcessInspection />} />
-        <Route path="/quality/product" element={<ProductInspection />} />
-        <Route path="/quality/microbe" element={<MicrobeInspection />} />
-        <Route path="/quality/environment" element={<EnvironmentInspection />} />
-        <Route path="/quality/complaints" element={<ComplaintManagement />} />
-        <Route path="/quality/supplier" element={<SupplierComplaint />} />
-        <Route path="/quality/instruments" element={<InstrumentManagement />} />
-        <Route path="/device/list" element={<DeviceArchive />} />
-        <Route path="/device/check-records" element={<CheckRecord />} />
-        <Route path="/device/maintenance" element={<Maintenance />} />
-        <Route path="/device/oee" element={<DeviceOEE />} />
-        <Route path="/report/daily" element={<DailyReport />} />
-        <Route path="/report/monthly" element={<MonthlyReport />} />
-        <Route path="/report/efficiency" element={<EfficiencyReport />} />
-        <Route path="/report/production" element={<ProductionReport />} />
-        <Route path="/report/quality" element={<QualityReport />} />
-        <Route path="/report/exception" element={<ExceptionReport />} />
-        <Route path="/auto/task-settings" element={<TaskSettingsPage />} />
-        <Route path="/auto/scheduled-tasks" element={<ScheduledTaskPage />} />
-        <Route path="/auto/task-logs" element={<TaskLogPage />} />
+        <Route path="/system/users" element={lazyPage(<UserManagement />)} />
+        <Route path="/system/roles" element={lazyPage(<RoleManagement />)} />
+        <Route path="/system/menus" element={lazyPage(<MenuManagement />)} />
+        <Route path="/system/dictionary" element={lazyPage(<DataDictionary />)} />
+        <Route path="/system/config" element={lazyPage(<SystemConfig />)} />
+        <Route path="/system/logs" element={lazyPage(<OperationLogs />)} />
+        <Route path="/system/system-logs" element={lazyPage(<SystemLogs />)} />
+        <Route path="/basic/materials" element={lazyPage(<MaterialManagement />)} />
+        <Route path="/basic/lines" element={lazyPage(<ProductionLine />)} />
+        <Route path="/basic/processes" element={lazyPage(<ProcessManagement />)} />
+        <Route path="/basic/devices" element={lazyPage(<DeviceManagement />)} />
+        <Route path="/basic/defects" element={lazyPage(<DefectManagement />)} />
+        <Route path="/basic/customers" element={lazyPage(<CustomerManagement />)} />
+        <Route path="/basic/suppliers" element={lazyPage(<SupplierManagement />)} />
+        <Route path="/basic/number-rules" element={lazyPage(<NumberRuleManagement />)} />
+        <Route path="/production/orders" element={lazyPage(<OrderManagement />)} />
+        <Route path="/production/reporting" element={lazyPage(<ProcessReporting />)} />
+        <Route path="/quality/standards" element={lazyPage(<InspectionStandard />)} />
+        <Route path="/quality/standards/new" element={lazyPage(<InspectionStandardForm />)} />
+        <Route path="/quality/standards/:id/edit" element={lazyPage(<InspectionStandardForm />)} />
+        <Route path="/quality/incoming" element={lazyPage(<IncomingInspection />)} />
+        <Route path="/quality/process" element={lazyPage(<ProcessInspection />)} />
+        <Route path="/quality/product" element={lazyPage(<ProductInspection />)} />
+        <Route path="/quality/microbe" element={lazyPage(<MicrobeInspection />)} />
+        <Route path="/quality/environment" element={lazyPage(<EnvironmentInspection />)} />
+        <Route path="/quality/complaints" element={lazyPage(<ComplaintManagement />)} />
+        <Route path="/quality/supplier" element={lazyPage(<SupplierComplaint />)} />
+        <Route path="/quality/instruments" element={lazyPage(<InstrumentManagement />)} />
+        <Route path="/device/list" element={lazyPage(<DeviceArchive />)} />
+        <Route path="/device/check-records" element={lazyPage(<CheckRecord />)} />
+        <Route path="/device/maintenance" element={lazyPage(<Maintenance />)} />
+        <Route path="/device/oee" element={lazyPage(<DeviceOEE />)} />
+        <Route path="/report/daily" element={lazyPage(<DailyReport />)} />
+        <Route path="/report/monthly" element={lazyPage(<MonthlyReport />)} />
+        <Route path="/report/efficiency" element={lazyPage(<EfficiencyReport />)} />
+        <Route path="/report/production" element={lazyPage(<ProductionReport />)} />
+        <Route path="/report/quality" element={lazyPage(<QualityReport />)} />
+        <Route path="/report/exception" element={lazyPage(<ExceptionReport />)} />
+        <Route path="/auto/task-settings" element={lazyPage(<TaskSettingsPage />)} />
+        <Route path="/auto/scheduled-tasks" element={lazyPage(<ScheduledTaskPage />)} />
+        <Route path="/auto/task-logs" element={lazyPage(<TaskLogPage />)} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
@@ -156,7 +172,11 @@ function App() {
   )
 }
 
-function AppInner({ setMessageApi, setModalApi, setNotificationApi }) {
+function AppInner({ setMessageApi, setModalApi, setNotificationApi }: {
+  setMessageApi: (api: unknown) => void
+  setModalApi: (api: unknown) => void
+  setNotificationApi: (api: unknown) => void
+}) {
   const { message, modal, notification } = AntdApp.useApp()
   useEffect(() => {
     setMessageApi(message)
@@ -170,7 +190,7 @@ function AppInner({ setMessageApi, setModalApi, setNotificationApi }) {
   )
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <AppProvider>
       <App />

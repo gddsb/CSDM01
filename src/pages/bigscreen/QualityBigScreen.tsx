@@ -213,7 +213,7 @@ export default function QualityBigScreen() {
     { label: '活跃客诉数', value: activeComplaints, unit: '件', color: '#ff6b6b' },
   ]
 
-  const noAnimation = { animation: false, animationDuration: 0, animationDurationUpdate: 0, animationEasingUpdate: 'linear' }
+  const noAnimation = { animation: false, animationDuration: 0, animationDurationUpdate: 0, animationEasingUpdate: 'linear' as const }
 
   useEffect(() => {
     if (!barChartRef.current) return

@@ -5,7 +5,7 @@ import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 export const listType = async (req, res) => {
   try {
     const { keyword, status, page = 1, pageSize = 30 } = req.query
-    const where = {}
+    const where: any = {}
     if (keyword) {
       where[Op.or] = [
         { dict_name: { [Op.like]: `%${keyword}%` } },
@@ -102,7 +102,7 @@ export const removeType = async (req, res) => {
 export const listData = async (req, res) => {
   try {
     const { dictType, keyword, status, page = 1, pageSize = 30 } = req.query
-    const where = {}
+    const where: any = {}
     if (dictType) where.dict_type = dictType
     if (keyword) {
       where[Op.or] = [

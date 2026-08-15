@@ -94,7 +94,7 @@ export async function loginU9(onProgress?: ProgressCallback): Promise<U9LoginRes
 
   http.interceptors.request.use((cfg) => {
     if (cookies) {
-      cfg.headers = cfg.headers || {};
+      cfg.headers = (cfg.headers || {}) as any;
       // AxiosHeaders 实例用 set，普通对象直接赋值
       if (typeof (cfg.headers as any).set === 'function') {
         (cfg.headers as any).set('Cookie', cookies);

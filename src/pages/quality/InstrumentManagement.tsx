@@ -62,7 +62,7 @@ export default function InstrumentManagement() {
   }
 
   const columns = [
-    { title: '仪器编号', dataIndex: 'instrument_no', key: 'instrument_no', width: 140, fixed: 'left' },
+    { title: '仪器编号', dataIndex: 'instrument_no', key: 'instrument_no', width: 140, fixed: 'left' as const },
     { title: '仪器名称', dataIndex: 'instrument_name', key: 'instrument_name', width: 130 },
     { title: '型号', dataIndex: 'instrument_model', key: 'instrument_model', width: 110 },
     { title: '所属部门', dataIndex: 'department', key: 'department', width: 120 },
@@ -78,7 +78,7 @@ export default function InstrumentManagement() {
       render: v => <Tag color={statusColor[v] || 'default'}>{v}</Tag>
     },
     {
-      title: '操作', key: 'action', fixed: 'right',
+      title: '操作', key: 'action', fixed: 'right' as const,
       render: (_, record) => (
         <Button type="link" size="small" onClick={() => showHistory(record)}>校准记录</Button>
       )

@@ -6,7 +6,7 @@ export const list = async (req, res) => {
   try {
     const { keyword, is_active, category_name, dateStart, dateEnd, page = 1, pageSize = 20, page_size } = req.query
     const actualPageSize = page_size || pageSize
-    const where = {}
+    const where: any = {}
     if (keyword) {
       where[Op.or] = [
         { material_code: { [Op.like]: `%${keyword}%` } },

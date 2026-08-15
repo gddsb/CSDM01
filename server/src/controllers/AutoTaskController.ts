@@ -853,7 +853,7 @@ export const productionDashboard = async (req, res) => {
 
     const roMap = new Map()
     processReportOrders.forEach(ro => roMap.set(ro.report_order_id, ro))
-    const processReportsWithQty = processReports.map(pr => {
+    const processReportsWithQty: any[] = processReports.map(pr => {
       const ro = roMap.get(pr.report_order_id)
       return {
         ...pr,
@@ -1088,7 +1088,7 @@ export const managementDashboard = async (req, res) => {
       const ros = await ReportOrder.findAll({ where: { report_order_id: { [Op.in]: reportOrderIds } }, raw: true })
       ros.forEach(ro => roMap.set(ro.report_order_id, ro))
     }
-    const processReportsWithQty = processReports.map(pr => {
+    const processReportsWithQty: any[] = processReports.map(pr => {
       const ro = roMap.get(pr.report_order_id)
       return {
         ...pr,

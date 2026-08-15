@@ -8,7 +8,7 @@ import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 export const list = async (req, res) => {
   try {
     const { keyword, status, defect_type, category_name, display, dateStart, dateEnd, page = 1, pageSize = 50 } = req.query
-    const where = {}
+    const where: any = {}
     if (keyword) {
       where[Op.or] = [
         { defect_code: { [Op.like]: `%${keyword}%` } },
@@ -184,7 +184,7 @@ export const nextCode = async (req, res) => {
     }
     const catCode = categoryMap[category_name] || 'XX'
     const typeCode = typeMap[defect_type] || 'XX'
-    const where = {}
+    const where: any = {}
     if (category_name) where.category_name = category_name
     if (defect_type) where.defect_type = defect_type
     const count = await DefectType.count({ where })

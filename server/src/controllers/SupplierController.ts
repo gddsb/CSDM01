@@ -14,7 +14,7 @@ const __dirname = path.dirname(__filename)
 export const list = async (req, res) => {
   try {
     const { keyword, status, dateStart, dateEnd, page = 1, pageSize = 50 } = req.query
-    const where = {}
+    const where: any = {}
     if (keyword) {
       where[Op.or] = [
         { supplier_code: { [Op.like]: `%${keyword}%` } },
@@ -107,7 +107,7 @@ export const update = async (req, res) => {
       return fail(res, '联系电话格式不正确', ErrorCode.PARAM_INVALID)
     }
 
-    const payload = {
+    const payload: any = {
       supplier_code, supplier_name, short_name, supplier_category, contact_person, phone, email, address, credit_level, tax_id, bank_account, bank_name, remark, sort_order,
     }
     if (status !== undefined) {

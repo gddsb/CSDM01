@@ -18,7 +18,7 @@ const TABS = [
 const genTempId = () => 'tmp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6)
 
 // 可编辑筛选下拉组件：支持输入文本快速筛选，下拉显示编码+项目，选中后只显示编码
-function DefectSelect({ value, onChange, options, placeholder, codeField, nameField, autoWidth, excludeValues = [] }) {
+function DefectSelect({ value, onChange, options, placeholder, codeField, nameField, autoWidth, excludeValues = [] }: { value: any; onChange: any; options: any; placeholder?: string; codeField: string; nameField?: string; autoWidth?: boolean; excludeValues?: any[] }) {
   const [open, setOpen] = useState(false)
   const [searchText, setSearchText] = useState('')
   const ref = useRef(null)
@@ -1625,7 +1625,8 @@ function ExceptionTab({ list, setList, devices, isEditable, reportOrderId, repor
     input.accept = 'image/*'
     input.multiple = true
     input.onchange = async (e) => {
-      const files = Array.from(e.target.files || [])
+      const target = e.target as HTMLInputElement
+      const files = Array.from(target.files || [])
       if (files.length === 0) return
       if (!reportNo) {
         Toast.show({ icon: 'fail', content: '报工单号不存在，无法上传' })
