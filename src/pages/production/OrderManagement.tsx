@@ -8,6 +8,7 @@ import {
   SendOutlined, ClockCircleOutlined, CheckCircleOutlined, SyncOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
+import type { ColumnsType } from 'antd/es/table'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 import { formatVersionNo, formatDateTime, formatDate } from '../../utils'
@@ -87,7 +88,7 @@ export default function OrderManagement() {
         setRangeWarn(false)
       }
       try {
-        const params = { page: query.page, pageSize: query.pageSize }
+        const params: Record<string, unknown> = { page: query.page, pageSize: query.pageSize }
         if (query.keyword) params.keyword = query.keyword
         if (query.materialCode) params.materialCode = query.materialCode
         if (query.status && query.status.length > 0) params.status = query.status.join(',')
@@ -513,7 +514,7 @@ export default function OrderManagement() {
     return <Button type="link" size="small" onClick={() => handleView(r)}>查看</Button>
   }
 
-  const columns = [
+  const columns: ColumnsType<any> = [
     { title: '订单编号', dataIndex: 'order_no', key: 'order_no', width: 160, fixed: 'left' as const },
     { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 130, fixed: 'left' as const },
     { title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 200, render: (text) => <div style={{ wordBreak: 'break-word', whiteSpace: 'normal' }}>{text}</div> },

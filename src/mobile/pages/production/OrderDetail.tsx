@@ -348,7 +348,7 @@ export default function OrderDetail() {
                 color="primary"
                 size="large"
                 loading={starting}
-                onClick={handleStart}
+                onClick={() => { void handleStart() }}
                 style={{ borderRadius: 8, height: 44, flex: 2 }}
               >
                 确认开工

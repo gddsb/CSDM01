@@ -19,6 +19,7 @@ import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { generateReportOrderNo } from '../utils/sequence.js'
 import { logger } from '../utils/logger.js'
 import { nowBeijingDateStr, nowBeijingDate, formatDateTime } from '../utils/date.js'
+import { ReportWorkflowService } from '../services/ProductionWorkflowService.js'
 
 // 报工单状态: 0=开工, 1=完工, 2=关闭
 const statusMap = { '开工': 0, '完工': 1, '关闭': 2 }
@@ -115,68 +116,11 @@ async function syncReportProcesses(reportOrderId: number, lineId: number, transa
 }
 
 /**
- * 检查并联动更新订单状态
- * - 报工单创建后：若订单为"下发"，自动转为"开工"
- * - 报工单完工后：若该订单下所有报工单均"完工" 且 完工数量 >= 计划数量，订单自动转为"完工"
- * - 报工单删除后：若无剩余报工单且订单为"开工"，可回退为"下发"
+ * 报工单与订单状态联动逻辑已迁移至 ReportWorkflowService。
+ * 保留该导出以兼容模块内历史调用。
  */
 export async function syncOrderStatus(orderId: number, transaction?: any) {
-  const opts = transaction ? { transaction, lock: transaction.LOCK ? transaction.LOCK.UPDATE : undefined } : {}
-  const countOpts = transaction ? { transaction } : {}
-
-  const order = await Order.findOne({ where: { order_id: orderId }, ...opts })
-  if (!order) return
-
-  const statusVal = order.getDataValue('status')
-  const plannedQty = Number(order.getDataValue('planned_qty') || 0)
-
-  const total = await ReportOrder.count({
-    where: { order_id: orderId },
-    ...countOpts,
-  })
-  const finishedCount = await ReportOrder.count({
-    where: { order_id: orderId, status: 1 },
-    ...countOpts,
-  })
-  const finishedRows = await ReportOrder.findAll({
-    where: { order_id: orderId, status: 1 },
-    attributes: [[sequelize.fn('SUM', sequelize.col('report_qty')), 'finished_sum']],
-    ...countOpts,
-    raw: true,
-  })
-  const finishedSum = Number(finishedRows[0]?.finished_sum || 0)
-
-  if (total > 0 && statusVal === 1) {
-    await order.update({ status: 2 }, { transaction })
-    return
-  }
-
-  // 有未完工报工单时，订单状态从"完工"回退为"开工"（关闭状态不回退）
-  if (total > 0 && finishedCount < total && (statusVal === 3)) {
-    await order.update({ status: 2 }, { transaction })
-    return
-  }
-
-  // 所有报工单都完工时，订单自动转为"完工"
-  if (total > 0 && finishedCount === total && statusVal === 2) {
-    await order.update({ status: 3, close_time: nowBeijingDate() }, { transaction })
-    // 额外规则：订单完工且完工数量 >= 计划数量时，自动变为关闭
-    if (finishedSum >= plannedQty) {
-      await order.update({ status: 4 }, { transaction })
-    }
-    return
-  }
-
-  // 如果订单已处于"完工"状态，检查完工数量是否 >= 计划数量，若是则自动关闭
-  if (statusVal === 3 && finishedSum >= plannedQty) {
-    await order.update({ status: 4 }, { transaction })
-    return
-  }
-
-  if (total === 0 && statusVal === 2) {
-    await order.update({ status: 1, release_time: order.release_time || nowBeijingDate() }, { transaction })
-    return
-  }
+  return ReportWorkflowService.syncOrderStatus(orderId, transaction)
 }
 
 // 报工单列表
@@ -528,248 +472,29 @@ export const remove = async (req, res) => {
 //  7. 异常工时记录填写完整
 export const finish = async (req, res) => {
   try {
-    const { id } = req.params
-    const reportOrderId = Number(id)
-
-    const processCount = await ReportProcess.count({ where: { report_order_id: reportOrderId } })
-    const openExceptionCount = await ProcessException.count({
-      where: { report_order_id: reportOrderId, end_time: null },
-    })
-    if (processCount === 0) {
-      return fail(res, '报工单无工序记录，不允许完工', ErrorCode.BUSINESS_ERROR)
-    }
-    if (openExceptionCount > 0) {
-      return fail(res, `存在 ${openExceptionCount} 条未关闭的异常记录，请先关闭后再完工`, ErrorCode.BUSINESS_ERROR)
-    }
-
-    // 必须报工(must_report=1)的工序：必须有不良记录
-    const mustReportProcesses = await ReportProcess.findAll({
-      where: { report_order_id: reportOrderId, must_report: 1 },
-      attributes: ['process_id', 'process_code', 'process_name'],
-    })
-    for (const mp of mustReportProcesses) {
-      const defectCount = await ProcessDefect.count({
-        where: { report_order_id: reportOrderId, process_id: mp.process_id },
-      })
-      if (defectCount === 0) {
-        return fail(res, `必须报工工序「${mp.process_name}(${mp.process_code})」缺少：不良记录`, ErrorCode.BUSINESS_ERROR)
-      }
-    }
-
-    // 引入物料(has_material=1)的工序：必须有物料记录
-    const hasMaterialProcesses = await ReportProcess.findAll({
-      where: { report_order_id: reportOrderId, has_material: 1 },
-      attributes: ['process_id', 'process_code', 'process_name'],
-    })
-    for (const hp of hasMaterialProcesses) {
-      const materialCount = await ProcessMaterial.count({
-        where: { report_order_id: reportOrderId, process_id: hp.process_id },
-      })
-      if (materialCount === 0) {
-        return fail(res, `引入物料工序「${hp.process_name}(${hp.process_code})」缺少：物料记录`, ErrorCode.BUSINESS_ERROR)
-      }
-    }
-
-    const manpowerCount = await ManpowerRecord.count({ where: { report_order_id: reportOrderId } })
-    if (manpowerCount === 0) {
-      return fail(res, '人员记录不能为空，请先填写人员记录', ErrorCode.BUSINESS_ERROR)
-    }
-
-    const exceptionList = await ProcessException.findAll({
-      where: { report_order_id: reportOrderId },
-      attributes: ['exception_id', 'start_time', 'end_time', 'duration', 'exception_type'],
-    })
-    for (const exc of exceptionList) {
-      if (!exc.end_time) {
-        return fail(res, `异常记录「${exc.exception_type}」未填写恢复时间`, ErrorCode.BUSINESS_ERROR)
-      }
-      if (!exc.duration || Number(exc.duration) <= 0) {
-        return fail(res, `异常记录「${exc.exception_type}」未填写持续时长`, ErrorCode.BUSINESS_ERROR)
-      }
-    }
-
-    const reportProcesses = await ReportProcess.findAll({
-      where: { report_order_id: reportOrderId },
-      order: [['sort_order', 'ASC']],
-      attributes: ['process_id', 'sort_order'],
-    })
-    let inputQty = 0
-    if (reportProcesses.length > 0) {
-      const firstProcessId = reportProcesses[0].process_id
-      const firstProcessMaterials = await ProcessMaterial.findAll({
-        where: { report_order_id: reportOrderId, process_id: firstProcessId },
-        attributes: ['material_type', 'quantity'],
-      })
-      const investQty = firstProcessMaterials
-        .filter(m => m.material_type === '投入')
-        .reduce((sum, m) => sum + (Number(m.quantity) || 0), 0)
-      const returnQty = firstProcessMaterials
-        .filter(m => m.material_type === '退回')
-        .reduce((sum, m) => sum + (Number(m.quantity) || 0), 0)
-      inputQty = investQty - returnQty
-    }
-
-    const allDefects = await ProcessDefect.findAll({
-      where: { report_order_id: reportOrderId },
-      attributes: ['quantity'],
-      include: [{
-        model: DefectType,
-        as: 'defect_type',
-        attributes: ['defect_type'],
-        required: false,
-      }],
-    })
-    const defectQty = allDefects
-      .filter(d => {
-        const dt = (d as any).defect_type?.defect_type
-        return dt !== '检验报废'
-      })
-      .reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
-    const scrapQty = allDefects
-      .filter(d => (d as any).defect_type?.defect_type === '检验报废')
-      .reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
-
-    const expectedOutput = inputQty - defectQty - scrapQty
-    const reportOrderRecord = await ReportOrder.findOne({
-      where: { report_order_id: reportOrderId },
-      attributes: ['report_qty'],
-    })
-    const actualOutput = Number(reportOrderRecord?.getDataValue('report_qty') || 0)
-    const outputDiff = actualOutput - expectedOutput
-    if (inputQty > 0 && outputDiff < 0) {
-      return fail(res, `投入产出不平衡：投入${inputQty} - 不良${defectQty} - 检验报废${scrapQty} = 预计产出${expectedOutput}，实际报工产出${actualOutput}，实际产出不能少于预计产出`, ErrorCode.BUSINESS_ERROR)
-    }
-
-    const result = await sequelize.transaction(async (t) => {
-      const reportOrder = await ReportOrder.findOne({
-        where: { report_order_id: id },
-        transaction: t,
-        lock: t.LOCK.UPDATE,
-      })
-      if (!reportOrder) {
-        const err: any = new Error('报工单不存在')
-        err.code = ErrorCode.RECORD_NOT_FOUND
-        throw err
-      }
-      if (reportOrder.getDataValue('status') !== 0) {
-        const err: any = new Error('当前报工单状态不允许完工')
-        err.code = ErrorCode.BUSINESS_ERROR
-        throw err
-      }
-
-      const order = await Order.findOne({
-        where: { order_id: reportOrder.order_id },
-        transaction: t,
-        lock: t.LOCK.UPDATE,
-      })
-
-      await reportOrder.update({
-        status: 1,
-        finish_time: nowBeijingDate(),
-        finish_user_id: req.user?.userId || null,
-        finish_user_name: req.user?.username || null,
-      }, { transaction: t })
-
-      if (order) {
-        const finishedRows = await ReportOrder.findAll({
-          where: { order_id: order.order_id, status: 1 },
-          attributes: [[sequelize.fn('SUM', sequelize.col('report_qty')), 'finished_sum']],
-          transaction: t,
-          raw: true,
-        })
-        const finishedSum = Number(finishedRows[0]?.finished_sum || 0)
-        await order.update({ finished_qty: finishedSum }, { transaction: t })
-      }
-
-      await syncOrderStatus(reportOrder.order_id, t)
-
-      return reportOrder
-    })
-
-    logger.info('[ReportOrder.finish] 报工单完工成功', { report_order_id: id, order_id: result.order_id, report_order_no: result.report_order_no, user: req.user?.username })
-    const fullResultFinish = await getReportOrderWithOrder(id)
-    return success(res, fullResultFinish || result, '报工单已完工')
+    const result = await ReportWorkflowService.finish(Number(req.params.id), req.user)
+    const fullResult = await getReportOrderWithOrder(Number(req.params.id))
+    return success(res, fullResult || result, '报工单已完工')
   } catch (err: any) {
-    if (err && err.code) {
-      return fail(res, err.message, err.code)
-    }
+    if (err?.code) return fail(res, err.message, err.code)
     console.error('完工报工单失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
 // 关闭报工单（开工 → 完工）
-// 关闭校验：无不良记录、无物料使用记录、无检验报废记录
 export const close = async (req, res) => {
   try {
-    const { id } = req.params
-    const reportOrderId = Number(id)
-
-    const defectCount = await ProcessDefect.count({ where: { report_order_id: reportOrderId } })
-    const materialCount = await ProcessMaterial.count({ where: { report_order_id: reportOrderId } })
-
-    const scrapCount = await ProcessDefect.count({
-      where: { report_order_id: reportOrderId },
-      include: [{
-        model: DefectType,
-        as: 'defect_type',
-        attributes: [],
-        where: { defect_type: '检验报废' },
-        required: true,
-      }],
-    })
-
-    if (defectCount > 0) {
-      return fail(res, `该报工单存在 ${defectCount} 条不良记录，不允许关闭`, ErrorCode.BUSINESS_ERROR)
-    }
-    if (materialCount > 0) {
-      return fail(res, `该报工单存在 ${materialCount} 条物料使用记录，不允许关闭`, ErrorCode.BUSINESS_ERROR)
-    }
-    if (scrapCount > 0) {
-      return fail(res, `该报工单存在 ${scrapCount} 条检验报废记录，不允许关闭`, ErrorCode.BUSINESS_ERROR)
-    }
-
-    const result = await sequelize.transaction(async (t) => {
-      const reportOrder = await ReportOrder.findOne({
-        where: { report_order_id: id },
-        transaction: t,
-        lock: t.LOCK.UPDATE,
-      })
-      if (!reportOrder) {
-        const err: any = new Error('报工单不存在')
-        err.code = ErrorCode.RECORD_NOT_FOUND
-        throw err
-      }
-      const statusVal = reportOrder.getDataValue('status')
-      if (statusVal === 1) {
-        const err: any = new Error('报工单已完工')
-        err.code = ErrorCode.BUSINESS_ERROR
-        throw err
-      }
-
-      await reportOrder.update({
-        status: 1,
-        close_time: nowBeijingDate(),
-        close_user_id: req.user?.userId || null,
-        close_user_name: req.user?.username || null,
-      }, { transaction: t })
-
-      await syncOrderStatus(reportOrder.order_id, t)
-
-      return reportOrder
-    })
-
-    logger.info('[ReportOrder.close] 报工单关闭成功', { report_order_id: id, order_id: result.order_id, report_order_no: result.report_order_no, user: req.user?.username })
-    const fullResultClose = await getReportOrderWithOrder(id)
-    return success(res, fullResultClose || result, '报工单已关闭')
+    const result = await ReportWorkflowService.close(Number(req.params.id), req.user)
+    const fullResult = await getReportOrderWithOrder(Number(req.params.id))
+    return success(res, fullResult || result, '报工单已关闭')
   } catch (err: any) {
-    if (err && err.code) {
-      return fail(res, err.message, err.code)
-    }
+    if (err?.code) return fail(res, err.message, err.code)
     console.error('关闭报工单失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
+
 
 // 获取报工单工序列表（继承自产线工序表）
 export const getProcesses = async (req, res) => {

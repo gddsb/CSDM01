@@ -9,6 +9,7 @@ import {
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import { formatDateTime } from '../../utils'
 import api from '../../utils/api'
 import { MONTH_QUICK_OPTIONS, getMonthRange, validateRange } from '../../utils/monthQuick'
@@ -151,7 +152,7 @@ export default function ProductInspection() {
   const processCount = summaryStats.process ?? 0
   const finishedCount = summaryStats.finished ?? 0
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '检验总数', value: totalCount, icon: <ExperimentOutlined />, color: '#2196F3' },
     { label: '首件', value: firstPieceCount, icon: <ExperimentOutlined />, color: '#1890FF' },
     { label: '制程', value: processCount, icon: <ExperimentOutlined />, color: '#722ED1' },
@@ -353,7 +354,7 @@ export default function ProductInspection() {
     },
     { title: '工单编号', dataIndex: 'report_order_no', key: 'report_order_no' },
     { title: '料号', dataIndex: 'material_code', key: 'material_code' },
-    { title: '产品名称', dataIndex: 'material_name', key: 'material_name', onCell: () => ({ style: { whiteSpace: 'normal', wordBreak: 'break-all', lineHeight: '22px' } }) },
+    { title: '产品名称', dataIndex: 'material_name', key: 'material_name', onCell: () => ({ style: { whiteSpace: 'normal', wordBreak: 'break-all' as const, lineHeight: '22px' } }) },
     { title: '规格', dataIndex: 'specification', key: 'specification' },
     {
       title: '结果', dataIndex: 'result', key: 'result',

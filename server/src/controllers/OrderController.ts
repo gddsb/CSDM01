@@ -4,6 +4,7 @@ import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { generateOrderNo } from '../utils/sequence.js'
 import { logger } from '../utils/logger.js'
 import { nowBeijingDate, parseDateOnly, parseDateTime } from '../utils/date.js'
+import { OrderWorkflowService } from '../services/ProductionWorkflowService.js'
 
 // 订单状态: 0=开立, 1=下发, 2=开工, 3=完工, 4=关闭
 const statusMap = { '开立': 0, '下发': 1, '开工': 2, '完工': 3, '关闭': 4 }
@@ -237,43 +238,22 @@ export const remove = async (req, res) => {
 // 下发订单（开立 → 下发）
 export const release = async (req, res) => {
   try {
-    const { id } = req.params
-    const order = await Order.findOne({ where: { order_id: id } })
-    if (!order) return fail(res, '订单不存在', ErrorCode.RECORD_NOT_FOUND)
-
-    const statusVal = order.getDataValue('status')
-    const releaseTime = order.getDataValue('release_time')
-
-    if (statusVal >= 1 && releaseTime) {
-      logger.warn('[Order.release] 幂等命中：订单已下发', { order_id: id, order_no: order.getDataValue('order_no') })
-      return success(res, order, '订单已下发')
-    }
-
-    if (statusVal !== 0) return fail(res, '只有开立状态的订单可以下发', ErrorCode.BUSINESS_ERROR)
-    await order.update({ status: 1, release_time: nowBeijingDate() })
-    logger.info('[Order.release] 订单下发成功', { order_id: id, order_no: order.getDataValue('order_no'), user: (req as any).user?.username })
+    const order = await OrderWorkflowService.release(req.params.id, req.user)
     return success(res, order, '订单已下发')
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.code) return fail(res, err.message, err.code)
     console.error('下发订单失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
 
 // 关闭订单（强制归档，不可逆；"下发""完工"状态可关闭）
-// 业务规则：订单"开工""完工"由报工单自动联动，"关闭"为最终归档状态
 export const close = async (req, res) => {
   try {
-    const { id } = req.params
-    const order = await Order.findOne({ where: { order_id: id } })
-    if (!order) return fail(res, '订单不存在', ErrorCode.RECORD_NOT_FOUND)
-    const statusVal = order.getDataValue('status')
-    if (statusVal === 0) return fail(res, '开立状态的订单请直接下发或删除，不能关闭')
-    if (statusVal === 2) return fail(res, '开工状态的订单不能关闭，请先完工')
-    if (statusVal === 4) return fail(res, '订单已关闭')
-    await order.update({ status: 4, close_time: nowBeijingDate() })
-    logger.info('[Order.close] 订单关闭成功', { order_id: id, order_no: order.getDataValue('order_no'), user: (req as any).user?.username })
+    const order = await OrderWorkflowService.close(req.params.id, req.user)
     return success(res, order, '订单已关闭')
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.code) return fail(res, err.message, err.code)
     console.error('关闭订单失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
@@ -282,16 +262,10 @@ export const close = async (req, res) => {
 // 完工订单（开工 → 完工）
 export const finish = async (req, res) => {
   try {
-    const { id } = req.params
-    const order = await Order.findOne({ where: { order_id: id } })
-    if (!order) return fail(res, '订单不存在', ErrorCode.RECORD_NOT_FOUND)
-    const statusVal = order.getDataValue('status')
-    if (statusVal === 3) return success(res, order, '订单已完工')
-    if (statusVal !== 2) return fail(res, '只有开工状态的订单可以完工', ErrorCode.BUSINESS_ERROR)
-    await order.update({ status: 3, close_time: nowBeijingDate() })
-    logger.info('[Order.finish] 订单完工成功', { order_id: id, order_no: order.getDataValue('order_no'), user: (req as any).user?.username })
+    const order = await OrderWorkflowService.finish(req.params.id, req.user)
     return success(res, order, '订单已完工')
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.code) return fail(res, err.message, err.code)
     console.error('完工订单失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }

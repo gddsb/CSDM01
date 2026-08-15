@@ -6,6 +6,7 @@ import {
 } from '@ant-design/icons'
 import * as echarts from 'echarts'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import { devices } from '../../mock/data'
 import { MONTH_QUICK_OPTIONS, getMonthRange, validateRange, getThisMonth } from '../../utils/monthQuick'
 
@@ -82,7 +83,7 @@ export default function DeviceOEE() {
   const minDevice = oeeData.reduce((m, d) => d.oee < m.oee ? d : m, oeeData[0])
   const avgAvailability = +(oeeData.reduce((s, d) => s + d.availability, 0) / oeeData.length).toFixed(1)
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '平均OEE', value: `${avgOee}%`, icon: <DashboardOutlined />, color: '#2196F3' },
     { label: `最高OEE · ${maxDevice.device_name}`, value: `${maxDevice.oee}%`, icon: <ArrowUpOutlined />, color: '#4CAF50' },
     { label: `最低OEE · ${minDevice.device_name}`, value: `${minDevice.oee}%`, icon: <ArrowDownOutlined />, color: '#F44336' },
@@ -94,7 +95,7 @@ export default function DeviceOEE() {
     setDateRange(getThisMonth())
   }
 
-  const filters = [
+  const filters: FilterItem[] = [
     { type: 'select', placeholder: '快速选择月份', options: MONTH_QUICK_OPTIONS, value: monthQuick || undefined, onChange: handleMonthQuick, col: { span: 6 } },
     { type: 'rangepicker', value: dateRange, onChange: handleRangeChange, col: { span: 8 } },
   ]

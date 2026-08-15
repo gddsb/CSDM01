@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { Table, Tag, Button, Select, DatePicker, Input, Space } from 'antd'
 import { BugOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 import { useMessage } from '../../contexts/AppContext'
 import dayjs from 'dayjs'
@@ -90,14 +91,14 @@ export default function SystemLogs() {
     setQuery(q => ({ ...q, page: 1, keyword: '', level: '', dateStart: '', dateEnd: '' }))
   }
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '日志总条数', value: total, icon: <BugOutlined />, color: '#2196F3' },
   ]
 
-  const filters = [
+  const filters: FilterItem[] = [
     {
       type: 'select', placeholder: '日志级别', col: { span: 4 },
-      options: levelOptions, value: levelInput, onChange: v => setLevelInput(v),
+      options: levelOptions, value: levelInput, onChange: (v) => setLevelInput(v as string),
     },
     {
       type: 'rangepicker', col: { span: 6 },
@@ -105,7 +106,7 @@ export default function SystemLogs() {
     },
     {
       type: 'input', placeholder: '搜索关键词', col: { span: 6 },
-      value: keywordInput, onChange: e => setKeywordInput(e.target.value),
+      value: keywordInput, onChange: (e) => setKeywordInput((e as React.ChangeEvent<HTMLInputElement>).target.value),
       prefix: <SearchOutlined />,
     },
   ]

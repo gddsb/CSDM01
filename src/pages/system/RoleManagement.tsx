@@ -6,6 +6,7 @@ import {
   PlusOutlined, ReloadOutlined, SafetyOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 import { useMessage, useApp } from '../../contexts/AppContext'
 
@@ -84,14 +85,14 @@ export default function RoleManagement() {
   const [permModalVisible, setPermModalVisible] = useState(false)
   const [permRole, setPermRole] = useState(null)
   const [permissions, setPermissions] = useState([])
-  const [checkedKeys, setCheckedKeys] = useState([])
+  const [checkedKeys, setCheckedKeys] = useState<React.Key[] | { checked: React.Key[]; halfChecked: React.Key[] }>([])
   const [permLoading, setPermLoading] = useState(false)
   const [permSaving, setPermSaving] = useState(false)
 
   const defaultCount = data.filter(r => r.type === '系统默认').length
   const optionalCount = data.filter(r => r.type === '可选').length
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '角色总数', value: total, icon: <SafetyCertificateOutlined />, color: '#2196F3' },
     { label: '系统默认角色', value: defaultCount, icon: <ApartmentOutlined />, color: '#FF9800' },
     { label: '可选角色', value: optionalCount, icon: <SafetyOutlined />, color: '#4CAF50' },
@@ -105,7 +106,7 @@ export default function RoleManagement() {
     const run = async () => {
       setLoading(true)
       try {
-        const params = { page: query.page, pageSize: query.pageSize }
+        const params: Record<string, unknown> = { page: query.page, pageSize: query.pageSize }
         if (query.keyword) params.keyword = query.keyword
         if (query.status !== undefined && query.status !== null) params.status = query.status
         const res = await api.get('/system/roles', { params })
@@ -251,8 +252,8 @@ export default function RoleManagement() {
     }
   }
 
-  const filters = [
-    { type: 'input', placeholder: '搜索角色名称/编码', col: { span: 6 }, value: keywordInput, onChange: e => setKeywordInput(e.target.value) },
+  const filters: FilterItem[] = [
+    { type: 'input', placeholder: '搜索角色名称/编码', col: { span: 6 }, value: keywordInput, onChange: (e) => setKeywordInput((e as React.ChangeEvent<HTMLInputElement>).target.value) },
     {
       type: 'select', placeholder: '状态筛选', col: { span: 6 },
       options: statusOptions, value: statusInput, onChange: v => setStatusInput(v),

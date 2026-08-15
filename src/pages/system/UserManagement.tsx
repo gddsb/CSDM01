@@ -6,6 +6,7 @@ import {
   PlusOutlined, ReloadOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 import { useMessage, useApp } from '../../contexts/AppContext'
 
@@ -57,7 +58,7 @@ export default function UserManagement() {
 
   const [query, setQuery] = useState<QueryParams>({ page: 1, pageSize: 30, keyword: '', status: undefined, role_id: undefined })
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '总用户数', value: total, icon: <TeamOutlined />, color: '#2196F3' },
     { label: '启用用户', value: data.filter(u => u.status === '启用').length, icon: <CheckCircleOutlined />, color: '#4CAF50' },
     { label: '禁用用户', value: data.filter(u => u.status === '禁用').length, icon: <StopOutlined />, color: '#F44336' },
@@ -209,7 +210,7 @@ export default function UserManagement() {
     }
   }
 
-  const filters = [
+  const filters: FilterItem[] = [
     { type: 'input', placeholder: '搜索用户名/姓名/工号', col: { span: 6 }, value: keywordInput, onChange: (e: React.ChangeEvent<HTMLInputElement>) => setKeywordInput(e.target.value) },
     { type: 'select', placeholder: '角色筛选', options: roleOptions, col: { span: 6 }, value: roleInput, onChange: (v: number | undefined) => setRoleInput(v) },
     {

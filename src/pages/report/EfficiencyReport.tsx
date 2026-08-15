@@ -8,6 +8,7 @@ import {
 import dayjs from 'dayjs'
 import * as echarts from 'echarts'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import api, { extractList } from '../../utils/api'
 import { processReports as mockProcessReports } from '../../mock/data'
 
@@ -114,7 +115,6 @@ export default function EfficiencyReport() {
       message.error(err.message || '加载数据失败')
     } finally {
       setLoading(false)
-      setRangeWarn(false)
     }
   }
 
@@ -220,7 +220,7 @@ export default function EfficiencyReport() {
   const totalWorkers = filtered.reduce((s, l) => s + l.workerCount, 0)
   const perCapita = totalWorkers > 0 ? Math.round(totalOutputAll / totalWorkers) : 0
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '平均OEE', value: `${avgOee}%`, icon: <ThunderboltOutlined />, color: '#9C27B0' },
     { label: '平均生产效率', value: `${avgEfficiency}%`, icon: <DashboardOutlined />, color: '#2196F3' },
     { label: '设备故障率', value: `${faultRate}%`, icon: <ToolOutlined />, color: '#FF9800' },

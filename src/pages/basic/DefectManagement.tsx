@@ -7,6 +7,7 @@ import {
   UploadOutlined, PictureOutlined, SearchOutlined, ReloadOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 import { useMessage } from '../../contexts/AppContext'
 
@@ -106,13 +107,13 @@ export default function DefectManagement() {
     const run = async () => {
       setLoading(true)
       try {
-        const params = { page: query.page, pageSize: query.pageSize }
+        const params: Record<string, unknown> = { page: query.page, pageSize: query.pageSize }
         if (query.keyword) params.keyword = query.keyword
         if (query.category_name) params.category_name = query.category_name
         if (query.defect_type) params.defect_type = query.defect_type
         if (Array.isArray(query.display)) {
           if (query.display.length === 1) params.display = query.display[0]
-        } else if (query.display !== undefined && query.display !== null && query.display !== '') {
+        } else if (query.display !== undefined && query.display !== null) {
           params.display = query.display
         }
         if (query.status !== undefined && query.status !== null && query.status !== '') params.status = query.status
@@ -511,7 +512,7 @@ export default function DefectManagement() {
   const processCount = data.filter(d => d.defect_type === '制程不良').length
   const scrapCount = data.filter(d => d.defect_type === '检验报废').length
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '来料不良数', value: incomingCount, icon: <ImportOutlined />, color: '#2196F3' },
     { label: '制程不良数', value: processCount, icon: <ToolOutlined />, color: '#FF9800' },
     { label: '检验报废数', value: scrapCount, icon: <DeleteOutlined />, color: '#F44336' },

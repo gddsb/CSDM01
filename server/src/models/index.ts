@@ -83,8 +83,8 @@ ProcessException.belongsTo(ReportOrder, { foreignKey: 'report_order_id', as: 're
 ReportOrder.hasMany(ProcessMaterial, { foreignKey: 'report_order_id', as: 'process_materials' })
 ProcessMaterial.belongsTo(ReportOrder, { foreignKey: 'report_order_id', as: 'report_order' })
 
-// 报工物料 - 基础料品（bas_material_id 为字符串类型，与 material_id 整数类型不兼容，禁用 FK 约束）
-ProcessMaterial.belongsTo(Material, { foreignKey: 'bas_material_id', as: 'bas_material', constraints: false })
+// 报工物料 - 基础料品（bas_material_id 与 bas_material.material_id 均为 CHAR(36) UUID）
+ProcessMaterial.belongsTo(Material, { foreignKey: 'bas_material_id', as: 'bas_material', constraints: true, onDelete: 'SET NULL', onUpdate: 'CASCADE' })
 
 // 报工单 - 报工图片记录（一对多）
 ReportOrder.hasMany(ReportImage, { foreignKey: 'report_order_id', as: 'report_images' })

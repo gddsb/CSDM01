@@ -23,7 +23,7 @@ const ProcessMaterial = sequelize.define('ProcessMaterial', {
     comment: '物料类型',
   },
   bas_material_id: {
-    type: DataTypes.STRING,
+    type: DataTypes.CHAR(36),
     comment: '关联基础料品表ID',
   },
   material_batch: {

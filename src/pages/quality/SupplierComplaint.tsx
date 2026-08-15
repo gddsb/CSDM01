@@ -6,6 +6,7 @@ import {
   FilePdfOutlined, SearchOutlined
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import { supplierComplaints, incomingInspections } from '../../mock/data'
 import { MONTH_QUICK_OPTIONS, getMonthRange, validateRange, getThisMonth } from '../../utils/monthQuick'
 import dayjs from 'dayjs'
@@ -58,7 +59,7 @@ export default function SupplierComplaint() {
   const repliedCount = filteredData.filter((s: any) => s.status === '已回复').length
   const closedCount = filteredData.filter((s: any) => s.status === '已关闭').length
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '总投诉数', value: filteredData.length, icon: <WarningOutlined />, color: '#2196F3' },
     { label: '已发出', value: sentCount, icon: <SendOutlined />, color: '#FF9800' },
     { label: '已回复', value: repliedCount, icon: <MessageOutlined />, color: '#00BCD4' },
@@ -95,7 +96,7 @@ export default function SupplierComplaint() {
   }
 
   const columns = [
-    { title: '投诉编号', dataIndex: 'complaint_no', key: 'complaint_no', width: 140, fixed: 'left' as const as const },
+    { title: '投诉编号', dataIndex: 'complaint_no', key: 'complaint_no', width: 140, fixed: 'left' as const },
     { title: '供应商', dataIndex: 'supplier_name', key: 'supplier_name', width: 120 },
     { title: '投诉类型', dataIndex: 'complaint_type', key: 'complaint_type', width: 110 },
     { title: '投诉原因', dataIndex: 'complaint_reason', key: 'complaint_reason', width: 260 },

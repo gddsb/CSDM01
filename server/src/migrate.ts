@@ -352,11 +352,107 @@ export async function runMigrations() {
   // 3. 删除废弃字段（必须在新增 report_order_id 后才能删除旧外键字段）
   await dropObsoleteColumns()
 
-  // 4. 执行 SQL 目录中的迁移（如外键补充）
-  await runSqlMigrations()
+  // 4. 执行 SQL 目录中的迁移（幂等补充核心外键）
+  await ensureCoreForeignKeys()
 
   // 5. 补齐高频查询字段的性能索引（幂等）
   await ensurePerformanceIndexes()
+}
+
+// 判断约束是否已存在
+async function constraintExists(table: string, name: string): Promise<boolean> {
+  const [rows] = await sequelize.query(
+    `SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table AND CONSTRAINT_NAME = :name LIMIT 1`,
+    { replacements: { table, name }, type: QueryTypes.SELECT }
+  )
+  return (rows as unknown[]).length > 0
+}
+
+async function ensureCoreForeignKeys(): Promise<void> {
+  if (sequelize.getDialect() !== 'mysql') return
+  const statements: Array<{ table: string; name: string; ddl: (name: string) => string }> = [
+    {
+      table: 'production_report_process',
+      name: 'fk_rpp_process',
+      ddl: (n) =>
+        `ALTER TABLE production_report_process ADD CONSTRAINT ${n} FOREIGN KEY (process_id) REFERENCES master_process(process_id) ON DELETE RESTRICT ON UPDATE CASCADE`,
+    },
+    {
+      table: 'production_process_defect',
+      name: 'fk_ppd_process',
+      ddl: (n) =>
+        `ALTER TABLE production_process_defect ADD CONSTRAINT ${n} FOREIGN KEY (process_id) REFERENCES master_process(process_id) ON DELETE RESTRICT ON UPDATE CASCADE`,
+    },
+    {
+      table: 'production_process_material',
+      name: 'fk_ppm_process',
+      ddl: (n) =>
+        `ALTER TABLE production_process_material ADD CONSTRAINT ${n} FOREIGN KEY (process_id) REFERENCES master_process(process_id) ON DELETE RESTRICT ON UPDATE CASCADE`,
+    },
+    {
+      table: 'production_process_material',
+      name: 'fk_ppm_bas_material',
+      ddl: (n) =>
+        `ALTER TABLE production_process_material ADD CONSTRAINT ${n} FOREIGN KEY (bas_material_id) REFERENCES bas_material(material_id) ON DELETE SET NULL ON UPDATE CASCADE`,
+    },
+    {
+      table: 'production_process_exception',
+      name: 'fk_ppe_report',
+      ddl: (n) =>
+        `ALTER TABLE production_process_exception ADD CONSTRAINT ${n} FOREIGN KEY (report_order_id) REFERENCES production_report_order(report_order_id) ON DELETE CASCADE ON UPDATE CASCADE`,
+    },
+    {
+      table: 'production_report_order',
+      name: 'fk_pro_line',
+      ddl: (n) =>
+        `ALTER TABLE production_report_order ADD CONSTRAINT ${n} FOREIGN KEY (line_id) REFERENCES master_production_line(line_id) ON DELETE RESTRICT ON UPDATE CASCADE`,
+    },
+    {
+      table: 'master_device',
+      name: 'fk_device_line',
+      ddl: (n) =>
+        `ALTER TABLE master_device ADD CONSTRAINT ${n} FOREIGN KEY (line_id) REFERENCES master_production_line(line_id) ON DELETE SET NULL ON UPDATE CASCADE`,
+    },
+    {
+      table: 'quality_microbe_inspection',
+      name: 'fk_micro_order',
+      ddl: (n) =>
+        `ALTER TABLE quality_microbe_inspection ADD CONSTRAINT ${n} FOREIGN KEY (order_id) REFERENCES production_order(order_id) ON DELETE SET NULL ON UPDATE CASCADE`,
+    },
+    {
+      table: 'quality_microbe_inspection',
+      name: 'fk_micro_report',
+      ddl: (n) =>
+        `ALTER TABLE quality_microbe_inspection ADD CONSTRAINT ${n} FOREIGN KEY (report_order_id) REFERENCES production_report_order(report_order_id) ON DELETE SET NULL ON UPDATE CASCADE`,
+    },
+    {
+      table: 'sys_operation_log',
+      name: 'fk_oplog_user',
+      ddl: (n) =>
+        `ALTER TABLE sys_operation_log ADD CONSTRAINT ${n} FOREIGN KEY (user_id) REFERENCES sys_user(user_id) ON DELETE CASCADE ON UPDATE CASCADE`,
+    },
+  ]
+
+  // 先统一字段类型与字符集，避免外键因 collation/类型不兼容而失败
+  try {
+    await sequelize.query(
+      `ALTER TABLE production_process_material MODIFY COLUMN bas_material_id CHAR(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '关联基础料品表ID'`
+    )
+  } catch (err) {
+    console.warn('  ⚠️ 统一 bas_material_id 类型失败:', err?.message)
+  }
+
+  for (const item of statements) {
+    try {
+      if (!(await tableExists(item.table))) continue
+      if (await constraintExists(item.table, item.name)) continue
+      await sequelize.query(item.ddl(item.name))
+      console.log(`  🔗 ${item.table}.${item.name}`)
+    } catch (err) {
+      console.warn(`  ⚠️ 外键 ${item.table}.${item.name} 创建失败:`, err?.message)
+    }
+  }
 }
 
 // 记录已执行的 SQL 迁移

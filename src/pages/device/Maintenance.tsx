@@ -6,6 +6,7 @@ import {
   ExportOutlined, ReloadOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import { devices } from '../../mock/data'
 import { useMessage } from '../../contexts/AppContext'
 import { MONTH_QUICK_OPTIONS, getMonthRange, validateRange, getThisMonth } from '../../utils/monthQuick'
@@ -94,14 +95,14 @@ export default function Maintenance() {
   const repairingCount = data.filter(r => r.mt_type === '故障维修' && r.status !== '已完成').length
   const repairCost = data.filter(r => r.mt_type === '故障维修').reduce((s, r) => s + (r.cost || 0), 0)
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '本月保养次数', value: maintainCount, icon: <ScheduleOutlined />, color: '#2196F3' },
     { label: '待保养设备', value: pendingDevices, icon: <ClockCircleOutlined />, color: '#FF9800' },
     { label: '维修中', value: repairingCount, icon: <ToolOutlined />, color: '#F44336' },
     { label: '本月维修费用', value: `¥${repairCost.toLocaleString()}`, icon: <DollarOutlined />, color: '#4CAF50' },
   ]
 
-  const filters = [
+  const filters: FilterItem[] = [
     { type: 'select', placeholder: '选择设备', options: deviceOptions, value: deviceFilter, onChange: setDeviceFilter, col: { span: 3 } },
     { type: 'select', placeholder: '维护类型', options: typeOptions, value: typeFilter, onChange: setTypeFilter, col: { span: 3 } },
     { type: 'select', placeholder: '状态', options: statusOptions, value: statusFilter, onChange: setStatusFilter, col: { span: 3 } },

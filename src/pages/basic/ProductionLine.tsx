@@ -7,6 +7,7 @@ import {
   UnorderedListOutlined, SettingOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 import { useMessage, useApp } from '../../contexts/AppContext'
 
@@ -37,7 +38,7 @@ export default function ProductionLine() {
   const runningCount = data.filter(l => l.status === '运行中').length
   const maintenanceCount = data.filter(l => l.status === '维护中').length
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '总产线数', value: total, icon: <DeploymentUnitOutlined />, color: '#2196F3' },
     { label: '运行中', value: runningCount, icon: <PlayCircleOutlined />, color: '#4CAF50' },
     { label: '维护中', value: maintenanceCount, icon: <ToolOutlined />, color: '#FF9800' },
@@ -50,7 +51,7 @@ export default function ProductionLine() {
     const run = async () => {
       setLoading(true)
       try {
-        const params = { page: query.page, pageSize: query.pageSize }
+        const params: Record<string, unknown> = { page: query.page, pageSize: query.pageSize }
         if (query.keyword) params.keyword = query.keyword
         if (query.status !== undefined && query.status !== null) params.status = query.status
         if (query.workshop) params.workshop = query.workshop
@@ -324,8 +325,8 @@ export default function ProductionLine() {
     { title: '工序名称', dataIndex: 'process_name', key: 'process_name', width: 150 },
   ]
 
-  const filters = [
-    { type: 'input', placeholder: '搜索产线编号/名称', col: { span: 6 }, value: keywordInput, onChange: e => setKeywordInput(e.target.value) },
+  const filters: FilterItem[] = [
+    { type: 'input', placeholder: '搜索产线编号/名称', col: { span: 6 }, value: keywordInput, onChange: (e) => setKeywordInput((e as React.ChangeEvent<HTMLInputElement>).target.value) },
     {
       type: 'select', placeholder: '状态筛选', col: { span: 6 },
       options: [{ label: '运行中', value: 1 }, { label: '维护中', value: 2 }, { label: '停用', value: 0 }],

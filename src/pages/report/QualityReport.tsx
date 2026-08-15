@@ -7,6 +7,7 @@ import {
   RiseOutlined
 } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import { formatDateTime } from '../../utils'
 import api, { extractList } from '../../utils/api'
 import { MONTH_QUICK_OPTIONS, getMonthRange, validateRange, getThisMonth } from '../../utils/monthQuick'
@@ -156,7 +157,7 @@ export default function QualityReport() {
   const passRate = totalInspections > 0 ? ((passCount / (passCount + failCount || 1)) * 100).toFixed(1) : '0.0'
   const complaintCount = complaints.length
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '检验总数', value: totalInspections, icon: <ExperimentOutlined />, color: '#2196F3' },
     { label: '合格数', value: passCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
     { label: '不合格数', value: failCount, icon: <CloseCircleOutlined />, color: '#F44336' },

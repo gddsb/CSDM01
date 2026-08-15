@@ -7,7 +7,8 @@ import {
   PlusOutlined, ExportOutlined, ReloadOutlined, SearchOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
-import ThreeSectionPage, { } from '../../components/ThreeSectionPage'
+import ThreeSectionPage from '../../components/ThreeSectionPage'
+import type { StatItem } from '../../components/ThreeSectionPage'
 import { formatDateTime } from '../../utils'
 import { workOrders, processes } from '../../mock/data'
 
@@ -61,7 +62,7 @@ export default function ProcessInspection() {
   const failCount = data.filter(i => i.result === '不合格').length
   const passRate = totalCount > 0 ? ((passCount / totalCount) * 100).toFixed(1) : '0.0'
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '检验批次', value: totalCount, icon: <ExperimentOutlined />, color: '#2196F3' },
     { label: '合格批次', value: passCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
     { label: '不合格批次', value: failCount, icon: <CloseCircleOutlined />, color: '#F44336' },

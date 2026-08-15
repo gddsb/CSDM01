@@ -128,9 +128,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return nextKey
   }
 
-  const setMessageApi = (api: unknown) => { setMessageApiState(api) }
-  const setModalApi = (api: unknown) => { setModalApiState(api) }
-  const setNotificationApi = (api: unknown) => { setNotificationApiState(api) }
+  const setMessageApi = (api: MessageInstance) => { setMessageApiState(api) }
+  const setModalApi = (api: Omit<ModalStaticFunctions, 'warn'>) => { setModalApiState(api) }
+  const setNotificationApi = (api: NotificationInstance) => { setNotificationApiState(api) }
 
   const hasPermission = (permCode: string): boolean => {
     if (!currentUser) return false

@@ -6,6 +6,7 @@ import {
   EyeOutlined, SearchOutlined
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import { formatDateTime } from '../../utils'
 import { finishedInspections } from '../../mock/data'
 
@@ -45,13 +46,13 @@ export default function FinishedInspection() {
   const passCount = filteredData.filter(i => i.result === '合格').length
   const failCount = filteredData.filter(i => i.result === '不合格').length
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '总检验数', value: filteredData.length, icon: <ExperimentOutlined />, color: '#2196F3' },
     { label: '合格', value: passCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
     { label: '不合格', value: failCount, icon: <CloseCircleOutlined />, color: '#F44336' },
   ]
 
-  const filters = [
+  const filters: FilterItem[] = [
     { type: 'input', placeholder: '检验编号', icon: <SearchOutlined /> },
     { type: 'input', placeholder: '关联工单编号' },
     {

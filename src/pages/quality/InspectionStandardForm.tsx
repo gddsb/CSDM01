@@ -6,6 +6,7 @@ import { useMessage } from '../../contexts/AppContext'
 import { PlusOutlined, ArrowLeftOutlined, SaveOutlined, CheckCircleOutlined } from '@ant-design/icons'
 import api from '../../utils/api'
 import { formatDateTime } from '../../utils'
+import type { ColumnsType } from 'antd/es/table'
 
 const categoryColor: Record<string, string> = { '感官要求': 'blue', '尺寸要求': 'cyan', '理化性能要求': 'purple', '微生物检测要求': 'green', '环境检测要求': 'geekblue', '其它要求': 'default' }
 
@@ -246,7 +247,7 @@ export default function InspectionStandardForm() {
     }
   }
 
-  const itemTableColumns = [
+  const itemTableColumns: ColumnsType<any> = [
     {
       title: '项目大类', dataIndex: 'category', key: 'category', width: 100,
       render: (v: string) => <span style={{ color: categoryColor[v] || '#999' }}>{v}</span>

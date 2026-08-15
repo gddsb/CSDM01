@@ -2,6 +2,7 @@ import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import * as echarts from 'echarts'
 import { Row, Col, Tag } from 'antd'
+import type { ColumnsType } from 'antd/es/table'
 import api from '../../utils/api'
 import BigScreenHeader from '../../components/BigScreenHeader'
 import BigScreenPanel from '../../components/BigScreenPanel'
@@ -268,7 +269,7 @@ export default function ManagementBigScreen() {
     { category: '环境检验', total: envTotal, pass: envPass, fail: envTotal - envPass, pending: 0 },
   ]
 
-  const qualityColumns = [
+  const qualityColumns: ColumnsType<any> = [
     { title: '检验类别', dataIndex: 'category', key: 'category', render: v => <span style={{ color: '#00d4ff', fontWeight: 600 }}>{v}</span> },
     { title: '总数', dataIndex: 'total', key: 'total', align: 'center' },
     { title: '合格', dataIndex: 'pass', key: 'pass', align: 'center', render: v => <span style={{ color: '#3FB950' }}>{v}</span> },
@@ -280,7 +281,7 @@ export default function ManagementBigScreen() {
     },
   ]
 
-  const complaintColumns = [
+  const complaintColumns: ColumnsType<any> = [
     { title: '客诉编号', dataIndex: 'complaint_no', key: 'complaint_no', width: 120, render: (v: any, r: any) => v || r.complaint_id || '-' },
     { title: '客户', dataIndex: 'customer_name', key: 'customer_name', width: 100, render: (v: any, r: any) => v || r.customer || '-' },
     { title: '问题分类', dataIndex: 'complaint_type', key: 'complaint_type', width: 90, render: (v: any, r: any) => v || r.type || '-' },

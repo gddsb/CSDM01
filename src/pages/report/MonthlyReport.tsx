@@ -8,6 +8,7 @@ import {
 import dayjs from 'dayjs'
 import * as echarts from 'echarts'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import api, { extractList } from '../../utils/api'
 import {
   microbeInspections as mockMicrobe,
@@ -105,7 +106,7 @@ export default function MonthlyReport() {
     ? ((passCount / (passCount + failCount)) * 100).toFixed(1)
     : '0.0'
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '本月检验批次', value: totalCount, icon: <AuditOutlined />, color: '#2196F3' },
     { label: '合格批次', value: passCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
     { label: '不合格批次', value: failCount, icon: <CloseCircleOutlined />, color: '#F44336' },

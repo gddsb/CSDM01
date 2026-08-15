@@ -6,6 +6,7 @@ import {
   ExportOutlined, ReloadOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import { devices } from '../../mock/data'
 import { useMessage } from '../../contexts/AppContext'
 import { MONTH_QUICK_OPTIONS, getMonthRange, validateRange, getThisMonth } from '../../utils/monthQuick'
@@ -86,14 +87,14 @@ export default function CheckRecord() {
   const checkedToday = new Set(data.filter(r => r.check_date === LATEST_CHECK_DATE).map(r => r.device_name))
   const pendingDevices = devices.filter(d => !checkedToday.has(d.device_name)).length
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '总点检次数', value: total, icon: <FileSearchOutlined />, color: '#2196F3' },
     { label: '正常次数', value: normalCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
     { label: '异常次数', value: abnormalCount, icon: <WarningOutlined />, color: '#F44336' },
     { label: '待点检设备数', value: pendingDevices, icon: <ClockCircleOutlined />, color: '#FF9800' },
   ]
 
-  const filters = [
+  const filters: FilterItem[] = [
     { type: 'select', placeholder: '选择设备', options: deviceOptions, value: deviceFilter, onChange: setDeviceFilter, col: { span: 4 } },
     { type: 'select', placeholder: '点检结果', options: resultOptions, value: resultFilter, onChange: setResultFilter, col: { span: 4 } },
     { type: 'select', placeholder: '快速选择月份', options: MONTH_QUICK_OPTIONS, value: monthQuick || undefined, onChange: handleMonthQuick, col: { span: 4 } },

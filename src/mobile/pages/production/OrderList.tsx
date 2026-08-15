@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { PullToRefresh, InfiniteScroll, Toast, Dialog, PullToRefreshRef } from 'antd-mobile'
+import { PullToRefresh, InfiniteScroll, Toast, Dialog } from 'antd-mobile'
 import { AddOutline, SearchOutline } from 'antd-mobile-icons'
 import api from '../../../utils/api'
 import { formatDateTime } from '../../../utils'

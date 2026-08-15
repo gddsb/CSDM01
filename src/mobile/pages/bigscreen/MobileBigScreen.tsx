@@ -144,7 +144,7 @@ export default function MobileBigScreen() {
     return releasedToday || startedToday || finishedToday
   })
 
-  const noAnimation = { animation: false, animationDuration: 0, animationDurationUpdate: 0, animationEasingUpdate: 'linear' as const as const }
+  const noAnimation = { animation: false, animationDuration: 0, animationDurationUpdate: 0, animationEasingUpdate: 'linear' as const }
 
   useEffect(() => {
     if (!lineChartRef.current) return
@@ -354,7 +354,7 @@ export default function MobileBigScreen() {
             <div style={{ color: '#58A6FF', fontSize: 11, fontWeight: 600, marginBottom: 4 }}>不良统计</div>
             <div style={{ overflow: 'auto', maxHeight: 'calc(100% - 24px)' }}>
               {(() => {
-                const dist = {}
+                const dist: Record<string, number> = {}
                 dateProcessReports.forEach(r => {
                   dist['来料不良'] = (dist['来料不良'] || 0) + r.defect_material
                   dist['制程不良'] = (dist['制程不良'] || 0) + r.defect_process

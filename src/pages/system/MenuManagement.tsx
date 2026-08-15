@@ -6,6 +6,8 @@ import {
   PlusOutlined, EyeOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
+import type { ColumnsType } from 'antd/es/table'
 import api from '../../utils/api'
 import { useMessage } from '../../contexts/AppContext'
 
@@ -41,7 +43,7 @@ export default function MenuManagement() {
   // 拉取列表
   const refresh = useCallback(() => {
     setLoading(true)
-    const params = {}
+    const params: Record<string, unknown> = {}
     if (query.keyword) params.keyword = query.keyword
     if (query.status !== undefined && query.status !== null) params.status = query.status
     if (query.type) params.type = query.type
@@ -171,7 +173,7 @@ export default function MenuManagement() {
     }
   }
 
-  const columns = [
+  const columns: ColumnsType<any> = [
     { title: '菜单名称', dataIndex: 'perm_name', key: 'perm_name', width: 200 },
     { title: '权限编码', dataIndex: 'perm_code', key: 'perm_code', width: 180 },
     {
@@ -205,8 +207,8 @@ export default function MenuManagement() {
     },
   ]
 
-  const filters = [
-    { type: 'input', placeholder: '搜索菜单名称/编码/路径', col: { span: 8 }, value: keywordInput, onChange: e => setKeywordInput(e.target.value) },
+  const filters: FilterItem[] = [
+    { type: 'input', placeholder: '搜索菜单名称/编码/路径', col: { span: 8 }, value: keywordInput, onChange: (e) => setKeywordInput((e as React.ChangeEvent<HTMLInputElement>).target.value) },
     {
       type: 'select', placeholder: '类型', col: { span: 6 },
       options: typeOptions, value: typeInput, onChange: v => setTypeInput(v),
@@ -223,7 +225,7 @@ export default function MenuManagement() {
   const pageCount = countByType(data, 'page')
   const buttonCount = countByType(data, 'button')
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '菜单总数', value: total, icon: <AppstoreOutlined />, color: '#2196F3' },
     { label: '菜单项', value: menuCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
     { label: '页面/按钮', value: pageCount + buttonCount, icon: <CloseCircleOutlined />, color: '#FF9800' },

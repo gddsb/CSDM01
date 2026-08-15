@@ -10,6 +10,8 @@ import {
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import type { ColumnsType } from 'antd/es/table'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 import { formatDate } from '../../utils'
 
@@ -93,7 +95,7 @@ export default function InspectionStandard() {
   const microbeCount = data.filter(s => s.standard_type === '微生物检验标准').length
   const effectiveCount = data.filter(s => s.status === '生效').length
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '标准总数', value: pagination.total, icon: <FileProtectOutlined />, color: '#2196F3' },
     { label: '材料检验', value: materialCount, icon: <AppstoreOutlined />, color: '#00BCD4' },
     { label: '产品检验', value: productCount, icon: <SolutionOutlined />, color: '#FF9800' },
@@ -176,7 +178,7 @@ export default function InspectionStandard() {
     }
   }
 
-  const columns = [
+  const columns: ColumnsType<any> = [
     { title: '标准号', dataIndex: 'standard_no', key: 'standard_no', width: 160 },
     {
       title: '标准名称', dataIndex: 'standard_name', key: 'standard_name', width: 260,

@@ -6,6 +6,7 @@ import {
   PlusOutlined, EyeOutlined, ReloadOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 import { formatVersionNo } from '../../utils'
 import { useMessage, useApp } from '../../contexts/AppContext'
@@ -58,7 +59,7 @@ const MaterialManagement = () => {
   const activeCount = data.filter(m => m.is_active).length
   const inactiveCount = data.filter(m => !m.is_active).length
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '料品总数', value: total, icon: <ProfileOutlined />, color: '#2196F3' },
     { label: '生效', value: activeCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
     { label: '失效', value: inactiveCount, icon: <CloseCircleOutlined />, color: '#F44336' },
@@ -71,7 +72,7 @@ const MaterialManagement = () => {
     const run = async () => {
       setLoading(true)
       try {
-        const params = { page: query.page, pageSize: query.pageSize }
+        const params: Record<string, unknown> = { page: query.page, pageSize: query.pageSize }
         if (query.keyword) params.keyword = query.keyword
         if (query.is_active !== undefined && query.is_active !== null) params.is_active = query.is_active
         if (query.category_name) params.category_name = query.category_name
@@ -215,8 +216,8 @@ const MaterialManagement = () => {
     },
   ]
 
-  const filters = [
-    { type: 'input', placeholder: '搜索料号/品名/规格', col: { span: 6 }, value: keywordInput, onChange: e => setKeywordInput(e.target.value) },
+  const filters: FilterItem[] = [
+    { type: 'input', placeholder: '搜索料号/品名/规格', col: { span: 6 }, value: keywordInput, onChange: (e) => setKeywordInput((e as React.ChangeEvent<HTMLInputElement>).target.value) },
     {
       type: 'select', placeholder: '状态筛选', col: { span: 6 },
       options: [{ label: '生效', value: true }, { label: '失效', value: false }],

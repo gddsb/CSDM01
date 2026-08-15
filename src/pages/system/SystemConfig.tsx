@@ -432,8 +432,8 @@ export default function SystemConfig() {
       const res = await api.put('/system/config', payload)
       message.success(res.message || '系统配置保存成功')
       updateSystemConfig({
-        system_name: payload.system_name || '',
-        company_name: payload.company_name || '',
+        system_name: String(payload.system_name ?? ''),
+        company_name: String(payload.company_name ?? ''),
       })
       await loadConfig()
     } catch (e: unknown) {

@@ -8,6 +8,7 @@ import {
 } from '@ant-design/icons'
 import dayjs, { Dayjs } from 'dayjs'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import { formatDateTime, MONTH_QUICK_OPTIONS, getMonthRange, validateDateRange } from '../../utils'
 import api, { extractList } from '../../utils/api'
 
@@ -251,7 +252,7 @@ export default function ProductionReport() {
   const totalDefect = filtered.reduce((s, r) => s + r.total_defect, 0)
   const avgYield = filtered.length > 0 ? (filtered.reduce((s, r) => s + r.yield_rate, 0) / filtered.length).toFixed(1) : '0.0'
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '工单总数', value: filtered.length, icon: <FileTextOutlined />, color: '#2196F3' },
     { label: '目标产量', value: totalTarget.toLocaleString(), icon: <RiseOutlined />, color: '#4CAF50' },
     { label: '实际产出', value: totalOutput.toLocaleString(), icon: <CheckCircleOutlined />, color: '#00BCD4' },

@@ -8,6 +8,7 @@ import {
 } from '@ant-design/icons'
 import dayjs, { Dayjs } from 'dayjs'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import { formatDateTime } from '../../utils'
 import api, { extractList } from '../../utils/api'
 
@@ -191,7 +192,7 @@ export default function ExceptionReport() {
     })).sort((a, b) => b.count - a.count)
   }, [filtered])
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '异常总数', value: totalExceptions, icon: <BellOutlined />, color: '#F44336' },
     { label: '总异常时长', value: `${totalDuration}分钟`, icon: <ClockCircleOutlined />, color: '#FF9800' },
     { label: '平均异常时长', value: `${avgDuration}分钟`, icon: <FallOutlined />, color: '#2196F3' },

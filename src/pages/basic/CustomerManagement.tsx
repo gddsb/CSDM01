@@ -7,6 +7,7 @@ import {
   PlusOutlined, EyeOutlined, ReloadOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 import { useMessage, useApp } from '../../contexts/AppContext'
 
@@ -39,7 +40,7 @@ export default function CustomerManagement() {
     const run = async () => {
       setLoading(true)
       try {
-        const params = { page: query.page, pageSize: query.pageSize }
+        const params: QueryParams = { page: query.page, pageSize: query.pageSize }
         if (query.keyword) params.keyword = query.keyword
         if (query.status !== undefined && query.status !== null) params.status = query.status
         const res = await api.get('/basic/customers', { params })
@@ -197,12 +198,12 @@ export default function CustomerManagement() {
     },
   ]
 
-  const filters = [
-    { type: 'input', placeholder: '搜索编号/名称/简称', col: { span: 8 }, value: keywordInput, onChange: e => setKeywordInput(e.target.value) },
+  const filters: FilterItem[] = [
+    { type: 'input', placeholder: '搜索编号/名称/简称', col: { span: 8 }, value: keywordInput, onChange: (e) => setKeywordInput((e as React.ChangeEvent<HTMLInputElement>).target.value) },
     {
       type: 'select', placeholder: '状态筛选', col: { span: 6 },
       options: [{ label: '启用', value: 1 }, { label: '停用', value: 0 }],
-      value: statusInput, onChange: v => setStatusInput(v),
+      value: statusInput, onChange: (v) => setStatusInput(v as number | string | undefined),
     },
   ]
 
@@ -210,7 +211,7 @@ export default function CustomerManagement() {
   const activeCount = data.filter(d => d.status === 1 || d.status === '启用').length
   const inactiveCount = data.filter(d => d.status === 0 || d.status === '停用').length
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '客户总数', value: total, icon: <TeamOutlined />, color: '#2196F3' },
     { label: '启用客户', value: activeCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
     { label: '停用客户', value: inactiveCount, icon: <CloseCircleOutlined />, color: '#F44336' },

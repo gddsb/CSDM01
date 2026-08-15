@@ -11,7 +11,7 @@ export const exceptionCategories = [
   { label: '来料异常', value: '来料异常' },
   { label: '停机待料', value: '停机待料' },
   { label: '其它异常', value: '其它异常' },
-] as const
+]
 
 // 生成前端临时 ID（新增行尚未保存时使用）
 export const genTempId = (): string =>

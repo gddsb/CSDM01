@@ -16,6 +16,15 @@ import { exec } from 'child_process'
 import { logger } from '../utils/logger.js'
 import { formatDateTime, nowBeijingStr } from '../utils/date.js'
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const BACKUP_DIR = process.env.BACKUP_DIR || path.resolve(__dirname, '../../backups')
+const SQLITE_PATH = process.env.DB_STORAGE || path.resolve(__dirname, '../../data/milk_can_mes.sqlite')
+const LEGACY_DEFAULT_VALUES: Record<string, string[]> = {
+  system_version: ['V1.0.0'],
+  defect_warning_threshold: ['5'],
+  microbe_cycle: ['30'],
+}
+
 // ============= 数据字典刷新：异步任务进度 + 频率限制 =============
 type DictRefreshStatus = 'pending' | 'running' | 'success' | 'failed'
 interface DictRefreshTask {
@@ -1417,200 +1426,10 @@ async function collectDatabaseSchema(options: CollectSchemaOptions = {}) {
 }
 
 // 数据库配置信息（密码脱敏）+ 数据表清单
-export const getDatabaseInfo = async (req, res) => {
-  try {
-    const dialect = process.env.DB_DIALECT || 'sqlite'
-    const info: any = {
-      dialect,
-      host: process.env.DB_HOST || (dialect === 'sqlite' ? '-' : 'localhost'),
-      port: process.env.DB_PORT || (dialect === 'sqlite' ? '-' : 3306),
-      database: process.env.DB_NAME || (dialect === 'sqlite' ? 'milk_can_mes.sqlite' : 'milk_can_mes'),
-      username: process.env.DB_USER || (dialect === 'sqlite' ? '-' : 'root'),
-      password_set: !!(process.env.DB_PASSWORD && process.env.DB_PASSWORD.length > 0),
-      storage: dialect === 'sqlite' ? (process.env.DB_STORAGE || './data/milk_can_mes.sqlite') : '-',
-    }
-    try {
-      await sequelize.authenticate()
-      info.connection_status = 'connected'
-    } catch (e) {
-      info.connection_status = 'error'
-      const rawMsg = e.message || '连接失败'
-      info.connection_error = rawMsg
-        .replace(/(password|pwd|passwd|secret)[=:]['"]?[^&,\s'"]*/gi, '$1=***')
-        .replace(/\/\/[^:@\s]+:[^@\s]+@/g, '//***:***@')
-      logger.error('[getDatabaseInfo] 数据库连接失败:', rawMsg)
-    }
 
-    const { tables, columnsMap } = await collectDatabaseSchema()
 
-    info.tables = tables
-    info.columns = columnsMap
-    info.table_count = tables.length
 
-    return success(res, info, '获取成功')
-  } catch (err) {
-    console.error('获取数据库配置失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
-  }
-}
 
-// 备份目录（生产环境使用 /opt/backups/milk-can-mes，可通过环境变量 BACKUP_DIR 覆盖）
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-const BACKUP_DIR = process.env.BACKUP_DIR || '/opt/backups/milk-can-mes'
-const SQLITE_PATH = path.resolve(__dirname, '../../data/milk_can_mes.sqlite')
-
-// 列出备份文件
-export const listBackups = async (req, res) => {
-  try {
-    if (!fs.existsSync(BACKUP_DIR)) {
-      fs.mkdirSync(BACKUP_DIR, { recursive: true })
-      return success(res, [], '获取成功')
-    }
-    const files = fs.readdirSync(BACKUP_DIR)
-    const backups = files
-      .filter(f => f.endsWith('.sqlite') || f.endsWith('.db') || f.endsWith('.sql') || f.endsWith('.sql.gz'))
-      .map(f => {
-        const stat = fs.statSync(path.join(BACKUP_DIR, f))
-        return {
-          filename: f,
-          size: stat.size,
-          created_at: formatDateTime(stat.mtime),
-        }
-      })
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    return success(res, backups, '获取成功')
-  } catch (err) {
-    console.error('列出备份失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
-  }
-}
-
-// 创建备份
-export const createBackup = async (req, res) => {
-  try {
-    const dialect = process.env.DB_DIALECT || 'mysql'
-    if (!fs.existsSync(BACKUP_DIR)) {
-      fs.mkdirSync(BACKUP_DIR, { recursive: true })
-    }
-    const ts = new Date().toISOString().replace(/[:T]/g, '-').replace(/\..+/, '').replace(' ', '_')
-
-    if (dialect === 'sqlite') {
-      if (!fs.existsSync(SQLITE_PATH)) {
-        return fail(res, '数据库文件不存在', ErrorCode.RECORD_NOT_FOUND)
-      }
-      const filename = `backup_${ts}.sqlite`
-      const target = path.join(BACKUP_DIR, filename)
-      fs.copyFileSync(SQLITE_PATH, target)
-      const stat = fs.statSync(target)
-      return success(res, { filename, size: stat.size, created_at: formatDateTime(stat.mtime) }, '备份成功')
-    } else if (dialect === 'mysql') {
-      const filename = `backup_${ts}.sql`
-      const target = path.join(BACKUP_DIR, filename)
-      const dbHost = process.env.DB_HOST || 'localhost'
-      const dbPort = process.env.DB_PORT || '3306'
-      const dbUser = process.env.DB_USER || 'root'
-      const dbPassword = process.env.DB_PASSWORD || ''
-      const dbName = process.env.DB_NAME || 'milk_can_mes'
-
-      const passwordArg = dbPassword ? `-p${dbPassword}` : ''
-      const cmd = `mysqldump -h ${dbHost} -P ${dbPort} -u ${dbUser} ${passwordArg} --default-character-set=utf8mb4 --single-transaction --routines --triggers ${dbName} > "${target}"`
-
-      await new Promise<void>((resolve, reject) => {
-        exec(cmd, { timeout: 300000 }, (err, stdout, stderr) => {
-          if (err) {
-            console.error('mysqldump 错误:', err, stderr)
-            reject(new Error(stderr?.trim() || err.message || 'mysqldump 执行失败'))
-          } else {
-            resolve()
-          }
-        })
-      })
-
-      if (!fs.existsSync(target) || fs.statSync(target).size === 0) {
-        return fail(res, 'MySQL 备份失败，请检查 mysqldump 是否可用以及数据库连接配置', ErrorCode.SYSTEM_ERROR)
-      }
-      const stat = fs.statSync(target)
-      return success(res, { filename, size: stat.size, created_at: formatDateTime(stat.mtime) }, 'MySQL 备份成功')
-    } else {
-      return fail(res, `当前数据库类型 ${dialect} 暂不支持界面备份`, ErrorCode.PARAM_INVALID)
-    }
-  } catch (err) {
-    console.error('创建备份失败:', err)
-    return fail(res, err instanceof Error ? err.message : '备份失败', ErrorCode.SYSTEM_ERROR)
-  }
-}
-
-// 还原备份
-export const restoreBackup = async (req, res) => {
-  try {
-    const dialect = process.env.DB_DIALECT || 'mysql'
-    const { filename } = req.body
-    if (!filename) return fail(res, '请选择备份文件', ErrorCode.PARAM_INVALID)
-    const safe = path.basename(filename)
-    const source = path.join(BACKUP_DIR, safe)
-    if (!fs.existsSync(source)) return fail(res, '备份文件不存在', ErrorCode.RECORD_NOT_FOUND)
-
-    if (dialect === 'sqlite') {
-      fs.copyFileSync(source, SQLITE_PATH)
-      return success(res, null, '还原成功，建议重启服务以使连接生效')
-    } else if (dialect === 'mysql') {
-      if (!safe.endsWith('.sql')) {
-        return fail(res, 'MySQL 还原仅支持 .sql 格式的备份文件', ErrorCode.PARAM_INVALID)
-      }
-      const dbHost = process.env.DB_HOST || 'localhost'
-      const dbPort = process.env.DB_PORT || '3306'
-      const dbUser = process.env.DB_USER || 'root'
-      const dbPassword = process.env.DB_PASSWORD || ''
-      const dbName = process.env.DB_NAME || 'milk_can_mes'
-
-      const passwordArg = dbPassword ? `-p${dbPassword}` : ''
-      const cmd = `mysql -h ${dbHost} -P ${dbPort} -u ${dbUser} ${passwordArg} --default-character-set=utf8mb4 ${dbName} < "${source}"`
-
-      await new Promise<void>((resolve, reject) => {
-        exec(cmd, { timeout: 300000 }, (err, stdout, stderr) => {
-          if (err) {
-            console.error('mysql 还原错误:', err, stderr)
-            reject(new Error(stderr?.trim() || err.message || 'mysql 还原执行失败'))
-          } else {
-            resolve()
-          }
-        })
-      })
-
-      return success(res, null, 'MySQL 还原成功')
-    } else {
-      return fail(res, `当前数据库类型 ${dialect} 暂不支持界面还原`, ErrorCode.PARAM_INVALID)
-    }
-  } catch (err) {
-    console.error('还原备份失败:', err)
-    return fail(res, err instanceof Error ? err.message : '还原失败', ErrorCode.SYSTEM_ERROR)
-  }
-}
-
-// 删除备份
-export const deleteBackup = async (req, res) => {
-  try {
-    const { filename } = req.params
-    const safe = path.basename(filename)
-    const target = path.join(BACKUP_DIR, safe)
-    if (!fs.existsSync(target)) return fail(res, '备份文件不存在', ErrorCode.RECORD_NOT_FOUND)
-    fs.unlinkSync(target)
-    return success(res, null, '删除成功')
-  } catch (err) {
-    console.error('删除备份失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
-  }
-}
-
-// 需要强制同步默认值的关键配置项
-// 这些 key 的值若与历史旧默认值一致，则刷新为新默认值（避免覆盖用户自定义值）
-const LEGACY_DEFAULT_VALUES = {
-  system_name: ['奶粉罐MES', '奶粉罐生产系统', '长沙大满生产制造系统'],
-  company_name: ['恒丰包装科技有限公司'],
-  shift_setting: ['白班,夜班', '白班,夜班,中班'],
-  default_line: [''],
-}
 
 export const initDefaultConfigs = async () => {
   for (const def of defaultConfigs) {
@@ -2085,64 +1904,3 @@ export const listDataDictionary = async (req, res) => {
   }
 }
 
-export const listTableRecords = async (req, res) => {
-  try {
-    const { table_name } = req.params
-    const { page = 1, pageSize = 20 } = req.query
-
-    if (!table_name) return fail(res, '表名不能为空')
-
-    // 安全校验：只允许字母、数字、下划线
-    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(table_name)) {
-      return fail(res, '非法表名')
-    }
-
-    const limit = Math.min(parseInt(pageSize, 10) || 20, MAX_PAGE_SIZE)
-    const offset = (Math.max(parseInt(page, 10) || 1, 1) - 1) * limit
-
-    const dialect = process.env.DB_DIALECT || 'sqlite'
-    const quoteChar = dialect === 'mysql' || dialect === 'mariadb' ? '`' : '"'
-    const safeTableName = table_name
-
-    // 查询总记录数
-    const countResult = await sequelize.query(`SELECT COUNT(*) as count FROM ${quoteChar}${safeTableName}${quoteChar}`, { 
-      type: QueryTypes.SELECT 
-    })
-    const total = Number((countResult[0] as any)?.count) || 0 || 0
-
-    // 查询分页数据
-    const rows = await sequelize.query(`SELECT * FROM ${quoteChar}${safeTableName}${quoteChar} LIMIT ? OFFSET ?`, { 
-      replacements: [limit, offset],
-      type: QueryTypes.SELECT 
-    })
-
-    // 查询字段信息
-    const dictEntry = await DataDictionary.findOne({ where: { table_name } })
-    const fields = dictEntry?.fields ? (typeof dictEntry.fields === 'string' ? JSON.parse(dictEntry.fields) : dictEntry.fields) : []
-
-    return success(res, { list: rows, total, fields }, '获取成功')
-  } catch (err) {
-    console.error('查询表记录失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
-  }
-}
-
-export default {
-  getConfig,
-  saveConfig,
-  getEnvironment,
-  getDatabaseInfo,
-  listDataDictionary,
-  refreshDataDictionary,
-  getRefreshProgress,
-  refreshDictionaryData,
-  refreshDictionaryDataIfEmpty,
-  listTableRecords,
-  listBackups,
-  createBackup,
-  restoreBackup,
-  deleteBackup,
-  migrateDatabase,
-  getMigrationTargets,
-  initDefaultConfigs,
-}

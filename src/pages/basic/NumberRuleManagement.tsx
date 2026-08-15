@@ -10,6 +10,7 @@ import {
   PlayCircleOutlined, ThunderboltOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 import { useMessage } from '../../contexts/AppContext'
 
@@ -68,7 +69,7 @@ export default function NumberRuleManagement() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const params = { page: query.page, pageSize: query.pageSize }
+      const params: Record<string, unknown> = { page: query.page, pageSize: query.pageSize }
       if (query.keyword) params.keyword = query.keyword
       if (query.status !== undefined && query.status !== null) params.status = query.status
       const res = await api.get('/basic/number-rules', { params })
@@ -306,8 +307,8 @@ export default function NumberRuleManagement() {
     },
   ]
 
-  const filters = [
-    { type: 'input', placeholder: '搜索规则名称/编码', col: { span: 8 }, value: keywordInput, onChange: e => setKeywordInput(e.target.value) },
+  const filters: FilterItem[] = [
+    { type: 'input', placeholder: '搜索规则名称/编码', col: { span: 8 }, value: keywordInput, onChange: (e) => setKeywordInput((e as React.ChangeEvent<HTMLInputElement>).target.value) },
     {
       type: 'select', placeholder: '状态筛选', col: { span: 6 },
       options: [{ label: '启用', value: 1 }, { label: '停用', value: 0 }],
@@ -315,7 +316,7 @@ export default function NumberRuleManagement() {
     },
   ]
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '规则总数', value: total, icon: <KeyOutlined />, color: '#2196F3' },
     { label: '已审核', value: data.filter(d => d.is_locked === 1).length, icon: <LockOutlined />, color: '#4CAF50' },
     { label: '启用中', value: data.filter(d => d.status === 1).length, icon: <PlayCircleOutlined />, color: '#FF9800' },

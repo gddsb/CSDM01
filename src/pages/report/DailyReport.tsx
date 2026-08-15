@@ -8,6 +8,7 @@ import {
 import dayjs from 'dayjs'
 import * as echarts from 'echarts'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import api, { extractList } from '../../utils/api'
 import { processReports as mockProcessReports } from '../../mock/data'
 
@@ -98,7 +99,6 @@ export default function DailyReport() {
       message.error(err.message || '加载数据失败')
     } finally {
       setLoading(false)
-      setRangeWarn(false)
     }
   }
 
@@ -173,7 +173,7 @@ export default function DailyReport() {
   const totalDefect = filtered.reduce((s, r) => s + r.total_defect, 0)
   const avgYield = totalInput > 0 ? ((totalOutput / totalInput) * 100).toFixed(1) : '0.0'
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '今日工单数', value: todayOrders, icon: <FileTextOutlined />, color: '#2196F3' },
     { label: '今日产出总量', value: totalOutput.toLocaleString(), icon: <RiseOutlined />, color: '#4CAF50' },
     { label: '今日投入总量', value: totalInput.toLocaleString(), icon: <CheckCircleOutlined />, color: '#00BCD4' },

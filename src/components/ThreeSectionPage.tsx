@@ -10,7 +10,7 @@ const { RangePicker } = DatePicker
 
 type RangeValueType = RangePickerProps['value']
 
-interface FilterItem {
+export interface FilterItem {
   type: 'input' | 'select' | 'checkbox-group' | 'rangepicker'
   placeholder?: string
   icon?: React.ReactNode
@@ -18,14 +18,15 @@ interface FilterItem {
   onChange?: (value: unknown) => void
   field?: string
   options?: { label: string; value: string | number }[]
-  col?: { span: number }
+  col?: { span?: number; flex?: string | number }
   mode?: 'multiple'
   disabled?: boolean
+  prefix?: React.ReactNode
 }
 
-interface StatItem {
+export interface StatItem {
   label: string
-  value: number
+  value: number | string
   icon: React.ReactNode
   color: string
 }
@@ -72,7 +73,7 @@ export default function ThreeSectionPage({
         <Input
           placeholder={f.placeholder}
           allowClear
-          prefix={f.icon}
+          prefix={f.icon ?? f.prefix}
           value={f.value as string}
           onChange={(e) => {
             f.onChange?.(e)

@@ -92,6 +92,8 @@ pnpm run typecheck        # 后端类型检查
 - 沙箱使用本地 **MySQL 8.0**：`server/.env` 中 `DB_DIALECT=mysql`，`DB_HOST=127.0.0.1`，`DB_PORT=3306`，`DB_NAME=milk_can_mes`，`DB_USER=root`，`DB_PASSWORD=123456`
 - 数据库已由 `assets/milk_can_mes.sql` 备份恢复（49 张表，含用户/角色/544 料品/200 订单等演示数据），**无需再执行 seed**
 - 后端启动自动 `sequelize.sync()` + `runMigrations()` 补齐表结构（只增不删）
+- SQL 迁移位于 `server/src/migrations/`，由 `migration_version` 表记录已执行版本；`004-add-core-foreign-keys.sql` 已补齐核心外键
+- 生产订单/报工单状态流转统一走 `server/src/services/ProductionWorkflowService.ts`（下发、关闭、完工、报工单完工校验与订单联动）
 - 切换为 SQLite：将 `DB_DIALECT` 改为 `sqlite` 并设 `DB_STORAGE=./data/milk_can_mes.sqlite`，再 `pnpm seed` 初始化数据
 
 ## 默认登录账号

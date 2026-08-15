@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { Table, Tag, Button } from 'antd'
 import { HistoryOutlined, ReloadOutlined } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 import { useMessage } from '../../contexts/AppContext'
 
@@ -38,7 +39,7 @@ export default function OperationLogs() {
     const run = async () => {
       setLoading(true)
       try {
-        const params = { page: query.page, pageSize: query.pageSize }
+        const params: Record<string, unknown> = { page: query.page, pageSize: query.pageSize }
         if (query.username) params.username = query.username
         const res = await api.get('/system/logs', { params })
         if (cancelled) return
@@ -70,12 +71,12 @@ export default function OperationLogs() {
     setQuery(q => ({ ...q, page: 1, username: '' }))
   }
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '日志总条数', value: total, icon: <HistoryOutlined />, color: '#2196F3' },
   ]
 
-  const filters = [
-    { type: 'input', placeholder: '搜索用户名', col: { span: 6 }, value: usernameInput, onChange: e => setUsernameInput(e.target.value) },
+  const filters: FilterItem[] = [
+    { type: 'input', placeholder: '搜索用户名', col: { span: 6 }, value: usernameInput, onChange: (e) => setUsernameInput((e as React.ChangeEvent<HTMLInputElement>).target.value) },
   ]
 
   const columns = [

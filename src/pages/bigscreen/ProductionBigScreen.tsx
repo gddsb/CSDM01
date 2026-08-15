@@ -255,7 +255,7 @@ export default function ProductionBigScreen() {
     }))
   }
 
-  const defectDistribution = {}
+  const defectDistribution: Record<string, number> = {}
   dateProcessReports.forEach(r => {
     defectDistribution['来料不良'] = (defectDistribution['来料不良'] || 0) + Number(r.defect_material || 0)
     defectDistribution['制程不良'] = (defectDistribution['制程不良'] || 0) + Number(r.defect_process || 0)

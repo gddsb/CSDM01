@@ -7,6 +7,7 @@ import {
   PlusOutlined, ReloadOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 import { useMessage, useApp } from '../../contexts/AppContext'
 
@@ -31,7 +32,7 @@ export default function ProcessManagement() {
 
   const enabledCount = data.filter(p => p.status === '启用').length
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '总工序数', value: total, icon: <OrderedListOutlined />, color: '#2196F3' },
     { label: '启用数', value: enabledCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
   ]
@@ -42,7 +43,7 @@ export default function ProcessManagement() {
     const run = async () => {
       setLoading(true)
       try {
-        const params = { page: query.page, pageSize: query.pageSize }
+        const params: Record<string, unknown> = { page: query.page, pageSize: query.pageSize }
         if (query.keyword) params.keyword = query.keyword
         if (query.status !== undefined && query.status !== null) params.status = query.status
         const res = await api.get('/basic/processes', { params })
@@ -219,8 +220,8 @@ export default function ProcessManagement() {
     },
   ]
 
-  const filters = [
-    { type: 'input', placeholder: '搜索工序名称/编码', col: { span: 8 }, value: keywordInput, onChange: e => setKeywordInput(e.target.value) },
+  const filters: FilterItem[] = [
+    { type: 'input', placeholder: '搜索工序名称/编码', col: { span: 8 }, value: keywordInput, onChange: (e) => setKeywordInput((e as React.ChangeEvent<HTMLInputElement>).target.value) },
     {
       type: 'select', placeholder: '状态筛选', col: { span: 8 },
       options: [{ label: '启用', value: 1 }, { label: '停用', value: 0 }],

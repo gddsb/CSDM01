@@ -6,6 +6,7 @@ import {
   MailOutlined, EyeOutlined, SearchOutlined
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import { complaints } from '../../mock/data'
 import { MONTH_QUICK_OPTIONS, getMonthRange, validateRange, getThisMonth } from '../../utils/monthQuick'
 import dayjs from 'dayjs'
@@ -76,7 +77,7 @@ export default function ComplaintManagement() {
   const closedCount = filteredData.filter((c: any) => c.status === '已关闭').length
   const replyCount = filteredData.filter((c: any) => c.require_reply === 1).length
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '总客诉数', value: filteredData.length, icon: <MessageOutlined />, color: '#2196F3' },
     { label: '处理中', value: processingCount, icon: <ClockCircleOutlined />, color: '#FF9800' },
     { label: '已关闭', value: closedCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
@@ -107,7 +108,7 @@ export default function ComplaintManagement() {
   }
 
   const columns = [
-    { title: '客诉编号', dataIndex: 'complaint_no', key: 'complaint_no', width: 130, fixed: 'left' as const as const },
+    { title: '客诉编号', dataIndex: 'complaint_no', key: 'complaint_no', width: 130, fixed: 'left' as const },
     { title: '来源', dataIndex: 'source', key: 'source', width: 100 },
     { title: '客户名称', dataIndex: 'customer_name', key: 'customer_name', width: 110 },
     { title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 130 },
@@ -126,7 +127,7 @@ export default function ComplaintManagement() {
       render: (v: string) => <Tag color={statusColor[v] || 'default'}>{v}</Tag>
     },
     {
-      title: '操作', key: 'action', fixed: 'right' as const as const,
+      title: '操作', key: 'action', fixed: 'right' as const,
       render: (_: any, record: any) => (
         <Button type="link" size="small" onClick={() => showDetail(record)}>查看详情</Button>
       )

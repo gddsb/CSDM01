@@ -9,6 +9,7 @@ import {
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import { formatDateTime, formatDate } from '../../utils'
 import api from '../../utils/api'
 import { MONTH_QUICK_OPTIONS, getMonthRange, validateRange } from '../../utils/monthQuick'
@@ -121,7 +122,7 @@ export default function IncomingInspection() {
   const pendingCount = summaryStats.pending ?? 0
   const inspectingCount = summaryStats.inspecting ?? 0
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '检验总数', value: totalCount, icon: <ExperimentOutlined />, color: '#2196F3' },
     { label: '待检', value: pendingCount, icon: <ExperimentOutlined />, color: '#FF9800' },
     { label: '检验中', value: inspectingCount, icon: <ExperimentOutlined />, color: '#1890FF' },
@@ -336,7 +337,7 @@ export default function IncomingInspection() {
       render: v => v ? <Tag>{v}</Tag> : <span style={{ color: '#999' }}>-</span>
     },
     {
-      title: '操作', key: 'action', fixed: 'right' as const as const, width: 220,
+      title: '操作', key: 'action', fixed: 'right' as const, width: 220,
       render: (_: any, record: any) => (
         <Space size={2} wrap>
           <Button type="link" size="small" onClick={() => showDetail(record)}>详情</Button>

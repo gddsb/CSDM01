@@ -125,7 +125,7 @@ function ImageManagerModal({ visible, onClose, images, onUpload, onRemove, title
     cameraInputRef.current?.click()
   }
 
-  const handleFileChange = async (e) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (files.length === 0) return
     if (!reportNo) {
@@ -134,7 +134,7 @@ function ImageManagerModal({ visible, onClose, images, onUpload, onRemove, title
     }
     try {
       const formData = new FormData()
-      files.forEach(file => formData.append('files', file))
+      files.forEach((file) => formData.append('files', file))
       const res = await api.post(`/production/report-images/${reportNo}/${category}/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })

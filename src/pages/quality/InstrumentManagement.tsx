@@ -6,6 +6,7 @@ import {
   ClockCircleOutlined, SearchOutlined, HistoryOutlined
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
+import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import { instruments } from '../../mock/data'
 
 const { Text, Title } = Typography
@@ -37,14 +38,14 @@ export default function InstrumentManagement() {
   const expiringCount = instruments.filter(i => i.status === '即将到期').length
   const expiredCount = instruments.filter(i => i.status === '已超期').length
 
-  const stats = [
+  const stats: StatItem[] = [
     { label: '仪器总数', value: instruments.length, icon: <ToolOutlined />, color: '#2196F3' },
     { label: '正常', value: normalCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
     { label: '即将到期', value: expiringCount, icon: <WarningOutlined />, color: '#FF9800' },
     { label: '已超期', value: expiredCount, icon: <ClockCircleOutlined />, color: '#F44336' },
   ]
 
-  const filters = [
+  const filters: FilterItem[] = [
     { type: 'input', placeholder: '仪器编号 / 仪器名称', icon: <SearchOutlined /> },
     {
       type: 'select', placeholder: '状态', options: [

@@ -1,4 +1,11 @@
-interface ThemeColors {
+interface ThemeColorVariants {
+  '--color-primary-bg'?: string
+  '--color-primary-light'?: string
+  '--color-primary-border'?: string
+  '--color-primary-soft'?: string
+}
+
+interface ThemeColors extends ThemeColorVariants {
   '--bg-main': string
   '--bg-card': string
   '--color-primary': string
@@ -12,10 +19,6 @@ interface ThemeColors {
   '--border-color': string
   '--nav-bg': string
   '--nav-text': string
-  '--color-primary-bg'?: string
-  '--color-primary-light'?: string
-  '--color-primary-border'?: string
-  '--color-primary-soft'?: string
 }
 
 interface Theme {
@@ -28,7 +31,7 @@ interface Theme {
 
 type ThemesMap = Record<string, Theme>
 
-function generateThemeVariants(theme: Theme): ThemeColors {
+function generateThemeVariants(theme: Theme): ThemeColorVariants {
   const primary = theme.colors['--color-primary']
   const bgCard = theme.colors['--bg-card']
   const textSecondary = theme.colors['--text-secondary']
