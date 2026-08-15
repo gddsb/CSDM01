@@ -7,8 +7,17 @@
 - **架构**：前后端分离，Vite 开发服务器代理 `/api` 到 Express 后端
 - **前端**：React 18 + TypeScript 5 + Vite 5 + Ant Design 5 + Ant Design Mobile 5 + ECharts 6 + React Router 6
 - **后端**：Node.js + Express 4 + TypeScript（tsx 直接运行）+ Sequelize 6 + JWT + bcryptjs
-- **数据库**：SQLite（开发/沙箱默认）/ MySQL（生产）；ORM 为 Sequelize
+- **数据库**：MySQL 8.0（沙箱已安装并使用 `assets/milk_can_mes.sql` 备份恢复）；ORM 为 Sequelize，也兼容 SQLite
 - **包管理器**：**pnpm**（前后端各自独立 package.json）
+
+> **沙箱 MySQL 启动**：容器无 systemd，若 MySQL 未运行，需手动启动：
+> ```bash
+> mkdir -p /var/run/mysqld && chown mysql:mysql /var/run/mysqld
+> nohup mysqld --user=mysql --datadir=/var/lib/mysql \
+>   --socket=/var/run/mysqld/mysqld.sock --port=3306 --bind-address=0.0.0.0 \
+>   > /app/work/logs/bypass/mysql.log 2>&1 &
+> ```
+> 连接：`mysql -uroot -p123456`，数据库 `milk_can_mes`。
 
 ## 目录结构
 
@@ -80,10 +89,10 @@ pnpm run typecheck        # 后端类型检查
 ```
 
 ### 数据库
-- 沙箱/开发使用 **SQLite**，文件位于 `server/data/milk_can_mes.sqlite`（已在 `.gitignore`）
-- `server/.env` 中 `DB_DIALECT=sqlite`；生产用 MySQL 时改为 `DB_DIALECT=mysql`
-- 后端启动自动 `sequelize.sync()` + `runMigrations()` 补齐表结构，并初始化默认配置/权限/编号规则/任务设置
-- **首次启动后必须执行 `cd server && pnpm seed`** 导入默认账号和演示数据，否则无法登录
+- 沙箱使用本地 **MySQL 8.0**：`server/.env` 中 `DB_DIALECT=mysql`，`DB_HOST=127.0.0.1`，`DB_PORT=3306`，`DB_NAME=milk_can_mes`，`DB_USER=root`，`DB_PASSWORD=123456`
+- 数据库已由 `assets/milk_can_mes.sql` 备份恢复（49 张表，含用户/角色/544 料品/200 订单等演示数据），**无需再执行 seed**
+- 后端启动自动 `sequelize.sync()` + `runMigrations()` 补齐表结构（只增不删）
+- 切换为 SQLite：将 `DB_DIALECT` 改为 `sqlite` 并设 `DB_STORAGE=./data/milk_can_mes.sqlite`，再 `pnpm seed` 初始化数据
 
 ## 默认登录账号
 
