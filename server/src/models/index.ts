@@ -32,13 +32,10 @@ import DictData from './DictData.js'
 import DataDictionary from './DataDictionary.js'
 import UserSetting from './UserSetting.js'
 import ProductInspection from './ProductInspection.js'
-import ProductInspectionItem from './ProductInspectionItem.js'
 import IncomingInspection from './IncomingInspection.js'
-import IncomingInspectionItem from './IncomingInspectionItem.js'
 import InspectionStandard from './InspectionStandard.js'
 import InspectionStandardItem from './InspectionStandardItem.js'
 import MicrobeInspection from './MicrobeInspection.js'
-import MicrobeInspectionItem from './MicrobeInspectionItem.js'
 // 检验数据统一存储改造（阶段1.5）：统一子表 + 样品测量值明细
 import QcInspectionItem from './QcInspectionItem.js'
 import QcInspectionSampleValue from './QcInspectionSampleValue.js'
@@ -136,15 +133,11 @@ DictData.belongsTo(DictType, { foreignKey: 'dict_type', targetKey: 'dict_type', 
 ProductInspection.belongsTo(ReportOrder, { foreignKey: 'report_order_id', as: 'report_order' })
 // 产品检测主表 - 检验标准
 ProductInspection.belongsTo(InspectionStandard, { foreignKey: 'standard_id', as: 'standard' })
-// 产品检测主表 - 检测项目（一对多）
-ProductInspection.hasMany(ProductInspectionItem, { foreignKey: 'inspection_id', as: 'items' })
-ProductInspectionItem.belongsTo(ProductInspection, { foreignKey: 'inspection_id', as: 'inspection' })
+// 阶段5：ProductInspectionItem（旧子表）关联已移除，统一使用 QcInspectionItem（as: 'qc_items'）
 
 // 来料检验主表 - 检验标准
 IncomingInspection.belongsTo(InspectionStandard, { foreignKey: 'standard_id', as: 'standard' })
-// 来料检验主表 - 检验项目（一对多）
-IncomingInspection.hasMany(IncomingInspectionItem, { foreignKey: 'inspection_id', as: 'items' })
-IncomingInspectionItem.belongsTo(IncomingInspection, { foreignKey: 'inspection_id', as: 'inspection' })
+// 阶段5：IncomingInspectionItem（旧子表）关联已移除，统一使用 QcInspectionItem（as: 'qc_items'）
 
 // 检验标准 - 检验标准项目（一对多）
 InspectionStandard.hasMany(InspectionStandardItem, { foreignKey: 'standard_id', as: 'items' })
@@ -160,9 +153,7 @@ MicrobeInspection.belongsTo(IncomingInspection, { foreignKey: 'incoming_id', as:
 MicrobeInspection.belongsTo(Order, { foreignKey: 'order_id', as: 'order', constraints: false })
 // 微生物检验主表 - 检验标准
 MicrobeInspection.belongsTo(InspectionStandard, { foreignKey: 'standard_id', as: 'standard', constraints: false })
-// 微生物检验主表 - 检测项目（一对多）
-MicrobeInspection.hasMany(MicrobeInspectionItem, { foreignKey: 'inspection_id', as: 'items' })
-MicrobeInspectionItem.belongsTo(MicrobeInspection, { foreignKey: 'inspection_id', as: 'inspection' })
+// 阶段5：MicrobeInspectionItem（旧子表）关联已移除，统一使用 QcInspectionItem（as: 'qc_items'）
 
 // ============================================================
 // 检验数据统一存储改造（阶段1.5）：统一子表 + 样品测量值明细
@@ -241,13 +232,10 @@ const db = {
   DataDictionary,
   UserSetting,
   ProductInspection,
-  ProductInspectionItem,
   IncomingInspection,
-  IncomingInspectionItem,
   InspectionStandard,
   InspectionStandardItem,
   MicrobeInspection,
-  MicrobeInspectionItem,
   QcInspectionItem,
   QcInspectionSampleValue,
   TaskSetting,
@@ -296,13 +284,10 @@ export {
   DataDictionary,
   UserSetting,
   ProductInspection,
-  ProductInspectionItem,
   IncomingInspection,
-  IncomingInspectionItem,
   InspectionStandard,
   InspectionStandardItem,
   MicrobeInspection,
-  MicrobeInspectionItem,
   QcInspectionItem,
   QcInspectionSampleValue,
   TaskSetting,

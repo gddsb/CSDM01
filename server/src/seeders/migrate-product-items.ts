@@ -1,3 +1,5 @@
+// @ts-nocheck
+// 归档脚本（阶段2使用）：阶段5移除旧子表模型后不再参与常规编译，必要时通过 tsx 直接执行
 /**
  * 检验数据统一存储改造（阶段2.3）
  * 产品检验子表 quality_product_inspection_item → qc_inspection_item (source_type='产品')

@@ -11,9 +11,11 @@ import {
   DictType, DictData, ProcessDefect, ProcessException,
   ProcessMaterial, DataDictionary,
   InspectionStandard, InspectionStandardItem,
-  MicrobeInspection, MicrobeInspectionItem,
-  ProductInspection, ProductInspectionItem,
-  IncomingInspection, IncomingInspectionItem,
+  MicrobeInspection,
+  ProductInspection,
+  IncomingInspection,
+  QcInspectionItem,
+  QcInspectionSampleValue,
 } from './models/index.js'
 import sequelize from './config/database.js'
 import { logger } from './utils/logger.js'
@@ -53,11 +55,11 @@ const seedOrder = [
   { name: 'InspectionStandard', model: InspectionStandard, label: '检验标准主表' },
   { name: 'InspectionStandardItem', model: InspectionStandardItem, label: '检验标准子表' },
   { name: 'IncomingInspection', model: IncomingInspection, label: '来料检验主表' },
-  { name: 'IncomingInspectionItem', model: IncomingInspectionItem, label: '来料检验项目' },
   { name: 'ProductInspection', model: ProductInspection, label: '成品检验主表' },
-  { name: 'ProductInspectionItem', model: ProductInspectionItem, label: '成品检验项目' },
   { name: 'MicrobeInspection', model: MicrobeInspection, label: '微生物检验主表' },
-  { name: 'MicrobeInspectionItem', model: MicrobeInspectionItem, label: '微生物检验项目' },
+  // 阶段5.4：统一使用新统一子表 + 样品测量值表（替代三旧子表）
+  { name: 'QcInspectionItem', model: QcInspectionItem, label: '统一检验子表（来料/产品/微生物）' },
+  { name: 'QcInspectionSampleValue', model: QcInspectionSampleValue, label: '检验样品测量值' },
   { name: 'DataDictionary', model: DataDictionary, label: '数据字典' },
   { name: 'OperationLog', model: OperationLog, label: '操作日志' },
 ]
