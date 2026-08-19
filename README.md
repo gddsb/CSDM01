@@ -1093,9 +1093,12 @@ milk-can-mes/
 │   │   │   ├── SystemConfig.ts       # 系统配置模型
 │   │   │   ├── UserSetting.ts         # 用户个性化设置模型（列宽配置等）
 │   │   │   ├── ProductInspection.ts    # 产品检测主表模型（主表：检验编号/类型/报工单/标准/结果/状态/检验人/审核人）
-│   │   │   ├── ProductInspectionItem.ts # 产品检测子表模型（检测项目：项目名称/标准值/检测值/判定结果/检测人/检测时间）
 │   │   │   ├── IncomingInspection.ts   # 来料检验主表模型（检验编号/供应商/料品/批次/结果/状态/检验人/审核人）
-│   │   │   ├── IncomingInspectionItem.ts # 来料检验子表模型（检验项目：项目名称/标准值/检测值/判定结果）
+│   │   │   ├── MicrobeInspection.ts    # 微生物检验主表模型
+│   │   │   ├── InspectionStandard.ts   # 检验标准主表模型
+│   │   │   ├── InspectionStandardItem.ts # 检验标准子表（支持定性/定量配置：item_type/抽样数/标称/上下限）
+│   │   │   ├── QcInspectionItem.ts     # 检验数据统一子表（主表独立方案：来料/产品/微生物共用，source_type 多态外键）
+│   │   │   ├── QcInspectionSampleValue.ts # 检验样品测量值表（多样板/多维度存储：定量走 num，定性走 text，含自动判定）
 │   │   │   ├── Supplier.ts             # 供应商档案模型（编码/名称/分类/信用等级/状态等）
 │   │   │   ├── Material.ts           # 料品档案模型
 │   │   │   ├── Customer.ts           # 客户档案模型
@@ -1131,6 +1134,8 @@ milk-can-mes/
 │   │   │   ├── system.ts             # 系统管理路由
 │   │   │   ├── basic.ts              # 基础数据路由
 │   │   │   ├── production.ts         # 生产管理路由
+│   │   │   ├── quality.ts            # 质量管理路由（来料/产品/微生物三检验 CRUD，统一使用 replaceQcItems 保存）
+│   │   │   ├── sample-value.ts       # 检验样品测量值 CRUD（/api/inspection-items/:item_id/sample-values + 判定级联）
 │   │   │   └── auto.ts               # 自动任务路由
 │   │   ├── utils/                    # 工具函数
 │   │   │   ├── jwt.ts                # JWT 签发与验证
@@ -1149,11 +1154,15 @@ milk-can-mes/
 │   │   │   ├── envCollector.ts       # 环境监测采集服务（0531yun 物联网平台）
 │   │   │   ├── energyMeterCollector.ts # 能源采集服务（云集云能源平台，支持Token直连+验证码A7方案OCR）
 │   │   │   ├── u9Login.ts            # U9 ERP 登录认证服务（MD5+AES）
-│   │   │   └── u9Exporter.ts         # U9 料品/客户数据导出服务
+│   │   │   ├── u9Exporter.ts         # U9 料品/客户数据导出服务
+│   │   │   ├── SampleJudgeService.ts # 检验样品值自动判定（上下限/标称 → 单样品 → 检验项 → 主表三级汇总）
+│   │   │   └── InspectionItemMapper.ts # 新统一子表 ↔ 前端 items 字段映射（mapQcItemsToFrontend / replaceQcItems）
 │   │   ├── migrations/               # SQL 迁移脚本（启动时按 migration_version 表执行）
 │   │   │   ├── 002-add-material-fk.sql
 │   │   │   ├── 003-add-performance-indexes.sql
-│   │   │   └── 004-add-core-foreign-keys.sql
+│   │   │   ├── 004-add-core-foreign-keys.sql
+│   │   │   ├── 005-stage1-create-unified-qc-tables.sql      # 阶段1：新建统一子表 + 样品测量值表 + 标准项5字段补齐
+│   │   │   └── 006-stage5-deprecate-old-item-tables.sql     # 阶段5：三旧子表 RENAME TO *_deprecated（保留30天可回滚）
 │   │   ├── app.ts                    # 应用入口（Express 实例化）
 │   │   ├── seed.ts                   # 数据初始化脚本
 │   │   ├── init-db.ts                # 数据库初始化脚本
@@ -1187,6 +1196,7 @@ milk-can-mes/
 | 基础类 | `bas_` / `master_` | `bas_material`, `master_process` | 基础档案表 |
 | 生产类 | `production_` / `prod_` | `production_order`, `prod_report_order` | 生产业务表 |
 | 字典类 | `bas_dict_` | `bas_dict_type`, `bas_dict_data` | 数据字典表 |
+| 质量类 | `quality_` / `qc_` | `quality_incoming_inspection`, `qc_inspection_item` | 质量管理表（统一子表：qc_inspection_item + qc_inspection_sample_value） |
 
 ### 核心数据表详细结构
 
@@ -1454,11 +1464,118 @@ milk-can-mes/
 | sample_rule | STRING(200) | ✗ | ✗ | - | 抽样方式 |
 | standard_value | STRING(200) | ✗ | ✓ | - | 标准值 |
 | unit | STRING(20) | ✗ | ✗ | - | 单位 |
+| **item_type** | STRING(20) | ✗ | ✗ | `'qualitative'` | **检验项类型：qualitative（定性，OK/NG判定）/ quantitative（定量，数值+上下限）**（阶段1新增） |
+| **need_sample_count** | INTEGER | ✗ | ✗ | 1 | **需要记录的样板数量（阶段1新增）：1表示仅判定/仅单值，3~5表示多样板录入** |
+| **nominal_value** | DECIMAL(15,4) | ✗ | ✗ | NULL | **定量项标称值（阶段1新增）：与实际值比较允许±偏差** |
+| **upper_limit** | DECIMAL(15,4) | ✗ | ✗ | NULL | **定量项上限（阶段1新增）：measure_value_num ≤ upper_limit 判定合格** |
+| **lower_limit** | DECIMAL(15,4) | ✗ | ✗ | NULL | **定量项下限（阶段1新增）：measure_value_num ≥ lower_limit 判定合格** |
 | sort_order | INTEGER | ✗ | ✗ | 0 | 排序 |
 | created_at | DATE | ✗ | ✗ | - | 创建时间 |
 | updated_at | DATE | ✗ | ✗ | - | 更新时间 |
 
-#### 14. 生产订单采集表（task_production_order）
+> **自动回填工具**：首次迁移时可执行 `tsx server/src/seeders/backfill-item-type.ts` 基于启发式规则从旧 `standard_value` 自动解析 item_type、抽样数和上下限（数值范围、单边限、外观/微生物等关键词），也可在"检验标准管理"页面手工维护。
+
+---
+
+### 检验数据统一存储改造（主表独立方案）
+
+> 目标：将 **来料检验 / 产品检验 / 微生物检验 / 未来环境检验** 四种检验原本各自独立的"主表+子表"结构，统一为 **"三主表保留 + 两张共享子表"**，同时支持**多样板/多维度**测量值录入与自动判定。
+
+#### 改造前（旧结构）
+
+```
+quality_incoming_inspection    1  ──▶  N  quality_incoming_inspection_item   (独立子表, actual_value 单值文本)
+quality_product_inspection     1  ──▶  N  quality_product_inspection_item    (独立子表, actual_value 单值文本)
+quality_microbe_inspection     1  ──▶  N  quality_microbe_inspection_item    (独立子表, actual_value 单值文本)
+```
+
+#### 改造后（主表独立方案）
+
+```
+                 ┌── 多态外键 scope=来料 ──┐
+                 │                         │
+                 │   scope=产品            │
+quality_incoming ─┤                         │
+   _inspection    │                         ▼
+quality_product   │               qc_inspection_item（统一子表，source_type + inspection_id 关联）
+   _inspection    ─┤                         │ 1
+quality_microbe   │   scope=微生物          │
+   _inspection    ─┤                         ▼
+                 │                 qc_inspection_sample_value（样品测量值表，多样板 N × 多维度 M）
+                 │                         单样品同时存：measure_value_num（定量/SPC聚合用）
+                 └───────────────────────► measure_value_text（定性/OK-NG-无缺口 等）
+                                           + is_qualified 自动判定
+```
+
+**核心收益：**
+- **子表数量降低 66%**：三旧子表 → 一张 `qc_inspection_item`
+- **样品值结构化**：定性/定量同时支持双字段（num/text）+ 每件单独判定 is_qualified，不再塞在 actual_value 文本
+- **前后端统一组件**：前端一个 `<InspectionItemEditor>` 即支持来料/产品/微生物的录入与详情只读，新增"环境检验"只需新增主表 + 复用 mapper 函数即可
+- **三级自动判定**：样品值录入 → judgeSampleValue（上下限/标称/关键词）→ recalcItemAndSamples（检验项 result 汇总）→ recalcInspection（主表 result 汇总）
+- **平滑迁移 + 可回滚**：阶段 1-5 渐进式（双写→全量迁移→停旧→只读保留→30天后DROP）
+
+#### 14. 统一检验子表（qc_inspection_item）
+
+> 通过 `source_type`（来料/产品/微生物）+ `inspection_id` 与三主表做"多态外键"关联。三主表在 `models/index.ts` 中分别通过 **Sequelize scope** 注册为 `hasMany(..., as: 'qc_items')`。
+
+| 字段名 | 类型 | 主键 | 必填 | 默认值 | 说明 |
+|--------|------|------|------|--------|------|
+| item_id | INTEGER | ✓ | ✓ | 自增 | 检验项ID（主键） |
+| source_type | STRING(20) | ✗ | ✓ | - | **多态外键分类：`来料` / `产品` / `微生物` / 未来 `环境`** |
+| inspection_id | INTEGER | ✗ | ✓ | - | **多态外键：关联三主表各自的 inspection_id** |
+| standard_item_id | INTEGER | ✗ | ✗ | - | 对应 quality_inspection_standard_item.item_id（便于追溯标准） |
+| category | STRING(50) | ✗ | ✗ | - | 项目分类（外观/尺寸/理化/微生物…冗余存储用于列表展示） |
+| item_name | STRING(200) | ✗ | ✓ | - | 检验项目名称 |
+| standard_value | STRING(200) | ✗ | ✗ | - | 标准要求（冗余快照，标准变更不影响历史归档） |
+| unit | STRING(20) | ✗ | ✗ | - | 单位 |
+| item_type | STRING(20) | ✗ | ✗ | `'qualitative'` | qualitative/quantitative（检验项快照） |
+| need_sample_count | INTEGER | ✗ | ✗ | 1 | 样板数量（前端默认渲染多少行录入） |
+| nominal_value | DECIMAL(15,4) | ✗ | ✗ | NULL | 定量-标称值（检验项快照） |
+| upper_limit | DECIMAL(15,4) | ✗ | ✗ | NULL | 定量-上限（检验项快照） |
+| lower_limit | DECIMAL(15,4) | ✗ | ✗ | NULL | 定量-下限（检验项快照） |
+| actual_value | STRING(200) | ✗ | ✗ | - | 兼容字段：迁移的旧 actual_value / 单值录入（只读展示） |
+| actual_value_text | STRING(500) | ✗ | ✗ | - | 兼容旧数据 / 单值场景 / 定性值汇总 |
+| actual_value_num | DECIMAL(15,4) | ✗ | ✗ | NULL | 定量汇总值（平均值/最后值/SPC统计入口） |
+| is_need_measure | TINYINT(1) | ✗ | ✗ | 0 | 1=需要记录测量值，0=仅判定 |
+| result | TINYINT | ✗ | ✗ | NULL | 检验项判定汇总：0=不合格 1=合格 NULL=未检 |
+| result_text | STRING(20) | ✗ | ✗ | NULL | 判定文本：合格/不合格/待检 |
+| inspector_name | STRING(50) | ✗ | ✗ | - | 检验人 |
+| inspection_time | DATE | ✗ | ✗ | - | 检验时间 |
+| remarks | STRING(500) | ✗ | ✗ | - | 备注 |
+| sort_order | INTEGER | ✗ | ✗ | 0 | 排序号 |
+| created_at | DATE | ✗ | ✗ | - | 创建时间 |
+| updated_at | DATE | ✗ | ✗ | - | 更新时间 |
+
+> **索引**：`(source_type, inspection_id)` 联合索引保证 getDetail 查询命中；`(standard_item_id)` 单列索引便于 SPC 按标准项取数。
+
+#### 15. 检验样品测量值表（qc_inspection_sample_value）
+
+> 每个 `qc_inspection_item` 可以拥有 N 件样板 × M 个维度（如"内径X/内径Y/高度/卷边"四个尺寸分别录入每件样品）。单件测量值支持"定量/定性双字段"，判定结果由 `SampleJudgeService.judgeSampleValue` 统一产出。
+
+| 字段名 | 类型 | 主键 | 必填 | 默认值 | 说明 |
+|--------|------|------|------|--------|------|
+| value_id | INTEGER | ✓ | ✓ | 自增 | 样品测量值ID（主键） |
+| item_id | INTEGER | ✗ | ✓ | - | 关联 qc_inspection_item.item_id（外键 ON DELETE CASCADE） |
+| sample_no | INTEGER | ✗ | ✓ | 1 | **样板编号**：1,2,3… 对应第几件样品（前端渲染行号） |
+| dimension_code | STRING(50) | ✗ | ✗ | `'default'` | **维度编码**：区分同一件样品的多个测量维度（default / ID-X / ID-Y / OD / HEIGHT 等） |
+| dimension_name | STRING(100) | ✗ | ✗ | - | 维度名称（显示用） |
+| measure_value_num | DECIMAL(15,4) | ✗ | ✗ | NULL | **定量测量值**：连续数据，可做 SPC 控制图、均值/极差/CPK 聚合 |
+| measure_value_text | STRING(50) | ✗ | ✗ | - | **定性测量值**：`OK` / `NG` / `无缺口` / `良好` 等语义判定文本 |
+| defect_desc | STRING(200) | ✗ | ✗ | - | 缺陷/异常描述（如"凹坑直径0.5mm"） |
+| is_qualified | TINYINT | ✗ | ✗ | NULL | **自动判定**：1=合格 / 0=不合格 / NULL=未录入（由 SampleJudgeService 统一重算，避免前端判定与后端不一致） |
+| measured_at | DATE | ✗ | ✗ | - | 测量时间（可单件记录，SPC 控制图X轴） |
+| measure_user | STRING(50) | ✗ | ✗ | - | 测量人 |
+| device_code | STRING(50) | ✗ | ✗ | - | 测量仪器编码（溯源用） |
+| remarks | STRING(500) | ✗ | ✗ | - | 备注 |
+| created_at | DATE | ✗ | ✗ | - | 创建时间 |
+| updated_at | DATE | ✗ | ✗ | - | 更新时间 |
+
+> **判定规则**：见 `server/src/services/SampleJudgeService.ts`
+> - **定量**：给定 `(lower_limit, upper_limit, nominal_value)`，优先用上下限；若仅有 nominal_value 则允许 ±5% 容差；空值 = NULL=待检
+> - **定性**：`measure_value_text` 含"OK/合格/PASS/良好/无/正常" → 1；含 "NG/不合格/FAIL/缺口/超标/污染" → 0
+> - **级联**：POST/DELETE sample-values → `recalcItemAndSamples(item_id)` 汇总项级 result → `recalcInspection(source_type, inspection_id, mainModel)` 汇总主表 result
+
+#### 16. 生产订单采集表（task_production_order）
 
 U9 ERP 制造订单 MO 列表采集表，字段与业务主表 `production_order` 对齐，含采集独有字段。通过 `syncProductionOrdersToOrder()` 按 `order_no` 做 upsert 同步到 `production_order`。
 
