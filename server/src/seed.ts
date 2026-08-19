@@ -16,6 +16,7 @@ import {
   IncomingInspection,
   QcInspectionItem,
   QcInspectionSampleValue,
+  Instrument,
 } from './models/index.js'
 import sequelize from './config/database.js'
 import { logger } from './utils/logger.js'
@@ -52,6 +53,7 @@ const seedOrder = [
   { name: 'SystemConfig', model: SystemConfig, label: '系统配置' },
   { name: 'Sequence', model: Sequence, label: '序列号' },
   { name: 'NumberRule', model: NumberRule, label: '编码规则' },
+  { name: 'Instrument', model: Instrument, label: '检测仪器' },
   { name: 'InspectionStandard', model: InspectionStandard, label: '检验标准主表' },
   { name: 'InspectionStandardItem', model: InspectionStandardItem, label: '检验标准子表' },
   { name: 'IncomingInspection', model: IncomingInspection, label: '来料检验主表' },

@@ -6,7 +6,7 @@ import { previewBizNo, reloadRulesFromDB } from '../utils/sequence.js'
 // 受 SEQ_CONFIG 保护的系统内置规则编码（与 utils/sequence.js 一致）
 const SYSTEM_RULE_CODES = [
   'ORDER', 'WORK_ORDER', 'INCOMING', 'PROCESS', 'FINISHED',
-  'MICROBE', 'ENV', 'INSTRUMENT', 'COMPLAINT',
+  'MICROBE', 'ENV', 'COMPLAINT',
   'SUPPLIER_COMPLAINT', 'STANDARD', 'NCR',
 ]
 
@@ -19,7 +19,6 @@ const defaultRules = [
   { rule_name: '成品检验号', rule_code: 'FINISHED', prefix: 'CP', date_format: 'YYMMDD', separator: '', seq_width: 3, reset_by: 'daily', target_table: 'quality_finished', target_field: 'inspection_no', target_label: '成品检验编号' },
   { rule_name: '微生物检验号', rule_code: 'MICROBE', prefix: 'WS', date_format: 'YYMMDD', separator: '', seq_width: 3, reset_by: 'daily', target_table: 'quality_microbe', target_field: 'inspection_no', target_label: '微生物检验编号' },
   { rule_name: '环境检验号', rule_code: 'ENV', prefix: 'HJ', date_format: 'YYMMDD', separator: '', seq_width: 3, reset_by: 'daily', target_table: 'quality_environment', target_field: 'inspection_no', target_label: '环境检验编号' },
-  { rule_name: '检测仪器编号', rule_code: 'INSTRUMENT', prefix: 'YQ', date_format: 'YYYY', separator: '', seq_width: 4, reset_by: 'yearly', target_table: 'quality_instrument', target_field: 'instrument_no', target_label: '检测仪器编号' },
   { rule_name: '客诉编号', rule_code: 'COMPLAINT', prefix: 'TS', date_format: 'YYYY', separator: '', seq_width: 4, reset_by: 'yearly', target_table: 'quality_complaint', target_field: 'complaint_no', target_label: '客诉编号' },
   { rule_name: '供应商投诉编号', rule_code: 'SUPPLIER_COMPLAINT', prefix: 'GY', date_format: 'YYYY', separator: '', seq_width: 4, reset_by: 'yearly', target_table: 'quality_supplier_complaint', target_field: 'complaint_no', target_label: '供应商投诉编号' },
   { rule_name: '检验标准编号', rule_code: 'STANDARD', prefix: 'BZ-CL', date_format: 'YYYY', separator: '-', seq_width: 3, reset_by: 'yearly', target_table: 'quality_inspection_standard', target_field: 'standard_no', target_label: '检验标准编号' },

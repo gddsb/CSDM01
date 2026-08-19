@@ -24,7 +24,6 @@ import { logger } from './logger.js'
  * - 成品检验：CP + YYMMDD + 3位序号             例：CP260705001
  * - 微生物检验：WS + YYMMDD + 3位序号           例：WS260705001
  * - 环境检验：HJ + YYMMDD + 3位序号             例：HJ260705001
- * - 检测仪器：YQ + YYYY + 4位序号               例：YQ20260001
  * - 客诉编号：TS + YYYY + 4位序号               例：TS20260001
  * - 供应商投诉：GY + YYYY + 4位序号             例：GY20260001
  * - 检验标准：BZ-{CL/CP/HJ/WS/QT} + YYYY + 3位序号  例：BZ-CL-2026-001 / BZ-CP-2026-001 / BZ-WS-2026-001
@@ -41,7 +40,6 @@ const SEQ_CONFIG: any = {
   FINISHED:            { prefix: 'CP',    datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
   MICROBE:             { prefix: 'WS',    datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
   ENV:                 { prefix: 'HJ',    datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
-  INSTRUMENT:          { prefix: 'YQ',    datePattern: 'YYYY',   seqWidth: 4, resetBy: 'year'   },
   COMPLAINT:           { prefix: 'TS',    datePattern: 'YYYY',   seqWidth: 4, resetBy: 'year'   },
   SUPPLIER_COMPLAINT:  { prefix: 'GY',    datePattern: 'YYYY',   seqWidth: 4, resetBy: 'year'   },
   STANDARD:            { prefix: 'BZ-CL', datePattern: 'YYYY',   seqWidth: 3, resetBy: 'year',   separator: '-' },
@@ -185,7 +183,6 @@ export const generateProcessInspectionNo = () => generateBizNo('PROCESS')
 export const generateFinishedNo         = () => generateBizNo('FINISHED')
 export const generateMicrobeNo          = () => generateBizNo('MICROBE')
 export const generateEnvNo              = () => generateBizNo('ENV')
-export const generateInstrumentNo       = () => generateBizNo('INSTRUMENT')
 export const generateComplaintNo        = () => generateBizNo('COMPLAINT')
 export const generateSupplierComplaintNo = () => generateBizNo('SUPPLIER_COMPLAINT')
 export const generateStandardNo         = () => generateBizNo('STANDARD')
@@ -220,7 +217,6 @@ export default {
   generateFinishedNo,
   generateMicrobeNo,
   generateEnvNo,
-  generateInstrumentNo,
   generateComplaintNo,
   generateSupplierComplaintNo,
   generateStandardNo,

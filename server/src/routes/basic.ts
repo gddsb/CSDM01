@@ -63,6 +63,13 @@ import {
   audit as ruleAudit,
   preview as rulePreview,
 } from '../controllers/NumberRuleController.js'
+import {
+  list as instrumentList,
+  detail as instrumentDetail,
+  create as instrumentCreate,
+  update as instrumentUpdate,
+  remove as instrumentRemove,
+} from '../controllers/InstrumentController.js'
 import ProductInspectionController from '../controllers/ProductInspectionController.js'
 import IncomingInspectionController from '../controllers/IncomingInspectionController.js'
 import InspectionStandardController from '../controllers/InspectionStandardController.js'
@@ -202,5 +209,12 @@ router.get('/microbe-inspections/:id', MicrobeInspectionController.detail)
 router.post('/microbe-inspections', logOperation('微生物检验'), MicrobeInspectionController.create)
 router.put('/microbe-inspections/:id', logOperation('微生物检验'), MicrobeInspectionController.update)
 router.delete('/microbe-inspections/:id', logOperation('微生物检验'), MicrobeInspectionController.delete)
+
+// 检测仪器
+router.get('/instruments', instrumentList)
+router.get('/instruments/:id', instrumentDetail)
+router.post('/instruments', logOperation('检测仪器'), instrumentCreate)
+router.put('/instruments/:id', logOperation('检测仪器'), instrumentUpdate)
+router.delete('/instruments/:id', logOperation('检测仪器'), instrumentRemove)
 
 export default router

@@ -1,99 +1,209 @@
 import ResizableTable from '../../components/ResizableTable'
-import React, { useState } from 'react'
-import { Table, Tag, Button, Modal, Space, Typography } from 'antd'
+import React, { useState, useEffect, useCallback } from 'react'
+import { Tag, Button, Drawer, Space, Modal, Form, Input, Select, Popconfirm, Descriptions, Row, Col } from 'antd'
 import {
-  ToolOutlined, CheckCircleOutlined, WarningOutlined,
-  ClockCircleOutlined, SearchOutlined, HistoryOutlined
+  ToolOutlined, PlayCircleOutlined, SafetyCertificateOutlined,
+  PlusOutlined, ReloadOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
-import { instruments } from '../../mock/data'
+import api from '../../utils/api'
+import { useMessage, useApp } from '../../contexts/AppContext'
 
-const { Text, Title } = Typography
-
-// 校准历史记录 mock 数据（按仪器id分组）
-const calibrationHistoryMap = {
-  i1: [
-    { calibration_date: '2026-06-15', calibration_result: '合格', calibration_org: '上海市计量测试技术研究院', operator: '质量检验员' },
-    { calibration_date: '2025-06-15', calibration_result: '合格', calibration_org: '上海市计量测试技术研究院', operator: '质量检验员' },
-    { calibration_date: '2024-06-15', calibration_result: '合格', calibration_org: '上海市计量测试技术研究院', operator: '质量管理员' },
-  ],
-  i2: [
-    { calibration_date: '2026-01-10', calibration_result: '合格', calibration_org: '广州计量检测院', operator: '质量检验员' },
-    { calibration_date: '2025-07-10', calibration_result: '合格', calibration_org: '广州计量检测院', operator: '质量管理员' },
-  ],
-  i3: [
-    { calibration_date: '2025-05-01', calibration_result: '合格', calibration_org: '北京中测院', operator: '质量管理员' },
-    { calibration_date: '2024-05-01', calibration_result: '合格', calibration_org: '北京中测院', operator: '质量管理员' },
-  ],
-}
-
-const statusColor = { '正常': 'success', '即将到期': 'warning', '已超期': 'error', '停用': 'default' }
+// 状态标签颜色映射（与后端 Instrument 模型一致：在用/停用）
+const statusColorMap = { '在用': 'green', '停用': 'red' }
+const statusOptions = ['在用', '停用'].map(s => ({ label: s, value: s }))
+const calibrationTypeOptions = ['外校', '内校', '不需要校准'].map(s => ({ label: s, value: s }))
 
 export default function InstrumentManagement() {
-  const [modalOpen, setModalOpen] = useState(false)
+  const message = useMessage()
+  const { hasPermission } = useApp()
+  const [data, setData] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [total, setTotal] = useState(0)
+  const [detailOpen, setDetailOpen] = useState(false)
   const [current, setCurrent] = useState(null)
+  const [editing, setEditing] = useState(null)
+  const [modalVisible, setModalVisible] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [form] = Form.useForm()
 
-  const normalCount = instruments.filter(i => i.status === '正常').length
-  const expiringCount = instruments.filter(i => i.status === '即将到期').length
-  const expiredCount = instruments.filter(i => i.status === '已超期').length
+  // 筛选输入态
+  const [keywordInput, setKeywordInput] = useState('')
+  const [statusInput, setStatusInput] = useState(undefined)
+  const [departmentInput, setDepartmentInput] = useState(undefined)
+  const [calibrationTypeInput, setCalibrationTypeInput] = useState(undefined)
+  // 已应用的查询条件
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined, department: undefined, calibration_type: undefined })
+
+  const inUseCount = data.filter(d => d.status === '在用').length
+  const stopCount = data.filter(d => d.status === '停用').length
 
   const stats: StatItem[] = [
-    { label: '仪器总数', value: instruments.length, icon: <ToolOutlined />, color: '#2196F3' },
-    { label: '正常', value: normalCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
-    { label: '即将到期', value: expiringCount, icon: <WarningOutlined />, color: '#FF9800' },
-    { label: '已超期', value: expiredCount, icon: <ClockCircleOutlined />, color: '#F44336' },
+    { label: '仪器总数', value: total, icon: <ToolOutlined />, color: '#2196F3' },
+    { label: '在用', value: inUseCount, icon: <PlayCircleOutlined />, color: '#4CAF50' },
+    { label: '停用', value: stopCount, icon: <SafetyCertificateOutlined />, color: '#F44336' },
   ]
 
-  const filters: FilterItem[] = [
-    { type: 'input', placeholder: '仪器编号 / 仪器名称', icon: <SearchOutlined /> },
-    {
-      type: 'select', placeholder: '状态', options: [
-        { label: '正常', value: '正常' },
-        { label: '即将到期', value: '即将到期' },
-        { label: '已超期', value: '已超期' },
-        { label: '停用', value: '停用' },
-      ]
-    },
-  ]
+  const departmentOptions = [...new Set(data.map(d => d.department).filter(Boolean))].map(d => ({ label: d, value: d }))
 
-  const showHistory = (record) => {
+  // 获取列表
+  useEffect(() => {
+    let cancelled = false
+    const run = async () => {
+      setLoading(true)
+      try {
+        const params: Record<string, unknown> = { page: query.page, pageSize: query.pageSize, sortBy: 'instrument_no', sortOrder: 'asc' }
+        if (query.keyword) params.keyword = query.keyword
+        if (query.status) params.status = query.status
+        if (query.department) params.department = query.department
+        if (query.calibration_type) params.calibration_type = query.calibration_type
+        const res = await api.get('/basic/instruments', { params })
+        if (cancelled) return
+        const list = res.data || []
+        setData(list)
+        setTotal(res.total || list.length)
+      } catch (err) {
+        if (!cancelled) {
+          message.error(err.message || '获取检测仪器列表失败')
+          setData([])
+          setTotal(0)
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [query])
+
+  const refresh = useCallback(() => setQuery(q => ({ ...q })), [])
+
+  const handleSearch = () => {
+    setQuery(q => ({ ...q, page: 1, keyword: keywordInput, status: statusInput, department: departmentInput, calibration_type: calibrationTypeInput }))
+  }
+
+  const handleReset = () => {
+    setKeywordInput('')
+    setStatusInput(undefined)
+    setDepartmentInput(undefined)
+    setCalibrationTypeInput(undefined)
+    setQuery(q => ({ ...q, page: 1, keyword: '', status: undefined, department: undefined, calibration_type: undefined }))
+  }
+
+  const handleDetail = (record) => {
     setCurrent(record)
-    setModalOpen(true)
+    setDetailOpen(true)
+  }
+
+  const handleAdd = () => {
+    setEditing(null)
+    setModalVisible(true)
+  }
+
+  const handleEdit = (record) => {
+    setEditing(record)
+    setModalVisible(true)
+  }
+
+  // Modal 打开动画结束后再设置表单值（配合 destroyOnHidden + preserve={false}）
+  const handleAfterOpenChange = (open) => {
+    if (!open) return
+    if (editing) {
+      form.setFieldsValue({
+        instrument_no: editing.instrument_no,
+        instrument_name: editing.instrument_name,
+        instrument_model: editing.instrument_model,
+        precision: editing.precision,
+        department: editing.department,
+        location: editing.location,
+        status: editing.status,
+        calibration_type: editing.calibration_type,
+        calibration_cycle: editing.calibration_cycle,
+        last_calibration_date: editing.last_calibration_date,
+        next_calibration_date: editing.next_calibration_date,
+        supplier: editing.supplier,
+        remarks: editing.remarks,
+      })
+    } else {
+      form.resetFields()
+      form.setFieldsValue({ status: '在用' })
+    }
+  }
+
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields()
+      setSubmitting(true)
+      const payload = { ...values }
+      if (editing) {
+        // 编号不可修改，剔除 instrument_no
+        delete payload.instrument_no
+        const res = await api.put(`/basic/instruments/${editing.instrument_id}`, payload)
+        message.success(res.message || '检测仪器编辑成功')
+      } else {
+        const res = await api.post('/basic/instruments', payload)
+        message.success(res.message || '检测仪器新增成功')
+      }
+      setModalVisible(false)
+      refresh()
+    } catch (e) {
+      if (e?.errorFields) return
+      message.error(e.message || '操作失败')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleDelete = async (record) => {
+    try {
+      const res = await api.delete(`/basic/instruments/${record.instrument_id}`)
+      message.success(res.message || '删除成功')
+      refresh()
+    } catch (err) {
+      message.error(err.message || '删除失败')
+    }
   }
 
   const columns = [
     { title: '仪器编号', dataIndex: 'instrument_no', key: 'instrument_no', width: 140, fixed: 'left' as const },
     { title: '仪器名称', dataIndex: 'instrument_name', key: 'instrument_name', width: 130 },
     { title: '型号', dataIndex: 'instrument_model', key: 'instrument_model', width: 110 },
-    { title: '所属部门', dataIndex: 'department', key: 'department', width: 120 },
+    { title: '精度', dataIndex: 'precision', key: 'precision', width: 100 },
+    { title: '使用部门', dataIndex: 'department', key: 'department', width: 110 },
     { title: '存放地点', dataIndex: 'location', key: 'location', width: 110 },
-    {
-      title: '校准周期(天)', dataIndex: 'calibration_cycle', key: 'calibration_cycle', width: 120,
-      render: v => v
-    },
+    { title: '校验类型', dataIndex: 'calibration_type', key: 'calibration_type', width: 100 },
+    { title: '校准周期(天)', dataIndex: 'calibration_cycle', key: 'calibration_cycle', width: 110 },
     { title: '上次校准日期', dataIndex: 'last_calibration_date', key: 'last_calibration_date', width: 120 },
     { title: '下次校准日期', dataIndex: 'next_calibration_date', key: 'next_calibration_date', width: 120 },
     {
-      title: '状态', dataIndex: 'status', key: 'status', width: 100,
-      render: v => <Tag color={statusColor[v] || 'default'}>{v}</Tag>
+      title: '状态', dataIndex: 'status', key: 'status', width: 90,
+      render: v => <Tag color={statusColorMap[v] || 'default'}>{v}</Tag>,
     },
+    { title: '供应商', dataIndex: 'supplier', key: 'supplier', width: 110 },
     {
-      title: '操作', key: 'action', fixed: 'right' as const,
+      title: '操作', key: 'action', fixed: 'right' as const, width: 180,
       render: (_, record) => (
-        <Button type="link" size="small" onClick={() => showHistory(record)}>校准记录</Button>
-      )
+        <Space size="small">
+          <Button type="link" size="small" onClick={() => handleDetail(record)}>查看</Button>
+          {hasPermission('quality:instrument:update') && (
+            <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
+          )}
+          {hasPermission('quality:instrument:delete') && (
+            <Popconfirm title="确定删除该检测仪器吗？" onConfirm={() => handleDelete(record)} okText="确定" cancelText="取消">
+              <Button type="link" size="small" danger>删除</Button>
+            </Popconfirm>
+          )}
+        </Space>
+      ),
     },
   ]
 
-  const historyColumns = [
-    { title: '校准日期', dataIndex: 'calibration_date', key: 'calibration_date', width: 130 },
-    {
-      title: '校准结果', dataIndex: 'calibration_result', key: 'calibration_result', width: 100,
-      render: v => <Tag color={v === '合格' ? 'success' : 'error'}>{v}</Tag>
-    },
-    { title: '校准机构', dataIndex: 'calibration_org', key: 'calibration_org' },
-    { title: '录入人', dataIndex: 'operator', key: 'operator', width: 110 },
+  const filters: FilterItem[] = [
+    { type: 'input', placeholder: '仪器编号 / 名称 / 型号', col: { flex: '180px' }, value: keywordInput, onChange: (e) => setKeywordInput((e as React.ChangeEvent<HTMLInputElement>).target.value) },
+    { type: 'select', placeholder: '使用部门', options: departmentOptions, col: { flex: '150px' }, value: departmentInput, onChange: (v) => setDepartmentInput(v as string | undefined) },
+    { type: 'select', placeholder: '校验类型', options: calibrationTypeOptions, col: { flex: '150px' }, value: calibrationTypeInput, onChange: (v) => setCalibrationTypeInput(v as string | undefined) },
+    { type: 'select', placeholder: '状态', options: statusOptions, col: { flex: '150px' }, value: statusInput, onChange: (v) => setStatusInput(v as string | undefined) },
   ]
 
   return (
@@ -103,61 +213,158 @@ export default function InstrumentManagement() {
         breadcrumbs="质量管理 / 检测仪器"
         stats={stats}
         filters={filters}
-        actions={<ActionButtons />}
+        onSearch={handleSearch}
+        onReset={handleReset}
+        actions={
+          <ActionButtons
+            hasAdd={false}
+            hasExport={false}
+            extra={[
+              <Button key="add" type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增仪器</Button>,
+              <Button key="reload" icon={<ReloadOutlined />} onClick={refresh}>刷新</Button>,
+            ]}
+          />
+        }
         table={
-          <ResizableTable tableKey="pages_quality_InstrumentManagement"             columns={columns}
-            dataSource={instruments}
+          <ResizableTable tableKey="pages_quality_InstrumentManagement" columns={columns}
+            dataSource={data}
             rowKey="instrument_id"
             size="small"
-            scroll={{ x: 1200 }}
-            pagination={{ pageSize: 30, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
+            loading={loading}
+            scroll={{ x: 1500 }}
+            pagination={{
+              current: query.page,
+              pageSize: query.pageSize,
+              total,
+              showSizeChanger: true,
+              showTotal: t => `共 ${t} 条`,
+              onChange: (p, ps) => setQuery(q => ({ ...q, page: p, pageSize: ps })),
+            }}
           />
         }
       />
       <Modal
-        title="校准记录"
-        open={modalOpen}
-        onCancel={() => setModalOpen(false)}
-        footer={null}
-        width={720}
+        title={editing ? '编辑检测仪器' : '新增检测仪器'}
+        open={modalVisible}
+        onOk={handleSubmit}
+        confirmLoading={submitting}
+        onCancel={() => setModalVisible(false)}
+        afterOpenChange={handleAfterOpenChange}
+        okText="保存"
+        cancelText="取消"
+        width={760}
         destroyOnHidden
       >
-        {current && (
-          <>
-            <Space size="large" style={{ marginBottom: 16 }}>
-              <div>
-                <Text type="secondary">仪器编号：</Text>
-                <Text strong>{current.instrument_no}</Text>
-              </div>
-              <div>
-                <Text type="secondary">仪器名称：</Text>
-                <Text strong>{current.instrument_name}</Text>
-              </div>
-              <div>
-                <Text type="secondary">型号：</Text>
-                <Text strong>{current.instrument_model}</Text>
-              </div>
-              <div>
-                <Text type="secondary">状态：</Text>
-                <Tag color={statusColor[current.status] || 'default'}>{current.status}</Tag>
-              </div>
-            </Space>
-            <Title level={5}>校准历史记录</Title>
-            <ResizableTable tableKey="pages_quality_InstrumentManagement"               columns={historyColumns}
-              dataSource={calibrationHistoryMap[current.instrument_id] || []}
-              rowKey={(r, i) => i}
-              size="small"
-              pagination={false}
-            />
-            {current.remarks && (
-              <div style={{ marginTop: 16 }}>
-                <Text type="secondary">备注：</Text>
-                <Text>{current.remarks}</Text>
-              </div>
-            )}
-          </>
+        <Form form={form} layout="vertical" className="compact-form" preserve={false}>
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item
+                name="instrument_no"
+                label="仪器编号"
+                rules={[{ required: true, message: '请输入仪器编号' }]}
+                extra={editing ? '编码已生成，不允许修改' : '编码一经生成不可修改，请仔细核对'}
+              >
+                <Input placeholder="请输入仪器编号（如 DMCS-ZJC-02）" disabled={!!editing} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="instrument_name" label="仪器名称" rules={[{ required: true, message: '请输入仪器名称' }]}>
+                <Input placeholder="请输入仪器名称" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item name="instrument_model" label="型号">
+                <Input placeholder="请输入型号" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="precision" label="精度">
+                <Input placeholder="如 0.01mm" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={8}>
+              <Form.Item name="department" label="使用部门">
+                <Input placeholder="如 生产部" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="location" label="存放地点">
+                <Input placeholder="如 下料" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
+                <Select placeholder="请选择状态" options={statusOptions} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={8}>
+              <Form.Item name="calibration_type" label="校验类型">
+                <Select placeholder="请选择" options={calibrationTypeOptions} allowClear />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="calibration_cycle" label="校准周期（天）">
+                <Input placeholder="如 365" type="number" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="supplier" label="供应商">
+                <Input placeholder="请输入供应商" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={12}>
+              <Form.Item name="last_calibration_date" label="上次校准日期">
+                <Input placeholder="YYYY-MM-DD" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="next_calibration_date" label="下次校准日期">
+                <Input placeholder="YYYY-MM-DD" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item name="remarks" label="备注">
+            <Input.TextArea placeholder="请输入备注" rows={2} />
+          </Form.Item>
+        </Form>
+        {editing && (
+          <div style={{ marginTop: 8, color: '#faad14', fontSize: 12 }}>
+            提示：仪器编号一经生成不允许修改，如需修改请删除后重新创建。
+          </div>
         )}
       </Modal>
+      <Drawer
+        title="检测仪器详情"
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        width={560}
+      >
+        {current && (
+          <Descriptions column={1} bordered size="small">
+            <Descriptions.Item label="仪器编号">{current.instrument_no}</Descriptions.Item>
+            <Descriptions.Item label="仪器名称">{current.instrument_name}</Descriptions.Item>
+            <Descriptions.Item label="型号">{current.instrument_model || '-'}</Descriptions.Item>
+            <Descriptions.Item label="精度">{current.precision || '-'}</Descriptions.Item>
+            <Descriptions.Item label="使用部门">{current.department || '-'}</Descriptions.Item>
+            <Descriptions.Item label="存放地点">{current.location || '-'}</Descriptions.Item>
+            <Descriptions.Item label="状态"><Tag color={statusColorMap[current.status] || 'default'}>{current.status}</Tag></Descriptions.Item>
+            <Descriptions.Item label="校验类型">{current.calibration_type || '-'}</Descriptions.Item>
+            <Descriptions.Item label="校准周期（天）">{current.calibration_cycle ?? '-'}</Descriptions.Item>
+            <Descriptions.Item label="上次校准日期">{current.last_calibration_date || '-'}</Descriptions.Item>
+            <Descriptions.Item label="下次校准日期">{current.next_calibration_date || '-'}</Descriptions.Item>
+            <Descriptions.Item label="供应商">{current.supplier || '-'}</Descriptions.Item>
+            <Descriptions.Item label="备注">{current.remarks || '-'}</Descriptions.Item>
+          </Descriptions>
+        )}
+      </Drawer>
     </>
   )
 }

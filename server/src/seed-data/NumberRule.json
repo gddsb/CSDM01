@@ -127,24 +127,6 @@
     "updated_at": "2026-07-09T06:53:49.000Z"
   },
   {
-    "rule_id": 8,
-    "rule_name": "检测仪器编号",
-    "rule_code": "INSTRUMENT",
-    "prefix": "YQ",
-    "date_format": "YYYY",
-    "separator": "",
-    "seq_width": 4,
-    "reset_by": "yearly",
-    "target_table": "quality_instrument",
-    "target_field": "instrument_no",
-    "target_label": "检测仪器编号",
-    "used_count": 0,
-    "status": 1,
-    "is_locked": 1,
-    "created_at": "2026-07-09T06:53:49.000Z",
-    "updated_at": "2026-07-09T06:53:49.000Z"
-  },
-  {
     "rule_id": 9,
     "rule_name": "客诉编号",
     "rule_code": "COMPLAINT",

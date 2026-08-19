@@ -10,7 +10,7 @@ const Sequence = sequelize.define('Sequence', {
     primaryKey: true,
     autoIncrement: true,
   },
-  // 序列键，如 ORDER / WORK_ORDER / INCOMING / PROCESS / FINISHED / MICROBE / ENV / INSTRUMENT / COMPLAINT / SUPPLIER_COMPLAINT / NCR / STANDARD
+  // 序列键，如 ORDER / WORK_ORDER / INCOMING / PROCESS / FINISHED / MICROBE / ENV / COMPLAINT / SUPPLIER_COMPLAINT / NCR / STANDARD
   seq_key: {
     type: DataTypes.STRING(50),
     allowNull: false,
