@@ -67,6 +67,12 @@ export function buildQcItemData(
     inspector_name: item.inspector_name || user.realName || user.username || null,
     inspection_time: item.inspection_time ? new Date(item.inspection_time) : null,
     unit: item.unit || null,
+    // 阶段回填：从检验标准 / 前端 payload 持久化配置字段
+    item_type: item.item_type || null,
+    need_sample_count: item.need_sample_count ?? 0,
+    nominal_value: item.nominal_value ?? null,
+    upper_limit: item.upper_limit ?? null,
+    lower_limit: item.lower_limit ?? null,
     sort_order: item.sort_order !== undefined ? item.sort_order : idx,
     remarks: item.remarks || null,
   }))
@@ -122,6 +128,12 @@ export function mapQcItemsToFrontend(qcItems: any[]): any[] {
       inspector_name: raw.inspector_name,
       inspection_time: raw.inspection_time,
       unit: raw.unit,
+      // 阶段回填：暴露配置字段给前端 InspectionItemEditor
+      item_type: raw.item_type ?? null,
+      need_sample_count: raw.need_sample_count ?? null,
+      nominal_value: raw.nominal_value ?? null,
+      upper_limit: raw.upper_limit ?? null,
+      lower_limit: raw.lower_limit ?? null,
       sort_order: raw.sort_order,
       remarks: raw.remarks,
       created_at: raw.created_at,

@@ -72,6 +72,28 @@ const QcInspectionItem = sequelize.define('QcInspectionItem', {
     type: DataTypes.STRING(20),
     comment: '单位',
   },
+  // —— 检验数据统一存储改造（回填阶段）：从检验标准子表同步的配置字段 ——
+  item_type: {
+    type: DataTypes.STRING(20),
+    comment: '项目类型：qualitative定性(仅判定OK/NG) / quantitative定量(记录测量数值)',
+  },
+  need_sample_count: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    comment: '默认抽样数（来自检验标准），0=不限制由实际抽样决定',
+  },
+  nominal_value: {
+    type: DataTypes.DECIMAL(15, 4),
+    comment: '标称值（定量用，来自检验标准）',
+  },
+  upper_limit: {
+    type: DataTypes.DECIMAL(15, 4),
+    comment: '上限（定量用，来自检验标准）',
+  },
+  lower_limit: {
+    type: DataTypes.DECIMAL(15, 4),
+    comment: '下限（定量用，来自检验标准）',
+  },
   sort_order: {
     type: DataTypes.INTEGER,
     defaultValue: 0,

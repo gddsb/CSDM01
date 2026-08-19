@@ -161,6 +161,7 @@ export default {
         result.items = standardItems.map((si: any, idx: number) => ({
           item_id: null,
           inspection_id: result.inspection_id,
+          item_cfg_id: si.item_id,
           item_name: si.item_name,
           standard_value: si.standard_value || '',
           actual_value: '',
@@ -172,6 +173,12 @@ export default {
           remarks: '',
           category: si.category,
           unit: si.unit,
+          // 阶段回填：检验标准兜底拉取时也带上配置字段
+          item_type: si.item_type ?? null,
+          need_sample_count: si.need_sample_count ?? null,
+          nominal_value: si.nominal_value ?? null,
+          upper_limit: si.upper_limit ?? null,
+          lower_limit: si.lower_limit ?? null,
         }))
       }
       success(res, result)

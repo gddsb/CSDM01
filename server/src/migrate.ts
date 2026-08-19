@@ -203,6 +203,18 @@ const migrations = [
       ['inspection_types', 'VARCHAR(200)'],
     ],
   },
+  // 检验数据统一存储改造（回填阶段）：qc_inspection_item 加 5 个配置字段
+  // 与 quality_inspection_standard_item 同构，由回填脚本同步过来
+  {
+    table: 'qc_inspection_item',
+    columns: [
+      ['item_type', 'VARCHAR(20)'],
+      ['need_sample_count', 'INT DEFAULT 0'],
+      ['nominal_value', 'DECIMAL(15,4)'],
+      ['upper_limit', 'DECIMAL(15,4)'],
+      ['lower_limit', 'DECIMAL(15,4)'],
+    ],
+  },
   // 人员使用记录子表：新增 report_order_id（替代原 report_id/work_order_id/work_order_no）
   {
     table: 'production_manpower_record',
@@ -357,6 +369,9 @@ export async function runMigrations() {
 
   // 5. 补齐高频查询字段的性能索引（幂等）
   await ensurePerformanceIndexes()
+
+  // 6. 检验数据统一存储改造（回填阶段）：从检验标准同步配置到 qc_inspection_item
+  await backfillQcItemConfig()
 }
 
 // 判断约束是否已存在
@@ -575,6 +590,118 @@ async function ensurePerformanceIndexes(): Promise<void> {
       } catch (err: any) {
         console.warn(`[Migrate] create index ${idx.name} failed: ${err?.message}`)
       }
+    }
+  }
+}
+
+// ============================================================
+// 检验数据统一存储改造（回填阶段）
+// 从 quality_inspection_standard_item 同步配置字段到 qc_inspection_item
+// 让旧检验单（item_cfg_id 为空，缺 item_type/limit 等）也能驱动
+// 前端 InspectionItemEditor 正确渲染定量录入界面
+//
+// 幂等性：所有 UPDATE 用 IFNULL，已填的数据不会被覆盖，可重复执行
+// ============================================================
+async function backfillQcItemConfig(): Promise<void> {
+  if (sequelize.getDialect() !== 'mysql') return
+
+  // 表不存在则跳过（sync 会先建表）
+  if (!(await tableExists('qc_inspection_item'))) return
+  if (!(await tableExists('quality_inspection_standard_item'))) return
+
+  const queries: Array<{ name: string; sql: string }> = [
+    {
+      name: 'qc_item backfill by item_cfg_id',
+      sql: `UPDATE qc_inspection_item qci
+            JOIN quality_inspection_standard_item si ON si.item_id = qci.item_cfg_id
+            SET qci.item_type = IFNULL(qci.item_type, si.item_type),
+                qci.need_sample_count = IFNULL(NULLIF(qci.need_sample_count, 0), si.need_sample_count),
+                qci.nominal_value = IFNULL(qci.nominal_value, si.nominal_value),
+                qci.upper_limit = IFNULL(qci.upper_limit, si.upper_limit),
+                qci.lower_limit = IFNULL(qci.lower_limit, si.lower_limit)
+            WHERE qci.item_type IS NULL
+               OR qci.nominal_value IS NULL
+               OR qci.upper_limit IS NULL
+               OR qci.lower_limit IS NULL`,
+    },
+    {
+      name: 'qc_item backfill incoming (item_cfg_id null)',
+      sql: `UPDATE qc_inspection_item qci
+            JOIN quality_incoming_inspection ii
+              ON ii.inspection_id = qci.inspection_id AND qci.source_type = '来料'
+            JOIN (
+              SELECT MIN(item_id) AS min_item_id, standard_id, item_name
+              FROM quality_inspection_standard_item
+              GROUP BY standard_id, item_name
+            ) si ON si.standard_id = ii.standard_id AND si.item_name = qci.item_name
+            JOIN quality_inspection_standard_item si_full ON si_full.item_id = si.min_item_id
+            SET qci.item_cfg_id = IFNULL(qci.item_cfg_id, si_full.item_id),
+                qci.item_type = IFNULL(qci.item_type, si_full.item_type),
+                qci.need_sample_count = IFNULL(NULLIF(qci.need_sample_count, 0), si_full.need_sample_count),
+                qci.nominal_value = IFNULL(qci.nominal_value, si_full.nominal_value),
+                qci.upper_limit = IFNULL(qci.upper_limit, si_full.upper_limit),
+                qci.lower_limit = IFNULL(qci.lower_limit, si_full.lower_limit)
+            WHERE qci.item_cfg_id IS NULL`,
+    },
+    {
+      name: 'qc_item backfill product (item_cfg_id null)',
+      sql: `UPDATE qc_inspection_item qci
+            JOIN quality_product_inspection pi
+              ON pi.inspection_id = qci.inspection_id AND qci.source_type = '产品'
+            JOIN (
+              SELECT MIN(item_id) AS min_item_id, standard_id, item_name
+              FROM quality_inspection_standard_item
+              GROUP BY standard_id, item_name
+            ) si ON si.standard_id = pi.standard_id AND si.item_name = qci.item_name
+            JOIN quality_inspection_standard_item si_full ON si_full.item_id = si.min_item_id
+            SET qci.item_cfg_id = IFNULL(qci.item_cfg_id, si_full.item_id),
+                qci.item_type = IFNULL(qci.item_type, si_full.item_type),
+                qci.need_sample_count = IFNULL(NULLIF(qci.need_sample_count, 0), si_full.need_sample_count),
+                qci.nominal_value = IFNULL(qci.nominal_value, si_full.nominal_value),
+                qci.upper_limit = IFNULL(qci.upper_limit, si_full.upper_limit),
+                qci.lower_limit = IFNULL(qci.lower_limit, si_full.lower_limit)
+            WHERE qci.item_cfg_id IS NULL`,
+    },
+    {
+      name: 'qc_item backfill microbe (item_cfg_id null)',
+      sql: `UPDATE qc_inspection_item qci
+            JOIN quality_microbe_inspection mi
+              ON mi.inspection_id = qci.inspection_id AND qci.source_type = '微生物'
+            JOIN (
+              SELECT MIN(item_id) AS min_item_id, standard_id, item_name
+              FROM quality_inspection_standard_item
+              GROUP BY standard_id, item_name
+            ) si ON si.standard_id = mi.standard_id AND si.item_name = qci.item_name
+            JOIN quality_inspection_standard_item si_full ON si_full.item_id = si.min_item_id
+            SET qci.item_cfg_id = IFNULL(qci.item_cfg_id, si_full.item_id),
+                qci.item_type = IFNULL(qci.item_type, si_full.item_type),
+                qci.need_sample_count = IFNULL(NULLIF(qci.need_sample_count, 0), si_full.need_sample_count),
+                qci.nominal_value = IFNULL(qci.nominal_value, si_full.nominal_value),
+                qci.upper_limit = IFNULL(qci.upper_limit, si_full.upper_limit),
+                qci.lower_limit = IFNULL(qci.lower_limit, si_full.lower_limit)
+            WHERE qci.item_cfg_id IS NULL`,
+    },
+    {
+      name: 'qc_item backfill heuristic quantitative',
+      sql: `UPDATE qc_inspection_item
+            SET item_type = 'quantitative'
+            WHERE item_type IS NULL AND standard_value REGEXP '[0-9]'`,
+    },
+    {
+      name: 'qc_item backfill default qualitative',
+      sql: `UPDATE qc_inspection_item
+            SET item_type = 'qualitative'
+            WHERE item_type IS NULL`,
+    },
+  ]
+
+  for (const q of queries) {
+    try {
+      const [r] = await sequelize.query(q.sql) as any
+      const affected = (r as any)?.affectedRows || 0
+      console.log(`  ✅ ${q.name}: ${affected} rows`)
+    } catch (err: any) {
+      console.warn(`  ⚠️ ${q.name} failed:`, err?.message)
     }
   }
 }
