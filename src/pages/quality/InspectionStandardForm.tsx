@@ -42,6 +42,11 @@ const categoryOptions = [
   { label: '其它要求', value: '其它要求' },
 ]
 
+const itemTypeOptions = [
+  { label: '定性（仅判定 OK/NG）', value: 'qualitative' },
+  { label: '定量（记录测量数值）', value: 'quantitative' },
+]
+
 export default function InspectionStandardForm() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -63,6 +68,7 @@ export default function InspectionStandardForm() {
   const readOnly = isEdit && currentStatus !== '开立'
 
   const formStandardType = Form.useWatch('standard_type', form)
+  const watchItemType = Form.useWatch('item_type', itemForm)
 
   const generateStandardNo = useCallback(async (st: string) => {
     if (!st || generatingRef.current) return
@@ -206,6 +212,8 @@ export default function InspectionStandardForm() {
       category: '感官要求',
       defect_level: 'B类严重缺陷',
       inspection_types: [],
+      item_type: 'qualitative',
+      need_sample_count: 0,
     })
     setItemModalVisible(true)
   }
@@ -221,6 +229,11 @@ export default function InspectionStandardForm() {
       unit: record.unit,
       defect_level: record.defect_level,
       inspection_types: record.inspection_types || [],
+      item_type: record.item_type || 'qualitative',
+      need_sample_count: record.need_sample_count ?? 0,
+      nominal_value: record.nominal_value ?? undefined,
+      upper_limit: record.upper_limit ?? undefined,
+      lower_limit: record.lower_limit ?? undefined,
     })
     setItemModalVisible(true)
   }
@@ -262,6 +275,11 @@ export default function InspectionStandardForm() {
       }
     },
     { title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 220, render: (v: string) => <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{v}</span> },
+    {
+      title: '项目类型', dataIndex: 'item_type', key: 'item_type', width: 90,
+      render: (v: string) => v ? <Tag color={v === 'quantitative' ? 'orange' : 'blue'}>{v === 'quantitative' ? '定量' : '定性'}</Tag> : '-'
+    },
+    { title: '抽样数', dataIndex: 'need_sample_count', key: 'need_sample_count', width: 70, render: (v: number) => v ? v : '不限' },
     { title: '单位', dataIndex: 'unit', key: 'unit', width: 80 },
     {
       title: '缺陷等级', dataIndex: 'defect_level', key: 'defect_level', width: 130,
@@ -418,7 +436,7 @@ export default function InspectionStandardForm() {
               rowKey={(r: any) => r._key || r.item_id}
               size="small"
               pagination={false}
-              scroll={{ x: 1500 }}
+              scroll={{ x: 1660 }}
               locale={{ emptyText: '暂无检验项目，点击右上角"新增项目"添加' }}
             />
           </div>
@@ -478,6 +496,47 @@ export default function InspectionStandardForm() {
               </Form.Item>
             </Col>
           </Row>
+          <Row gutter={12}>
+            <Col span={8}>
+              <Form.Item name="item_type" label="项目类型" rules={[{ required: true, message: '请选择项目类型' }]}
+                extra={watchItemType === 'quantitative' ? '录入多测量值并按上下限自动判定' : '每件样品判定 OK/NG'}>
+                <Select placeholder="请选择" options={itemTypeOptions} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="need_sample_count" label="默认抽样数"
+                extra="0=不限制，由实际抽样决定">
+                <Input type="number" placeholder="如 5" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item shouldUpdate={(p, c) => (p.item_type ?? 'qualitative') !== (c.item_type ?? 'qualitative')} noStyle>
+                {() => (itemForm.getFieldValue('item_type') === 'quantitative' ? (
+                  <Form.Item label="标称值" name="nominal_value" extra="可选，无上下限时按标称值判定">
+                    <Input type="number" placeholder="如 90.0" />
+                  </Form.Item>
+                ) : <div style={{ height: 56 }} />)}
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item shouldUpdate={(p, c) => (p.item_type ?? 'qualitative') !== (c.item_type ?? 'qualitative')} noStyle>
+            {() => itemForm.getFieldValue('item_type') === 'quantitative' ? (
+              <Row gutter={12}>
+                <Col span={12}>
+                  <Form.Item name="upper_limit" label="上限"
+                    extra="可空；超出上限判 NG">
+                    <Input type="number" placeholder="如 90.3" />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item name="lower_limit" label="下限"
+                    extra="可空；低于下限判 NG">
+                    <Input type="number" placeholder="如 89.7" />
+                  </Form.Item>
+                </Col>
+              </Row>
+            ) : null}
+          </Form.Item>
           <Row gutter={12}>
             <Col span={24}>
               <Form.Item name="standard_value" label="检验要求" rules={[{ required: true, message: '请输入检验要求' }]}>

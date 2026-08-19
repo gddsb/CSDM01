@@ -139,6 +139,11 @@ export const create = async (req: any, res: any) => {
         defect_level: it.defect_level || null,
         sort_order: it.sort_order || 0,
         inspection_types: Array.isArray(it.inspection_types) ? it.inspection_types.join(',') : (it.inspection_types || null),
+        item_type: it.item_type || 'qualitative',
+        need_sample_count: it.need_sample_count ?? 0,
+        nominal_value: it.nominal_value ?? null,
+        upper_limit: it.upper_limit ?? null,
+        lower_limit: it.lower_limit ?? null,
       }))
       await InspectionStandardItem.bulkCreate(itemRecords)
     }
@@ -210,6 +215,11 @@ export const update = async (req: any, res: any) => {
           defect_level: it.defect_level || null,
           sort_order: it.sort_order || 0,
           inspection_types: Array.isArray(it.inspection_types) ? it.inspection_types.join(',') : (it.inspection_types || null),
+          item_type: it.item_type || 'qualitative',
+          need_sample_count: it.need_sample_count ?? 0,
+          nominal_value: it.nominal_value ?? null,
+          upper_limit: it.upper_limit ?? null,
+          lower_limit: it.lower_limit ?? null,
         }))
         await InspectionStandardItem.bulkCreate(itemRecords)
       }
@@ -289,6 +299,11 @@ export const copy = async (req: any, res: any) => {
         defect_level: it.defect_level || null,
         sort_order: it.sort_order || 0,
         inspection_types: it.inspection_types || null,
+        item_type: it.item_type || 'qualitative',
+        need_sample_count: it.need_sample_count ?? 0,
+        nominal_value: it.nominal_value ?? null,
+        upper_limit: it.upper_limit ?? null,
+        lower_limit: it.lower_limit ?? null,
       }))
       await InspectionStandardItem.bulkCreate(itemRecords)
     }
@@ -350,6 +365,11 @@ export const revise = async (req: any, res: any) => {
         defect_level: it.defect_level || null,
         sort_order: it.sort_order || 0,
         inspection_types: it.inspection_types || null,
+        item_type: it.item_type || 'qualitative',
+        need_sample_count: it.need_sample_count ?? 0,
+        nominal_value: it.nominal_value ?? null,
+        upper_limit: it.upper_limit ?? null,
+        lower_limit: it.lower_limit ?? null,
       }))
       await InspectionStandardItem.bulkCreate(itemRecords)
     }
