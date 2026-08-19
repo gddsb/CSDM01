@@ -710,6 +710,87 @@ async function backfillQcItemConfig(): Promise<void> {
             SET item_type = 'qualitative'
             WHERE item_type IS NULL`,
     },
+
+    // —— standard_item 旧数据补齐：消除详情页「抽样信息」列全是 '-' 的情况（用户不需要手工再重保存）
+    // AQL抽样：填充 {aql_value:2.5} + 默认抽样数 20
+    {
+      name: 'std_item backfill: AQL sampling_detail',
+      sql: `UPDATE quality_inspection_standard_item
+            SET sampling_detail = '{"aql_value":2.5}'
+            WHERE sampling_plan = 'AQL抽样' AND (sampling_detail IS NULL OR sampling_detail = '')`,
+    },
+    {
+      name: 'std_item backfill: AQL need_sample_count default 20',
+      sql: `UPDATE quality_inspection_standard_item
+            SET need_sample_count = COALESCE(need_sample_count, 20)
+            WHERE sampling_plan = 'AQL抽样' AND (need_sample_count IS NULL OR need_sample_count = 0)`,
+    },
+    // 固定数量抽样：用 need_sample_count 作为 n；如果 Ac/Re 空则默认 Ac=0 Re=1
+    {
+      name: 'std_item backfill: fixed sampling_detail JSON',
+      sql: `UPDATE quality_inspection_standard_item
+            SET sampling_detail = CONCAT('{"sample_count":', COALESCE(NULLIF(need_sample_count,0),5),
+                        ',"accept_number":', COALESCE(accept_number, 0),
+                        ',"reject_number":',  COALESCE(reject_number, 1), '}')
+            WHERE sampling_plan = '固定数量抽样' AND (sampling_detail IS NULL OR sampling_detail = '')`,
+    },
+    {
+      name: 'std_item backfill: fixed default Ac/Re',
+      sql: `UPDATE quality_inspection_standard_item
+            SET accept_number = COALESCE(accept_number, 0),
+                reject_number = COALESCE(reject_number, 1)
+            WHERE sampling_plan = '固定数量抽样'`,
+    },
+    {
+      name: 'std_item backfill: fixed n (need_sample_count)',
+      sql: `UPDATE quality_inspection_standard_item
+            SET need_sample_count = CASE
+              WHEN need_sample_count IS NULL OR need_sample_count = 0 THEN 5
+              ELSE need_sample_count
+            END
+            WHERE sampling_plan = '固定数量抽样'`,
+    },
+    // 按数量抽样：默认 1 段（≤100 → n=5 Ac=0 Re=1）
+    {
+      name: 'std_item backfill: by_qty sampling_detail',
+      sql: `UPDATE quality_inspection_standard_item
+            SET sampling_detail = '{"segments":[{"max_qty":100,"sample_count":5,"accept_number":0,"reject_number":1}]}'
+            WHERE sampling_plan = '按数量抽样' AND (sampling_detail IS NULL OR sampling_detail = '')`,
+    },
+    {
+      name: 'std_item backfill: by_qty default n=5',
+      sql: `UPDATE quality_inspection_standard_item
+            SET need_sample_count = CASE
+              WHEN need_sample_count IS NULL OR need_sample_count = 0 THEN 5
+              ELSE need_sample_count
+            END
+            WHERE sampling_plan = '按数量抽样'`,
+    },
+    // 全检：need_sample_count 留 NULL 即可（展示时用"全部"表示）
+    {
+      name: 'std_item backfill: full_inspection sampling_detail',
+      sql: `UPDATE quality_inspection_standard_item
+            SET sampling_detail = '{"note":"全检：100%逐件检验，任一NG整批拒收"}'
+            WHERE sampling_plan = '全检' AND (sampling_detail IS NULL OR sampling_detail = '')`,
+    },
+    // 项目类型：有上下限任一非空 → quantitative；否则 qualitative
+    {
+      name: 'std_item backfill: item_type from limits',
+      sql: `UPDATE quality_inspection_standard_item
+            SET item_type = CASE
+              WHEN item_type IS NOT NULL AND item_type <> '' THEN item_type
+              WHEN upper_limit IS NOT NULL OR lower_limit IS NOT NULL THEN 'quantitative'
+              ELSE 'qualitative'
+            END
+            WHERE item_type IS NULL OR item_type = ''`,
+    },
+    // 计划名兼容：旧数据 sampling_plan 为 NULL → 默认 AQL抽样
+    {
+      name: 'std_item backfill: sampling_plan default AQL',
+      sql: `UPDATE quality_inspection_standard_item
+            SET sampling_plan = 'AQL抽样'
+            WHERE sampling_plan IS NULL OR sampling_plan = ''`,
+    },
   ]
 
   for (const q of queries) {

@@ -616,7 +616,7 @@ export default function InspectionStandardForm() {
             </Col>
           </Row>
 
-          {/* 第二行：检验类型 + 上限、下限、单位（四列布局） */}
+          {/* 第二行：检验类型、单位、上限、下限（四列布局） */}
           <Row gutter={12} align="top">
             {/* 检验类型：占 10 栅格 */}
             <Col span={10}>
@@ -626,6 +626,12 @@ export default function InspectionStandardForm() {
                   options={inspectionTypeOptions}
                   style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', paddingTop: 4 }}
                 />
+              </Form.Item>
+            </Col>
+            {/* 单位：6 栅格 */}
+            <Col span={6}>
+              <Form.Item name="unit" label="单位" extra="如 mm / N / % / mg / 级">
+                <Input placeholder="可选，定性/定量通用" />
               </Form.Item>
             </Col>
             {/* 上限：4 栅格 */}
@@ -638,12 +644,6 @@ export default function InspectionStandardForm() {
             <Col span={4}>
               <Form.Item name="lower_limit" label="下限" extra={itemForm.getFieldValue('item_type') === 'quantitative' ? '低于判不合格' : '定量时填写'}>
                 <Input type="number" placeholder="定量填写" />
-              </Form.Item>
-            </Col>
-            {/* 单位：6 栅格 */}
-            <Col span={6}>
-              <Form.Item name="unit" label="单位" extra="如 mm / N / % / mg / 级">
-                <Input placeholder="可选，定性/定量通用" />
               </Form.Item>
             </Col>
           </Row>
@@ -685,19 +685,19 @@ export default function InspectionStandardForm() {
             {/* 方案说明位置：根据当前选中方案显示精简版说明（位于同一行右边） */}
             <Col span={16}>
               {watchSamplingPlan === 'AQL抽样' && (
-                <Alert type="info" showIcon size="small" style={{ marginTop: 4 }}
+                <Alert type="info" showIcon style={{ marginTop: 4, padding: '4px 12px', fontSize: 12 }}
                   message="AQL抽样：按 AQL 值和到货数量查表获取 n/Ac/Re；不合格数≤Ac 接收，≥Re 拒收" />
               )}
               {watchSamplingPlan === '固定数量抽样' && (
-                <Alert type="info" showIcon size="small" style={{ marginTop: 4 }}
+                <Alert type="info" showIcon style={{ marginTop: 4, padding: '4px 12px', fontSize: 12 }}
                   message="固定数量抽样：检验时抽取固定件数；按 Ac/Re 判定整批。示例：n=10, Ac=1, Re=2 → 1件不合格仍可接收" />
               )}
               {watchSamplingPlan === '按数量抽样' && (
-                <Alert type="info" showIcon size="small" style={{ marginTop: 4 }}
+                <Alert type="info" showIcon style={{ marginTop: 4, padding: '4px 12px', fontSize: 12 }}
                   message="按数量抽样：根据到货数量从分段表中取对应抽样数；最多5个分段；每段独立配置 n/Ac/Re" />
               )}
               {watchSamplingPlan === '全检' && (
-                <Alert type="info" showIcon size="small" style={{ marginTop: 4 }}
+                <Alert type="info" showIcon style={{ marginTop: 4, padding: '4px 12px', fontSize: 12 }}
                   message="全检：100% 逐件检验；任一件 NG 整批判不合格" />
               )}
             </Col>
