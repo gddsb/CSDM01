@@ -455,6 +455,8 @@ export default {
       }
 
       await IncomingInspectionItem.destroy({ where: { inspection_id: id }, transaction: t })
+      // 检验数据统一存储改造（阶段1.7）：同步清理 qc_items + sample_values
+      await deleteQcItems('来料', Number(id), t)
       await record.destroy({ transaction: t })
       await t.commit()
 
