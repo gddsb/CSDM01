@@ -630,10 +630,11 @@ async function backfillQcItemConfig(): Promise<void> {
             JOIN quality_incoming_inspection ii
               ON ii.inspection_id = qci.inspection_id AND qci.source_type = '来料'
             JOIN (
-              SELECT MIN(item_id) AS min_item_id, standard_id, item_name
+              SELECT MIN(item_id) AS min_item_id, standard_id,
+                     CONVERT(item_name USING utf8mb4) COLLATE utf8mb4_0900_ai_ci AS item_name_ci
               FROM quality_inspection_standard_item
               GROUP BY standard_id, item_name
-            ) si ON si.standard_id = ii.standard_id AND si.item_name = qci.item_name
+            ) si ON si.standard_id = ii.standard_id AND si.item_name_ci = qci.item_name
             JOIN quality_inspection_standard_item si_full ON si_full.item_id = si.min_item_id
             SET qci.item_cfg_id = IFNULL(qci.item_cfg_id, si_full.item_id),
                 qci.item_type = IFNULL(qci.item_type, si_full.item_type),
@@ -649,10 +650,11 @@ async function backfillQcItemConfig(): Promise<void> {
             JOIN quality_product_inspection pi
               ON pi.inspection_id = qci.inspection_id AND qci.source_type = '产品'
             JOIN (
-              SELECT MIN(item_id) AS min_item_id, standard_id, item_name
+              SELECT MIN(item_id) AS min_item_id, standard_id,
+                     CONVERT(item_name USING utf8mb4) COLLATE utf8mb4_0900_ai_ci AS item_name_ci
               FROM quality_inspection_standard_item
               GROUP BY standard_id, item_name
-            ) si ON si.standard_id = pi.standard_id AND si.item_name = qci.item_name
+            ) si ON si.standard_id = pi.standard_id AND si.item_name_ci = qci.item_name
             JOIN quality_inspection_standard_item si_full ON si_full.item_id = si.min_item_id
             SET qci.item_cfg_id = IFNULL(qci.item_cfg_id, si_full.item_id),
                 qci.item_type = IFNULL(qci.item_type, si_full.item_type),
@@ -668,10 +670,11 @@ async function backfillQcItemConfig(): Promise<void> {
             JOIN quality_microbe_inspection mi
               ON mi.inspection_id = qci.inspection_id AND qci.source_type = '微生物'
             JOIN (
-              SELECT MIN(item_id) AS min_item_id, standard_id, item_name
+              SELECT MIN(item_id) AS min_item_id, standard_id,
+                     CONVERT(item_name USING utf8mb4) COLLATE utf8mb4_0900_ai_ci AS item_name_ci
               FROM quality_inspection_standard_item
               GROUP BY standard_id, item_name
-            ) si ON si.standard_id = mi.standard_id AND si.item_name = qci.item_name
+            ) si ON si.standard_id = mi.standard_id AND si.item_name_ci = qci.item_name
             JOIN quality_inspection_standard_item si_full ON si_full.item_id = si.min_item_id
             SET qci.item_cfg_id = IFNULL(qci.item_cfg_id, si_full.item_id),
                 qci.item_type = IFNULL(qci.item_type, si_full.item_type),
