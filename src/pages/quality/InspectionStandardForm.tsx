@@ -284,6 +284,48 @@ export default function InspectionStandardForm() {
     setItemModalVisible(true)
   }
 
+  // 解析抽样详情为显示文本
+  const renderSamplingSummary = (record: any): React.ReactNode => {
+    if (!record.sampling_plan && !record.sampling_detail) return '-'
+    const plan = record.sampling_plan || 'AQL抽样'
+    let detail: any = {}
+    if (record.sampling_detail) {
+      try {
+        detail = typeof record.sampling_detail === 'string' ? JSON.parse(record.sampling_detail) : record.sampling_detail
+      } catch { detail = {} }
+    }
+    if (plan === 'AQL抽样') {
+      return <span>AQL: <strong>{detail.aql_value ?? '-'}</strong></span>
+    }
+    if (plan === '固定数量抽样') {
+      const ac = detail.accept_number ?? 0
+      const re = detail.reject_number ?? 1
+      return (
+        <Space direction="vertical" size={0} style={{ lineHeight: 1.5 }}>
+          <span>抽样数: <strong>{detail.fixed_count ?? '-'}</strong></span>
+          <span style={{ fontSize: 12, color: '#666' }}>Ac={ac} / Re={re}</span>
+        </Space>
+      )
+    }
+    if (plan === '按数量抽样') {
+      const segments = (detail.segments || []) as any[]
+      if (segments.length === 0) return '-'
+      return (
+        <Space direction="vertical" size={0} style={{ lineHeight: 1.5 }}>
+          {segments.map((s, i) => (
+            <span key={i} style={{ fontSize: 12 }}>
+              ≤{s.max_qty}: n={s.sample_count} Ac={s.accept_number} Re={s.reject_number}
+            </span>
+          ))}
+        </Space>
+      )
+    }
+    if (plan === '全检') {
+      return <Tag color="purple">100% 全检</Tag>
+    }
+    return '-'
+  }
+
   const handleDeleteItem = (record: any) => {
     setCurrentItems(prev => prev.filter((i: any) => i._key !== record._key))
     antMsg.success('已删除')
@@ -313,7 +355,6 @@ export default function InspectionStandardForm() {
         ...values,
         sampling_detail: JSON.stringify(samplingDetail),
         sampling_plan: plan,
-        sampling_ratio: values.sampling_ratio ?? null,
       }
       // 移除临时字段
       delete itemData.aql_value
@@ -322,6 +363,8 @@ export default function InspectionStandardForm() {
       delete itemData.fixed_accept
       delete itemData.fixed_reject
       delete itemData.need_sample_count
+      delete itemData.nominal_value
+      delete itemData.sampling_ratio
 
       if (itemEditing) {
         setCurrentItems(prev => prev.map((i: any) =>
@@ -352,7 +395,7 @@ export default function InspectionStandardForm() {
     },
     { title: '检验标准', dataIndex: 'standard_value', key: 'standard_value', width: 200, render: (v: string) => <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{v}</span> },
     {
-      title: '抽样方案', dataIndex: 'sampling_plan', key: 'sampling_plan', width: 120,
+      title: '抽样方案', dataIndex: 'sampling_plan', key: 'sampling_plan', width: 110,
       render: (v: string) => {
         if (!v) return '-'
         const colorMap: any = { 'AQL抽样': 'blue', '按数量抽样': 'green', '固定数量抽样': 'orange', '全检': 'purple' }
@@ -360,8 +403,8 @@ export default function InspectionStandardForm() {
       }
     },
     {
-      title: '抽样比例', dataIndex: 'sampling_ratio', key: 'sampling_ratio', width: 90,
-      render: (v: number | null) => v != null ? `${v}%` : '-'
+      title: '抽样信息', key: 'sampling_info', width: 260,
+      render: (_: any, record: any) => renderSamplingSummary(record)
     },
     {
       title: '操作', key: 'action', fixed: 'right', width: 120,
@@ -395,13 +438,13 @@ export default function InspectionStandardForm() {
         }
         extra={
           <Space>
-            {isEdit && currentStatus === '开立' && (
-              <Popconfirm title="确认审核通过？审核后标准状态将变为生效，不可再编辑" onConfirm={handleAudit} okText="确认审核" cancelText="取消">
-                <Button type="primary" icon={<CheckCircleOutlined />} loading={auditing}>审核</Button>
-              </Popconfirm>
-            )}
             {!readOnly && <Button onClick={() => navigate('/quality/standards')}>取消</Button>}
             {!readOnly && <Button type="primary" icon={<SaveOutlined />} loading={saving || isGeneratingNo} onClick={handleSubmit}>保存</Button>}
+            {isEdit && currentStatus === '开立' && (
+              <Popconfirm title="确认审核通过？审核后标准状态将变为生效，不可再编辑" onConfirm={handleAudit} okText="确认审核" cancelText="取消">
+                <Button type="primary" icon={<CheckCircleOutlined />} loading={auditing} style={{ background: '#52c41a', borderColor: '#52c41a' }}>审核</Button>
+              </Popconfirm>
+            )}
             {readOnly && <Button onClick={() => navigate('/quality/standards')}>返回</Button>}
           </Space>
         }
@@ -527,13 +570,14 @@ export default function InspectionStandardForm() {
         destroyOnHidden
       >
         <Form form={itemForm} layout="vertical" className="compact-form" preserve={false}>
+          {/* 第一行：项目分类、项目名称、缺陷等级、项目类型 */}
           <Row gutter={12}>
             <Col span={6}>
               <Form.Item name="category" label="项目分类" rules={[{ required: true, message: '请选择' }]}>
                 <Select placeholder="请选择" options={categoryOptions} />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={6}>
               <Form.Item name="item_name" label="项目名称" rules={[{ required: true, message: '请输入' }]}>
                 <Input placeholder="请输入项目名称" />
               </Form.Item>
@@ -543,60 +587,80 @@ export default function InspectionStandardForm() {
                 <Select placeholder="请选择" allowClear options={defectLevelOptions} />
               </Form.Item>
             </Col>
+            <Col span={6}>
+              <Form.Item name="item_type" label="项目类型" rules={[{ required: true, message: '请选择' }]}>
+                <Select
+                  placeholder="请选择"
+                  options={itemTypeOptions}
+                  optionRender={(opt: any) => (
+                    <div style={{ padding: '2px 0' }}>
+                      {opt.label}
+                      <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
+                        {opt.value === 'quantitative' ? '录入多测量值，按上下限自动判定' : '每件样品判定合格/不合格'}
+                      </div>
+                    </div>
+                  )}
+                />
+              </Form.Item>
+            </Col>
           </Row>
 
+          {/* 第二行：检验类型 */}
           <Row gutter={12}>
-            <Col span={12}>
+            <Col span={24}>
               <Form.Item name="inspection_types" label="检验类型" rules={[{ required: true, message: '请选择' }]}>
                 <Checkbox.Group options={inspectionTypeOptions} />
               </Form.Item>
             </Col>
-            <Col span={6}>
-              <Form.Item name="unit" label="单位">
-                <Input placeholder="如 mm、N、%等" />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item name="item_type" label="项目类型" rules={[{ required: true, message: '请选择' }]}
-                extra={watchItemType === 'quantitative' ? '录入多测量值并按上下限自动判定' : '每件样品判定 OK/NG'}>
-                <Select placeholder="请选择" options={itemTypeOptions} />
+          </Row>
+
+          {/* 第三行：检验要求 */}
+          <Row gutter={12}>
+            <Col span={24}>
+              <Form.Item name="standard_value" label="检验要求" rules={[{ required: true, message: '请输入' }]}>
+                <Input.TextArea placeholder="如 90.0±0.3、≥200、外观无明显划痕 等" autoSize={{ minRows: 2, maxRows: 3 }} />
               </Form.Item>
             </Col>
           </Row>
 
-          {/* 定量项目的标称值/上下限 */}
+          {/* 第四行：上限、下限、单位（定量项目） */}
           <Form.Item shouldUpdate={(p, c) => (p.item_type ?? 'qualitative') !== (c.item_type ?? 'qualitative')} noStyle>
             {() => itemForm.getFieldValue('item_type') === 'quantitative' ? (
               <Row gutter={12}>
-                <Col span={6}>
-                  <Form.Item label="标称值" name="nominal_value" extra="可选">
-                    <Input type="number" placeholder="如 90.0" />
-                  </Form.Item>
-                </Col>
-                <Col span={6}>
-                  <Form.Item name="upper_limit" label="上限" extra="超出判NG">
+                <Col span={8}>
+                  <Form.Item name="upper_limit" label="上限" extra="超出判定不合格">
                     <Input type="number" placeholder="如 90.3" />
                   </Form.Item>
                 </Col>
-                <Col span={6}>
-                  <Form.Item name="lower_limit" label="下限" extra="低于判NG">
+                <Col span={8}>
+                  <Form.Item name="lower_limit" label="下限" extra="低于判定不合格">
                     <Input type="number" placeholder="如 89.7" />
                   </Form.Item>
                 </Col>
-                <Col span={6} />
+                <Col span={8}>
+                  <Form.Item name="unit" label="单位">
+                    <Input placeholder="如 mm、N、%、g、mg 等" />
+                  </Form.Item>
+                </Col>
               </Row>
-            ) : null}
+            ) : (
+              // 定性也要显示单位？不需要，所以占位一下，或者干脆隐藏
+              // 但要保持页面布局稳定，这里单位也给定性用（如果有需要，比如 pH 值等）
+              <Row gutter={12}>
+                <Col span={8}>
+                  <Form.Item name="unit" label="单位">
+                    <Input placeholder="可选，如 级、项 等" />
+                  </Form.Item>
+                </Col>
+              </Row>
+            )}
           </Form.Item>
 
+          {/* 第五行：检验方法 */}
           <Row gutter={12}>
-            <Col span={16}>
-              <Form.Item name="standard_value" label="检验要求" rules={[{ required: true, message: '请输入' }]}>
-                <Input.TextArea placeholder="如 90.0±0.3、≥200 等" autoSize={{ minRows: 2, maxRows: 4 }} />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
+            <Col span={24}>
               <Form.Item name="method" label="检验方法">
-                <Input.TextArea placeholder="如 游标卡尺测量等" autoSize={{ minRows: 2, maxRows: 4 }} />
+                <Input.TextArea placeholder="如 游标卡尺测量、目视检查（1.0视力，正常光照，30cm距离）等" autoSize={{ minRows: 2, maxRows: 3 }} />
               </Form.Item>
             </Col>
           </Row>
@@ -608,7 +672,6 @@ export default function InspectionStandardForm() {
             <Col span={8}>
               <Form.Item name="sampling_plan" label="抽样方案" rules={[{ required: true, message: '请选择' }]}>
                 <Select placeholder="请选择" options={samplingPlanOptions} onChange={() => {
-                  // 切换方案时清空配置
                   const plan = itemForm.getFieldValue('sampling_plan')
                   if (plan === 'AQL抽样') {
                     itemForm.setFieldsValue({ aql_value: 2.5 })
@@ -620,13 +683,7 @@ export default function InspectionStandardForm() {
                 }} />
               </Form.Item>
             </Col>
-            <Col span={8}>
-              <Form.Item name="sampling_ratio" label="抽样比例(%)"
-                extra="可选，按比例抽样时生效">
-                <InputNumber min={0} max={100} placeholder="如 10" style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-            <Col span={8} />
+            <Col span={16} />
           </Row>
 
           {/* AQL 抽样配置 */}

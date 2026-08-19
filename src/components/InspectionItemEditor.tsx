@@ -17,8 +17,8 @@
  *  - materialInfo?: 物料信息（顶部展示，不入表格）
  */
 import React, { useMemo } from 'react'
-import { Table, InputNumber, Segmented, Tag, Space, Tooltip, Typography, Card, Descriptions } from 'antd'
-import { CheckCircleOutlined, CloseCircleOutlined, MinusCircleOutlined } from '@ant-design/icons'
+import { Table, InputNumber, Checkbox, Tag, Space, Tooltip, Typography, Card, Descriptions } from 'antd'
+import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 
 const { Text } = Typography
@@ -87,7 +87,7 @@ interface Props {
 // ============================================================
 function judgeSampleValue(
   sample: Pick<SampleValue, 'measure_value_num' | 'measure_value_text'>,
-  cfg: { nominal_value?: number | null; upper_limit?: number | null; lower_limit?: number | null },
+  cfg: { upper_limit?: number | null; lower_limit?: number | null },
 ): number | null {
   const text = (sample.measure_value_text || '').trim()
   if (text) {
@@ -99,15 +99,9 @@ function judgeSampleValue(
   const num = sample.measure_value_num
   if (num === null || num === undefined || Number.isNaN(Number(num))) return null
   const n = Number(num)
-  const { upper_limit, lower_limit, nominal_value } = cfg
+  const { upper_limit, lower_limit } = cfg
   if (upper_limit !== null && upper_limit !== undefined && n > Number(upper_limit)) return 0
   if (lower_limit !== null && lower_limit !== undefined && n < Number(lower_limit)) return 0
-  if ((upper_limit === null || upper_limit === undefined) &&
-      (lower_limit === null || lower_limit === undefined) &&
-      nominal_value !== null && nominal_value !== undefined &&
-      Math.abs(n - Number(nominal_value)) > 1e-9) {
-    return 0
-  }
   return 1
 }
 
@@ -151,18 +145,19 @@ function applyUpdate(
   mutator(next[rowIdx])
   const row = next[rowIdx]
   if (row.sample_values && row.sample_values.length > 0) {
-    const cfg = { nominal_value: row.nominal_value ?? null, upper_limit: row.upper_limit ?? null, lower_limit: row.lower_limit ?? null }
+    const cfg = { upper_limit: row.upper_limit ?? null, lower_limit: row.lower_limit ?? null }
     row.sample_values = row.sample_values.map(sv => ({
       ...sv,
       is_qualified: judgeSampleValue({ measure_value_num: sv.measure_value_num, measure_value_text: sv.measure_value_text }, cfg),
     }))
-    row.result = aggregateRowResult(row.sample_values, row.result)
+    // 实时逐行判定（用户要求：全部样本完成后才给判定结论，在判定结论列 render 中延迟判定）
+    // 这里只更新 is_qualified，不立即更新 result
   }
   onChange?.(next)
 }
 
 // ============================================================
-//  单元格渲染：定性 OK/NG 单选
+//  单元格渲染：定性 勾选框（合格/不合格）
 // ============================================================
 function QualitativeCell(props: {
   value: SampleValue
@@ -171,55 +166,75 @@ function QualitativeCell(props: {
 }) {
   const { value, onChange, disabled } = props
   const text = (value.measure_value_text || '').trim()
-  const selectValue = text === 'OK' || text === '合格' ? 1 : text === 'NG' || text === '不合格' ? 0 : undefined
-  const qualified = value.is_qualified
-  const color = qualified === 1 ? '#52c41a' : qualified === 0 ? '#ff4d4f' : undefined
+  const isOK = text === 'OK' || text === '合格'
+  const isNG = text === 'NG' || text === '不合格'
   return (
-    <Segmented
-      size="small"
-      disabled={disabled}
-      value={selectValue}
-      options={[
-        { label: <Space size={2}><CheckCircleOutlined style={{ color: '#52c41a' }} />OK</Space>, value: 1 },
-        { label: <Space size={2}><CloseCircleOutlined style={{ color: '#ff4d4f' }} />NG</Space>, value: 0 },
-      ]}
-      onChange={val => {
-        if (disabled) return
-        onChange({ ...value, measure_value_text: val === 1 ? 'OK' : 'NG', measure_value_num: null })
-      }}
-    />
+    <Space size="middle" style={{ display: 'flex', justifyContent: 'center' }}>
+      <Checkbox
+        checked={isOK}
+        disabled={disabled}
+        style={{ color: isOK ? '#52c41a' : undefined, fontWeight: isOK ? 600 : undefined }}
+        onChange={(e) => {
+          if (disabled) return
+          const checked = e.target.checked
+          // 勾选互斥：合格 => 取消不合格
+          onChange({
+            ...value,
+            measure_value_text: checked ? 'OK' : '',
+            measure_value_num: null,
+          })
+        }}
+      >
+        <span style={{ color: isOK ? '#52c41a' : undefined }}>合格</span>
+      </Checkbox>
+      <Checkbox
+        checked={isNG}
+        disabled={disabled}
+        style={{ color: isNG ? '#ff4d4f' : undefined, fontWeight: isNG ? 600 : undefined }}
+        onChange={(e) => {
+          if (disabled) return
+          const checked = e.target.checked
+          onChange({
+            ...value,
+            measure_value_text: checked ? 'NG' : '',
+            measure_value_num: null,
+          })
+        }}
+      >
+        <span style={{ color: isNG ? '#ff4d4f' : undefined }}>不合格</span>
+      </Checkbox>
+    </Space>
   )
 }
 
 // ============================================================
-//  单元格渲染：定量 InputNumber
+//  单元格渲染：定量 InputNumber（不显示单位后缀）
 // ============================================================
 function QuantitativeCell(props: {
   value: SampleValue
-  unit?: string | null
-  cfg: { nominal_value?: number | null; upper_limit?: number | null; lower_limit?: number | null }
+  cfg: { upper_limit?: number | null; lower_limit?: number | null }
   onChange: (next: SampleValue) => void
   disabled?: boolean
 }) {
-  const { value, unit, cfg, onChange, disabled } = props
+  const { value, cfg, onChange, disabled } = props
   const qualified = value.is_qualified
-  const borderColor = qualified === 1 ? '#52c41a' : qualified === 0 ? '#ff4d4f' : undefined
+  // 不合格显示红色（用户要求：不合格显示红色）
+  const borderColor = qualified === 0 ? '#ff4d4f' : undefined
+  const bgColor = qualified === 0 ? '#fff2f0' : undefined
   const hint = useMemo(() => {
     const parts: string[] = []
     if (cfg.lower_limit !== null && cfg.lower_limit !== undefined) parts.push(`≥${cfg.lower_limit}`)
     if (cfg.upper_limit !== null && cfg.upper_limit !== undefined) parts.push(`≤${cfg.upper_limit}`)
-    if (cfg.nominal_value !== null && cfg.nominal_value !== undefined && parts.length === 0) parts.push(`=${cfg.nominal_value}`)
     return parts.join(' ~ ')
-  }, [cfg.lower_limit, cfg.upper_limit, cfg.nominal_value])
+  }, [cfg.lower_limit, cfg.upper_limit])
   return (
     <Tooltip title={hint || '无上下限配置'} placement="topLeft">
       <InputNumber
         size="small"
         disabled={disabled}
-        style={{ borderColor, boxShadow: borderColor ? `0 0 0 1px ${borderColor} inset` : undefined, width: 110 }}
+        style={{ borderColor, backgroundColor: bgColor, boxShadow: borderColor ? `0 0 0 1px ${borderColor} inset` : undefined, width: 110 }}
         step={0.001}
         value={value.measure_value_num}
-        addonAfter={unit || null}
         onChange={val => {
           if (disabled) return
           onChange({ ...value, measure_value_num: val as any, measure_value_text: null })
@@ -227,13 +242,6 @@ function QuantitativeCell(props: {
       />
     </Tooltip>
   )
-}
-
-function QualifiedTag({ qualified }: { qualified: number | null }) {
-  if (qualified === null || qualified === undefined) return <Tag icon={<MinusCircleOutlined />} color="default">未判定</Tag>
-  return qualified === 1
-    ? <Tag icon={<CheckCircleOutlined />} color="success">合格</Tag>
-    : <Tag icon={<CloseCircleOutlined />} color="error">不合格</Tag>
 }
 
 // ============================================================
@@ -246,7 +254,6 @@ export default function InspectionItemEditor(props: Props) {
     if (row.item_type === 'quantitative' || row.item_type === 'qualitative') return row.item_type
     if (row.upper_limit !== null && row.upper_limit !== undefined) return 'quantitative'
     if (row.lower_limit !== null && row.lower_limit !== undefined) return 'quantitative'
-    if (row.nominal_value !== null && row.nominal_value !== undefined) return 'quantitative'
     const av = (row.actual_value || '').toString()
     if (av && !isNaN(Number(av.trim()))) return 'quantitative'
     return 'qualitative'
@@ -259,10 +266,10 @@ export default function InspectionItemEditor(props: Props) {
       const cnt = Number(row.need_sample_count) || Number(row.sample_count) || (row.sample_values?.length || 1)
       if (cnt > max) max = cnt
     }
-    return Math.min(max, 20) // 最多20列
+    return Math.min(max, 20)
   }, [items])
 
-  // 动态生成样本列
+  // 动态生成样本列（不显示单项结果 Tag）
   const sampleColumns = useMemo(() => {
     const cols: ColumnsType<InspectionItemRow> = []
     for (let i = 0; i < maxSampleCount; i++) {
@@ -270,37 +277,17 @@ export default function InspectionItemEditor(props: Props) {
         title: `样本${i + 1}`,
         key: `sample_${i}`,
         width: 150,
+        align: 'center',
         render: (_: any, record: InspectionItemRow, rowIdx: number) => {
           const itemType = getItemType(record)
           const svs = ensureSampleValues(record)
           const sv = svs[i]
           if (!sv) return <Text type="secondary">-</Text>
-          const cfg = { nominal_value: record.nominal_value ?? null, upper_limit: record.upper_limit ?? null, lower_limit: record.lower_limit ?? null }
+          const cfg = { upper_limit: record.upper_limit ?? null, lower_limit: record.lower_limit ?? null }
           if (itemType === 'qualitative') {
             return (
-              <div>
-                <QualitativeCell
-                  value={sv}
-                  disabled={disabled}
-                  onChange={next => {
-                    applyUpdate(items, rowIdx, row => {
-                      row.sample_values = ensureSampleValues(row)
-                      row.sample_values![i] = next
-                    }, onChange)
-                  }}
-                />
-                <div style={{ marginTop: 4 }}>
-                  <QualifiedTag qualified={sv.is_qualified ?? null} />
-                </div>
-              </div>
-            )
-          }
-          return (
-            <div>
-              <QuantitativeCell
+              <QualitativeCell
                 value={sv}
-                unit={record.unit || null}
-                cfg={cfg}
                 disabled={disabled}
                 onChange={next => {
                   applyUpdate(items, rowIdx, row => {
@@ -309,10 +296,20 @@ export default function InspectionItemEditor(props: Props) {
                   }, onChange)
                 }}
               />
-              <div style={{ marginTop: 4 }}>
-                <QualifiedTag qualified={sv.is_qualified ?? null} />
-              </div>
-            </div>
+            )
+          }
+          return (
+            <QuantitativeCell
+              value={sv}
+              cfg={cfg}
+              disabled={disabled}
+              onChange={next => {
+                applyUpdate(items, rowIdx, row => {
+                  row.sample_values = ensureSampleValues(row)
+                  row.sample_values![i] = next
+                }, onChange)
+              }}
+            />
           )
         },
       })
@@ -320,11 +317,56 @@ export default function InspectionItemEditor(props: Props) {
     return cols
   }, [maxSampleCount, items, disabled, onChange])
 
-  // 表格列
+  // 判定结论：完成所有样本后才给出
+  const judgeFinal = (record: InspectionItemRow): { text: string; color: string; icon?: any; pending?: boolean } => {
+    const expected = Number(record.need_sample_count) || Number(record.sample_count) || maxSampleCount
+    const svs = ensureSampleValues(record)
+    // 定性/定量判断是否"录入完成"
+    const itemType = getItemType(record)
+    let allFilled = true
+    for (let i = 0; i < expected; i++) {
+      const sv = svs[i]
+      if (!sv) { allFilled = false; break }
+      if (itemType === 'qualitative') {
+        const t = (sv.measure_value_text || '').trim()
+        if (!t) { allFilled = false; break }
+      } else {
+        const n = sv.measure_value_num
+        if (n === null || n === undefined || Number.isNaN(Number(n))) { allFilled = false; break }
+      }
+    }
+    if (!allFilled) return { text: '待完成', color: 'default', pending: true }
+
+    // 已全部录入，按Ac/Re+不合格数判定
+    const ac = record.accept_number ?? 0
+    const re = record.reject_number ?? 1
+    const defectCount = svs.slice(0, expected).filter(sv => sv.is_qualified === 0).length
+
+    if (defectCount <= ac) return { text: '合格', color: 'success', icon: <CheckCircleOutlined /> }
+    if (defectCount >= re) return { text: '不合格', color: 'error', icon: <CloseCircleOutlined /> }
+    // Ac < x < Re 情况
+    return { text: `继续抽样(${defectCount})`, color: 'warning' }
+  }
+
+  // 格式化检验标准（上下限）
+  const renderStandard = (r: InspectionItemRow): React.ReactNode => {
+    const parts: string[] = []
+    if (r.lower_limit !== null && r.lower_limit !== undefined) parts.push(`≥${r.lower_limit}`)
+    if (r.upper_limit !== null && r.upper_limit !== undefined) parts.push(`≤${r.upper_limit}`)
+    if (parts.length === 0) return r.standard_value ? <span>{r.standard_value}</span> : <Text type="secondary">-</Text>
+    return (
+      <Space direction="vertical" size={0} style={{ lineHeight: 1.4 }}>
+        <Text type="secondary" style={{ fontSize: 11 }}>{parts.join(' ~ ')}</Text>
+        {r.standard_value && <span>{r.standard_value}</span>}
+      </Space>
+    )
+  }
+
+  // 表格列：序号、检验项目、检验标准(上限、下限)、单位、样本量、Ac/Re、样本...、判定结论
   const columns: ColumnsType<InspectionItemRow> = [
-    { title: '序号', width: 50, render: (_: any, __: any, i: number) => i + 1 },
+    { title: '序号', width: 50, fixed: 'left' as const, render: (_: any, __: any, i: number) => i + 1 },
     {
-      title: '检验项目', dataIndex: 'item_name', width: 140,
+      title: '检验项目', dataIndex: 'item_name', width: 150, fixed: 'left' as const,
       render: (v, r) => (
         <Space direction="vertical" size={2}>
           <span>{v || '-'}</span>
@@ -337,17 +379,12 @@ export default function InspectionItemEditor(props: Props) {
       ),
     },
     {
-      title: '抽样方案', dataIndex: 'sampling_plan', width: 130,
-      render: (v, r) => {
-        if (!v) return <Text type="secondary">-</Text>
-        const colorMap: any = { 'AQL抽样': 'blue', '按数量抽样': 'green', '固定数量抽样': 'orange', '全检': 'purple' }
-        return (
-          <Space direction="vertical" size={2}>
-            <Tag color={colorMap[v] || 'default'} style={{ margin: 0 }}>{v}</Tag>
-            {r.sampling_ratio != null && <Text type="secondary" style={{ fontSize: 11 }}>{r.sampling_ratio}%</Text>}
-          </Space>
-        )
-      },
+      title: '检验标准', width: 140,
+      render: (_: any, r: InspectionItemRow) => renderStandard(r),
+    },
+    {
+      title: '单位', dataIndex: 'unit', width: 70,
+      render: (v: string | null | undefined) => v || <Text type="secondary">-</Text>,
     },
     {
       title: '样本量', dataIndex: 'need_sample_count', width: 70,
@@ -364,14 +401,11 @@ export default function InspectionItemEditor(props: Props) {
     },
     ...sampleColumns,
     {
-      title: '判定结论', dataIndex: 'result', width: 100, fixed: 'right' as const,
-      render: (v: any, record) => {
-        const svs = record.sample_values || []
-        const displayResult = svs.length > 0 ? aggregateRowResult(svs, v) : v
-        if (!displayResult) return <Tag>待判定</Tag>
-        return displayResult === '合格'
-          ? <Tag icon={<CheckCircleOutlined />} color="success">合格</Tag>
-          : <Tag icon={<CloseCircleOutlined />} color="error">不合格</Tag>
+      title: '判定结论', width: 100, fixed: 'right' as const,
+      render: (_: any, record: InspectionItemRow) => {
+        const { text, color, icon, pending } = judgeFinal(record)
+        if (pending) return <Tag color="default">{text}</Tag>
+        return <Tag icon={icon || undefined} color={color as any}>{text}</Tag>
       },
     },
   ]

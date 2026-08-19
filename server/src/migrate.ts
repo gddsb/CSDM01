@@ -256,9 +256,9 @@ const obsoleteColumns = [
   { table: 'production_process_material', columns: ['report_id', 'work_order_id'] },
   { table: 'production_process_exception', columns: ['report_id', 'work_order_id', 'work_order_no'] },
   { table: 'production_manpower_record', columns: ['report_id', 'work_order_id', 'work_order_no'] },
-  // 检验项目抽样方式改造：旧字段 sample_rule / sample_count_mode 已被 sampling_plan / sampling_ratio / sampling_detail 替代
-  { table: 'quality_inspection_standard_item', columns: ['sample_rule', 'sample_count_mode'] },
-  { table: 'qc_inspection_item', columns: ['sample_rule', 'sample_count_mode'] },
+  // 检验项目抽样方式改造：旧字段 sample_rule / sample_count_mode 已被替代
+  { table: 'quality_inspection_standard_item', columns: ['sample_rule', 'sample_count_mode', 'nominal_value', 'sampling_ratio'] },
+  { table: 'qc_inspection_item', columns: ['sample_rule', 'sample_count_mode', 'nominal_value', 'sampling_ratio'] },
 ]
 
 // SQLite 与 MySQL 取列名的方式不同

@@ -221,6 +221,48 @@ export default function InspectionStandard() {
     },
   ]
 
+  // 解析抽样详情为显示文本
+  const renderSamplingSummary = (record: any): React.ReactNode => {
+    if (!record.sampling_plan && !record.sampling_detail) return '-'
+    const plan = record.sampling_plan || 'AQL抽样'
+    let detail: any = {}
+    if (record.sampling_detail) {
+      try {
+        detail = typeof record.sampling_detail === 'string' ? JSON.parse(record.sampling_detail) : record.sampling_detail
+      } catch { detail = {} }
+    }
+    if (plan === 'AQL抽样') {
+      return <span>AQL: <strong>{detail.aql_value ?? '-'}</strong></span>
+    }
+    if (plan === '固定数量抽样') {
+      const ac = detail.accept_number ?? 0
+      const re = detail.reject_number ?? 1
+      return (
+        <Space direction="vertical" size={0} style={{ lineHeight: 1.5 }}>
+          <span>抽样数: <strong>{detail.fixed_count ?? '-'}</strong></span>
+          <span style={{ fontSize: 12, color: '#666' }}>Ac={ac} / Re={re}</span>
+        </Space>
+      )
+    }
+    if (plan === '按数量抽样') {
+      const segments = (detail.segments || []) as any[]
+      if (segments.length === 0) return '-'
+      return (
+        <Space direction="vertical" size={0} style={{ lineHeight: 1.5 }}>
+          {segments.map((s, i) => (
+            <span key={i} style={{ fontSize: 12 }}>
+              ≤{s.max_qty}: n={s.sample_count} Ac={s.accept_number} Re={s.reject_number}
+            </span>
+          ))}
+        </Space>
+      )
+    }
+    if (plan === '全检') {
+      return <Tag color="purple">100% 全检</Tag>
+    }
+    return '-'
+  }
+
   const itemTableColumns = [
     {
       title: '项目大类', dataIndex: 'category', key: 'category', width: 120,
@@ -236,7 +278,7 @@ export default function InspectionStandard() {
     },
     { title: '检验标准', dataIndex: 'standard_value', key: 'standard_value', width: 240, render: (v: string) => <span style={{ whiteSpace: 'normal', wordBreak: 'break-all' }}>{v || '-'}</span> },
     {
-      title: '抽样方案', dataIndex: 'sampling_plan', key: 'sampling_plan', width: 120,
+      title: '抽样方案', dataIndex: 'sampling_plan', key: 'sampling_plan', width: 110,
       render: (v: string) => {
         if (!v) return '-'
         const colorMap: any = { 'AQL抽样': 'blue', '按数量抽样': 'green', '固定数量抽样': 'orange', '全检': 'purple' }
@@ -244,8 +286,8 @@ export default function InspectionStandard() {
       }
     },
     {
-      title: '抽样比例', dataIndex: 'sampling_ratio', key: 'sampling_ratio', width: 90,
-      render: (v: number | null) => v != null ? `${v}%` : '-'
+      title: '抽样信息', key: 'sampling_info', width: 280,
+      render: (_: any, record: any) => renderSamplingSummary(record)
     },
   ]
 
