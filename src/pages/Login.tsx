@@ -13,23 +13,18 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [remember, setRemember] = useState(true)
 
+  // 上次登录用户名（首次进入默认 admin，使用初始密码 123456；改密后由用户输入实际密码）
+  const lastUsername = localStorage.getItem('mes_last_username') || 'admin'
+
   const onFinish = async (values) => {
     setLoading(true)
     const result = await login(values.username, values.password)
     if (result.success) {
-      message.success('登录成功')
-      const targetPath = result.isViewer ? '/bigscreen/production' : '/dashboard'
-      navigate(targetPath)
-    } else {
-      message.error(result.message)
-    }
-    setLoading(false)
-  }
-
-  const quickLogin = async (username) => {
-    setLoading(true)
-    const result = await login(username, '123456')
-    if (result.success) {
+      if (remember) {
+        localStorage.setItem('mes_last_username', values.username)
+      } else {
+        localStorage.removeItem('mes_last_username')
+      }
       message.success('登录成功')
       const targetPath = result.isViewer ? '/bigscreen/production' : '/dashboard'
       navigate(targetPath)
@@ -73,7 +68,7 @@ export default function Login() {
             name="login"
             onFinish={onFinish}
             size="large"
-            initialValues={{ username: 'admin', password: '123456' }}
+            initialValues={{ username: lastUsername }}
             className="login-form"
           >
             <Form.Item name="username" rules={[{ required: true, message: '请输入用户名' }]}>
@@ -93,7 +88,7 @@ export default function Login() {
 
             <div className="login-form-options">
               <Checkbox checked={remember} onChange={(e) => setRemember(e.target.checked)}>
-                记住密码
+                记住用户名
               </Checkbox>
               <a className="login-forgot-link" onClick={() => message.info('请联系管理员重置密码')}>
                 忘记密码？
@@ -106,21 +101,6 @@ export default function Login() {
               </Button>
             </Form.Item>
           </Form>
-
-          <div className="login-quick-section">
-            <div className="login-quick-divider">
-              <span>快捷登录</span>
-            </div>
-            <div className="login-quick-btns">
-              <Button
-                size="small"
-                onClick={() => quickLogin('admin')}
-                className="login-quick-btn"
-              >
-                管理员
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
 
