@@ -624,15 +624,14 @@ async function backfillQcItemConfig(): Promise<void> {
   const queries: Array<{ name: string; sql: string }> = [
     {
       name: 'qc_item backfill by item_cfg_id',
+      // 注意：nominal_value / sampling_ratio 已废弃并已 DROP COLUMN，SQL 中不再引用
       sql: `UPDATE qc_inspection_item qci
             JOIN quality_inspection_standard_item si ON si.item_id = qci.item_cfg_id
             SET qci.item_type = IFNULL(qci.item_type, si.item_type),
                 qci.need_sample_count = IFNULL(NULLIF(qci.need_sample_count, 0), si.need_sample_count),
-                qci.nominal_value = IFNULL(qci.nominal_value, si.nominal_value),
                 qci.upper_limit = IFNULL(qci.upper_limit, si.upper_limit),
                 qci.lower_limit = IFNULL(qci.lower_limit, si.lower_limit)
             WHERE qci.item_type IS NULL
-               OR qci.nominal_value IS NULL
                OR qci.upper_limit IS NULL
                OR qci.lower_limit IS NULL`,
     },
@@ -651,7 +650,6 @@ async function backfillQcItemConfig(): Promise<void> {
             SET qci.item_cfg_id = IFNULL(qci.item_cfg_id, si_full.item_id),
                 qci.item_type = IFNULL(qci.item_type, si_full.item_type),
                 qci.need_sample_count = IFNULL(NULLIF(qci.need_sample_count, 0), si_full.need_sample_count),
-                qci.nominal_value = IFNULL(qci.nominal_value, si_full.nominal_value),
                 qci.upper_limit = IFNULL(qci.upper_limit, si_full.upper_limit),
                 qci.lower_limit = IFNULL(qci.lower_limit, si_full.lower_limit)
             WHERE qci.item_cfg_id IS NULL`,
@@ -671,7 +669,6 @@ async function backfillQcItemConfig(): Promise<void> {
             SET qci.item_cfg_id = IFNULL(qci.item_cfg_id, si_full.item_id),
                 qci.item_type = IFNULL(qci.item_type, si_full.item_type),
                 qci.need_sample_count = IFNULL(NULLIF(qci.need_sample_count, 0), si_full.need_sample_count),
-                qci.nominal_value = IFNULL(qci.nominal_value, si_full.nominal_value),
                 qci.upper_limit = IFNULL(qci.upper_limit, si_full.upper_limit),
                 qci.lower_limit = IFNULL(qci.lower_limit, si_full.lower_limit)
             WHERE qci.item_cfg_id IS NULL`,
@@ -691,7 +688,6 @@ async function backfillQcItemConfig(): Promise<void> {
             SET qci.item_cfg_id = IFNULL(qci.item_cfg_id, si_full.item_id),
                 qci.item_type = IFNULL(qci.item_type, si_full.item_type),
                 qci.need_sample_count = IFNULL(NULLIF(qci.need_sample_count, 0), si_full.need_sample_count),
-                qci.nominal_value = IFNULL(qci.nominal_value, si_full.nominal_value),
                 qci.upper_limit = IFNULL(qci.upper_limit, si_full.upper_limit),
                 qci.lower_limit = IFNULL(qci.lower_limit, si_full.lower_limit)
             WHERE qci.item_cfg_id IS NULL`,
