@@ -616,36 +616,50 @@ export default function InspectionStandardForm() {
             </Col>
           </Row>
 
-          {/* 第二行：检验类型、单位、上限、下限（四列布局） */}
+          {/* 第二行：检验类型一行显示 + 单位（窄）+ 上限/下限（仅定量显示，且更窄） */}
           <Row gutter={12} align="top">
-            {/* 检验类型：占 10 栅格 */}
-            <Col span={10}>
-              <Form.Item name="inspection_types" label="检验类型" rules={[{ required: true, message: '请选择' }]}
-                extra="可多选：适用的检验环节">
+            {/* 检验类型：占 15 栅格（给复选框一行显示足够空间，禁止换行） */}
+            <Col span={15}>
+              <Form.Item
+                name="inspection_types"
+                label="检验类型"
+                rules={[{ required: true, message: '请选择' }]}
+                extra="适用的检验环节，可多选">
                 <Checkbox.Group
                   options={inspectionTypeOptions}
-                  style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', paddingTop: 4 }}
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'nowrap',
+                    gap: '4px 16px',
+                    paddingTop: 4,
+                    overflowX: 'auto',
+                    whiteSpace: 'nowrap',
+                  }}
                 />
               </Form.Item>
             </Col>
-            {/* 单位：6 栅格 */}
-            <Col span={6}>
-              <Form.Item name="unit" label="单位" extra="如 mm / N / % / mg / 级">
-                <Input placeholder="可选，定性/定量通用" />
+            {/* 单位：占 3 栅格（缩窄，短文本足够） */}
+            <Col span={watchItemType === 'quantitative' ? 3 : 9}>
+              <Form.Item name="unit" label="单位" extra="mm / N / % 等">
+                <Input placeholder="可选" />
               </Form.Item>
             </Col>
-            {/* 上限：4 栅格 */}
-            <Col span={4}>
-              <Form.Item name="upper_limit" label="上限" extra={itemForm.getFieldValue('item_type') === 'quantitative' ? '超出判不合格' : '定量时填写'}>
-                <Input type="number" placeholder="定量填写" />
-              </Form.Item>
-            </Col>
-            {/* 下限：4 栅格 */}
-            <Col span={4}>
-              <Form.Item name="lower_limit" label="下限" extra={itemForm.getFieldValue('item_type') === 'quantitative' ? '低于判不合格' : '定量时填写'}>
-                <Input type="number" placeholder="定量填写" />
-              </Form.Item>
-            </Col>
+            {/* 上限：仅"定量项目类型"时显示，占 3 栅格（缩窄，数字用） */}
+            {watchItemType === 'quantitative' && (
+              <Col span={3}>
+                <Form.Item name="upper_limit" label="上限" extra="超出判不合格">
+                  <Input type="number" placeholder="数值" />
+                </Form.Item>
+              </Col>
+            )}
+            {/* 下限：仅"定量项目类型"时显示，占 3 栅格（缩窄，数字用） */}
+            {watchItemType === 'quantitative' && (
+              <Col span={3}>
+                <Form.Item name="lower_limit" label="下限" extra="低于判不合格">
+                  <Input type="number" placeholder="数值" />
+                </Form.Item>
+              </Col>
+            )}
           </Row>
 
           {/* 第三行：检验要求 */}
