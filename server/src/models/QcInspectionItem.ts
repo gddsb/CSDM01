@@ -94,6 +94,15 @@ const QcInspectionItem = sequelize.define('QcInspectionItem', {
     type: DataTypes.DECIMAL(15, 4),
     comment: '下限（定量用，来自检验标准）',
   },
+  sample_rule: {
+    type: DataTypes.STRING(200),
+    comment: '抽样方案，来自检验标准',
+  },
+  sample_count_mode: {
+    type: DataTypes.STRING(20),
+    defaultValue: 'auto',
+    comment: '抽样模式：fixed固定值/percent百分比/auto自动',
+  },
   sort_order: {
     type: DataTypes.INTEGER,
     defaultValue: 0,

@@ -19,6 +19,7 @@ import {
   replaceQcItems,
   deleteQcItemsForSource,
 } from '../services/QcItemCompatHelper.js'
+import { calcSampleCount, recalcItemSampleCounts } from '../services/SampleCountCalcService.js'
 
 const STATUS_REVERSE: Record<string, number> = { '待检': 0, '检验中': 1, '审核中': 2, '已完成': 3, '已关闭': 4 }
 
@@ -179,7 +180,11 @@ export default {
           nominal_value: si.nominal_value ?? null,
           upper_limit: si.upper_limit ?? null,
           lower_limit: si.lower_limit ?? null,
+          sample_rule: si.sample_rule ?? null,
+          sample_count_mode: si.sample_count_mode ?? 'auto',
         }))
+        // 根据到货数量重算样本量
+        result.items = recalcItemSampleCounts(result.items, result.quantity)
       }
       success(res, result)
     } catch (err: any) {

@@ -75,6 +75,11 @@ const InspectionStandardItem = sequelize.define('InspectionStandardItem', {
     type: DataTypes.DECIMAL(15, 4),
     comment: '下限（定量用，可空）',
   },
+  sample_count_mode: {
+    type: DataTypes.STRING(20),
+    defaultValue: 'auto',
+    comment: '抽样模式：fixed固定值/percent百分比/auto自动',
+  },
 }, {
   tableName: 'quality_inspection_standard_item',
   timestamps: true,

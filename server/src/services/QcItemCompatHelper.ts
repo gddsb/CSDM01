@@ -73,6 +73,8 @@ export function buildQcItemData(
     nominal_value: item.nominal_value ?? null,
     upper_limit: item.upper_limit ?? null,
     lower_limit: item.lower_limit ?? null,
+    sample_rule: item.sample_rule || null,
+    sample_count_mode: item.sample_count_mode || 'auto',
     sort_order: item.sort_order !== undefined ? item.sort_order : idx,
     remarks: item.remarks || null,
   }))
@@ -134,6 +136,8 @@ export function mapQcItemsToFrontend(qcItems: any[]): any[] {
       nominal_value: raw.nominal_value ?? null,
       upper_limit: raw.upper_limit ?? null,
       lower_limit: raw.lower_limit ?? null,
+      sample_rule: raw.sample_rule ?? null,
+      sample_count_mode: raw.sample_count_mode ?? null,
       sort_order: raw.sort_order,
       remarks: raw.remarks,
       created_at: raw.created_at,

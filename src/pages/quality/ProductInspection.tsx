@@ -736,6 +736,14 @@ export default function ProductInspection() {
           items={inspectItems}
           onChange={setInspectItems}
           disabled={false}
+          materialInfo={{
+            material_code: current?.material_code,
+            material_name: current?.material_name,
+            specification: current?.specification,
+            quantity: current?.quantity,
+            supplier_name: current?.supplier_name,
+            supplier_batch_no: current?.supplier_batch_no,
+          }}
         />
       </Drawer>
 
@@ -793,6 +801,14 @@ export default function ProductInspection() {
                   sort_order: it.sort_order !== undefined ? it.sort_order : idx,
                 })) as InspectionItemRow[]}
                 disabled={true}
+                materialInfo={{
+                  material_code: current?.material_code,
+                  material_name: current?.material_name,
+                  specification: current?.specification,
+                  quantity: current?.quantity,
+                  supplier_name: current?.supplier_name,
+                  supplier_batch_no: current?.supplier_batch_no,
+                }}
               />
             </div>
           </>

@@ -355,6 +355,14 @@ export default function MicrobeInspection() {
               <InspectionItemEditor
                 items={detailItems}
                 disabled={true}
+                materialInfo={{
+                  material_code: current?.material_code,
+                  material_name: current?.material_name,
+                  specification: current?.specification,
+                  quantity: current?.quantity,
+                  supplier_name: current?.supplier_name,
+                  supplier_batch_no: current?.supplier_batch_no,
+                }}
               />
             </div>
           </>
