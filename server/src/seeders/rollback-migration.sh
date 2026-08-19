@@ -23,7 +23,7 @@ done
 
 if [[ -z "$BACKUP_FILE" ]]; then
   # 未指定备份文件，默认取最新的
-  ENV_FILE="${ENV_FILE:-$(dirname "$0")/../.env}"
+  ENV_FILE="${ENV_FILE:-$(dirname "$0")/../../.env}"
   if [[ -f "$ENV_FILE" ]]; then
     set -a; source "$ENV_FILE"; set +a
   fi

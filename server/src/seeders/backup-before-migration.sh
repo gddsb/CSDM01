@@ -8,7 +8,8 @@
 set -euo pipefail
 
 # 从 server/.env 读取数据库配置（兼容 BACKUP_DIR 自定义）
-ENV_FILE="${ENV_FILE:-$(dirname "$0")/../.env}"
+# 脚本位于 server/src/seeders/，需 ../../ 才到 server/
+ENV_FILE="${ENV_FILE:-$(dirname "$0")/../../.env}"
 if [[ -f "$ENV_FILE" ]]; then
   set -a
   # shellcheck disable=SC1090
