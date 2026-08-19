@@ -12,16 +12,10 @@ export const loginSchema = z.object({
   captcha: z.string().max(10).optional(),
 });
 
-export const changePasswordSchema = z
-  .object({
-    oldPassword: z.string().min(1, '原密码不能为空'),
-    newPassword: z.string().min(6, '新密码至少6位').max(50, '新密码不能超过50位'),
-    confirmPassword: z.string().min(1, '确认密码不能为空'),
-  })
-  .refine((d) => d.newPassword === d.confirmPassword, {
-    message: '两次输入的密码不一致',
-    path: ['confirmPassword'],
-  });
+export const changePasswordSchema = z.object({
+  old_password: z.string().min(1, '原密码不能为空'),
+  new_password: z.string().min(6, '新密码至少6位').max(50, '新密码不能超过50位'),
+});
 
 export const profileUpdateSchema = z.object({
   real_name: z.string().max(20).optional(),

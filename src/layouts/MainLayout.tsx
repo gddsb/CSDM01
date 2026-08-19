@@ -381,14 +381,22 @@ export default function MainLayout() {
       message.error('两次输入的密码不一致')
       return
     }
-    if (values.old_password !== '123456') {
-      message.error('原密码错误')
-      return
+    try {
+      const res = await api.post('/auth/change-password', {
+        old_password: values.old_password,
+        new_password: values.new_password,
+      })
+      if (res.success) {
+        message.success('密码修改成功，请重新登录')
+        setPwdOpen(false)
+        pwdForm.resetFields()
+        setTimeout(() => logout(), 1000)
+      } else {
+        message.error(res.message || '密码修改失败')
+      }
+    } catch (err: any) {
+      message.error(err?.message || '密码修改失败')
     }
-    message.success('密码修改成功，请重新登录')
-    setPwdOpen(false)
-    pwdForm.resetFields()
-    setTimeout(() => logout(), 1000)
   }
 
   const userMenu: MenuProps = {

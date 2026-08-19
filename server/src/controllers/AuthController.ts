@@ -2,10 +2,20 @@ import { User, Role } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { AuthService } from '../services/AuthService.js'
 import { hashPassword } from '../utils/password.js'
+import { AppError } from '../middleware/security.js'
 import type { Request, Response } from 'express'
 
 // 默认弱密码列表：命中时提醒用户修改（不阻断登录）
 const WEAK_PASSWORDS = new Set(['123456', 'admin', 'password', '111111', '888888', '000000', 'admin123'])
+
+// 统一异常处理：业务异常 AppError 按其自身 code/message/statusCode 透传，避免被吞成 500 服务器错误
+function handleControllerError(res: Response, err: unknown, fallbackAction: string) {
+  console.error(`${fallbackAction}:`, err)
+  if (err instanceof AppError) {
+    return fail(res, err.message, err.code, undefined, err.statusCode)
+  }
+  return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
+}
 
 // 登录
 export const login = async (req: Request, res: Response): Promise<any> => {
@@ -20,8 +30,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
     const result = await AuthService.login({ username, password, ip })
     return success(res, result, '登录成功')
   } catch (err) {
-    console.error('登录失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
+    return handleControllerError(res, err, '登录失败')
   }
 }
 
@@ -65,8 +74,7 @@ export const changePassword = async (req, res) => {
     await AuthService.changePassword(userId, old_password, new_password)
     return success(res, null, '密码修改成功')
   } catch (err) {
-    console.error('修改密码失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
+    return handleControllerError(res, err, '修改密码失败')
   }
 }
 
