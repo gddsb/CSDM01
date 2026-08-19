@@ -1,6 +1,9 @@
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { Tag, Button, Select, DatePicker, Space, Input, Drawer, Descriptions, Typography, Alert, message, Checkbox } from 'antd'
+// 检验数据统一存储改造（阶段4.8）：引入统一检验项目录入组件（只读模式展示）
+import InspectionItemEditor from '../../components/InspectionItemEditor'
+import type { InspectionItemRow } from '../../components/InspectionItemEditor'
 import {
   ExperimentOutlined, SafetyCertificateOutlined, WarningOutlined,
   CheckCircleOutlined, SearchOutlined, ReloadOutlined
@@ -52,7 +55,7 @@ export default function MicrobeInspection() {
   const [pagination, setPagination] = useState({ current: 1, pageSize: 20, total: 0 })
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [current, setCurrent] = useState<any>(null)
-  const [detailItems, setDetailItems] = useState<any[]>([])
+  const [detailItems, setDetailItems] = useState<InspectionItemRow[]>([])
 
   const [inspectionNo, setInspectionNo] = useState<any>(undefined)
   const [inspectionType, setInspectionType] = useState<any>(undefined)
@@ -133,14 +136,15 @@ export default function MicrobeInspection() {
       const res = await api.get(`/basic/microbe-inspections/${record.inspection_id}`)
       if (res.success !== false && res.data) {
         setCurrent(res.data)
-        const items = res.data.items || []
-        setDetailItems(items.map((it: any) => {
+        // 阶段4.8：items 已经包含 sample_values，直接传入 InspectionItemEditor 只读展示
+        const items: InspectionItemRow[] = (res.data.items || []).map((it: any, idx: number) => {
           const r = it.result
-          let judge = '待检'
+          let judge: '合格' | '不合格' | string | null = null
           if (r === 1 || r === '1' || r === '合格') judge = '合格'
           else if (r === 0 || r === '0' || r === '不合格') judge = '不合格'
-          return { ...it, judge }
-        }))
+          return { ...it, result: judge, sort_order: it.sort_order !== undefined ? it.sort_order : idx } as InspectionItemRow
+        })
+        setDetailItems(items)
       }
     } catch (e) {
       // ignore
@@ -347,13 +351,12 @@ export default function MicrobeInspection() {
               </Descriptions.Item>
             </Descriptions>
             <Title level={5}>检验结果明细</Title>
-            <ResizableTable tableKey="pages_quality_MicrobeInspection_detail"
-              columns={detailColumns}
-              dataSource={detailItems}
-              rowKey={(r: any, i: number) => r.item_id || i}
-              size="small"
-              pagination={false}
-            />
+            <div style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 400px)' }}>
+              <InspectionItemEditor
+                items={detailItems}
+                disabled={true}
+              />
+            </div>
           </>
         )}
       </Drawer>

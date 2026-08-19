@@ -1,6 +1,9 @@
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { Table, Tag, Button, Select, DatePicker, Space, Row, Col, Modal, Form, Input, Drawer, Descriptions, Typography, Popconfirm, Table as AntTable, InputNumber, Alert, Checkbox } from 'antd'
+// 检验数据统一存储改造（阶段4.7）：引入统一检验项目录入组件
+import InspectionItemEditor from '../../components/InspectionItemEditor'
+import type { InspectionItemRow } from '../../components/InspectionItemEditor'
 import { useMessage } from '../../contexts/AppContext'
 import {
   ExperimentOutlined, CheckCircleOutlined, CloseCircleOutlined, PercentageOutlined,
@@ -57,7 +60,7 @@ export default function ProductInspection() {
   const [inspectDrawerOpen, setInspectDrawerOpen] = useState(false)
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false)
   const [current, setCurrent] = useState<any>(null)
-  const [inspectItems, setInspectItems] = useState<any[]>([])
+  const [inspectItems, setInspectItems] = useState<InspectionItemRow[]>([])
   const [addForm] = Form.useForm()
   const [editForm] = Form.useForm()
   const message = useMessage()
@@ -235,7 +238,11 @@ export default function ProductInspection() {
       const res = await api.get(`/basic/product-inspections/${record.inspection_id}`)
       const detail = res.data || record
       setCurrent(detail)
-      setInspectItems((detail.items || []).map((it: any, idx: number) => ({ ...it, sort_order: it.sort_order !== undefined ? it.sort_order : idx })))
+      // 阶段4.7：items 已经包含 sample_values，直接传入 InspectionItemEditor
+      setInspectItems((detail.items || []).map((it: any, idx: number) => ({
+        ...it,
+        sort_order: it.sort_order !== undefined ? it.sort_order : idx,
+      })) as InspectionItemRow[])
       setInspectDrawerOpen(true)
     } catch (e) {
       setCurrent(record)
@@ -259,13 +266,37 @@ export default function ProductInspection() {
 
   const handleInspectSave = async () => {
     try {
+      // 阶段4.7：保存时同步写 sample_values 到后端（PUT 接口会走 replaceQcItems）
       const payload = { items: inspectItems }
-      await api.put(`/basic/product-inspections/${current.inspection_id}`, payload)
-      message.success('检测项目已保存')
-      setInspectDrawerOpen(false)
-      fetchData()
+      const res = await api.put(`/basic/product-inspections/${current.inspection_id}`, payload)
+      if (res.success !== false) {
+        // 同步保存 sample_values（有变化的项，含 sample_values）
+        let saved = 0
+        for (const it of inspectItems) {
+          const svs = it.sample_values || []
+          if (svs.length > 0 && it.item_id) {
+            const svRes = await api.post(`/inspection-items/${it.item_id}/sample-values`, {
+              sample_values: svs.map(s => ({
+                sample_no: s.sample_no,
+                dimension_code: s.dimension_code,
+                dimension_name: s.dimension_name,
+                measure_value_num: s.measure_value_num,
+                measure_value_text: s.measure_value_text,
+                defect_desc: s.defect_desc,
+                measured_at: s.measured_at,
+              })),
+            })
+            if (svRes.success !== false) saved++
+          }
+        }
+        message.success(saved > 0 ? `检测项目已保存（含 ${saved} 项样品测量值）` : '检测项目已保存')
+        setInspectDrawerOpen(false)
+        fetchData()
+      } else {
+        message.error(res.message || '保存失败')
+      }
     } catch (e: any) {
-      // ignore
+      message.error(e?.response?.data?.message || e?.message || '保存失败，请重试')
     }
   }
 
@@ -321,7 +352,8 @@ export default function ProductInspection() {
 
   const addItem = () => {
     setInspectItems(prev => [...prev, {
-      item_id: 'new_' + Date.now(),
+      item_id: undefined,
+      inspection_id: current?.inspection_id,
       item_name: '',
       category: '',
       standard_value: '',
@@ -330,8 +362,7 @@ export default function ProductInspection() {
       inspector_name: '',
       inspection_time: null,
       sort_order: prev.length,
-      _new: true,
-    }])
+    } as InspectionItemRow])
   }
 
   const updateItem = useCallback((index: number, field: string, value: any) => {
@@ -701,12 +732,10 @@ export default function ProductInspection() {
           </Space>
         }
       >
-        <AntTable
-          columns={inspectColumns}
-          dataSource={inspectItems}
-          rowKey={(r: any, i: number) => r.item_id || `row-${i}`}
-          size="small"
-          pagination={false}
+        <InspectionItemEditor
+          items={inspectItems}
+          onChange={setInspectItems}
+          disabled={false}
         />
       </Drawer>
 
@@ -758,26 +787,12 @@ export default function ProductInspection() {
 
             <Title level={5} style={{ marginTop: 8 }}>检测项目</Title>
             <div style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 420px)' }}>
-              <AntTable
-                size="small"
-                dataSource={current.items || []}
-                rowKey={(r: any, i: number) => r.item_id || i}
-                pagination={false}
-                tableLayout="auto"
-                columns={[
-                  { title: '序号', width: 60, render: (_: any, __: any, i: number) => i + 1 },
-                  { title: '检测项目', dataIndex: 'item_name' },
-                  { title: '标准要求', dataIndex: 'standard_value' },
-                  { title: '检测值', dataIndex: 'actual_value' },
-                  {
-                    title: '判定', dataIndex: 'result', width: 100,
-                    render: (v: any) => v !== null && v !== undefined ? (
-                      <Tag color={v === '合格' || v === 1 ? 'success' : 'error'}>
-                        {typeof v === 'number' ? (v === 1 ? '合格' : '不合格') : v}
-                      </Tag>
-                    ) : '-'
-                  },
-                ]}
+              <InspectionItemEditor
+                items={(current.items || []).map((it: any, idx: number) => ({
+                  ...it,
+                  sort_order: it.sort_order !== undefined ? it.sort_order : idx,
+                })) as InspectionItemRow[]}
+                disabled={true}
               />
             </div>
           </>
