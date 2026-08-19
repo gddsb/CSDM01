@@ -327,7 +327,7 @@ export default function InspectionStandardForm() {
         <div style={{ lineHeight: 1.5 }}>
           {segments.map((s, i) => (
             <div key={i} style={{ fontSize: 12 }}>
-              ≤{s.max_qty ?? '-'}: n={<strong>{s.sample_count ?? '-'}</strong>} Ac={s.accept_number ?? 0} Re={s.reject_number ?? 1}
+              ≤{s.max_qty ?? '-'}: n=<strong>{s.sample_count ?? '-'}</strong> Ac={s.accept_number ?? 0} Re={s.reject_number ?? 1}
             </div>
           ))}
         </div>

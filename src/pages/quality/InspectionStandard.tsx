@@ -274,12 +274,12 @@ export default function InspectionStandard() {
     }
     if (displayPlan === '按数量抽样') {
       const segments = (detail.segments || []) as any[]
-      if (segments.length === 0) return <Tag type="warning" style={{ margin: 0 }}>未配置分段</Tag>
+      if (segments.length === 0) return <Tag color="warning" style={{ margin: 0 }}>未配置分段</Tag>
       return (
         <div style={{ lineHeight: 1.6 }}>
           {segments.map((s, i) => (
             <div key={i} style={{ fontSize: 12 }}>
-              ≤{s.max_qty ?? '-'}:&nbsp;n={<strong>{s.sample_count ?? '-'}</strong>&nbsp;Ac={s.accept_number ?? 0}&nbsp;Re={s.reject_number ?? 1}
+              ≤{s.max_qty ?? '-'}:&nbsp;n=<strong>{s.sample_count ?? '-'}</strong>&nbsp;Ac={s.accept_number ?? 0}&nbsp;Re={s.reject_number ?? 1}
             </div>
           ))}
         </div>
