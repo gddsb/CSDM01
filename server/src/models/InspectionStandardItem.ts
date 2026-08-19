@@ -53,6 +53,28 @@ const InspectionStandardItem = sequelize.define('InspectionStandardItem', {
     type: DataTypes.STRING(200),
     comment: '检验类型（多选，逗号分隔：首件,制程,成品,来料,其它）',
   },
+  // —— 检验数据统一存储改造（阶段1.1）新增字段 ——
+  item_type: {
+    type: DataTypes.STRING(20),
+    comment: '项目类型：qualitative定性(仅判定OK/NG) / quantitative定量(记录测量数值)',
+  },
+  need_sample_count: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    comment: '默认抽样数，0=不限制由实际抽样决定',
+  },
+  nominal_value: {
+    type: DataTypes.DECIMAL(15, 4),
+    comment: '标称值（定量用）',
+  },
+  upper_limit: {
+    type: DataTypes.DECIMAL(15, 4),
+    comment: '上限（定量用，可空）',
+  },
+  lower_limit: {
+    type: DataTypes.DECIMAL(15, 4),
+    comment: '下限（定量用，可空）',
+  },
 }, {
   tableName: 'quality_inspection_standard_item',
   timestamps: true,

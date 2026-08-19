@@ -10,6 +10,8 @@ import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { generateProductInspectionNo } from '../utils/sequence.js'
 import { logger } from '../utils/logger.js'
 import { nowBeijingDate, parseDateTime } from '../utils/date.js'
+// 检验数据统一存储改造（阶段1.7）：双写统一子表
+import { syncQcItems, deleteQcItems } from '../services/QcInspectionItemSync.js'
 
 const STATUS_REVERSE: Record<string, number> = { '待检': 0, '检验中': 1, '审核中': 2, '已完成': 3, '已关闭': 4 }
 
@@ -200,6 +202,8 @@ export default {
           remarks: item.remarks || '',
         }))
         await ProductInspectionItem.bulkCreate(itemData, { transaction: t })
+        // 检验数据统一存储改造（阶段1.7）：双写统一子表
+        await syncQcItems('产品', record.inspection_id, itemData, t)
       }
 
       await t.commit()
@@ -264,6 +268,8 @@ export default {
 
       if (items !== undefined) {
         await ProductInspectionItem.destroy({ where: { inspection_id: id }, transaction: t })
+        // 检验数据统一存储改造（阶段1.7）：同步清理旧 qc_items
+        await deleteQcItems('产品', Number(id), t)
         if (items.length > 0) {
           const user: any = req.user || {}
           const now = nowBeijingDate()
@@ -281,6 +287,8 @@ export default {
             remarks: item.remarks || '',
           }))
           await ProductInspectionItem.bulkCreate(itemData, { transaction: t })
+          // 检验数据统一存储改造（阶段1.7）：双写统一子表
+          await syncQcItems('产品', Number(id), itemData, t)
         }
       }
 
@@ -405,6 +413,8 @@ export default {
       }
 
       await ProductInspectionItem.destroy({ where: { inspection_id: id }, transaction: t })
+      // 检验数据统一存储改造（阶段1.7）：同步清理 qc_items + sample_values
+      await deleteQcItems('产品', Number(id), t)
       await record.destroy({ transaction: t })
       await t.commit()
 

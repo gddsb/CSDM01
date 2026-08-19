@@ -39,6 +39,9 @@ import InspectionStandard from './InspectionStandard.js'
 import InspectionStandardItem from './InspectionStandardItem.js'
 import MicrobeInspection from './MicrobeInspection.js'
 import MicrobeInspectionItem from './MicrobeInspectionItem.js'
+// 检验数据统一存储改造（阶段1.5）：统一子表 + 样品测量值明细
+import QcInspectionItem from './QcInspectionItem.js'
+import QcInspectionSampleValue from './QcInspectionSampleValue.js'
 import TaskSetting from './TaskSetting.js'
 import SyncTask from './SyncTask.js'
 import ScheduledTask from './ScheduledTask.js'
@@ -161,6 +164,49 @@ MicrobeInspection.belongsTo(InspectionStandard, { foreignKey: 'standard_id', as:
 MicrobeInspection.hasMany(MicrobeInspectionItem, { foreignKey: 'inspection_id', as: 'items' })
 MicrobeInspectionItem.belongsTo(MicrobeInspection, { foreignKey: 'inspection_id', as: 'inspection' })
 
+// ============================================================
+// 检验数据统一存储改造（阶段1.5）：统一子表 + 样品测量值明细
+// 多态外键关联：三主表 hasMany QcInspectionItem（as: 'qc_items'）
+// 注意：source_type 区分来源，无物理FK约束，应用层保证一致性
+// ============================================================
+// 来料检验主表 - 统一检验子表（一对多，多态）
+IncomingInspection.hasMany(QcInspectionItem, {
+  foreignKey: 'inspection_id',
+  scope: { source_type: '来料' },
+  as: 'qc_items',
+  constraints: false,
+})
+// 产品检验主表 - 统一检验子表（一对多，多态）
+ProductInspection.hasMany(QcInspectionItem, {
+  foreignKey: 'inspection_id',
+  scope: { source_type: '产品' },
+  as: 'qc_items',
+  constraints: false,
+})
+// 微生物检验主表 - 统一检验子表（一对多，多态）
+MicrobeInspection.hasMany(QcInspectionItem, {
+  foreignKey: 'inspection_id',
+  scope: { source_type: '微生物' },
+  as: 'qc_items',
+  constraints: false,
+})
+// 统一检验子表 - 样品测量值（一对多）
+QcInspectionItem.hasMany(QcInspectionSampleValue, {
+  foreignKey: 'item_id',
+  as: 'sample_values',
+  onDelete: 'CASCADE',
+})
+QcInspectionSampleValue.belongsTo(QcInspectionItem, {
+  foreignKey: 'item_id',
+  as: 'qc_item',
+})
+// 统一检验子表 - 检验标准项目配置（多态关联，可空）
+QcInspectionItem.belongsTo(InspectionStandardItem, {
+  foreignKey: 'item_cfg_id',
+  as: 'item_cfg',
+  constraints: false,
+})
+
 const db = {
   sequelize,
   DataTypes,
@@ -202,6 +248,8 @@ const db = {
   InspectionStandardItem,
   MicrobeInspection,
   MicrobeInspectionItem,
+  QcInspectionItem,
+  QcInspectionSampleValue,
   TaskSetting,
   SyncTask,
   ScheduledTask,
@@ -255,6 +303,8 @@ export {
   InspectionStandardItem,
   MicrobeInspection,
   MicrobeInspectionItem,
+  QcInspectionItem,
+  QcInspectionSampleValue,
   TaskSetting,
   SyncTask,
   ScheduledTask,
