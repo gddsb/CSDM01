@@ -195,15 +195,16 @@ const migrations = [
       ['inspection_plan', 'VARCHAR(50)'],
     ],
   },
-  // 检验标准项目子表：补齐 defect_level、inspection_types
+  // 检验标准项目子表：补齐 defect_level、inspection_types、sample_count_mode
   {
     table: 'quality_inspection_standard_item',
     columns: [
       ['defect_level', 'VARCHAR(20)'],
       ['inspection_types', 'VARCHAR(200)'],
+      ['sample_count_mode', "VARCHAR(20) DEFAULT 'auto'"],
     ],
   },
-  // 检验数据统一存储改造（回填阶段）：qc_inspection_item 加 5 个配置字段
+  // 检验数据统一存储改造（回填阶段）：qc_inspection_item 加配置字段
   // 与 quality_inspection_standard_item 同构，由回填脚本同步过来
   {
     table: 'qc_inspection_item',
@@ -213,6 +214,8 @@ const migrations = [
       ['nominal_value', 'DECIMAL(15,4)'],
       ['upper_limit', 'DECIMAL(15,4)'],
       ['lower_limit', 'DECIMAL(15,4)'],
+      ['sample_rule', 'VARCHAR(200)'],
+      ['sample_count_mode', "VARCHAR(20) DEFAULT 'auto'"],
     ],
   },
   // 人员使用记录子表：新增 report_order_id（替代原 report_id/work_order_id/work_order_no）
