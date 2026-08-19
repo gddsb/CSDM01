@@ -58,8 +58,11 @@ export interface InspectionItemRow {
   nominal_value?: number | null
   upper_limit?: number | null
   lower_limit?: number | null
-  sample_rule?: string | null
-  sample_count_mode?: string | null
+  sampling_plan?: string | null
+  sampling_ratio?: number | null
+  sampling_detail?: string | null
+  accept_number?: number | null
+  reject_number?: number | null
   sample_values?: SampleValue[]
 }
 
@@ -334,20 +337,30 @@ export default function InspectionItemEditor(props: Props) {
       ),
     },
     {
-      title: '抽样方案', dataIndex: 'sample_rule', width: 120,
-      render: v => v || <Text type="secondary">-</Text>,
+      title: '抽样方案', dataIndex: 'sampling_plan', width: 130,
+      render: (v, r) => {
+        if (!v) return <Text type="secondary">-</Text>
+        const colorMap: any = { 'AQL抽样': 'blue', '按数量抽样': 'green', '固定数量抽样': 'orange', '全检': 'purple' }
+        return (
+          <Space direction="vertical" size={2}>
+            <Tag color={colorMap[v] || 'default'} style={{ margin: 0 }}>{v}</Tag>
+            {r.sampling_ratio != null && <Text type="secondary" style={{ fontSize: 11 }}>{r.sampling_ratio}%</Text>}
+          </Space>
+        )
+      },
     },
     {
       title: '样本量', dataIndex: 'need_sample_count', width: 70,
       render: (v, r) => v || r.sample_count || <Text type="secondary">1</Text>,
     },
     {
-      title: '下限', dataIndex: 'lower_limit', width: 80,
-      render: v => v !== null && v !== undefined ? v : <Text type="secondary">-</Text>,
-    },
-    {
-      title: '上限', dataIndex: 'upper_limit', width: 80,
-      render: v => v !== null && v !== undefined ? v : <Text type="secondary">-</Text>,
+      title: 'Ac/Re', dataIndex: 'accept_number', width: 80,
+      render: (v, r) => {
+        const ac = r.accept_number
+        const re = r.reject_number
+        if (ac == null && re == null) return <Text type="secondary">-</Text>
+        return <Text style={{ fontSize: 12 }}>Ac={ac ?? '-'} / Re={re ?? '-'}</Text>
+      },
     },
     ...sampleColumns,
     {

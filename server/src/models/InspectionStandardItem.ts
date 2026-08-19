@@ -27,9 +27,17 @@ const InspectionStandardItem = sequelize.define('InspectionStandardItem', {
     type: DataTypes.STRING(200),
     comment: '检验方法',
   },
-  sample_rule: {
-    type: DataTypes.STRING(200),
-    comment: '抽样方式',
+  sampling_plan: {
+    type: DataTypes.STRING(20),
+    comment: '抽样方案：AQL抽样/按数量抽样/固定数量抽样/全检',
+  },
+  sampling_ratio: {
+    type: DataTypes.INTEGER,
+    comment: '抽样比例（百分比，如 10 表示 10%）',
+  },
+  sampling_detail: {
+    type: DataTypes.TEXT,
+    comment: '抽样方案详情JSON：AQL值/分段数量/固定数量/Ac/Re',
   },
   standard_value: {
     type: DataTypes.STRING(200),
@@ -58,11 +66,6 @@ const InspectionStandardItem = sequelize.define('InspectionStandardItem', {
     type: DataTypes.STRING(20),
     comment: '项目类型：qualitative定性(仅判定OK/NG) / quantitative定量(记录测量数值)',
   },
-  need_sample_count: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0,
-    comment: '默认抽样数，0=不限制由实际抽样决定',
-  },
   nominal_value: {
     type: DataTypes.DECIMAL(15, 4),
     comment: '标称值（定量用）',
@@ -75,11 +78,7 @@ const InspectionStandardItem = sequelize.define('InspectionStandardItem', {
     type: DataTypes.DECIMAL(15, 4),
     comment: '下限（定量用，可空）',
   },
-  sample_count_mode: {
-    type: DataTypes.STRING(20),
-    defaultValue: 'auto',
-    comment: '抽样模式：fixed固定值/percent百分比/auto自动',
-  },
+  // 抽样相关：由 sampling_plan / sampling_ratio / sampling_detail 驱动
 }, {
   tableName: 'quality_inspection_standard_item',
   timestamps: true,

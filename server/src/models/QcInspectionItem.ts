@@ -94,14 +94,26 @@ const QcInspectionItem = sequelize.define('QcInspectionItem', {
     type: DataTypes.DECIMAL(15, 4),
     comment: '下限（定量用，来自检验标准）',
   },
-  sample_rule: {
-    type: DataTypes.STRING(200),
-    comment: '抽样方案，来自检验标准',
-  },
-  sample_count_mode: {
+  // —— 抽样方案配置（来自检验标准） ——
+  sampling_plan: {
     type: DataTypes.STRING(20),
-    defaultValue: 'auto',
-    comment: '抽样模式：fixed固定值/percent百分比/auto自动',
+    comment: '抽样方案：AQL抽样/按数量抽样/固定数量抽样/全检',
+  },
+  sampling_ratio: {
+    type: DataTypes.INTEGER,
+    comment: '抽样比例（百分比）',
+  },
+  sampling_detail: {
+    type: DataTypes.TEXT,
+    comment: '抽样方案详情JSON（Ac/Re等）',
+  },
+  accept_number: {
+    type: DataTypes.INTEGER,
+    comment: '允收值 Ac',
+  },
+  reject_number: {
+    type: DataTypes.INTEGER,
+    comment: '拒收值 Re',
   },
   sort_order: {
     type: DataTypes.INTEGER,

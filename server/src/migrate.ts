@@ -195,17 +195,18 @@ const migrations = [
       ['inspection_plan', 'VARCHAR(50)'],
     ],
   },
-  // 检验标准项目子表：补齐 defect_level、inspection_types、sample_count_mode
+  // 检验标准项目子表：新增抽样方案字段
   {
     table: 'quality_inspection_standard_item',
     columns: [
       ['defect_level', 'VARCHAR(20)'],
       ['inspection_types', 'VARCHAR(200)'],
-      ['sample_count_mode', "VARCHAR(20) DEFAULT 'auto'"],
+      ['sampling_plan', "VARCHAR(20) DEFAULT 'AQL抽样'"],
+      ['sampling_ratio', 'INT'],
+      ['sampling_detail', 'TEXT'],
     ],
   },
-  // 检验数据统一存储改造（回填阶段）：qc_inspection_item 加配置字段
-  // 与 quality_inspection_standard_item 同构，由回填脚本同步过来
+  // 检验数据统一存储改造：qc_inspection_item 新增抽样方案字段
   {
     table: 'qc_inspection_item',
     columns: [
@@ -214,8 +215,11 @@ const migrations = [
       ['nominal_value', 'DECIMAL(15,4)'],
       ['upper_limit', 'DECIMAL(15,4)'],
       ['lower_limit', 'DECIMAL(15,4)'],
-      ['sample_rule', 'VARCHAR(200)'],
-      ['sample_count_mode', "VARCHAR(20) DEFAULT 'auto'"],
+      ['sampling_plan', "VARCHAR(20) DEFAULT 'AQL抽样'"],
+      ['sampling_ratio', 'INT'],
+      ['sampling_detail', 'TEXT'],
+      ['accept_number', 'INT'],
+      ['reject_number', 'INT'],
     ],
   },
   // 人员使用记录子表：新增 report_order_id（替代原 report_id/work_order_id/work_order_no）
@@ -252,6 +256,9 @@ const obsoleteColumns = [
   { table: 'production_process_material', columns: ['report_id', 'work_order_id'] },
   { table: 'production_process_exception', columns: ['report_id', 'work_order_id', 'work_order_no'] },
   { table: 'production_manpower_record', columns: ['report_id', 'work_order_id', 'work_order_no'] },
+  // 检验项目抽样方式改造：旧字段 sample_rule / sample_count_mode 已被 sampling_plan / sampling_ratio / sampling_detail 替代
+  { table: 'quality_inspection_standard_item', columns: ['sample_rule', 'sample_count_mode'] },
+  { table: 'qc_inspection_item', columns: ['sample_rule', 'sample_count_mode'] },
 ]
 
 // SQLite 与 MySQL 取列名的方式不同

@@ -164,8 +164,11 @@ export default {
           nominal_value: si.nominal_value ?? null,
           upper_limit: si.upper_limit ?? null,
           lower_limit: si.lower_limit ?? null,
-          sample_rule: si.sample_rule ?? null,
-          sample_count_mode: si.sample_count_mode ?? 'auto',
+          sampling_plan: si.sampling_plan ?? 'AQL抽样',
+          sampling_ratio: si.sampling_ratio ?? null,
+          sampling_detail: si.sampling_detail ?? null,
+          accept_number: si.accept_number ?? null,
+          reject_number: si.reject_number ?? null,
         }))
         // 根据到货数量重算样本量
         result.items = recalcItemSampleCounts(result.items, result.quantity)

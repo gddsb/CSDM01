@@ -228,24 +228,25 @@ export default function InspectionStandard() {
     },
     { title: '检验项目', dataIndex: 'item_name', key: 'item_name', width: 180, render: (v: string) => <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{v || '-'}</span> },
     {
-      title: '检验类型', dataIndex: 'inspection_types', key: 'inspection_types', width: 240,
-      render: (v: string) => {
-        if (!v) return '-'
-        const types = v.split(',')
-        return <Space wrap size={4}>{types.map(t => <Tag key={t} color={typeColorMap[t] || 'default'}>{t}</Tag>)}</Space>
-      }
-    },
-    { title: '标准要求', dataIndex: 'standard_value', key: 'standard_value', width: 240, render: (v: string) => <span style={{ whiteSpace: 'normal', wordBreak: 'break-all' }}>{v || '-'}</span> },
-    { title: '单位', dataIndex: 'unit', key: 'unit', width: 80, render: (v: string) => v || '-' },
-    {
       title: '缺陷等级', dataIndex: 'defect_level', key: 'defect_level', width: 130,
       render: (v: string) => {
         const colorMap: any = { 'A类致命缺陷': 'red', 'B类严重缺陷': 'orange', 'C类次要缺陷': 'blue' }
         return v ? <Tag color={colorMap[v] || 'default'}>{v}</Tag> : '-'
       }
     },
-    { title: '检验方法', dataIndex: 'method', key: 'method', width: 200, render: (v: string) => <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{v || '-'}</span> },
-    { title: '抽样方式', dataIndex: 'sample_rule', key: 'sample_rule', width: 200, render: (v: string) => <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{v || '-'}</span> },
+    { title: '检验标准', dataIndex: 'standard_value', key: 'standard_value', width: 240, render: (v: string) => <span style={{ whiteSpace: 'normal', wordBreak: 'break-all' }}>{v || '-'}</span> },
+    {
+      title: '抽样方案', dataIndex: 'sampling_plan', key: 'sampling_plan', width: 120,
+      render: (v: string) => {
+        if (!v) return '-'
+        const colorMap: any = { 'AQL抽样': 'blue', '按数量抽样': 'green', '固定数量抽样': 'orange', '全检': 'purple' }
+        return <Tag color={colorMap[v] || 'default'}>{v}</Tag>
+      }
+    },
+    {
+      title: '抽样比例', dataIndex: 'sampling_ratio', key: 'sampling_ratio', width: 90,
+      render: (v: number | null) => v != null ? `${v}%` : '-'
+    },
   ]
 
   return (
@@ -399,7 +400,7 @@ export default function InspectionStandard() {
               rowKey="item_id"
               size="small"
               pagination={false}
-              scroll={{ x: 1500 }}
+              scroll={{ x: 1000 }}
             />
           </>
         )}
