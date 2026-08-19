@@ -5,6 +5,8 @@ import systemRoutes from './system.js'
 import basicRoutes from './basic.js'
 import productionRoutes from './production.js'
 import autoRoutes from './auto.js'
+// 检验数据统一存储改造（阶段3.1）：样品测量值 CRUD + 自动判定
+import sampleValueRoutes from './sample-value.js'
 import { uploadImage } from '../controllers/UploadController.js'
 import { authRequired } from '../middleware/auth.js'
 
@@ -28,5 +30,7 @@ router.use('/system', systemRoutes)
 router.use('/basic', basicRoutes)
 router.use('/production', productionRoutes)
 router.use('/auto', autoRoutes)
+// 阶段3.1 样品测量值 CRUD：/api/inspection-items/:item_id/sample-values
+router.use('/inspection-items', authRequired, sampleValueRoutes)
 
 export default router

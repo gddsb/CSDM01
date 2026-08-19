@@ -1,17 +1,22 @@
 import { Op } from 'sequelize'
 import {
   ProductInspection,
-  ProductInspectionItem,
   ReportOrder,
   InspectionStandard,
   InspectionStandardItem,
+  QcInspectionItem,
+  QcInspectionSampleValue,
 } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { generateProductInspectionNo } from '../utils/sequence.js'
 import { logger } from '../utils/logger.js'
 import { nowBeijingDate, parseDateTime } from '../utils/date.js'
-// 检验数据统一存储改造（阶段1.7）：双写统一子表
-import { syncQcItems, deleteQcItems } from '../services/QcInspectionItemSync.js'
+// 检验数据统一存储改造（阶段3.4/3.6）：切流量查新子表，停旧表写入
+import {
+  mapQcItemsToFrontend,
+  replaceQcItems,
+  deleteQcItemsForSource,
+} from '../services/QcItemCompatHelper.js'
 
 const STATUS_REVERSE: Record<string, number> = { '待检': 0, '检验中': 1, '审核中': 2, '已完成': 3, '已关闭': 4 }
 
@@ -34,22 +39,32 @@ const parseStatusParam = (status: any): number[] | null => {
 }
 
 async function getDetail(id: number) {
-  return ProductInspection.findOne({
+  // 阶段3.4：item 查询从旧子表 ProductInspectionItem 改为新统一子表 QcInspectionItem
+  const record = await ProductInspection.findOne({
     where: { inspection_id: id },
     include: [
       {
-        model: ProductInspectionItem,
-        as: 'items',
+        model: QcInspectionItem,
+        as: 'qc_items',
+        required: false,
+        separate: true,
         order: [['sort_order', 'ASC'], ['item_id', 'ASC']],
+        include: [
+          {
+            model: QcInspectionSampleValue,
+            as: 'sample_values',
+            required: false,
+            separate: true,
+          },
+        ],
       },
     ],
   })
-}
-
-const convertItemResult = (v: any) => {
-  if (v === undefined || v === null) return null
-  if (typeof v === 'string') return v === '合格' ? 1 : 0
-  return v
+  if (!record) return null
+  const json: any = record.toJSON()
+  json.items = mapQcItemsToFrontend(json.qc_items || [])
+  delete json.qc_items
+  return json
 }
 
 export default {
@@ -188,22 +203,8 @@ export default {
       }, { transaction: t })
 
       if (items && items.length > 0) {
-        const itemData = items.map((item: any, idx: number) => ({
-          inspection_id: record.inspection_id,
-          item_name: item.item_name,
-          category: item.category || '',
-          standard_value: item.standard_value || '',
-          actual_value: item.actual_value || '',
-          result: convertItemResult(item.result),
-          inspector_id: item.inspector_id || null,
-          inspector_name: item.inspector_name || '',
-          inspection_time: item.inspection_time ? new Date(item.inspection_time) : null,
-          sort_order: item.sort_order !== undefined ? item.sort_order : idx,
-          remarks: item.remarks || '',
-        }))
-        await ProductInspectionItem.bulkCreate(itemData, { transaction: t })
-        // 检验数据统一存储改造（阶段1.7）：双写统一子表
-        await syncQcItems('产品', record.inspection_id, itemData, t)
+        // 阶段3.6：停双写，直接写新统一子表
+        await replaceQcItems('产品', record.inspection_id, items, t)
       }
 
       await t.commit()
@@ -267,29 +268,8 @@ export default {
       }
 
       if (items !== undefined) {
-        await ProductInspectionItem.destroy({ where: { inspection_id: id }, transaction: t })
-        // 检验数据统一存储改造（阶段1.7）：同步清理旧 qc_items
-        await deleteQcItems('产品', Number(id), t)
-        if (items.length > 0) {
-          const user: any = req.user || {}
-          const now = nowBeijingDate()
-          const itemData = items.map((item: any, idx: number) => ({
-            inspection_id: Number(id),
-            item_name: item.item_name,
-            category: item.category || '',
-            standard_value: item.standard_value || '',
-            actual_value: item.actual_value || '',
-            result: convertItemResult(item.result),
-            inspector_id: user.userId || null,
-            inspector_name: user.realName || user.username || '',
-            inspection_time: now,
-            sort_order: item.sort_order !== undefined ? item.sort_order : idx,
-            remarks: item.remarks || '',
-          }))
-          await ProductInspectionItem.bulkCreate(itemData, { transaction: t })
-          // 检验数据统一存储改造（阶段1.7）：双写统一子表
-          await syncQcItems('产品', Number(id), itemData, t)
-        }
+        // 阶段3.6：停双写，replaceQcItems 已包含先 delete 再 bulkCreate
+        await replaceQcItems('产品', Number(id), items || [], t)
       }
 
       await t.commit()
@@ -412,9 +392,8 @@ export default {
         return fail(res, '只有手工触发的记录可以删除', ErrorCode.PARAM_INVALID)
       }
 
-      await ProductInspectionItem.destroy({ where: { inspection_id: id }, transaction: t })
-      // 检验数据统一存储改造（阶段1.7）：同步清理 qc_items + sample_values
-      await deleteQcItems('产品', Number(id), t)
+      // 阶段3.6：旧子表保留只读，仅清理新统一子表（sample_values CASCADE 自动清理）
+      await deleteQcItemsForSource('产品', Number(id), t)
       await record.destroy({ transaction: t })
       await t.commit()
 
