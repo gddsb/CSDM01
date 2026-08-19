@@ -177,11 +177,9 @@ export default {
           // 阶段回填：检验标准兜底拉取时也带上配置字段
           item_type: si.item_type ?? null,
           need_sample_count: si.need_sample_count ?? null,
-          nominal_value: si.nominal_value ?? null,
           upper_limit: si.upper_limit ?? null,
           lower_limit: si.lower_limit ?? null,
           sampling_plan: si.sampling_plan ?? 'AQL抽样',
-          sampling_ratio: si.sampling_ratio ?? null,
           sampling_detail: si.sampling_detail ?? null,
           accept_number: si.accept_number ?? null,
           reject_number: si.reject_number ?? null,

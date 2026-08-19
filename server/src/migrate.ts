@@ -251,17 +251,16 @@ const obsoleteTables = [
 ]
 
 // 废弃字段清单（已用 report_order_id 统一替代 / 旧抽样字段 sample_rule/sample_count_mode 已被替代）
-// 注意：nominal_value 与 sampling_ratio 仅在前端 UI/业务层"废弃"（不展示、不写入），
-//       但仍保留在 Sequelize 模型中，因此不能在 ALTER TABLE DROP COLUMN 中删除，
-//       否则会导致 SELECT / INSERT 出现 ER_BAD_FIELD_ERROR。
+// nominal_value / sampling_ratio：先从 Sequelize 模型（InspectionStandardItem / QcInspectionItem）中移除，
+//   再通过 obsoleteColumns 从物理表中 DROP COLUMN，避免 Sequelize SELECT 时 ER_BAD_FIELD_ERROR。
 const obsoleteColumns = [
   { table: 'production_process_defect', columns: ['report_id', 'work_order_id'] },
   { table: 'production_process_material', columns: ['report_id', 'work_order_id'] },
   { table: 'production_process_exception', columns: ['report_id', 'work_order_id', 'work_order_no'] },
   { table: 'production_manpower_record', columns: ['report_id', 'work_order_id', 'work_order_no'] },
   // 检验项目抽样方式改造：旧字段 sample_rule / sample_count_mode 已被替代
-  { table: 'quality_inspection_standard_item', columns: ['sample_rule', 'sample_count_mode'] },
-  { table: 'qc_inspection_item', columns: ['sample_rule', 'sample_count_mode'] },
+  { table: 'quality_inspection_standard_item', columns: ['sample_rule', 'sample_count_mode', 'nominal_value', 'sampling_ratio'] },
+  { table: 'qc_inspection_item', columns: ['sample_rule', 'sample_count_mode', 'nominal_value', 'sampling_ratio'] },
 ]
 
 // SQLite 与 MySQL 取列名的方式不同

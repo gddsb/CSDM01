@@ -223,7 +223,7 @@ export function recalcItemSampleCounts(items: any[], quantity: number | null | u
     const info = calcSampleInfo(
       item.sampling_plan,
       item.sampling_detail,
-      item.sampling_ratio,
+      null,
       quantity,
     )
     return {

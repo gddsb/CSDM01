@@ -134,7 +134,6 @@ export const create = async (req: any, res: any) => {
         category: it.category || null,
         method: it.method || null,
         sampling_plan: it.sampling_plan || 'AQL抽样',
-        sampling_ratio: it.sampling_ratio ?? null,
         sampling_detail: it.sampling_detail ? (typeof it.sampling_detail === 'string' ? it.sampling_detail : JSON.stringify(it.sampling_detail)) : null,
         standard_value: it.standard_value,
         unit: it.unit || null,
@@ -143,7 +142,6 @@ export const create = async (req: any, res: any) => {
         inspection_types: Array.isArray(it.inspection_types) ? it.inspection_types.join(',') : (it.inspection_types || null),
         item_type: it.item_type || 'qualitative',
         need_sample_count: it.need_sample_count ?? 0,
-        nominal_value: it.nominal_value ?? null,
         upper_limit: it.upper_limit ?? null,
         lower_limit: it.lower_limit ?? null,
       }))
@@ -212,7 +210,6 @@ export const update = async (req: any, res: any) => {
           category: it.category || null,
           method: it.method || null,
           sampling_plan: it.sampling_plan || 'AQL抽样',
-          sampling_ratio: it.sampling_ratio ?? null,
           sampling_detail: it.sampling_detail ? (typeof it.sampling_detail === 'string' ? it.sampling_detail : JSON.stringify(it.sampling_detail)) : null,
           standard_value: it.standard_value,
           unit: it.unit || null,
@@ -221,7 +218,6 @@ export const update = async (req: any, res: any) => {
           inspection_types: Array.isArray(it.inspection_types) ? it.inspection_types.join(',') : (it.inspection_types || null),
           item_type: it.item_type || 'qualitative',
           need_sample_count: it.need_sample_count ?? 0,
-          nominal_value: it.nominal_value ?? null,
           upper_limit: it.upper_limit ?? null,
           lower_limit: it.lower_limit ?? null,
         }))
@@ -298,7 +294,6 @@ export const copy = async (req: any, res: any) => {
         category: it.category || null,
         method: it.method || null,
         sampling_plan: it.sampling_plan || 'AQL抽样',
-        sampling_ratio: it.sampling_ratio ?? null,
         sampling_detail: it.sampling_detail || null,
         standard_value: it.standard_value,
         unit: it.unit || null,
@@ -307,7 +302,6 @@ export const copy = async (req: any, res: any) => {
         inspection_types: it.inspection_types || null,
         item_type: it.item_type || 'qualitative',
         need_sample_count: it.need_sample_count ?? 0,
-        nominal_value: it.nominal_value ?? null,
         upper_limit: it.upper_limit ?? null,
         lower_limit: it.lower_limit ?? null,
       }))
@@ -366,7 +360,6 @@ export const revise = async (req: any, res: any) => {
         category: it.category || null,
         method: it.method || null,
         sampling_plan: it.sampling_plan || 'AQL抽样',
-        sampling_ratio: it.sampling_ratio ?? null,
         sampling_detail: it.sampling_detail || null,
         standard_value: it.standard_value,
         unit: it.unit || null,
@@ -375,7 +368,6 @@ export const revise = async (req: any, res: any) => {
         inspection_types: it.inspection_types || null,
         item_type: it.item_type || 'qualitative',
         need_sample_count: it.need_sample_count ?? 0,
-        nominal_value: it.nominal_value ?? null,
         upper_limit: it.upper_limit ?? null,
         lower_limit: it.lower_limit ?? null,
       }))

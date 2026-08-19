@@ -322,50 +322,17 @@ export default function MicrobeInspection() {
         title="微生物检验详情"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        width={820}
+        width={900}
         destroyOnHidden
       >
         {current && (
-          <>
-            <Descriptions column={2} size="small" bordered style={{ marginBottom: 16 }}>
-              <Descriptions.Item label="检验编号">{current.inspection_no}</Descriptions.Item>
-              <Descriptions.Item label="状态">
-                <Tag color={statusColor[getStatusText(current.status)] || 'default'}>{getStatusText(current.status)}</Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="检验类型">
-                <Tag color={typeColor[current.inspection_type] || 'default'}>{current.inspection_type}</Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="检验对象">
-                <Tag color={objectColor[current.object_type] || 'default'}>{current.object_type}</Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="关联单号" span={2}>{getRelatedNo(current)}</Descriptions.Item>
-              <Descriptions.Item label="料品名称">{current.material_name || '-'}</Descriptions.Item>
-              <Descriptions.Item label="规格型号">{current.specification || '-'}</Descriptions.Item>
-              <Descriptions.Item label="检验人">{current.inspector_name || '-'}</Descriptions.Item>
-              <Descriptions.Item label="检验时间">{formatDateTime(current.inspection_time)}</Descriptions.Item>
-              <Descriptions.Item label="检验结果">
-                {current.result ? <Tag color={resultColor[current.result]}>{current.result}</Tag> : <Tag>待检</Tag>}
-              </Descriptions.Item>
-              <Descriptions.Item label="处理方式">
-                {current.handle_type ? <Tag color={handleColor[current.handle_type] || 'default'}>{current.handle_type}</Tag> : '-'}
-              </Descriptions.Item>
-            </Descriptions>
-            <Title level={5}>检验结果明细</Title>
-            <div style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 400px)' }}>
-              <InspectionItemEditor
-                items={detailItems}
-                disabled={true}
-                materialInfo={{
-                  material_code: current?.material_code,
-                  material_name: current?.material_name,
-                  specification: current?.specification,
-                  quantity: current?.quantity,
-                  supplier_name: current?.supplier_name,
-                  supplier_batch_no: current?.supplier_batch_no,
-                }}
-              />
-            </div>
-          </>
+          <div style={{ height: 'calc(100vh - 180px)', overflow: 'auto' }}>
+            <InspectionItemEditor
+              items={detailItems}
+              disabled={true}
+              showMaterialInfo={false}
+            />
+          </div>
         )}
       </Drawer>
     </>

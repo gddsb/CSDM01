@@ -221,72 +221,100 @@ export default function InspectionStandard() {
     },
   ]
 
-  // 解析抽样详情为显示文本
+  // 解析抽样详情为显示文本（详情页/列表页通用）
+  // 修复详情页抽样信息显示不正常：兼容 sampling_detail 为对象、字符串、或从顶层取 accept_number/reject_number 的情况
   const renderSamplingSummary = (record: any): React.ReactNode => {
-    if (!record.sampling_plan && !record.sampling_detail) return '-'
-    const plan = record.sampling_plan || 'AQL抽样'
+    if (!record) return '-'
+    const plan = record.sampling_plan || ''
+    if (!plan && !record.sampling_detail) return '-'
+    // 解析 sampling_detail JSON
     let detail: any = {}
     if (record.sampling_detail) {
       try {
-        detail = typeof record.sampling_detail === 'string' ? JSON.parse(record.sampling_detail) : record.sampling_detail
+        detail = typeof record.sampling_detail === 'string' ? JSON.parse(record.sampling_detail) : { ...record.sampling_detail }
       } catch { detail = {} }
     }
-    if (plan === 'AQL抽样') {
-      return <span>AQL: <strong>{detail.aql_value ?? '-'}</strong></span>
+    // 详情页 items 可能把 Ac/Re 放在顶层（qc_inspection_item 表结构），这里做兼容回填
+    if (detail.accept_number === undefined || detail.accept_number === null) {
+      if (record.accept_number !== undefined && record.accept_number !== null) detail.accept_number = record.accept_number
     }
-    if (plan === '固定数量抽样') {
-      const ac = detail.accept_number ?? 0
-      const re = detail.reject_number ?? 1
-      return (
-        <Space direction="vertical" size={0} style={{ lineHeight: 1.5 }}>
-          <span>抽样数: <strong>{detail.fixed_count ?? '-'}</strong></span>
-          <span style={{ fontSize: 12, color: '#666' }}>Ac={ac} / Re={re}</span>
-        </Space>
-      )
+    if (detail.reject_number === undefined || detail.reject_number === null) {
+      if (record.reject_number !== undefined && record.reject_number !== null) detail.reject_number = record.reject_number
     }
-    if (plan === '按数量抽样') {
-      const segments = (detail.segments || []) as any[]
-      if (segments.length === 0) return '-'
+    if (detail.fixed_count === undefined || detail.fixed_count === null) {
+      if (record.need_sample_count !== undefined && record.need_sample_count !== null && plan === '固定数量抽样') {
+        detail.fixed_count = record.need_sample_count
+      } else if (record.sample_count !== undefined && record.sample_count !== null && plan === '固定数量抽样') {
+        detail.fixed_count = record.sample_count
+      }
+    }
+    // AQL抽样：兼容AQL值不在detail里但在顶层的情况
+    if ((plan === 'AQL抽样' || !plan) && detail.aql_value === undefined && record.aql_value !== undefined) {
+      detail.aql_value = record.aql_value
+    }
+    const displayPlan = plan || 'AQL抽样'
+    if (displayPlan === 'AQL抽样') {
+      const v = detail.aql_value
+      return <span>AQL: <strong>{v === null || v === undefined ? '-' : v}</strong></span>
+    }
+    if (displayPlan === '固定数量抽样') {
+      const ac = detail.accept_number
+      const re = detail.reject_number
+      const cnt = detail.fixed_count
       return (
-        <Space direction="vertical" size={0} style={{ lineHeight: 1.5 }}>
-          {segments.map((s, i) => (
-            <span key={i} style={{ fontSize: 12 }}>
-              ≤{s.max_qty}: n={s.sample_count} Ac={s.accept_number} Re={s.reject_number}
+        <Space direction="vertical" size={0} style={{ lineHeight: 1.6 }}>
+          <span>抽样数: <strong>{cnt === null || cnt === undefined ? '-' : cnt}</strong></span>
+          {(ac !== undefined && ac !== null) || (re !== undefined && re !== null) ? (
+            <span style={{ fontSize: 12, color: '#555' }}>
+              Ac={ac === undefined || ac === null ? '-' : ac} / Re={re === undefined || re === null ? '-' : re}
             </span>
-          ))}
+          ) : null}
         </Space>
       )
     }
-    if (plan === '全检') {
-      return <Tag color="purple">100% 全检</Tag>
+    if (displayPlan === '按数量抽样') {
+      const segments = (detail.segments || []) as any[]
+      if (segments.length === 0) return <Tag type="warning" style={{ margin: 0 }}>未配置分段</Tag>
+      return (
+        <div style={{ lineHeight: 1.6 }}>
+          {segments.map((s, i) => (
+            <div key={i} style={{ fontSize: 12 }}>
+              ≤{s.max_qty ?? '-'}:&nbsp;n={<strong>{s.sample_count ?? '-'}</strong>&nbsp;Ac={s.accept_number ?? 0}&nbsp;Re={s.reject_number ?? 1}
+            </div>
+          ))}
+        </div>
+      )
     }
-    return '-'
+    if (displayPlan === '全检') {
+      return <Tag color="purple" style={{ margin: 0 }}>100% 全检</Tag>
+    }
+    return plan || '-'
   }
 
   const itemTableColumns = [
     {
-      title: '项目大类', dataIndex: 'category', key: 'category', width: 120,
+      title: '项目大类', dataIndex: 'category', key: 'category', width: 110,
       render: (v: string) => <Tag color={categoryColor[v] || 'default'}>{v}</Tag>
     },
-    { title: '检验项目', dataIndex: 'item_name', key: 'item_name', width: 180, render: (v: string) => <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{v || '-'}</span> },
+    { title: '检验项目', dataIndex: 'item_name', key: 'item_name', width: 170, render: (v: string) => <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{v || '-'}</span> },
     {
-      title: '缺陷等级', dataIndex: 'defect_level', key: 'defect_level', width: 130,
+      title: '缺陷等级', dataIndex: 'defect_level', key: 'defect_level', width: 120,
       render: (v: string) => {
         const colorMap: any = { 'A类致命缺陷': 'red', 'B类严重缺陷': 'orange', 'C类次要缺陷': 'blue' }
         return v ? <Tag color={colorMap[v] || 'default'}>{v}</Tag> : '-'
       }
     },
-    { title: '检验标准', dataIndex: 'standard_value', key: 'standard_value', width: 240, render: (v: string) => <span style={{ whiteSpace: 'normal', wordBreak: 'break-all' }}>{v || '-'}</span> },
+    { title: '检验要求', dataIndex: 'standard_value', key: 'standard_value', width: 200, render: (v: string) => <span style={{ whiteSpace: 'normal', wordBreak: 'break-all' }}>{v || '-'}</span> },
     {
       title: '抽样方案', dataIndex: 'sampling_plan', key: 'sampling_plan', width: 110,
       render: (v: string) => {
-        if (!v) return '-'
+        if (!v) return <Tag style={{ margin: 0 }}>-</Tag>
         const colorMap: any = { 'AQL抽样': 'blue', '按数量抽样': 'green', '固定数量抽样': 'orange', '全检': 'purple' }
-        return <Tag color={colorMap[v] || 'default'}>{v}</Tag>
+        return <Tag color={colorMap[v] || 'default'} style={{ margin: 0 }}>{v}</Tag>
       }
     },
     {
-      title: '抽样信息', key: 'sampling_info', width: 280,
+      title: '抽样信息', key: 'sampling_info', width: 250,
       render: (_: any, record: any) => renderSamplingSummary(record)
     },
   ]

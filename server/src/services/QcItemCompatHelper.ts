@@ -70,11 +70,9 @@ export function buildQcItemData(
     // 阶段回填：从检验标准 / 前端 payload 持久化配置字段
     item_type: item.item_type || null,
     need_sample_count: item.need_sample_count ?? 0,
-    nominal_value: item.nominal_value ?? null,
     upper_limit: item.upper_limit ?? null,
     lower_limit: item.lower_limit ?? null,
     sampling_plan: item.sampling_plan || 'AQL抽样',
-    sampling_ratio: item.sampling_ratio ?? null,
     sampling_detail: item.sampling_detail ? (typeof item.sampling_detail === 'string' ? item.sampling_detail : JSON.stringify(item.sampling_detail)) : null,
     accept_number: item.accept_number ?? null,
     reject_number: item.reject_number ?? null,
@@ -136,11 +134,9 @@ export function mapQcItemsToFrontend(qcItems: any[]): any[] {
       // 阶段回填：暴露配置字段给前端 InspectionItemEditor
       item_type: raw.item_type ?? null,
       need_sample_count: raw.need_sample_count ?? null,
-      nominal_value: raw.nominal_value ?? null,
       upper_limit: raw.upper_limit ?? null,
       lower_limit: raw.lower_limit ?? null,
       sampling_plan: raw.sampling_plan ?? null,
-      sampling_ratio: raw.sampling_ratio ?? null,
       sampling_detail: raw.sampling_detail ?? null,
       accept_number: raw.accept_number ?? null,
       reject_number: raw.reject_number ?? null,

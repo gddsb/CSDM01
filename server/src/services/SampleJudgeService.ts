@@ -25,7 +25,6 @@ export function judgeSampleValue(sample: {
   measure_value_num?: number | null
   measure_value_text?: string | null
 }, cfg: {
-  nominal_value?: number | null
   upper_limit?: number | null
   lower_limit?: number | null
 }): number | null {
@@ -44,17 +43,10 @@ export function judgeSampleValue(sample: {
   if (num === null || num === undefined || Number.isNaN(Number(num))) return null
 
   const n = Number(num)
-  // 优先用上下限，其次用标称值（默认 ±0，即必须严格等于）
-  const { upper_limit, lower_limit, nominal_value } = cfg
+  // 按上下限判定
+  const { upper_limit, lower_limit } = cfg
   if (upper_limit !== null && upper_limit !== undefined && n > Number(upper_limit)) return 0
   if (lower_limit !== null && lower_limit !== undefined && n < Number(lower_limit)) return 0
-  // 仅有 nominal_value 且无上下限时，严格等于（容差 0）
-  if ((upper_limit === null || upper_limit === undefined) &&
-      (lower_limit === null || lower_limit === undefined) &&
-      nominal_value !== null && nominal_value !== undefined &&
-      Math.abs(n - Number(nominal_value)) > 1e-9) {
-    return 0
-  }
   return 1
 }
 
@@ -68,7 +60,7 @@ async function loadItemCfg(item: { item_cfg_id?: number | null; item_id: number 
     const cfg = await InspectionStandardItem.findOne({
       where: { item_id: item.item_cfg_id },
       raw: true,
-      attributes: ['item_type', 'nominal_value', 'upper_limit', 'lower_limit'],
+      attributes: ['item_type', 'upper_limit', 'lower_limit'],
     })
     return cfg
   } catch (err: any) {
@@ -111,7 +103,6 @@ export async function recalcItemAndSamples(itemId: number): Promise<number | nul
         measure_value_text: s.get('measure_value_text') as string | null,
       },
       {
-        nominal_value: cfg?.nominal_value ?? null,
         upper_limit: cfg?.upper_limit ?? null,
         lower_limit: cfg?.lower_limit ?? null,
       },

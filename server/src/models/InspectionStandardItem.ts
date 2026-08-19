@@ -31,10 +31,6 @@ const InspectionStandardItem = sequelize.define('InspectionStandardItem', {
     type: DataTypes.STRING(20),
     comment: '抽样方案：AQL抽样/按数量抽样/固定数量抽样/全检',
   },
-  sampling_ratio: {
-    type: DataTypes.INTEGER,
-    comment: '抽样比例（百分比，如 10 表示 10%）',
-  },
   sampling_detail: {
     type: DataTypes.TEXT,
     comment: '抽样方案详情JSON：AQL值/分段数量/固定数量/Ac/Re',
@@ -66,10 +62,6 @@ const InspectionStandardItem = sequelize.define('InspectionStandardItem', {
     type: DataTypes.STRING(20),
     comment: '项目类型：qualitative定性(仅判定OK/NG) / quantitative定量(记录测量数值)',
   },
-  nominal_value: {
-    type: DataTypes.DECIMAL(15, 4),
-    comment: '标称值（定量用）',
-  },
   upper_limit: {
     type: DataTypes.DECIMAL(15, 4),
     comment: '上限（定量用，可空）',
@@ -78,7 +70,8 @@ const InspectionStandardItem = sequelize.define('InspectionStandardItem', {
     type: DataTypes.DECIMAL(15, 4),
     comment: '下限（定量用，可空）',
   },
-  // 抽样相关：由 sampling_plan / sampling_ratio / sampling_detail 驱动
+  // 注意：nominal_value 和 sampling_ratio 已废弃（从 Sequelize 模型中移除，通过 migrate DROP COLUMN 删除物理列）
+  // 抽样相关：由 sampling_plan / sampling_detail 驱动
 }, {
   tableName: 'quality_inspection_standard_item',
   timestamps: true,

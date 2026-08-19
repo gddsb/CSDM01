@@ -236,7 +236,6 @@ export default function InspectionStandardForm() {
       inspection_types: [],
       item_type: 'qualitative',
       sampling_plan: 'AQL抽样',
-      sampling_ratio: null,
       aql_value: 2.5,
       // 分段抽样默认2段
       segments: [
@@ -270,11 +269,9 @@ export default function InspectionStandardForm() {
       defect_level: record.defect_level,
       inspection_types: record.inspection_types || [],
       item_type: record.item_type || 'qualitative',
-      nominal_value: record.nominal_value ?? undefined,
       upper_limit: record.upper_limit ?? undefined,
       lower_limit: record.lower_limit ?? undefined,
       sampling_plan: record.sampling_plan || 'AQL抽样',
-      sampling_ratio: record.sampling_ratio ?? null,
       aql_value: detail.aql_value ?? 2.5,
       segments: detail.segments || [{ max_qty: 100, sample_count: 5, accept_number: 0, reject_number: 1 }],
       fixed_count: detail.fixed_count ?? 10,
@@ -284,46 +281,60 @@ export default function InspectionStandardForm() {
     setItemModalVisible(true)
   }
 
-  // 解析抽样详情为显示文本
+  // 解析抽样详情为显示文本（同步修复：兼容顶层字段和JSON对象）
   const renderSamplingSummary = (record: any): React.ReactNode => {
-    if (!record.sampling_plan && !record.sampling_detail) return '-'
-    const plan = record.sampling_plan || 'AQL抽样'
+    if (!record) return '-'
+    const plan = record.sampling_plan || ''
+    if (!plan && !record.sampling_detail) return '-'
     let detail: any = {}
     if (record.sampling_detail) {
       try {
-        detail = typeof record.sampling_detail === 'string' ? JSON.parse(record.sampling_detail) : record.sampling_detail
+        detail = typeof record.sampling_detail === 'string' ? JSON.parse(record.sampling_detail) : { ...record.sampling_detail }
       } catch { detail = {} }
     }
-    if (plan === 'AQL抽样') {
-      return <span>AQL: <strong>{detail.aql_value ?? '-'}</strong></span>
+    if (detail.accept_number === undefined || detail.accept_number === null) {
+      if (record.accept_number !== undefined && record.accept_number !== null) detail.accept_number = record.accept_number
     }
-    if (plan === '固定数量抽样') {
-      const ac = detail.accept_number ?? 0
-      const re = detail.reject_number ?? 1
+    if (detail.reject_number === undefined || detail.reject_number === null) {
+      if (record.reject_number !== undefined && record.reject_number !== null) detail.reject_number = record.reject_number
+    }
+    if (detail.fixed_count === undefined || detail.fixed_count === null) {
+      if (record.need_sample_count !== undefined && record.need_sample_count !== null && plan === '固定数量抽样') detail.fixed_count = record.need_sample_count
+      else if (record.sample_count !== undefined && record.sample_count !== null && plan === '固定数量抽样') detail.fixed_count = record.sample_count
+    }
+    const displayPlan = plan || 'AQL抽样'
+    if (displayPlan === 'AQL抽样') {
+      const v = detail.aql_value
+      return <span>AQL: <strong>{v === null || v === undefined ? '-' : v}</strong></span>
+    }
+    if (displayPlan === '固定数量抽样') {
+      const ac = detail.accept_number
+      const re = detail.reject_number
+      const cnt = detail.fixed_count
       return (
         <Space direction="vertical" size={0} style={{ lineHeight: 1.5 }}>
-          <span>抽样数: <strong>{detail.fixed_count ?? '-'}</strong></span>
-          <span style={{ fontSize: 12, color: '#666' }}>Ac={ac} / Re={re}</span>
+          <span>抽样数: <strong>{cnt === null || cnt === undefined ? '-' : cnt}</strong></span>
+          {(ac !== undefined && ac !== null) || (re !== undefined && re !== null) ? (
+            <span style={{ fontSize: 12, color: '#555' }}>Ac={ac === undefined || ac === null ? '-' : ac} / Re={re === undefined || re === null ? '-' : re}</span>
+          ) : null}
         </Space>
       )
     }
-    if (plan === '按数量抽样') {
+    if (displayPlan === '按数量抽样') {
       const segments = (detail.segments || []) as any[]
       if (segments.length === 0) return '-'
       return (
-        <Space direction="vertical" size={0} style={{ lineHeight: 1.5 }}>
+        <div style={{ lineHeight: 1.5 }}>
           {segments.map((s, i) => (
-            <span key={i} style={{ fontSize: 12 }}>
-              ≤{s.max_qty}: n={s.sample_count} Ac={s.accept_number} Re={s.reject_number}
-            </span>
+            <div key={i} style={{ fontSize: 12 }}>
+              ≤{s.max_qty ?? '-'}: n={<strong>{s.sample_count ?? '-'}</strong>} Ac={s.accept_number ?? 0} Re={s.reject_number ?? 1}
+            </div>
           ))}
-        </Space>
+        </div>
       )
     }
-    if (plan === '全检') {
-      return <Tag color="purple">100% 全检</Tag>
-    }
-    return '-'
+    if (displayPlan === '全检') return <Tag color="purple">100% 全检</Tag>
+    return plan || '-'
   }
 
   const handleDeleteItem = (record: any) => {
@@ -570,7 +581,7 @@ export default function InspectionStandardForm() {
         destroyOnHidden
       >
         <Form form={itemForm} layout="vertical" className="compact-form" preserve={false}>
-          {/* 第一行：项目分类、项目名称、缺陷等级、项目类型 */}
+          {/* 第一行：项目分类、项目名称、缺陷等级、项目类型（确保四列完整显示） */}
           <Row gutter={12}>
             <Col span={6}>
               <Form.Item name="category" label="项目分类" rules={[{ required: true, message: '请选择' }]}>
@@ -596,7 +607,7 @@ export default function InspectionStandardForm() {
                     <div style={{ padding: '2px 0' }}>
                       {opt.label}
                       <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
-                        {opt.value === 'quantitative' ? '录入多测量值，按上下限自动判定' : '每件样品判定合格/不合格'}
+                        {opt.value === 'quantitative' ? '录入多测量值，按上下限自动判定' : '每件样品判定OK/NG'}
                       </div>
                     </div>
                   )}
@@ -605,11 +616,34 @@ export default function InspectionStandardForm() {
             </Col>
           </Row>
 
-          {/* 第二行：检验类型 */}
-          <Row gutter={12}>
-            <Col span={24}>
-              <Form.Item name="inspection_types" label="检验类型" rules={[{ required: true, message: '请选择' }]}>
-                <Checkbox.Group options={inspectionTypeOptions} />
+          {/* 第二行：检验类型 + 上限、下限、单位（四列布局） */}
+          <Row gutter={12} align="top">
+            {/* 检验类型：占 10 栅格 */}
+            <Col span={10}>
+              <Form.Item name="inspection_types" label="检验类型" rules={[{ required: true, message: '请选择' }]}
+                extra="可多选：适用的检验环节">
+                <Checkbox.Group
+                  options={inspectionTypeOptions}
+                  style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', paddingTop: 4 }}
+                />
+              </Form.Item>
+            </Col>
+            {/* 上限：4 栅格 */}
+            <Col span={4}>
+              <Form.Item name="upper_limit" label="上限" extra={itemForm.getFieldValue('item_type') === 'quantitative' ? '超出判不合格' : '定量时填写'}>
+                <Input type="number" placeholder="定量填写" />
+              </Form.Item>
+            </Col>
+            {/* 下限：4 栅格 */}
+            <Col span={4}>
+              <Form.Item name="lower_limit" label="下限" extra={itemForm.getFieldValue('item_type') === 'quantitative' ? '低于判不合格' : '定量时填写'}>
+                <Input type="number" placeholder="定量填写" />
+              </Form.Item>
+            </Col>
+            {/* 单位：6 栅格 */}
+            <Col span={6}>
+              <Form.Item name="unit" label="单位" extra="如 mm / N / % / mg / 级">
+                <Input placeholder="可选，定性/定量通用" />
               </Form.Item>
             </Col>
           </Row>
@@ -617,73 +651,56 @@ export default function InspectionStandardForm() {
           {/* 第三行：检验要求 */}
           <Row gutter={12}>
             <Col span={24}>
-              <Form.Item name="standard_value" label="检验要求" rules={[{ required: true, message: '请输入' }]}>
-                <Input.TextArea placeholder="如 90.0±0.3、≥200、外观无明显划痕 等" autoSize={{ minRows: 2, maxRows: 3 }} />
+              <Form.Item name="standard_value" label="检验要求" rules={[{ required: true, message: '请输入' }]}
+                extra="示例：90.0±0.3、≥200MPa、外观无明显划痕、菌落总数≤100cfu/g">
+                <Input.TextArea autoSize={{ minRows: 2, maxRows: 3 }} />
               </Form.Item>
             </Col>
           </Row>
 
-          {/* 第四行：上限、下限、单位（定量项目） */}
-          <Form.Item shouldUpdate={(p, c) => (p.item_type ?? 'qualitative') !== (c.item_type ?? 'qualitative')} noStyle>
-            {() => itemForm.getFieldValue('item_type') === 'quantitative' ? (
-              <Row gutter={12}>
-                <Col span={8}>
-                  <Form.Item name="upper_limit" label="上限" extra="超出判定不合格">
-                    <Input type="number" placeholder="如 90.3" />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item name="lower_limit" label="下限" extra="低于判定不合格">
-                    <Input type="number" placeholder="如 89.7" />
-                  </Form.Item>
-                </Col>
-                <Col span={8}>
-                  <Form.Item name="unit" label="单位">
-                    <Input placeholder="如 mm、N、%、g、mg 等" />
-                  </Form.Item>
-                </Col>
-              </Row>
-            ) : (
-              // 定性也要显示单位？不需要，所以占位一下，或者干脆隐藏
-              // 但要保持页面布局稳定，这里单位也给定性用（如果有需要，比如 pH 值等）
-              <Row gutter={12}>
-                <Col span={8}>
-                  <Form.Item name="unit" label="单位">
-                    <Input placeholder="可选，如 级、项 等" />
-                  </Form.Item>
-                </Col>
-              </Row>
-            )}
-          </Form.Item>
-
-          {/* 第五行：检验方法 */}
+          {/* 第四行：检验方法 */}
           <Row gutter={12}>
             <Col span={24}>
-              <Form.Item name="method" label="检验方法">
-                <Input.TextArea placeholder="如 游标卡尺测量、目视检查（1.0视力，正常光照，30cm距离）等" autoSize={{ minRows: 2, maxRows: 3 }} />
+              <Form.Item name="method" label="检验方法"
+                extra="示例：游标卡尺测量 / 目视检查（1.0视力，正常光照，30cm距离）">
+                <Input.TextArea autoSize={{ minRows: 2, maxRows: 3 }} />
               </Form.Item>
             </Col>
           </Row>
 
-          {/* 抽样方案配置 */}
-          <Divider style={{ margin: '8px 0' }} orientation="left">抽样方案配置</Divider>
+          {/* 抽样方案配置（调整说明Alert位于各方案行的右边，占span=剩余宽度） */}
+          <Divider style={{ margin: '4px 0 12px 0' }} orientation="left">抽样方案配置</Divider>
 
-          <Row gutter={12}>
+          <Row gutter={12} align="top">
             <Col span={8}>
               <Form.Item name="sampling_plan" label="抽样方案" rules={[{ required: true, message: '请选择' }]}>
                 <Select placeholder="请选择" options={samplingPlanOptions} onChange={() => {
                   const plan = itemForm.getFieldValue('sampling_plan')
-                  if (plan === 'AQL抽样') {
-                    itemForm.setFieldsValue({ aql_value: 2.5 })
-                  } else if (plan === '固定数量抽样') {
-                    itemForm.setFieldsValue({ fixed_count: 10, fixed_accept: 1, fixed_reject: 2 })
-                  } else if (plan === '按数量抽样') {
-                    itemForm.setFieldsValue({ segments: [{ max_qty: 100, sample_count: 5, accept_number: 0, reject_number: 1 }] })
-                  }
+                  if (plan === 'AQL抽样') itemForm.setFieldsValue({ aql_value: 2.5 })
+                  else if (plan === '固定数量抽样') itemForm.setFieldsValue({ fixed_count: 10, fixed_accept: 1, fixed_reject: 2 })
+                  else if (plan === '按数量抽样') itemForm.setFieldsValue({ segments: [{ max_qty: 100, sample_count: 5, accept_number: 0, reject_number: 1 }] })
                 }} />
               </Form.Item>
             </Col>
-            <Col span={16} />
+            {/* 方案说明位置：根据当前选中方案显示精简版说明（位于同一行右边） */}
+            <Col span={16}>
+              {watchSamplingPlan === 'AQL抽样' && (
+                <Alert type="info" showIcon size="small" style={{ marginTop: 4 }}
+                  message="AQL抽样：按 AQL 值和到货数量查表获取 n/Ac/Re；不合格数≤Ac 接收，≥Re 拒收" />
+              )}
+              {watchSamplingPlan === '固定数量抽样' && (
+                <Alert type="info" showIcon size="small" style={{ marginTop: 4 }}
+                  message="固定数量抽样：检验时抽取固定件数；按 Ac/Re 判定整批。示例：n=10, Ac=1, Re=2 → 1件不合格仍可接收" />
+              )}
+              {watchSamplingPlan === '按数量抽样' && (
+                <Alert type="info" showIcon size="small" style={{ marginTop: 4 }}
+                  message="按数量抽样：根据到货数量从分段表中取对应抽样数；最多5个分段；每段独立配置 n/Ac/Re" />
+              )}
+              {watchSamplingPlan === '全检' && (
+                <Alert type="info" showIcon size="small" style={{ marginTop: 4 }}
+                  message="全检：100% 逐件检验；任一件 NG 整批判不合格" />
+              )}
+            </Col>
           </Row>
 
           {/* AQL 抽样配置 */}
@@ -694,14 +711,6 @@ export default function InspectionStandardForm() {
                   extra="检验水平Ⅱ，根据到货数量查表">
                   <Select placeholder="请选择" options={aqlValueOptions} />
                 </Form.Item>
-              </Col>
-              <Col span={16}>
-                <Alert
-                  type="info"
-                  showIcon
-                  message="AQL抽样说明"
-                  description="根据 AQL 值和到货数量自动查表确定样本量(n)、允收值(Ac)和拒收值(Re)。判定：不合格数≤Ac → 合格，≥Re → 不合格"
-                />
               </Col>
             </Row>
           )}
@@ -811,16 +820,6 @@ export default function InspectionStandardForm() {
                 </Form.Item>
               </Col>
             </Row>
-          )}
-
-          {/* 全检 */}
-          {watchSamplingPlan === '全检' && (
-            <Alert
-              type="info"
-              showIcon
-              message="全检说明"
-              description="按来料数量100%全检，每件检验合格判OK/NG。任一件不合格则整批判不合格。无需设置允收/拒收值。"
-            />
           )}
         </Form>
       </Modal>

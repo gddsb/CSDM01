@@ -55,11 +55,9 @@ export interface InspectionItemRow {
   remarks?: string | null
   item_type?: 'qualitative' | 'quantitative' | string | null
   need_sample_count?: number | null
-  nominal_value?: number | null
   upper_limit?: number | null
   lower_limit?: number | null
   sampling_plan?: string | null
-  sampling_ratio?: number | null
   sampling_detail?: string | null
   accept_number?: number | null
   reject_number?: number | null
@@ -80,6 +78,8 @@ interface Props {
   disabled?: boolean
   onChange?: (next: InspectionItemRow[]) => void
   materialInfo?: MaterialInfo
+  /** 是否显示顶部物料信息卡片（详情 Drawer 传 false 隐藏，默认 true） */
+  showMaterialInfo?: boolean
 }
 
 // ============================================================
@@ -157,7 +157,7 @@ function applyUpdate(
 }
 
 // ============================================================
-//  单元格渲染：定性 勾选框（合格/不合格）
+//  单元格渲染：定性 勾选框（OK / NG）
 // ============================================================
 function QualitativeCell(props: {
   value: SampleValue
@@ -166,6 +166,7 @@ function QualitativeCell(props: {
 }) {
   const { value, onChange, disabled } = props
   const text = (value.measure_value_text || '').trim()
+  // 兼容旧数据 合格/不合格
   const isOK = text === 'OK' || text === '合格'
   const isNG = text === 'NG' || text === '不合格'
   return (
@@ -177,7 +178,7 @@ function QualitativeCell(props: {
         onChange={(e) => {
           if (disabled) return
           const checked = e.target.checked
-          // 勾选互斥：合格 => 取消不合格
+          // 勾选互斥：OK => 取消 NG
           onChange({
             ...value,
             measure_value_text: checked ? 'OK' : '',
@@ -185,7 +186,7 @@ function QualitativeCell(props: {
           })
         }}
       >
-        <span style={{ color: isOK ? '#52c41a' : undefined }}>合格</span>
+        <span style={{ color: isOK ? '#52c41a' : undefined }}>OK</span>
       </Checkbox>
       <Checkbox
         checked={isNG}
@@ -201,7 +202,7 @@ function QualitativeCell(props: {
           })
         }}
       >
-        <span style={{ color: isNG ? '#ff4d4f' : undefined }}>不合格</span>
+        <span style={{ color: isNG ? '#ff4d4f' : undefined }}>NG</span>
       </Checkbox>
     </Space>
   )
@@ -248,7 +249,7 @@ function QuantitativeCell(props: {
 //  主组件
 // ============================================================
 export default function InspectionItemEditor(props: Props) {
-  const { items, disabled, onChange, materialInfo } = props
+  const { items, disabled, onChange, materialInfo, showMaterialInfo = true } = props
 
   const getItemType = (row: InspectionItemRow): 'qualitative' | 'quantitative' => {
     if (row.item_type === 'quantitative' || row.item_type === 'qualitative') return row.item_type
@@ -410,8 +411,8 @@ export default function InspectionItemEditor(props: Props) {
     },
   ]
 
-  // 物料信息卡片
-  const materialCard = materialInfo && (
+  // 物料信息卡片：只有 showMaterialInfo=true 时才显示
+  const materialCard = showMaterialInfo && materialInfo && (
     <Card size="small" style={{ marginBottom: 12 }}>
       <Descriptions column={4} size="small" bordered>
         <Descriptions.Item label="料号">{materialInfo.material_code || '-'}</Descriptions.Item>

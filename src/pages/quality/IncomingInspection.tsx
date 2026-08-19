@@ -640,74 +640,16 @@ export default function IncomingInspection() {
         }
       >
         {current && (
-          <>
-            <Descriptions column={4} size="small" bordered style={{ marginBottom: 16 }}>
-              <Descriptions.Item label="检验编号">{current.inspection_no}</Descriptions.Item>
-              <Descriptions.Item label="触发方式">
-                {current.trigger_type ? <Tag color={triggerColor[current.trigger_type as keyof typeof triggerColor]}>{current.trigger_type}</Tag> : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="状态">
-                <Tag color={statusColor[current.status as keyof typeof statusColor]}>{current.status}</Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="总结果">
-                {current.result && current.result !== '-' ? <Tag color={resultColor[current.result as keyof typeof resultColor]}>{current.result}</Tag> : <Tag>待检</Tag>}
-              </Descriptions.Item>
-
-              <Descriptions.Item label="供应商" span={2}>{current.supplier_name || '-'}</Descriptions.Item>
-              <Descriptions.Item label="供应商编码">{current.supplier_code || '-'}</Descriptions.Item>
-              <Descriptions.Item label="供应商批号">{current.supplier_batch_no || '-'}</Descriptions.Item>
-
-              <Descriptions.Item label="料号">{current.material_code || '-'}</Descriptions.Item>
-              <Descriptions.Item label="料品名称" span={2}>{current.material_name || '-'}</Descriptions.Item>
-              <Descriptions.Item label="规格">{current.specification || '-'}</Descriptions.Item>
-
-              <Descriptions.Item label="内部批号">{current.internal_batch_no || '-'}</Descriptions.Item>
-              <Descriptions.Item label="到货数量">{current.quantity ? Number(current.quantity).toLocaleString() : '-'}</Descriptions.Item>
-              <Descriptions.Item label="到货日期">{current.arrival_date ? formatDate(current.arrival_date) : '-'}</Descriptions.Item>
-              <Descriptions.Item label="收货单状态">
-                {current.receipt_status ? <Tag>{current.receipt_status}</Tag> : '-'}
-              </Descriptions.Item>
-
-              <Descriptions.Item label="采购收货单号" span={2}>
-                {current.receipt_no ? (current.line_no ? `${current.receipt_no} (行${current.line_no})` : current.receipt_no) : '-'}
-              </Descriptions.Item>
-              <Descriptions.Item label="检验标准">{current.standard_name || '-'}</Descriptions.Item>
-              <Descriptions.Item label="处理方式">
-                {current.handle_type ? <Tag color={handleColor[current.handle_type as keyof typeof handleColor]}>{current.handle_type}</Tag> : '-'}
-              </Descriptions.Item>
-
-              <Descriptions.Item label="检验人">{current.inspector_name || '-'}</Descriptions.Item>
-              <Descriptions.Item label="检验时间">{formatDateTime(current.inspection_time)}</Descriptions.Item>
-              <Descriptions.Item label="审核人">{current.reviewer_name || '-'}</Descriptions.Item>
-              <Descriptions.Item label="审核时间">{formatDateTime(current.review_time)}</Descriptions.Item>
-
-              {current.handle_reason && (
-                <Descriptions.Item label="处理原因" span={4}>{current.handle_reason}</Descriptions.Item>
-              )}
-              {current.remarks && (
-                <Descriptions.Item label="备注" span={4}>{current.remarks}</Descriptions.Item>
-              )}
-            </Descriptions>
-
-            <Title level={5} style={{ marginTop: 8 }}>检测项目</Title>
-            <div style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 420px)' }}>
-              <InspectionItemEditor
-                items={(current.items || []).map((it: any, idx: number) => ({
-                  ...it,
-                  sort_order: it.sort_order !== undefined ? it.sort_order : idx,
-                })) as InspectionItemRow[]}
-                disabled={true}
-                materialInfo={{
-                  material_code: current?.material_code,
-                  material_name: current?.material_name,
-                  specification: current?.specification,
-                  quantity: current?.quantity,
-                  supplier_name: current?.supplier_name,
-                  supplier_batch_no: current?.supplier_batch_no,
-                }}
-              />
-            </div>
-          </>
+          <div style={{ height: 'calc(100vh - 180px)', overflow: 'auto' }}>
+            <InspectionItemEditor
+              items={(current.items || []).map((it: any, idx: number) => ({
+                ...it,
+                sort_order: it.sort_order !== undefined ? it.sort_order : idx,
+              })) as InspectionItemRow[]}
+              disabled={true}
+              showMaterialInfo={false}
+            />
+          </div>
         )}
       </Drawer>
     </>
