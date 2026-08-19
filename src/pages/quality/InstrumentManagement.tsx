@@ -1,6 +1,6 @@
 import ResizableTable from '../../components/ResizableTable'
-import React, { useState, useEffect, useCallback } from 'react'
-import { Tag, Button, Drawer, Space, Modal, Form, Input, Select, Popconfirm, Descriptions, Row, Col } from 'antd'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { Tag, Button, Drawer, Space, Modal, Form, Input, Select, Descriptions, Row, Col } from 'antd'
 import {
   ToolOutlined, PlayCircleOutlined, SafetyCertificateOutlined,
   PlusOutlined, ReloadOutlined,
@@ -28,13 +28,17 @@ export default function InstrumentManagement() {
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
 
-  // 筛选输入态
+  // 筛选输入态（仅关键字输入框使用受控值，避免每次按键触发查询；select 直接以 query 为单一数据源）
   const [keywordInput, setKeywordInput] = useState('')
-  const [statusInput, setStatusInput] = useState(undefined)
-  const [departmentInput, setDepartmentInput] = useState(undefined)
-  const [calibrationTypeInput, setCalibrationTypeInput] = useState(undefined)
-  // 已应用的查询条件
-  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined, department: undefined, calibration_type: undefined })
+  // 已应用的查询条件（筛选条件单一数据源：select 变化直接修改 query 立即查询）
+  const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: undefined as string | undefined, department: undefined as string | undefined, calibration_type: undefined as string | undefined })
+  // 关键字防抖句柄
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // 组件卸载时清理防抖计时器
+  useEffect(() => () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+  }, [])
 
   const inUseCount = data.filter(d => d.status === '在用').length
   const stopCount = data.filter(d => d.status === '停用').length
@@ -79,16 +83,26 @@ export default function InstrumentManagement() {
 
   const refresh = useCallback(() => setQuery(q => ({ ...q })), [])
 
+  // 查询：仅提交关键字输入框当前值（select 已在各自 onChange 中即时更新到 query）
   const handleSearch = () => {
-    setQuery(q => ({ ...q, page: 1, keyword: keywordInput, status: statusInput, department: departmentInput, calibration_type: calibrationTypeInput }))
+    if (debounceRef.current) { clearTimeout(debounceRef.current); debounceRef.current = null }
+    setQuery(q => ({ ...q, page: 1, keyword: keywordInput }))
   }
 
   const handleReset = () => {
+    if (debounceRef.current) { clearTimeout(debounceRef.current); debounceRef.current = null }
     setKeywordInput('')
-    setStatusInput(undefined)
-    setDepartmentInput(undefined)
-    setCalibrationTypeInput(undefined)
     setQuery(q => ({ ...q, page: 1, keyword: '', status: undefined, department: undefined, calibration_type: undefined }))
+  }
+
+  // 关键字输入：受控更新显示值 + 300ms 防抖立即查询
+  const handleKeywordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value
+    setKeywordInput(v)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      setQuery(q => ({ ...q, page: 1, keyword: v }))
+    }, 300)
   }
 
   const handleDetail = (record) => {
@@ -155,16 +169,6 @@ export default function InstrumentManagement() {
     }
   }
 
-  const handleDelete = async (record) => {
-    try {
-      const res = await api.delete(`/basic/instruments/${record.instrument_id}`)
-      message.success(res.message || '删除成功')
-      refresh()
-    } catch (err) {
-      message.error(err.message || '删除失败')
-    }
-  }
-
   const columns = [
     { title: '仪器编号', dataIndex: 'instrument_no', key: 'instrument_no', width: 140, fixed: 'left' as const },
     { title: '仪器名称', dataIndex: 'instrument_name', key: 'instrument_name', width: 130 },
@@ -182,17 +186,12 @@ export default function InstrumentManagement() {
     },
     { title: '供应商', dataIndex: 'supplier', key: 'supplier', width: 110 },
     {
-      title: '操作', key: 'action', fixed: 'right' as const, width: 180,
+      title: '操作', key: 'action', fixed: 'right' as const, width: 120,
       render: (_, record) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleDetail(record)}>查看</Button>
           {hasPermission('quality:instrument:update') && (
             <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
-          )}
-          {hasPermission('quality:instrument:delete') && (
-            <Popconfirm title="确定删除该检测仪器吗？" onConfirm={() => handleDelete(record)} okText="确定" cancelText="取消">
-              <Button type="link" size="small" danger>删除</Button>
-            </Popconfirm>
           )}
         </Space>
       ),
@@ -200,10 +199,10 @@ export default function InstrumentManagement() {
   ]
 
   const filters: FilterItem[] = [
-    { type: 'input', placeholder: '仪器编号 / 名称 / 型号', col: { flex: '180px' }, value: keywordInput, onChange: (e) => setKeywordInput((e as React.ChangeEvent<HTMLInputElement>).target.value) },
-    { type: 'select', placeholder: '使用部门', options: departmentOptions, col: { flex: '150px' }, value: departmentInput, onChange: (v) => setDepartmentInput(v as string | undefined) },
-    { type: 'select', placeholder: '校验类型', options: calibrationTypeOptions, col: { flex: '150px' }, value: calibrationTypeInput, onChange: (v) => setCalibrationTypeInput(v as string | undefined) },
-    { type: 'select', placeholder: '状态', options: statusOptions, col: { flex: '150px' }, value: statusInput, onChange: (v) => setStatusInput(v as string | undefined) },
+    { type: 'input', placeholder: '仪器编号 / 名称 / 型号', col: { flex: '180px' }, value: keywordInput, onChange: handleKeywordChange },
+    { type: 'select', field: 'department', placeholder: '使用部门', options: departmentOptions, col: { flex: '150px' }, value: query.department, onChange: (v) => setQuery(q => ({ ...q, page: 1, department: v as string | undefined })) },
+    { type: 'select', field: 'calibration_type', placeholder: '校验类型', options: calibrationTypeOptions, col: { flex: '150px' }, value: query.calibration_type, onChange: (v) => setQuery(q => ({ ...q, page: 1, calibration_type: v as string | undefined })) },
+    { type: 'select', field: 'status', placeholder: '状态', options: statusOptions, col: { flex: '150px' }, value: query.status, onChange: (v) => setQuery(q => ({ ...q, page: 1, status: v as string | undefined })) },
   ]
 
   return (
@@ -337,7 +336,7 @@ export default function InstrumentManagement() {
         </Form>
         {editing && (
           <div style={{ marginTop: 8, color: '#faad14', fontSize: 12 }}>
-            提示：仪器编号一经生成不允许修改，如需修改请删除后重新创建。
+            提示：仪器编号一经生成不允许修改。
           </div>
         )}
       </Modal>
