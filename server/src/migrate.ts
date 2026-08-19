@@ -195,28 +195,34 @@ const migrations = [
       ['inspection_plan', 'VARCHAR(50)'],
     ],
   },
-  // 检验标准项目子表：新增抽样方案字段
+  // 检验标准项目子表：新增抽样方案字段（补齐标准项配置驱动所需全量列）
   {
     table: 'quality_inspection_standard_item',
     columns: [
       ['defect_level', 'VARCHAR(20)'],
       ['inspection_types', 'VARCHAR(200)'],
       ['sampling_plan', "VARCHAR(20) DEFAULT 'AQL抽样'"],
-      ['sampling_ratio', 'INT'],
       ['sampling_detail', 'TEXT'],
+      // —— 标准项直接驱动的配置字段（新增：原来 migrate 漏加导致抽样信息列大量 '-')
+      ['item_type', 'VARCHAR(20)'],
+      ['need_sample_count', 'INT DEFAULT 0'],
+      ['upper_limit', 'DECIMAL(15,4)'],
+      ['lower_limit', 'DECIMAL(15,4)'],
+      ['accept_number', 'INT'],
+      ['reject_number', 'INT'],
     ],
   },
   // 检验数据统一存储改造：qc_inspection_item 新增抽样方案字段
+  // 注意：nominal_value / sampling_ratio 在下面 obsoleteColumns 中被删除（先从模型移除），
+  // 所以此处不再 ADD 它们
   {
     table: 'qc_inspection_item',
     columns: [
       ['item_type', 'VARCHAR(20)'],
       ['need_sample_count', 'INT DEFAULT 0'],
-      ['nominal_value', 'DECIMAL(15,4)'],
       ['upper_limit', 'DECIMAL(15,4)'],
       ['lower_limit', 'DECIMAL(15,4)'],
       ['sampling_plan', "VARCHAR(20) DEFAULT 'AQL抽样'"],
-      ['sampling_ratio', 'INT'],
       ['sampling_detail', 'TEXT'],
       ['accept_number', 'INT'],
       ['reject_number', 'INT'],
