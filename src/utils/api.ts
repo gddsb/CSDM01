@@ -54,16 +54,9 @@ function doubleEncodeParams(params: Record<string, unknown>): Record<string, unk
 }
 
 // Capacitor 原生 App 中 WebView origin 是 https://localhost，
-// 相对路径 /api 会打到 localhost 而非生产服务器，需要用绝对 URL。
-const API_BASE_URL = (() => {
-  // 检测是否运行在 Capacitor 原生环境中
-  const cap = (window as any).Capacitor
-  if (cap?.isNativePlatform?.() === true || cap?.Platforms?.isNative === true) {
-    return 'http://43.138.218.55/api'
-  }
-  // 浏览器环境：用相对路径，由 Nginx 反代到后端
-  return '/api'
-})()
+// 相对路径 /api 会打到 localhost 而非生产服务器。
+// 方案：构建时通过 VITE_API_BASE_URL 注入绝对地址；若未设置则回退到 /api（浏览器场景由 Nginx 反代）。
+const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '/api'
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
