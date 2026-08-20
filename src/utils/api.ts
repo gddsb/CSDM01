@@ -83,7 +83,99 @@ async function capacitorHttpAdapter(config: AxiosRequestConfig): Promise<AxiosRe
   }
 }
 
-// 统一适配器：原生走 CapacitorHttp，浏览器走默认 xhr
+// ========== 浏览器默认 XHR 适配器（axios v1.x 兼容） ==========
+// axios v1.x 的 axios.defaults.adapter 是字符串数组 ["xhr","http","fetch"] 而非函数
+// 这里手动实现浏览器端的 XMLHttpRequest 适配器
+async function browserXhrAdapter(config: AxiosRequestConfig): Promise<AxiosResponse> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    const method = (config.method || 'get').toUpperCase()
+
+    // 构造 URL
+    let fullUrl = (config.baseURL || '') + (config.url || '')
+    if (config.params && Object.keys(config.params).length > 0) {
+      const qs = new URLSearchParams()
+      for (const [k, v] of Object.entries(config.params)) {
+        if (Array.isArray(v)) {
+          for (const item of v) qs.append(k, String(item))
+        } else if (v != null) {
+          qs.append(k, String(v))
+        }
+      }
+      fullUrl += (fullUrl.includes('?') ? '&' : '?') + qs.toString()
+    }
+
+    xhr.open(method, fullUrl, true)
+    xhr.timeout = (config.timeout || 60000)
+
+    // 设置 headers
+    if (config.headers) {
+      for (const [k, v] of Object.entries(config.headers)) {
+        if (v != null && k !== 'common') {
+          xhr.setRequestHeader(k, String(v))
+        }
+      }
+    }
+
+    // 处理超时
+    xhr.ontimeout = () => {
+      reject(new AxiosError('请求超时', 'ECONNABORTED', config))
+    }
+
+    // 处理错误
+    xhr.onerror = () => {
+      reject(new AxiosError('网络连接失败', 'ERR_NETWORK', config))
+    }
+
+    // 处理响应
+    xhr.onload = () => {
+      const status = xhr.status
+      const headers: Record<string, string> = {}
+      xhr.getAllResponseHeaders().split('\r\n').forEach(line => {
+        const idx = line.indexOf(':')
+        if (idx > 0) headers[line.slice(0, idx).trim().toLowerCase()] = line.slice(idx + 1).trim()
+      })
+
+      let responseData: any = xhr.responseText
+      const contentType = headers['content-type'] || ''
+      if (contentType.includes('application/json') || contentType.includes('text/')) {
+        try { responseData = JSON.parse(responseData) } catch { /* keep as text */ }
+      }
+
+      const axiosResponse: AxiosResponse = {
+        data: responseData,
+        status,
+        statusText: xhr.statusText,
+        headers,
+        config,
+      }
+
+      if (status >= 200 && status < 300) {
+        resolve(axiosResponse)
+      } else {
+        const err = new AxiosError(`Request failed with status code ${status}`, 'ERR_BAD_RESPONSE', config) as AxiosError
+        err.response = axiosResponse
+        reject(err)
+      }
+    }
+
+    // 发送请求
+    let body: string | null = null
+    if (config.data != null) {
+      if (typeof config.data === 'string') {
+        body = config.data
+      } else {
+        if (!config.headers?.['Content-Type']) {
+          xhr.setRequestHeader('Content-Type', 'application/json')
+        }
+        body = JSON.stringify(config.data)
+      }
+    }
+    xhr.send(body)
+  })
+}
+
+// 统一适配器：原生走 CapacitorHttp，浏览器走手写 XHR（兼容 axios v1.x）
 async function smartAdapter(config: AxiosRequestConfig): Promise<AxiosResponse> {
   // 延迟检测（首次请求时 Capacitor 可能已初始化）
   const win = window as any
@@ -98,10 +190,8 @@ async function smartAdapter(config: AxiosRequestConfig): Promise<AxiosResponse> 
     }
   }
 
-  // 回退到 axios 默认 xhr / http 适配器
-  const defaultAdapter = axios.defaults.adapter
-  if (!defaultAdapter) throw new AxiosError('No adapter available', 'ERR_CONFIG_MISSING', config)
-  return defaultAdapter(config)
+  // 回退到浏览器原生 XHR（axios v1.x 兼容方式）
+  return browserXhrAdapter(config)
 }
 
 // ========== 类型映射 ==========
