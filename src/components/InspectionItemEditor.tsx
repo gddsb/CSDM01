@@ -120,8 +120,10 @@ function aggregateRowResult(svs: SampleValue[], rowResult: any): '合格' | '不
 }
 
 function ensureSampleValues(row: InspectionItemRow): SampleValue[] {
+  const MAX_SAMPLES = 20
   const raw = row.sample_values || []
-  const count = Number(row.need_sample_count) || Number(row.sample_count) || 1
+  const rawCount = Number(row.need_sample_count) || Number(row.sample_count) || 1
+  const count = Math.min(MAX_SAMPLES, Math.max(1, rawCount))
   if (raw.length >= count) return raw.slice(0, count)
   return Array.from({ length: count }, (_, i) => {
     const existing = raw[i]
@@ -320,7 +322,9 @@ export default function InspectionItemEditor(props: Props) {
 
   // 判定结论：完成所有样本后才给出
   const judgeFinal = (record: InspectionItemRow): { text: string; color: string; icon?: any; pending?: boolean } => {
-    const expected = Number(record.need_sample_count) || Number(record.sample_count) || maxSampleCount
+    const MAX_SAMPLES = 20
+    const rawExpected = Number(record.need_sample_count) || Number(record.sample_count) || maxSampleCount
+    const expected = Math.min(MAX_SAMPLES, Math.max(1, rawExpected))
     const svs = ensureSampleValues(record)
     // 定性/定量判断是否"录入完成"
     const itemType = getItemType(record)

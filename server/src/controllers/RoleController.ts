@@ -111,7 +111,6 @@ const defaultPermissions = [
   { parent_id: 0, parent_code: 'system', perm_name: '系统配置', perm_code: 'system:config', type: 'menu', icon: 'ControlOutlined', path: '/system/config', sort_order: 5 },
   { parent_id: 0, parent_code: 'system', perm_name: '操作日志', perm_code: 'system:log', type: 'menu', icon: 'FileTextOutlined', path: '/system/logs', sort_order: 6 },
   { parent_id: 0, parent_code: 'system', perm_name: '系统日志', perm_code: 'system:system-log', type: 'menu', icon: 'BugOutlined', path: '/system/system-logs', sort_order: 8 },
-  { parent_id: 0, parent_code: 'system', perm_name: '移动端模拟器', perm_code: 'system:mobile-simulator', type: 'menu', icon: 'MobileOutlined', path: '/system/mobile-simulator', sort_order: 7 },
   // 基础数据
   { parent_id: 0, perm_name: '基础数据', perm_code: 'basic', type: 'menu', icon: 'ProfileOutlined', path: 'basic', sort_order: 4 },
   { parent_id: 0, parent_code: 'basic', perm_name: '料品档案', perm_code: 'basic:material', type: 'menu', icon: 'ProfileOutlined', path: '/basic/materials', sort_order: 1 },
