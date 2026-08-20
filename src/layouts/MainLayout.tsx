@@ -247,13 +247,26 @@ export default function MainLayout() {
 
   // useMemo: 菜单项仅在 dynamicMenu 变化时重算
   const builtMenuItems = useMemo<MenuProps['items']>(() => {
+    // 需要过滤掉的菜单名称关键字
+    const EXCLUDED_LABELS = ['移动端模拟器']
+    // 图标默认映射（菜单名 → 图标组件名）
+    const DEFAULT_ICON_MAP: Record<string, string> = {
+      '系统日志': 'FileTextOutlined',
+    }
+
     const buildMenuItems = (nodes: MenuNode[]): MenuProps['items'] => {
       return nodes
         .filter(n => n.type === 'menu' || n.type === 'page')
+        .filter(n => !EXCLUDED_LABELS.some(keyword => n.perm_name?.includes(keyword)))
         .map(n => {
+          // 优先使用后端配置的图标，没有则检查是否有默认图标映射
+          let iconName = n.icon
+          if (!iconName && n.perm_name && DEFAULT_ICON_MAP[n.perm_name]) {
+            iconName = DEFAULT_ICON_MAP[n.perm_name]
+          }
           const item: MenuProps['items'][number] = {
             key: n.path || n.perm_code || '',
-            icon: resolveIcon(n.icon),
+            icon: resolveIcon(iconName),
             label: n.perm_name,
           } as MenuProps['items'][number]
           if (n.children && n.children.length > 0) {
