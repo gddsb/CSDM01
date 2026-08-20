@@ -71,6 +71,12 @@ interface MaterialInfo {
   quantity?: number | null | string
   supplier_name?: string | null
   supplier_batch_no?: string | null
+  /** 检验编号（来料/产品共有） */
+  inspection_no?: string | null
+  /** 产品名称（产品检验用，与 material_name 同义） */
+  product_name?: string | null
+  /** 检验类型（产品检验用：制程/成品/出货等） */
+  inspection_type?: string | null
 }
 
 interface Props {
@@ -80,6 +86,8 @@ interface Props {
   materialInfo?: MaterialInfo
   /** 是否显示顶部物料信息卡片（详情 Drawer 传 false 隐藏，默认 true） */
   showMaterialInfo?: boolean
+  /** 检验模式：incoming=来料检验, product=产品检验 */
+  inspectionMode?: 'incoming' | 'product'
 }
 
 // ============================================================
@@ -251,7 +259,7 @@ function QuantitativeCell(props: {
 //  主组件
 // ============================================================
 export default function InspectionItemEditor(props: Props) {
-  const { items, disabled, onChange, materialInfo, showMaterialInfo = true } = props
+  const { items, disabled, onChange, materialInfo, showMaterialInfo = true, inspectionMode = 'incoming' } = props
 
   const getItemType = (row: InspectionItemRow): 'qualitative' | 'quantitative' => {
     if (row.item_type === 'quantitative' || row.item_type === 'qualitative') return row.item_type
@@ -416,20 +424,32 @@ export default function InspectionItemEditor(props: Props) {
   ]
 
   // 物料信息卡片：只有 showMaterialInfo=true 时才显示
+  // 根据 inspectionMode 显示不同字段：
+  //   incoming（来料检验）：检验编号、料号、料品名称、规格、到货数量
+  //   product（产品检验）：检验编号、料号、产品名称、规格、检验类型
   const materialCard = showMaterialInfo && materialInfo && (
     <Card size="small" style={{ marginBottom: 12 }}>
-      <Descriptions column={4} size="small" bordered>
-        <Descriptions.Item label="料号">{materialInfo.material_code || '-'}</Descriptions.Item>
-        <Descriptions.Item label="料品名称">{materialInfo.material_name || '-'}</Descriptions.Item>
-        <Descriptions.Item label="规格">{materialInfo.specification || '-'}</Descriptions.Item>
-        <Descriptions.Item label="到货数量">
-          {materialInfo.quantity !== null && materialInfo.quantity !== undefined
-            ? (typeof materialInfo.quantity === 'number' ? materialInfo.quantity.toLocaleString() : materialInfo.quantity)
-            : '-'}
-        </Descriptions.Item>
-        <Descriptions.Item label="供应商">{materialInfo.supplier_name || '-'}</Descriptions.Item>
-        <Descriptions.Item label="供应商批号" span={3}>{materialInfo.supplier_batch_no || '-'}</Descriptions.Item>
-      </Descriptions>
+      {inspectionMode === 'product' ? (
+        <Descriptions column={5} size="small" bordered>
+          <Descriptions.Item label="检验编号">{materialInfo.inspection_no || '-'}</Descriptions.Item>
+          <Descriptions.Item label="料号">{materialInfo.material_code || '-'}</Descriptions.Item>
+          <Descriptions.Item label="产品名称">{materialInfo.product_name || materialInfo.material_name || '-'}</Descriptions.Item>
+          <Descriptions.Item label="规格">{materialInfo.specification || '-'}</Descriptions.Item>
+          <Descriptions.Item label="检验类型">{materialInfo.inspection_type || '-'}</Descriptions.Item>
+        </Descriptions>
+      ) : (
+        <Descriptions column={5} size="small" bordered>
+          <Descriptions.Item label="检验编号">{materialInfo.inspection_no || '-'}</Descriptions.Item>
+          <Descriptions.Item label="料号">{materialInfo.material_code || '-'}</Descriptions.Item>
+          <Descriptions.Item label="料品名称">{materialInfo.material_name || '-'}</Descriptions.Item>
+          <Descriptions.Item label="规格">{materialInfo.specification || '-'}</Descriptions.Item>
+          <Descriptions.Item label="到货数量">
+            {materialInfo.quantity !== null && materialInfo.quantity !== undefined
+              ? (typeof materialInfo.quantity === 'number' ? materialInfo.quantity.toLocaleString() : materialInfo.quantity)
+              : '-'}
+          </Descriptions.Item>
+        </Descriptions>
+      )}
     </Card>
   )
 

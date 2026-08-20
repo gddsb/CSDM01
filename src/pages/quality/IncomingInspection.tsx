@@ -615,13 +615,13 @@ export default function IncomingInspection() {
           items={inspectItems}
           onChange={setInspectItems}
           disabled={false}
+          inspectionMode="incoming"
           materialInfo={{
+            inspection_no: current?.inspection_no,
             material_code: current?.material_code,
             material_name: current?.material_name,
             specification: current?.specification,
             quantity: current?.quantity,
-            supplier_name: current?.supplier_name,
-            supplier_batch_no: current?.supplier_batch_no,
           }}
         />
       </Drawer>

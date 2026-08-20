@@ -744,13 +744,13 @@ export default function ProductInspection() {
           items={inspectItems}
           onChange={setInspectItems}
           disabled={false}
+          inspectionMode="product"
           materialInfo={{
+            inspection_no: current?.inspection_no,
             material_code: current?.material_code,
-            material_name: current?.material_name,
+            product_name: current?.product_name || current?.material_name,
             specification: current?.specification,
-            quantity: current?.quantity,
-            supplier_name: current?.supplier_name,
-            supplier_batch_no: current?.supplier_batch_no,
+            inspection_type: current?.inspection_type,
           }}
         />
       </Drawer>
