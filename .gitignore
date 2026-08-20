@@ -52,3 +52,11 @@ AGENTS.md
 android/
 ios/
 .capacitor/
+
+# 构建产物：APK / IPA 等原生打包产物
+*.apk
+*.aab
+*.ipa
+*.mobileprovision
+*.keystore
+*.jks
