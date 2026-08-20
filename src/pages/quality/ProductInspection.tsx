@@ -266,30 +266,38 @@ export default function ProductInspection() {
 
   const handleInspectSave = async () => {
     try {
-      // 阶段4.7：保存时同步写 sample_values 到后端（PUT 接口会走 replaceQcItems）
+      // 阶段4.7：保存 sample_values 必须发生在 PUT 之前，因为后端 replaceQcItems 会 delete+bulkCreate
+      // 导致 item_id 改变，随后调用 /inspection-items/:item_id/sample-values 就会报 "检验项不存在"。
+      // 修复：先保存所有 sample_values，再 PUT 主表（后端已改为 upsert 保留 item_id，双保险）。
+      let svSaved = 0
+      for (const it of inspectItems) {
+        const svs = it.sample_values || []
+        const itemId = it.item_id
+        if (!itemId || svs.length === 0) continue
+        try {
+          const svRes = await api.post(`/inspection-items/${itemId}/sample-values`, {
+            sample_values: svs.map(s => ({
+              sample_no: s.sample_no,
+              dimension_code: s.dimension_code,
+              dimension_name: s.dimension_name,
+              measure_value_num: s.measure_value_num,
+              measure_value_text: s.measure_value_text,
+              defect_desc: s.defect_desc,
+              measured_at: s.measured_at,
+            })),
+          })
+          if (svRes.success !== false) svSaved++
+        } catch (svErr: any) {
+          // 单项失败不影响整体 PUT，继续
+          console.warn('[handleInspectSave] save sample_values failed for item_id=' + itemId, svErr?.response?.data?.message || svErr?.message)
+        }
+      }
+
+      // 再 PUT 主表（后端 replaceQcItems 已改为 upsert 保留 item_id）
       const payload = { items: inspectItems }
       const res = await api.put(`/basic/product-inspections/${current.inspection_id}`, payload)
       if (res.success !== false) {
-        // 同步保存 sample_values（有变化的项，含 sample_values）
-        let saved = 0
-        for (const it of inspectItems) {
-          const svs = it.sample_values || []
-          if (svs.length > 0 && it.item_id) {
-            const svRes = await api.post(`/inspection-items/${it.item_id}/sample-values`, {
-              sample_values: svs.map(s => ({
-                sample_no: s.sample_no,
-                dimension_code: s.dimension_code,
-                dimension_name: s.dimension_name,
-                measure_value_num: s.measure_value_num,
-                measure_value_text: s.measure_value_text,
-                defect_desc: s.defect_desc,
-                measured_at: s.measured_at,
-              })),
-            })
-            if (svRes.success !== false) saved++
-          }
-        }
-        message.success(saved > 0 ? `检测项目已保存（含 ${saved} 项样品测量值）` : '检测项目已保存')
+        message.success(svSaved > 0 ? `检测项目已保存（含 ${svSaved} 项样品测量值）` : '检测项目已保存')
         setInspectDrawerOpen(false)
         fetchData()
       } else {

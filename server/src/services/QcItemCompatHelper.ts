@@ -15,7 +15,7 @@
  */
 import QcInspectionItem from '../models/QcInspectionItem.js'
 import QcInspectionSampleValue from '../models/QcInspectionSampleValue.js'
-import type { Transaction } from 'sequelize'
+import { Op, type Transaction } from 'sequelize'
 
 export type SourceType = '来料' | '产品' | '微生物'
 
@@ -83,9 +83,10 @@ export function buildQcItemData(
 
 /**
  * 替换式写入新子表（旧子表停止写入）
- * - 先按 source_type + inspection_id 删除旧 QcInspectionItem
- * - 注意：QcInspectionItem.hasMany(sample_values) 配置了 onDelete: CASCADE，
- *   删除 item 会自动级联清理 sample_value，无需单独处理
+ * - 策略：若前端 item 带 item_id，走 upsert（按 (source_type, inspection_id, item_id) 保留），
+ *   这样 item_id 稳定不变，前端后续调用 /inspection-items/:item_id/sample-values 不会 "检验项不存在"。
+ * - 不带 item_id 的旧 item（前端首次新建/纯标准引用项）走 delete+bulkCreate。
+ * - QcInspectionItem.hasMany(sample_values) 配置了 onDelete: CASCADE，删除 item 会自动级联清理 sample_value。
  */
 export async function replaceQcItems(
   sourceType: SourceType,
@@ -93,16 +94,73 @@ export async function replaceQcItems(
   items: any[],
   t?: Transaction,
 ): Promise<void> {
-  await QcInspectionItem.destroy({
-    where: { source_type: sourceType, inspection_id: inspectionId },
-    transaction: t,
-  })
-  if (!items || items.length === 0) return
-  await QcInspectionItem.bulkCreate(
-    // buildQcItemData 已注入 sourceType 和 inspectionId
-    buildQcItemData(sourceType, inspectionId, items),
-    { transaction: t },
-  )
+  if (!items || items.length === 0) {
+    // 没有要写的 → 直接清空
+    await QcInspectionItem.destroy({
+      where: { source_type: sourceType, inspection_id: inspectionId },
+      transaction: t,
+    })
+    return
+  }
+
+  const withId = items.filter(i => i && i.item_id && !isNaN(Number(i.item_id)))
+  const withoutId = items.filter(i => i && !(i.item_id && !isNaN(Number(i.item_id))))
+
+  // 1) 先处理带 item_id 的项：upsert（update 而不是 delete+create）
+  if (withId.length > 0) {
+    for (const item of withId) {
+      const id = Number(item.item_id)
+      const data = buildQcItemData(sourceType, inspectionId, [item])[0] || {}
+      delete data.item_id  // 不写入 ID 字段
+      // 兼容 create/update 字段：若前端传了 sample_values，保留不被覆盖（sample_values 作为子表独立管理）
+      await QcInspectionItem.update(data, {
+        where: {
+          source_type: sourceType,
+          inspection_id: inspectionId,
+          item_id: id,
+        },
+        transaction: t,
+      })
+    }
+  }
+
+  // 2) 处理不带 item_id 的项：全部先删除再创建（保留已在 withId 中的那些 item_id）
+  if (withoutId.length > 0) {
+    // 先删除本 inspection 下已被替换的旧项（不保留的 item_id 全部清掉）
+    const keepIds = new Set(withId.map(i => Number(i.item_id)))
+    if (keepIds.size === 0) {
+      await QcInspectionItem.destroy({
+        where: { source_type: sourceType, inspection_id: inspectionId },
+        transaction: t,
+      })
+    } else {
+      await QcInspectionItem.destroy({
+        where: {
+          source_type: sourceType,
+          inspection_id: inspectionId,
+          item_id: { [Op.notIn]: Array.from(keepIds) },
+        },
+        transaction: t,
+      })
+    }
+    await QcInspectionItem.bulkCreate(
+      buildQcItemData(sourceType, inspectionId, withoutId),
+      { transaction: t },
+    )
+  } else {
+    // 没有不带 id 的项 → 只清掉已被删除的旧项（不在 items 里的）
+    const keepIds = new Set(withId.map(i => Number(i.item_id)))
+    if (keepIds.size > 0) {
+      await QcInspectionItem.destroy({
+        where: {
+          source_type: sourceType,
+          inspection_id: inspectionId,
+          item_id: { [Op.notIn]: Array.from(keepIds) },
+        },
+        transaction: t,
+      })
+    }
+  }
 }
 
 /**
