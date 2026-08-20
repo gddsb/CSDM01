@@ -1,6 +1,6 @@
 # 奶粉罐生产管理系统 (Milk Can MES)
 
-> 版本：V1.0.1.734
+> 版本：V1.0.1.735
 >
 > 东莞市大满包装实业有限公司长沙分公司 — 奶粉罐生产制造执行系统
 
@@ -1812,6 +1812,23 @@ npx vite preview --host 0.0.0.0 --port 5000
 # 按实际环境编写 server 块，将 / 指向 5000，/api 与 /uploads 反代到 3001
 ```
 
+#### 生产环境部署（推荐方式）
+
+> 由于部分服务器网络无法直连 GitHub，项目提供 `scripts/deploy.sh` 智能部署脚本，通过 SCP 上传变更文件替代 `git pull`。
+
+```bash
+# 在本地开发机执行（需配置 corkscrew HTTP 代理）
+bash scripts/deploy.sh [commit_count]
+
+# commit_count: 要包含的最近 N 次提交，默认 3
+# 脚本自动完成：
+#   1. git diff 分析变更文件列表
+#   2. 智能分类（前端/后端/依赖）
+#   3. SCP 上传变更文件到服务器
+#   4. 服务器端按需构建（前端/后端分开）
+#   5. PM2 重启 + 健康检查
+```
+
 #### 常用运维命令
 
 ```bash
@@ -2385,15 +2402,30 @@ PC端生产报工页面（`/production/reporting`）信息区采用三行布局�
 
 | 文件/目录 | 清理原因 |
 |------|---------|
+| `deploy.sh`（根目录） | 旧部署脚本，已统一使用 `scripts/deploy.sh` |
+| `deploy_stage1_v2.sh` | 旧分阶段部署脚本 |
+| `deploy_stage2.sh` | 旧分阶段部署脚本 |
+| `http_proxy_wrapper.sh` | 旧代理包装脚本 |
+| `scripts/deploy.py` | Python 部署脚本，已替换为 bash |
+| `scripts/verify.py`~`verify4.py` | 一次性验证脚本 |
+| `scripts/verify_api.py` | 一次性 API 验证脚本 |
+| `scripts/check_server.py` | 一次性服务器检查脚本 |
+| `scripts/find_dir.py` | 一次性目录查找脚本 |
+| `scripts/run_backfill_and_verify.py` | 一次性回填验证脚本 |
+| `.trae/documents/` | IDE 内部规划文档，非项目代码 |
+| `package-lock.json`（根目录） | 项目统一使用 pnpm，冗余 npm lockfile |
+| `server/package-lock.json` | 同上 |
+| `server/src/seeders/backup-before-migration.sh` | 一次性迁移备份脚本 |
+| `server/src/seeders/rollback-migration.sh` | 一次性回滚脚本 |
+| `server/src/seeders/verify-migration.ts` | 一次性迁移验证脚本 |
+| `server/src/seeders/backfill-item-type.ts` | 一次性数据回填脚本 |
+| `.askpass.sh` | Git 内部辅助脚本 |
 | `assets/image.png` | 历史截图（9MB），与项目无关 |
 | `assets/milk_can_mes.sql` | 14MB 数据库完整备份，应由 DBA 管理，不入仓库 |
-| `.codegraph/` | IDE 代码索引缓存（沙箱产物） |
 | `ecosystem.config.cjs` | PM2 生产配置，含服务器路径/凭据，不内置 |
 | `deploy-prod.sh` | 临时生产部署脚本 |
 | `fix-status-trim.sh` | 临时数据修复脚本 |
 | `parse_nav.ts` | 临时导航解析脚本 |
-| `.trae-html-share-packages/` | IDE 临时目录 |
-| `package-lock.json` / `server/package-lock.json` | 项目统一使用 pnpm，冗余的 npm lockfile |
 | `server/src/migrate_inspection_type.js` | SQLite 专用迁移（生产用 MySQL） |
 | `server/src/scripts/migrate-sqlite-to-mysql.ts` | 已完成的数据库迁移 |
 | `server/src/scripts/migrate-sqlite-to-sqlite.ts` | 已完成的数据库迁移 |
@@ -2428,6 +2460,42 @@ type 类型：
 ---
 
 ## 更新日志
+
+### V1.0.1.735（项目清理与检验页面优化）
+
+**项目清理**
+- 删除根目录 4 个旧部署脚本：`deploy.sh`、`deploy_stage1_v2.sh`、`deploy_stage2.sh`、`http_proxy_wrapper.sh`，统一使用 `scripts/deploy.sh`
+- 删除 `scripts/` 下 9 个一次性脚本：`verify.py`~`verify4.py`、`verify_api.py`、`check_server.py`、`find_dir.py`、`deploy.py`、`run_backfill_and_verify.py`
+- 删除 `.trae/documents/` 下 3 个 IDE 规划文档（`inspection_page_redesign_plan*.md`、`sampling_redesign_plan.md`）
+- 删除冗余 lock 文件：根目录 `package-lock.json`、`server/package-lock.json`（项目统一使用 pnpm）
+- 删除 `server/src/seeders/` 下 4 个一次性迁移脚本：`backup-before-migration.sh`、`rollback-migration.sh`、`verify-migration.ts`、`backfill-item-type.ts`
+- 删除根目录 `.askpass.sh`（Git 内部辅助脚本）
+
+**检验页面顶部区域优化**
+- 来料检验页面顶部显示：检验编号、料号、料品名称、规格、到货数量
+- 产品检验页面顶部显示：检验编号、料号、产品名称、规格、检验类型
+- `InspectionItemEditor` 组件新增 `inspectionMode` 属性（`incoming`/`product`），按检验类型动态切换显示字段
+- `MaterialInfo` 接口扩展：新增 `inspection_no`、`product_name`、`inspection_type` 字段
+
+**生产服务器部署优化**
+- 新增 `scripts/deploy.sh` 智能部署脚本：自动分析变更文件（`git diff`），SCP 上传变更文件替代 `git pull`
+- 部署流程：变更分析 → SCP 上传 → 服务器按需构建（前端/后端独立） → PM2 重启 → 健康检查
+- 解决服务器无法直连 GitHub 的网络问题，部署耗时从 60s+ 降至 ~35s
+
+**样本量上限 20**
+- 前端 `InspectionItemEditor`：`ensureSampleValues` 和 `judgeFinal` 添加 `MAX_SAMPLES=20` 限制
+- 后端 `SampleCountCalcService`：所有抽样方案（AQL/按数量/固定数量/全检）通过 `capToMax` 截断到 20
+- 后端 `QcItemCompatHelper`：`buildQcItemData` 保存时强制截断
+- 数据库历史数据修复：14 条 `need_sample_count > 20` 的记录已截断到 20
+
+**移动端清理**
+- 删除移动端模拟器相关代码：`MobileLayout.tsx` 模拟器控件、`mobile.css` 外壳样式、`main.tsx` 路由、`Permission.json` 菜单配置
+- 只保留 APP 打开的移动端主页
+
+**登录错误修复**
+- 修复 `r is not a function` 登录错误：axios v1.x 中 `axios.defaults.adapter` 已变为数组，改用手写 `browserXhrAdapter` 适配器
+
+---
 
 ### V1.0.1.734（生产加固与检验页面交互优化）
 

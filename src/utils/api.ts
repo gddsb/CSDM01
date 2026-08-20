@@ -1,4 +1,4 @@
-import axios, { AxiosResponse, AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios'
+import axios, { AxiosResponse, AxiosInstance, AxiosRequestConfig, AxiosError, InternalAxiosRequestConfig } from 'axios'
 
 // ========== CapacitorHttp 适配器 ==========
 // 安卓/iOS 原生 App 中，WebView 会拦截明文 HTTP 请求并触发 "Network Error"。
@@ -86,7 +86,7 @@ async function capacitorHttpAdapter(config: AxiosRequestConfig): Promise<AxiosRe
 // ========== 浏览器默认 XHR 适配器（axios v1.x 兼容） ==========
 // axios v1.x 的 axios.defaults.adapter 是字符串数组 ["xhr","http","fetch"] 而非函数
 // 这里手动实现浏览器端的 XMLHttpRequest 适配器
-async function browserXhrAdapter(config: AxiosRequestConfig): Promise<AxiosResponse> {
+async function browserXhrAdapter(config: InternalAxiosRequestConfig): Promise<AxiosResponse> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     const method = (config.method || 'get').toUpperCase()
@@ -110,7 +110,16 @@ async function browserXhrAdapter(config: AxiosRequestConfig): Promise<AxiosRespo
 
     // 设置 headers
     if (config.headers) {
-      for (const [k, v] of Object.entries(config.headers)) {
+      // AxiosHeaders 对象或普通对象兼容处理
+      const headersObj: Record<string, any> = {}
+      if (typeof config.headers.forEach === 'function') {
+        config.headers.forEach((value: any, key: string) => {
+          headersObj[key] = value
+        })
+      } else {
+        Object.assign(headersObj, config.headers)
+      }
+      for (const [k, v] of Object.entries(headersObj)) {
         if (v != null && k !== 'common') {
           xhr.setRequestHeader(k, String(v))
         }
@@ -147,7 +156,7 @@ async function browserXhrAdapter(config: AxiosRequestConfig): Promise<AxiosRespo
         status,
         statusText: xhr.statusText,
         headers,
-        config,
+        config: config as unknown as InternalAxiosRequestConfig,
       }
 
       if (status >= 200 && status < 300) {
@@ -165,7 +174,12 @@ async function browserXhrAdapter(config: AxiosRequestConfig): Promise<AxiosRespo
       if (typeof config.data === 'string') {
         body = config.data
       } else {
-        if (!config.headers?.['Content-Type']) {
+        // 检查是否已有 Content-Type
+        let hasContentType = false
+        if (config.headers && typeof config.headers.has === 'function') {
+          hasContentType = config.headers.has('Content-Type')
+        }
+        if (!hasContentType) {
           xhr.setRequestHeader('Content-Type', 'application/json')
         }
         body = JSON.stringify(config.data)
@@ -176,14 +190,14 @@ async function browserXhrAdapter(config: AxiosRequestConfig): Promise<AxiosRespo
 }
 
 // 统一适配器：原生走 CapacitorHttp，浏览器走手写 XHR（兼容 axios v1.x）
-async function smartAdapter(config: AxiosRequestConfig): Promise<AxiosResponse> {
+async function smartAdapter(config: InternalAxiosRequestConfig): Promise<AxiosResponse> {
   // 延迟检测（首次请求时 Capacitor 可能已初始化）
   const win = window as any
   const isNative = !!(win.Capacitor && (win.Capacitor.getPlatform?.() === 'android' || win.Capacitor.getPlatform?.() === 'ios'))
 
   if (isNative) {
     try {
-      return await capacitorHttpAdapter(config)
+      return await capacitorHttpAdapter(config as unknown as AxiosRequestConfig)
     } catch (e) {
       // CapacitorHttp 失败时回退（极少数情况）
       console.warn('[API] CapacitorHttp 失败，尝试 xhr 回退', e)
