@@ -61,16 +61,16 @@ async function capacitorHttpAdapter(config: AxiosRequestConfig): Promise<AxiosRe
 
     const axiosResponse: AxiosResponse = {
       data: responseData,
-      status: resp.statusCode || resp.status,
+      status: (resp as any).statusCode || resp.status,
       statusText: resp.status >= 200 && resp.status < 300 ? 'OK' : 'Error',
-      headers: resp.headers,
-      config,
+      headers: resp.headers as any,
+      config: config as any,
     }
 
     if (axiosResponse.status < 200 || axiosResponse.status >= 300) {
       const err = new Error(`Request failed with status code ${axiosResponse.status}`) as AxiosError
       err.response = axiosResponse
-      err.config = config
+      err.config = config as any
       err.code = 'ERR_BAD_RESPONSE'
       throw err
     }
@@ -78,7 +78,7 @@ async function capacitorHttpAdapter(config: AxiosRequestConfig): Promise<AxiosRe
     return axiosResponse
   } catch (err: any) {
     if (err.response) throw err
-    const axiosErr = new AxiosError(err?.message || 'Network Error', 'ERR_NETWORK', config)
+    const axiosErr = new AxiosError(err?.message || 'Network Error', 'ERR_NETWORK', config as any)
     throw axiosErr
   }
 }
