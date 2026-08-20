@@ -33,6 +33,9 @@ const AQL_TABLE: AQLRow[] = [
 
 export const AQL_VALUES = [0.65, 1.0, 2.5, 4.0, 6.5]
 
+/** 样本量上限：超过此值的样本量自动截断（含 Ac/Re 同步调整） */
+export const MAX_SAMPLE_COUNT = 20
+
 // ============================================================
 // 类型定义
 // ============================================================
@@ -92,6 +95,49 @@ export function lookupAQL(batchQty: number, aql: number): { sample_size: number;
 }
 
 // ============================================================
+// 样本量上限截断（n=20 时的 Ac/Re 同步调整）
+// ============================================================
+
+/** n=20 时的 AQL 行索引（检验水平Ⅱ，批量 151-280） */
+const AQL_N20_ROW = AQL_TABLE.find(r => r.n === MAX_SAMPLE_COUNT)
+
+/**
+ * 将样本量截断到 MAX_SAMPLE_COUNT 以内
+ * - AQL抽样：使用 n=20 行的 Ac/Re 替代原大样本 Ac/Re
+ * - 全检：样本量=20, Ac=19, Re=20
+ * - 固定数量/按数量抽样：仅截断样本量，保留原 Ac/Re
+ */
+function capToMax(
+  result: CalcResult,
+  aqlValue: number | null | undefined = null,
+): CalcResult {
+  if (result.sample_count <= MAX_SAMPLE_COUNT) return result
+
+  const capped: CalcResult = {
+    ...result,
+    sample_count: MAX_SAMPLE_COUNT,
+  }
+
+  // AQL抽样：用 n=20 行的 Ac/Re 替换
+  if (aqlValue !== null && AQL_N20_ROW) {
+    const aqlKey = aqlValue.toString()
+    const val = AQL_N20_ROW.data[aqlKey]
+    if (val) {
+      capped.accept_number = val.Ac
+      capped.reject_number = val.Re
+    }
+  }
+
+  // 全检兜底：样本量=20, Ac=19, Re=20
+  if (result.sampling_plan === '全检') {
+    capped.accept_number = MAX_SAMPLE_COUNT - 1
+    capped.reject_number = MAX_SAMPLE_COUNT
+  }
+
+  return capped
+}
+
+// ============================================================
 // 主计算函数
 // ============================================================
 /**
@@ -124,19 +170,19 @@ export function calcSampleInfo(
       const info = lookupAQL(q > 0 ? q : 1, aqlVal)
       // 如果详情中已有计算值且匹配，则使用详情中的值（已固定的检验数据）
       if (detail.sample_size && detail.accept_number !== undefined && detail.reject_number !== undefined) {
-        return {
+        return capToMax({
           sample_count: detail.sample_size,
           accept_number: detail.accept_number,
           reject_number: detail.reject_number,
           sampling_plan: plan,
-        }
+        }, aqlVal)
       }
-      return {
+      return capToMax({
         sample_count: info.sample_size,
         accept_number: info.accept_number,
         reject_number: info.reject_number,
         sampling_plan: plan,
-      }
+      }, aqlVal)
     }
 
     case '按数量抽样': {
@@ -147,42 +193,42 @@ export function calcSampleInfo(
       // 按到货数量匹配分段
       const matched = segments.find(s => q <= s.max_qty)
       if (matched) {
-        return {
+        return capToMax({
           sample_count: Math.max(1, matched.sample_count),
           accept_number: matched.accept_number,
           reject_number: matched.reject_number,
           sampling_plan: plan,
-        }
+        })
       }
       // 超过最大分段，取最后一段
       const last = segments[segments.length - 1]
-      return {
+      return capToMax({
         sample_count: Math.max(1, last.sample_count),
         accept_number: last.accept_number,
         reject_number: last.reject_number,
         sampling_plan: plan,
-      }
+      })
     }
 
     case '固定数量抽样': {
       const fixedCfg = detail as FixedCountConfig
       const fixedCount = Number(fixedCfg.fixed_count) || 1
-      return {
+      return capToMax({
         sample_count: Math.max(1, fixedCount),
         accept_number: fixedCfg.accept_number ?? 0,
         reject_number: fixedCfg.reject_number ?? 1,
         sampling_plan: plan,
-      }
+      })
     }
 
     case '全检': {
       const total = Math.max(1, q)
-      return {
+      return capToMax({
         sample_count: total,
         accept_number: total,  // 全检：不合格数<1 即合格
         reject_number: total + 1,
         sampling_plan: plan,
-      }
+      })
     }
 
     default: {
@@ -255,11 +301,17 @@ export function judgeItemResult(
  */
 export function buildAQLDetail(aqlValue: number, batchQty: number): AQLConfig {
   const info = lookupAQL(batchQty, aqlValue)
+  const capped = capToMax({
+    sample_count: info.sample_size,
+    accept_number: info.accept_number,
+    reject_number: info.reject_number,
+    sampling_plan: 'AQL抽样',
+  }, aqlValue)
   return {
     aql_value: aqlValue,
     inspection_level: 'Ⅱ',
-    sample_size: info.sample_size,
-    accept_number: info.accept_number,
-    reject_number: info.reject_number,
+    sample_size: capped.sample_count,
+    accept_number: capped.accept_number,
+    reject_number: capped.reject_number,
   }
 }

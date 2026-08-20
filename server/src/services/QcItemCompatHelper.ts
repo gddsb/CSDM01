@@ -44,7 +44,56 @@ export function resultToStr(v: any): string | any {
 /**
  * 把前端 items payload 转为 QcInspectionItem.bulkCreate 格式
  * 用在 create/update 中替代旧子表 bulkCreate + syncQcItems
+ *
+ * 含样本量后端强制截断：need_sample_count > 20 时自动截断到 20，
+ * Ac/Re 同步调整（AQL抽样用 n=20 行值，其他保留原 Ac/Re）
  */
+const MAX_SAMPLE_COUNT = 20
+
+/** n=20 时 AQL 表的 Ac/Re（检验水平Ⅱ，批量 151-280） */
+const AQL_N20: Record<number, { Ac: number; Re: number }> = {
+  0.65: { Ac: 0, Re: 1 },
+  1.0:  { Ac: 0, Re: 1 },
+  2.5:  { Ac: 1, Re: 2 },
+  4.0:  { Ac: 1, Re: 2 },
+  6.5:  { Ac: 3, Re: 4 },
+}
+
+/** 截断 need_sample_count 到上限以内 */
+function capNeedSampleCount(item: any): any {
+  const nsc = Number(item.need_sample_count) || 0
+  if (nsc <= MAX_SAMPLE_COUNT) return item
+
+  const capped = { ...item, need_sample_count: MAX_SAMPLE_COUNT }
+
+  // AQL抽样：用 n=20 行的 Ac/Re 替换
+  if (item.sampling_plan === 'AQL抽样' && item.sampling_detail) {
+    try {
+      const detail = typeof item.sampling_detail === 'string'
+        ? JSON.parse(item.sampling_detail)
+        : item.sampling_detail
+      const aqlVal = Number(detail?.aql_value) || 2.5
+      const n20 = AQL_N20[aqlVal] || AQL_N20[2.5]
+      capped.accept_number = n20.Ac
+      capped.reject_number = n20.Re
+      // 更新 sampling_detail JSON
+      const newDetail = { ...detail, sample_size: MAX_SAMPLE_COUNT, accept_number: n20.Ac, reject_number: n20.Re }
+      capped.sampling_detail = typeof item.sampling_detail === 'string' ? JSON.stringify(newDetail) : newDetail
+    } catch {
+      capped.accept_number = 0
+      capped.reject_number = 2
+    }
+  }
+
+  // 全检：Ac=19, Re=20
+  if (item.sampling_plan === '全检') {
+    capped.accept_number = MAX_SAMPLE_COUNT - 1
+    capped.reject_number = MAX_SAMPLE_COUNT
+  }
+
+  return capped
+}
+
 export function buildQcItemData(
   sourceType: SourceType,
   inspectionId: number,
@@ -52,33 +101,36 @@ export function buildQcItemData(
   user: { userId?: number; realName?: string; username?: string } = {},
 ): any[] {
   if (!items || items.length === 0) return []
-  return items.map((item, idx) => ({
-    source_type: sourceType,
-    inspection_id: inspectionId,
-    item_cfg_id: item.item_cfg_id || null,
-    item_name: item.item_name,
-    category: item.category || null,
-    standard_value: item.standard_value || null,
-    actual_value_text: item.actual_value || null,
-    sample_count: item.sample_count ?? null,
-    summary: item.summary || null,
-    result: convertItemResult(item.result),
-    inspector_id: item.inspector_id ?? user.userId ?? null,
-    inspector_name: item.inspector_name || user.realName || user.username || null,
-    inspection_time: item.inspection_time ? new Date(item.inspection_time) : null,
-    unit: item.unit || null,
-    // 阶段回填：从检验标准 / 前端 payload 持久化配置字段
-    item_type: item.item_type || null,
-    need_sample_count: item.need_sample_count ?? 0,
-    upper_limit: item.upper_limit ?? null,
-    lower_limit: item.lower_limit ?? null,
-    sampling_plan: item.sampling_plan || 'AQL抽样',
-    sampling_detail: item.sampling_detail ? (typeof item.sampling_detail === 'string' ? item.sampling_detail : JSON.stringify(item.sampling_detail)) : null,
-    accept_number: item.accept_number ?? null,
-    reject_number: item.reject_number ?? null,
-    sort_order: item.sort_order !== undefined ? item.sort_order : idx,
-    remarks: item.remarks || null,
-  }))
+  return items.map((item, idx) => {
+    const capped = capNeedSampleCount(item)
+    return {
+      source_type: sourceType,
+      inspection_id: inspectionId,
+      item_cfg_id: capped.item_cfg_id || null,
+      item_name: capped.item_name,
+      category: capped.category || null,
+      standard_value: capped.standard_value || null,
+      actual_value_text: capped.actual_value || null,
+      sample_count: capped.sample_count ?? null,
+      summary: capped.summary || null,
+      result: convertItemResult(capped.result),
+      inspector_id: capped.inspector_id ?? user.userId ?? null,
+      inspector_name: capped.inspector_name || user.realName || user.username || null,
+      inspection_time: capped.inspection_time ? new Date(capped.inspection_time) : null,
+      unit: capped.unit || null,
+      // 阶段回填：从检验标准 / 前端 payload 持久化配置字段
+      item_type: capped.item_type || null,
+      need_sample_count: capped.need_sample_count ?? 0,
+      upper_limit: capped.upper_limit ?? null,
+      lower_limit: capped.lower_limit ?? null,
+      sampling_plan: capped.sampling_plan || 'AQL抽样',
+      sampling_detail: capped.sampling_detail ? (typeof capped.sampling_detail === 'string' ? capped.sampling_detail : JSON.stringify(capped.sampling_detail)) : null,
+      accept_number: capped.accept_number ?? null,
+      reject_number: capped.reject_number ?? null,
+      sort_order: capped.sort_order !== undefined ? capped.sort_order : idx,
+      remarks: capped.remarks || null,
+    }
+  })
 }
 
 /**
