@@ -1,0 +1,49 @@
+{
+  "name": "奶粉罐生产管理系统",
+  "short_name": "奶粉罐MES",
+  "description": "奶粉罐生产管理系统 - 生产/质量/设备综合管理",
+  "start_url": "/mobile/home",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#2196F3",
+  "lang": "zh-CN",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/assets/logo-square.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/logo-square.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "工单列表",
+      "url": "/mobile/orders",
+      "icons": [{ "src": "/assets/logo-square.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "报工",
+      "url": "/mobile/reporting",
+      "icons": [{ "src": "/assets/logo-square.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "质量检验",
+      "url": "/mobile/quality",
+      "icons": [{ "src": "/assets/logo-square.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "个人中心",
+      "url": "/mobile/profile",
+      "icons": [{ "src": "/assets/logo-square.png", "sizes": "192x192" }]
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .vite/
+.pnpm-store/
 *.local
 .DS_Store
 *.tsbuildinfo
@@ -46,3 +47,8 @@ AGENTS.md
 *.orig
 *.rej
 *~
+
+# Capacitor 原生平台模板（通过 `npx cap add android/ios` 本地生成即可，不入库）
+android/
+ios/
+.capacitor/

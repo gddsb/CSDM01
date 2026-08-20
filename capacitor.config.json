@@ -1,0 +1,20 @@
+{
+  "appId": "com.milkcan.mes",
+  "appName": "奶粉罐MES",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1500,
+      "backgroundColor": "#2196F3",
+      "androidSplashResourceName": "splash",
+      "iosSplashResourceName": "splash"
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  }
+}

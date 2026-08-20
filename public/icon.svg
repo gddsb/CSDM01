@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2196F3"/>
+      <stop offset="100%" stop-color="#1565C0"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="36" fill="url(#g)"/>
+  <circle cx="96" cy="76" r="26" fill="none" stroke="#fff" stroke-width="6"/>
+  <path d="M60 130 Q60 100 96 100 Q132 100 132 130 L132 140 L60 140 Z" fill="none" stroke="#fff" stroke-width="6" stroke-linejoin="round"/>
+  <rect x="76" y="140" width="40" height="14" rx="3" fill="#fff"/>
+  <text x="96" y="178" text-anchor="middle" fill="#fff" font-family="sans-serif" font-size="22" font-weight="700">MES</text>
+</svg>
