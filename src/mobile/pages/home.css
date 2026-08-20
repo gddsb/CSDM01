@@ -1,101 +1,489 @@
-/* 首页专属样式 */
+/* 移动端主页专属样式 — 独立布局，不依赖 mobile.css 的通用样式 */
 
 .home-page {
-  padding-bottom: 20px;
+  padding: 0 0 12px !important;
 }
 
-.home-welcome {
-  background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
-  margin: -12px -12px 12px;
-  padding: 18px 16px 22px;
+/* ================================================
+   1. 欢迎区（渐变头部 + 统计卡片）
+   ================================================ */
+.home-hero {
+  background: linear-gradient(160deg, var(--color-primary, #2196F3) 0%, var(--color-secondary, #1565C0) 60%, #0D47A1 100%);
+  margin: -12px -12px 0;
+  padding: 20px 16px 24px;
   color: #fff;
-  border-radius: 0 0 16px 16px;
+  border-radius: 0 0 24px 24px;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.35s ease;
 }
 
-.home-welcome-row {
+.home-hero::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -30px;
+  width: 160px;
+  height: 160px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+}
+
+.home-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -60px;
+  left: -20px;
+  width: 140px;
+  height: 140px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+}
+
+.home-hero-top {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: flex-start;
+  position: relative;
+  z-index: 1;
 }
 
-.home-welcome-name {
+.home-greeting {
+  display: flex;
+  flex-direction: column;
+}
+
+.home-greeting-text {
   font-size: 18px;
   font-weight: 600;
+  letter-spacing: 0.3px;
 }
 
-.home-welcome-company {
+.home-date {
   font-size: 12px;
-  opacity: 0.85;
-}
-
-.home-welcome-sub {
-  font-size: 12px;
-  opacity: 0.75;
+  opacity: 0.8;
   margin-top: 4px;
 }
 
-.home-section-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #424242;
-  margin: 16px 4px 10px;
-  padding-left: 8px;
-  border-left: 3px solid #2196F3;
+.home-hero-brand {
+  text-align: right;
 }
 
-.home-quick {
-  background: #fff;
-  border-radius: 8px;
+.home-brand-name {
+  font-size: 12px;
+  opacity: 0.9;
+  max-width: 100px;
+  white-space: nowrap;
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  text-overflow: ellipsis;
 }
 
-.home-quick-item {
+/* 统计卡片 */
+.home-stats {
+  margin-top: 20px;
+  display: flex;
+  align-items: stretch;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 14px;
+  padding: 14px 0;
+  position: relative;
+  z-index: 1;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.home-stat-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.home-stat-item:active {
+  transform: scale(0.95);
+}
+
+.home-stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-stat-label {
+  font-size: 11px;
+  opacity: 0.85;
+  margin-top: 6px;
+}
+
+.home-stat-divider {
+  width: 1px;
+  background: rgba(255, 255, 255, 0.25);
+  margin: 4px 0;
+}
+
+/* ================================================
+   2. 区块标题
+   ================================================ */
+.home-section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 12px;
-  border-bottom: 1px solid #f5f5f5;
+  margin: 18px 4px 10px;
+  padding: 0 4px;
+}
+
+.home-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a1a;
+  position: relative;
+  padding-left: 10px;
+}
+
+.home-section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 14px;
+  background: var(--color-primary, #2196F3);
+  border-radius: 2px;
+}
+
+.home-section-more {
+  font-size: 12px;
+  color: #999;
   cursor: pointer;
 }
 
-.home-quick-item:last-child {
-  border-bottom: none;
+.home-section-more:active {
+  color: var(--color-primary, #2196F3);
 }
 
-.home-quick-item:active {
-  background: #f5f6f8;
+/* ================================================
+   3. 快捷操作卡片（2×2 渐变卡片）
+   ================================================ */
+.home-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding: 0 4px;
 }
 
-.home-quick-label {
-  font-size: 14px;
-  color: #212121;
-}
-
-.home-quick-arrow {
-  font-size: 20px;
-  color: #BDBDBD;
-}
-
-.mobile-menu-icon-wrapper {
+.home-quick-card {
+  border-radius: 14px;
+  padding: 16px 14px 14px;
+  color: #fff;
   position: relative;
+  cursor: pointer;
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transition: transform 0.15s, box-shadow 0.15s;
+  overflow: hidden;
+}
+
+.home-quick-card:active {
+  transform: scale(0.97);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.home-quick-card-icon {
+  width: 38px;
+  height: 38px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  backdrop-filter: blur(4px);
 }
 
-.mobile-menu-badge {
+.home-quick-card-info {
+  margin-top: 10px;
+}
+
+.home-quick-card-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.home-quick-card-sub {
+  font-size: 11px;
+  opacity: 0.85;
+  margin-top: 4px;
+  line-height: 1.3;
+}
+
+.home-quick-card-badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  background: #f5222d;
-  color: white;
-  font-size: 10px;
-  font-weight: bold;
+  top: 12px;
+  right: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.22);
+  padding: 2px 8px;
   border-radius: 10px;
-  min-width: 16px;
-  height: 16px;
-  line-height: 16px;
+  backdrop-filter: blur(4px);
+}
+
+/* ================================================
+   4. 功能菜单网格（4 列）
+   ================================================ */
+.home-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px 4px;
+  padding: 4px 4px 0;
+  background: #fff;
+  border-radius: 14px;
+  margin: 0 4px;
+  padding: 14px 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.home-feature-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 12px 4px 8px;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.home-feature-item:active {
+  transform: scale(0.92);
+}
+
+.home-feature-item.disabled {
+  opacity: 0.55;
+}
+
+.home-feature-item.disabled:active {
+  transform: none;
+}
+
+.home-feature-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  transition: transform 0.15s;
+}
+
+.home-feature-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a1a1a;
   text-align: center;
-  padding: 0 3px;
+  line-height: 1.3;
+}
+
+.home-feature-desc {
+  font-size: 10px;
+  color: #999;
+  text-align: center;
+  margin-top: 2px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* ================================================
+   5. 最近待办列表
+   ================================================ */
+.home-recent-list {
+  background: #fff;
+  border-radius: 14px;
+  margin: 0 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.home-recent-item {
+  display: flex;
+  align-items: center;
+  padding: 14px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid #f5f5f5;
+  transition: background 0.15s;
+}
+
+.home-recent-item:last-child {
+  border-bottom: none;
+}
+
+.home-recent-item:active {
+  background: #f9f9fb;
+}
+
+.home-recent-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-right: 12px;
+  font-size: 20px;
+}
+
+.home-recent-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.home-recent-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1a1a1a;
+  margin-bottom: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-recent-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.home-recent-time {
+  font-size: 11px;
+  color: #999;
+}
+
+.home-recent-arrow {
+  color: #ccc;
+  flex-shrink: 0;
+}
+
+/* 状态标签 */
+.home-status-tag {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.home-status-tag.status-overdue {
+  background: #FFEBEE;
+  color: #E53935;
+}
+
+.home-status-tag.status-pending {
+  background: #FFF3E0;
+  color: #FB8C00;
+}
+
+.home-status-tag.status-progress {
+  background: #E3F2FD;
+  color: #1E88E5;
+}
+
+.home-status-tag.status-done {
+  background: #E8F5E9;
+  color: #43A047;
+}
+
+/* ================================================
+   6. 团队协作提示
+   ================================================ */
+.home-team-tip {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 14px;
+  margin: 12px 4px 4px;
+  padding: 14px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s;
+}
+
+.home-team-tip:active {
+  transform: scale(0.99);
+}
+
+.home-team-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.home-team-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.home-team-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.home-team-sub {
+  font-size: 11px;
+  color: #999;
+  margin-top: 3px;
+}
+
+/* ================================================
+   7. 响应式适配（小屏手机）
+   ================================================ */
+@media (max-height: 700px) {
+  .home-hero {
+    padding: 16px 16px 20px;
+  }
+  .home-stat-value {
+    font-size: 20px;
+  }
+  .home-quick-card {
+    min-height: 96px;
+    padding: 12px;
+  }
+  .home-feature-icon {
+    width: 42px;
+    height: 42px;
+  }
+}
+
+/* 桌面模拟器模式（限制宽度） */
+@media (min-width: 768px) {
+  .home-feature-grid {
+    margin: 0 12px;
+  }
+  .home-recent-list {
+    margin: 0 12px;
+  }
+  .home-quick-actions {
+    padding: 0 12px;
+  }
+  .home-team-tip {
+    margin: 12px 12px 4px;
+  }
 }
