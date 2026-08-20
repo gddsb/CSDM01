@@ -74,6 +74,9 @@ import ProductInspectionController from '../controllers/ProductInspectionControl
 import IncomingInspectionController from '../controllers/IncomingInspectionController.js'
 import InspectionStandardController from '../controllers/InspectionStandardController.js'
 import MicrobeInspectionController from '../controllers/MicrobeInspectionController.js'
+import EnvInspectionController from '../controllers/EnvInspectionController.js'
+import ComplaintController from '../controllers/ComplaintController.js'
+import SupplierComplaintController from '../controllers/SupplierComplaintController.js'
 import { authRequired, logOperation } from '../middleware/auth.js'
 
 const router = Router()
@@ -210,11 +213,50 @@ router.post('/microbe-inspections', logOperation('微生物检验'), MicrobeInsp
 router.put('/microbe-inspections/:id', logOperation('微生物检验'), MicrobeInspectionController.update)
 router.delete('/microbe-inspections/:id', logOperation('微生物检验'), MicrobeInspectionController.delete)
 
+// 环境检验路由
+router.get('/env-inspections', EnvInspectionController.list)
+router.get('/env-inspections/:id', EnvInspectionController.detail)
+router.post('/env-inspections', logOperation('环境检验'), EnvInspectionController.create)
+router.put('/env-inspections/:id', logOperation('环境检验'), EnvInspectionController.update)
+router.delete('/env-inspections/:id', logOperation('环境检验'), EnvInspectionController.delete)
+// 环境检验区域
+router.get('/env-areas', EnvInspectionController.listAreas)
+router.post('/env-areas', logOperation('环境区域'), EnvInspectionController.createArea)
+router.put('/env-areas/:id', logOperation('环境区域'), EnvInspectionController.updateArea)
+router.delete('/env-areas/:id', logOperation('环境区域'), EnvInspectionController.deleteArea)
+// 环境检验模板
+router.get('/env-templates', EnvInspectionController.listTemplates)
+router.post('/env-templates', logOperation('环境模板'), EnvInspectionController.createTemplate)
+router.put('/env-templates/:id', logOperation('环境模板'), EnvInspectionController.updateTemplate)
+router.delete('/env-templates/:id', logOperation('环境模板'), EnvInspectionController.deleteTemplate)
+// 根据区域获取模板
+router.get('/env-templates/area/:areaId', EnvInspectionController.getTemplatesByArea)
+
 // 检测仪器
 router.get('/instruments', instrumentList)
 router.get('/instruments/:id', instrumentDetail)
 router.post('/instruments', logOperation('检测仪器'), instrumentCreate)
 router.put('/instruments/:id', logOperation('检测仪器'), instrumentUpdate)
 router.delete('/instruments/:id', logOperation('检测仪器'), instrumentRemove)
+
+// 客诉管理路由
+router.get('/complaints', ComplaintController.list)
+router.get('/complaints/:id', ComplaintController.detail)
+router.post('/complaints', logOperation('客诉管理'), ComplaintController.create)
+router.put('/complaints/:id', logOperation('客诉管理'), ComplaintController.update)
+router.delete('/complaints/:id', logOperation('客诉管理'), ComplaintController.delete)
+router.post('/complaints/:id/records', logOperation('客诉记录'), ComplaintController.addRecord)
+router.put('/complaints/:id/close', logOperation('关闭客诉'), ComplaintController.close)
+
+// 供应商投诉管理路由
+router.get('/supplier-complaints', SupplierComplaintController.list)
+router.get('/supplier-complaints/:id', SupplierComplaintController.detail)
+router.post('/supplier-complaints', logOperation('供应商投诉'), SupplierComplaintController.create)
+router.put('/supplier-complaints/:id', logOperation('供应商投诉'), SupplierComplaintController.update)
+router.delete('/supplier-complaints/:id', logOperation('供应商投诉'), SupplierComplaintController.delete)
+router.put('/supplier-complaints/:id/issue', logOperation('发出投诉'), SupplierComplaintController.issue)
+router.put('/supplier-complaints/:id/reply', logOperation('供应商回复'), SupplierComplaintController.reply)
+router.put('/supplier-complaints/:id/close', logOperation('关闭投诉'), SupplierComplaintController.close)
+router.get('/supplier-complaints/:id/pdf', SupplierComplaintController.generatePdf)
 
 export default router

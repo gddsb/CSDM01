@@ -51,6 +51,13 @@ import EnergyMeterData from './EnergyMeterData.js'
 import U9ProductionOrder from './U9ProductionOrder.js'
 import U9PurchaseReceipt from './U9PurchaseReceipt.js'
 import Instrument from './Instrument.js'
+import QualityEnvArea from './QualityEnvArea.js'
+import QualityEnvTemplate from './QualityEnvTemplate.js'
+import QualityEnvInspection from './QualityEnvInspection.js'
+import QualityEnvInspectionItem from './QualityEnvInspectionItem.js'
+import QualitySupplierComplaint from './QualitySupplierComplaint.js'
+import QualityComplaint from './QualityComplaint.js'
+import QualityComplaintRecord from './QualityComplaintRecord.js'
 
 // 建立模型关联关系
 // 用户 - 角色
@@ -156,6 +163,38 @@ MicrobeInspection.belongsTo(Order, { foreignKey: 'order_id', as: 'order', constr
 MicrobeInspection.belongsTo(InspectionStandard, { foreignKey: 'standard_id', as: 'standard', constraints: false })
 // 阶段5：MicrobeInspectionItem（旧子表）关联已移除，统一使用 QcInspectionItem（as: 'qc_items'）
 
+// 客诉 - 处理记录（一对多）
+QualityComplaint.hasMany(QualityComplaintRecord, { foreignKey: 'complaint_id', as: 'records', onDelete: 'CASCADE' })
+QualityComplaintRecord.belongsTo(QualityComplaint, { foreignKey: 'complaint_id', as: 'complaint' })
+
+// 客诉 - 客户（多对一）
+QualityComplaint.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer', constraints: false })
+
+// 客诉 - 料品（多对一）
+QualityComplaint.belongsTo(Material, { foreignKey: 'material_id', as: 'material', constraints: false })
+
+// 供应商投诉 - 供应商（多对一）
+QualitySupplierComplaint.belongsTo(Supplier, { foreignKey: 'supplier_id', as: 'supplier', constraints: false })
+
+// 供应商投诉 - 来料检验（多对一）
+QualitySupplierComplaint.belongsTo(IncomingInspection, { foreignKey: 'related_inspection_id', as: 'incoming_inspection', constraints: false })
+
+// 环境检验区域 - 自关联（树形）
+QualityEnvArea.hasMany(QualityEnvArea, { foreignKey: 'parent_id', as: 'children', constraints: false })
+QualityEnvArea.belongsTo(QualityEnvArea, { foreignKey: 'parent_id', as: 'parent', constraints: false })
+
+// 环境检验区域 - 环境检验模板（一对多）
+QualityEnvArea.hasMany(QualityEnvTemplate, { foreignKey: 'area_id', as: 'templates' })
+QualityEnvTemplate.belongsTo(QualityEnvArea, { foreignKey: 'area_id', as: 'area' })
+
+// 环境检验区域 - 环境检验记录（一对多）
+QualityEnvArea.hasMany(QualityEnvInspection, { foreignKey: 'area_id', as: 'inspections' })
+QualityEnvInspection.belongsTo(QualityEnvArea, { foreignKey: 'area_id', as: 'area' })
+
+// 环境检验记录 - 检验子项（一对多）
+QualityEnvInspection.hasMany(QualityEnvInspectionItem, { foreignKey: 'inspection_id', as: 'items', onDelete: 'CASCADE' })
+QualityEnvInspectionItem.belongsTo(QualityEnvInspection, { foreignKey: 'inspection_id', as: 'inspection' })
+
 // ============================================================
 // 检验数据统一存储改造（阶段1.5）：统一子表 + 样品测量值明细
 // 多态外键关联：三主表 hasMany QcInspectionItem（as: 'qc_items'）
@@ -251,6 +290,13 @@ const db = {
   U9ProductionOrder,
   U9PurchaseReceipt,
   Instrument,
+  QualityEnvArea,
+  QualityEnvTemplate,
+  QualityEnvInspection,
+  QualityEnvInspectionItem,
+  QualityComplaint,
+  QualityComplaintRecord,
+  QualitySupplierComplaint,
 }
 
 // 具名导出，便于按需导入
@@ -304,6 +350,13 @@ export {
   U9ProductionOrder,
   U9PurchaseReceipt,
   Instrument,
+  QualityEnvArea,
+  QualityEnvTemplate,
+  QualityEnvInspection,
+  QualityEnvInspectionItem,
+  QualityComplaint,
+  QualityComplaintRecord,
+  QualitySupplierComplaint,
 }
 
 // 别名：统一以模型业务名对外暴露，兼容控制器与测试中的既有引用
