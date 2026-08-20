@@ -2,65 +2,50 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Layout, Menu, Dropdown, Avatar, Space, Typography, Badge, Button, Modal, Form, Input, Tooltip, Upload, Spin } from 'antd'
 import type { MenuProps } from 'antd'
 import {
-  DashboardOutlined, TeamOutlined, DatabaseOutlined, SettingOutlined,
-  ProfileOutlined, DeploymentUnitOutlined, SafetyCertificateOutlined,
-  ExperimentOutlined, ToolOutlined, BarChartOutlined, FileTextOutlined,
-  LogoutOutlined, UserOutlined, BellOutlined, MenuFoldOutlined, MenuUnfoldOutlined,
-  PieChartOutlined, FileSearchOutlined, FundProjectionScreenOutlined,
-  ControlOutlined, DesktopOutlined, LineChartOutlined, CalendarOutlined,
-  RiseOutlined, AlertOutlined, ContainerOutlined, EnvironmentOutlined,
-  ClockCircleOutlined,
-  LockOutlined, KeyOutlined, MenuOutlined, SkinOutlined, MobileOutlined,
-  FolderOutlined, ShopOutlined,
+  DashboardOutlined, FundProjectionScreenOutlined,
+  UserOutlined, KeyOutlined, LogoutOutlined,
+  MenuUnfoldOutlined, MenuFoldOutlined, BellOutlined,
+  SkinOutlined, LockOutlined,
 } from '@ant-design/icons'
+import * as AntIcons from '@ant-design/icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { useApp, useMessage, User } from '../contexts/AppContext'
 import { themeList, themes } from '../themes'
 import { useTodoStats } from '../hooks/useTodoStats'
 import api from '../utils/api'
 
-// 20 个预设头像（使用 DiceBear API 生成不同样式头像）
+// 20 个预设头像（本地 SVG，离线可用）
 const presetAvatars = [
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Mimi',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Bandit',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Lily',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Leo',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Sophie',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Toto',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Coco',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Max',
-  'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Whiskers',
-  'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Bubbles',
-  'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Shadow',
-  'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Sunny',
-  'https://api.dicebear.com/7.x/fun-emoji/svg?seed=Pepper',
-  'https://api.dicebear.com/7.x/bottts/svg?seed=Alpha',
-  'https://api.dicebear.com/7.x/bottts/svg?seed=Beta',
-  'https://api.dicebear.com/7.x/bottts/svg?seed=Gamma',
-  'https://api.dicebear.com/7.x/bottts/svg?seed=Delta',
-  'https://api.dicebear.com/7.x/bottts/svg?seed=Omega',
+  '/assets/avatars/avatar-01.svg',
+  '/assets/avatars/avatar-02.svg',
+  '/assets/avatars/avatar-03.svg',
+  '/assets/avatars/avatar-04.svg',
+  '/assets/avatars/avatar-05.svg',
+  '/assets/avatars/avatar-06.svg',
+  '/assets/avatars/avatar-07.svg',
+  '/assets/avatars/avatar-08.svg',
+  '/assets/avatars/avatar-09.svg',
+  '/assets/avatars/avatar-10.svg',
+  '/assets/avatars/avatar-11.svg',
+  '/assets/avatars/avatar-12.svg',
+  '/assets/avatars/avatar-13.svg',
+  '/assets/avatars/avatar-14.svg',
+  '/assets/avatars/avatar-15.svg',
+  '/assets/avatars/avatar-16.svg',
+  '/assets/avatars/avatar-17.svg',
+  '/assets/avatars/avatar-18.svg',
+  '/assets/avatars/avatar-19.svg',
+  '/assets/avatars/avatar-20.svg',
 ]
 
 const { Sider, Header, Content } = Layout
 const { Text } = Typography
 
-// 图标名称 → 组件映射（用于动态菜单渲染）
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  DashboardOutlined, TeamOutlined, DatabaseOutlined, SettingOutlined,
-  ProfileOutlined, DeploymentUnitOutlined, SafetyCertificateOutlined,
-  ExperimentOutlined, ToolOutlined, BarChartOutlined, FileTextOutlined,
-  LogoutOutlined, UserOutlined, BellOutlined, MenuFoldOutlined, MenuUnfoldOutlined,
-  PieChartOutlined, FileSearchOutlined, FundProjectionScreenOutlined,
-  ControlOutlined, DesktopOutlined, LineChartOutlined, CalendarOutlined,
-  RiseOutlined, AlertOutlined, ContainerOutlined, EnvironmentOutlined,
-  ClockCircleOutlined,
-  LockOutlined, KeyOutlined, MenuOutlined, MobileOutlined, ShopOutlined,
-}
+// 动态图标解析：从 @ant-design/icons 命名空间按名称查找组件
+// 支持后端配置任意图标名（如 FileTextOutlined、SettingOutlined 等），无需前端维护映射
 function resolveIcon(name?: string): React.ReactNode {
   if (!name) return undefined
-  const Comp = iconMap[name]
+  const Comp = (AntIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[name]
   return Comp ? <Comp /> : undefined
 }
 

@@ -10,6 +10,7 @@ import { AppProvider, useApp } from './contexts/AppContext'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from './queryClient'
 import MainLayout from './layouts/MainLayout'
+import ErrorBoundary from './components/ErrorBoundary'
 
 // 首屏关键页面同步加载（避免白屏）
 import Login from './pages/Login'
@@ -195,7 +196,9 @@ function AppInner({ setMessageApi, setModalApi, setNotificationApi }: {
   }, [message, modal, notification, setMessageApi, setModalApi, setNotificationApi])
   return (
     <BrowserRouter>
-      <AppRoutes />
+      <ErrorBoundary>
+        <AppRoutes />
+      </ErrorBoundary>
     </BrowserRouter>
   )
 }

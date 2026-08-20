@@ -16,7 +16,8 @@ import { useTodoStats } from '../hooks/useTodoStats'
 import api from '../utils/api'
 import './mobile.css'
 
-const SYSTEM_VERSION = 'V1.0.1.722'
+declare const __APP_VERSION__: string
+const SYSTEM_VERSION = `V${__APP_VERSION__}`
 
 const tabs = [
   { key: '/mobile/bigscreen', title: '看板', icon: <UnorderedListOutline /> },

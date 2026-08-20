@@ -261,8 +261,8 @@ export const setMyAvatar = async (req, res) => {
     if (!avatar_url || typeof avatar_url !== 'string') {
       return fail(res, '头像地址不能为空')
     }
-    // 允许的预设头像来源（DiceBear API）和已上传的自定义头像
-    const isPreset = avatar_url.startsWith('https://api.dicebear.com/')
+    // 允许的预设头像来源（本地 /assets/avatars/）和已上传的自定义头像
+    const isPreset = avatar_url.startsWith('/assets/avatars/')
     const isUploaded = avatar_url.startsWith('/uploads/avatars/')
     if (!isPreset && !isUploaded) {
       return fail(res, '头像地址不合法')

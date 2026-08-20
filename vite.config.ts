@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import type { ProxyOptions } from 'vite'
+import pkg from './package.json'
 
 const apiProxy: ProxyOptions = {
   target: 'http://localhost:3001',
@@ -28,6 +29,9 @@ const apiProxy: ProxyOptions = {
 }
 
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   plugins: [
     react(),
     // PWA：支持"添加到主屏幕"、离线缓存，覆盖安卓/苹果双端浏览器场景
@@ -51,6 +55,8 @@ export default defineConfig({
         categories: ['business', 'productivity'],
       },
       workbox: {
+        // 允许大文件（antd chunk 超 2MB）预缓存
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         // 构建产物全量预缓存（html/js/css/img/svg/ico/png/webp/woff2），保证安装后离线可用首页/已缓存页面
         globPatterns: ['**/*.{html,js,css,png,svg,ico,webp,jpg,jpeg,woff2,ttf,json}'],
         // API / uploads 不缓存（实时数据）
