@@ -16,7 +16,7 @@ export default function MobileLogin() {
 
   useEffect(() => {
     if (currentUser) {
-      const redirect = searchParams.get('redirect') || '/mobile'
+      const redirect = searchParams.get('redirect') || '/mobile/home'
       navigate(redirect, { replace: true })
     }
   }, [currentUser, navigate, searchParams])
@@ -30,7 +30,7 @@ export default function MobileLogin() {
     const result = await login(username, password)
     if (result.success) {
       Toast.show({ icon: 'success', content: '登录成功' })
-      const redirect = searchParams.get('redirect') || '/mobile'
+      const redirect = searchParams.get('redirect') || '/mobile/home'
       setTimeout(() => navigate(redirect, { replace: true }), 300)
     } else {
       Toast.show({ icon: 'fail', content: result.message || '登录失败' })

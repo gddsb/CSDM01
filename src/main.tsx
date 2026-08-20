@@ -88,6 +88,14 @@ function AppRoutes() {
   const { currentUser, initialized } = useApp()
   const location = useLocation()
   if (!initialized) return null
+
+  // Capacitor 原生 App：APK/IPA 启动时默认路径为 /，自动跳转到移动端主页
+  const win = window as any
+  const isNative = !!(win.Capacitor && (win.Capacitor.getPlatform?.() === 'android' || win.Capacitor.getPlatform?.() === 'ios'))
+  if (isNative && !location.pathname.startsWith('/mobile')) {
+    return <Navigate to="/mobile/home" replace />
+  }
+
   // 移动端独立路由（不进入 PC 端 MainLayout）
   if (location.pathname.startsWith('/mobile')) {
     return lazyPage(<MobileRoutes />)
