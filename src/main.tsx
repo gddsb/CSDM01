@@ -48,6 +48,13 @@ const DeviceArchive = lazy(() => import('./pages/device/DeviceManagement'))
 const CheckRecord = lazy(() => import('./pages/device/CheckRecord'))
 const Maintenance = lazy(() => import('./pages/device/Maintenance'))
 const DeviceOEE = lazy(() => import('./pages/device/DeviceOEE'))
+const DeviceFault = lazy(() => import('./pages/device/DeviceFault'))
+const DeviceInspection = lazy(() => import('./pages/device/DeviceInspection'))
+const DeviceMaintenancePlan = lazy(() => import('./pages/device/DeviceMaintenancePlan'))
+const DeviceSparePart = lazy(() => import('./pages/device/DeviceSparePart'))
+const DeviceCalibration = lazy(() => import('./pages/device/DeviceCalibration'))
+const DeviceDocumentPage = lazy(() => import('./pages/device/DeviceDocument'))
+const DeviceDashboard = lazy(() => import('./pages/device/DeviceDashboard'))
 const ProductionReport = lazy(() => import('./pages/report/ProductionReport'))
 const QualityReport = lazy(() => import('./pages/report/QualityReport'))
 const ExceptionReport = lazy(() => import('./pages/report/ExceptionReport'))
@@ -145,6 +152,13 @@ function AppRoutes() {
         <Route path="/device/check-records" element={lazyPage(<CheckRecord />)} />
         <Route path="/device/maintenance" element={lazyPage(<Maintenance />)} />
         <Route path="/device/oee" element={lazyPage(<DeviceOEE />)} />
+        <Route path="/device/fault" element={lazyPage(<DeviceFault />)} />
+        <Route path="/device/inspection" element={lazyPage(<DeviceInspection />)} />
+        <Route path="/device/maintenance-plan" element={lazyPage(<DeviceMaintenancePlan />)} />
+        <Route path="/device/spare-parts" element={lazyPage(<DeviceSparePart />)} />
+        <Route path="/device/calibration" element={lazyPage(<DeviceCalibration />)} />
+        <Route path="/device/documents" element={lazyPage(<DeviceDocumentPage />)} />
+        <Route path="/device/dashboard" element={lazyPage(<DeviceDashboard />)} />
         <Route path="/report/daily" element={lazyPage(<DailyReport />)} />
         <Route path="/report/monthly" element={lazyPage(<MonthlyReport />)} />
         <Route path="/report/efficiency" element={lazyPage(<EfficiencyReport />)} />

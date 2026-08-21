@@ -16,6 +16,7 @@ import {
   TruckOutline,
   StarOutline,
 } from 'antd-mobile-icons'
+import { CheckCircleOutlined, WarningOutlined } from '@ant-design/icons'
 import { useApp } from '../../contexts/AppContext'
 import { useTodoStats } from '../../hooks/useTodoStats'
 import './home.css'
@@ -26,6 +27,8 @@ const featureMenu = [
   { key: '/mobile/reporting', name: '生产报工', desc: '扫码快速报工', icon: <FillinOutline fontSize={26} />, color: '#4CAF50', bg: '#E8F5E9', enabled: true },
   { key: '/mobile/quality', name: '质量检验', desc: '来料/过程/成品', icon: <CheckShieldOutline fontSize={26} />, color: '#9C27B0', bg: '#F3E5F5', enabled: true },
   { key: '/mobile/inspection', name: '设备巡检', desc: '日常/月度巡检', icon: <SetOutline fontSize={26} />, color: '#00BCD4', bg: '#E0F7FA', enabled: true },
+  { key: '/mobile/device-inspection', name: '设备点检', desc: '今日点检任务', icon: <CheckCircleOutlined style={{ fontSize: 26 }} />, color: '#4CAF50', bg: '#E8F5E9', enabled: true },
+  { key: '/mobile/device-fault', name: '故障上报', desc: '设备故障上报', icon: <WarningOutlined style={{ fontSize: 26 }} />, color: '#F44336', bg: '#FFEBEE', enabled: true },
   { key: '/mobile/craft', name: '工艺查询', desc: 'BOM/SOP 查看', icon: <SearchOutline fontSize={26} />, color: '#FF9800', bg: '#FFF3E0', enabled: false },
   { key: '/mobile/trace', name: '工单追踪', desc: '全过程追溯', icon: <ClockCircleOutline fontSize={26} />, color: '#E91E63', bg: '#FCE4EC', enabled: false },
   { key: '/mobile/exception', name: '异常上报', desc: '设备/质量异常', icon: <ExclamationOutline fontSize={26} />, color: '#F44336', bg: '#FFEBEE', enabled: false },

@@ -58,6 +58,20 @@ import QualityEnvInspectionItem from './QualityEnvInspectionItem.js'
 import QualitySupplierComplaint from './QualitySupplierComplaint.js'
 import QualityComplaint from './QualityComplaint.js'
 import QualityComplaintRecord from './QualityComplaintRecord.js'
+import DeviceFault from './DeviceFault.js'
+import DeviceFaultRepair from './DeviceFaultRepair.js'
+import DeviceImage from './DeviceImage.js'
+import DeviceInspectionStandard from './DeviceInspectionStandard.js'
+import DeviceInspectionPlan from './DeviceInspectionPlan.js'
+import DeviceInspectionRecord from './DeviceInspectionRecord.js'
+import DeviceMaintenanceStandard from './DeviceMaintenanceStandard.js'
+import DeviceMaintenanceRecord from './DeviceMaintenanceRecord.js'
+import DeviceRuntimeLog from './DeviceRuntimeLog.js'
+import DeviceCalibrationPlan from './DeviceCalibrationPlan.js'
+import DeviceCalibrationRecord from './DeviceCalibrationRecord.js'
+import DeviceSparePart from './DeviceSparePart.js'
+import DeviceSparePartLog from './DeviceSparePartLog.js'
+import DeviceDocument from './DeviceDocument.js'
 
 // 建立模型关联关系
 // 用户 - 角色
@@ -238,6 +252,44 @@ QcInspectionItem.belongsTo(InspectionStandardItem, {
   constraints: false,
 })
 
+// 设备故障 - 维修记录（一对一）
+DeviceFault.hasOne(DeviceFaultRepair, { foreignKey: 'fault_id', as: 'repair_record', onDelete: 'CASCADE' })
+DeviceFaultRepair.belongsTo(DeviceFault, { foreignKey: 'fault_id', as: 'fault' })
+
+// 设备故障 - 图片（一对多，多态）
+DeviceFault.hasMany(DeviceImage, { foreignKey: 'doc_id', scope: { doc_type: 'fault' }, as: 'fault_images', constraints: false })
+DeviceFaultRepair.hasMany(DeviceImage, { foreignKey: 'doc_id', scope: { doc_type: 'repair' }, as: 'repair_images', constraints: false })
+
+// 设备点检
+DeviceInspectionStandard.belongsTo(Device, { foreignKey: 'device_id', as: 'device', constraints: false })
+DeviceInspectionPlan.belongsTo(Device, { foreignKey: 'device_id', as: 'device', constraints: false })
+DeviceInspectionPlan.hasMany(DeviceInspectionRecord, { foreignKey: 'plan_id', as: 'records', onDelete: 'CASCADE' })
+DeviceInspectionRecord.belongsTo(DeviceInspectionPlan, { foreignKey: 'plan_id', as: 'plan' })
+// 点检图片关联（复用 DeviceImage 模型，doc_type='inspection'）
+DeviceInspectionPlan.hasMany(DeviceImage, { foreignKey: 'doc_id', scope: { doc_type: 'inspection' }, as: 'inspection_images', constraints: false })
+
+// 设备维护 - 设备（多对一，多态，无物理FK约束）
+DeviceMaintenanceStandard.belongsTo(Device, { foreignKey: 'device_id', as: 'device', constraints: false })
+DeviceMaintenanceRecord.belongsTo(Device, { foreignKey: 'device_id', as: 'device', constraints: false })
+DeviceMaintenanceRecord.belongsTo(DeviceMaintenanceStandard, { foreignKey: 'standard_id', as: 'standard', constraints: false })
+DeviceRuntimeLog.belongsTo(Device, { foreignKey: 'device_id', as: 'device', constraints: false })
+// 维护工单 - 维护图片（一对多，多态）
+DeviceMaintenanceRecord.hasMany(DeviceImage, { foreignKey: 'doc_id', scope: { doc_type: 'maintenance' }, as: 'maintenance_images', constraints: false })
+
+// 设备校准
+DeviceCalibrationPlan.belongsTo(Device, { foreignKey: 'device_id', as: 'device', constraints: false })
+DeviceCalibrationPlan.hasMany(DeviceCalibrationRecord, { foreignKey: 'plan_id', as: 'records', onDelete: 'CASCADE' })
+DeviceCalibrationRecord.belongsTo(DeviceCalibrationPlan, { foreignKey: 'plan_id', as: 'plan' })
+// 校准证书图片关联（复用 DeviceImage 模型，doc_type='calibration'）
+DeviceCalibrationRecord.hasMany(DeviceImage, { foreignKey: 'doc_id', scope: { doc_type: 'calibration' }, as: 'calibration_images', constraints: false })
+
+// 设备备件 - 出入库流水（一对多）
+DeviceSparePart.hasMany(DeviceSparePartLog, { foreignKey: 'part_id', as: 'logs' })
+DeviceSparePartLog.belongsTo(DeviceSparePart, { foreignKey: 'part_id', as: 'part' })
+
+// 设备电子档案 - 设备（多对一，多态，无物理FK约束）
+DeviceDocument.belongsTo(Device, { foreignKey: 'device_id', as: 'device', constraints: false })
+
 const db = {
   sequelize,
   DataTypes,
@@ -297,6 +349,20 @@ const db = {
   QualityComplaint,
   QualityComplaintRecord,
   QualitySupplierComplaint,
+  DeviceFault,
+  DeviceFaultRepair,
+  DeviceImage,
+  DeviceInspectionStandard,
+  DeviceInspectionPlan,
+  DeviceInspectionRecord,
+  DeviceMaintenanceStandard,
+  DeviceMaintenanceRecord,
+  DeviceRuntimeLog,
+  DeviceCalibrationPlan,
+  DeviceCalibrationRecord,
+  DeviceSparePart,
+  DeviceSparePartLog,
+  DeviceDocument,
 }
 
 // 具名导出，便于按需导入
@@ -357,6 +423,20 @@ export {
   QualityComplaint,
   QualityComplaintRecord,
   QualitySupplierComplaint,
+  DeviceFault,
+  DeviceFaultRepair,
+  DeviceImage,
+  DeviceInspectionStandard,
+  DeviceInspectionPlan,
+  DeviceInspectionRecord,
+  DeviceMaintenanceStandard,
+  DeviceMaintenanceRecord,
+  DeviceRuntimeLog,
+  DeviceCalibrationPlan,
+  DeviceCalibrationRecord,
+  DeviceSparePart,
+  DeviceSparePartLog,
+  DeviceDocument,
 }
 
 // 别名：统一以模型业务名对外暴露，兼容控制器与测试中的既有引用

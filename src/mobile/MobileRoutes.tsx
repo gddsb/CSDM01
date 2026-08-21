@@ -4,6 +4,8 @@ import { useApp } from '../contexts/AppContext'
 import MobileLayout from './MobileLayout'
 import MobileLogin from './pages/MobileLogin'
 import MobileHome from './pages/MobileHome'
+import MobileDeviceInspection from './pages/MobileDeviceInspection'
+import MobileDeviceFault from './pages/MobileDeviceFault'
 import OrderList from './pages/production/OrderList'
 import OrderDetail from './pages/production/OrderDetail'
 import ReportList from './pages/production/ReportList'
@@ -36,6 +38,8 @@ export default function MobileRoutes() {
         <Route path="orders/:id" element={<OrderDetail />} />
         <Route path="reporting" element={<ReportList />} />
         <Route path="reporting/:id" element={<ReportDetail />} />
+        <Route path="device-inspection" element={<MobileDeviceInspection />} />
+        <Route path="device-fault" element={<MobileDeviceFault />} />
         <Route path="device" element={<PlaceholderPage title="设备" />} />
         <Route path="messages" element={<PlaceholderPage title="消息" />} />
         <Route path="profile" element={<ProfilePage />} />

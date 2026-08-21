@@ -77,6 +77,12 @@ import MicrobeInspectionController from '../controllers/MicrobeInspectionControl
 import EnvInspectionController from '../controllers/EnvInspectionController.js'
 import ComplaintController from '../controllers/ComplaintController.js'
 import SupplierComplaintController from '../controllers/SupplierComplaintController.js'
+import DeviceFaultController from '../controllers/DeviceFaultController.js'
+import DeviceInspectionController from '../controllers/DeviceInspectionController.js'
+import DeviceMaintenanceController from '../controllers/DeviceMaintenanceController.js'
+import DeviceCalibrationController from '../controllers/DeviceCalibrationController.js'
+import DeviceSparePartController from '../controllers/DeviceSparePartController.js'
+import DeviceDocumentController from '../controllers/DeviceDocumentController.js'
 import { authRequired, logOperation } from '../middleware/auth.js'
 
 const router = Router()
@@ -88,6 +94,83 @@ const defectUploadMiddleware = multer({
   fileFilter: (req, file, cb) => {
     if (!file.mimetype || !file.mimetype.startsWith('image/')) {
       return cb(new Error('请上传图片格式的文件'))
+    }
+    cb(null, true)
+  },
+})
+
+// 故障图片上传 multer 配置（与不良图片相同规则，复用一份配置）
+const deviceFaultUploadMiddleware = multer({
+  dest: 'uploads/tmp/',
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype || !file.mimetype.startsWith('image/')) {
+      return cb(new Error('请上传图片格式的文件'))
+    }
+    cb(null, true)
+  },
+})
+
+// 点检图片上传 multer 配置（同上规则）
+const inspectionUploadMiddleware = multer({
+  dest: 'uploads/tmp/',
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype || !file.mimetype.startsWith('image/')) {
+      return cb(new Error('请上传图片格式的文件'))
+    }
+    cb(null, true)
+  },
+})
+
+// 维护图片上传 multer 配置（同上规则）
+const deviceMaintenanceUploadMiddleware = multer({
+  dest: 'uploads/tmp/',
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype || !file.mimetype.startsWith('image/')) {
+      return cb(new Error('请上传图片格式的文件'))
+    }
+    cb(null, true)
+  },
+})
+
+// 校准证书上传 multer 配置（支持图片与 PDF）
+const calibrationUploadMiddleware = multer({
+  dest: 'uploads/tmp/',
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype || (!file.mimetype.startsWith('image/') && file.mimetype !== 'application/pdf')) {
+      return cb(new Error('请上传图片或PDF格式的文件'))
+    }
+    cb(null, true)
+  },
+})
+
+// 设备电子档案上传 multer 配置（支持 PDF/Office/图片/压缩包，单文件最大 50MB）
+const deviceDocumentUploadMiddleware = multer({
+  dest: 'uploads/tmp/',
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain',
+      'application/zip',
+      'application/x-zip-compressed',
+      'application/x-rar-compressed',
+    ]
+    const isImage = file.mimetype && file.mimetype.startsWith('image/')
+    const isOffice = file.mimetype && allowed.includes(file.mimetype)
+    // 允许部分 octet-stream（某些环境下 doc/xls 会被识别为此类型）
+    if (file.mimetype === 'application/octet-stream') return cb(null, true)
+    if (!file.mimetype || (!isImage && !isOffice)) {
+      return cb(new Error('请上传 PDF/Word/Excel/PowerPoint/图片/压缩包格式文件'))
     }
     cb(null, true)
   },
@@ -258,5 +341,88 @@ router.put('/supplier-complaints/:id/issue', logOperation('发出投诉'), Suppl
 router.put('/supplier-complaints/:id/reply', logOperation('供应商回复'), SupplierComplaintController.reply)
 router.put('/supplier-complaints/:id/close', logOperation('关闭投诉'), SupplierComplaintController.close)
 router.get('/supplier-complaints/:id/pdf', SupplierComplaintController.generatePdf)
+
+// 设备故障管理
+router.get('/device-faults', DeviceFaultController.list)
+router.get('/device-faults/:id', DeviceFaultController.detail)
+router.post('/device-faults', logOperation('设备故障上报'), DeviceFaultController.create)
+router.put('/device-faults/:id/assign', logOperation('故障派工'), DeviceFaultController.assign)
+router.put('/device-faults/:id/repair', logOperation('提交维修'), DeviceFaultController.submitRepair)
+router.put('/device-faults/:id/approve', logOperation('故障审批'), DeviceFaultController.approve)
+router.put('/device-faults/:id/close', logOperation('关闭故障'), DeviceFaultController.close)
+router.delete('/device-faults/:id', logOperation('删除故障'), DeviceFaultController.delete)
+// 故障图片
+router.get('/device-faults/:id/images', DeviceFaultController.getImages)
+router.post('/device-faults/:id/images', deviceFaultUploadMiddleware.array('images', 10), logOperation('上传故障图片'), DeviceFaultController.uploadImage)
+
+// 设备点检标准
+router.get('/device-inspection-standards', DeviceInspectionController.listStandards)
+router.post('/device-inspection-standards', logOperation('点检标准'), DeviceInspectionController.createStandard)
+router.put('/device-inspection-standards/:id', logOperation('点检标准'), DeviceInspectionController.updateStandard)
+router.delete('/device-inspection-standards/:id', logOperation('点检标准'), DeviceInspectionController.deleteStandard)
+
+// 设备点检计划
+router.get('/device-inspection-plans', DeviceInspectionController.listPlans)
+router.get('/device-inspection-plans/:id', DeviceInspectionController.detailPlan)
+router.post('/device-inspection-plans/generate', logOperation('生成点检计划'), DeviceInspectionController.generatePlans)
+router.put('/device-inspection-plans/:id/submit', logOperation('提交点检'), DeviceInspectionController.submitInspection)
+router.get('/device-inspection-plans/:id/images', DeviceInspectionController.getImages)
+router.post('/device-inspection-plans/:id/images', inspectionUploadMiddleware.array('images', 10), logOperation('上传点检图片'), DeviceInspectionController.uploadImage)
+
+// 设备点检记录
+router.get('/device-inspection-records', DeviceInspectionController.listRecords)
+
+// 设备维护标准
+router.get('/device-maintenance-standards', DeviceMaintenanceController.listStandards)
+router.post('/device-maintenance-standards', logOperation('维护标准'), DeviceMaintenanceController.createStandard)
+router.put('/device-maintenance-standards/:id', logOperation('维护标准'), DeviceMaintenanceController.updateStandard)
+router.delete('/device-maintenance-standards/:id', logOperation('维护标准'), DeviceMaintenanceController.deleteStandard)
+
+// 设备维护工单
+router.get('/device-maintenance-records', DeviceMaintenanceController.listRecords)
+router.get('/device-maintenance-records/:id', DeviceMaintenanceController.detailRecord)
+router.post('/device-maintenance-records/generate', logOperation('生成维护工单'), DeviceMaintenanceController.generateRecords)
+router.put('/device-maintenance-records/:id/start', logOperation('开始维护'), DeviceMaintenanceController.startRecord)
+router.put('/device-maintenance-records/:id/submit', logOperation('提交维护'), DeviceMaintenanceController.submitRecord)
+router.delete('/device-maintenance-records/:id', logOperation('删除维护工单'), DeviceMaintenanceController.deleteRecord)
+router.get('/device-maintenance-records/:id/images', DeviceMaintenanceController.getImages)
+router.post('/device-maintenance-records/:id/images', deviceMaintenanceUploadMiddleware.array('images', 10), logOperation('上传维护图片'), DeviceMaintenanceController.uploadImage)
+
+// 设备运行时长
+router.post('/device-runtime-logs', logOperation('录入运行时长'), DeviceMaintenanceController.logRuntime)
+router.get('/device-runtime-logs', DeviceMaintenanceController.getRuntimeLog)
+
+// 设备备件管理
+router.get('/device-spare-parts', DeviceSparePartController.list)
+router.get('/device-spare-parts/low-stock/list', DeviceSparePartController.getLowStock)
+router.get('/device-spare-parts/:id', DeviceSparePartController.detail)
+router.post('/device-spare-parts', logOperation('备件管理'), DeviceSparePartController.create)
+router.put('/device-spare-parts/:id', logOperation('备件管理'), DeviceSparePartController.update)
+router.delete('/device-spare-parts/:id', logOperation('备件管理'), DeviceSparePartController.delete)
+router.post('/device-spare-parts/:id/stock-in', logOperation('备件入库'), DeviceSparePartController.stockIn)
+router.post('/device-spare-parts/:id/stock-out', logOperation('备件出库'), DeviceSparePartController.stockOut)
+router.post('/device-spare-parts/:id/adjust', logOperation('库存调整'), DeviceSparePartController.stockAdjust)
+router.get('/device-spare-part-logs', DeviceSparePartController.listLogs)
+
+// 设备校准管理
+router.get('/device-calibration-plans', DeviceCalibrationController.listPlans)
+router.get('/device-calibration-plans/expiring/list', DeviceCalibrationController.getExpiringSoon)
+router.get('/device-calibration-plans/overdue/list', DeviceCalibrationController.getOverdue)
+router.get('/device-calibration-plans/:id', DeviceCalibrationController.detailPlan)
+router.post('/device-calibration-plans', logOperation('校准计划'), DeviceCalibrationController.createPlan)
+router.put('/device-calibration-plans/:id', logOperation('校准计划'), DeviceCalibrationController.updatePlan)
+router.delete('/device-calibration-plans/:id', logOperation('校准计划'), DeviceCalibrationController.deletePlan)
+router.put('/device-calibration-plans/:id/submit', logOperation('提交校准'), DeviceCalibrationController.submitCalibration)
+router.post('/device-calibration-plans/:id/certificate', calibrationUploadMiddleware.array('images', 10), logOperation('上传证书'), DeviceCalibrationController.uploadCertificate)
+router.get('/device-calibration-records', DeviceCalibrationController.listRecords)
+
+// 设备电子档案管理
+router.get('/device-documents', DeviceDocumentController.list)
+router.get('/device-documents/by-device/:deviceId', DeviceDocumentController.listByDevice)
+router.get('/device-documents/:id/download', DeviceDocumentController.download)
+router.get('/device-documents/:id', DeviceDocumentController.detail)
+router.post('/device-documents', deviceDocumentUploadMiddleware.array('files', 10), logOperation('上传设备文档'), DeviceDocumentController.upload)
+router.put('/device-documents/:id', logOperation('更新设备文档'), DeviceDocumentController.update)
+router.delete('/device-documents/:id', logOperation('删除设备文档'), DeviceDocumentController.delete)
 
 export default router
