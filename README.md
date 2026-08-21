@@ -1,6 +1,6 @@
 # 奶粉罐生产管理系统 (Milk Can MES)
 
-> 版本：V1.0.1.735
+> 版本：V1.0.1.736
 >
 > 东莞市大满包装实业有限公司长沙分公司 — 奶粉罐生产制造执行系统
 
@@ -181,6 +181,13 @@
 | 点检记录 | `/device/check-records` | 设备日常点检记录；**筛选区支持月份快速选择**（本月/上月/近3个月/近6个月/今年/去年），默认显示本月，查询跨度最大12个月，超3个月显示长查询警告 |
 | 维修保养 | `/device/maintenance` | 设备维修计划与保养记录；**筛选区支持月份快速选择**（本月/上月/近3个月/近6个月/今年/去年），默认显示本月，查询跨度最大12个月，超3个月显示长查询警告 |
 | 设备OEE | `/device/oee` | 设备综合效率分析；**筛选区支持月份快速选择**（本月/上月/近3个月/近6个月/今年/去年），默认显示本月，查询跨度最大12个月，超3个月显示长查询警告 |
+| 设备故障管理 | `/device/fault` | 故障上报→派工→维修→成本核算→审批关闭全流程；三级故障等级（一般/严重/紧急）；维修成本自动核算（备件+人工+外协）；支持故障照片和维修后照片上传 |
+| 设备点检管理 | `/device/inspection` | 点检标准配置（定性/定量）、每日点检计划生成、点检录入（支持拍照上传）、异常项自动转故障工单 |
+| 设备维护管理 | `/device/maintenance-plan` | 双模式触发：固定周期（日/周/月/季）+ 运行时长阈值；维护标准配置、工单自动生成、维护执行记录（含备件使用和照片上传）、运行时长手动录入（预留IoT自动采集） |
+| 设备备件管理 | `/device/spare-parts` | 备件档案管理、采购入库、领用出库（关联工单）、库存预警（安全库存上下限）、库存盘点调整、出入库流水查询 |
+| 设备校准管理 | `/device/calibration` | 计量器具校准计划（周期6/12个月）、到期提醒（30/15/7天）、校准结果记录（合格/不合格）、校准证书上传与管理、超期未校准锁定 |
+| 设备电子档案 | `/device/documents` | 出厂资料/验收资料/外保记录/内部维修/改造记录分类管理；支持PDF/Word/Excel/图片上传；在线预览与下载；版本管理；有效期提醒 |
+| 设备看板 | `/device/dashboard` | 设备状态看板、维护到期看板、点检待办看板、故障工单看板、备件预警看板、校准到期看板；60秒自动刷新 |
 
 ### 6. 自动任务
 
@@ -2007,6 +2014,36 @@ mysqldump -u <user> -p milk_can_mes > /opt/backups/milk_can_mes_$(date +%Y%m%d_%
 | GET/POST/DELETE | `/basic/lines/:id/devices` | 产线设备关联 |
 | GET/POST/PUT/DELETE | `/basic/processes` | 工序档案 |
 | GET/POST/PUT/DELETE | `/basic/devices` | 设备档案 |
+| GET/POST/PUT/DELETE | `/basic/device-faults` | 设备故障管理 |
+| PUT | `/basic/device-faults/:id/assign` | 故障派工 |
+| PUT | `/basic/device-faults/:id/repair` | 提交维修记录 |
+| PUT | `/basic/device-faults/:id/approve` | 故障审批 |
+| GET/POST | `/basic/device-faults/:id/images` | 故障图片管理 |
+| GET/POST/PUT/DELETE | `/basic/device-inspection-standards` | 点检标准 |
+| GET/POST | `/basic/device-inspection-plans` | 点检计划 |
+| GET | `/basic/device-inspection-plans/:id` | 点检计划详情 |
+| POST | `/basic/device-inspection-plans/generate` | 生成当日点检计划 |
+| PUT | `/basic/device-inspection-plans/:id/submit` | 提交点检结果 |
+| GET/POST | `/basic/device-inspection-plans/:id/images` | 点检图片管理 |
+| GET/POST/PUT/DELETE | `/basic/device-maintenance-standards` | 维护标准 |
+| GET/POST | `/basic/device-maintenance-records` | 维护工单 |
+| POST | `/basic/device-maintenance-records/generate` | 生成维护工单 |
+| PUT | `/basic/device-maintenance-records/:id/start` | 开始维护 |
+| PUT | `/basic/device-maintenance-records/:id/submit` | 提交维护结果 |
+| GET/POST | `/basic/device-runtime-logs` | 设备运行时长 |
+| GET/POST/PUT/DELETE | `/basic/device-spare-parts` | 备件档案 |
+| POST | `/basic/device-spare-parts/:id/stock-in` | 备件入库 |
+| POST | `/basic/device-spare-parts/:id/stock-out` | 备件出库 |
+| POST | `/basic/device-spare-parts/:id/adjust` | 库存调整 |
+| GET | `/basic/device-spare-parts/low-stock/list` | 低库存预警 |
+| GET | `/basic/device-spare-part-logs` | 出入库流水 |
+| GET/POST/PUT/DELETE | `/basic/device-calibration-plans` | 校准计划 |
+| PUT | `/basic/device-calibration-plans/:id/submit` | 提交校准结果 |
+| GET | `/basic/device-calibration-plans/expiring/list` | 即将到期校准 |
+| GET | `/basic/device-calibration-plans/overdue/list` | 已超期校准 |
+| GET/POST | `/basic/device-documents` | 设备电子档案 |
+| GET | `/basic/device-documents/by-device/:deviceId` | 按设备查询档案 |
+| GET | `/basic/device-documents/:id/download` | 下载档案 |
 | GET/POST/PUT/DELETE | `/basic/defects` | 不良项目 |
 | GET/POST/DELETE | `/basic/defects/:id/images` | 不良图片 |
 | GET | `/basic/defects/next-code` | 下一个不良编码 |
@@ -2460,6 +2497,69 @@ type 类型：
 ---
 
 ## 更新日志
+
+### V1.0.1.736（设备管理模块开发）
+
+新增设备管理 8 个功能模块，覆盖设备全生命周期管理：
+
+**设备故障管理**
+- 故障上报→派工→维修→成本核算→审批关闭全流程
+- 三级故障等级：一般（不影响生产）、严重（影响产能）、紧急（停机）
+- 维修成本自动核算：备件费用 + 人工成本（工时×时薪）+ 外协费用
+- 支持故障照片和维修后照片上传，按单据类型分目录归档
+
+**设备点检管理**
+- 点检标准配置：支持定性（正常/异常）和定量（数值范围）两种判定方式
+- 每日点检计划自动生成，指派点检人员
+- 点检录入支持拍照上传，异常项自动创建故障工单
+- 漏检提醒
+
+**设备维护管理（双模式触发）**
+- 固定周期触发：按日/周/月/季自动生成维护工单
+- 运行时长触发：手动录入设备运行小时数（从面板抄录），达到阈值自动生成工单
+- 维护标准配置、工单全流程执行（含备件使用和照片上传）
+- 预留 IoT 自动采集接口
+
+**设备备件管理**
+- 备件档案管理（编号、规格、适用设备、安全库存上下限、库位）
+- 采购入库、领用出库（关联维护/维修工单）、库存盘点调整
+- 库存低于安全下限时看板预警，生成采购建议
+- 完整出入库流水查询
+
+**设备校准管理**
+- 计量器具校准计划（周期 6/12 个月），自动计算下次校准日期
+- 到期提醒（提前 30/15/7 天），超期未校准标记锁定
+- 校准结果记录（合格/不合格），校准证书上传与管理
+- 不合格计量器具禁止使用
+
+**设备电子档案管理**
+- 五类档案分类：出厂资料、验收资料、外保记录、内部维修、改造记录
+- 支持 PDF/Word/Excel/图片上传，单文件限制 50MB
+- PDF 和图片支持在线预览，按文档类型分目录归档
+- 版本管理，外保合同/质保有效期提醒
+
+**设备看板**
+- 六大看板：设备状态、维护到期、点检待办、故障工单、备件预警、校准到期
+- 60 秒自动刷新，支持手动刷新
+- 预留 IoT 设备数据自动采集接口
+
+**移动端**
+- 移动端设备点检：扫码/选择设备，逐项点检，拍照上传
+- 移动端故障上报：快速上报故障，拍照上传，查看历史故障
+
+**图片管理规范**
+- 按单据类型分目录：`uploads/device/fault/`、`inspection/`、`maintenance/`、`calibration/`
+- 文件命名规范：`{单据类型}_{单据号}_{序号}_{时间戳}.ext`
+
+**数据库新增 14 张表**
+- `device_fault`、`device_fault_repair`、`device_image`
+- `device_inspection_standard`、`device_inspection_plan`、`device_inspection_record`
+- `device_maintenance_standard`、`device_maintenance_record`、`device_runtime_log`
+- `device_spare_part`、`device_spare_part_log`
+- `device_calibration_plan`、`device_calibration_record`
+- `device_document`
+
+---
 
 ### V1.0.1.735（项目清理与检验页面优化）
 
