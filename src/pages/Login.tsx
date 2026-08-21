@@ -106,7 +106,7 @@ export default function Login() {
 
       <div className="login-footer">
         <Text type="secondary" style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
-          © 2026 大满包装 · 长沙大满MES V1.0.1.722
+          © 2026 大满包装 · 长沙大满MES V1.0.1.736
         </Text>
       </div>
     </div>
