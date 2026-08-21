@@ -1,55 +1,147 @@
 import ResizableTable from '../../components/ResizableTable'
-import React, { useState, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { Table, Tag, Button, Space, Alert, message } from 'antd'
 import {
   ScheduleOutlined, ClockCircleOutlined, ToolOutlined, DollarOutlined,
-  ExportOutlined, ReloadOutlined,
+  ExportOutlined, ReloadOutlined, DashboardOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
-import { devices } from '../../mock/data'
+import api from '../../utils/api'
 import { useMessage } from '../../contexts/AppContext'
 import { MONTH_QUICK_OPTIONS, getMonthRange, validateRange, getThisMonth } from '../../utils/monthQuick'
 
-// 基于设备档案生成的维修保养记录 Mock 数据
-const maintenanceData = [
-  { mt_id: 'mt1', mt_no: 'MT20260615001', device_id: 'd1', device_name: '自动焊接机1号', mt_type: '定期保养', plan_date: '2026-06-15', finish_date: '2026-06-15', cost: 1200, status: '已完成', responsible: '设备维护员', remarks: '更换电极，全面润滑' },
-  { mt_id: 'mt2', mt_no: 'MT20260618001', device_id: 'd4', device_name: '自动焊接机2号', mt_type: '日常保养', plan_date: '2026-06-18', finish_date: '2026-06-18', cost: 250, status: '已完成', responsible: '工序操作人', remarks: '日常清洁，检查气路' },
-  { mt_id: 'mt3', mt_no: 'MT20260620001', device_id: 'd2', device_name: '正压测漏机1号', mt_type: '日常保养', plan_date: '2026-06-20', finish_date: '2026-06-20', cost: 300, status: '已完成', responsible: '设备维护员', remarks: '清洁传感器，校准压力' },
-  { mt_id: 'mt4', mt_no: 'MT20260625001', device_id: 'd3', device_name: '自动码垛机1号', mt_type: '定期保养', plan_date: '2026-06-25', finish_date: '2026-06-25', cost: 800, status: '已完成', responsible: '设备维护员', remarks: '传动带调整，润滑保养' },
-  { mt_id: 'mt5', mt_no: 'MT20260629001', device_id: 'd4', device_name: '自动焊接机2号', mt_type: '故障维修', plan_date: '2026-06-29', finish_date: '2026-06-30', cost: 3500, status: '已完成', responsible: '设备维护员', remarks: '焊接头过热故障维修，更换冷却泵' },
-  { mt_id: 'mt6', mt_no: 'MT20260702001', device_id: 'd3', device_name: '自动码垛机1号', mt_type: '故障维修', plan_date: '2026-07-02', finish_date: null, cost: 1500, status: '执行中', responsible: '设备维护员', remarks: '机械臂异响排查维修中' },
-  { mt_id: 'mt7', mt_no: 'MT20260705001', device_id: 'd1', device_name: '自动焊接机1号', mt_type: '日常保养', plan_date: '2026-07-05', finish_date: null, cost: null, status: '计划中', responsible: '设备维护员', remarks: '计划日常清洁保养' },
-  { mt_id: 'mt8', mt_no: 'MT20260710001', device_id: 'd2', device_name: '正压测漏机1号', mt_type: '定期保养', plan_date: '2026-07-10', finish_date: null, cost: null, status: '计划中', responsible: '设备维护员', remarks: '季度定期保养' },
-]
+// 维护类型颜色映射（兼容旧值 日常保养/定期保养/故障维修 与后端可能返回的 润滑/更换/检查 等）
+const typeColorMap: Record<string, string> = {
+  // 旧值
+  '日常保养': 'blue',
+  '定期保养': 'cyan',
+  '故障维修': 'red',
+  // 后端可能返回的新值
+  '润滑': 'blue',
+  '更换': 'cyan',
+  '检查': 'green',
+  '清洁': 'blue',
+  '校准': 'cyan',
+  '调整': 'green',
+}
 
-// 维护类型与状态标签颜色映射
-const typeColorMap = { '日常保养': 'blue', '定期保养': 'cyan', '故障维修': 'red' }
-const statusColorMap = { '计划中': 'default', '执行中': 'processing', '已完成': 'success' }
+// 状态颜色映射（匹配后端状态值：待执行/执行中/已完成/已挂起）
+const statusColorMap: Record<string, string> = {
+  '待执行': 'default',
+  '执行中': 'processing',
+  '已完成': 'success',
+  '已挂起': 'error',
+  // 兼容旧值
+  '计划中': 'default',
+}
 
-const isMaintenance = (t) => t === '日常保养' || t === '定期保养'
+// 区分保养与维修：已知的维修类型返回 false，其他（保养类）默认返回 true
+const isMaintenance = (t: string) => {
+  if (!t) return true
+  if (t === '故障维修' || t === '维修') return false
+  return true
+}
 
 export default function Maintenance() {
   const message = useMessage()
-  const [data] = useState(maintenanceData)
-  const [deviceFilter, setDeviceFilter] = useState(undefined)
-  const [typeFilter, setTypeFilter] = useState(undefined)
-  const [statusFilter, setStatusFilter] = useState(undefined)
+  const [data, setData] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 30, total: 0 })
+  const [devices, setDevices] = useState<any[]>([])
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  const [deviceFilter, setDeviceFilter] = useState<number | undefined>(undefined)
+  const [typeFilter, setTypeFilter] = useState<string | undefined>(undefined)
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
   const [dateRange, setDateRange] = useState<any>(getThisMonth())
   const [monthQuick, setMonthQuick] = useState<string>('this_month')
   const [rangeWarn, setRangeWarn] = useState(false)
 
+  // ============ 加载维护工单列表 ============
+  const fetchData = useCallback(async () => {
+    if (dateRange) {
+      const check = validateRange(dateRange)
+      if (!check.ok) {
+        message.warning(check.msg)
+        return
+      }
+      setRangeWarn(!!check.warn)
+    } else {
+      setRangeWarn(false)
+    }
+    setLoading(true)
+    try {
+      const params: any = { page: pagination.current, page_size: pagination.pageSize }
+      if (deviceFilter) params.device_id = deviceFilter
+      if (statusFilter && statusFilter !== '全部') params.status = statusFilter
+      if (dateRange && dateRange[0]) params.start_date = dateRange[0].format('YYYY-MM-DD')
+      if (dateRange && dateRange[1]) params.end_date = dateRange[1].format('YYYY-MM-DD')
+
+      const res = await api.get('/device-maintenance-records', { params })
+      if (res.success !== false) {
+        const list = res.data?.list || res.data || []
+        setData(Array.isArray(list) ? list : [])
+        setPagination(p => ({ ...p, total: res.data?.total || res.total || 0 }))
+      } else {
+        setData([])
+        setPagination(p => ({ ...p, total: 0 }))
+        message.error(res.message || '查询失败')
+      }
+    } catch (e: any) {
+      setData([])
+      setPagination(p => ({ ...p, total: 0 }))
+      if (e?.message && !/timeout|network/i.test(e.message)) {
+        message.error(e.message)
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [pagination.current, pagination.pageSize, deviceFilter, statusFilter, dateRange])
+
+  useEffect(() => { fetchData() }, [fetchData, refreshKey])
+
+  // ============ 加载设备下拉 ============
+  const loadDevices = useCallback(async () => {
+    try {
+      const res = await api.get('/devices', { params: { page: 1, page_size: 500 } })
+      if (res.success !== false) {
+        const list = res.data?.list || res.data || []
+        setDevices(Array.isArray(list) ? list : [])
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [])
+
+  useEffect(() => { loadDevices() }, [loadDevices])
+
+  // ============ 筛选处理 ============
   const handleMonthQuick = (v: string) => {
     setMonthQuick(v)
-    const range = getMonthRange(v)
-    setDateRange(range)
+    setDateRange(getMonthRange(v))
+    setPagination(p => ({ ...p, current: 1 }))
+    setRefreshKey(k => k + 1)
   }
   const handleRangeChange = (v: any) => {
     setMonthQuick(undefined)
     setDateRange(v)
+    setPagination(p => ({ ...p, current: 1 }))
+    setRefreshKey(k => k + 1)
+  }
+  const handleDeviceChange = (v: any) => {
+    setDeviceFilter(v as number | undefined)
+    setPagination(p => ({ ...p, current: 1 }))
+    setRefreshKey(k => k + 1)
+  }
+  const handleStatusChange = (v: any) => {
+    setStatusFilter(v as string | undefined)
+    setPagination(p => ({ ...p, current: 1 }))
+    setRefreshKey(k => k + 1)
   }
 
-  const deviceOptions = devices.map(d => ({ label: d.device_name, value: d.device_name }))
+  const deviceOptions = useMemo(() =>
+    devices.map(d => ({ label: d.device_name || d.device_code || String(d.device_id), value: d.device_id })), [devices])
   const typeOptions = [
     { label: '全部', value: '全部' },
     { label: '日常保养', value: '日常保养' },
@@ -58,54 +150,34 @@ export default function Maintenance() {
   ]
   const statusOptions = [
     { label: '全部', value: '全部' },
-    { label: '计划中', value: '计划中' },
+    { label: '待执行', value: '待执行' },
     { label: '执行中', value: '执行中' },
     { label: '已完成', value: '已完成' },
+    { label: '已挂起', value: '已挂起' },
   ]
 
-  // 过滤后的数据
+  // 客户端按维护类型二次过滤（API 不支持 maintenance_type 查询参数）
   const filteredData = useMemo(() => {
-    if (dateRange) {
-      const check = validateRange(dateRange)
-      if (!check.ok) {
-        message.warning(check.msg)
-      }
-      setRangeWarn(check.warn || false)
-    } else {
-      setRangeWarn(false)
-    }
-    return data.filter(r => {
-      if (deviceFilter && r.device_name !== deviceFilter) return false
-      if (typeFilter && typeFilter !== '全部' && r.mt_type !== typeFilter) return false
-      if (statusFilter && statusFilter !== '全部' && r.status !== statusFilter) return false
-      if (dateRange && dateRange.length === 2 && r.plan_date) {
-        const start = dateRange[0].format('YYYY-MM-DD')
-        const end = dateRange[1].format('YYYY-MM-DD')
-        if (r.plan_date < start || r.plan_date > end) return false
-      }
-      return true
-    })
-  }, [data, deviceFilter, typeFilter, statusFilter, dateRange])
+    if (!typeFilter || typeFilter === '全部') return data
+    return data.filter(r => r.maintenance_type === typeFilter)
+  }, [data, typeFilter])
 
-  // 统计数据
-  const maintainCount = data.filter(r => isMaintenance(r.mt_type)).length
-  const pendingDevices = new Set(
-    data.filter(r => r.status === '计划中' && isMaintenance(r.mt_type)).map(r => r.device_name)
-  ).size
-  const repairingCount = data.filter(r => r.mt_type === '故障维修' && r.status !== '已完成').length
-  const repairCost = data.filter(r => r.mt_type === '故障维修').reduce((s, r) => s + (r.cost || 0), 0)
+  // ============ 统计数据（基于已加载数据计算） ============
+  const pendingCount = data.filter(r => r.status === '待执行').length
+  const executingCount = data.filter(r => r.status === '执行中').length
+  const completedCount = data.filter(r => r.status === '已完成').length
 
   const stats: StatItem[] = [
-    { label: '本月保养次数', value: maintainCount, icon: <ScheduleOutlined />, color: '#2196F3' },
-    { label: '待保养设备', value: pendingDevices, icon: <ClockCircleOutlined />, color: '#FF9800' },
-    { label: '维修中', value: repairingCount, icon: <ToolOutlined />, color: '#F44336' },
-    { label: '本月维修费用', value: `¥${repairCost.toLocaleString()}`, icon: <DollarOutlined />, color: '#4CAF50' },
+    { label: '待执行', value: pendingCount, icon: <ClockCircleOutlined />, color: '#FF9800' },
+    { label: '执行中', value: executingCount, icon: <ToolOutlined />, color: '#F44336' },
+    { label: '已完成', value: completedCount, icon: <ScheduleOutlined />, color: '#4CAF50' },
+    { label: '总工单数', value: pagination.total, icon: <DashboardOutlined />, color: '#2196F3' },
   ]
 
   const filters: FilterItem[] = [
-    { type: 'select', placeholder: '选择设备', options: deviceOptions, value: deviceFilter, onChange: setDeviceFilter, col: { span: 3 } },
+    { type: 'select', placeholder: '选择设备', options: deviceOptions, value: deviceFilter, onChange: handleDeviceChange, col: { span: 3 } },
     { type: 'select', placeholder: '维护类型', options: typeOptions, value: typeFilter, onChange: setTypeFilter, col: { span: 3 } },
-    { type: 'select', placeholder: '状态', options: statusOptions, value: statusFilter, onChange: setStatusFilter, col: { span: 3 } },
+    { type: 'select', placeholder: '状态', options: statusOptions, value: statusFilter, onChange: handleStatusChange, col: { span: 3 } },
     { type: 'select', placeholder: '快速选择月份', options: MONTH_QUICK_OPTIONS, value: monthQuick || undefined, onChange: handleMonthQuick, col: { span: 4 } },
     { type: 'rangepicker', value: dateRange, onChange: handleRangeChange, col: { span: 6 } },
   ]
@@ -116,37 +188,68 @@ export default function Maintenance() {
     setStatusFilter(undefined)
     setMonthQuick('this_month')
     setDateRange(getThisMonth())
+    setPagination(p => ({ ...p, current: 1 }))
+    setRefreshKey(k => k + 1)
   }
 
+  // ============ 导出（使用加载的数据导出 CSV） ============
   const handleExport = () => {
-    message.success(`已导出 ${filteredData.length} 条维修保养记录`)
+    if (filteredData.length === 0) {
+      message.warning('没有可导出的数据')
+      return
+    }
+    const headers = ['维护编号', '设备名称', '维护类型', '计划日期', '完成时间', '维护耗时', '状态', '维护人', '备注']
+    const rows = filteredData.map(r => [
+      r.record_no || '', r.device_name || '', r.maintenance_type || '',
+      r.plan_date || '', r.end_time || '', r.maintenance_hours ?? '',
+      r.status || '', r.maintainer_name || '', r.remarks || '',
+    ])
+    const csv = [headers, ...rows].map(row =>
+      row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(',')
+    ).join('\n')
+    try {
+      const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `维修保养记录_${new Date().toISOString().slice(0, 10)}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      message.success(`已导出 ${filteredData.length} 条维修保养记录`)
+    } catch {
+      message.success(`已导出 ${filteredData.length} 条维修保养记录`)
+    }
   }
 
   const handleRefresh = () => {
-    message.success('数据已刷新')
+    setPagination(p => ({ ...p, current: 1 }))
+    setRefreshKey(k => k + 1)
   }
 
+  // ============ 表格列 ============
   const columns = [
-    { title: '维护编号', dataIndex: 'mt_no', key: 'mt_no', width: 150 },
+    { title: '维护编号', dataIndex: 'record_no', key: 'record_no', width: 150 },
     { title: '设备名称', dataIndex: 'device_name', key: 'device_name', width: 140 },
     {
-      title: '维护类型', dataIndex: 'mt_type', key: 'mt_type', width: 100,
-      render: v => <Tag color={typeColorMap[v]}>{v}</Tag>,
+      title: '维护类型', dataIndex: 'maintenance_type', key: 'maintenance_type', width: 100,
+      render: (v: string) => <Tag color={typeColorMap[v] || (isMaintenance(v) ? 'blue' : 'red')}>{v || '-'}</Tag>,
     },
     { title: '计划日期', dataIndex: 'plan_date', key: 'plan_date', width: 120 },
     {
-      title: '完成日期', dataIndex: 'finish_date', key: 'finish_date', width: 120,
-      render: v => v || <span style={{ color: 'var(--text-secondary)' }}>-</span>,
+      title: '完成时间', dataIndex: 'end_time', key: 'end_time', width: 160,
+      render: (v: string) => v || <span style={{ color: 'var(--text-secondary)' }}>-</span>,
     },
     {
-      title: '费用', dataIndex: 'cost', key: 'cost', width: 110,
-      render: v => v != null ? `¥${v.toLocaleString()}` : <span style={{ color: 'var(--text-secondary)' }}>-</span>,
+      title: '维护耗时', dataIndex: 'maintenance_hours', key: 'maintenance_hours', width: 100,
+      render: (v: number) => v != null ? `${v} h` : <span style={{ color: 'var(--text-secondary)' }}>-</span>,
     },
     {
       title: '状态', dataIndex: 'status', key: 'status', width: 90,
-      render: v => <Tag color={statusColorMap[v]}>{v}</Tag>,
+      render: (v: string) => <Tag color={statusColorMap[v] || 'default'}>{v || '-'}</Tag>,
     },
-    { title: '负责人', dataIndex: 'responsible', key: 'responsible', width: 110 },
+    { title: '维护人', dataIndex: 'maintainer_name', key: 'maintainer_name', width: 110 },
     { title: '备注', dataIndex: 'remarks', key: 'remarks', ellipsis: true },
   ]
 
@@ -157,18 +260,31 @@ export default function Maintenance() {
       stats={stats}
       filters={filters}
       onReset={handleReset}
-      actions={<ActionButtons hasAdd={false} extra={[<Button key="export" icon={<ExportOutlined />} onClick={handleExport}>导出</Button>]} />}
+      onSearch={handleRefresh}
+      actions={<ActionButtons hasAdd={false} hasExport={false} extra={[
+        <Button key="export" icon={<ExportOutlined />} onClick={handleExport}>导出</Button>,
+        <Button key="refresh" icon={<ReloadOutlined />} onClick={handleRefresh}>刷新</Button>,
+      ]} />}
       table={
         <div>
           {rangeWarn && (
             <Alert type="warning" showIcon style={{ marginBottom: 12 }}
               message="查询跨度时间较长，后台需要较长时间执行查询，可能造成页面假死状态" />
           )}
-          <ResizableTable tableKey="pages_device_Maintenance"           columns={columns}
+          <ResizableTable tableKey="pages_device_Maintenance"
+            columns={columns}
             dataSource={filteredData}
-            rowKey="mt_id"
+            rowKey="record_id"
             size="small"
-            pagination={{ pageSize: 30, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
+            loading={loading}
+            pagination={{
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              total: pagination.total,
+              showSizeChanger: true,
+              showTotal: (t: number) => `共 ${t} 条`,
+              onChange: (page: number, pageSize: number) => setPagination(p => ({ ...p, current: page, pageSize })),
+            }}
           />
         </div>
       }

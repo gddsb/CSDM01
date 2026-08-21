@@ -5,12 +5,14 @@ import { UserOutline, LockOutline } from 'antd-mobile-icons'
 import { useApp } from '../../contexts/AppContext'
 import './mobile-login.css'
 
+declare const __APP_VERSION__: string
+
 export default function MobileLogin() {
   const { login, currentUser } = useApp()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const [username, setUsername] = useState('admin')
-  const [password, setPassword] = useState('123456')
+  const [username, setUsername] = useState(localStorage.getItem('mes_last_username') || '')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [remember, setRemember] = useState(true)
 
@@ -29,6 +31,11 @@ export default function MobileLogin() {
     setLoading(true)
     const result = await login(username, password)
     if (result.success) {
+      if (remember) {
+        localStorage.setItem('mes_last_username', username)
+      } else {
+        localStorage.removeItem('mes_last_username')
+      }
       Toast.show({ icon: 'success', content: '登录成功' })
       const redirect = searchParams.get('redirect') || '/mobile/home'
       setTimeout(() => navigate(redirect, { replace: true }), 300)
@@ -118,7 +125,7 @@ export default function MobileLogin() {
         </div>
 
         <div className="m-login-footer">
-          © 2026 大满包装 · 长沙大满MES
+          © 2026 大满包装 · 长沙大满MES V{__APP_VERSION__}
         </div>
       </div>
     </div>

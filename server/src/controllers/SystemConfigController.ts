@@ -33,6 +33,7 @@ const BACKUP_DIR = process.env.BACKUP_DIR || path.resolve(__dirname, '../../back
 const SQLITE_PATH = process.env.DB_STORAGE || path.resolve(__dirname, '../../data/milk_can_mes.sqlite')
 const LEGACY_DEFAULT_VALUES: Record<string, string[]> = {
   system_version: ['V1.0.0', 'V1.0.1.722'],
+  contact_phone: ['0731-88888888'],
   defect_warning_threshold: ['5'],
   microbe_cycle: ['30'],
 }
@@ -99,7 +100,7 @@ const defaultConfigs = [
   { config_key: 'system_name', config_value: '长沙大满MES', config_desc: '系统名称' },
   { config_key: 'system_version', config_value: 'V1.0.1.736', config_desc: '系统版本（只读，实际以 package.json 为准）' },
   { config_key: 'company_name', config_value: '东莞市大满包装实业有限公司长沙分公司', config_desc: '公司名称' },
-  { config_key: 'contact_phone', config_value: '0731-88888888', config_desc: '联系电话' },
+  { config_key: 'contact_phone', config_value: '', config_desc: '联系电话' },
   { config_key: 'default_line', config_value: 'A线', config_desc: '默认产线' },
   { config_key: 'standard_hours', config_value: '8', config_desc: '标准工时' },
   // 班次设定：默认白班
