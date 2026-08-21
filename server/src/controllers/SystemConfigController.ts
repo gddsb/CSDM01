@@ -8,19 +8,31 @@ export function clearSysConfigCache() { sysConfigCache = null }
 import sequelize from '../config/database.js'
 import { Sequelize, Op, QueryTypes } from 'sequelize'
 import fs from 'fs'
-import path from 'path'
 import { fileURLToPath } from 'url'
+import path from 'path'
+
+// 从 package.json 动态读取版本号，避免硬编码
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+function getPackageVersion(): string {
+  try {
+    const pkgPath = path.resolve(__dirname, '../../../package.json')
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
+    return `V${pkg.version}`
+  } catch {
+    return 'V1.0.1.736'
+  }
+}
 import http from 'http'
 import net from 'net'
 import { exec } from 'child_process'
 import { logger } from '../utils/logger.js'
 import { formatDateTime, nowBeijingStr } from '../utils/date.js'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const BACKUP_DIR = process.env.BACKUP_DIR || path.resolve(__dirname, '../../backups')
 const SQLITE_PATH = process.env.DB_STORAGE || path.resolve(__dirname, '../../data/milk_can_mes.sqlite')
 const LEGACY_DEFAULT_VALUES: Record<string, string[]> = {
-  system_version: ['V1.0.0'],
+  system_version: ['V1.0.0', 'V1.0.1.722'],
   defect_warning_threshold: ['5'],
   microbe_cycle: ['30'],
 }
@@ -85,7 +97,7 @@ async function runConcurrently<T, R>(
 // 默认配置（设计文档 §2.2.2 系统配置表）
 const defaultConfigs = [
   { config_key: 'system_name', config_value: '长沙大满MES', config_desc: '系统名称' },
-  { config_key: 'system_version', config_value: 'V1.0.1.722', config_desc: '系统版本（只读）' },
+  { config_key: 'system_version', config_value: 'V1.0.1.736', config_desc: '系统版本（只读，实际以 package.json 为准）' },
   { config_key: 'company_name', config_value: '东莞市大满包装实业有限公司长沙分公司', config_desc: '公司名称' },
   { config_key: 'contact_phone', config_value: '0731-88888888', config_desc: '联系电话' },
   { config_key: 'default_line', config_value: 'A线', config_desc: '默认产线' },
@@ -117,10 +129,8 @@ export const getConfig = async (req, res) => {
         result[def.config_key] = def.config_value
       }
     }
-    const versionDef = defaultConfigs.find(d => d.config_key === 'system_version')
-    if (versionDef) {
-      result.system_version = versionDef.config_value
-    }
+    // 系统版本号始终从 package.json 动态读取，避免硬编码导致版本不一致
+    result.system_version = getPackageVersion()
     // 写入缓存
     sysConfigCache = { value: result, expireAt: Date.now() + SYSCONFIG_CACHE_TTL }
     return success(res, result, '获取成功')
