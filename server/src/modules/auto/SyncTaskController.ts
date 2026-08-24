@@ -100,10 +100,9 @@ export const syncProductionOrdersFull = async (req, res) => {
 
     const taskId = (syncTask as any).task_id
     const settingParams = (setting as any).params || {}
-    const sourceUrl = (setting as any).source_url || undefined
 
     // 同步执行：U9 采集
-    const collectResult = await executeRealTask(taskType, taskBizId, taskId, settingParams, sourceUrl)
+    const collectResult = await executeRealTask(taskType, taskBizId, taskId, settingParams)
     if (!collectResult.success) {
       return fail(res, `U9生产订单采集失败：${collectResult.error || '未知错误'}`, ErrorCode.BUSINESS_ERROR)
     }

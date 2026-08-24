@@ -455,24 +455,8 @@ export default function TaskSettingsPage() {
           <Form.Item label="描述" name="description">
             <Input.TextArea rows={2} />
           </Form.Item>
-          <Form.Item label="数据源URL" name="source_url"
-            tooltip={
-              editing?.task_type?.startsWith('env_') || editing?.task_type === 'weather' || editing?.task_type === 'energy_meter'
-                ? '若该任务已在代码中内置数据源，可留空'
-                : '支持三种写法：① 完整URL（https://.../MainForm.aspx?lnk=...）② 仅查询串（?lnk=...）③ ERP页面相对路径。__curOId 会自动替换为当前选择的组织。生产订单示例：?lnk=MFG.MO.DiscreteMO.DiscreteMOList&sId=3025nid&bId=1001101160309210&ShowType=NavigatePage&CardPageID=MFG.MO.DiscreteMO.DiscreteMO&IsStartMO=0'
-            }
-          >
-            <Input placeholder={
-              editing?.task_type === 'production_orders'
-                ? '例：?lnk=MFG.MO.DiscreteMO.DiscreteMOList&sId=3025nid&bId=1001101160309210 或 https://u9.xxx.com/.../MainForm.aspx?...'
-                : editing?.task_type === 'items'
-                  ? '例：?lnk=CBO.Pub.Item.ItemList&sId=3000nid&bId=1001101159162183'
-                  : editing?.task_type === 'customers'
-                    ? '例：?lnk=CBO.Pub.Customer.CustomerList&sId=3002nid&bId=1001101159200093'
-                    : editing?.task_type === 'purchase_receipts'
-                      ? '例：?lnk=SCM.PM.PM6010_20&sId=3016nid&bId=1001101160311129'
-                      : 'U9 ERP 列表页 URL 或 ? 查询串，留空则使用内置默认地址'
-            } />
+          <Form.Item label="数据源URL" name="source_url">
+            <Input />
           </Form.Item>
 
           {paramFields.length > 0 && (

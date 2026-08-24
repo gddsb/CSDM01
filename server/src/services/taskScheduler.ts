@@ -165,20 +165,16 @@ export async function triggerScheduledTaskById(taskId: number) {
 
     // 获取任务设置参数
     let taskParams: Record<string, any> = {}
-    let sourceUrl: string | undefined
     try {
       const setting = await TaskSetting.findOne({ where: { task_type: type } })
-      if (setting) {
-        taskParams = (setting as any).params || {}
-        sourceUrl = (setting as any).source_url || undefined
-      }
+      if (setting) taskParams = (setting as any).params || {}
     } catch (e) {
       console.warn('[Scheduler] 读取任务设置失败，使用默认参数:', e)
     }
 
     // 异步执行真实采集任务
     ;(async () => {
-      await executeRealTask(type, taskBizId, syncTaskId, taskParams, sourceUrl)
+      await executeRealTask(type, taskBizId, syncTaskId, taskParams)
     })()
   } catch (err) {
     console.error('[Scheduler] 触发任务失败:', err)
