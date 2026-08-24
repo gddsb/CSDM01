@@ -22,6 +22,18 @@ export interface U9LoginResult {
   http: AxiosInstance;
   org: U9Org;
   cookies: string;
+  cfg: typeof U9_CONFIG;
+}
+
+export interface U9LoginOverrides {
+  baseUrl?: string;
+  erpUrl?: string;
+  enterpriseId?: string;
+  enterpriseName?: string;
+  username?: string;
+  password?: string;
+  orgCode?: string;
+  aesKeyHex?: string;
 }
 
 export type ProgressCallback = (message: string, percent: number) => Promise<void> | void;
@@ -55,9 +67,18 @@ function aesEcbEncryptHex(plaintext: string, keyHex: string): string {
 /**
  * 登录 U9 系统。
  * 使用 axios + 自定义 cookie 字符串（保持简单，无需 tough-cookie）
+ * 可通过 overrides 覆盖 U9_CONFIG 默认值（从任务设置 params 中读取到的 loginName/password/orgCode 等）
  */
-export async function loginU9(onProgress?: ProgressCallback): Promise<U9LoginResult> {
-  const u9 = U9_CONFIG;
+export async function loginU9(
+  onProgress?: ProgressCallback,
+  overrides?: U9LoginOverrides
+): Promise<U9LoginResult> {
+  const u9 = {
+    ...U9_CONFIG,
+    ...Object.fromEntries(
+      Object.entries(overrides || {}).filter(([, v]) => v !== undefined && v !== null && v !== '')
+    ),
+  } as typeof U9_CONFIG;
   const baseURL = u9.baseUrl;
 
   const report = async (msg: string, pct: number) => {
@@ -169,5 +190,17 @@ export async function loginU9(onProgress?: ProgressCallback): Promise<U9LoginRes
   }
 
   await report(`登录成功，组织: ${targetOrg.Name}`, 100);
-  return { http, org: targetOrg, cookies };
+  return { http, org: targetOrg, cookies, cfg: u9 };
+}
+
+/**
+ * 基于 U9_CONFIG 与覆盖参数生成最终生效配置（供调用方同步拼装 URL 时使用）
+ */
+export function resolveU9Config(overrides?: U9LoginOverrides): typeof U9_CONFIG {
+  return {
+    ...U9_CONFIG,
+    ...Object.fromEntries(
+      Object.entries(overrides || {}).filter(([, v]) => v !== undefined && v !== null && v !== '')
+    ),
+  } as typeof U9_CONFIG;
 }

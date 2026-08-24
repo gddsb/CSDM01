@@ -1,6 +1,5 @@
 import { AxiosInstance } from 'axios';
-import { U9_CONFIG } from './u9Login';
-import { loginU9, ProgressCallback } from './u9Login';
+import { loginU9, ProgressCallback, U9LoginOverrides, resolveU9Config } from './u9Login';
 import U9Item from '../models/U9Item.js';
 import U9Customer from '../models/U9Customer.js';
 import U9ProductionOrder from '../models/U9ProductionOrder.js';
@@ -9,6 +8,30 @@ import Material from '../models/Material.js';
 import Order from '../models/Order.js';
 import { nowBeijingDate, parseDateTime } from '../utils/date.js';
 import { logger } from '../utils/logger.js';
+
+/** 传递给 4 个 export* 函数的任务设置 */
+export interface U9ExportOptions {
+  /** 解密后的任务设置 params：loginName, password, orgCode, 以及可选的 baseUrl, erpUrl, enterpriseId, enterpriseName, aesKeyHex */
+  settings?: Record<string, any>;
+  /** 任务设置中 source_url：若提供，则直接作为列表页 URL（跳过从 ITEM_LIST_PARAMS / PRODUCTION_ORDER_LIST_PARAMS 等硬编码参数拼装） */
+  sourceUrl?: string;
+}
+
+/** 将 settings 映射成 loginU9 支持的 U9LoginOverrides */
+function buildLoginOverrides(settings?: Record<string, any>): U9LoginOverrides {
+  if (!settings) return {};
+  const s = settings as Record<string, any>;
+  return {
+    username: s.loginName as string | undefined,
+    password: s.password as string | undefined,
+    orgCode: s.orgCode as string | undefined,
+    baseUrl: s.baseUrl as string | undefined,
+    erpUrl: s.erpUrl as string | undefined,
+    enterpriseId: s.enterpriseId as string | undefined,
+    enterpriseName: s.enterpriseName as string | undefined,
+    aesKeyHex: s.aesKeyHex as string | undefined,
+  };
+}
 
 /** ========= 料品列表 ========= */
 export const ITEM_LIST_PARAMS: Record<string, string> = {
@@ -229,8 +252,42 @@ function getAspnetState(html: string) {
   return { viewstate: vs, eventvalidation: ev };
 }
 
-function buildErpUrl(params: Record<string, string>) {
-  return U9_CONFIG.erpUrl + '?' + Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+/**
+ * 组装 ERP 列表页 URL。
+ * - 若提供 sourceUrl（用户在任务设置里填过），直接使用该 URL，并将 __curOId 注入/覆盖为当前组织ID；
+ *   当 URL 已是绝对 URL (http/https 开头) 直接原样；否则按 erpUrl 拼
+ * - 否则从 hardcodedParams 与组织ID 按原逻辑拼装
+ */
+function buildErpUrl(
+  erpUrl: string,
+  hardcodedParams: Record<string, string>,
+  orgId: string,
+  sourceUrl?: string
+): string {
+  if (sourceUrl && sourceUrl.trim()) {
+    let raw = sourceUrl.trim();
+    // 若用户只写了查询字符串（?开头）或相对路径，拼上 erpUrl
+    if (raw.startsWith('?')) {
+      raw = (erpUrl || '') + raw;
+    } else if (!/^https?:\/\//i.test(raw)) {
+      // 形如 MainForm.aspx?lnk=... 则认为是 erpUrl 的路径部分；若 erpUrl 已有路径/查询，走简单拼接
+      const base = erpUrl || '';
+      raw = /[?&]/.test(raw) ? (base + (base.includes('?') ? '&' : '?') + raw.replace(/^[?&]/, '')) : raw;
+    }
+    // 统一将 __curOId 设为当前登录组织的 ID（与用户实际选择的组织保持一致）
+    try {
+      const u = new URL(raw);
+      u.searchParams.set('__curOId', orgId);
+      return u.toString();
+    } catch {
+      // raw 不是完整 URL，降级：追加/替换 __curOId 查询参数
+      const sep = raw.includes('?') ? '&' : '?';
+      return raw.replace(/([?&])__curOId=[^&]*/, '$1__curOId=' + encodeURIComponent(orgId))
+        + (raw.includes('__curOId=') ? '' : `${sep}__curOId=${encodeURIComponent(orgId)}`);
+    }
+  }
+  const params = { ...hardcodedParams, __curOId: orgId };
+  return erpUrl + '?' + Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
 }
 
 interface ExportResult {
@@ -239,14 +296,18 @@ interface ExportResult {
 }
 
 /** ======== 料品全量抓取 ======== */
-export async function exportItems(taskId?: string, onProgress?: ProgressCallback): Promise<ExportResult> {
+export async function exportItems(
+  taskId?: string,
+  onProgress?: ProgressCallback,
+  opts?: U9ExportOptions
+): Promise<ExportResult> {
   const report = async (msg: string, pct: number) => { if (onProgress) await onProgress(msg, pct); };
+  const overrides = buildLoginOverrides(opts?.settings);
 
-  const { http, org } = await loginU9((m, p) => report(m, Math.floor(p * 0.15)));
+  const { http, org, cfg } = await loginU9((m, p) => report(m, Math.floor(p * 0.15)), overrides);
   await report(`登录成功，准备拉取料品列表（组织: ${org.Name}）...`, 16);
 
-  const params = { ...ITEM_LIST_PARAMS, __curOId: String(org.ID) };
-  const url = buildErpUrl(params);
+  const url = buildErpUrl(cfg.erpUrl, ITEM_LIST_PARAMS, String(org.ID), opts?.sourceUrl);
 
   await report('请求料品列表首页...', 18);
   const firstResp = await http.get<string>(url);
@@ -320,14 +381,18 @@ export async function exportItems(taskId?: string, onProgress?: ProgressCallback
 }
 
 /** ========= 客户列表 ========= */
-export async function exportCustomers(taskId?: string, onProgress?: ProgressCallback): Promise<ExportResult> {
+export async function exportCustomers(
+  taskId?: string,
+  onProgress?: ProgressCallback,
+  opts?: U9ExportOptions
+): Promise<ExportResult> {
   const report = async (msg: string, pct: number) => { if (onProgress) await onProgress(msg, pct); };
+  const overrides = buildLoginOverrides(opts?.settings);
 
-  const { http, org } = await loginU9((m, p) => report(m, Math.floor(p * 0.15)));
+  const { http, org, cfg } = await loginU9((m, p) => report(m, Math.floor(p * 0.15)), overrides);
   await report(`登录成功，准备拉取客户列表（组织: ${org.Name}）...`, 16);
 
-  const params = { ...CUSTOMER_LIST_PARAMS, __curOId: String(org.ID) };
-  const url = buildErpUrl(params);
+  const url = buildErpUrl(cfg.erpUrl, CUSTOMER_LIST_PARAMS, String(org.ID), opts?.sourceUrl);
 
   await report('请求客户列表首页...', 18);
   const firstResp = await http.get<string>(url);
@@ -386,14 +451,18 @@ export async function exportCustomers(taskId?: string, onProgress?: ProgressCall
 }
 
 /** ========= 生产订单列表 ========= */
-export async function exportProductionOrders(taskId?: string, onProgress?: ProgressCallback): Promise<ExportResult> {
+export async function exportProductionOrders(
+  taskId?: string,
+  onProgress?: ProgressCallback,
+  opts?: U9ExportOptions
+): Promise<ExportResult> {
   const report = async (msg: string, pct: number) => { if (onProgress) await onProgress(msg, pct); };
+  const overrides = buildLoginOverrides(opts?.settings);
 
-  const { http, org } = await loginU9((m, p) => report(m, Math.floor(p * 0.15)));
+  const { http, org, cfg } = await loginU9((m, p) => report(m, Math.floor(p * 0.15)), overrides);
   await report(`登录成功，准备拉取生产订单列表（组织: ${org.Name}）...`, 16);
 
-  const params = { ...PRODUCTION_ORDER_LIST_PARAMS, __curOId: String(org.ID) };
-  const url = buildErpUrl(params);
+  const url = buildErpUrl(cfg.erpUrl, PRODUCTION_ORDER_LIST_PARAMS, String(org.ID), opts?.sourceUrl);
 
   await report('请求生产订单列表首页...', 18);
   const firstResp = await http.get<string>(url);
@@ -464,14 +533,18 @@ export async function exportProductionOrders(taskId?: string, onProgress?: Progr
 }
 
 /** ======== 采购收货全量抓取 ======== */
-export async function exportPurchaseReceipts(taskId?: string, onProgress?: ProgressCallback): Promise<ExportResult> {
+export async function exportPurchaseReceipts(
+  taskId?: string,
+  onProgress?: ProgressCallback,
+  opts?: U9ExportOptions
+): Promise<ExportResult> {
   const report = async (msg: string, pct: number) => { if (onProgress) await onProgress(msg, pct); };
+  const overrides = buildLoginOverrides(opts?.settings);
 
-  const { http, org } = await loginU9((m, p) => report(m, Math.floor(p * 0.15)));
+  const { http, org, cfg } = await loginU9((m, p) => report(m, Math.floor(p * 0.15)), overrides);
   await report(`登录成功，准备拉取采购收货列表（组织: ${org.Name}）...`, 16);
 
-  const params = { ...PURCHASE_RECEIPT_LIST_PARAMS, __curOId: String(org.ID) };
-  const url = buildErpUrl(params);
+  const url = buildErpUrl(cfg.erpUrl, PURCHASE_RECEIPT_LIST_PARAMS, String(org.ID), opts?.sourceUrl);
 
   await report('请求采购收货列表首页...', 18);
   const firstResp = await http.get<string>(url);

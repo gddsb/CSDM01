@@ -32,12 +32,18 @@ export function createProgressUpdater(taskId: number): TaskProgressUpdater {
 
 /**
  * 执行真实数据采集任务
+ * @param taskType       任务类型
+ * @param taskBizId      业务任务ID
+ * @param taskId         SyncTask 主键ID
+ * @param encryptedParams TaskSetting.params 中的加密对象（若已经是解密对象同样可以正常处理）
+ * @param sourceUrl      TaskSetting.source_url（仅对 U9 4 类任务生效：items/customers/production_orders/purchase_receipts）
  */
 export async function executeRealTask(
   taskType: string,
   taskBizId: string,
   taskId: number,
-  params?: Record<string, any>
+  params?: Record<string, any>,
+  sourceUrl?: string
 ): Promise<{ success: boolean; totalRecords?: number; error?: string }> {
   const updateProgress = createProgressUpdater(taskId)
 
@@ -93,7 +99,8 @@ export async function executeRealTask(
         const onProgress = async (msg: string, pct: number) => {
           await updateProgress(msg, pct)
         }
-        const result = await exportItems(taskBizId, onProgress)
+        const decryptedSettings = decryptParamsObj(params || {})
+        const result = await exportItems(taskBizId, onProgress, { settings: decryptedSettings, sourceUrl })
         await updateProgress(`料品同步完成，共 ${result.totalRecords} 条`, 100, 'completed', result.totalRecords)
         return { success: true, totalRecords: result.totalRecords }
       }
@@ -102,7 +109,8 @@ export async function executeRealTask(
         const onProgress = async (msg: string, pct: number) => {
           await updateProgress(msg, pct)
         }
-        const result = await exportCustomers(taskBizId, onProgress)
+        const decryptedSettings = decryptParamsObj(params || {})
+        const result = await exportCustomers(taskBizId, onProgress, { settings: decryptedSettings, sourceUrl })
         await updateProgress(`客户同步完成，共 ${result.totalRecords} 条`, 100, 'completed', result.totalRecords)
         return { success: true, totalRecords: result.totalRecords }
       }
@@ -111,7 +119,8 @@ export async function executeRealTask(
         const onProgress = async (msg: string, pct: number) => {
           await updateProgress(msg, pct)
         }
-        const result = await exportProductionOrders(taskBizId, onProgress)
+        const decryptedSettings = decryptParamsObj(params || {})
+        const result = await exportProductionOrders(taskBizId, onProgress, { settings: decryptedSettings, sourceUrl })
         await updateProgress(`生产订单同步完成，共 ${result.totalRecords} 条`, 100, 'completed', result.totalRecords)
         return { success: true, totalRecords: result.totalRecords }
       }
@@ -120,7 +129,8 @@ export async function executeRealTask(
         const onProgress = async (msg: string, pct: number) => {
           await updateProgress(msg, pct)
         }
-        const result = await exportPurchaseReceipts(taskBizId, onProgress)
+        const decryptedSettings = decryptParamsObj(params || {})
+        const result = await exportPurchaseReceipts(taskBizId, onProgress, { settings: decryptedSettings, sourceUrl })
         await updateProgress(`采购收货同步完成，共 ${result.totalRecords} 条`, 100, 'completed', result.totalRecords)
         return { success: true, totalRecords: result.totalRecords }
       }

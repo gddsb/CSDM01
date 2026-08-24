@@ -411,10 +411,11 @@ export const testTaskSetting = async (req, res) => {
 
     const taskId = (syncTask as any).task_id
     const settingParams = (setting as any).params || {}
+    const sourceUrl = (setting as any).source_url || undefined
 
     // 异步执行真实采集任务
     ;(async () => {
-      await executeRealTask(taskType, taskBizId, taskId, settingParams)
+      await executeRealTask(taskType, taskBizId, taskId, settingParams, sourceUrl)
     })()
 
     return success(res, { task_biz_id: taskBizId, sync_task: syncTask }, '任务已启动，正在采集中...')
