@@ -1,7 +1,7 @@
 import EnvMonitor from '../models/EnvMonitor.js'
 import EnvAlarm from '../models/EnvAlarm.js'
 
-const BASE_URL = process.env.ENV_BASE_URL || 'http://www.0531yun.com';
+const BASE_URL = 'http://www.0531yun.com';
 
 interface EnvConfig {
   loginName: string;

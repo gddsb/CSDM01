@@ -214,7 +214,7 @@ export default function MainLayout() {
     }
   }, [fetchMenu, MENU_CACHE_KEY])
 
-  const systemName = systemConfig.system_name || '长沙大满MES'
+  const systemName = systemConfig.system_name || '长沙大满生产制造系统'
   const companyName = systemConfig.company_name || ''
 
   useEffect(() => {

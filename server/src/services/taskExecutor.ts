@@ -46,8 +46,8 @@ export async function executeRealTask(
       case 'env_monitor': {
         await updateProgress('连接环境监测平台...', 10)
         const decryptedParams = decryptParamsObj(params || {})
-        const loginName = decryptedParams.loginName || process.env.ENV_LOGIN_NAME || ''
-        const password = decryptedParams.password || process.env.ENV_PASSWORD || ''
+        const loginName = decryptedParams.loginName || process.env.ENV_LOGIN_NAME || '13800138000'
+        const password = decryptedParams.password || process.env.ENV_PASSWORD || '123456'
         const collector = new EnvCollector({ loginName, password })
         await updateProgress('获取实时监测数据...', 30)
         const result = await collector.collectAndSave()

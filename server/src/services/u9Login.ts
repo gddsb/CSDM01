@@ -2,14 +2,14 @@ import crypto from 'crypto';
 import axios, { AxiosInstance } from 'axios';
 
 export const U9_CONFIG = {
-  baseUrl: process.env.U9_BASE_URL || '',
-  erpUrl: process.env.U9_ERP_URL || '',
-  enterpriseId: process.env.U9_ENTERPRISE_ID || '',
-  enterpriseName: process.env.U9_ENTERPRISE_NAME || '',
-  username: process.env.U9_USERNAME || '',
-  password: process.env.U9_PASSWORD || '',
-  orgCode: process.env.U9_ORG_CODE || '',
-  aesKeyHex: process.env.U9_AES_KEY || '',
+  baseUrl: process.env.U9_BASE_URL || 'http://120.79.24.179/U9/mvc',
+  erpUrl: process.env.U9_ERP_URL || 'http://120.79.24.179/U9/erp/display.aspx',
+  enterpriseId: process.env.U9_ENTERPRISE_ID || '01',
+  enterpriseName: process.env.U9_ENTERPRISE_NAME || '大满包装',
+  username: process.env.U9_USERNAME || '20021',
+  password: process.env.U9_PASSWORD || '654321',
+  orgCode: process.env.U9_ORG_CODE || '160',
+  aesKeyHex: process.env.U9_AES_KEY || 'dad52b5719e3202e32a6619e14d0ccec',
 };
 
 export interface U9Org {

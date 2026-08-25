@@ -1,6 +1,6 @@
 # 奶粉罐生产管理系统 (Milk Can MES)
 
-> 版本：V1.0.1.737
+> 版本：V1.0.1.736
 >
 > 东莞市大满包装实业有限公司长沙分公司 — 奶粉罐生产制造执行系统
 
@@ -2497,46 +2497,6 @@ type 类型：
 ---
 
 ## 更新日志
-
-### V1.0.1.737（安全加固、数据接入与系统版本修复）
-
-**系统版本号修复（根因：硬编码覆盖数据库值）**
-- 修复 [SystemConfigController.ts](../server/src/controllers/SystemConfigController.ts) 中重复导入与重复声明 `__dirname` 导致的潜在冲突
-- 核心修复：`getConfig` 函数原本使用 `defaultConfigs[system_version].config_value` 硬编码 `V1.0.1.722` 覆盖数据库值，改为始终调用 `getPackageVersion()` 从 `package.json` 动态读取
-- `initDefaultConfigs` 中的 `system_version` 默认值、`getPackageVersion()` catch 后备值、`LEGACY_DEFAULT_VALUES` 遗留值列表同步更新为 `V1.0.1.737`，服务器重启后自动刷新数据库
-
-**设备管理菜单补齐**
-- [RoleController.ts](../server/src/controllers/RoleController.ts) `defaultPermissions` 补齐设备看板/故障/点检/维护/备件/校准/电子档案 7 个子菜单（通过 `parent_code` 解析真实 parent_id，`findOrCreate` 自动建库）
-- [Permission.json](../server/src/seed-data/Permission.json) 种子数据同步
-- 启动时 `initDefaultPermissions` 自动为 `SUPER_ADMIN` 全量分配权限，非超管在角色管理手动分配
-
-**安全加固（移除硬编码凭据 fallback）**
-- [u9Service.ts](../server/src/services/u9Service.ts) 与 [u9Login.ts](../server/src/services/u9Login.ts)：U9 ERP 登录配置中 `120.79.24.179` URL、用户名 `20021`、密码 `654321`、AES 密钥全部 fallback 改为空，强制走 `U9_BASE_URL / U9_USERNAME / U9_PASSWORD / U9_AES_KEY` 等环境变量
-- [taskExecutor.ts](../server/src/services/taskExecutor.ts)：环境监测平台默认账号 `13800138000` + 密码 `123456` fallback 清空，必须从任务参数或 `ENV_LOGIN_NAME / ENV_PASSWORD` 注入
-- [envCollector.ts](../server/src/services/envCollector.ts)：0531yun BASE_URL 新增 `process.env.ENV_BASE_URL` 覆盖
-- [MobileLogin.tsx](../src/mobile/pages/MobileLogin.tsx)：移除初始化 `password='123456'` 预填值（安全风险），改为与 PC 端一致的 localStorage 用户名持久化 + 空密码
-
-**品牌信息动态化**
-- PC 端 [Login.tsx](../src/pages/Login.tsx) 与移动端 [MobileLogin.tsx](../src/mobile/pages/MobileLogin.tsx) 页脚版本号从硬编码 `V1.0.1.736` 改为构建时注入的 `V{__APP_VERSION__}`（Vite `define`），与 package.json 同步
-- [MainLayout.tsx](../src/layouts/MainLayout.tsx) 系统名 fallback 修正为 `长沙大满MES`（与种子一致）
-- [SystemConfigController.ts](../server/src/controllers/SystemConfigController.ts) 联系电话默认值与种子数据清空占位符 `0731-88888888`，纳入 `LEGACY_DEFAULT_VALUES` 刷新策略
-
-**设备模块 Mock 数据替换为真实 API**
-- [Maintenance.tsx](../src/pages/device/Maintenance.tsx)：移除硬编码 8 条 `maintenanceData` + `devices` mock 导入，接入 `GET /api/device-maintenance-records` 服务端分页，状态值适配后端 `待执行/执行中/已完成/已挂起`
-- [CheckRecord.tsx](../src/pages/device/CheckRecord.tsx)：移除 9 条 `checkRecordsData` 硬编码，接入 `GET /api/device-inspection-records`，字段映射到后端 `record_no / inspection_date / inspection_item / inspector_name`
-- [DeviceOEE.tsx](../src/pages/device/DeviceOEE.tsx)：移除 `baseRates` 与 `getFactorByRange` 偏移逻辑，接入 `GET /api/devices` + `GET /api/device-runtime-logs` 基于运行时长计算可用率；性能率/合格率暂设默认 85%/95% 并加注释待后端接口
-
-**三处"设备校验"功能评估结论（分别保留，不合并）**
-
-| 功能 | 归属模块 | 管理对象 | 法规/依据 | 字段体系 |
-|---|---|---|---|---|
-| 检测仪器管理 | 质量管理 | 计量器具（卡尺、千分尺等） | 计量法（强制检定） | `calibration_type / calibration_cycle(天) / last/next_calibration_date` |
-| 设备档案 | 基础数据 | 生产设备（焊接机、码垛机等） | 特种设备安全监察条例 | `last/next_inspection_date / inspection_cycle(月)` |
-| 校准管理 | 设备管理 | 生产设备的校准计划 | 企业内部维护规范 | `calibration_cycle / calibration_items / 状态机(待→已→超期→锁定)` |
-
-三处分属不同模型/表（`quality_instrument` / `master_device` / `device_calibration_plan+record`）、不同管理部门、不同法规要求，建议保留独立。需澄清设备档案中"检定"专指法定特种设备检定，校准管理指内部校准，避免语义混淆。
-
----
 
 ### V1.0.1.736（设备管理模块开发）
 

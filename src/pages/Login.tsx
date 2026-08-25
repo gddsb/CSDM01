@@ -5,7 +5,6 @@ import { useApp, useMessage } from '../contexts/AppContext'
 import { useNavigate } from 'react-router-dom'
 
 const { Text } = Typography
-declare const __APP_VERSION__: string
 
 export default function Login() {
   const message = useMessage()
@@ -107,7 +106,7 @@ export default function Login() {
 
       <div className="login-footer">
         <Text type="secondary" style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
-          © 2026 大满包装 · 长沙大满MES V{__APP_VERSION__}
+          © 2026 大满包装 · 长沙大满MES V1.0.1.722
         </Text>
       </div>
     </div>
