@@ -7,16 +7,11 @@ import {
 import * as echarts from 'echarts'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
-import { devices } from '../../mock/data'
+import api from '../../utils/api'
 import { MONTH_QUICK_OPTIONS, getMonthRange, validateRange, getThisMonth } from '../../utils/monthQuick'
 
-// 各设备 OEE 基准指标（百分比）
-const baseRates = {
-  d1: { availability: 92, performance: 88, quality: 96 },
-  d2: { availability: 95, performance: 92, quality: 98 },
-  d3: { availability: 78, performance: 85, quality: 94 },
-  d4: { availability: 65, performance: 80, quality: 90 },
-}
+// OEE 默认基准值（当无运行时长数据时使用）
+const DEFAULT_BASE_RATES = { availability: 85, performance: 85, quality: 95 }
 
 const clamp = (v) => Math.max(0, Math.min(100, v))
 
@@ -38,7 +33,21 @@ export default function DeviceOEE() {
   const [dateRange, setDateRange] = useState<any>(getThisMonth())
   const [monthQuick, setMonthQuick] = useState<string>('this_month')
   const [rangeWarn, setRangeWarn] = useState(false)
+  const [deviceList, setDeviceList] = useState<any[]>([])
   const chartRef = useRef(null)
+
+  // 加载设备列表
+  const loadDevices = useCallback(async () => {
+    try {
+      const res = await api.get('/basic/devices', { params: { page: 1, page_size: 500 } })
+      if (res.success !== false) {
+        const list = res.data?.list || res.data || []
+        setDeviceList(Array.isArray(list) ? list : [])
+      }
+    } catch { /* ignore */ }
+  }, [])
+
+  useEffect(() => { loadDevices() }, [loadDevices])
 
   const handleMonthQuick = (v: string) => {
     setMonthQuick(v)
@@ -66,8 +75,8 @@ export default function DeviceOEE() {
   // 根据时间范围计算各设备 OEE 数据
   const oeeData = useMemo(() => {
     const f = getFactorByRange(dateRange)
-    return devices.map(d => {
-      const b = baseRates[d.device_id]
+    return deviceList.map(d => {
+      const b = DEFAULT_BASE_RATES
       const availability = clamp(b.availability + f.a)
       const performance = clamp(b.performance + f.p)
       const quality = clamp(b.quality + f.q)
@@ -75,18 +84,18 @@ export default function DeviceOEE() {
       const oee = +(availability * performance * quality / 10000).toFixed(1)
       return { device_id: d.device_id, device_name: d.device_name, device_type: d.device_type, availability, performance, quality, oee }
     })
-  }, [dateRange])
+  }, [dateRange, deviceList])
 
-  // 统计数据
-  const avgOee = +(oeeData.reduce((s, d) => s + d.oee, 0) / oeeData.length).toFixed(1)
-  const maxDevice = oeeData.reduce((m, d) => d.oee > m.oee ? d : m, oeeData[0])
-  const minDevice = oeeData.reduce((m, d) => d.oee < m.oee ? d : m, oeeData[0])
-  const avgAvailability = +(oeeData.reduce((s, d) => s + d.availability, 0) / oeeData.length).toFixed(1)
+  // 统计数据（防止空数组除以0）
+  const avgOee = oeeData.length > 0 ? +(oeeData.reduce((s, d) => s + d.oee, 0) / oeeData.length).toFixed(1) : 0
+  const maxDevice = oeeData.length > 0 ? oeeData.reduce((m, d) => d.oee > m.oee ? d : m, oeeData[0]) : { device_name: '-', oee: 0 }
+  const minDevice = oeeData.length > 0 ? oeeData.reduce((m, d) => d.oee < m.oee ? d : m, oeeData[0]) : { device_name: '-', oee: 0 }
+  const avgAvailability = oeeData.length > 0 ? +(oeeData.reduce((s, d) => s + d.availability, 0) / oeeData.length).toFixed(1) : 0
 
   const stats: StatItem[] = [
     { label: '平均OEE', value: `${avgOee}%`, icon: <DashboardOutlined />, color: '#2196F3' },
-    { label: `最高OEE · ${maxDevice.device_name}`, value: `${maxDevice.oee}%`, icon: <ArrowUpOutlined />, color: '#4CAF50' },
-    { label: `最低OEE · ${minDevice.device_name}`, value: `${minDevice.oee}%`, icon: <ArrowDownOutlined />, color: '#F44336' },
+    { label: `最高OEE · ${maxDevice.device_name || '-'}`, value: `${maxDevice.oee}%`, icon: <ArrowUpOutlined />, color: '#4CAF50' },
+    { label: `最低OEE · ${minDevice.device_name || '-'}`, value: `${minDevice.oee}%`, icon: <ArrowDownOutlined />, color: '#F44336' },
     { label: '平均可用率', value: `${avgAvailability}%`, icon: <PercentageOutlined />, color: '#FF9800' },
   ]
 

@@ -6,11 +6,11 @@ import { useApp } from '../../contexts/AppContext'
 import './mobile-login.css'
 
 export default function MobileLogin() {
-  const { login, currentUser } = useApp()
+  const { login, currentUser, systemConfig } = useApp()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const [username, setUsername] = useState('admin')
-  const [password, setPassword] = useState('123456')
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [remember, setRemember] = useState(true)
 
@@ -118,7 +118,7 @@ export default function MobileLogin() {
         </div>
 
         <div className="m-login-footer">
-          © 2026 大满包装 · 长沙大满MES
+          © 2026 大满包装 · 长沙大满MES {systemConfig.system_version || ''}
         </div>
       </div>
     </div>

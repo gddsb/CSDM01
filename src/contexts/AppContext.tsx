@@ -20,6 +20,7 @@ export interface User {
 interface SystemConfig {
   system_name: string
   company_name: string
+  system_version?: string
 }
 
 interface AppContextType {
@@ -110,6 +111,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setSystemConfig({
           system_name: cfg.system_name || '',
           company_name: cfg.company_name || '',
+          system_version: cfg.system_version || '',
         })
       }
     } catch {

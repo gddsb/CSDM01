@@ -1,5 +1,5 @@
 import ResizableTable from '../../components/ResizableTable'
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import { Table, Tag, Button, Space, Alert, message } from 'antd'
 import {
   ScheduleOutlined, ClockCircleOutlined, ToolOutlined, DollarOutlined,
@@ -7,21 +7,9 @@ import {
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
-import { devices } from '../../mock/data'
+import api from '../../utils/api'
 import { useMessage } from '../../contexts/AppContext'
 import { MONTH_QUICK_OPTIONS, getMonthRange, validateRange, getThisMonth } from '../../utils/monthQuick'
-
-// 基于设备档案生成的维修保养记录 Mock 数据
-const maintenanceData = [
-  { mt_id: 'mt1', mt_no: 'MT20260615001', device_id: 'd1', device_name: '自动焊接机1号', mt_type: '定期保养', plan_date: '2026-06-15', finish_date: '2026-06-15', cost: 1200, status: '已完成', responsible: '设备维护员', remarks: '更换电极，全面润滑' },
-  { mt_id: 'mt2', mt_no: 'MT20260618001', device_id: 'd4', device_name: '自动焊接机2号', mt_type: '日常保养', plan_date: '2026-06-18', finish_date: '2026-06-18', cost: 250, status: '已完成', responsible: '工序操作人', remarks: '日常清洁，检查气路' },
-  { mt_id: 'mt3', mt_no: 'MT20260620001', device_id: 'd2', device_name: '正压测漏机1号', mt_type: '日常保养', plan_date: '2026-06-20', finish_date: '2026-06-20', cost: 300, status: '已完成', responsible: '设备维护员', remarks: '清洁传感器，校准压力' },
-  { mt_id: 'mt4', mt_no: 'MT20260625001', device_id: 'd3', device_name: '自动码垛机1号', mt_type: '定期保养', plan_date: '2026-06-25', finish_date: '2026-06-25', cost: 800, status: '已完成', responsible: '设备维护员', remarks: '传动带调整，润滑保养' },
-  { mt_id: 'mt5', mt_no: 'MT20260629001', device_id: 'd4', device_name: '自动焊接机2号', mt_type: '故障维修', plan_date: '2026-06-29', finish_date: '2026-06-30', cost: 3500, status: '已完成', responsible: '设备维护员', remarks: '焊接头过热故障维修，更换冷却泵' },
-  { mt_id: 'mt6', mt_no: 'MT20260702001', device_id: 'd3', device_name: '自动码垛机1号', mt_type: '故障维修', plan_date: '2026-07-02', finish_date: null, cost: 1500, status: '执行中', responsible: '设备维护员', remarks: '机械臂异响排查维修中' },
-  { mt_id: 'mt7', mt_no: 'MT20260705001', device_id: 'd1', device_name: '自动焊接机1号', mt_type: '日常保养', plan_date: '2026-07-05', finish_date: null, cost: null, status: '计划中', responsible: '设备维护员', remarks: '计划日常清洁保养' },
-  { mt_id: 'mt8', mt_no: 'MT20260710001', device_id: 'd2', device_name: '正压测漏机1号', mt_type: '定期保养', plan_date: '2026-07-10', finish_date: null, cost: null, status: '计划中', responsible: '设备维护员', remarks: '季度定期保养' },
-]
 
 // 维护类型与状态标签颜色映射
 const typeColorMap = { '日常保养': 'blue', '定期保养': 'cyan', '故障维修': 'red' }
@@ -31,13 +19,57 @@ const isMaintenance = (t) => t === '日常保养' || t === '定期保养'
 
 export default function Maintenance() {
   const message = useMessage()
-  const [data] = useState(maintenanceData)
+  const [data, setData] = useState<any[]>([])
+  const [deviceList, setDeviceList] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
   const [deviceFilter, setDeviceFilter] = useState(undefined)
   const [typeFilter, setTypeFilter] = useState(undefined)
   const [statusFilter, setStatusFilter] = useState(undefined)
   const [dateRange, setDateRange] = useState<any>(getThisMonth())
   const [monthQuick, setMonthQuick] = useState<string>('this_month')
   const [rangeWarn, setRangeWarn] = useState(false)
+
+  // 加载设备列表
+  const loadDevices = useCallback(async () => {
+    try {
+      const res = await api.get('/basic/devices', { params: { page: 1, page_size: 500 } })
+      if (res.success !== false) {
+        const list = res.data?.list || res.data || []
+        setDeviceList(Array.isArray(list) ? list : [])
+      }
+    } catch { /* ignore */ }
+  }, [])
+
+  // 加载维修保养记录
+  const loadData = useCallback(async () => {
+    setLoading(true)
+    try {
+      const params: any = { page: 1, page_size: 500 }
+      if (dateRange && dateRange[0]) params.start_date = dateRange[0].format('YYYY-MM-DD')
+      if (dateRange && dateRange[1]) params.end_date = dateRange[1].format('YYYY-MM-DD')
+      const res = await api.get('/basic/device-maintenance-records', { params })
+      if (res.success !== false) {
+        const list = res.data?.list || res.data || []
+        // 映射 API 字段到页面期望的字段名
+        const mapped = (Array.isArray(list) ? list : []).map((r: any) => ({
+          ...r,
+          mt_no: r.record_no || r.mt_no,
+          mt_type: r.maintenance_type || r.mt_type,
+          responsible: r.responsible_person || r.responsible,
+        }))
+        setData(mapped)
+      } else {
+        setData([])
+      }
+    } catch {
+      setData([])
+    } finally {
+      setLoading(false)
+    }
+  }, [dateRange])
+
+  useEffect(() => { loadDevices() }, [loadDevices])
+  useEffect(() => { loadData() }, [loadData])
 
   const handleMonthQuick = (v: string) => {
     setMonthQuick(v)
@@ -49,7 +81,7 @@ export default function Maintenance() {
     setDateRange(v)
   }
 
-  const deviceOptions = devices.map(d => ({ label: d.device_name, value: d.device_name }))
+  const deviceOptions = deviceList.map(d => ({ label: d.device_name, value: d.device_name }))
   const typeOptions = [
     { label: '全部', value: '全部' },
     { label: '日常保养', value: '日常保养' },
@@ -123,7 +155,7 @@ export default function Maintenance() {
   }
 
   const handleRefresh = () => {
-    message.success('数据已刷新')
+    loadData()
   }
 
   const columns = [

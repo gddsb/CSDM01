@@ -1,5 +1,5 @@
 import ResizableTable from '../../components/ResizableTable'
-import React, { useState, useMemo, useCallback } from 'react'
+import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import { Table, Tag, Button, Space, Alert, message } from 'antd'
 import {
   FileSearchOutlined, CheckCircleOutlined, WarningOutlined, ClockCircleOutlined,
@@ -7,39 +7,70 @@ import {
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
-import { devices } from '../../mock/data'
+import api from '../../utils/api'
 import { useMessage } from '../../contexts/AppContext'
 import { MONTH_QUICK_OPTIONS, getMonthRange, validateRange, getThisMonth } from '../../utils/monthQuick'
-
-// 基于设备档案生成的点检记录 Mock 数据
-const checkRecordsData = [
-  { check_id: 'cr1', check_no: 'CR20260630001', device_id: 'd1', device_name: '自动焊接机1号', check_date: '2026-06-30', check_item: '焊接头温度检查', result: '正常', inspector: '工序操作人', remarks: '焊接温度稳定，无异常' },
-  { check_id: 'cr2', check_no: 'CR20260630002', device_id: 'd2', device_name: '正压测漏机1号', check_date: '2026-06-30', check_item: '密封性能检查', result: '正常', inspector: '设备维护员', remarks: '密封性良好，保压正常' },
-  { check_id: 'cr3', check_no: 'CR20260630003', device_id: 'd3', device_name: '自动码垛机1号', check_date: '2026-06-30', check_item: '机械臂运行检查', result: '异常', inspector: '工序操作人', remarks: '机械臂运行有异响，已上报维修' },
-  { check_id: 'cr4', check_no: 'CR20260629001', device_id: 'd1', device_name: '自动焊接机1号', check_date: '2026-06-29', check_item: '冷却系统检查', result: '正常', inspector: '设备维护员', remarks: '冷却液位正常，循环畅通' },
-  { check_id: 'cr5', check_no: 'CR20260629002', device_id: 'd4', device_name: '自动焊接机2号', check_date: '2026-06-29', check_item: '焊接头温度检查', result: '异常', inspector: '工序操作人', remarks: '焊接头过热，停机冷却30分钟' },
-  { check_id: 'cr6', check_no: 'CR20260628001', device_id: 'd2', device_name: '正压测漏机1号', check_date: '2026-06-28', check_item: '压力表校验', result: '正常', inspector: '设备维护员', remarks: '压力表读数准确，在有效期内' },
-  { check_id: 'cr7', check_no: 'CR20260628002', device_id: 'd3', device_name: '自动码垛机1号', check_date: '2026-06-28', check_item: '传动带张力检查', result: '正常', inspector: '工序操作人', remarks: '传动带张力适中，无松动' },
-  { check_id: 'cr8', check_no: 'CR20260627001', device_id: 'd1', device_name: '自动焊接机1号', check_date: '2026-06-27', check_item: '电极磨损检查', result: '正常', inspector: '设备维护员', remarks: '电极磨损在允许范围内' },
-  { check_id: 'cr9', check_no: 'CR20260627002', device_id: 'd4', device_name: '自动焊接机2号', check_date: '2026-06-27', check_item: '气压系统检查', result: '正常', inspector: '工序操作人', remarks: '气压稳定，管路无泄漏' },
-]
 
 // 点检结果标签颜色映射
 const resultColorMap = { '正常': 'green', '异常': 'red' }
 
-// 最近点检日（用于统计待点检设备数）
-const LATEST_CHECK_DATE = '2026-06-30'
-
 export default function CheckRecord() {
   const message = useMessage()
-  const [data] = useState(checkRecordsData)
+  const [data, setData] = useState<any[]>([])
+  const [deviceList, setDeviceList] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
   const [deviceFilter, setDeviceFilter] = useState(undefined)
   const [resultFilter, setResultFilter] = useState(undefined)
   const [dateRange, setDateRange] = useState<any>(getThisMonth())
   const [monthQuick, setMonthQuick] = useState<string>('this_month')
   const [rangeWarn, setRangeWarn] = useState(false)
 
-  const deviceOptions = devices.map(d => ({ label: d.device_name, value: d.device_name }))
+  // 加载设备列表
+  const loadDevices = useCallback(async () => {
+    try {
+      const res = await api.get('/basic/devices', { params: { page: 1, page_size: 500 } })
+      if (res.success !== false) {
+        const list = res.data?.list || res.data || []
+        setDeviceList(Array.isArray(list) ? list : [])
+      }
+    } catch { /* ignore */ }
+  }, [])
+
+  // 加载点检记录
+  const loadData = useCallback(async () => {
+    setLoading(true)
+    try {
+      const params: any = { page: 1, page_size: 500 }
+      if (dateRange && dateRange[0]) params.start_date = dateRange[0].format('YYYY-MM-DD')
+      if (dateRange && dateRange[1]) params.end_date = dateRange[1].format('YYYY-MM-DD')
+      const res = await api.get('/basic/device-inspection-plans', { params })
+      if (res.success !== false) {
+        const list = res.data?.list || res.data || []
+        // 映射 API 字段到页面期望的字段名
+        const mapped = (Array.isArray(list) ? list : []).map((r: any) => ({
+          ...r,
+          check_no: r.plan_no || r.check_no,
+          check_date: r.plan_date || r.check_date,
+          check_item: r.inspection_items || r.check_item || '点检',
+          inspector: r.inspector_name || r.inspector || r.responsible_person || '-',
+          remarks: r.remark || r.remarks || '',
+          result: r.status === '已检' ? '正常' : r.status === '异常' ? '异常' : (r.result || '-'),
+        }))
+        setData(mapped)
+      } else {
+        setData([])
+      }
+    } catch {
+      setData([])
+    } finally {
+      setLoading(false)
+    }
+  }, [dateRange])
+
+  useEffect(() => { loadDevices() }, [loadDevices])
+  useEffect(() => { loadData() }, [loadData])
+
+  const deviceOptions = deviceList.map(d => ({ label: d.device_name, value: d.device_name }))
   const resultOptions = [
     { label: '全部', value: '全部' },
     { label: '正常', value: '正常' },
@@ -83,9 +114,9 @@ export default function CheckRecord() {
   const total = data.length
   const normalCount = data.filter(r => r.result === '正常').length
   const abnormalCount = data.filter(r => r.result === '异常').length
-  // 待点检设备数：最近点检日未点检的设备
-  const checkedToday = new Set(data.filter(r => r.check_date === LATEST_CHECK_DATE).map(r => r.device_name))
-  const pendingDevices = devices.filter(d => !checkedToday.has(d.device_name)).length
+  // 待点检设备数：设备总数 - 已点检设备数
+  const checkedDevices = new Set(data.filter(r => r.result === '正常' || r.result === '异常').map(r => r.device_name))
+  const pendingDevices = deviceList.filter(d => !checkedDevices.has(d.device_name)).length
 
   const stats: StatItem[] = [
     { label: '总点检次数', value: total, icon: <FileSearchOutlined />, color: '#2196F3' },
@@ -113,7 +144,7 @@ export default function CheckRecord() {
   }
 
   const handleRefresh = () => {
-    message.success('数据已刷新')
+    loadData()
   }
 
   const columns = [
