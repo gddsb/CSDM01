@@ -700,60 +700,72 @@ export async function syncProductionOrdersToOrder(): Promise<{ total: number; in
   let inserted = 0;
   let updated = 0;
   let skipped = 0;
+  // 钳制 DECIMAL(12,2) 范围：超过上限或负数置 0，避免 Out of range 中断迁移
+  const clampQty = (v: any): number => {
+    const n = Number(v)
+    if (!isFinite(n) || n < 0 || n > 9999999999.99) return 0
+    return Math.round(n * 100) / 100
+  }
 
   for (const o of taskOrders) {
     const orderNo = o.order_no;
     if (!orderNo) { skipped++; continue; }
 
-    const materialId = o.material_code ? materialMap.get(o.material_code) || null : null;
-    const statusStr = String(o.status || '').trim();
-    // 采集数据 status 可能是数字编码（如"0"）或文本（如"开立"），优先按数字处理
-    const statusNum = parseInt(statusStr, 10);
-    const status = isNaN(statusNum) ? (DOC_STATUS_MAP[statusStr] !== undefined ? DOC_STATUS_MAP[statusStr] : 0) : statusNum;
+    try {
+      const materialId = o.material_code ? materialMap.get(o.material_code) || null : null;
+      const statusStr = String(o.status || '').trim();
+      // 采集数据 status 可能是数字编码（如"0"）或文本（如"开立"），优先按数字处理
+      const statusNum = parseInt(statusStr, 10);
+      const status = isNaN(statusNum) ? (DOC_STATUS_MAP[statusStr] !== undefined ? DOC_STATUS_MAP[statusStr] : 0) : statusNum;
 
-    // 字段命名已与 production_order 完全对齐
-    const payload = {
-      order_no: orderNo,
-      material_id: materialId,
-      material_code: o.material_code || null,
-      material_name: o.material_name || null,
-      specification: o.specification || null,
-      film_version: o.film_version || null,
-      version_no: o.version_no || null,
-      barcode: o.barcode || null,
-      planned_qty: Number(o.planned_qty) || 0,
-      u9_qualified: Number(o.qualified_qty) || 0,
-      plan_start_time: parseDateTime(o.plan_start_time),
-      plan_end_time: parseDateTime(o.plan_end_time),
-      u9_status: o.status || null,
-      status,
-      created_by: o.created_by || null,
-    };
+      // 字段命名已与 production_order 完全对齐
+      const payload = {
+        order_no: orderNo,
+        material_id: materialId,
+        material_code: o.material_code || null,
+        material_name: o.material_name || null,
+        specification: o.specification || null,
+        film_version: o.film_version || null,
+        version_no: o.version_no || null,
+        barcode: o.barcode || null,
+        planned_qty: clampQty(o.planned_qty),
+        u9_qualified: clampQty(o.qualified_qty),
+        plan_start_time: parseDateTime(o.plan_start_time),
+        plan_end_time: parseDateTime(o.plan_end_time),
+        u9_status: o.status || null,
+        status,
+        created_by: o.created_by || null,
+      };
 
-    const [row, created] = await Order.findOrCreate({
-      where: { order_no: orderNo },
-      defaults: payload,
-    });
-    if (created) {
-      inserted++;
-    } else {
-      // 仅更新业务字段，不修改 status（避免覆盖手动变更的状态）
-      await row.update({
-        material_id: payload.material_id,
-        material_code: payload.material_code,
-        material_name: payload.material_name,
-        specification: payload.specification,
-        film_version: payload.film_version,
-        version_no: payload.version_no,
-        barcode: payload.barcode,
-        planned_qty: payload.planned_qty,
-        u9_qualified: payload.u9_qualified,
-        plan_start_time: payload.plan_start_time,
-        plan_end_time: payload.plan_end_time,
-        u9_status: payload.u9_status,
-        created_by: payload.created_by,
+      const [row, created] = await Order.findOrCreate({
+        where: { order_no: orderNo },
+        defaults: payload,
       });
-      updated++;
+      if (created) {
+        inserted++;
+      } else {
+        // 仅更新业务字段，不修改 status（避免覆盖手动变更的状态）
+        await row.update({
+          material_id: payload.material_id,
+          material_code: payload.material_code,
+          material_name: payload.material_name,
+          specification: payload.specification,
+          film_version: payload.film_version,
+          version_no: payload.version_no,
+          barcode: payload.barcode,
+          planned_qty: payload.planned_qty,
+          u9_qualified: payload.u9_qualified,
+          plan_start_time: payload.plan_start_time,
+          plan_end_time: payload.plan_end_time,
+          u9_status: payload.u9_status,
+          created_by: payload.created_by,
+        });
+        updated++;
+      }
+    } catch (e: any) {
+      // 单条迁移失败不中断整批，记录并跳过
+      logger.warn(`[syncProductionOrdersToOrder] 跳过订单 ${orderNo}: ${e.message}`);
+      skipped++;
     }
   }
 
