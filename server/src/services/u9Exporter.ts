@@ -433,7 +433,10 @@ export async function exportProductionOrders(taskId?: string, onProgress?: Progr
     }
     const records = uniq.map((r) => ({
       task_id: taskId || '',
-      // U9 HTML 实际15列 (r[0]~r[14])，按字段含义一一对应；barcode 为扩展字段(r[15])，U9列表无此列时为空
+      // U9 HTML 列顺序（经 raw_data 样本核对）：
+      // r[0]单据类别 r[1]来源类型 r[2]制单日期 r[3]单据号 r[4]状态 r[5]料号 r[6]品名 r[7]规格
+      // r[8]菲林编号 r[9]版本 r[10]条形码 r[11]排产数量 r[12]累计合格数量
+      // r[13]计划开工 r[14]计划完工 r[15]制单人
       doc_type_name: r[0] || '',
       source_type: r[1] || '',
       biz_create_date: r[2] || '',
@@ -444,12 +447,12 @@ export async function exportProductionOrders(taskId?: string, onProgress?: Progr
       specification: r[7] || '',
       film_version: r[8] || '',
       version_no: r[9] || '',
-      barcode: r[15] || '',
-      planned_qty: cleanNum(r[10]),
-      qualified_qty: cleanNum(r[11]),
-      plan_start_time: r[12] || '',
-      plan_end_time: r[13] || '',
-      created_by: r[14] || '',
+      barcode: r[10] || '',
+      planned_qty: cleanNum(r[11]),
+      qualified_qty: cleanNum(r[12]),
+      plan_start_time: r[13] || '',
+      plan_end_time: r[14] || '',
+      created_by: r[15] || '',
       raw_data: JSON.stringify(r),
     }));
     // 分批写入：单批失败不影响其他批次，避免一条脏数据拖垮整批
