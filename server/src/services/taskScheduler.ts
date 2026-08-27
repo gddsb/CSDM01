@@ -119,7 +119,7 @@ function generateTaskBizId(type: string): string {
   const d = pad(now.getDate())
   const datePart = `${y}${m}${d}`
   const prefix = type === 'items' ? 'SCHI' : type === 'customers' ? 'SCHC' : type === 'env_monitor' ? 'SCHE' : type === 'weather' ? 'SCHW' : type === 'energy_meter' ? 'SCHEM' : 'SCHX'
-  const rand = String(Math.floor(Math.random() * 900) + 100)
+  const rand = String(Date.now()).slice(-5) + String(Math.floor(Math.random() * 90) + 10)
   return `${prefix}${datePart}${rand}`
 }
 

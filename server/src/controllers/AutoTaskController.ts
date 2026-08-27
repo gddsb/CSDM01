@@ -237,7 +237,7 @@ export function generateTaskBizId(type: string): string {
   const d = String(now.getDate()).padStart(2, '0')
   const datePart = `${y}${m}${d}`
   const prefix = type === 'items' ? 'SCHI' : type === 'customers' ? 'SCHC' : type === 'env_monitor' ? 'SCHE' : type === 'weather' ? 'SCHW' : type === 'energy_meter' ? 'SCHM' : type === 'production_orders' ? 'SCHP' : type === 'purchase_receipts' ? 'SCHR' : 'SCHX'
-  const rand = String(Math.floor(Math.random() * 900) + 100)
+  const rand = String(Date.now()).slice(-5) + String(Math.floor(Math.random() * 90) + 10)
   return `${prefix}${datePart}${rand}`
 }
 
