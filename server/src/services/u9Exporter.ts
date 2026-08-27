@@ -425,6 +425,12 @@ export async function exportProductionOrders(taskId?: string, onProgress?: Progr
   await report(`抓取+去重后 ${uniq.length} 条，写入数据库...`, 92);
 
   if (U9ProductionOrder && uniq.length > 0) {
+    // 清洗 DECIMAL 字段：空格/空字符串/非数字 → '0'，避免 MySQL strict mode 报 Incorrect decimal value
+    const cleanNum = (v: any): string => {
+      if (v == null) return '0'
+      const s = String(v).replace(/,/g, '').trim()
+      return s === '' || isNaN(Number(s)) ? '0' : s
+    }
     const records = uniq.map((r) => ({
       task_id: taskId || '',
       // U9 HTML 实际15列 (r[0]~r[14])，按字段含义一一对应；barcode 为扩展字段(r[15])，U9列表无此列时为空
@@ -439,22 +445,32 @@ export async function exportProductionOrders(taskId?: string, onProgress?: Progr
       film_version: r[8] || '',
       version_no: r[9] || '',
       barcode: r[15] || '',
-      planned_qty: (r[10] || '0').replace(/,/g, ''),
-      qualified_qty: (r[11] || '0').replace(/,/g, ''),
+      planned_qty: cleanNum(r[10]),
+      qualified_qty: cleanNum(r[11]),
       plan_start_time: r[12] || '',
       plan_end_time: r[13] || '',
       created_by: r[14] || '',
       raw_data: JSON.stringify(r),
     }));
-    try {
-      await U9ProductionOrder.bulkCreate(records as any, {
-        updateOnDuplicate: ['task_id', 'doc_type_name', 'source_type', 'biz_create_date', 'status',
-          'material_code', 'material_name', 'specification', 'film_version', 'version_no', 'barcode',
-          'planned_qty', 'qualified_qty', 'created_by',
-          'plan_start_time', 'plan_end_time', 'raw_data', 'updated_at'],
-      });
-    } catch (e: any) {
-      console.warn('[exportProductionOrders] 数据库写入警告:', e.message);
+    // 分批写入：单批失败不影响其他批次，避免一条脏数据拖垮整批
+    const BATCH = 50
+    let writeFail = 0
+    for (let i = 0; i < records.length; i += BATCH) {
+      const batch = records.slice(i, i + BATCH)
+      try {
+        await U9ProductionOrder.bulkCreate(batch as any, {
+          updateOnDuplicate: ['task_id', 'doc_type_name', 'source_type', 'biz_create_date', 'status',
+            'material_code', 'material_name', 'specification', 'film_version', 'version_no', 'barcode',
+            'planned_qty', 'qualified_qty', 'created_by',
+            'plan_start_time', 'plan_end_time', 'raw_data', 'updated_at'],
+        });
+      } catch (e: any) {
+        writeFail++
+        console.warn(`[exportProductionOrders] 批次 ${i / BATCH + 1} 写入失败:`, e.message);
+      }
+    }
+    if (writeFail > 0) {
+      logger.warn(`[exportProductionOrders] 共 ${writeFail} 批写入失败（每批 ${BATCH} 条），部分数据可能未同步`)
     }
   }
 
