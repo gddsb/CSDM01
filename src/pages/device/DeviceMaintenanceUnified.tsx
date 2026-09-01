@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   Tag, Button, Select, DatePicker, Space, Input, Drawer, Form, Descriptions,
-  Typography, message, Modal, Popconfirm, Empty, Spin, Radio, Table, Checkbox, InputNumber, Upload, Image,
+  Typography, message, Modal, Popconfirm, Empty, Spin, Radio, Table, Checkbox, InputNumber, Upload, Image, Card,
 } from 'antd'
 import type { UploadFile } from 'antd/es/upload/interface'
 import {
@@ -468,48 +468,59 @@ export default function DeviceMaintenanceUnified() {
         onClose={() => setDetailOpen(false)}
       >
         {detailData && (
-          <Descriptions column={1} bordered size="small">
-            <Descriptions.Item label="记录编号">{detailData.record_no}</Descriptions.Item>
-            <Descriptions.Item label="设备">{detailData.device_name} ({detailData.device_code})</Descriptions.Item>
-            <Descriptions.Item label="保养项">{detailData.standard?.maintenance_content || '-'}</Descriptions.Item>
-            <Descriptions.Item label="机构">{detailData.standard?.mechanism || '-'}</Descriptions.Item>
-            <Descriptions.Item label="部件">{detailData.standard?.component || '-'}</Descriptions.Item>
-            <Descriptions.Item label="部位">{detailData.standard?.location || '-'}</Descriptions.Item>
-            <Descriptions.Item label="判定基准">{detailData.standard?.standard_value || '-'}</Descriptions.Item>
-            <Descriptions.Item label="保养图片">
-              {detailData.maintenance_images?.length > 0 ? (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <>
+            <Descriptions column={1} bordered size="small">
+              <Descriptions.Item label="记录编号">{detailData.record_no}</Descriptions.Item>
+              <Descriptions.Item label="设备">{detailData.device_name} ({detailData.device_code})</Descriptions.Item>
+              <Descriptions.Item label="保养项">{detailData.standard?.maintenance_content || '-'}</Descriptions.Item>
+              {detailData.standard?.mechanism && <Descriptions.Item label="机构">{detailData.standard.mechanism}</Descriptions.Item>}
+              {detailData.standard?.component && <Descriptions.Item label="部件">{detailData.standard.component}</Descriptions.Item>}
+              {detailData.standard?.location && <Descriptions.Item label="部位">{detailData.standard.location}</Descriptions.Item>}
+              {detailData.standard?.standard_value && <Descriptions.Item label="判定基准">{detailData.standard.standard_value}</Descriptions.Item>}
+              {detailData.standard?.maintenance_method && <Descriptions.Item label="保养方法">{detailData.standard.maintenance_method}</Descriptions.Item>}
+              <Descriptions.Item label="频率">
+                <Tag color={MODE_COLOR[detailData.trigger_mode]}>{MODE_LABEL[detailData.trigger_mode]}</Tag>
+              </Descriptions.Item>
+              {detailData.period_key && <Descriptions.Item label="周期">{detailData.period_key}</Descriptions.Item>}
+              <Descriptions.Item label="状态">
+                <Tag color={STATUS_COLOR[detailData.status]}>{detailData.status}</Tag>
+              </Descriptions.Item>
+              {detailData.result && (
+                <Descriptions.Item label="结果">
+                  <Tag color={RESULT_COLOR[detailData.result]}>{detailData.result}</Tag>
+                </Descriptions.Item>
+              )}
+              {detailData.actual_value && <Descriptions.Item label="实测值">{detailData.actual_value}</Descriptions.Item>}
+              {detailData.abnormal_desc && <Descriptions.Item label="异常描述">{detailData.abnormal_desc}</Descriptions.Item>}
+              {detailData.executor_name && <Descriptions.Item label="执行人">{detailData.executor_name}</Descriptions.Item>}
+              {detailData.start_time && <Descriptions.Item label="开始时间">{dayjs(detailData.start_time).format('YYYY-MM-DD HH:mm')}</Descriptions.Item>}
+              {detailData.end_time && <Descriptions.Item label="结束时间">{dayjs(detailData.end_time).format('YYYY-MM-DD HH:mm')}</Descriptions.Item>}
+              {detailData.duration_min && <Descriptions.Item label="耗时">{detailData.duration_min} 分钟</Descriptions.Item>}
+              {detailData.remarks && <Descriptions.Item label="备注">{detailData.remarks}</Descriptions.Item>}
+            </Descriptions>
+
+            {detailData.maintenance_images?.length > 0 && (
+              <Card
+                size="small"
+                title="保养图片"
+                style={{ marginTop: 12 }}
+                bodyStyle={{ padding: 12 }}
+              >
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
                   {detailData.maintenance_images.map((img: any) => (
                     <Image
                       key={img.image_id}
-                      width={80}
-                      height={80}
-                      style={{ objectFit: 'cover', borderRadius: 4 }}
+                      width={100}
+                      height={100}
+                      style={{ objectFit: 'cover', borderRadius: 4, border: '1px solid #eee' }}
                       src={img.file_path}
                       alt="保养图片"
                     />
                   ))}
                 </div>
-              ) : '-'}
-            </Descriptions.Item>
-            <Descriptions.Item label="频率">
-              <Tag color={MODE_COLOR[detailData.trigger_mode]}>{MODE_LABEL[detailData.trigger_mode]}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="周期">{detailData.period_key}</Descriptions.Item>
-            <Descriptions.Item label="状态">
-              <Tag color={STATUS_COLOR[detailData.status]}>{detailData.status}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="结果">
-              {detailData.result ? <Tag color={RESULT_COLOR[detailData.result]}>{detailData.result}</Tag> : '-'}
-            </Descriptions.Item>
-            {detailData.actual_value && <Descriptions.Item label="实测值">{detailData.actual_value}</Descriptions.Item>}
-            {detailData.abnormal_desc && <Descriptions.Item label="异常描述">{detailData.abnormal_desc}</Descriptions.Item>}
-            <Descriptions.Item label="执行人">{detailData.executor_name || '-'}</Descriptions.Item>
-            <Descriptions.Item label="开始时间">{detailData.start_time ? dayjs(detailData.start_time).format('YYYY-MM-DD HH:mm') : '-'}</Descriptions.Item>
-            <Descriptions.Item label="结束时间">{detailData.end_time ? dayjs(detailData.end_time).format('YYYY-MM-DD HH:mm') : '-'}</Descriptions.Item>
-            {detailData.duration_min && <Descriptions.Item label="耗时">{detailData.duration_min} 分钟</Descriptions.Item>}
-            {detailData.remarks && <Descriptions.Item label="备注">{detailData.remarks}</Descriptions.Item>}
-          </Descriptions>
+              </Card>
+            )}
+          </>
         )}
       </Drawer>
 
