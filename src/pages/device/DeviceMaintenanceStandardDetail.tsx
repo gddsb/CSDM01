@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   Card, Table, Tag, Button, Space, Input, Drawer, Form, Radio, InputNumber,
-  Checkbox, Popconfirm, Empty, Spin, Descriptions, Typography, message,
+  Checkbox, Popconfirm, Empty, Spin, Descriptions, Typography, Tooltip, message,
 } from 'antd'
 import {
   ArrowLeftOutlined, PlusOutlined, EditOutlined, DeleteOutlined,
@@ -73,6 +73,9 @@ export default function DeviceMaintenanceStandardDetail() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [editing, setEditing] = useState<StdRow | null>(null)
   const [form] = Form.useForm()
+  // 查看 Drawer（生效态只读）
+  const [viewOpen, setViewOpen] = useState(false)
+  const [viewRow, setViewRow] = useState<StdRow | null>(null)
 
   // ===== 加载档案详情（含标准项） =====
   const loadDetail = useCallback(async () => {
@@ -177,13 +180,13 @@ export default function DeviceMaintenanceStandardDetail() {
   }
 
   // ===== 列定义 =====
+  const isEffective = currentStatus === '生效'
   const columns: ColumnsType<StdRow> = [
-    { title: '排序', dataIndex: 'sort_order', width: 70, render: (v) => v ?? 0 },
     {
       title: '频率', width: 100,
       render: (_, r) => <Tag color={MODE_COLOR[r.trigger_mode]}>{MODE_LABEL[r.trigger_mode] || r.trigger_mode}</Tag>,
     },
-    { title: '保养项', dataIndex: 'item_name', width: 180 },
+    { title: '保养项', dataIndex: 'item_name', width: 180, render: (v) => v || '-' },
     { title: '机构', dataIndex: 'mechanism', width: 120, render: (v) => v || '-' },
     { title: '部件', dataIndex: 'component', width: 120, render: (v) => v || '-' },
     { title: '部位', dataIndex: 'location', width: 120, render: (v) => v || '-' },
@@ -202,21 +205,6 @@ export default function DeviceMaintenanceStandardDetail() {
         return r.trigger_mode === 'daily' ? '每天' : r.trigger_mode === 'weekly' ? '每周' : '-'
       },
     },
-    {
-      title: '状态', width: 80,
-      render: (_, r) => <Tag color={r.status === 1 ? 'success' : 'default'}>{r.status === 1 ? '启用' : '禁用'}</Tag>,
-    },
-    {
-      title: '操作', width: 140, fixed: 'right',
-      render: (_, r) => (
-        <Space>
-          <Button size="small" type="link" icon={<EditOutlined />} onClick={() => openEditDrawer(r)}>编辑</Button>
-          <Popconfirm title="确认删除？" onConfirm={() => handleDelete(r.standard_id)}>
-            <Button size="small" type="link" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
-        </Space>
-      ),
-    },
   ]
 
   const device = profile?.device || {}
@@ -229,7 +217,17 @@ export default function DeviceMaintenanceStandardDetail() {
         <Space style={{ marginBottom: 16 }}>
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/device/maintenance-standard')}>返回列表</Button>
           <Button icon={<ReloadOutlined />} onClick={loadDetail}>刷新</Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openAddDrawer}>新增保养项</Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={openAddDrawer}
+            disabled={isEffective}
+          >新增保养项</Button>
+          {isEffective && (
+            <Tooltip title="档案已生效，如需修改请先停用">
+              <span style={{ display: 'inline-block', width: 0 }} />
+            </Tooltip>
+          )}
           {/* 状态切换按钮 */}
           {currentStatus === '编制' && (
             <Popconfirm title="确认生效？生效后将按计划生成执行记录" onConfirm={() => handleSwitchStatus('生效')}>
@@ -270,18 +268,66 @@ export default function DeviceMaintenanceStandardDetail() {
         </Card>
 
         {/* ===== 标准项列表 ===== */}
-        <Card size="small" title={<Title level={5} style={{ margin: 0 }}>保养标准项（{standards.length}）</Title>}>
+        <Card size="small" title={<Title level={5} style={{ margin: 0 }}>保养标准项（{standards.length}）{isEffective && <Tag color="success" style={{ marginLeft: 8 }}>已生效 · 仅查看</Tag>}</Title>}>
           <Table
             rowKey="standard_id"
             columns={columns}
             dataSource={standards}
-            scroll={{ x: 1500 }}
+            scroll={{ x: 1200 }}
             pagination={false}
             size="small"
             locale={{ emptyText: <Empty description="暂无保养标准项" /> }}
+            onRow={(r) => ({
+              onClick: () => {
+                if (isEffective) {
+                  setViewRow(r); setViewOpen(true)
+                } else {
+                  openEditDrawer(r)
+                }
+              },
+              style: { cursor: 'pointer' },
+            })}
           />
         </Card>
       </div>
+
+      {/* ===== 只读查看 Drawer（生效态） ===== */}
+      <Drawer
+        title="保养项详情"
+        open={viewOpen}
+        width={560}
+        onClose={() => setViewOpen(false)}
+        extra={<Button onClick={() => setViewOpen(false)}>关闭</Button>}
+      >
+        {viewRow && (
+          <Descriptions column={1} size="small" bordered>
+            <Descriptions.Item label="触发频率">{MODE_LABEL[viewRow.trigger_mode]}</Descriptions.Item>
+            <Descriptions.Item label="保养项名称">{viewRow.item_name || '-'}</Descriptions.Item>
+            <Descriptions.Item label="机构">{viewRow.mechanism || '-'}</Descriptions.Item>
+            <Descriptions.Item label="部件">{viewRow.component || '-'}</Descriptions.Item>
+            <Descriptions.Item label="部位">{viewRow.location || '-'}</Descriptions.Item>
+            <Descriptions.Item label="保养点数">{viewRow.point_count ?? 0}</Descriptions.Item>
+            <Descriptions.Item label="单件保养时间">{viewRow.time_per_point ?? 0} 分钟</Descriptions.Item>
+            <Descriptions.Item label="保养方法">{viewRow.maintenance_method || '-'}</Descriptions.Item>
+            <Descriptions.Item label="保养内容">{viewRow.maintenance_content || '-'}</Descriptions.Item>
+            <Descriptions.Item label="判定方式">{viewRow.judge_type}</Descriptions.Item>
+            <Descriptions.Item label="判定基准">{viewRow.standard_value || '-'}</Descriptions.Item>
+            <Descriptions.Item label="单位">{viewRow.unit || '-'}</Descriptions.Item>
+            {viewRow.trigger_mode === 'monthly' && (
+              <Descriptions.Item label="月度计划">
+                {(() => {
+                  const mp: boolean[] = viewRow.monthly_plan || []
+                  const months = mp.map((v, i) => v ? i + 1 : 0).filter(v => v > 0)
+                  return months.length > 0 ? months.join('月 ') + '月' : '-'
+                })()}
+              </Descriptions.Item>
+            )}
+            {viewRow.trigger_mode === 'runtime' && (
+              <Descriptions.Item label="运行时长阈值">{viewRow.runtime_threshold} 小时</Descriptions.Item>
+            )}
+          </Descriptions>
+        )}
+      </Drawer>
 
       {/* ===== 新增/编辑标准项 Drawer ===== */}
       <Drawer

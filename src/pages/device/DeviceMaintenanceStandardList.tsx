@@ -184,10 +184,6 @@ export default function DeviceMaintenanceStandardList() {
       render: (v: string) => v ? dayjs(v).format('YYYY-MM-DD') : '-',
     },
     {
-      title: '更新时间', dataIndex: 'updated_at', width: 160,
-      render: (v: string) => v ? dayjs(v).format('YYYY-MM-DD HH:mm') : '-',
-    },
-    {
       title: '操作', width: 240, fixed: 'right',
       render: (_, r) => (
         <Space size={4}>
