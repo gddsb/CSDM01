@@ -62,6 +62,7 @@ import DeviceFault from './DeviceFault.js'
 import DeviceFaultRepair from './DeviceFaultRepair.js'
 import DeviceImage from './DeviceImage.js'
 import DeviceMaintenanceStandard from './DeviceMaintenanceStandard.js'
+import DeviceMaintenanceProfile from './DeviceMaintenanceProfile.js'
 import DeviceMaintenanceRecord from './DeviceMaintenanceRecord.js'
 import DeviceRuntimeLog from './DeviceRuntimeLog.js'
 import DeviceCalibrationPlan from './DeviceCalibrationPlan.js'
@@ -261,6 +262,13 @@ DeviceFaultRepair.hasMany(DeviceImage, { foreignKey: 'doc_id', scope: { doc_type
 DeviceMaintenanceStandard.belongsTo(Device, { foreignKey: 'device_id', as: 'device', constraints: false })
 Device.hasMany(DeviceMaintenanceStandard, { foreignKey: 'device_id', as: 'device_standards' })
 
+// 设备维护标准档案 - 设备（一对一，设备级状态）
+DeviceMaintenanceProfile.belongsTo(Device, { foreignKey: 'device_id', as: 'device', constraints: false })
+Device.hasOne(DeviceMaintenanceProfile, { foreignKey: 'device_id', as: 'maintenance_profile', constraints: false })
+// 档案 - 标准项（一对多，通过 device_id 关联）
+DeviceMaintenanceProfile.hasMany(DeviceMaintenanceStandard, { foreignKey: 'device_id', as: 'standards', constraints: false })
+DeviceMaintenanceStandard.belongsTo(DeviceMaintenanceProfile, { foreignKey: 'device_id', as: 'profile', constraints: false })
+
 // 设备保养执行记录 - 设备（多对一）
 DeviceMaintenanceRecord.belongsTo(Device, { foreignKey: 'device_id', as: 'device', constraints: false })
 
@@ -351,6 +359,7 @@ const db = {
   DeviceFaultRepair,
   DeviceImage,
   DeviceMaintenanceStandard,
+  DeviceMaintenanceProfile,
   DeviceMaintenanceRecord,
   DeviceRuntimeLog,
   DeviceCalibrationPlan,
@@ -422,6 +431,7 @@ export {
   DeviceFaultRepair,
   DeviceImage,
   DeviceMaintenanceStandard,
+  DeviceMaintenanceProfile,
   DeviceMaintenanceRecord,
   DeviceRuntimeLog,
   DeviceCalibrationPlan,

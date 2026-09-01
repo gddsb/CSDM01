@@ -360,6 +360,15 @@ router.post('/device-standards', logOperation('保养标准'), DeviceMaintenance
 router.put('/device-standards/:id', logOperation('保养标准'), DeviceMaintenanceController.updateStandard)
 router.delete('/device-standards/:id', logOperation('保养标准'), DeviceMaintenanceController.deleteStandard)
 
+// 设备维护标准档案（设备级，承载编制/生效/停用状态）
+// 注意：available-devices 必须在 :deviceId 之前，避免被参数路由匹配
+router.get('/device-maintenance-profiles', DeviceMaintenanceController.listProfiles)
+router.get('/device-maintenance-profiles/available-devices', DeviceMaintenanceController.listAvailableDevices)
+router.get('/device-maintenance-profiles/:deviceId', DeviceMaintenanceController.detailProfile)
+router.post('/device-maintenance-profiles', logOperation('维护标准档案'), DeviceMaintenanceController.createProfile)
+router.put('/device-maintenance-profiles/:deviceId/status', logOperation('档案状态'), DeviceMaintenanceController.updateProfileStatus)
+router.delete('/device-maintenance-profiles/:deviceId', logOperation('维护标准档案'), DeviceMaintenanceController.deleteProfile)
+
 // 设备保养执行记录（统一版，合并旧点检计划/记录+维护工单）
 router.post('/device-records/generate', logOperation('生成保养执行'), DeviceMaintenanceController.generateRecords)
 router.get('/device-records/matrix', DeviceMaintenanceController.getMatrix)

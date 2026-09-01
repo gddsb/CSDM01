@@ -3,6 +3,7 @@ import fs from 'fs'
 import { Op } from 'sequelize'
 import {
   DeviceMaintenanceStandard,
+  DeviceMaintenanceProfile,
   DeviceMaintenanceRecord,
   DeviceRuntimeLog,
   Device,
@@ -280,6 +281,203 @@ export default {
   },
 
   // ============================================================
+  // 设备维护标准档案（设备级，承载编制/生效/停用状态）
+  // ============================================================
+  /**
+   * 档案列表：每行=一台设备，返回已有档案的设备 + 标准项数量 + 状态
+   */
+  async listProfiles(req: any, res: any) {
+    try {
+      const { keyword, status, page = 1, pageSize = 50 } = req.query
+      const where: any = {}
+      if (status) where.status = status
+      let deviceIds: number[] | null = null
+      if (keyword) {
+        const devices = await Device.findAll({
+          where: {
+            [Op.or]: [
+              { device_code: { [Op.like]: `%${keyword}%` } },
+              { device_name: { [Op.like]: `%${keyword}%` } },
+            ],
+          },
+          attributes: ['device_id'],
+          raw: true,
+        })
+        deviceIds = devices.map(d => d.device_id)
+        if (deviceIds.length === 0) return success(res, { list: [], total: 0 }, '查询成功', 0)
+        where.device_id = { [Op.in]: deviceIds }
+      }
+      const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
+      const offset = (Number(page) - 1) * limit
+      const { rows, count } = await DeviceMaintenanceProfile.findAndCountAll({
+        where,
+        include: [
+          { model: Device, as: 'device', required: false, attributes: ['device_id', 'device_code', 'device_name'] },
+          {
+            model: DeviceMaintenanceStandard, as: 'standards', required: false, separate: true,
+            attributes: ['standard_id', 'trigger_mode', 'status'],
+          },
+        ],
+        limit, offset,
+        order: [['updated_at', 'DESC'], ['profile_id', 'DESC']],
+        distinct: true,
+      })
+      const list = rows.map((p: any) => {
+        const stds = p.getDataValue('standards') || []
+        const byMode: Record<string, number> = { daily: 0, weekly: 0, monthly: 0, runtime: 0 }
+        stds.forEach((s: any) => { const m = s.getDataValue('trigger_mode'); if (byMode[m] !== undefined) byMode[m] += 1 })
+        return {
+          profile_id: p.getDataValue('profile_id'),
+          device_id: p.getDataValue('device_id'),
+          device_code: p.getDataValue('device_code') || p.getDataValue('device')?.device_code,
+          device_name: p.getDataValue('device_name') || p.getDataValue('device')?.device_name,
+          status: p.getDataValue('status'),
+          version: p.getDataValue('version'),
+          effective_date: p.getDataValue('effective_date'),
+          remarks: p.getDataValue('remarks'),
+          updated_at: p.getDataValue('updated_at'),
+          created_at: p.getDataValue('created_at'),
+          std_count: stds.length,
+          std_by_mode: byMode,
+        }
+      })
+      return success(res, { list, total: count }, '查询成功', count)
+    } catch (err: any) {
+      logger.error('[DeviceMaintenance] listProfiles error:', err)
+      return fail(res, err.message || '查询失败', ErrorCode.SYSTEM_ERROR)
+    }
+  },
+
+  /**
+   * 可用设备列表：返回尚未创建档案的设备，供新增档案选择
+   */
+  async listAvailableDevices(req: any, res: any) {
+    try {
+      const { keyword } = req.query
+      const devWhere: any = {}
+      if (keyword) {
+        devWhere[Op.or] = [
+          { device_code: { [Op.like]: `%${keyword}%` } },
+          { device_name: { [Op.like]: `%${keyword}%` } },
+        ]
+      }
+      const existed = await DeviceMaintenanceProfile.findAll({ attributes: ['device_id'], raw: true })
+      const existedSet = new Set(existed.map(p => p.device_id))
+      const devices = await Device.findAll({
+        where: { ...devWhere, device_id: { [Op.notIn]: Array.from(existedSet) || [0] } },
+        attributes: ['device_id', 'device_code', 'device_name'],
+        order: [['device_code', 'ASC']],
+      })
+      return success(res, devices, '查询成功')
+    } catch (err: any) {
+      logger.error('[DeviceMaintenance] listAvailableDevices error:', err)
+      return fail(res, err.message || '查询失败', ErrorCode.SYSTEM_ERROR)
+    }
+  },
+
+  /**
+   * 创建档案：为指定设备创建档案（状态=编制）
+   */
+  async createProfile(req: any, res: any) {
+    const t = await DeviceMaintenanceProfile.sequelize.transaction()
+    try {
+      const { device_id, remarks } = req.body || {}
+      if (!device_id) return fail(res, '设备ID不能为空', ErrorCode.PARAM_INVALID)
+      const exists = await DeviceMaintenanceProfile.findOne({ where: { device_id }, transaction: t })
+      if (exists) return fail(res, '该设备已存在维护标准档案', ErrorCode.RECORD_EXISTS)
+      const device = await Device.findOne({ where: { device_id }, transaction: t })
+      if (!device) return fail(res, '设备不存在', ErrorCode.RECORD_NOT_FOUND)
+      const profile = await DeviceMaintenanceProfile.create({
+        device_id,
+        device_code: (device as any).device_code,
+        device_name: (device as any).device_name,
+        status: '编制',
+        version: 1,
+        remarks,
+      }, { transaction: t })
+      await t.commit()
+      return success(res, profile, '档案创建成功')
+    } catch (err: any) {
+      if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
+      logger.error('[DeviceMaintenance] createProfile error:', err)
+      return fail(res, err.message || '创建失败', ErrorCode.SYSTEM_ERROR)
+    }
+  },
+
+  /**
+   * 档案详情：含该设备所有标准项
+   */
+  async detailProfile(req: any, res: any) {
+    try {
+      const { deviceId } = req.params
+      const profile = await DeviceMaintenanceProfile.findOne({
+        where: { device_id: deviceId },
+        include: [
+          { model: Device, as: 'device', required: false, attributes: ['device_id', 'device_code', 'device_name', 'device_model', 'device_spec', 'location'] },
+          {
+            model: DeviceMaintenanceStandard, as: 'standards', required: false, separate: false,
+            order: [['sort_order', 'ASC'], ['standard_id', 'ASC']],
+          },
+        ],
+      })
+      if (!profile) return fail(res, '档案不存在', ErrorCode.RECORD_NOT_FOUND)
+      return success(res, profile, '查询成功')
+    } catch (err: any) {
+      logger.error('[DeviceMaintenance] detailProfile error:', err)
+      return fail(res, err.message || '查询失败', ErrorCode.SYSTEM_ERROR)
+    }
+  },
+
+  /**
+   * 切换档案状态：编制→生效、生效→停用、停用→生效
+   * 生效时 effective_date=今天，version+1
+   */
+  async updateProfileStatus(req: any, res: any) {
+    const t = await DeviceMaintenanceProfile.sequelize.transaction()
+    try {
+      const { deviceId } = req.params
+      const { status } = req.body || {}
+      if (!['编制', '生效', '停用'].includes(status)) {
+        return fail(res, '状态无效，可选值：编制 / 生效 / 停用', ErrorCode.PARAM_INVALID)
+      }
+      const profile = await DeviceMaintenanceProfile.findOne({ where: { device_id: deviceId }, transaction: t })
+      if (!profile) return fail(res, '档案不存在', ErrorCode.RECORD_NOT_FOUND)
+      const patch: any = { status }
+      if (status === '生效') {
+        patch.effective_date = new Date().toISOString().slice(0, 10)
+        patch.version = (profile.getDataValue('version') || 1) + 1
+      }
+      await profile.update(patch, { transaction: t })
+      await t.commit()
+      return success(res, profile, '状态更新成功')
+    } catch (err: any) {
+      if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
+      logger.error('[DeviceMaintenance] updateProfileStatus error:', err)
+      return fail(res, err.message || '更新失败', ErrorCode.SYSTEM_ERROR)
+    }
+  },
+
+  /**
+   * 删除档案：同时删除该设备的所有标准项（档案接管的标准项清理）
+   */
+  async deleteProfile(req: any, res: any) {
+    const t = await DeviceMaintenanceProfile.sequelize.transaction()
+    try {
+      const { deviceId } = req.params
+      const profile = await DeviceMaintenanceProfile.findOne({ where: { device_id: deviceId }, transaction: t })
+      if (!profile) return fail(res, '档案不存在', ErrorCode.RECORD_NOT_FOUND)
+      await DeviceMaintenanceStandard.destroy({ where: { device_id: deviceId }, transaction: t })
+      await profile.destroy({ transaction: t })
+      await t.commit()
+      return success(res, null, '删除成功')
+    } catch (err: any) {
+      if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
+      logger.error('[DeviceMaintenance] deleteProfile error:', err)
+      return fail(res, err.message || '删除失败', ErrorCode.SYSTEM_ERROR)
+    }
+  },
+
+  // ============================================================
   // 生成执行记录（四分支）
   // ============================================================
   /**
@@ -303,11 +501,26 @@ export default {
 
       const createdList: any[] = []
 
+      // 仅对档案状态=生效的设备生成执行记录
+      const effectiveProfiles = await DeviceMaintenanceProfile.findAll({
+        where: { status: '生效' },
+        attributes: ['device_id'],
+        transaction: t,
+      })
+      let effectiveDeviceIds = effectiveProfiles.map((p: any) => p.getDataValue('device_id'))
+      // 若限定单台设备，进一步取交集
+      if (device_id) {
+        effectiveDeviceIds = effectiveDeviceIds.filter(id => id === Number(device_id))
+      }
+      if (effectiveDeviceIds.length === 0) {
+        await t.commit()
+        return success(res, { created: 0, total: 0, records: [] }, '无生效档案，跳过生成')
+      }
+
       for (const m of targetModes) {
         if (!['daily', 'weekly', 'monthly', 'runtime'].includes(m)) continue
 
-        const stdWhere: any = { trigger_mode: m, status: 1 }
-        if (device_id) stdWhere.device_id = device_id
+        const stdWhere: any = { trigger_mode: m, status: 1, device_id: { [Op.in]: effectiveDeviceIds } }
 
         const standards = await DeviceMaintenanceStandard.findAll({ where: stdWhere, transaction: t })
 
@@ -1074,4 +1287,50 @@ export default {
       fail(res, err.message || '查询失败', ErrorCode.SYSTEM_ERROR)
     }
   },
+}
+
+// ============================================================
+// 启动时 backfill：为已有标准但无档案的设备创建"生效"档案
+// 保证存量标准在引入档案机制后仍能继续生成执行记录
+// ============================================================
+export async function initProfiles() {
+  try {
+    const stdRows = await DeviceMaintenanceStandard.findAll({
+      attributes: ['device_id'],
+      group: ['device_id'],
+      raw: true,
+    }) as any[]
+    const stdDeviceIds: number[] = stdRows.map(r => r.device_id).filter(Boolean)
+    if (stdDeviceIds.length === 0) return
+    const existed = await DeviceMaintenanceProfile.findAll({
+      attributes: ['device_id'],
+      where: { device_id: { [Op.in]: stdDeviceIds } },
+      raw: true,
+    }) as any[]
+    const existedSet = new Set(existed.map(p => p.device_id))
+    const toCreate = stdDeviceIds.filter(id => !existedSet.has(id))
+    if (toCreate.length === 0) return
+    const devices = await Device.findAll({
+      where: { device_id: { [Op.in]: toCreate } },
+      attributes: ['device_id', 'device_code', 'device_name'],
+      raw: true,
+    }) as any[]
+    const deviceMap = new Map(devices.map(d => [d.device_id, d]))
+    const today = new Date().toISOString().slice(0, 10)
+    const rows = toCreate.map(id => {
+      const d = deviceMap.get(id)
+      return {
+        device_id: id,
+        device_code: d?.device_code || null,
+        device_name: d?.device_name || null,
+        status: '生效',
+        version: 1,
+        effective_date: today,
+      }
+    })
+    await DeviceMaintenanceProfile.bulkCreate(rows)
+    console.log(`✅ 维护标准档案 backfill: ${rows.length} 台设备`)
+  } catch (err: any) {
+    logger.error('[DeviceMaintenance] initProfiles error:', err)
+  }
 }
