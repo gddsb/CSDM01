@@ -4,8 +4,7 @@ import {
   Popconfirm, Empty, Spin, Tooltip, message,
 } from 'antd'
 import {
-  SearchOutlined, ReloadOutlined, PlusOutlined, EditOutlined,
-  DeleteOutlined, CheckCircleOutlined, PauseCircleOutlined, PlayCircleOutlined,
+  SearchOutlined, ReloadOutlined, PlusOutlined,
   ToolOutlined, FileTextOutlined, AppstoreOutlined,
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
@@ -184,31 +183,31 @@ export default function DeviceMaintenanceStandardList() {
       render: (v: string) => v ? dayjs(v).format('YYYY-MM-DD') : '-',
     },
     {
-      title: '操作', width: 240, fixed: 'right',
+      title: '操作', width: 220, fixed: 'right',
       render: (_, r) => (
         <Space size={4}>
-          <Button size="small" type="link" icon={<EditOutlined />}
-            onClick={() => navigate(`/device/maintenance-standard/${r.device_id}`)}>编辑</Button>
+          <Button size="small" type="link"
+            onClick={() => navigate(`/device/maintenance-standard/${r.device_id}`)}>查看</Button>
           {r.status === '编制' && (
             <Popconfirm title="确认生效？生效后将按计划生成执行记录"
               onConfirm={() => handleSwitchStatus(r, '生效')}>
-              <Button size="small" type="link" icon={<CheckCircleOutlined />}>生效</Button>
+              <Button size="small" type="link">生效</Button>
             </Popconfirm>
           )}
           {r.status === '生效' && (
             <Popconfirm title="确认停用？停用后不再生成新执行记录"
               onConfirm={() => handleSwitchStatus(r, '停用')}>
-              <Button size="small" type="link" icon={<PauseCircleOutlined />}>停用</Button>
+              <Button size="small" type="link">停用</Button>
             </Popconfirm>
           )}
           {r.status === '停用' && (
             <Popconfirm title="确认重新生效？"
               onConfirm={() => handleSwitchStatus(r, '生效')}>
-              <Button size="small" type="link" icon={<PlayCircleOutlined />}>生效</Button>
+              <Button size="small" type="link">生效</Button>
             </Popconfirm>
           )}
           <Popconfirm title="确认删除？将同时清除该设备所有标准项" onConfirm={() => handleDelete(r)}>
-            <Button size="small" type="link" danger icon={<DeleteOutlined />} />
+            <Button size="small" type="link" danger>删除</Button>
           </Popconfirm>
         </Space>
       ),

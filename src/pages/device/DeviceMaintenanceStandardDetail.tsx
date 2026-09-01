@@ -4,8 +4,9 @@ import {
   Checkbox, Popconfirm, Empty, Spin, Descriptions, Typography, Tooltip, message,
 } from 'antd'
 import {
-  ArrowLeftOutlined, PlusOutlined, EditOutlined, DeleteOutlined,
+  ArrowLeftOutlined, PlusOutlined,
   CheckCircleOutlined, PauseCircleOutlined, PlayCircleOutlined, ReloadOutlined,
+  PrinterOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import dayjs from 'dayjs'
@@ -217,6 +218,7 @@ export default function DeviceMaintenanceStandardDetail() {
         <Space style={{ marginBottom: 16 }}>
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/device/maintenance-standard')}>返回列表</Button>
           <Button icon={<ReloadOutlined />} onClick={loadDetail}>刷新</Button>
+          <Button icon={<PrinterOutlined />} onClick={() => window.print()}>打印</Button>
           <Button
             type="primary"
             icon={<PlusOutlined />}
@@ -465,6 +467,18 @@ export default function DeviceMaintenanceStandardDetail() {
           </Form.Item>
         </Form>
       </Drawer>
+
+      {/* 打印样式 */}
+      <style>{`
+        @media print {
+          .ant-layout-sider, .ant-layout-header, .ant-layout-footer { display: none !important; }
+          .ant-layout-content { margin: 0 !important; padding: 0 !important; max-width: 100% !important; }
+          .ant-space { display: none !important; }
+          .ant-drawer, .ant-modal { display: none !important; }
+          .ant-card-head { border-bottom: 1px solid #000 !important; }
+          body { background: #fff !important; }
+        }
+      `}</style>
     </Spin>
   )
 }
