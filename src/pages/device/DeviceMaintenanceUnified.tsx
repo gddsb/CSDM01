@@ -6,8 +6,9 @@ import {
 import {
   ToolOutlined, ClockCircleOutlined, CheckCircleOutlined, SearchOutlined,
   ReloadOutlined, PlusOutlined, SettingOutlined, EditOutlined, EyeOutlined,
-  DeleteOutlined, ThunderboltOutlined, DashboardOutlined,
+  DeleteOutlined, ThunderboltOutlined, DashboardOutlined, PrinterOutlined, AppstoreOutlined,
 } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import type { StatItem } from '../../components/ThreeSectionPage'
 import dayjs from 'dayjs'
@@ -61,6 +62,7 @@ const JUDGE_OPTIONS = [
 interface DeviceOption { device_id: number; device_code: string; device_name: string }
 
 export default function DeviceMaintenanceUnified() {
+  const navigate = useNavigate()
   // ============ 执行记录列表 ============
   const [records, setRecords] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -439,6 +441,21 @@ export default function DeviceMaintenanceUnified() {
             setGenOpen(true)
           }}>生成执行记录</Button>
           <Button icon={<SettingOutlined />} onClick={openStdDrawer}>保养标准管理</Button>
+          <Button
+            icon={<AppstoreOutlined />}
+            disabled={!filters.device_id}
+            onClick={() => navigate(
+              `/device/maintenance/matrix?device_id=${filters.device_id}&year_month=${dayjs().format('YYYY-MM')}`
+            )}
+          >矩阵视图</Button>
+          <Button
+            icon={<PrinterOutlined />}
+            disabled={!filters.device_id}
+            onClick={() => window.open(
+              `/device/maintenance/print?device_id=${filters.device_id}&year_month=${dayjs().format('YYYY-MM')}`,
+              '_blank', 'width=1280,height=800'
+            )}
+          >打印</Button>
           <Button icon={<ReloadOutlined />} onClick={() => { setPage(1); loadRecords() }}>刷新</Button>
         </Space>
       }

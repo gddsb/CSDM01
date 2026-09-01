@@ -13,51 +13,24 @@ import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { generateDeviceFaultNo, generateDeviceRecordNo } from '../utils/sequence.js'
 import { logger } from '../utils/logger.js'
 import { STATUS_REVERSE } from '../models/DeviceMaintenanceRecord.js'
+import {
+  todayStr,
+  dateOnlyStr,
+  getISOWeek,
+  buildPeriodKey,
+  parseMultiStatus,
+  dailyPeriodKeys,
+  weeklyPeriodKeys,
+  parseMonthlyPlan,
+  monthlyStandardActive,
+} from '../utils/maintenanceMatrix.js'
 
 // 未完成工单状态集合：0=待执行, 1=执行中, 3=跳过（不含 2=已完成）
 const UNFINISHED_STATUS = [0, 1, 3]
 
 // ============================================================
-// 工具函数
+// 工具函数（纯函数已移至 maintenanceMatrix.ts）
 // ============================================================
-
-function todayStr(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-function dateOnlyStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-// ISO 周号：返回 'YYYY-Www'（如 '2026-W36'）
-function getISOWeek(date: Date): string {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
-  const dayNum = d.getUTCDay() || 7
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum)
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
-  const weekNum = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
-  return `${d.getUTCFullYear()}-W${String(weekNum).padStart(2, '0')}`
-}
-
-// 状态参数解析（支持中文状态名或数字的混合输入）
-const parseMultiStatus = (status: any): number[] | null => {
-  if (status === undefined || status === '' || status === null) return null
-  const arr = Array.isArray(status) ? status : [status]
-  const nums: number[] = []
-  arr.forEach((s: any) => {
-    if (typeof s === 'string' && s.includes(',')) {
-      s.split(',').forEach((p: string) => {
-        const n = STATUS_REVERSE[p] !== undefined ? STATUS_REVERSE[p] : Number(p)
-        if (!Number.isNaN(n)) nums.push(n)
-      })
-    } else {
-      const n = STATUS_REVERSE[s] !== undefined ? STATUS_REVERSE[s] : Number(s)
-      if (!Number.isNaN(n)) nums.push(n)
-    }
-  })
-  return nums.length ? nums : null
-}
 
 // 取数值化的 status（绕过 model getter）
 const rawStatus = (record: any): number => record.getDataValue('status')
@@ -91,16 +64,8 @@ async function getLatestRuntime(deviceId: number, t?: any): Promise<number> {
   return log ? Number((log as any).getDataValue('runtime_hours')) : 0
 }
 
-// period_key 生成
-function buildPeriodKey(triggerMode: string, targetDate: Date, standardId?: number, deviceId?: number, threshold?: number): string {
-  switch (triggerMode) {
-    case 'daily':    return dateOnlyStr(targetDate)
-    case 'weekly':   return getISOWeek(targetDate)
-    case 'monthly':  return `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`
-    case 'runtime':  return `RUNTIME:${deviceId}:${standardId}:${threshold ?? 0}`
-    default:         return dateOnlyStr(targetDate)
-  }
-}
+// period_key 生成（复用公共函数，已测试）
+export { buildPeriodKey } from '../utils/maintenanceMatrix.js'
 
 // ============================================================
 // 标准详情（含图片）
@@ -461,8 +426,11 @@ export default {
       if (!ym) ym = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
 
       const [yr, mo] = ym.split('-').map(Number)
-      const targetMonthDate = new Date(yr, mo - 1, 1)
       const daysInMonth = new Date(yr, mo, 0).getDate()
+
+      // 提前计算 period_keys 集（纯工具函数，已测试）
+      const dailyKeys = dailyPeriodKeys(yr, mo)
+      const weekKeys = weeklyPeriodKeys(yr, mo)
 
       // 1. 查该设备全部启用标准
       const standards = await DeviceMaintenanceStandard.findAll({
@@ -481,14 +449,13 @@ export default {
         else if (tm === 'weekly') weeklyStds.push(s)
         else if (tm === 'monthly') {
           const mp = s.getDataValue('monthly_plan')
-          if (Array.isArray(mp) && mp[mo - 1]) monthlyStds.push(s)
+          if (monthlyStandardActive(mp, mo)) monthlyStds.push(s)
         } else if (tm === 'runtime') runtimeStds.push(s)
       })
 
       // 3. 查该设备在该月内的所有执行记录
-      // daily: period_key 属于这个月的日期
-      const dailyStart = `${yr}-${String(mo).padStart(2, '0')}-01`
-      const dailyEnd = `${yr}-${String(mo).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`
+      const dailyStart = dailyKeys[0]
+      const dailyEnd = dailyKeys[dailyKeys.length - 1]
 
       const records = await DeviceMaintenanceRecord.findAll({
         where: {
@@ -497,7 +464,7 @@ export default {
             // daily: period_key 落在这个月
             { trigger_mode: 'daily', period_key: { [Op.gte]: dailyStart, [Op.lte]: dailyEnd } },
             // weekly: period_key = YYYY-Www，取这个月里覆盖到的周
-            { trigger_mode: 'weekly' },
+            { trigger_mode: 'weekly', period_key: { [Op.in]: weekKeys } },
             // monthly: period_key = YYYY-MM
             { trigger_mode: 'monthly', period_key: ym },
           ],
@@ -546,20 +513,10 @@ export default {
         standard_value: s.getDataValue('standard_value'),
         unit: s.getDataValue('unit'),
         sort_order: s.getDataValue('sort_order'),
-        // 31天的 period_key
-        records: buildMatrixRecords(
-          s, 'daily',
-          Array.from({ length: daysInMonth }, (_, i) => `${yr}-${String(mo).padStart(2, '0')}-${String(i + 1).padStart(2, '0')}`),
-        ),
+        point_count: s.getDataValue('point_count'),
+        time_per_point: s.getDataValue('time_per_point'),
+        records: buildMatrixRecords(s, 'daily', dailyKeys),
       }))
-
-      // weekly: 找出这个月有哪些周覆盖
-      const isoWeeksInMonth = new Set<string>()
-      for (let d = 1; d <= daysInMonth; d++) {
-        const isoWeek = getISOWeek(new Date(yr, mo - 1, d))
-        isoWeeksInMonth.add(isoWeek)
-      }
-      const weekKeys = Array.from(isoWeeksInMonth).sort()
 
       const resultWeekly: any[] = weeklyStds.map((s: any) => ({
         standard_id: s.getDataValue('standard_id'),
@@ -668,7 +625,7 @@ export default {
       if (trigger_mode) where.trigger_mode = trigger_mode
       if (period_key) where.period_key = period_key
 
-      const statusArr = parseMultiStatus(status)
+      const statusArr = parseMultiStatus(status, STATUS_REVERSE)
       if (statusArr) where.status = { [Op.in]: statusArr }
 
       if (start_date || end_date) {
