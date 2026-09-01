@@ -1262,6 +1262,13 @@ export default {
       }
 
       const files: any[] = (req as any).files || ((req as any).file ? [(req as any).file] : [])
+      logger.info('[DeviceMaintenance] uploadImage debug', {
+        ct: req.headers['content-type'],
+        cl: req.headers['content-length'],
+        files_len: files.length,
+        multer_req_files_keys: (req as any).files ? Object.keys((req as any).files).slice(0, 3) : null,
+        multer_file: !!(req as any).file,
+      })
       if (files.length === 0) return fail(res, '请选择要上传的图片', ErrorCode.PARAM_INVALID)
 
       // 专用目录：uploads/device/maintenance/YYYY-MM/
