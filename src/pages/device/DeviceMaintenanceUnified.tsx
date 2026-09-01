@@ -196,9 +196,8 @@ export default function DeviceMaintenanceUnified() {
     const fd = new FormData()
     files.forEach(f => fd.append('images', f))
     try {
-      await api.post(`/basic/device-records/${recordId}/images`, fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
+      // 注意：不要手动设置 Content-Type，浏览器会自动带 multipart/form-data + boundary
+      await api.post(`/basic/device-records/${recordId}/images`, fd)
     } catch (err: any) {
       message.warning('保养结果已提交，但图片上传失败：' + (err?.message || '请稍后重试'))
     }

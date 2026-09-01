@@ -21,9 +21,16 @@ async function capacitorHttpAdapter(config: AxiosRequestConfig): Promise<AxiosRe
   }
 
   // 组装 body
-  let body: string | null = null
+  let body: any = null
   if (config.data != null) {
     if (typeof config.data === 'string') {
+      body = config.data
+    } else if (
+      config.data instanceof FormData ||
+      config.data instanceof Blob ||
+      config.data instanceof File
+    ) {
+      // FormData / Blob / File 直接透传，由浏览器自动设置 Content-Type（含 boundary）
       body = config.data
     } else {
       if (!headers['Content-Type']) headers['Content-Type'] = 'application/json'
@@ -50,7 +57,7 @@ async function capacitorHttpAdapter(config: AxiosRequestConfig): Promise<AxiosRe
       url: fullUrl,
       method: method as any,
       headers,
-      data: body,
+      data: body as any,
     })
 
     // 解析响应
@@ -169,9 +176,16 @@ async function browserXhrAdapter(config: InternalAxiosRequestConfig): Promise<Ax
     }
 
     // 发送请求
-    let body: string | null = null
+    let body: any = null
     if (config.data != null) {
       if (typeof config.data === 'string') {
+        body = config.data
+      } else if (
+        config.data instanceof FormData ||
+        config.data instanceof Blob ||
+        config.data instanceof File
+      ) {
+        // FormData / Blob / File 直接透传，由 XHR 自动设置 Content-Type + boundary
         body = config.data
       } else {
         // 检查是否已有 Content-Type
