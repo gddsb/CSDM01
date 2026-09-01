@@ -83,10 +83,12 @@ function sha256File(p: string): string {
 
 /** 渲染时间水印 SVG（白色半透明描边黑色，底部右对齐） */
 function buildWatermarkSvg(text: string, width: number, height: number, density: number): string {
-  const fontSize = Math.max(14, Math.round(width * 0.018 * density))
-  const padding = Math.round(width * 0.025 * density)
-  const svgW = width * density
-  const svgH = height * density
+  // SVG 是矢量格式，宽高直接用底图像素尺寸，不需要 density 放大
+  // density 参数保留（调用处不破坏），但 SVG 尺寸固定为底图尺寸
+  const fontSize = Math.max(14, Math.round(width * 0.018))
+  const padding = Math.round(width * 0.025)
+  const svgW = width
+  const svgH = height
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   return `
