@@ -177,17 +177,39 @@ app.get('/api/health', (req, res) => {
 // API 路由
 app.use('/api', routes)
 
-// 非 API 请求代理到前端 Vite 开发服务器
-app.use('/', (req, res, next) => {
-  // 只代理非 API 请求
-  if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
-    return next()
-  }
-  proxy.web(req, res, {}, (err) => {
-    console.error('代理错误:', err)
-    res.status(503).json({ success: false, message: '前端服务暂不可用' })
+// 非 API 请求：生产模式由后端直接提供 dist 静态文件 + SPA fallback；
+// 开发模式代理到 Vite 开发服务器 (localhost:5173)
+const DIST_DIR = path.resolve(process.cwd(), '..', 'dist')
+const DIST_INDEX = path.resolve(DIST_DIR, 'index.html')
+const distExists = () => {
+  try { return fs.existsSync(DIST_INDEX) } catch { return false }
+}
+if (isProd && distExists()) {
+  // 生产：先 serve 静态文件
+  app.use('/', express.static(DIST_DIR, {
+    index: false, // 不自动 index.html，SPA fallback 统一走 sendFile
+    maxAge: '7d',
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache')
+    },
+  }))
+  // SPA fallback：所有非文件请求返回 index.html
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next()
+    res.sendFile(DIST_INDEX, (err) => {
+      if (err) next(err)
+    })
   })
-})
+} else {
+  // 开发 / dist 不存在时，代理到 Vite 开发服务器
+  app.use('/', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next()
+    proxy.web(req, res, {}, (err) => {
+      console.error('代理错误:', err)
+      res.status(503).json({ success: false, message: '前端服务暂不可用' })
+    })
+  })
+}
 
 // 404 处理（仅针对未匹配的 API 请求）
 app.use('/api', (req, res) => {
