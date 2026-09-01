@@ -300,45 +300,58 @@ export default function DeviceMaintenanceStandardDetail() {
           point_count: 1,
           time_per_point: 0,
         }}>
-          <Title level={5}>基础信息</Title>
-          <Form.Item name="sort_order" label="排序">
-            <InputNumber min={0} style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item name="item_name" label="保养项名称" rules={[{ required: true, message: '请填写保养项名称' }]}>
-            <Input placeholder="如：清理冷凝器两侧绒毛飞絮" />
-          </Form.Item>
+          {/* 第一行：触发频率、状态 */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Form.Item name="trigger_mode" label="触发频率" rules={[{ required: true, message: '请选择触发频率' }]}>
+              <Radio.Group>
+                <Radio value="daily">每日点检</Radio>
+                <Radio value="weekly">每周保养</Radio>
+                <Radio value="monthly">每月保养</Radio>
+                <Radio value="runtime">运行时长</Radio>
+              </Radio.Group>
+            </Form.Item>
+            <Form.Item name="status" label="状态">
+              <Radio.Group>
+                <Radio value={1}>启用</Radio>
+                <Radio value={0}>禁用</Radio>
+              </Radio.Group>
+            </Form.Item>
+          </div>
+
+          {/* 第二行：保养项名称（多行文本） */}
+          <Form.Item name="item_name" label="保养项名称" rules={[{ required: true, message: '请填写保养项名称' }]}>
+            <TextArea rows={2} placeholder="如：清理冷凝器两侧绒毛飞絮" />
+          </Form.Item>
+
+          {/* 第三行：机构、部件、部位 */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
             <Form.Item name="mechanism" label="机构"><Input placeholder="如：压缩机冷热机" /></Form.Item>
             <Form.Item name="component" label="部件"><Input placeholder="如：交换管" /></Form.Item>
             <Form.Item name="location" label="部位"><Input placeholder="如：排风扇" /></Form.Item>
+          </div>
+
+          {/* 第四行：保养点数、单件保养时间、保养方法 */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+            <Form.Item name="point_count" label="保养点数"><InputNumber min={1} style={{ width: '100%' }} /></Form.Item>
+            <Form.Item name="time_per_point" label="单件保养时间(分钟)"><InputNumber min={0} style={{ width: '100%' }} /></Form.Item>
             <Form.Item name="maintenance_method" label="保养方法"><Input placeholder="如：定期点检 / 定期清理" /></Form.Item>
           </div>
+
+          {/* 第五行：保养内容 */}
           <Form.Item name="maintenance_content" label="保养内容">
             <TextArea rows={2} placeholder="具体保养动作描述" />
           </Form.Item>
 
-          <Title level={5}>参数</Title>
+          {/* 第六行：判定方式 */}
+          <Form.Item name="judge_type" label="判定方式"><Radio.Group options={JUDGE_OPTIONS} /></Form.Item>
+
+          {/* 其他参数 */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <Form.Item name="judge_type" label="判定方式"><Radio.Group options={JUDGE_OPTIONS} /></Form.Item>
+            <Form.Item name="standard_value" label="判定基准"><Input placeholder="如：≤60℃" /></Form.Item>
             <Form.Item name="unit" label="单位"><Input placeholder="如：℃ / hPa" /></Form.Item>
           </div>
-          <Form.Item name="standard_value" label="判定基准">
-            <Input placeholder="如：冷凝器两侧干净无绒毛飞絮、≤60℃" />
-          </Form.Item>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <Form.Item name="point_count" label="保养点位件数"><InputNumber min={1} style={{ width: '100%' }} /></Form.Item>
-            <Form.Item name="time_per_point" label="单件保养时间(分钟)"><InputNumber min={0} style={{ width: '100%' }} /></Form.Item>
-          </div>
 
-          <Title level={5}>触发频率（四种互斥）</Title>
-          <Form.Item name="trigger_mode" rules={[{ required: true, message: '请选择触发频率' }]}>
-            <Radio.Group>
-              <Radio value="daily">每日点检</Radio>
-              <Radio value="weekly">每周保养</Radio>
-              <Radio value="monthly">每月保养</Radio>
-              <Radio value="runtime">运行时长</Radio>
-            </Radio.Group>
-          </Form.Item>
+          {/* 触发频率相关参数 */}
           <Form.Item shouldUpdate={(prev, cur) => prev.trigger_mode !== cur.trigger_mode}>
             {({ getFieldValue }) => {
               const mode = getFieldValue('trigger_mode')
@@ -363,14 +376,11 @@ export default function DeviceMaintenanceStandardDetail() {
             }}
           </Form.Item>
 
-          <Title level={5}>其他</Title>
-          <Form.Item name="status" label="状态">
-            <Radio.Group>
-              <Radio value={1}>启用</Radio>
-              <Radio value={0}>禁用</Radio>
-            </Radio.Group>
-          </Form.Item>
-          <Form.Item name="remarks" label="备注"><TextArea rows={2} /></Form.Item>
+          {/* 排序、备注 */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12 }}>
+            <Form.Item name="sort_order" label="排序"><InputNumber min={0} style={{ width: '100%' }} /></Form.Item>
+            <Form.Item name="remarks" label="备注"><Input /></Form.Item>
+          </div>
         </Form>
       </Drawer>
     </Spin>
