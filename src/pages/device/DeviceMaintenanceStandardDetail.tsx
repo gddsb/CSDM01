@@ -179,8 +179,11 @@ export default function DeviceMaintenanceStandardDetail() {
     }
   }
 
-  // ===== 列定义 =====
+  const device = profile?.device || {}
+  const currentStatus = profile?.status
   const isEffective = currentStatus === '生效'
+
+  // ===== 列定义 =====
   const columns: ColumnsType<StdRow> = [
     {
       title: '频率', width: 100,
@@ -206,9 +209,6 @@ export default function DeviceMaintenanceStandardDetail() {
       },
     },
   ]
-
-  const device = profile?.device || {}
-  const currentStatus = profile?.status
 
   return (
     <Spin spinning={loading}>
