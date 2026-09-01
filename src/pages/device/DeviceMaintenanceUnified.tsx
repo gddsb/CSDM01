@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   Tag, Button, Select, DatePicker, Space, Input, Drawer, Form, Descriptions,
-  Typography, message, Modal, Popconfirm, Empty, Spin, Radio, Table, Checkbox, InputNumber, Upload,
+  Typography, message, Modal, Popconfirm, Empty, Spin, Radio, Table, Checkbox, InputNumber, Upload, Image,
 } from 'antd'
 import type { UploadFile } from 'antd/es/upload/interface'
 import {
@@ -472,6 +472,26 @@ export default function DeviceMaintenanceUnified() {
             <Descriptions.Item label="记录编号">{detailData.record_no}</Descriptions.Item>
             <Descriptions.Item label="设备">{detailData.device_name} ({detailData.device_code})</Descriptions.Item>
             <Descriptions.Item label="保养项">{detailData.standard?.maintenance_content || '-'}</Descriptions.Item>
+            <Descriptions.Item label="机构">{detailData.standard?.mechanism || '-'}</Descriptions.Item>
+            <Descriptions.Item label="部件">{detailData.standard?.component || '-'}</Descriptions.Item>
+            <Descriptions.Item label="部位">{detailData.standard?.location || '-'}</Descriptions.Item>
+            <Descriptions.Item label="判定基准">{detailData.standard?.standard_value || '-'}</Descriptions.Item>
+            <Descriptions.Item label="保养图片">
+              {detailData.maintenance_images?.length > 0 ? (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {detailData.maintenance_images.map((img: any) => (
+                    <Image
+                      key={img.image_id}
+                      width={80}
+                      height={80}
+                      style={{ objectFit: 'cover', borderRadius: 4 }}
+                      src={img.file_path}
+                      alt="保养图片"
+                    />
+                  ))}
+                </div>
+              ) : '-'}
+            </Descriptions.Item>
             <Descriptions.Item label="频率">
               <Tag color={MODE_COLOR[detailData.trigger_mode]}>{MODE_LABEL[detailData.trigger_mode]}</Tag>
             </Descriptions.Item>
