@@ -145,7 +145,10 @@ export default function DeviceMaintenanceUnified() {
       const res = await api.get('/basic/device-standards', {
         params: deviceId ? { device_id: deviceId } : {},
       })
-      setStandards(res?.data || res?.list || [])
+      // 后端返回 { success, data: { list, total } }，兼容数组/对象两种格式
+      const raw = res?.data
+      const list = Array.isArray(raw) ? raw : (raw?.list || raw?.rows || [])
+      setStandards(list)
     } catch { /* silent */ }
   }, [])
 
@@ -221,8 +224,18 @@ export default function DeviceMaintenanceUnified() {
     const values = await stdForm.validateFields()
     try {
       const payload = { ...values }
-      // monthly_plan: 默认全 false
-      if (values.trigger_mode !== 'monthly') payload.monthly_plan = null
+      // monthly_plan: Checkbox.Group 返回被选中索引数组，后端需要 12 位布尔数组
+      if (values.trigger_mode === 'monthly') {
+        const mp = Array(12).fill(false)
+        if (Array.isArray(values.monthly_plan)) {
+          values.monthly_plan.forEach((idx: number) => {
+            if (typeof idx === 'number' && idx >= 0 && idx < 12) mp[idx] = true
+          })
+        }
+        payload.monthly_plan = mp
+      } else {
+        payload.monthly_plan = null
+      }
       // runtime: 默认空
       if (values.trigger_mode !== 'runtime') payload.runtime_threshold = null
 
@@ -242,6 +255,9 @@ export default function DeviceMaintenanceUnified() {
   }
   const handleEditStd = (row: any) => {
     setEditingStd(row)
+    // monthly_plan 后端存储为 12 位布尔数组，Checkbox.Group 需要被选中索引数组
+    const mpRaw = Array.isArray(row.monthly_plan) ? row.monthly_plan : []
+    const mpIndices = mpRaw.map((v: boolean, i: number) => v ? i : -1).filter((v: number) => v >= 0)
     stdForm.setFieldsValue({
       device_id: row.device_id,
       item_name: row.item_name,
@@ -256,7 +272,7 @@ export default function DeviceMaintenanceUnified() {
       point_count: row.point_count || 1,
       time_per_point: row.time_per_point || 0,
       trigger_mode: row.trigger_mode || 'daily',
-      monthly_plan: row.monthly_plan || Array(12).fill(false),
+      monthly_plan: mpIndices,
       runtime_threshold: row.runtime_threshold || null,
       sort_order: row.sort_order || 0,
       status: row.status,
