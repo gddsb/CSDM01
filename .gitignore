@@ -6,6 +6,11 @@ dist/
 .DS_Store
 *.tsbuildinfo
 
+# 统一使用 pnpm，忽略 npm/yarn 产生的锁文件
+package-lock.json
+server/package-lock.json
+yarn.lock
+
 # 数据库
 server/data/*.sqlite
 server/data/*.db
