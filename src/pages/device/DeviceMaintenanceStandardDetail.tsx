@@ -191,12 +191,9 @@ export default function DeviceMaintenanceStandardDetail() {
       render: (_, r) => <Tag color={MODE_COLOR[r.trigger_mode]}>{MODE_LABEL[r.trigger_mode] || r.trigger_mode}</Tag>,
     },
     { title: '保养/点检内容', dataIndex: 'maintenance_content', width: 200, render: (v) => v || '-' },
-    { title: '机构', dataIndex: 'mechanism', width: 120, render: (v) => v || '-' },
-    { title: '部件', dataIndex: 'component', width: 120, render: (v) => v || '-' },
-    { title: '部位', dataIndex: 'location', width: 120, render: (v) => v || '-' },
+    { title: '判定基准', dataIndex: 'standard_value', width: 160, ellipsis: true, render: (v) => v || '-' },
     { title: '保养方法', dataIndex: 'maintenance_method', width: 120, render: (v) => v || '-' },
     { title: '判定方式', dataIndex: 'judge_type', width: 90 },
-    { title: '判定基准', dataIndex: 'standard_value', width: 160, ellipsis: true, render: (v) => v || '-' },
     {
       title: '周期配置', width: 180,
       render: (_, r) => {
