@@ -299,11 +299,7 @@ export default function DeviceMaintenanceUnified() {
     },
     { title: '执行人', dataIndex: 'executor_name', width: 100, render: (v: string) => v || '-' },
     {
-      title: '创建时间', dataIndex: 'created_at', width: 160,
-      render: (v: string) => v ? dayjs(v).format('YYYY-MM-DD HH:mm') : '-',
-    },
-    {
-      title: '操作', width: 260, fixed: 'right' as const, render: (_: any, r: any) => (
+      title: '操作', width: 200, fixed: 'right' as const, render: (_: any, r: any) => (
         <Space size={4}>
           <Button size="small" type="link" onClick={() => handleDetail(r.record_id)}>详情</Button>
           {r.status === '待执行' && (
@@ -314,11 +310,6 @@ export default function DeviceMaintenanceUnified() {
           )}
           {r.status === '待执行' && (
             <Button size="small" type="link" onClick={() => handleSkip(r.record_id)}>跳过</Button>
-          )}
-          {(r.status === '待执行' || r.status === '跳过') && (
-            <Popconfirm title="确认删除？已开始/已完成的保养记录不允许删除" onConfirm={() => handleDelete(r.record_id)}>
-              <Button size="small" type="link" danger onClick={(e) => e.stopPropagation()}>删除</Button>
-            </Popconfirm>
           )}
         </Space>
       ),
