@@ -83,6 +83,13 @@ export default function DeviceMaintenanceUnified() {
   const [detailOpen, setDetailOpen] = useState(false)
   const [detailData, setDetailData] = useState<any>(null)
 
+  // ============ 完成保养 Modal ============
+  const [completeOpen, setCompleteOpen] = useState(false)
+  const [completeLoading, setCompleteLoading] = useState(false)
+  const [completeRecord, setCompleteRecord] = useState<any>(null)
+  const [form] = Form.useForm()
+  const [resultType, setResultType] = useState<'正常' | '异常'>('正常')
+
   // ============ 设备下拉 ============
   const [devices, setDevices] = useState<DeviceOption[]>([])
 
@@ -170,6 +177,35 @@ export default function DeviceMaintenanceUnified() {
     }
   }
 
+  // ===== 打开完成保养弹窗 =====
+  const openComplete = (record: any) => {
+    setCompleteRecord(record)
+    setResultType('正常')
+    form.resetFields()
+    form.setFieldsValue({ result: '正常' })
+    setCompleteOpen(true)
+  }
+
+  // ===== 完成保养（提交执行结果） =====
+  const handleComplete = async () => {
+    const values = await form.validateFields()
+    setCompleteLoading(true)
+    try {
+      const res = await api.put(`/basic/device-records/${completeRecord.record_id}/submit`, values)
+      if (res?.success !== false) {
+        message.success(res?.message || '完成保养成功')
+        setCompleteOpen(false)
+        loadRecords()
+      } else {
+        message.error(res?.message || '提交失败')
+      }
+    } catch (err: any) {
+      message.error(err?.message || '提交失败')
+    } finally {
+      setCompleteLoading(false)
+    }
+  }
+
   // ===== 详情 =====
   const handleDetail = async (id: number) => {
     try {
@@ -242,17 +278,20 @@ export default function DeviceMaintenanceUnified() {
       render: (v: string) => v ? dayjs(v).format('YYYY-MM-DD HH:mm') : '-',
     },
     {
-      title: '操作', width: 220, fixed: 'right' as const, render: (_: any, r: any) => (
+      title: '操作', width: 260, fixed: 'right' as const, render: (_: any, r: any) => (
         <Space size={4}>
-          <Button size="small" type="link" icon={<EyeOutlined />} onClick={() => handleDetail(r.record_id)}>详情</Button>
+          <Button size="small" type="link" onClick={() => handleDetail(r.record_id)}>详情</Button>
           {r.status === '待执行' && (
-            <Button size="small" type="link" icon={<ToolOutlined />} onClick={() => handleStart(r.record_id)}>开始</Button>
+            <Button size="small" type="link" onClick={() => handleStart(r.record_id)}>开始</Button>
+          )}
+          {r.status === '执行中' && (
+            <Button size="small" type="link" onClick={() => openComplete(r)}>完成</Button>
           )}
           {r.status !== '已完成' && r.status !== '跳过' && (
             <Button size="small" type="link" onClick={() => handleSkip(r.record_id)}>跳过</Button>
           )}
           <Popconfirm title="确认删除？" onConfirm={() => handleDelete(r.record_id)}>
-            <Button size="small" type="link" danger icon={<DeleteOutlined />} />
+            <Button size="small" type="link" danger onClick={(e) => e.stopPropagation()}>删除</Button>
           </Popconfirm>
         </Space>
       ),
@@ -431,6 +470,71 @@ export default function DeviceMaintenanceUnified() {
           </Descriptions>
         )}
       </Drawer>
+
+      {/* ===== 完成保养 Modal ===== */}
+      <Modal
+        title={
+          <span>
+            <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 8 }} />
+            完成保养执行 — {completeRecord?.record_no || ''}
+          </span>
+        }
+        open={completeOpen}
+        confirmLoading={completeLoading}
+        onOk={handleComplete}
+        onCancel={() => setCompleteOpen(false)}
+        okText="提交完成"
+        cancelText="取消"
+        width={560}
+        destroyOnClose
+      >
+        {completeRecord && (
+          <div style={{ marginBottom: 12, padding: 12, background: '#fafafa', borderRadius: 6, fontSize: 13 }}>
+            <div><Text type="secondary">设备：</Text>{completeRecord.device_name} ({completeRecord.device_code})</div>
+            <div><Text type="secondary">保养项：</Text>{completeRecord.standard?.item_name || '-'}</div>
+            <div><Text type="secondary">周期：</Text>{completeRecord.period_key} <Tag color={MODE_COLOR[completeRecord.trigger_mode]} style={{ marginLeft: 4 }}>{MODE_LABEL[completeRecord.trigger_mode]}</Tag></div>
+          </div>
+        )}
+        <Form form={form} layout="vertical">
+          <Form.Item name="result" label="执行结果" rules={[{ required: true, message: '请选择执行结果' }]}>
+            <Radio.Group onChange={(e) => setResultType(e.target.value)}>
+              <Radio value="正常"><Tag color="success">正常</Tag>（保养完成，无异常）</Radio>
+              <Radio value="异常"><Tag color="error">异常</Tag>（发现问题，需创建故障）</Radio>
+            </Radio.Group>
+          </Form.Item>
+
+          <Form.Item shouldUpdate={(prev, cur) => prev.result !== cur.result} noStyle>
+            {({ getFieldValue }) => {
+              const isAbnormal = getFieldValue('result') === '异常'
+              return (
+                <>
+                  {isAbnormal && (
+                    <Form.Item name="abnormal_desc" label="异常描述" rules={[{ required: true, message: '请填写异常描述' }]}>
+                      <TextArea rows={3} placeholder="描述发现的异常情况、位置、严重程度等" />
+                    </Form.Item>
+                  )}
+
+                  <Form.Item name="actual_value" label="实测值（定量型保养填写）">
+                    <Input placeholder={isAbnormal ? '如：温度偏高 75℃' : '如：温度 52℃，压力正常'} />
+                  </Form.Item>
+
+                  <Form.Item name="maintenance_content" label="保养内容记录">
+                    <TextArea rows={2} placeholder="简要记录本次实际执行的保养动作" />
+                  </Form.Item>
+
+                  <Form.Item name="duration_min" label="耗时（分钟）">
+                    <InputNumber min={0} style={{ width: 160 }} placeholder="自动计算" />
+                  </Form.Item>
+
+                  <Form.Item name="remarks" label="备注">
+                    <TextArea rows={2} placeholder="其他需要说明的事项" />
+                  </Form.Item>
+                </>
+              )
+            }}
+          </Form.Item>
+        </Form>
+      </Modal>
     </>
   )
 }
