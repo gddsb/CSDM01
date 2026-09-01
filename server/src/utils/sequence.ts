@@ -50,6 +50,7 @@ const SEQ_CONFIG: any = {
   PRODUCT_INSPECTION_QT:  { prefix: 'QT',  datePattern: 'YYMMDD', seqWidth: 3, resetBy: 'day'    },
   DEVICE_FAULT:         { prefix: 'F',     datePattern: 'YYYYMMDD', seqWidth: 3, resetBy: 'day'    },
   DEVICE_MAINTENANCE:    { prefix: 'WH',    datePattern: 'YYYYMMDD', seqWidth: 3, resetBy: 'day'    },
+  DEVICE_RECORD:         { prefix: 'BM',    datePattern: 'YYYYMMDD', seqWidth: 3, resetBy: 'day'    },
 }
 
 // NumberRule 字段 → SEQ_CONFIG 字段映射
@@ -191,6 +192,7 @@ export const generateStandardNo         = () => generateBizNo('STANDARD')
 export const generateNcrNo              = () => generateBizNo('NCR')
 export const generateDeviceFaultNo      = () => generateBizNo('DEVICE_FAULT')
 export const generateDeviceMaintenanceNo = () => generateBizNo('DEVICE_MAINTENANCE')
+export const generateDeviceRecordNo      = () => generateBizNo('DEVICE_RECORD')
 
 const PRODUCT_INSPECTION_SEQ_KEY = {
   '首件': 'PRODUCT_INSPECTION_SJ',
@@ -228,4 +230,5 @@ export default {
   generateProductInspectionNo,
   generateDeviceFaultNo,
   generateDeviceMaintenanceNo,
+  generateDeviceRecordNo,
 }

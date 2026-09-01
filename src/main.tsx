@@ -45,12 +45,9 @@ const ComplaintManagement = lazy(() => import('./pages/quality/ComplaintManageme
 const SupplierComplaint = lazy(() => import('./pages/quality/SupplierComplaint'))
 const InstrumentManagement = lazy(() => import('./pages/quality/InstrumentManagement'))
 const DeviceArchive = lazy(() => import('./pages/device/DeviceManagement'))
-const CheckRecord = lazy(() => import('./pages/device/CheckRecord'))
-const Maintenance = lazy(() => import('./pages/device/Maintenance'))
 const DeviceOEE = lazy(() => import('./pages/device/DeviceOEE'))
 const DeviceFault = lazy(() => import('./pages/device/DeviceFault'))
-const DeviceInspection = lazy(() => import('./pages/device/DeviceInspection'))
-const DeviceMaintenancePlan = lazy(() => import('./pages/device/DeviceMaintenancePlan'))
+const DeviceMaintenanceUnified = lazy(() => import('./pages/device/DeviceMaintenanceUnified'))
 const DeviceSparePart = lazy(() => import('./pages/device/DeviceSparePart'))
 const DeviceCalibration = lazy(() => import('./pages/device/DeviceCalibration'))
 const DeviceDocumentPage = lazy(() => import('./pages/device/DeviceDocument'))
@@ -149,12 +146,9 @@ function AppRoutes() {
         <Route path="/quality/supplier" element={lazyPage(<SupplierComplaint />)} />
         <Route path="/quality/instruments" element={lazyPage(<InstrumentManagement />)} />
         <Route path="/device/list" element={lazyPage(<DeviceArchive />)} />
-        <Route path="/device/check-records" element={lazyPage(<CheckRecord />)} />
-        <Route path="/device/maintenance" element={lazyPage(<Maintenance />)} />
         <Route path="/device/oee" element={lazyPage(<DeviceOEE />)} />
         <Route path="/device/fault" element={lazyPage(<DeviceFault />)} />
-        <Route path="/device/inspection" element={lazyPage(<DeviceInspection />)} />
-        <Route path="/device/maintenance-plan" element={lazyPage(<DeviceMaintenancePlan />)} />
+        <Route path="/device/maintenance" element={lazyPage(<DeviceMaintenanceUnified />)} />
         <Route path="/device/spare-parts" element={lazyPage(<DeviceSparePart />)} />
         <Route path="/device/calibration" element={lazyPage(<DeviceCalibration />)} />
         <Route path="/device/documents" element={lazyPage(<DeviceDocumentPage />)} />

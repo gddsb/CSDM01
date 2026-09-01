@@ -61,9 +61,6 @@ import QualityComplaintRecord from './QualityComplaintRecord.js'
 import DeviceFault from './DeviceFault.js'
 import DeviceFaultRepair from './DeviceFaultRepair.js'
 import DeviceImage from './DeviceImage.js'
-import DeviceInspectionStandard from './DeviceInspectionStandard.js'
-import DeviceInspectionPlan from './DeviceInspectionPlan.js'
-import DeviceInspectionRecord from './DeviceInspectionRecord.js'
 import DeviceMaintenanceStandard from './DeviceMaintenanceStandard.js'
 import DeviceMaintenanceRecord from './DeviceMaintenanceRecord.js'
 import DeviceRuntimeLog from './DeviceRuntimeLog.js'
@@ -260,21 +257,22 @@ DeviceFaultRepair.belongsTo(DeviceFault, { foreignKey: 'fault_id', as: 'fault' }
 DeviceFault.hasMany(DeviceImage, { foreignKey: 'doc_id', scope: { doc_type: 'fault' }, as: 'fault_images', constraints: false })
 DeviceFaultRepair.hasMany(DeviceImage, { foreignKey: 'doc_id', scope: { doc_type: 'repair' }, as: 'repair_images', constraints: false })
 
-// 设备点检
-DeviceInspectionStandard.belongsTo(Device, { foreignKey: 'device_id', as: 'device', constraints: false })
-DeviceInspectionPlan.belongsTo(Device, { foreignKey: 'device_id', as: 'device', constraints: false })
-DeviceInspectionPlan.hasMany(DeviceInspectionRecord, { foreignKey: 'plan_id', as: 'records', onDelete: 'CASCADE' })
-DeviceInspectionRecord.belongsTo(DeviceInspectionPlan, { foreignKey: 'plan_id', as: 'plan' })
-// 点检图片关联（复用 DeviceImage 模型，doc_type='inspection'）
-DeviceInspectionPlan.hasMany(DeviceImage, { foreignKey: 'doc_id', scope: { doc_type: 'inspection' }, as: 'inspection_images', constraints: false })
-
-// 设备维护 - 设备（多对一，多态，无物理FK约束）
+// 设备保养标准 - 设备（多对一）
 DeviceMaintenanceStandard.belongsTo(Device, { foreignKey: 'device_id', as: 'device', constraints: false })
+Device.hasMany(DeviceMaintenanceStandard, { foreignKey: 'device_id', as: 'device_standards' })
+
+// 设备保养执行记录 - 设备（多对一）
 DeviceMaintenanceRecord.belongsTo(Device, { foreignKey: 'device_id', as: 'device', constraints: false })
+
+// 设备保养执行记录 - 保养标准（多对一）
 DeviceMaintenanceRecord.belongsTo(DeviceMaintenanceStandard, { foreignKey: 'standard_id', as: 'standard', constraints: false })
-DeviceRuntimeLog.belongsTo(Device, { foreignKey: 'device_id', as: 'device', constraints: false })
-// 维护工单 - 维护图片（一对多，多态）
+DeviceMaintenanceStandard.hasMany(DeviceMaintenanceRecord, { foreignKey: 'standard_id', as: 'records', onDelete: 'CASCADE' })
+
+// 设备保养执行记录 - 保养图片（一对多，多态 doc_type='maintenance'）
 DeviceMaintenanceRecord.hasMany(DeviceImage, { foreignKey: 'doc_id', scope: { doc_type: 'maintenance' }, as: 'maintenance_images', constraints: false })
+
+// 运行时长日志 - 设备
+DeviceRuntimeLog.belongsTo(Device, { foreignKey: 'device_id', as: 'device', constraints: false })
 
 // 设备校准
 DeviceCalibrationPlan.belongsTo(Device, { foreignKey: 'device_id', as: 'device', constraints: false })
@@ -352,9 +350,6 @@ const db = {
   DeviceFault,
   DeviceFaultRepair,
   DeviceImage,
-  DeviceInspectionStandard,
-  DeviceInspectionPlan,
-  DeviceInspectionRecord,
   DeviceMaintenanceStandard,
   DeviceMaintenanceRecord,
   DeviceRuntimeLog,
@@ -426,9 +421,6 @@ export {
   DeviceFault,
   DeviceFaultRepair,
   DeviceImage,
-  DeviceInspectionStandard,
-  DeviceInspectionPlan,
-  DeviceInspectionRecord,
   DeviceMaintenanceStandard,
   DeviceMaintenanceRecord,
   DeviceRuntimeLog,

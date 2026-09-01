@@ -78,7 +78,6 @@ import EnvInspectionController from '../controllers/EnvInspectionController.js'
 import ComplaintController from '../controllers/ComplaintController.js'
 import SupplierComplaintController from '../controllers/SupplierComplaintController.js'
 import DeviceFaultController from '../controllers/DeviceFaultController.js'
-import DeviceInspectionController from '../controllers/DeviceInspectionController.js'
 import DeviceMaintenanceController from '../controllers/DeviceMaintenanceController.js'
 import DeviceCalibrationController from '../controllers/DeviceCalibrationController.js'
 import DeviceSparePartController from '../controllers/DeviceSparePartController.js'
@@ -355,38 +354,24 @@ router.delete('/device-faults/:id', logOperation('删除故障'), DeviceFaultCon
 router.get('/device-faults/:id/images', DeviceFaultController.getImages)
 router.post('/device-faults/:id/images', deviceFaultUploadMiddleware.array('images', 10), logOperation('上传故障图片'), DeviceFaultController.uploadImage)
 
-// 设备点检标准
-router.get('/device-inspection-standards', DeviceInspectionController.listStandards)
-router.post('/device-inspection-standards', logOperation('点检标准'), DeviceInspectionController.createStandard)
-router.put('/device-inspection-standards/:id', logOperation('点检标准'), DeviceInspectionController.updateStandard)
-router.delete('/device-inspection-standards/:id', logOperation('点检标准'), DeviceInspectionController.deleteStandard)
+// 设备保养标准（统一版，合并旧点检标准+维护标准）
+router.get('/device-standards', DeviceMaintenanceController.listStandards)
+router.post('/device-standards', logOperation('保养标准'), DeviceMaintenanceController.createStandard)
+router.put('/device-standards/:id', logOperation('保养标准'), DeviceMaintenanceController.updateStandard)
+router.delete('/device-standards/:id', logOperation('保养标准'), DeviceMaintenanceController.deleteStandard)
 
-// 设备点检计划
-router.get('/device-inspection-plans', DeviceInspectionController.listPlans)
-router.get('/device-inspection-plans/:id', DeviceInspectionController.detailPlan)
-router.post('/device-inspection-plans/generate', logOperation('生成点检计划'), DeviceInspectionController.generatePlans)
-router.put('/device-inspection-plans/:id/submit', logOperation('提交点检'), DeviceInspectionController.submitInspection)
-router.get('/device-inspection-plans/:id/images', DeviceInspectionController.getImages)
-router.post('/device-inspection-plans/:id/images', inspectionUploadMiddleware.array('images', 10), logOperation('上传点检图片'), DeviceInspectionController.uploadImage)
-
-// 设备点检记录
-router.get('/device-inspection-records', DeviceInspectionController.listRecords)
-
-// 设备维护标准
-router.get('/device-maintenance-standards', DeviceMaintenanceController.listStandards)
-router.post('/device-maintenance-standards', logOperation('维护标准'), DeviceMaintenanceController.createStandard)
-router.put('/device-maintenance-standards/:id', logOperation('维护标准'), DeviceMaintenanceController.updateStandard)
-router.delete('/device-maintenance-standards/:id', logOperation('维护标准'), DeviceMaintenanceController.deleteStandard)
-
-// 设备维护工单
-router.get('/device-maintenance-records', DeviceMaintenanceController.listRecords)
-router.get('/device-maintenance-records/:id', DeviceMaintenanceController.detailRecord)
-router.post('/device-maintenance-records/generate', logOperation('生成维护工单'), DeviceMaintenanceController.generateRecords)
-router.put('/device-maintenance-records/:id/start', logOperation('开始维护'), DeviceMaintenanceController.startRecord)
-router.put('/device-maintenance-records/:id/submit', logOperation('提交维护'), DeviceMaintenanceController.submitRecord)
-router.delete('/device-maintenance-records/:id', logOperation('删除维护工单'), DeviceMaintenanceController.deleteRecord)
-router.get('/device-maintenance-records/:id/images', DeviceMaintenanceController.getImages)
-router.post('/device-maintenance-records/:id/images', deviceMaintenanceUploadMiddleware.array('images', 10), logOperation('上传维护图片'), DeviceMaintenanceController.uploadImage)
+// 设备保养执行记录（统一版，合并旧点检计划/记录+维护工单）
+router.post('/device-records/generate', logOperation('生成保养执行'), DeviceMaintenanceController.generateRecords)
+router.get('/device-records/matrix', DeviceMaintenanceController.getMatrix)
+router.get('/device-records', DeviceMaintenanceController.listRecords)
+router.get('/device-records/:id', DeviceMaintenanceController.detailRecord)
+router.put('/device-records/:id/start', logOperation('开始保养'), DeviceMaintenanceController.startRecord)
+router.put('/device-records/:id/submit', logOperation('提交保养'), DeviceMaintenanceController.submitRecord)
+router.post('/device-records/batch-submit', logOperation('批量提交保养'), DeviceMaintenanceController.batchSubmit)
+router.put('/device-records/:id/skip', DeviceMaintenanceController.skipRecord)
+router.delete('/device-records/:id', logOperation('删除保养记录'), DeviceMaintenanceController.deleteRecord)
+router.get('/device-records/:id/images', DeviceMaintenanceController.getImages)
+router.post('/device-records/:id/images', deviceMaintenanceUploadMiddleware.array('images', 10), logOperation('上传保养图片'), DeviceMaintenanceController.uploadImage)
 
 // 设备运行时长
 router.post('/device-runtime-logs', logOperation('录入运行时长'), DeviceMaintenanceController.logRuntime)
