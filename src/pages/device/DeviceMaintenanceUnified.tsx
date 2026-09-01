@@ -103,7 +103,8 @@ export default function DeviceMaintenanceUnified() {
   // ===== 加载设备列表 =====
   useEffect(() => {
     api.get('/basic/devices', { params: { page_size: 999 } }).then((res: any) => {
-      const list = res?.list || res?.rows || []
+      const raw = res?.data
+      const list = Array.isArray(raw) ? raw : (raw?.rows || raw?.list || [])
       const opts = list.map((d: any) => ({
         device_id: d.device_id,
         device_code: d.device_code,
@@ -125,8 +126,10 @@ export default function DeviceMaintenanceUnified() {
       if (!filters.trigger_mode) delete params.trigger_mode
       if (!filters.status) delete params.status
       const res = await api.get('/basic/device-records', { params })
-      setRecords(res?.list || [])
-      setTotal(res?.total || 0)
+      const raw = res?.data
+      const list = Array.isArray(raw) ? raw : (raw?.rows || raw?.list || [])
+      setRecords(list)
+      setTotal(res?.total || raw?.total || list.length)
     } catch (err: any) {
       message.error('加载执行记录失败')
     } finally {
@@ -142,7 +145,7 @@ export default function DeviceMaintenanceUnified() {
       const res = await api.get('/basic/device-standards', {
         params: deviceId ? { device_id: deviceId } : {},
       })
-      setStandards(res?.list || [])
+      setStandards(res?.data || res?.list || [])
     } catch { /* silent */ }
   }, [])
 

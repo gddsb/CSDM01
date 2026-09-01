@@ -134,7 +134,11 @@ export default function DeviceMaintenanceMatrix() {
 
   useEffect(() => {
     api.get('/basic/devices', { params: { page_size: 500 } })
-      .then((res: any) => setDevices(res?.rows || []))
+      .then((res: any) => {
+        const raw = res?.data
+        const list = Array.isArray(raw) ? raw : (raw?.rows || raw?.list || [])
+        setDevices(list)
+      })
       .catch(() => {})
   }, [])
 
