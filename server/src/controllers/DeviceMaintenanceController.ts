@@ -104,18 +104,29 @@ async function processImage(srcPath: string, watermarkText: string): Promise<{
   buffer: Buffer; hash: string; width: number; height: number; size: number;
 }> {
   const meta = await sharp(srcPath).metadata()
-  const w = meta.width || 0
-  const h = meta.height || 0
+  let w = meta.width || 0
+  let h = meta.height || 0
   const orient = meta.orientation || 1
+
+  // EXIF orientation >= 5 时，rotate() 会交换宽高（landscape <-> portrait）
+  if (orient >= 5 && orient <= 8) {
+    const tmp = w; w = h; h = tmp
+  }
+
+  // 手动计算 resize 后的实际尺寸（sharp.pipeline.metadata() 返回原始尺寸，不可靠）
+  let rw = w, rh = h
+  if (Math.max(w, h) > 1600) {
+    const scale = 1600 / Math.max(w, h)
+    rw = Math.round(w * scale)
+    rh = Math.round(h * scale)
+  }
 
   // 压缩：长边 <= 1600，JPEG 质量 82（WebP 太新，老设备不识别；PNG 无损大）
   let out = sharp(srcPath).rotate() // 纠正 EXIF 方向
   if (Math.max(w, h) > 1600) {
     out = out.resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
   }
-  const resizedMeta = await out.metadata()
-  const rw = resizedMeta.width || w
-  const rh = resizedMeta.height || h
+
   const density = 2 // SVG 渲染密度
   const svg = buildWatermarkSvg(watermarkText, rw, rh, density)
 
