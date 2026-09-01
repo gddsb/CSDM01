@@ -149,13 +149,16 @@ export default function DeviceMaintenanceStandardDetail() {
       }
       if (values.trigger_mode !== 'runtime') payload.runtime_threshold = null
 
-      if (editing) {
-        await api.put(`/basic/device-standards/${editing.standard_id}`, payload)
-        message.success('更新成功')
-      } else {
-        await api.post('/basic/device-standards', { ...payload, device_id: Number(deviceId) })
-        message.success('创建成功')
+      const res: any = editing
+        ? await api.put(`/basic/device-standards/${editing.standard_id}`, payload)
+        : await api.post('/basic/device-standards', { ...payload, device_id: Number(deviceId) })
+
+      // 后端返回 { success: false, message } 时 HTTP 仍为 200，需手动检查
+      if (res?.success === false) {
+        message.error(res?.message || '操作失败')
+        return
       }
+      message.success(editing ? '更新成功' : '创建成功')
       setDrawerOpen(false)
       loadDetail()
     } catch (err: any) {
@@ -313,6 +316,22 @@ export default function DeviceMaintenanceStandardDetail() {
             </Radio.Group>
           </Form.Item>
 
+          {/* 保养项名称：始终显示，每日点检时必填，其他模式非必填 */}
+          <Form.Item shouldUpdate={(prev, cur) => prev.trigger_mode !== cur.trigger_mode} noStyle>
+            {({ getFieldValue }) => {
+              const isDaily = getFieldValue('trigger_mode') === 'daily'
+              return (
+                <Form.Item
+                  name="item_name"
+                  label="保养项名称"
+                  rules={isDaily ? [{ required: true, message: '请填写保养项名称' }] : []}
+                >
+                  <TextArea rows={2} placeholder={isDaily ? '如：清理冷凝器两侧绒毛飞絮' : '可选，如：月度保养项目'} />
+                </Form.Item>
+              )
+            }}
+          </Form.Item>
+
           {/* 根据触发频率动态显示字段 */}
           <Form.Item shouldUpdate={(prev, cur) => prev.trigger_mode !== cur.trigger_mode} noStyle>
             {({ getFieldValue }) => {
@@ -321,13 +340,6 @@ export default function DeviceMaintenanceStandardDetail() {
 
               return (
                 <>
-                  {/* 保养项名称：仅每日点检时显示且必填 */}
-                  {isDaily && (
-                    <Form.Item name="item_name" label="保养项名称" rules={[{ required: true, message: '请填写保养项名称' }]}>
-                      <TextArea rows={2} placeholder="如：清理冷凝器两侧绒毛飞絮" />
-                    </Form.Item>
-                  )}
-
                   {/* 机构、部件、部位：非每日点检时显示，机构必填 */}
                   {!isDaily && (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>

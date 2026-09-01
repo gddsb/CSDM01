@@ -146,7 +146,8 @@ export default {
       } = req.body
 
       if (!device_id) return fail(res, '设备ID不能为空', ErrorCode.PARAM_INVALID)
-      if (!item_name) return fail(res, '保养项名称不能为空', ErrorCode.PARAM_INVALID)
+      // 每日点检模式必须填写保养项名称；其他模式保养项名称可为空
+      if (trigger_mode === 'daily' && !item_name) return fail(res, '每日点检模式保养项名称不能为空', ErrorCode.PARAM_INVALID)
 
       // trigger_mode 校验
       if (!['daily', 'weekly', 'monthly', 'runtime'].includes(trigger_mode)) {
