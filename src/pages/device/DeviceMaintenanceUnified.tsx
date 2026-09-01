@@ -190,33 +190,42 @@ export default function DeviceMaintenanceUnified() {
     setCompleteOpen(true)
   }
 
-  // ===== 上传保养图片 =====
-  const uploadCompleteImages = async (recordId: number, files: File[]) => {
-    if (files.length === 0) return
+  // ===== 上传保养图片（返回全部成功才通过，否则抛错让上层处理） =====
+  const uploadCompleteImages = async (recordId: number, files: File[]): Promise<number> => {
+    if (files.length === 0) return 0
     const fd = new FormData()
     files.forEach(f => fd.append('images', f))
-    try {
-      // 注意：不要手动设置 Content-Type，浏览器会自动带 multipart/form-data + boundary
-      await api.post(`/basic/device-records/${recordId}/images`, fd)
-    } catch (err: any) {
-      message.warning('保养结果已提交，但图片上传失败：' + (err?.message || '请稍后重试'))
+    const res = await api.post(`/basic/device-records/${recordId}/images`, fd)
+    const saved = res?.data?.saved ?? res?.saved ?? 0
+    const failed = res?.data?.failed ?? res?.failed ?? 0
+    const total = res?.data?.total ?? res?.total ?? files.length
+    if (saved === 0) {
+      throw new Error(res?.message || '所有图片上传失败')
     }
+    if (saved < total) {
+      throw new Error(`${saved}/${total} 张图片上传成功，${failed} 张失败`)
+    }
+    return saved
   }
 
-  // ===== 完成保养（提交执行结果） =====
+  // ===== 完成保养（先上传图片，全部成功后再提交执行结果） =====
   const handleComplete = async () => {
     const values = await form.validateFields()
+    // 收集待上传的本地文件
+    const pendingFiles = completeFileList
+      .filter(f => f.originFileObj)
+      .map(f => f.originFileObj as File)
+
     setCompleteLoading(true)
     try {
+      // Step 1: 先上传图片，任何失败都不会提交完成（回滚）
+      if (pendingFiles.length > 0) {
+        await uploadCompleteImages(completeRecord.record_id, pendingFiles)
+      }
+
+      // Step 2: 图片全部成功（或无图片），再提交完成
       const res = await api.put(`/basic/device-records/${completeRecord.record_id}/submit`, values)
       if (res?.success !== false) {
-        // 收集待上传的文件（仅本地文件，已上传的跳过）
-        const pendingFiles = completeFileList
-          .filter(f => f.originFileObj)
-          .map(f => f.originFileObj as File)
-        if (pendingFiles.length > 0) {
-          await uploadCompleteImages(completeRecord.record_id, pendingFiles)
-        }
         message.success(res?.message || '完成保养成功')
         setCompleteOpen(false)
         loadRecords()
@@ -224,7 +233,13 @@ export default function DeviceMaintenanceUnified() {
         message.error(res?.message || '提交失败')
       }
     } catch (err: any) {
-      message.error(err?.message || '提交失败')
+      // 图片上传或提交失败均提示用户，Modal 保持打开可重试
+      const msg = err?.message || '未知错误'
+      if (msg.includes('图片') || msg.includes('上传')) {
+        message.error(`图片上传失败：${msg}。保养结果尚未提交，请检查网络后重试`)
+      } else {
+        message.error(`提交失败：${msg}`)
+      }
     } finally {
       setCompleteLoading(false)
     }
