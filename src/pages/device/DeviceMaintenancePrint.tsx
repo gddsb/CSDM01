@@ -20,7 +20,7 @@ interface MatrixRecord {
 
 interface MatrixItem {
   standard_id: number
-  item_name: string
+  maintenance_content: string
   mechanism: string | null
   component: string | null
   location: string | null
@@ -30,7 +30,6 @@ interface MatrixItem {
   unit: string | null
   point_count: number
   time_per_point: number
-  maintenance_content?: string | null
   monthly_plan?: unknown
   sort_order: number
   records: Record<string, MatrixRecord | null>
@@ -195,7 +194,7 @@ export default function DeviceMaintenancePrint() {
                       {data.daily.items.map((it, idx) => (
                         <tr key={it.standard_id}>
                           <td className="text-center">{idx + 1}</td>
-                          <td>{it.item_name}</td>
+                          <td>{it.maintenance_content}</td>
                           <td>{it.mechanism || '-'}</td>
                           <td>{it.component || '-'}</td>
                           <td>{it.location || '-'}</td>
@@ -246,7 +245,7 @@ export default function DeviceMaintenancePrint() {
                       {data.weekly.items.map((it, idx) => (
                         <tr key={it.standard_id}>
                           <td className="text-center">{idx + 1}</td>
-                          <td>{it.item_name}</td>
+                          <td>{it.maintenance_content}</td>
                           <td>{it.mechanism || '-'}</td>
                           <td>{it.component || '-'}</td>
                           <td>{it.standard_value || '-'}</td>
@@ -299,7 +298,7 @@ export default function DeviceMaintenancePrint() {
                         return (
                           <tr key={it.standard_id}>
                             <td className="text-center">{idx + 1}</td>
-                            <td>{it.item_name}</td>
+                            <td>{it.maintenance_content}</td>
                             <td>{[it.mechanism, it.component].filter(Boolean).join(' / ') || '-'}</td>
                             <td>{it.standard_value || '-'}</td>
                             <td>{it.maintenance_content || '-'}</td>

@@ -190,7 +190,7 @@ export default function DeviceMaintenanceStandardDetail() {
       title: '频率', width: 100,
       render: (_, r) => <Tag color={MODE_COLOR[r.trigger_mode]}>{MODE_LABEL[r.trigger_mode] || r.trigger_mode}</Tag>,
     },
-    { title: '保养项', dataIndex: 'item_name', width: 180, render: (v) => v || '-' },
+    { title: '保养/点检内容', dataIndex: 'maintenance_content', width: 200, render: (v) => v || '-' },
     { title: '机构', dataIndex: 'mechanism', width: 120, render: (v) => v || '-' },
     { title: '部件', dataIndex: 'component', width: 120, render: (v) => v || '-' },
     { title: '部位', dataIndex: 'location', width: 120, render: (v) => v || '-' },
@@ -304,14 +304,13 @@ export default function DeviceMaintenanceStandardDetail() {
         {viewRow && (
           <Descriptions column={1} size="small" bordered>
             <Descriptions.Item label="触发频率">{MODE_LABEL[viewRow.trigger_mode]}</Descriptions.Item>
-            <Descriptions.Item label="保养项名称">{viewRow.item_name || '-'}</Descriptions.Item>
+            <Descriptions.Item label="保养/点检内容">{viewRow.maintenance_content || '-'}</Descriptions.Item>
             <Descriptions.Item label="机构">{viewRow.mechanism || '-'}</Descriptions.Item>
             <Descriptions.Item label="部件">{viewRow.component || '-'}</Descriptions.Item>
             <Descriptions.Item label="部位">{viewRow.location || '-'}</Descriptions.Item>
             <Descriptions.Item label="保养点数">{viewRow.point_count ?? 0}</Descriptions.Item>
             <Descriptions.Item label="单件保养时间">{viewRow.time_per_point ?? 0} 分钟</Descriptions.Item>
             <Descriptions.Item label="保养方法">{viewRow.maintenance_method || '-'}</Descriptions.Item>
-            <Descriptions.Item label="保养内容">{viewRow.maintenance_content || '-'}</Descriptions.Item>
             <Descriptions.Item label="判定方式">{viewRow.judge_type}</Descriptions.Item>
             <Descriptions.Item label="判定基准">{viewRow.standard_value || '-'}</Descriptions.Item>
             <Descriptions.Item label="单位">{viewRow.unit || '-'}</Descriptions.Item>
@@ -364,23 +363,16 @@ export default function DeviceMaintenanceStandardDetail() {
             </Radio.Group>
           </Form.Item>
 
-          {/* 保养项名称：始终显示，每日点检时必填，其他模式非必填 */}
-          <Form.Item shouldUpdate={(prev, cur) => prev.trigger_mode !== cur.trigger_mode} noStyle>
-            {({ getFieldValue }) => {
-              const isDaily = getFieldValue('trigger_mode') === 'daily'
-              return (
-                <Form.Item
-                  name="item_name"
-                  label="保养项名称"
-                  rules={isDaily ? [{ required: true, message: '请填写保养项名称' }] : []}
-                >
-                  <TextArea rows={2} placeholder={isDaily ? '如：清理冷凝器两侧绒毛飞絮' : '可选，如：月度保养项目'} />
-                </Form.Item>
-              )
-            }}
+          {/* 保养/点检内容：所有频率统一显示，必填 */}
+          <Form.Item
+            name="maintenance_content"
+            label="保养/点检内容"
+            rules={[{ required: true, message: '请填写保养/点检内容' }]}
+          >
+            <TextArea rows={2} placeholder="描述具体的保养动作或点检项内容" />
           </Form.Item>
 
-          {/* 根据触发频率动态显示字段 */}
+          {/* 根据触发频率动态显示字段（除保养内容外的条件字段） */}
           <Form.Item shouldUpdate={(prev, cur) => prev.trigger_mode !== cur.trigger_mode} noStyle>
             {({ getFieldValue }) => {
               const mode = getFieldValue('trigger_mode')
@@ -406,13 +398,6 @@ export default function DeviceMaintenanceStandardDetail() {
                       <Form.Item name="time_per_point" label="单件保养时间(分钟)"><InputNumber min={0} style={{ width: '100%' }} /></Form.Item>
                       <Form.Item name="maintenance_method" label="保养方法"><Input placeholder="如：定期点检 / 定期清理" /></Form.Item>
                     </div>
-                  )}
-
-                  {/* 保养内容：非每日点检时显示且必填 */}
-                  {!isDaily && (
-                    <Form.Item name="maintenance_content" label="保养内容" rules={[{ required: true, message: '请填写保养内容' }]}>
-                      <TextArea rows={2} placeholder="具体保养动作描述" />
-                    </Form.Item>
                   )}
                 </>
               )

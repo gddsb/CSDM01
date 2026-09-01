@@ -275,7 +275,7 @@ export default function DeviceMaintenanceUnified() {
     {
       title: '保养项', width: 200, render: (_: any, r: any) => (
         <div>
-          <div style={{ fontWeight: 500 }}>{r.standard?.item_name || '-'}</div>
+          <div style={{ fontWeight: 500 }}>{r.standard?.maintenance_content || '-'}</div>
           {r.standard?.mechanism && <Text type="secondary" style={{ fontSize: 12 }}>{r.standard.mechanism}</Text>}
         </div>
       ),
@@ -471,7 +471,7 @@ export default function DeviceMaintenanceUnified() {
           <Descriptions column={1} bordered size="small">
             <Descriptions.Item label="记录编号">{detailData.record_no}</Descriptions.Item>
             <Descriptions.Item label="设备">{detailData.device_name} ({detailData.device_code})</Descriptions.Item>
-            <Descriptions.Item label="保养项">{detailData.standard?.item_name || '-'}</Descriptions.Item>
+            <Descriptions.Item label="保养项">{detailData.standard?.maintenance_content || '-'}</Descriptions.Item>
             <Descriptions.Item label="频率">
               <Tag color={MODE_COLOR[detailData.trigger_mode]}>{MODE_LABEL[detailData.trigger_mode]}</Tag>
             </Descriptions.Item>
@@ -513,7 +513,7 @@ export default function DeviceMaintenanceUnified() {
         {completeRecord && (
           <div style={{ marginBottom: 12, padding: 12, background: '#fafafa', borderRadius: 6, fontSize: 13 }}>
             <div><Text type="secondary">设备：</Text>{completeRecord.device_name} ({completeRecord.device_code})</div>
-            <div><Text type="secondary">保养项：</Text>{completeRecord.standard?.item_name || '-'}</div>
+            <div><Text type="secondary">保养项：</Text>{completeRecord.standard?.maintenance_content || '-'}</div>
             <div><Text type="secondary">周期：</Text>{completeRecord.period_key} <Tag color={MODE_COLOR[completeRecord.trigger_mode]} style={{ marginLeft: 4 }}>{MODE_LABEL[completeRecord.trigger_mode]}</Tag></div>
           </div>
         )}

@@ -172,11 +172,11 @@ export default {
       if (device_id) where.device_id = device_id
       if (trigger_mode) where.trigger_mode = trigger_mode
       if (status !== undefined && status !== '' && status !== null) where.status = Number(status)
-      if (item_name) where.item_name = { [Op.like]: `%${item_name}%` }
-      else if (standard_name) where.item_name = { [Op.like]: `%${standard_name}%` }
+      if (item_name) where.maintenance_content = { [Op.like]: `%${item_name}%` }
+      else if (standard_name) where.maintenance_content = { [Op.like]: `%${standard_name}%` }
       else if (keyword) {
         where[Op.or] = [
-          { item_name: { [Op.like]: `%${keyword}%` } },
+          { maintenance_content: { [Op.like]: `%${keyword}%` } },
           { mechanism: { [Op.like]: `%${keyword}%` } },
           { component: { [Op.like]: `%${keyword}%` } },
         ]
@@ -215,8 +215,7 @@ export default {
       } = req.body
 
       if (!device_id) return fail(res, '设备ID不能为空', ErrorCode.PARAM_INVALID)
-      // 每日点检模式必须填写保养项名称；其他模式保养项名称可为空
-      if (trigger_mode === 'daily' && !item_name) return fail(res, '每日点检模式保养项名称不能为空', ErrorCode.PARAM_INVALID)
+      if (!maintenance_content) return fail(res, '保养/点检内容不能为空', ErrorCode.PARAM_INVALID)
 
       // trigger_mode 校验
       if (!['daily', 'weekly', 'monthly', 'runtime'].includes(trigger_mode)) {
@@ -237,7 +236,7 @@ export default {
         device_id,
         device_code: finalDeviceCode,
         device_name: finalDeviceName,
-        item_name,
+        item_name: null, // 已废弃，统一使用 maintenance_content
         mechanism: mechanism || null,
         component: component || null,
         location: location || null,
@@ -1043,7 +1042,7 @@ export default {
         const standard = record.getDataValue('standard_id')
           ? await DeviceMaintenanceStandard.findOne({ where: { standard_id: record.getDataValue('standard_id') }, transaction: t })
           : null
-        const itemName = standard?.getDataValue('item_name') || '未知保养项'
+        const itemName = standard?.getDataValue('item_name') || standard?.getDataValue('maintenance_content') || '未知保养项'
         const faultNo = await generateDeviceFaultNo()
         await DeviceFault.create({
           fault_no: faultNo,
@@ -1149,7 +1148,7 @@ export default {
           const standard = record.getDataValue('standard_id')
             ? await DeviceMaintenanceStandard.findOne({ where: { standard_id: record.getDataValue('standard_id') }, transaction: t })
             : null
-          const itemName = standard?.getDataValue('item_name') || '未知保养项'
+          const itemName = standard?.getDataValue('item_name') || standard?.getDataValue('maintenance_content') || '未知保养项'
           const faultNo = await generateDeviceFaultNo()
           const fault = await DeviceFault.create({
             fault_no: faultNo,
