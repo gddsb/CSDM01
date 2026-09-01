@@ -5,6 +5,7 @@ import {
 } from 'antd'
 import {
   SearchOutlined, ReloadOutlined, PlusOutlined,
+  CheckCircleOutlined, PauseCircleOutlined,
   ToolOutlined, FileTextOutlined, AppstoreOutlined,
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
