@@ -296,27 +296,18 @@ export default function DeviceMaintenanceStandardDetail() {
         <Form form={form} layout="vertical" initialValues={{
           judge_type: '定性',
           trigger_mode: 'daily',
-          status: 1,
           point_count: 1,
           time_per_point: 0,
         }}>
-          {/* 第一行：触发频率、状态 */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <Form.Item name="trigger_mode" label="触发频率" rules={[{ required: true, message: '请选择触发频率' }]}>
-              <Radio.Group>
-                <Radio value="daily">每日点检</Radio>
-                <Radio value="weekly">每周保养</Radio>
-                <Radio value="monthly">每月保养</Radio>
-                <Radio value="runtime">运行时长</Radio>
-              </Radio.Group>
-            </Form.Item>
-            <Form.Item name="status" label="状态">
-              <Radio.Group>
-                <Radio value={1}>启用</Radio>
-                <Radio value={0}>禁用</Radio>
-              </Radio.Group>
-            </Form.Item>
-          </div>
+          {/* 第一行：触发频率 */}
+          <Form.Item name="trigger_mode" label="触发频率" rules={[{ required: true, message: '请选择触发频率' }]}>
+            <Radio.Group>
+              <Radio value="daily">每日点检</Radio>
+              <Radio value="weekly">每周保养</Radio>
+              <Radio value="monthly">每月保养</Radio>
+              <Radio value="runtime">运行时长</Radio>
+            </Radio.Group>
+          </Form.Item>
 
           {/* 第二行：保养项名称（多行文本） */}
           <Form.Item name="item_name" label="保养项名称" rules={[{ required: true, message: '请填写保养项名称' }]}>
@@ -375,12 +366,6 @@ export default function DeviceMaintenanceStandardDetail() {
               return <Text type="secondary">{mode === 'daily' ? '每天自动生成一条执行记录' : '每周一自动生成一条执行记录'}</Text>
             }}
           </Form.Item>
-
-          {/* 排序、备注 */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12 }}>
-            <Form.Item name="sort_order" label="排序"><InputNumber min={0} style={{ width: '100%' }} /></Form.Item>
-            <Form.Item name="remarks" label="备注"><Input /></Form.Item>
-          </div>
         </Form>
       </Drawer>
     </Spin>
