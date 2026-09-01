@@ -266,8 +266,8 @@ Device.hasMany(DeviceMaintenanceStandard, { foreignKey: 'device_id', as: 'device
 DeviceMaintenanceProfile.belongsTo(Device, { foreignKey: 'device_id', as: 'device', constraints: false })
 Device.hasOne(DeviceMaintenanceProfile, { foreignKey: 'device_id', as: 'maintenance_profile', constraints: false })
 // 档案 - 标准项（一对多，通过 device_id 关联）
-DeviceMaintenanceProfile.hasMany(DeviceMaintenanceStandard, { foreignKey: 'device_id', as: 'standards', constraints: false })
-DeviceMaintenanceStandard.belongsTo(DeviceMaintenanceProfile, { foreignKey: 'device_id', as: 'profile', constraints: false })
+DeviceMaintenanceProfile.hasMany(DeviceMaintenanceStandard, { foreignKey: 'device_id', sourceKey: 'device_id', as: 'standards', constraints: false })
+DeviceMaintenanceStandard.belongsTo(DeviceMaintenanceProfile, { foreignKey: 'device_id', targetKey: 'device_id', as: 'profile', constraints: false })
 
 // 设备保养执行记录 - 设备（多对一）
 DeviceMaintenanceRecord.belongsTo(Device, { foreignKey: 'device_id', as: 'device', constraints: false })
