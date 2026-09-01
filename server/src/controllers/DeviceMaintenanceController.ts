@@ -1,5 +1,7 @@
 import path from 'path'
 import fs from 'fs'
+import crypto from 'crypto'
+import sharp from 'sharp'
 import { Op } from 'sequelize'
 import {
   DeviceMaintenanceStandard,
@@ -67,6 +69,73 @@ async function getLatestRuntime(deviceId: number, t?: any): Promise<number> {
 
 // period_key 生成（复用公共函数，已测试）
 export { buildPeriodKey } from '../utils/maintenanceMatrix.js'
+
+// ============================================================
+// 图片处理工具（压缩 + 水印 + 哈希去重 + 统一命名）
+// ============================================================
+
+/** 计算文件 SHA256（用于去重） */
+function sha256File(p: string): string {
+  const hash = crypto.createHash('sha256')
+  hash.update(fs.readFileSync(p))
+  return hash.digest('hex')
+}
+
+/** 渲染时间水印 SVG（白色半透明描边黑色，底部右对齐） */
+function buildWatermarkSvg(text: string, width: number, height: number, density: number): string {
+  const fontSize = Math.max(14, Math.round(width * 0.018 * density))
+  const padding = Math.round(width * 0.025 * density)
+  const svgW = width * density
+  const svgH = height * density
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">
+      <text x="${svgW - padding}" y="${svgH - padding}" font-family="sans-serif"
+        font-size="${fontSize}" fill="rgba(255,255,255,0.85)" stroke="rgba(0,0,0,0.55)"
+        stroke-width="2" text-anchor="end" font-weight="500">${escape(text)}</text>
+    </svg>`.trim()
+}
+
+/** 处理单张图片：压缩 + 水印 + 返回 { buffer, hash, width, height, size } */
+async function processImage(srcPath: string, watermarkText: string): Promise<{
+  buffer: Buffer; hash: string; width: number; height: number; size: number;
+}> {
+  const meta = await sharp(srcPath).metadata()
+  const w = meta.width || 0
+  const h = meta.height || 0
+  const orient = meta.orientation || 1
+
+  // 压缩：长边 <= 1600，JPEG 质量 82（WebP 太新，老设备不识别；PNG 无损大）
+  let out = sharp(srcPath).rotate() // 纠正 EXIF 方向
+  if (Math.max(w, h) > 1600) {
+    out = out.resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
+  }
+  const resizedMeta = await out.metadata()
+  const rw = resizedMeta.width || w
+  const rh = resizedMeta.height || h
+  const density = 2 // SVG 渲染密度
+  const svg = buildWatermarkSvg(watermarkText, rw, rh, density)
+
+  const buffer = await out
+    .composite([{ input: Buffer.from(svg), gravity: 'southeast' }])
+    .jpeg({ quality: 82, mozjpeg: true })
+    .toBuffer()
+
+  // 返回处理后元数据
+  const finalMeta = await sharp(buffer).metadata()
+  const hash = crypto.createHash('sha256').update(buffer).digest('hex')
+  return { buffer, hash, width: finalMeta.width || rw, height: finalMeta.height || rh, size: buffer.length }
+}
+
+/** 生成统一文件名：BMIMG_{yyyymmdd}_{recordId}_{seq}_{shortHash}.jpg */
+function buildImageName(recordId: number, seq: number, hash: string): string {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `BMIMG_${y}${m}${day}_${recordId}_${String(seq).padStart(2, '0')}_${hash.slice(0, 8)}.jpg`
+}
 
 // ============================================================
 // 标准详情（含图片）
@@ -1195,37 +1264,78 @@ export default {
       const files: any[] = (req as any).files || ((req as any).file ? [(req as any).file] : [])
       if (files.length === 0) return fail(res, '请选择要上传的图片', ErrorCode.PARAM_INVALID)
 
-      const uploadsDir = path.resolve(process.cwd(), 'uploads', 'device', 'maintenance')
+      // 专用目录：uploads/device/maintenance/YYYY-MM-DD/
+      const d = new Date()
+      const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      const uploadsDir = path.resolve(process.cwd(), 'uploads', 'device', 'maintenance', ymd)
       if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true })
 
+      const recordId = Number(id)
       const existingCount = await DeviceImage.count({
-        where: { doc_type: 'maintenance', doc_id: id },
+        where: { doc_type: 'maintenance', doc_id: recordId },
         transaction: t,
       })
-      const ts = Date.now()
+
+      // 收集本次待处理图片的已存在 hash（用于跨本次上传去重）
+      const existingHashSet = new Set<string>()
+      const existedImages = await DeviceImage.findAll({
+        where: { doc_type: 'maintenance', doc_id: recordId },
+        attributes: ['file_path'],
+        transaction: t,
+      })
+      for (const img of existedImages) {
+        const p = path.resolve(process.cwd(), img.getDataValue('file_path').replace(/^\//, ''))
+        if (fs.existsSync(p)) {
+          try { existingHashSet.add(sha256File(p)) } catch { /* ignore */ }
+        }
+      }
+
+      const nowStr = d.toLocaleString('zh-CN', { hour12: false })
+      let seqNum = existingCount
       const saved: any[] = []
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i]
-        const seqNum = existingCount + i + 1
-        const ext = path.extname(file.originalname) || '.jpg'
-        const newName = `record_${id}_${seqNum}_${ts}${ext}`
-        const destPath = path.join(uploadsDir, newName)
-        fs.renameSync(file.path, destPath)
-        const img = await DeviceImage.create({
-          doc_type: 'maintenance',
-          doc_id: Number(id),
-          file_path: `/uploads/device/maintenance/${newName}`,
-          file_name: file.originalname || newName,
-          file_size: file.size || null,
-          sort_order: seqNum,
-          uploaded_by: userInfo.userId || null,
-          uploaded_by_name: userInfo.username || '',
-        }, { transaction: t })
-        saved.push(img)
+      const skipped: string[] = [] // 被去重跳过的文件名
+
+      for (const file of files) {
+        try {
+          // 处理：压缩 + 水印（水印包含当前时间、设备编号，便于追溯）
+          const watermarkText = `${nowStr}  ${record.device_code || ''}  ${record.getDataValue('trigger_mode') || ''}`.trim()
+          const processed = await processImage(file.path, watermarkText)
+
+          // 同记录内去重（与已存在图片比对）
+          if (existingHashSet.has(processed.hash)) {
+            skipped.push(file.originalname || file.filename || '(未命名)')
+            continue
+          }
+          existingHashSet.add(processed.hash)
+
+          seqNum += 1
+          const newName = buildImageName(recordId, seqNum, processed.hash)
+          const destPath = path.join(uploadsDir, newName)
+          fs.writeFileSync(destPath, processed.buffer)
+
+          const img = await DeviceImage.create({
+            doc_type: 'maintenance',
+            doc_id: recordId,
+            file_path: `/uploads/device/maintenance/${ymd}/${newName}`,
+            file_name: file.originalname || newName,
+            file_size: processed.size,
+            sort_order: seqNum,
+            uploaded_by: userInfo.userId || null,
+            uploaded_by_name: userInfo.username || '',
+          }, { transaction: t })
+          saved.push(img)
+        } catch (procErr: any) {
+          logger.warn('[DeviceMaintenance] uploadImage skip one:', procErr?.message || procErr)
+        } finally {
+          // 删除 multer 临时文件
+          try { fs.unlinkSync(file.path) } catch { /* ignore */ }
+        }
       }
 
       await t.commit()
-      success(res, saved, `上传成功，共 ${saved.length} 张`)
+      const msgParts = [`成功上传 ${saved.length} 张`]
+      if (skipped.length > 0) msgParts.push(`${skipped.length} 张重复图片已跳过`)
+      success(res, saved, msgParts.join('，'))
     } catch (err: any) {
       if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
       logger.error('[DeviceMaintenance] uploadImage error:', err)

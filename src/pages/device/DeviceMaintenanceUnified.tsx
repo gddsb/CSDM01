@@ -286,7 +286,6 @@ export default function DeviceMaintenanceUnified() {
         <Tag color={MODE_COLOR[r.trigger_mode]}>{MODE_LABEL[r.trigger_mode] || r.trigger_mode}</Tag>
       ),
     },
-    { title: '周期', dataIndex: 'period_key', width: 120 },
     {
       title: '状态', width: 90, render: (_: any, r: any) => (
         <Tag color={STATUS_COLOR[r.status]}>{r.status}</Tag>
@@ -298,6 +297,12 @@ export default function DeviceMaintenanceUnified() {
         : <Text type="secondary">-</Text>,
     },
     { title: '执行人', dataIndex: 'executor_name', width: 100, render: (v: string) => v || '-' },
+    {
+      title: '执行日期', width: 130, render: (_: any, r: any) => {
+        const d = r.end_time || r.start_time
+        return d ? dayjs(d).format('YYYY-MM-DD') : <Text type="secondary">-</Text>
+      },
+    },
     {
       title: '操作', width: 200, fixed: 'right' as const, render: (_: any, r: any) => (
         <Space size={4}>
