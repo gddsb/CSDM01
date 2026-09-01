@@ -781,9 +781,12 @@ export default function DeviceMaintenancePlan() {
   )
 
   // ============ 维护标准列 ============
+  // 注意：所有列必须显式声明 dataIndex，否则 Antd Table 的 render(value, record, index) 第二个参数
+  //       会退化为 index（而非 record），导致 r.xxx 读取到 undefined；
+  //       同时某些列缺少 dataIndex 时 value 可能是整行对象，被直接渲染到 JSX 会抛 React error #31
   const stdColumns = [
     {
-      title: '标准名称', key: 'standard_name', width: 160,
+      title: '标准名称', key: 'standard_name', dataIndex: 'standard_name', width: 160,
       render: (_: any, r: StdRow) => (
         <Input
           placeholder="维护标准名称"
@@ -793,7 +796,7 @@ export default function DeviceMaintenancePlan() {
       ),
     },
     {
-      title: '设备', key: 'device_id', width: 200,
+      title: '设备', key: 'device_id', dataIndex: 'device_id', width: 200,
       render: (_: any, r: StdRow) => (
         <Select
           showSearch
@@ -810,7 +813,7 @@ export default function DeviceMaintenancePlan() {
       ),
     },
     {
-      title: '维护项目', key: 'item_name', width: 140,
+      title: '维护项目', key: 'item_name', dataIndex: 'item_name', width: 140,
       render: (_: any, r: StdRow) => (
         <Input
           placeholder="维护项目名称"
@@ -820,7 +823,7 @@ export default function DeviceMaintenancePlan() {
       ),
     },
     {
-      title: '触发方式', key: 'trigger_type', width: 110,
+      title: '触发方式', key: 'trigger_type', dataIndex: 'trigger_type', width: 110,
       render: (_: any, r: StdRow) => (
         <Select
           style={{ width: '100%' }}
@@ -831,7 +834,7 @@ export default function DeviceMaintenancePlan() {
       ),
     },
     {
-      title: '周期/阈值', key: 'cycle', width: 220,
+      title: '周期/阈值', key: 'cycle', dataIndex: 'cycle_value', width: 220,
       render: (_: any, r: StdRow) => {
         if (r.trigger_type === '运行时长') {
           return (
@@ -867,7 +870,7 @@ export default function DeviceMaintenancePlan() {
       },
     },
     {
-      title: '标准要求', key: 'standard_requirement', width: 200,
+      title: '标准要求', key: 'standard_requirement', dataIndex: 'standard_requirement', width: 200,
       render: (_: any, r: StdRow) => (
         <Input
           placeholder="维护说明/标准要求"
@@ -877,7 +880,7 @@ export default function DeviceMaintenancePlan() {
       ),
     },
     {
-      title: '上次维护', key: 'last_maintenance', width: 160,
+      title: '上次维护', key: 'last_maintenance', dataIndex: 'last_maintenance_date', width: 160,
       render: (_: any, r: StdRow) => {
         if (r.trigger_type === '运行时长') {
           return r.last_maintenance_runtime !== undefined ? `${r.last_maintenance_runtime} h` : <Text type="secondary">-</Text>
@@ -886,7 +889,7 @@ export default function DeviceMaintenancePlan() {
       },
     },
     {
-      title: '下次维护', key: 'next_maintenance_date', width: 120,
+      title: '下次维护', key: 'next_maintenance_date', dataIndex: 'next_maintenance_date', width: 120,
       render: (v: string, r: StdRow) => {
         if (r.trigger_type === '运行时长') return <Text type="secondary">-</Text>
         // 周期型未保存时按上次维护日期 + 周期本地预览
@@ -898,7 +901,7 @@ export default function DeviceMaintenancePlan() {
       },
     },
     {
-      title: '状态', key: 'status', width: 80,
+      title: '状态', key: 'status', dataIndex: 'status', width: 80,
       render: (_: any, r: StdRow) => (
         <Tag
           color={r.status === 1 ? 'success' : 'default'}
@@ -910,7 +913,7 @@ export default function DeviceMaintenancePlan() {
       ),
     },
     {
-      title: '操作', key: 'action', width: 160, fixed: 'right' as const,
+      title: '操作', key: 'action', dataIndex: 'standard_id', width: 160, fixed: 'right' as const,
       render: (_: any, r: StdRow) => (
         <Space size="small">
           <Button type="link" size="small" loading={stdSaving} onClick={() => saveStdItem(r)}>
