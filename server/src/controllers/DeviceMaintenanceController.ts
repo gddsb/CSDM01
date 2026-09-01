@@ -1264,10 +1264,10 @@ export default {
       const files: any[] = (req as any).files || ((req as any).file ? [(req as any).file] : [])
       if (files.length === 0) return fail(res, '请选择要上传的图片', ErrorCode.PARAM_INVALID)
 
-      // 专用目录：uploads/device/maintenance/YYYY-MM-DD/
+      // 专用目录：uploads/device/maintenance/YYYY-MM/
       const d = new Date()
-      const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-      const uploadsDir = path.resolve(process.cwd(), 'uploads', 'device', 'maintenance', ymd)
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      const uploadsDir = path.resolve(process.cwd(), 'uploads', 'device', 'maintenance', ym)
       if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true })
 
       const recordId = Number(id)
@@ -1316,7 +1316,7 @@ export default {
           const img = await DeviceImage.create({
             doc_type: 'maintenance',
             doc_id: recordId,
-            file_path: `/uploads/device/maintenance/${ymd}/${newName}`,
+            file_path: `/uploads/device/maintenance/${ym}/${newName}`,
             file_name: file.originalname || newName,
             file_size: processed.size,
             sort_order: seqNum,
