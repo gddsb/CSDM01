@@ -293,7 +293,11 @@ export default function DeviceMaintenanceStandardDetail() {
           </Space>
         }
       >
-        <Form form={form} layout="vertical" initialValues={{
+        <style>{`
+          .compact-std-form .ant-form-item { margin-bottom: 17px !important; }
+          .compact-std-form .ant-form-item:last-child { margin-bottom: 0 !important; }
+        `}</style>
+        <Form form={form} layout="vertical" className="compact-std-form" initialValues={{
           judge_type: '定性',
           trigger_mode: 'daily',
           point_count: 1,
