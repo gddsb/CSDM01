@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   Tag, Button, Select, DatePicker, Space, Input, Drawer, Form, Descriptions,
-  Typography, message, Modal, Popconfirm, Empty, Spin, Radio, Table, Checkbox, InputNumber,
+  Typography, message, Modal, Popconfirm, Empty, Spin, Radio, Table, Checkbox, InputNumber, Upload,
 } from 'antd'
+import type { UploadFile } from 'antd/es/upload/interface'
 import {
   ToolOutlined, ClockCircleOutlined, CheckCircleOutlined, SearchOutlined,
   ReloadOutlined, PlusOutlined, SettingOutlined, EditOutlined, EyeOutlined,
   DeleteOutlined, ThunderboltOutlined, DashboardOutlined, PrinterOutlined, AppstoreOutlined,
+  UploadOutlined,
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
@@ -89,6 +91,7 @@ export default function DeviceMaintenanceUnified() {
   const [completeRecord, setCompleteRecord] = useState<any>(null)
   const [form] = Form.useForm()
   const [resultType, setResultType] = useState<'正常' | '异常'>('正常')
+  const [completeFileList, setCompleteFileList] = useState<UploadFile[]>([])
 
   // ============ 设备下拉 ============
   const [devices, setDevices] = useState<DeviceOption[]>([])
@@ -181,9 +184,24 @@ export default function DeviceMaintenanceUnified() {
   const openComplete = (record: any) => {
     setCompleteRecord(record)
     setResultType('正常')
+    setCompleteFileList([])
     form.resetFields()
     form.setFieldsValue({ result: '正常' })
     setCompleteOpen(true)
+  }
+
+  // ===== 上传保养图片 =====
+  const uploadCompleteImages = async (recordId: number, files: File[]) => {
+    if (files.length === 0) return
+    const fd = new FormData()
+    files.forEach(f => fd.append('images', f))
+    try {
+      await api.post(`/basic/device-records/${recordId}/images`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+    } catch (err: any) {
+      message.warning('保养结果已提交，但图片上传失败：' + (err?.message || '请稍后重试'))
+    }
   }
 
   // ===== 完成保养（提交执行结果） =====
@@ -193,6 +211,13 @@ export default function DeviceMaintenanceUnified() {
     try {
       const res = await api.put(`/basic/device-records/${completeRecord.record_id}/submit`, values)
       if (res?.success !== false) {
+        // 收集待上传的文件（仅本地文件，已上传的跳过）
+        const pendingFiles = completeFileList
+          .filter(f => f.originFileObj)
+          .map(f => f.originFileObj as File)
+        if (pendingFiles.length > 0) {
+          await uploadCompleteImages(completeRecord.record_id, pendingFiles)
+        }
         message.success(res?.message || '完成保养成功')
         setCompleteOpen(false)
         loadRecords()
@@ -287,12 +312,14 @@ export default function DeviceMaintenanceUnified() {
           {r.status === '执行中' && (
             <Button size="small" type="link" onClick={() => openComplete(r)}>完成</Button>
           )}
-          {r.status !== '已完成' && r.status !== '跳过' && (
+          {r.status === '待执行' && (
             <Button size="small" type="link" onClick={() => handleSkip(r.record_id)}>跳过</Button>
           )}
-          <Popconfirm title="确认删除？" onConfirm={() => handleDelete(r.record_id)}>
-            <Button size="small" type="link" danger onClick={(e) => e.stopPropagation()}>删除</Button>
-          </Popconfirm>
+          {(r.status === '待执行' || r.status === '跳过') && (
+            <Popconfirm title="确认删除？已开始/已完成的保养记录不允许删除" onConfirm={() => handleDelete(r.record_id)}>
+              <Button size="small" type="link" danger onClick={(e) => e.stopPropagation()}>删除</Button>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
@@ -528,6 +555,23 @@ export default function DeviceMaintenanceUnified() {
 
                   <Form.Item name="remarks" label="备注">
                     <TextArea rows={2} placeholder="其他需要说明的事项" />
+                  </Form.Item>
+
+                  <Form.Item label="保养图片（最多10张）">
+                    <Upload
+                      listType="picture-card"
+                      multiple
+                      accept="image/*"
+                      fileList={completeFileList}
+                      beforeUpload={() => false}
+                      onChange={({ fileList }) => setCompleteFileList(fileList)}
+                      maxCount={10}
+                    >
+                      <div>
+                        <UploadOutlined />
+                        <div style={{ marginTop: 4 }}>上传图片</div>
+                      </div>
+                    </Upload>
                   </Form.Item>
                 </>
               )

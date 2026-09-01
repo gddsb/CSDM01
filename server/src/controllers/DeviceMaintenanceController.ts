@@ -1123,7 +1123,9 @@ export default {
       const { id } = req.params
       const record = await DeviceMaintenanceRecord.findOne({ where: { record_id: id } })
       if (!record) return fail(res, '执行记录不存在', ErrorCode.RECORD_NOT_FOUND)
-      if (rawStatus(record) === 2) return fail(res, '已完成的记录不能跳过', ErrorCode.BUSINESS_ERROR)
+      const s = rawStatus(record)
+      if (s === 1) return fail(res, '执行中的记录不允许跳过，请到完成保养后提交结果', ErrorCode.BUSINESS_ERROR)
+      if (s === 2) return fail(res, '已完成的记录不能跳过', ErrorCode.BUSINESS_ERROR)
       await record.update({ status: 3 })
       success(res, null, '已标记为跳过')
     } catch (err: any) {
@@ -1141,6 +1143,10 @@ export default {
       const { id } = req.params
       const record = await DeviceMaintenanceRecord.findOne({ where: { record_id: id }, transaction: t })
       if (!record) return fail(res, '执行记录不存在', ErrorCode.RECORD_NOT_FOUND)
+
+      const s = rawStatus(record)
+      if (s === 1) return fail(res, '执行中的保养记录不允许删除，请先完成或跳过', ErrorCode.BUSINESS_ERROR)
+      if (s === 2) return fail(res, '已完成的保养记录不允许删除', ErrorCode.BUSINESS_ERROR)
 
       // 级联删图片
       await DeviceImage.destroy({ where: { doc_type: 'maintenance', doc_id: id }, transaction: t })
