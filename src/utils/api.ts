@@ -30,10 +30,13 @@ async function capacitorHttpAdapter(config: AxiosRequestConfig): Promise<AxiosRe
       config.data instanceof Blob ||
       config.data instanceof File
     ) {
-      // FormData / Blob / File 直接透传，由浏览器自动设置 Content-Type（含 boundary）
+      // FormData / Blob / File 直接透传，不手动设置 Content-Type
+      // 原生层 CapacitorHttp 会识别 FormData 并自己处理 boundary
+      delete headers['Content-Type']
+      delete headers['content-type']
       body = config.data
     } else {
-      if (!headers['Content-Type']) headers['Content-Type'] = 'application/json'
+      if (!headers['Content-Type'] && !headers['content-type']) headers['Content-Type'] = 'application/json'
       body = JSON.stringify(config.data)
     }
   }
@@ -115,9 +118,15 @@ async function browserXhrAdapter(config: InternalAxiosRequestConfig): Promise<Ax
     xhr.open(method, fullUrl, true)
     xhr.timeout = (config.timeout || 60000)
 
-    // 设置 headers
+    // 判断 body 是否为 FormData/Blob/File（用于决定是否让浏览器自动处理 Content-Type）
+    const isBrowserManagedBody =
+      config.data instanceof FormData ||
+      config.data instanceof Blob ||
+      config.data instanceof File
+
+    // 设置 headers —— FormData/Blob/File 时不手动设置 Content-Type，让 XHR 自动加 boundary
+    let explicitContentType: string | null = null
     if (config.headers) {
-      // AxiosHeaders 对象或普通对象兼容处理
       const headersObj: Record<string, any> = {}
       if (typeof config.headers.forEach === 'function') {
         config.headers.forEach((value: any, key: string) => {
@@ -128,6 +137,11 @@ async function browserXhrAdapter(config: InternalAxiosRequestConfig): Promise<Ax
       }
       for (const [k, v] of Object.entries(headersObj)) {
         if (v != null && k !== 'common') {
+          if (k.toLowerCase() === 'content-type') {
+            // 暂存，稍后根据 body 类型决定是否设置
+            explicitContentType = String(v)
+            continue
+          }
           xhr.setRequestHeader(k, String(v))
         }
       }
@@ -175,29 +189,25 @@ async function browserXhrAdapter(config: InternalAxiosRequestConfig): Promise<Ax
       }
     }
 
-    // 发送请求
+    // 发送请求 —— Content-Type 设置策略：
+    //   FormData/Blob/File → 不设置，让 XHR 自动加 multipart + boundary
+    //   string            → 设置 explicitContentType（若有），否则不设（浏览器默认 text/plain 也可）
+    //   普通对象           → 设置 explicitContentType（若有），否则 application/json
     let body: any = null
     if (config.data != null) {
-      if (typeof config.data === 'string') {
+      if (isBrowserManagedBody) {
         body = config.data
-      } else if (
-        config.data instanceof FormData ||
-        config.data instanceof Blob ||
-        config.data instanceof File
-      ) {
-        // FormData / Blob / File 直接透传，由 XHR 自动设置 Content-Type + boundary
+        // 关键：这里绝对不要 setRequestHeader('Content-Type', ...)！
+        // 手动设置会阻止 XHR 自动注入 multipart boundary
+      } else if (typeof config.data === 'string') {
         body = config.data
+        if (explicitContentType) xhr.setRequestHeader('Content-Type', explicitContentType)
       } else {
-        // 检查是否已有 Content-Type
-        let hasContentType = false
-        if (config.headers && typeof config.headers.has === 'function') {
-          hasContentType = config.headers.has('Content-Type')
-        }
-        if (!hasContentType) {
-          xhr.setRequestHeader('Content-Type', 'application/json')
-        }
         body = JSON.stringify(config.data)
+        xhr.setRequestHeader('Content-Type', explicitContentType || 'application/json')
       }
+    } else if (explicitContentType) {
+      xhr.setRequestHeader('Content-Type', explicitContentType)
     }
     xhr.send(body)
   })
