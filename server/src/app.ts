@@ -118,8 +118,8 @@ app.use(
 
 // 中间件
 app.use(cors(corsOptions()))
-app.use(express.json({ limit: '20mb' }))
-app.use(express.urlencoded({ extended: true, limit: '20mb' }))
+app.use(express.json({ limit: '50mb' }))
+app.use(express.urlencoded({ extended: true, limit: '50mb', parameterLimit: 100000 }))
 app.use(performanceMonitor)
 
 // 全局限流（登录接口在 auth 路由内单独配置更严格的限流）
