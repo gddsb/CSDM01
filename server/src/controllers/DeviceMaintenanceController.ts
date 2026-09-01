@@ -413,7 +413,7 @@ export default {
       const profile = await DeviceMaintenanceProfile.findOne({
         where: { device_id: deviceId },
         include: [
-          { model: Device, as: 'device', required: false, attributes: ['device_id', 'device_code', 'device_name', 'device_model', 'device_spec', 'location'] },
+          { model: Device, as: 'device', required: false, attributes: ['device_id', 'device_code', 'device_name', 'device_model', 'serial_no', 'location'] },
           {
             model: DeviceMaintenanceStandard, as: 'standards', required: false, separate: false,
             order: [['sort_order', 'ASC'], ['standard_id', 'ASC']],

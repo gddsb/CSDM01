@@ -250,7 +250,7 @@ export default function DeviceMaintenanceStandardDetail() {
           <Descriptions column={3} size="small">
             <Descriptions.Item label="设备编码">{device.device_code || '-'}</Descriptions.Item>
             <Descriptions.Item label="设备名称">{device.device_name || '-'}</Descriptions.Item>
-            <Descriptions.Item label="型号/规格">{device.device_model || '-'} / {device.device_spec || '-'}</Descriptions.Item>
+            <Descriptions.Item label="型号/序列号">{device.device_model || '-'} / {device.serial_no || '-'}</Descriptions.Item>
             <Descriptions.Item label="安装位置">{device.location || '-'}</Descriptions.Item>
             <Descriptions.Item label="档案状态">
               <Tag color={STATUS_COLOR[currentStatus] || 'default'} style={{ fontSize: 14, padding: '2px 12px' }}>
