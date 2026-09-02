@@ -226,6 +226,31 @@ export const tableCategoryMap = {
   task_env_alarm_record: { category: '业务表', purpose: '环境报警记录表，存储环境监测超限的报警信息、级别及处理状态' },
   task_weather_info: { category: '业务表', purpose: '气象信息表，存储城市/区域的实时天气数据（温度、湿度、大气压等）' },
   task_energy_meter_data: { category: '业务表', purpose: '能源采集数据表，存储从云集云能源平台采集的总表有功/无功总电能历史记录' },
+  // 设备保养/故障/校准/备件模块
+  device_standard: { category: '基础数据表', purpose: '设备保养标准表（统一版），一台设备多条标准，按触发频率（daily/weekly/monthly/runtime）自动生成执行记录，与设备保养执行记录一对多关联' },
+  device_maintenance_profile: { category: '基础数据表', purpose: '设备维护标准档案表（设备级），一台设备一个档案，统一控制该设备下所有保养标准的执行记录生成，状态机：编制→生效→停用' },
+  device_record: { category: '业务表', purpose: '设备保养执行记录表（统一版），一条记录对应矩阵中一个格子（标准×周期），状态机：待执行→执行中→已完成/跳过' },
+  device_fault: { category: '业务表', purpose: '设备故障表，记录设备故障上报信息，含故障级别（一般/严重/紧急）及影响范围，状态机：待派工→维修中→待审批→已关闭/已挂起' },
+  device_fault_repair: { category: '业务表', purpose: '设备故障维修记录表，与设备故障一对一关联，记录故障原因分析、维修方案、维修过程、备件费用及审批结果' },
+  device_image: { category: '业务表', purpose: '设备单据图片表，通过 doc_type+doc_id 多态关联故障/维修/点检/维护/校准等单据，统一存储设备相关图片' },
+  device_document: { category: '业务表', purpose: '设备电子档案表，存储设备的出厂资料/验收资料/外保记录/内部维修/改造记录等文档附件' },
+  device_runtime_log: { category: '业务表', purpose: '设备运行时长日志表，记录设备累计运行小时数及增量，用于按运行时长触发的保养计划' },
+  device_calibration_plan: { category: '基础数据表', purpose: '计量器具校准计划表，记录校准周期、上次/下次校准日期及校准机构，状态：待校准/已校准/已超期/已锁定' },
+  device_calibration_record: { category: '业务表', purpose: '设备校准记录表，与校准计划一对多关联，记录校准日期、机构、结果（合格/不合格）及校准证书图片' },
+  device_spare_part: { category: '基础数据表', purpose: '设备备件档案表，存储备件编号、规格型号、安全库存上下限及适用设备列表' },
+  device_spare_part_log: { category: '业务表', purpose: '设备备件出入库流水表，记录备件入库/出库/调整的数量、金额、供应商及关联工单' },
+  // 质量客诉与环境检验模块
+  quality_complaint: { category: '业务表', purpose: '客户投诉主表，记录客诉来源、客户、关联料品及处理状态，状态机：处理中→已关闭' },
+  quality_complaint_record: { category: '业务表', purpose: '客诉处理记录子表，按阶段（调查/处理/原因分析/回复客户/客户反馈/关闭）记录客诉处理过程及内容' },
+  quality_supplier_complaint: { category: '业务表', purpose: '供应商投诉主表，记录对供应商的投诉类型、原因及关联来料检验，状态机：已创建→已发出→已回复→已关闭' },
+  quality_env_area: { category: '基础数据表', purpose: '环境检验区域表（树形结构），定义更衣室/车间/产线/仓库等检验区域，支持父子层级及排序' },
+  quality_env_template: { category: '基础数据表', purpose: '环境检验模板表，按区域配置检验项目（如温度、沉降菌）、标准值、单位及检测方法' },
+  quality_env_inspection: { category: '业务表', purpose: '环境检验记录主表，记录检验编号、关联区域、触发方式（自动/手工）及结果，状态机：待检→检验中→已完成→已关闭' },
+  quality_env_inspection_item: { category: '业务表', purpose: '环境检验项目子表，记录每个检验项目的标准值、实测值、单位及判定结果（合格/不合格）' },
+  quality_instrument: { category: '基础数据表', purpose: '质量检验仪器表（独立于 master_device），存储仪器编号、型号、精度、校验类型及状态（在用/停用）' },
+  // 检验数据统一存储改造（阶段1.5）：统一子表 + 样品测量值明细
+  qc_inspection_item: { category: '业务表', purpose: '统一检验子表（合并来料/产品/微生物三子表），通过 source_type+inspection_id 多态外键关联三主表，存储检验项目、标准值、抽样数及综合判定' },
+  qc_inspection_sample_value: { category: '业务表', purpose: '检验样品测量值明细表，一条记录=1个样板的1个检验项目的1组结果，定量定性统一存储（measure_value_num 聚合做SPC，measure_value_text 存定性描述）' },
 }
 
 // 表名 → { 字段名: 中文注释 }（数据库表结构元数据，模块级常量）
