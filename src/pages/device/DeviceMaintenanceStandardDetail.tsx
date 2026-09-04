@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   Card, Table, Tag, Button, Space, Input, Drawer, Form, Radio, InputNumber,
-  Checkbox, Popconfirm, Empty, Spin, Descriptions, Typography, Tooltip, message,
+  Checkbox, Popconfirm, Empty, Spin, Descriptions, Typography, Tooltip, message, Select,
 } from 'antd'
 import {
   ArrowLeftOutlined, PlusOutlined,
@@ -48,6 +48,7 @@ interface StdRow {
   location?: string
   maintenance_method?: string
   maintenance_content?: string
+  inspection_roles?: string[] | null
   judge_type: string
   standard_value?: string
   unit?: string
@@ -77,6 +78,8 @@ export default function DeviceMaintenanceStandardDetail() {
   // 查看 Drawer（生效态只读）
   const [viewOpen, setViewOpen] = useState(false)
   const [viewRow, setViewRow] = useState<StdRow | null>(null)
+  // 点检角色选项（来自系统角色）
+  const [roles, setRoles] = useState<{ label: string; value: string }[]>([])
 
   // ===== 加载档案详情（含标准项） =====
   const loadDetail = useCallback(async () => {
@@ -96,6 +99,15 @@ export default function DeviceMaintenanceStandardDetail() {
   }, [deviceId])
 
   useEffect(() => { loadDetail() }, [loadDetail])
+
+  // 加载系统角色列表（用于点检角色多选）
+  useEffect(() => {
+    api.get('/system/roles', { params: { page_size: 999 } }).then((res: any) => {
+      const raw = res?.data
+      const list = Array.isArray(raw) ? raw : (raw?.rows || raw?.list || [])
+      setRoles(list.map((r: any) => ({ label: r.role_name, value: r.role_name })).filter((r: any) => r.value))
+    }).catch(() => { /* silent */ })
+  }, [])
 
   // ===== 状态切换 =====
   const handleSwitchStatus = async (target: '编制' | '生效' | '停用') => {
@@ -131,6 +143,7 @@ export default function DeviceMaintenanceStandardDetail() {
       ...row,
       monthly_plan: mpIndices,
       runtime_threshold: row.runtime_threshold ?? null,
+      inspection_roles: Array.isArray(row.inspection_roles) ? row.inspection_roles : [],
     })
     setDrawerOpen(true)
   }
@@ -191,6 +204,7 @@ export default function DeviceMaintenanceStandardDetail() {
       render: (_, r) => <Tag color={MODE_COLOR[r.trigger_mode]}>{MODE_LABEL[r.trigger_mode] || r.trigger_mode}</Tag>,
     },
     { title: '保养/点检内容', dataIndex: 'maintenance_content', width: 200, render: (v) => v || '-' },
+    { title: '点检角色', dataIndex: 'inspection_roles', width: 140, ellipsis: true, render: (v) => (Array.isArray(v) && v.length) ? v.join('、') : '-' },
     { title: '判定基准', dataIndex: 'standard_value', width: 160, ellipsis: true, render: (v) => v || '-' },
     { title: '保养方法', dataIndex: 'maintenance_method', width: 120, render: (v) => v || '-' },
     { title: '判定方式', dataIndex: 'judge_type', width: 90 },
@@ -367,6 +381,11 @@ export default function DeviceMaintenanceStandardDetail() {
             rules={[{ required: true, message: '请填写保养/点检内容' }]}
           >
             <TextArea rows={2} placeholder="描述具体的保养动作或点检项内容" />
+          </Form.Item>
+
+          {/* 点检角色（多选，来自系统角色） */}
+          <Form.Item name="inspection_roles" label="点检角色">
+            <Select mode="multiple" allowClear placeholder="请选择点检角色（可多选）" options={roles} />
           </Form.Item>
 
           {/* 根据触发频率动态显示字段（除保养内容外的条件字段） */}

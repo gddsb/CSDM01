@@ -41,6 +41,14 @@ const DeviceMaintenanceStandard = sequelize.define('DeviceMaintenanceStandard', 
   maintenance_method: { type: DataTypes.STRING(50), comment: '保养方法（如：定期点检、定期清理）' },
   maintenance_content: { type: DataTypes.TEXT, comment: '保养内容描述' },
 
+  // 点检角色（多选，存角色名称数组，如 ["点检员","操作工"]）
+  inspection_roles: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: null,
+    comment: '点检角色（多选，存角色名称数组）',
+  },
+
   // ===== 参数 =====
   judge_type: {
     type: DataTypes.STRING(20),

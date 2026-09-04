@@ -224,7 +224,7 @@ export default {
         judge_type = '定性', standard_value, unit,
         point_count = 1, time_per_point = 0,
         trigger_mode = 'daily', monthly_plan, runtime_threshold,
-        status = 1, remarks,
+        status = 1, remarks, inspection_roles,
       } = req.body
 
       if (!device_id) return fail(res, '设备ID不能为空', ErrorCode.PARAM_INVALID)
@@ -267,6 +267,7 @@ export default {
         sort_order: (req.body as any).sort_order !== undefined ? (req.body as any).sort_order : 0,
         status,
         remarks: remarks || null,
+        inspection_roles: Array.isArray(inspection_roles) ? inspection_roles : null,
       }, { transaction: t })
 
       await t.commit()
@@ -294,7 +295,7 @@ export default {
         judge_type, standard_value, unit,
         point_count, time_per_point,
         trigger_mode, monthly_plan, runtime_threshold,
-        sort_order, status, remarks,
+        sort_order, status, remarks, inspection_roles,
       } = req.body
 
       if (trigger_mode !== undefined && !['daily', 'weekly', 'monthly', 'runtime'].includes(trigger_mode)) {
@@ -335,6 +336,7 @@ export default {
       if (sort_order !== undefined) updateData.sort_order = sort_order
       if (status !== undefined) updateData.status = status
       if (remarks !== undefined) updateData.remarks = remarks
+      if (inspection_roles !== undefined) updateData.inspection_roles = Array.isArray(inspection_roles) ? inspection_roles : null
 
       await record.update(updateData, { transaction: t })
       await t.commit()

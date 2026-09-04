@@ -140,13 +140,17 @@ export default function DeviceManagement() {
       const values = await form.validateFields()
       setSubmitting(true)
       const payload = { ...values }
+      let res: any
       if (editing) {
-        const res = await api.put(`/basic/devices/${editing.device_id}`, payload)
-        message.success(res.message || '设备编辑成功')
+        res = await api.put(`/basic/devices/${editing.device_id}`, payload)
       } else {
-        const res = await api.post('/basic/devices', payload)
-        message.success(res.message || '设备新增成功')
+        res = await api.post('/basic/devices', payload)
       }
+      if (res?.success === false) {
+        message.error(res.message || '保存失败')
+        return
+      }
+      message.success(res?.message || (editing ? '设备编辑成功' : '设备新增成功'))
       setModalVisible(false)
       refresh()
     } catch (e) {
@@ -160,6 +164,10 @@ export default function DeviceManagement() {
   const handleDelete = async (record) => {
     try {
       const res = await api.delete(`/basic/devices/${record.device_id}`)
+      if (res?.success === false) {
+        message.error(res.message || '删除失败')
+        return
+      }
       message.success(res.message || '删除成功')
       refresh()
     } catch (err) {
@@ -270,8 +278,13 @@ export default function DeviceManagement() {
           </Row>
           <Row gutter={12}>
             <Col span={12}>
-              <Form.Item name="device_type" label="设备类型" rules={[{ required: true, message: '请输入设备类型' }]}>
-                <Input placeholder="请输入设备类型" />
+              <Form.Item name="device_type" label="设备类型" rules={[{ required: true, message: '请选择设备类型' }]}>
+                <Select placeholder="请选择设备类型" options={[
+                  { label: '生产设备', value: '生产设备' },
+                  { label: '检测设备', value: '检测设备' },
+                  { label: '辅助设备', value: '辅助设备' },
+                  { label: '其他设备', value: '其他设备' },
+                ]} />
               </Form.Item>
             </Col>
             <Col span={12}>
