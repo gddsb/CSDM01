@@ -147,6 +147,7 @@ const defaultPermissions = [
   { parent_id: 0, parent_code: 'device', perm_name: '备件管理', perm_code: 'device:spare-part', type: 'menu', icon: 'InboxOutlined', path: '/device/spare-parts', sort_order: 8 },
   { parent_id: 0, parent_code: 'device', perm_name: '校准管理', perm_code: 'device:calibration', type: 'menu', icon: 'AimOutlined', path: '/device/calibration', sort_order: 9 },
   { parent_id: 0, parent_code: 'device', perm_name: '电子档案', perm_code: 'device:document', type: 'menu', icon: 'FolderOutlined', path: '/device/documents', sort_order: 10 },
+  { parent_id: 0, parent_code: 'device', perm_name: '历史保养记录', perm_code: 'device:maintenance-history', type: 'menu', icon: 'HistoryOutlined', path: '/device/maintenance-history', sort_order: 11 },
   // 报表中心
   { parent_id: 0, perm_name: '报表中心', perm_code: 'report', type: 'menu', icon: 'PieChartOutlined', path: 'report', sort_order: 5 },
   { parent_id: 0, parent_code: 'report', perm_name: '生产日报', perm_code: 'report:daily', type: 'menu', icon: 'CalendarOutlined', path: '/report/daily', sort_order: 1 },

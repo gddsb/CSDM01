@@ -103,6 +103,13 @@ const migrations = [
       ['must_report', 'TINYINT DEFAULT 0'],
     ],
   },
+  // 设备保养标准表：补齐点检角色字段（多选，存角色名称数组）
+  {
+    table: 'device_standard',
+    columns: [
+      ['inspection_roles', 'JSON NULL COMMENT \'点检角色（多选，存角色名称数组）\''],
+    ],
+  },
   // 生产报工单主表（订单下发后直接创建）
   {
     table: 'production_report_order',
