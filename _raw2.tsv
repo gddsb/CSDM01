@@ -1,0 +1,155 @@
+设备编号	设备名称	保养项名称	机构	部件	部位	保养方法	保养内容描述	判定方式()	判定基准	单位	保养点位	保养时间	触发频率	月度计划矩阵	运行时长	上次触发时间	排序	状态	备注	创建时间	更新时间
+DMCS-SZN-19			通风机构	初效过滤器	初效过滤器网兜	定期清理	清洗初效过滤器网兜，根据实际使用情况判定是否更换	定性	无灰土无吸入杂物，无破损			15	monthly	[false,false,true,false,false,true,false,false,true,false,false,true]			0	1
+DMCS-SZN-19			通风机构	中效过滤器	中效过滤器网兜	定期更换	更换中效过滤器	定性	更换全新中效过滤器			15	monthly	[false,false,false,true,false,false,false,false,false,true,false,false]			0	1
+DMCS-SZN-19			通风机构	高效过滤器	高效过滤器	定期更换	更换高效过滤器	定性	更换全新高效过滤器			10	monthly	[false,false,false,false,false,false,false,false,false,false,false,false]			0	1
+DMCS-SZN-19			通风机构	循环风机	传动皮带	定期点检	检查循环风机运行有无异响抖动，三角皮带有无打滑异味现象，两端轴承做加注润滑油。出现异响打滑异味更换传动皮带	定性	风机运行无异响抖动，无皮带打滑异味现象，			30	weekly	-			0	1
+DMCS-SZN-19			制冷机构	制冷压缩机组	冷凝器	定期清理	清理压缩机冷凝器两侧吸附的绒毛飞絮	定性	压缩机冷凝器两侧干净无绒毛飞絮，通风散热顺畅			10	weekly	-			0	1
+DMCS-SZN-19			制冷机构	制冷压缩机组	排风扇	定期点检	检查排风扇运行有无抖动异响	定性	排风扇运行顺畅无抖动异响现象			5	weekly	-			0	1
+DMCS-SZN-19			制冷机构	制冷压缩机组	制冷剂	定期点检	检查冷媒R22的容量压力值，补充制冷剂，水温控制在１０－２６度之间	定性	高压14-18kg,低压4-7kg，冷水温度控制在１０-２６度之间	kg		10	monthly	[true,true,true,true,true,true,true,true,true,true,true,true]			0	1
+DMCS-SZN-19			制冷机构	制冷压缩机组	循环水泵	定期测量	检查循环水泵运行有无异响，有无漏水压力低现象，与备用泵交替使用	定性	运行无异响，无漏水压力低上水慢现象			10	monthly	[true,true,true,true,true,true,true,true,true,true,true,true]			0	1
+DMCS-SZN-19			制冷机构	制冷压缩机组	循环水管路	定期清理	使用除垢剂清洁所有循环水管路水垢，清洗两遍	定性	请设备厂家专业清理维护，有污垢排出，铜管路部分无损伤漏水现象			480	monthly	[false,false,false,true,false,false,false,false,false,false,false,false]			0	1
+DMCS-SZN-19			制冷机构	制冷压缩机组	循环水管路	定期点检	所有循环水进出水管路做保温防护保养，重新缠绕防护包布	定性	所有保温棉外部重新缠绕防护包布，无缺少保温棉或包裹不到位现象			480	monthly	[false,false,false,true,false,false,false,false,false,false,false,false]			0	1
+DMCS-SZN-19			制冷机构	制冷压缩机组	电控装置	定期点检	检查所有电控部件是否有效，包括转换阀，压力开关，延时启动器等	定性	设备启动运行正常，无报警故障			60	monthly	[false,false,false,true,false,false,false,false,false,false,false,false]			0	1
+DMCS-SZN-20			通风机构	初效过滤器	初效过滤器网兜	定期清理	清洗初效过滤器网兜，根据实际使用情况判定是否更换	定性	无灰土无吸入杂物，无破损			15	monthly	[false,false,true,false,false,true,false,false,true,false,false,true]			0	1
+DMCS-SZN-20			通风机构	中效过滤器	中效过滤器网兜	定期更换	更换中效过滤器	定性	更换全新中效过滤器			15	monthly	[false,false,false,true,false,false,false,false,false,true,false,false]			0	1
+DMCS-SZN-20			通风机构	高效过滤器	高效过滤器	定期更换	更换高效过滤器	定性	更换全新高效过滤器			10	monthly	[false,false,false,false,false,false,false,false,false,false,false,false]			0	1
+DMCS-SZN-20			通风机构	循环风机	传动皮带	定期点检	检查循环风机运行有无异响抖动，三角皮带有无打滑异味现象，两端轴承做加注润滑油。出现异响打滑异味更换传动皮带	定性	风机运行无异响抖动，无皮带打滑异味现象，			30	weekly	-			0	1
+DMCS-SZN-20			制冷机构	制冷压缩机组	冷凝器	定期清理	清理压缩机冷凝器两侧吸附的绒毛飞絮	定性	压缩机冷凝器两侧干净无绒毛飞絮，通风散热顺畅			10	weekly	-			0	1
+DMCS-SZN-20			制冷机构	制冷压缩机组	排风扇	定期点检	检查排风扇运行有无抖动异响	定性	排风扇运行顺畅无抖动异响现象			5	weekly	-			0	1
+DMCS-SZN-20			制冷机构	制冷压缩机组	制冷剂	定期点检	检查冷媒R22的容量压力值，补充制冷剂，水温控制在１０－２６度之间	定性	高压14-18kg,低压4-7kg，冷水温度控制在１０-２６度之间	kg		10	monthly	[true,true,true,true,true,true,true,true,true,true,true,true]			0	1
+DMCS-SZN-20			制冷机构	制冷压缩机组	循环水泵	定期测量	检查循环水泵运行有无异响，有无漏水压力低现象，与备用泵交替使用	定性	运行无异响，无漏水压力低上水慢现象			10	monthly	[true,true,true,true,true,true,true,true,true,true,true,true]			0	1
+DMCS-SZN-20			制冷机构	制冷压缩机组	循环水管路	定期清理	使用除垢剂清洁所有循环水管路水垢，清洗两遍	定性	请设备厂家专业清理维护，有污垢排出，铜管路部分无损伤漏水现象			480	monthly	[false,false,false,true,false,false,false,false,false,false,false,false]			0	1
+DMCS-SZN-20			制冷机构	制冷压缩机组	循环水管路	定期点检	所有循环水进出水管路做保温防护保养，重新缠绕防护包布	定性	所有保温棉外部重新缠绕防护包布，无缺少保温棉或包裹不到位现象			480	monthly	[false,false,false,true,false,false,false,false,false,false,false,false]			0	1
+DMCS-SZN-20			制冷机构	制冷压缩机组	电控装置	定期点检	检查所有电控部件是否有效，包括转换阀，压力开关，延时启动器等	定性	设备启动运行正常，无报警故障			60	monthly	[false,false,false,true,false,false,false,false,false,false,false,false]			0	1
+DMCS-SZN-21			通风机构	初效过滤器	初效过滤器网兜	定期清理	清洗初效过滤器网兜，根据实际使用情况判定是否更换	定性	无灰土无吸入杂物，无破损			15	monthly	[false,false,true,false,false,true,false,false,true,false,false,true]			0	1
+DMCS-SZN-21			通风机构	中效过滤器	中效过滤器网兜	定期更换	更换中效过滤器	定性	更换全新中效过滤器			15	monthly	[false,false,false,true,false,false,false,false,false,true,false,false]			0	1
+DMCS-SZN-21			通风机构	高效过滤器	高效过滤器	定期更换	更换高效过滤器	定性	更换全新高效过滤器			10	monthly	[false,false,false,false,false,false,false,false,false,false,false,false]			0	1
+DMCS-SZN-21			通风机构	循环风机	传动皮带	定期点检	检查循环风机运行有无异响抖动，三角皮带有无打滑异味现象，两端轴承做加注润滑油。出现异响打滑异味更换传动皮带	定性	风机运行无异响抖动，无皮带打滑异味现象，			30	weekly	-			0	1
+DMCS-SZN-21			制冷机构	制冷压缩机组	冷凝器	定期清理	清理压缩机冷凝器两侧吸附的绒毛飞絮	定性	压缩机冷凝器两侧干净无绒毛飞絮，通风散热顺畅			10	weekly	-			0	1
+DMCS-SZN-21			制冷机构	制冷压缩机组	排风扇	定期点检	检查排风扇运行有无抖动异响	定性	排风扇运行顺畅无抖动异响现象			5	weekly	-			0	1
+DMCS-SZN-21			制冷机构	制冷压缩机组	制冷剂	定期点检	检查冷媒R22的容量压力值，补充制冷剂，水温控制在１０－２６度之间	定性	高压14-18kg,低压4-7kg，冷水温度控制在１０-２６度之间	kg		10	monthly	[true,true,true,true,true,true,true,true,true,true,true,true]			0	1
+DMCS-SZN-21			制冷机构	制冷压缩机组	循环水泵	定期测量	检查循环水泵运行有无异响，有无漏水压力低现象，与备用泵交替使用	定性	运行无异响，无漏水压力低上水慢现象			10	monthly	[true,true,true,true,true,true,true,true,true,true,true,true]			0	1
+DMCS-SZN-21			制冷机构	制冷压缩机组	循环水管路	定期清理	使用除垢剂清洁所有循环水管路水垢，清洗两遍	定性	请设备厂家专业清理维护，有污垢排出，铜管路部分无损伤漏水现象			480	monthly	[false,false,false,true,false,false,false,false,false,false,false,false]			0	1
+DMCS-SZN-21			制冷机构	制冷压缩机组	循环水管路	定期点检	所有循环水进出水管路做保温防护保养，重新缠绕防护包布	定性	所有保温棉外部重新缠绕防护包布，无缺少保温棉或包裹不到位现象			480	monthly	[false,false,false,true,false,false,false,false,false,false,false,false]			0	1
+DMCS-SZN-21			制冷机构	制冷压缩机组	电控装置	定期点检	检查所有电控部件是否有效，包括转换阀，压力开关，延时启动器等	定性	设备启动运行正常，无报警故障			60	monthly	[false,false,false,true,false,false,false,false,false,false,false,false]			0	1
+DMCS-SZN-001			机身台面是否清洁无杂物	定性			1	0	daily	-			0	1
+DMCS-SZN-001			检查显示屏及所有控制按钮是否有效	定性			1	0	daily	-			0	1
+DMCS-SZN-001			检查圆刀有无裂口及磨损	定性			1	0	daily	-			0	1
+DMCS-SZN-001			检查输送链条推爪及轨道磨损情况	定性			1	0	daily	-			0	1
+DMCS-SZN-001			检查定位板及定位弹片磨损程度	定性			1	0	daily	-			0	1
+DMCS-SZN-001			检查双张检测器功能是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-001			检查吸料、送料、裁剪是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-001			检查运行有无异常响声	定性			1	0	daily	-			0	1
+DMCS-SZN-002			检查机身台面是否清洁无杂物	定性			1	0	daily	-			0	1
+DMCS-SZN-002			清理镜头上的灰尘	定性			1	0	daily	-			0	1
+DMCS-SZN-002			擦拭光源板	定性			1	0	daily	-			0	1
+DMCS-SZN-009			检查机身台面是否清洁无杂物	定性			1	0	daily	-			0	1
+DMCS-SZN-009			清理镜头上的灰尘	定性			1	0	daily	-			0	1
+DMCS-SZN-009			擦拭光源板	定性			1	0	daily	-			0	1
+DMCS-SZN-010			检查机身台面是否清洁无杂物	定性			1	0	daily	-			0	1
+DMCS-SZN-010			清理镜头上的灰尘	定性			1	0	daily	-			0	1
+DMCS-SZN-010			擦拭光源板	定性			1	0	daily	-			0	1
+DMCS-SZN-031			检查机身台面是否清洁无杂物	定性			1	0	daily	-			0	1
+DMCS-SZN-031			清理镜头上的灰尘	定性			1	0	daily	-			0	1
+DMCS-SZN-031			擦拭光源板	定性			1	0	daily	-			0	1
+DMCS-SZN-030			检查机身台面是否清洁无杂物	定性			1	0	daily	-			0	1
+DMCS-SZN-030			清理镜头上的灰尘	定性			1	0	daily	-			0	1
+DMCS-SZN-030			擦拭光源板	定性			1	0	daily	-			0	1
+DMCS-SZN-003			检查机身台面是否清洁无异物	定性			1	0	daily	-			0	1
+DMCS-SZN-003			检查料片输送及光电感应控制是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-003			检查机械手运行时间及位置确定	定性			1	0	daily	-			0	1
+DMCS-SZN-003			检查所有气管及接头有无破损漏气	定性			1	0	daily	-			0	1
+DMCS-SZN-003			检查所有定位传感器间隙与灵敏度	定性			1	0	daily	-			0	1
+DMCS-SZN-003			检查所有运行部位螺丝有无松动	定性			1	0	daily	-			0	1
+DMCS-SZN-003			检查触控屏及所有按钮控制有效性	定性			1	0	daily	-			0	1
+DMCS-SZN-003			检查运行有无异常响声	定性			1	0	daily	-			0	1
+DMCS-SZN-004			检查机身台面清洁无杂物.	定性			1	0	daily	-			0	1
+DMCS-SZN-004			清洁料片缓存槽；清洁真空吸料装置，并检查吸盘磨损程度；	定性			1	0	daily	-			0	1
+DMCS-SZN-004			清洁并检查成圆轴和送料胶辊磨损程度(胶辊着力面磨损深度超过0.5mm必须更换)	定性	0.5	mm	1	0	daily	-			0	1
+DMCS-SZN-004			清洁上下焊轮和搭接规。	定性			1	0	daily	-			0	1
+DMCS-SZN-004			清洁内外氮气喷头。	定性			1	0	daily	-			0	1
+DMCS-SZN-014			机身表面是否清洁无杂物	定性			1	0	daily	-			0	1
+DMCS-SZN-014			检查输送管路有无破损漏液	定性			1	0	daily	-			0	1
+DMCS-SZN-014			检查压缩空气管路有无破损	定性			1	0	daily	-			0	1
+DMCS-SZN-014			检查风扇是否有正常运行或异响	定性			1	0	daily	-			0	1
+DMCS-SZN-015			机身表面是否清洁无杂物	定性			1	0	daily	-			0	1
+DMCS-SZN-015			检查输送管路有无破损漏液	定性			1	0	daily	-			0	1
+DMCS-SZN-015			检查压缩空气管路有无破损	定性			1	0	daily	-			0	1
+DMCS-SZN-015			检查风扇是否有正常运行或异响	定性			1	0	daily	-			0	1
+DMCS-SFZ-004			机身表面是否清洁无杂物	定性			1	0	daily	-			0	1
+DMCS-SFZ-004			检查输送管路有无破损漏液	定性			1	0	daily	-			0	1
+DMCS-SFZ-004			检查压缩空气管路有无破损	定性			1	0	daily	-			0	1
+DMCS-SZN-005			机身表面是否清洁无杂物（重点炉头炉尾）	定性			1	0	daily	-			0	1
+DMCS-SZN-005			压缩空气压力是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-005			排风是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-005			输送带无破损跑偏现象	定性			1	0	daily	-			0	1
+DMCS-SZN-005			各开关按钮功能是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-005			各指示灯显示是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-005			设备运行无异响	定性			1	0	daily	-			0	1
+DMCS-SZN-005			输送带表面需用75%酒精消毒	定性	75	%	1	0	daily	-			0	1
+DMCS-SZN-006			检查清洁机身台面无杂物	定性			1	0	daily	-			0	1
+DMCS-SZN-006			检查封罐机前后输送线传动轮、传动轴、轴承、链板磨损情况	定性			1	0	daily	-			0	1
+DMCS-SZN-006			检查滚筋模具有无磨损、损伤、油污清洁消毒	定性			1	0	daily	-			0	1
+DMCS-SZN-006			清理抛光封罐机构轧头/滚轮,检查轧头/卷封滚轮磨损程度(单件使用运行350万罐更换)	定性	350	万罐	1	0	daily	-			0	1
+DMCS-SZN-006			模具固定螺丝有无松动	定性			1	0	daily	-			0	1
+DMCS-SZN-006			各开关控制按钮功能是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-006			导罐星轮/划盘检查抛光,附属输送链条、链轮磨损状况检查	定性			1	0	daily	-			0	1
+DMCS-SZN-006			检查自动上盖系统皮带磨损情况	定性			1	0	daily	-			0	1
+DMCS-SZN-006			检查运行有无异常响动	定性			1	0	daily	-			0	1
+DMCS-SZN-007			设备机台表面清洁无杂物	定性			1	0	daily	-			0	1
+DMCS-SZN-007			检查压缩空气压力是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-007			清洁并检查各工位托盘及密封橡胶盘磨损程度(橡胶盘出现划痕或罐口接触位置磨损深度超过1.5mm必须更换修复)	定性	1.5	mm	1	0	daily	-			0	1
+DMCS-SZN-007			清洁检查进出口输送星轮/划盘模具有无磨损划伤现象	定性			1	0	daily	-			0	1
+DMCS-SZN-007			检查验证剔除时间位置准确性	定性			1	0	daily	-			0	1
+DMCS-SZN-007			检查确认设备运行有无异常响动	定性			1	0	daily	-			0	1
+DMCS-SZN-023			检查输送护栏是否有异物破损	定性			1	0	daily	-			0	1
+DMCS-SZN-023			检查输送链板是否脏污破损	定性			1	0	daily	-			0	1
+DMCS-SZN-023			检查链轮是否脏污磨损等	定性			1	0	daily	-			0	1
+DMCS-SZN-023			设备机台表面清洁无异物	定性			1	0	daily	-			0	1
+DMCS-SZN-023			检查确认设备运行有无异常响动	定性			1	0	daily	-			0	1
+DMCS-SZN-037			设备机台表面清洁无杂物	定性			1	0	daily	-			0	1
+DMCS-SZN-037			检查压缩空气压力是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-037			清洁并检查输送集罐护栏有无毛刺划伤罐体现象	定性			1	0	daily	-			0	1
+DMCS-SZN-037			清洁检查各限位开关/传感器有效性	定性			1	0	daily	-			0	1
+DMCS-SZN-037			检查所有压缩空气管路接头有无漏气现象	定性			1	0	daily	-			0	1
+DMCS-SZN-037			检查确认设备运行有无异常响动	定性			1	0	daily	-			0	1
+DMCS-SZN-012			设备机台表面清洁无杂物	定性			1	0	daily	-			0	1
+DMCS-SZN-012			检查电源是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-012			检查显示屏是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-012			清洁检查各限位开关/传感器有效性	定性			1	0	daily	-			0	1
+DMCS-SZN-012			检查确认设备运行有无异常响动	定性			1	0	daily	-			0	1
+DMCS-SZN-011			设备机台表面清洁无异物	定性			1	0	daily	-			0	1
+DMCS-SZN-011			检查电源是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-011			检查显示屏是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-011			清洁检查各限位开关/传感器有效性	定性			1	0	daily	-			0	1
+DMCS-SZN-011			检查确认设备运行有无异常响动	定性			1	0	daily	-			0	1
+DMCS-SZN-017			检查清洁设备表面卫生。	定性			1	0	daily	-			0	1
+DMCS-SZN-017			检查设备储气罐和冷干机及三级过滤器是否有存水现象。	定性			1	0	daily	-			0	1
+DMCS-SZN-017			检查所有管路接头有无漏气现象。	定性			1	0	daily	-			0	1
+DMCS-SZN-013			检查清洁设备表面卫生。	定性			1	0	daily	-			0	1
+DMCS-SZN-013			检查设备储气罐和冷干机及三级过滤器是否有存水现象。	定性			1	0	daily	-			0	1
+DMCS-SZN-013			检查所有管路接头有无漏气现象。	定性			1	0	daily	-			0	1
+DMCS-SZN-028			检查清洁设备表面卫生；	定性			1	0	daily	-			0	1
+DMCS-SZN-028			检查电源开关和行程开关是否正常；	定性			1	0	daily	-			0	1
+DMCS-SZN-028			检查上下螺杆润滑是否正常；	定性			1	0	daily	-			0	1
+DMCS-SZN-028			检查链条是否有异响，磨损；	定性			1	0	daily	-			0	1
+DMCS-SBY-001			操作杆是否正常	定性			1	0	daily	-			0	1
+DMCS-SBY-001			制动是否灵活	定性			1	0	daily	-			0	1
+DMCS-SBY-001			升降功能是否正常	定性			1	0	daily	-			0	1
+DMCS-SBY-001			检查有无漏油现象	定性			1	0	daily	-			0	1
+DMCS-SBY-001			车胎磨损状况	定性			1	0	daily	-			0	1
+DMCS-SBY-001			警示灯、喇叭是否正常	定性			1	0	daily	-			0	1
+DMCS-SBY-001			车体表面是否有新的划痕	定性			1	0	daily	-			0	1
+DMCS-SBY-001			倒车警示是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-19			检查压缩机组启动运行是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-19			检查循环水系统运行是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-19			检查循环风箱风机运行是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-19			检查加载卸载动作是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-20			检查压缩机组启动运行是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-20			检查循环水系统运行是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-20			检查循环风箱风机运行是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-20			检查加载卸载动作是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-21			检查压缩机组启动运行是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-21			检查循环水系统运行是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-21			检查循环风箱风机运行是否正常	定性			1	0	daily	-			0	1
+DMCS-SZN-21			检查加载卸载动作是否正常	定性			1	0	daily	-			0	1
