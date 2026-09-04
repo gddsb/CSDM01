@@ -162,17 +162,15 @@ export default function DeviceDocumentPage() {
   const canDelete = hasPermission('device:document:delete') || hasPermission('device:list:delete')
   const canUpload = hasPermission('device:document:upload') || canEdit
 
-  // 设备列表（左侧）
+  // 设备列表（主表）
   const [devices, setDevices] = useState<DeviceRow[]>([])
   const [devicesLoading, setDevicesLoading] = useState(false)
   const [deviceKeyword, setDeviceKeyword] = useState('')
   const [selectedDeviceId, setSelectedDeviceId] = useState<number | null>(null)
-  const [selectedDevice, setSelectedDevice] = useState<DeviceRow | null>(null)
 
-  // 文档列表（按类型分组）
-  const [groupedDocs, setGroupedDocs] = useState<Record<string, DocRow[]>>({})
+  // 全部文档（用于主表统计 + 子表展示）
+  const [allDocs, setAllDocs] = useState<DocRow[]>([])
   const [docsLoading, setDocsLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<string>('factory')
 
   // 上传 Modal
   const [uploadVisible, setUploadVisible] = useState(false)
@@ -207,77 +205,83 @@ export default function DeviceDocumentPage() {
         const arr: DeviceRow[] = Array.isArray(list) ? list : []
         setDevices(arr)
         setDevicesCount(res.data?.total || res.total || arr.length)
-        // 默认选中第一个设备（仅在未选中时）
-        if (arr.length > 0 && selectedDeviceId === null) {
-          setSelectedDeviceId(arr[0].device_id)
-          setSelectedDevice(arr[0])
-        }
       }
     } catch (e: any) {
       if (!/timeout|network/i.test(e?.message || '')) message.error(e?.message || '获取设备列表失败')
     } finally {
       setDevicesLoading(false)
     }
-  }, [message, selectedDeviceId])
+  }, [message])
 
   useEffect(() => {
     fetchDevices()
   }, [fetchDevices])
 
-  // ============ 获取设备文档（按类型分组） ============
-  const fetchDocs = useCallback(async () => {
-    if (!selectedDeviceId) {
-      setGroupedDocs({})
-      setTotalDocs(0)
-      return
-    }
+  // ============ 获取全部设备文档（用于主表统计 + 子表展示） ============
+  const fetchAllDocs = useCallback(async () => {
     setDocsLoading(true)
     try {
-      const res = await api.get(`/basic/device-documents/by-device/${selectedDeviceId}`)
-      if (res.success !== false && res.data) {
-        const groups = res.data.groups || {}
-        // 规范化每个类型 key，避免缺失
-        const normalized: Record<string, DocRow[]> = {}
-        for (const k of DOC_TYPE_KEYS) {
-          normalized[k] = Array.isArray(groups[k]) ? groups[k] : []
-        }
-        setGroupedDocs(normalized)
-        setTotalDocs(res.data.total || Object.values(normalized).reduce((sum, arr) => sum + arr.length, 0))
-        setSelectedDevice(res.data.device || null)
+      const res = await api.get('/basic/device-documents', { params: { page: 1, page_size: 9999 } })
+      if (res.success !== false) {
+        const raw = res.data
+        const list = Array.isArray(raw) ? raw : (raw?.list || raw?.rows || [])
+        setAllDocs(list as DocRow[])
+        setTotalDocs(Array.isArray(raw) ? list.length : (raw?.total || list.length))
       } else {
-        setGroupedDocs({})
+        setAllDocs([])
         setTotalDocs(0)
         message.error(res.message || '获取文档列表失败')
       }
     } catch (e: any) {
-      setGroupedDocs({})
+      setAllDocs([])
       setTotalDocs(0)
       if (!/timeout|network/i.test(e?.message || '')) message.error(e?.message || '获取文档列表失败')
     } finally {
       setDocsLoading(false)
     }
-  }, [selectedDeviceId, message])
+  }, [message])
 
   useEffect(() => {
-    fetchDocs()
-  }, [fetchDocs])
+    fetchAllDocs()
+  }, [fetchAllDocs])
 
   // ============ 统计 ============
   const stats: StatItem[] = useMemo(() => {
-    const factoryCount = (groupedDocs['factory'] || []).length
-    const repairCount = (groupedDocs['internal_repair'] || []).length + (groupedDocs['external_repair'] || []).length
+    const factoryCount = allDocs.filter(d => d.doc_type === 'factory').length
+    const repairCount = allDocs.filter(d => d.doc_type === 'internal_repair' || d.doc_type === 'external_repair').length
     return [
       { label: '设备总数', value: devicesCount, icon: <FileTextTwoTone />, color: '#2196F3' },
-      { label: '当前设备文档', value: totalDocs, icon: <FileOutlined />, color: '#4CAF50' },
+      { label: '档案总数', value: totalDocs, icon: <FileOutlined />, color: '#4CAF50' },
       { label: '出厂资料', value: factoryCount, icon: <FileTextOutlined />, color: '#FF9800' },
       { label: '维修记录', value: repairCount, icon: <FileUnknownOutlined />, color: '#9C27B0' },
     ]
-  }, [devicesCount, totalDocs, groupedDocs])
+  }, [devicesCount, totalDocs, allDocs])
 
-  // ============ 选中设备 ============
+  // ============ 按设备聚合文档计数（主表统计列） ============
+  const docsCountByDevice = useMemo(() => {
+    const map: Record<number, Record<string, number>> = {}
+    for (const d of allDocs) {
+      if (!map[d.device_id]) map[d.device_id] = {}
+      const t = d.doc_type || 'unknown'
+      map[d.device_id][t] = (map[d.device_id][t] || 0) + 1
+    }
+    return map
+  }, [allDocs])
+
+  // ============ 当前选中设备的子表数据 ============
+  const selectedDeviceDocs = useMemo(() => {
+    if (selectedDeviceId == null) return []
+    return allDocs.filter(d => Number(d.device_id) === Number(selectedDeviceId))
+  }, [allDocs, selectedDeviceId])
+
+  const selectedDevice = useMemo<DeviceRow | null>(() => {
+    if (selectedDeviceId == null) return null
+    return devices.find(d => d.device_id === selectedDeviceId) || null
+  }, [devices, selectedDeviceId])
+
+  // ============ 选中设备（主表行点击） ============
   const handleSelectDevice = (device: DeviceRow) => {
     setSelectedDeviceId(device.device_id)
-    setSelectedDevice(device)
   }
 
   const handleSearchDevice = () => {
@@ -292,13 +296,13 @@ export default function DeviceDocumentPage() {
   // ============ 上传 ============
   const openUpload = () => {
     if (!selectedDeviceId) {
-      message.warning('请先选择设备')
+      message.warning('请先在主表选择设备')
       return
     }
     uploadForm.resetFields()
     uploadForm.setFieldsValue({
       device_id: selectedDeviceId,
-      doc_type: activeTab,
+      doc_type: 'factory',
       version: 'v1',
     })
     setFileList([])
@@ -330,9 +334,7 @@ export default function DeviceDocumentPage() {
       if (res.success !== false) {
         message.success(res.message || `成功上传${validFiles.length}个文件`)
         setUploadVisible(false)
-        // 如果上传到的类型与当前选中设备不同，则切换 tab 到上传类型
-        setActiveTab(values.doc_type)
-        fetchDocs()
+        fetchAllDocs()
       } else {
         message.error(res.message || '上传失败')
       }
@@ -378,7 +380,7 @@ export default function DeviceDocumentPage() {
       if (res.success !== false) {
         message.success(res.message || '更新成功')
         setEditVisible(false)
-        fetchDocs()
+        fetchAllDocs()
       } else {
         message.error(res.message || '更新失败')
       }
@@ -396,7 +398,7 @@ export default function DeviceDocumentPage() {
       const res = await api.delete(`/basic/device-documents/${record.doc_id}`)
       if (res.success !== false) {
         message.success(res.message || '删除成功')
-        fetchDocs()
+        fetchAllDocs()
       } else {
         message.error(res.message || '删除失败')
       }
@@ -424,6 +426,10 @@ export default function DeviceDocumentPage() {
 
   // ============ 表格列定义 ============
   const columns: ColumnsType<DocRow> = [
+    {
+      title: '文档类型', dataIndex: 'doc_type', key: 'doc_type', width: 110,
+      render: (v: string) => v ? <Tag color="blue">{DOC_TYPE_MAP[v] || v}</Tag> : '-',
+    },
     {
       title: '文档名称', dataIndex: 'doc_name', key: 'doc_name', width: 240, ellipsis: true,
       render: (v: string, r: DocRow) => (
@@ -480,98 +486,90 @@ export default function DeviceDocumentPage() {
     },
   ]
 
-  // ============ 左侧设备列表渲染 ============
-  const renderDeviceList = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
-      <div style={{ padding: 8, borderBottom: '1px solid #f0f0f0' }}>
-        <Space direction="vertical" style={{ width: '100%' }} size={6}>
-          <AntInput
-            placeholder="搜索设备编号/名称/型号"
-            allowClear
-            prefix={<SearchOutlined />}
-            value={deviceKeyword}
-            onChange={(e) => setDeviceKeyword(e.target.value)}
-            onPressEnter={handleSearchDevice}
-          />
-          <Space>
-            <Button type="primary" size="small" icon={<SearchOutlined />} onClick={handleSearchDevice}>查询</Button>
+  // ============ 主表列定义（设备 + 各类型文档计数） ============
+  const masterColumns: ColumnsType<DeviceRow> = [
+    { title: '设备编号', dataIndex: 'device_code', key: 'device_code', width: 140, render: (v: string) => v || '-' },
+    { title: '设备名称', dataIndex: 'device_name', key: 'device_name', width: 160, render: (v: string) => v || '-' },
+    ...DOC_TYPE_KEYS.map((key) => ({
+      title: DOC_TYPE_MAP[key], key, width: 110, align: 'center' as const,
+      render: (_: any, r: DeviceRow) => {
+        const n = docsCountByDevice[r.device_id]?.[key] || 0
+        return n > 0 ? <Tag color="blue">{n}</Tag> : <Text type="secondary">-</Text>
+      },
+    })),
+  ]
+
+  // ============ 主子表联动布局（一二级列表） ============
+  const renderMasterDetail = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* 一级：主表 */}
+      <div>
+        <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+          <Text strong>设备电子档案（主表 · 点击行查看子表档案）</Text>
+          <Space wrap>
+            <AntInput
+              placeholder="搜索设备编号/名称/型号"
+              allowClear
+              prefix={<SearchOutlined />}
+              style={{ width: 240 }}
+              value={deviceKeyword}
+              onChange={(e) => setDeviceKeyword(e.target.value)}
+              onPressEnter={handleSearchDevice}
+            />
+            <Button size="small" icon={<SearchOutlined />} onClick={handleSearchDevice}>查询</Button>
             <Button size="small" icon={<ReloadOutlined />} onClick={handleResetDevice}>重置</Button>
           </Space>
-        </Space>
+        </div>
+        <Table
+          size="small"
+          rowKey="device_id"
+          columns={masterColumns as any}
+          dataSource={devices}
+          loading={devicesLoading || docsLoading}
+          scroll={{ x: 920 }}
+          pagination={false}
+          rowClassName={(r: DeviceRow) => r.device_id === selectedDeviceId ? 'device-archive-row-selected' : ''}
+          onRow={(r: DeviceRow) => ({
+            onClick: () => handleSelectDevice(r),
+            style: { cursor: 'pointer' },
+          })}
+          locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无设备" /> }}
+        />
       </div>
-      <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
-        <Spin spinning={devicesLoading}>
-          {devices.length === 0 ? (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无设备" style={{ marginTop: 32 }} />
-          ) : (
-            devices.map((d) => {
-              const active = d.device_id === selectedDeviceId
-              return (
-                <div
-                  key={d.device_id}
-                  onClick={() => handleSelectDevice(d)}
-                  style={{
-                    padding: '8px 12px',
-                    cursor: 'pointer',
-                    borderBottom: '1px solid #f5f5f5',
-                    background: active ? 'var(--color-primary-soft, rgba(33,150,243,0.08))' : undefined,
-                    borderLeft: active ? '3px solid var(--color-primary, #2196F3)' : '3px solid transparent',
-                    transition: 'all 0.2s',
-                  }}
-                >
-                  <div style={{ fontWeight: active ? 600 : 400, fontSize: 13, color: active ? 'var(--color-primary, #2196F3)' : undefined }}>
-                    {d.device_name || '-'}
-                  </div>
-                  <Space size={6} style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
-                    <span>{d.device_code || '-'}</span>
-                    {d.device_type && <Tag style={{ fontSize: 11 }}>{d.device_type}</Tag>}
-                  </Space>
-                </div>
-              )
-            })
-          )}
-        </Spin>
-      </div>
-    </div>
-  )
 
-  // ============ 右侧文档区 ============
-  const renderDocumentArea = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
-      <Tabs
-        activeKey={activeTab}
-        onChange={(k) => setActiveTab(k)}
-        type="card"
-        style={{ flexShrink: 0 }}
-        items={DOC_TYPE_KEYS.map((key) => {
-          const list = groupedDocs[key] || []
-          return {
-            key,
-            label: (
-              <span>
-                {DOC_TYPE_MAP[key]}
-                <Tag color={list.length > 0 ? 'blue' : 'default'} style={{ marginLeft: 6, fontSize: 11 }}>{list.length}</Tag>
-              </span>
-            ),
-            children: (
-              <div style={{ padding: '0 4px' }}>
-                <Table
-                  size="small"
-                  rowKey="doc_id"
-                  columns={columns as any}
-                  dataSource={list}
-                  loading={docsLoading}
-                  scroll={{ x: 1200 }}
-                  pagination={false}
-                  locale={{
-                    emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={`暂无${DOC_TYPE_MAP[key]}`} />,
-                  }}
-                />
-              </div>
-            ),
-          }
-        })}
-      />
+      {/* 二级：子表 */}
+      <div>
+        <div style={{ marginBottom: 8 }}>
+          <Space wrap>
+            <Text strong>档案明细（子表）</Text>
+            {selectedDevice ? (
+              <Tag color="blue">{selectedDevice.device_name}（{selectedDevice.device_code}）</Tag>
+            ) : (
+              <Text type="warning">未选择设备</Text>
+            )}
+            <Text type="secondary">｜ 明细数：</Text>
+            <Tag color="geekblue">{selectedDeviceDocs.length}</Tag>
+          </Space>
+        </div>
+        {selectedDeviceId == null ? (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description="请点击上方主表选择设备后查看对应档案明细"
+            style={{ padding: '24px 0' }}
+          />
+        ) : (
+          <Table
+            size="small"
+            rowKey="doc_id"
+            columns={columns as any}
+            dataSource={selectedDeviceDocs}
+            loading={docsLoading}
+            scroll={{ x: 1300 }}
+            pagination={false}
+            locale={{ emptyText: <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="该设备暂无档案文档" /> }}
+          />
+        )}
+      </div>
     </div>
   )
 
@@ -597,7 +595,7 @@ export default function DeviceDocumentPage() {
       <Button type="primary" icon={<PlusOutlined />} onClick={openUpload} disabled={!canUpload || !selectedDeviceId}>
         上传文档
       </Button>
-      <Button icon={<ReloadOutlined />} onClick={() => { fetchDevices(deviceKeyword); fetchDocs() }}>刷新</Button>
+      <Button icon={<ReloadOutlined />} onClick={() => { fetchDevices(deviceKeyword); fetchAllDocs() }}>刷新</Button>
     </Space>
   )
 
@@ -631,6 +629,10 @@ export default function DeviceDocumentPage() {
 
   return (
     <>
+      <style>{`
+        .device-archive-row-selected > td { background: rgba(33,150,243,0.10) !important; }
+        .device-archive-row-selected:hover > td { background: rgba(33,150,243,0.16) !important; }
+      `}</style>
       <ThreeSectionPage
         title="设备电子档案"
         breadcrumbs="设备管理 / 设备电子档案"
@@ -638,14 +640,9 @@ export default function DeviceDocumentPage() {
         filter={filterNode}
         actions={actions}
         table={
-          <Row style={{ height: 'calc(100vh - 320px)', minHeight: 420, background: '#fff', border: '1px solid #f0f0f0', borderRadius: 6 }}>
-            <Col flex="0 0 280px" style={{ borderRight: '1px solid #f0f0f0', overflow: 'hidden' }}>
-              {renderDeviceList()}
-            </Col>
-            <Col flex="1 1 auto" style={{ overflow: 'hidden', padding: 4 }}>
-              {renderDocumentArea()}
-            </Col>
-          </Row>
+          <div style={{ background: '#fff', border: '1px solid #f0f0f0', borderRadius: 6, padding: 12 }}>
+            {renderMasterDetail()}
+          </div>
         }
       />
 

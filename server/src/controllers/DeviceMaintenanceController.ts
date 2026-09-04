@@ -912,6 +912,7 @@ export default {
         record_no, device_id, device_name, device_code,
         trigger_mode, status, period_key,
         start_date, end_date,
+        extra,
       } = req.query
 
       const where: any = {}
@@ -929,6 +930,19 @@ export default {
         where.created_at = {}
         if (start_date) where.created_at[Op.gte] = new Date(start_date as string)
         if (end_date) where.created_at[Op.lte] = new Date(`${end_date} 23:59:59`)
+      }
+
+      // 历史记录模式：只看本月以外的已完成/跳过记录
+      if (extra === 'history') {
+        where.status = { [Op.in]: (statusArr && statusArr.length) ? statusArr : [2, 3] }
+        if (!start_date && !end_date) {
+          const now = new Date()
+          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+          const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+          where.created_at = {
+            [Op.or]: [{ [Op.lt]: monthStart }, { [Op.gt]: monthEnd }],
+          }
+        }
       }
 
       const pageNum = Math.max(1, Number(page) || 1)

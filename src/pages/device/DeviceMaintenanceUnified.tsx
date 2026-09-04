@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Tag, Button, Select, DatePicker, Space, Input, Drawer, Form, Descriptions,
   Typography, message, Modal, Popconfirm, Empty, Spin, Radio, Table, Checkbox, InputNumber, Upload, Image, Card,
@@ -76,10 +76,13 @@ export default function DeviceMaintenanceUnified() {
     device_id: undefined as number | undefined,
     trigger_mode: undefined as string | undefined,
     status: undefined as string | undefined,
-    start_date: undefined as string | undefined,
-    end_date: undefined as string | undefined,
+    start_date: dayjs().startOf('month').format('YYYY-MM-DD') as string | undefined,
+    end_date: dayjs().endOf('month').format('YYYY-MM-DD') as string | undefined,
     keyword: '',
   })
+
+  // ============ 展开行控制 ============
+  const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([])
 
   // ============ 详情 Drawer ============
   const [detailOpen, setDetailOpen] = useState(false)
@@ -117,11 +120,11 @@ export default function DeviceMaintenanceUnified() {
     }).catch(() => { /* silent */ })
   }, [])
 
-  // ===== 加载执行记录 =====
+  // ===== 加载执行记录（按设备聚合需要拉取全部本月记录，分页改为前端按设备分页） =====
   const loadRecords = useCallback(async () => {
     setLoading(true)
     try {
-      const params: any = { page, page_size: pageSize, ...filters }
+      const params: any = { page: 1, page_size: 9999, ...filters }
       if (!filters.start_date) delete params.start_date
       if (!filters.end_date) delete params.end_date
       if (!filters.device_id) delete params.device_id
@@ -137,9 +140,26 @@ export default function DeviceMaintenanceUnified() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, filters])
+  }, [filters])
 
   useEffect(() => { loadRecords() }, [loadRecords])
+
+  // ===== 按设备分组 =====
+  const deviceGroups = useMemo(() => {
+    const map = new Map<number, { device_id: number; device_code: string; device_name: string; records: any[] }>()
+    records.forEach(r => {
+      if (!map.has(r.device_id)) {
+        map.set(r.device_id, {
+          device_id: r.device_id,
+          device_code: r.device_code,
+          device_name: r.device_name,
+          records: [],
+        })
+      }
+      map.get(r.device_id)!.records.push(r)
+    })
+    return Array.from(map.values())
+  }, [records])
 
   // ===== 生成执行记录 =====
   const handleGenerate = async () => {
@@ -276,17 +296,9 @@ export default function DeviceMaintenanceUnified() {
     { label: '总记录数', value: total, color: '#722ed1', icon: <DashboardOutlined /> },
   ]
 
-  // ===== 列定义 =====
-  const columns = [
+  // ===== 子表列定义（执行记录，去掉设备列，操作列宽 250）=====
+  const recordColumns = [
     { title: '记录编号', dataIndex: 'record_no', width: 160 },
-    {
-      title: '设备', width: 180, render: (_: any, r: any) => (
-        <div>
-          <div style={{ fontWeight: 500 }}>{r.device_name}</div>
-          <Text type="secondary" style={{ fontSize: 12 }}>{r.device_code}</Text>
-        </div>
-      ),
-    },
     {
       title: '保养项', width: 200, render: (_: any, r: any) => (
         <div>
@@ -318,7 +330,7 @@ export default function DeviceMaintenanceUnified() {
       },
     },
     {
-      title: '操作', width: 200, fixed: 'right' as const, render: (_: any, r: any) => (
+      title: '操作', width: 250, fixed: 'right' as const, render: (_: any, r: any) => (
         <Space size={4}>
           <Button size="small" type="link" onClick={() => handleDetail(r.record_id)}>详情</Button>
           {r.status === '待执行' && (
@@ -332,6 +344,49 @@ export default function DeviceMaintenanceUnified() {
           )}
         </Space>
       ),
+    },
+  ]
+
+  // ===== 外层设备分组列定义 =====
+  const deviceColumns = [
+    { title: '设备编号', dataIndex: 'device_code', width: 160 },
+    { title: '设备名称', dataIndex: 'device_name', width: 200 },
+    {
+      title: '待执行', width: 90, render: (_: any, r: any) => {
+        const c = r.records.filter((x: any) => x.status === '待执行').length
+        return <Tag color={STATUS_COLOR['待执行']}>{c}</Tag>
+      },
+    },
+    {
+      title: '执行中', width: 90, render: (_: any, r: any) => {
+        const c = r.records.filter((x: any) => x.status === '执行中').length
+        return <Tag color={STATUS_COLOR['执行中']}>{c}</Tag>
+      },
+    },
+    {
+      title: '已完成', width: 90, render: (_: any, r: any) => {
+        const c = r.records.filter((x: any) => x.status === '已完成').length
+        return <Tag color={STATUS_COLOR['已完成']}>{c}</Tag>
+      },
+    },
+    {
+      title: '操作', width: 120, render: (_: any, r: any) => {
+        const expanded = expandedRowKeys.includes(r.device_id)
+        return (
+          <Button
+            size="small"
+            type="link"
+            onClick={(e) => {
+              e.stopPropagation()
+              setExpandedRowKeys(expanded
+                ? expandedRowKeys.filter(k => k !== r.device_id)
+                : [...expandedRowKeys, r.device_id])
+            }}
+          >
+            {expanded ? '收起' : '查看'}
+          </Button>
+        )
+      },
     },
   ]
 
@@ -369,6 +424,9 @@ export default function DeviceMaintenanceUnified() {
           />
           <RangePicker
             style={{ width: 240 }}
+            value={filters.start_date && filters.end_date
+              ? [dayjs(filters.start_date), dayjs(filters.end_date)]
+              : undefined}
             onChange={(ds) => {
               setFilters(f => ({
                 ...f,
@@ -415,17 +473,31 @@ export default function DeviceMaintenanceUnified() {
       table={
         <Spin spinning={loading}>
           <Table
-            rowKey="record_id"
-            columns={columns}
-            dataSource={records}
-            scroll={{ x: 1400 }}
+            rowKey="device_id"
+            columns={deviceColumns}
+            dataSource={deviceGroups}
+            scroll={{ x: 800 }}
+            expandable={{
+              expandedRowKeys,
+              onExpandedRowsChange: (keys) => setExpandedRowKeys([...keys]),
+              expandedRowRender: (record: any) => (
+                <Table
+                  rowKey="record_id"
+                  columns={recordColumns}
+                  dataSource={record.records}
+                  pagination={false}
+                  size="small"
+                  scroll={{ x: 1200 }}
+                />
+              ),
+            }}
             pagination={{
               current: page,
               pageSize,
-              total,
+              total: deviceGroups.length,
               showSizeChanger: true,
               showQuickJumper: true,
-              showTotal: (t) => `共 ${t} 条`,
+              showTotal: (t) => `共 ${t} 台设备 / ${total} 条记录`,
               onChange: (p, ps) => { setPage(p); setPageSize(ps) },
             }}
             locale={{ emptyText: <Empty description="暂无执行记录" /> }}

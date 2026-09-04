@@ -135,8 +135,12 @@ export default function DeviceMaintenanceStandardList() {
   // ===== 删除档案 =====
   const handleDelete = async (row: ProfileRow) => {
     try {
-      await api.delete(`/basic/device-maintenance-profiles/${row.device_id}`)
-      message.success('删除成功')
+      const res: any = await api.delete(`/basic/device-maintenance-profiles/${row.device_id}`)
+      if (res?.success === false) {
+        message.error(res?.message || '删除失败')
+        return
+      }
+      message.success(res?.message || '删除成功')
       loadList()
     } catch (err: any) {
       message.error(err?.message || '删除失败')
@@ -153,15 +157,8 @@ export default function DeviceMaintenanceStandardList() {
 
   // ===== 列定义 =====
   const columns: ColumnsType<ProfileRow> = [
-    {
-      title: '设备', width: 200,
-      render: (_, r) => (
-        <div>
-          <div style={{ fontWeight: 500 }}>{r.device_name || '-'}</div>
-          <span style={{ fontSize: 12, color: '#999' }}>{r.device_code || '-'}</span>
-        </div>
-      ),
-    },
+    { title: '设备编号', dataIndex: 'device_code', width: 140, render: (v: string) => v || '-' },
+    { title: '设备名称', dataIndex: 'device_name', width: 160, render: (v: string) => v || '-' },
     {
       title: '标准项数', width: 220,
       render: (_, r) => {
@@ -184,7 +181,7 @@ export default function DeviceMaintenanceStandardList() {
       render: (v: string) => v ? dayjs(v).format('YYYY-MM-DD') : '-',
     },
     {
-      title: '操作', width: 220, fixed: 'right',
+      title: '操作', width: 250, fixed: 'right',
       render: (_, r) => (
         <Space size={4}>
           <Button size="small" type="link"
@@ -207,9 +204,15 @@ export default function DeviceMaintenanceStandardList() {
               <Button size="small" type="link">生效</Button>
             </Popconfirm>
           )}
-          <Popconfirm title="确认删除？将同时清除该设备所有标准项" onConfirm={() => handleDelete(r)}>
-            <Button size="small" type="link" danger>删除</Button>
-          </Popconfirm>
+          {r.status === '生效' ? (
+            <Tooltip title="生效状态不允许删除，请先停用">
+              <Button size="small" type="link" danger disabled>删除</Button>
+            </Tooltip>
+          ) : (
+            <Popconfirm title="确认删除？将同时清除该设备所有标准项" onConfirm={() => handleDelete(r)}>
+              <Button size="small" type="link" danger>删除</Button>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },

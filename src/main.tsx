@@ -48,6 +48,7 @@ const DeviceArchive = lazy(() => import('./pages/device/DeviceManagement'))
 const DeviceOEE = lazy(() => import('./pages/device/DeviceOEE'))
 const DeviceFault = lazy(() => import('./pages/device/DeviceFault'))
 const DeviceMaintenanceUnified = lazy(() => import('./pages/device/DeviceMaintenanceUnified'))
+const DeviceMaintenanceHistory = lazy(() => import('./pages/device/DeviceMaintenanceHistory'))
 const DeviceMaintenanceMatrix = lazy(() => import('./pages/device/DeviceMaintenanceMatrix'))
 const DeviceMaintenancePrint = lazy(() => import('./pages/device/DeviceMaintenancePrint'))
 const DeviceMaintenanceStandardList = lazy(() => import('./pages/device/DeviceMaintenanceStandardList'))
@@ -153,6 +154,7 @@ function AppRoutes() {
         <Route path="/device/oee" element={lazyPage(<DeviceOEE />)} />
         <Route path="/device/fault" element={lazyPage(<DeviceFault />)} />
         <Route path="/device/maintenance" element={lazyPage(<DeviceMaintenanceUnified />)} />
+        <Route path="/device/maintenance-history" element={lazyPage(<DeviceMaintenanceHistory />)} />
         <Route path="/device/maintenance-standard" element={lazyPage(<DeviceMaintenanceStandardList />)} />
         <Route path="/device/maintenance-standard/:deviceId" element={lazyPage(<DeviceMaintenanceStandardDetail />)} />
         <Route path="/device/maintenance/matrix" element={lazyPage(<DeviceMaintenanceMatrix />)} />
