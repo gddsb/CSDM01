@@ -181,7 +181,7 @@ export default function DeviceMaintenanceStandardList() {
       render: (v: string) => v ? dayjs(v).format('YYYY-MM-DD') : '-',
     },
     {
-      title: '操作', width: 250, fixed: 'right',
+      title: '操作', width: 180, fixed: 'right',
       render: (_, r) => (
         <Space size={4}>
           <Button size="small" type="link"
