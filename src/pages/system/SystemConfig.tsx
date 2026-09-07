@@ -216,25 +216,6 @@ export default function SystemConfig() {
     }
   }
 
-  const handleFileDelete = (item: FileItem) => {
-    Modal.confirm({
-      title: `确认删除${item.isDirectory ? '目录' : '文件'}？`,
-      content: `确定要删除 "${item.name}" 吗？${item.isDirectory ? '仅空目录可删除。' : ''}`,
-      okText: '确认删除',
-      okType: 'danger',
-      cancelText: '取消',
-      onOk: async () => {
-        try {
-          await api.delete(`/system/files/${encodeURIComponent(item.path)}`)
-          showSuccess('删除成功')
-          loadFileDirectory(fileCurrentDir === '/' ? '' : fileCurrentDir.replace(/^\//, ''))
-        } catch (err: unknown) {
-          showError(err instanceof Error ? err.message : '删除失败')
-        }
-      },
-    })
-  }
-
   const handleFilePreview = (item: FileItem) => {
     if (!item.isDirectory) {
       const url = '/' + item.path
