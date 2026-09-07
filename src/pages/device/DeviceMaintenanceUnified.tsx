@@ -209,16 +209,35 @@ export default function DeviceMaintenanceUnified() {
     const fd = new FormData()
     files.forEach(f => fd.append('images', f))
     const res = await api.post(`/basic/device-records/${recordId}/images`, fd)
-    const saved = res?.data?.saved ?? res?.saved ?? 0
-    const failed = res?.data?.failed ?? res?.failed ?? 0
-    const total = res?.data?.total ?? res?.total ?? files.length
-    if (saved === 0) {
+
+    // 后端 uploadImage 返回 success(res, savedArray, msg)
+    // 结构：{ success: true, message: "成功上传 N 张", data: [imgObj1, imgObj2, ...] }
+    // data 是数组（已保存的图片对象），不是 { saved, failed, total } 对象
+    const data = res?.data
+    let savedCount: number
+    if (Array.isArray(data)) {
+      // 数组模式：data.length = 实际成功保存的图片数
+      savedCount = data.length
+    } else if (data && typeof data === 'object' && 'saved' in data) {
+      // 对象模式：兼容可能的扩展返回
+      savedCount = (data as any).saved ?? 0
+    } else {
+      savedCount = 0
+    }
+
+    // 真正失败的判断：业务层明确返回 success: false
+    if (res?.success === false) {
+      throw new Error(res?.message || '图片上传失败')
+    }
+    // 没有保存任何图片
+    if (savedCount === 0) {
       throw new Error(res?.message || '所有图片上传失败')
     }
-    if (saved < total) {
-      throw new Error(`${saved}/${total} 张图片上传成功，${failed} 张失败`)
+    // 部分失败（上传的数量少于提交的）
+    if (savedCount < files.length) {
+      throw new Error(res?.message || `${savedCount}/${files.length} 张图片上传成功`)
     }
-    return saved
+    return savedCount
   }
 
   // ===== 完成保养（先上传图片，全部成功后再提交执行结果） =====
