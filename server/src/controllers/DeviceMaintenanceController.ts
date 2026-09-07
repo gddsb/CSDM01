@@ -115,30 +115,35 @@ async function processImage(srcPath: string, watermarkText: string): Promise<{
 
   // 手动计算 resize 后的实际尺寸（sharp.pipeline.metadata() 返回原始尺寸，不可靠）
   let rw = w, rh = h
-  if (Math.max(w, h) > 1600) {
-    const scale = 1600 / Math.max(w, h)
+  if (Math.max(w, h) > 2400) {
+    const scale = 2400 / Math.max(w, h)
     rw = Math.round(w * scale)
     rh = Math.round(h * scale)
   }
 
-  // 压缩：长边 <= 1600，JPEG 质量 82（WebP 太新，老设备不识别；PNG 无损大）
+  // 压缩：长边 <= 2400，JPEG 质量优先 85，> 2MB 自动降级到 82
   let out = sharp(srcPath).rotate() // 纠正 EXIF 方向
-  if (Math.max(w, h) > 1600) {
-    out = out.resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
+  if (Math.max(w, h) > 2400) {
+    out = out.resize({ width: 2400, height: 2400, fit: 'inside', withoutEnlargement: true })
   }
 
   const density = 2 // SVG 渲染密度
   const svg = buildWatermarkSvg(watermarkText, rw, rh, density)
 
+  // 先以 quality 85 编码，若 > 2MB 自动降级到 82
   const buffer = await out
     .composite([{ input: Buffer.from(svg), gravity: 'southeast' }])
-    .jpeg({ quality: 82, mozjpeg: true })
+    .jpeg({ quality: 85, mozjpeg: true })
     .toBuffer()
+  const MAX_BYTES = 2 * 1024 * 1024
+  const finalBuffer = buffer.length > MAX_BYTES
+    ? await out.clone().composite([{ input: Buffer.from(svg), gravity: 'southeast' }]).jpeg({ quality: 82, mozjpeg: true }).toBuffer()
+    : buffer
 
   // 返回处理后元数据
-  const finalMeta = await sharp(buffer).metadata()
-  const hash = crypto.createHash('sha256').update(buffer).digest('hex')
-  return { buffer, hash, width: finalMeta.width || rw, height: finalMeta.height || rh, size: buffer.length }
+  const finalMeta = await sharp(finalBuffer).metadata()
+  const hash = crypto.createHash('sha256').update(finalBuffer).digest('hex')
+  return { buffer: finalBuffer, hash, width: finalMeta.width || rw, height: finalMeta.height || rh, size: finalBuffer.length }
 }
 
 /** 生成统一文件名：BMIMG_{yyyymmdd}_{recordId}_{seq}_{shortHash}.jpg */
