@@ -526,7 +526,7 @@ export default function DeviceDocumentPage() {
           columns={masterColumns as any}
           dataSource={devices}
           loading={devicesLoading || docsLoading}
-          scroll={{ x: 920 }}
+          scroll={{ x: 920, y: 312 }}
           pagination={false}
           rowClassName={(r: DeviceRow) => r.device_id === selectedDeviceId ? 'device-archive-row-selected' : ''}
           onRow={(r: DeviceRow) => ({

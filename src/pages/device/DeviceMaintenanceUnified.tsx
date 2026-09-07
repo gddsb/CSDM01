@@ -330,7 +330,7 @@ export default function DeviceMaintenanceUnified() {
       },
     },
     {
-      title: '操作', width: 250, fixed: 'right' as const, render: (_: any, r: any) => (
+      title: '操作', width: 170, fixed: 'right' as const, render: (_: any, r: any) => (
         <Space size={4}>
           <Button size="small" type="link" onClick={() => handleDetail(r.record_id)}>详情</Button>
           {r.status === '待执行' && (
@@ -370,7 +370,7 @@ export default function DeviceMaintenanceUnified() {
       },
     },
     {
-      title: '操作', width: 120, render: (_: any, r: any) => {
+      title: '操作', width: 90, render: (_: any, r: any) => {
         const expanded = expandedRowKeys.includes(r.device_id)
         return (
           <Button

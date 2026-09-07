@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
 import {
-  Row, Col, Card, Tag, List, Spin, Statistic, Empty, Typography, Space, Button, Tooltip,
+  Row, Col, Card, Tag, List, Spin, Statistic, Empty, Typography, Space, Button,
 } from 'antd'
 import {
   ReloadOutlined, DashboardOutlined, ToolOutlined, WarningOutlined,
@@ -159,7 +158,6 @@ function SectionCard({
 }
 
 export default function DeviceDashboard() {
-  const navigate = useNavigate()
   const message = useMessage()
 
   const [loading, setLoading] = useState(false)
@@ -241,42 +239,7 @@ export default function DeviceDashboard() {
     ...calibrationsExpiring,
   ]
 
-  // ============ 渲染：设备状态卡片网格 ============
-  const renderDeviceCard = (d: DeviceItem) => {
-    const status = d.status || '停用'
-    const color = deviceStatusColor[status] || '#d9d9d9'
-    return (
-      <Tooltip
-        key={d.device_id}
-        title={`点击查看设备详情：${d.device_name || d.device_code || d.device_id}`}
-      >
-        <Card
-          hoverable
-          size="small"
-          style={{
-            cursor: 'pointer',
-            borderRadius: 8,
-            borderLeft: `4px solid ${color}`,
-          }}
-          styles={{ body: { padding: '10px 12px' } }}
-          onClick={() => navigate('/device/list')}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 600, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {d.device_name || '-'}
-              </div>
-              <Text type="secondary" style={{ fontSize: 12 }}>{d.device_code || '-'}</Text>
-            </div>
-            <Tag color={status === '运行' ? 'success' : status === '维修' ? 'warning' : 'default'} style={{ margin: 0 }}>
-              {status}
-            </Tag>
-          </div>
-        </Card>
-      </Tooltip>
-    )
-  }
-
+  // ============ 渲染 ============
   return (
     <div style={{ paddingBottom: 12 }}>
       {/* ============ 头部标题栏 ============ */}
@@ -378,31 +341,7 @@ export default function DeviceDashboard() {
           </Col>
         </Row>
 
-        {/* ============ 1.2 设备状态看板 ============ */}
-        <Row gutter={[12, 12]} style={{ marginBottom: 12 }}>
-          <Col span={24}>
-            <SectionCard
-              title={`设备状态看板（共 ${deviceTotal} 台）`}
-              icon={<HddOutlined />}
-              loading={loading}
-              bodyStyle={{ maxHeight: 360, overflow: 'auto' }}
-            >
-              {devices.length === 0 ? (
-                <Empty description="暂无设备" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-              ) : (
-                <Row gutter={[8, 8]}>
-                  {devices.map(d => (
-                    <Col key={d.device_id} xs={12} sm={8} md={6} lg={4} xl={3}>
-                      {renderDeviceCard(d)}
-                    </Col>
-                  ))}
-                </Row>
-              )}
-            </SectionCard>
-          </Col>
-        </Row>
-
-        {/* ============ 1.3 + 1.4 维护到期 + 点检待办 ============ */}
+        {/* ============ 1.2 + 1.3 维护到期 + 点检待办 ============ */}
         <Row gutter={[12, 12]} style={{ marginBottom: 12 }}>
           <Col xs={24} lg={12}>
             <SectionCard
