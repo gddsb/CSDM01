@@ -69,8 +69,6 @@ export default function DeviceMaintenanceUnified() {
   const [records, setRecords] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [total, setTotal] = useState(0)
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(20)
 
   const [filters, setFilters] = useState({
     device_id: undefined as number | undefined,
@@ -144,9 +142,9 @@ export default function DeviceMaintenanceUnified() {
 
   useEffect(() => { loadRecords() }, [loadRecords])
 
-  // ===== 按设备分组 =====
+  // ===== 按设备分组，含各频率完成度统计 =====
   const deviceGroups = useMemo(() => {
-    const map = new Map<number, { device_id: number; device_code: string; device_name: string; records: any[] }>()
+    const map = new Map<number, any>()
     records.forEach(r => {
       if (!map.has(r.device_id)) {
         map.set(r.device_id, {
@@ -158,7 +156,21 @@ export default function DeviceMaintenanceUnified() {
       }
       map.get(r.device_id)!.records.push(r)
     })
-    return Array.from(map.values())
+    return Array.from(map.values()).map(g => {
+      const daily = g.records.filter((x: any) => x.trigger_mode === 'daily')
+      const weekly = g.records.filter((x: any) => x.trigger_mode === 'weekly')
+      const monthly = g.records.filter((x: any) => x.trigger_mode === 'monthly')
+      const stat = (arr: any[]) => ({
+        total: arr.length,
+        completed: arr.filter((x: any) => x.status === '已完成').length,
+      })
+      return {
+        ...g,
+        dailyStat: stat(daily),
+        weeklyStat: stat(weekly),
+        monthlyStat: stat(monthly),
+      }
+    })
   }, [records])
 
   // ===== 生成执行记录 =====
@@ -347,30 +359,35 @@ export default function DeviceMaintenanceUnified() {
     },
   ]
 
-  // ===== 外层设备分组列定义 =====
+  // ===== 外层设备分组列定义（按频率显示完成度，如 3/5）=====
+  const renderModeStat = (label: string, stat: { completed: number; total: number }) => {
+    const color = stat.completed === stat.total && stat.total > 0 ? '#52c41a' : '#1677ff'
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.3 }}>
+        <div style={{ fontSize: 11, color: '#888' }}>{label}</div>
+        <div style={{ fontSize: 15, fontWeight: 600, color }}>
+          {stat.completed}<span style={{ color: '#bbb', fontSize: 12 }}> / </span>{stat.total}
+        </div>
+      </div>
+    )
+  }
   const deviceColumns = [
-    { title: '设备编号', dataIndex: 'device_code', width: 160 },
-    { title: '设备名称', dataIndex: 'device_name', width: 200 },
+    { title: '设备编号', dataIndex: 'device_code', width: 150, fixed: 'left' as const },
+    { title: '设备名称', dataIndex: 'device_name', width: 200, fixed: 'left' as const },
     {
-      title: '待执行', width: 90, render: (_: any, r: any) => {
-        const c = r.records.filter((x: any) => x.status === '待执行').length
-        return <Tag color={STATUS_COLOR['待执行']}>{c}</Tag>
-      },
+      title: '日点检', width: 100, align: 'center' as const,
+      render: (_: any, r: any) => renderModeStat('每日', r.dailyStat),
     },
     {
-      title: '执行中', width: 90, render: (_: any, r: any) => {
-        const c = r.records.filter((x: any) => x.status === '执行中').length
-        return <Tag color={STATUS_COLOR['执行中']}>{c}</Tag>
-      },
+      title: '周保养', width: 100, align: 'center' as const,
+      render: (_: any, r: any) => renderModeStat('每周', r.weeklyStat),
     },
     {
-      title: '已完成', width: 90, render: (_: any, r: any) => {
-        const c = r.records.filter((x: any) => x.status === '已完成').length
-        return <Tag color={STATUS_COLOR['已完成']}>{c}</Tag>
-      },
+      title: '月保养', width: 100, align: 'center' as const,
+      render: (_: any, r: any) => renderModeStat('每月', r.monthlyStat),
     },
     {
-      title: '操作', width: 90, render: (_: any, r: any) => {
+      title: '操作', width: 80, fixed: 'right' as const, render: (_: any, r: any) => {
         const expanded = expandedRowKeys.includes(r.device_id)
         return (
           <Button
@@ -402,7 +419,7 @@ export default function DeviceMaintenanceUnified() {
             placeholder="全部设备" allowClear
             style={{ width: 200 }}
             value={filters.device_id}
-            onChange={(v) => setFilters(f => ({ ...f, device_id: v, page: 1 }))}
+            onChange={(v) => setFilters(f => ({ ...f, device_id: v }))}
             options={[{ label: '全部设备', value: undefined, disabled: true }, ...devices.map(d => ({
               label: `${d.device_code} ${d.device_name}`,
               value: d.device_id,
@@ -412,14 +429,14 @@ export default function DeviceMaintenanceUnified() {
             placeholder="全部频率" allowClear
             style={{ width: 140 }}
             value={filters.trigger_mode}
-            onChange={(v) => setFilters(f => ({ ...f, trigger_mode: v, page: 1 }))}
+            onChange={(v) => setFilters(f => ({ ...f, trigger_mode: v }))}
             options={MODE_OPTIONS}
           />
           <Select
             placeholder="全部状态" allowClear
             style={{ width: 120 }}
             value={filters.status}
-            onChange={(v) => setFilters(f => ({ ...f, status: v, page: 1 }))}
+            onChange={(v) => setFilters(f => ({ ...f, status: v }))}
             options={STATUS_OPTIONS}
           />
           <RangePicker
@@ -432,7 +449,6 @@ export default function DeviceMaintenanceUnified() {
                 ...f,
                 start_date: ds?.[0]?.format('YYYY-MM-DD'),
                 end_date: ds?.[1]?.format('YYYY-MM-DD'),
-                page: 1,
               }))
             }}
           />
@@ -467,7 +483,7 @@ export default function DeviceMaintenanceUnified() {
               '_blank', 'width=1280,height=800'
             )}
           >打印</Button>
-          <Button icon={<ReloadOutlined />} onClick={() => { setPage(1); loadRecords() }}>刷新</Button>
+          <Button icon={<ReloadOutlined />} onClick={loadRecords}>刷新</Button>
         </Space>
       }
       table={
@@ -476,7 +492,7 @@ export default function DeviceMaintenanceUnified() {
             rowKey="device_id"
             columns={deviceColumns}
             dataSource={deviceGroups}
-            scroll={{ x: 800 }}
+            scroll={{ x: 680, y: 312 }}
             expandable={{
               expandedRowKeys,
               onExpandedRowsChange: (keys) => setExpandedRowKeys([...keys]),
@@ -491,15 +507,7 @@ export default function DeviceMaintenanceUnified() {
                 />
               ),
             }}
-            pagination={{
-              current: page,
-              pageSize,
-              total: deviceGroups.length,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (t) => `共 ${t} 台设备 / ${total} 条记录`,
-              onChange: (p, ps) => { setPage(p); setPageSize(ps) },
-            }}
+            pagination={false}
             locale={{ emptyText: <Empty description="暂无执行记录" /> }}
           />
         </Spin>

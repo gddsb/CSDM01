@@ -176,11 +176,6 @@ export default function DeviceMaintenancePrint() {
                       <tr>
                         <th className="col-seq">序号</th>
                         <th className="col-item">保养项目</th>
-                        <th className="col-meta">部位</th>
-                        <th className="col-meta">组件</th>
-                        <th className="col-meta">位置</th>
-                        <th className="col-meta">方法</th>
-                        <th className="col-judge">判定基准</th>
                         {allPeriods.dailyDates.map(d => (
                           <th key={d} className="col-day">{Number(d.slice(8, 10))}</th>
                         ))}
@@ -191,12 +186,7 @@ export default function DeviceMaintenancePrint() {
                       {data.daily.items.map((it, idx) => (
                         <tr key={it.standard_id}>
                           <td className="text-center">{idx + 1}</td>
-                          <td>{it.maintenance_content}</td>
-                          <td>{it.mechanism || '-'}</td>
-                          <td>{it.component || '-'}</td>
-                          <td>{it.location || '-'}</td>
-                          <td>{it.maintenance_method || '-'}</td>
-                          <td>{it.standard_value || '-'}</td>
+                          <td>{it.maintenance_content || '-'}</td>
                           {allPeriods.dailyDates.map(d => {
                             const cell = cellValue(it.records?.[d] || null)
                             return (

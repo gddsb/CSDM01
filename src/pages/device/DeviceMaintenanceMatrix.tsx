@@ -178,14 +178,8 @@ export default function DeviceMaintenanceMatrix() {
   const dailyColumns = useMemo(() => {
     const base = [
       { title: '序号', dataIndex: '__idx', width: 60, fixed: 'left' as const, render: (_: any, __: any, i: number) => i + 1 },
-      { title: '保养项目', dataIndex: 'maintenance_content', width: 180, fixed: 'left' as const, ellipsis: true, render: (v: string, r: any) =>
+      { title: '保养项目', dataIndex: 'maintenance_content', width: 220, fixed: 'left' as const, ellipsis: true, render: (v: string, r: any) =>
         <Tooltip title={`标准ID:${r.standard_id} · ${v || ''}`}>{v || '-'}</Tooltip> },
-      { title: '部位', dataIndex: 'mechanism', width: 90, ellipsis: true },
-      { title: '组件', dataIndex: 'component', width: 100, ellipsis: true },
-      { title: '位置', dataIndex: 'location', width: 90, ellipsis: true },
-      { title: '保养方法', dataIndex: 'maintenance_method', width: 100, ellipsis: true },
-      { title: '判定基准', dataIndex: 'standard_value', width: 200, ellipsis: true, render: (v: string, r: any) =>
-        v ? <span>{v}{r.unit && <Text type="secondary"> ({r.unit})</Text>}</span> : '-' },
     ]
     const dateCols = dailyDates.map(d => ({
       title: Number(d.slice(8, 10)),
