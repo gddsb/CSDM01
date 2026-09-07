@@ -1063,13 +1063,14 @@ export default {
       await record.update(recordUpdate, { transaction: t })
 
       // 异常自动创建故障工单
+      let faultId: number | null = null
       if (result === '异常') {
         const standard = record.getDataValue('standard_id')
           ? await DeviceMaintenanceStandard.findOne({ where: { standard_id: record.getDataValue('standard_id') }, transaction: t })
           : null
         const itemName = standard?.getDataValue('maintenance_content') || '未知保养项'
         const faultNo = await generateDeviceFaultNo()
-        await DeviceFault.create({
+        const fault = await DeviceFault.create({
           fault_no: faultNo,
           device_id: deviceId,
           device_code: deviceCode,
@@ -1085,6 +1086,7 @@ export default {
           related_inspection_id: Number(id),
           remarks: `由保养执行记录#${id}自动生成`,
         }, { transaction: t })
+        faultId = (fault as any).fault_id
       }
 
       // 处理上传图片
@@ -1104,16 +1106,31 @@ export default {
           const newName = `record_${id}_${seqNum}_${ts}${ext}`
           const destPath = path.join(uploadsDir, newName)
           fs.renameSync(file.path, destPath)
+          const fileRelPath = `/uploads/device/maintenance/${newName}`
+          // 1) 关联保养记录
           await DeviceImage.create({
             doc_type: 'maintenance',
             doc_id: Number(id),
-            file_path: `/uploads/device/maintenance/${newName}`,
+            file_path: fileRelPath,
             file_name: file.originalname || newName,
             file_size: file.size || null,
             sort_order: seqNum,
             uploaded_by: recordUpdate.executor_id || null,
             uploaded_by_name: recordUpdate.executor_name || '',
           }, { transaction: t })
+          // 2) 如果自动创建了故障，把同一图片也关联给故障（共用物理文件）
+          if (faultId != null) {
+            await DeviceImage.create({
+              doc_type: 'fault',
+              doc_id: faultId,
+              file_path: fileRelPath,
+              file_name: file.originalname || newName,
+              file_size: file.size || null,
+              sort_order: seqNum,
+              uploaded_by: recordUpdate.executor_id || null,
+              uploaded_by_name: recordUpdate.executor_name || '',
+            }, { transaction: t })
+          }
         }
       }
 

@@ -125,6 +125,7 @@ export default function DeviceMaintenanceUnified() {
 
   // ===== 按设备分组，含各频率完成度统计 =====
   const deviceGroups = useMemo(() => {
+    const MODE_ORDER: Record<string, number> = { daily: 0, weekly: 1, monthly: 2, runtime: 3 }
     const map = new Map<number, any>()
     records.forEach(r => {
       if (!map.has(r.device_id)) {
@@ -138,6 +139,15 @@ export default function DeviceMaintenanceUnified() {
       map.get(r.device_id)!.records.push(r)
     })
     return Array.from(map.values()).map(g => {
+      // 子表排序：先按频率（日→周→月→其他），同频率内按保养项名称
+      g.records.sort((a: any, b: any) => {
+        const ma = MODE_ORDER[a.trigger_mode] ?? 99
+        const mb = MODE_ORDER[b.trigger_mode] ?? 99
+        if (ma !== mb) return ma - mb
+        const na = a.standard?.maintenance_content || ''
+        const nb = b.standard?.maintenance_content || ''
+        return na.localeCompare(nb, 'zh-CN')
+      })
       const daily = g.records.filter((x: any) => x.trigger_mode === 'daily')
       const weekly = g.records.filter((x: any) => x.trigger_mode === 'weekly')
       const monthly = g.records.filter((x: any) => x.trigger_mode === 'monthly')
