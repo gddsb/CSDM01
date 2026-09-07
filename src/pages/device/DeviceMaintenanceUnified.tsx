@@ -1,16 +1,14 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Tag, Button, Select, DatePicker, Space, Input, Drawer, Form, Descriptions,
-  Typography, message, Modal, Popconfirm, Empty, Spin, Radio, Table, Checkbox, InputNumber, Upload, Image, Card,
+  Typography, message, Modal, Empty, Spin, Radio, Table, Checkbox, InputNumber, Upload, Image, Card,
 } from 'antd'
 import type { UploadFile } from 'antd/es/upload/interface'
 import {
   ToolOutlined, ClockCircleOutlined, CheckCircleOutlined, SearchOutlined,
-  ReloadOutlined, PlusOutlined, SettingOutlined, EditOutlined, EyeOutlined,
-  DeleteOutlined, ThunderboltOutlined, DashboardOutlined, PrinterOutlined, AppstoreOutlined,
+  ReloadOutlined, ThunderboltOutlined, DashboardOutlined,
   UploadOutlined,
 } from '@ant-design/icons'
-import { useNavigate } from 'react-router-dom'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import type { StatItem } from '../../components/ThreeSectionPage'
 import dayjs from 'dayjs'
@@ -62,7 +60,6 @@ const JUDGE_OPTIONS = [
 ]
 
 export default function DeviceMaintenanceUnified() {
-  const navigate = useNavigate()
   // ============ 执行记录列表 ============
   const [records, setRecords] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -344,14 +341,11 @@ export default function DeviceMaintenanceUnified() {
   ]
 
   // ===== 外层设备分组列定义（按频率显示完成度，如 3/5）=====
-  const renderModeStat = (label: string, stat: { completed: number; total: number }) => {
+  const renderModeStat = (stat: { completed: number; total: number }) => {
     const color = stat.completed === stat.total && stat.total > 0 ? '#52c41a' : '#1677ff'
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.3 }}>
-        <div style={{ fontSize: 11, color: '#888' }}>{label}</div>
-        <div style={{ fontSize: 15, fontWeight: 600, color }}>
-          {stat.completed}<span style={{ color: '#bbb', fontSize: 12 }}> / </span>{stat.total}
-        </div>
+      <div style={{ fontSize: 15, fontWeight: 600, color, textAlign: 'center' }}>
+        {stat.completed}<span style={{ color: '#bbb', fontSize: 12 }}> / </span>{stat.total}
       </div>
     )
   }
@@ -359,16 +353,16 @@ export default function DeviceMaintenanceUnified() {
     { title: '设备编号', dataIndex: 'device_code', width: 150, fixed: 'left' as const },
     { title: '设备名称', dataIndex: 'device_name', width: 220, fixed: 'left' as const },
     {
-      title: '日点检', width: 100, align: 'center' as const,
-      render: (_: any, r: any) => renderModeStat('每日', r.dailyStat),
+      title: '日点检', width: 90, align: 'center' as const,
+      render: (_: any, r: any) => renderModeStat(r.dailyStat),
     },
     {
-      title: '周保养', width: 100, align: 'center' as const,
-      render: (_: any, r: any) => renderModeStat('每周', r.weeklyStat),
+      title: '周保养', width: 90, align: 'center' as const,
+      render: (_: any, r: any) => renderModeStat(r.weeklyStat),
     },
     {
-      title: '月保养', width: 100, align: 'center' as const,
-      render: (_: any, r: any) => renderModeStat('每月', r.monthlyStat),
+      title: '月保养', width: 90, align: 'center' as const,
+      render: (_: any, r: any) => renderModeStat(r.monthlyStat),
     },
   ]
 
@@ -435,21 +429,6 @@ export default function DeviceMaintenanceUnified() {
             setGenDate(dayjs().format('YYYY-MM-DD'))
             setGenOpen(true)
           }}>生成执行记录</Button>
-          <Button
-            icon={<AppstoreOutlined />}
-            disabled={!filters.device_id}
-            onClick={() => navigate(
-              `/device/maintenance/matrix?device_id=${filters.device_id}&year_month=${dayjs().format('YYYY-MM')}`
-            )}
-          >矩阵视图</Button>
-          <Button
-            icon={<PrinterOutlined />}
-            disabled={!filters.device_id}
-            onClick={() => window.open(
-              `/device/maintenance/print?device_id=${filters.device_id}&year_month=${dayjs().format('YYYY-MM')}`,
-              '_blank', 'width=1280,height=800'
-            )}
-          >打印</Button>
           <Button icon={<ReloadOutlined />} onClick={loadRecords}>刷新</Button>
         </Space>
       }
@@ -475,29 +454,14 @@ export default function DeviceMaintenanceUnified() {
           {/* === 下部：子表（选中设备的执行记录）=== */}
           <div style={{ marginTop: 16 }}>
             {selectedDevice ? (
-              <>
-                <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 600 }}>
-                  <Text strong>{selectedDevice.device_code}</Text>
-                  <Text style={{ marginLeft: 8, color: '#333' }}>{selectedDevice.device_name}</Text>
-                  <Text type="secondary" style={{ marginLeft: 12, fontSize: 12 }}>
-                    · 共 {selectedDevice.records.length} 条记录
-                  </Text>
-                  <Button
-                    size="small"
-                    type="link"
-                    style={{ float: 'right' }}
-                    onClick={() => setSelectedDeviceId(null)}
-                  >取消选中</Button>
-                </div>
-                <Table
-                  rowKey="record_id"
-                  columns={recordColumns}
-                  dataSource={selectedDevice.records}
-                  pagination={false}
-                  size="small"
-                  scroll={{ x: 1030, y: 320 }}
-                />
-              </>
+              <Table
+                rowKey="record_id"
+                columns={recordColumns}
+                dataSource={selectedDevice.records}
+                pagination={false}
+                size="small"
+                scroll={{ x: 1030, y: 320 }}
+              />
             ) : (
               <div style={{ padding: '40px 0', textAlign: 'center', color: '#bbb', background: '#fafafa', border: '1px dashed #e8e8e8', borderRadius: 6 }}>
                 👆 请在上方设备列表中点击选择一台设备，查看其保养执行记录
