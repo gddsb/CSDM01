@@ -1030,6 +1030,7 @@ export default {
       if (!result) return fail(res, '执行结果不能为空（正常/异常）', ErrorCode.PARAM_INVALID)
 
       const now = end_time ? new Date(end_time) : new Date()
+      const nowStr = now.toLocaleString('zh-CN', { hour12: false })
       const deviceId = record.getDataValue('device_id')
       const deviceCode = record.getDataValue('device_code')
       const deviceName = record.getDataValue('device_name')
@@ -1089,7 +1090,7 @@ export default {
         faultId = (fault as any).fault_id
       }
 
-      // 处理上传图片
+      // 处理上传图片（压缩 + 水印 + 关联保养记录，异常时同时关联故障工单）
       const files: any[] = (req as any).files || ((req as any).file ? [(req as any).file] : [])
       if (files.length > 0) {
         const uploadsDir = path.resolve(process.cwd(), 'uploads', 'device', 'maintenance')
@@ -1102,18 +1103,37 @@ export default {
         for (let i = 0; i < files.length; i++) {
           const file = files[i]
           const seqNum = existingCount + i + 1
-          const ext = path.extname(file.originalname) || '.jpg'
-          const newName = `record_${id}_${seqNum}_${ts}${ext}`
-          const destPath = path.join(uploadsDir, newName)
-          fs.renameSync(file.path, destPath)
-          const fileRelPath = `/uploads/device/maintenance/${newName}`
+          // 统一压缩 + 水印（与 uploadImage 端点保持一致）
+          const watermarkText = `${nowStr}  ${deviceCode || ''}  ${(record.getDataValue('trigger_mode') || '').trim()}`.trim()
+          let fileRelPath: string
+          let finalSize: number | null
+          let finalName: string
+          try {
+            const processed = await processImage(file.path, watermarkText)
+            const ext = '.jpg' // 压缩后统一 JPEG
+            finalName = `record_${id}_${seqNum}_${ts}${ext}`
+            fs.writeFileSync(path.join(uploadsDir, finalName), processed.buffer)
+            fileRelPath = `/uploads/device/maintenance/${finalName}`
+            finalSize = processed.size
+          } catch (procErr: any) {
+            // 压缩失败（如非图片格式），退化为原文件搬运
+            logger.warn('[DeviceMaintenance] submitRecord image process fallback:', procErr?.message)
+            const ext = path.extname(file.originalname) || '.jpg'
+            finalName = `record_${id}_${seqNum}_${ts}${ext}`
+            fs.renameSync(file.path, path.join(uploadsDir, finalName))
+            fileRelPath = `/uploads/device/maintenance/${finalName}`
+            finalSize = file.size || null
+          }
+          // 删除 multer 临时文件（如果 renameSync 成功了这里跳过）
+          try { if (fs.existsSync(file.path)) fs.unlinkSync(file.path) } catch { /* ignore */ }
+
           // 1) 关联保养记录
           await DeviceImage.create({
             doc_type: 'maintenance',
             doc_id: Number(id),
             file_path: fileRelPath,
-            file_name: file.originalname || newName,
-            file_size: file.size || null,
+            file_name: file.originalname || finalName,
+            file_size: finalSize,
             sort_order: seqNum,
             uploaded_by: recordUpdate.executor_id || null,
             uploaded_by_name: recordUpdate.executor_name || '',
@@ -1124,8 +1144,8 @@ export default {
               doc_type: 'fault',
               doc_id: faultId,
               file_path: fileRelPath,
-              file_name: file.originalname || newName,
-              file_size: file.size || null,
+              file_name: file.originalname || finalName,
+              file_size: finalSize,
               sort_order: seqNum,
               uploaded_by: recordUpdate.executor_id || null,
               uploaded_by_name: recordUpdate.executor_name || '',
