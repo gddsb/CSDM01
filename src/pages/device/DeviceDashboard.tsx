@@ -105,19 +105,6 @@ function extractList(data: any): any[] {
   return []
 }
 
-// 维护到期状态：7天内到期标黄、已过期标红
-function getMaintenanceDueState(planDate?: string): 'overdue' | 'soon' | 'normal' {
-  if (!planDate) return 'normal'
-  const d = dayjs(planDate)
-  if (!d.isValid()) return 'normal'
-  const today = dayjs().startOf('day')
-  const target = d.startOf('day')
-  const diffDays = target.diff(today, 'day')
-  if (diffDays < 0) return 'overdue'
-  if (diffDays <= 7) return 'soon'
-  return 'normal'
-}
-
 // 建议采购量：补齐到安全上限
 function suggestPurchaseQty(current: number, max: number): number {
   const c = Number(current) || 0
@@ -176,15 +163,13 @@ export default function DeviceDashboard() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const today = dayjs().format('YYYY-MM-DD')
       const [
-        devicesRes, faultsRes, maintenanceRes, inspectionsRes,
+        devicesRes, faultsRes, maintenanceRes,
         sparePartsRes, calibExpiringRes, calibOverdueRes,
       ] = await Promise.all([
         api.get('/basic/devices', { params: { page_size: 999 } }),
         api.get('/basic/device-faults', { params: { status: '待派工,维修中,待审批', page_size: 999 } }),
         api.get('/basic/device-records', { params: { status: '待执行,执行中', page_size: 999 } }),
-        api.get('/basic/device-records', { params: { period_key: today, status: '待执行', page_size: 999 } }),
         api.get('/basic/device-spare-parts/low-stock/list'),
         api.get('/basic/device-calibration-plans/expiring/list'),
         api.get('/basic/device-calibration-plans/overdue/list'),
@@ -192,10 +177,15 @@ export default function DeviceDashboard() {
 
       if (cancelledRef.current) return
 
+      // 按触发模式拆分：每日(daily) → 点检，其余(weekly/monthly/runtime) → 维护
+      const allRecords = extractList(maintenanceRes.data)
+      const dailyRecords = allRecords.filter((r: any) => r.trigger_mode === 'daily')
+      const otherRecords = allRecords.filter((r: any) => r.trigger_mode !== 'daily')
+
       setDevices(extractList(devicesRes.data))
       setFaults(extractList(faultsRes.data))
-      setMaintenance(extractList(maintenanceRes.data))
-      setInspections(extractList(inspectionsRes.data))
+      setMaintenance(otherRecords)
+      setInspections(dailyRecords)
       setSpareParts(extractList(sparePartsRes.data))
       setCalibrationsExpiring(extractList(calibExpiringRes.data))
       setCalibrationsOverdue(extractList(calibOverdueRes.data))
@@ -355,7 +345,7 @@ export default function DeviceDashboard() {
                 dataSource={maintenance}
                 locale={{ emptyText: <Empty description="暂无待维护工单" image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
                 renderItem={(item) => {
-                  const due = getMaintenanceDueState(item.plan_date)
+                  const modeLabel = ({ weekly: '每周保养', monthly: '每月保养', runtime: '运行时长' } as Record<string, string>)[item.trigger_mode] || item.trigger_mode
                   return (
                     <List.Item style={{ padding: '8px 4px' }}>
                       <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
@@ -364,19 +354,13 @@ export default function DeviceDashboard() {
                             <Text strong style={{ fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {item.device_name || '-'}
                             </Text>
-                            {item.maintenance_type && (
-                              <Tag style={{ margin: 0 }}>{item.maintenance_type}</Tag>
-                            )}
+                            <Tag style={{ margin: 0 }}>{modeLabel}</Tag>
                           </div>
                           <Text type="secondary" style={{ fontSize: 12 }}>
-                            计划日期：{formatDate(item.plan_date)}
+                            周期：{item.period_key || '-'}
                           </Text>
                         </div>
-                        <Space size={4} direction="vertical" align="end">
-                          <Tag color={maintenanceStatusColor[item.status] || 'default'}>{item.status}</Tag>
-                          {due === 'overdue' && <Tag color="error" style={{ margin: 0 }}>已过期</Tag>}
-                          {due === 'soon' && <Tag color="warning" style={{ margin: 0 }}>7天内到期</Tag>}
-                        </Space>
+                        <Tag color={maintenanceStatusColor[item.status] || 'default'}>{item.status}</Tag>
                       </div>
                     </List.Item>
                   )
@@ -395,7 +379,7 @@ export default function DeviceDashboard() {
               <List
                 size="small"
                 dataSource={inspections}
-                locale={{ emptyText: <Empty description="今日无待检任务" image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
+                locale={{ emptyText: <Empty description="暂无待点检任务" image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
                 renderItem={(item) => (
                   <List.Item style={{ padding: '8px 4px' }}>
                     <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
@@ -405,7 +389,7 @@ export default function DeviceDashboard() {
                         </Text>
                         <div>
                           <Text type="secondary" style={{ fontSize: 12 }}>
-                            点检人：{item.inspector_name || '-'}
+                            点检人：{item.executor_name || '-'} · {item.period_key || '-'}
                           </Text>
                         </div>
                       </div>

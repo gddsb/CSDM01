@@ -146,7 +146,7 @@ export default function DeviceMaintenanceMatrix() {
     setLoading(true)
     api.get('/basic/device-records/matrix', {
       params: { device_id: deviceId, year_month: ym.format('YYYY-MM') },
-    }).then((res: any) => setData(res as MatrixResp))
+    }).then((res: any) => setData(res?.data as MatrixResp))
       .catch(err => message.error(err?.message || '加载失败'))
       .finally(() => setLoading(false))
   }
@@ -165,11 +165,11 @@ export default function DeviceMaintenanceMatrix() {
   // ==== 统计卡片 ====
   const statItems: StatItem[] = useMemo(() => {
     if (!data) return []
-    const s = data.summary
+    const s = data.summary || {}
     return [
-      { label: '日点检完成率', value: `${s.daily_rate ?? 0}% (${s.daily_completed}/${s.daily_total})`, color: '#1677ff', icon: <CalendarOutlined /> },
-      { label: '周保养完成率', value: `${s.weekly_rate ?? 0}% (${s.weekly_completed}/${s.weekly_total})`, color: '#52c41a', icon: <FileDoneOutlined /> },
-      { label: '月保养完成率', value: `${s.monthly_rate ?? 0}% (${s.monthly_completed}/${s.monthly_total})`, color: '#722ed1', icon: <CheckCircleOutlined /> },
+      { label: '日点检完成率', value: `${s.daily_rate ?? 0}% (${s.daily_completed ?? 0}/${s.daily_total ?? 0})`, color: '#1677ff', icon: <CalendarOutlined /> },
+      { label: '周保养完成率', value: `${s.weekly_rate ?? 0}% (${s.weekly_completed ?? 0}/${s.weekly_total ?? 0})`, color: '#52c41a', icon: <FileDoneOutlined /> },
+      { label: '月保养完成率', value: `${s.monthly_rate ?? 0}% (${s.monthly_completed ?? 0}/${s.monthly_total ?? 0})`, color: '#722ed1', icon: <CheckCircleOutlined /> },
       { label: '异常项数', value: s.abnormal_count ?? 0, color: '#f5222d', icon: <ExclamationCircleOutlined /> },
     ]
   }, [data])
@@ -309,11 +309,11 @@ export default function DeviceMaintenanceMatrix() {
                       <Row gutter={8} align="middle">
                         <Col flex="auto">
                           <div style={{ fontWeight: 500, marginBottom: 6 }}>每日点检</div>
-                          <Progress percent={data.summary.daily_rate} />
+                          <Progress percent={data.summary?.daily_rate ?? 0} />
                         </Col>
                         <Col flex="80px" style={{ textAlign: 'right' }}>
-                          <Statistic value={data.summary.daily_completed}
-                                     suffix={`/ ${data.summary.daily_total}`} />
+                          <Statistic value={data.summary?.daily_completed ?? 0}
+                                     suffix={`/ ${data.summary?.daily_total ?? 0}`} />
                         </Col>
                       </Row>
                     </Card>
@@ -323,11 +323,11 @@ export default function DeviceMaintenanceMatrix() {
                       <Row gutter={8} align="middle">
                         <Col flex="auto">
                           <div style={{ fontWeight: 500, marginBottom: 6 }}>每周保养</div>
-                          <Progress percent={data.summary.weekly_rate} />
+                          <Progress percent={data.summary?.weekly_rate ?? 0} />
                         </Col>
                         <Col flex="80px" style={{ textAlign: 'right' }}>
-                          <Statistic value={data.summary.weekly_completed}
-                                     suffix={`/ ${data.summary.weekly_total}`} />
+                          <Statistic value={data.summary?.weekly_completed ?? 0}
+                                     suffix={`/ ${data.summary?.weekly_total ?? 0}`} />
                         </Col>
                       </Row>
                     </Card>
@@ -337,12 +337,12 @@ export default function DeviceMaintenanceMatrix() {
                       <Row gutter={8} align="middle">
                         <Col flex="auto">
                           <div style={{ fontWeight: 500, marginBottom: 6 }}>每月保养</div>
-                          <Progress percent={data.summary.monthly_rate}
-                                    status={data.summary.monthly_rate === 100 ? 'success' : undefined} />
+                          <Progress percent={data.summary?.monthly_rate ?? 0}
+                                    status={data.summary?.monthly_rate === 100 ? 'success' : undefined} />
                         </Col>
                         <Col flex="80px" style={{ textAlign: 'right' }}>
-                          <Statistic value={data.summary.monthly_completed}
-                                     suffix={`/ ${data.summary.monthly_total}`} />
+                          <Statistic value={data.summary?.monthly_completed ?? 0}
+                                     suffix={`/ ${data.summary?.monthly_total ?? 0}`} />
                         </Col>
                       </Row>
                     </Card>
@@ -379,7 +379,7 @@ export default function DeviceMaintenanceMatrix() {
                   }
                 </Card>
 
-                {data.summary.abnormal_count > 0 && (
+                {data.summary?.abnormal_count > 0 && (
                   <Alert
                     style={{ marginTop: 16 }}
                     type="error"
