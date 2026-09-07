@@ -494,7 +494,7 @@ function executorList(records?: Record<string, MatrixRecord | null>): string {
 // 从 localStorage 读取当前登录用户名作为打印人
 function getPrintUser(): string {
   try {
-    const raw = localStorage.getItem('mes:user')
+    const raw = localStorage.getItem('mes_user')
     if (raw) {
       const u = JSON.parse(raw)
       return u?.real_name || u?.username || u?.name || '未知'

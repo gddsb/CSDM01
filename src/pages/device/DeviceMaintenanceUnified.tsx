@@ -79,8 +79,8 @@ export default function DeviceMaintenanceUnified() {
     keyword: '',
   })
 
-  // ============ 展开行控制 ============
-  const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([])
+  // ============ 选中的设备（主表点击 → 子表显示） ============
+  const [selectedDeviceId, setSelectedDeviceId] = useState<number | null>(null)
 
   // ============ 详情 Drawer ============
   const [detailOpen, setDetailOpen] = useState(false)
@@ -141,6 +141,9 @@ export default function DeviceMaintenanceUnified() {
   }, [filters])
 
   useEffect(() => { loadRecords() }, [loadRecords])
+
+  // 筛选变化时清除选中，避免选中的设备被过滤掉
+  useEffect(() => { setSelectedDeviceId(null) }, [filters])
 
   // ===== 按设备分组，含各频率完成度统计 =====
   const deviceGroups = useMemo(() => {
@@ -373,7 +376,7 @@ export default function DeviceMaintenanceUnified() {
   }
   const deviceColumns = [
     { title: '设备编号', dataIndex: 'device_code', width: 150, fixed: 'left' as const },
-    { title: '设备名称', dataIndex: 'device_name', width: 200, fixed: 'left' as const },
+    { title: '设备名称', dataIndex: 'device_name', width: 220, fixed: 'left' as const },
     {
       title: '日点检', width: 100, align: 'center' as const,
       render: (_: any, r: any) => renderModeStat('每日', r.dailyStat),
@@ -386,26 +389,9 @@ export default function DeviceMaintenanceUnified() {
       title: '月保养', width: 100, align: 'center' as const,
       render: (_: any, r: any) => renderModeStat('每月', r.monthlyStat),
     },
-    {
-      title: '操作', width: 80, fixed: 'right' as const, render: (_: any, r: any) => {
-        const expanded = expandedRowKeys.includes(r.device_id)
-        return (
-          <Button
-            size="small"
-            type="link"
-            onClick={(e) => {
-              e.stopPropagation()
-              setExpandedRowKeys(expanded
-                ? expandedRowKeys.filter(k => k !== r.device_id)
-                : [...expandedRowKeys, r.device_id])
-            }}
-          >
-            {expanded ? '收起' : '查看'}
-          </Button>
-        )
-      },
-    },
   ]
+
+  const selectedDevice = deviceGroups.find((g: any) => g.device_id === selectedDeviceId)
 
   return (
     <>
@@ -487,30 +473,62 @@ export default function DeviceMaintenanceUnified() {
         </Space>
       }
       table={
-        <Spin spinning={loading}>
-          <Table
-            rowKey="device_id"
-            columns={deviceColumns}
-            dataSource={deviceGroups}
-            scroll={{ x: 680, y: 312 }}
-            expandable={{
-              expandedRowKeys,
-              onExpandedRowsChange: (keys) => setExpandedRowKeys([...keys]),
-              expandedRowRender: (record: any) => (
+        <>
+          {/* === 上部：主表（设备列表，固定5行可滚动）=== */}
+          <Spin spinning={loading}>
+            <Table
+              rowKey="device_id"
+              columns={deviceColumns}
+              dataSource={deviceGroups}
+              scroll={{ x: 620, y: 312 }}
+              pagination={false}
+              size="middle"
+              onRow={(r) => ({
+                onClick: () => setSelectedDeviceId(r.device_id),
+              })}
+              rowClassName={(r) => r.device_id === selectedDeviceId ? 'device-row-selected' : ''}
+              locale={{ emptyText: <Empty description="暂无保养执行记录" /> }}
+            />
+          </Spin>
+
+          {/* === 下部：子表（选中设备的执行记录）=== */}
+          <div style={{ marginTop: 16 }}>
+            {selectedDevice ? (
+              <>
+                <div style={{ marginBottom: 8, fontSize: 14, fontWeight: 600 }}>
+                  <Text strong>{selectedDevice.device_code}</Text>
+                  <Text style={{ marginLeft: 8, color: '#333' }}>{selectedDevice.device_name}</Text>
+                  <Text type="secondary" style={{ marginLeft: 12, fontSize: 12 }}>
+                    · 共 {selectedDevice.records.length} 条记录
+                  </Text>
+                  <Button
+                    size="small"
+                    type="link"
+                    style={{ float: 'right' }}
+                    onClick={() => setSelectedDeviceId(null)}
+                  >取消选中</Button>
+                </div>
                 <Table
                   rowKey="record_id"
                   columns={recordColumns}
-                  dataSource={record.records}
+                  dataSource={selectedDevice.records}
                   pagination={false}
-                  size="small"
-                  scroll={{ x: 1200 }}
+                  size="middle"
+                  scroll={{ x: 1200, y: 320 }}
                 />
-              ),
-            }}
-            pagination={false}
-            locale={{ emptyText: <Empty description="暂无执行记录" /> }}
-          />
-        </Spin>
+              </>
+            ) : (
+              <div style={{ padding: '40px 0', textAlign: 'center', color: '#bbb', background: '#fafafa', border: '1px dashed #e8e8e8', borderRadius: 6 }}>
+                👆 请在上方设备列表中点击选择一台设备，查看其保养执行记录
+              </div>
+            )}
+          </div>
+
+          <style>{`
+            .device-row-selected { background: #e6f4ff !important; }
+            .device-row-selected td { background: #e6f4ff !important; }
+          `}</style>
+        </>
       }
     />
 
