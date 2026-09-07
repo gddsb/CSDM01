@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   Row, Col, Card, Tabs, Form, Button, Modal, Input, Popconfirm,
   Spin, Typography, Tag, Space,
@@ -48,6 +48,7 @@ export default function SystemConfig() {
   const [fileCurrentDir, setFileCurrentDir] = useState('')
   const [fileBreadcrumbs, setFileBreadcrumbs] = useState<{ name: string; path: string }[]>([])
   const [fileLoading, setFileLoading] = useState(false)
+  const [previewFile, setPreviewFile] = useState<{ url: string; name: string } | null>(null)
 
   const [migrationTargets, setMigrationTargets] = useState<MigrationTarget[]>([
     { name: 'SQLite', description: '本地文件数据库（开发环境）', dialect: 'sqlite', default_storage: './data/milk_can_mes.sqlite', default_port: undefined, is_current: false },
@@ -221,16 +222,7 @@ export default function SystemConfig() {
       const url = '/uploads/' + item.path
       const isImage = /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(item.name)
       if (isImage) {
-        Modal.info({
-          title: item.name,
-          width: 600,
-          icon: null,
-          content: (
-            <div style={{ textAlign: 'center' }}>
-              <img src={url} alt={item.name} style={{ maxWidth: '100%', maxHeight: 500, objectFit: 'contain' }} />
-            </div>
-          ),
-        })
+        setPreviewFile({ url, name: item.name })
       } else {
         window.open(url, '_blank')
       }
@@ -470,6 +462,117 @@ export default function SystemConfig() {
           )}
         </Form>
       </Modal>
+
+      {/* 图片预览 Modal —— 支持滚轮缩放、放大后拖动 */}
+      <Modal
+        open={!!previewFile}
+        title={previewFile?.name}
+        onCancel={() => setPreviewFile(null)}
+        footer={null}
+        width={720}
+        centered
+        destroyOnClose
+      >
+        {previewFile && <ImagePreview url={previewFile.url} name={previewFile.name} />}
+      </Modal>
+    </div>
+  )
+}
+
+/** 图片预览子组件：滚轮缩放 + 放大后拖动 + 控制按钮 */
+function ImagePreview({ url, name }: { url: string; name: string }) {
+  const [scale, setScale] = useState(1)
+  const [offset, setOffset] = useState({ x: 0, y: 0 })
+  const [dragging, setDragging] = useState(false)
+  const dragStart = useRef({ x: 0, y: 0, ox: 0, oy: 0 })
+  const MIN_SCALE = 0.2
+  const MAX_SCALE = 5
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault()
+    const delta = e.deltaY > 0 ? -0.1 : 0.1
+    setScale(s => Math.min(MAX_SCALE, Math.max(MIN_SCALE, +(s + delta).toFixed(2))))
+  }
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (scale <= 1) return
+    e.preventDefault()
+    setDragging(true)
+    dragStart.current = { x: e.clientX, y: e.clientY, ox: offset.x, oy: offset.y }
+  }
+
+  useEffect(() => {
+    if (!dragging) return
+    const onMove = (e: MouseEvent) => {
+      setOffset({
+        x: dragStart.current.ox + (e.clientX - dragStart.current.x),
+        y: dragStart.current.oy + (e.clientY - dragStart.current.y),
+      })
+    }
+    const onUp = () => setDragging(false)
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+  }, [dragging])
+
+  const reset = () => { setScale(1); setOffset({ x: 0, y: 0 }) }
+
+  const cursor = scale > 1 ? (dragging ? 'grabbing' : 'grab') : 'default'
+
+  return (
+    <div style={{ position: 'relative', height: 500, overflow: 'hidden', background: '#000', borderRadius: 4 }}>
+      <div
+        onWheel={handleWheel}
+        onMouseDown={handleMouseDown}
+        style={{
+          width: '100%', height: '100%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor, userSelect: 'none',
+        }}
+      >
+        <img
+          src={url}
+          alt={name}
+          draggable={false}
+          onDoubleClick={reset}
+          style={{
+            transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+            transformOrigin: 'center center',
+            maxWidth: '100%',
+            maxHeight: 500,
+            transition: dragging ? 'none' : 'transform 0.12s ease-out',
+            pointerEvents: 'none',
+          }}
+        />
+      </div>
+
+      {/* 左下角缩放比例 */}
+      <div style={{
+        position: 'absolute', bottom: 12, left: 12,
+        background: 'rgba(0,0,0,0.65)', color: '#fff',
+        padding: '3px 10px', borderRadius: 4, fontSize: 12,
+        fontFamily: 'monospace',
+      }}>
+        {Math.round(scale * 100)}%
+      </div>
+
+      {/* 右下角控制按钮 */}
+      <div style={{ position: 'absolute', bottom: 10, right: 10, display: 'flex', gap: 6 }}>
+        <Button size="small" onClick={() => setScale(s => Math.min(MAX_SCALE, +(s + 0.2).toFixed(2)))}>+</Button>
+        <Button size="small" onClick={() => setScale(s => Math.max(MIN_SCALE, +(s - 0.2).toFixed(2)))}>−</Button>
+        <Button size="small" onClick={reset} disabled={scale === 1 && offset.x === 0 && offset.y === 0}>重置</Button>
+      </div>
+
+      {/* 右上角操作提示 */}
+      <div style={{
+        position: 'absolute', top: 10, right: 12,
+        color: 'rgba(255,255,255,0.55)', fontSize: 11,
+      }}>
+        滚轮缩放 · {scale > 1 ? '拖动移动 · ' : ''}双击重置
+      </div>
     </div>
   )
 }
