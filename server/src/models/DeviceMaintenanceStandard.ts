@@ -29,12 +29,6 @@ const DeviceMaintenanceStandard = sequelize.define('DeviceMaintenanceStandard', 
   device_name: { type: DataTypes.STRING(100), comment: '设备名称（冗余）' },
 
   // ===== 模板左列完整字段 =====
-  item_name: {
-    type: DataTypes.STRING(100),
-    allowNull: true,
-    defaultValue: null,
-    comment: '保养项名称（每日点检时必填，其他频率可选）',
-  },
   mechanism: { type: DataTypes.STRING(50), comment: '机构（如：压缩机冷热机、散热机构）' },
   component: { type: DataTypes.STRING(50), comment: '部件（如：交换管、过滤网）' },
   location: { type: DataTypes.STRING(50), comment: '部位（如：排风扇、过滤网）' },

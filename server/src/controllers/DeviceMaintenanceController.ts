@@ -220,7 +220,7 @@ export default {
     try {
       const {
         device_id, device_code, device_name,
-        item_name, mechanism, component, location, maintenance_method, maintenance_content,
+        mechanism, component, location, maintenance_method, maintenance_content,
         judge_type = '定性', standard_value, unit,
         point_count = 1, time_per_point = 0,
         trigger_mode = 'daily', monthly_plan, runtime_threshold,
@@ -249,7 +249,6 @@ export default {
         device_id,
         device_code: finalDeviceCode,
         device_name: finalDeviceName,
-        item_name: null, // 已废弃，统一使用 maintenance_content
         mechanism: mechanism || null,
         component: component || null,
         location: location || null,
@@ -291,7 +290,7 @@ export default {
 
       const {
         device_id, device_code, device_name,
-        item_name, mechanism, component, location, maintenance_method, maintenance_content,
+        mechanism, component, location, maintenance_method, maintenance_content,
         judge_type, standard_value, unit,
         point_count, time_per_point,
         trigger_mode, monthly_plan, runtime_threshold,
@@ -319,7 +318,6 @@ export default {
       if (device_id !== undefined) updateData.device_id = device_id
       if (device_code !== undefined) updateData.device_code = device_code
       if (device_name !== undefined) updateData.device_name = device_name
-      if (item_name !== undefined) updateData.item_name = item_name
       if (mechanism !== undefined) updateData.mechanism = mechanism
       if (component !== undefined) updateData.component = component
       if (location !== undefined) updateData.location = location
@@ -801,7 +799,7 @@ export default {
 
       const resultDaily: any[] = dailyStds.map((s: any) => ({
         standard_id: s.getDataValue('standard_id'),
-        item_name: s.getDataValue('item_name'),
+        maintenance_content: s.getDataValue('maintenance_content'),
         mechanism: s.getDataValue('mechanism'),
         component: s.getDataValue('component'),
         location: s.getDataValue('location'),
@@ -817,7 +815,7 @@ export default {
 
       const resultWeekly: any[] = weeklyStds.map((s: any) => ({
         standard_id: s.getDataValue('standard_id'),
-        item_name: s.getDataValue('item_name'),
+        maintenance_content: s.getDataValue('maintenance_content'),
         mechanism: s.getDataValue('mechanism'),
         component: s.getDataValue('component'),
         location: s.getDataValue('location'),
@@ -827,14 +825,13 @@ export default {
         unit: s.getDataValue('unit'),
         point_count: s.getDataValue('point_count'),
         time_per_point: s.getDataValue('time_per_point'),
-        maintenance_content: s.getDataValue('maintenance_content'),
         sort_order: s.getDataValue('sort_order'),
         records: buildMatrixRecords(s, 'weekly', weekKeys),
       }))
 
       const resultMonthly: any[] = monthlyStds.map((s: any) => ({
         standard_id: s.getDataValue('standard_id'),
-        item_name: s.getDataValue('item_name'),
+        maintenance_content: s.getDataValue('maintenance_content'),
         mechanism: s.getDataValue('mechanism'),
         component: s.getDataValue('component'),
         location: s.getDataValue('location'),
@@ -844,7 +841,6 @@ export default {
         unit: s.getDataValue('unit'),
         point_count: s.getDataValue('point_count'),
         time_per_point: s.getDataValue('time_per_point'),
-        maintenance_content: s.getDataValue('maintenance_content'),
         monthly_plan: s.getDataValue('monthly_plan'),
         sort_order: s.getDataValue('sort_order'),
         records: buildMatrixRecords(s, 'monthly', [ym]),
@@ -1071,7 +1067,7 @@ export default {
         const standard = record.getDataValue('standard_id')
           ? await DeviceMaintenanceStandard.findOne({ where: { standard_id: record.getDataValue('standard_id') }, transaction: t })
           : null
-        const itemName = standard?.getDataValue('item_name') || standard?.getDataValue('maintenance_content') || '未知保养项'
+        const itemName = standard?.getDataValue('maintenance_content') || '未知保养项'
         const faultNo = await generateDeviceFaultNo()
         await DeviceFault.create({
           fault_no: faultNo,
@@ -1177,7 +1173,7 @@ export default {
           const standard = record.getDataValue('standard_id')
             ? await DeviceMaintenanceStandard.findOne({ where: { standard_id: record.getDataValue('standard_id') }, transaction: t })
             : null
-          const itemName = standard?.getDataValue('item_name') || standard?.getDataValue('maintenance_content') || '未知保养项'
+          const itemName = standard?.getDataValue('maintenance_content') || '未知保养项'
           const faultNo = await generateDeviceFaultNo()
           const fault = await DeviceFault.create({
             fault_no: faultNo,

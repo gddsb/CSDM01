@@ -42,7 +42,6 @@ const JUDGE_OPTIONS = [
 interface StdRow {
   standard_id: number
   device_id: number
-  item_name: string
   mechanism?: string
   component?: string
   location?: string

@@ -97,7 +97,7 @@ export default function DeviceMaintenancePrint() {
         year_month: ym.format('YYYY-MM'),
       },
     }).then((res: any) => {
-      setData(res as MatrixResp)
+      setData(res?.data as MatrixResp)
     }).catch((err: any) => {
       message.error(err?.message || '加载失败')
     }).finally(() => setLoading(false))
