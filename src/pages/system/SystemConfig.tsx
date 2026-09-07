@@ -418,7 +418,6 @@ export default function SystemConfig() {
   const fileColumns: ColumnsType<FileItem> = useMemo(() => buildFileColumns({
     onPreview: handleFilePreview,
     onDownload: handleFileDownload,
-    onDelete: handleFileDelete,
   }), [fileCurrentDir])
 
   return (
