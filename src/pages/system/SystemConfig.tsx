@@ -218,7 +218,7 @@ export default function SystemConfig() {
 
   const handleFilePreview = (item: FileItem) => {
     if (!item.isDirectory) {
-      const url = '/' + item.path
+      const url = '/uploads/' + item.path
       const isImage = /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(item.name)
       if (isImage) {
         Modal.info({
@@ -239,7 +239,7 @@ export default function SystemConfig() {
 
   const handleFileDownload = async (item: FileItem) => {
     if (item.isDirectory) return
-    const url = '/' + item.path
+    const url = '/uploads/' + item.path
     try {
       const resp = await fetch(url)
       if (!resp.ok) throw new Error(`下载失败 (HTTP ${resp.status})`)
