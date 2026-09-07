@@ -89,7 +89,7 @@ const router = Router()
 // 不良图片上传 multer 配置
 const defectUploadMiddleware = multer({
   dest: 'uploads/tmp/',
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (!file.mimetype || !file.mimetype.startsWith('image/')) {
       return cb(new Error('请上传图片格式的文件'))
@@ -101,7 +101,7 @@ const defectUploadMiddleware = multer({
 // 故障图片上传 multer 配置（与不良图片相同规则，复用一份配置）
 const deviceFaultUploadMiddleware = multer({
   dest: 'uploads/tmp/',
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (!file.mimetype || !file.mimetype.startsWith('image/')) {
       return cb(new Error('请上传图片格式的文件'))
@@ -113,7 +113,7 @@ const deviceFaultUploadMiddleware = multer({
 // 点检图片上传 multer 配置（同上规则）
 const inspectionUploadMiddleware = multer({
   dest: 'uploads/tmp/',
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (!file.mimetype || !file.mimetype.startsWith('image/')) {
       return cb(new Error('请上传图片格式的文件'))
@@ -125,7 +125,7 @@ const inspectionUploadMiddleware = multer({
 // 维护图片上传 multer 配置（同上规则）
 const deviceMaintenanceUploadMiddleware = multer({
   dest: 'uploads/tmp/',
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (!file.mimetype || !file.mimetype.startsWith('image/')) {
       return cb(new Error('请上传图片格式的文件'))
@@ -137,7 +137,7 @@ const deviceMaintenanceUploadMiddleware = multer({
 // 校准证书上传 multer 配置（支持图片与 PDF）
 const calibrationUploadMiddleware = multer({
   dest: 'uploads/tmp/',
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (!file.mimetype || (!file.mimetype.startsWith('image/') && file.mimetype !== 'application/pdf')) {
       return cb(new Error('请上传图片或PDF格式的文件'))
