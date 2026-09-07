@@ -1,6 +1,6 @@
 import React from 'react'
 import { Button, Space, Tag } from 'antd'
-import { FolderOutlined, FileOutlined } from '@ant-design/icons'
+import { FolderOutlined, FileOutlined, DownloadOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 
 export interface FileItem {
@@ -17,10 +17,11 @@ export interface FileItem {
 
 interface BuildFileColumnsOptions {
   onPreview: (record: FileItem) => void
+  onDownload: (record: FileItem) => void
   onDelete: (record: FileItem) => void
 }
 
-export function buildFileColumns({ onPreview, onDelete }: BuildFileColumnsOptions): ColumnsType<FileItem> {
+export function buildFileColumns({ onPreview, onDownload, onDelete }: BuildFileColumnsOptions): ColumnsType<FileItem> {
   return [
     {
       title: '名称',
@@ -43,10 +44,11 @@ export function buildFileColumns({ onPreview, onDelete }: BuildFileColumnsOption
     { title: '大小', dataIndex: 'sizeText', key: 'size', width: 120, render: (text: string, record: FileItem) => record.isDirectory ? '-' : text },
     { title: '修改时间', dataIndex: 'modifiedTime', key: 'modifiedTime', width: 200, render: (time: string) => time ? new Date(time).toLocaleString('zh-CN') : '-' },
     {
-      title: '操作', key: 'action',
+      title: '操作', key: 'action', width: 200,
       render: (_: unknown, record) => (
         <Space size="small">
           {!record.isDirectory && <Button type="link" size="small" onClick={() => onPreview(record)}>查看</Button>}
+          {!record.isDirectory && <Button type="link" size="small" icon={<DownloadOutlined />} onClick={() => onDownload(record)}>下载</Button>}
           <Button type="link" size="small" danger onClick={() => onDelete(record)}>删除</Button>
         </Space>
       ),

@@ -256,6 +256,34 @@ export default function SystemConfig() {
     }
   }
 
+  const handleFileDownload = async (item: FileItem) => {
+    if (item.isDirectory) return
+    const url = '/' + item.path
+    try {
+      const resp = await fetch(url)
+      if (!resp.ok) throw new Error(`下载失败 (HTTP ${resp.status})`)
+      const blob = await resp.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = item.name || url.split('/').pop() || 'download'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(blobUrl)
+    } catch (err: unknown) {
+      // fetch 可能因为 CORS / 鉴权失败，降级用 <a download>
+      const a = document.createElement('a')
+      a.href = url
+      a.download = item.name || ''
+      a.target = '_blank'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      showError(err instanceof Error ? err.message : '下载失败')
+    }
+  }
+
   const openMigrationModal = (target: MigrationTarget) => {
     setMigrationTarget(target)
     setMigrationOpen(true)
@@ -389,6 +417,7 @@ export default function SystemConfig() {
 
   const fileColumns: ColumnsType<FileItem> = useMemo(() => buildFileColumns({
     onPreview: handleFilePreview,
+    onDownload: handleFileDownload,
     onDelete: handleFileDelete,
   }), [fileCurrentDir])
 
