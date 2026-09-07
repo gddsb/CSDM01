@@ -32,7 +32,8 @@ interface MatrixRecord {
 
 interface MatrixItem {
   standard_id: number
-  maintenance_content: string
+  item_name: string
+  maintenance_content?: string
   mechanism: string | null
   component: string | null
   location: string | null
@@ -178,8 +179,8 @@ export default function DeviceMaintenanceMatrix() {
   const dailyColumns = useMemo(() => {
     const base = [
       { title: '序号', dataIndex: '__idx', width: 60, fixed: 'left' as const, render: (_: any, __: any, i: number) => i + 1 },
-      { title: '保养项目', dataIndex: 'maintenance_content', width: 180, fixed: 'left' as const, ellipsis: true, render: (v: string, r: any) =>
-        <Tooltip title={`标准ID:${r.standard_id} · ${v}`}>{v}</Tooltip> },
+      { title: '保养项目', dataIndex: 'item_name', width: 180, fixed: 'left' as const, ellipsis: true, render: (v: string, r: any) =>
+        <Tooltip title={`标准ID:${r.standard_id} · ${v || ''}`}>{v || '-'}</Tooltip> },
       { title: '部位', dataIndex: 'mechanism', width: 90, ellipsis: true },
       { title: '组件', dataIndex: 'component', width: 100, ellipsis: true },
       { title: '位置', dataIndex: 'location', width: 90, ellipsis: true },
@@ -200,7 +201,7 @@ export default function DeviceMaintenanceMatrix() {
   const weeklyColumns = useMemo(() => {
     const base = [
       { title: '序号', dataIndex: '__idx', width: 60, fixed: 'left' as const, render: (_: any, __: any, i: number) => i + 1 },
-      { title: '保养项目', dataIndex: 'maintenance_content', width: 200, fixed: 'left' as const, ellipsis: true },
+      { title: '保养项目', dataIndex: 'item_name', width: 200, fixed: 'left' as const, ellipsis: true },
       { title: '部位', dataIndex: 'mechanism', width: 100 },
       { title: '组件', dataIndex: 'component', width: 120 },
       { title: '判定基准', dataIndex: 'standard_value', width: 220, ellipsis: true },
@@ -218,7 +219,7 @@ export default function DeviceMaintenanceMatrix() {
 
   const monthlyColumns = [
     { title: '序号', dataIndex: '__idx', width: 60, render: (_: any, __: any, i: number) => i + 1 },
-    { title: '保养项目', dataIndex: 'maintenance_content', width: 220, ellipsis: true },
+    { title: '保养项目', dataIndex: 'item_name', width: 220, ellipsis: true },
     { title: '部位/组件', width: 160, render: (_: any, r: any) =>
       [r.mechanism, r.component].filter(Boolean).join(' / ') || '-' },
     { title: '判定基准', dataIndex: 'standard_value', width: 240, ellipsis: true },

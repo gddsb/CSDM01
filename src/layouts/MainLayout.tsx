@@ -337,7 +337,12 @@ export default function MainLayout() {
               if (path.startsWith(grandchild.key as string)) return [grandchild.key as string]
             }
           }
-          if (typeof child.key === 'string' && child.key.startsWith('/') && path.startsWith(child.key)) return [child.key as string]
+          if (typeof child.key === 'string' && child.key.startsWith('/')) {
+            // 精确匹配或子路径为数字ID（详情页）时才高亮父菜单，避免 /maintenance/matrix 误匹配 /maintenance
+            if (path === child.key) return [child.key as string]
+            const rest = path.slice(child.key.length)
+            if (/^\/\d+(\/|$)/.test(rest)) return [child.key as string]
+          }
         }
       }
     }
