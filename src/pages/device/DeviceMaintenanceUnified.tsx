@@ -61,8 +61,6 @@ const JUDGE_OPTIONS = [
   { label: '定量（数值范围）', value: '定量' },
 ]
 
-interface DeviceOption { device_id: number; device_code: string; device_name: string }
-
 export default function DeviceMaintenanceUnified() {
   const navigate = useNavigate()
   // ============ 执行记录列表 ============
@@ -94,9 +92,6 @@ export default function DeviceMaintenanceUnified() {
   const [resultType, setResultType] = useState<'正常' | '异常'>('正常')
   const [completeFileList, setCompleteFileList] = useState<UploadFile[]>([])
 
-  // ============ 设备下拉 ============
-  const [devices, setDevices] = useState<DeviceOption[]>([])
-
   // ============ 生成弹窗 ============
   const [genOpen, setGenOpen] = useState(false)
   const [genLoading, setGenLoading] = useState(false)
@@ -104,21 +99,7 @@ export default function DeviceMaintenanceUnified() {
   const [genDeviceId, setGenDeviceId] = useState<number | undefined>(undefined)
   const [genDate, setGenDate] = useState<string>(dayjs().format('YYYY-MM-DD'))
 
-  // ===== 加载设备列表 =====
-  useEffect(() => {
-    api.get('/basic/devices', { params: { page_size: 999 } }).then((res: any) => {
-      const raw = res?.data
-      const list = Array.isArray(raw) ? raw : (raw?.rows || raw?.list || [])
-      const opts = list.map((d: any) => ({
-        device_id: d.device_id,
-        device_code: d.device_code,
-        device_name: d.device_name,
-      }))
-      setDevices(opts)
-    }).catch(() => { /* silent */ })
-  }, [])
-
-  // ===== 加载执行记录（按设备聚合需要拉取全部本月记录，分页改为前端按设备分页） =====
+  // ===== 按频率执行记录按设备分组 =====
   const loadRecords = useCallback(async () => {
     setLoading(true)
     try {
@@ -311,11 +292,11 @@ export default function DeviceMaintenanceUnified() {
     { label: '总记录数', value: total, color: '#722ed1', icon: <DashboardOutlined /> },
   ]
 
-  // ===== 子表列定义（执行记录，去掉设备列，操作列宽 250）=====
+  // ===== 子表列定义（调整列宽到刚好显示内容）=====
   const recordColumns = [
-    { title: '记录编号', dataIndex: 'record_no', width: 160 },
+    { title: '记录编号', dataIndex: 'record_no', width: 150 },
     {
-      title: '保养项', width: 200, render: (_: any, r: any) => (
+      title: '保养项', width: 180, render: (_: any, r: any) => (
         <div>
           <div style={{ fontWeight: 500 }}>{r.standard?.maintenance_content || '-'}</div>
           {r.standard?.mechanism && <Text type="secondary" style={{ fontSize: 12 }}>{r.standard.mechanism}</Text>}
@@ -323,29 +304,29 @@ export default function DeviceMaintenanceUnified() {
       ),
     },
     {
-      title: '频率', width: 90, render: (_: any, r: any) => (
+      title: '频率', width: 80, render: (_: any, r: any) => (
         <Tag color={MODE_COLOR[r.trigger_mode]}>{MODE_LABEL[r.trigger_mode] || r.trigger_mode}</Tag>
       ),
     },
     {
-      title: '状态', width: 90, render: (_: any, r: any) => (
+      title: '状态', width: 80, render: (_: any, r: any) => (
         <Tag color={STATUS_COLOR[r.status]}>{r.status}</Tag>
       ),
     },
     {
-      title: '结果', width: 90, render: (_: any, r: any) => r.result
+      title: '结果', width: 80, render: (_: any, r: any) => r.result
         ? <Tag color={RESULT_COLOR[r.result]}>{r.result}</Tag>
         : <Text type="secondary">-</Text>,
     },
-    { title: '执行人', dataIndex: 'executor_name', width: 100, render: (v: string) => v || '-' },
+    { title: '执行人', dataIndex: 'executor_name', width: 90, render: (v: string) => v || '-' },
     {
-      title: '执行日期', width: 130, render: (_: any, r: any) => {
+      title: '执行日期', width: 120, render: (_: any, r: any) => {
         const d = r.end_time || r.start_time
         return d ? dayjs(d).format('YYYY-MM-DD') : <Text type="secondary">-</Text>
       },
     },
     {
-      title: '操作', width: 170, fixed: 'right' as const, render: (_: any, r: any) => (
+      title: '操作', width: 150, fixed: 'right' as const, render: (_: any, r: any) => (
         <Space size={4}>
           <Button size="small" type="link" onClick={() => handleDetail(r.record_id)}>详情</Button>
           {r.status === '待执行' && (
@@ -406,9 +387,9 @@ export default function DeviceMaintenanceUnified() {
             style={{ width: 200 }}
             value={filters.device_id}
             onChange={(v) => setFilters(f => ({ ...f, device_id: v }))}
-            options={[{ label: '全部设备', value: undefined, disabled: true }, ...devices.map(d => ({
-              label: `${d.device_code} ${d.device_name}`,
-              value: d.device_id,
+            options={[{ label: '全部设备', value: undefined, disabled: true }, ...deviceGroups.map((g: any) => ({
+              label: `${g.device_code || ''} ${g.device_name || ''}`.trim(),
+              value: g.device_id,
             }))]}
           />
           <Select
@@ -480,9 +461,9 @@ export default function DeviceMaintenanceUnified() {
               rowKey="device_id"
               columns={deviceColumns}
               dataSource={deviceGroups}
-              scroll={{ x: 620, y: 312 }}
+              scroll={{ x: 620, y: 260 }}
               pagination={false}
-              size="middle"
+              size="small"
               onRow={(r) => ({
                 onClick: () => setSelectedDeviceId(r.device_id),
               })}
@@ -513,8 +494,8 @@ export default function DeviceMaintenanceUnified() {
                   columns={recordColumns}
                   dataSource={selectedDevice.records}
                   pagination={false}
-                  size="middle"
-                  scroll={{ x: 1200, y: 320 }}
+                  size="small"
+                  scroll={{ x: 1030, y: 320 }}
                 />
               </>
             ) : (
@@ -565,9 +546,9 @@ export default function DeviceMaintenanceUnified() {
             style={{ width: 280 }}
             value={genDeviceId}
             onChange={setGenDeviceId}
-            options={[{ label: '全部设备', value: undefined, disabled: true }, ...devices.map(d => ({
-              label: `${d.device_code} ${d.device_name}`,
-              value: d.device_id,
+            options={[{ label: '全部设备', value: undefined, disabled: true }, ...deviceGroups.map((g: any) => ({
+              label: `${g.device_code || ''} ${g.device_name || ''}`.trim(),
+              value: g.device_id,
             }))]}
           />
         </div>
