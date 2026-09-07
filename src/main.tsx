@@ -119,6 +119,8 @@ function AppRoutes() {
       <Route path="/bigscreen/quality" element={<ProtectedRoute>{lazyPage(<QualityBigScreen />)}</ProtectedRoute>} />
       <Route path="/bigscreen/environment" element={<ProtectedRoute>{lazyPage(<EnvironmentBigScreen />)}</ProtectedRoute>} />
       <Route path="/bigscreen/display" element={<ProtectedRoute>{lazyPage(<DisplayBigScreen />)}</ProtectedRoute>} />
+      {/* 打印路由 - 独立全屏页面，不显示菜单/路径 */}
+      <Route path="/device/maintenance/print" element={<ProtectedRoute><DeviceMaintenancePrint /></ProtectedRoute>} />
       <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dashboard-bigscreen" element={<Dashboard />} />
@@ -158,7 +160,6 @@ function AppRoutes() {
         <Route path="/device/maintenance-standard" element={lazyPage(<DeviceMaintenanceStandardList />)} />
         <Route path="/device/maintenance-standard/:deviceId" element={lazyPage(<DeviceMaintenanceStandardDetail />)} />
         <Route path="/device/maintenance/matrix" element={lazyPage(<DeviceMaintenanceMatrix />)} />
-        <Route path="/device/maintenance/print" element={<DeviceMaintenancePrint />} />
         <Route path="/device/spare-parts" element={lazyPage(<DeviceSparePart />)} />
         <Route path="/device/calibration" element={lazyPage(<DeviceCalibration />)} />
         <Route path="/device/documents" element={lazyPage(<DeviceDocumentPage />)} />

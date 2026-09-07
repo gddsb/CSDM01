@@ -120,54 +120,51 @@ export default function DeviceMaintenancePrint() {
     <div className="print-page-root">
       {/* ===== 操作栏（不打印） ===== */}
       <div className="print-toolbar no-print">
-        <Space wrap>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => history.back()}>返回</Button>
-          <Select
-            placeholder="选择设备" allowClear showSearch
-            style={{ width: 260 }}
-            value={deviceId}
-            onChange={setDeviceId}
-            options={devices.map(d => ({
-              label: `${d.device_code || ''} ${d.device_name || ''}`.trim(),
-              value: d.device_id,
-            }))}
-            filterOption={(input, option) =>
-              String(option?.label || '').toLowerCase().includes(input.toLowerCase())
-            }
-          />
-          <DatePicker
-            picker="month"
-            value={ym}
-            onChange={(d) => d && setYm(d)}
-            style={{ width: 150 }}
-          />
-          <Button icon={<ReloadOutlined />} onClick={load}>加载</Button>
-          <Button
-            type="primary"
-            icon={<PrinterOutlined />}
-            onClick={() => window.print()}
-            disabled={!data}
-          >打印</Button>
-          <Text type="secondary" style={{ marginLeft: 12 }}>
-            {data ? `共 ${data.daily.items.length + data.weekly.items.length + data.monthly.items.length} 条保养项` : ''}
-          </Text>
-        </Space>
-      </div>
-
-      {/* ===== 打印区 ===== */}
-      <Spin spinning={loading}>
-        {data ? (
-          <div className="print-area">
-            <div className="print-header">
-              <Title level={3} style={{ textAlign: 'center', margin: 0 }}>
-                设备点检/维保记录表
-              </Title>
-              <div className="print-header-meta">
-                <div>设备编号：<b>{data.device_code || '-'}</b></div>
-                <div>设备名称：<b>{data.device_name || '-'}</b></div>
-                <div>年月：<b>{data.year_month}</b></div>
-              </div>
+              <Space wrap>
+                <Button icon={<ArrowLeftOutlined />} onClick={() => history.back()}>返回</Button>
+                <Select
+                  placeholder="选择设备" allowClear showSearch
+                  style={{ width: 260 }}
+                  value={deviceId}
+                  onChange={setDeviceId}
+                  options={devices.map(d => ({
+                    label: `${d.device_code || ''} ${d.device_name || ''}`.trim(),
+                    value: d.device_id,
+                  }))}
+                  filterOption={(input, option) =>
+                    String(option?.label || '').toLowerCase().includes(input.toLowerCase())
+                  }
+                />
+                <DatePicker
+                  picker="month"
+                  value={ym}
+                  onChange={(d) => d && setYm(d)}
+                  style={{ width: 150 }}
+                />
+                <Button icon={<ReloadOutlined />} onClick={load}>加载</Button>
+                <Button
+                  type="primary"
+                  icon={<PrinterOutlined />}
+                  onClick={() => window.print()}
+                  disabled={!data}
+                >打印</Button>
+              </Space>
             </div>
+
+            {/* ===== 打印内容区 ===== */}
+            <Spin spinning={loading}>
+              {data ? (
+                <div className="print-body">
+                  <div className="print-header">
+                    <Title level={3} style={{ textAlign: 'center', margin: 0 }}>
+                      设备点检/维保记录表
+                    </Title>
+                    <div className="print-header-meta">
+                      <div>设备编号：<b>{data.device_code || '-'}</b></div>
+                      <div>设备名称：<b>{data.device_name || '-'}</b></div>
+                      <div>年月：<b>{data.year_month}</b></div>
+                    </div>
+                  </div>
 
             {/* ========== 每日点检矩阵 ========== */}
             {data.daily.items.length > 0 && (
@@ -330,13 +327,13 @@ export default function DeviceMaintenancePrint() {
               <Title level={5} className="section-title">四、执行汇总</Title>
               <div className="summary-box">
                 <div className="summary-grid">
-                  <div><b>每日点检完成率：</b>{data.summary.daily_completed || 0} / {data.summary.daily_total || 0}
-                    （{data.summary.daily_rate ?? 0}%）</div>
-                  <div><b>每周保养完成率：</b>{data.summary.weekly_completed || 0} / {data.summary.weekly_total || 0}
-                    （{data.summary.weekly_rate ?? 0}%）</div>
-                  <div><b>每月保养完成率：</b>{data.summary.monthly_completed || 0} / {data.summary.monthly_total || 0}
-                    （{data.summary.monthly_rate ?? 0}%）</div>
-                  <div className="span-3"><b>异常项数：</b>{data.summary.abnormal_count || 0}</div>
+                  <div><b>每日点检完成率：</b>{data.summary?.daily_completed || 0} / {data.summary?.daily_total || 0}
+                    （{data.summary?.daily_rate ?? 0}%）</div>
+                  <div><b>每周保养完成率：</b>{data.summary?.weekly_completed || 0} / {data.summary?.weekly_total || 0}
+                    （{data.summary?.weekly_rate ?? 0}%）</div>
+                  <div><b>每月保养完成率：</b>{data.summary?.monthly_completed || 0} / {data.summary?.monthly_total || 0}
+                    （{data.summary?.monthly_rate ?? 0}%）</div>
+                  <div className="span-3"><b>异常项数：</b>{data.summary?.abnormal_count || 0}</div>
                 </div>
               </div>
               <div className="sign-box">
@@ -346,6 +343,12 @@ export default function DeviceMaintenancePrint() {
                 <div>日期：</div>
               </div>
             </section>
+
+            {/* ========== 打印页脚 ========== */}
+            <div className="print-footer">
+              <span>打印人：{getPrintUser()}</span>
+              <span>打印时间：{dayjs().format('YYYY-MM-DD HH:mm:ss')}</span>
+            </div>
           </div>
         ) : (
           <div className="print-empty">请选择设备后点击 <b>加载</b> 以获取打印数据</div>
@@ -360,7 +363,7 @@ export default function DeviceMaintenancePrint() {
           border: 1px solid #e8e8e8; border-radius: 6px;
           margin-bottom: 16px; box-shadow: 0 2px 6px rgba(0,0,0,.04);
         }
-        .print-area { background: #fff; padding: 28px 32px; border-radius: 6px; }
+        .print-body { background: #fff; padding: 20px 28px 28px; border-radius: 6px; }
         .print-empty { padding: 100px 0; text-align: center; color: #999; }
         .print-header { margin-bottom: 18px; }
         .print-header-meta {
@@ -459,18 +462,32 @@ export default function DeviceMaintenancePrint() {
           border-bottom: 1px solid #222;
           text-align: left;
         }
+        .print-footer {
+          display: flex;
+          justify-content: space-between;
+          margin-top: 24px;
+          padding-top: 12px;
+          border-top: 1px solid #ddd;
+          font-size: 12px;
+          color: #666;
+        }
         /* ===== 打印样式 ===== */
         @page { size: A4 landscape; margin: 10mm; }
         @media print {
-          body { background: #fff !important; }
-          .print-page-root { padding: 0; background: #fff; }
-          .no-print { display: none !important; }
-          .print-area { padding: 0; border-radius: 0; }
-          .print-table { font-size: 11px; }
-          .col-day, .col-week { padding: 1px 0 !important; font-size: 10px; }
+          * { box-sizing: border-box; }
+          html, body { margin: 0; padding: 0; background: #fff !important; }
+          .print-page-root { padding: 0 !important; background: #fff !important; min-height: auto; }
+          .no-print, .ant-spin, .ant-spin-container::after { display: none !important; }
+          .ant-spin-container { display: block !important; }
+          .print-body { padding: 0 !important; border-radius: 0 !important; }
+          .print-table { font-size: 10px; }
+          .col-day, .col-week { padding: 1px 0 !important; font-size: 9px; }
           .section-title { break-after: avoid; }
           .print-section { break-inside: avoid; }
           .print-table thead th { position: initial; }
+          .summary-box, .sign-box, .print-footer { break-inside: avoid; }
+          /* 隐藏浏览器默认页眉页脚（地址、日期） */
+          @page { size: A4 landscape; margin: 10mm; }
         }
       `}</style>
     </div>
@@ -482,4 +499,16 @@ function executorList(records?: Record<string, MatrixRecord | null>): string {
   const set = new Set<string>()
   Object.values(records).forEach(r => { if (r?.executor) set.add(r.executor) })
   return Array.from(set).join('、')
+}
+
+// 从 localStorage 读取当前登录用户名作为打印人
+function getPrintUser(): string {
+  try {
+    const raw = localStorage.getItem('mes:user')
+    if (raw) {
+      const u = JSON.parse(raw)
+      return u?.real_name || u?.username || u?.name || '未知'
+    }
+  } catch (_) {}
+  return '未知'
 }
