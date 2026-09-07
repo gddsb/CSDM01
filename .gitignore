@@ -65,3 +65,4 @@ ios/
 *.mobileprovision
 *.keystore
 *.jks
+.uploads/
