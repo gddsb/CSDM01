@@ -338,7 +338,7 @@ export default function DeviceDashboard() {
               title={`维护到期看板（${maintenance.length}）`}
               icon={<ToolOutlined />}
               loading={loading}
-              bodyStyle={{ maxHeight: 320, overflow: 'auto' }}
+              bodyStyle={{ height: 200, overflow: 'auto' }}
             >
               <List
                 size="small"
@@ -351,6 +351,9 @@ export default function DeviceDashboard() {
                       <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8 }}>
                         <Text strong style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, flexShrink: 1 }}>
                           {item.device_name || '-'}
+                        </Text>
+                        <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          {item.device_code || '-'}
                         </Text>
                         <Tag style={{ margin: 0, flexShrink: 0 }}>{modeLabel}</Tag>
                         <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap', flexShrink: 0 }}>周期 {item.period_key || '-'}</Text>
@@ -369,7 +372,7 @@ export default function DeviceDashboard() {
               title={`点检待办看板（${inspections.length}）`}
               icon={<ExperimentOutlined />}
               loading={loading}
-              bodyStyle={{ maxHeight: 320, overflow: 'auto' }}
+              bodyStyle={{ height: 200, overflow: 'auto' }}
             >
               <List
                 size="small"
@@ -380,6 +383,9 @@ export default function DeviceDashboard() {
                     <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8 }}>
                       <Text strong style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, flexShrink: 1 }}>
                         {item.device_name || '-'}
+                      </Text>
+                      <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        {item.device_code || '-'}
                       </Text>
                       <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap', flexShrink: 0 }}>
                         {item.executor_name || '-'} · {item.period_key || '-'}
@@ -416,8 +422,17 @@ export default function DeviceDashboard() {
                           {item.fault_no || '-'}
                         </Text>
                         <Tag color={faultLevelColor[item.fault_level] || 'default'} style={{ margin: 0, flexShrink: 0 }}>{item.fault_level}</Tag>
-                        <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, flex: 1 }}>
-                          {item.device_name || '-'} · {formatDateTime(item.fault_time)}
+                        <Text strong style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, flexShrink: 1 }}>
+                          {item.device_name || '-'}
+                        </Text>
+                        <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          {item.device_code || '-'}
+                        </Text>
+                        <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
+                          {item.fault_desc || '-'}
+                        </Text>
+                        <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          {formatDateTime(item.fault_time)}
                         </Text>
                         <Tag color={faultStatusColor[item.status] || 'default'} style={{ margin: 0, flexShrink: 0 }}>{item.status}</Tag>
                       </div>
