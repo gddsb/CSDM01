@@ -632,6 +632,8 @@ export default function SupplierComplaint() {
                     allowClear
                     showSearch
                     disabled={!relatedDocType}
+                    popupMatchSelectWidth={false}
+                    listItemHeight={64}
                     filterOption={(input, option) =>
                       (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
                     }
