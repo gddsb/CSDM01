@@ -81,6 +81,7 @@ export default {
         page = 1,
         page_size = 20,
         inspection_no,
+        supplier_id,
         supplier_name,
         material_code,
         material_name,
@@ -92,6 +93,7 @@ export default {
 
       const where: any = {}
       if (inspection_no) where.inspection_no = { [Op.like]: `%${inspection_no}%` }
+      if (supplier_id) where.supplier_id = supplier_id
       if (supplier_name) where.supplier_name = { [Op.like]: `%${supplier_name}%` }
       if (material_code) where.material_code = { [Op.like]: `%${material_code}%` }
       if (material_name) where.material_name = { [Op.like]: `%${material_name}%` }

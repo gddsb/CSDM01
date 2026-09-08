@@ -111,20 +111,16 @@ export default function SupplierComplaint() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  // 基础下拉数据：供应商 + 全部报工单
   const loadSelectOptions = useCallback(async () => {
     try {
-      const [sRes, iRes, roRes] = await Promise.all([
+      const [sRes, roRes] = await Promise.all([
         api.get('/basic/suppliers', { params: { page: 1, page_size: 500 } }),
-        api.get('/basic/incoming-inspections', { params: { page: 1, page_size: 500 } }),
         api.get('/production/report-orders', { params: { page: 1, page_size: 500 } }).catch(() => null),
       ])
       if (sRes.success !== false) {
         const list = sRes.data?.list || sRes.data || []
         setSuppliers(Array.isArray(list) ? list : [])
-      }
-      if (iRes.success !== false) {
-        const list = iRes.data?.list || iRes.data || []
-        setIncomingInspections(Array.isArray(list) ? list : [])
       }
       if (roRes && roRes.success !== false) {
         const list = roRes.data?.list || roRes.data || []
@@ -134,6 +130,25 @@ export default function SupplierComplaint() {
       /* ignore */
     }
   }, [])
+
+  // 来料检验单：根据选中的供应商动态拉取
+  useEffect(() => {
+    let cancelled = false
+    const fetchInspections = async () => {
+      try {
+        const params: any = { page: 1, page_size: 500 }
+        if (supplierId) {
+          params.supplier_id = supplierId
+        }
+        const res = await api.get('/basic/incoming-inspections', { params })
+        if (cancelled || res.success === false) return
+        const list = res.data?.list || res.data || []
+        setIncomingInspections(Array.isArray(list) ? list : [])
+      } catch { /* ignore */ }
+    }
+    fetchInspections()
+    return () => { cancelled = true }
+  }, [supplierId])
 
   useEffect(() => {
     loadSelectOptions()
