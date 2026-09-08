@@ -19,6 +19,22 @@ interface BuildExceptionColumnsParams {
 
 export function buildExceptionColumns(params: BuildExceptionColumnsParams): ColumnsType<ExceptionRecord> {
   const { isEditable, deviceOptions, exceptionCategories, exceptionList, reportTime, onChange, onDelete, openImageDrawer } = params
+
+  // 判断记录是否不可编辑/不可删除
+  // 规则：已保存（有 exception_id）不可编辑/删除；自动创建（换型换线）不可删除
+  const isRecordLocked = (record: any): boolean => {
+    if (record.exception_id) return true
+    return false
+  }
+  const isRecordAutoCreated = (record: any): boolean => {
+    return record.exception_type === '换型换线'
+      || (record.description && String(record.description).includes('自动生成'))
+  }
+  // 不可删除 = 自动创建 或 已保存
+  const canDelete = (record: any): boolean => {
+    return !isRecordAutoCreated(record) && !isRecordLocked(record)
+  }
+
   const disabledTime = () => {
     const baseDate = reportTime ? dayjs(reportTime).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')
     const today = dayjs().format('YYYY-MM-DD')
@@ -42,11 +58,7 @@ export function buildExceptionColumns(params: BuildExceptionColumnsParams): Colu
     {
       title: '异常类型', dataIndex: 'exception_type', key: 'exception_type', width: 120,
       render: (val, record) => {
-        // 自动创建的异常记录（换型换线）不允许修改异常类型
-        const isAutoCreated = record.exception_type === '换型换线' || (record.description && String(record.description).includes('自动生成'))
-        if (isAutoCreated || !isEditable) {
-          return val || '-'
-        }
+        if (!isEditable || isRecordLocked(record)) return val || '-'
         return (
           <Select
             placeholder="请选择"
@@ -62,124 +74,136 @@ export function buildExceptionColumns(params: BuildExceptionColumnsParams): Colu
     },
     {
       title: '设备', dataIndex: 'device_name', key: 'device_name', width: 150,
-      render: (_, record) => isEditable ? (
-        <Select
-          placeholder="请选择设备"
-          value={record.device_id || undefined}
-          onChange={(v) => onChange(record.id, 'device_id', v)}
-          options={deviceOptions}
-          style={{ width: '100%' }}
-          showSearch
-          optionFilterProp="label"
-          size="small"
-          allowClear
-          popupClassName="mes-select-dropdown"
-        />
-      ) : record.device_name || '-',
+      render: (_, record) => {
+        if (!isEditable || isRecordLocked(record)) return record.device_name || '-'
+        return (
+          <Select
+            placeholder="请选择设备"
+            value={record.device_id || undefined}
+            onChange={(v) => onChange(record.id, 'device_id', v)}
+            options={deviceOptions}
+            style={{ width: '100%' }}
+            showSearch
+            optionFilterProp="label"
+            size="small"
+            allowClear
+            popupClassName="mes-select-dropdown"
+          />
+        )
+      },
     },
     {
       title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 150,
-      render: (val, record) => isEditable ? (
-        <TimePicker
-          value={val ? dayjs(val) : null}
-          onChange={(d) => {
-            if (d) {
-              const newTime = buildTime(d)
-              if (reportTime && dayjs(newTime).isBefore(dayjs(reportTime))) {
-                message.warning('开始时间不能早于报工时间')
-                return
-              }
-              if (dayjs(newTime).isAfter(dayjs())) {
-                message.warning('开始时间不能晚于当前时间')
-                return
-              }
-              const overlap = exceptionList.some(e => {
-                if (String(e.id) === String(record.id)) return false
-                if (!e.start_time) return false
-                const eStart = dayjs(e.start_time as string | number | Date)
-                const eEnd = e.end_time ? dayjs(e.end_time as string | number | Date) : null
-                const newStart = dayjs(newTime)
-                const newEnd = record.end_time ? dayjs(record.end_time as string | number | Date) : newStart
-                if (eEnd) return newStart.isBefore(eEnd) && newEnd.isAfter(eStart)
-                return newEnd.isAfter(eStart) || newStart.isSame(eStart)
-              })
-              if (overlap) {
-                message.warning('开始时间与已有异常记录的时间区间重叠')
-                return
-              }
-              onChange(record.id, 'start_time', newTime)
-            } else {
-              onChange(record.id, 'start_time', null)
-            }
-          }}
-          format="HH:mm"
-          style={{ width: '100%' }}
-          size="small"
-          minuteStep={5}
-          disabledTime={disabledTime}
-        />
-      ) : formatDateTime(val),
-    },
-    {
-      title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 150,
-      render: (val, record) => isEditable ? (
-        <TimePicker
-          value={val ? dayjs(val) : null}
-          onChange={(d) => {
-            if (d) {
-              const newTime = buildTime(d)
-              if (record.start_time && dayjs(newTime).isBefore(dayjs(record.start_time as string | number | Date))) {
-                message.warning('结束时间不能小于开始时间')
-                return
-              }
-              if (dayjs(newTime).isAfter(dayjs())) {
-                message.warning('结束时间不能晚于当前时间')
-                return
-              }
-              if (record.start_time) {
+      render: (val, record) => {
+        if (!isEditable || isRecordLocked(record)) return formatDateTime(val)
+        return (
+          <TimePicker
+            value={val ? dayjs(val) : null}
+            onChange={(d) => {
+              if (d) {
+                const newTime = buildTime(d)
+                if (reportTime && dayjs(newTime).isBefore(dayjs(reportTime))) {
+                  message.warning('开始时间不能早于报工时间')
+                  return
+                }
+                if (dayjs(newTime).isAfter(dayjs())) {
+                  message.warning('开始时间不能晚于当前时间')
+                  return
+                }
                 const overlap = exceptionList.some(e => {
                   if (String(e.id) === String(record.id)) return false
                   if (!e.start_time) return false
                   const eStart = dayjs(e.start_time as string | number | Date)
                   const eEnd = e.end_time ? dayjs(e.end_time as string | number | Date) : null
-                  const newStart = dayjs(record.start_time as string | number | Date)
-                  const newEnd = dayjs(newTime)
+                  const newStart = dayjs(newTime)
+                  const newEnd = record.end_time ? dayjs(record.end_time as string | number | Date) : newStart
                   if (eEnd) return newStart.isBefore(eEnd) && newEnd.isAfter(eStart)
-                  return newEnd.isAfter(eStart)
+                  return newEnd.isAfter(eStart) || newStart.isSame(eStart)
                 })
                 if (overlap) {
-                  message.warning('结束时间与已有异常记录的时间区间重叠')
+                  message.warning('开始时间与已有异常记录的时间区间重叠')
                   return
                 }
+                onChange(record.id, 'start_time', newTime)
+              } else {
+                onChange(record.id, 'start_time', null)
               }
-              onChange(record.id, 'end_time', newTime)
-            } else {
-              onChange(record.id, 'end_time', null)
-            }
-          }}
-          format="HH:mm"
-          style={{ width: '100%' }}
-          size="small"
-          minuteStep={5}
-          disabledTime={disabledTime}
-        />
-      ) : formatDateTime(val),
+            }}
+            format="HH:mm"
+            style={{ width: '100%' }}
+            size="small"
+            minuteStep={5}
+            disabledTime={disabledTime}
+          />
+        )
+      },
+    },
+    {
+      title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 150,
+      render: (val, record) => {
+        if (!isEditable || isRecordLocked(record)) return formatDateTime(val)
+        return (
+          <TimePicker
+            value={val ? dayjs(val) : null}
+            onChange={(d) => {
+              if (d) {
+                const newTime = buildTime(d)
+                if (record.start_time && dayjs(newTime).isBefore(dayjs(record.start_time as string | number | Date))) {
+                  message.warning('结束时间不能小于开始时间')
+                  return
+                }
+                if (dayjs(newTime).isAfter(dayjs())) {
+                  message.warning('结束时间不能晚于当前时间')
+                  return
+                }
+                if (record.start_time) {
+                  const overlap = exceptionList.some(e => {
+                    if (String(e.id) === String(record.id)) return false
+                    if (!e.start_time) return false
+                    const eStart = dayjs(e.start_time as string | number | Date)
+                    const eEnd = e.end_time ? dayjs(e.end_time as string | number | Date) : null
+                    const newStart = dayjs(record.start_time as string | number | Date)
+                    const newEnd = dayjs(newTime)
+                    if (eEnd) return newStart.isBefore(eEnd) && newEnd.isAfter(eStart)
+                    return newEnd.isAfter(eStart)
+                  })
+                  if (overlap) {
+                    message.warning('结束时间与已有异常记录的时间区间重叠')
+                    return
+                  }
+                }
+                onChange(record.id, 'end_time', newTime)
+              } else {
+                onChange(record.id, 'end_time', null)
+              }
+            }}
+            format="HH:mm"
+            style={{ width: '100%' }}
+            size="small"
+            minuteStep={5}
+            disabledTime={disabledTime}
+          />
+        )
+      },
     },
     { title: '时长(分钟)', dataIndex: 'duration', key: 'duration', width: 100 },
     {
       title: '异常描述', dataIndex: 'description', key: 'description', width: 240,
-      render: (val, record) => isEditable ? (
-        <Input.TextArea
-          placeholder="请输入异常描述"
-          value={val || ''}
-          onChange={(e) => onChange(record.id, 'description', e.target.value)}
-          size="small"
-          maxLength={200}
-          autoSize={{ minRows: 1, maxRows: 3 }}
-        />
-      ) : (
-        <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', display: 'block' }}>{val || '-'}</span>
-      ),
+      render: (val, record) => {
+        if (!isEditable || isRecordLocked(record)) {
+          return <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', display: 'block' }}>{val || '-'}</span>
+        }
+        return (
+          <Input.TextArea
+            placeholder="请输入异常描述"
+            value={val || ''}
+            onChange={(e) => onChange(record.id, 'description', e.target.value)}
+            size="small"
+            maxLength={200}
+            autoSize={{ minRows: 1, maxRows: 3 }}
+          />
+        )
+      },
     },
     {
       title: '图片', dataIndex: 'exception_images', key: 'exception_images', width: 100,
@@ -191,12 +215,15 @@ export function buildExceptionColumns(params: BuildExceptionColumnsParams): Colu
       ),
     },
     {
-      title: '操作', key: 'action',
-      render: (_, record) => isEditable ? (
-        <Popconfirm title="确认删除？" onConfirm={() => onDelete(record)}>
-          <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
-        </Popconfirm>
-      ) : null,
+      title: '操作', key: 'action', width: 80,
+      render: (_, record) => {
+        if (!isEditable || !canDelete(record)) return null
+        return (
+          <Popconfirm title="确认删除？" onConfirm={() => onDelete(record)}>
+            <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
+          </Popconfirm>
+        )
+      },
     },
   ]
 }
