@@ -99,12 +99,6 @@ export default {
             attributes: ['supplier_id', 'supplier_name', 'short_name', 'supplier_code', 'contact_person', 'phone'],
             required: false,
           },
-          {
-            model: IncomingInspection,
-            as: 'incoming_inspection',
-            attributes: ['inspection_id', 'inspection_no', 'supplier_name', 'result', 'status'],
-            required: false,
-          },
         ],
       })
       if (!record) {
@@ -423,12 +417,6 @@ export default {
             attributes: ['supplier_id', 'supplier_name', 'short_name', 'supplier_code', 'contact_person', 'phone'],
             required: false,
           },
-          {
-            model: IncomingInspection,
-            as: 'incoming_inspection',
-            attributes: ['inspection_id', 'inspection_no', 'supplier_name', 'result', 'status'],
-            required: false,
-          },
         ],
       })
       if (!record) {
@@ -437,7 +425,6 @@ export default {
 
       const data: any = record.toJSON()
       const supplierInfo = data.supplier || {}
-      const inspectionInfo = data.incoming_inspection || {}
 
       // 构建HTML内容
       const html = `<!DOCTYPE html>
@@ -490,9 +477,7 @@ export default {
       ${data.related_doc_no ? `
       <tr>
         <td class="label">关联单据</td>
-        <td class="value">${data.related_doc_type || ''}：${data.related_doc_no}</td>
-        <td class="label">检验结果</td>
-        <td class="value">${inspectionInfo.result || ''}</td>
+        <td class="value" colspan="3">${data.related_doc_type ? '[' + data.related_doc_type + '] ' : ''}${data.related_doc_no}</td>
       </tr>` : ''}
       <tr>
         <td class="label">创建人</td>

@@ -188,8 +188,7 @@ QualityComplaint.belongsTo(Material, { foreignKey: 'material_id', as: 'material'
 // 供应商投诉 - 供应商（多对一）
 QualitySupplierComplaint.belongsTo(Supplier, { foreignKey: 'supplier_id', as: 'supplier', constraints: false })
 
-// 供应商投诉 - 来料检验（多对一）
-QualitySupplierComplaint.belongsTo(IncomingInspection, { foreignKey: 'related_inspection_id', as: 'incoming_inspection', constraints: false })
+// 供应商投诉 - 来料检验（多对一） — 旧外键已废弃，改为通用 related_doc_id，不再用固定 association
 
 // 环境检验区域 - 自关联（树形）
 QualityEnvArea.hasMany(QualityEnvArea, { foreignKey: 'parent_id', as: 'children', constraints: false })
