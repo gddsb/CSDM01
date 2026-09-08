@@ -1,5 +1,6 @@
 import React from 'react'
-import { Form, InputNumber, Modal, Select } from 'antd'
+import { Form, InputNumber, Input, Modal, Select } from 'antd'
+import dayjs from 'dayjs'
 
 interface OrderOption {
   label: string
@@ -78,8 +79,8 @@ export default function CreateReportModal({
         >
           <InputNumber min={1} step={1} precision={0} style={{ width: '100%' }} />
         </Form.Item>
-        <Form.Item name="report_time" label="报工时间" rules={[{ required: true, message: '请选择报工时间' }]}>
-          <InputNumber readOnly style={{ width: '100%' }} placeholder="自动填充为当前时间" />
+        <Form.Item name="report_time" label="报工时间" initialValue={dayjs().format('YYYY-MM-DD HH:mm:ss')}>
+          <Input disabled placeholder="系统自动填充" style={{ color: 'rgba(0,0,0,0.65)' }} />
         </Form.Item>
       </Form>
     </Modal>

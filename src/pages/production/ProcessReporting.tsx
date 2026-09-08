@@ -607,7 +607,11 @@ export default function ProcessReporting() {
   // 打开新增报工 Modal
   const handleOpenCreateModal = () => {
     createForm.resetFields()
-    createForm.setFieldsValue({ report_qty: 0, remarks: '' })
+    createForm.setFieldsValue({
+      report_qty: 0,
+      remarks: '',
+      report_time: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+    })
     setSelectedCreateOrder(null)
     setCreateModalOpen(true)
   }
