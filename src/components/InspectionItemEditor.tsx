@@ -180,7 +180,7 @@ function QualitativeCell(props: {
   const isOK = text === 'OK' || text === '合格'
   const isNG = text === 'NG' || text === '不合格'
   return (
-    <Space size="middle" style={{ display: 'flex', justifyContent: 'center' }}>
+    <Space direction="vertical" size={4} style={{ display: 'flex', alignItems: 'center' }}>
       <Checkbox
         checked={isOK}
         disabled={disabled}
