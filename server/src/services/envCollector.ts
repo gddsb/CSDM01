@@ -179,12 +179,21 @@ export class EnvCollector {
   }
 
   /** 执行一次采集并保存 */
-  async collectAndSave(): Promise<{ saved: number; devices: number; alarms: number }> {
+  async collectAndSave(): Promise<{ saved: number; devices: number; alarms: number; success: boolean; error?: string }> {
     const [devices, coeffMap] = await Promise.all([
       this.fetchRealTimeData(),
       this.fetchDeviceList(),
     ]);
-    if (devices.length === 0) return { saved: 0, devices: 0, alarms: 0 };
+    if (devices.length === 0) {
+      const token = this.token;
+      return {
+        saved: 0,
+        devices: 0,
+        alarms: 0,
+        success: false,
+        error: token ? 'API未返回设备数据，请检查平台是否有在线设备' : 'Token获取失败，请检查用户名和密码是否正确',
+      };
+    }
 
     const records = this.convertToRecords(devices);
     // 补充系数
@@ -204,7 +213,7 @@ export class EnvCollector {
       await EnvAlarm.bulkCreate(alarmRecords);
     }
     console.log(`[EnvCollector] Saved ${records.length} records, ${alarmRecords.length} alarms from ${devices.length} devices`);
-    return { saved: records.length, devices: devices.length, alarms: alarmRecords.length };
+    return { saved: records.length, devices: devices.length, alarms: alarmRecords.length, success: true };
   }
 
   /** 启动定时采集 */

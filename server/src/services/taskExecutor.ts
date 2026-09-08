@@ -46,12 +46,22 @@ export async function executeRealTask(
       case 'env_monitor': {
         await updateProgress('连接环境监测平台...', 10)
         const decryptedParams = decryptParamsObj(params || {})
-        const loginName = decryptedParams.loginName || process.env.ENV_LOGIN_NAME || '13800138000'
-        const password = decryptedParams.password || process.env.ENV_PASSWORD || '123456'
+        const loginName = decryptedParams.loginName || process.env.ENV_LOGIN_NAME
+        const password = decryptedParams.password || process.env.ENV_PASSWORD
+        if (!loginName || !password) {
+          const msg = '缺少平台账号密码配置，请在"自动任务设置"中为环境监测任务配置 0531yun 登录凭据'
+          await updateProgress(msg, 100, 'failed')
+          return { success: false, error: msg }
+        }
         const collector = new EnvCollector({ loginName, password })
         await updateProgress('获取实时监测数据...', 30)
         const result = await collector.collectAndSave()
-        await updateProgress(`数据写入完成（${result.saved} 条记录，${result.alarms} 条报警）`, 100, 'completed', result.saved)
+        if (!result.success) {
+          const msg = `采集失败: ${result.error || '未获取到数据'}`
+          await updateProgress(msg, 100, 'failed')
+          return { success: false, error: msg }
+        }
+        await updateProgress(`数据写入完成（${result.saved} 条记录，${result.alarms} 条报警，来自 ${result.devices} 台设备）`, 100, 'completed', result.saved)
         return { success: true, totalRecords: result.saved }
       }
 
