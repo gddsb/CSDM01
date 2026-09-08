@@ -212,15 +212,6 @@ export default function SupplierComplaint() {
       if (values.related_doc_type && values.related_doc_id) {
         payload.related_doc_type = values.related_doc_type
         payload.related_doc_id = values.related_doc_id
-        // 老字段兼容（来料检验单时同时填 related_inspection_id）
-        if (values.related_doc_type === '来料检验单') {
-          payload.related_inspection_id = values.related_doc_id
-        }
-      } else if (values.related_inspection) {
-        // 仅传老字段
-        payload.related_inspection_id = values.related_inspection
-        payload.related_doc_type = '来料检验单'
-        payload.related_doc_id = values.related_inspection
       }
       const res = await api.post('/basic/supplier-complaints', payload)
       if (res.success !== false) {
@@ -386,8 +377,8 @@ export default function SupplierComplaint() {
     {
       title: '关联单据', key: 'related_doc', width: 180,
       render: (_: any, record: any) => {
-        const type = record.related_doc_type || (record.related_inspection_id ? '来料检验单' : '')
-        const no = record.related_doc_no || record.related_inspection_no
+        const type = record.related_doc_type || ''
+        const no = record.related_doc_no
         if (!no) return <Text type="secondary">-</Text>
         return `${type ? `[${type}] ` : ''}${no}`
       }
@@ -748,8 +739,8 @@ export default function SupplierComplaint() {
                 <Descriptions.Item label="登记人">{current.created_by_name}</Descriptions.Item>
                 <Descriptions.Item label="关联单据">
                   {(() => {
-                    const type = current.related_doc_type || (current.related_inspection_id ? '来料检验单' : '')
-                    const no = current.related_doc_no || current.related_inspection_no
+                    const type = current.related_doc_type || ''
+                    const no = current.related_doc_no
                     if (!no) return '-'
                     return type ? `[${type}] ${no}` : no
                   })()}
