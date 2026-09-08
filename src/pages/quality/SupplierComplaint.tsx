@@ -53,6 +53,9 @@ export default function SupplierComplaint() {
   const [reportOrders, setReportOrders] = useState<any[]>([])
   const [relatedDocType, setRelatedDocType] = useState<string>('') // 表单内的本地状态，用于级联
   const relatedDocId = Form.useWatch('related_doc_id', createForm)
+  const [docDrawerOpen, setDocDrawerOpen] = useState(false)
+  const [docDetail, setDocDetail] = useState<any>(null)
+  const [docLoading, setDocLoading] = useState(false)
 
   const [replyModalOpen, setReplyModalOpen] = useState(false)
   const [replyLoading, setReplyLoading] = useState(false)
@@ -111,7 +114,7 @@ export default function SupplierComplaint() {
     try {
       const [sRes, iRes, roRes] = await Promise.all([
         api.get('/basic/suppliers', { params: { page: 1, page_size: 500 } }),
-        api.get('/basic/incoming-inspections', { params: { page: 1, page_size: 500, result: '不合格' } }),
+        api.get('/basic/incoming-inspections', { params: { page: 1, page_size: 500 } }),
         api.get('/production/report-orders', { params: { page: 1, page_size: 500 } }).catch(() => null),
       ])
       if (sRes.success !== false) {
@@ -351,19 +354,41 @@ export default function SupplierComplaint() {
   }, [suppliers])
 
   const inspectionOptions = useMemo(() => {
-    return (incomingInspections || []).map((i: any) => ({
-      label: `${i.inspection_no} - ${i.supplier_name || ''}`,
-      value: i.inspection_id ?? i.id,
-      raw: i,
-    }))
+    return (incomingInspections || []).map((i: any) => {
+      const parts = [
+        i.inspection_no,
+        i.supplier_name,
+        i.material_code,
+        i.material_name,
+        i.specification,
+        i.quantity != null ? `数量:${i.quantity}` : undefined,
+        i.supplier_batch_no,
+        i.result || i.status,
+      ].filter(Boolean)
+      return {
+        label: parts.join(' | '),
+        value: i.inspection_id ?? i.id,
+        raw: i,
+      }
+    })
   }, [incomingInspections])
 
   const reportOrderOptions = useMemo(() => {
-    return (reportOrders || []).map((r: any) => ({
-      label: `${r.order_no || r.report_order_no || ''} - ${r.product_name || ''}`,
-      value: r.report_order_id ?? r.id,
-      raw: r,
-    }))
+    return (reportOrders || []).map((r: any) => {
+      const parts = [
+        r.order_no || r.report_order_no,
+        r.material_code,
+        r.product_name || r.material_name,
+        r.specification,
+        r.completed_quantity != null ? `完工:${r.completed_quantity}` : undefined,
+        r.status,
+      ].filter(Boolean)
+      return {
+        label: parts.join(' | '),
+        value: r.report_order_id ?? r.id,
+        raw: r,
+      }
+    })
   }, [reportOrders])
 
   const columns = [
@@ -632,11 +657,28 @@ export default function SupplierComplaint() {
                 type="link"
                 size="middle"
                 disabled={!relatedDocType || !relatedDocId}
-                onClick={() => {
-                  if (relatedDocType === '来料检验单') {
-                    window.open('/quality/incoming', '_blank')
-                  } else if (relatedDocType === '生产报工单') {
-                    window.open('/production/reporting', '_blank')
+                onClick={async () => {
+                  setDocDrawerOpen(true)
+                  setDocLoading(true)
+                  try {
+                    let url = ''
+                    if (relatedDocType === '来料检验单') {
+                      url = `/basic/incoming-inspections/${relatedDocId}`
+                    } else if (relatedDocType === '生产报工单') {
+                      url = `/production/report-orders/${relatedDocId}`
+                    }
+                    if (url) {
+                      const res = await api.get(url)
+                      if (res.success !== false && res.data) {
+                        setDocDetail(res.data)
+                      } else {
+                        setDocDetail(null)
+                      }
+                    }
+                  } catch {
+                    setDocDetail(null)
+                  } finally {
+                    setDocLoading(false)
                   }
                 }}
               >
@@ -694,6 +736,59 @@ export default function SupplierComplaint() {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* 关联单据详情抽屉 */}
+      <Drawer
+        title={`${relatedDocType || '关联单据'}详情`}
+        open={docDrawerOpen}
+        onClose={() => setDocDrawerOpen(false)}
+        width={680}
+        destroyOnHidden
+      >
+        {docLoading ? (
+          <Text type="secondary">加载中...</Text>
+        ) : !docDetail ? (
+          <Text type="secondary">未找到单据详情</Text>
+        ) : relatedDocType === '来料检验单' ? (
+          <Descriptions column={2} size="small" bordered>
+            <Descriptions.Item label="检验编号">{docDetail.inspection_no}</Descriptions.Item>
+            <Descriptions.Item label="供应商名称">{docDetail.supplier_name}</Descriptions.Item>
+            <Descriptions.Item label="料号">{docDetail.material_code}</Descriptions.Item>
+            <Descriptions.Item label="料品名称">{docDetail.material_name}</Descriptions.Item>
+            <Descriptions.Item label="规格">{docDetail.specification}</Descriptions.Item>
+            <Descriptions.Item label="到货数量">{docDetail.quantity}</Descriptions.Item>
+            <Descriptions.Item label="供应商批号">{docDetail.supplier_batch_no}</Descriptions.Item>
+            <Descriptions.Item label="状态">
+              <Tag color={docDetail.result === '合格' ? 'success' : docDetail.result === '不合格' ? 'error' : 'default'}>
+                {docDetail.result || docDetail.status}
+              </Tag>
+            </Descriptions.Item>
+            {docDetail.inspection_date && (
+              <Descriptions.Item label="检验日期">{docDetail.inspection_date}</Descriptions.Item>
+            )}
+            {docDetail.supplier_batch_no && (
+              <Descriptions.Item label="检验员">{docDetail.inspector_name || docDetail.inspector || '-'}</Descriptions.Item>
+            )}
+          </Descriptions>
+        ) : relatedDocType === '生产报工单' ? (
+          <Descriptions column={2} size="small" bordered>
+            <Descriptions.Item label="报工单编号">{docDetail.order_no || docDetail.report_order_no}</Descriptions.Item>
+            <Descriptions.Item label="料号">{docDetail.material_code}</Descriptions.Item>
+            <Descriptions.Item label="料品名称">{docDetail.product_name || docDetail.material_name}</Descriptions.Item>
+            <Descriptions.Item label="规格">{docDetail.specification}</Descriptions.Item>
+            <Descriptions.Item label="完工数量">{docDetail.completed_quantity ?? '-'}</Descriptions.Item>
+            <Descriptions.Item label="状态">{docDetail.status}</Descriptions.Item>
+            {docDetail.planned_start && (
+              <Descriptions.Item label="计划开始">{docDetail.planned_start}</Descriptions.Item>
+            )}
+            {docDetail.planned_end && (
+              <Descriptions.Item label="计划结束">{docDetail.planned_end}</Descriptions.Item>
+            )}
+          </Descriptions>
+        ) : (
+          <pre style={{ fontSize: 12, maxHeight: 400, overflow: 'auto' }}>{JSON.stringify(docDetail, null, 2)}</pre>
+        )}
+      </Drawer>
 
       {/* 详情抽屉 */}
       <Drawer
