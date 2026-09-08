@@ -341,12 +341,12 @@ export default function ComplaintManagement() {
         const isClosed = record.status === '已关闭'
         return (
           <Space size="small">
-            <Button type="link" size="small" onClick={() => showDetail(record)} icon={<EyeOutlined />}>查看</Button>
+            <Button type="link" size="small" onClick={() => showDetail(record)}>查看</Button>
             {isProcessing && (
-              <Button type="link" size="small" onClick={() => { setCurrent(record); setDrawerOpen(true) }} icon={<FileAddOutlined />}>添加记录</Button>
+              <Button type="link" size="small" onClick={() => { setCurrent(record); setDrawerOpen(true) }}>添加记录</Button>
             )}
             {isProcessing && !isClosed && (
-              <Button type="link" size="small" danger onClick={() => handleClose(record)} icon={<CloseCircleOutlined />}>关闭</Button>
+              <Button type="link" size="small" danger onClick={() => handleClose(record)}>关闭</Button>
             )}
           </Space>
         )

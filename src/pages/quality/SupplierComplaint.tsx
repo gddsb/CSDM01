@@ -52,6 +52,7 @@ export default function SupplierComplaint() {
   const [incomingInspections, setIncomingInspections] = useState<any[]>([])
   const [reportOrders, setReportOrders] = useState<any[]>([])
   const [relatedDocType, setRelatedDocType] = useState<string>('') // 表单内的本地状态，用于级联
+  const relatedDocId = Form.useWatch('related_doc_id', createForm)
 
   const [replyModalOpen, setReplyModalOpen] = useState(false)
   const [replyLoading, setReplyLoading] = useState(false)
@@ -206,7 +207,6 @@ export default function SupplierComplaint() {
         complaint_type: values.complaint_type,
         complaint_reason: values.complaint_reason,
         complaint_date: values.complaint_date?.format?.('YYYY-MM-DD') || undefined,
-        remarks: values.remarks,
       }
       // 新字段：关联单据类型 + 单据ID
       if (values.related_doc_type && values.related_doc_id) {
@@ -583,8 +583,8 @@ export default function SupplierComplaint() {
             <Form.Item name="complaint_date" label="投诉日期" rules={[{ required: true, message: '请选择投诉日期' }]}>
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item label="关联单据">
-              <Space.Compact style={{ width: '100%' }}>
+            <Form.Item label="关联单据" style={{ gridColumn: '1fr / span 2' }}>
+              <Space.Compact>
                 <Form.Item name="related_doc_type" noStyle>
                   <Select
                     placeholder="单据类型"
@@ -596,7 +596,6 @@ export default function SupplierComplaint() {
                     ]}
                     onChange={(val) => {
                       setRelatedDocType(val || '')
-                      // 清空已选的单据 ID
                       createForm.setFieldsValue({ related_doc_id: undefined })
                     }}
                   />
@@ -604,7 +603,7 @@ export default function SupplierComplaint() {
                 <Form.Item name="related_doc_id" noStyle>
                   <Select
                     placeholder={relatedDocType ? `选择${relatedDocType}...` : '请先选择单据类型'}
-                    style={{ flex: 1 }}
+                    style={{ width: 280 }}
                     allowClear
                     showSearch
                     disabled={!relatedDocType}
@@ -629,14 +628,25 @@ export default function SupplierComplaint() {
                   />
                 </Form.Item>
               </Space.Compact>
-            </Form.Item>
-            <Form.Item name="complaint_reason" label="投诉原因" rules={[{ required: true, message: '请填写投诉原因' }]}>
-              <Input.TextArea rows={4} placeholder="请描述投诉原因" />
-            </Form.Item>
-            <Form.Item name="remarks" label="备注">
-              <Input.TextArea rows={2} placeholder="可选备注" />
+              <Button
+                type="link"
+                size="middle"
+                disabled={!relatedDocType || !relatedDocId}
+                onClick={() => {
+                  if (relatedDocType === '来料检验单') {
+                    window.open('/quality/incoming', '_blank')
+                  } else if (relatedDocType === '生产报工单') {
+                    window.open('/production/reporting', '_blank')
+                  }
+                }}
+              >
+                查看单据
+              </Button>
             </Form.Item>
           </div>
+          <Form.Item name="complaint_reason" label="投诉原因" rules={[{ required: true, message: '请填写投诉原因' }]}>
+            <Input.TextArea rows={4} placeholder="请描述投诉原因" />
+          </Form.Item>
         </Form>
       </Modal>
 
