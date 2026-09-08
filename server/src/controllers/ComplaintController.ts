@@ -1,4 +1,6 @@
 import { Op } from 'sequelize'
+import path from 'path'
+import fs from 'fs'
 import {
   QualityComplaint,
   QualityComplaintRecord,
@@ -11,6 +13,23 @@ import { logger } from '../utils/logger.js'
 import { STAGE_MAP, STAGE_REVERSE } from '../models/QualityComplaintRecord.js'
 
 const STATUS_REVERSE: Record<string, number> = { '处理中': 0, '已关闭': 1 }
+
+function dateStamp(): string {
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`
+}
+function ensureDir(dir: string): void {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true })
+  }
+}
+function cleanupFiles(files: any[]): void {
+  if (!files || !files.length) return
+  for (const f of files) {
+    try { if (f && f.path && fs.existsSync(f.path)) fs.unlinkSync(f.path) } catch { /* ignore */ }
+  }
+}
 
 const parseStatusParam = (status: any): number[] | null => {
   if (status === undefined || status === '' || status === null) return null
@@ -295,6 +314,69 @@ export default {
       if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
       logger.error('[QualityComplaint] addRecord error:', err)
       fail(res, err.message || '添加处理记录失败', ErrorCode.SYSTEM_ERROR)
+    }
+  },
+
+  /**
+   * 客诉处理记录附件上传
+   *  - 支持 Office（Word/Excel/PPT/PDF）单文件 ≤20MB；压缩包（ZIP/RAR/7z）单文件 ≤50MB
+   *  - 单次上传总大小 ≤200MB
+   *  - 文件重命名：{complaint_no}_{YYYYMMDD}_{HHmmss}{ext}（如 TS20260001_20260908_143055.pdf）
+   *  - 存储目录：uploads/complaints/{YYYYMM}/（按客诉单年月归档）
+   */
+  async uploadAttachment(req: any, res: any) {
+    const COMPLAINT_MAX_TOTAL_SIZE = 200 * 1024 * 1024
+    try {
+      const { id } = req.params
+      const record = await QualityComplaint.findOne({ where: { complaint_id: id } })
+      if (!record) {
+        cleanupFiles(req.files || [])
+        return fail(res, '客诉记录不存在', ErrorCode.RECORD_NOT_FOUND)
+      }
+
+      const files: any[] = req.files || (req.file ? [req.file] : [])
+      if (!files.length) {
+        return fail(res, '请选择要上传的文件', ErrorCode.PARAM_INVALID)
+      }
+
+      // 总大小校验
+      const totalSize = files.reduce((acc, f) => acc + (f.size || 0), 0)
+      if (totalSize > COMPLAINT_MAX_TOTAL_SIZE) {
+        cleanupFiles(files)
+        return fail(res, `单次上传总大小不能超过 200MB（当前 ${(totalSize / 1024 / 1024).toFixed(1)}MB）`, ErrorCode.PARAM_INVALID)
+      }
+
+      // 年月目录：用客诉单的 complaint_time 或者 complaint_date 的 YYYYMM
+      const baseDate = (record as any).complaint_time || (record as any).complaint_date || new Date()
+      const ym = new Date(baseDate).toISOString().slice(0, 7).replace('-', '') // 202609
+      const uploadsDir = path.resolve(process.cwd(), 'uploads', 'complaints', ym)
+      ensureDir(uploadsDir)
+
+      const complaintNoPrefix = (record as any).complaint_no || `TS${String(record.complaint_id).padStart(6, '0')}`
+      const datePart = dateStamp().slice(0, 8) // 20260908
+      const created: any[] = []
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i]
+        const ext = path.extname(file.originalname || '').toLowerCase()
+        const ts = dateStamp().slice(9) // 143055 时间部分
+        const finalName = `${complaintNoPrefix}_${datePart}_${ts}_${i + 1}${ext}`
+        const destPath = path.join(uploadsDir, finalName)
+        fs.renameSync(file.path, destPath)
+        const url = `/uploads/complaints/${ym}/${finalName}`
+        created.push({
+          name: finalName,
+          original_name: file.originalname,
+          url,
+          size: file.size,
+        })
+      }
+
+      success(res, { files: created }, `上传成功 ${created.length} 个文件`)
+    } catch (err: any) {
+      cleanupFiles(req.files || [])
+      logger.error('[QualityComplaint] uploadAttachment error:', err)
+      fail(res, err.message || '上传失败', ErrorCode.SYSTEM_ERROR)
     }
   },
 

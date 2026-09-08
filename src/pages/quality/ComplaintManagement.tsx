@@ -2,12 +2,12 @@ import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useMemo, useCallback, useEffect } from 'react'
 import {
   Tag, Button, Drawer, Descriptions, Typography, Timeline,
-  Select, DatePicker, Input, Alert, Modal, Form, Space, message
+  Select, DatePicker, Input, Alert, Modal, Form, Space, message, Upload
 } from 'antd'
 import {
   MessageOutlined, ClockCircleOutlined, CheckCircleOutlined,
   MailOutlined, EyeOutlined, SearchOutlined, PlusOutlined,
-  CloseCircleOutlined, FileAddOutlined
+  CloseCircleOutlined, FileAddOutlined, PaperClipOutlined, UploadOutlined
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
@@ -65,6 +65,24 @@ export default function ComplaintManagement() {
   const [recordModalOpen, setRecordModalOpen] = useState(false)
   const [recordLoading, setRecordLoading] = useState(false)
   const [recordForm] = Form.useForm()
+  const [recordAttachmentList, setRecordAttachmentList] = useState<any[]>([]) // Upload fileList
+
+  // 允许的附件格式
+  const COMPLAINT_ATTACHMENT_ACCEPT = '.doc,.docx,.xls,.xlsx,.ppt,.pptx,.pdf,.zip,.rar,.7z'
+  const beforeUploadAttachment = (file: File) => {
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase()
+    const office = ['.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.pdf']
+    const archive = ['.zip', '.rar', '.7z']
+    if (office.includes(ext)) {
+      if (file.size > 20 * 1024 * 1024) { message.error('办公文档单文件不能超过 20MB'); return Upload.LIST_IGNORE }
+    } else if (archive.includes(ext)) {
+      if (file.size > 50 * 1024 * 1024) { message.error('压缩包单文件不能超过 50MB'); return Upload.LIST_IGNORE }
+    } else {
+      message.error('仅支持 Word/Excel/PPT/PDF/ZIP/RAR/7z 格式')
+      return Upload.LIST_IGNORE
+    }
+    return true
+  }
 
   const messageApi = useMessage()
 
@@ -234,6 +252,7 @@ export default function ComplaintManagement() {
   const openRecordModal = () => {
     recordForm.resetFields()
     recordForm.setFieldsValue({ stage: '调查' })
+    setRecordAttachmentList([])
     setRecordModalOpen(true)
   }
 
@@ -242,10 +261,15 @@ export default function ComplaintManagement() {
     try {
       const values = await recordForm.validateFields()
       setRecordLoading(true)
+      // 从 Upload fileList 提取已上传成功的文件
+      const uploadedFiles = recordAttachmentList
+        .filter((f: any) => f.status === 'done' && f.response?.data?.files)
+        .flatMap((f: any) => f.response.data.files)
+      const attachment_url = uploadedFiles.length ? JSON.stringify(uploadedFiles.map((f: any) => ({ url: f.url, name: f.original_name || f.name }))) : ''
       const payload: any = {
         stage: values.stage,
         content: values.content,
-        attachment_url: values.attachment_url || '',
+        attachment_url,
       }
       const res = await api.post(`/basic/complaints/${current.complaint_id}/records`, payload)
       if (res.success !== false) {
@@ -396,6 +420,18 @@ export default function ComplaintManagement() {
     if (!records.length) {
       return <Text type="secondary">暂无处理记录</Text>
     }
+    // 解析附件：兼容旧 URL 字符串和新 JSON 数组两种格式
+    const parseAttachments = (v: any): Array<{ url: string; name?: string }> => {
+      if (!v) return []
+      if (Array.isArray(v)) return v
+      if (typeof v === 'string') {
+        if (v.startsWith('[')) {
+          try { return JSON.parse(v) } catch { /* fallback */ }
+        }
+        return [{ url: v, name: v.split('/').pop() || '附件' }]
+      }
+      return []
+    }
     return (
       <Timeline
         mode="left"
@@ -411,6 +447,21 @@ export default function ComplaintManagement() {
                 </Text>
               </div>
               <div style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}>{item.content}</div>
+              {(() => {
+                const attachments = parseAttachments(item.attachment_url)
+                if (!attachments.length) return null
+                return (
+                  <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    <PaperClipOutlined style={{ color: '#888', marginTop: 4 }} />
+                    {attachments.map((a, i) => (
+                      <a key={i} href={a.url} target="_blank" rel="noopener noreferrer"
+                        style={{ fontSize: 12, marginRight: 8 }}>
+                        {a.name || a.url.split('/').pop() || '附件'}
+                      </a>
+                    ))}
+                  </div>
+                )
+              })()}
             </div>
           ),
         }))}
@@ -593,8 +644,22 @@ export default function ComplaintManagement() {
           <Form.Item name="content" label="处理内容" rules={[{ required: true, message: '请输入处理内容' }]}>
             <TextArea rows={4} placeholder="请输入处理内容" />
           </Form.Item>
-          <Form.Item name="attachment_url" label="附件地址（可选）">
-            <Input placeholder="如已上传附件，请填写附件 URL" />
+          <Form.Item label="附件（可选）" extra="支持 Word/Excel/PPT/PDF（单文件≤20MB）、ZIP/RAR/7z（单文件≤50MB），单次总大小≤200MB">
+            <Upload
+              multiple
+              accept={COMPLAINT_ATTACHMENT_ACCEPT}
+              listType="text"
+              beforeUpload={beforeUploadAttachment}
+              fileList={recordAttachmentList}
+              onChange={({ fileList }) => setRecordAttachmentList(fileList)}
+              action={current ? `/api/basic/complaints/${current.complaint_id}/attachments` : undefined}
+              headers={{ Authorization: `Bearer ${localStorage.getItem('mes_token') || ''}` }}
+              name="files"
+              data={{}}
+              maxCount={10}
+            >
+              <Button icon={<UploadOutlined />}>选择文件上传</Button>
+            </Upload>
           </Form.Item>
         </Form>
       </Modal>

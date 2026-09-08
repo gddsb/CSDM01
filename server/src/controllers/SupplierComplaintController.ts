@@ -6,6 +6,7 @@ import {
   QualitySupplierComplaint,
   Supplier,
   IncomingInspection,
+  ReportOrder,
 } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { generateSupplierComplaintNo } from '../utils/sequence.js'
@@ -129,6 +130,10 @@ export default {
         supplier_name,
         complaint_type,
         complaint_reason,
+        // 新字段（优先）
+        related_doc_type,
+        related_doc_id,
+        // 老字段（兼容）
         related_inspection_id,
         complaint_date,
         remarks,
@@ -153,19 +158,46 @@ export default {
       // 自动生成投诉编号
       const complaint_no = await generateSupplierComplaintNo()
 
-      // 如果关联来料检验，自动填充供应商和检验信息
+      // 关联单据处理：新字段优先，老字段回退
+      let final_doc_type: string | null = null
+      let final_doc_id: number | null = null
+      let final_doc_no = ''
       let related_inspection_no = ''
       let supplierName = supplier_name || supplier.supplier_name || ''
-      if (related_inspection_id) {
+
+      if (related_doc_type && related_doc_id) {
+        // 新字段：按类型查对应表
+        final_doc_type = related_doc_type
+        final_doc_id = Number(related_doc_id)
+        if (related_doc_type === '生产报工单') {
+          const order = await ReportOrder.findOne({ where: { report_order_id: final_doc_id }, transaction: t })
+          if (!order) {
+            return fail(res, '关联的生产报工单不存在', ErrorCode.RECORD_NOT_FOUND)
+          }
+          final_doc_no = (order as any).order_no || (order as any).report_order_no || ''
+        } else if (related_doc_type === '来料检验单') {
+          const inspection = await IncomingInspection.findOne({ where: { inspection_id: final_doc_id }, transaction: t })
+          if (!inspection) {
+            return fail(res, '关联的来料检验单不存在', ErrorCode.RECORD_NOT_FOUND)
+          }
+          final_doc_no = inspection.inspection_no || ''
+          related_inspection_no = final_doc_no
+          if (!supplier_name) supplierName = inspection.supplier_name || supplierName
+        } else {
+          return fail(res, '关联单据类型不合法，可选值：生产报工单/来料检验单', ErrorCode.PARAM_INVALID)
+        }
+      } else if (related_inspection_id) {
+        // 老字段兼容：自动映射为来料检验单
         const inspection = await IncomingInspection.findOne({
           where: { inspection_id: related_inspection_id },
           transaction: t,
         })
         if (inspection) {
-          related_inspection_no = inspection.inspection_no || ''
-          if (!supplier_name) {
-            supplierName = inspection.supplier_name || supplierName
-          }
+          final_doc_type = '来料检验单'
+          final_doc_id = related_inspection_id
+          final_doc_no = inspection.inspection_no || ''
+          related_inspection_no = final_doc_no
+          if (!supplier_name) supplierName = inspection.supplier_name || supplierName
         }
       }
 
@@ -175,7 +207,10 @@ export default {
         supplier_name: supplierName,
         complaint_type,
         complaint_reason,
-        related_inspection_id: related_inspection_id || null,
+        related_doc_type: final_doc_type,
+        related_doc_id: final_doc_id,
+        related_doc_no: final_doc_no,
+        related_inspection_id: final_doc_type === '来料检验单' ? final_doc_id : null,
         related_inspection_no,
         complaint_date: complaint_date ? new Date(complaint_date) : nowBeijingDate(),
         status: 0,
@@ -219,6 +254,10 @@ export default {
         supplier_name,
         complaint_type,
         complaint_reason,
+        // 新字段
+        related_doc_type,
+        related_doc_id,
+        // 老字段（兼容）
         related_inspection_id,
         complaint_date,
         remarks,
@@ -232,15 +271,56 @@ export default {
       }
       if (complaint_type !== undefined) updateData.complaint_type = complaint_type
       if (complaint_reason !== undefined) updateData.complaint_reason = complaint_reason
-      if (related_inspection_id !== undefined) {
+
+      // 关联单据更新（新字段优先）
+      if (related_doc_type !== undefined) {
+        if (!related_doc_type) {
+          // 清空关联
+          updateData.related_doc_type = null
+          updateData.related_doc_id = null
+          updateData.related_doc_no = ''
+          updateData.related_inspection_id = null
+          updateData.related_inspection_no = ''
+        } else {
+          let docId = related_doc_id !== undefined ? Number(related_doc_id) : Number((record as any).related_doc_id)
+          if (related_doc_type === '生产报工单') {
+            if (docId) {
+              const order = await ReportOrder.findOne({ where: { report_order_id: docId } })
+              if (!order) return fail(res, '关联的生产报工单不存在', ErrorCode.RECORD_NOT_FOUND)
+              updateData.related_doc_no = (order as any).order_no || (order as any).report_order_no || ''
+            }
+            updateData.related_inspection_id = null
+            updateData.related_inspection_no = ''
+          } else if (related_doc_type === '来料检验单') {
+            if (docId) {
+              const inspection = await IncomingInspection.findOne({ where: { inspection_id: docId } })
+              if (!inspection) return fail(res, '关联的来料检验单不存在', ErrorCode.RECORD_NOT_FOUND)
+              updateData.related_doc_no = inspection.inspection_no || ''
+              updateData.related_inspection_id = docId
+              updateData.related_inspection_no = inspection.inspection_no || ''
+            }
+          } else {
+            return fail(res, '关联单据类型不合法', ErrorCode.PARAM_INVALID)
+          }
+          updateData.related_doc_type = related_doc_type
+          updateData.related_doc_id = docId || null
+        }
+      } else if (related_inspection_id !== undefined) {
+        // 老字段兼容
         if (related_inspection_id) {
           const inspection = await IncomingInspection.findOne({ where: { inspection_id: related_inspection_id } })
           if (!inspection) return fail(res, '关联的来料检验记录不存在', ErrorCode.RECORD_NOT_FOUND)
           updateData.related_inspection_id = related_inspection_id
           updateData.related_inspection_no = inspection.inspection_no || ''
+          updateData.related_doc_type = '来料检验单'
+          updateData.related_doc_id = related_inspection_id
+          updateData.related_doc_no = inspection.inspection_no || ''
         } else {
           updateData.related_inspection_id = null
           updateData.related_inspection_no = ''
+          updateData.related_doc_type = null
+          updateData.related_doc_id = null
+          updateData.related_doc_no = ''
         }
       }
       if (complaint_date !== undefined) updateData.complaint_date = complaint_date ? new Date(complaint_date) : null

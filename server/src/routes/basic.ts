@@ -134,6 +134,33 @@ const deviceMaintenanceUploadMiddleware = multer({
   },
 })
 
+// 客诉处理记录附件上传 multer 配置
+// 支持：Office（Word/Excel/PPT/PDF）单文件 ≤20MB；压缩包（ZIP/RAR/7z）单文件 ≤50MB
+// 单次上传总大小 ≤200MB
+const COMPLAINT_OFFICE_EXTS = new Set(['.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.pdf'])
+const COMPLAINT_ARCHIVE_EXTS = new Set(['.zip', '.rar', '.7z'])
+const COMPLAINT_MAX_TOTAL_SIZE = 200 * 1024 * 1024
+const complaintAttachmentUploadMiddleware = multer({
+  dest: 'uploads/tmp/',
+  limits: { fileSize: 50 * 1024 * 1024 }, // 最大单文件 50MB
+  fileFilter: (req, file, cb) => {
+    const ext = (file.originalname || '').substring(file.originalname.lastIndexOf('.')).toLowerCase()
+    if (COMPLAINT_OFFICE_EXTS.has(ext)) {
+      if (file.size && file.size > 20 * 1024 * 1024) {
+        return cb(new Error(`办公文档格式（${ext}）单文件不能超过 20MB`))
+      }
+      return cb(null, true)
+    }
+    if (COMPLAINT_ARCHIVE_EXTS.has(ext)) {
+      // 压缩包 multer limits 已经限制到 50MB，不再二次校验
+      return cb(null, true)
+    }
+    return cb(new Error('仅支持 Word/Excel/PPT/PDF/ZIP/RAR/7z 格式'))
+  },
+})
+
+// 客诉附件总大小前置校验中间件（遍历 header 无法得到真实总大小，改用在 controller 内校验）
+
 // 校准证书上传 multer 配置（支持图片与 PDF）
 const calibrationUploadMiddleware = multer({
   dest: 'uploads/tmp/',
@@ -328,6 +355,7 @@ router.post('/complaints', logOperation('客诉管理'), ComplaintController.cre
 router.put('/complaints/:id', logOperation('客诉管理'), ComplaintController.update)
 router.delete('/complaints/:id', logOperation('客诉管理'), ComplaintController.delete)
 router.post('/complaints/:id/records', logOperation('客诉记录'), ComplaintController.addRecord)
+router.post('/complaints/:id/attachments', complaintAttachmentUploadMiddleware.array('files', 10), logOperation('上传客诉附件'), ComplaintController.uploadAttachment)
 router.put('/complaints/:id/close', logOperation('关闭客诉'), ComplaintController.close)
 
 // 供应商投诉管理路由

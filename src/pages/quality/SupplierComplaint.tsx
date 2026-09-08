@@ -50,6 +50,8 @@ export default function SupplierComplaint() {
   const [createForm] = Form.useForm()
   const [suppliers, setSuppliers] = useState<any[]>([])
   const [incomingInspections, setIncomingInspections] = useState<any[]>([])
+  const [reportOrders, setReportOrders] = useState<any[]>([])
+  const [relatedDocType, setRelatedDocType] = useState<string>('') // 表单内的本地状态，用于级联
 
   const [replyModalOpen, setReplyModalOpen] = useState(false)
   const [replyLoading, setReplyLoading] = useState(false)
@@ -106,9 +108,10 @@ export default function SupplierComplaint() {
 
   const loadSelectOptions = useCallback(async () => {
     try {
-      const [sRes, iRes] = await Promise.all([
+      const [sRes, iRes, roRes] = await Promise.all([
         api.get('/basic/suppliers', { params: { page: 1, page_size: 500 } }),
         api.get('/basic/incoming-inspections', { params: { page: 1, page_size: 500, result: '不合格' } }),
+        api.get('/production/report-orders', { params: { page: 1, page_size: 500 } }).catch(() => null),
       ])
       if (sRes.success !== false) {
         const list = sRes.data?.list || sRes.data || []
@@ -117,6 +120,10 @@ export default function SupplierComplaint() {
       if (iRes.success !== false) {
         const list = iRes.data?.list || iRes.data || []
         setIncomingInspections(Array.isArray(list) ? list : [])
+      }
+      if (roRes && roRes.success !== false) {
+        const list = roRes.data?.list || roRes.data || []
+        setReportOrders(Array.isArray(list) ? list : [])
       }
     } catch {
       /* ignore */
@@ -181,6 +188,7 @@ export default function SupplierComplaint() {
   // ========= 新建投诉 =========
   const openCreateModal = () => {
     createForm.resetFields()
+    setRelatedDocType('')
     createForm.setFieldsValue({
       complaint_type: '质量问题',
       complaint_date: dayjs(),
@@ -197,9 +205,22 @@ export default function SupplierComplaint() {
         supplier_name: values.supplier_name || undefined,
         complaint_type: values.complaint_type,
         complaint_reason: values.complaint_reason,
-        related_inspection_id: values.related_inspection || null,
         complaint_date: values.complaint_date?.format?.('YYYY-MM-DD') || undefined,
         remarks: values.remarks,
+      }
+      // 新字段：关联单据类型 + 单据ID
+      if (values.related_doc_type && values.related_doc_id) {
+        payload.related_doc_type = values.related_doc_type
+        payload.related_doc_id = values.related_doc_id
+        // 老字段兼容（来料检验单时同时填 related_inspection_id）
+        if (values.related_doc_type === '来料检验单') {
+          payload.related_inspection_id = values.related_doc_id
+        }
+      } else if (values.related_inspection) {
+        // 仅传老字段
+        payload.related_inspection_id = values.related_inspection
+        payload.related_doc_type = '来料检验单'
+        payload.related_doc_id = values.related_inspection
       }
       const res = await api.post('/basic/supplier-complaints', payload)
       if (res.success !== false) {
@@ -346,6 +367,14 @@ export default function SupplierComplaint() {
     }))
   }, [incomingInspections])
 
+  const reportOrderOptions = useMemo(() => {
+    return (reportOrders || []).map((r: any) => ({
+      label: `${r.order_no || r.report_order_no || ''} - ${r.product_name || ''}`,
+      value: r.report_order_id ?? r.id,
+      raw: r,
+    }))
+  }, [reportOrders])
+
   const columns = [
     { title: '投诉编号', dataIndex: 'complaint_no', key: 'complaint_no', width: 140, fixed: 'left' as const },
     { title: '供应商', dataIndex: 'supplier_name', key: 'supplier_name', width: 160 },
@@ -355,8 +384,13 @@ export default function SupplierComplaint() {
       ellipsis: true,
     },
     {
-      title: '关联来料检验', key: 'related_inspection', width: 150,
-      render: (_: any, record: any) => record.related_inspection_no || <Text type="secondary">-</Text>
+      title: '关联单据', key: 'related_doc', width: 180,
+      render: (_: any, record: any) => {
+        const type = record.related_doc_type || (record.related_inspection_id ? '来料检验单' : '')
+        const no = record.related_doc_no || record.related_inspection_no
+        if (!no) return <Text type="secondary">-</Text>
+        return `${type ? `[${type}] ` : ''}${no}`
+      }
     },
     { title: '投诉日期', dataIndex: 'complaint_date', key: 'complaint_date', width: 110 },
     {
@@ -558,31 +592,52 @@ export default function SupplierComplaint() {
             <Form.Item name="complaint_date" label="投诉日期" rules={[{ required: true, message: '请选择投诉日期' }]}>
               <DatePicker style={{ width: '100%' }} />
             </Form.Item>
-            <Form.Item name="related_inspection" label="关联来料检验（仅不合格）">
-              <Select
-                allowClear
-                showSearch
-                placeholder="选择来料检验记录"
-                filterOption={(input, option) =>
-                  (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
-                }
-                onChange={(val) => {
-                  if (val) {
-                    const opt = inspectionOptions.find(o => o.value === val)
-                    if (opt?.raw) {
-                      // 自动填充供应商信息（如果未手动选供应商）
-                      const currentSupplier = createForm.getFieldValue('supplier')
-                      if (!currentSupplier && opt.raw.supplier_id) {
-                        createForm.setFieldsValue({
-                          supplier: opt.raw.supplier_id,
-                          supplier_name: opt.raw.supplier_name || '',
-                        })
-                      }
+            <Form.Item label="关联单据">
+              <Space.Compact style={{ width: '100%' }}>
+                <Form.Item name="related_doc_type" noStyle>
+                  <Select
+                    placeholder="单据类型"
+                    style={{ width: 140 }}
+                    allowClear
+                    options={[
+                      { label: '生产报工单', value: '生产报工单' },
+                      { label: '来料检验单', value: '来料检验单' },
+                    ]}
+                    onChange={(val) => {
+                      setRelatedDocType(val || '')
+                      // 清空已选的单据 ID
+                      createForm.setFieldsValue({ related_doc_id: undefined })
+                    }}
+                  />
+                </Form.Item>
+                <Form.Item name="related_doc_id" noStyle>
+                  <Select
+                    placeholder={relatedDocType ? `选择${relatedDocType}...` : '请先选择单据类型'}
+                    style={{ flex: 1 }}
+                    allowClear
+                    showSearch
+                    disabled={!relatedDocType}
+                    filterOption={(input, option) =>
+                      (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
                     }
-                  }
-                }}
-                options={inspectionOptions}
-              />
+                    onChange={(val) => {
+                      if (relatedDocType === '来料检验单' && val) {
+                        const opt = inspectionOptions.find(o => o.value === val)
+                        if (opt?.raw) {
+                          const currentSupplier = createForm.getFieldValue('supplier')
+                          if (!currentSupplier && opt.raw.supplier_id) {
+                            createForm.setFieldsValue({
+                              supplier: opt.raw.supplier_id,
+                              supplier_name: opt.raw.supplier_name || '',
+                            })
+                          }
+                        }
+                      }
+                    }}
+                    options={relatedDocType === '来料检验单' ? inspectionOptions : relatedDocType === '生产报工单' ? reportOrderOptions : []}
+                  />
+                </Form.Item>
+              </Space.Compact>
             </Form.Item>
             <Form.Item name="complaint_reason" label="投诉原因" rules={[{ required: true, message: '请填写投诉原因' }]}>
               <Input.TextArea rows={4} placeholder="请描述投诉原因" />
@@ -691,7 +746,14 @@ export default function SupplierComplaint() {
                 <Descriptions.Item label="投诉类型">{current.complaint_type}</Descriptions.Item>
                 <Descriptions.Item label="投诉日期">{current.complaint_date}</Descriptions.Item>
                 <Descriptions.Item label="登记人">{current.created_by_name}</Descriptions.Item>
-                <Descriptions.Item label="关联来料检验">{current.related_inspection_no || '-'}</Descriptions.Item>
+                <Descriptions.Item label="关联单据">
+                  {(() => {
+                    const type = current.related_doc_type || (current.related_inspection_id ? '来料检验单' : '')
+                    const no = current.related_doc_no || current.related_inspection_no
+                    if (!no) return '-'
+                    return type ? `[${type}] ${no}` : no
+                  })()}
+                </Descriptions.Item>
                 <Descriptions.Item label="投诉原因" span={2}>{current.complaint_reason}</Descriptions.Item>
                 <Descriptions.Item label="供应商回复" span={2}>
                   {current.reply_content || <Text type="secondary">暂无回复</Text>}

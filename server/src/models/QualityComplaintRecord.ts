@@ -47,8 +47,8 @@ const QualityComplaintRecord = sequelize.define('QualityComplaintRecord', {
     comment: '处理人姓名（冗余）',
   },
   attachment_url: {
-    type: DataTypes.STRING(500),
-    comment: '附件URL',
+    type: DataTypes.TEXT,
+    comment: '附件列表（JSON 数组）或单文件 URL',
   },
 }, {
   tableName: 'quality_complaint_record',

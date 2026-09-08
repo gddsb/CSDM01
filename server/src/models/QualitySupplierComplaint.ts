@@ -36,11 +36,24 @@ const QualitySupplierComplaint = sequelize.define('QualitySupplierComplaint', {
   related_inspection_id: {
     type: DataTypes.INTEGER,
     index: true,
-    comment: '关联来料检验ID',
+    comment: '关联来料检验ID（兼容老数据，已废弃，使用 related_doc_id）',
   },
   related_inspection_no: {
     type: DataTypes.STRING(50),
-    comment: '关联来料检验单号（冗余）',
+    comment: '关联来料检验单号（冗余，已废弃，使用 related_doc_no）',
+  },
+  related_doc_type: {
+    type: DataTypes.STRING(30),
+    comment: '关联单据类型：生产报工单/来料检验单',
+  },
+  related_doc_id: {
+    type: DataTypes.INTEGER,
+    index: true,
+    comment: '关联单据ID（通用）',
+  },
+  related_doc_no: {
+    type: DataTypes.STRING(50),
+    comment: '关联单据号（通用冗余）',
   },
   complaint_date: {
     type: DataTypes.DATE,
