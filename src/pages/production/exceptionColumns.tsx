@@ -41,17 +41,24 @@ export function buildExceptionColumns(params: BuildExceptionColumnsParams): Colu
   return [
     {
       title: '异常类型', dataIndex: 'exception_type', key: 'exception_type', width: 120,
-      render: (val, record) => isEditable ? (
-        <Select
-          placeholder="请选择"
-          value={val || undefined}
-          onChange={(v) => onChange(record.id, 'exception_type', v)}
-          options={exceptionCategories}
-          style={{ width: '100%' }}
-          size="small"
-          popupClassName="mes-select-dropdown"
-        />
-      ) : val || '-',
+      render: (val, record) => {
+        // 自动创建的异常记录（换型换线）不允许修改异常类型
+        const isAutoCreated = record.exception_type === '换型换线' || (record.description && String(record.description).includes('自动生成'))
+        if (isAutoCreated || !isEditable) {
+          return val || '-'
+        }
+        return (
+          <Select
+            placeholder="请选择"
+            value={val || undefined}
+            onChange={(v) => onChange(record.id, 'exception_type', v)}
+            options={exceptionCategories}
+            style={{ width: '100%' }}
+            size="small"
+            popupClassName="mes-select-dropdown"
+          />
+        )
+      },
     },
     {
       title: '设备', dataIndex: 'device_name', key: 'device_name', width: 150,
@@ -158,7 +165,7 @@ export function buildExceptionColumns(params: BuildExceptionColumnsParams): Colu
         />
       ) : formatDateTime(val),
     },
-    { title: '时长(小时)', dataIndex: 'duration', key: 'duration', width: 100 },
+    { title: '时长(分钟)', dataIndex: 'duration', key: 'duration', width: 100 },
     {
       title: '异常描述', dataIndex: 'description', key: 'description', width: 240,
       render: (val, record) => isEditable ? (

@@ -191,6 +191,12 @@ export function useReportDetailRecords(opts: Options) {
   const handleAddExceptionRow = useCallback(() => {
     if (!isEditable) { msg.warning('请先开工报工单'); return }
     if (!selectedReport) { msg.warning('请先选择报工单'); return }
+    // 存在未填写结束时间的异常工时记录时，不允许添加新的
+    const unfinished = exceptionList.find((e: any) => !e.end_time)
+    if (unfinished) {
+      msg.warning(`存在未结束的异常工时记录（异常类型：${unfinished.exception_type || '-'}），请先填写结束时间后再新增`)
+      return
+    }
     const now = new Date().toISOString()
     const row: ExceptionRecord = {
       id: genId('ex'), exception_type: '设备异常', exception_category: '停机',
@@ -198,7 +204,7 @@ export function useReportDetailRecords(opts: Options) {
       _dirty: true, report_order_id: selectedReport.report_order_id,
     }
     setExceptionList(prev => [row, ...prev])
-  }, [isEditable, selectedReport, msg])
+  }, [isEditable, selectedReport, exceptionList, msg])
 
   const handleDeleteException = useCallback(async (id: string | number) => {
     if (!String(id).startsWith('tmp_')) {

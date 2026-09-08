@@ -1120,8 +1120,6 @@ export default function ProcessReporting() {
   }
 
   const selectedOrderInfo = orders.find((o: any) => o.order_id === selectedReport?.order_id)
-  const balanceDiff = Number((stats.expectedOutput - stats.outputQty).toFixed(2))
-  const isBalanced = balanceDiff === 0
   const reportStatItems = [
     { label: '计划数量', value: selectedOrderInfo?.planned_qty ?? '-', color: '#1890ff', dynamicLabel: `计划数量 (${selectedOrderInfo?.order_no || '—'})` },
     { label: '报工数量', value: stats.outputQty || 0, color: '#1890ff', dynamicLabel: '报工数量' },
@@ -1129,11 +1127,9 @@ export default function ProcessReporting() {
     { label: '合格数量', value: stats.expectedOutput > 0 ? stats.expectedOutput : 0, color: '#52c41a', dynamicLabel: '合格数量' },
     { label: '制程不良', value: stats.defectProcess || 0, color: '#fa8c16', dynamicLabel: '制程不良' },
     { label: '来料不良', value: stats.defectMaterial || 0, color: '#faad14', dynamicLabel: '来料不良' },
-    { label: '物料损耗', value: 0, color: '#722ed1', dynamicLabel: '物料损耗' },
     { label: '报废数量', value: stats.defectScrap || 0, color: '#f5222d', dynamicLabel: '报废数量' },
     { label: '异常工时', value: `${(stats.exceptionHours || 0).toFixed(1)}min`, color: '#eb2f96', dynamicLabel: '异常工时' },
     { label: '总工时', value: `${(stats.manpowerHours || 0).toFixed(1)}h`, color: '#13c2c2', dynamicLabel: '总工时' },
-    { label: '平衡差', value: isBalanced ? '平衡' : balanceDiff, color: isBalanced ? '#52c41a' : '#f5222d', dynamicLabel: '平衡差' },
   ]
 
   return (
