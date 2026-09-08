@@ -1121,15 +1121,15 @@ export default function ProcessReporting() {
 
   const selectedOrderInfo = orders.find((o: any) => o.order_id === selectedReport?.order_id)
   const reportStatItems = [
-    { label: '计划数量', value: selectedOrderInfo?.planned_qty ?? '-', color: '#1890ff', dynamicLabel: `计划数量 (${selectedOrderInfo?.order_no || '—'})` },
-    { label: '报工数量', value: stats.outputQty || 0, color: '#1890ff', dynamicLabel: '报工数量' },
-    { label: '投入数量', value: stats.inputQty || 0, color: '#1890ff', dynamicLabel: '投入数量' },
-    { label: '合格数量', value: stats.expectedOutput > 0 ? stats.expectedOutput : 0, color: '#52c41a', dynamicLabel: '合格数量' },
-    { label: '制程不良', value: stats.defectProcess || 0, color: '#fa8c16', dynamicLabel: '制程不良' },
-    { label: '来料不良', value: stats.defectMaterial || 0, color: '#faad14', dynamicLabel: '来料不良' },
-    { label: '报废数量', value: stats.defectScrap || 0, color: '#f5222d', dynamicLabel: '报废数量' },
-    { label: '异常工时', value: `${(stats.exceptionHours || 0).toFixed(1)}min`, color: '#eb2f96', dynamicLabel: '异常工时' },
-    { label: '总工时', value: `${(stats.manpowerHours || 0).toFixed(1)}h`, color: '#13c2c2', dynamicLabel: '总工时' },
+    { label: '计划数量', value: selectedOrderInfo?.planned_qty ?? '-', color: '#1890ff' },
+    { label: '报工数量', value: stats.outputQty || 0, color: '#1890ff' },
+    { label: '投入数量', value: stats.inputQty || 0, color: '#1890ff' },
+    { label: '合格数量', value: stats.expectedOutput > 0 ? stats.expectedOutput : 0, color: '#52c41a' },
+    { label: '制程不良', value: stats.defectProcess || 0, color: '#fa8c16' },
+    { label: '来料不良', value: stats.defectMaterial || 0, color: '#faad14' },
+    { label: '报废数量', value: stats.defectScrap || 0, color: '#f5222d' },
+    { label: '异常工时', value: `${(stats.exceptionHours || 0).toFixed(1)}min`, color: '#eb2f96' },
+    { label: '总工时', value: `${(stats.manpowerHours || 0).toFixed(1)}h`, color: '#13c2c2' },
   ]
 
   return (
