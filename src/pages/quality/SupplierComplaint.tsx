@@ -53,6 +53,7 @@ export default function SupplierComplaint() {
   const [reportOrders, setReportOrders] = useState<any[]>([])
   const [relatedDocType, setRelatedDocType] = useState<string>('') // 表单内的本地状态，用于级联
   const relatedDocId = Form.useWatch('related_doc_id', createForm)
+  const supplierId = Form.useWatch('supplier', createForm)
   const [docDrawerOpen, setDocDrawerOpen] = useState(false)
   const [docDetail, setDocDetail] = useState<any>(null)
   const [docLoading, setDocLoading] = useState(false)
@@ -354,10 +355,13 @@ export default function SupplierComplaint() {
   }, [suppliers])
 
   const inspectionOptions = useMemo(() => {
-    return (incomingInspections || []).map((i: any) => {
+    let list = incomingInspections || []
+    if (supplierId) {
+      list = list.filter((i: any) => i.supplier_id == supplierId)
+    }
+    return list.map((i: any) => {
       const parts = [
         i.inspection_no,
-        i.supplier_name,
         i.material_code,
         i.material_name,
         i.specification,
@@ -371,7 +375,7 @@ export default function SupplierComplaint() {
         raw: i,
       }
     })
-  }, [incomingInspections])
+  }, [incomingInspections, supplierId])
 
   const reportOrderOptions = useMemo(() => {
     return (reportOrders || []).map((r: any) => {
