@@ -347,20 +347,15 @@ export default function DeviceDashboard() {
                 renderItem={(item) => {
                   const modeLabel = ({ weekly: '每周保养', monthly: '每月保养', runtime: '运行时长' } as Record<string, string>)[item.trigger_mode] || item.trigger_mode
                   return (
-                    <List.Item style={{ padding: '8px 4px' }}>
-                      <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <Text strong style={{ fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {item.device_name || '-'}
-                            </Text>
-                            <Tag style={{ margin: 0 }}>{modeLabel}</Tag>
-                          </div>
-                          <Text type="secondary" style={{ fontSize: 12 }}>
-                            周期：{item.period_key || '-'}
-                          </Text>
-                        </div>
-                        <Tag color={maintenanceStatusColor[item.status] || 'default'}>{item.status}</Tag>
+                    <List.Item style={{ padding: '6px 4px' }}>
+                      <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Text strong style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, flexShrink: 1 }}>
+                          {item.device_name || '-'}
+                        </Text>
+                        <Tag style={{ margin: 0, flexShrink: 0 }}>{modeLabel}</Tag>
+                        <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap', flexShrink: 0 }}>周期 {item.period_key || '-'}</Text>
+                        <div style={{ flex: 1 }} />
+                        <Tag color={maintenanceStatusColor[item.status] || 'default'} style={{ margin: 0, flexShrink: 0 }}>{item.status}</Tag>
                       </div>
                     </List.Item>
                   )
@@ -381,19 +376,16 @@ export default function DeviceDashboard() {
                 dataSource={inspections}
                 locale={{ emptyText: <Empty description="暂无待点检任务" image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
                 renderItem={(item) => (
-                  <List.Item style={{ padding: '8px 4px' }}>
-                    <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <Text strong style={{ fontSize: 13 }}>
-                          {item.device_name || '-'}
-                        </Text>
-                        <div>
-                          <Text type="secondary" style={{ fontSize: 12 }}>
-                            点检人：{item.executor_name || '-'} · {item.period_key || '-'}
-                          </Text>
-                        </div>
-                      </div>
-                      <Tag color={inspectionStatusColor[item.status] || 'default'}>{item.status}</Tag>
+                  <List.Item style={{ padding: '6px 4px' }}>
+                    <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Text strong style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, flexShrink: 1 }}>
+                        {item.device_name || '-'}
+                      </Text>
+                      <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        {item.executor_name || '-'} · {item.period_key || '-'}
+                      </Text>
+                      <div style={{ flex: 1 }} />
+                      <Tag color={inspectionStatusColor[item.status] || 'default'} style={{ margin: 0, flexShrink: 0 }}>{item.status}</Tag>
                     </div>
                   </List.Item>
                 )}
@@ -418,20 +410,16 @@ export default function DeviceDashboard() {
                 renderItem={(item) => {
                   const isUrgent = item.fault_level === '紧急'
                   return (
-                    <List.Item style={{ padding: '8px 4px' }}>
-                      <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                            <Text strong style={{ fontSize: 13, color: isUrgent ? '#ff4d4f' : undefined }}>
-                              {item.fault_no || '-'}
-                            </Text>
-                            <Tag color={faultLevelColor[item.fault_level] || 'default'}>{item.fault_level}</Tag>
-                          </div>
-                          <Text type="secondary" style={{ fontSize: 12 }}>
-                            {item.device_name || '-'} · {formatDateTime(item.fault_time)}
-                          </Text>
-                        </div>
-                        <Tag color={faultStatusColor[item.status] || 'default'}>{item.status}</Tag>
+                    <List.Item style={{ padding: '6px 4px' }}>
+                      <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Text strong style={{ fontSize: 13, color: isUrgent ? '#ff4d4f' : undefined, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          {item.fault_no || '-'}
+                        </Text>
+                        <Tag color={faultLevelColor[item.fault_level] || 'default'} style={{ margin: 0, flexShrink: 0 }}>{item.fault_level}</Tag>
+                        <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, flex: 1 }}>
+                          {item.device_name || '-'} · {formatDateTime(item.fault_time)}
+                        </Text>
+                        <Tag color={faultStatusColor[item.status] || 'default'} style={{ margin: 0, flexShrink: 0 }}>{item.status}</Tag>
                       </div>
                     </List.Item>
                   )
@@ -457,30 +445,24 @@ export default function DeviceDashboard() {
                 renderItem={(item) => {
                   const suggest = suggestPurchaseQty(item.current_stock, item.safety_stock_max)
                   return (
-                    <List.Item style={{ padding: '8px 4px' }}>
-                      <div style={{ width: '100%' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <Text strong style={{ fontSize: 13 }}>
-                              {item.part_name || '-'}
-                            </Text>
-                            <Text type="secondary" style={{ fontSize: 12, marginLeft: 6 }}>
-                              {item.part_code || ''}
-                            </Text>
-                          </div>
-                          <Tag color="error" style={{ margin: 0 }}>
-                            库存 {item.current_stock ?? 0} / 下限 {item.safety_stock_min ?? 0}
-                          </Tag>
-                        </div>
-                        <div style={{ marginTop: 4 }}>
-                          <Text type="secondary" style={{ fontSize: 12 }}>
-                            建议采购量：
-                            <Text strong style={{ color: suggest > 0 ? '#FF9800' : undefined }}>
-                              {suggest}
-                            </Text>
-                            {item.unit ? ` ${item.unit}` : ''}
+                    <List.Item style={{ padding: '6px 4px' }}>
+                      <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Text strong style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, flexShrink: 1 }}>
+                          {item.part_name || '-'}
+                        </Text>
+                        <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          {item.part_code || ''}
+                        </Text>
+                        <Tag color="error" style={{ margin: 0, flexShrink: 0 }}>
+                          库存 {item.current_stock ?? 0} / 下限 {item.safety_stock_min ?? 0}
+                        </Tag>
+                        <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          建议采购
+                          <Text strong style={{ color: suggest > 0 ? '#FF9800' : undefined, marginLeft: 2 }}>
+                            {suggest}
                           </Text>
-                        </div>
+                          {item.unit ? ` ${item.unit}` : ''}
+                        </Text>
                       </div>
                     </List.Item>
                   )
@@ -503,19 +485,16 @@ export default function DeviceDashboard() {
                 renderItem={(item) => {
                   const isOverdue = item.status === '已超期'
                   return (
-                    <List.Item style={{ padding: '8px 4px' }}>
-                      <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <Text strong style={{ fontSize: 13, color: isOverdue ? '#ff4d4f' : undefined }}>
-                            {item.device_name || item.device_code || '-'}
-                          </Text>
-                          <div>
-                            <Text type="secondary" style={{ fontSize: 12 }}>
-                              下次校准：{formatDate(item.next_calibration_date)}
-                            </Text>
-                          </div>
-                        </div>
-                        <Tag color={calibrationStatusColor[item.status] || 'default'}>{item.status}</Tag>
+                    <List.Item style={{ padding: '6px 4px' }}>
+                      <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Text strong style={{ fontSize: 13, color: isOverdue ? '#ff4d4f' : undefined, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, flexShrink: 1 }}>
+                          {item.device_name || item.device_code || '-'}
+                        </Text>
+                        <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          下次 {formatDate(item.next_calibration_date)}
+                        </Text>
+                        <div style={{ flex: 1 }} />
+                        <Tag color={calibrationStatusColor[item.status] || 'default'} style={{ margin: 0, flexShrink: 0 }}>{item.status}</Tag>
                       </div>
                     </List.Item>
                   )
