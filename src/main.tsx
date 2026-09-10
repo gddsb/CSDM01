@@ -67,6 +67,7 @@ const ProductionBigScreen = lazy(() => import('./pages/bigscreen/ProductionBigSc
 const ManagementBigScreen = lazy(() => import('./pages/bigscreen/ManagementBigScreen'))
 const QualityBigScreen = lazy(() => import('./pages/bigscreen/QualityBigScreen'))
 const EnvironmentBigScreen = lazy(() => import('./pages/bigscreen/EnvironmentBigScreen'))
+const EnergyBigScreen = lazy(() => import('./pages/bigscreen/EnergyBigScreen'))
 const DisplayBigScreen = lazy(() => import('./pages/bigscreen/DisplayBigScreen'))
 const TaskSettingsPage = lazy(() => import('./pages/auto/TaskSettingsPage'))
 const TaskLogPage = lazy(() => import('./pages/auto/TaskLogPage'))
@@ -118,6 +119,7 @@ function AppRoutes() {
       <Route path="/bigscreen/management" element={<ProtectedRoute>{lazyPage(<ManagementBigScreen />)}</ProtectedRoute>} />
       <Route path="/bigscreen/quality" element={<ProtectedRoute>{lazyPage(<QualityBigScreen />)}</ProtectedRoute>} />
       <Route path="/bigscreen/environment" element={<ProtectedRoute>{lazyPage(<EnvironmentBigScreen />)}</ProtectedRoute>} />
+      <Route path="/bigscreen/energy" element={<ProtectedRoute>{lazyPage(<EnergyBigScreen />)}</ProtectedRoute>} />
       <Route path="/bigscreen/display" element={<ProtectedRoute>{lazyPage(<DisplayBigScreen />)}</ProtectedRoute>} />
       {/* 打印路由 - 独立全屏页面，不显示菜单/路径 */}
       <Route path="/device/maintenance/print" element={<ProtectedRoute><DeviceMaintenancePrint /></ProtectedRoute>} />

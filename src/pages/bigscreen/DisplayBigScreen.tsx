@@ -5,6 +5,7 @@ const SCREENS = [
   { name: '质量分析看板', path: '/bigscreen/quality' },
   { name: '管理驾驶舱', path: '/bigscreen/management' },
   { name: '环境看板', path: '/bigscreen/environment' },
+  { name: '能源管理看板', path: '/bigscreen/energy' },
 ]
 
 const DISPLAY_DURATION = 10000
