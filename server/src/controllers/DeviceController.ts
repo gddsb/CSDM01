@@ -8,8 +8,11 @@ const ALLOWED_DEVICE_TYPES = new Set(['生产设备', '检测设备', '辅助设
 // 设备列表
 export const list = async (req, res) => {
   try {
-    const { keyword, status, device_type, line_id, is_special, dateStart, dateEnd, page = 1, pageSize = 20 } = req.query
+    const { keyword, status, device_type, line_id, is_special, dateStart, dateEnd, page = 1, pageSize = 20, entity_type } = req.query
     const where: any = {}
+    // 默认只查设备；传 entity_type='仪器' 或 '全部' 可切换
+    if (entity_type && entity_type !== '全部') where.entity_type = entity_type
+    else if (!entity_type) where.entity_type = '设备'
     if (keyword) {
       where[Op.or] = [
         { device_code: { [Op.like]: `%${keyword}%` } },
@@ -88,7 +91,7 @@ export const create = async (req, res) => {
     const exists = await Device.findOne({ where: { device_code } })
     if (exists) return fail(res, '设备编码已存在', ErrorCode.RECORD_EXISTS)
     const device = await Device.create({
-      device_code, device_name, device_type, device_model, serial_no, location, line_id, responsible_person, is_special, status, last_inspection_date, inspection_cycle, next_inspection_date, manufacturer, purchase_date, warranty_end,
+      entity_type: '设备', device_code, device_name, device_type, device_model, serial_no, location, line_id, responsible_person, is_special, status, last_inspection_date, inspection_cycle, next_inspection_date, manufacturer, purchase_date, warranty_end,
     })
     return success(res, device, '创建成功')
   } catch (err) {

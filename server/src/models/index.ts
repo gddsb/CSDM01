@@ -282,9 +282,10 @@ DeviceMaintenanceRecord.hasMany(DeviceImage, { foreignKey: 'doc_id', scope: { do
 DeviceRuntimeLog.belongsTo(Device, { foreignKey: 'device_id', as: 'device', constraints: false })
 
 // 设备校准
-DeviceCalibrationPlan.belongsTo(Device, { foreignKey: 'device_id', as: 'device', constraints: false })
+DeviceCalibrationPlan.belongsTo(Device, { foreignKey: 'asset_id', as: 'asset', constraints: false })
 DeviceCalibrationPlan.hasMany(DeviceCalibrationRecord, { foreignKey: 'plan_id', as: 'records', onDelete: 'CASCADE' })
 DeviceCalibrationRecord.belongsTo(DeviceCalibrationPlan, { foreignKey: 'plan_id', as: 'plan' })
+DeviceCalibrationRecord.belongsTo(Device, { foreignKey: 'asset_id', as: 'asset', constraints: false })
 // 校准证书图片关联（复用 DeviceImage 模型，doc_type='calibration'）
 DeviceCalibrationRecord.hasMany(DeviceImage, { foreignKey: 'doc_id', scope: { doc_type: 'calibration' }, as: 'calibration_images', constraints: false })
 

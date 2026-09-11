@@ -107,9 +107,9 @@ export default {
       const {
         page = 1,
         page_size = 20,
-        device_id,
-        device_name,
-        device_code,
+        asset_id,
+        asset_name,
+        asset_code,
         status,
         start_date,
         end_date,
@@ -117,13 +117,13 @@ export default {
       } = req.query
 
       const where: any = {}
-      if (device_id) where.device_id = device_id
-      if (device_name) where.device_name = { [Op.like]: `%${device_name}%` }
-      if (device_code) where.device_code = { [Op.like]: `%${device_code}%` }
+      if (asset_id) where.asset_id = asset_id
+      if (asset_name) where.asset_name = { [Op.like]: `%${asset_name}%` }
+      if (asset_code) where.asset_code = { [Op.like]: `%${asset_code}%` }
       if (keyword) {
         where[Op.or] = [
-          { device_name: { [Op.like]: `%${keyword}%` } },
-          { device_code: { [Op.like]: `%${keyword}%` } },
+          { asset_name: { [Op.like]: `%${keyword}%` } },
+          { asset_code: { [Op.like]: `%${keyword}%` } },
         ]
       }
       if (start_date || end_date) {
@@ -175,9 +175,9 @@ export default {
   async createPlan(req: any, res: any) {
     try {
       const {
-        device_id,
-        device_code,
-        device_name,
+        asset_id,
+        asset_code,
+        asset_name,
         calibration_cycle,
         last_calibration_date,
         calibration_org,
@@ -186,7 +186,7 @@ export default {
         remarks,
       } = req.body || {}
 
-      if (!device_id) {
+      if (!asset_id) {
         return fail(res, '设备ID不能为空', ErrorCode.PARAM_INVALID)
       }
       const cycle = Number(calibration_cycle)
@@ -195,24 +195,24 @@ export default {
       }
 
       // 自动补全设备冗余字段
-      let finalDeviceCode = device_code
-      let finalDeviceName = device_name
+      let finalDeviceCode = asset_code
+      let finalDeviceName = asset_name
       if (!finalDeviceCode || !finalDeviceName) {
         const device = await Device.findOne({ where: { device_id } })
         if (!device) {
           return fail(res, '设备不存在', ErrorCode.RECORD_NOT_FOUND)
         }
-        finalDeviceCode = finalDeviceCode || (device as any).device_code
-        finalDeviceName = finalDeviceName || (device as any).device_name
+        finalDeviceCode = finalDeviceCode || (device as any).asset_code
+        finalDeviceName = finalDeviceName || (device as any).asset_name
       }
 
       const lastDate = last_calibration_date ? String(last_calibration_date).slice(0, 10) : null
       const nextDate = calcNextDate(lastDate, cycle)
 
       const record = await DeviceCalibrationPlan.create({
-        device_id,
-        device_code: finalDeviceCode,
-        device_name: finalDeviceName,
+        asset_id,
+        asset_code: finalDeviceCode,
+        asset_name: finalDeviceName,
         calibration_cycle: cycle,
         last_calibration_date: lastDate,
         next_calibration_date: nextDate,
@@ -241,9 +241,9 @@ export default {
       }
 
       const {
-        device_id,
-        device_code,
-        device_name,
+        asset_id,
+        asset_code,
+        asset_name,
         calibration_cycle,
         last_calibration_date,
         calibration_org,
@@ -253,14 +253,14 @@ export default {
       } = req.body || {}
 
       // 设备冗余字段自动补全
-      let finalDeviceCode = device_code
-      let finalDeviceName = device_name
-      const targetDeviceId = device_id || (plan as any).device_id
-      if (device_id && (!finalDeviceCode || !finalDeviceName)) {
+      let finalDeviceCode = asset_code
+      let finalDeviceName = asset_name
+      const targetDeviceId = asset_id || (plan as any).asset_id
+      if (asset_id && (!finalDeviceCode || !finalDeviceName)) {
         const device = await Device.findOne({ where: { device_id: targetDeviceId } })
         if (device) {
-          finalDeviceCode = finalDeviceCode || (device as any).device_code
-          finalDeviceName = finalDeviceName || (device as any).device_name
+          finalDeviceCode = finalDeviceCode || (device as any).asset_code
+          finalDeviceName = finalDeviceName || (device as any).asset_name
         }
       }
 
@@ -274,9 +274,9 @@ export default {
         : oldLastDate
 
       const update: any = {}
-      if (device_id !== undefined) update.device_id = device_id
-      if (finalDeviceCode !== undefined) update.device_code = finalDeviceCode || (plan as any).device_code
-      if (finalDeviceName !== undefined) update.device_name = finalDeviceName || (plan as any).device_name
+      if (asset_id !== undefined) update.asset_id = asset_id
+      if (finalDeviceCode !== undefined) update.asset_code = finalDeviceCode || (plan as any).asset_code
+      if (finalDeviceName !== undefined) update.asset_name = finalDeviceName || (plan as any).asset_name
       if (calibration_cycle !== undefined) update.calibration_cycle = newCycle
       if (last_calibration_date !== undefined) update.last_calibration_date = newLastDate
       if (calibration_org !== undefined) update.calibration_org = calibration_org
@@ -389,9 +389,9 @@ export default {
         resultNum = 1
       }
 
-      const deviceId = plan.getDataValue('device_id')
-      const deviceCode = plan.getDataValue('device_code')
-      const deviceName = plan.getDataValue('device_name')
+      const deviceId = plan.getDataValue('asset_id')
+      const deviceCode = plan.getDataValue('asset_code')
+      const deviceName = plan.getDataValue('asset_name')
       const finalOperatorId = operator_id || userInfo.userId || null
       const finalOperatorName = operator_name || userInfo.username || ''
 
@@ -402,9 +402,9 @@ export default {
       // 创建校准记录
       const record = await DeviceCalibrationRecord.create({
         plan_id: Number(id),
-        device_id: deviceId,
-        device_code: deviceCode,
-        device_name: deviceName,
+        asset_id: deviceId,
+        asset_code: deviceCode,
+        asset_name: deviceName,
         calibration_date: calDate,
         calibration_org: calibration_org || (plan as any).calibration_org || '',
         calibration_result: resultNum,
@@ -476,10 +476,10 @@ export default {
    */
   async listRecords(req: any, res: any) {
     try {
-      const { plan_id, device_id, calibration_result, start_date, end_date } = req.query
+      const { plan_id, asset_id, calibration_result, start_date, end_date } = req.query
       const where: any = {}
       if (plan_id) where.plan_id = plan_id
-      if (device_id) where.device_id = device_id
+      if (asset_id) where.asset_id = asset_id
       if (calibration_result) {
         // 兼容中文/数字
         if (calibration_result === '合格' || calibration_result === 1 || calibration_result === '1') {
