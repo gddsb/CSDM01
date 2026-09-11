@@ -236,7 +236,7 @@ async function smartAdapter(config: InternalAxiosRequestConfig): Promise<AxiosRe
 const STATUS_TEXT_TO_NUM: Record<string, number> = {
   '开立': 0, '下发': 1, '开工': 2, '完工': 3, '关闭': 4,
   '启用': 1, '禁用': 0, '停用': 0,
-  '运行': 1, '维修': 2,
+  '正常': 1, '运行': 1, '维修': 2,
   '运行中': 1, '停机': 0,
 }
 

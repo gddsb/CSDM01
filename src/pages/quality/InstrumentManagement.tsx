@@ -196,20 +196,17 @@ export default function InstrumentManagement() {
 
   const columns = [
     { title: '仪器编号', dataIndex: 'instrument_no', key: 'instrument_no', width: 140, fixed: 'left' as const },
-    { title: '仪器名称', dataIndex: 'instrument_name', key: 'instrument_name', width: 130 },
-    { title: '型号', dataIndex: 'instrument_model', key: 'instrument_model', width: 110 },
+    { title: '仪器名称', dataIndex: 'instrument_name', key: 'instrument_name', width: 140 },
+    { title: '型号', dataIndex: 'instrument_model', key: 'instrument_model', width: 120 },
     { title: '精度', dataIndex: 'precision', key: 'precision', width: 100 },
     { title: '使用部门', dataIndex: 'department', key: 'department', width: 110 },
     { title: '存放地点', dataIndex: 'location', key: 'location', width: 110 },
     { title: '校验类型', dataIndex: 'calibration_type', key: 'calibration_type', width: 100 },
-    { title: '校准周期(天)', dataIndex: 'calibration_cycle', key: 'calibration_cycle', width: 110 },
-    { title: '上次校准日期', dataIndex: 'last_calibration_date', key: 'last_calibration_date', width: 120 },
-    { title: '下次校准日期', dataIndex: 'next_calibration_date', key: 'next_calibration_date', width: 120 },
     {
       title: '状态', dataIndex: 'status', key: 'status', width: 90,
       render: v => <Tag color={statusColorMap[v] || 'default'}>{v}</Tag>,
     },
-    { title: '供应商', dataIndex: 'supplier', key: 'supplier', width: 110 },
+    { title: '供应商', dataIndex: 'supplier', key: 'supplier', width: 120 },
     {
       title: '操作', key: 'action', fixed: 'right' as const, width: 120,
       render: (_, record) => (
@@ -233,8 +230,8 @@ export default function InstrumentManagement() {
   return (
     <>
       <ThreeSectionPage
-        title="检测仪器"
-        breadcrumbs="质量管理 / 检测仪器"
+        title="仪器管理"
+        breadcrumbs="质量管理 / 仪器管理"
         stats={stats}
         filters={filters}
         onSearch={handleSearch}
@@ -255,7 +252,7 @@ export default function InstrumentManagement() {
             rowKey="instrument_id"
             size="small"
             loading={loading}
-            scroll={{ x: 1500 }}
+            scroll={{ x: 1260 }}
             pagination={{
               current: query.page,
               pageSize: query.pageSize,
@@ -268,7 +265,7 @@ export default function InstrumentManagement() {
         }
       />
       <Modal
-        title={editing ? '编辑检测仪器' : '新增检测仪器'}
+        title={editing ? '编辑仪器' : '新增仪器'}
         open={modalVisible}
         onOk={handleSubmit}
         confirmLoading={submitting}

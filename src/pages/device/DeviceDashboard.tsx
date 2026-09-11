@@ -16,7 +16,7 @@ const { Title, Text } = Typography
 
 // ============ 颜色方案 ============
 const deviceStatusColor: Record<string, string> = {
-  '运行': '#52c41a',
+  '正常': '#52c41a',
   '维修': '#faad14',
   '停用': '#d9d9d9',
 }
@@ -213,7 +213,7 @@ export default function DeviceDashboard() {
 
   // ============ 顶部统计计算 ============
   const deviceTotal = devices.length
-  const runningCount = devices.filter(d => d.status === '运行').length
+  const runningCount = devices.filter(d => d.status === '正常').length
   const repairingCount = devices.filter(d => d.status === '维修').length
   const stoppedCount = devices.filter(d => d.status === '停用').length
 
@@ -264,7 +264,7 @@ export default function DeviceDashboard() {
               />
               <div style={{ marginTop: 8, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <span>
-                  <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: deviceStatusColor['运行'], marginRight: 4 }} />
+                  <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: deviceStatusColor['正常'], marginRight: 4 }} />
                   <Text style={{ fontSize: 12 }}>运行 {runningCount}</Text>
                 </span>
                 <span>

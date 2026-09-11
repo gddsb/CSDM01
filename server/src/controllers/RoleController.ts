@@ -134,7 +134,7 @@ const defaultPermissions = [
   { parent_id: 0, parent_code: 'quality', perm_name: '投诉管理', perm_code: 'quality:complaint', type: 'menu', icon: 'BellOutlined', path: '/quality/complaints', sort_order: 5 },
   { parent_id: 0, parent_code: 'quality:complaint', perm_name: '客诉管理', perm_code: 'quality:complaint:customer', type: 'menu', icon: 'BellOutlined', path: '/quality/complaints', sort_order: 1 },
   { parent_id: 0, parent_code: 'quality:complaint', perm_name: '供应商投诉', perm_code: 'quality:complaint:supplier', type: 'menu', icon: 'TeamOutlined', path: '/quality/supplier', sort_order: 2 },
-  { parent_id: 0, parent_code: 'quality', perm_name: '检测仪器管理', perm_code: 'quality:instrument', type: 'menu', icon: 'ToolOutlined', path: '/quality/instruments', sort_order: 6 },
+  { parent_id: 0, parent_code: 'quality', perm_name: '仪器管理', perm_code: 'quality:instrument', type: 'menu', icon: 'ToolOutlined', path: '/quality/instruments', sort_order: 6 },
   // 设备管理
   { parent_id: 0, perm_name: '设备管理', perm_code: 'device', type: 'menu', icon: 'ToolOutlined', path: 'device', sort_order: 3 },
   { parent_id: 0, parent_code: 'device', perm_name: '设备档案', perm_code: 'device:list', type: 'menu', icon: 'ToolOutlined', path: '/device/list', sort_order: 1 },

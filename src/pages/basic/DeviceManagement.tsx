@@ -11,8 +11,8 @@ import api from '../../utils/api'
 import { useMessage, useApp } from '../../contexts/AppContext'
 
 // 设备状态标签颜色映射（与后端 Device 模型一致：运行=1, 停用=0, 维修=2）
-const statusColorMap = { '运行': 'green', '维修': 'orange', '停用': 'red' }
-const statusOptions = ['运行', '维修', '停用'].map(s => ({ label: s, value: s }))
+const statusColorMap = { '正常': 'green', '维修': 'orange', '停用': 'red' }
+const statusOptions = ['正常', '维修', '停用'].map(s => ({ label: s, value: s }))
 const specialOptions = [{ label: '是', value: 1 }, { label: '否', value: 0 }]
 
 export default function DeviceManagement() {
@@ -36,13 +36,13 @@ export default function DeviceManagement() {
   // 已应用的查询条件
   const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', status: [1, 2, 0], device_type: undefined, is_special: undefined })
 
-  const runningCount = data.filter(d => d.status === '运行').length
+  const runningCount = data.filter(d => d.status === '正常').length
   const faultCount = data.filter(d => d.status === '维修').length
   const specialCount = data.filter(d => d.is_special === true || d.is_special === 1).length
 
   const stats: StatItem[] = [
     { label: '设备总数', value: total, icon: <ToolOutlined />, color: '#2196F3' },
-    { label: '运行中', value: runningCount, icon: <PlayCircleOutlined />, color: '#4CAF50' },
+    { label: '正常', value: runningCount, icon: <PlayCircleOutlined />, color: '#4CAF50' },
     { label: '维修', value: faultCount, icon: <WarningOutlined />, color: '#FF9800' },
     { label: '特种设备数', value: specialCount, icon: <SafetyCertificateOutlined />, color: '#F44336' },
   ]
@@ -131,7 +131,7 @@ export default function DeviceManagement() {
       })
     } else {
       form.resetFields()
-      form.setFieldsValue({ status: '运行', is_special: 0 })
+      form.setFieldsValue({ status: '正常', is_special: 0 })
     }
   }
 
@@ -176,23 +176,22 @@ export default function DeviceManagement() {
   }
 
   const columns = [
-    { title: '设备编号', dataIndex: 'device_code', key: 'device_code', width: 120 },
-    { title: '设备名称', dataIndex: 'device_name', key: 'device_name' },
-    { title: '型号', dataIndex: 'device_model', key: 'device_model', width: 100 },
-    { title: '类型', dataIndex: 'device_type', key: 'device_type', width: 90 },
-    { title: '位置', dataIndex: 'location', key: 'location', width: 130 },
+    { title: '设备编号', dataIndex: 'device_code', key: 'device_code', width: 130, fixed: 'left' as const },
+    { title: '设备名称', dataIndex: 'device_name', key: 'device_name', width: 150 },
+    { title: '型号', dataIndex: 'device_model', key: 'device_model', width: 130 },
+    { title: '类型', dataIndex: 'device_type', key: 'device_type', width: 100 },
+    { title: '位置', dataIndex: 'location', key: 'location', width: 140 },
     {
-      title: '状态', dataIndex: 'status', key: 'status', width: 80,
+      title: '状态', dataIndex: 'status', key: 'status', width: 90,
       render: v => <Tag color={statusColorMap[v]}>{v}</Tag>,
     },
     {
-      title: '特种设备', dataIndex: 'is_special', key: 'is_special', width: 90,
+      title: '特种设备', dataIndex: 'is_special', key: 'is_special', width: 100,
       render: v => (v === true || v === 1) ? <Tag color="orange">是</Tag> : <Tag>否</Tag>,
     },
-    { title: '上次检定', dataIndex: 'last_inspection_date', key: 'last_inspection_date', width: 120 },
-    { title: '下次检定', dataIndex: 'next_inspection_date', key: 'next_inspection_date', width: 120 },
+    { title: '负责人', dataIndex: 'responsible_person', key: 'responsible_person', width: 100 },
     {
-      title: '操作', key: 'action',
+      title: '操作', key: 'action', width: 120, fixed: 'right' as const,
       render: (_, record) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleDetail(record)}>查看</Button>
@@ -209,7 +208,7 @@ export default function DeviceManagement() {
     { type: 'select', placeholder: '设备类型', options: typeOptions, col: { flex: '150px' }, value: typeInput, onChange: (v) => setTypeInput(v as number | string | undefined) },
     {
       type: 'checkbox-group', placeholder: '状态筛选', col: { flex: '200px' },
-      options: [{ label: '运行', value: 1 }, { label: '维修', value: 2 }, { label: '停用', value: 0 }],
+      options: [{ label: '正常', value: 1 }, { label: '维修', value: 2 }, { label: '停用', value: 0 }],
       value: statusInput, onChange: (v) => setStatusInput(v as number[]),
     },
     { type: 'select', placeholder: '是否特种设备', options: specialOptions, col: { flex: '150px' }, value: specialInput, onChange: (v) => setSpecialInput(v as number | string | undefined) },
@@ -239,7 +238,7 @@ export default function DeviceManagement() {
             rowKey="device_id"
             size="small"
             loading={loading}
-            scroll={{ x: 1200 }}
+            scroll={{ x: 1080 }}
             pagination={{
               current: query.page,
               pageSize: query.pageSize,

@@ -23,12 +23,12 @@ const Device = sequelize.define('Device', {
     defaultValue: 1,
     get() {
       const val = this.getDataValue('status')
-      const map = { 1: '运行', 0: '停用', 2: '维修' }
+      const map = { 1: '正常', 0: '停用', 2: '维修' }
       return map[val] !== undefined ? map[val] : val
     },
     set(val: any) {
       if (typeof val === 'string') {
-        const map: Record<string, number> = { '运行': 1, '停用': 0, '维修': 2, '在用': 1 }
+        const map: Record<string, number> = { '正常': 1, '停用': 0, '维修': 2, '在用': 1, '运行': 1 }
         this.setDataValue('status', map[val] !== undefined ? map[val] : 1)
       } else {
         this.setDataValue('status', val)
