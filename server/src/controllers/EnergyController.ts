@@ -82,18 +82,18 @@ export async function overview(req: any, res: any) {
     const monthUnit = monthQty > 0 ? monthKwh / monthQty : null
 
     return success(res, {
-      today_kwh: Math.round(todayKwh * 100) / 100,
-      month_kwh: Math.round(monthKwh * 100) / 100,
-      month_peak_kwh: Math.round(peakKwh * 100) / 100,
+      today_kwh: Math.round(todayKwh),
+      month_kwh: Math.round(monthKwh),
+      month_peak_kwh: Math.round(peakKwh),
       month_peak_date: peakDate,
-      yesterday_kwh: Math.round(yesterdayKwh * 100) / 100,
+      yesterday_kwh: Math.round(yesterdayKwh),
       yesterday_qty: yesterdayQty,
-      yesterday_unit_energy: yesterdayUnit != null ? Math.round(yesterdayUnit * 100) / 100 : null,
-      week_kwh: Math.round(weekKwh * 100) / 100,
+      yesterday_unit_energy: yesterdayUnit != null ? Math.round(yesterdayUnit) : null,
+      week_kwh: Math.round(weekKwh),
       week_qty: weekQty,
-      week_unit_energy: weekUnit != null ? Math.round(weekUnit * 100) / 100 : null,
+      week_unit_energy: weekUnit != null ? Math.round(weekUnit) : null,
       month_qty: monthQty,
-      month_unit_energy: monthUnit != null ? Math.round(monthUnit * 100) / 100 : null,
+      month_unit_energy: monthUnit != null ? Math.round(monthUnit) : null,
     })
   } catch (err: any) {
     logger.error('energy/overview error: ' + err.message)
@@ -215,5 +215,89 @@ export async function monthTrend(req: any, res: any) {
   } catch (err: any) {
     logger.error('energy/month-trend error: ' + err.message)
     return fail(res, '获取月度趋势失败', ErrorCode.SYSTEM_ERROR)
+  }
+}
+
+/**
+ * 电表列表：最新读数 + 今日实际用电量 + 在线状态（保留兼容旧客户端）
+ * GET /api/energy/meter-list
+ */
+export async function meterList(req: any, res: any) {
+  try {
+    const today0 = new Date()
+    today0.setHours(0, 0, 0, 0)
+    const today1 = new Date(today0.getTime() + 86400000)
+    const sql = `
+      SELECT
+        t.device_addr, t.device_name, t.forward_active_energy, t.forward_reactive_energy,
+        t.reverse_active_energy, t.reading_date,
+        IFNULL(td.today_kwh, 0) AS today_kwh,
+        CASE
+          WHEN t.forward_active_energy > 0 THEN
+            t.forward_active_energy / SQRT(t.forward_active_energy * t.forward_active_energy
+              + COALESCE(t.forward_reactive_energy, 0) * COALESCE(t.forward_reactive_energy, 0))
+          ELSE NULL
+        END AS power_factor
+      FROM task_energy_meter_data t
+      INNER JOIN (
+        SELECT device_addr, MAX(reading_date) AS max_date
+        FROM task_energy_meter_data WHERE device_addr IS NOT NULL
+        GROUP BY device_addr
+      ) latest ON t.device_addr = latest.device_addr AND t.reading_date = latest.max_date
+      LEFT JOIN (
+        SELECT device_addr, SUM(forward_active_energy) AS today_kwh
+        FROM task_energy_meter_data
+        WHERE reading_date >= ? AND reading_date < ? AND forward_active_energy >= 0
+        GROUP BY device_addr
+      ) td ON t.device_addr = td.device_addr
+      ORDER BY today_kwh DESC
+    `
+    const rowsArr: any = await sequelize.query(sql, {
+      replacements: [today0, today1], type: QueryTypes.SELECT,
+    })
+    const twoHoursAgo = new Date(Date.now() - 2 * 3600 * 1000)
+    const list = rowsArr.map((r: any) => ({
+      device_addr: r.device_addr,
+      device_name: r.device_name || r.device_addr,
+      forward_active: Number(r.forward_active_energy ?? 0),
+      forward_reactive: Number(r.forward_reactive_energy ?? 0),
+      reverse_active: Number(r.reverse_active_energy ?? 0),
+      reading_date: r.reading_date,
+      today_delta: Number(r.today_kwh ?? 0),
+      power_factor: r.power_factor != null ? Math.round(Number(r.power_factor) * 1000) / 1000 : null,
+      online: new Date(r.reading_date) >= twoHoursAgo,
+    }))
+    return success(res, list)
+  } catch (err: any) {
+    logger.error('energy/meter-list error: ' + err.message)
+    return fail(res, '获取电表列表失败', ErrorCode.SYSTEM_ERROR)
+  }
+}
+
+/**
+ * 在线率 + 最新采集时间（保留兼容旧客户端）
+ * GET /api/energy/online
+ */
+export async function online(req: any, res: any) {
+  try {
+    const twoHoursAgo = new Date(Date.now() - 2 * 3600 * 1000)
+    const statArr: any = await sequelize.query(`
+      SELECT
+        COUNT(DISTINCT CASE WHEN device_addr IS NOT NULL THEN device_addr END) AS total,
+        COUNT(DISTINCT CASE WHEN reading_date >= ? THEN device_addr END) AS online_cnt,
+        MAX(reading_date) AS last_reading
+      FROM task_energy_meter_data
+    `, { replacements: [twoHoursAgo], type: QueryTypes.SELECT })
+    const total = Number(statArr[0]?.total ?? 0)
+    const onlineCnt = Number(statArr[0]?.online_cnt ?? 0)
+    return success(res, {
+      total_meters: total,
+      online_count: onlineCnt,
+      online_rate: total > 0 ? Math.round((onlineCnt / total) * 1000) / 10 : 0,
+      last_reading: statArr[0]?.last_reading || null,
+    })
+  } catch (err: any) {
+    logger.error('energy/online error: ' + err.message)
+    return fail(res, '获取在线状态失败', ErrorCode.SYSTEM_ERROR)
   }
 }
