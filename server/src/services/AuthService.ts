@@ -9,7 +9,7 @@ import { verifyPassword, hashPassword } from '../utils/password'
 import { AppError } from '../middleware/security'
 
 
-async function getUserPermissionCodes(roleId: number): Promise<string[]> {
+export async function getUserPermissionCodes(roleId: number): Promise<string[]> {
   const perms = await Permission.findAll({
     include: [
       {

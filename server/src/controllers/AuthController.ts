@@ -1,6 +1,6 @@
 import { User, Role } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
-import { AuthService } from '../services/AuthService.js'
+import { AuthService, getUserPermissionCodes } from '../services/AuthService.js'
 import { hashPassword } from '../utils/password.js'
 import { AppError } from '../middleware/security.js'
 import type { Request, Response } from 'express'
@@ -46,6 +46,9 @@ export const profile = async (req, res) => {
     if (!user) return fail(res, '用户不存在', ErrorCode.RECORD_NOT_FOUND)
     const userData = user.toJSON()
     delete userData.user_pwd
+    // 补上权限码列表（与 login 返回保持一致）
+    const permCodes = await getUserPermissionCodes(userData.role_id)
+    userData.perm_codes = permCodes
     return success(res, userData, '获取用户信息成功')
   } catch (err) {
     console.error('获取用户信息失败:', err)
