@@ -333,14 +333,14 @@ export default function EnergyBigScreen() {
       value: fmtInt(overview?.month_kwh),
       color: '#40a9ff',
       icon: <FundOutlined style={{ marginRight: 6, fontSize: 18 }} />,
-      sub: dayjs().format('YYYY年M月'),
+      sub: 'kWh',
     },
     {
       label: '本月峰值',
       value: fmtInt(overview?.month_peak_kwh),
       color: '#ff4d4f',
       icon: <RiseOutlined style={{ marginRight: 6, fontSize: 18 }} />,
-      sub: overview?.month_peak_date ? dayjs(overview.month_peak_date).format('M月D日') : '--',
+      sub: 'kWh',
     },
     {
       label: '昨日单罐能耗',
