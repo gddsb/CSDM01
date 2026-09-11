@@ -482,6 +482,9 @@ export default function OrderManagement() {
           {hasPermission('production:order:finish') && (
             <Button type="link" size="small" onClick={() => handleFinish(r)}>完工</Button>
           )}
+          {hasPermission('production:order:close') && (
+            <Button type="link" size="small" danger onClick={() => handleClose(r)}>关闭</Button>
+          )}
           <Button type="link" size="small" onClick={() => handleView(r)}>查看</Button>
         </Space>
       )

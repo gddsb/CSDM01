@@ -42,7 +42,6 @@ export class OrderWorkflowService {
     if (!order) throw new WorkflowError('订单不存在', ErrorCode.RECORD_NOT_FOUND, 404)
     const statusVal = order.getDataValue('status') as number
     if (statusVal === 0) throw new WorkflowError('开立状态的订单请直接下发或删除，不能关闭')
-    if (statusVal === 2) throw new WorkflowError('开工状态的订单不能关闭，请先完工')
     if (statusVal === 4) throw new WorkflowError('订单已关闭')
     await order.update({ status: 4, close_time: nowBeijingDate() })
     logger.info('[OrderWorkflowService.close] 订单关闭成功', { order_id: orderId, order_no: order.getDataValue('order_no'), actor: actor?.username })
