@@ -23,18 +23,78 @@ export const statusOptions = [
 interface BuildColumnsArgs {
   onView: (record: any) => void
   onEdit: (record: any) => void
+  onRelease?: (record: any) => void
+  onStart?: (record: any) => void
+  onFinish?: (record: any) => void
+  onClose?: (record: any) => void
   canEdit: boolean
+  canRelease?: boolean
+  canFinish?: boolean
+  canClose?: boolean
 }
 
-export function buildOrderColumns({ onView, onEdit, canEdit }: BuildColumnsArgs): ColumnsType<any> {
-  const renderActions = (r: any) => (
-    <Space size="small">
-      <Tooltip title="查看"><Button type="link" size="small" onClick={() => onView(r)}>查看</Button></Tooltip>
-      {canEdit && ['开立', '下发'].includes(r.status) && (
-        <Tooltip title="编辑"><Button type="link" size="small" onClick={() => onEdit(r)}>编辑</Button></Tooltip>
-      )}
-    </Space>
-  )
+export function buildOrderColumns({
+  onView, onEdit, onRelease, onStart, onFinish, onClose,
+  canEdit, canRelease, canFinish, canClose,
+}: BuildColumnsArgs): ColumnsType<any> {
+  const renderActions = (r: any) => {
+    if (r.status === '开立') {
+      return (
+        <Space size={0}>
+          {canRelease && onRelease && (
+            <Button type="link" size="small" onClick={() => onRelease(r)}>下发</Button>
+          )}
+          {canEdit && (
+            <Button type="link" size="small" onClick={() => onEdit(r)}>编辑</Button>
+          )}
+          <Button type="link" size="small" onClick={() => onView(r)}>查看</Button>
+        </Space>
+      )
+    }
+    if (r.status === '下发') {
+      return (
+        <Space size={0}>
+          {onStart && (
+            <Button type="link" size="small" onClick={() => onStart(r)}>开工</Button>
+          )}
+          {canClose && onClose && (
+            <Button type="link" size="small" danger onClick={() => onClose(r)}>关闭</Button>
+          )}
+          <Button type="link" size="small" onClick={() => onView(r)}>查看</Button>
+        </Space>
+      )
+    }
+    if (r.status === '开工') {
+      return (
+        <Space size={0}>
+          {canFinish && onFinish && (
+            <Button type="link" size="small" onClick={() => onFinish(r)}>完工</Button>
+          )}
+          {canClose && onClose && (
+            <Button type="link" size="small" danger onClick={() => onClose(r)}>关闭</Button>
+          )}
+          <Button type="link" size="small" onClick={() => onView(r)}>查看</Button>
+        </Space>
+      )
+    }
+    if (r.status === '完工') {
+      return (
+        <Space size={0}>
+          {canClose && onClose && (
+            <Button type="link" size="small" danger onClick={() => onClose(r)}>关闭</Button>
+          )}
+          <Button type="link" size="small" onClick={() => onView(r)}>查看</Button>
+        </Space>
+      )
+    }
+    // 关闭或其他状态：仅查看
+    return (
+      <Space size={0}>
+        <Button type="link" size="small" onClick={() => onView(r)}>查看</Button>
+      </Space>
+    )
+  }
+
   return [
     { title: '订单编号', dataIndex: 'order_no', key: 'order_no', width: 160, fixed: 'left' as const },
     { title: '料号', dataIndex: 'material_code', key: 'material_code', width: 130, fixed: 'left' as const },
@@ -56,6 +116,6 @@ export function buildOrderColumns({ onView, onEdit, canEdit }: BuildColumnsArgs)
     },
     { title: 'U9状态', dataIndex: 'u9_status', key: 'u9_status', width: 80 },
     { title: '状态', dataIndex: 'status', key: 'status', width: 80, render: v => <Tag color={statusColorMap[v]}>{v}</Tag> },
-    { title: '操作', key: 'action', render: (_, r) => renderActions(r) },
+    { title: '操作', key: 'action', width: 220, render: (_, r) => renderActions(r) },
   ]
 }

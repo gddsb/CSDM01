@@ -505,7 +505,14 @@ export default function OrderManagement() {
   const columns = buildOrderColumns({
     onView: (r: any) => handleView(r),
     onEdit: (r: any) => { setEditing(r); setEditing(r) },
-    canEdit: hasPermission('production:order:edit'),
+    onRelease: (r: any) => handleRelease(r),
+    onStart: (r: any) => handleStart(r),
+    onFinish: (r: any) => handleFinish(r),
+    onClose: (r: any) => handleClose(r),
+    canEdit: hasPermission('production:order:update'),
+    canRelease: hasPermission('production:order:release'),
+    canFinish: hasPermission('production:order:finish'),
+    canClose: hasPermission('production:order:close'),
   })
 
   return (
