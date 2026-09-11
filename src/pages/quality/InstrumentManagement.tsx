@@ -1,6 +1,6 @@
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { Tag, Button, Drawer, Space, Modal, Form, Input, Select, Descriptions, Row, Col } from 'antd'
+import { Tag, Button, Drawer, Space, Modal, Form, Input, Select, Descriptions, Row, Col, Collapse, Table, Upload, Popconfirm } from 'antd'
 import {
   ToolOutlined, PlayCircleOutlined, SafetyCertificateOutlined,
   PlusOutlined, ReloadOutlined,
@@ -11,7 +11,7 @@ import api from '../../utils/api'
 import { useMessage, useApp } from '../../contexts/AppContext'
 
 // 状态标签颜色映射（与后端 Instrument 模型一致：在用/停用）
-const statusColorMap = { '在用': 'green', '停用': 'red' }
+const statusColorMap = { '在用': 'green', '运行': 'green', '停用': 'red', '维修': 'orange' }
 const statusOptions = ['在用', '停用'].map(s => ({ label: s, value: s }))
 const calibrationTypeOptions = ['外校', '内校', '不需要校准'].map(s => ({ label: s, value: s }))
 
@@ -27,6 +27,30 @@ export default function InstrumentManagement() {
   const [modalVisible, setModalVisible] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
+  const [docList, setDocList] = useState<any[]>([])
+  const [planList, setPlanList] = useState<any[]>([])
+  const [recordList, setRecordList] = useState<any[]>([])
+  const [faultList, setFaultList] = useState<any[]>([])
+  const [docUploadOpen, setDocUploadOpen] = useState(false)
+  const [docSubmitting, setDocSubmitting] = useState(false)
+  const [docForm] = Form.useForm()
+
+  const loadArchives = useCallback(async (instrumentId: number) => {
+    if (!instrumentId) return
+    try {
+      const [docsRes, plansRes, recordsRes, faultsRes] = await Promise.all([
+        api.get('/basic/device-documents', { params: { device_id: instrumentId, page: 1, page_size: 200 } }).catch(() => null),
+        api.get('/basic/device-calibration-plans', { params: { asset_id: instrumentId, page: 1, page_size: 200 } }).catch(() => null),
+        api.get('/basic/device-calibration-records', { params: { asset_id: instrumentId } }).catch(() => null),
+        api.get('/basic/device-faults', { params: { device_id: instrumentId, page: 1, page_size: 200 } }).catch(() => null),
+      ])
+      // 后端统一返回 { success, data: { list, total, ... } }，api.get 解包到 response.data
+      setDocList(Array.isArray(docsRes?.data?.list) ? docsRes.data.list : [])
+      setPlanList(Array.isArray(plansRes?.data?.list) ? plansRes.data.list : [])
+      setRecordList(Array.isArray(recordsRes?.data?.list) ? recordsRes.data.list : [])
+      setFaultList(Array.isArray(faultsRes?.data?.list) ? faultsRes.data.list : [])
+    } catch { /* ignore */ }
+  }, [])
 
   // 筛选输入态（仅关键字输入框使用受控值，避免每次按键触发查询；select 直接以 query 为单一数据源）
   const [keywordInput, setKeywordInput] = useState('')
@@ -108,6 +132,7 @@ export default function InstrumentManagement() {
   const handleDetail = (record) => {
     setCurrent(record)
     setDetailOpen(true)
+    if (record?.instrument_id) loadArchives(record.instrument_id)
   }
 
   const handleAdd = () => {
@@ -341,29 +366,156 @@ export default function InstrumentManagement() {
         )}
       </Modal>
       <Drawer
-        title="检测仪器详情"
+        title="仪器电子档案"
         open={detailOpen}
-        onClose={() => setDetailOpen(false)}
-        width={560}
+        onClose={() => { setDetailOpen(false); setCurrent(null) }}
+        width={720}
       >
         {current && (
-          <Descriptions column={1} bordered size="small">
-            <Descriptions.Item label="仪器编号">{current.instrument_no}</Descriptions.Item>
-            <Descriptions.Item label="仪器名称">{current.instrument_name}</Descriptions.Item>
-            <Descriptions.Item label="型号">{current.instrument_model || '-'}</Descriptions.Item>
-            <Descriptions.Item label="精度">{current.precision || '-'}</Descriptions.Item>
-            <Descriptions.Item label="使用部门">{current.department || '-'}</Descriptions.Item>
-            <Descriptions.Item label="存放地点">{current.location || '-'}</Descriptions.Item>
-            <Descriptions.Item label="状态"><Tag color={statusColorMap[current.status] || 'default'}>{current.status}</Tag></Descriptions.Item>
-            <Descriptions.Item label="校验类型">{current.calibration_type || '-'}</Descriptions.Item>
-            <Descriptions.Item label="校准周期（天）">{current.calibration_cycle ?? '-'}</Descriptions.Item>
-            <Descriptions.Item label="上次校准日期">{current.last_calibration_date || '-'}</Descriptions.Item>
-            <Descriptions.Item label="下次校准日期">{current.next_calibration_date || '-'}</Descriptions.Item>
-            <Descriptions.Item label="供应商">{current.supplier || '-'}</Descriptions.Item>
-            <Descriptions.Item label="备注">{current.remarks || '-'}</Descriptions.Item>
-          </Descriptions>
+          <Collapse
+            defaultActiveKey={['info', 'docs', 'plans', 'records', 'faults']}
+            ghost
+          >
+            <Collapse.Panel header="📋 基本信息" key="info">
+              <Descriptions column={1} bordered size="small">
+                <Descriptions.Item label="仪器编号">{current.instrument_no}</Descriptions.Item>
+                <Descriptions.Item label="仪器名称">{current.instrument_name}</Descriptions.Item>
+                <Descriptions.Item label="型号">{current.instrument_model || '-'}</Descriptions.Item>
+                <Descriptions.Item label="精度">{current.precision || '-'}</Descriptions.Item>
+                <Descriptions.Item label="使用部门">{current.department || '-'}</Descriptions.Item>
+                <Descriptions.Item label="存放地点">{current.location || '-'}</Descriptions.Item>
+                <Descriptions.Item label="状态"><Tag color={statusColorMap[current.status] || 'default'}>{current.status}</Tag></Descriptions.Item>
+                <Descriptions.Item label="校验类型">{current.calibration_type || '-'}</Descriptions.Item>
+                <Descriptions.Item label="校准周期（天）">{current.calibration_cycle ?? '-'}</Descriptions.Item>
+                <Descriptions.Item label="上次校准日期">{current.last_calibration_date || '-'}</Descriptions.Item>
+                <Descriptions.Item label="下次校准日期">{current.next_calibration_date || '-'}</Descriptions.Item>
+                <Descriptions.Item label="供应商">{current.supplier || '-'}</Descriptions.Item>
+                <Descriptions.Item label="备注">{current.remarks || '-'}</Descriptions.Item>
+              </Descriptions>
+            </Collapse.Panel>
+            <Collapse.Panel header={`📎 电子文档 (${docList.length})`} key="docs">
+              <>
+                <div style={{ marginBottom: 8, textAlign: 'right' }}>
+                  <Button size="small" type="primary" onClick={() => { docForm.resetFields(); setDocUploadOpen(true) }}>上传文档</Button>
+                </div>
+                <Table size="small" rowKey="doc_id" dataSource={docList} pagination={false} locale={{ emptyText: '暂无文档' }}
+                  columns={[
+                    { title: '文档类型', dataIndex: 'doc_type', width: 100 },
+                    { title: '文档名称', dataIndex: 'doc_name' },
+                    { title: '版本', dataIndex: 'version', width: 70 },
+                    { title: '上传日期', dataIndex: 'upload_date', width: 110 },
+                    { title: '操作', key: 'a', width: 100,
+                      render: (_, r: any) => (
+                        <Space size={4}>
+                          <Button size="small" type="link" href={r.file_path} target="_blank">查看</Button>
+                          <Popconfirm title="删除文档？" onConfirm={async () => {
+                            try { await api.delete(`/basic/device-documents/${r.doc_id}`); message.success('已删除'); loadArchives(current.instrument_id) } catch (e: any) { message.error(e.message) }
+                          }}><Button size="small" type="link" danger>删除</Button></Popconfirm>
+                        </Space>
+                      ),
+                    },
+                  ]}
+                />
+              </>
+            </Collapse.Panel>
+            <Collapse.Panel header={`📅 校准计划 (${planList.length})`} key="plans">
+              <Table size="small" rowKey="plan_id" dataSource={planList} pagination={false} locale={{ emptyText: '暂无校准计划' }}
+                columns={[
+                  { title: '周期(月)', dataIndex: 'calibration_cycle', width: 90 },
+                  { title: '上次校准', dataIndex: 'last_calibration_date', width: 110 },
+                  { title: '下次校准', dataIndex: 'next_calibration_date', width: 110 },
+                  { title: '校准机构', dataIndex: 'calibration_org' },
+                  { title: '状态', dataIndex: 'status', width: 80,
+                    render: (v: string) => <Tag color={{ '待校准': 'blue', '已校准': 'green', '已超期': 'red', '已锁定': 'default' }[v] || 'default'}>{v}</Tag> },
+                ]}
+              />
+            </Collapse.Panel>
+            <Collapse.Panel header={`🏆 校准记录 (${recordList.length})`} key="records">
+              <Table size="small" rowKey="record_id" dataSource={recordList} pagination={false} locale={{ emptyText: '暂无校准记录' }}
+                columns={[
+                  { title: '校准日期', dataIndex: 'calibration_date', width: 110 },
+                  { title: '校准机构', dataIndex: 'calibration_org' },
+                  { title: '证书号', dataIndex: 'certificate_no' },
+                  { title: '结果', dataIndex: 'calibration_result', width: 70,
+                    render: (v: string) => <Tag color={v === '合格' ? 'green' : 'red'}>{v}</Tag> },
+                  { title: '证书', key: 'c', width: 80,
+                    render: (_, r: any) => r.certificate_path ? <Button size="small" type="link" href={r.certificate_path} target="_blank">查看</Button> : '-' },
+                ]}
+              />
+            </Collapse.Panel>
+            <Collapse.Panel header={`⚠️ 故障记录 (${faultList.length})`} key="faults">
+              <Table size="small" rowKey="fault_id" dataSource={faultList} pagination={false} locale={{ emptyText: '暂无故障记录' }}
+                columns={[
+                  { title: '故障编号', dataIndex: 'fault_no', width: 120 },
+                  { title: '故障描述', dataIndex: 'fault_desc' },
+                  { title: '发生时间', dataIndex: 'fault_time', width: 150 },
+                  { title: '状态', dataIndex: 'status', width: 80,
+                    render: (v: string) => <Tag color={{ '待派工': 'orange', '维修中': 'blue', '待审批': 'purple', '已关闭': 'green' }[v] || 'default'}>{v}</Tag> },
+                ]}
+              />
+            </Collapse.Panel>
+          </Collapse>
         )}
       </Drawer>
+      <Modal
+        title="上传仪器文档"
+        open={docUploadOpen}
+        onCancel={() => setDocUploadOpen(false)}
+        footer={null}
+        width={480}
+      >
+        <Form form={docForm} layout="vertical" preserve={false}>
+          <Form.Item name="doc_type" label="文档类型" rules={[{ required: true, message: '请选择文档类型' }]}>
+            <Select placeholder="请选择" options={[
+              { label: '出厂资料', value: 'factory' },
+              { label: '验收报告', value: 'acceptance' },
+              { label: '校准证书', value: 'calibration' },
+              { label: '外部维修', value: 'external_repair' },
+              { label: '内部维修', value: 'internal_repair' },
+              { label: '改造升级', value: 'modification' },
+              { label: '其他', value: 'other' },
+            ]} />
+          </Form.Item>
+          <Form.Item name="doc_name" label="文档名称" rules={[{ required: true, message: '请输入文档名称' }]}>
+            <Input placeholder="如：XX仪器校准证书" />
+          </Form.Item>
+          <Form.Item name="version" label="版本">
+            <Input placeholder="如：v1.0" />
+          </Form.Item>
+          <Form.Item label="文件" required>
+            <Upload.Dragger multiple={false} maxCount={1} beforeUpload={() => false}
+              onChange={({ fileList }) => docForm.setFieldsValue({ _file: fileList[0] })}>
+              <p className="ant-upload-drag-icon">📄</p>
+              <p className="ant-upload-text">点击或拖拽文件到此处</p>
+            </Upload.Dragger>
+          </Form.Item>
+          <div style={{ textAlign: 'right', marginTop: 12 }}>
+            <Space>
+              <Button onClick={() => setDocUploadOpen(false)}>取消</Button>
+              <Button type="primary" loading={docSubmitting} onClick={async () => {
+                try {
+                  const values = await docForm.validateFields()
+                  if (!values._file) { message.warning('请选择文件'); return }
+                  setDocSubmitting(true)
+                  const fd = new FormData()
+                  // 后端 multer.array('files', 10) 接收 files 字段
+                  fd.append('files', values._file.originFileObj || values._file)
+                  fd.append('device_id', String(current.instrument_id))
+                  fd.append('doc_type', values.doc_type)
+                  fd.append('doc_name', values.doc_name)
+                  if (values.version) fd.append('version', values.version)
+                  const res = await api.post('/basic/device-documents', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+                  if (res?.success === false) throw new Error(res.message)
+                  message.success('上传成功')
+                  setDocUploadOpen(false)
+                  loadArchives(current.instrument_id)
+                } catch (e: any) { message.error(e.message || '上传失败') }
+                finally { setDocSubmitting(false) }
+              }}>确定上传</Button>
+            </Space>
+          </div>
+        </Form>
+      </Modal>
     </>
   )
 }
