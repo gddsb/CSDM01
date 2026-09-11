@@ -102,18 +102,26 @@ export async function overview(req: any, res: any) {
 }
 
 /**
- * 30 天趋势：每日用电量 + 每日完工 + 单罐能耗
- * GET /api/energy/trend?days=30
+ * 每日用电趋势
+ *   mode=month  (默认) 本月 1 号 到 今天
+ *   mode=rolling 近 days 天（days 默认 30）
+ * GET /api/energy/trend?mode=month
  */
 export async function trend(req: any, res: any) {
   try {
-    const days = Math.min(Math.max(Number(req.query.days) || 30, 7), 90)
-    const startDate = new Date()
-    startDate.setHours(0, 0, 0, 0)
-    startDate.setDate(startDate.getDate() - days + 1)
+    const mode = String(req.query.mode || 'month')
     const today0 = new Date()
     today0.setHours(0, 0, 0, 0)
     const tomorrow0 = new Date(today0.getTime() + 86400000)
+    let startDate: Date
+    let days: number
+    if (mode === 'rolling') {
+      days = Math.min(Math.max(Number(req.query.days) || 30, 7), 90)
+      startDate = new Date(today0.getTime() - (days - 1) * 86400000)
+    } else {
+      startDate = new Date(today0.getFullYear(), today0.getMonth(), 1)
+      days = Math.floor((today0.getTime() - startDate.getTime()) / 86400000) + 1
+    }
 
     const energyRowsArr: any = await sequelize.query(`
       SELECT DATE(reading_date) AS reading_day, SUM(forward_active_energy) AS day_kwh
@@ -147,7 +155,7 @@ export async function trend(req: any, res: any) {
     const result: any[] = []
     for (let i = 0; i < days; i++) {
       const d = new Date(startDate.getTime() + i * 86400000)
-      const key = d.toISOString().slice(0, 10)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
       const kwh = energyMap.get(key) || 0
       const qty = finishMap.get(key) || 0
       result.push({

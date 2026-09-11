@@ -215,13 +215,32 @@ function useChart(option: EChartsOption | null, deps: any[] = []) {
   const chartRef = useRef<echarts.ECharts | null>(null)
   useEffect(() => {
     if (!ref.current) return
-    const chart = echarts.init(ref.current)
-    chartRef.current = chart
-    const onResize = () => chart.resize()
+    let chart = chartRef.current
+    if (!chart) {
+      chart = echarts.init(ref.current)
+      chartRef.current = chart
+    }
+    if (option) chart.setOption(option, true)
+    // 强制 resize：ECharts init 时父容器可能尚未撑开，用 next tick 让它拿到正确尺寸
+    const t1 = setTimeout(() => chart!.resize(), 0)
+    const t2 = setTimeout(() => chart!.resize(), 200)
+    const onResize = () => chart!.resize()
     window.addEventListener('resize', onResize)
-    return () => { window.removeEventListener('resize', onResize); chart.dispose(); chartRef.current = null }
+    // ResizeObserver 兜底：父容器尺寸变化时自动 resize
+    let ro: ResizeObserver | null = null
+    if ('ResizeObserver' in window) {
+      ro = new ResizeObserver(() => chart!.resize())
+      ro.observe(ref.current)
+    }
+    return () => {
+      clearTimeout(t1); clearTimeout(t2)
+      window.removeEventListener('resize', onResize)
+      ro?.disconnect()
+    }
+  }, [option, ...deps])
+  useEffect(() => {
+    return () => { if (chartRef.current) { chartRef.current.dispose(); chartRef.current = null } }
   }, [])
-  useEffect(() => { if (chartRef.current && option) chartRef.current.setOption(option, true) }, [option, ...deps])
   return ref
 }
 
@@ -263,7 +282,7 @@ export default function EnergyBigScreen() {
     try {
       const [o, t, mt] = await Promise.all([
         api.get('/energy/overview'),
-        api.get('/energy/trend?days=30'),
+        api.get('/energy/trend?mode=month'),
         api.get('/energy/month-trend?months=12'),
       ])
       if (o?.data) setOverview(o.data as OverviewData)
@@ -347,7 +366,7 @@ export default function EnergyBigScreen() {
   ]
 
   return (
-    <div style={{ width: '100vw', height: '100vh', minWidth: 1280, minHeight: 720, overflow: 'hidden', background: '#0a0e1a' }}>
+    <div style={{ width: '100vw', height: '100vh', minWidth: 1280, minHeight: 720, overflow: 'hidden' }}>
       <div className="bigscreen-container" style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', minWidth: 1280, minHeight: 720, overflow: 'hidden' }}>
         <BigScreenHeader
           title="能源管理中心"
@@ -357,56 +376,41 @@ export default function EnergyBigScreen() {
           refreshing={loading}
         />
 
-        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10, padding: 10, position: 'relative' }}>
-          {loading && !overview && (
-            <div className="bs-loading-overlay">
-              <Spin size="large" tip="加载能源数据..." />
-            </div>
-          )}
-
-          {/* 第一行：6 个 KPI */}
-          <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
-            {kpis.map((k) => (
-              <BigScreenPanel key={k.label} style={{ flex: 1 }}>
-                <div className="bs-kpi-card" style={{
-                  textAlign: 'left',
-                  padding: '10px 14px',
-                  background: 'transparent',
-                  border: 'none',
-                  position: 'relative',
-                }}>
-                  <div className="bs-kpi-label" style={{ color: '#8adfff', fontSize: 13, marginBottom: 6, marginTop: 0 }}>
-                    {k.icon}{k.label}
-                  </div>
-                  <div className="bs-kpi-value bs-number-glow" style={{ color: k.color, fontSize: 42, lineHeight: 1 }}>
-                    {k.value}
-                    <span className="bs-kpi-unit" style={{ fontSize: 14, fontWeight: 400, color: '#5b8ca8', marginLeft: 6, fontFamily: '-apple-system, PingFang SC, Microsoft YaHei, sans-serif' }}>
-                      {k.sub}
-                    </span>
-                  </div>
+        <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexShrink: 0 }}>
+          {kpis.map((k) => (
+            <BigScreenPanel key={k.label} style={{ flex: 1 }}>
+              <div className="bs-kpi-card">
+                <div className="bs-kpi-label" style={{ color: '#8adfff', fontSize: 13, marginTop: 0, marginBottom: 4 }}>
+                  {k.icon}{k.label}
                 </div>
-              </BigScreenPanel>
-            ))}
-          </div>
+                <div className="bs-kpi-value bs-number-glow" style={{ color: k.color }}>
+                  {k.value}
+                  <span style={{ fontSize: 16, marginLeft: 2 }}>{k.sub}</span>
+                </div>
+              </div>
+            </BigScreenPanel>
+          ))}
+        </div>
 
-          {/* 第二行：近 30 天用电趋势 */}
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <BigScreenPanel
-            title="近 30 天用电趋势"
+            title="本月用电趋势"
             titleIcon={<BarChartOutlined />}
             titleExtra="主: 日用电量(kWh) · 次: 单罐能耗(kWh/罐)"
-            style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+            style={{ flex: 1, minWidth: 0, minHeight: 0 }}
+            bodyStyle={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
           >
-            <div ref={trendRef} className="bs-chart-container" />
+            <div ref={trendRef} style={{ flex: 1, minHeight: 160, width: '100%', display: 'block' }} />
           </BigScreenPanel>
 
-          {/* 第三行：近 12 个月用电趋势 */}
           <BigScreenPanel
             title="近 12 个月用电趋势"
             titleIcon={<ClockCircleOutlined />}
             titleExtra="主: 月用电量(kWh) · 次: 单罐能耗(kWh/罐)"
-            style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+            style={{ flex: 1, minWidth: 0, minHeight: 0 }}
+            bodyStyle={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
           >
-            <div ref={monthTrendRef} className="bs-chart-container" />
+            <div ref={monthTrendRef} style={{ flex: 1, minHeight: 160, width: '100%', display: 'block' }} />
           </BigScreenPanel>
         </div>
       </div>
