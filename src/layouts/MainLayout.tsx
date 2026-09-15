@@ -60,7 +60,12 @@ export default function MainLayout() {
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [mobileDownloadOpen, setMobileDownloadOpen] = useState(false)
-  const [mobileVersion, setMobileVersion] = useState<{ version?: string; downloadUrl?: string; updateNotes?: string } | null>(null)
+  const [mobileVersion, setMobileVersion] = useState<{
+    version?: string; buildNumber?: number; forceUpdate?: boolean;
+    downloadUrl?: string; downloadUrlIos?: string;
+    apkSize?: number; ipaSize?: number;
+    updateNotes?: string; publishedAt?: string; gitSha?: string;
+  } | null>(null)
   const [profileForm] = Form.useForm()
   const [pwdForm] = Form.useForm()
 
@@ -716,13 +721,29 @@ export default function MainLayout() {
             >
               <Button block type="primary" size="large" style={{ height: 44, fontSize: 15, borderRadius: 10 }}>
                 🤖 下载 Android APK
+                {mobileVersion?.apkSize ? <span style={{ fontSize: 11, marginLeft: 6, opacity: 0.8 }}>({(mobileVersion.apkSize/1024/1024).toFixed(1)}MB)</span> : null}
               </Button>
             </a>
-            <Button block size="large" style={{ height: 40, borderRadius: 10 }} disabled>
-              🍎 iOS（即将发布）
-            </Button>
+            {mobileVersion?.downloadUrlIos && mobileVersion?.ipaSize && mobileVersion.ipaSize > 0 ? (
+              <a
+                href={mobileVersion.downloadUrlIos}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ textDecoration: 'none' }}
+              >
+                <Button block size="large" style={{ height: 44, fontSize: 15, borderRadius: 10, background: '#000', color: '#fff', border: 'none' }}>
+                  🍎 下载 iOS IPA
+                  <span style={{ fontSize: 11, marginLeft: 6, opacity: 0.8 }}>({(mobileVersion.ipaSize/1024/1024).toFixed(1)}MB)</span>
+                </Button>
+              </a>
+            ) : (
+              <Button block size="large" style={{ height: 40, borderRadius: 10 }} disabled>
+                🍎 iOS（即将发布）
+              </Button>
+            )}
             <div style={{ fontSize: 11, color: '#aaa', textAlign: 'center', marginTop: 4 }}>
-              注：Android 8.0+ 请在"允许安装未知来源应用"后安装
+              Android 8.0+ 请在"允许安装未知来源应用"后安装
+              {mobileVersion?.publishedAt ? ` · 发布于 ${mobileVersion.publishedAt.slice(0,10)}` : null}
             </div>
           </div>
         ) : (

@@ -24,11 +24,15 @@ export interface ReleaseInfo {
   buildNumber: number
   forceUpdate: boolean
   downloadUrl: string
+  downloadUrlIos?: string
   updateNotes?: string
   minNativeVersion?: number
   minAppVersion?: string
   apkSize?: number
+  ipaSize?: number
   checksum?: string
+  publishedAt?: string
+  gitSha?: string
 }
 
 export type UpdatePlatform = 'android' | 'ios' | 'web' | 'unknown'

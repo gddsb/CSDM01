@@ -1,0 +1,14 @@
+{
+  "version": "1.0.2",
+  "buildNumber": 2,
+  "forceUpdate": false,
+  "downloadUrl": "http://43.138.218.55/download/milk-can-mes-1.0.2-e98e43b.apk",
+  "downloadUrlIos": "http://43.138.218.55/download/milk-can-mes-1.0.2-e98e43b.ipa",
+  "apkSize": 6886826,
+  "ipaSize": 0,
+  "appId": "com.daman.milkcanmes",
+  "bundleId": "com.daman.milkcanmes",
+  "updateNotes": "Batch C 全部完成：成品检验/过程检验/报工历史/5-TabBar",
+  "publishedAt": "2026-09-15T10:21:04Z",
+  "gitSha": "e98e43b"
+}
