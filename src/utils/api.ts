@@ -1,98 +1,5 @@
 import axios, { AxiosResponse, AxiosInstance, AxiosRequestConfig, AxiosError, InternalAxiosRequestConfig } from 'axios'
 
-// ========== CapacitorHttp 适配器 ==========
-// 安卓/iOS 原生 App 中，WebView 会拦截明文 HTTP 请求并触发 "Network Error"。
-// CapacitorHttp 在原生层发起请求，绕过 WebView 级别的所有网络限制（CORS / 明文 / 混合内容）。
-// 非原生平台自动回退到 axios 默认 xhr 适配器。
-
-async function capacitorHttpAdapter(config: AxiosRequestConfig): Promise<AxiosResponse> {
-  // 动态 import，避免在浏览器端加载 Capacitor 原生代码
-  const { CapacitorHttp } = await import('@capacitor/core')
-
-  const method = (config.method || 'get').toUpperCase()
-  const url = (config.baseURL || '') + (config.url || '')
-
-  // 组装 headers
-  const headers: Record<string, string> = {}
-  if (config.headers) {
-    for (const [k, v] of Object.entries(config.headers)) {
-      if (v != null && k !== 'common') headers[k] = String(v)
-    }
-  }
-
-  // 组装 body
-  let body: any = null
-  if (config.data != null) {
-    if (typeof config.data === 'string') {
-      body = config.data
-    } else if (
-      config.data instanceof FormData ||
-      config.data instanceof Blob ||
-      config.data instanceof File
-    ) {
-      // FormData / Blob / File 直接透传，不手动设置 Content-Type
-      // 原生层 CapacitorHttp 会识别 FormData 并自己处理 boundary
-      delete headers['Content-Type']
-      delete headers['content-type']
-      body = config.data
-    } else {
-      if (!headers['Content-Type'] && !headers['content-type']) headers['Content-Type'] = 'application/json'
-      body = JSON.stringify(config.data)
-    }
-  }
-
-  // 组装 query string
-  let fullUrl = url
-  if (config.params && Object.keys(config.params).length > 0) {
-    const qs = new URLSearchParams()
-    for (const [k, v] of Object.entries(config.params)) {
-      if (Array.isArray(v)) {
-        for (const item of v) qs.append(k, String(item))
-      } else if (v != null) {
-        qs.append(k, String(v))
-      }
-    }
-    fullUrl += (url.includes('?') ? '&' : '?') + qs.toString()
-  }
-
-  try {
-    const resp = await CapacitorHttp.request({
-      url: fullUrl,
-      method: method as any,
-      headers,
-      data: body as any,
-    })
-
-    // 解析响应
-    let responseData: any = resp.data
-    if (typeof resp.data === 'string') {
-      try { responseData = JSON.parse(resp.data) } catch { responseData = resp.data }
-    }
-
-    const axiosResponse: AxiosResponse = {
-      data: responseData,
-      status: (resp as any).statusCode || resp.status,
-      statusText: resp.status >= 200 && resp.status < 300 ? 'OK' : 'Error',
-      headers: resp.headers as any,
-      config: config as any,
-    }
-
-    if (axiosResponse.status < 200 || axiosResponse.status >= 300) {
-      const err = new Error(`Request failed with status code ${axiosResponse.status}`) as AxiosError
-      err.response = axiosResponse
-      err.config = config as any
-      err.code = 'ERR_BAD_RESPONSE'
-      throw err
-    }
-
-    return axiosResponse
-  } catch (err: any) {
-    if (err.response) throw err
-    const axiosErr = new AxiosError(err?.message || 'Network Error', 'ERR_NETWORK', config as any)
-    throw axiosErr
-  }
-}
-
 // ========== 浏览器默认 XHR 适配器（axios v1.x 兼容） ==========
 // axios v1.x 的 axios.defaults.adapter 是字符串数组 ["xhr","http","fetch"] 而非函数
 // 这里手动实现浏览器端的 XMLHttpRequest 适配器
@@ -213,22 +120,8 @@ async function browserXhrAdapter(config: InternalAxiosRequestConfig): Promise<Ax
   })
 }
 
-// 统一适配器：原生走 CapacitorHttp，浏览器走手写 XHR（兼容 axios v1.x）
+// 统一适配器：浏览器 XHR（axios v1.x 兼容方式）
 async function smartAdapter(config: InternalAxiosRequestConfig): Promise<AxiosResponse> {
-  // 延迟检测（首次请求时 Capacitor 可能已初始化）
-  const win = window as any
-  const isNative = !!(win.Capacitor && (win.Capacitor.getPlatform?.() === 'android' || win.Capacitor.getPlatform?.() === 'ios'))
-
-  if (isNative) {
-    try {
-      return await capacitorHttpAdapter(config as unknown as AxiosRequestConfig)
-    } catch (e) {
-      // CapacitorHttp 失败时回退（极少数情况）
-      console.warn('[API] CapacitorHttp 失败，尝试 xhr 回退', e)
-    }
-  }
-
-  // 回退到浏览器原生 XHR（axios v1.x 兼容方式）
   return browserXhrAdapter(config)
 }
 

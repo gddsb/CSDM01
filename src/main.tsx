@@ -76,7 +76,6 @@ const DisplayBigScreen = lazy(() => import('./pages/bigscreen/DisplayBigScreen')
 const TaskSettingsPage = lazy(() => import('./pages/auto/TaskSettingsPage'))
 const TaskLogPage = lazy(() => import('./pages/auto/TaskLogPage'))
 const ScheduledTaskPage = lazy(() => import('./pages/auto/ScheduledTaskPage'))
-const MobileRoutes = lazy(() => import('./mobile/MobileRoutes'))
 
 dayjs.locale('zh-cn')
 
@@ -104,17 +103,6 @@ function AppRoutes() {
   const location = useLocation()
   if (!initialized) return null
 
-  // Capacitor 原生 App：APK/IPA 启动时默认路径为 /，自动跳转到移动端主页
-  const win = window as any
-  const isNative = !!(win.Capacitor && (win.Capacitor.getPlatform?.() === 'android' || win.Capacitor.getPlatform?.() === 'ios'))
-  if (isNative && !location.pathname.startsWith('/mobile')) {
-    return <Navigate to="/mobile/home" replace />
-  }
-
-  // 移动端独立路由（不进入 PC 端 MainLayout）
-  if (location.pathname.startsWith('/mobile')) {
-    return lazyPage(<MobileRoutes />)
-  }
   return (
     <Routes>
       <Route path="/login" element={currentUser ? <Navigate to="/dashboard" replace /> : <Login />} />

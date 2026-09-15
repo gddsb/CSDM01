@@ -41,7 +41,7 @@ export default defineConfig({
         name: '奶粉罐生产管理系统',
         short_name: '奶粉罐MES',
         description: '奶粉罐生产管理系统 - 生产/质量/设备综合管理',
-        start_url: '/mobile/home',
+        start_url: '/',
         display: 'standalone',
         orientation: 'portrait',
         background_color: '#ffffff',
@@ -101,7 +101,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'antd-vendor': ['antd', '@ant-design/icons', 'antd-mobile', 'antd-mobile-icons'],
+          'antd-vendor': ['antd', '@ant-design/icons'],
           'echarts-vendor': ['echarts'],
         },
       },
