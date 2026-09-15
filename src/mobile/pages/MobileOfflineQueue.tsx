@@ -139,7 +139,7 @@ export default function MobileOfflineQueue() {
   const handleDeleteOne = async (id: number) => {
     const ok = await Dialog.confirm({
       content: '确认删除这条离线请求？删除后数据将丢失。',
-      confirmText: '删除', confirmColor: 'danger', cancelText: '取消',
+      confirmText: '删除', cancelText: '取消',
     })
     if (!ok) return
     await deleteOne(id)
@@ -163,7 +163,7 @@ export default function MobileOfflineQueue() {
     if (items.length === 0) { Toast.show({ content: '队列为空', position: 'bottom' }); return }
     const ok = await Dialog.confirm({
       content: `确认清空全部 ${items.length} 条离线请求？此操作不可恢复。`,
-      confirmText: '清空', confirmColor: 'danger', cancelText: '取消',
+      confirmText: '清空', cancelText: '取消',
     })
     if (!ok) return
     await clearAll()

@@ -14,7 +14,7 @@
  * 作为独立组件：可在 MobileProcessReporting 历史列表和 MobileOrderManagement 下属报工单中复用
  */
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Tabs, Toast, Dialog, Input, List, ImageUploader } from 'antd-mobile'
+import { Button, Tabs, Toast, Dialog, Input, TextArea, List, ImageUploader } from 'antd-mobile'
 import type { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import api from '../../utils/api'
 import { offlinePost, offlinePut } from '../offline/offlineApi'
@@ -90,7 +90,7 @@ export function ReportOrderDetail({ meta, onClose }: Props) {
   const onCloseReport = async () => {
     const ok = await Dialog.confirm({
       content: `确认关闭报工单 ${meta.report_no}？关闭后不可再添加数据。`,
-      confirmText: '确认关闭', cancelText: '取消', confirmColor: '#F44336',
+      confirmText: '确认关闭', cancelText: '取消',
     })
     if (!ok) return
     try {
@@ -245,7 +245,7 @@ function DefectPanel({ reportId, processes, defectTypes, list, onChange, disable
             <Input value={form.unit} onChange={(v) => setForm({ ...form, unit: v })} placeholder="单位" style={{ flex: 1 }} />
           </div>
           <div style={{ marginTop: 6 }}>
-            <Input type="textarea" value={form.defect_desc} onChange={(v) => setForm({ ...form, defect_desc: v })} rows={2} placeholder="缺陷描述（可选）" />
+            <TextArea value={form.defect_desc} onChange={(v) => setForm({ ...form, defect_desc: v })} rows={2} placeholder="缺陷描述（可选）" />
           </div>
           <Button block color="primary" size="mini" style={{ marginTop: 8 }} onClick={add}>添加不良</Button>
         </>
@@ -285,7 +285,7 @@ function ScrapPanel({ reportId, processes, list, onChange, disabled }: {
             <Input type="number" value={String(f.quantity)} onChange={(v) => setF({ ...f, quantity: Number(v) || 0 })} placeholder="数量" style={{ flex: 1 }} />
           </div>
           <div style={{ marginTop: 6 }}>
-            <Input type="textarea" value={f.reason} onChange={(v) => setF({ ...f, reason: v })} rows={2} placeholder="报废原因" />
+            <TextArea value={f.reason} onChange={(v) => setF({ ...f, reason: v })} rows={2} placeholder="报废原因" />
           </div>
           <Button block color="primary" size="mini" style={{ marginTop: 8 }} onClick={add}>添加报废</Button>
         </>

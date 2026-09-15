@@ -15,6 +15,8 @@ export interface User {
   department?: string
   role?: { role_name: string; role_code: string }
   perm_codes?: string[]
+  position?: string
+  employee_no?: string
 }
 
 interface SystemConfig {

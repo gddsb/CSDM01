@@ -13,7 +13,7 @@
  * 点击订单 → 下属报工单列表 → 点击报工单 → 复用 ReportOrderDetail
  */
 import { useEffect, useState } from 'react'
-import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh, Input, Radio } from 'antd-mobile'
+import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh, Input, Radio , TextArea} from 'antd-mobile'
 import api from '../../utils/api'
 import { offlinePost, offlineDelete } from '../offline/offlineApi'
 import { useBarcode } from '../hooks/useBarcode'
@@ -101,7 +101,7 @@ export default function MobileOrderManagement() {
   }
 
   const onClose = async (o: OrderRow) => {
-    const ok = await Dialog.confirm({ content: `关闭订单 ${o.order_no}？关闭后不可再报工。`, confirmText: '关闭', confirmColor: '#F44336', cancelText: '取消' })
+    const ok = await Dialog.confirm({ content: `关闭订单 ${o.order_no}？关闭后不可再报工。`, confirmText: '关闭', cancelText: '取消' })
     if (!ok) return
     try {
       const r: any = await offlinePost(`/production/orders/${o.order_id}/close`, {}, { source: 'production-order' })
@@ -111,7 +111,7 @@ export default function MobileOrderManagement() {
   }
 
   const onDelete = async (o: OrderRow) => {
-    const ok = await Dialog.confirm({ content: `删除订单 ${o.order_no}？`, confirmText: '删除', confirmColor: '#F44336', cancelText: '取消' })
+    const ok = await Dialog.confirm({ content: `删除订单 ${o.order_no}？`, confirmText: '删除', cancelText: '取消' })
     if (!ok) return
     try {
       await offlineDelete(`/production/orders/${o.order_id}`, { source: 'production-order' })
@@ -164,9 +164,8 @@ export default function MobileOrderManagement() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
         <div style={{ flex: 1 }}>
           <SearchBar placeholder="扫/输工单号" value={keyword} onChange={setKeyword}
-            onSearch={() => load(tab, keyword.trim())}
-            onRightIconClick={onScan}
-            right={<span style={{ fontSize: 12, color: '#2196F3' }}>扫码</span>} />
+            onSearch={() => load(tab, keyword.trim())} />
+          <Button size="mini" onClick={onScan} style={{marginTop:8}}>扫码</Button>
         </div>
         <Button color="primary" onClick={() => setShowCreate(true)} style={{ height: 40, marginTop: 2 }}>+ 新建</Button>
       </div>
@@ -245,7 +244,7 @@ export default function MobileOrderManagement() {
         <Dialog visible content={<OrderCreateForm value={newOrder} setValue={setNewOrder} lines={lines} />}
           actions={[
             { key: 'cancel', text: '取消', onClick: () => setShowCreate(false) },
-            { key: 'ok', text: '创建', primary: true, onClick: createOrder },
+            { key: 'ok', text: '创建', bold: true, onClick: createOrder },
           ]}
         />
       )}
@@ -303,17 +302,20 @@ function OrderCreateForm({ value, setValue, lines }: {
         {lines.map((l) => <option key={l.line_id} value={l.line_id}>{l.line_name}</option>)}
       </select>
       <div style={{ margin: '8px 0 6px', color: '#666' }}>产品类型</div>
-      <Radio.Group value={value.product_type} onChange={(v) => setValue({ ...value, product_type: v })} style={{ display: 'flex', gap: 14 }}>
+      <div style={{ display: 'flex', gap: 14 }}>
+<Radio.Group value={value.product_type} onChange={(v) => setValue({ ...value, product_type: v })}>
+
         <Radio value="饮料">饮料</Radio>
         <Radio value="奶粉">奶粉</Radio>
         <Radio value="其他">其他</Radio>
-      </Radio.Group>
+      </Radio.Group>      </div>
+
       <div style={{ margin: '8px 0 6px', color: '#666' }}>开工日期</div>
       <Input type="date" value={value.start_date} onChange={(v) => setValue({ ...value, start_date: v })} />
       <div style={{ margin: '8px 0 6px', color: '#666' }}>完工日期</div>
       <Input type="date" value={value.end_date} onChange={(v) => setValue({ ...value, end_date: v })} />
       <div style={{ margin: '8px 0 6px', color: '#666' }}>备注</div>
-      <Input type="textarea" rows={2} value={value.remark} onChange={(v) => setValue({ ...value, remark: v })} />
+      <TextArea  rows={2} value={value.remark} onChange={(v) => setValue({ ...value, remark: v })} />
     </div>
   )
 }

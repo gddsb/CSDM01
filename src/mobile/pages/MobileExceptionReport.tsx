@@ -230,10 +230,10 @@ export default function MobileExceptionReport() {
             value={keyword}
             onChange={setKeyword}
             onSearch={onSearch}
-            onRightIconClick={handleScan}
-            right={<span style={{ fontSize: 12, color: '#2196F3' }}>扫码</span>}
+
             style={{ marginBottom: 12 }}
           />
+          <Button size="mini" onClick={handleScan} style={{marginTop:8}}>扫码</Button>
           {loading ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>
           ) : orders.length === 0 ? (

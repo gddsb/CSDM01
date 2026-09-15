@@ -12,7 +12,7 @@
  *   POST   /basic/device-spare-parts                  新建备件
  */
 import { useEffect, useState } from 'react'
-import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh, Input, Radio, Space } from 'antd-mobile'
+import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh, Input, Radio, Space , TextArea} from 'antd-mobile'
 import api from '../../utils/api'
 import { offlinePost, offlineDelete } from '../offline/offlineApi'
 import { useBarcode } from '../hooks/useBarcode'
@@ -152,7 +152,7 @@ export default function MobileSparePart() {
   }
 
   const onDelete = async (part: SpareRow) => {
-    const ok = await Dialog.confirm({ content: `删除备件 ${part.part_name}？`, confirmText: '删除', confirmColor: '#F44336', cancelText: '取消' })
+    const ok = await Dialog.confirm({ content: `删除备件 ${part.part_name}？`, confirmText: '删除', cancelText: '取消' })
     if (!ok) return
     try {
       await offlineDelete(`/basic/device-spare-parts/${part.part_id}`, { source: 'spare-part' })
@@ -168,8 +168,8 @@ export default function MobileSparePart() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
         <div style={{ flex: 1 }}>
           <SearchBar placeholder="扫/输备件编号" value={keyword} onChange={setKeyword}
-            onSearch={() => refresh()} onRightIconClick={onScan}
-            right={<span style={{ fontSize: 12, color: '#2196F3' }}>扫码</span>} />
+            onSearch={() => refresh()} />
+          <Button size="mini" onClick={onScan} style={{marginTop:8}}>扫码</Button>
         </div>
         <Button color="primary" onClick={() => setFormType('create')} style={{ height: 40, marginTop: 2 }}>+ 新建</Button>
       </div>
@@ -272,12 +272,12 @@ export default function MobileSparePart() {
               </>
             )}
             <div style={{ fontSize: 11, color: '#888', margin: '8px 0 4px' }}>备注{formType === 'out' ? '（用途必填）' : '（可选）'}</div>
-            <Input type="textarea" rows={2} value={remarks} onChange={setRemarks} placeholder={formType === 'out' ? '请填用途，如：5#空压机保养领用' : ''} />
+            <TextArea  rows={2} value={remarks} onChange={setRemarks} placeholder={formType === 'out' ? '请填用途，如：5#空压机保养领用' : ''} />
           </FormPanel>
         }
           actions={[
             { key: 'cancel', text: '取消', onClick: () => { setFormType(null); setSelected(null) } },
-            { key: 'ok', text: formType === 'in' ? '确认入库' : formType === 'out' ? '确认出库' : '确认调整', primary: true, onClick: submitForm },
+            { key: 'ok', text: formType === 'in' ? '确认入库' : formType === 'out' ? '确认出库' : '确认调整', bold: true, onClick: submitForm },
           ]}
         />
       )}
@@ -320,7 +320,7 @@ export default function MobileSparePart() {
         }
           actions={[
             { key: 'cancel', text: '取消', onClick: () => setFormType(null) },
-            { key: 'ok', text: '创建', primary: true, onClick: submitCreate },
+            { key: 'ok', text: '创建', bold: true, onClick: submitCreate },
           ]}
         />
       )}

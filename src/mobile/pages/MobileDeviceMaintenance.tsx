@@ -33,7 +33,7 @@ interface RecordRow {
   standard_name?: string; standard_id?: number; maintenance_images?: any[]
 }
 
-type Step = 0 | 1 | 2
+type Step = 0 | 1 | 2 | 3
 type StatusTab = 'all' | '待执行' | '进行中' | '已完成' | '已跳过'
 
 const STATUS_TABS: { key: StatusTab; label: string }[] = [
@@ -183,7 +183,6 @@ export default function MobileDeviceMaintenance() {
     const ok = await Dialog.confirm({
       content: `确认删除「${rec.standard_name || rec.record_id}」保养记录？`,
       confirmText: '删除',
-      confirmColor: '#F44336',
       cancelText: '取消',
     })
     if (!ok) return
@@ -312,10 +311,10 @@ export default function MobileDeviceMaintenance() {
             value={keyword}
             onChange={setKeyword}
             onSearch={handleSearch}
-            onRightIconClick={handleScan}
-            right={<span style={{ fontSize: 12, color: '#2196F3' }}>扫码</span>}
+
             style={{ marginBottom: 12 }}
           />
+          <Button size="mini" onClick={handleScan} style={{marginTop:8}}>扫码</Button>
           {loading ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>
           ) : devices.length === 0 ? (
@@ -479,10 +478,13 @@ export default function MobileDeviceMaintenance() {
           </Card>
 
           <Card title="执行结果">
-            <Radio.Group value={result} onChange={(v) => setResult(v as any)} style={{ display: 'flex', gap: 20 }}>
+            <div style={{ display: 'flex', gap: 20 }}>
+<Radio.Group value={result} onChange={(v) => setResult(v as any)}>
+
               <Radio value="正常">正常</Radio>
               <Radio value="异常">异常</Radio>
-            </Radio.Group>
+            </Radio.Group>            </div>
+
             {result === '异常' && (
               <div style={{ marginTop: 10 }}>
                 <TextArea value={abnormalDesc} onChange={setAbnormalDesc} rows={2}

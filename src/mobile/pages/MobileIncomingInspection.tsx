@@ -7,7 +7,7 @@
  *   - 写操作全部走 offlineApi（离线暂存）
  */
 import { useEffect, useState } from 'react'
-import { Steps, Button, List, SearchBar, Toast, Dialog, Radio, Input, PullToRefresh } from 'antd-mobile'
+import { Steps, Button, List, SearchBar, Toast, Dialog, Radio, Input, PullToRefresh , TextArea} from 'antd-mobile'
 import api from '../../utils/api'
 import { useBarcode } from '../hooks/useBarcode'
 import { useInspectionWorkflow, type InspectionItem } from '../hooks/useInspectionWorkflow'
@@ -134,9 +134,9 @@ export default function MobileIncomingInspection() {
       {step === 0 && (
         <>
           <SearchBar placeholder="扫/输检验单号" value={keyword} onChange={setKeyword}
-            onSearch={load} onRightIconClick={onScan}
-            right={<span style={{ fontSize: 12, color: '#2196F3' }}>扫码</span>}
+            onSearch={load}
             style={{ marginBottom: 12 }} />
+          <Button size="mini" onClick={onScan} style={{marginTop:8}}>扫码</Button>
           {loading ? <Empty text="加载中..." /> : list.length === 0 ? (
             <Empty text="暂无可检来料单" sub="请先在 PC 端创建来料检验记录" />
           ) : (
@@ -181,17 +181,19 @@ export default function MobileIncomingInspection() {
           </Section>
 
           <Section title="整体判定">
-            <Radio.Group value={items.every((i) => !i.result) ? undefined : (items.some((i) => i.result === '不合格') ? '不合格' : '合格')}
-              onChange={() => { /* 从 items 自动推导 */ }}
-              style={{ display: 'flex', gap: 20, marginBottom: 8 }}>
+            <div style={{ display: 'flex', gap: 20, marginBottom: 8 }}>
+<Radio.Group value={items.every((i) => !i.result) ? undefined : (items.some((i) => i.result === '不合格') ? '不合格' : '合格')}
+              onChange={() => { /* 从 items 自动推导 */ }}>
+
               <Radio value="合格">合格（{items.filter((i) => i.result === '合格').length} 项）</Radio>
               <Radio value="不合格">不合格（{items.filter((i) => i.result === '不合格').length} 项）</Radio>
-            </Radio.Group>
+            </Radio.Group>            </div>
+
             <div style={{ fontSize: 11, color: '#999' }}>整体结果 = 所有项都合格才算合格</div>
           </Section>
 
           <Section title="备注（可选）">
-            <Input type="textarea" value={remarks} onChange={setRemarks} rows={2}
+            <TextArea  value={remarks} onChange={setRemarks} rows={2}
               placeholder="不合格原因 / 特殊说明" />
           </Section>
 
@@ -241,11 +243,13 @@ export function ItemRow({
           {status}
         </span>
       </div>
-      <Radio.Group value={item.result} onChange={(v) => setItemResult(idx, v as any)}
-        style={{ display: 'flex', gap: 12, fontSize: 12 }}>
+      <div style={{ display: 'flex', gap: 12, fontSize: 12 }}>
+<Radio.Group value={item.result} onChange={(v) => setItemResult(idx, v as any)}>
+
         <Radio value="合格">合格</Radio>
         <Radio value="不合格">不合格</Radio>
-      </Radio.Group>
+      </Radio.Group>      </div>
+
 
       {/* 样品值 */}
       {item.sample_values.length > 0 && (

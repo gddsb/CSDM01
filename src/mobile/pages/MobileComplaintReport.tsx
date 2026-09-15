@@ -54,7 +54,6 @@ export default function MobileComplaintReport() {
     const ok = await Picker.prompt({
       columns: [options],
       title,
-      value: [[current]],
     })
     if (ok && ok[0]) cb(ok[0] as string)
   }
@@ -207,11 +206,13 @@ export default function MobileComplaintReport() {
             >建议处理方向</List.Item>
             <div style={{ padding: '10px 16px', borderTop: '1px solid #f0f0f0' }}>
               <div style={{ fontSize: 12, color: '#888', marginBottom: 6 }}>是否需要回复客户</div>
-              <Radio.Group value={requireReply} onChange={(v) => setRequireReply(v as any)}
-                style={{ display: 'flex', gap: 24 }}>
+              <div style={{ display: 'flex', gap: 24 }}>
+<Radio.Group value={requireReply} onChange={(v) => setRequireReply(v as any)}>
+
                 <Radio value="yes">是</Radio>
                 <Radio value="no">否</Radio>
-              </Radio.Group>
+              </Radio.Group>              </div>
+
             </div>
           </Card>
 

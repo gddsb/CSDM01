@@ -9,6 +9,7 @@
  */
 import axios, { AxiosError } from 'axios'
 import { db, buildQueueKey, QueuedRequest, QueueMethod } from './db'
+export type { QueuedRequest } from './db'
 
 /** 最大重试次数，超过后置为 failed 不再自动重试 */
 const MAX_RETRIES = 8

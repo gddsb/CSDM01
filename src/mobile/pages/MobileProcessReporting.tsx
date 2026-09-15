@@ -44,6 +44,7 @@ interface HistoryRow {
   material_name?: string
   report_qty?: number
   line_name?: string
+  material_code?: string
   status?: string
   created_at?: string
 }
@@ -297,10 +298,10 @@ export default function MobileProcessReporting() {
             value={keyword}
             onChange={setKeyword}
             onSearch={onSearch}
-            onRightIconClick={handleScanOrder}
-            right={<span style={{ fontSize: 12, color: '#2196F3' }}>扫码</span>}
+
             style={{ marginBottom: 12 }}
           />
+          <Button size="mini" onClick={handleScanOrder} style={{marginTop:8}}>扫码</Button>
           {loading ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>
           ) : orders.length === 0 ? (

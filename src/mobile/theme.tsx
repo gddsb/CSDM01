@@ -1,12 +1,10 @@
 /**
  * 移动端主题（P3.5：浅色 / 深色动态切换）
  *
- * antd-mobile ConfigProvider 通过 CSS 变量定制品牌色；
- * 在 .mobile-app 容器上挂 data-theme 属性供 mobile.css 覆盖背景/文字色。
+ * 在 .mobile-app 容器上挂 data-theme 属性 + CSS 变量供 mobile.css 覆盖背景/文字色。
  */
 import { createContext, useContext } from 'react'
-import { ConfigProvider } from 'antd-mobile'
-import type { ReactNode } from 'react'
+import type { ReactNode, CSSProperties } from 'react'
 import { useMobileTheme, MobileThemeKey } from './hooks/useMobileTheme'
 
 /** 浅色主题 token（与 PC 端品牌色 #2196F3 一致） */
@@ -52,12 +50,12 @@ const MobileThemeContext = createContext<MobileThemeContextValue | null>(null)
 
 export function MobileThemeProvider({ children }: { children: ReactNode }) {
   const { theme, isDark, changeTheme, toggleTheme } = useMobileTheme()
-  const tokens = isDark ? darkTheme : lightTheme
+  const tokens = (isDark ? darkTheme : lightTheme) as unknown as CSSProperties
   return (
     <MobileThemeContext.Provider value={{ theme, isDark, changeTheme, toggleTheme }}>
-      <ConfigProvider theme={tokens}>
+      <div style={tokens} data-theme={isDark ? 'dark' : 'light'}>
         {children}
-      </ConfigProvider>
+      </div>
     </MobileThemeContext.Provider>
   )
 }

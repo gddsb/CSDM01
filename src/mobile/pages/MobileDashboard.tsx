@@ -89,7 +89,7 @@ export default function MobileDashboard() {
   const name = currentUser?.real_name || currentUser?.username || '同事'
 
   return (
-    <PullToRefresh onRefresh={onRefresh} className="mobile-page" style={{ paddingTop: 16 }}>
+    <PullToRefresh onRefresh={onRefresh}>
       {/* 欢迎区 */}
       <div style={{ marginBottom: 18 }}>
         <div style={{ fontSize: 13, color: '#888' }}>{greeting}，{name}</div>

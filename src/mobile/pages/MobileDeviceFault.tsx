@@ -221,7 +221,7 @@ export default function MobileDeviceFault() {
   // ===== 5-B 关闭 =====
   const onClose = async () => {
     if (!selected) return
-    const ok = await Dialog.confirm({ content: '确认关闭此故障单？', confirmText: '关闭', cancelText: '取消', confirmColor: '#F44336' })
+    const ok = await Dialog.confirm({ content: '确认关闭此故障单？', confirmText: '关闭', cancelText: '取消' })
     if (!ok) return
     try {
       const r: any = await offlinePut(`/basic/device-faults/${selected.fault_id}/close`, {
@@ -312,9 +312,12 @@ export default function MobileDeviceFault() {
               </select>
             </div>
             <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>故障等级</div>
-            <Radio.Group value={createLevel} onChange={(v) => setCreateLevel(v as string)} style={{ display: 'flex', gap: 16 }}>
+            <div style={{ display: 'flex', gap: 16 }}>
+<Radio.Group value={createLevel} onChange={(v) => setCreateLevel(v as string)}>
+
               {LEVELS.map((l) => <Radio key={l} value={l}>{l}</Radio>)}
-            </Radio.Group>
+            </Radio.Group>            </div>
+
             <div style={{ fontSize: 12, color: '#666', margin: '8px 0 4px' }}>故障描述 *</div>
             <TextArea value={createDesc} onChange={setCreateDesc} rows={3}
               placeholder="详细描述故障现象" style={{ background: '#f7f8fa', borderRadius: 8, padding: 8 }} />
@@ -328,7 +331,7 @@ export default function MobileDeviceFault() {
         }
           actions={[
             { key: 'cancel', text: '取消', onClick: () => setShowCreate(false) },
-            { key: 'ok', text: '上报', primary: true, onClick: onCreateSubmit },
+            { key: 'ok', text: '上报', bold: true, onClick: onCreateSubmit },
           ]}
         />
       )}
@@ -492,10 +495,13 @@ function FaultDetail(p: FaultDetailProps) {
       {f.status === '待审批' && (
         <Section title="✅ 验收审批">
           <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>验收结果</div>
-          <Radio.Group value={p.approveResult} onChange={(v) => p.setApproveResult(v as any)} style={{ display: 'flex', gap: 16 }}>
+          <div style={{ display: 'flex', gap: 16 }}>
+<Radio.Group value={p.approveResult} onChange={(v) => p.setApproveResult(v as any)}>
+
             <Radio value="通过">通过</Radio>
             <Radio value="驳回">驳回</Radio>
-          </Radio.Group>
+          </Radio.Group>          </div>
+
           <div style={{ fontSize: 12, color: '#666', margin: '8px 0 4px' }}>审批意见</div>
           <TextArea value={p.approveOpinion} onChange={p.setApproveOpinion} rows={2}
             placeholder="验收备注" style={{ background: '#f7f8fa', borderRadius: 8, padding: 8 }} />

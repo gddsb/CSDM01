@@ -234,10 +234,10 @@ export default function MobileMicrobeInspection() {
                 value={keyword}
                 onChange={setKeyword}
                 onSearch={() => loadRelated(keyword.trim())}
-                onRightIconClick={handleScan}
-                right={<span style={{ fontSize: 12, color: '#2196F3' }}>扫码</span>}
+
                 style={{ marginBottom: 12 }}
               />
+              <Button size="mini" onClick={handleScan} style={{marginTop:8}}>扫码</Button>
               {loading ? <EmptyHint text="加载中..." /> : list.length === 0 ? (
                 <EmptyHint text="未找到关联单据" sub="请先在 PC 端创建报工单或成品检验单" />
               ) : (
@@ -310,11 +310,13 @@ export default function MobileMicrobeInspection() {
                     style={{ width: 80, fontSize: 13, background: '#f7f8fa', borderRadius: 6, padding: '4px 8px' }}
                   />
                 </div>
-                <Radio.Group value={it.result} onChange={(v) => updateItem(idx, 'result', v as any)}
-                  style={{ display: 'flex', gap: 20 }}>
+                <div style={{ display: 'flex', gap: 20 }}>
+<Radio.Group value={it.result} onChange={(v) => updateItem(idx, 'result', v as any)}>
+
                   <Radio value="合格" style={{ color: '#4CAF50' }}>合格</Radio>
                   <Radio value="不合格" style={{ color: '#F44336' }}>不合格</Radio>
-                </Radio.Group>
+                </Radio.Group>                </div>
+
               </div>
             ))}
           </div>

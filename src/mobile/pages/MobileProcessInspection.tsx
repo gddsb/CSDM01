@@ -158,10 +158,10 @@ export default function MobileProcessInspection() {
             value={keyword}
             onChange={setKeyword}
             onSearch={onSearch}
-            onRightIconClick={onScan}
-            right={<span style={{ fontSize: 12, color: '#2196F3' }}>扫码</span>}
+
             style={{ marginBottom: 12 }}
           />
+          <Button size="mini" onClick={onScan} style={{marginTop:8}}>扫码</Button>
           {loading ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>
           ) : list.length === 0 ? (
@@ -211,11 +211,13 @@ export default function MobileProcessInspection() {
 
           <div style={{ background: '#fff', borderRadius: 10, padding: 14, border: '1px solid #eef0f3', marginBottom: 14 }}>
             <div style={{ fontSize: 13, color: '#666', marginBottom: 10 }}>判定</div>
-            <Radio.Group value={result} onChange={(v) => setResult(v as any)}
-              style={{ display: 'flex', gap: 20 }}>
+            <div style={{ display: 'flex', gap: 20 }}>
+<Radio.Group value={result} onChange={(v) => setResult(v as any)}>
+
               <Radio value="合格">合格</Radio>
               <Radio value="不合格">不合格</Radio>
-            </Radio.Group>
+            </Radio.Group>            </div>
+
             <textarea
               value={remarks} onChange={(e) => setRemarks(e.target.value)}
               placeholder="说明（可选）" rows={2}

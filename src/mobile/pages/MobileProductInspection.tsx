@@ -5,7 +5,7 @@
  * 流程与 PC ProductInspection.tsx 完全对齐：start → items → 样品值 → submit
  */
 import { useEffect, useState } from 'react'
-import { Steps, Button, List, SearchBar, Toast, Dialog, Input, PullToRefresh } from 'antd-mobile'
+import { Steps, Button, List, SearchBar, Toast, Dialog, Input, PullToRefresh , TextArea} from 'antd-mobile'
 import api from '../../utils/api'
 import { useBarcode } from '../hooks/useBarcode'
 import { useInspectionWorkflow } from '../hooks/useInspectionWorkflow'
@@ -127,9 +127,9 @@ export default function MobileProductInspection() {
       {step === 0 && (
         <>
           <SearchBar placeholder="扫/输检验单号" value={keyword} onChange={setKeyword}
-            onSearch={load} onRightIconClick={onScan}
-            right={<span style={{ fontSize: 12, color: '#2196F3' }}>扫码</span>}
+            onSearch={load}
             style={{ marginBottom: 12 }} />
+          <Button size="mini" onClick={onScan} style={{marginTop:8}}>扫码</Button>
           {loading ? <Empty text="加载中..." /> : list.length === 0 ? (
             <Empty text="暂无可检成品单" sub="请先在 PC 端创建成品检验单" />
           ) : (
@@ -177,7 +177,7 @@ export default function MobileProductInspection() {
           </Section>
 
           <Section title="备注（可选）">
-            <Input type="textarea" value={remarks} onChange={setRemarks} rows={2}
+            <TextArea  value={remarks} onChange={setRemarks} rows={2}
               placeholder="不合格说明 / 特殊说明" />
           </Section>
 

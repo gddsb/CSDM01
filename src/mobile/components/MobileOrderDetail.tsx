@@ -134,10 +134,6 @@ export function MobileOrderDetail({ order, orderId, visible, onClose }: Props) {
         overflow: 'hidden',
         background: 'var(--m-surface, #fff)',
       }}
-      contentStyle={{
-        background: 'var(--m-surface, #fff)',
-        color: 'var(--m-text, #222)',
-      }}
     >
       {/* 拖拽手柄 */}
       <div style={{

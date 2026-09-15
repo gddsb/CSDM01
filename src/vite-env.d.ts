@@ -3,6 +3,8 @@
 import type { CSSProperties } from 'react'
 
 declare global {
+  const __APP_VERSION__: string
+  
   interface Window {
     ImageViewer?: {
       show: (opts: { images: string[]; defaultIndex?: number }) => void

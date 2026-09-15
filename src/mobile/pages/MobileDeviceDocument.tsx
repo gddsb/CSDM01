@@ -52,14 +52,16 @@ export default function MobileDeviceDocument() {
   const fileInputRef = useState(() => document.createElement('input'))[0]
 
   // ===== 拉设备 =====
-  const loadDevices = async (kw?: string) => {
+  const loadDevices = async (kw?: string): Promise<DeviceRow[]> => {
     setLoading(true)
     try {
       const params: Record<string, unknown> = { page: 1, page_size: 200 }
       if (kw) params.device_code = kw
       const r: any = await api.get('/basic/devices', { params })
-      setDevices(r.success ? (r.data?.list || r.data || []) : [])
-    } catch { setDevices([]) } finally { setLoading(false) }
+      const list: DeviceRow[] = r.success ? (r.data?.list || r.data || []) : []
+      setDevices(list)
+      return list
+    } catch { setDevices([]); return [] } finally { setLoading(false) }
   }
   useEffect(() => { loadDevices() }, [])
 
@@ -124,8 +126,7 @@ export default function MobileDeviceDocument() {
   // ===== 删除 =====
   const onDelete = async (d: DocRow) => {
     const ok = await Dialog.confirm({
-      content: `删除文档 "${d.doc_name}"？`, confirmText: '删除',
-      confirmColor: '#F44336', cancelText: '取消',
+      content: `删除文档 "${d.doc_name}"？`, confirmText: '删除', cancelText: '取消',
     })
     if (!ok) return
     try {
@@ -190,9 +191,9 @@ export default function MobileDeviceDocument() {
           扫码或选设备 → 查看该设备的全部电子档案
         </div>
         <SearchBar placeholder="扫/输设备编号" value={keyword} onChange={setKeyword}
-          onSearch={onSearchDevice} onRightIconClick={onScan}
-          right={<span style={{ fontSize: 12, color: '#2196F3' }}>扫码</span>}
+          onSearch={onSearchDevice}
           style={{ marginBottom: 12 }} />
+        <Button size="mini" onClick={onScan} style={{marginTop:8}}>扫码</Button>
         {loading ? (
           <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>
         ) : devices.length === 0 ? (
@@ -308,7 +309,7 @@ export default function MobileDeviceDocument() {
         }
           actions={[
             { key: 'cancel', text: '取消', onClick: () => setShowUpload(false) },
-            { key: 'ok', text: uploading ? '上传中...' : '确认上传', primary: true, onClick: submitUpload },
+            { key: 'ok', text: uploading ? '上传中...' : '确认上传', bold: true, onClick: submitUpload },
           ]}
         />
       )}

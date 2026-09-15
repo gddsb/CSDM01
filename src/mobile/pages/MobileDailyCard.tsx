@@ -314,10 +314,10 @@ function RateRow({ label, rate, color }: { label: string; rate: { ok: number; to
     <div style={{ padding: '10px 0', borderBottom: '1px dashed #f0f0f0' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
         <span style={{ color: '#666' }}>{label}</span>
-        <span style={{ fontWeight: 600, color }}>{fmtPct(rate.r)} <span style={{ color: '#aaa', fontWeight: 400 }}>({rate.ok}/{rate.total})</span></span>
+        <span style={{ fontWeight: 600, color }}>{fmtPct(rate.rate)} <span style={{ color: '#aaa', fontWeight: 400 }}>({rate.ok}/{rate.total})</span></span>
       </div>
       <div style={{ height: 4, background: '#f0f0f0', borderRadius: 2, overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${rate.r}%`, background: color, transition: 'width .3s' }} />
+        <div style={{ height: '100%', width: `${rate.rate}%`, background: color, transition: 'width .3s' }} />
       </div>
     </div>
   )

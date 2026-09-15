@@ -134,10 +134,10 @@ export default function MobileDeviceInspection() {
             value={keyword}
             onChange={setKeyword}
             onSearch={loadDevices}
-            onRightIconClick={handleScan}
-            right={<span style={{ fontSize: 12, color: '#2196F3' }}>扫码</span>}
+
             style={{ marginBottom: 12 }}
           />
+          <Button size="mini" onClick={handleScan} style={{marginTop:8}}>扫码</Button>
           {loading ? <EmptyHint text="加载中..." /> : devices.length === 0 ? (
             <EmptyHint text="暂无设备" sub="请先在 PC 端创建设备档案" />
           ) : (
