@@ -139,15 +139,22 @@ function AppRoutes() {
 
   // TV 端：访问根路径直接跳到 TV 大屏
   const isTv = type === 'tv'
-  const isMobileDevice = type === 'phone' || type === 'pda' || type === 'tablet'
 
-  // 设备入口自动跳转
-  // 1) 移动端设备访问 PC 根路由 → 跳到移动端入口（TV 端跳过）
-  if (isMobileDevice && !isMobilePath(location.pathname)) {
+  // 是否在 Capacitor 原生壳内（只有壳内才自动跳转移动端路由）
+  const inCapacitorShell = typeof window !== 'undefined' && (
+    (window as any).Capacitor || /capacitor/i.test(navigator.userAgent)
+  )
+  const forceMobileOverride = typeof window !== 'undefined' && (
+    window.location.search.toLowerCase().includes('mobile=1') ||
+    window.location.hash.toLowerCase().includes('mobile=1')
+  )
+  const shouldUseMobile = inCapacitorShell || forceMobileOverride
+
+  // 设备入口自动跳转（只看壳环境，不看 useDevice 类型 —— 避免 localStorage 缓存误判）
+  if (shouldUseMobile && !isMobilePath(location.pathname)) {
     return <Navigate to="/m/dashboard" replace />
   }
-  // 2) PC 设备访问移动端路由 → 跳回 PC 端
-  if (!isMobileDevice && isMobilePath(location.pathname)) {
+  if (!shouldUseMobile && isMobilePath(location.pathname)) {
     return <Navigate to="/dashboard" replace />
   }
 
@@ -252,7 +259,7 @@ function AppRoutes() {
       <Route path="/m/*" element={<MobileRoutes />} />
 
       {/* 兜底：TV 走 TV 大屏，其他端走 Dashboard */}
-      <Route path="*" element={<Navigate to={isTv ? '/tv/display' : '/dashboard'} replace />} />
+      <Route path="*" element={<Navigate to={isTv ? '/tv/display' : shouldUseMobile ? '/m/dashboard' : '/dashboard'} replace />} />
     </Routes>
   )
 }
