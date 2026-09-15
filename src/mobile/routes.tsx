@@ -19,6 +19,8 @@ const MobileIncomingInspection = lazy(() => import('./pages/MobileIncomingInspec
 const MobileProductInspection = lazy(() => import('./pages/MobileProductInspection'))
 const MobileProcessInspection = lazy(() => import('./pages/MobileProcessInspection'))
 const MobileDeviceInspection = lazy(() => import('./pages/MobileDeviceInspection'))
+const MobileDeviceMaintenance = lazy(() => import('./pages/MobileDeviceMaintenance'))
+const MobileExceptionReport = lazy(() => import('./pages/MobileExceptionReport'))
 import { MobileProfile } from './pages/MobileProfile'
 
 function MobileLoading() {
@@ -83,6 +85,16 @@ export default function MobileRoutes() {
           <Route path="device-inspection" element={
             <Suspense fallback={<MobileLoading />}>
               <MobileDeviceInspection />
+            </Suspense>
+          } />
+          <Route path="device-maintenance" element={
+            <Suspense fallback={<MobileLoading />}>
+              <MobileDeviceMaintenance />
+            </Suspense>
+          } />
+          <Route path="exception-report" element={
+            <Suspense fallback={<MobileLoading />}>
+              <MobileExceptionReport />
             </Suspense>
           } />
           <Route path="profile" element={<MobileProfile />} />

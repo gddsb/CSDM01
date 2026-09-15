@@ -73,6 +73,7 @@ import {
 } from '../controllers/InstrumentController.js'
 import ProductInspectionController from '../controllers/ProductInspectionController.js'
 import IncomingInspectionController from '../controllers/IncomingInspectionController.js'
+import ProcessInspectionController from '../controllers/ProcessInspectionController.js'
 import InspectionStandardController from '../controllers/InspectionStandardController.js'
 import MicrobeInspectionController from '../controllers/MicrobeInspectionController.js'
 import EnvInspectionController from '../controllers/EnvInspectionController.js'
@@ -304,6 +305,15 @@ router.put('/incoming-inspections/:id/submit', logOperation('来料检验报审'
 router.put('/incoming-inspections/:id/start', logOperation('来料检验开检'), asyncHandler(IncomingInspectionController.start))
 router.put('/incoming-inspections/:id/review', logOperation('来料检验审核'), asyncHandler(IncomingInspectionController.review))
 router.delete('/incoming-inspections/:id', logOperation('来料检验'), asyncHandler(IncomingInspectionController.delete))
+
+// 过程检验（移动端优先，简化版：在制品列表 + 一步提交）
+router.get('/process-inspections/wip', asyncHandler(ProcessInspectionController.listWip))
+router.get('/process-inspections', asyncHandler(ProcessInspectionController.list))
+router.get('/process-inspections/:id', asyncHandler(ProcessInspectionController.detail))
+router.post('/process-inspections', logOperation('过程检验'), asyncHandler(ProcessInspectionController.create))
+router.post('/process-inspections/submit', logOperation('过程检验提交'), asyncHandler(ProcessInspectionController.submit))
+router.put('/process-inspections/:id', logOperation('过程检验'), asyncHandler(ProcessInspectionController.update))
+router.delete('/process-inspections/:id', logOperation('过程检验'), asyncHandler(ProcessInspectionController.delete))
 
 // 检验标准
 router.get('/standards', asyncHandler(InspectionStandardController.list))

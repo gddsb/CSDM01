@@ -33,6 +33,7 @@ import DataDictionary from './DataDictionary.js'
 import UserSetting from './UserSetting.js'
 import ProductInspection from './ProductInspection.js'
 import IncomingInspection from './IncomingInspection.js'
+import ProcessInspection from './ProcessInspection.js'
 import InspectionStandard from './InspectionStandard.js'
 import InspectionStandardItem from './InspectionStandardItem.js'
 import MicrobeInspection from './MicrobeInspection.js'
@@ -158,6 +159,9 @@ ProductInspection.belongsTo(InspectionStandard, { foreignKey: 'standard_id', as:
 // 来料检验主表 - 检验标准
 IncomingInspection.belongsTo(InspectionStandard, { foreignKey: 'standard_id', as: 'standard' })
 // 阶段5：IncomingInspectionItem（旧子表）关联已移除，统一使用 QcInspectionItem（as: 'qc_items'）
+
+// 过程检验主表 - 报工单（多对一，可选关联）
+ProcessInspection.belongsTo(ReportOrder, { foreignKey: 'report_order_id', as: 'report_order', constraints: false })
 
 // 检验标准 - 检验标准项目（一对多）
 InspectionStandard.hasMany(InspectionStandardItem, { foreignKey: 'standard_id', as: 'items' })
@@ -331,6 +335,7 @@ const db = {
   UserSetting,
   ProductInspection,
   IncomingInspection,
+  ProcessInspection,
   InspectionStandard,
   InspectionStandardItem,
   MicrobeInspection,
@@ -403,6 +408,7 @@ export {
   UserSetting,
   ProductInspection,
   IncomingInspection,
+  ProcessInspection,
   InspectionStandard,
   InspectionStandardItem,
   MicrobeInspection,

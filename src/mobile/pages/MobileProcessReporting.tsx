@@ -11,9 +11,9 @@
  *   POST /api/production/report-orders                       创建报工单
  *   POST /api/production/report-orders/:id/finish            完工
  */
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Steps, Button, List, SearchBar, Stepper, Toast, Dialog, Tabs } from 'antd-mobile'
+import { Steps, Button, List, SearchBar, Stepper, Toast, Dialog, Tabs, PullToRefresh, InfiniteScroll } from 'antd-mobile'
 import api from '../../utils/api'
 import { useBarcode } from '../hooks/useBarcode'
 
@@ -55,6 +55,8 @@ export default function MobileProcessReporting() {
   const [orders, setOrders] = useState<OrderRow[]>([])
   const [lines, setLines] = useState<LineRow[]>([])
   const [history, setHistory] = useState<HistoryRow[]>([])
+  const [historyPage, setHistoryPage] = useState(1)
+  const [historyHasMore, setHistoryHasMore] = useState(true)
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<OrderRow | null>(null)
@@ -82,15 +84,47 @@ export default function MobileProcessReporting() {
     loadOrders()
   }, [])
 
-  // 加载报工历史（今日）
-  const loadHistory = async () => {
+  // 加载报工历史 —— 增量加载单页（P3.3 InfiniteScroll 配套）
+  const loadHistoryPage = useCallback(async (page: number, append: boolean) => {
     try {
       const today = new Date().toISOString().slice(0, 10)
       const r: any = await api.get('/production/report-orders', {
-        params: { page: 1, page_size: 20, start_date: today, end_date: today },
+        params: { page, page_size: 20, start_date: today, end_date: today },
       })
-      if (r.success) setHistory(r.data?.list || r.data?.rows || [])
-    } catch {}
+      if (!r.success) {
+        if (!append) { setHistory([]); setHistoryHasMore(false) }
+        return
+      }
+      const list: HistoryRow[] = r.data?.list || r.data?.rows || []
+      setHistory(prev => append ? [...prev, ...list] : list)
+      const total = r.data?.total || r.total || 0
+      setHistoryHasMore(page * 20 < total && list.length > 0)
+      setHistoryPage(page)
+    } catch {
+      if (!append) setHistoryHasMore(false)
+    }
+  }, [])
+
+  // 加载报工历史（重置到第 1 页，给"切换到 history tab"用）
+  const loadHistory = useCallback(async () => {
+    await loadHistoryPage(1, false)
+  }, [loadHistoryPage])
+
+  // InfiniteScroll 触发加载下一页
+  const loadMoreHistory = async () => {
+    if (!historyHasMore) return
+    await loadHistoryPage(historyPage + 1, true)
+  }
+
+  // 下拉刷新报工列表
+  const onRefreshOrders = async () => {
+    await loadOrders(keyword.trim() || undefined)
+    Toast.show({ content: '已刷新', icon: 'success', position: 'bottom', duration: 600 })
+  }
+
+  // 下拉刷新历史列表
+  const onRefreshHistory = async () => {
+    await loadHistory()
   }
 
   // Step 1 → Step 2: 选订单
@@ -185,32 +219,35 @@ export default function MobileProcessReporting() {
       </Tabs>
 
       {tab === 'history' ? (
-        history.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>
-            今日暂无报工记录
-          </div>
-        ) : (
-          <List>
-            {history.map(h => (
-              <List.Item key={h.report_order_id}
-                description={
-                  <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
-                    {h.material_name || ''} · {h.line_name || '—'}
-                    <span style={{ marginLeft: 12, color: '#4CAF50' }}>{h.status}</span>
+        <PullToRefresh onRefresh={onRefreshHistory}>
+          {history.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 60, color: 'var(--m-text-3, #999)' }}>
+              今日暂无报工记录
+            </div>
+          ) : (
+            <List>
+              {history.map(h => (
+                <List.Item key={h.report_order_id}
+                  description={
+                    <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+                      {h.material_name || ''} · {h.line_name || '—'}
+                      <span style={{ marginLeft: 12, color: '#4CAF50' }}>{h.status}</span>
+                    </div>
+                  }>
+                  <div style={{ fontWeight: 500, fontSize: 13 }}>
+                    {h.report_no || h.order_no} · ×{h.report_qty}
                   </div>
-                }>
-                <div style={{ fontWeight: 500, fontSize: 13 }}>
-                  {h.report_no || h.order_no} · ×{h.report_qty}
-                </div>
-                {h.created_at && (
-                  <div style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>
-                    {new Date(h.created_at).toLocaleTimeString('zh-CN', { hour12: false })}
-                  </div>
-                )}
-              </List.Item>
-            ))}
-          </List>
-        )
+                  {h.created_at && (
+                    <div style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>
+                      {new Date(h.created_at).toLocaleTimeString('zh-CN', { hour12: false })}
+                    </div>
+                  )}
+                </List.Item>
+              ))}
+              <InfiniteScroll loadMore={loadMoreHistory} hasMore={historyHasMore} />
+            </List>
+          )}
+        </PullToRefresh>
       ) : (
         <>
           <Steps
@@ -242,23 +279,25 @@ export default function MobileProcessReporting() {
               <span style={{ fontSize: 12 }}>请先在 PC 端下发生产订单</span>
             </div>
           ) : (
-            <List>
-              {orders.map((o) => (
-                <List.Item
-                  key={o.order_id}
-                  onClick={() => goToFill(o)}
-                  arrow
-                  description={
-                    <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
-                      {o.material_code} {o.material_name || ''}
-                      <span style={{ marginLeft: 12 }}>计划: {o.planned_qty ?? '—'}</span>
-                    </div>
-                  }
-                >
-                  <div style={{ fontWeight: 500 }}>{o.order_no}</div>
-                </List.Item>
-              ))}
-            </List>
+            <PullToRefresh onRefresh={onRefreshOrders}>
+              <List>
+                {orders.map((o) => (
+                  <List.Item
+                    key={o.order_id}
+                    onClick={() => goToFill(o)}
+                    arrow
+                    description={
+                      <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+                        {o.material_code} {o.material_name || ''}
+                        <span style={{ marginLeft: 12 }}>计划: {o.planned_qty ?? '—'}</span>
+                      </div>
+                    }
+                  >
+                    <div style={{ fontWeight: 500 }}>{o.order_no}</div>
+                  </List.Item>
+                ))}
+              </List>
+            </PullToRefresh>
           )}
         </>
       )}

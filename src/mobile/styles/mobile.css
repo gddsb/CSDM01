@@ -83,3 +83,135 @@ html.mobile-root input:-webkit-autofill {
   -webkit-box-shadow: 0 0 0 1000px white inset;
   -webkit-text-fill-color: #333;
 }
+
+/* ============================================================
+ * P3.5 深色模式覆盖
+ * 触发条件：<html data-theme="dark"> 由 useMobileTheme 注入
+ * 仅作用于 .mobile-app 容器，避免污染 PC 端
+ * ============================================================ */
+
+/* 移动端语义色变量 —— 浅色（默认） */
+.mobile-app {
+  --m-bg: #f5f6f8;
+  --m-surface: #ffffff;
+  --m-surface-2: #f7f8fa;
+  --m-text: #222222;
+  --m-text-2: #666666;
+  --m-text-3: #999999;
+  --m-border: #eef0f3;
+  --m-border-2: #f0f1f4;
+  --m-shadow: rgba(0, 0, 0, 0.04);
+  --m-info-bg: #E3F2FD;
+  --m-success-bg: #E8F5E9;
+  --m-warn-bg: #FFF3E0;
+  --m-amber-bg: #FFF8E1;
+  --m-danger-bg: #FFEBEE;
+  background: var(--m-bg);
+}
+
+/* 移动端语义色变量 —— 深色 */
+html[data-theme="dark"] .mobile-app,
+html[data-theme="dark"].mobile-root .mobile-app {
+  --m-bg: #0f1115;
+  --m-surface: #1a1d23;
+  --m-surface-2: #232730;
+  --m-text: #e8eaed;
+  --m-text-2: #a8acb3;
+  --m-text-3: #6b7078;
+  --m-border: #2a2e36;
+  --m-border-2: #2a2e36;
+  --m-shadow: rgba(0, 0, 0, 0.4);
+  --m-info-bg: #1E3A5F;
+  --m-success-bg: #1B3A2A;
+  --m-warn-bg: #3D2E14;
+  --m-amber-bg: #2A2614;
+  --m-danger-bg: #3D1418;
+  background: var(--m-bg);
+  color: var(--m-text);
+}
+
+/* 深色模式：根容器 */
+html[data-theme="dark"].mobile-root,
+html[data-theme="dark"].mobile-root body {
+  background: #0f1115;
+  color: #e8eaed;
+}
+
+/* 深色模式：滚动条 */
+html[data-theme="dark"] ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+html[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #3a3f48;
+  border-radius: 3px;
+}
+
+/* 深色模式：自动填充 */
+html[data-theme="dark"].mobile-root input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #1a1d23 inset;
+  -webkit-text-fill-color: #e8eaed;
+  caret-color: #e8eaed;
+}
+
+/* 深色模式：antd-mobile 组件局部覆盖（部分组件未读 CSS 变量时兜底） */
+html[data-theme="dark"] .mobile-app .adm-list,
+html[data-theme="dark"] .mobile-app .adm-card,
+html[data-theme="dark"] .mobile-app .adm-card-header,
+html[data-theme="dark"] .mobile-app .adm-card-body,
+html[data-theme="dark"] .mobile-app .adm-list-item,
+html[data-theme="dark"] .mobile-app .adm-list-item-content,
+html[data-theme="dark"] .mobile-app .adm-list-item-content-main {
+  background: var(--m-surface);
+  color: var(--m-text);
+}
+
+html[data-theme="dark"] .mobile-app .adm-list-item-content::after {
+  border-bottom-color: var(--m-border);
+}
+
+html[data-theme="dark"] .mobile-app .adm-input,
+html[data-theme="dark"] .mobile-app .adm-text-area {
+  background: var(--m-surface-2);
+  color: var(--m-text);
+}
+
+html[data-theme="dark"] .mobile-app .adm-nav-bar {
+  background: var(--m-surface);
+  border-bottom-color: var(--m-border);
+  color: var(--m-text);
+}
+
+html[data-theme="dark"] .mobile-app .adm-tab-bar {
+  background: var(--m-surface);
+  border-top-color: var(--m-border);
+  color: var(--m-text-2);
+}
+
+html[data-theme="dark"] .mobile-app .adm-search-bar,
+html[data-theme="dark"] .mobile-app .adm-search-bar-input {
+  background: var(--m-surface-2);
+  color: var(--m-text);
+}
+
+html[data-theme="dark"] .mobile-app .adm-dialog,
+html[data-theme="dark"] .mobile-app .adm-dialog-content,
+html[data-theme="dark"] .mobile-app .adm-action-sheet,
+html[data-theme="dark"] .mobile-app .adm-action-sheet-button-item {
+  background: var(--m-surface);
+  color: var(--m-text);
+}
+
+/* 深色模式：原生 input/datetime */
+html[data-theme="dark"] .mobile-app input[type="datetime-local"],
+html[data-theme="dark"] .mobile-app input[type="text"],
+html[data-theme="dark"] .mobile-app textarea {
+  background: var(--m-surface-2);
+  color: var(--m-text);
+  border-color: var(--m-border);
+}
+html[data-theme="dark"] .mobile-app input::placeholder,
+html[data-theme="dark"] .mobile-app textarea::placeholder {
+  color: var(--m-text-3);
+}
+
