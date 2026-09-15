@@ -137,8 +137,14 @@ export function MobileProfile() {
             {online ? (syncing ? '同步中…' : '在线') : '离线'}
           </span>
         </div>
-        <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 14 }}>
-          待同步请求：<span style={{ color: 'var(--brand-color, #1976D2)', fontWeight: 600 }}>{pending}</span> 条
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <div style={{ fontSize: 13, color: 'var(--m-text-2)' }}>
+            待同步请求：<span style={{ color: 'var(--brand-color, #1976D2)', fontWeight: 600 }}>{pending}</span> 条
+          </div>
+          <span
+            onClick={() => navigate('/m/offline-queue')}
+            style={{ fontSize: 12, color: '#2196F3', cursor: 'pointer', fontWeight: 500 }}
+          >查看详情 →</span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <Button

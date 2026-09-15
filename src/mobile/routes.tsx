@@ -27,6 +27,7 @@ const MobileInspectionHistory = lazy(() => import('./pages/MobileInspectionHisto
 const MobileDailyCard = lazy(() => import('./pages/MobileDailyCard'))
 const MobileMicrobeInspection = lazy(() => import('./pages/MobileMicrobeInspection'))
 const MobileComplaintReport = lazy(() => import('./pages/MobileComplaintReport'))
+const MobileOfflineQueue = lazy(() => import('./pages/MobileOfflineQueue'))
 import { MobileProfile } from './pages/MobileProfile'
 
 function MobileLoading() {
@@ -131,6 +132,11 @@ export default function MobileRoutes() {
           <Route path="complaint-report" element={
             <Suspense fallback={<MobileLoading />}>
               <MobileComplaintReport />
+            </Suspense>
+          } />
+          <Route path="offline-queue" element={
+            <Suspense fallback={<MobileLoading />}>
+              <MobileOfflineQueue />
             </Suspense>
           } />
           <Route path="profile" element={<MobileProfile />} />

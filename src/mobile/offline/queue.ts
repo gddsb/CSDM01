@@ -194,3 +194,37 @@ export async function clearAll(): Promise<void> {
 export async function listAll(): Promise<QueuedRequest[]> {
   return await db.queue.orderBy('enqueuedAt').reverse().toArray()
 }
+
+/** 删除单条队列项 */
+export async function deleteOne(id: number): Promise<void> {
+  await db.queue.delete(id)
+}
+
+/** 把指定项重置为 pending 并立即尝试同步（单条手动重试） */
+export async function retryOne(id: number): Promise<{ ok: boolean; error?: string }> {
+  const item = await db.queue.get(id)
+  if (!item) return { ok: false, error: '条目不存在' }
+
+  // 如果已 done 或 syncing，忽略
+  if (item.status === 'done') return { ok: true }
+  if (item.status === 'syncing') return { ok: false, error: '正在同步中' }
+
+  await db.queue.update(id, {
+    status: 'pending',
+    retries: 0,
+    nextRetryAt: undefined,
+    lastError: undefined,
+  })
+
+  // 立即尝试 drain（只会处理 pending 且 nextRetryAt<=now 的）
+  if (navigator.onLine) {
+    const res = await drain()
+    if (res.failed > 0) {
+      // 找到这条的新 error
+      const fresh = await db.queue.get(id)
+      if (fresh?.lastError) return { ok: false, error: fresh.lastError }
+    }
+    return { ok: res.ok > 0 || res.retried > 0 }
+  }
+  return { ok: false, error: '当前离线，已重置为待同步' }
+}

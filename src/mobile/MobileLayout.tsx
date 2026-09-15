@@ -63,6 +63,7 @@ const TITLE_MAP: Record<string, string> = {
   '/m/daily-card': '日报卡',
   '/m/microbe-inspection': '微生物检验',
   '/m/complaint-report': '投诉上报',
+  '/m/offline-queue': '离线暂存队列',
   '/m/exception-report': '异常上报',
   '/m/profile': '我的',
 }
