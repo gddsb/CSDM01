@@ -2,13 +2,13 @@
   "version": "1.0.2",
   "buildNumber": 3,
   "forceUpdate": false,
-  "downloadUrl": "http://43.138.218.55/download/milk-can-mes-1.0.2-19b4749.apk",
-  "downloadUrlIos": "http://43.138.218.55/download/milk-can-mes-1.0.2-19b4749.ipa",
+  "downloadUrl": "http://43.138.218.55/download/milk-can-mes-1.0.2-58dca6a.apk",
+  "downloadUrlIos": "http://43.138.218.55/download/milk-can-mes-1.0.2-58dca6a.ipa",
   "apkSize": 7442992,
   "ipaSize": 0,
   "appId": "com.daman.milkcanmes",
   "bundleId": "com.daman.milkcanmes",
-  "updateNotes": "用户 logo 图标 + PC 下载双列二维码+直接下载 + 修复 release 脚本上传顺序",
-  "publishedAt": "2026-09-15T10:34:19Z",
-  "gitSha": "19b4749"
+  "updateNotes": "移动端 Batch A-D 全量交付：Android/iOS 图标+二维码下载+5-TabBar+强更弹窗+发布脚本",
+  "publishedAt": "2026-09-15T10:42:00Z",
+  "gitSha": "58dca6a"
 }
