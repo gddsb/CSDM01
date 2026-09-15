@@ -131,6 +131,21 @@ export class AuthService {
   }
 
   /**
+   * 获取当前登录用户信息（含角色、权限码）
+   */
+  static async getCurrentUser(userId: number): Promise<Record<string, unknown>> {
+    const user = await User.findOne({
+      where: { user_id: userId },
+      include: [{ model: Role, as: 'role' }],
+    })
+    if (!user) throw new AppError('用户不存在', 10002, 404)
+    const userData: Record<string, any> = (user as any).toJSON()
+    delete userData.user_pwd
+    userData.perm_codes = await getUserPermissionCodes(userData.role_id)
+    return userData
+  }
+
+  /**
    * 更新个人资料（仅允许更新安全字段，忽略角色/状态等敏感字段）
    */
   static async updateProfile(
