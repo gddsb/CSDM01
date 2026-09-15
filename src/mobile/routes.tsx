@@ -28,6 +28,7 @@ const MobileDailyCard = lazy(() => import('./pages/MobileDailyCard'))
 const MobileMicrobeInspection = lazy(() => import('./pages/MobileMicrobeInspection'))
 const MobileComplaintReport = lazy(() => import('./pages/MobileComplaintReport'))
 const MobileOfflineQueue = lazy(() => import('./pages/MobileOfflineQueue'))
+const MobileOeeDashboard = lazy(() => import('./pages/MobileOeeDashboard'))
 import { MobileProfile } from './pages/MobileProfile'
 
 function MobileLoading() {
@@ -137,6 +138,11 @@ export default function MobileRoutes() {
           <Route path="offline-queue" element={
             <Suspense fallback={<MobileLoading />}>
               <MobileOfflineQueue />
+            </Suspense>
+          } />
+          <Route path="device-oee" element={
+            <Suspense fallback={<MobileLoading />}>
+              <MobileOeeDashboard />
             </Suspense>
           } />
           <Route path="profile" element={<MobileProfile />} />

@@ -46,6 +46,7 @@ const DEVICE_ITEMS = [
   { text: '🛠️ 设备保养', key: 'maintenance', route: '/m/device-maintenance', permCode: 'device:maintenance' },
   { text: '⚠️ 设备故障', key: 'fault', route: '/m/device-fault', permCode: 'device:fault' },
   { text: '⏰ 校准提醒', key: 'calibration', route: '/m/calibration-reminder', permCode: 'device:calibration' },
+  { text: '📊 设备OEE', key: 'oee', route: '/m/device-oee', permCode: 'device:oee' },
 ]
 
 /** 标题映射（Tab 页 + 子页都覆盖） */
@@ -64,6 +65,7 @@ const TITLE_MAP: Record<string, string> = {
   '/m/microbe-inspection': '微生物检验',
   '/m/complaint-report': '投诉上报',
   '/m/offline-queue': '离线暂存队列',
+  '/m/device-oee': '设备OEE看板',
   '/m/exception-report': '异常上报',
   '/m/profile': '我的',
 }
@@ -75,7 +77,7 @@ function isInspectionPath(p: string) {
 
 /** 当前路径是否属于"设备"家族（用于高亮 Tab） */
 function isDevicePath(p: string) {
-  return p === '/m/device-inspection' || p === '/m/device-maintenance' || p === '/m/device-fault' || p === '/m/calibration-reminder'
+  return p === '/m/device-inspection' || p === '/m/device-maintenance' || p === '/m/device-fault' || p === '/m/calibration-reminder' || p === '/m/device-oee'
 }
 
 export function MobileLayout() {

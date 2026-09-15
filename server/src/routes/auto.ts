@@ -6,6 +6,7 @@ import {
   dashboardOverview, dashboardTrend,
   productionDashboard, qualityDashboard, managementDashboard,
 } from '../modules/auto/DashboardController.js'
+import { oeeHandler } from '../modules/auto/OeeController.js'
 
 const router = Router()
 
@@ -15,6 +16,7 @@ router.get('/dashboard/trend', dashboardTrend)
 router.get('/dashboard/production', productionDashboard)
 router.get('/dashboard/quality', qualityDashboard)
 router.get('/dashboard/management', managementDashboard)
+router.get('/dashboard/oee', oeeHandler)
 
 router.use(authRequired)
 
