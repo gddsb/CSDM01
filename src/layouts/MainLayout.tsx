@@ -9,6 +9,7 @@ import {
 } from '@ant-design/icons'
 import * as AntIcons from '@ant-design/icons'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
+import { QRCodeSVG } from 'qrcode.react'
 import { useApp, useMessage, User } from '../contexts/AppContext'
 import { themeList, themes } from '../themes'
 import { useTodoStats } from '../hooks/useTodoStats'
@@ -681,76 +682,166 @@ export default function MainLayout() {
 
       {/* 移动端下载弹窗 */}
       <Modal
-        title="📱 移动端下载"
+        title="📱 大满 MES 移动端下载"
         open={mobileDownloadOpen}
         onCancel={() => setMobileDownloadOpen(false)}
         footer={null}
-        width={440}
+        width={640}
         destroyOnHidden
       >
-        <div style={{ textAlign: 'center', padding: '16px 0 8px' }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            width: 72, height: 72, borderRadius: 18,
-            background: 'linear-gradient(135deg, #2196F3, #1976D2)',
-            marginBottom: 12, fontSize: 32,
-          }}>📱</div>
-          <div style={{ fontSize: 18, fontWeight: 600 }}>大满 MES 移动端</div>
-          <div style={{ fontSize: 13, color: '#888', marginTop: 4 }}>
-            {mobileVersion ? `版本 v${mobileVersion.version}` : '正在获取版本信息...'}
+        {/* 头部：版本信息 */}
+        <div style={{ textAlign: 'center', padding: '8px 0 16px', borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>
+          <div style={{ fontSize: 18, fontWeight: 600 }}>
+            {mobileVersion ? `版本 v${mobileVersion.version}  ·  build ${mobileVersion.buildNumber}` : '正在获取版本信息...'}
           </div>
+          {mobileVersion?.gitSha && (
+            <div style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>
+              commit {mobileVersion.gitSha}
+              {mobileVersion?.publishedAt ? ` · ${mobileVersion.publishedAt.slice(0, 10)}` : null}
+            </div>
+          )}
+          {mobileVersion?.forceUpdate && (
+            <div style={{ marginTop: 6, fontSize: 12, color: '#ff4d4f', fontWeight: 500 }}>
+              ⚠️ 强制更新（旧版本已停用）
+            </div>
+          )}
         </div>
 
         {mobileVersion?.updateNotes && (
           <div style={{
-            background: '#f5f7fa', borderRadius: 8, padding: '10px 12px',
-            fontSize: 12, color: '#555', marginBottom: 16,
+            background: '#fafafa', borderRadius: 8, padding: '10px 14px',
+            fontSize: 12, color: '#555', marginBottom: 16, borderLeft: '3px solid #2196F3',
           }}>
-            <div style={{ fontWeight: 600, marginBottom: 4 }}>更新说明</div>
+            <div style={{ fontWeight: 600, marginBottom: 4, fontSize: 12, color: '#333' }}>📝 更新说明</div>
             {mobileVersion.updateNotes}
           </div>
         )}
 
         {mobileVersion?.downloadUrl ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <a
-              href={mobileVersion.downloadUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ textDecoration: 'none' }}
-            >
-              <Button block type="primary" size="large" style={{ height: 44, fontSize: 15, borderRadius: 10 }}>
-                🤖 下载 Android APK
-                {mobileVersion?.apkSize ? <span style={{ fontSize: 11, marginLeft: 6, opacity: 0.8 }}>({(mobileVersion.apkSize/1024/1024).toFixed(1)}MB)</span> : null}
-              </Button>
-            </a>
-            {mobileVersion?.downloadUrlIos && mobileVersion?.ipaSize && mobileVersion.ipaSize > 0 ? (
+          /* 双列布局：左 Android / 右 iOS */
+          <div style={{ display: 'flex', gap: 16 }}>
+
+            {/* ============== Android 卡片 ============== */}
+            <div style={{
+              flex: 1, background: '#f8fafb', borderRadius: 12, padding: 18,
+              border: '1px solid #e8ecf0', display: 'flex', flexDirection: 'column', alignItems: 'center',
+            }}>
+              <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                🤖 Android
+              </div>
+              {mobileVersion?.apkSize ? (
+                <div style={{ fontSize: 12, color: '#888', marginBottom: 14 }}>
+                  {(mobileVersion.apkSize / 1024 / 1024).toFixed(1)}MB · Android 8.0+
+                </div>
+              ) : (
+                <div style={{ fontSize: 12, color: '#aaa', marginBottom: 14 }}>—</div>
+              )}
+
+              {/* 二维码 */}
+              <div style={{
+                background: '#fff', padding: 12, borderRadius: 10,
+                border: '1px solid #eee', marginBottom: 14,
+              }}>
+                <QRCodeSVG
+                  value={mobileVersion.downloadUrl}
+                  size={140}
+                  level="M"
+                  includeMargin={false}
+                  bgColor="#ffffff"
+                  fgColor="#1a1a1a"
+                />
+              </div>
+              <div style={{ fontSize: 11, color: '#aaa', marginBottom: 12, textAlign: 'center' }}>
+                📷 手机扫码下载
+              </div>
+
+              {/* 直接下载按钮 */}
               <a
-                href={mobileVersion.downloadUrlIos}
+                href={mobileVersion.downloadUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ textDecoration: 'none' }}
+                style={{ width: '100%', textDecoration: 'none' }}
               >
-                <Button block size="large" style={{ height: 44, fontSize: 15, borderRadius: 10, background: '#000', color: '#fff', border: 'none' }}>
-                  🍎 下载 iOS IPA
-                  <span style={{ fontSize: 11, marginLeft: 6, opacity: 0.8 }}>({(mobileVersion.ipaSize/1024/1024).toFixed(1)}MB)</span>
+                <Button type="primary" block size="large" style={{ height: 42, borderRadius: 10, fontWeight: 500 }}>
+                  直接下载 APK
                 </Button>
               </a>
-            ) : (
-              <Button block size="large" style={{ height: 40, borderRadius: 10 }} disabled>
-                🍎 iOS（即将发布）
-              </Button>
-            )}
-            <div style={{ fontSize: 11, color: '#aaa', textAlign: 'center', marginTop: 4 }}>
-              Android 8.0+ 请在"允许安装未知来源应用"后安装
-              {mobileVersion?.publishedAt ? ` · 发布于 ${mobileVersion.publishedAt.slice(0,10)}` : null}
+            </div>
+
+            {/* ============== iOS 卡片 ============== */}
+            <div style={{
+              flex: 1, background: '#f8fafb', borderRadius: 12, padding: 18,
+              border: '1px solid #e8ecf0', display: 'flex', flexDirection: 'column', alignItems: 'center',
+              opacity: (mobileVersion?.downloadUrlIos && mobileVersion?.ipaSize && mobileVersion.ipaSize > 0) ? 1 : 0.5,
+            }}>
+              <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                🍎 iOS
+              </div>
+              {mobileVersion?.downloadUrlIos && mobileVersion?.ipaSize && mobileVersion.ipaSize > 0 ? (
+                <div style={{ fontSize: 12, color: '#888', marginBottom: 14 }}>
+                  {(mobileVersion.ipaSize / 1024 / 1024).toFixed(1)}MB · iOS 13.0+
+                </div>
+              ) : (
+                <div style={{ fontSize: 12, color: '#bbb', marginBottom: 14 }}>即将发布 / 暂无 IPA</div>
+              )}
+
+              {/* 二维码 */}
+              <div style={{
+                background: '#fff', padding: 12, borderRadius: 10,
+                border: '1px solid #eee', marginBottom: 14,
+                filter: (mobileVersion?.downloadUrlIos && mobileVersion?.ipaSize && mobileVersion.ipaSize > 0) ? 'none' : 'grayscale(100%)',
+              }}>
+                {mobileVersion?.downloadUrlIos && mobileVersion?.ipaSize && mobileVersion.ipaSize > 0 ? (
+                  <QRCodeSVG
+                    value={mobileVersion.downloadUrlIos}
+                    size={140}
+                    level="M"
+                    includeMargin={false}
+                    bgColor="#ffffff"
+                    fgColor="#1a1a1a"
+                  />
+                ) : (
+                  <div style={{ width: 140, height: 140, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5', borderRadius: 6, color: '#bbb', fontSize: 12 }}>
+                    暂无二维码
+                  </div>
+                )}
+              </div>
+              <div style={{ fontSize: 11, color: '#aaa', marginBottom: 12, textAlign: 'center' }}>
+                📷 手机扫码下载
+              </div>
+
+              {mobileVersion?.downloadUrlIos && mobileVersion?.ipaSize && mobileVersion.ipaSize > 0 ? (
+                <a
+                  href={mobileVersion.downloadUrlIos}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ width: '100%', textDecoration: 'none' }}
+                >
+                  <Button block size="large" style={{
+                    height: 42, borderRadius: 10, fontWeight: 500,
+                    background: '#111', border: 'none', color: '#fff',
+                  }}>
+                    直接下载 IPA
+                  </Button>
+                </a>
+              ) : (
+                <Button block size="large" disabled style={{ height: 42, borderRadius: 10 }}>
+                  iOS（待上架）
+                </Button>
+              )}
             </div>
           </div>
         ) : (
-          <div style={{ textAlign: 'center', padding: 20, color: '#999' }}>
-            暂未获取到下载地址
+          <div style={{ textAlign: 'center', padding: 30, color: '#999' }}>
+            暂未获取到下载地址，请稍后再试
           </div>
         )}
+
+        {/* 底部提示 */}
+        <div style={{ marginTop: 18, fontSize: 11, color: '#bbb', textAlign: 'center', lineHeight: 1.6 }}>
+          💡 提示：扫码下载需手机能访问本服务器 · Android 8.0+ 需开启"允许安装未知来源应用"
+          <br />iOS IPA 需通过 TestFlight 或 MDM 分发 · 企业版可用 Safari 直接安装
+        </div>
       </Modal>
     </Layout>
   )
