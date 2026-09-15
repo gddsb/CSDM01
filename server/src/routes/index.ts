@@ -6,6 +6,7 @@ import basicRoutes from './basic.js'
 import productionRoutes from './production.js'
 import autoRoutes from './auto.js'
 import energyRoutes from './energy.js'
+import versionRoutes from './version.js'
 // 检验数据统一存储改造（阶段3.1）：样品测量值 CRUD + 自动判定
 import sampleValueRoutes from './sample-value.js'
 import { uploadImage } from '../controllers/UploadController.js'
@@ -26,6 +27,9 @@ const commonUploadMiddleware = multer({
 })
 
 router.post('/upload/image', authRequired, commonUploadMiddleware.single('file'), asyncHandler(uploadImage))
+
+// 版本信息 — 公开，无需登录（移动端 /tv 端启动时需要立即查询）
+router.use('/version', versionRoutes)
 
 // router.use 挂载子路由（Router 实例），不需要 asyncHandler
 router.use('/auth', authRoutes)

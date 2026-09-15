@@ -4,3 +4,9 @@ project(':capacitor-android').projectDir = new File('../node_modules/.pnpm/@capa
 
 include ':capacitor-community-barcode-scanner'
 project(':capacitor-community-barcode-scanner').projectDir = new File('../node_modules/.pnpm/@capacitor-community+barcode-scanner@4.0.1_@capacitor+core@8.5.0/node_modules/@capacitor-community/barcode-scanner/android')
+
+include ':capacitor-device'
+project(':capacitor-device').projectDir = new File('../node_modules/.pnpm/@capacitor+device@8.0.3_@capacitor+core@8.5.0/node_modules/@capacitor/device/android')
+
+include ':capacitor-filesystem'
+project(':capacitor-filesystem').projectDir = new File('../node_modules/.pnpm/@capacitor+filesystem@6.0.4_@capacitor+core@8.5.0/node_modules/@capacitor/filesystem/android')
