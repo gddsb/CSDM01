@@ -18,9 +18,11 @@ import { RightOutline } from 'antd-mobile-icons'
 import api from '../../utils/api'
 import { offlinePost } from '../offline/offlineApi'
 import { useBarcode } from '../hooks/useBarcode'
+import { MobileOrderDetail, MobileOrderData } from '../components/MobileOrderDetail'
 
 interface ReportOrderRow {
   report_order_id: number
+  order_id?: number
   report_no?: string
   order_no?: string
   material_name?: string
@@ -92,14 +94,19 @@ export default function MobileExceptionReport() {
   const [devices, setDevices] = useState<DeviceRow[]>([])
   const [devicePickerVisible, setDevicePickerVisible] = useState(false)
 
-  const loadOrders = async (kw?: string) => {
+  // P-A: 工单详情抽屉
+  const [detailOrder, setDetailOrder] = useState<MobileOrderData | null>(null)
+
+  const loadOrders = async (kw?: string): Promise<ReportOrderRow[]> => {
     setLoading(true)
     try {
       const params: Record<string, unknown> = { page: 1, page_size: 30, status: '开工' }
       if (kw) params.keyword = kw
       const r: any = await api.get('/production/report-orders', { params })
-      if (r.success) setOrders(r.data?.list || r.data?.rows || [])
-    } catch { /* 静默降级 */ } finally { setLoading(false) }
+      const list: ReportOrderRow[] = r.success ? (r.data?.list || r.data?.rows || []) : []
+      setOrders(list)
+      return list
+    } catch { return [] } finally { setLoading(false) }
   }
 
   useEffect(() => { loadOrders() }, [])
@@ -117,9 +124,13 @@ export default function MobileExceptionReport() {
     const r = await scan()
     if (!r) return
     setKeyword(r.code)
-    await loadOrders(r.code)
-    if (orders.length === 1) {
-      setSelected(orders[0]); setStep(1)
+    const list = await loadOrders(r.code)
+    if (list.length === 1) {
+      setSelected(list[0]); setStep(1)
+    } else if (list.length > 1) {
+      Toast.show({ content: `命中 ${list.length} 条，请手动选择`, position: 'bottom', duration: 1500 })
+    } else {
+      Toast.show({ content: '未找到匹配报工单', position: 'bottom' })
     }
   }
 
@@ -245,7 +256,19 @@ export default function MobileExceptionReport() {
                       </div>
                     }
                   >
-                    <div style={{ fontWeight: 500 }}>{o.report_no || o.order_no}</div>
+                    <div style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span>{o.report_no || o.order_no}</span>
+                      {o.order_id && (
+                        <span
+                          onClick={(e) => { e.stopPropagation(); setDetailOrder({ order_id: o.order_id!, order_no: o.order_no || o.report_no } as MobileOrderData) }}
+                          style={{
+                            fontSize: 11, color: '#2196F3', fontWeight: 400,
+                            border: '1px solid #2196F3', borderRadius: 10,
+                            padding: '1px 7px', cursor: 'pointer',
+                          }}
+                        >详情</span>
+                      )}
+                    </div>
                   </List.Item>
                 ))}
               </List>
@@ -256,8 +279,22 @@ export default function MobileExceptionReport() {
 
       {step === 1 && selected && (
         <>
-          <div style={{ background: '#fff', borderRadius: 10, padding: 14, marginBottom: 14, border: '1px solid #eef0f3' }}>
-            <div style={{ fontSize: 15, fontWeight: 600 }}>{selected.report_no || selected.order_no}</div>
+          <div
+            onClick={() => selected.order_id && setDetailOrder({ order_id: selected.order_id!, order_no: selected.order_no || selected.report_no } as MobileOrderData)}
+            style={{
+              background: '#fff', borderRadius: 10, padding: 14, marginBottom: 14,
+              border: '1px solid #eef0f3',
+              cursor: selected.order_id ? 'pointer' : 'default',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ fontSize: 15, fontWeight: 600 }}>{selected.report_no || selected.order_no}</div>
+              {selected.order_id && (
+                <span style={{ fontSize: 11, color: '#2196F3', border: '1px solid #2196F3', borderRadius: 10, padding: '1px 7px' }}>
+                  查看工单详情 ›
+                </span>
+              )}
+            </div>
             <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
               {selected.material_name || ''} · {selected.line_name || ''}
             </div>
@@ -381,6 +418,14 @@ export default function MobileExceptionReport() {
           setDeviceLabel(dev ? `${dev.device_name} (${dev.device_code})` : '')
           setDevicePickerVisible(false)
         }}
+      />
+
+      {/* P-A: 工单详情抽屉 */}
+      <MobileOrderDetail
+        order={detailOrder}
+        orderId={detailOrder?.order_id ?? null}
+        visible={!!detailOrder}
+        onClose={() => setDetailOrder(null)}
       />
     </div>
   )

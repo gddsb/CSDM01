@@ -11,11 +11,12 @@
  *   POST /api/production/report-orders                       创建报工单
  *   POST /api/production/report-orders/:id/finish            完工
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Steps, Button, List, SearchBar, Stepper, Toast, Dialog, Tabs, PullToRefresh, InfiniteScroll } from 'antd-mobile'
 import api from '../../utils/api'
 import { useBarcode } from '../hooks/useBarcode'
+import { MobileOrderDetail, MobileOrderData } from '../components/MobileOrderDetail'
 
 interface OrderRow {
   order_id: number
@@ -65,15 +66,25 @@ export default function MobileProcessReporting() {
   const [submitting, setSubmitting] = useState(false)
   const [createdReportNo, setCreatedReportNo] = useState<string | null>(null)
 
-  // Step 1: 加载待报工订单
-  const loadOrders = async (kw?: string) => {
+  // P-A: 工单详情抽屉
+  const [detailOrder, setDetailOrder] = useState<MobileOrderData | null>(null)
+
+  // 上次扫码命中的订单列表（给"扫码后自动选中"逻辑用）
+  const lastScanMatches = useRef<OrderRow[]>([])
+
+  // Step 1: 加载待报工订单（返回列表供调用方直接使用，避免 state 异步问题）
+  const loadOrders = async (kw?: string): Promise<OrderRow[]> => {
     setLoading(true)
     try {
       const params: Record<string, unknown> = { page: 1, page_size: 30, status: '已下发' }
       if (kw) params.keyword = kw
       const r: any = await api.get('/production/orders', { params })
-      if (r.success) setOrders(r.data?.list || r.data?.rows || r.data || [])
-    } catch {} finally { setLoading(false) }
+      const list: OrderRow[] = r.success ? (r.data?.list || r.data?.rows || r.data || []) : []
+      setOrders(list)
+      return list
+    } catch {
+      return []
+    } finally { setLoading(false) }
   }
 
   // 产线列表（全量加载一次）
@@ -140,9 +151,18 @@ export default function MobileProcessReporting() {
     if (!result) return
     const kw = result.code
     setKeyword(kw)
-    await loadOrders(kw)
-    // 命中唯一结果 → 自动选中
-    if (orders.length === 1) goToFill(orders[0])
+    const list = await loadOrders(kw)
+    lastScanMatches.current = list
+    // 命中唯一结果 → 自动选中并打开详情
+    if (list.length === 1) {
+      const hit = list[0]
+      goToFill(hit)
+      setDetailOrder(hit as MobileOrderData)
+    } else if (list.length > 1) {
+      Toast.show({ content: `命中 ${list.length} 条，请手动选择`, position: 'bottom', duration: 1500 })
+    } else {
+      Toast.show({ content: '未找到匹配订单', position: 'bottom' })
+    }
   }
 
   // 手动搜索
@@ -293,7 +313,19 @@ export default function MobileProcessReporting() {
                       </div>
                     }
                   >
-                    <div style={{ fontWeight: 500 }}>{o.order_no}</div>
+                    <div style={{
+                      fontWeight: 500, display: 'flex', alignItems: 'center', gap: 8,
+                    }}>
+                      <span>{o.order_no}</span>
+                      <span
+                        onClick={(e) => { e.stopPropagation(); setDetailOrder(o as MobileOrderData) }}
+                        style={{
+                          fontSize: 11, color: '#2196F3', fontWeight: 400,
+                          border: '1px solid #2196F3', borderRadius: 10,
+                          padding: '1px 7px', cursor: 'pointer',
+                        }}
+                      >详情</span>
+                    </div>
                   </List.Item>
                 ))}
               </List>
@@ -305,11 +337,19 @@ export default function MobileProcessReporting() {
       {step === 1 && selectedOrder && (
         <div>
           {/* 订单信息卡 */}
-          <div style={{
-            background: '#fff', borderRadius: 10, padding: 14, marginBottom: 14,
-            border: '1px solid #eef0f3',
-          }}>
-            <div style={{ fontSize: 15, fontWeight: 600 }}>{selectedOrder.order_no}</div>
+          <div
+            onClick={() => setDetailOrder(selectedOrder as MobileOrderData)}
+            style={{
+              background: '#fff', borderRadius: 10, padding: 14, marginBottom: 14,
+              border: '1px solid #eef0f3', cursor: 'pointer',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ fontSize: 15, fontWeight: 600 }}>{selectedOrder.order_no}</div>
+              <span style={{ fontSize: 11, color: '#2196F3', border: '1px solid #2196F3', borderRadius: 10, padding: '1px 7px' }}>
+                查看详情 ›
+              </span>
+            </div>
             <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
               {selectedOrder.material_code} {selectedOrder.material_name || ''}
             </div>
@@ -386,6 +426,14 @@ export default function MobileProcessReporting() {
       )}
         </>
       )}
+
+      {/* P-A: 工单详情抽屉 */}
+      <MobileOrderDetail
+        order={detailOrder}
+        orderId={detailOrder?.order_id ?? null}
+        visible={!!detailOrder}
+        onClose={() => setDetailOrder(null)}
+      />
     </div>
   )
 }

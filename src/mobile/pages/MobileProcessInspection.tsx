@@ -44,15 +44,17 @@ export default function MobileProcessInspection() {
   const [submitting, setSubmitting] = useState(false)
   const [successNo, setSuccessNo] = useState('')
 
-  const load = async (kw?: string) => {
+  const load = async (kw?: string): Promise<WipRow[]> => {
     setLoading(true)
     try {
       const params: Record<string, unknown> = { page: 1, page_size: 30 }
       if (kw) params.keyword = kw
       const r: any = await api.get('/basic/process-inspections/wip', { params })
-      if (r.success) setList(r.data?.list || [])
+      const list: WipRow[] = r.success ? (r.data?.list || []) : []
+      setList(list)
+      return list
     } catch {
-      /* 静默降级 */
+      return []
     } finally {
       setLoading(false)
     }
@@ -64,10 +66,14 @@ export default function MobileProcessInspection() {
     const r = await scan()
     if (!r) return
     setKeyword(r.code)
-    await load(r.code)
-    if (list.length === 1) {
-      setSelected(list[0])
+    const list2 = await load(r.code)
+    if (list2.length === 1) {
+      setSelected(list2[0])
       setStep(1)
+    } else if (list2.length > 1) {
+      Toast.show({ content: `命中 ${list2.length} 条，请手动选择`, position: 'bottom', duration: 1500 })
+    } else {
+      Toast.show({ content: '未找到匹配在制品', position: 'bottom' })
     }
   }
 
