@@ -58,7 +58,9 @@ export function isRouteAllowed(pathname: string, type: DeviceType): boolean {
   if (type === 'tv') {
     return pathname.startsWith('/tv') || pathname === '/login' || pathname === '/'
   }
-  // 移动端：屏蔽 system / auto / settings
+  // PC 端：全开放（包含 /system、/auto、/settings 等管理路由）
+  if (type === 'pc') return true
+  // 移动端（phone / pda / tablet）：屏蔽 system / auto / settings
   const blocked = BLOCKED_ROUTE_PREFIXES.some((p) => pathname.startsWith(p))
   if (blocked) return false
   return true
