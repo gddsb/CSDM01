@@ -35,7 +35,9 @@ const INSPECTION_ITEMS = [
   { text: '📦 来料检验', key: 'incoming', route: '/m/incoming-inspection', permCode: 'quality:incoming' },
   { text: '🏷️ 成品检验', key: 'product', route: '/m/product-inspection', permCode: 'quality:product' },
   { text: '⚙️ 过程检验', key: 'process', route: '/m/process-inspection', permCode: 'quality:process' },
+  { text: '🔬 微生物检验', key: 'microbe', route: '/m/microbe-inspection', permCode: 'quality:incoming' },
   { text: '📋 检验历史', key: 'history', route: '/m/inspection-history', permCode: 'quality:incoming' },
+  { text: '📢 投诉上报', key: 'complaint', route: '/m/complaint-report', permCode: 'quality:incoming' },
 ]
 
 /** "设备" ActionSheet 子项（每项独立鉴权，全部不可见时隐藏设备 Tab） */
@@ -58,13 +60,16 @@ const TITLE_MAP: Record<string, string> = {
   '/m/device-fault': '设备故障上报',
   '/m/calibration-reminder': '校准提醒',
   '/m/inspection-history': '检验历史',
+  '/m/daily-card': '日报卡',
+  '/m/microbe-inspection': '微生物检验',
+  '/m/complaint-report': '投诉上报',
   '/m/exception-report': '异常上报',
   '/m/profile': '我的',
 }
 
 /** 当前路径是否属于"检验"家族（用于高亮 Tab） */
 function isInspectionPath(p: string) {
-  return p === '/m/incoming-inspection' || p === '/m/product-inspection' || p === '/m/process-inspection' || p === '/m/inspection-history'
+  return p === '/m/incoming-inspection' || p === '/m/product-inspection' || p === '/m/process-inspection' || p === '/m/inspection-history' || p === '/m/microbe-inspection' || p === '/m/complaint-report'
 }
 
 /** 当前路径是否属于"设备"家族（用于高亮 Tab） */

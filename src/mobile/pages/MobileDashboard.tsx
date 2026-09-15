@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Grid, Badge, PullToRefresh, Toast } from 'antd-mobile'
-import { AppOutline, BillOutline, CheckOutline, TeamOutline, UserOutline } from 'antd-mobile-icons'
+import { AppOutline, BillOutline, CheckOutline, TeamOutline, UserOutline, CalendarOutline, ChatAddOutline } from 'antd-mobile-icons'
 import { AppstoreOutline, SetOutline, FlagOutline, SearchOutline } from 'antd-mobile-icons'
 import { useApp } from '../../contexts/AppContext'
 import { useOfflineQueue } from '../hooks/useOfflineQueue'
@@ -32,9 +32,12 @@ const entries: QuickEntry[] = [
   { key: 'maintenance', title: '设备保养', icon: <SetOutline fontSize={32} />, color: '#00BCD4', path: '/m/device-maintenance', permCode: 'device:maintenance' },
   { key: 'exception', title: '异常上报', icon: <AppstoreOutline fontSize={32} />, color: '#F44336', path: '/m/exception-report', permCode: 'production:reporting' },
   { key: 'process', title: '过程检验', icon: <CheckOutline fontSize={32} />, color: '#3F51B5', path: '/m/process-inspection', permCode: 'quality:process' },
-  { key: 'device-fault', title: '设备故障', icon: <WarningOutline fontSize={32} />, color: '#E91E63', path: '/m/device-fault', permCode: 'device:fault' },
+  { key: 'device-fault', title: '设备故障', icon: <FlagOutline fontSize={32} />, color: '#E91E63', path: '/m/device-fault', permCode: 'device:fault' },
   { key: 'calibration', title: '校准提醒', icon: <SetOutline fontSize={32} />, color: '#FF5722', path: '/m/calibration-reminder', permCode: 'device:calibration' },
   { key: 'inspection-history', title: '检验历史', icon: <SearchOutline fontSize={32} />, color: '#795548', path: '/m/inspection-history', permCode: 'quality:incoming' },
+  { key: 'daily-card', title: '日报卡', icon: <CalendarOutline fontSize={32} />, color: '#009688', path: '/m/daily-card' },
+  { key: 'microbe', title: '微生物检验', icon: <CheckOutline fontSize={32} />, color: '#673AB7', path: '/m/microbe-inspection', permCode: 'quality:incoming' },
+  { key: 'complaint', title: '投诉上报', icon: <ChatAddOutline fontSize={32} />, color: '#FF4081', path: '/m/complaint-report', permCode: 'quality:incoming' },
 ]
 
 export default function MobileDashboard() {
