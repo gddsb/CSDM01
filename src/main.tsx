@@ -12,6 +12,7 @@ import { queryClient } from './queryClient'
 import MainLayout from './layouts/MainLayout'
 import ErrorBoundary from './components/ErrorBoundary'
 import { DeviceProvider, useDevice, isRouteAllowed } from './adapter'
+import { useAppUpdate } from './adapter/update'
 
 // 首屏关键页面同步加载（避免白屏）
 import Login from './pages/Login'
@@ -275,8 +276,20 @@ function AppInner({ setMessageApi, setModalApi, setNotificationApi }: {
       <ErrorBoundary>
         <AppRoutes />
       </ErrorBoundary>
+      {/* 版本检测弹窗 — 在路由外层渲染，避免路由切换影响弹窗状态 */}
+      <AppUpdateLoader />
     </BrowserRouter>
   )
+}
+
+/**
+ * 版本检测独立组件：冷启动时 checkForUpdate()
+ * Web 端始终启用（PWA 热更新）；TV 端跳过（大屏无需版本提醒）
+ */
+function AppUpdateLoader() {
+  const { type } = useDevice()
+  // TV 大屏不弹更新；电视用户一般不知道怎么点下载 APK
+  return useAppUpdate(/* enabled */ type !== 'tv')
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
