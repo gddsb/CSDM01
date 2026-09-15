@@ -13,6 +13,87 @@
 import sequelize from './config/database.js'
 import { QueryTypes } from 'sequelize'
 import { logger } from './utils/logger.js'
+import { Umzug, JSONStorage } from 'umzug'
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+// ==================================================================
+// umzug：管理 src/migrations/*.sql 迁移文件
+// ==================================================================
+// 所有 SQL 文件均为幂等实现（用 IF NOT EXISTS / SET @sql = IF(exists, skip, create)），
+// 重复执行不会报错。JSONStorage 追踪执行历史，跨 MySQL/SQLite 兼容。
+export async function runUmzugSqlFiles(): Promise<void> {
+  if (sequelize.getDialect() !== 'mysql') {
+    logger.info('[Umzug] SQLite 环境跳过 SQL 迁移目录（SQL 为 MySQL 专用）')
+    return
+  }
+
+  const migrationsDir = path.resolve(__dirname, 'migrations')
+  const stateFile = path.resolve(__dirname, '..', 'data', 'migration-state.json')
+
+  if (!fs.existsSync(migrationsDir)) {
+    logger.info('[Umzug] migrations 目录不存在，跳过')
+    return
+  }
+
+  // 确保 state 文件所在目录存在
+  fs.mkdirSync(path.dirname(stateFile), { recursive: true })
+  if (!fs.existsSync(stateFile)) {
+    fs.writeFileSync(stateFile, '[]', 'utf-8')
+  }
+
+  const umzug = new Umzug({
+    migrations: {
+      glob: path.join(migrationsDir, '*.sql'),
+      resolve({ name, path: filePath }) {
+        return {
+          name,
+          up: async () => {
+            const sql = fs.readFileSync(filePath!, 'utf-8')
+            logger.info(`[Umzug] executing ${name}`)
+            try {
+              await sequelize.query(sql, { raw: true })
+            } catch (err: any) {
+              const msg = err?.message || String(err)
+              if (/already exists|Duplicate|already been created|Unknown/.test(msg)) {
+                logger.warn(`[Umzug] ${name} skipped (idempotent): ${msg.slice(0, 80)}`)
+              } else {
+                throw err
+              }
+            }
+          },
+          down: async () => {
+            logger.warn(`[Umzug] ${name} has no down migration, skipping rollback`)
+          },
+        }
+      },
+    },
+    storage: new JSONStorage({ path: stateFile }),
+    logger: {
+      info: (msg: any) => logger.info('[Umzug]', typeof msg === 'string' ? msg : JSON.stringify(msg)),
+      warn: (msg: any) => logger.warn('[Umzug]', typeof msg === 'string' ? msg : JSON.stringify(msg)),
+      error: (msg: any) => logger.error('[Umzug]', typeof msg === 'string' ? msg : JSON.stringify(msg)),
+      debug: () => {},
+    },
+  })
+
+  try {
+    const pending = await umzug.pending()
+    if (pending.length === 0) {
+      logger.info('[Umzug] SQL 迁移已是最新')
+    } else {
+      logger.info(`[Umzug] 待执行 ${pending.length} 个 SQL 迁移`)
+      await umzug.up()
+      logger.info(`[Umzug] SQL 迁移执行完成`)
+    }
+  } catch (err: any) {
+    logger.error('[Umzug] SQL 迁移执行失败:', err?.message)
+    throw err
+  }
+}
 
 
 // 各模型需要保证存在的列（仅列出新增/补齐的列，避免对类型变更产生影响）

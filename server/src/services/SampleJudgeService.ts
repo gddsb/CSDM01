@@ -33,7 +33,7 @@ export function judgeSampleValue(sample: {
   if (text) {
     const lower = text.toLowerCase()
     if (['ok', '合格', 'pass'].includes(lower) || text === 'OK') return 1
-    if (['ng', '不合格', 'fail', '无'].some(kw => text.includes(kw))) return 0
+    if (['ng', '不合格', 'fail', '无'].some(kw => lower.includes(kw))) return 0
     // 其他描述文本不自动判定
     return null
   }

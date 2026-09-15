@@ -208,7 +208,8 @@ export const generateProductInspectionNo = (type: string) => {
 
 // 暴露 SEQ_CONFIG 副本（供调试/读取）
 export function getSeqConfig(): any {
-  return { ...SEQ_CONFIG }
+  // 深拷贝，防止外部修改影响内部状态
+  return JSON.parse(JSON.stringify(SEQ_CONFIG))
 }
 
 export default {

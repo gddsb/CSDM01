@@ -1,33 +1,84 @@
-const LOG_LEVELS = { debug: 0, info: 1, warn: 2, error: 3 }
-const currentLevel = LOG_LEVELS[(process.env.LOG_LEVEL || 'info').toLowerCase() as keyof typeof LOG_LEVELS] ?? LOG_LEVELS.info
+/**
+ * 结构化日志（pino）
+ *
+ * 与旧版 console 包装器保持相同的 API 签名（debug/info/warn/error，接受任意参数），
+ * 业务代码无需改动即可获得 JSON 结构化输出。
+ *
+ * 开发环境：pino-pretty transport，彩色可读
+ * 生产环境：纯 JSON 输出，PM2 自动轮转
+ */
+import pino from 'pino'
 
-function shouldLog(level: number): boolean {
-  return level >= currentLevel
-}
+const level = (process.env.LOG_LEVEL || 'info').toLowerCase()
+const isProd = process.env.NODE_ENV === 'production'
 
-function format(level: string, args: any[]): string {
-  const ts = new Date().toISOString()
-  const parts = args.map((a) => {
-    if (typeof a === 'object' && a !== null) {
-      try { return JSON.stringify(a) } catch { return String(a) }
-    }
+const pinoInstance = isProd
+  ? pino({
+      level,
+      base: undefined,
+      timestamp: pino.stdTimeFunctions.isoTime,
+    })
+  : pino({
+      level,
+      base: undefined,
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          colorize: true,
+          translateTime: 'HH:MM:ss',
+          ignore: 'pid,hostname',
+        },
+      },
+    })
+
+/**
+ * pino API 是 (obj, msg, ...args)，业务代码是 console 风格 (...args)
+ * 把第一个非 Error 对象当作结构化 fields，其余拼成 msg
+ */
+function normalizeArgs(args: any[]): [Record<string, unknown> | null, string] {
+  if (args.length === 0) return [null, '']
+  const first = args[0]
+
+  if (first instanceof Error) {
+    const fields = { err: pino.stdSerializers.err(first) }
+    const restMsg = args.slice(1).map((a) => String(a)).join(' ')
+    return [fields, restMsg]
+  }
+
+  if (first && typeof first === 'object') {
+    const fields = first as Record<string, unknown>
+    const restMsg = args.slice(1).map((a) => {
+      if (a == null) return String(a)
+      if (typeof a === 'object') { try { return JSON.stringify(a) } catch { return String(a) } }
+      return String(a)
+    }).join(' ')
+    return [fields, restMsg]
+  }
+
+  const msg = args.map((a) => {
+    if (a == null) return String(a)
+    if (typeof a === 'object') { try { return JSON.stringify(a) } catch { return String(a) } }
     return String(a)
-  })
-  return `[${ts}] [${level.toUpperCase()}] ${parts.join(' ')}`
+  }).join(' ')
+  return [null, msg]
 }
 
 export const logger = {
   debug: (...args: any[]) => {
-    if (shouldLog(LOG_LEVELS.debug)) console.debug(format('debug', args))
+    const [fields, msg] = normalizeArgs(args)
+    fields ? pinoInstance.debug(fields, msg) : pinoInstance.debug(msg)
   },
   info: (...args: any[]) => {
-    if (shouldLog(LOG_LEVELS.info)) console.info(format('info', args))
+    const [fields, msg] = normalizeArgs(args)
+    fields ? pinoInstance.info(fields, msg) : pinoInstance.info(msg)
   },
   warn: (...args: any[]) => {
-    if (shouldLog(LOG_LEVELS.warn)) console.warn(format('warn', args))
+    const [fields, msg] = normalizeArgs(args)
+    fields ? pinoInstance.warn(fields, msg) : pinoInstance.warn(msg)
   },
   error: (...args: any[]) => {
-    if (shouldLog(LOG_LEVELS.error)) console.error(format('error', args))
+    const [fields, msg] = normalizeArgs(args)
+    fields ? pinoInstance.error(fields, msg) : pinoInstance.error(msg)
   },
 }
 

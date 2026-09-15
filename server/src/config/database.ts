@@ -42,6 +42,9 @@ if (dialect === 'sqlite') {
       port: Number(process.env.DB_PORT) || 3306,
       dialect: dialect as 'mysql',
       timezone: '+08:00',
+      // 允许多语句执行（migrations/*.sql 和 migrate.ts 中的外键/索引创建需要）
+      // 业务代码应继续用 Sequelize ORM 方法，不要拼接原始 SQL
+      dialectOptions: { multipleStatements: true },
       ...baseOptions,
     }
   )

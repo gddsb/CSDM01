@@ -1,7 +1,7 @@
 import express from 'express'
 import cors from 'cors'
-import morgan from 'morgan'
 import helmet from 'helmet'
+import pinoHttp from 'pino-http'
 import dotenv from 'dotenv'
 import path from 'path'
 import fs from 'fs'
@@ -12,7 +12,7 @@ import { initDefaultConfigs, refreshDictionaryDataIfEmpty } from './controllers/
 import { initDefaultPermissions } from './controllers/RoleController.js'
 import { initDefaultRules } from './controllers/NumberRuleController.js'
 import { initProfiles } from './controllers/DeviceMaintenanceController.js'
-import { runMigrations } from './migrate.js'
+import { runMigrations, runUmzugSqlFiles } from './migrate.js'
 import { startTaskScheduler } from './services/taskScheduler.js'
 import { TaskSetting } from './models/index.js'
 import { corsOptions, apiRateLimiter, AppError } from './middleware/security.js'
@@ -102,6 +102,8 @@ async function initDatabase() {
     // 只创建不存在的表，不修改已有表结构
     await sequelize.sync()
     console.log('✅ 数据库表同步完成')
+    await runUmzugSqlFiles()
+    console.log('✅ SQL 文件迁移完成（umzug）')
     // 补齐已有表缺失的列（ALTER TABLE ADD COLUMN）
     await runMigrations()
     console.log('✅ 数据库列迁移完成')
@@ -177,9 +179,17 @@ function getSafeReqInfo(req: any): any {
   return info
 }
 
-const isProdLogger = process.env.NODE_ENV === 'production'
-
-app.use(morgan(isProdLogger ? 'combined' : 'dev'))
+app.use(pinoHttp({
+  logger: logger as any,  // pino-http 接受 pino 实例；我们的包装器兼容
+  // 开发环境默认 info 级别会输出每个请求；生产环境对 4xx/5xx 提升为 warn/error
+  customLogLevel: (req: any, res: any, err?: Error | null) => {
+    if (err || res.statusCode >= 500) return 'error'
+    if (res.statusCode >= 400) return 'warn'
+    return 'info'
+  },
+  // 去掉敏感 query/body
+  redact: { paths: ['req.headers.authorization', 'req.body.password', 'req.body.user_pwd'] },
+}))
 
 // 禁止浏览器缓存 API 响应（防止菜单排序等数据修改后刷新仍返回旧缓存）
 app.use('/api', (req, res, next) => {
@@ -272,7 +282,7 @@ app.use((err: any, req: any, res: any, next: any) => {
     error: {
       message: err?.message || String(err),
       name: err?.name,
-      stack: isProdLogger ? undefined : err?.stack,
+      stack: isProd ? undefined : err?.stack,
     },
   }))
   if (!res.headersSent) {
