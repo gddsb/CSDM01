@@ -8,7 +8,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Grid, Badge, PullToRefresh, Toast } from 'antd-mobile'
 import { AppOutline, BillOutline, CheckOutline, TeamOutline, UserOutline, CalendarOutline, ChatAddOutline } from 'antd-mobile-icons'
-import { AppstoreOutline, SetOutline, FlagOutline, SearchOutline, PieOutline } from 'antd-mobile-icons'
+import { AppstoreOutline, SetOutline, FlagOutline, SearchOutline, PieOutline, FolderOutline, FileOutline } from 'antd-mobile-icons'
 import { useApp } from '../../contexts/AppContext'
 import { useOfflineQueue } from '../hooks/useOfflineQueue'
 import api from '../../utils/api'
@@ -39,6 +39,8 @@ const entries: QuickEntry[] = [
   { key: 'oee', title: '设备OEE', icon: <PieOutline fontSize={32} />, color: '#3F51B5', path: '/m/device-oee', permCode: 'device:oee' },
   { key: 'microbe', title: '微生物检验', icon: <CheckOutline fontSize={32} />, color: '#673AB7', path: '/m/microbe-inspection', permCode: 'quality:incoming' },
   { key: 'complaint', title: '投诉上报', icon: <ChatAddOutline fontSize={32} />, color: '#FF4081', path: '/m/complaint-report', permCode: 'quality:incoming' },
+  { key: 'spare-parts', title: '备件管理', icon: <FolderOutline fontSize={32} />, color: '#607D8B', path: '/m/spare-parts', permCode: 'device:spare-part' },
+  { key: 'device-documents', title: '电子档案', icon: <FileOutline fontSize={32} />, color: '#795548', path: '/m/device-documents', permCode: 'device:document' },
 ]
 
 export default function MobileDashboard() {
