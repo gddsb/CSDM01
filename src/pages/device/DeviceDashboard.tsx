@@ -61,22 +61,30 @@ interface DeviceFaultItem {
   fault_id: number
   fault_no: string
   device_name?: string
+  device_code?: string
   fault_level: string
   status: string
   fault_time?: string
+  fault_desc?: string
 }
 interface MaintenanceItem {
   record_id: number
   record_no?: string
   device_name?: string
+  device_code?: string
   maintenance_type?: string
   plan_date?: string
+  trigger_mode?: string
+  period_key?: string
   status: string
 }
 interface InspectionItem {
   plan_id: number
   device_name?: string
+  device_code?: string
   inspector_name?: string
+  executor_name?: string
+  period_key?: string
   plan_date?: string
   status: string
 }

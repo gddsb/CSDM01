@@ -11,6 +11,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from './queryClient'
 import MainLayout from './layouts/MainLayout'
 import ErrorBoundary from './components/ErrorBoundary'
+import { DeviceProvider, useDevice, isRouteAllowed } from './adapter'
 
 // 首屏关键页面同步加载（避免白屏）
 import Login from './pages/Login'
@@ -91,6 +92,34 @@ function lazyPage(node: React.ReactNode) {
   return <Suspense fallback={<PageFallback />}>{node}</Suspense>
 }
 
+/**
+ * 设备感知的登录守卫
+ * - TV 端：跳过登录（capability.skipLogin = true）
+ * - 其他端：要求 currentUser 存在
+ * - 路由被设备屏蔽（如 TV 访问 /system 或手机访问 /tv/*）：重定向到首页
+ */
+function DeviceAwareGuard({ children }: { children: React.ReactNode }) {
+  const { currentUser, initialized } = useApp()
+  const { type, capability } = useDevice()
+  const location = useLocation()
+
+  if (!initialized) return null
+
+  // 检查路由在当前设备上是否允许（TV 只允许 /tv 和少量 public；移动端屏蔽 system/auto）
+  if (!isRouteAllowed(location.pathname, type)) {
+    // TV 端重定向到 TV 大屏；其他端重定向到 Dashboard
+    const redirect = type === 'tv' ? '/tv/display' : '/dashboard'
+    return <Navigate to={redirect} replace />
+  }
+
+  // TV 端跳过登录
+  if (capability.skipLogin) return <>{children}</>
+
+  // 普通登录守卫
+  if (!currentUser) return <Navigate to="/login" replace />
+  return <>{children}</>
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { currentUser, initialized } = useApp()
   if (!initialized) return null
@@ -100,24 +129,48 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AppRoutes() {
   const { currentUser, initialized } = useApp()
+  const { type, capability } = useDevice()
   const location = useLocation()
   if (!initialized) return null
 
+  // TV 端：访问根路径直接跳到 TV 大屏
+  const isTv = type === 'tv'
+
   return (
     <Routes>
-      <Route path="/login" element={currentUser ? <Navigate to="/dashboard" replace /> : <Login />} />
-      {/* 大屏路由 - 独立全屏页面 */}
+      {/* 登录页 — TV 端跳过 */}
+      <Route
+        path="/login"
+        element={capability.skipLogin
+          ? <Navigate to="/tv/display" replace />
+          : currentUser ? <Navigate to="/dashboard" replace /> : <Login />}
+      />
+
+      {/* —— TV 端专属路由前缀 /tv/* —— 直接展示，跳过登录，无任何交互控件 —— */}
+      <Route path="/tv" element={<Navigate to="/tv/display" replace />} />
+      <Route path="/tv/display" element={<DeviceAwareGuard>{lazyPage(<DisplayBigScreen />)}</DeviceAwareGuard>} />
+      <Route path="/tv/production" element={<DeviceAwareGuard>{lazyPage(<ProductionBigScreen />)}</DeviceAwareGuard>} />
+      <Route path="/tv/quality" element={<DeviceAwareGuard>{lazyPage(<QualityBigScreen />)}</DeviceAwareGuard>} />
+      <Route path="/tv/environment" element={<DeviceAwareGuard>{lazyPage(<EnvironmentBigScreen />)}</DeviceAwareGuard>} />
+      <Route path="/tv/energy" element={<DeviceAwareGuard>{lazyPage(<EnergyBigScreen />)}</DeviceAwareGuard>} />
+      <Route path="/tv/management" element={<DeviceAwareGuard>{lazyPage(<ManagementBigScreen />)}</DeviceAwareGuard>} />
+
+      {/* 大屏路由（Web / 平板 / 手机 / PDA 仍可访问） —— 需要登录 */}
       <Route path="/bigscreen/production" element={<ProtectedRoute>{lazyPage(<ProductionBigScreen />)}</ProtectedRoute>} />
       <Route path="/bigscreen/management" element={<ProtectedRoute>{lazyPage(<ManagementBigScreen />)}</ProtectedRoute>} />
       <Route path="/bigscreen/quality" element={<ProtectedRoute>{lazyPage(<QualityBigScreen />)}</ProtectedRoute>} />
       <Route path="/bigscreen/environment" element={<ProtectedRoute>{lazyPage(<EnvironmentBigScreen />)}</ProtectedRoute>} />
       <Route path="/bigscreen/energy" element={<ProtectedRoute>{lazyPage(<EnergyBigScreen />)}</ProtectedRoute>} />
       <Route path="/bigscreen/display" element={<ProtectedRoute>{lazyPage(<DisplayBigScreen />)}</ProtectedRoute>} />
-      {/* 打印路由 - 独立全屏页面，不显示菜单/路径 */}
+
+      {/* 打印路由 */}
       <Route path="/device/maintenance/print" element={<ProtectedRoute><DeviceMaintenancePrint /></ProtectedRoute>} />
-      <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+
+      {/* 主布局 + 所有业务路由 — 统一经 DeviceAwareGuard 做设备路由屏蔽 */}
+      <Route path="/" element={<DeviceAwareGuard><MainLayout /></DeviceAwareGuard>}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dashboard-bigscreen" element={<Dashboard />} />
+        {/* —— system/* 系统管理 —— DeviceAwareGuard 会在非 Web 端（含 TV）自动屏蔽 —— */}
         <Route path="/system/users" element={lazyPage(<UserManagement />)} />
         <Route path="/system/roles" element={lazyPage(<RoleManagement />)} />
         <Route path="/system/menus" element={lazyPage(<MenuManagement />)} />
@@ -130,6 +183,7 @@ function AppRoutes() {
         <Route path="/system/config/files" element={lazyPage(<ConfigFiles />)} />
         <Route path="/system/logs" element={lazyPage(<OperationLogs />)} />
         <Route path="/system/system-logs" element={lazyPage(<SystemLogs />)} />
+        {/* —— basic —— */}
         <Route path="/basic/materials" element={lazyPage(<MaterialManagement />)} />
         <Route path="/basic/lines" element={lazyPage(<ProductionLine />)} />
         <Route path="/basic/processes" element={lazyPage(<ProcessManagement />)} />
@@ -138,8 +192,10 @@ function AppRoutes() {
         <Route path="/basic/customers" element={lazyPage(<CustomerManagement />)} />
         <Route path="/basic/suppliers" element={lazyPage(<SupplierManagement />)} />
         <Route path="/basic/number-rules" element={lazyPage(<NumberRuleManagement />)} />
+        {/* —— production —— */}
         <Route path="/production/orders" element={lazyPage(<OrderManagement />)} />
         <Route path="/production/reporting" element={lazyPage(<ProcessReporting />)} />
+        {/* —— quality —— */}
         <Route path="/quality/standards" element={lazyPage(<InspectionStandard />)} />
         <Route path="/quality/standards/new" element={lazyPage(<InspectionStandardForm />)} />
         <Route path="/quality/standards/:id/edit" element={lazyPage(<InspectionStandardForm />)} />
@@ -151,6 +207,7 @@ function AppRoutes() {
         <Route path="/quality/complaints" element={lazyPage(<ComplaintManagement />)} />
         <Route path="/quality/supplier" element={lazyPage(<SupplierComplaint />)} />
         <Route path="/quality/instruments" element={lazyPage(<InstrumentManagement />)} />
+        {/* —— device —— */}
         <Route path="/device/list" element={lazyPage(<DeviceArchive />)} />
         <Route path="/device/oee" element={lazyPage(<DeviceOEE />)} />
         <Route path="/device/fault" element={lazyPage(<DeviceFault />)} />
@@ -163,17 +220,20 @@ function AppRoutes() {
         <Route path="/device/calibration" element={lazyPage(<DeviceCalibration />)} />
         <Route path="/device/documents" element={lazyPage(<DeviceDocumentPage />)} />
         <Route path="/device/dashboard" element={lazyPage(<DeviceDashboard />)} />
+        {/* —— report —— */}
         <Route path="/report/daily" element={lazyPage(<DailyReport />)} />
         <Route path="/report/monthly" element={lazyPage(<MonthlyReport />)} />
         <Route path="/report/efficiency" element={lazyPage(<EfficiencyReport />)} />
         <Route path="/report/production" element={lazyPage(<ProductionReport />)} />
         <Route path="/report/quality" element={lazyPage(<QualityReport />)} />
         <Route path="/report/exception" element={lazyPage(<ExceptionReport />)} />
+        {/* —— auto/* 自动任务 —— DeviceAwareGuard 在非 Web 端自动屏蔽 —— */}
         <Route path="/auto/task-settings" element={lazyPage(<TaskSettingsPage />)} />
         <Route path="/auto/scheduled-tasks" element={lazyPage(<ScheduledTaskPage />)} />
         <Route path="/auto/task-logs" element={lazyPage(<TaskLogPage />)} />
       </Route>
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      {/* 兜底：TV 走 TV 大屏，其他端走 Dashboard */}
+      <Route path="*" element={<Navigate to={isTv ? '/tv/display' : '/dashboard'} replace />} />
     </Routes>
   )
 }
@@ -223,7 +283,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <AppProvider>
-        <App />
+        <DeviceProvider>
+          <App />
+        </DeviceProvider>
       </AppProvider>
     </QueryClientProvider>
   </React.StrictMode>

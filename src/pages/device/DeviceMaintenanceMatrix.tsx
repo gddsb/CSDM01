@@ -165,7 +165,7 @@ export default function DeviceMaintenanceMatrix() {
   // ==== 统计卡片 ====
   const statItems: StatItem[] = useMemo(() => {
     if (!data) return []
-    const s = data.summary || {}
+    const s: Record<string, any> = data.summary || {}
     return [
       { label: '日点检完成率', value: `${s.daily_rate ?? 0}% (${s.daily_completed ?? 0}/${s.daily_total ?? 0})`, color: '#1677ff', icon: <CalendarOutlined /> },
       { label: '周保养完成率', value: `${s.weekly_rate ?? 0}% (${s.weekly_completed ?? 0}/${s.weekly_total ?? 0})`, color: '#52c41a', icon: <FileDoneOutlined /> },
