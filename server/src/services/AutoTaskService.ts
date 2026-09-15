@@ -19,11 +19,12 @@ import {
   TaskSetting, SyncTask, ScheduledTask, U9Item, U9Customer, U9ProductionOrder, U9PurchaseReceipt,
   EnvMonitor, EnvAlarm, WeatherInfo, EnergyMeterData,
 } from '../models/index.js'
-import { MAX_PAGE_SIZE } from '../utils/response.js'
+import { MAX_PAGE_SIZE, ErrorCode } from '../utils/response.js'
 import { encryptParamsObj } from '../utils/crypto.js'
 import { calcNextRunAt } from './taskScheduler.js'
 import { executeRealTask } from './taskExecutor.js'
 import { nowBeijingStr, nowBeijingDate } from '../utils/date.js'
+import { syncItemsToBasMaterial, syncProductionOrdersToOrder } from './u9Exporter.js'
 import { AppError } from '../utils/error.js'
 
 // -------- 纯工具 --------
@@ -265,3 +266,70 @@ export const AutoTaskService = {
 }
 
 export default AutoTaskService
+
+// -------- 采集 → 主数据同步 --------
+
+export async function syncToMasterData(syncType: string = 'all'): Promise<any> {
+  const result: any = {}
+  if (syncType === 'items' || syncType === 'all') {
+    result.items = await syncItemsToBasMaterial()
+  }
+  if (syncType === 'production_orders' || syncType === 'all') {
+    result.production_orders = await syncProductionOrdersToOrder()
+  }
+  return result
+}
+
+/** 生产订单一键同步（U9 采集 → 迁移到 production_order 业务表） */
+export async function syncProductionOrdersFull(): Promise<any> {
+  const taskType = 'production_orders'
+  const setting = await TaskSetting.findOne({ where: { task_type: taskType } })
+  if (!setting) throw new AppError('任务设置不存在（task_生产订单同步），请先在自动任务中配置', ErrorCode.RECORD_NOT_FOUND, 404)
+
+  const activeSame = await SyncTask.findOne({
+    where: { task_type: taskType, status: { [Op.in]: ['pending', 'running'] } },
+    order: [['task_id', 'DESC']],
+  })
+  if (activeSame) {
+    throw new AppError(`存在进行中的生产订单同步任务（${(activeSame as any).task_biz_id}），请稍后再试`, ErrorCode.BUSINESS_ERROR, 409)
+  }
+
+  const taskBizId = generateTaskBizId(taskType)
+  const syncTask = await SyncTask.create({
+    task_biz_id: taskBizId, task_type: taskType, status: 'running', progress: 5,
+    current_step: '订单同步已启动，正在采集U9生产订单...',
+    steps: [{ time: nowBeijingStr(), message: '订单同步已启动，正在采集U9生产订单...', percent: 5 }],
+    started_at: nowBeijingDate(),
+  })
+
+  const taskId = (syncTask as any).task_id
+  const settingParams = (setting as any).params || {}
+
+  const collectResult = await executeRealTask(taskType, taskBizId, taskId, settingParams)
+  if (!collectResult.success) throw new AppError(`U9生产订单采集失败：${collectResult.error || '未知错误'}`, ErrorCode.BUSINESS_ERROR)
+
+  try {
+    const task = await SyncTask.findByPk(taskId) as any
+    if (task) {
+      const steps = Array.isArray(task.steps) ? [...task.steps] : []
+      steps.push({ time: nowBeijingStr(), message: '采集完成，正在按关联关系同步到生产订单业务表...', percent: 95 })
+      task.progress = 95; task.current_step = '采集完成，正在同步到生产订单业务表...'; task.steps = steps
+      await task.save()
+    }
+  } catch (_) { /* ignore */ }
+
+  const migrated = await syncProductionOrdersToOrder()
+
+  try {
+    const task = await SyncTask.findByPk(taskId) as any
+    if (task) {
+      const steps = Array.isArray(task.steps) ? [...task.steps] : []
+      steps.push({ time: nowBeijingStr(), message: `订单同步完成：采集 ${collectResult.totalRecords || 0} 条，业务表新增 ${migrated.inserted}、更新 ${migrated.updated}`, percent: 100 })
+      task.progress = 100; task.current_step = '订单同步完成'; task.status = 'completed'
+      task.total_records = collectResult.totalRecords || 0; task.ended_at = new Date(); task.steps = steps
+      await task.save()
+    }
+  } catch (_) { /* ignore */ }
+
+  return { task_biz_id: taskBizId, collected: collectResult.totalRecords || 0, migrated }
+}
