@@ -22,7 +22,11 @@ const RoleManagement = lazy(() => import('./pages/system/RoleManagement'))
 const DataDictionary = lazy(() => import('./pages/system/DataDictionary'))
 const OperationLogs = lazy(() => import('./pages/system/OperationLogs'))
 const SystemLogs = lazy(() => import('./pages/system/SystemLogs'))
-const SystemConfig = lazy(() => import('./pages/system/SystemConfig'))
+const ConfigParams = lazy(() => import('./pages/system/config-pages/ParamsConfigPage'))
+const ConfigEnv = lazy(() => import('./pages/system/config-pages/EnvConfigPage'))
+const ConfigDb = lazy(() => import('./pages/system/config-pages/DbConfigPage'))
+const ConfigBackup = lazy(() => import('./pages/system/config-pages/BackupConfigPage'))
+const ConfigFiles = lazy(() => import('./pages/system/config-pages/FilesConfigPage'))
 const MenuManagement = lazy(() => import('./pages/system/MenuManagement'))
 const MaterialManagement = lazy(() => import('./pages/basic/MaterialManagement'))
 const ProductionLine = lazy(() => import('./pages/basic/ProductionLine'))
@@ -130,7 +134,12 @@ function AppRoutes() {
         <Route path="/system/roles" element={lazyPage(<RoleManagement />)} />
         <Route path="/system/menus" element={lazyPage(<MenuManagement />)} />
         <Route path="/system/dictionary" element={lazyPage(<DataDictionary />)} />
-        <Route path="/system/config" element={lazyPage(<SystemConfig />)} />
+        <Route path="/system/config" element={<Navigate to="/system/config/params" replace />} />
+        <Route path="/system/config/params" element={lazyPage(<ConfigParams />)} />
+        <Route path="/system/config/env" element={lazyPage(<ConfigEnv />)} />
+        <Route path="/system/config/db" element={lazyPage(<ConfigDb />)} />
+        <Route path="/system/config/backup" element={lazyPage(<ConfigBackup />)} />
+        <Route path="/system/config/files" element={lazyPage(<ConfigFiles />)} />
         <Route path="/system/logs" element={lazyPage(<OperationLogs />)} />
         <Route path="/system/system-logs" element={lazyPage(<SystemLogs />)} />
         <Route path="/basic/materials" element={lazyPage(<MaterialManagement />)} />

@@ -6,6 +6,11 @@ export const defaultPermissions = [
   { parent_id: 0, parent_code: 'system', perm_name: '菜单管理', perm_code: 'system:menu', type: 'menu', icon: 'MenuOutlined', path: '/system/menus', sort_order: 3 },
   { parent_id: 0, parent_code: 'system', perm_name: '数据字典', perm_code: 'system:dict', type: 'menu', icon: 'DatabaseOutlined', path: '/system/dictionary', sort_order: 4 },
   { parent_id: 0, parent_code: 'system', perm_name: '系统配置', perm_code: 'system:config', type: 'menu', icon: 'ControlOutlined', path: '/system/config', sort_order: 5 },
+  { parent_id: 0, parent_code: 'system:config', perm_name: '参数配置', perm_code: 'system:config:params', type: 'menu', icon: 'SettingOutlined', path: '/system/config/params', sort_order: 1 },
+  { parent_id: 0, parent_code: 'system:config', perm_name: '运行环境', perm_code: 'system:config:env', type: 'menu', icon: 'CloudServerOutlined', path: '/system/config/env', sort_order: 2 },
+  { parent_id: 0, parent_code: 'system:config', perm_name: '数据库', perm_code: 'system:config:db', type: 'menu', icon: 'DatabaseOutlined', path: '/system/config/db', sort_order: 3 },
+  { parent_id: 0, parent_code: 'system:config', perm_name: '备份还原', perm_code: 'system:config:backup', type: 'menu', icon: 'SaveOutlined', path: '/system/config/backup', sort_order: 4 },
+  { parent_id: 0, parent_code: 'system:config', perm_name: '文件管理', perm_code: 'system:config:files', type: 'menu', icon: 'FolderOutlined', path: '/system/config/files', sort_order: 5 },
   { parent_id: 0, parent_code: 'system', perm_name: '操作日志', perm_code: 'system:log', type: 'menu', icon: 'FileTextOutlined', path: '/system/logs', sort_order: 6 },
   { parent_id: 0, parent_code: 'system', perm_name: '系统日志', perm_code: 'system:system-log', type: 'menu', icon: 'BugOutlined', path: '/system/system-logs', sort_order: 8 },
   // 基础数据
