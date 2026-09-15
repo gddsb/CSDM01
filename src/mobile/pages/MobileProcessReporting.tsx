@@ -13,7 +13,7 @@
  */
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Steps, Button, List, SearchBar, Stepper, Toast, Dialog } from 'antd-mobile'
+import { Steps, Button, List, SearchBar, Stepper, Toast, Dialog, Tabs } from 'antd-mobile'
 import api from '../../utils/api'
 import { useBarcode } from '../hooks/useBarcode'
 
@@ -35,13 +35,26 @@ interface LineRow {
 
 type Step = 0 | 1 | 2 // 选订单 / 填数据 / 提交结果
 
+interface HistoryRow {
+  report_order_id: number
+  report_no?: string
+  order_no?: string
+  material_name?: string
+  report_qty?: number
+  line_name?: string
+  status?: string
+  created_at?: string
+}
+
 export default function MobileProcessReporting() {
   const navigate = useNavigate()
   const { scan, isScanning } = useBarcode()
 
+  const [tab, setTab] = useState<'report' | 'history'>('report')
   const [step, setStep] = useState<Step>(0)
   const [orders, setOrders] = useState<OrderRow[]>([])
   const [lines, setLines] = useState<LineRow[]>([])
+  const [history, setHistory] = useState<HistoryRow[]>([])
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<OrderRow | null>(null)
@@ -68,6 +81,17 @@ export default function MobileProcessReporting() {
     }).catch(() => {})
     loadOrders()
   }, [])
+
+  // 加载报工历史（今日）
+  const loadHistory = async () => {
+    try {
+      const today = new Date().toISOString().slice(0, 10)
+      const r: any = await api.get('/production/report-orders', {
+        params: { page: 1, page_size: 20, start_date: today, end_date: today },
+      })
+      if (r.success) setHistory(r.data?.list || r.data?.rows || [])
+    } catch {}
+  }
 
   // Step 1 → Step 2: 选订单
   const goToFill = (order: OrderRow) => {
@@ -148,7 +172,48 @@ export default function MobileProcessReporting() {
 
   return (
     <div className="mobile-page" style={{ paddingTop: 12 }}>
-      <Steps
+      <Tabs
+        activeKey={tab}
+        onChange={(k) => {
+          setTab(k as any)
+          if (k === 'history') loadHistory()
+        }}
+        style={{ marginBottom: 8 }}
+      >
+        <Tabs.Tab title="📝 报工录入" key="report" />
+        <Tabs.Tab title={`📋 今日历史(${history.length})`} key="history" />
+      </Tabs>
+
+      {tab === 'history' ? (
+        history.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>
+            今日暂无报工记录
+          </div>
+        ) : (
+          <List>
+            {history.map(h => (
+              <List.Item key={h.report_order_id}
+                description={
+                  <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+                    {h.material_name || ''} · {h.line_name || '—'}
+                    <span style={{ marginLeft: 12, color: '#4CAF50' }}>{h.status}</span>
+                  </div>
+                }>
+                <div style={{ fontWeight: 500, fontSize: 13 }}>
+                  {h.report_no || h.order_no} · ×{h.report_qty}
+                </div>
+                {h.created_at && (
+                  <div style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>
+                    {new Date(h.created_at).toLocaleTimeString('zh-CN', { hour12: false })}
+                  </div>
+                )}
+              </List.Item>
+            ))}
+          </List>
+        )
+      ) : (
+        <>
+          <Steps
         current={step}
         direction="vertical"
         style={{ marginBottom: 16 }}
@@ -279,6 +344,8 @@ export default function MobileProcessReporting() {
             <Button block color="primary" onClick={resetAll}>再来一单</Button>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   )
