@@ -160,7 +160,7 @@ export default function ProcessReporting() {
         const [defectRes, devRes, ordersRes, linesRes] = await Promise.all([
           api.get('/basic/defect-types', { params: { page: 1, pageSize: 1000, status: '启用' } }),
           api.get('/basic/devices', { params: { page: 1, pageSize: 1000 } }),
-          api.get('/production/orders', { params: { page: 1, pageSize: 1000 } }),
+          api.get('/production/orders', { params: { page: 1, pageSize: 1000, status: '1,2,3' } }),
           api.get('/basic/production-lines', { params: { page: 1, pageSize: 1000 } }),
         ])
         if (cancelled) return

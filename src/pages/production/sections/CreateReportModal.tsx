@@ -45,7 +45,7 @@ export default function CreateReportModal({
       <Form form={form} layout="vertical" preserve={false}>
         <Form.Item name="order_id" label="生产订单" rules={[{ required: true, message: '请选择生产订单' }]}>
           <Select
-            placeholder="请选择生产订单（仅下发状态）"
+            placeholder="请选择生产订单（下发/开工/未完工）"
             options={orderOptions}
             showSearch
             optionFilterProp="label"
