@@ -2,13 +2,13 @@
   "version": "1.0.2",
   "buildNumber": 2,
   "forceUpdate": false,
-  "downloadUrl": "http://43.138.218.55/download/milk-can-mes-1.0.2-e98e43b.apk",
-  "downloadUrlIos": "http://43.138.218.55/download/milk-can-mes-1.0.2-e98e43b.ipa",
-  "apkSize": 6886826,
+  "downloadUrl": "http://43.138.218.55/download/milk-can-mes-1.0.2-e11d899.apk",
+  "downloadUrlIos": "http://43.138.218.55/download/milk-can-mes-1.0.2-e11d899.ipa",
+  "apkSize": 6886635,
   "ipaSize": 0,
   "appId": "com.daman.milkcanmes",
   "bundleId": "com.daman.milkcanmes",
-  "updateNotes": "Batch C 全部完成：成品检验/过程检验/报工历史/5-TabBar",
-  "publishedAt": "2026-09-15T10:21:04Z",
-  "gitSha": "e98e43b"
+  "updateNotes": "Batch C + D：iOS 工程 + 发布脚本 + 强更弹窗 + PC 下载入口 iOS 动态启用",
+  "publishedAt": "2026-09-15T10:24:55Z",
+  "gitSha": "e11d899"
 }

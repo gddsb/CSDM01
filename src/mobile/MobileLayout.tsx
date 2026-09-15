@@ -4,11 +4,14 @@
  * - 中部 Outlet（子页面）
  * - 底部 TabBar（首页 / 报工 / 检验 / 设备 / 我的）
  *   "检验" Tab 点击时弹出 ActionSheet 选择：来料/成品/过程检验
+ * - 冷启动调 checkForUpdate()：有新版本时弹 antd-mobile Dialog
  */
+import { useEffect } from 'react'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
-import { TabBar, NavBar, ActionSheet } from 'antd-mobile'
+import { TabBar, NavBar, ActionSheet, Dialog } from 'antd-mobile'
 import { AppOutline, EditSOutline, CheckOutline, TeamOutline, UserOutline } from 'antd-mobile-icons'
 import { useApp } from '../contexts/AppContext'
+import { checkForUpdate, skipUpdate } from '../adapter/update'
 
 const TABS = [
   { key: '/m/dashboard', title: '首页', icon: <AppOutline /> },
@@ -44,6 +47,69 @@ export function MobileLayout() {
   const title = TITLE_MAP[location.pathname] || (location.pathname.startsWith('/m/') ? '奶粉罐MES' : '')
   const canBack = location.pathname.startsWith('/m/') && !isTabPage
 
+  // ========== 版本检测（冷启动时跑一次） ==========
+  useEffect(() => {
+    let cancelled = false
+    const run = async () => {
+      try {
+        const result = await checkForUpdate()
+        if (cancelled || !result.hasUpdate || !result.release) return
+        const rel = result.release
+        const apkUrl = rel.downloadUrl
+        const iosUrl = rel.downloadUrlIos
+        const isIos = result.local.platform === 'ios'
+        const targetUrl = isIos && iosUrl ? iosUrl : apkUrl
+
+        const content = (
+          <div>
+            <div style={{ fontSize: 14, color: '#333', marginBottom: 8, fontWeight: 500 }}>
+              新版本 v{rel.version}（build {rel.buildNumber}）
+            </div>
+            {rel.updateNotes && (
+              <div style={{ fontSize: 12, color: '#666', background: '#f5f7fa', padding: 10, borderRadius: 6, marginBottom: 8 }}>
+                {rel.updateNotes}
+              </div>
+            )}
+            {rel.apkSize && (
+              <div style={{ fontSize: 11, color: '#999' }}>
+                📦 {(rel.apkSize / 1024 / 1024).toFixed(1)}MB · Android
+              </div>
+            )}
+          </div>
+        )
+
+        const openDownload = () => {
+          if (targetUrl) window.open(targetUrl, '_blank')
+        }
+
+        if (result.forceUpdate) {
+          // 强制更新：无取消按钮
+          Dialog.alert({
+            title: '🔔 发现新版本（强制更新）',
+            content,
+            confirmText: '立即更新',
+            onConfirm: openDownload,
+          })
+        } else {
+          // 非强制更新：可跳过
+          Dialog.confirm({
+            title: '🔔 发现新版本',
+            content,
+            confirmText: '立即更新',
+            cancelText: '稍后再说',
+            onConfirm: openDownload,
+            onCancel: () => skipUpdate(rel),
+          })
+        }
+      } catch {
+        /* 静默降级 —— 网络失败 / parse 失败都不打扰用户 */
+      }
+    }
+    run()
+    return () => { cancelled = true }
+  }, [])
+
+  // ========== TabBar 交互 ==========
   const handleTabClick = (key: string) => {
     if (key === '__inspection__') {
       ActionSheet.show({
