@@ -66,6 +66,7 @@ const TITLE_MAP: Record<string, string> = {
   '/m/complaint-report': '投诉上报',
   '/m/offline-queue': '离线暂存队列',
   '/m/device-oee': '设备OEE看板',
+  '/m/production-orders': '生产订单',
   '/m/exception-report': '异常上报',
   '/m/profile': '我的',
 }

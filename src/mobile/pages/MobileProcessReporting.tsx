@@ -17,6 +17,7 @@ import { Steps, Button, List, SearchBar, Stepper, Toast, Dialog, Tabs, PullToRef
 import api from '../../utils/api'
 import { useBarcode } from '../hooks/useBarcode'
 import { MobileOrderDetail, MobileOrderData } from '../components/MobileOrderDetail'
+import { ReportOrderDetail, type ReportOrderMeta } from '../components/ReportOrderDetail'
 
 interface OrderRow {
   order_id: number
@@ -68,6 +69,9 @@ export default function MobileProcessReporting() {
 
   // P-A: 工单详情抽屉
   const [detailOrder, setDetailOrder] = useState<MobileOrderData | null>(null)
+
+  // 6-A: 报工单详情抽屉（工序/不良/报废/异常/人工/投料/图片）
+  const [activeReport, setActiveReport] = useState<ReportOrderMeta | null>(null)
 
   // 上次扫码命中的订单列表（给"扫码后自动选中"逻辑用）
   const lastScanMatches = useRef<OrderRow[]>([])
@@ -248,6 +252,12 @@ export default function MobileProcessReporting() {
             <List>
               {history.map(h => (
                 <List.Item key={h.report_order_id}
+                  onClick={() => setActiveReport({
+                    report_order_id: h.report_order_id, report_no: h.report_no,
+                    order_no: h.order_no, material_code: h.material_code,
+                    material_name: h.material_name, line_name: h.line_name,
+                    report_qty: h.report_qty, status: h.status,
+                  })}
                   description={
                     <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
                       {h.material_name || ''} · {h.line_name || '—'}
@@ -433,6 +443,13 @@ export default function MobileProcessReporting() {
         orderId={detailOrder?.order_id ?? null}
         visible={!!detailOrder}
         onClose={() => setDetailOrder(null)}
+      />
+
+      {/* 6-A: 报工单详情抽屉 */}
+      <Dialog visible={!!activeReport} content={
+        activeReport ? <ReportOrderDetail meta={activeReport} onClose={() => setActiveReport(null)} /> : null
+      }
+        actions={[{ key: 'close', text: '关闭', onClick: () => setActiveReport(null) }]}
       />
     </div>
   )

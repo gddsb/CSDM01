@@ -29,6 +29,7 @@ const MobileMicrobeInspection = lazy(() => import('./pages/MobileMicrobeInspecti
 const MobileComplaintReport = lazy(() => import('./pages/MobileComplaintReport'))
 const MobileOfflineQueue = lazy(() => import('./pages/MobileOfflineQueue'))
 const MobileOeeDashboard = lazy(() => import('./pages/MobileOeeDashboard'))
+const MobileOrderManagement = lazy(() => import('./pages/MobileOrderManagement'))
 import { MobileProfile } from './pages/MobileProfile'
 
 function MobileLoading() {
@@ -143,6 +144,11 @@ export default function MobileRoutes() {
           <Route path="device-oee" element={
             <Suspense fallback={<MobileLoading />}>
               <MobileOeeDashboard />
+            </Suspense>
+          } />
+          <Route path="production-orders" element={
+            <Suspense fallback={<MobileLoading />}>
+              <MobileOrderManagement />
             </Suspense>
           } />
           <Route path="profile" element={<MobileProfile />} />
