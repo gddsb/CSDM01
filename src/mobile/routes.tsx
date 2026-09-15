@@ -16,6 +16,8 @@ import MobileLogin from './pages/MobileLogin'
 const MobileDashboard = lazy(() => import('./pages/MobileDashboard'))
 const MobileProcessReporting = lazy(() => import('./pages/MobileProcessReporting'))
 const MobileIncomingInspection = lazy(() => import('./pages/MobileIncomingInspection'))
+const MobileProductInspection = lazy(() => import('./pages/MobileProductInspection'))
+const MobileProcessInspection = lazy(() => import('./pages/MobileProcessInspection'))
 const MobileDeviceInspection = lazy(() => import('./pages/MobileDeviceInspection'))
 import { MobileProfile } from './pages/MobileProfile'
 
@@ -57,7 +59,7 @@ export default function MobileRoutes() {
               <MobileDashboard />
             </Suspense>
           } />
-          {/* Batch B 页面占位，组件先写好再启用 */}
+          {/* Batch B + C 业务页面 */}
           <Route path="process-reporting" element={
             <Suspense fallback={<MobileLoading />}>
               <MobileProcessReporting />
@@ -66,6 +68,16 @@ export default function MobileRoutes() {
           <Route path="incoming-inspection" element={
             <Suspense fallback={<MobileLoading />}>
               <MobileIncomingInspection />
+            </Suspense>
+          } />
+          <Route path="product-inspection" element={
+            <Suspense fallback={<MobileLoading />}>
+              <MobileProductInspection />
+            </Suspense>
+          } />
+          <Route path="process-inspection" element={
+            <Suspense fallback={<MobileLoading />}>
+              <MobileProcessInspection />
             </Suspense>
           } />
           <Route path="device-inspection" element={
