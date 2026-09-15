@@ -6,6 +6,9 @@ import zhCN from 'antd/locale/zh_CN'
 import dayjs from 'dayjs'
 import 'dayjs/locale/zh-cn'
 import './styles/global.css'
+import './mobile/styles/mobile.css' // 移动端全局样式（有 html.mobile-root 前缀，不影响 PC）
+import MobileRoutes from './mobile/routes'
+import { DeviceEntryRedirect, isMobilePath } from './mobile/DeviceEntryRedirect'
 import { AppProvider, useApp } from './contexts/AppContext'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from './queryClient'
@@ -136,6 +139,17 @@ function AppRoutes() {
 
   // TV 端：访问根路径直接跳到 TV 大屏
   const isTv = type === 'tv'
+  const isMobileDevice = type === 'phone' || type === 'pda' || type === 'tablet'
+
+  // 设备入口自动跳转
+  // 1) 移动端设备访问 PC 根路由 → 跳到移动端入口（TV 端跳过）
+  if (isMobileDevice && !isMobilePath(location.pathname)) {
+    return <Navigate to="/m/dashboard" replace />
+  }
+  // 2) PC 设备访问移动端路由 → 跳回 PC 端
+  if (!isMobileDevice && isMobilePath(location.pathname)) {
+    return <Navigate to="/dashboard" replace />
+  }
 
   return (
     <Routes>
@@ -233,6 +247,10 @@ function AppRoutes() {
         <Route path="/auto/scheduled-tasks" element={lazyPage(<ScheduledTaskPage />)} />
         <Route path="/auto/task-logs" element={lazyPage(<TaskLogPage />)} />
       </Route>
+
+      {/* —— 移动端路由子树（antd-mobile，独立 ConfigProvider）—— */}
+      <Route path="/m/*" element={<MobileRoutes />} />
+
       {/* 兜底：TV 走 TV 大屏，其他端走 Dashboard */}
       <Route path="*" element={<Navigate to={isTv ? '/tv/display' : '/dashboard'} replace />} />
     </Routes>

@@ -1,0 +1,85 @@
+/**
+ * 移动端全局样式
+ * 注意：这个文件只在 /m/* 路由子树下 import，避免影响 PC 布局
+ */
+
+/* 安全区适配（iPhone X+ 刘海屏 / 底部 Home Indicator） */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+}
+
+/* 移动端根容器：100dvh 处理移动浏览器地址栏伸缩 */
+html.mobile-root,
+html.mobile-root body {
+  height: 100%;
+  background: #f5f6f8;
+}
+
+#root {
+  height: 100%;
+}
+
+/* 移动端专用覆盖：避免 PC 端的紧凑字号让 iOS 输入框放大 */
+html.mobile-root body {
+  font-size: 15px;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-y: contain;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.mobile-root input,
+html.mobile-root select,
+html.mobile-root textarea {
+  font-size: 16px !important; /* 防止 iOS 聚焦时自动放大 */
+}
+
+/* 移动端容器 */
+.mobile-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  min-height: 100vh; /* fallback */
+  background: #f5f6f8;
+  padding-top: var(--sat);
+  padding-bottom: var(--sab);
+}
+
+.mobile-app__content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 页面通用间距 */
+.mobile-page {
+  padding: 12px 14px;
+}
+
+/* TabBar 底部 padding（safe-area） */
+.mobile-tabbar-padding {
+  padding-bottom: calc(50px + var(--sab));
+}
+
+/* 点击态轻微缩放 */
+.mobile-clickable:active {
+  transform: scale(0.97);
+  opacity: 0.85;
+  transition: transform 0.08s ease, opacity 0.08s ease;
+}
+
+/* 隐藏滚动条但保持滚动功能（美观） */
+.mobile-scroll::-webkit-scrollbar {
+  display: none;
+}
+.mobile-scroll {
+  scrollbar-width: none;
+}
+
+/* 禁用 Chrome 自动填充样式 */
+html.mobile-root input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px white inset;
+  -webkit-text-fill-color: #333;
+}
