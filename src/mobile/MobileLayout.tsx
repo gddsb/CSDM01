@@ -35,12 +35,15 @@ const INSPECTION_ITEMS = [
   { text: '📦 来料检验', key: 'incoming', route: '/m/incoming-inspection', permCode: 'quality:incoming' },
   { text: '🏷️ 成品检验', key: 'product', route: '/m/product-inspection', permCode: 'quality:product' },
   { text: '⚙️ 过程检验', key: 'process', route: '/m/process-inspection', permCode: 'quality:process' },
+  { text: '📋 检验历史', key: 'history', route: '/m/inspection-history', permCode: 'quality:incoming' },
 ]
 
 /** "设备" ActionSheet 子项（每项独立鉴权，全部不可见时隐藏设备 Tab） */
 const DEVICE_ITEMS = [
   { text: '🔍 设备点检', key: 'inspection', route: '/m/device-inspection', permCode: 'device:inspection' },
   { text: '🛠️ 设备保养', key: 'maintenance', route: '/m/device-maintenance', permCode: 'device:maintenance' },
+  { text: '⚠️ 设备故障', key: 'fault', route: '/m/device-fault', permCode: 'device:fault' },
+  { text: '⏰ 校准提醒', key: 'calibration', route: '/m/calibration-reminder', permCode: 'device:calibration' },
 ]
 
 /** 标题映射（Tab 页 + 子页都覆盖） */
@@ -52,18 +55,21 @@ const TITLE_MAP: Record<string, string> = {
   '/m/process-inspection': '过程检验',
   '/m/device-inspection': '设备点检',
   '/m/device-maintenance': '设备保养',
+  '/m/device-fault': '设备故障上报',
+  '/m/calibration-reminder': '校准提醒',
+  '/m/inspection-history': '检验历史',
   '/m/exception-report': '异常上报',
   '/m/profile': '我的',
 }
 
 /** 当前路径是否属于"检验"家族（用于高亮 Tab） */
 function isInspectionPath(p: string) {
-  return p === '/m/incoming-inspection' || p === '/m/product-inspection' || p === '/m/process-inspection'
+  return p === '/m/incoming-inspection' || p === '/m/product-inspection' || p === '/m/process-inspection' || p === '/m/inspection-history'
 }
 
 /** 当前路径是否属于"设备"家族（用于高亮 Tab） */
 function isDevicePath(p: string) {
-  return p === '/m/device-inspection' || p === '/m/device-maintenance'
+  return p === '/m/device-inspection' || p === '/m/device-maintenance' || p === '/m/device-fault' || p === '/m/calibration-reminder'
 }
 
 export function MobileLayout() {
