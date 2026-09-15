@@ -1,220 +1,100 @@
-import { Op } from 'sequelize'
-import { DictType, DictData } from '../models/index.js'
-import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
+/**
+ * 字典管理 Controller — 全部逻辑下沉 DictService
+ * 保留 11 个 named export 兼容 routes/system.ts 的导入方式
+ */
+import DictService from '../services/DictService.js'
+import { success, fail } from '../utils/response.js'
+import { AppError } from '../utils/error.js'
+import { asyncHandler } from '../middleware/security.js'
+import type { Request, Response } from 'express'
 
-export const listType = async (req, res) => {
+const catchErr = (res: Response, err: any) => {
+  if (err instanceof AppError) return fail(res, err.message, err.code || 10001, err.statusCode || 400)
+  return fail(res, err?.message || '服务器错误', 500)
+}
+const paramStr = (v: any): string => (Array.isArray(v) ? v[0] : v) || ''
+
+// ============================================================
+// 字典类型
+// ============================================================
+
+export const listType = async (req: Request, res: Response) => {
   try {
-    const { keyword, status, page = 1, pageSize = 30 } = req.query
-    const where: any = {}
-    if (keyword) {
-      where[Op.or] = [
-        { dict_name: { [Op.like]: `%${keyword}%` } },
-        { dict_type: { [Op.like]: `%${keyword}%` } },
-      ]
-    }
-    if (status !== undefined && status !== '' && status !== null) {
-      where.status = Number(status)
-    }
-    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
-    const offset = (Number(page) - 1) * limit
-    const { rows, count } = await DictType.findAndCountAll({
-      where,
-      limit,
-      offset,
-      order: [['dict_id', 'DESC']],
-    })
+    const { rows, count } = await DictService.listType(req.query)
     return success(res, rows, '查询成功', count)
-  } catch (err) {
-    console.error('查询字典类型失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
-  }
+  } catch (err: any) { return catchErr(res, err) }
 }
 
-export const getType = async (req, res) => {
+export const getType = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params
-    const dict = await DictType.findOne({ where: { dict_id: id } })
-    if (!dict) return fail(res, '字典类型不存在', ErrorCode.RECORD_NOT_FOUND)
+    const dict = await DictService.getType(Number(req.params.id))
     return success(res, dict, '查询成功')
-  } catch (err) {
-    console.error('查询字典类型失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
-  }
+  } catch (err: any) { return catchErr(res, err) }
 }
 
-export const createType = async (req, res) => {
+export const createType = async (req: Request, res: Response) => {
   try {
-    const { dict_name, dict_type, status, remark } = req.body
-    if (!dict_name) return fail(res, '字典名称不能为空')
-    if (!dict_type) return fail(res, '字典类型不能为空')
-    const existing = await DictType.findOne({ where: { dict_type } })
-    if (existing) return fail(res, '字典类型编码已存在')
-    const dict = await DictType.create({
-      dict_name,
-      dict_type,
-      status: status !== undefined ? Number(status) : 1,
-      remark,
-      created_by: req.user?.username || null,
-    })
+    const dict = await DictService.createType(req.body, (req as any).user)
     return success(res, dict, '创建成功')
-  } catch (err) {
-    console.error('创建字典类型失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
-  }
+  } catch (err: any) { return catchErr(res, err) }
 }
 
-export const updateType = async (req, res) => {
+export const updateType = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params
-    const { dict_name, dict_type, status, remark } = req.body
-    const dict = await DictType.findOne({ where: { dict_id: id } })
-    if (!dict) return fail(res, '字典类型不存在', ErrorCode.RECORD_NOT_FOUND)
-    if (dict_type && dict_type !== dict.dict_type) {
-      const existing = await DictType.findOne({ where: { dict_type } })
-      if (existing) return fail(res, '字典类型编码已存在')
-    }
-    await DictType.update(
-      { dict_name, dict_type, status: status !== undefined ? Number(status) : undefined, remark },
-      { where: { dict_id: id } }
-    )
-    const updated = await DictType.findOne({ where: { dict_id: id } })
-    return success(res, updated, '更新成功')
-  } catch (err) {
-    console.error('更新字典类型失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
-  }
+    const dict = await DictService.updateType(Number(req.params.id), req.body)
+    return success(res, dict, '更新成功')
+  } catch (err: any) { return catchErr(res, err) }
 }
 
-export const removeType = async (req, res) => {
+export const removeType = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params
-    const dict = await DictType.findOne({ where: { dict_id: id } })
-    if (!dict) return fail(res, '字典类型不存在', ErrorCode.RECORD_NOT_FOUND)
-    await DictData.destroy({ where: { dict_type: dict.dict_type } })
-    await DictType.destroy({ where: { dict_id: id } })
+    await DictService.removeType(Number(req.params.id))
     return success(res, null, '删除成功')
-  } catch (err) {
-    console.error('删除字典类型失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
-  }
+  } catch (err: any) { return catchErr(res, err) }
 }
 
-export const listData = async (req, res) => {
+// ============================================================
+// 字典数据
+// ============================================================
+
+export const listData = async (req: Request, res: Response) => {
   try {
-    const { dictType, keyword, status, page = 1, pageSize = 30 } = req.query
-    const where: any = {}
-    if (dictType) where.dict_type = dictType
-    if (keyword) {
-      where[Op.or] = [
-        { dict_label: { [Op.like]: `%${keyword}%` } },
-        { dict_value: { [Op.like]: `%${keyword}%` } },
-      ]
-    }
-    if (status !== undefined && status !== '' && status !== null) {
-      where.status = Number(status)
-    }
-    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
-    const offset = (Number(page) - 1) * limit
-    const { rows, count } = await DictData.findAndCountAll({
-      where,
-      limit,
-      offset,
-      order: [['dict_sort', 'ASC'], ['dict_code', 'ASC']],
-    })
+    const { rows, count } = await DictService.listData(req.query)
     return success(res, rows, '查询成功', count)
-  } catch (err) {
-    console.error('查询字典数据失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
-  }
+  } catch (err: any) { return catchErr(res, err) }
 }
 
-export const listDataByType = async (req, res) => {
+export const listDataByType = async (req: Request, res: Response) => {
   try {
-    const { type } = req.params
-    const data = await DictData.findAll({
-      where: { dict_type: type, status: 1 },
-      order: [['dict_sort', 'ASC'], ['dict_code', 'ASC']],
-    })
+    const data = await DictService.listDataByType(paramStr(req.params.type))
     return success(res, data, '查询成功')
-  } catch (err) {
-    console.error('查询字典数据失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
-  }
+  } catch (err: any) { return catchErr(res, err) }
 }
 
-export const getData = async (req, res) => {
+export const getData = async (req: Request, res: Response) => {
   try {
-    const { code } = req.params
-    const data = await DictData.findOne({ where: { dict_code: code } })
-    if (!data) return fail(res, '字典数据不存在', ErrorCode.RECORD_NOT_FOUND)
+    const data = await DictService.getData(paramStr(req.params.code))
     return success(res, data, '查询成功')
-  } catch (err) {
-    console.error('查询字典数据失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
-  }
+  } catch (err: any) { return catchErr(res, err) }
 }
 
-export const createData = async (req, res) => {
+export const createData = async (req: Request, res: Response) => {
   try {
-    const { dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, remark } = req.body
-    if (!dict_label) return fail(res, '字典标签不能为空')
-    if (!dict_value) return fail(res, '字典键值不能为空')
-    if (!dict_type) return fail(res, '字典类型不能为空')
-    const data = await DictData.create({
-      dict_sort: dict_sort || 0,
-      dict_label,
-      dict_value,
-      dict_type,
-      css_class,
-      list_class,
-      is_default: is_default ? 1 : 0,
-      status: status !== undefined ? Number(status) : 1,
-      remark,
-    })
+    const data = await DictService.createData(req.body)
     return success(res, data, '创建成功')
-  } catch (err) {
-    console.error('创建字典数据失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
-  }
+  } catch (err: any) { return catchErr(res, err) }
 }
 
-export const updateData = async (req, res) => {
+export const updateData = async (req: Request, res: Response) => {
   try {
-    const { code } = req.params
-    const { dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, remark } = req.body
-    const data = await DictData.findOne({ where: { dict_code: code } })
-    if (!data) return fail(res, '字典数据不存在', ErrorCode.RECORD_NOT_FOUND)
-    await DictData.update(
-      {
-        dict_sort,
-        dict_label,
-        dict_value,
-        dict_type,
-        css_class,
-        list_class,
-        is_default: is_default ? 1 : 0,
-        status: status !== undefined ? Number(status) : undefined,
-        remark,
-      },
-      { where: { dict_code: code } }
-    )
-    const updated = await DictData.findOne({ where: { dict_code: code } })
-    return success(res, updated, '更新成功')
-  } catch (err) {
-    console.error('更新字典数据失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
-  }
+    const data = await DictService.updateData(paramStr(req.params.code), req.body)
+    return success(res, data, '更新成功')
+  } catch (err: any) { return catchErr(res, err) }
 }
 
-export const removeData = async (req, res) => {
+export const removeData = async (req: Request, res: Response) => {
   try {
-    const { code } = req.params
-    const data = await DictData.findOne({ where: { dict_code: code } })
-    if (!data) return fail(res, '字典数据不存在', ErrorCode.RECORD_NOT_FOUND)
-    await DictData.destroy({ where: { dict_code: code } })
+    await DictService.removeData(paramStr(req.params.code))
     return success(res, null, '删除成功')
-  } catch (err) {
-    console.error('删除字典数据失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
-  }
+  } catch (err: any) { return catchErr(res, err) }
 }
