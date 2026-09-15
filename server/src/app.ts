@@ -16,6 +16,7 @@ import { runMigrations, runUmzugSqlFiles } from './migrate.js'
 import { startTaskScheduler } from './services/taskScheduler.js'
 import { TaskSetting } from './models/index.js'
 import { corsOptions, apiRateLimiter, AppError } from './middleware/security.js'
+import { WorkflowError } from './services/ProductionWorkflowService.js'
 import { performanceMonitor } from './middleware/performance.js'
 import logger from './utils/logger.js'
 
@@ -270,6 +271,17 @@ app.use((err: any, req: any, res: any, next: any) => {
   // 业务异常：使用其自带的状态码与错误码
   if (err instanceof AppError) {
     logger.warn('[AppError]', JSON.stringify({ ...reqInfo, code: err.code, message: err.message }))
+    if (!res.headersSent) {
+      const resp: any = { success: false, code: err.code, message: err.message }
+      if (err.details) resp.details = err.details
+      return res.status(err.statusCode).json(resp)
+    }
+    return
+  }
+
+  // 状态机流转异常（WorkflowError 结构与 AppError 一致）
+  if (err instanceof WorkflowError) {
+    logger.warn('[WorkflowError]', JSON.stringify({ ...reqInfo, code: err.code, message: err.message }))
     if (!res.headersSent) {
       return res.status(err.statusCode).json({ success: false, code: err.code, message: err.message })
     }

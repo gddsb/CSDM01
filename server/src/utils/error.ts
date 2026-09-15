@@ -7,12 +7,14 @@
 export class AppError extends Error {
   code: number
   statusCode: number
+  details?: Record<string, any>
 
-  constructor(message: string, code = 10000, statusCode = 400) {
+  constructor(message: string, code = 10000, statusCode = 400, details?: Record<string, any>) {
     super(message)
     this.name = 'AppError'
     this.code = code
     this.statusCode = statusCode
+    if (details) this.details = details
     Object.setPrototypeOf(this, AppError.prototype)
   }
 }
