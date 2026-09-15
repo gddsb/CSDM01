@@ -25,9 +25,33 @@ const app = express()
 const PORT = process.env.PORT || 3001
 const isProd = process.env.NODE_ENV === 'production'
 
-// 启动时校验 JWT 密钥安全性（生产环境禁止使用默认弱密钥）
-if (isProd && (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'default-secret')) {
-  logger.warn('[Security] 生产环境未设置强随机 JWT_SECRET，请在 .env 中配置 JWT_SECRET')
+// 启动时校验生产环境关键配置（JWT + DB），不合格直接拒绝启动
+if (isProd) {
+  const errors: string[] = []
+
+  // JWT 密钥校验
+  const secret = process.env.JWT_SECRET
+  if (!secret || secret === 'default-secret' || secret.length < 16) {
+    errors.push('JWT_SECRET 未配置或长度 < 16 位')
+  }
+
+  // 数据库校验：生产禁止 SQLite，MySQL 必须显式配置
+  const dialect = process.env.DB_DIALECT || 'mysql'
+  if (dialect === 'sqlite') {
+    errors.push('生产环境禁止使用 SQLite，请切换到 MySQL (DB_DIALECT=mysql)')
+  } else {
+    if (!process.env.DB_HOST) errors.push('DB_HOST 未配置')
+    if (!process.env.DB_USER) errors.push('DB_USER 未配置')
+    if (!process.env.DB_NAME) errors.push('DB_NAME 未配置')
+    if (process.env.DB_PASSWORD === undefined) errors.push('DB_PASSWORD 未配置')
+  }
+
+  if (errors.length > 0) {
+    const msg = '[Security] 生产环境启动检查未通过：\n  ' + errors.join('\n  ')
+    logger.error(msg)
+    console.error('\n❌ ' + msg + '\n    请在 server/.env 中补齐上述配置后重启\n')
+    process.exit(1)
+  }
 }
 
 const proxy = httpProxy.createProxyServer({

@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { asyncHandler } from '../middleware/security.js'
 import multer from 'multer'
 import {
   list as orderList,
@@ -74,60 +75,60 @@ const reportImageUpload = multer({
 router.use(authRequired)
 
 // 生产订单（状态：开立/下发/开工/完工/关闭）
-router.get('/orders', orderList)
-router.get('/orders/:id', orderDetail)
-router.post('/orders', orderCreate)
-router.put('/orders/:id', orderUpdate)
-router.delete('/orders/:id', orderRemove)
-router.post('/orders/:id/release', permissionRequired('production:order:release'), release)
-router.post('/orders/:id/close', permissionRequired('production:order:close'), close)
-router.post('/orders/:id/finish', permissionRequired('production:order:finish'), orderFinish)
+router.get('/orders', asyncHandler(orderList))
+router.get('/orders/:id', asyncHandler(orderDetail))
+router.post('/orders', asyncHandler(orderCreate))
+router.put('/orders/:id', asyncHandler(orderUpdate))
+router.delete('/orders/:id', asyncHandler(orderRemove))
+router.post('/orders/:id/release', permissionRequired('production:order:release'), asyncHandler(release))
+router.post('/orders/:id/close', permissionRequired('production:order:close'), asyncHandler(close))
+router.post('/orders/:id/finish', permissionRequired('production:order:finish'), asyncHandler(orderFinish))
 
 // 生产报工单（状态：开工/完工；订单下发后直接创建）
-router.get('/report-orders', roList)
-router.get('/report-orders/:id', roDetail)
-router.post('/report-orders', permissionRequired('production:reporting:create'), roCreate)
-router.put('/report-orders/:id', roUpdate)
-router.delete('/report-orders/:id', roRemove)
-router.post('/report-orders/:id/finish', permissionRequired('production:reporting:finish'), roFinish)
-router.post('/report-orders/:id/close', permissionRequired('production:reporting:close'), roClose)
-router.get('/report-orders/:id/processes', roGetProcesses)
+router.get('/report-orders', asyncHandler(roList))
+router.get('/report-orders/:id', asyncHandler(roDetail))
+router.post('/report-orders', permissionRequired('production:reporting:create'), asyncHandler(roCreate))
+router.put('/report-orders/:id', asyncHandler(roUpdate))
+router.delete('/report-orders/:id', asyncHandler(roRemove))
+router.post('/report-orders/:id/finish', permissionRequired('production:reporting:finish'), asyncHandler(roFinish))
+router.post('/report-orders/:id/close', permissionRequired('production:reporting:close'), asyncHandler(roClose))
+router.get('/report-orders/:id/processes', asyncHandler(roGetProcesses))
 
 // 人员记录
-router.get('/manpower-records', manpowerList)
-router.get('/manpower-records/summary/by-report-order', manpowerSummary)
-router.get('/manpower-records/:id', manpowerDetail)
-router.post('/manpower-records', manpowerCreate)
-router.put('/manpower-records/:id', manpowerUpdate)
-router.delete('/manpower-records/:id', manpowerRemove)
+router.get('/manpower-records', asyncHandler(manpowerList))
+router.get('/manpower-records/summary/by-report-order', asyncHandler(manpowerSummary))
+router.get('/manpower-records/:id', asyncHandler(manpowerDetail))
+router.post('/manpower-records', asyncHandler(manpowerCreate))
+router.put('/manpower-records/:id', asyncHandler(manpowerUpdate))
+router.delete('/manpower-records/:id', asyncHandler(manpowerRemove))
 
 // 工序不良记录
-router.get('/process-defects', defectList)
-router.post('/process-defects', defectCreate)
-router.post('/process-defects/batch-save', defectBatchSave)
-router.put('/process-defects/:id', defectUpdate)
-router.delete('/process-defects/:id', defectRemove)
+router.get('/process-defects', asyncHandler(defectList))
+router.post('/process-defects', asyncHandler(defectCreate))
+router.post('/process-defects/batch-save', asyncHandler(defectBatchSave))
+router.put('/process-defects/:id', asyncHandler(defectUpdate))
+router.delete('/process-defects/:id', asyncHandler(defectRemove))
 
 // 检验报废记录
-router.get('/scrap-defects', scrapList)
-router.post('/scrap-defects', scrapCreate)
-router.put('/scrap-defects/:id', scrapUpdate)
+router.get('/scrap-defects', asyncHandler(scrapList))
+router.post('/scrap-defects', asyncHandler(scrapCreate))
+router.put('/scrap-defects/:id', asyncHandler(scrapUpdate))
 
 // 异常工时记录
-router.get('/process-exceptions', exceptionList)
-router.post('/process-exceptions', exceptionCreate)
-router.put('/process-exceptions/:id', exceptionUpdate)
-router.delete('/process-exceptions/:id', exceptionRemove)
+router.get('/process-exceptions', asyncHandler(exceptionList))
+router.post('/process-exceptions', asyncHandler(exceptionCreate))
+router.put('/process-exceptions/:id', asyncHandler(exceptionUpdate))
+router.delete('/process-exceptions/:id', asyncHandler(exceptionRemove))
 
 // 制程物料记录
-router.get('/process-materials', materialList)
-router.post('/process-materials', materialCreate)
-router.put('/process-materials/:id', materialUpdate)
-router.delete('/process-materials/:id', materialRemove)
+router.get('/process-materials', asyncHandler(materialList))
+router.post('/process-materials', asyncHandler(materialCreate))
+router.put('/process-materials/:id', asyncHandler(materialUpdate))
+router.delete('/process-materials/:id', asyncHandler(materialRemove))
 
 // 报工图片
-router.get('/report-images', reportImageList)
-router.delete('/report-images/:id', reportImageRemove)
-router.post('/report-images/:report_no/:category/upload', reportImageUpload.array('files', 10), uploadReportImages)
+router.get('/report-images', asyncHandler(reportImageList))
+router.delete('/report-images/:id', asyncHandler(reportImageRemove))
+router.post('/report-images/:report_no/:category/upload', reportImageUpload.array('files', 10), asyncHandler(uploadReportImages))
 
 export default router

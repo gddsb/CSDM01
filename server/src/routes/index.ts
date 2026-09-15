@@ -10,6 +10,7 @@ import energyRoutes from './energy.js'
 import sampleValueRoutes from './sample-value.js'
 import { uploadImage } from '../controllers/UploadController.js'
 import { authRequired } from '../middleware/auth.js'
+import { asyncHandler } from '../middleware/security.js'
 
 const router = Router()
 
@@ -24,8 +25,9 @@ const commonUploadMiddleware = multer({
   },
 })
 
-router.post('/upload/image', authRequired, commonUploadMiddleware.single('file'), uploadImage)
+router.post('/upload/image', authRequired, commonUploadMiddleware.single('file'), asyncHandler(uploadImage))
 
+// router.use 挂载子路由（Router 实例），不需要 asyncHandler
 router.use('/auth', authRoutes)
 router.use('/system', systemRoutes)
 router.use('/basic', basicRoutes)

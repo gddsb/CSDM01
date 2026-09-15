@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { asyncHandler } from '../middleware/security.js'
 import multer from 'multer'
 import { list, detail, create, update, remove, toggle, uploadMyAvatar, setMyAvatar, updateMyProfile } from '../controllers/UserController.js'
 import { list as roleList, create as roleCreate, update as roleUpdate, remove as roleRemove, getRolePermissions, assignPermissions } from '../controllers/RoleController.js'
@@ -50,84 +51,84 @@ const avatarUpload = multer({
 router.use(authRequired)
 
 // 当前用户头像与个人信息（放在 /users/:id 之前避免被匹配）
-router.post('/users/me/avatar', avatarUpload.single('avatar'), uploadMyAvatar)
-router.put('/users/me/avatar', setMyAvatar)
-router.put('/users/me/profile', updateMyProfile)
+router.post('/users/me/avatar', avatarUpload.single('avatar'), asyncHandler(uploadMyAvatar))
+router.put('/users/me/avatar', asyncHandler(setMyAvatar))
+router.put('/users/me/profile', asyncHandler(updateMyProfile))
 
 // 用户管理
-router.get('/users', logOperation('用户管理'), list)
-router.get('/users/:id', logOperation('用户管理'), detail)
-router.post('/users', logOperation('用户管理'), create)
-router.put('/users/:id', logOperation('用户管理'), update)
-router.delete('/users/:id', logOperation('用户管理'), remove)
-router.post('/users/:id/toggle', logOperation('用户管理'), toggle)
+router.get('/users', logOperation('用户管理'), asyncHandler(list))
+router.get('/users/:id', logOperation('用户管理'), asyncHandler(detail))
+router.post('/users', logOperation('用户管理'), asyncHandler(create))
+router.put('/users/:id', logOperation('用户管理'), asyncHandler(update))
+router.delete('/users/:id', logOperation('用户管理'), asyncHandler(remove))
+router.post('/users/:id/toggle', logOperation('用户管理'), asyncHandler(toggle))
 
 // 角色管理
-router.get('/roles', logOperation('角色管理'), roleList)
-router.post('/roles', logOperation('角色管理'), roleCreate)
-router.put('/roles/:id', logOperation('角色管理'), roleUpdate)
-router.delete('/roles/:id', logOperation('角色管理'), roleRemove)
+router.get('/roles', logOperation('角色管理'), asyncHandler(roleList))
+router.post('/roles', logOperation('角色管理'), asyncHandler(roleCreate))
+router.put('/roles/:id', logOperation('角色管理'), asyncHandler(roleUpdate))
+router.delete('/roles/:id', logOperation('角色管理'), asyncHandler(roleRemove))
 
 // 权限/菜单管理
-router.get('/permissions', permList)
-router.get('/permissions/tree', permList)
-router.get('/permissions/menu', userMenu)
-router.get('/permissions/:id', permDetail)
-router.post('/permissions', logOperation('菜单管理'), permCreate)
-router.put('/permissions/:id', logOperation('菜单管理'), permUpdate)
-router.delete('/permissions/:id', logOperation('菜单管理'), permRemove)
-router.get('/roles/:id/permissions', getRolePermissions)
-router.put('/roles/:id/permissions', logOperation('角色权限分配'), assignPermissions)
+router.get('/permissions', asyncHandler(permList))
+router.get('/permissions/tree', asyncHandler(permList))
+router.get('/permissions/menu', asyncHandler(userMenu))
+router.get('/permissions/:id', asyncHandler(permDetail))
+router.post('/permissions', logOperation('菜单管理'), asyncHandler(permCreate))
+router.put('/permissions/:id', logOperation('菜单管理'), asyncHandler(permUpdate))
+router.delete('/permissions/:id', logOperation('菜单管理'), asyncHandler(permRemove))
+router.get('/roles/:id/permissions', asyncHandler(getRolePermissions))
+router.put('/roles/:id/permissions', logOperation('角色权限分配'), asyncHandler(assignPermissions))
 
 // 操作日志
-router.get('/logs', logList)
+router.get('/logs', asyncHandler(logList))
 
 // 系统日志（结构化日志）
-router.get('/system-logs', systemLogList)
+router.get('/system-logs', asyncHandler(systemLogList))
 
 // 数据字典 - 字典类型
-router.get('/dict/types', dictTypeList)
-router.get('/dict/types/:id', dictTypeGet)
-router.post('/dict/types', logOperation('数据字典'), dictTypeCreate)
-router.put('/dict/types/:id', logOperation('数据字典'), dictTypeUpdate)
-router.delete('/dict/types/:id', logOperation('数据字典'), dictTypeRemove)
+router.get('/dict/types', asyncHandler(dictTypeList))
+router.get('/dict/types/:id', asyncHandler(dictTypeGet))
+router.post('/dict/types', logOperation('数据字典'), asyncHandler(dictTypeCreate))
+router.put('/dict/types/:id', logOperation('数据字典'), asyncHandler(dictTypeUpdate))
+router.delete('/dict/types/:id', logOperation('数据字典'), asyncHandler(dictTypeRemove))
 
 // 数据字典 - 字典数据
-router.get('/dict/datas', dictDataList)
-router.get('/dict/datas/type/:type', listDataByType)
-router.get('/dict/datas/:code', dictDataGet)
-router.post('/dict/datas', logOperation('数据字典'), dictDataCreate)
-router.put('/dict/datas/:code', logOperation('数据字典'), dictDataUpdate)
-router.delete('/dict/datas/:code', logOperation('数据字典'), dictDataRemove)
+router.get('/dict/datas', asyncHandler(dictDataList))
+router.get('/dict/datas/type/:type', asyncHandler(listDataByType))
+router.get('/dict/datas/:code', asyncHandler(dictDataGet))
+router.post('/dict/datas', logOperation('数据字典'), asyncHandler(dictDataCreate))
+router.put('/dict/datas/:code', logOperation('数据字典'), asyncHandler(dictDataUpdate))
+router.delete('/dict/datas/:code', logOperation('数据字典'), asyncHandler(dictDataRemove))
 
 // 系统配置
-router.get('/config', getConfig)
-router.put('/config', logOperation('系统配置'), saveConfig)
+router.get('/config', asyncHandler(getConfig))
+router.put('/config', logOperation('系统配置'), asyncHandler(saveConfig))
 // 项目环境
-router.get('/config/environment', getEnvironment)
-router.post('/config/restart', logOperation('系统配置'), restartServer)
+router.get('/config/environment', asyncHandler(getEnvironment))
+router.post('/config/restart', logOperation('系统配置'), asyncHandler(restartServer))
 // 数据库配置
-router.get('/config/database', getDatabaseInfo)
-router.get('/config/database/migration-targets', getMigrationTargets)
-router.post('/config/database/migrate', logOperation('系统配置'), migrateDatabase)
+router.get('/config/database', asyncHandler(getDatabaseInfo))
+router.get('/config/database/migration-targets', asyncHandler(getMigrationTargets))
+router.post('/config/database/migrate', logOperation('系统配置'), asyncHandler(migrateDatabase))
 // 数据字典
-router.get('/config/data-dictionary', listDataDictionary)
-router.post('/config/data-dictionary/refresh', logOperation('系统配置'), refreshDataDictionary)
-router.get('/config/data-dictionary/refresh/:taskId', getRefreshProgress)
-router.get('/config/data-dictionary/:table_name/records', listTableRecords)
+router.get('/config/data-dictionary', asyncHandler(listDataDictionary))
+router.post('/config/data-dictionary/refresh', logOperation('系统配置'), asyncHandler(refreshDataDictionary))
+router.get('/config/data-dictionary/refresh/:taskId', asyncHandler(getRefreshProgress))
+router.get('/config/data-dictionary/:table_name/records', asyncHandler(listTableRecords))
 // 备份还原
-router.get('/config/backups', listBackups)
-router.post('/config/backups', logOperation('系统配置'), createBackup)
-router.post('/config/backups/restore', logOperation('系统配置'), restoreBackup)
-router.delete('/config/backups/:filename', logOperation('系统配置'), deleteBackup)
+router.get('/config/backups', asyncHandler(listBackups))
+router.post('/config/backups', logOperation('系统配置'), asyncHandler(createBackup))
+router.post('/config/backups/restore', logOperation('系统配置'), asyncHandler(restoreBackup))
+router.delete('/config/backups/:filename', logOperation('系统配置'), asyncHandler(deleteBackup))
 
 // 文件管理
-router.get('/files', listDirectory)
-router.delete('/files/:path', logOperation('文件管理'), removeItem)
+router.get('/files', asyncHandler(listDirectory))
+router.delete('/files/:path', logOperation('文件管理'), asyncHandler(removeItem))
 
 // 用户个性化设置
-router.get('/user-settings', getUserSettings)
-router.put('/user-setting', logOperation('用户设置'), saveUserSetting)
-router.put('/user-settings/batch', logOperation('用户设置'), batchSaveUserSettings)
+router.get('/user-settings', asyncHandler(getUserSettings))
+router.put('/user-setting', logOperation('用户设置'), asyncHandler(saveUserSetting))
+router.put('/user-settings/batch', logOperation('用户设置'), asyncHandler(batchSaveUserSettings))
 
 export default router

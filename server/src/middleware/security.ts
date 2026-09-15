@@ -26,17 +26,11 @@ function rateLimitKeyGenerator(req: RateLimitRequest): string {
 
 /**
  * 通用业务异常：抛出后由全局错误中间件统一转为标准响应
+ *
+ * 统一导出自 utils/error.ts，此处仅为向后兼容的 re-export。
+ * 权威定义见：src/utils/error.ts
  */
-export class AppError extends Error {
-  public readonly code: number
-  public readonly statusCode: number
-  constructor(message: string, code = 50000, statusCode = 400) {
-    super(message)
-    this.name = 'AppError'
-    this.code = code
-    this.statusCode = statusCode
-  }
-}
+export { AppError } from '../utils/error.js'
 
 /**
  * asyncHandler：包裹异步路由处理函数，自动把 rejected promise / 抛出的异常
