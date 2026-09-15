@@ -223,15 +223,21 @@ if [ "$SKIP_UPLOAD" != "true" ]; then
         ok "IPA 上传: /download/${TAG}.ipa"
     fi
 
-    # 上传 releases.json
-    eval "$SCP server/data/releases.json ${PROD_USER}@${PROD_HOST}:${PROD_PATH}/server/data/releases.json" 2>&1 | tail -1
-    ok "releases.json 上传"
+    # 上传 releases.json — 放在 git pull 之后，避免被 reset --hard 覆盖
+    ok "APK/IPA 上传完成，准备拉代码 + 写 releases.json"
 
-    # 拉最新代码 + build + reload
-    log "  生产服务器构建 + reload ..."
+    # 先拉代码 + vite build（此时 releases.json 是仓库里的旧版本）
+    log "  生产服务器拉代码 + build ..."
     eval "$SSH 'cd ${PROD_PATH} && git fetch origin main && git reset --hard origin/main >/dev/null 2>&1 && npx vite build 2>&1 | tail -3'" 2>&1 | tail -5
+    ok "代码拉取 + vite build 完成"
+
+    # 再上传 releases.json（写入覆盖掉仓库里的旧版本号）
+    eval "$SCP server/data/releases.json ${PROD_USER}@${PROD_HOST}:${PROD_PATH}/server/data/releases.json" 2>&1 | tail -1
+    ok "releases.json 已上传（version=${VERSION}, build=${BUILD}, sha=${SHORT_SHA}）"
+
+    # reload PM2（让 Node 进程重新读最新 releases.json）
     eval "$SSH 'pm2 reload milk-can-mes-server --update-env 2>/dev/null || pm2 restart milk-can-mes-server'" 2>&1 | tail -2
-    ok "生产服务器 reload 完成"
+    ok "PM2 reload 完成"
     echo ""
 fi
 
