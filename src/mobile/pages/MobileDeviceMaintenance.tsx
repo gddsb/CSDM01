@@ -76,7 +76,7 @@ export default function MobileDeviceMaintenance() {
 
   useEffect(() => { loadDevices() }, [])
 
-  const loadRecords = async (device: DeviceRow) => {
+  const loadRecords = async (device: DeviceRow): Promise<RecordRow[]> => {
     setSelectedDevice(device)
     setSelectedRecord(null)
     setLoading(true)
@@ -84,9 +84,12 @@ export default function MobileDeviceMaintenance() {
       const r: any = await api.get('/basic/device-records', {
         params: { page: 1, page_size: 30, status: '待执行', device_id: device.device_id },
       })
-      if (r.success) setRecords(r.data?.list || r.data || [])
-      else setRecords([])
-    } catch { /* 静默降级 */ } finally { setLoading(false) }
+      const list: RecordRow[] = r.success ? (r.data?.list || r.data || []) : []
+      setRecords(list)
+      return list
+    } catch {
+      setRecords([]); return []
+    } finally { setLoading(false) }
   }
 
   const handleScan = async () => {
@@ -95,12 +98,35 @@ export default function MobileDeviceMaintenance() {
     setKeyword(r.code)
     const list = await loadDevices(r.code)
     const match = list.find((d) => d.device_code === r.code)
-    if (match) {
-      await loadRecords(match)
-      setStep(1)
-    } else {
-      Toast.show({ content: '未找到该设备，请确认设备编号', position: 'bottom' })
+    if (!match) {
+      Toast.show({ content: '未找到该设备，请确认设备编号', position: 'bottom' }); return
     }
+    const recs = await loadRecords(match)
+    if (recs.length === 0) {
+      Toast.show({ content: `${match.device_name} 暂无待执行保养任务`, position: 'bottom' })
+      setStep(1); return
+    }
+    // ✨ 联动增强：唯一待执行 → 直接进 Step 2
+    if (recs.length === 1) {
+      selectRecord(recs[0])
+    } else {
+      setStep(1)
+    }
+  }
+
+  /** Step 0 手动搜索后，如果唯一命中也自动联动 */
+  const handleSearch = async () => {
+    const kw = keyword.trim()
+    const list = await loadDevices(kw)
+    if (list.length === 1) {
+      // 唯一命中 → 自动进 Step 1 + 自动选中唯一 record
+      const recs = await loadRecords(list[0])
+      if (recs.length === 1) selectRecord(recs[0])
+      else setStep(1)
+    } else if (list.length === 0) {
+      Toast.show({ content: '未找到匹配设备', position: 'bottom' })
+    }
+    // list.length > 1 → 让用户手动选（列表已渲染）
   }
 
   // Step 1 → Step 2: 选保养记录
@@ -197,7 +223,7 @@ export default function MobileDeviceMaintenance() {
             placeholder="扫设备编号 / 手输"
             value={keyword}
             onChange={setKeyword}
-            onSearch={() => loadDevices(keyword.trim())}
+            onSearch={handleSearch}
             onRightIconClick={handleScan}
             right={<span style={{ fontSize: 12, color: '#2196F3' }}>扫码</span>}
             style={{ marginBottom: 12 }}
@@ -215,7 +241,17 @@ export default function MobileDeviceMaintenance() {
                 {devices.map((d) => (
                   <List.Item
                     key={d.device_id}
-                    onClick={() => { loadRecords(d); setStep(1) }}
+                    onClick={async () => {
+                      const recs = await loadRecords(d)
+                      if (recs.length === 0) {
+                        Toast.show({ content: '该设备暂无待执行保养', position: 'bottom' })
+                        setStep(1)
+                      } else if (recs.length === 1) {
+                        selectRecord(recs[0])
+                      } else {
+                        setStep(1)
+                      }
+                    }}
                     arrow
                     description={<div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>{d.device_code}</div>}
                   >
