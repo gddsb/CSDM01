@@ -18,7 +18,7 @@ import { TaskSetting } from './models/index.js'
 import { corsOptions, apiRateLimiter, AppError } from './middleware/security.js'
 import { WorkflowError } from './services/ProductionWorkflowService.js'
 import { performanceMonitor } from './middleware/performance.js'
-import logger from './utils/logger.js'
+import logger, { pinoLogger } from './utils/logger.js'
 
 dotenv.config()
 
@@ -181,7 +181,7 @@ function getSafeReqInfo(req: any): any {
 }
 
 app.use(pinoHttp({
-  logger: logger as any,  // pino-http 接受 pino 实例；我们的包装器兼容
+  logger: pinoLogger,
   // 开发环境默认 info 级别会输出每个请求；生产环境对 4xx/5xx 提升为 warn/error
   customLogLevel: (req: any, res: any, err?: Error | null) => {
     if (err || res.statusCode >= 500) return 'error'

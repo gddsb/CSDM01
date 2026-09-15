@@ -63,6 +63,9 @@ function normalizeArgs(args: any[]): [Record<string, unknown> | null, string] {
   return [null, msg]
 }
 
+/** 原生 pino 实例，供 pino-http 等需要原生 API 的库使用 */
+export const pinoLogger = pinoInstance
+
 export const logger = {
   debug: (...args: any[]) => {
     const [fields, msg] = normalizeArgs(args)
