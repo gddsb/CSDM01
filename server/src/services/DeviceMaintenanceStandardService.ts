@@ -1,214 +1,186 @@
 /**
- * 设备保养标准 Service（DeviceMaintenanceController 标准子模块下沉）
- *
- * 业务：保养标准 CRUD（trigger_mode: daily/weekly/monthly/runtime）
- * 内部 helper：loadDeviceFields（补设备冗余字段）+ getLatestRuntime（查运行小时）
- * getRecordDetail（记录详情含图片）
+ * DeviceMaintenanceStandardService — 保养标准 CRUD
+ * 从 origin/main 的 DeviceMaintenanceController.ts 抽取
  */
 import { Op } from 'sequelize'
-import {
-  DeviceMaintenanceStandard,
-  DeviceMaintenanceRecord,
-  DeviceRuntimeLog,
-  Device,
-  DeviceFault,
-  DeviceImage,
-} from '../models/index.js'
-import { MAX_PAGE_SIZE } from '../utils/response.js'
+import { DeviceMaintenanceStandard, Device } from '../models/index.js'
+import { ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { AppError } from '../utils/error.js'
 import { logger } from '../utils/logger.js'
 
-// 未完成执行记录状态（不含已完成2）
-export const UNFINISHED_STATUS = [0, 1, 3]
-
-const rawStatus = (record: any): number => record.getDataValue('status')
-
-// ============================================================
-// 内部 DB helper（原 Controller 私有函数，下沉为 Service 私有函数）
-// ============================================================
-
-/** 自动补全设备冗余字段（device_code / device_name） */
-export async function loadDeviceFields(
-  deviceId: number,
-  fallbackCode?: string | null,
-  fallbackName?: string | null,
-  t?: any,
-): Promise<{ finalDeviceCode: string; finalDeviceName: string }> {
-  if (fallbackCode && fallbackName) {
-    return { finalDeviceCode: fallbackCode, finalDeviceName: fallbackName }
+async function loadDeviceFields(
+  deviceId: number | undefined | null,
+  deviceCode?: string, deviceName?: string, t?: any,
+): Promise<{ finalDeviceCode: string | null; finalDeviceName: string | null }> {
+  let finalDeviceCode = deviceCode
+  let finalDeviceName = deviceName
+  if ((!finalDeviceCode || !finalDeviceName) && deviceId) {
+    const device = await Device.findOne({ where: { device_id: deviceId }, transaction: t })
+    if (device) {
+      finalDeviceCode = finalDeviceCode || (device as any).device_code
+      finalDeviceName = finalDeviceName || (device as any).device_name
+    }
   }
-  const device = await Device.findOne({
-    where: { device_id: deviceId },
-    attributes: ['device_code', 'device_name'],
-    transaction: t,
-  })
-  if (!device) {
-    return { finalDeviceCode: fallbackCode || '', finalDeviceName: fallbackName || '' }
-  }
-  return {
-    finalDeviceCode: fallbackCode || (device as any).getDataValue('device_code') || '',
-    finalDeviceName: fallbackName || (device as any).getDataValue('device_name') || '',
-  }
+  return { finalDeviceCode: finalDeviceCode || null, finalDeviceName: finalDeviceName || null }
 }
 
-/** 查设备最新运行小时（runtime 触发用） */
-export async function getLatestRuntime(deviceId: number, t?: any): Promise<number> {
-  const log = await DeviceRuntimeLog.findOne({
-    where: { device_id: deviceId },
-    order: [['created_at', 'DESC'], ['log_id', 'DESC']],
-    transaction: t,
-  })
-  return log ? Number((log as any).getDataValue('runtime_hours')) : 0
+export async function listStandards(query: any) {
+const { device_id, trigger_mode, status, item_name, standard_name, mechanism, keyword } = query
+      const where: any = {}
+      if (device_id) where.device_id = device_id
+      if (trigger_mode) where.trigger_mode = trigger_mode
+      if (status !== undefined && status !== '' && status !== null) where.status = Number(status)
+      if (item_name) where.maintenance_content = { [Op.like]: `%${item_name}%` }
+      else if (standard_name) where.maintenance_content = { [Op.like]: `%${standard_name}%` }
+      else if (keyword) {
+        where[Op.or] = [
+          { maintenance_content: { [Op.like]: `%${keyword}%` } },
+          { mechanism: { [Op.like]: `%${keyword}%` } },
+          { component: { [Op.like]: `%${keyword}%` } },
+        ]
+      }
+      if (mechanism) where.mechanism = { [Op.like]: `%${mechanism}%` }
+
+      const rows = await DeviceMaintenanceStandard.findAll({
+        where,
+        include: [{ model: Device, as: 'device', required: false }],
+        order: [['device_id', 'ASC'], ['trigger_mode', 'ASC'], ['sort_order', 'ASC'], ['standard_id', 'ASC']],
+      })
+
+      return { list: rows, total: rows.length }
 }
 
-/** 保养记录详情（含关联图片 + 关联故障） */
-export async function getRecordDetail(id: number) {
-  const record = await DeviceMaintenanceRecord.findOne({
-    where: { record_id: id },
-    include: [
-      {
-        model: DeviceImage,
-        as: 'record_images',
-        required: false,
-        separate: true,
-        order: [['sort_order', 'ASC'], ['image_id', 'ASC']],
-      },
-      {
-        model: DeviceImage,
-        as: 'abnormal_images',
-        required: false,
-        separate: true,
-        order: [['sort_order', 'ASC'], ['image_id', 'ASC']],
-      },
-      {
-        model: DeviceFault,
-        as: 'device_fault',
-        required: false,
-      },
-      {
-        model: Device,
-        as: 'device',
-        required: false,
-        attributes: ['device_id', 'device_code', 'device_name'],
-      },
-      {
-        model: DeviceMaintenanceStandard,
-        as: 'standard',
-        required: false,
-        attributes: ['standard_id', 'standard_name', 'trigger_mode', 'runtime_threshold', 'sort_order'],
-      },
-    ],
-  })
-  return record
+export async function createStandard(body: any, user?: any) {
+const t = await DeviceMaintenanceStandard.sequelize.transaction()
+    try {
+      const {
+        device_id, device_code, device_name,
+        mechanism, component, location, maintenance_method, maintenance_content,
+        judge_type = '定性', standard_value, unit,
+        point_count = 1, time_per_point = 0,
+        trigger_mode = 'daily', monthly_plan, runtime_threshold,
+        status = 1, remarks, inspection_roles,
+      } = body
+
+      if (!device_id) throw new AppError('设备ID不能为空', ErrorCode.PARAM_INVALID)
+      if (!maintenance_content) throw new AppError('保养/点检内容不能为空', ErrorCode.PARAM_INVALID)
+
+      // trigger_mode 校验
+      if (!['daily', 'weekly', 'monthly', 'runtime'].includes(trigger_mode)) {
+        throw new AppError('触发频率无效，可选值：daily / weekly / monthly / runtime', ErrorCode.PARAM_INVALID)
+      }
+      if (trigger_mode === 'monthly') {
+        if (!Array.isArray(monthly_plan) || monthly_plan.length !== 12) {
+          throw new AppError('月度计划必须提供 12 位布尔数组，表示1月~12月', ErrorCode.PARAM_INVALID)
+        }
+      }
+      if (trigger_mode === 'runtime' && (!runtime_threshold || Number(runtime_threshold) <= 0)) {
+        throw new AppError('运行时长模式必须填写有效的运行时长阈值', ErrorCode.PARAM_INVALID)
+      }
+
+      const { finalDeviceCode, finalDeviceName } = await loadDeviceFields(device_id, device_code, device_name, t)
+
+      const record = await DeviceMaintenanceStandard.create({
+        device_id,
+        device_code: finalDeviceCode,
+        device_name: finalDeviceName,
+        mechanism: mechanism || null,
+        component: component || null,
+        location: location || null,
+        maintenance_method: maintenance_method || null,
+        maintenance_content: maintenance_content || null,
+        judge_type,
+        standard_value: standard_value || null,
+        unit: unit || null,
+        point_count: point_count !== undefined ? point_count : 1,
+        time_per_point: time_per_point !== undefined ? time_per_point : 0,
+        trigger_mode,
+        monthly_plan: trigger_mode === 'monthly' ? monthly_plan : null,
+        runtime_threshold: trigger_mode === 'runtime' ? runtime_threshold : null,
+        last_trigger_value: null,
+        sort_order: (body as any).sort_order !== undefined ? (body as any).sort_order : 0,
+        status,
+        remarks: remarks || null,
+        inspection_roles: Array.isArray(inspection_roles) ? inspection_roles : null,
+      }, { transaction: t })
+
+      await t.commit()
+      return record
+    } catch (err: any) {
+      if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
+      throw new AppError(err.message || '创建失败', ErrorCode.SYSTEM_ERROR)
+    }
 }
 
-// ============================================================
-// 保养标准 CRUD
-// ============================================================
+export async function updateStandard(id: number, body: any) {
+const t = await DeviceMaintenanceStandard.sequelize.transaction()
+    try {
+      const record = await DeviceMaintenanceStandard.findOne({ where: { standard_id: id }, transaction: t })
+      if (!record) throw new AppError('保养标准不存在', ErrorCode.RECORD_NOT_FOUND)
 
-export const DeviceMaintenanceStandardService = {
-  /** 保养标准列表（按设备/触发模式/状态筛选） */
-  async listStandards(query: any) {
-    const { device_id, trigger_mode, status, keyword, page = 1, pageSize = 50 } = query
-    const where: any = {}
-    if (device_id) where.device_id = device_id
-    if (trigger_mode) where.trigger_mode = trigger_mode
-    if (status !== undefined && status !== '') where.status = Number(status)
-    if (keyword) {
-      where[Op.or] = [
-        { standard_name: { [Op.like]: `%${keyword}%` } },
-        { item_name: { [Op.like]: `%${keyword}%` } },
-      ]
+      const {
+        device_id, device_code, device_name,
+        mechanism, component, location, maintenance_method, maintenance_content,
+        judge_type, standard_value, unit,
+        point_count, time_per_point,
+        trigger_mode, monthly_plan, runtime_threshold,
+        sort_order, status, remarks, inspection_roles,
+      } = body
+
+      if (trigger_mode !== undefined && !['daily', 'weekly', 'monthly', 'runtime'].includes(trigger_mode)) {
+        throw new AppError('触发频率无效', ErrorCode.PARAM_INVALID)
+      }
+      if (trigger_mode === 'monthly' && monthly_plan !== undefined && monthly_plan !== null) {
+        if (!Array.isArray(monthly_plan) || monthly_plan.length !== 12) {
+          throw new AppError('月度计划必须提供 12 位布尔数组', ErrorCode.PARAM_INVALID)
+        }
+      }
+
+      // 设备冗余字段自动补全
+      const targetDeviceId = device_id !== undefined ? device_id : (record as any).getDataValue('device_id')
+      if (device_id !== undefined || (device_code !== undefined && !device_name) || (device_name !== undefined && !device_code)) {
+        const { finalDeviceCode, finalDeviceName } = await loadDeviceFields(targetDeviceId, device_code, device_name, t)
+        body.device_code = finalDeviceCode
+        body.device_name = finalDeviceName
+      }
+
+      const updateData: any = {}
+      if (device_id !== undefined) updateData.device_id = device_id
+      if (device_code !== undefined) updateData.device_code = device_code
+      if (device_name !== undefined) updateData.device_name = device_name
+      if (mechanism !== undefined) updateData.mechanism = mechanism
+      if (component !== undefined) updateData.component = component
+      if (location !== undefined) updateData.location = location
+      if (maintenance_method !== undefined) updateData.maintenance_method = maintenance_method
+      if (maintenance_content !== undefined) updateData.maintenance_content = maintenance_content
+      if (judge_type !== undefined) updateData.judge_type = judge_type
+      if (standard_value !== undefined) updateData.standard_value = standard_value
+      if (unit !== undefined) updateData.unit = unit
+      if (point_count !== undefined) updateData.point_count = point_count
+      if (time_per_point !== undefined) updateData.time_per_point = time_per_point
+      if (trigger_mode !== undefined) updateData.trigger_mode = trigger_mode
+      if (monthly_plan !== undefined) updateData.monthly_plan = monthly_plan
+      if (runtime_threshold !== undefined) updateData.runtime_threshold = runtime_threshold
+      if (sort_order !== undefined) updateData.sort_order = sort_order
+      if (status !== undefined) updateData.status = status
+      if (remarks !== undefined) updateData.remarks = remarks
+      if (inspection_roles !== undefined) updateData.inspection_roles = Array.isArray(inspection_roles) ? inspection_roles : null
+
+      await record.update(updateData, { transaction: t })
+      await t.commit()
+      return record
+    } catch (err: any) {
+      if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
+      throw new AppError(err.message || '更新失败', ErrorCode.SYSTEM_ERROR)
     }
-    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
-    const offset = (Number(page) - 1) * limit
-
-    return await DeviceMaintenanceStandard.findAndCountAll({
-      where,
-      include: [{ model: Device, as: 'device', required: false, attributes: ['device_id', 'device_code', 'device_name'] }],
-      limit, offset,
-      order: [['device_id', 'ASC'], ['trigger_mode', 'ASC'], ['sort_order', 'ASC']],
-      distinct: true,
-    })
-  },
-
-  /** 创建保养标准（自动补设备信息 + 去重校验） */
-  async createStandard(body: any, actor?: any) {
-    const { device_id, trigger_mode, item_name, standard_name } = body
-    if (!device_id) throw new AppError('设备不能为空', 10001, 400)
-    if (!trigger_mode) throw new AppError('触发模式不能为空', 10001, 400)
-    if (!item_name) throw new AppError('保养项目不能为空', 10001, 400)
-    if (!['daily', 'weekly', 'monthly', 'runtime'].includes(trigger_mode)) {
-      throw new AppError('触发模式只能是 daily/weekly/monthly/runtime', 10001, 400)
-    }
-    if (trigger_mode === 'runtime' && !body.runtime_threshold) {
-      throw new AppError('runtime 模式必须填写运行小时阈值', 10001, 400)
-    }
-
-    const device = await Device.findOne({ where: { device_id } })
-    if (!device) throw new AppError('设备不存在', 10002, 404)
-
-    // 同设备 + 同触发模式 + 同项目名 去重
-    const exists = await DeviceMaintenanceStandard.findOne({
-      where: { device_id, trigger_mode, item_name },
-    })
-    if (exists) throw new AppError('同设备已存在相同触发模式和保养项目的标准', 20001, 409)
-
-    return await DeviceMaintenanceStandard.create({
-      device_id,
-      device_code: (device as any).getDataValue('device_code'),
-      device_name: (device as any).getDataValue('device_name'),
-      trigger_mode,
-      standard_name: standard_name || `${trigger_mode}-${item_name}`,
-      item_name,
-      item_content: body.item_content || '',
-      standard_value: body.standard_value || null,
-      actual_value: body.actual_value || null,
-      runtime_threshold: body.runtime_threshold || null,
-      sort_order: body.sort_order || 0,
-      monthly_plan: body.monthly_plan || null,
-      status: body.status !== undefined ? body.status : 1,
-      created_by: actor?.userId || null,
-      remarks: body.remarks || '',
-    } as any)
-  },
-
-  /** 修改保养标准 */
-  async updateStandard(id: number | string, body: any) {
-    const record = await DeviceMaintenanceStandard.findOne({ where: { standard_id: Number(id) } })
-    if (!record) throw new AppError('保养标准不存在', 10002, 404)
-
-    if (body.trigger_mode && !['daily', 'weekly', 'monthly', 'runtime'].includes(body.trigger_mode)) {
-      throw new AppError('触发模式只能是 daily/weekly/monthly/runtime', 10001, 400)
-    }
-    if (body.trigger_mode === 'runtime' && !body.runtime_threshold) {
-      throw new AppError('runtime 模式必须填写运行小时阈值', 10001, 400)
-    }
-
-    const updateData: any = {}
-    const fields = [
-      'trigger_mode', 'standard_name', 'item_name', 'item_content',
-      'standard_value', 'actual_value', 'runtime_threshold', 'sort_order',
-      'monthly_plan', 'status', 'remarks',
-    ]
-    for (const f of fields) {
-      if (body[f] !== undefined) updateData[f] = body[f]
-    }
-
-    await record.update(updateData)
-    return record
-  },
-
-  /** 删除保养标准（只有 status=1 生效 可以删？原始逻辑没校验，保留原样） */
-  async deleteStandard(id: number | string) {
-    const record = await DeviceMaintenanceStandard.findOne({ where: { standard_id: Number(id) } })
-    if (!record) throw new AppError('保养标准不存在', 10002, 404)
-
-    // 删除关联的执行记录（非已完成的也要删）
-    await DeviceMaintenanceRecord.destroy({ where: { standard_id: Number(id) } })
-    await record.destroy()
-    return true
-  },
 }
 
-export default DeviceMaintenanceStandardService
+export async function deleteStandard(id: number) {
+
+      const record = await DeviceMaintenanceStandard.findOne({ where: { standard_id: id } })
+      if (!record) throw new AppError('保养标准不存在', ErrorCode.RECORD_NOT_FOUND)
+      await record.destroy()
+      return { message: '删除成功' }
+}
+
+export default { listStandards, createStandard, updateStandard, deleteStandard }

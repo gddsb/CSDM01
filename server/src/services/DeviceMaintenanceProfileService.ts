@@ -1,208 +1,243 @@
 /**
- * 设备保养计划 + 执行记录 Service（DeviceMaintenanceController 核心子模块下沉）
- *
- * 包含：保养计划 CRUD + 可用设备列表 + generateRecords（定时生成执行工单）
- *      + getMatrix（保养矩阵视图）+ 保养记录 CRUD + 工时记录
- *      + initProfiles（定时任务：从保养标准 backfill 档案）
- *
- * 触发模式：daily / weekly / monthly / runtime
- * UNFINISHED_STATUS = [0,1,3]（不含已完成2）
+ * DeviceMaintenanceProfileService — 保养档案 + 执行工单 + 矩阵 + 运行时长
+ * 从 origin/main 的 DeviceMaintenanceController.ts 抽取
+ * uploadImage / processImage 涉及 fs/sharp，保留在 Controller
  */
-import { Op } from 'sequelize'
-import sequelize from '../config/database.js'
+import { Op, QueryTypes } from 'sequelize'
+import sequelize from 'sequelize'
 import {
-  DeviceMaintenanceStandard,
-  DeviceMaintenanceProfile,
-  DeviceMaintenanceRecord,
-  DeviceRuntimeLog,
-  Device,
+  DeviceMaintenanceProfile, DeviceMaintenanceRecord, DeviceMaintenanceStandard,
+  DeviceRuntimeLog, Device, DeviceFault, DeviceImage,
 } from '../models/index.js'
-import { STATUS_REVERSE } from '../models/DeviceMaintenanceRecord.js'
-import {
-  todayStr,
-  dateOnlyStr,
-  dailyPeriodKeys,
-  weeklyPeriodKeys,
-  monthlyStandardActive,
-  buildPeriodKey,
-} from '../utils/maintenanceMatrix.js'
-import { generateDeviceRecordNo } from '../utils/sequence.js'
-import { MAX_PAGE_SIZE } from '../utils/response.js'
+import { generateDeviceFaultNo, generateDeviceRecordNo } from '../utils/sequence.js'
+import { ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
 import { AppError } from '../utils/error.js'
 import { logger } from '../utils/logger.js'
-import { UNFINISHED_STATUS, loadDeviceFields, getLatestRuntime, getRecordDetail } from './DeviceMaintenanceStandardService.js'
+import { STATUS_REVERSE } from '../models/DeviceMaintenanceRecord.js'
+import {
+  todayStr, dateOnlyStr, getISOWeek, buildPeriodKey, parseMultiStatus,
+  dailyPeriodKeys, weeklyPeriodKeys, parseMonthlyPlan, monthlyStandardActive,
+} from '../utils/maintenanceMatrix.js'
 
+const UNFINISHED_STATUS = [0, 1, 3]
 const rawStatus = (record: any): number => record.getDataValue('status')
 
-// ============================================================
-// 保养计划 CRUD
-// ============================================================
+async function loadDeviceFields(
+  deviceId: number | undefined | null,
+  deviceCode?: string, deviceName?: string, t?: any,
+): Promise<{ finalDeviceCode: string | null; finalDeviceName: string | null }> {
+  let finalDeviceCode = deviceCode
+  let finalDeviceName = deviceName
+  if ((!finalDeviceCode || !finalDeviceName) && deviceId) {
+    const device = await Device.findOne({ where: { device_id: deviceId }, transaction: t })
+    if (device) {
+      finalDeviceCode = finalDeviceCode || (device as any).device_code
+      finalDeviceName = finalDeviceName || (device as any).device_name
+    }
+  }
+  return { finalDeviceCode: finalDeviceCode || null, finalDeviceName: finalDeviceName || null }
+}
 
-export const DeviceMaintenanceProfileService = {
-  /** 保养计划（档案）列表，含关联标准按 trigger_mode 分组计数 */
-  async listProfiles(query: any) {
-    const { keyword, status, page = 1, pageSize = 50 } = query
-    const where: any = {}
-    if (status) where.status = status
-    let deviceIds: number[] | null = null
-    if (keyword) {
-      const devices = await Device.findAll({
-        where: { [Op.or]: [
+async function getLatestRuntime(deviceId: number, t?: any): Promise<number> {
+  const log = await DeviceRuntimeLog.findOne({
+    where: { device_id: deviceId },
+    order: [['created_at', 'DESC'], ['log_id', 'DESC']], transaction: t,
+  })
+  return log ? Number((log as any).getDataValue('runtime_hours')) : 0
+}
+
+export async function getRecordDetail(id: number) {
+  const record = await DeviceMaintenanceRecord.findOne({
+    where: { record_id: id },
+    include: [
+      { model: DeviceMaintenanceStandard, as: 'standard', required: false },
+      { model: DeviceImage, as: 'maintenance_images', required: false, separate: true,
+        order: [['sort_order', 'ASC'], ['image_id', 'ASC']] },
+    ],
+  })
+  return record ? (record as any).toJSON() : null
+}
+
+export { buildPeriodKey } from '../utils/maintenanceMatrix.js'
+
+export async function listProfiles(query: any) {
+const { keyword, status, page = 1, pageSize = 50 } = query
+      const where: any = {}
+      if (status) where.status = status
+      let deviceIds: number[] | null = null
+      if (keyword) {
+        const devices = await Device.findAll({
+          where: {
+            [Op.or]: [
+              { device_code: { [Op.like]: `%${keyword}%` } },
+              { device_name: { [Op.like]: `%${keyword}%` } },
+            ],
+          },
+          attributes: ['device_id'],
+          raw: true,
+        })
+        deviceIds = devices.map(d => d.device_id)
+        if (deviceIds.length === 0) return { list: [], total: 0 }
+        where.device_id = { [Op.in]: deviceIds }
+      }
+      const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
+      const offset = (Number(page) - 1) * limit
+      const { rows, count } = await DeviceMaintenanceProfile.findAndCountAll({
+        where,
+        include: [
+          { model: Device, as: 'device', required: false, attributes: ['device_id', 'device_code', 'device_name'] },
+          {
+            model: DeviceMaintenanceStandard, as: 'standards', required: false, separate: true,
+            attributes: ['standard_id', 'trigger_mode', 'status'],
+          },
+        ],
+        limit, offset,
+        order: [['updated_at', 'DESC'], ['profile_id', 'DESC']],
+        distinct: true,
+      })
+      const list = rows.map((p: any) => {
+        const stds = p.getDataValue('standards') || []
+        const byMode: Record<string, number> = { daily: 0, weekly: 0, monthly: 0, runtime: 0 }
+        stds.forEach((s: any) => { const m = s.getDataValue('trigger_mode'); if (byMode[m] !== undefined) byMode[m] += 1 })
+        return {
+          profile_id: p.getDataValue('profile_id'),
+          device_id: p.getDataValue('device_id'),
+          device_code: p.getDataValue('device_code') || p.getDataValue('device')?.device_code,
+          device_name: p.getDataValue('device_name') || p.getDataValue('device')?.device_name,
+          status: p.getDataValue('status'),
+          version: p.getDataValue('version'),
+          effective_date: p.getDataValue('effective_date'),
+          remarks: p.getDataValue('remarks'),
+          updated_at: p.getDataValue('updated_at'),
+          created_at: p.getDataValue('created_at'),
+          std_count: stds.length,
+          std_by_mode: byMode,
+        }
+      })
+      return { list, total: count }
+}
+
+export async function listAvailableDevices(query: any) {
+const { keyword } = query
+      const devWhere: any = {}
+      if (keyword) {
+        devWhere[Op.or] = [
           { device_code: { [Op.like]: `%${keyword}%` } },
           { device_name: { [Op.like]: `%${keyword}%` } },
-        ] },
-        attributes: ['device_id'],
-        raw: true,
-      })
-      deviceIds = devices.map((d: any) => d.device_id)
-      if (deviceIds.length === 0) return { list: [], total: 0 }
-      where.device_id = { [Op.in]: deviceIds }
-    }
-    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
-    const offset = (Number(page) - 1) * limit
-
-    const { rows, count } = await DeviceMaintenanceProfile.findAndCountAll({
-      where,
-      include: [
-        { model: Device, as: 'device', required: false, attributes: ['device_id', 'device_code', 'device_name'] },
-        { model: DeviceMaintenanceStandard, as: 'standards', required: false, separate: true,
-          attributes: ['standard_id', 'trigger_mode', 'status'] },
-      ],
-      limit, offset,
-      order: [['updated_at', 'DESC'], ['profile_id', 'DESC']],
-      distinct: true,
-    })
-    const list = rows.map((p: any) => {
-      const stds = p.getDataValue('standards') || []
-      const byMode: Record<string, number> = { daily: 0, weekly: 0, monthly: 0, runtime: 0 }
-      stds.forEach((s: any) => { const m = s.getDataValue('trigger_mode'); if (byMode[m] !== undefined) byMode[m] += 1 })
-      return {
-        profile_id: p.getDataValue('profile_id'),
-        device_id: p.getDataValue('device_id'),
-        device_code: p.getDataValue('device_code') || p.getDataValue('device')?.device_code,
-        device_name: p.getDataValue('device_name') || p.getDataValue('device')?.device_name,
-        status: p.getDataValue('status'),
-        version: p.getDataValue('version'),
-        effective_date: p.getDataValue('effective_date'),
-        remarks: p.getDataValue('remarks'),
-        updated_at: p.getDataValue('updated_at'),
-        created_at: p.getDataValue('created_at'),
-        std_count: stds.length,
-        std_by_mode: byMode,
+        ]
       }
-    })
-    return { list, total: count }
-  },
+      const existed = await DeviceMaintenanceProfile.findAll({ attributes: ['device_id'], raw: true })
+      const existedSet = new Set(existed.map(p => p.device_id))
+      const devices = await Device.findAll({
+        where: { ...devWhere, device_id: { [Op.notIn]: Array.from(existedSet) || [0] } },
+        attributes: ['device_id', 'device_code', 'device_name'],
+        order: [['device_code', 'ASC']],
+      })
+      return devices
+}
 
-  /** 可用设备：尚未创建保养档案的设备 */
-  async listAvailableDevices(query: any) {
-    const { keyword, entity_type } = query
-    const where: any = {}
-    if (entity_type && entity_type !== '全部') where.entity_type = entity_type
-    const profiles = await DeviceMaintenanceProfile.findAll({
-      attributes: ['device_id'],
-      raw: true,
-    })
-    const existSet = new Set(profiles.map((p: any) => p.device_id))
-    const allDevices = await Device.findAll({
-      where: keyword
-        ? { [Op.and]: [where, { [Op.or]: [
-            { device_code: { [Op.like]: `%${keyword}%` } },
-            { device_name: { [Op.like]: `%${keyword}%` } },
-          ] }] }
-        : where,
-      order: [['device_code', 'ASC']],
-    })
-    return allDevices.filter((d: any) => !existSet.has(d.getDataValue('device_id')))
-  },
-
-  /** 创建保养档案 */
-  async createProfile(body: any, actor?: any) {
-    const { device_id } = body
-    if (!device_id) throw new AppError('设备不能为空', 10001, 400)
-    const device = await Device.findOne({ where: { device_id } })
-    if (!device) throw new AppError('设备不存在', 10002, 404)
-    const exists = await DeviceMaintenanceProfile.findOne({ where: { device_id } })
-    if (exists) throw new AppError('该设备已存在保养档案', 20001, 409)
-
-    return await DeviceMaintenanceProfile.create({
-      device_id,
-      device_code: (device as any).getDataValue('device_code'),
-      device_name: (device as any).getDataValue('device_name'),
-      status: body.status || '生效',
-      version: body.version || 1,
-      effective_date: body.effective_date || todayStr(),
-      remarks: body.remarks || '',
-      created_by: actor?.userId || null,
-    } as any)
-  },
-
-  /** 档案详情（含关联标准按 mode 分组） */
-  async detailProfile(id: number | string) {
-    const p = await DeviceMaintenanceProfile.findOne({
-      where: { profile_id: Number(id) },
-      include: [
-        { model: Device, as: 'device', required: false, attributes: ['device_id', 'device_code', 'device_name', 'entity_type'] },
-        { model: DeviceMaintenanceStandard, as: 'standards', required: false, separate: true,
-          order: [['trigger_mode', 'ASC'], ['sort_order', 'ASC']] },
-      ],
-    })
-    if (!p) throw new AppError('保养档案不存在', 10002, 404)
-    return p
-  },
-
-  /** 更新档案状态（生效/停用） */
-  async updateProfileStatus(id: number | string, body: any) {
-    const p = await DeviceMaintenanceProfile.findOne({ where: { profile_id: Number(id) } })
-    if (!p) throw new AppError('保养档案不存在', 10002, 404)
-    if (body.status) p.status = body.status
-    if (body.remarks !== undefined) p.remarks = body.remarks
-    if (body.version !== undefined) p.version = body.version
-    await p.save()
-    return p
-  },
-
-  /** 删除档案（只有 status != 生效 可删） */
-  async deleteProfile(id: number | string) {
-    const p = await DeviceMaintenanceProfile.findOne({ where: { profile_id: Number(id) } })
-    if (!p) throw new AppError('保养档案不存在', 10002, 404)
-    if (p.getDataValue('status') === '生效') {
-      throw new AppError('生效中的档案不能删除，请先停用', 20001, 409)
+export async function createProfile(body: any, user?: any) {
+const t = await DeviceMaintenanceProfile.sequelize.transaction()
+    try {
+      const { device_id, remarks } = body || {}
+      if (!device_id) throw new AppError('设备ID不能为空', ErrorCode.PARAM_INVALID)
+      const exists = await DeviceMaintenanceProfile.findOne({ where: { device_id }, transaction: t })
+      if (exists) throw new AppError('该设备已存在维护标准档案', ErrorCode.RECORD_EXISTS)
+      const device = await Device.findOne({ where: { device_id }, transaction: t })
+      if (!device) throw new AppError('设备不存在', ErrorCode.RECORD_NOT_FOUND)
+      const profile = await DeviceMaintenanceProfile.create({
+        device_id,
+        device_code: (device as any).device_code,
+        device_name: (device as any).device_name,
+        status: '编制',
+        version: 1,
+        remarks,
+      }, { transaction: t })
+      await t.commit()
+      return profile
+    } catch (err: any) {
+      if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
+      throw new AppError(err.message || '创建失败', ErrorCode.SYSTEM_ERROR)
     }
-    await p.destroy()
-    return true
-  },
+}
 
-  // ============================================================
-  // 保养记录生成（generateRecords）
-  // ============================================================
+export async function detailProfile(deviceId: number) {
 
-  /**
-   * 定时生成保养执行工单（核心逻辑）
-   *
-   * @param mode daily|weekly|monthly|runtime 或数组，默认全部
-   * @param targetDate 目标日期（默认今天）
-   * @param deviceId 限定单台设备（可选）
-   */
-  async generateRecords(body: any): Promise<{ created: number; total: number; records: any[] }> {
-    const t = await sequelize.transaction()
+      const profile = await DeviceMaintenanceProfile.findOne({
+        where: { device_id: deviceId },
+        include: [
+          { model: Device, as: 'device', required: false, attributes: ['device_id', 'device_code', 'device_name', 'device_model', 'serial_no', 'location'] },
+          {
+            model: DeviceMaintenanceStandard, as: 'standards', required: false, separate: false,
+            order: [['sort_order', 'ASC'], ['standard_id', 'ASC']],
+          },
+        ],
+      })
+      if (!profile) throw new AppError('档案不存在', ErrorCode.RECORD_NOT_FOUND)
+      return profile
+}
+
+export async function updateProfileStatus(deviceId: number, body: any) {
+const t = await DeviceMaintenanceProfile.sequelize.transaction()
+    try {
+      const { status } = body || {}
+      if (!['编制', '生效', '停用'].includes(status)) {
+        throw new AppError('状态无效，可选值：编制 / 生效 / 停用', ErrorCode.PARAM_INVALID)
+      }
+      const profile = await DeviceMaintenanceProfile.findOne({ where: { device_id: deviceId }, transaction: t })
+      if (!profile) throw new AppError('档案不存在', ErrorCode.RECORD_NOT_FOUND)
+      const patch: any = { status }
+      if (status === '生效') {
+        patch.effective_date = new Date().toISOString().slice(0, 10)
+        patch.version = (profile.getDataValue('version') || 1) + 1
+      }
+      await profile.update(patch, { transaction: t })
+      await t.commit()
+      return profile
+    } catch (err: any) {
+      if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
+      throw new AppError(err.message || '更新失败', ErrorCode.SYSTEM_ERROR)
+    }
+}
+
+export async function deleteProfile(deviceId: number) {
+const t = await DeviceMaintenanceProfile.sequelize.transaction()
+    try {
+      const profile = await DeviceMaintenanceProfile.findOne({ where: { device_id: deviceId }, transaction: t })
+      if (!profile) throw new AppError('档案不存在', ErrorCode.RECORD_NOT_FOUND)
+      await DeviceMaintenanceStandard.destroy({ where: { device_id: deviceId }, transaction: t })
+      await profile.destroy({ transaction: t })
+      await t.commit()
+      return null
+    } catch (err: any) {
+      if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
+      throw new AppError(err.message || '删除失败', ErrorCode.SYSTEM_ERROR)
+    }
+}
+
+export async function generateRecords(body: any) {
+const t = await DeviceMaintenanceRecord.sequelize.transaction()
     try {
       const { mode, target_date, device_id } = body || {}
       const targetDate = target_date ? new Date(target_date) : new Date()
+      const today = todayStr()
       const targetModes: string[] = mode
         ? (Array.isArray(mode) ? mode : [mode])
         : ['daily', 'weekly', 'monthly', 'runtime']
 
       const createdList: any[] = []
 
-      // 仅对档案 status='生效' 的设备生成
+      // 仅对档案状态=生效的设备生成执行记录
       const effectiveProfiles = await DeviceMaintenanceProfile.findAll({
         where: { status: '生效' },
         attributes: ['device_id'],
         transaction: t,
       })
-      let effectiveDeviceIds: number[] = effectiveProfiles.map((p: any) => p.getDataValue('device_id'))
-      if (device_id) effectiveDeviceIds = effectiveDeviceIds.filter(id => id === Number(device_id))
+      let effectiveDeviceIds = effectiveProfiles.map((p: any) => p.getDataValue('device_id'))
+      // 若限定单台设备，进一步取交集
+      if (device_id) {
+        effectiveDeviceIds = effectiveDeviceIds.filter(id => id === Number(device_id))
+      }
       if (effectiveDeviceIds.length === 0) {
         await t.commit()
         return { created: 0, total: 0, records: [] }
@@ -212,12 +247,14 @@ export const DeviceMaintenanceProfileService = {
         if (!['daily', 'weekly', 'monthly', 'runtime'].includes(m)) continue
 
         const stdWhere: any = { trigger_mode: m, status: 1, device_id: { [Op.in]: effectiveDeviceIds } }
+
         const standards = await DeviceMaintenanceStandard.findAll({ where: stdWhere, transaction: t })
 
+        // 预先查已有未完成的执行记录（runtime 模式用 period_key 不固定，所以按 (standard_id, status != 2) 查）
         const activeStandards: any[] = []
 
         if (m === 'runtime') {
-          // runtime：查未完成执行记录（去重）
+          // runtime 模式：查已有未完成的执行记录
           const unfinished = await DeviceMaintenanceRecord.findAll({
             where: {
               standard_id: { [Op.in]: standards.map((s: any) => s.getDataValue('standard_id')) },
@@ -240,19 +277,13 @@ export const DeviceMaintenanceProfileService = {
           }
         } else {
           // daily/weekly/monthly：按 period_key 去重
-          const pk = buildPeriodKey(m, targetDate)
-          const periodKeys = [pk]
-          if (m === 'daily') {
-            // 生成今日到月末的所有 daily keys（用于补签）
-            const y = targetDate.getFullYear()
-            const mo = targetDate.getMonth() + 1
-            const allKeys = dailyPeriodKeys(y, mo)
-            const fromIdx = allKeys.indexOf(pk)
-            if (fromIdx >= 0) periodKeys.push(...allKeys.slice(fromIdx + 1))
-          }
+          const periodKeys: string[] = []
           const stdPeriodMap: Record<number, string> = {}
-          for (const s of standards) stdPeriodMap[s.getDataValue('standard_id')] = pk
-
+          for (const s of standards) {
+            const pk = buildPeriodKey(m, targetDate)
+            periodKeys.push(pk)
+            stdPeriodMap[s.getDataValue('standard_id')] = pk
+          }
           if (periodKeys.length > 0) {
             const existing = await DeviceMaintenanceRecord.findAll({
               where: {
@@ -265,9 +296,9 @@ export const DeviceMaintenanceProfileService = {
             const existSet = new Set(existing.map((r: any) => `${r.getDataValue('standard_id')}|${r.getDataValue('period_key')}`))
             for (const s of standards) {
               const sid = s.getDataValue('standard_id')
-              const curPk = stdPeriodMap[sid]
-              if (existSet.has(`${sid}|${curPk}`)) continue
-              activeStandards.push({ s, periodKey: curPk })
+              const pk = stdPeriodMap[sid]
+              if (existSet.has(`${sid}|${pk}`)) continue
+              activeStandards.push({ s, periodKey: pk })
             }
           }
         }
@@ -284,402 +315,610 @@ export const DeviceMaintenanceProfileService = {
           if (m === 'runtime') {
             finalPeriodKey = buildPeriodKey('runtime', new Date(), s.getDataValue('standard_id'), s.getDataValue('device_id'), Number(s.getDataValue('runtime_threshold')))
           }
+
           const recordNo = await generateDeviceRecordNo()
-          const record = await DeviceMaintenanceRecord.create({
+          const created = await DeviceMaintenanceRecord.create({
             record_no: recordNo,
+            standard_id: s.getDataValue('standard_id'),
             device_id: s.getDataValue('device_id'),
             device_code: finalDeviceCode,
             device_name: finalDeviceName,
-            standard_id: s.getDataValue('standard_id'),
-            profile_id: null,
             trigger_mode: m,
             period_key: finalPeriodKey,
-            sort_order: s.getDataValue('sort_order') || 0,
-            status: 0, // 待执行
-            result: null,
-            actual_value: null,
-            standard_value: s.getDataValue('standard_value'),
-            executor_id: null,
-            executor_name: null,
-            start_time: null,
-            end_time: null,
-            duration_min: null,
-            content: s.getDataValue('item_content'),
-            item_name: s.getDataValue('item_name'),
-            abnormal_desc: null,
-            remarks: null,
-          } as any, { transaction: t })
-          createdList.push(record)
+            status: 0,
+            remarks: m === 'runtime'
+              ? `运行时长${currentRuntime}h 达阈值${s.getDataValue('runtime_threshold')}h，自动生成`
+              : '自动生成',
+          }, { transaction: t })
+          createdList.push(created)
 
-          // runtime 模式：更新 standard.last_trigger_value
-          if (m === 'runtime' && currentRuntime !== undefined) {
-            await s.update({ last_trigger_value: currentRuntime } as any, { transaction: t })
+          // runtime 模式推进 last_trigger_value
+          if (m === 'runtime') {
+            await s.update({ last_trigger_value: String(currentRuntime) }, { transaction: t })
           }
         }
       }
 
       await t.commit()
-      logger.info(`[DeviceMaintenance] generateRecords: created=${createdList.length}`)
-      return { created: createdList.length, total: createdList.length, records: createdList }
-    } catch (err) {
+      return {
+        created: createdList.length,
+        total: createdList.length,
+        records: createdList.map(r => ({ record_id: r.record_id, record_no: r.record_no })),
+      }
+    } catch (err: any) {
       if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
-      throw err
+      throw new AppError(err.message || '生成失败', ErrorCode.SYSTEM_ERROR)
     }
-  },
+}
 
-  // ============================================================
-  // 保养矩阵视图（getMatrix）
-  // ============================================================
+export async function getMatrix(query: any) {
+const { device_id, year_month, year } = query
+      if (!device_id) throw new AppError('设备ID不能为空', ErrorCode.PARAM_INVALID)
 
-  async getMatrix(query: any) {
-    const { device_id, year_month, year } = query
-    if (!device_id) throw new AppError('设备 ID 不能为空', 10001, 400)
+      let ym = year_month
+      if (!ym && year) ym = `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
+      if (!ym) ym = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
 
-    let ym = year_month
-    if (!ym && year) ym = `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
-    if (!ym) ym = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
+      const [yr, mo] = ym.split('-').map(Number)
+      const daysInMonth = new Date(yr, mo, 0).getDate()
 
-    const [yr, mo] = ym.split('-').map(Number)
-    const daysInMonth = new Date(yr, mo, 0).getDate()
-    const dailyKeys = dailyPeriodKeys(yr, mo)
-    const weekKeys = weeklyPeriodKeys(yr, mo)
+      // 提前计算 period_keys 集（纯工具函数，已测试）
+      const dailyKeys = dailyPeriodKeys(yr, mo)
+      const weekKeys = weeklyPeriodKeys(yr, mo)
 
-    // 查全部启用标准
-    const standards = await DeviceMaintenanceStandard.findAll({
-      where: { device_id, status: 1 },
-      order: [['trigger_mode', 'ASC'], ['sort_order', 'ASC'], ['standard_id', 'ASC']],
-    })
-    const dailyStds: any[] = []
-    const weeklyStds: any[] = []
-    const monthlyStds: any[] = []
-    const runtimeStds: any[] = []
-    standards.forEach((s: any) => {
-      const tm = s.getDataValue('trigger_mode')
-      if (tm === 'daily') dailyStds.push(s)
-      else if (tm === 'weekly') weeklyStds.push(s)
-      else if (tm === 'monthly') {
-        if (monthlyStandardActive(s.getDataValue('monthly_plan'), mo)) monthlyStds.push(s)
-      } else if (tm === 'runtime') runtimeStds.push(s)
-    })
+      // 1. 查该设备全部启用标准
+      const standards = await DeviceMaintenanceStandard.findAll({
+        where: { device_id, status: 1 },
+        order: [['trigger_mode', 'ASC'], ['sort_order', 'ASC'], ['standard_id', 'ASC']],
+      })
 
-    // 查该月内所有执行记录
-    const dailyStart = dailyKeys[0]
-    const dailyEnd = dailyKeys[dailyKeys.length - 1]
-    const records = await DeviceMaintenanceRecord.findAll({
-      where: {
-        device_id,
-        [Op.or]: [
-          { trigger_mode: 'daily', period_key: { [Op.gte]: dailyStart, [Op.lte]: dailyEnd } },
-          { trigger_mode: 'weekly', period_key: { [Op.in]: weekKeys } },
-          { trigger_mode: 'monthly', period_key: ym },
-        ],
-      },
-      attributes: ['record_id', 'standard_id', 'trigger_mode', 'period_key',
-        'status', 'result', 'actual_value', 'executor_name', 'executor_id',
-        'start_time', 'end_time', 'duration_min', 'abnormal_desc'],
-    })
+      // 2. 按 trigger_mode 分组
+      const dailyStds: any[] = []
+      const weeklyStds: any[] = []
+      const monthlyStds: any[] = []
+      const runtimeStds: any[] = []
+      standards.forEach((s: any) => {
+        const tm = s.getDataValue('trigger_mode')
+        if (tm === 'daily') dailyStds.push(s)
+        else if (tm === 'weekly') weeklyStds.push(s)
+        else if (tm === 'monthly') {
+          const mp = s.getDataValue('monthly_plan')
+          if (monthlyStandardActive(mp, mo)) monthlyStds.push(s)
+        } else if (tm === 'runtime') runtimeStds.push(s)
+      })
 
-    const recordsMap = new Map<string, any>()
-    records.forEach((r: any) => {
-      const raw = r.toJSON()
-      recordsMap.set(`${raw.trigger_mode}|${raw.period_key}|${raw.standard_id}`, raw)
-    })
+      // 3. 查该设备在该月内的所有执行记录
+      const dailyStart = dailyKeys[0]
+      const dailyEnd = dailyKeys[dailyKeys.length - 1]
 
-    // 构建矩阵：standards × period_keys 的 cell 数组
-    const buildCells = (stds: any[], periodKeys: string[]) => stds.map((s: any) => ({
-      standard: {
-        standard_id: s.getDataValue('standard_id'),
-        standard_name: s.getDataValue('standard_name'),
-        item_name: s.getDataValue('item_name'),
-        sort_order: s.getDataValue('sort_order'),
-        trigger_mode: s.getDataValue('trigger_mode'),
-      },
-      cells: periodKeys.map(pk => {
-        const key = `${s.getDataValue('trigger_mode')}|${pk}|${s.getDataValue('standard_id')}`
-        const rec = recordsMap.get(key)
-        if (!rec) return { period_key: pk, record: null }
-        const statusText = STATUS_REVERSE[rec.status] || String(rec.status)
-        return {
-          period_key: pk,
-          record: {
+      const records = await DeviceMaintenanceRecord.findAll({
+        where: {
+          device_id,
+          [Op.or]: [
+            // daily: period_key 落在这个月
+            { trigger_mode: 'daily', period_key: { [Op.gte]: dailyStart, [Op.lte]: dailyEnd } },
+            // weekly: period_key = YYYY-Www，取这个月里覆盖到的周
+            { trigger_mode: 'weekly', period_key: { [Op.in]: weekKeys } },
+            // monthly: period_key = YYYY-MM
+            { trigger_mode: 'monthly', period_key: ym },
+          ],
+        },
+        attributes: ['record_id', 'standard_id', 'trigger_mode', 'period_key',
+          'status', 'result', 'actual_value', 'executor_name', 'executor_id',
+          'start_time', 'end_time', 'duration_min', 'abnormal_desc'],
+      })
+
+      // 构建 recordsMap: (trigger_mode, period_key, standard_id) → record
+      const recordsMap = new Map<string, any>()
+      records.forEach((r: any) => {
+        const raw = r.toJSON()
+        const key = `${raw.trigger_mode}|${raw.period_key}|${raw.standard_id}`
+        recordsMap.set(key, raw)
+      })
+
+      // 4. 组装矩阵
+      const buildMatrixRecords = (std: any, mode: string, periodKeys: string[]): Record<string, any> => {
+        const out: Record<string, any> = {}
+        periodKeys.forEach(pk => {
+          const rec = recordsMap.get(`${mode}|${pk}|${std.getDataValue('standard_id')}`)
+          out[pk] = rec ? {
             record_id: rec.record_id,
             status: rec.status,
-            status_text: statusText,
             result: rec.result,
             actual_value: rec.actual_value,
-            executor_name: rec.executor_name,
+            executor: rec.executor_name,
             start_time: rec.start_time,
             end_time: rec.end_time,
             duration_min: rec.duration_min,
-          },
-        }
-      }),
-    }))
+            abnormal_desc: rec.abnormal_desc,
+          } : null
+        })
+        return out
+      }
 
-    return {
-      year_month: ym,
-      days_in_month: daysInMonth,
-      daily_period_keys: dailyKeys,
-      weekly_period_keys: weekKeys,
-      daily_standards: buildCells(dailyStds, dailyKeys),
-      weekly_standards: buildCells(weeklyStds, weekKeys),
-      monthly_standards: buildCells(monthlyStds, [ym]),
-      runtime_standards: runtimeStds.map((s: any) => ({
+      const resultDaily: any[] = dailyStds.map((s: any) => ({
         standard_id: s.getDataValue('standard_id'),
-        standard_name: s.getDataValue('standard_name'),
-        item_name: s.getDataValue('item_name'),
-        runtime_threshold: s.getDataValue('runtime_threshold'),
-      })),
-    }
-  },
+        maintenance_content: s.getDataValue('maintenance_content'),
+        mechanism: s.getDataValue('mechanism'),
+        component: s.getDataValue('component'),
+        location: s.getDataValue('location'),
+        maintenance_method: s.getDataValue('maintenance_method'),
+        judge_type: s.getDataValue('judge_type'),
+        standard_value: s.getDataValue('standard_value'),
+        unit: s.getDataValue('unit'),
+        sort_order: s.getDataValue('sort_order'),
+        point_count: s.getDataValue('point_count'),
+        time_per_point: s.getDataValue('time_per_point'),
+        records: buildMatrixRecords(s, 'daily', dailyKeys),
+      }))
 
-  // ============================================================
-  // 保养执行记录 CRUD
-  // ============================================================
+      const resultWeekly: any[] = weeklyStds.map((s: any) => ({
+        standard_id: s.getDataValue('standard_id'),
+        maintenance_content: s.getDataValue('maintenance_content'),
+        mechanism: s.getDataValue('mechanism'),
+        component: s.getDataValue('component'),
+        location: s.getDataValue('location'),
+        maintenance_method: s.getDataValue('maintenance_method'),
+        judge_type: s.getDataValue('judge_type'),
+        standard_value: s.getDataValue('standard_value'),
+        unit: s.getDataValue('unit'),
+        point_count: s.getDataValue('point_count'),
+        time_per_point: s.getDataValue('time_per_point'),
+        sort_order: s.getDataValue('sort_order'),
+        records: buildMatrixRecords(s, 'weekly', weekKeys),
+      }))
 
-  async listRecords(query: any) {
-    const { device_id, trigger_mode, status, result, keyword, start_date, end_date, page = 1, pageSize = 20 } = query
-    const where: any = {}
-    if (device_id) where.device_id = device_id
-    if (trigger_mode) where.trigger_mode = trigger_mode
-    if (status !== undefined && status !== '') where.status = Number(status)
-    if (result) where.result = result
-    if (keyword) where[Op.or] = [
-      { record_no: { [Op.like]: `%${keyword}%` } },
-      { device_name: { [Op.like]: `%${keyword}%` } },
-      { content: { [Op.like]: `%${keyword}%` } },
-    ]
-    if (start_date || end_date) {
-      where.created_at = {}
-      if (start_date) where.created_at[Op.gte] = new Date(start_date)
-      if (end_date) where.created_at[Op.lte] = new Date(new Date(end_date).getTime() + 86400000)
-    }
-    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
-    const offset = (Number(page) - 1) * limit
-    return await DeviceMaintenanceRecord.findAndCountAll({
-      where, limit, offset,
-      include: [
-        { model: Device, as: 'device', required: false, attributes: ['device_id', 'device_code', 'device_name'] },
-        { model: DeviceMaintenanceStandard, as: 'standard', required: false, attributes: ['standard_id', 'standard_name', 'item_name'] },
-      ],
-      order: [['created_at', 'DESC']],
-    })
-  },
+      const resultMonthly: any[] = monthlyStds.map((s: any) => ({
+        standard_id: s.getDataValue('standard_id'),
+        maintenance_content: s.getDataValue('maintenance_content'),
+        mechanism: s.getDataValue('mechanism'),
+        component: s.getDataValue('component'),
+        location: s.getDataValue('location'),
+        maintenance_method: s.getDataValue('maintenance_method'),
+        judge_type: s.getDataValue('judge_type'),
+        standard_value: s.getDataValue('standard_value'),
+        unit: s.getDataValue('unit'),
+        point_count: s.getDataValue('point_count'),
+        time_per_point: s.getDataValue('time_per_point'),
+        monthly_plan: s.getDataValue('monthly_plan'),
+        sort_order: s.getDataValue('sort_order'),
+        records: buildMatrixRecords(s, 'monthly', [ym]),
+      }))
 
-  async detailRecord(id: number | string) {
-    const record = await getRecordDetail(Number(id))
-    if (!record) throw new AppError('保养执行记录不存在', 10002, 404)
-    return record
-  },
+      // 5. 汇总统计
+      const completedCount = (items: any[]) => items.reduce((acc, it) => {
+        return acc + Object.values(it.records).filter((v: any) => v && v.status === '已完成').length
+      }, 0)
+      const pendingCount = (items: any[]) => items.reduce((acc, it) => {
+        return acc + Object.values(it.records).filter((v: any) => v === null || v.status === '待执行').length
+      }, 0)
+      const abnormalCount = (items: any[]) => items.reduce((acc, it) => {
+        return acc + Object.values(it.records).filter((v: any) => v && v.result === '异常').length
+      }, 0)
 
-  /** 开始执行（状态 0→1） */
-  async startRecord(id: number | string, actor?: any) {
-    const record = await DeviceMaintenanceRecord.findOne({ where: { record_id: Number(id) } })
-    if (!record) throw new AppError('保养执行记录不存在', 10002, 404)
-    if (rawStatus(record) !== 0) throw new AppError('只有待执行可以开始', 20001, 409)
+      const dailyTotal = resultDaily.length * daysInMonth
+      const dailyCompleted = completedCount(resultDaily)
+      const weeklyTotal = resultWeekly.length * weekKeys.length
+      const weeklyCompleted = completedCount(resultWeekly)
+      const monthlyTotal = resultMonthly.length
+      const monthlyCompleted = completedCount(resultMonthly)
 
-    await record.update({
-      status: 1,
-      start_time: new Date(),
-      executor_id: actor?.userId || null,
-      executor_name: actor?.realName || actor?.username || null,
-    } as any)
-    return record
-  },
+      // 设备基础信息
+      const device = await Device.findOne({ where: { device_id } })
 
-  /** 提交执行结果（状态 → 已完成 或 异常） */
-  async submitRecord(id: number | string, body: any, actor?: any) {
-    const t = await sequelize.transaction()
+      return {
+        device_id: Number(device_id),
+        device_code: (device as any)?.getDataValue('device_code') || null,
+        device_name: (device as any)?.getDataValue('device_name') || null,
+        year_month: ym,
+        year: yr,
+        month: mo,
+        days_in_month: daysInMonth,
+        week_keys: weekKeys,
+        daily: { items: resultDaily },
+        weekly: { items: resultWeekly },
+        monthly: { items: resultMonthly },
+        summary: {
+          daily_total: dailyTotal,
+          daily_completed: dailyCompleted,
+          daily_rate: dailyTotal > 0 ? Math.round((dailyCompleted / dailyTotal) * 100) : 0,
+          weekly_total: weeklyTotal,
+          weekly_completed: weeklyCompleted,
+          weekly_rate: weeklyTotal > 0 ? Math.round((weeklyCompleted / weeklyTotal) * 100) : 0,
+          monthly_total: monthlyTotal,
+          monthly_completed: monthlyCompleted,
+          monthly_rate: monthlyTotal > 0 ? Math.round((monthlyCompleted / monthlyTotal) * 100) : 0,
+          abnormal_count: abnormalCount([...resultDaily, ...resultWeekly, ...resultMonthly]),
+        },
+      }
+}
+
+export async function listRecords(query: any) {
+const {
+        page = 1, page_size = 20,
+        record_no, device_id, device_name, device_code,
+        trigger_mode, status, period_key,
+        start_date, end_date,
+        extra,
+      } = query
+
+      const where: any = {}
+      if (record_no) where.record_no = { [Op.like]: `%${record_no}%` }
+      if (device_id) where.device_id = device_id
+      if (device_name) where.device_name = { [Op.like]: `%${device_name}%` }
+      if (device_code) where.device_code = { [Op.like]: `%${device_code}%` }
+      if (trigger_mode) where.trigger_mode = trigger_mode
+      if (period_key) where.period_key = period_key
+
+      const statusArr = parseMultiStatus(status, STATUS_REVERSE)
+      if (statusArr) where.status = { [Op.in]: statusArr }
+
+      if (start_date || end_date) {
+        where.created_at = {}
+        if (start_date) where.created_at[Op.gte] = new Date(start_date as string)
+        if (end_date) where.created_at[Op.lte] = new Date(`${end_date} 23:59:59`)
+      }
+
+      // 历史记录模式：只看本月以外的已完成/跳过记录
+      if (extra === 'history') {
+        where.status = { [Op.in]: (statusArr && statusArr.length) ? statusArr : [2, 3] }
+        if (!start_date && !end_date) {
+          const now = new Date()
+          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+          const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+          where.created_at = {
+            [Op.or]: [{ [Op.lt]: monthStart }, { [Op.gt]: monthEnd }],
+          }
+        }
+      }
+
+      const pageNum = Math.max(1, Number(page) || 1)
+      const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(page_size) || 20))
+
+      const { count, rows } = await DeviceMaintenanceRecord.findAndCountAll({
+        where,
+        order: [['created_at', 'DESC'], ['record_id', 'DESC']],
+        limit: pageSize,
+        offset: (pageNum - 1) * pageSize,
+        include: [{ model: DeviceMaintenanceStandard, as: 'standard', required: false }],
+      })
+
+      return { list: rows, total: count, page: pageNum, page_size: pageSize }
+}
+
+export async function detailRecord(id: number) {
+
+      const detail = await getRecordDetail(Number(id))
+      if (!detail) throw new AppError('执行记录不存在', ErrorCode.RECORD_NOT_FOUND)
+      return detail
+}
+
+export async function startRecord(id: number, body: any, user?: any) {
+const t = await DeviceMaintenanceRecord.sequelize.transaction()
     try {
-      const record = await DeviceMaintenanceRecord.findOne({ where: { record_id: Number(id) }, transaction: t })
-      if (!record) throw new AppError('保养执行记录不存在', 10002, 404)
+      const userInfo: any = user || {}
+      const { start_time, executor_id, executor_name } = body || {}
 
-      const { result, actual_value, abnormal_desc, duration_min, end_time, remarks, maintenance_content, spare_parts_used } = body
-      if (!result) throw new AppError('执行结果不能为空（正常/异常）', 10001, 400)
+      const record = await DeviceMaintenanceRecord.findOne({ where: { record_id: id }, transaction: t })
+      if (!record) throw new AppError('执行记录不存在', ErrorCode.RECORD_NOT_FOUND)
+
+      const s = rawStatus(record)
+      if (s !== 0 && s !== 3) {
+        throw new AppError('当前状态不允许开始执行', ErrorCode.BUSINESS_ERROR)
+      }
+
+      await record.update({
+        status: 1,
+        start_time: start_time ? new Date(start_time) : new Date(),
+        executor_id: executor_id || userInfo.userId || null,
+        executor_name: executor_name || userInfo.username || '',
+      }, { transaction: t })
+
+      await t.commit()
+      const detail = await getRecordDetail(Number(id))
+      return detail
+    } catch (err: any) {
+      if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
+      throw new AppError(err.message || '操作失败', ErrorCode.SYSTEM_ERROR)
+    }
+}
+
+export async function submitRecord(id: number, body: any, user?: any) {
+const t = await DeviceMaintenanceRecord.sequelize.transaction()
+    try {
+      const userInfo: any = user || {}
+      const {
+        result, actual_value, abnormal_desc, executor_id, executor_name,
+        maintenance_content, spare_parts_used, duration_min, end_time, remarks,
+      } = body || {}
+
+      const record = await DeviceMaintenanceRecord.findOne({ where: { record_id: id }, transaction: t })
+      if (!record) {
+        throw new AppError('执行记录不存在', ErrorCode.RECORD_NOT_FOUND)
+      }
+
+      if (!result) throw new AppError('执行结果不能为空（正常/异常）', ErrorCode.PARAM_INVALID)
 
       const now = end_time ? new Date(end_time) : new Date()
+      const nowStr = now.toLocaleString('zh-CN', { hour12: false })
+      const deviceId = record.getDataValue('device_id')
+      const deviceCode = record.getDataValue('device_code')
+      const deviceName = record.getDataValue('device_name')
+
+      // 计算耗时
       let finalDuration = duration_min !== undefined ? duration_min : null
       if (finalDuration === null) {
         const st = record.getDataValue('start_time')
         if (st) finalDuration = Math.max(1, Math.round((now.getTime() - new Date(st).getTime()) / 60000))
       }
 
-      const statusVal = result === '异常' ? 4 : 2 // 4=异常完成, 2=已完成
-      await record.update({
-        status: statusVal,
+      const recordUpdate: any = {
+        status: 2,
         result,
-        actual_value: actual_value !== undefined ? actual_value : null,
+        actual_value: actual_value || null,
+        abnormal_desc: result === '异常' ? (abnormal_desc || '') : '',
+        maintenance_content: maintenance_content || null,
+        spare_parts_used: Array.isArray(spare_parts_used) ? spare_parts_used : null,
         end_time: now,
         duration_min: finalDuration,
-        abnormal_desc: abnormal_desc || null,
-        executor_id: actor?.userId || record.getDataValue('executor_id'),
-        executor_name: actor?.realName || actor?.username || record.getDataValue('executor_name'),
-        content: maintenance_content || record.getDataValue('content'),
-        spare_parts_used: spare_parts_used ? JSON.stringify(spare_parts_used) : null,
-        remarks: remarks || null,
-      } as any, { transaction: t })
-
-      await t.commit()
-      return await getRecordDetail(Number(id))
-    } catch (err) {
-      if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
-      throw err
-    }
-  },
-
-  /** 批量提交（遍历调用 submitRecord 逻辑，事务包裹） */
-  async batchSubmit(body: any, actor?: any) {
-    const { ids, result, abnormal_desc, remarks, duration_min, end_time } = body
-    if (!Array.isArray(ids) || ids.length === 0) throw new AppError('请提供记录 ID 列表', 10001, 400)
-    if (!result) throw new AppError('执行结果不能为空', 10001, 400)
-
-    const t = await sequelize.transaction()
-    try {
-      const now = end_time ? new Date(end_time) : new Date()
-      const statusVal = result === '异常' ? 4 : 2
-      let successCount = 0
-      for (const rid of ids) {
-        const record = await DeviceMaintenanceRecord.findOne({ where: { record_id: Number(rid) }, transaction: t })
-        if (!record) continue
-        // 跳过已完成（避免重复提交）
-        const st = rawStatus(record)
-        if (st === 2 || st === 4) continue
-
-        let finalDuration = duration_min !== undefined ? duration_min : null
-        if (finalDuration === null) {
-          const rec_st = record.getDataValue('start_time')
-          if (rec_st) finalDuration = Math.max(1, Math.round((now.getTime() - new Date(rec_st).getTime()) / 60000))
-        }
-        await record.update({
-          status: statusVal,
-          result,
-          end_time: now,
-          duration_min: finalDuration,
-          abnormal_desc: abnormal_desc || null,
-          remarks: remarks || null,
-          executor_id: actor?.userId || record.getDataValue('executor_id'),
-          executor_name: actor?.realName || actor?.username || record.getDataValue('executor_name'),
-        } as any, { transaction: t })
-        successCount++
+        remarks: remarks !== undefined ? remarks : (record as any).remarks,
       }
+      if (!record.getDataValue('executor_id') && !record.getDataValue('executor_name')) {
+        recordUpdate.executor_id = executor_id || userInfo.userId || null
+        recordUpdate.executor_name = executor_name || userInfo.username || ''
+      } else {
+        if (executor_id !== undefined) recordUpdate.executor_id = executor_id
+        if (executor_name !== undefined) recordUpdate.executor_name = executor_name
+      }
+
+      await record.update(recordUpdate, { transaction: t })
+
+      // 异常自动创建故障工单
+      let faultId: number | null = null
+      if (result === '异常') {
+        const standard = record.getDataValue('standard_id')
+          ? await DeviceMaintenanceStandard.findOne({ where: { standard_id: record.getDataValue('standard_id') }, transaction: t })
+          : null
+        const itemName = standard?.getDataValue('maintenance_content') || '未知保养项'
+        const faultNo = await generateDeviceFaultNo()
+        const fault = await DeviceFault.create({
+          fault_no: faultNo,
+          device_id: deviceId,
+          device_code: deviceCode,
+          device_name: deviceName,
+          fault_level: 1,
+          fault_desc: `保养异常：${itemName}`,
+          fault_time: now,
+          impact_desc: abnormal_desc || '',
+          status: 0,
+          reporter_id: recordUpdate.executor_id || null,
+          reporter_name: recordUpdate.executor_name || '',
+          source: '保养异常',
+          related_inspection_id: Number(id),
+          remarks: `由保养执行记录#${id}自动生成`,
+        }, { transaction: t })
+        faultId = (fault as any).fault_id
+      }
+
+
       await t.commit()
-      return { success_count: successCount, total: ids.length }
-    } catch (err) {
-      if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
-      throw err
-    }
-  },
-
-  /** 跳过执行（状态 → 3） */
-  async skipRecord(id: number | string, body: any, actor?: any) {
-    const record = await DeviceMaintenanceRecord.findOne({ where: { record_id: Number(id) } })
-    if (!record) throw new AppError('保养执行记录不存在', 10002, 404)
-
-    const st = rawStatus(record)
-    if (st === 2 || st === 4) throw new AppError('已完成的记录不能跳过', 20001, 409)
-
-    await record.update({
-      status: 3,
-      result: '跳过',
-      abnormal_desc: body.abnormal_desc || body.reason || null,
-      executor_id: actor?.userId || null,
-      executor_name: actor?.realName || actor?.username || null,
-      end_time: new Date(),
-    } as any)
-    return record
-  },
-
-  /** 删除执行记录（只有未完成可以删） */
-  async deleteRecord(id: number | string) {
-    const record = await DeviceMaintenanceRecord.findOne({ where: { record_id: Number(id) } })
-    if (!record) throw new AppError('保养执行记录不存在', 10002, 404)
-    if (!UNFINISHED_STATUS.includes(rawStatus(record))) {
-      throw new AppError('已完成/异常/跳过的记录不能删除', 20001, 409)
-    }
-    await record.destroy()
-    return true
-  },
-
-  // ============================================================
-  // 运行小时记录
-  // ============================================================
-
-  /** 提交设备运行小时（runtime 触发用） */
-  async logRuntime(body: any, actor?: any) {
-    const { device_id, runtime_hours, note } = body
-    if (!device_id) throw new AppError('设备不能为空', 10001, 400)
-    if (runtime_hours === undefined || runtime_hours === null) throw new AppError('运行小时不能为空', 10001, 400)
-
-    const device = await Device.findOne({ where: { device_id } })
-    if (!device) throw new AppError('设备不存在', 10002, 404)
-
-    const log = await DeviceRuntimeLog.create({
-      device_id,
-      device_code: (device as any).getDataValue('device_code'),
-      device_name: (device as any).getDataValue('device_name'),
-      runtime_hours: Number(runtime_hours),
-      note: note || '',
-      logged_by: actor?.userId || null,
-      logged_by_name: actor?.username || actor?.realName || null,
-    } as any)
-    return log
-  },
-
-  /** 查某设备运行小时日志 */
-  async getRuntimeLog(deviceId: number | string) {
-    return await DeviceRuntimeLog.findAll({
-      where: { device_id: Number(deviceId) },
-      order: [['created_at', 'DESC'], ['log_id', 'DESC']],
-      limit: 200,
-    })
-  },
-
-  // ============================================================
-  // 定时任务：从保养标准 backfill 保养档案
-  // ============================================================
-
-  /** export async function initProfiles（原 Controller 同名函数迁移，app.ts 定时任务调用） */
-  async initProfiles() {
-    try {
-      const stdRows = await DeviceMaintenanceStandard.findAll({
-        attributes: ['device_id'],
-        group: ['device_id'],
-        raw: true,
-      })
-      const stdDeviceIds: number[] = stdRows.map((r: any) => r.device_id).filter(Boolean)
-      if (stdDeviceIds.length === 0) return
-      const existed = await DeviceMaintenanceProfile.findAll({
-        attributes: ['device_id'],
-        where: { device_id: { [Op.in]: stdDeviceIds } },
-        raw: true,
-      })
-      const existedSet = new Set(existed.map((p: any) => p.device_id))
-      const toCreate = stdDeviceIds.filter(id => !existedSet.has(id))
-      if (toCreate.length === 0) return
-      const devices = await Device.findAll({
-        where: { device_id: { [Op.in]: toCreate } },
-        attributes: ['device_id', 'device_code', 'device_name'],
-        raw: true,
-      })
-      const deviceMap = new Map(devices.map((d: any) => [d.device_id, d]))
-      const today = new Date().toISOString().slice(0, 10)
-      const rows = toCreate.map((id: number) => {
-        const d = deviceMap.get(id)
-        return {
-          device_id: id,
-          device_code: d?.device_code || null,
-          device_name: d?.device_name || null,
-          status: '生效',
-          version: 1,
-          effective_date: today,
-        }
-      })
-      await DeviceMaintenanceProfile.bulkCreate(rows)
-      logger.info(`[DeviceMaintenance] initProfiles: backfill ${rows.length} devices`)
+      const detail = await getRecordDetail(Number(id))
+      return detail
     } catch (err: any) {
-      logger.error('[DeviceMaintenance] initProfiles error:', err)
+      if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
+      throw new AppError(err.message || '提交失败', ErrorCode.SYSTEM_ERROR)
     }
-  },
 }
 
-export default DeviceMaintenanceProfileService
+export async function batchSubmit(body: any, user?: any) {
+const t = await DeviceMaintenanceRecord.sequelize.transaction()
+    try {
+      const userInfo: any = user || {}
+      const items = Array.isArray(body?.records) ? body.records : []
+      if (items.length === 0) throw new AppError('提交项不能为空', ErrorCode.PARAM_INVALID)
+
+      const updated: any[] = []
+      const abnormalFaults: any[] = []
+
+      for (const payload of items) {
+        const record = await DeviceMaintenanceRecord.findOne({ where: { record_id: payload.record_id }, transaction: t })
+        if (!record) continue
+        const newStatus = payload.status || 2
+        const now = new Date()
+
+        const updateData: any = {
+          status: newStatus,
+        }
+        if (payload.result !== undefined) updateData.result = payload.result
+        if (payload.actual_value !== undefined) updateData.actual_value = payload.actual_value || null
+        if (payload.abnormal_desc !== undefined && payload.result === '异常') {
+          updateData.abnormal_desc = payload.abnormal_desc
+        }
+        if (newStatus === 2) {
+          updateData.end_time = now
+          if (!record.getDataValue('executor_id') && (payload.executor_id || userInfo.userId)) {
+            updateData.executor_id = payload.executor_id || userInfo.userId
+            updateData.executor_name = payload.executor_name || userInfo.username || ''
+          }
+        }
+
+        await record.update(updateData, { transaction: t })
+        updated.push({ record_id: payload.record_id, status: newStatus })
+
+        // 异常自动转故障
+        if (payload.result === '异常') {
+          const standard = record.getDataValue('standard_id')
+            ? await DeviceMaintenanceStandard.findOne({ where: { standard_id: record.getDataValue('standard_id') }, transaction: t })
+            : null
+          const itemName = standard?.getDataValue('maintenance_content') || '未知保养项'
+          const faultNo = await generateDeviceFaultNo()
+          const fault = await DeviceFault.create({
+            fault_no: faultNo,
+            device_id: record.getDataValue('device_id'),
+            device_code: record.getDataValue('device_code'),
+            device_name: record.getDataValue('device_name'),
+            fault_level: 1,
+            fault_desc: `保养异常：${itemName}`,
+            fault_time: now,
+            impact_desc: payload.abnormal_desc || '',
+            status: 0,
+            reporter_id: updateData.executor_id || null,
+            reporter_name: updateData.executor_name || '',
+            source: '保养异常',
+            related_inspection_id: record.getDataValue('record_id'),
+            remarks: `由保养执行记录#${payload.record_id}自动生成（批量提交）`,
+          }, { transaction: t })
+          abnormalFaults.push({ fault_id: fault.fault_id, fault_no: fault.fault_no })
+        }
+      }
+
+      await t.commit()
+      return {
+        updated: updated.length,
+        abnormal_count: abnormalFaults.length,
+        abnormal_faults: abnormalFaults,
+      }
+    } catch (err: any) {
+      if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
+      throw new AppError(err.message || '批量提交失败', ErrorCode.SYSTEM_ERROR)
+    }
+}
+
+export async function skipRecord(id: number, body: any, user?: any) {
+
+      const record = await DeviceMaintenanceRecord.findOne({ where: { record_id: id } })
+      if (!record) throw new AppError('执行记录不存在', ErrorCode.RECORD_NOT_FOUND)
+      const s = rawStatus(record)
+      if (s === 1) throw new AppError('执行中的记录不允许跳过，请到完成保养后提交结果', ErrorCode.BUSINESS_ERROR)
+      if (s === 2) throw new AppError('已完成的记录不能跳过', ErrorCode.BUSINESS_ERROR)
+      await record.update({ status: 3 })
+      return null
+}
+
+export async function deleteRecord(id: number) {
+const t = await DeviceMaintenanceRecord.sequelize.transaction()
+    try {
+      const record = await DeviceMaintenanceRecord.findOne({ where: { record_id: id }, transaction: t })
+      if (!record) throw new AppError('执行记录不存在', ErrorCode.RECORD_NOT_FOUND)
+
+      const s = rawStatus(record)
+      if (s === 1) throw new AppError('执行中的保养记录不允许删除，请先完成或跳过', ErrorCode.BUSINESS_ERROR)
+      if (s === 2) throw new AppError('已完成的保养记录不允许删除', ErrorCode.BUSINESS_ERROR)
+
+      // 级联删图片
+      await DeviceImage.destroy({ where: { doc_type: 'maintenance', doc_id: id }, transaction: t })
+      await record.destroy({ transaction: t })
+
+      await t.commit()
+      return { message: '删除成功' }
+    } catch (err: any) {
+      if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
+      throw new AppError(err.message || '删除失败', ErrorCode.SYSTEM_ERROR)
+    }
+}
+
+export async function getImages(query: any) {
+  const { record_id } = query
+  if (!record_id) throw new AppError('record_id 不能为空', ErrorCode.PARAM_INVALID)
+  const exists = await DeviceMaintenanceRecord.findOne({ where: { record_id: Number(record_id) }, attributes: ['record_id'] })
+  if (!exists) throw new AppError('执行记录不存在', ErrorCode.RECORD_NOT_FOUND)
+  const images = await DeviceImage.findAll({
+    where: { doc_type: 'maintenance', doc_id: Number(record_id) },
+    order: [['sort_order', 'ASC'], ['image_id', 'ASC']],
+  })
+  return images
+}
+
+export async function logRuntime(body: any, user?: any) {
+const t = await DeviceRuntimeLog.sequelize.transaction()
+    try {
+      const userInfo: any = user || {}
+      const { device_id, runtime_hours, remarks } = body || {}
+      if (!device_id) throw new AppError('设备ID不能为空', ErrorCode.PARAM_INVALID)
+      if (!runtime_hours || Number(runtime_hours) <= 0) {
+        throw new AppError('运行时长必须为有效正数（小时）', ErrorCode.PARAM_INVALID)
+      }
+
+      const { finalDeviceCode, finalDeviceName } = await loadDeviceFields(device_id, undefined, undefined, t)
+      const currentHours = Number(runtime_hours)
+      const previousHours = await getLatestRuntime(device_id, t)
+      const delta = currentHours > previousHours ? Number((currentHours - previousHours).toFixed(2)) : 0
+
+      const log = await DeviceRuntimeLog.create({
+        device_id,
+        device_code: finalDeviceCode,
+        device_name: finalDeviceName,
+        runtime_hours: currentHours,
+        previous_hours: previousHours,
+        delta_hours: delta,
+        logged_by: userInfo.userId || null,
+        logged_by_name: userInfo.username || '',
+        remarks: remarks || '',
+      }, { transaction: t })
+
+      await t.commit()
+      return log
+    } catch (err: any) {
+      if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
+      throw new AppError(err.message || '录入失败', ErrorCode.SYSTEM_ERROR)
+    }
+}
+
+export async function getRuntimeLog(deviceId: number) {
+
+}
+
+export async function initProfiles() {
+const stdRows = await DeviceMaintenanceStandard.findAll({
+      attributes: ['device_id'],
+      group: ['device_id'],
+      raw: true,
+    }) as any[]
+    const stdDeviceIds: number[] = stdRows.map(r => r.device_id).filter(Boolean)
+    if (stdDeviceIds.length === 0) return
+    const existed = await DeviceMaintenanceProfile.findAll({
+      attributes: ['device_id'],
+      where: { device_id: { [Op.in]: stdDeviceIds } },
+      raw: true,
+    }) as any[]
+    const existedSet = new Set(existed.map(p => p.device_id))
+    const toCreate = stdDeviceIds.filter(id => !existedSet.has(id))
+    if (toCreate.length === 0) return
+    const devices = await Device.findAll({
+      where: { device_id: { [Op.in]: toCreate } },
+      attributes: ['device_id', 'device_code', 'device_name'],
+      raw: true,
+    }) as any[]
+    const deviceMap = new Map(devices.map(d => [d.device_id, d]))
+    const today = new Date().toISOString().slice(0, 10)
+    const rows = toCreate.map(id => {
+      const d = deviceMap.get(id)
+      return {
+        device_id: id,
+        device_code: d?.device_code || null,
+        device_name: d?.device_name || null,
+        status: '生效',
+        version: 1,
+        effective_date: today,
+      }
+    })
+    await DeviceMaintenanceProfile.bulkCreate(rows)
+    console.log(`✅ 维护标准档案 backfill: ${rows.length} 台设备`)
+}
+
+export async function uploadImageRecord(body: any) {
+  // DB-only persistence; actual fs/sharp done in Controller
+  const { record_id, image_path, original_name, watermark_text, sort_order = 0, remark } = body
+  if (!record_id || !image_path) throw new AppError('record_id / image_path 必填', ErrorCode.PARAM_INVALID)
+  return await DeviceImage.create({
+    record_id: Number(record_id), record_type: 'maintenance',
+    image_path, original_name, watermark_text, sort_order: Number(sort_order), remark: remark || null,
+  })
+}
+
+export default {
+  listProfiles, listAvailableDevices, createProfile, detailProfile, updateProfileStatus, deleteProfile,
+  generateRecords, getMatrix,
+  listRecords, detailRecord, startRecord, submitRecord, batchSubmit, skipRecord, deleteRecord,
+  getImages, uploadImageRecord, logRuntime, getRuntimeLog, initProfiles, getRecordDetail,
+}
