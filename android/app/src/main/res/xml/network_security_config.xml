@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 调试期间信任用户证书 + 允许所有明文 -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- 对生产服务器 http 43.138.218.55 放行明文 -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">43.138.218.55</domain>
+    </domain-config>
+</network-security-config>
