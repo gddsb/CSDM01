@@ -3,7 +3,7 @@
  * - auto 模式下 DeviceDetector 会自动判定为以下四种之一
  * - manual 模式下用户可手动锁定
  */
-export type DeviceType = 'phone' | 'pda' | 'tablet' | 'tv'
+export type DeviceType = 'phone' | 'pda' | 'tablet' | 'tv' | 'pc'
 
 export type DeviceMode = 'auto' | 'manual'
 
@@ -68,6 +68,15 @@ export const DEVICE_CAPABILITY: Record<DeviceType, DeviceCapability> = {
     interactive: true,
     skipLogin: false,
     hideSystemAdmin: true,
+  },
+  pc: {
+    barcode: false,
+    hardwareKeys: false,
+    tvRemote: false,
+    offlineSubmit: false,
+    interactive: true,
+    skipLogin: false,
+    hideSystemAdmin: false,
   },
   tv: {
     barcode: false,

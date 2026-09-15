@@ -4,7 +4,7 @@
  * - 中部 Outlet（子页面）
  * - 底部 TabBar（首页 / 检验 / 设备 / 我的）
  */
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { TabBar, NavBar } from 'antd-mobile'
 import { AppOutline, CheckOutline, TeamOutline, UserOutline } from 'antd-mobile-icons'
 import { useApp } from '../contexts/AppContext'

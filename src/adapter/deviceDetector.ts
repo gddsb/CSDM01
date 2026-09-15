@@ -67,27 +67,31 @@ export function detectDeviceType(): DeviceInfo {
   if (TV_KEYWORDS.some((k) => ua.includes(k))) {
     type = 'tv'
   }
-  // 2. 宽屏 tablet（桌面浏览器调试常见）
+  // 2. PC 桌面浏览器（Web platform + 宽屏 + 非移动端 UA）
+  else if (platform === 'web' && width >= 1024 && !/mobile|phone|android|iphone|ipad|ipod/.test(ua)) {
+    type = 'pc'
+  }
+  // 3. 宽屏 tablet（桌面浏览器调试常见）
   else if (width >= 1200 && platform === 'web') {
     type = 'tablet'
   }
-  // 3. 常规 tablet（Android tablet / iPad）
+  // 4. 常规 tablet（Android tablet / iPad）
   else if (width >= TABLET_WIDTH_MIN && !/mobile|phone/.test(ua)) {
     type = 'tablet'
   }
-  // 4. PDA 关键词
+  // 5. PDA 关键词
   else if (PDA_KEYWORDS.some((k) => ua.includes(k))) {
     type = 'pda'
   }
-  // 5. 工业 PDA 启发式：Android + 中等宽度 + 较高 DPI
+  // 6. 工业 PDA 启发式：Android + 中等宽度 + 较高 DPI
   else if (platform === 'android' && width >= 360 && width <= 600 && dpr >= 2.5) {
     type = 'pda'
   }
-  // 6. Phone
+  // 7. Phone
   else if (width < PHONE_WIDTH_MIN || /mobile|phone/.test(ua)) {
     type = 'phone'
   }
-  // 7. 兜底 phone（足够通用）
+  // 8. 兜底（小屏 web → phone）
   else {
     type = 'phone'
   }
