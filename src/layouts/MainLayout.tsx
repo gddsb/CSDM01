@@ -59,6 +59,8 @@ export default function MainLayout() {
   const [pwdOpen, setPwdOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
+  const [mobileDownloadOpen, setMobileDownloadOpen] = useState(false)
+  const [mobileVersion, setMobileVersion] = useState<{ version?: string; downloadUrl?: string; updateNotes?: string } | null>(null)
   const [profileForm] = Form.useForm()
   const [pwdForm] = Form.useForm()
 
@@ -402,11 +404,20 @@ export default function MainLayout() {
     }
   }
 
+  const openMobileDownload = async () => {
+    setMobileDownloadOpen(true)
+    try {
+      const res: any = await api.get('/version')
+      if (res.success && res.data) setMobileVersion(res.data)
+    } catch {}
+  }
+
   const userMenu: MenuProps = {
     items: [
       { key: 'info', label: `${currentUser?.real_name} (${currentUser?.role?.role_name || '-'})`, disabled: true },
       { key: 'dept', label: `部门：${currentUser?.department}`, disabled: true },
       { type: 'divider' as const },
+      { key: 'mobile', label: '📱 移动端下载' },
       { key: 'profile', label: '用户设置', icon: <UserOutlined /> },
       { key: 'password', label: '修改密码', icon: <KeyOutlined /> },
       { type: 'divider' as const },
@@ -416,11 +427,12 @@ export default function MainLayout() {
       if (key === 'logout') logout()
       if (key === 'profile') openProfile()
       if (key === 'password') { pwdForm.resetFields(); setPwdOpen(true) }
+      if (key === 'mobile') openMobileDownload()
     },
   }
 
   const siderContent = (
-    <>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div className="logo" style={{ color: 'var(--nav-text)' }}>
         <div className="daman-logo">
           <span className="daman-en">daman</span>
@@ -451,10 +463,39 @@ export default function MainLayout() {
             background: 'transparent',
             color: 'var(--nav-text)',
             borderRight: 'none',
+            flex: 1,
+            overflowY: 'auto',
           }}
         />
       )}
-    </>
+      {/* 侧边栏底部：移动端下载入口 */}
+      <div
+        onClick={openMobileDownload}
+        style={{
+          margin: 12,
+          padding: collapsed ? '10px 0' : '10px 14px',
+          borderRadius: 10,
+          background: 'linear-gradient(135deg, #2196F3 0%, #1976D2 100%)',
+          color: '#fff',
+          cursor: 'pointer',
+          textAlign: 'center',
+          boxShadow: '0 2px 8px rgba(33, 150, 243, 0.35)',
+          transition: 'transform 0.15s',
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-1px)')}
+        onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+        title="下载移动端 APP"
+      >
+        {collapsed ? (
+          <span style={{ fontSize: 18 }}>📱</span>
+        ) : (
+          <div style={{ fontSize: 12, fontWeight: 500 }}>
+            📱 移动端下载
+            <div style={{ fontSize: 10, opacity: 0.8, marginTop: 2 }}>点击获取 Android APK</div>
+          </div>
+        )}
+      </div>
+    </div>
   )
 
   return (
@@ -631,6 +672,64 @@ export default function MainLayout() {
             <Input.Password prefix={<KeyOutlined />} placeholder="请再次输入新密码" />
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* 移动端下载弹窗 */}
+      <Modal
+        title="📱 移动端下载"
+        open={mobileDownloadOpen}
+        onCancel={() => setMobileDownloadOpen(false)}
+        footer={null}
+        width={440}
+        destroyOnHidden
+      >
+        <div style={{ textAlign: 'center', padding: '16px 0 8px' }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 72, height: 72, borderRadius: 18,
+            background: 'linear-gradient(135deg, #2196F3, #1976D2)',
+            marginBottom: 12, fontSize: 32,
+          }}>📱</div>
+          <div style={{ fontSize: 18, fontWeight: 600 }}>大满 MES 移动端</div>
+          <div style={{ fontSize: 13, color: '#888', marginTop: 4 }}>
+            {mobileVersion ? `版本 v${mobileVersion.version}` : '正在获取版本信息...'}
+          </div>
+        </div>
+
+        {mobileVersion?.updateNotes && (
+          <div style={{
+            background: '#f5f7fa', borderRadius: 8, padding: '10px 12px',
+            fontSize: 12, color: '#555', marginBottom: 16,
+          }}>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>更新说明</div>
+            {mobileVersion.updateNotes}
+          </div>
+        )}
+
+        {mobileVersion?.downloadUrl ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <a
+              href={mobileVersion.downloadUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ textDecoration: 'none' }}
+            >
+              <Button block type="primary" size="large" style={{ height: 44, fontSize: 15, borderRadius: 10 }}>
+                🤖 下载 Android APK
+              </Button>
+            </a>
+            <Button block size="large" style={{ height: 40, borderRadius: 10 }} disabled>
+              🍎 iOS（即将发布）
+            </Button>
+            <div style={{ fontSize: 11, color: '#aaa', textAlign: 'center', marginTop: 4 }}>
+              注：Android 8.0+ 请在"允许安装未知来源应用"后安装
+            </div>
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: 20, color: '#999' }}>
+            暂未获取到下载地址
+          </div>
+        )}
       </Modal>
     </Layout>
   )
