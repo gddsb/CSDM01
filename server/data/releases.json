@@ -1,6 +1,6 @@
 {
-  "version": "1.0.2",
-  "buildNumber": 3,
+  "version": "1.0.3",
+  "buildNumber": 4,
   "forceUpdate": false,
   "downloadUrl": "http://43.138.218.55/download/milk-can-mes-1.0.2-58dca6a.apk",
   "downloadUrlIos": "http://43.138.218.55/download/milk-can-mes-1.0.2-58dca6a.ipa",
@@ -8,7 +8,7 @@
   "ipaSize": 0,
   "appId": "com.daman.milkcanmes",
   "bundleId": "com.daman.milkcanmes",
-  "updateNotes": "移动端 Batch A-D 全量交付：Android/iOS 图标+二维码下载+5-TabBar+强更弹窗+发布脚本",
-  "publishedAt": "2026-09-15T10:42:00Z",
-  "gitSha": "58dca6a"
+  "updateNotes": "v1.0.3：PC端不再弹移动端更新提示；移动端新增离线优先队列（断网暂存/自动同步）、深色模式、列表下拉刷新与无限滚动。注：本版本号已升级到 1.0.3，APK 壳待用 Android SDK 重新构建上传后即可完整下发。",
+  "publishedAt": "2026-09-15T12:00:00Z",
+  "gitSha": "pending"
 }

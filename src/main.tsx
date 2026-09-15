@@ -309,12 +309,18 @@ function AppInner({ setMessageApi, setModalApi, setNotificationApi }: {
 
 /**
  * 版本检测独立组件：冷启动时 checkForUpdate()
- * Web 端始终启用（PWA 热更新）；TV 端跳过（大屏无需版本提醒）
+ *
+ * 规则（与路由重定向一致，只看 Capacitor shell，不依赖 useDevice）：
+ *  - Capacitor 原生壳内（Android/iOS）→ 启用版本检测，有新版本时弹窗
+ *  - PC Web 浏览器 → 不启用（避免 PC 登录时弹出"移动端版本更新"提示）
+ *    Web 端的 PWA 热更新由 Service Worker 自行处理，无需此弹窗
+ *  - TV 大屏 → 不启用（电视用户一般不知道怎么点下载 APK）
  */
 function AppUpdateLoader() {
-  const { type } = useDevice()
-  // TV 大屏不弹更新；电视用户一般不知道怎么点下载 APK
-  return useAppUpdate(/* enabled */ type !== 'tv')
+  const inCapacitorShell = typeof window !== 'undefined' && (
+    (window as any).Capacitor || /capacitor/i.test(navigator.userAgent)
+  )
+  return useAppUpdate(/* enabled */ inCapacitorShell)
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
