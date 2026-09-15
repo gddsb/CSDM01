@@ -12,10 +12,15 @@ export const loginSchema = z.object({
   captcha: z.string().max(10).optional(),
 });
 
-export const changePasswordSchema = z.object({
-  old_password: z.string().min(1, '原密码不能为空'),
-  new_password: z.string().min(6, '新密码至少6位').max(50, '新密码不能超过50位'),
-});
+export const changePasswordSchema = z
+  .object({
+    old_password: z.string().min(1, '原密码不能为空'),
+    new_password: z.string().min(6, '新密码至少6位').max(50, '新密码不能超过50位'),
+  })
+  .refine(
+    (data) => data.old_password !== data.new_password,
+    { message: '新密码不能与原密码相同', path: ['new_password'] },
+  );
 
 export const profileUpdateSchema = z.object({
   real_name: z.string().max(20).optional(),
