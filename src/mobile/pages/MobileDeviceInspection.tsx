@@ -43,14 +43,19 @@ export default function MobileDeviceInspection() {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState<string | null>(null)
 
-  const loadDevices = async () => {
+  const loadDevices = async (kw?: string): Promise<DeviceRow[]> => {
     setLoading(true)
     try {
       const params: Record<string, unknown> = { page: 1, page_size: 50 }
-      if (keyword) params.device_code = keyword
+      const k = kw ?? keyword
+      if (k) params.device_code = k
       const r: any = await api.get('/basic/devices', { params })
-      if (r.success) setDevices(r.data?.list || r.data || [])
-    } catch {} finally { setLoading(false) }
+      const list: DeviceRow[] = r.success ? (r.data?.list || r.data || []) : []
+      setDevices(list)
+      return list
+    } catch {
+      return []
+    } finally { setLoading(false) }
   }
 
   useEffect(() => { loadDevices() }, [])
@@ -71,13 +76,13 @@ export default function MobileDeviceInspection() {
     const r = await scan()
     if (!r) return
     setKeyword(r.code)
-    // 直接用扫码结果作为 device_code 查询
-    const dev: any = { device_code: r.code, device_name: r.code, device_id: 0 }
-    await loadDevices()
-    // 如果设备列表里有匹配 → 选中
-    const match = devices.find((d) => d.device_code === r.code)
-    if (match) loadRecords(match)
-    else Toast.show({ content: '未找到该设备，请确认设备编号', position: 'bottom' })
+    const list = await loadDevices(r.code)
+    const match = list.find((d) => d.device_code === r.code)
+    if (match) {
+      await loadRecords(match)
+    } else {
+      Toast.show({ content: '未找到该设备，请确认设备编号', position: 'bottom' })
+    }
   }
 
   const onSubmit = async () => {

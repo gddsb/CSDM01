@@ -41,14 +41,19 @@ export default function MobileProductInspection() {
   const [remarks, setRemarks] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  const load = async () => {
+  const load = async (kw?: string): Promise<Inspection[]> => {
     setLoading(true)
     try {
       const params: Record<string, unknown> = { page: 1, page_size: 30, status: '检验中' }
-      if (keyword) params.inspection_no = keyword
+      const k = kw ?? keyword
+      if (k) params.inspection_no = k
       const r: any = await api.get('/basic/product-inspections', { params })
-      if (r.success) setList(r.data?.list || r.data?.rows || [])
-    } catch {} finally { setLoading(false) }
+      const list: Inspection[] = r.success ? (r.data?.list || r.data?.rows || []) : []
+      setList(list)
+      return list
+    } catch {
+      return []
+    } finally { setLoading(false) }
   }
 
   useEffect(() => { load() }, [])
@@ -76,8 +81,11 @@ export default function MobileProductInspection() {
 
   const onScan = async () => {
     const r = await scan(); if (!r) return
-    setKeyword(r.code); await load()
-    if (list.length === 1) onPick(list[0])
+    setKeyword(r.code)
+    const list2 = await load(r.code)
+    if (list2.length === 1) onPick(list2[0])
+    else if (list2.length > 1) Toast.show({ content: `命中 ${list2.length} 条，请手动选择`, position: 'bottom', duration: 1500 })
+    else Toast.show({ content: '未找到匹配检验单', position: 'bottom' })
   }
 
   const setItemResult = (idx: number, v: string) => {

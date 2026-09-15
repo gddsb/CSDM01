@@ -60,14 +60,18 @@ export default function MobileDeviceMaintenance() {
   const [abnormalDesc, setAbnormalDesc] = useState('')
   const [remarks, setRemarks] = useState('')
 
-  const loadDevices = async (kw?: string) => {
+  const loadDevices = async (kw?: string): Promise<DeviceRow[]> => {
     setLoading(true)
     try {
       const params: Record<string, unknown> = { page: 1, page_size: 50 }
       if (kw) params.device_code = kw
       const r: any = await api.get('/basic/devices', { params })
-      if (r.success) setDevices(r.data?.list || r.data || [])
-    } catch { /* 静默降级 */ } finally { setLoading(false) }
+      const list: DeviceRow[] = r.success ? (r.data?.list || r.data || []) : []
+      setDevices(list)
+      return list
+    } catch {
+      return []
+    } finally { setLoading(false) }
   }
 
   useEffect(() => { loadDevices() }, [])
@@ -89,9 +93,8 @@ export default function MobileDeviceMaintenance() {
     const r = await scan()
     if (!r) return
     setKeyword(r.code)
-    await loadDevices(r.code)
-    // 自动选中匹配设备
-    const match = devices.find((d) => d.device_code === r.code)
+    const list = await loadDevices(r.code)
+    const match = list.find((d) => d.device_code === r.code)
     if (match) {
       await loadRecords(match)
       setStep(1)
