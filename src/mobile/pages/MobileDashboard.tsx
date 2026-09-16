@@ -25,13 +25,19 @@ interface TodoItem {
   color: string
 }
 
-/** 根据屏幕宽度计算九宫格列数：最小3列、横屏宽屏最多7列 */
+/**
+ * 动态计算九宫格列数
+ * —— 基于卡片最小宽度 + 容器 padding + Grid gap 算出能放几列
+ * —— 结果 clamp 到 [3, 7]，竖屏 3-4 列、横屏宽屏最多 7 列
+ *
+ * 每张卡片最小占位 ≈ 80px（含 gap），容器左右 padding ≈ 28px
+ * cols = floor((width - padding) / (minCardWidth + gap))
+ */
+const MIN_CARD_UNIT = 90 // 80px 卡片宽 + 10px gap
+const CONTAINER_PADDING = 28
 function computeColumns(width: number): number {
-  if (width < 360) return 3
-  if (width < 430) return 4
-  if (width < 520) return 5
-  if (width < 640) return 6
-  return 7
+  const raw = Math.floor((width - CONTAINER_PADDING) / MIN_CARD_UNIT)
+  return Math.max(3, Math.min(7, raw))
 }
 
 interface QuickEntry {
