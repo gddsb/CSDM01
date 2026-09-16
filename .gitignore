@@ -52,3 +52,4 @@ AGENTS.md
 *.orig
 *.rej
 *~
+.uploads/

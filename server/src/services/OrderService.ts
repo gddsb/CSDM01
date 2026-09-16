@@ -57,7 +57,8 @@ export function buildOrderWhere(query: any): any {
 
   const statusNums = parseOrderStatusParam(status)
   if (statusNums) {
-    where.status = statusNums.length === 1 ? statusNums[0] : { [Op.in]: statusNums }
+    // 统一用 Op.in，确保 status=0 (开立) 这种 falsy 值也能正确过滤
+    where.status = { [Op.in]: statusNums }
   }
 
   if (planDateStart || planDateEnd) {

@@ -28,10 +28,10 @@ interface OrderRow {
 
 type StatusTab = '开立' | '下发' | '开工' | '完工'
 const STATUS_TABS: { key: StatusTab; label: string; color: string }[] = [
-  { key: '开立', label: '待下发', color: '#9E9E9E' },
-  { key: '下发', label: '待开工', color: '#2196F3' },
-  { key: '开工', label: '生产中', color: '#FF9800' },
-  { key: '完工', label: '已完工', color: '#4CAF50' },
+  { key: '开立', label: '开立', color: '#9E9E9E' },
+  { key: '下发', label: '下发', color: '#2196F3' },
+  { key: '开工', label: '开工', color: '#FF9800' },
+  { key: '完工', label: '完工', color: '#4CAF50' },
 ]
 
 /** 状态 → 徽章配色 */
@@ -183,7 +183,6 @@ export default function MobileOrderManagement() {
         <Tabs
           activeKey={tab}
           onChange={(k) => setTab(k as StatusTab)}
-          tabBarStyle={{ fontSize: 13 }}
         >
           {STATUS_TABS.map((t) => (
             <Tabs.Tab
