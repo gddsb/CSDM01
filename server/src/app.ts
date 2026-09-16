@@ -289,12 +289,14 @@ app.use((err: any, req: any, res: any, next: any) => {
   }
 
   // 未知异常：记录完整堆栈（生产隐藏堆栈），返回通用提示
+  console.error('[GlobalError] 未处理异常 FULL STACK:', err)
+  console.error('[GlobalError] stack:', err?.stack)
   logger.error('[GlobalError] 未处理异常:', JSON.stringify({
     ...reqInfo,
     error: {
       message: err?.message || String(err),
       name: err?.name,
-      stack: isProd ? undefined : err?.stack,
+      stack: err?.stack,
     },
   }))
   if (!res.headersSent) {
