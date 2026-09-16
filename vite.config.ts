@@ -3,6 +3,19 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import type { ProxyOptions } from 'vite'
 import pkg from './package.json'
+import { execSync } from 'node:child_process'
+
+/** 从环境变量 APP_BUILD 或 git rev-list 获取 build number */
+function resolveBuildNumber(): string {
+  if (process.env.APP_BUILD) return process.env.APP_BUILD
+  try {
+    return execSync('git rev-list --count HEAD 2>/dev/null', { encoding: 'utf-8' }).trim() || '1'
+  } catch {
+    return '1'
+  }
+}
+
+const APP_BUILD = resolveBuildNumber()
 
 const apiProxy: ProxyOptions = {
   target: 'http://localhost:3001',
@@ -31,6 +44,7 @@ const apiProxy: ProxyOptions = {
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
+    __APP_BUILD__: JSON.stringify(APP_BUILD),
   },
   plugins: [
     react(),

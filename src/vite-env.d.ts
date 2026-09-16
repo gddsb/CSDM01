@@ -4,6 +4,7 @@ import type { CSSProperties } from 'react'
 
 declare global {
   const __APP_VERSION__: string
+  const __APP_BUILD__: string
   
   interface Window {
     ImageViewer?: {

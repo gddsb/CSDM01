@@ -121,7 +121,7 @@ function applyCustomOrder(entries: QuickEntry[], customKeys: string[] | null): Q
 }
 
 export default function MobileDashboard() {
-  const { currentUser, hasPermission } = useApp()
+  const { hasPermission } = useApp()
   const navigate = useNavigate()
   const { pending, refresh: refreshQueue } = useOfflineQueue()
 
@@ -253,17 +253,6 @@ export default function MobileDashboard() {
     Toast.show({ content: '已刷新', icon: 'success', position: 'bottom', duration: 600 })
   }
 
-  const greeting = (() => {
-    const h = new Date().getHours()
-    if (h < 6) return '凌晨好'
-    if (h < 12) return '早上好'
-    if (h < 14) return '中午好'
-    if (h < 18) return '下午好'
-    return '晚上好'
-  })()
-
-  const name = currentUser?.real_name || currentUser?.username || '同事'
-
   // === 编辑模式：拖拽排序（已由 DndContext 接管）===
 
   const saveEdit = () => {
@@ -307,19 +296,6 @@ export default function MobileDashboard() {
 
   return (
     <PullToRefresh onRefresh={onRefresh}>
-      {/* 欢迎区 */}
-      <div style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 13, color: '#888' }}>{greeting}，{name}</div>
-        <div style={{ fontSize: 20, fontWeight: 600, color: '#222', marginTop: 4 }}>
-          今天也要加油 💪
-        </div>
-        {pending > 0 && (
-          <div style={{ fontSize: 11, color: '#E65100', marginTop: 4 }}>
-            📥 {pending} 条离线请求待同步
-          </div>
-        )}
-      </div>
-
       {/* 待办卡 — 玻璃拟态 + 渐变 */}
       <div style={{
         background: 'linear-gradient(135deg, #1976D2 0%, #2196F3 45%, #42A5F5 100%)',

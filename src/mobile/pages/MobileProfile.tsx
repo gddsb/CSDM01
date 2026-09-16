@@ -15,6 +15,7 @@ export function MobileProfile() {
   const { currentUser, logout } = useApp()
   const navigate = useNavigate()
   const version = __APP_VERSION__ || 'dev'
+  const build = __APP_BUILD__ || '0'
   const { online, pending, syncing, triggerSync, retryFailed, clearAll } = useOfflineQueue()
   const { isDark, toggleTheme } = useMobileThemeContext()
 
@@ -175,9 +176,13 @@ export function MobileProfile() {
         退出登录
       </Button>
 
-      {/* 版本号 */}
-      <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--m-text-3)', marginTop: 24 }}>
-        奶粉罐MES v{version}
+      {/* 版本号 — 与 vite build 注入的编译版本保持一致 */}
+      <div style={{
+        textAlign: 'center', fontSize: 11, color: 'var(--m-text-3)',
+        marginTop: 28, paddingTop: 16,
+        borderTop: '1px solid var(--m-border-2)',
+      }}>
+        奶粉罐MES · v{version} (build {build})
       </div>
     </div>
   )

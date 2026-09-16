@@ -97,7 +97,8 @@ echo ""
 
 # ---------- 1. Vite build ----------
 if [ "$SKIP_BUILD" != "true" ]; then
-    log "[1/6] Vite build (mode=capacitor) ..."
+    log "[1/6] Vite build (mode=capacitor, APP_BUILD=${BUILD}) ..."
+    export APP_BUILD="${BUILD}"
     npx vite build --mode capacitor 2>&1 | tail -5
     ok "vite build 完成 ($(du -sh dist | cut -f1))"
     echo ""

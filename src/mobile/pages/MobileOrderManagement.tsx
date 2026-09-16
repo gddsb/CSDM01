@@ -1,22 +1,21 @@
 /**
- * 生产订单移动版 — 4 状态 Tab + release/finish/close 三按钮 + 下属报工单跳转
+ * 生产订单移动版 — 4 状态 Tab（开立/下发/开工/完工）+ 下发/开工报工/完工/关闭 操作
  *
  * 对齐 PC OrderManagement.tsx：
- *   GET    /production/orders                列表（按状态 Tab）
- *   POST   /production/orders                新建
- *   POST   /production/orders/:id/release    一键下发
- *   POST   /production/orders/:id/finish     生产完工
- *   POST   /production/orders/:id/close     订单关闭
- *   DELETE /production/orders/:id            删除
- *   GET    /production/report-orders?order_id=:id  下属报工单
+ *   GET    /production/orders                 列表（按状态 Tab）
+ *   POST   /production/orders/:id/release     下发（开立→下发）
+ *   POST   /production/orders/:id/finish      完工（开工→完工）
+ *   POST   /production/orders/:id/close       关闭
+ *   POST   /auto/sync-production-orders       订单同步（timeout 300s）
  *
+ * 只显示开立/下发/开工/完工四状态订单，不支持新建
  * 点击订单 → 下属报工单列表 → 点击报工单 → 复用 ReportOrderDetail
  */
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh, Input, Radio , TextArea} from 'antd-mobile'
+import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh } from 'antd-mobile'
 import api from '../../utils/api'
-import { offlinePost, offlineDelete } from '../offline/offlineApi'
+import { offlinePost } from '../offline/offlineApi'
 import { useBarcode } from '../hooks/useBarcode'
 import { ReportOrderDetail, type ReportOrderMeta } from '../components/ReportOrderDetail'
 
@@ -27,13 +26,22 @@ interface OrderRow {
   line_name?: string; start_date?: string; end_date?: string
 }
 
-type StatusTab = '开立' | '已下发' | '生产中' | '已完工'
-const STATUS_TABS: { key: StatusTab; label: string }[] = [
-  { key: '开立', label: '待下发' },
-  { key: '已下发', label: '待开工' },
-  { key: '生产中', label: '生产中' },
-  { key: '已完工', label: '已完工' },
+type StatusTab = '开立' | '下发' | '开工' | '完工'
+const STATUS_TABS: { key: StatusTab; label: string; color: string }[] = [
+  { key: '开立', label: '待下发', color: '#9E9E9E' },
+  { key: '下发', label: '待开工', color: '#2196F3' },
+  { key: '开工', label: '生产中', color: '#FF9800' },
+  { key: '完工', label: '已完工', color: '#4CAF50' },
 ]
+
+/** 状态 → 徽章配色 */
+const STATUS_COLOR: Record<string, string> = {
+  '开立': '#9E9E9E',
+  '下发': '#2196F3',
+  '开工': '#FF9800',
+  '完工': '#4CAF50',
+  '关闭': '#757575',
+}
 
 export default function MobileOrderManagement() {
   const navigate = useNavigate()
@@ -46,15 +54,6 @@ export default function MobileOrderManagement() {
   const [selected, setSelected] = useState<OrderRow | null>(null)
   const [reports, setReports] = useState<ReportOrderMeta[]>([])
   const [activeReportId, setActiveReportId] = useState<number | null>(null)
-
-  // 新建订单表单
-  const [showCreate, setShowCreate] = useState(false)
-  const [newOrder, setNewOrder] = useState({
-    order_no: '', material_code: '', material_name: '',
-    planned_qty: 0, line_id: null, line_name: '',
-    start_date: '', end_date: '', product_type: '饮料', remark: '',
-  })
-  const [lines, setLines] = useState<any[]>([])
 
   const load = async (t?: StatusTab, kw?: string) => {
     setLoading(true)
@@ -70,39 +69,38 @@ export default function MobileOrderManagement() {
   }
   useEffect(() => { load(tab) }, [tab])
 
-  // ====== 订单同步（ERP→本地）======
+  // ====== 订单同步 —— 完全对齐 PC 端 ======
   const onSync = async () => {
-    const ok = await Dialog.confirm({ content: '从 ERP 同步生产订单？', confirmText: '同步', cancelText: '取消' })
+    const ok = await Dialog.confirm({
+      content: '从 ERP 同步生产订单？',
+      confirmText: '同步',
+      cancelText: '取消',
+    })
     if (!ok) return
     setSyncing(true)
     try {
-      const r: any = await api.post('/auto/sync-production-orders')
-      if (r.success) {
-        Toast.show({
-          content: r.message || '订单同步完成',
-          icon: 'success', position: 'bottom', duration: 2000,
-        })
-        await load(tab, keyword.trim())
-      } else {
-        Toast.show({ content: r.message || '同步失败', position: 'bottom' })
-      }
+      const res: any = await api.post('/auto/sync-production-orders', {}, { timeout: 300000 })
+      const d = res.data || {}
+      const collected = d.collected ?? 0
+      const m = d.migrated || {}
+      Toast.show({
+        content: res.message || `订单同步完成：采集 ${collected} 条，业务表新增 ${m.inserted ?? 0} 条、更新 ${m.updated ?? 0} 条`,
+        icon: 'success',
+        position: 'bottom',
+        duration: 2500,
+      })
+      await load(tab, keyword.trim())
     } catch (e: any) {
-      Toast.show({ content: e?.message || '网络错误', position: 'bottom' })
+      Toast.show({ content: e?.message || '订单同步失败', position: 'bottom' })
     } finally { setSyncing(false) }
   }
-
-  useEffect(() => {
-    api.get('/basic/lines', { params: { page: 1, page_size: 100 } }).then((r: any) => {
-      setLines(r.success ? (r.data?.list || r.data || []) : [])
-    }).catch(() => {})
-  }, [])
 
   const onScan = async () => {
     const r = await scan(); if (!r) return
     setKeyword(r.code); await load(tab, r.code)
   }
 
-  // ====== 订单三按钮 ======
+  // ====== 订单操作 ======
   const onRelease = async (o: OrderRow) => {
     const ok = await Dialog.confirm({ content: `下发订单 ${o.order_no}？下发后自动创建报工单。`, confirmText: '下发', cancelText: '取消' })
     if (!ok) return
@@ -133,16 +131,6 @@ export default function MobileOrderManagement() {
     } catch (e: any) { Toast.show({ content: e?.message || '失败', position: 'bottom' }) }
   }
 
-  const onDelete = async (o: OrderRow) => {
-    const ok = await Dialog.confirm({ content: `删除订单 ${o.order_no}？`, confirmText: '删除', cancelText: '取消' })
-    if (!ok) return
-    try {
-      await offlineDelete(`/production/orders/${o.order_id}`, { source: 'production-order' })
-      Toast.show({ content: '已删除', icon: 'success', position: 'bottom' })
-      await load()
-    } catch (e: any) { Toast.show({ content: e?.message || '失败', position: 'bottom' }) }
-  }
-
   // ====== 订单详情（下属报工单）======
   const openDetail = async (o: OrderRow) => {
     setSelected(o); setActiveReportId(null)
@@ -156,17 +144,6 @@ export default function MobileOrderManagement() {
         report_qty: x.report_qty, status: x.status,
       })))
     } catch { setReports([]) }
-  }
-
-  const createOrder = async () => {
-    if (!newOrder.order_no.trim()) { Toast.show({ content: '请填工单号', position: 'bottom' }); return }
-    try {
-      const r: any = await offlinePost('/production/orders', newOrder, { source: 'production-order' })
-      Toast.show({ content: r.message || '已创建', icon: 'success', position: 'bottom' })
-      setShowCreate(false)
-      setNewOrder({ order_no: '', material_code: '', material_name: '', planned_qty: 0, line_id: null, line_name: '', start_date: '', end_date: '', product_type: '饮料', remark: '' })
-      await load()
-    } catch (e: any) { Toast.show({ content: e?.message || '失败', position: 'bottom' }) }
   }
 
   // ====== 渲染 ======
@@ -183,20 +160,48 @@ export default function MobileOrderManagement() {
 
   return (
     <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 30 }}>
-      {/* 搜索 + 同步 + 新建 */}
+      {/* 搜索 + 扫描 + 同步 */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center' }}>
         <div style={{ flex: 1 }}>
-          <SearchBar placeholder="扫/输工单号" value={keyword} onChange={setKeyword}
-            onSearch={() => load(tab, keyword.trim())} />
+          <SearchBar
+            placeholder="扫/输工单号"
+            value={keyword}
+            onChange={setKeyword}
+            onSearch={() => load(tab, keyword.trim())}
+          />
         </div>
-        <Button size="mini" fill="outline" loading={syncing} onClick={onSync}>同步</Button>
-        <Button color="primary" onClick={() => setShowCreate(true)} style={{ height: 40 }}>+ 新建</Button>
+        <Button color="primary" fill="solid" loading={syncing} onClick={onSync} style={{ height: 40, borderRadius: 10 }}>
+          <span style={{ marginRight: 4 }}>🔄</span>同步
+        </Button>
       </div>
 
-      {/* 状态 Tab（对齐 PC） */}
-      <div style={{ background: '#fff', borderRadius: 10, padding: '0 8px', marginBottom: 10 }}>
-        <Tabs activeKey={tab} onChange={(k) => setTab(k as StatusTab)}>
-          {STATUS_TABS.map((t) => <Tabs.Tab title={t.label} key={t.key} />)}
+      {/* 状态 Tab */}
+      <div style={{
+        background: '#fff', borderRadius: 12, padding: '4px 10px',
+        marginBottom: 12, boxShadow: '0 1px 6px rgba(0,0,0,0.04)',
+      }}>
+        <Tabs
+          activeKey={tab}
+          onChange={(k) => setTab(k as StatusTab)}
+          tabBarStyle={{ fontSize: 13 }}
+        >
+          {STATUS_TABS.map((t) => (
+            <Tabs.Tab
+              title={
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  padding: '4px 6px',
+                }}>
+                  <span style={{
+                    width: 6, height: 6, borderRadius: '50%',
+                    background: t.color,
+                  }} />
+                  {t.label}
+                </span>
+              }
+              key={t.key}
+            />
+          ))}
         </Tabs>
       </div>
 
@@ -204,93 +209,125 @@ export default function MobileOrderManagement() {
       {loading ? (
         <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>
       ) : orders.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
-          暂无订单<br /><span style={{ fontSize: 12, color: '#bbb' }}>点上方同步按钮拉取 ERP 订单</span>
+        <div style={{
+          textAlign: 'center', padding: 60, color: '#bbb',
+          background: '#fff', borderRadius: 12, margin: '0 4px',
+        }}>
+          <div style={{ fontSize: 48, color: '#e0e0e0', marginBottom: 12 }}>📋</div>
+          <div style={{ fontSize: 15, color: '#999', marginBottom: 4 }}>暂无订单</div>
+          <div style={{ fontSize: 12 }}>点上方同步按钮拉取 ERP 订单</div>
         </div>
       ) : (
         <PullToRefresh onRefresh={() => load(tab, keyword.trim())}>
           <List>
             {orders.map((o) => {
-              const isReleased = /已下发|开立/.test(o.status || '')
-              const isRunning = /生产中/.test(o.status || '')
-              const isDone = /已完工/.test(o.status || '')
-              const isClosed = /已关闭/.test(o.status || '')
-              const badge = (() => {
-                if (isReleased) return { c: '#2196F3', t: '待开工' }
-                if (isRunning) return { c: '#4CAF50', t: '生产中' }
-                if (isDone) return { c: '#9C27B0', t: '已完工' }
-                if (isClosed) return { c: '#9E9E9E', t: '已关闭' }
-                return { c: '#FF9800', t: o.status || '' }
-              })()
+              const statusColor = STATUS_COLOR[o.status || ''] || '#FF9800'
+              const statusText = o.status || ''
+              const isReleased = o.status === '开立'
+              const isStarted = o.status === '下发' || o.status === '开工'
+              const isRunning = o.status === '开工'
+              const isDone = o.status === '完工'
+
               return (
-                <div key={o.order_id} onClick={() => openDetail(o)} style={{
-                  background: '#fff', borderRadius: 14, padding: '14px 14px 14px 17px', marginBottom: 10,
-                  border: 'none', cursor: 'pointer',
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03)',
-                  borderLeft: `3px solid ${badge.c}`,
-                  transition: 'transform 0.12s',
-                }}>
+                <div
+                  key={o.order_id}
+                  onClick={() => openDetail(o)}
+                  style={{
+                    background: '#fff', borderRadius: 14, padding: '14px 14px 14px 18px',
+                    marginBottom: 10, cursor: 'pointer',
+                    boxShadow: '0 2px 12px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.02)',
+                    borderLeft: `3px solid ${statusColor}`,
+                    transition: 'transform 0.12s, box-shadow 0.12s',
+                  }}
+                  onTouchStart={(e) => {
+                    (e.currentTarget as HTMLElement).style.transform = 'scale(0.98)'
+                  }}
+                  onTouchEnd={(e) => {
+                    (e.currentTarget as HTMLElement).style.transform = 'scale(1)'
+                  }}
+                >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ fontWeight: 700, fontSize: 15, color: '#222' }}>{o.order_no}</div>
                     <span style={{
                       fontSize: 11, padding: '3px 10px', borderRadius: 12,
-                      background: badge.c + '22', color: badge.c,
-                      fontWeight: 600, border: `1px solid ${badge.c}44`,
+                      background: statusColor + '15', color: statusColor,
+                      fontWeight: 600, border: `1px solid ${statusColor}44`,
+                      letterSpacing: 0.5,
                     }}>
-                      {badge.t}
+                      {statusText}
                     </span>
                   </div>
-                  <div style={{ fontSize: 12.5, color: '#555', marginTop: 6 }}>
-                    {o.material_code} {o.material_name?.slice(0, 20)} · <b style={{ color: '#333' }}>{o.planned_qty}</b>
-                  </div>
-                  <div style={{ fontSize: 11.5, color: '#999', marginTop: 3 }}>
-                    📍 {o.line_name || '—'} · {o.start_date?.slice(0, 10) || ''} → {o.end_date?.slice(0, 10) || ''}
+
+                  <div style={{ fontSize: 13, color: '#555', marginTop: 8, lineHeight: 1.5 }}>
+                    <span style={{ color: '#888' }}>{o.material_code}</span>
+                    {o.material_name && (
+                      <span style={{ marginLeft: 6 }}>· {o.material_name.slice(0, 18)}</span>
+                    )}
                   </div>
 
-                  {/* 进度条 + 剩余判断 */}
+                  {/* 数量 + 进度条 */}
                   {(o.planned_qty ?? 0) > 0 && (
-                    <div style={{ marginTop: 8 }}>
-                      <div style={{ fontSize: 11, color: '#777', marginBottom: 4 }}>
-                        已报 <b style={{ color: badge.c }}>{o.finished_qty ?? 0}</b> / {o.planned_qty}
+                    <div style={{ marginTop: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                        <span style={{ color: '#888' }}>
+                          已报 <b style={{ color: statusColor, fontSize: 14 }}>{o.finished_qty ?? 0}</b>
+                          <span style={{ color: '#bbb' }}> / {o.planned_qty}</span>
+                        </span>
                         {(o.finished_qty ?? 0) > 0 && (
-                          <span style={{ float: 'right', color: badge.c, fontWeight: 700 }}>
+                          <span style={{ color: statusColor, fontWeight: 700 }}>
                             {Math.round(((o.finished_qty ?? 0) / (o.planned_qty ?? 1)) * 100)}%
                           </span>
                         )}
                       </div>
-                      <div style={{ background: '#f0f2f5', borderRadius: 4, height: 4, overflow: 'hidden' }}>
+                      <div style={{
+                        background: '#f0f2f5', borderRadius: 6, height: 5, overflow: 'hidden',
+                        boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.06)',
+                      }}>
                         <div style={{
-                          background: (o.finished_qty ?? 0) >= (o.planned_qty ?? 0) ? '#4CAF50' : '#2196F3',
+                          background: `linear-gradient(90deg, ${statusColor}, ${statusColor}cc)`,
                           height: '100%',
                           width: `${Math.min(100, ((o.finished_qty ?? 0) / Math.max(1, o.planned_qty ?? 1)) * 100)}%`,
                           transition: 'width 0.3s',
+                          borderRadius: 6,
                         }} />
                       </div>
                     </div>
                   )}
 
+                  <div style={{ fontSize: 11.5, color: '#aaa', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>📍 {o.line_name || '—'}</span>
+                    <span style={{ color: '#ddd' }}>|</span>
+                    <span>{o.start_date?.slice(0, 10) || ''}</span>
+                    <span style={{ color: '#bbb' }}>→</span>
+                    <span>{o.end_date?.slice(0, 10) || ''}</span>
+                  </div>
+
                   {/* 行内按钮 */}
-                  <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }} onClick={(e) => e.stopPropagation()}>
+                  <div style={{
+                    display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap',
+                    paddingTop: 10, borderTop: '1px dashed #f0f0f0',
+                  }} onClick={(e) => e.stopPropagation()}>
                     {isReleased && (
-                      <>
-                        <Button size="mini" color="primary" onClick={() => onRelease(o)}>下发</Button>
-                        <Button size="mini" color="primary" fill="outline" onClick={() => navigate(`/m/process-reporting?orderId=${o.order_id}`)}>开工报工</Button>
-                      </>
+                      <Button size="mini" color="primary" onClick={() => onRelease(o)}>下发</Button>
                     )}
-                    {isRunning && (
-                      <Button size="mini" color="primary" onClick={() => navigate(`/m/process-reporting?orderId=${o.order_id}`)}>继续报工</Button>
+                    {(isReleased || o.status === '下发') && (
+                      <Button
+                        size="mini"
+                        color="primary"
+                        fill={isRunning ? 'outline' : 'solid'}
+                        onClick={() => navigate(`/m/process-reporting?orderId=${o.order_id}`)}
+                      >
+                        {isRunning ? '继续报工' : '开工报工'}
+                      </Button>
                     )}
-                    {isDone && (o.finished_qty ?? 0) < (o.planned_qty ?? 0) && (
-                      <Button size="mini" color="warning" onClick={() => navigate(`/m/process-reporting?orderId=${o.order_id}`)}>补报剩余</Button>
+                    {o.status === '开工' && (
+                      <Button size="mini" color="warning" onClick={() => navigate(`/m/process-reporting?orderId=${o.order_id}`)}>继续报工</Button>
                     )}
-                    {(isReleased || isRunning) && (
+                    {(isReleased || isStarted) && (
                       <Button size="mini" fill="outline" onClick={() => onFinish(o)}>完工</Button>
                     )}
-                    {!isClosed && (
+                    {!isDone && (
                       <Button size="mini" fill="outline" onClick={() => onClose(o)}>关闭</Button>
-                    )}
-                    {(isReleased || /开立/.test(o.status || '')) && (
-                      <Button size="mini" fill="outline" onClick={() => onDelete(o)}>删除</Button>
                     )}
                   </div>
                 </div>
@@ -300,33 +337,40 @@ export default function MobileOrderManagement() {
         </PullToRefresh>
       )}
 
-      {/* ===== 新建订单 ===== */}
-      {showCreate && (
-        <Dialog visible content={<OrderCreateForm value={newOrder} setValue={setNewOrder} lines={lines} />}
-          actions={[
-            { key: 'cancel', text: '取消', onClick: () => setShowCreate(false) },
-            { key: 'ok', text: '创建', bold: true, onClick: createOrder },
-          ]}
-        />
-      )}
-
       {/* ===== 订单详情（下属报工单）===== */}
       {selected && activeReportId === null && (
         <Dialog visible content={
           <div style={{ maxHeight: '70vh', overflow: 'auto', padding: '10px 6px' }}>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>{selected.order_no} 下属报工单</div>
+            <div style={{ fontWeight: 600, marginBottom: 10, fontSize: 15 }}>
+              {selected.order_no} 下属报工单
+              <span style={{ fontSize: 12, color: '#999', fontWeight: 400, marginLeft: 8 }}>
+                （{reports.length} 条）
+              </span>
+            </div>
             {reports.length === 0 ? (
-              <div style={{ fontSize: 12, color: '#999', padding: 20, textAlign: 'center' }}>
+              <div style={{ fontSize: 12, color: '#999', padding: 30, textAlign: 'center' }}>
                 暂无报工单 · 请先在 PC 端下发或在移动报工录入
               </div>
             ) : (
               reports.map((r) => (
-                <div key={r.report_order_id} onClick={() => setActiveReportId(r.report_order_id)} style={{
-                  padding: 10, borderBottom: '1px solid #f0f0f0', cursor: 'pointer',
-                }}>
-                  <div style={{ fontWeight: 500, fontSize: 13 }}>{r.report_no}</div>
-                  <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
-                    {r.line_name} · ×{r.report_qty} · {r.status}
+                <div
+                  key={r.report_order_id}
+                  onClick={() => setActiveReportId(r.report_order_id)}
+                  style={{
+                    padding: 12, borderBottom: '1px solid #f5f5f5', cursor: 'pointer',
+                    background: '#fafbfc', borderRadius: 8, marginBottom: 6,
+                  }}
+                >
+                  <div style={{ fontWeight: 600, fontSize: 13.5 }}>{r.report_no}</div>
+                  <div style={{ fontSize: 11, color: '#888', marginTop: 3, display: 'flex', gap: 10 }}>
+                    <span>🏭 {r.line_name}</span>
+                    <span>📦 ×{r.report_qty}</span>
+                    <span style={{
+                      padding: '1px 6px', borderRadius: 4,
+                      background: r.status === '完工' ? '#4CAF5015' : '#2196F315',
+                      color: r.status === '完工' ? '#4CAF50' : '#2196F3',
+                      fontSize: 10, fontWeight: 600,
+                    }}>{r.status}</span>
                   </div>
                 </div>
               ))
@@ -339,46 +383,3 @@ export default function MobileOrderManagement() {
     </div>
   )
 }
-
-function OrderCreateForm({ value, setValue, lines }: {
-  value: any; setValue: (v: any) => void; lines: any[]
-}) {
-  return (
-    <div style={{ fontSize: 13 }}>
-      <div style={{ marginBottom: 6, color: '#666' }}>工单号 *</div>
-      <Input value={value.order_no} onChange={(v) => setValue({ ...value, order_no: v })} placeholder="如 PO20260915001" />
-      <div style={{ margin: '8px 0 6px', color: '#666' }}>物料编码</div>
-      <Input value={value.material_code} onChange={(v) => setValue({ ...value, material_code: v })} placeholder="物料编码" />
-      <div style={{ margin: '8px 0 6px', color: '#666' }}>物料名称</div>
-      <Input value={value.material_name} onChange={(v) => setValue({ ...value, material_name: v })} placeholder="物料名称" />
-      <div style={{ margin: '8px 0 6px', color: '#666' }}>计划数量</div>
-      <Input type="number" value={String(value.planned_qty)} onChange={(v) => setValue({ ...value, planned_qty: Number(v) || 0 })} />
-      <div style={{ margin: '8px 0 6px', color: '#666' }}>产线</div>
-      <select value={value.line_id || ''} onChange={(e) => {
-        const id = e.target.value ? Number(e.target.value) : null
-        const ln = lines.find((l) => l.line_id === id)
-        setValue({ ...value, line_id: id, line_name: ln?.line_name || '' })
-      }} style={selStyle}>
-        <option value="">选择产线</option>
-        {lines.map((l) => <option key={l.line_id} value={l.line_id}>{l.line_name}</option>)}
-      </select>
-      <div style={{ margin: '8px 0 6px', color: '#666' }}>产品类型</div>
-      <div style={{ display: 'flex', gap: 14 }}>
-<Radio.Group value={value.product_type} onChange={(v) => setValue({ ...value, product_type: v })}>
-
-        <Radio value="饮料">饮料</Radio>
-        <Radio value="奶粉">奶粉</Radio>
-        <Radio value="其他">其他</Radio>
-      </Radio.Group>      </div>
-
-      <div style={{ margin: '8px 0 6px', color: '#666' }}>开工日期</div>
-      <Input type="date" value={value.start_date} onChange={(v) => setValue({ ...value, start_date: v })} />
-      <div style={{ margin: '8px 0 6px', color: '#666' }}>完工日期</div>
-      <Input type="date" value={value.end_date} onChange={(v) => setValue({ ...value, end_date: v })} />
-      <div style={{ margin: '8px 0 6px', color: '#666' }}>备注</div>
-      <TextArea  rows={2} value={value.remark} onChange={(v) => setValue({ ...value, remark: v })} />
-    </div>
-  )
-}
-
-const selStyle: React.CSSProperties = { padding: 6, borderRadius: 6, border: '1px solid #ddd', width: '100%', background: '#fff' }

@@ -2,8 +2,9 @@
  * 移动端主布局
  * - 顶部 NavBar（可返回 / 可自定义标题）
  * - 中部 Outlet（子页面）
- * - 底部 TabBar（首页 / 报工 / 检验 / 设备 / 我的）
- *   "检验" Tab 点击时弹出 ActionSheet 选择：来料/成品/过程检验
+ * - 底部 TabBar：仅在 Dashboard / Profile 两个 Tab 页常驻显示
+ *   "生产 / 检验 / 设备" 三个 Tab 点击弹出 ActionSheet 选择子功能
+ *   子功能页面跳转后 TabBar 自动收起（显示 NavBar 返回按钮）
  * - 冷启动调 checkForUpdate()：有新版本时弹 antd-mobile Dialog
  */
 import { useEffect, useMemo } from 'react'
@@ -29,6 +30,9 @@ const TABS: TabDef[] = [
   { key: '__device__', title: '设备', icon: <TeamOutline /> },
   { key: '/m/profile', title: '我的', icon: <UserOutline /> },
 ]
+
+/** 底部 TabBar 常驻显示的路由 —— 只有首页和"我的" */
+const TAB_ROUTES = new Set(['/m/dashboard', '/m/profile'])
 
 /** "生产" ActionSheet 子项 —— 订单管理 + 移动报工 */
 const PRODUCTION_ITEMS = [
@@ -57,7 +61,7 @@ const DEVICE_ITEMS = [
   { text: '📁 电子档案', key: 'device-documents', route: '/m/device-documents', permCode: 'device:document' },
 ]
 
-/** 标题映射（Tab 页 + 子页都覆盖） */
+/** 标题映射 */
 const TITLE_MAP: Record<string, string> = {
   '/m/dashboard': '奶粉罐MES',
   '/m/process-reporting': '移动报工',
@@ -79,21 +83,6 @@ const TITLE_MAP: Record<string, string> = {
   '/m/device-documents': '电子档案',
   '/m/exception-report': '异常上报',
   '/m/profile': '我的',
-}
-
-/** 当前路径是否属于"检验"家族（用于高亮 Tab） */
-function isInspectionPath(p: string) {
-  return p === '/m/incoming-inspection' || p === '/m/product-inspection' || p === '/m/process-inspection' || p === '/m/inspection-history' || p === '/m/microbe-inspection' || p === '/m/complaint-report'
-}
-
-/** 当前路径是否属于"设备"家族（用于高亮 Tab） */
-function isDevicePath(p: string) {
-  return p === '/m/device-inspection' || p === '/m/device-maintenance' || p === '/m/device-fault' || p === '/m/calibration-reminder' || p === '/m/device-oee' || p === '/m/spare-parts' || p === '/m/device-documents'
-}
-
-/** 当前路径是否属于"生产"家族（用于高亮 Tab） */
-function isProductionPath(p: string) {
-  return p === '/m/production-orders' || p === '/m/process-reporting'
 }
 
 export function MobileLayout() {
@@ -127,14 +116,8 @@ export function MobileLayout() {
     })
   }, [hasPermission, visibleProductionItems.length, visibleInspectionItems.length, visibleDeviceItems.length])
 
-  // isTabPage: 直接路由匹配 or 属于生产/检验/设备家族（且对应 Tab 仍可见）
-  const isProductionVisibleTab = visibleProductionItems.length > 0
-  const isInspectionVisibleTab = visibleInspectionItems.length > 0
-  const isDeviceVisibleTab = visibleDeviceItems.length > 0
-  const isTabPage = visibleTabs.some(t => t.key === location.pathname)
-    || (isProductionVisibleTab && isProductionPath(location.pathname))
-    || (isInspectionVisibleTab && isInspectionPath(location.pathname))
-    || (isDeviceVisibleTab && isDevicePath(location.pathname))
+  // TabBar 常驻显示 —— 仅 Dashboard 和 Profile 两个路由
+  const isTabPage = TAB_ROUTES.has(location.pathname)
   const title = TITLE_MAP[location.pathname] || (location.pathname.startsWith('/m/') ? '奶粉罐MES' : '')
   const canBack = location.pathname.startsWith('/m/') && !isTabPage
 
@@ -174,7 +157,6 @@ export function MobileLayout() {
         }
 
         if (result.forceUpdate) {
-          // 强制更新：无取消按钮
           Dialog.alert({
             title: '🔔 发现新版本（强制更新）',
             content,
@@ -182,7 +164,6 @@ export function MobileLayout() {
             onConfirm: openDownload,
           })
         } else {
-          // 非强制更新：可跳过
           Dialog.confirm({
             title: '🔔 发现新版本',
             content,
@@ -193,7 +174,7 @@ export function MobileLayout() {
           })
         }
       } catch {
-        /* 静默降级 —— 网络失败 / parse 失败都不打扰用户 */
+        /* 静默降级 */
       }
     }
     run()
@@ -256,12 +237,6 @@ export function MobileLayout() {
     navigate(key)
   }
 
-  const activeKey = (isProductionVisibleTab && isProductionPath(location.pathname))
-    ? '__production__'
-    : ((isInspectionVisibleTab && isInspectionPath(location.pathname))
-      ? '__inspection__'
-      : ((isDeviceVisibleTab && isDevicePath(location.pathname)) ? '__device__' : location.pathname))
-
   return (
     <div className="mobile-app">
       {/* NavBar — 适配 safe-area */}
@@ -299,22 +274,28 @@ export function MobileLayout() {
         <Outlet />
       </div>
 
-      {/* TabBar */}
+      {/* TabBar —— 仅在 Dashboard 和 Profile 页面常驻显示 */}
       {isTabPage && (
         <div style={{
           position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
-          paddingBottom: 'var(--sab)', background: 'var(--m-surface)', borderTop: '1px solid var(--m-border)',
+          paddingBottom: 'var(--sab)',
         }}>
-          <TabBar activeKey={activeKey} onChange={handleTabClick}>
-            {visibleTabs.map(t => {
-              // "我的" Tab 上挂载离线队列待同步条数 Badge
-              const showPendingBadge = t.key === '/m/profile' && pending > 0
-              const icon = showPendingBadge
-                ? <Badge content={pending > 99 ? '99+' : String(pending)}>{t.icon}</Badge>
-                : t.icon
-              return <TabBar.Item key={t.key} icon={icon} title={t.title} />
-            })}
-          </TabBar>
+          <div style={{
+            background: 'linear-gradient(180deg, #ffffff 0%, #f8faff 100%)',
+            borderTop: '1px solid rgba(0,0,0,0.06)',
+            boxShadow: '0 -4px 20px rgba(33,150,243,0.08)',
+            padding: '6px 0 2px',
+          }}>
+            <TabBar activeKey={location.pathname} onChange={handleTabClick} safeArea={false}>
+              {visibleTabs.map(t => {
+                const showPendingBadge = t.key === '/m/profile' && pending > 0
+                const icon = showPendingBadge
+                  ? <Badge content={pending > 99 ? '99+' : String(pending)}>{t.icon}</Badge>
+                  : t.icon
+                return <TabBar.Item key={t.key} icon={icon} title={t.title} />
+              })}
+            </TabBar>
+          </div>
         </div>
       )}
     </div>
