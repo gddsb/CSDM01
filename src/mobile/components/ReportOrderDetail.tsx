@@ -100,7 +100,7 @@ export function ReportOrderDetail({ meta, onClose }: Props) {
     } catch (e: any) { Toast.show({ content: e?.message || '关闭失败', position: 'bottom' }) }
   }
 
-  const isClosed = /已完工|已关闭|closed|finished/i.test(meta.status || '')
+  const isClosed = /完工|关闭|closed|finished/i.test(meta.status || '')
 
   return (
     <div style={{ maxHeight: '75vh', overflow: 'auto', padding: '6px 2px' }}>
