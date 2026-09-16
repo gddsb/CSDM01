@@ -190,12 +190,13 @@ export function MobileLayout() {
         navigate(items[0].route)
         return
       }
-      ActionSheet.show({
+      const sheet = ActionSheet.show({
         actions: items.map(it => ({ text: it.text, key: it.key })),
         cancelText: '取消',
         onAction: (action) => {
           const target = items.find(it => it.key === action.key)
-          if (target) navigate(target.route)
+          sheet.close()
+          if (target) setTimeout(() => navigate(target.route), 120)
         },
       })
       return
@@ -207,12 +208,13 @@ export function MobileLayout() {
         navigate(items[0].route)
         return
       }
-      ActionSheet.show({
+      const sheet = ActionSheet.show({
         actions: items.map(it => ({ text: it.text, key: it.key })),
         cancelText: '取消',
         onAction: (action) => {
           const target = items.find(it => it.key === action.key)
-          if (target) navigate(target.route)
+          sheet.close()
+          if (target) setTimeout(() => navigate(target.route), 120)
         },
       })
       return
@@ -224,12 +226,13 @@ export function MobileLayout() {
         navigate(items[0].route)
         return
       }
-      ActionSheet.show({
+      const sheet = ActionSheet.show({
         actions: items.map(it => ({ text: it.text, key: it.key })),
         cancelText: '取消',
         onAction: (action) => {
           const target = items.find(it => it.key === action.key)
-          if (target) navigate(target.route)
+          sheet.close()
+          if (target) setTimeout(() => navigate(target.route), 120)
         },
       })
       return

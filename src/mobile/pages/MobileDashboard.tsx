@@ -7,7 +7,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Grid, Badge, PullToRefresh, Toast, Button } from 'antd-mobile'
+import { Grid, Badge, PullToRefresh, Toast, Button, ActionSheet } from 'antd-mobile'
 import {
   BillOutline, CheckOutline, TeamOutline, SetOutline, AppstoreOutline,
   FlagOutline, SearchOutline, CalendarOutline, PieOutline, FolderOutline,
@@ -184,11 +184,11 @@ export default function MobileDashboard() {
     // 并行拉几个 total（page_size=1 只为拿 total，响应最小）
     type TodoResp = { icon: string; text: string; count: number; path: string; color: string }
     const apis: Promise<TodoResp>[] = [
-      // 待下发/开工订单
-      api.get('/production/orders', { params: { page: 1, page_size: 1, status: '已下发' } })
-        .then((r: any) => ({ icon: '📋', text: '待下发订单', count: r.data?.total || r.total || 0, path: '/m/production-orders', color: '#2196F3' })),
-      // 生产中订单
-      api.get('/production/orders', { params: { page: 1, page_size: 1, status: '生产中' } })
+      // 下发状态订单
+      api.get('/production/orders', { params: { page: 1, page_size: 1, status: '下发' } })
+        .then((r: any) => ({ icon: '📋', text: '待开工订单', count: r.data?.total || r.total || 0, path: '/m/production-orders', color: '#2196F3' })),
+      // 开工状态订单
+      api.get('/production/orders', { params: { page: 1, page_size: 1, status: '开工' } })
         .then((r: any) => ({ icon: '🏃', text: '生产中订单', count: r.data?.total || r.total || 0, path: '/m/production-orders', color: '#4CAF50' })),
       // 待报工报工单
       api.get('/production/report-orders', { params: { page: 1, page_size: 1, status: '待报工' } })
@@ -270,6 +270,38 @@ export default function MobileDashboard() {
     const visible = DEFAULT_ORDER.filter((e) => !e.permCode || hasPermission(e.permCode))
     setOrdered(visible)
     Toast.show({ content: '已恢复默认顺序（点保存生效）', icon: 'success', position: 'bottom', duration: 1200 })
+  }
+
+  // === 编辑模式：删除某个快捷操作 ===
+  const removeEntry = (key: string) => {
+    if (ordered.length <= 1) {
+      Toast.show({ content: '至少保留 1 个快捷操作', position: 'bottom' })
+      return
+    }
+    setOrdered((items) => items.filter((e) => e.key !== key))
+  }
+
+  // === 编辑模式：从全量列表添加一个（弹 ActionSheet 选） ===
+  const addEntry = () => {
+    const existingKeys = new Set(ordered.map((e) => e.key))
+    const candidates = DEFAULT_ORDER.filter(
+      (e) => !existingKeys.has(e.key) && (!e.permCode || hasPermission(e.permCode)),
+    )
+    if (candidates.length === 0) {
+      Toast.show({ content: '全部功能已在快捷操作中', position: 'bottom' })
+      return
+    }
+    ActionSheet.show({
+      actions: candidates.map((e) => ({
+        text: `${e.title}`,
+        key: e.key,
+      })),
+      cancelText: '取消',
+      onAction: (action) => {
+        const pick = candidates.find((e) => e.key === action.key)
+        if (pick) setOrdered((items) => [...items, pick])
+      },
+    })
   }
 
   // === 长按 600ms → 进入编辑模式 ===
@@ -406,6 +438,7 @@ export default function MobileDashboard() {
         <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>快捷操作</span>
         {editing ? (
           <div style={{ display: 'flex', gap: 6 }}>
+            <Button size="mini" color="primary" onClick={addEntry}>+ 添加</Button>
             <Button size="mini" fill="outline" onClick={resetToDefault}>恢复默认</Button>
             <Button size="mini" fill="outline" onClick={resetEdit}>取消</Button>
             <Button size="mini" color="primary" onClick={saveEdit}>保存</Button>
@@ -425,7 +458,7 @@ export default function MobileDashboard() {
           items={ordered.map((e) => e.key)}
           strategy={rectSortingStrategy}
         >
-          <Grid columns={columns} gap={10}>
+          <Grid columns={columns} gap={10} style={{ paddingLeft: 10, paddingRight: 4 }}>
             {ordered.map((entry) => (
               <Grid.Item key={entry.key}>
                 <SortableCard
@@ -434,6 +467,7 @@ export default function MobileDashboard() {
                   onClick={() => handleCardClick(entry)}
                   onPressStart={handlePressStart}
                   onPressEnd={handlePressEnd}
+                  onRemove={() => removeEntry(entry.key)}
                 />
               </Grid.Item>
             ))}
@@ -453,6 +487,7 @@ interface SortableCardProps {
   onClick: () => void
   onPressStart: () => void
   onPressEnd: () => void
+  onRemove: () => void
 }
 
 /** 图标渐变背景 — 根据 color 生成同色系渐变 */
@@ -461,7 +496,7 @@ function gradientFromHex(hex: string): string {
 }
 
 /** 可拖拽卡片 — @dnd-kit useSortable + 1:1 宽高比 */
-function SortableCard({ entry, editing, onClick, onPressStart, onPressEnd }: SortableCardProps) {
+function SortableCard({ entry, editing, onClick, onPressStart, onPressEnd, onRemove }: SortableCardProps) {
   const {
     attributes,
     listeners,
@@ -515,14 +550,30 @@ function SortableCard({ entry, editing, onClick, onPressStart, onPressEnd }: Sor
         {...(editing ? { ...attributes, ...listeners } : {})}
         className="mobile-clickable mobile-dashboard-card"
       >
-        {/* 编辑模式：右上角 8px 小圆点提示可拖 */}
+        {/* 编辑模式：左上 × 删除按钮 + 右上拖动提示点 */}
         {editing && (
-          <div style={{
-            position: 'absolute', top: 6, right: 6,
-            width: 10, height: 10, borderRadius: 5,
-            background: entry.color,
-            boxShadow: `0 2px 4px ${entry.color}66`,
-          }} />
+          <>
+            <div
+              onClick={(e) => { e.stopPropagation(); onRemove() }}
+              style={{
+                position: 'absolute', top: -6, left: -6,
+                width: 22, height: 22, borderRadius: '50%',
+                background: '#F44336', color: '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 14, fontWeight: 700, lineHeight: 1,
+                boxShadow: '0 2px 6px rgba(244,67,54,0.4)',
+                cursor: 'pointer', zIndex: 10,
+              }}
+              onTouchStart={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+            >×</div>
+            <div style={{
+              position: 'absolute', top: 6, right: 6,
+              width: 10, height: 10, borderRadius: 5,
+              background: entry.color,
+              boxShadow: `0 2px 4px ${entry.color}66`,
+            }} />
+          </>
         )}
 
         {/* 渐变圆角图标 */}
