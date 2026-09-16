@@ -103,20 +103,18 @@ function saveOrderKeys(keys: string[]) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(keys)) } catch { /* ignore */ }
 }
 
-/** 根据 localStorage 里的 key 顺序排列 entries；缺失/新增的 key 追加到末尾 */
+/** 根据 localStorage 里的 key 顺序排列 entries；
+ *  删了就是真删 — 仅返回 customKeys 包含的条目，不再把 DEFAULT_ORDER 剩余条目自动追加回来 */
 function applyCustomOrder(entries: QuickEntry[], customKeys: string[] | null): QuickEntry[] {
   if (!customKeys || customKeys.length === 0) return entries
   const map = new Map(entries.map((e) => [e.key, e]))
   const ordered: QuickEntry[] = []
   customKeys.forEach((k) => {
     const e = map.get(k)
-    if (e) {
-      ordered.push(e)
-      map.delete(k)
-    }
+    if (e) ordered.push(e)
   })
-  // 追加剩余（新增的或没在 customKeys 里的）
-  map.forEach((e) => ordered.push(e))
+  // 不再追加剩余！删了就是真删。
+  // 权限新增的条目用户可手动 "+添加" 找回
   return ordered
 }
 
@@ -460,7 +458,7 @@ export default function MobileDashboard() {
         >
           <Grid columns={columns} gap={10} style={{ paddingLeft: 10, paddingRight: 4 }}>
             {ordered.map((entry) => (
-              <Grid.Item key={entry.key}>
+              <Grid.Item key={entry.key} style={{ width: '100%' }}>
                 <SortableCard
                   entry={entry}
                   editing={editing}
@@ -511,7 +509,11 @@ function SortableCard({ entry, editing, onClick, onPressStart, onPressEnd, onRem
     background: entry.disabled ? '#f5f6f8' : '#fff',
     borderRadius: 14,
     // 核心：始终 1:1 正方形
+    width: '100%',
     aspectRatio: '1 / 1',
+    // 防止 Grid 子项被 flex 撑开高度或宽度
+    minWidth: 0, maxWidth: '100%',
+    minHeight: 0,
     // 内容居中垂直
     display: 'flex', flexDirection: 'column',
     alignItems: 'center', justifyContent: 'center',
@@ -531,6 +533,7 @@ function SortableCard({ entry, editing, onClick, onPressStart, onPressEnd, onRem
     transform: CSS.Transform.toString(transform),
     zIndex: isDragging ? 999 : undefined,
     touchAction: 'none', // 禁用浏览器触摸默认行为
+    overflow: 'hidden',
   }
 
   return (

@@ -31,8 +31,25 @@ const TABS: TabDef[] = [
   { key: '/m/profile', title: '我的', icon: <UserOutline /> },
 ]
 
-/** 底部 TabBar 常驻显示的路由 —— 只有首页和"我的" */
-const TAB_ROUTES = new Set(['/m/dashboard', '/m/profile'])
+/** 底部 TabBar 常驻显示 —— 现在**所有页面**都显示 TabBar（用户希望始终可见） */
+
+/** 根据当前路由计算 TabBar 应该高亮哪个 Tab */
+function computeActiveKey(pathname: string): string {
+  // 先检查直接的 Tab 路由
+  if (pathname === '/m/dashboard') return '/m/dashboard'
+  if (pathname === '/m/profile') return '/m/profile'
+  // 生产子路由
+  const prodRoutes = PRODUCTION_ITEMS.map(i => i.route)
+  if (prodRoutes.includes(pathname)) return '__production__'
+  // 检验子路由
+  const inspRoutes = INSPECTION_ITEMS.map(i => i.route)
+  if (inspRoutes.includes(pathname)) return '__inspection__'
+  // 设备子路由
+  const devRoutes = DEVICE_ITEMS.map(i => i.route)
+  if (devRoutes.includes(pathname)) return '__device__'
+  // 未知子页面，不高亮任何 Tab
+  return ''
+}
 
 /** "生产" ActionSheet 子项 —— 订单管理 + 移动报工 */
 const PRODUCTION_ITEMS = [
@@ -116,10 +133,13 @@ export function MobileLayout() {
     })
   }, [hasPermission, visibleProductionItems.length, visibleInspectionItems.length, visibleDeviceItems.length])
 
-  // TabBar 常驻显示 —— 仅 Dashboard 和 Profile 两个路由
-  const isTabPage = TAB_ROUTES.has(location.pathname)
+  // TabBar 常驻显示（所有页面）—— 根据当前路由计算高亮哪个 Tab
+  const activeTabKey = computeActiveKey(location.pathname)
+  // canBack 仅对"有返回历史的子页面"显示 NavBar 返回按钮
+  const isDashboard = location.pathname === '/m/dashboard'
+  const isProfile = location.pathname === '/m/profile'
+  const canBack = location.pathname.startsWith('/m/') && !isDashboard && !isProfile
   const title = TITLE_MAP[location.pathname] || (location.pathname.startsWith('/m/') ? '奶粉罐MES' : '')
-  const canBack = location.pathname.startsWith('/m/') && !isTabPage
 
   // ========== 版本检测（冷启动时跑一次） ==========
   useEffect(() => {
@@ -272,35 +292,33 @@ export function MobileLayout() {
         </div>
       )}
 
-      {/* 内容区 */}
-      <div className={`mobile-app__content ${isTabPage ? 'mobile-tabbar-padding' : ''}`}>
+      {/* 内容区 —— TabBar 常驻，底部始终留白 */}
+      <div className="mobile-app__content mobile-tabbar-padding">
         <Outlet />
       </div>
 
-      {/* TabBar —— 仅在 Dashboard 和 Profile 页面常驻显示 */}
-      {isTabPage && (
+      {/* TabBar —— 始终显示（5 个菜单常驻，ActionSheet 二级菜单选择后自动收起） */}
+      <div style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
+        paddingBottom: 'var(--sab)',
+      }}>
         <div style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
-          paddingBottom: 'var(--sab)',
+          background: 'linear-gradient(180deg, #ffffff 0%, #f8faff 100%)',
+          borderTop: '1px solid rgba(0,0,0,0.06)',
+          boxShadow: '0 -4px 20px rgba(33,150,243,0.08)',
+          padding: '6px 0 2px',
         }}>
-          <div style={{
-            background: 'linear-gradient(180deg, #ffffff 0%, #f8faff 100%)',
-            borderTop: '1px solid rgba(0,0,0,0.06)',
-            boxShadow: '0 -4px 20px rgba(33,150,243,0.08)',
-            padding: '6px 0 2px',
-          }}>
-            <TabBar activeKey={location.pathname} onChange={handleTabClick} safeArea={false}>
-              {visibleTabs.map(t => {
-                const showPendingBadge = t.key === '/m/profile' && pending > 0
-                const icon = showPendingBadge
-                  ? <Badge content={pending > 99 ? '99+' : String(pending)}>{t.icon}</Badge>
-                  : t.icon
-                return <TabBar.Item key={t.key} icon={icon} title={t.title} />
-              })}
-            </TabBar>
-          </div>
+          <TabBar activeKey={activeTabKey} onChange={handleTabClick} safeArea={false}>
+            {visibleTabs.map(t => {
+              const showPendingBadge = t.key === '/m/profile' && pending > 0
+              const icon = showPendingBadge
+                ? <Badge content={pending > 99 ? '99+' : String(pending)}>{t.icon}</Badge>
+                : t.icon
+              return <TabBar.Item key={t.key} icon={icon} title={t.title} />
+            })}
+          </TabBar>
         </div>
-      )}
+      </div>
     </div>
   )
 }

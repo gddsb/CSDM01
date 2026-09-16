@@ -60,7 +60,7 @@ export default function MobileOrderManagement() {
     try {
       const params: Record<string, unknown> = { page: 1, page_size: 50 }
       const tt = t ?? tab
-      params.status = tt
+      params.status = [tt]  // 数组格式，与 PC OrderManagement.tsx 完全对齐
       if (kw) params.order_no = kw
       const r: any = await api.get('/production/orders', { params })
       const list: OrderRow[] = r.success ? (r.data?.list || r.data || []) : []
