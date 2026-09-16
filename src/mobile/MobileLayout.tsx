@@ -9,7 +9,7 @@
 import { useEffect, useMemo } from 'react'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { TabBar, NavBar, ActionSheet, Dialog, Badge } from 'antd-mobile'
-import { AppOutline, EditSOutline, CheckOutline, TeamOutline, UserOutline } from 'antd-mobile-icons'
+import { AppOutline, BillOutline, CheckOutline, TeamOutline, UserOutline } from 'antd-mobile-icons'
 import { useApp } from '../contexts/AppContext'
 import { checkForUpdate, skipUpdate } from '../adapter/update'
 import { useOfflineQueue } from './hooks/useOfflineQueue'
@@ -24,10 +24,16 @@ interface TabDef {
 
 const TABS: TabDef[] = [
   { key: '/m/dashboard', title: '首页', icon: <AppOutline /> },
-  { key: '/m/process-reporting', title: '报工', icon: <EditSOutline />, permCode: 'production:reporting' },
+  { key: '__production__', title: '生产', icon: <BillOutline /> },
   { key: '__inspection__', title: '检验', icon: <CheckOutline /> },
   { key: '__device__', title: '设备', icon: <TeamOutline /> },
   { key: '/m/profile', title: '我的', icon: <UserOutline /> },
+]
+
+/** "生产" ActionSheet 子项 —— 订单管理 + 移动报工 */
+const PRODUCTION_ITEMS = [
+  { text: '📋 生产订单', key: 'orders', route: '/m/production-orders', permCode: 'production:reporting' },
+  { text: '📝 移动报工', key: 'reporting', route: '/m/process-reporting', permCode: 'production:reporting' },
 ]
 
 /** "检验" ActionSheet 子项（每项独立鉴权，全部不可见时隐藏检验 Tab） */
@@ -85,13 +91,18 @@ function isDevicePath(p: string) {
   return p === '/m/device-inspection' || p === '/m/device-maintenance' || p === '/m/device-fault' || p === '/m/calibration-reminder' || p === '/m/device-oee' || p === '/m/spare-parts' || p === '/m/device-documents'
 }
 
+/** 当前路径是否属于"生产"家族（用于高亮 Tab） */
+function isProductionPath(p: string) {
+  return p === '/m/production-orders' || p === '/m/process-reporting'
+}
+
 export function MobileLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { currentUser, hasPermission } = useApp()
   const { online, pending, syncing } = useOfflineQueue()
 
-  // 权限过滤：检验/设备 Tab 的可见性取决于其子项中是否至少有一项可见
+  // 权限过滤：检验/设备/生产 Tab 的可见性取决于其子项中是否至少有一项可见
   const visibleInspectionItems = useMemo(
     () => INSPECTION_ITEMS.filter(it => !it.permCode || hasPermission(it.permCode)),
     [hasPermission],
@@ -100,21 +111,28 @@ export function MobileLayout() {
     () => DEVICE_ITEMS.filter(it => !it.permCode || hasPermission(it.permCode)),
     [hasPermission],
   )
+  const visibleProductionItems = useMemo(
+    () => PRODUCTION_ITEMS.filter(it => !it.permCode || hasPermission(it.permCode)),
+    [hasPermission],
+  )
 
   // 计算 Tab 可见性
   const visibleTabs = useMemo(() => {
     return TABS.filter((t) => {
+      if (t.key === '__production__') return visibleProductionItems.length > 0
       if (t.key === '__inspection__') return visibleInspectionItems.length > 0
       if (t.key === '__device__') return visibleDeviceItems.length > 0
       if (!t.permCode) return true
       return hasPermission(t.permCode)
     })
-  }, [hasPermission, visibleInspectionItems.length, visibleDeviceItems.length])
+  }, [hasPermission, visibleProductionItems.length, visibleInspectionItems.length, visibleDeviceItems.length])
 
-  // isTabPage: 直接路由匹配 or 属于检验/设备家族（且对应 Tab 仍可见）
+  // isTabPage: 直接路由匹配 or 属于生产/检验/设备家族（且对应 Tab 仍可见）
+  const isProductionVisibleTab = visibleProductionItems.length > 0
   const isInspectionVisibleTab = visibleInspectionItems.length > 0
   const isDeviceVisibleTab = visibleDeviceItems.length > 0
   const isTabPage = visibleTabs.some(t => t.key === location.pathname)
+    || (isProductionVisibleTab && isProductionPath(location.pathname))
     || (isInspectionVisibleTab && isInspectionPath(location.pathname))
     || (isDeviceVisibleTab && isDevicePath(location.pathname))
   const title = TITLE_MAP[location.pathname] || (location.pathname.startsWith('/m/') ? '奶粉罐MES' : '')
@@ -184,6 +202,23 @@ export function MobileLayout() {
 
   // ========== TabBar 交互 ==========
   const handleTabClick = (key: string) => {
+    if (key === '__production__') {
+      const items = visibleProductionItems
+      if (items.length === 0) return
+      if (items.length === 1) {
+        navigate(items[0].route)
+        return
+      }
+      ActionSheet.show({
+        actions: items.map(it => ({ text: it.text, key: it.key })),
+        cancelText: '取消',
+        onAction: (action) => {
+          const target = items.find(it => it.key === action.key)
+          if (target) navigate(target.route)
+        },
+      })
+      return
+    }
     if (key === '__inspection__') {
       const items = visibleInspectionItems
       if (items.length === 0) return
@@ -221,9 +256,11 @@ export function MobileLayout() {
     navigate(key)
   }
 
-  const activeKey = (isInspectionVisibleTab && isInspectionPath(location.pathname))
-    ? '__inspection__'
-    : ((isDeviceVisibleTab && isDevicePath(location.pathname)) ? '__device__' : location.pathname)
+  const activeKey = (isProductionVisibleTab && isProductionPath(location.pathname))
+    ? '__production__'
+    : ((isInspectionVisibleTab && isInspectionPath(location.pathname))
+      ? '__inspection__'
+      : ((isDeviceVisibleTab && isDevicePath(location.pathname)) ? '__device__' : location.pathname))
 
   return (
     <div className="mobile-app">

@@ -5,7 +5,7 @@
  * - 长按卡片进入「编辑模式」，可上下移动调整顺序
  * - 顺序持久化到 localStorage: mobile_home_order
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Grid, Badge, PullToRefresh, Toast, Button } from 'antd-mobile'
 import {
@@ -16,6 +16,21 @@ import {
 import { useApp } from '../../contexts/AppContext'
 import { useOfflineQueue } from '../hooks/useOfflineQueue'
 import api from '../../utils/api'
+
+interface TodoItem {
+  icon: string
+  text: string
+  count: number
+  path: string
+  color: string
+}
+
+/** 根据屏幕宽度计算九宫格列数：窄屏3列、宽屏最多5列 */
+function computeColumns(width: number): number {
+  if (width < 360) return 3
+  if (width < 420) return 4
+  return 5
+}
 
 interface QuickEntry {
   key: string
@@ -84,8 +99,12 @@ function applyCustomOrder(entries: QuickEntry[], customKeys: string[] | null): Q
 export default function MobileDashboard() {
   const { currentUser, hasPermission } = useApp()
   const navigate = useNavigate()
-  const [stats, setStats] = useState<{ pendingOrders: number; todayReports: number } | null>(null)
   const { pending, refresh: refreshQueue } = useOfflineQueue()
+
+  // 待办条目
+  const [todos, setTodos] = useState<TodoItem[]>([])
+  // 九宫格列数（响应式）
+  const [columns, setColumns] = useState(() => computeColumns(typeof window !== 'undefined' ? window.innerWidth : 360))
 
   // 是否处于编辑模式
   const [editing, setEditing] = useState(false)
@@ -93,6 +112,10 @@ export default function MobileDashboard() {
   const [ordered, setOrdered] = useState<QuickEntry[]>([])
   // 长按计时器 ref
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // 滚动定时器 ref
+  const scrollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  // 滚动偏移
+  const [scrollOffset, setScrollOffset] = useState(0)
 
   // 初始化：按权限过滤 + 应用自定义顺序
   useEffect(() => {
@@ -101,26 +124,85 @@ export default function MobileDashboard() {
     setOrdered(applyCustomOrder(visible, customKeys))
   }, [hasPermission])
 
-  // 轻量今日统计（可选，后续对接真实后端统计接口）
-  const loadStats = useCallback(() => {
-    let canceled = false
-    api.get('/production/report-orders', { params: { page: 1, page_size: 1, status: '待报工' } })
-      .then((r: any) => { if (!canceled && r.success) setStats((s) => ({ ...(s || { pendingOrders: 0, todayReports: 0 }), pendingOrders: r.data?.total || r.total || 0 })) })
-      .catch(() => {})
-    api.get('/production/report-orders', { params: { page: 1, page_size: 1, status: '已完成' } })
-      .then((r: any) => { if (!canceled && r.success) setStats((s) => ({ ...(s || { pendingOrders: 0, todayReports: 0 }), todayReports: r.data?.total || r.total || 0 })) })
-      .catch(() => {})
-    return () => { canceled = true }
+  // 响应式列数监听
+  useEffect(() => {
+    const onResize = () => setColumns(computeColumns(window.innerWidth))
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
   }, [])
 
+  // 加载待办条目（轻量：各列表接口取 total）
+  const loadTodos = useCallback(async () => {
+    const items: TodoItem[] = []
+
+    // 并行拉几个 total（page_size=1 只为拿 total，响应最小）
+    type TodoResp = { icon: string; text: string; count: number; path: string; color: string }
+    const apis: Promise<TodoResp>[] = [
+      // 待下发/开工订单
+      api.get('/production/orders', { params: { page: 1, page_size: 1, status: '已下发' } })
+        .then((r: any) => ({ icon: '📋', text: '待下发订单', count: r.data?.total || r.total || 0, path: '/m/production-orders', color: '#2196F3' })),
+      // 生产中订单
+      api.get('/production/orders', { params: { page: 1, page_size: 1, status: '生产中' } })
+        .then((r: any) => ({ icon: '🏃', text: '生产中订单', count: r.data?.total || r.total || 0, path: '/m/production-orders', color: '#4CAF50' })),
+      // 待报工报工单
+      api.get('/production/report-orders', { params: { page: 1, page_size: 1, status: '待报工' } })
+        .then((r: any) => ({ icon: '📝', text: '待报工任务', count: r.data?.total || r.total || 0, path: '/m/process-reporting', color: '#FF9800' })),
+    ]
+
+    // 权限过滤：检验/设备接口只给有权限的用户
+    if (hasPermission('quality:incoming')) {
+      apis.push(
+        api.get('/incoming-inspections', { params: { page: 1, page_size: 1, status: '待检验' } })
+          .then((r: any) => ({ icon: '🔍', text: '待来料检验', count: r.data?.total || r.total || 0, path: '/m/incoming-inspection', color: '#9C27B0' })),
+      )
+    }
+    if (hasPermission('device:inspection')) {
+      apis.push(
+        api.get('/device-inspections', { params: { page: 1, page_size: 1, status: '待点检' } })
+          .then((r: any) => ({ icon: '⚙️', text: '待设备点检', count: r.data?.total || r.total || 0, path: '/m/device-inspection', color: '#00BCD4' })),
+      )
+    }
+
+    try {
+      const results = await Promise.allSettled(apis)
+      results.forEach(res => {
+        if (res.status !== 'fulfilled') return
+        items.push(res.value)
+      })
+    } catch { /* ignore */ }
+
+    // 离线暂存条数总是显示
+    items.push({ icon: '📥', text: '离线暂存待同步', count: pending, path: '/m/offline-queue', color: '#E65100' })
+
+    // 只显示 count > 0 的（但保留离线条目即使为 0 也显示）
+    const filtered = items.filter(i => i.count > 0 || i.path === '/m/offline-queue')
+    setTodos(filtered)
+  }, [hasPermission, pending])
+
   useEffect(() => {
-    const cleanup = loadStats()
-    return cleanup
-  }, [loadStats])
+    loadTodos()
+  }, [loadTodos])
+
+  // 自动滚动：每 2.5s 滚一行
+  useEffect(() => {
+    if (todos.length <= 3) {
+      setScrollOffset(0)
+      return
+    }
+    scrollTimerRef.current = setInterval(() => {
+      setScrollOffset(prev => {
+        const max = todos.length - 3
+        return prev >= max ? 0 : prev + 1
+      })
+    }, 2500)
+    return () => {
+      if (scrollTimerRef.current) clearInterval(scrollTimerRef.current)
+    }
+  }, [todos.length])
 
   // 下拉刷新
   const onRefresh = async () => {
-    loadStats()
+    await loadTodos()
     await refreshQueue()
     Toast.show({ content: '已刷新', icon: 'success', position: 'bottom', duration: 600 })
   }
@@ -195,26 +277,70 @@ export default function MobileDashboard() {
         )}
       </div>
 
-      {/* 今日统计卡 */}
+      {/* 今日统计卡 — 改为待办事项滚动列表 */}
       <div style={{
         background: 'linear-gradient(135deg, #1976D2 0%, #42A5F5 100%)',
-        borderRadius: 14, padding: '18px 20px', color: '#fff', marginBottom: 20,
+        borderRadius: 14, padding: '14px 18px', color: '#fff', marginBottom: 20,
         boxShadow: '0 6px 16px rgba(33,150,243,0.25)',
       }}>
-        <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 10 }}>今日概览 · 下拉刷新</div>
-        <div style={{ display: 'flex', gap: 28 }}>
-          <div>
-            <div style={{ fontSize: 26, fontWeight: 700 }}>
-              {stats ? stats.pendingOrders : '—'}
-            </div>
-            <div style={{ fontSize: 12, opacity: 0.85 }}>待报工</div>
+        <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span>📌 待办事项</span>
+          <span style={{ fontSize: 11, opacity: 0.7 }}>· 下拉刷新</span>
+        </div>
+
+        {/* 固定 3 行高度的滚动容器 */}
+        <div style={{
+          height: 126, // 3 行 × 42px
+          overflow: 'hidden',
+          position: 'relative',
+        }}>
+          <div style={{
+            transform: `translateY(-${scrollOffset * 42}px)`,
+            transition: 'transform 0.5s ease-in-out',
+          }}>
+            {(todos.length > 0 ? todos : [
+              { icon: '📋', text: '加载中...', count: 0, path: '', color: '#fff' },
+            ]).map((t, i) => (
+              <div
+                key={`${t.path}-${i}`}
+                onClick={() => t.path && navigate(t.path)}
+                style={{
+                  height: 42,
+                  display: 'flex', alignItems: 'center',
+                  padding: '0 4px',
+                  cursor: t.path ? 'pointer' : 'default',
+                  fontSize: 14,
+                }}
+              >
+                <span style={{ marginRight: 6, fontSize: 16 }}>{t.icon}</span>
+                <span style={{ flex: 1 }}>{t.text}</span>
+                <span style={{
+                  background: t.count > 0 ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.12)',
+                  padding: '2px 10px', borderRadius: 10,
+                  fontSize: 13, fontWeight: 600,
+                  minWidth: 28, textAlign: 'center',
+                }}>
+                  {t.count}
+                </span>
+              </div>
+            ))}
           </div>
-          <div>
-            <div style={{ fontSize: 26, fontWeight: 700 }}>
-              {stats ? stats.todayReports : '—'}
-            </div>
-            <div style={{ fontSize: 12, opacity: 0.85 }}>已完成工序</div>
-          </div>
+
+          {/* 渐变遮罩 */}
+          {todos.length > 3 && (
+            <>
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: 12,
+                background: 'linear-gradient(to bottom, rgba(25,118,210,0.9), transparent)',
+                pointerEvents: 'none',
+              }} />
+              <div style={{
+                position: 'absolute', bottom: 0, left: 0, right: 0, height: 12,
+                background: 'linear-gradient(to top, rgba(25,118,210,0.9), transparent)',
+                pointerEvents: 'none',
+              }} />
+            </>
+          )}
         </div>
       </div>
 
@@ -235,8 +361,8 @@ export default function MobileDashboard() {
         )}
       </div>
 
-      {/* 九宫格 — 3 列自动排布 */}
-      <Grid columns={3} gap={10}>
+      {/* 九宫格 — 动态列数（360以下3列、420以下4列、以上5列） */}
+      <Grid columns={columns} gap={10}>
         {ordered.map((entry, idx) => (
           <Grid.Item key={entry.key}>
             <QuickCard

@@ -12,8 +12,8 @@
  *   POST /api/production/report-orders/:id/finish            完工
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Steps, Button, List, SearchBar, Stepper, Toast, Dialog, Tabs, PullToRefresh, InfiniteScroll } from 'antd-mobile'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Steps, Button, List, SearchBar, Stepper, Toast, Dialog, Tabs, PullToRefresh, InfiniteScroll, ActionSheet } from 'antd-mobile'
 import api from '../../utils/api'
 import { useBarcode } from '../hooks/useBarcode'
 import { MobileOrderDetail, MobileOrderData } from '../components/MobileOrderDetail'
@@ -52,7 +52,9 @@ interface HistoryRow {
 
 export default function MobileProcessReporting() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { scan, isScanning } = useBarcode()
+  const orderIdFromUrl = searchParams.get('orderId')
 
   const [tab, setTab] = useState<'report' | 'history'>('report')
   const [step, setStep] = useState<Step>(0)
@@ -132,6 +134,55 @@ export default function MobileProcessReporting() {
     loadLines()
     loadOrders()
   }, [])
+
+  // ========== 智能路由：URL带orderId or 唯一开工订单 → 自动进入 ==========
+  const smartRoutedRef = useRef(false)
+  useEffect(() => {
+    if (smartRoutedRef.current) return
+    if (orders.length === 0) return
+
+    // 1) URL 带 orderId → 找到后自动进入
+    if (orderIdFromUrl) {
+      const target = orders.find(o => String(o.order_id) === String(orderIdFromUrl))
+      if (target) {
+        goToFill(target)
+        smartRoutedRef.current = true
+        setSearchParams({}, { replace: true }) // 清掉 URL 参数，避免刷新重复触发
+        return
+      }
+      // URL orderId 没匹配到也不强行拦截，让用户在列表里选
+    }
+
+    // 2) 过滤出"开工中"的订单（status=开工 or status=2）
+    const running = orders.filter(o => {
+      const s = STATUS_MAP[String(o.status)] || String(o.status)
+      return s === '开工'
+    })
+
+    if (running.length === 1) {
+      // 唯一开工订单 → 自动进入
+      Toast.show({ content: `已自动选中: ${running[0].order_no}`, position: 'bottom', duration: 1200 })
+      goToFill(running[0])
+      smartRoutedRef.current = true
+    } else if (running.length > 1) {
+      // 多个开工订单 → ActionSheet 让用户选
+      ActionSheet.show({
+        actions: running.map(o => ({
+          text: `${o.order_no} · ${o.material_name || o.material_code || ''}`,
+          key: String(o.order_id),
+        })),
+        cancelText: '手动选择',
+        onAction: (action) => {
+          const picked = running.find(o => String(o.order_id) === action.key)
+          if (picked) {
+            goToFill(picked)
+            smartRoutedRef.current = true
+          }
+        },
+      })
+      smartRoutedRef.current = true // 不管选没选都不重复弹
+    }
+  }, [orders.length, orderIdFromUrl])
 
   // 加载报工历史 —— 增量加载单页（P3.3 InfiniteScroll 配套）
   const loadHistoryPage = useCallback(async (page: number, append: boolean) => {

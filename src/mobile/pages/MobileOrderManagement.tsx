@@ -13,6 +13,7 @@
  * 点击订单 → 下属报工单列表 → 点击报工单 → 复用 ReportOrderDetail
  */
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh, Input, Radio , TextArea} from 'antd-mobile'
 import api from '../../utils/api'
 import { offlinePost, offlineDelete } from '../offline/offlineApi'
@@ -36,10 +37,12 @@ const STATUS_TABS: { key: StatusTab; label: string }[] = [
 ]
 
 export default function MobileOrderManagement() {
+  const navigate = useNavigate()
   const { scan } = useBarcode()
   const [tab, setTab] = useState<StatusTab>('已下发')
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const [orders, setOrders] = useState<OrderRow[]>([])
   const [selected, setSelected] = useState<OrderRow | null>(null)
   const [reports, setReports] = useState<ReportOrderMeta[]>([])
@@ -67,6 +70,28 @@ export default function MobileOrderManagement() {
     } catch { setOrders([]) } finally { setLoading(false) }
   }
   useEffect(() => { load(tab) }, [tab])
+
+  // ====== 订单同步（ERP→本地）======
+  const onSync = async () => {
+    const ok = await Dialog.confirm({ content: '从 ERP 同步生产订单？', confirmText: '同步', cancelText: '取消' })
+    if (!ok) return
+    setSyncing(true)
+    try {
+      const r: any = await api.post('/auto/sync-production-orders')
+      if (r.success) {
+        const d = r.data || {}
+        Toast.show({
+          content: `同步成功：新增 ${d.inserted || 0}，更新 ${d.updated || 0}`,
+          icon: 'success', position: 'bottom', duration: 1500,
+        })
+        await load(tab, keyword.trim())
+      } else {
+        Toast.show({ content: r.message || '同步失败', position: 'bottom' })
+      }
+    } catch (e: any) {
+      Toast.show({ content: e?.message || '网络错误', position: 'bottom' })
+    } finally { setSyncing(false) }
+  }
 
   useEffect(() => {
     api.get('/basic/lines', { params: { page: 1, page_size: 100 } }).then((r: any) => {
@@ -160,14 +185,14 @@ export default function MobileOrderManagement() {
 
   return (
     <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 30 }}>
-      {/* 搜索 + 新建 */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+      {/* 搜索 + 同步 + 新建 */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center' }}>
         <div style={{ flex: 1 }}>
           <SearchBar placeholder="扫/输工单号" value={keyword} onChange={setKeyword}
             onSearch={() => load(tab, keyword.trim())} />
-          <Button size="mini" onClick={onScan} style={{marginTop:8}}>扫码</Button>
         </div>
-        <Button color="primary" onClick={() => setShowCreate(true)} style={{ height: 40, marginTop: 2 }}>+ 新建</Button>
+        <Button size="mini" fill="outline" loading={syncing} onClick={onSync}>同步</Button>
+        <Button color="primary" onClick={() => setShowCreate(true)} style={{ height: 40 }}>+ 新建</Button>
       </div>
 
       {/* 状态 Tab（对齐 PC） */}
@@ -217,13 +242,44 @@ export default function MobileOrderManagement() {
                     📍 {o.line_name || '—'} · {o.start_date?.slice(0, 10) || ''} → {o.end_date?.slice(0, 10) || ''}
                   </div>
 
+                  {/* 进度条 + 剩余判断 */}
+                  {(o.planned_qty ?? 0) > 0 && (
+                    <div style={{ marginTop: 6 }}>
+                      <div style={{ fontSize: 11, color: '#888', marginBottom: 3 }}>
+                        已报 {o.finished_qty ?? 0} / {o.planned_qty}
+                        {(o.finished_qty ?? 0) > 0 && (
+                          <span style={{ float: 'right' }}>
+                            {Math.round(((o.finished_qty ?? 0) / (o.planned_qty ?? 1)) * 100)}%
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ background: '#f0f2f5', borderRadius: 4, height: 4, overflow: 'hidden' }}>
+                        <div style={{
+                          background: (o.finished_qty ?? 0) >= (o.planned_qty ?? 0) ? '#4CAF50' : '#2196F3',
+                          height: '100%',
+                          width: `${Math.min(100, ((o.finished_qty ?? 0) / Math.max(1, o.planned_qty ?? 1)) * 100)}%`,
+                          transition: 'width 0.3s',
+                        }} />
+                      </div>
+                    </div>
+                  )}
+
                   {/* 行内按钮 */}
-                  <div style={{ display: 'flex', gap: 6, marginTop: 8 }} onClick={(e) => e.stopPropagation()}>
+                  <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }} onClick={(e) => e.stopPropagation()}>
                     {isReleased && (
-                      <Button size="mini" color="primary" onClick={() => onRelease(o)}>下发</Button>
+                      <>
+                        <Button size="mini" color="primary" onClick={() => onRelease(o)}>下发</Button>
+                        <Button size="mini" color="primary" fill="outline" onClick={() => navigate(`/m/process-reporting?orderId=${o.order_id}`)}>开工报工</Button>
+                      </>
+                    )}
+                    {isRunning && (
+                      <Button size="mini" color="primary" onClick={() => navigate(`/m/process-reporting?orderId=${o.order_id}`)}>继续报工</Button>
+                    )}
+                    {isDone && (o.finished_qty ?? 0) < (o.planned_qty ?? 0) && (
+                      <Button size="mini" color="warning" onClick={() => navigate(`/m/process-reporting?orderId=${o.order_id}`)}>补报剩余</Button>
                     )}
                     {(isReleased || isRunning) && (
-                      <Button size="mini" color="primary" onClick={() => onFinish(o)}>完工</Button>
+                      <Button size="mini" fill="outline" onClick={() => onFinish(o)}>完工</Button>
                     )}
                     {!isClosed && (
                       <Button size="mini" fill="outline" onClick={() => onClose(o)}>关闭</Button>
