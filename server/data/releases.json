@@ -1,14 +1,14 @@
 {
-  "version": "1.0.6",
-  "buildNumber": 7,
+  "version": "1.0.7",
+  "buildNumber": 8,
   "forceUpdate": false,
-  "downloadUrl": "http://43.138.218.55/download/milkcanmes-v1.0.6-debug.apk",
+  "downloadUrl": "http://43.138.218.55/download/milkcanmes-v1.0.7-debug.apk",
   "downloadUrlIos": "http://43.138.218.55/download/milkcanmes.ipa",
   "apkSize": 7549747,
   "ipaSize": 0,
   "appId": "com.daman.milkcanmes",
   "bundleId": "com.daman.milkcanmes",
-  "updateNotes": "v1.0.6：首页九宫格卡片加渐变图标圆角色块(44×44)+阴影+按压反馈；待办卡玻璃拟态(blur backdrop)+3色渐变背景+装饰光斑+徽章描边；卡片圆角从12→14/16px更圆润。",
-  "publishedAt": "2026-09-16T13:05:00Z",
-  "gitSha": "9f91f5e"
+  "updateNotes": "v1.0.7：九宫格卡片改为1:1正方形宽高比；移除上下箭头改为长按进入编辑+自由拖拽排序(@dnd-kit)；编辑模式下拖拽即交换位置；右上角小圆点提示可拖。",
+  "publishedAt": "2026-09-16T13:30:00Z",
+  "gitSha": "6184acb"
 }
