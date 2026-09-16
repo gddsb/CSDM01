@@ -33,6 +33,7 @@ interface LineRow {
   line_id: number
   line_code?: string
   line_name?: string
+  status?: string
 }
 
 type Step = 0 | 1 | 2 // 选订单 / 填数据 / 提交结果
@@ -77,14 +78,36 @@ export default function MobileProcessReporting() {
   // 上次扫码命中的订单列表（给"扫码后自动选中"逻辑用）
   const lastScanMatches = useRef<OrderRow[]>([])
 
+  // 订单状态数字→中文映射（与 PC 端 ProcessReporting.tsx STATUS_MAP 保持一致）
+  const STATUS_MAP: Record<string, string> = {
+    '0': '开立', '1': '下发', '2': '开工', '3': '完工',
+    '开立': '开立', '下发': '下发', '开工': '开工', '完工': '完工',
+  }
+
+  /** 订单是否属于"可报工"状态（与 PC 端 getOrderOptions 过滤逻辑一致） */
+  const isReportable = (o: OrderRow): boolean => {
+    const s = STATUS_MAP[String(o.status)] || String(o.status)
+    if (s === '下发' || s === '开工') return true
+    if (s === '完工') {
+      // 完工但未全部完成的也可报工
+      const planned = Number((o as any).planned_qty || 0)
+      const finished = Number((o as any).finished_qty || 0)
+      return finished < planned
+    }
+    return false
+  }
+
   // Step 1: 加载待报工订单（返回列表供调用方直接使用，避免 state 异步问题）
+  // —— 与 PC 端一致：status='1,2,3' 拉下发/开工/完工，前端再按 STATUS_MAP 过滤可报工
   const loadOrders = async (kw?: string): Promise<OrderRow[]> => {
     setLoading(true)
     try {
-      const params: Record<string, unknown> = { page: 1, page_size: 30, status: '已下发' }
+      const params: Record<string, unknown> = { page: 1, pageSize: 200, status: '1,2,3' }
       if (kw) params.keyword = kw
       const r: any = await api.get('/production/orders', { params })
-      const list: OrderRow[] = r.success ? (r.data?.list || r.data?.rows || r.data || []) : []
+      const all: OrderRow[] = r.success ? (r.data?.list || r.data?.rows || r.data || []) : []
+      // 只显示"可报工"的订单
+      const list = all.filter(isReportable)
       setOrders(list)
       return list
     } catch {
@@ -92,11 +115,21 @@ export default function MobileProcessReporting() {
     } finally { setLoading(false) }
   }
 
-  // 产线列表（全量加载一次）
+  // 产线列表 —— 与 PC 端一致用 /basic/production-lines + pageSize（驼峰）
+  // —— 只加载「运行中」的产线，避免用户选到已停用/停机产线
+  const loadLines = async () => {
+    try {
+      const r: any = await api.get('/basic/production-lines', { params: { page: 1, pageSize: 1000 } })
+      if (!r.success) return
+      const all = r.data?.list || r.data?.rows || r.data || []
+      // 字段兼容：部分产线可能 status 为 null/undefined，也放进来（兜底）
+      const running = (all as LineRow[]).filter((l) => !l.status || l.status === '运行中')
+      setLines(running)
+    } catch { /* 静默 */ }
+  }
+
   useEffect(() => {
-    api.get('/basic/lines', { params: { page_size: 200 } }).then((r: any) => {
-      if (r.success) setLines(r.data?.list || r.data || [])
-    }).catch(() => {})
+    loadLines()
     loadOrders()
   }, [])
 
