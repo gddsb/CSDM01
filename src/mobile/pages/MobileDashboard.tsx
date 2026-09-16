@@ -25,11 +25,13 @@ interface TodoItem {
   color: string
 }
 
-/** 根据屏幕宽度计算九宫格列数：窄屏3列、宽屏最多5列 */
+/** 根据屏幕宽度计算九宫格列数：最小3列、横屏宽屏最多7列 */
 function computeColumns(width: number): number {
   if (width < 360) return 3
-  if (width < 420) return 4
-  return 5
+  if (width < 430) return 4
+  if (width < 520) return 5
+  if (width < 640) return 6
+  return 7
 }
 
 interface QuickEntry {
