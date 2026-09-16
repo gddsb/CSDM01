@@ -27,19 +27,18 @@ interface OrderRow {
   line_name?: string; start_date?: string; end_date?: string
 }
 
-type StatusTab = 'all' | '开立' | '已下发' | '生产中' | '已完工' | '已关闭'
+type StatusTab = '开立' | '已下发' | '生产中' | '已完工'
 const STATUS_TABS: { key: StatusTab; label: string }[] = [
-  { key: 'all', label: '全部' },
+  { key: '开立', label: '待下发' },
   { key: '已下发', label: '待开工' },
   { key: '生产中', label: '生产中' },
   { key: '已完工', label: '已完工' },
-  { key: '已关闭', label: '已关闭' },
 ]
 
 export default function MobileOrderManagement() {
   const navigate = useNavigate()
   const { scan } = useBarcode()
-  const [tab, setTab] = useState<StatusTab>('已下发')
+  const [tab, setTab] = useState<StatusTab>('开立')
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(false)
   const [syncing, setSyncing] = useState(false)
@@ -62,7 +61,7 @@ export default function MobileOrderManagement() {
     try {
       const params: Record<string, unknown> = { page: 1, page_size: 50 }
       const tt = t ?? tab
-      if (tt !== 'all') params.status = tt
+      params.status = tt
       if (kw) params.order_no = kw
       const r: any = await api.get('/production/orders', { params })
       const list: OrderRow[] = r.success ? (r.data?.list || r.data || []) : []
@@ -79,10 +78,9 @@ export default function MobileOrderManagement() {
     try {
       const r: any = await api.post('/auto/sync-production-orders')
       if (r.success) {
-        const d = r.data || {}
         Toast.show({
-          content: `同步成功：新增 ${d.inserted || 0}，更新 ${d.updated || 0}`,
-          icon: 'success', position: 'bottom', duration: 1500,
+          content: r.message || '订单同步完成',
+          icon: 'success', position: 'bottom', duration: 2000,
         })
         await load(tab, keyword.trim())
       } else {
@@ -207,7 +205,7 @@ export default function MobileOrderManagement() {
         <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>
       ) : orders.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
-          暂无订单<br /><span style={{ fontSize: 12 }}>或点右上角 + 新建</span>
+          暂无订单<br /><span style={{ fontSize: 12, color: '#bbb' }}>点上方同步按钮拉取 ERP 订单</span>
         </div>
       ) : (
         <PullToRefresh onRefresh={() => load(tab, keyword.trim())}>
@@ -226,29 +224,36 @@ export default function MobileOrderManagement() {
               })()
               return (
                 <div key={o.order_id} onClick={() => openDetail(o)} style={{
-                  background: '#fff', borderRadius: 10, padding: 12, marginBottom: 10,
-                  border: '1px solid #eef0f3', cursor: 'pointer',
+                  background: '#fff', borderRadius: 14, padding: '14px 14px 14px 17px', marginBottom: 10,
+                  border: 'none', cursor: 'pointer',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03)',
+                  borderLeft: `3px solid ${badge.c}`,
+                  transition: 'transform 0.12s',
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontWeight: 600 }}>{o.order_no}</div>
-                    <span style={{ fontSize: 11, padding: '2px 6px', borderRadius: 8, background: badge.c + '22', color: badge.c }}>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: '#222' }}>{o.order_no}</div>
+                    <span style={{
+                      fontSize: 11, padding: '3px 10px', borderRadius: 12,
+                      background: badge.c + '22', color: badge.c,
+                      fontWeight: 600, border: `1px solid ${badge.c}44`,
+                    }}>
                       {badge.t}
                     </span>
                   </div>
-                  <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
-                    {o.material_code} {o.material_name?.slice(0, 18)} · {o.planned_qty}
+                  <div style={{ fontSize: 12.5, color: '#555', marginTop: 6 }}>
+                    {o.material_code} {o.material_name?.slice(0, 20)} · <b style={{ color: '#333' }}>{o.planned_qty}</b>
                   </div>
-                  <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>
+                  <div style={{ fontSize: 11.5, color: '#999', marginTop: 3 }}>
                     📍 {o.line_name || '—'} · {o.start_date?.slice(0, 10) || ''} → {o.end_date?.slice(0, 10) || ''}
                   </div>
 
                   {/* 进度条 + 剩余判断 */}
                   {(o.planned_qty ?? 0) > 0 && (
-                    <div style={{ marginTop: 6 }}>
-                      <div style={{ fontSize: 11, color: '#888', marginBottom: 3 }}>
-                        已报 {o.finished_qty ?? 0} / {o.planned_qty}
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ fontSize: 11, color: '#777', marginBottom: 4 }}>
+                        已报 <b style={{ color: badge.c }}>{o.finished_qty ?? 0}</b> / {o.planned_qty}
                         {(o.finished_qty ?? 0) > 0 && (
-                          <span style={{ float: 'right' }}>
+                          <span style={{ float: 'right', color: badge.c, fontWeight: 700 }}>
                             {Math.round(((o.finished_qty ?? 0) / (o.planned_qty ?? 1)) * 100)}%
                           </span>
                         )}

@@ -70,6 +70,7 @@ interface QuickEntry {
 /** 默认顺序（9宫格） */
 const DEFAULT_ORDER: QuickEntry[] = [
   { key: 'reporting', title: '移动报工', icon: <BillOutline fontSize={28} />, color: '#2196F3', path: '/m/process-reporting', permCode: 'production:reporting' },
+  { key: 'prod-orders', title: '生产订单', icon: <CalendarOutline fontSize={28} />, color: '#FF9800', path: '/m/production-orders', permCode: 'production:reporting' },
   { key: 'incoming', title: '来料检验', icon: <CheckOutline fontSize={28} />, color: '#4CAF50', path: '/m/incoming-inspection', permCode: 'quality:incoming' },
   { key: 'process', title: '过程检验', icon: <CheckOutline fontSize={28} />, color: '#3F51B5', path: '/m/process-inspection', permCode: 'quality:process' },
   { key: 'device', title: '设备点检', icon: <TeamOutline fontSize={28} />, color: '#FF9800', path: '/m/device-inspection', permCode: 'device:inspection' },
