@@ -13,6 +13,21 @@ import {
   FlagOutline, SearchOutline, CalendarOutline, PieOutline, FolderOutline,
   FileOutline, ChatAddOutline,
 } from 'antd-mobile-icons'
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  useSortable,
+  arrayMove,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useApp } from '../../contexts/AppContext'
 import { useOfflineQueue } from '../hooks/useOfflineQueue'
 import api from '../../utils/api'
@@ -125,6 +140,28 @@ export default function MobileDashboard() {
   // 滚动偏移
   const [scrollOffset, setScrollOffset] = useState(0)
 
+  // ====== DnD 传感器：触摸 + 鼠标都支持，编辑模式下才启用 ======
+  const sensors = useSensors(
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 0, tolerance: 5 },
+    }),
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    }),
+  )
+
+  // DndContext onDragEnd：交换 arrayMove
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    setOrdered((items) => {
+      const oldIndex = items.findIndex((i) => i.key === active.id)
+      const newIndex = items.findIndex((i) => i.key === over.id)
+      if (oldIndex === -1 || newIndex === -1) return items
+      return arrayMove(items, oldIndex, newIndex)
+    })
+  }
+
   // 初始化：按权限过滤 + 应用自定义顺序
   useEffect(() => {
     const visible = DEFAULT_ORDER.filter((e) => !e.permCode || hasPermission(e.permCode))
@@ -226,17 +263,7 @@ export default function MobileDashboard() {
 
   const name = currentUser?.real_name || currentUser?.username || '同事'
 
-  // === 编辑模式：移动卡片 ===
-  const moveCard = (index: number, direction: -1 | 1) => {
-    setOrdered((prev) => {
-      const nextIdx = index + direction
-      if (nextIdx < 0 || nextIdx >= prev.length) return prev
-      const arr = [...prev]
-      const [moved] = arr.splice(index, 1)
-      arr.splice(nextIdx, 0, moved)
-      return arr
-    })
-  }
+  // === 编辑模式：拖拽排序（已由 DndContext 接管）===
 
   const saveEdit = () => {
     saveOrderKeys(ordered.map((e) => e.key))
@@ -252,15 +279,15 @@ export default function MobileDashboard() {
     localStorage.removeItem(STORAGE_KEY)
     const visible = DEFAULT_ORDER.filter((e) => !e.permCode || hasPermission(e.permCode))
     setOrdered(visible)
-    setEditing(false)
-    Toast.show({ content: '已恢复默认顺序', icon: 'success', position: 'bottom', duration: 800 })
+    Toast.show({ content: '已恢复默认顺序（点保存生效）', icon: 'success', position: 'bottom', duration: 1200 })
   }
 
-  // === 长按处理 ===
+  // === 长按 600ms → 进入编辑模式 ===
   const handlePressStart = () => {
+    if (editing) return // 已在编辑模式下不重复触发
     longPressTimer.current = setTimeout(() => {
       setEditing(true)
-      Toast.show({ content: '进入编辑模式：点击 ▲▼ 调整顺序', position: 'bottom', duration: 1500 })
+      Toast.show({ content: '已进入编辑模式：拖动图标排序', position: 'bottom', duration: 1500 })
     }, 600)
   }
   const handlePressEnd = () => {
@@ -268,6 +295,13 @@ export default function MobileDashboard() {
       clearTimeout(longPressTimer.current)
       longPressTimer.current = null
     }
+  }
+
+  // 非编辑模式下点击 → 跳转；编辑模式下点击不跳转
+  const handleCardClick = (entry: QuickEntry) => {
+    if (editing) return
+    if (entry.disabled) return
+    if (entry.path) navigate(entry.path)
   }
 
   return (
@@ -404,27 +438,31 @@ export default function MobileDashboard() {
         )}
       </div>
 
-      {/* 九宫格 — 动态列数（360以下3列、420以下4列、以上5列） */}
-      <Grid columns={columns} gap={10}>
-        {ordered.map((entry, idx) => (
-          <Grid.Item key={entry.key}>
-            <QuickCard
-              entry={entry}
-              index={idx}
-              total={ordered.length}
-              editing={editing}
-              onMove={moveCard}
-              onClick={() => {
-                if (editing) return // 编辑模式下禁止跳转
-                if (entry.disabled) return
-                if (entry.path) navigate(entry.path)
-              }}
-              onPressStart={handlePressStart}
-              onPressEnd={handlePressEnd}
-            />
-          </Grid.Item>
-        ))}
-      </Grid>
+      {/* 九宫格 — 拖拽排序（编辑模式下可用） */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={ordered.map((e) => e.key)}
+          strategy={rectSortingStrategy}
+        >
+          <Grid columns={columns} gap={10}>
+            {ordered.map((entry) => (
+              <Grid.Item key={entry.key}>
+                <SortableCard
+                  entry={entry}
+                  editing={editing}
+                  onClick={() => handleCardClick(entry)}
+                  onPressStart={handlePressStart}
+                  onPressEnd={handlePressEnd}
+                />
+              </Grid.Item>
+            ))}
+          </Grid>
+        </SortableContext>
+      </DndContext>
 
       {/* 底部空出 TabBar + safe-area */}
       <div style={{ height: 20 }} />
@@ -432,99 +470,102 @@ export default function MobileDashboard() {
   )
 }
 
-interface QuickCardProps {
+interface SortableCardProps {
   entry: QuickEntry
-  index: number
-  total: number
   editing: boolean
-  onMove: (index: number, direction: -1 | 1) => void
   onClick: () => void
   onPressStart: () => void
   onPressEnd: () => void
 }
 
-/** 图标渐变背景 — 根据 color 生成同色系渐变，让卡片更有质感 */
+/** 图标渐变背景 — 根据 color 生成同色系渐变 */
 function gradientFromHex(hex: string): string {
-  // 简单规则：主色 + 白色 tint + 深色 shadow
   return `linear-gradient(135deg, ${hex} 0%, ${hex}dd 40%, ${hex}99 100%)`
 }
 
-function QuickCard({ entry, index, total, editing, onMove, onClick, onPressStart, onPressEnd }: QuickCardProps) {
+/** 可拖拽卡片 — @dnd-kit useSortable + 1:1 宽高比 */
+function SortableCard({ entry, editing, onClick, onPressStart, onPressEnd }: SortableCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: entry.key })
+
+  const style: React.CSSProperties = {
+    position: 'relative',
+    background: entry.disabled ? '#f5f6f8' : '#fff',
+    borderRadius: 14,
+    // 核心：始终 1:1 正方形
+    aspectRatio: '1 / 1',
+    // 内容居中垂直
+    display: 'flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'center',
+    padding: '10px 6px',
+    boxSizing: 'border-box',
+    border: editing ? '2px solid #2196F3' : 'none',
+    opacity: entry.disabled ? 0.55 : 1,
+    cursor: editing ? 'grab' : (entry.disabled ? 'not-allowed' : 'pointer'),
+    transition: isDragging ? 'none' : 'transform 0.15s cubic-bezier(.4,0,.2,1), box-shadow 0.2s',
+    userSelect: 'none',
+    // 拖拽时的视觉反馈
+    boxShadow: isDragging
+      ? '0 12px 32px rgba(33,150,243,0.35)'
+      : (editing
+          ? '0 0 0 3px rgba(33,150,243,0.15)'
+          : (entry.disabled ? 'none' : '0 2px 10px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03)')),
+    transform: CSS.Transform.toString(transform),
+    zIndex: isDragging ? 999 : undefined,
+    touchAction: 'none', // 禁用浏览器触摸默认行为
+  }
+
   return (
     <Badge content={entry.badge || null}>
       <div
+        ref={setNodeRef}
+        style={style}
         onClick={onClick}
+        // 长按进入编辑（仅非编辑模式下触发）
         onMouseDown={onPressStart}
         onMouseUp={onPressEnd}
         onMouseLeave={onPressEnd}
         onTouchStart={onPressStart}
         onTouchEnd={onPressEnd}
         onTouchCancel={onPressEnd}
-        style={{
-          position: 'relative',
-          background: entry.disabled ? '#f5f6f8' : '#fff',
-          borderRadius: 14,
-          padding: '18px 6px 14px',
-          textAlign: 'center',
-          border: editing ? '2px solid #2196F3' : 'none',
-          opacity: entry.disabled ? 0.55 : 1,
-          cursor: editing ? 'move' : (entry.disabled ? 'not-allowed' : 'pointer'),
-          transition: 'transform 0.15s cubic-bezier(.4,0,.2,1), box-shadow 0.2s',
-          userSelect: 'none',
-          boxShadow: editing
-            ? '0 0 0 3px rgba(33,150,243,0.15)'
-            : (entry.disabled ? 'none' : '0 2px 10px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03)'),
-          ...(editing ? {} : {
-            // 按压反馈：active 缩小一点
-            ':active': { transform: 'scale(0.94)' },
-          } as any),
-        }}
+        // 编辑模式下：useSortable 接管拖拽事件
+        {...(editing ? { ...attributes, ...listeners } : {})}
         className="mobile-clickable mobile-dashboard-card"
       >
-        {/* 编辑模式：移动按钮 */}
+        {/* 编辑模式：右上角 8px 小圆点提示可拖 */}
         {editing && (
           <div style={{
-            position: 'absolute', top: 4, right: 6, display: 'flex', gap: 2,
-            fontSize: 14, lineHeight: 1, zIndex: 5,
-          }}>
-            <button
-              onClick={(e) => { e.stopPropagation(); onMove(index, -1) }}
-              disabled={index === 0}
-              style={{
-                width: 22, height: 22, borderRadius: 6, border: 'none',
-                background: index === 0 ? '#eee' : '#2196F3',
-                color: index === 0 ? '#bbb' : '#fff', cursor: index === 0 ? 'not-allowed' : 'pointer',
-                lineHeight: '22px', padding: 0, fontSize: 11, fontWeight: 700,
-                boxShadow: index === 0 ? 'none' : '0 2px 4px rgba(33,150,243,0.3)',
-              }}
-            >▲</button>
-            <button
-              onClick={(e) => { e.stopPropagation(); onMove(index, 1) }}
-              disabled={index >= total - 1}
-              style={{
-                width: 22, height: 22, borderRadius: 6, border: 'none',
-                background: index >= total - 1 ? '#eee' : '#2196F3',
-                color: index >= total - 1 ? '#bbb' : '#fff', cursor: index >= total - 1 ? 'not-allowed' : 'pointer',
-                lineHeight: '22px', padding: 0, fontSize: 11, fontWeight: 700,
-                boxShadow: index >= total - 1 ? 'none' : '0 2px 4px rgba(33,150,243,0.3)',
-              }}
-            >▼</button>
-          </div>
+            position: 'absolute', top: 6, right: 6,
+            width: 10, height: 10, borderRadius: 5,
+            background: entry.color,
+            boxShadow: `0 2px 4px ${entry.color}66`,
+          }} />
         )}
 
-        {/* 图标：加渐变圆形背景 */}
+        {/* 渐变圆角图标 */}
         <div style={{
-          width: 44, height: 44, margin: '0 auto 8px',
+          width: 44, height: 44,
           borderRadius: 14,
           background: gradientFromHex(entry.color),
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: '#fff',
           boxShadow: `0 4px 10px ${entry.color}55`,
+          flexShrink: 0,
         }}>
           {entry.icon}
         </div>
 
-        <div style={{ fontSize: 12, fontWeight: 500, color: '#333', lineHeight: 1.3, padding: '0 2px' }}>
+        <div style={{
+          fontSize: 12, fontWeight: 500, color: '#333',
+          lineHeight: 1.3, padding: '6px 2px 0',
+          textAlign: 'center',
+        }}>
           {entry.title}
         </div>
         {entry.disabled && (
