@@ -1,14 +1,14 @@
 {
-  "version": "1.0.5",
-  "buildNumber": 6,
+  "version": "1.0.6",
+  "buildNumber": 7,
   "forceUpdate": false,
-  "downloadUrl": "http://43.138.218.55/download/milkcanmes-v1.0.5-debug.apk",
+  "downloadUrl": "http://43.138.218.55/download/milkcanmes-v1.0.6-debug.apk",
   "downloadUrlIos": "http://43.138.218.55/download/milkcanmes.ipa",
-  "apkSize": 7973140,
+  "apkSize": 7549747,
   "ipaSize": 0,
   "appId": "com.daman.milkcanmes",
   "bundleId": "com.daman.milkcanmes",
-  "updateNotes": "v1.0.5：移动端 TabBar「报工」→「生产」二级菜单（生产订单/移动报工）；生产订单页新增同步+开工报工+补报剩余；移动报工智能路由（URL orderId / 唯一开工自动进入）；首页「概览」→「待办事项」3行自动滚动；九宫格动态列数（3-7列自适应，横屏友好）。",
-  "publishedAt": "2026-09-16T12:45:00Z",
-  "gitSha": "387e0d6"
+  "updateNotes": "v1.0.6：首页九宫格卡片加渐变图标圆角色块(44×44)+阴影+按压反馈；待办卡玻璃拟态(blur backdrop)+3色渐变背景+装饰光斑+徽章描边；卡片圆角从12→14/16px更圆润。",
+  "publishedAt": "2026-09-16T13:05:00Z",
+  "gitSha": "9f91f5e"
 }
