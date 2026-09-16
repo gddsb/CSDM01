@@ -285,26 +285,45 @@ export default function MobileDashboard() {
         )}
       </div>
 
-      {/* 今日统计卡 — 改为待办事项滚动列表 */}
+      {/* 待办卡 — 玻璃拟态 + 渐变 */}
       <div style={{
-        background: 'linear-gradient(135deg, #1976D2 0%, #42A5F5 100%)',
-        borderRadius: 14, padding: '14px 18px', color: '#fff', marginBottom: 20,
-        boxShadow: '0 6px 16px rgba(33,150,243,0.25)',
+        background: 'linear-gradient(135deg, #1976D2 0%, #2196F3 45%, #42A5F5 100%)',
+        borderRadius: 16, padding: '16px 18px', color: '#fff', marginBottom: 20,
+        boxShadow: '0 8px 24px rgba(33,150,243,0.3), inset 0 1px 0 rgba(255,255,255,0.2)',
+        position: 'relative', overflow: 'hidden',
       }}>
-        <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span>📌 待办事项</span>
-          <span style={{ fontSize: 11, opacity: 0.7 }}>· 下拉刷新</span>
+        {/* 顶部装饰光斑 */}
+        <div style={{
+          position: 'absolute', top: -30, right: -30, width: 120, height: 120,
+          borderRadius: '50%', background: 'rgba(255,255,255,0.1)',
+          filter: 'blur(8px)', pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'absolute', bottom: -20, left: -20, width: 80, height: 80,
+          borderRadius: '50%', background: 'rgba(255,255,255,0.08)',
+          filter: 'blur(6px)', pointerEvents: 'none',
+        }} />
+
+        <div style={{
+          fontSize: 13, opacity: 0.95, marginBottom: 10,
+          display: 'flex', alignItems: 'center', gap: 6,
+          position: 'relative', zIndex: 1,
+        }}>
+          <span style={{ fontSize: 16 }}>📌</span>
+          <span style={{ fontWeight: 600, letterSpacing: 0.5 }}>待办事项</span>
+          <span style={{ fontSize: 11, opacity: 0.65, marginLeft: 'auto' }}>下拉刷新</span>
         </div>
 
         {/* 固定 3 行高度的滚动容器 */}
         <div style={{
-          height: 126, // 3 行 × 42px
+          height: 132, // 3 行 × 44px (加 padding 后更宽松)
           overflow: 'hidden',
           position: 'relative',
+          zIndex: 1,
         }}>
           <div style={{
-            transform: `translateY(-${scrollOffset * 42}px)`,
-            transition: 'transform 0.5s ease-in-out',
+            transform: `translateY(-${scrollOffset * 44}px)`,
+            transition: 'transform 0.5s cubic-bezier(.4,0,.2,1)',
           }}>
             {(todos.length > 0 ? todos : [
               { icon: '📋', text: '加载中...', count: 0, path: '', color: '#fff' },
@@ -313,20 +332,36 @@ export default function MobileDashboard() {
                 key={`${t.path}-${i}`}
                 onClick={() => t.path && navigate(t.path)}
                 style={{
-                  height: 42,
+                  height: 44,
                   display: 'flex', alignItems: 'center',
-                  padding: '0 4px',
+                  padding: '0 8px',
+                  marginBottom: 2,
                   cursor: t.path ? 'pointer' : 'default',
                   fontSize: 14,
+                  borderRadius: 8,
+                  background: i % 2 === 0 ? 'rgba(255,255,255,0.06)' : 'transparent',
+                  transition: 'background 0.15s',
+                  ...(t.path ? {
+                    // 点击态
+                    ':active': { background: 'rgba(255,255,255,0.18)' },
+                  } : {}),
                 }}
+                className={t.path ? 'mobile-dashboard-todo-item' : ''}
               >
-                <span style={{ marginRight: 6, fontSize: 16 }}>{t.icon}</span>
-                <span style={{ flex: 1 }}>{t.text}</span>
                 <span style={{
-                  background: t.count > 0 ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.12)',
-                  padding: '2px 10px', borderRadius: 10,
-                  fontSize: 13, fontWeight: 600,
-                  minWidth: 28, textAlign: 'center',
+                  width: 28, height: 28, borderRadius: 8,
+                  background: `rgba(255,255,255,0.15)`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  marginRight: 10, fontSize: 15,
+                }}>{t.icon}</span>
+                <span style={{ flex: 1, fontWeight: 500, fontSize: 13.5 }}>{t.text}</span>
+                <span style={{
+                  background: t.count > 0 ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.1)',
+                  border: '1px solid rgba(255,255,255,0.25)',
+                  padding: '3px 12px', borderRadius: 12,
+                  fontSize: 13, fontWeight: 700,
+                  minWidth: 32, textAlign: 'center',
+                  backdropFilter: 'blur(4px)',
                 }}>
                   {t.count}
                 </span>
@@ -338,13 +373,13 @@ export default function MobileDashboard() {
           {todos.length > 3 && (
             <>
               <div style={{
-                position: 'absolute', top: 0, left: 0, right: 0, height: 12,
-                background: 'linear-gradient(to bottom, rgba(25,118,210,0.9), transparent)',
+                position: 'absolute', top: 0, left: 0, right: 0, height: 14,
+                background: 'linear-gradient(to bottom, rgba(25,118,210,0.95), transparent)',
                 pointerEvents: 'none',
               }} />
               <div style={{
-                position: 'absolute', bottom: 0, left: 0, right: 0, height: 12,
-                background: 'linear-gradient(to top, rgba(25,118,210,0.9), transparent)',
+                position: 'absolute', bottom: 0, left: 0, right: 0, height: 14,
+                background: 'linear-gradient(to top, rgba(25,118,210,0.95), transparent)',
                 pointerEvents: 'none',
               }} />
             </>
@@ -408,6 +443,12 @@ interface QuickCardProps {
   onPressEnd: () => void
 }
 
+/** 图标渐变背景 — 根据 color 生成同色系渐变，让卡片更有质感 */
+function gradientFromHex(hex: string): string {
+  // 简单规则：主色 + 白色 tint + 深色 shadow
+  return `linear-gradient(135deg, ${hex} 0%, ${hex}dd 40%, ${hex}99 100%)`
+}
+
 function QuickCard({ entry, index, total, editing, onMove, onClick, onPressStart, onPressEnd }: QuickCardProps) {
   return (
     <Badge content={entry.badge || null}>
@@ -422,48 +463,68 @@ function QuickCard({ entry, index, total, editing, onMove, onClick, onPressStart
         style={{
           position: 'relative',
           background: entry.disabled ? '#f5f6f8' : '#fff',
-          borderRadius: 12,
-          padding: '16px 8px 14px',
+          borderRadius: 14,
+          padding: '18px 6px 14px',
           textAlign: 'center',
-          border: editing ? '2px solid #2196F3' : '1px solid #eef0f3',
-          opacity: entry.disabled ? 0.6 : 1,
+          border: editing ? '2px solid #2196F3' : 'none',
+          opacity: entry.disabled ? 0.55 : 1,
           cursor: editing ? 'move' : (entry.disabled ? 'not-allowed' : 'pointer'),
-          transition: 'transform 0.12s, border-color 0.12s',
+          transition: 'transform 0.15s cubic-bezier(.4,0,.2,1), box-shadow 0.2s',
           userSelect: 'none',
+          boxShadow: editing
+            ? '0 0 0 3px rgba(33,150,243,0.15)'
+            : (entry.disabled ? 'none' : '0 2px 10px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03)'),
+          ...(editing ? {} : {
+            // 按压反馈：active 缩小一点
+            ':active': { transform: 'scale(0.94)' },
+          } as any),
         }}
-        className="mobile-clickable"
+        className="mobile-clickable mobile-dashboard-card"
       >
         {/* 编辑模式：移动按钮 */}
         {editing && (
           <div style={{
-            position: 'absolute', top: 2, right: 4, display: 'flex', gap: 2,
+            position: 'absolute', top: 4, right: 6, display: 'flex', gap: 2,
             fontSize: 14, lineHeight: 1, zIndex: 5,
           }}>
             <button
               onClick={(e) => { e.stopPropagation(); onMove(index, -1) }}
               disabled={index === 0}
               style={{
-                width: 22, height: 22, borderRadius: 4, border: '1px solid #ddd',
-                background: index === 0 ? '#f5f5f5' : '#fff',
-                color: index === 0 ? '#bbb' : '#2196F3', cursor: index === 0 ? 'not-allowed' : 'pointer',
-                lineHeight: '20px', padding: 0, fontSize: 12,
+                width: 22, height: 22, borderRadius: 6, border: 'none',
+                background: index === 0 ? '#eee' : '#2196F3',
+                color: index === 0 ? '#bbb' : '#fff', cursor: index === 0 ? 'not-allowed' : 'pointer',
+                lineHeight: '22px', padding: 0, fontSize: 11, fontWeight: 700,
+                boxShadow: index === 0 ? 'none' : '0 2px 4px rgba(33,150,243,0.3)',
               }}
             >▲</button>
             <button
               onClick={(e) => { e.stopPropagation(); onMove(index, 1) }}
               disabled={index >= total - 1}
               style={{
-                width: 22, height: 22, borderRadius: 4, border: '1px solid #ddd',
-                background: index >= total - 1 ? '#f5f5f5' : '#fff',
-                color: index >= total - 1 ? '#bbb' : '#2196F3', cursor: index >= total - 1 ? 'not-allowed' : 'pointer',
-                lineHeight: '20px', padding: 0, fontSize: 12,
+                width: 22, height: 22, borderRadius: 6, border: 'none',
+                background: index >= total - 1 ? '#eee' : '#2196F3',
+                color: index >= total - 1 ? '#bbb' : '#fff', cursor: index >= total - 1 ? 'not-allowed' : 'pointer',
+                lineHeight: '22px', padding: 0, fontSize: 11, fontWeight: 700,
+                boxShadow: index >= total - 1 ? 'none' : '0 2px 4px rgba(33,150,243,0.3)',
               }}
             >▼</button>
           </div>
         )}
 
-        <div style={{ color: entry.color, marginBottom: 6 }}>{entry.icon}</div>
-        <div style={{ fontSize: 12, fontWeight: 500, color: '#333', lineHeight: 1.2 }}>
+        {/* 图标：加渐变圆形背景 */}
+        <div style={{
+          width: 44, height: 44, margin: '0 auto 8px',
+          borderRadius: 14,
+          background: gradientFromHex(entry.color),
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#fff',
+          boxShadow: `0 4px 10px ${entry.color}55`,
+        }}>
+          {entry.icon}
+        </div>
+
+        <div style={{ fontSize: 12, fontWeight: 500, color: '#333', lineHeight: 1.3, padding: '0 2px' }}>
           {entry.title}
         </div>
         {entry.disabled && (
