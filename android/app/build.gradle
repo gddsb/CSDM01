@@ -1,5 +1,20 @@
 apply plugin: 'com.android.application'
 
+// ====== 从 releases.json 读取版本信息 ======
+def releasesFile = file("../../server/data/releases.json")
+def jsonSlurper = new groovy.json.JsonSlurper()
+def releases
+try {
+    releases = jsonSlurper.parseText(releasesFile.text)
+} catch (Exception e) {
+    logger.warn("releases.json 读取失败，使用默认版本: ${e.message}")
+    releases = [version: "1.0.0", buildNumber: 1]
+}
+def VERSION_NAME = releases.version ?: "1.0.0"
+def VERSION_CODE = (releases.buildNumber ?: 1).toInteger() + 1000 // buildNumber 从 1 开始，versionCode 从 1001 起
+def APP_NAME = "milk-can-mes"
+// ============================================
+
 android {
     namespace = "com.daman.milkcanmes"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +22,8 @@ android {
         applicationId "com.daman.milkcanmes"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 11
-        versionName "1.1.0"
+        versionCode VERSION_CODE
+        versionName VERSION_NAME
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -20,6 +35,14 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    // ====== 自定义 APK 文件名：milk-can-mes-v1.1.0-build9.apk ======
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            def buildType = variant.buildType.name  // debug / release
+            outputFileName = "${APP_NAME}-v${VERSION_NAME}-build${releases.buildNumber}-${buildType}.apk"
         }
     }
 }

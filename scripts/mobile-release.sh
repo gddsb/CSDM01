@@ -81,17 +81,33 @@ while [[ $# -gt 0 ]]; do
 done
 
 VERSION="${VERSION:-$(node -p "require('./package.json').version")}"
-BUILD="${BUILD:-$(git rev-list --count HEAD 2>/dev/null || echo 1)}"
+
+# ---------- BUILD 版本号策略 ----------
+# 优先: --build 参数
+# 否则: 从 releases.json 读 buildNumber + 1 (每次发布自动升)
+# 兜底: git rev-list --count HEAD
+if [ -n "$BUILD" ]; then
+    BUILD="$BUILD"
+else
+    if [ -f "server/data/releases.json" ]; then
+        CURRENT_BUILD=$(node -p "JSON.parse(require('fs').readFileSync('server/data/releases.json')).buildNumber || 0" 2>/dev/null || echo 0)
+        BUILD=$((CURRENT_BUILD + 1))
+    else
+        BUILD="$(git rev-list --count HEAD 2>/dev/null || echo 1)"
+    fi
+fi
+
 NOTES="${NOTES:-新版本发布}"
 FORCE_UPDATE_VAL="false"
 [[ "$FORCE_UPDATE" == "true" ]] && FORCE_UPDATE_VAL="true"
 
 SHORT_SHA="$(git rev-parse --short HEAD 2>/dev/null || echo local)"
-TAG="milk-can-mes-${VERSION}-${SHORT_SHA}"
-DOWNLOAD_URL="http://${PROD_HOST}/download/${TAG}.apk"
+# APK 文件名与 android/app/build.gradle 的 outputFileName 一致
+APK_NAME="milk-can-mes-v${VERSION}-build${BUILD}-debug.apk"
+DOWNLOAD_URL="http://${PROD_HOST}/download/${APK_NAME}"
 
 log "=== 大满 MES 移动端发布 ==="
-log "平台: ${CYAN}${PLATFORM}${NC}  版本: ${CYAN}${VERSION}${NC}  构建号: ${CYAN}${BUILD}${NC}  Tag: ${CYAN}${TAG}${NC}"
+log "平台: ${CYAN}${PLATFORM}${NC}  版本: ${CYAN}${VERSION}${NC}  构建号: ${CYAN}${BUILD}${NC}  APK: ${CYAN}${APK_NAME}${NC}"
 log "环境: ${ENV}"
 echo ""
 
@@ -103,6 +119,28 @@ if [ "$SKIP_BUILD" != "true" ]; then
     ok "vite build 完成 ($(du -sh dist | cut -f1))"
     echo ""
 fi
+
+# ---------- 1.5 先写 releases.json (让 gradle 读新 buildNumber) ----------
+log "[1.5/6] 预写 releases.json (buildNumber=${BUILD}) ..."
+mkdir -p server/data
+cat > server/data/releases.json << JSON
+{
+  "version": "${VERSION}",
+  "buildNumber": ${BUILD},
+  "forceUpdate": ${FORCE_UPDATE_VAL},
+  "downloadUrl": "http://${PROD_HOST}/download/${APK_NAME}",
+  "downloadUrlIos": "",
+  "apkSize": 0,
+  "ipaSize": 0,
+  "appId": "${ANDROID_APP_ID}",
+  "bundleId": "${IOS_BUNDLE_ID}",
+  "updateNotes": "${NOTES}",
+  "publishedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "gitSha": "${SHORT_SHA}"
+}
+JSON
+ok "releases.json 预写完成 → 供 gradle 读取版本号"
+echo ""
 
 # ---------- 2. cap sync ----------
 if [ "$SKIP_BUILD" != "true" ]; then
@@ -124,16 +162,17 @@ ANDROID_APK=""
 if [[ "$PLATFORM" == "android" || "$PLATFORM" == "both" ]]; then
     log "[3/6] Android 构建 (assembleDebug) ..."
     export JAVA_HOME="${JAVA_HOME:-/root/.local/share/mise/installs/java/21}"
-    export ANDROID_HOME="${ANDROID_HOME:-/usr/local/android-sdk}"
+    export ANDROID_HOME="${ANDROID_HOME:-/opt/android-sdk}"
     if [ ! -d "$ANDROID_HOME" ]; then
         warn "ANDROID_HOME 不存在，跳过 Android 构建"
     else
         cd android
-        ./gradlew assembleDebug --no-daemon 2>&1 | tail -3
+        ./gradlew assembleDebug --no-daemon 2>&1 | tail -5
         cd "$PROJECT_DIR"
-        ANDROID_APK="android/app/build/outputs/apk/debug/app-debug.apk"
+        # gradle 用自定义 outputFileName → 找实际的 APK
+        ANDROID_APK=$(find android/app/build/outputs/apk -name "*.apk" -not -name "*.unaligned.apk" 2>/dev/null | head -1)
         if [ -f "$ANDROID_APK" ]; then
-            ok "Android APK: $(du -sh $ANDROID_APK | cut -f1)"
+            ok "Android APK: ${ANDROID_APK} ($(du -sh $ANDROID_APK | cut -f1))"
         else
             warn "APK 未生成（构建失败？）"
             ANDROID_APK=""
@@ -170,37 +209,25 @@ if [[ "$PLATFORM" == "ios" || "$PLATFORM" == "both" ]]; then
     echo ""
 fi
 
-# ---------- 4. 更新 releases.json ----------
-log "[4/6] 更新 releases.json ..."
-mkdir -p server/data
+# ---------- 4. 补全 releases.json (apkSize 等) ----------
+log "[4/6] 补全 releases.json (apkSize/ipaSize) ..."
 
 ANDROID_SIZE="0"
 [ -f "$ANDROID_APK" ] && ANDROID_SIZE=$(stat -c%s "$ANDROID_APK" 2>/dev/null || stat -f%z "$ANDROID_APK" 2>/dev/null || echo 0)
 IOS_SIZE="0"
 [ -n "$IOS_IPA" ] && IOS_SIZE=$(stat -c%s "$IOS_IPA" 2>/dev/null || stat -f%z "$IOS_IPA" 2>/dev/null || echo 0)
 
-RELEVANT_DOWNLOAD="${DOWNLOAD_URL}"
-if [[ "$PLATFORM" == "ios" || "$PLATFORM" == "both" ]]; then
-    RELEVANT_DOWNLOAD="http://${PROD_HOST}/download/${TAG}.ipa"
-fi
-
-cat > server/data/releases.json << JSON
-{
-  "version": "${VERSION}",
-  "buildNumber": ${BUILD},
-  "forceUpdate": ${FORCE_UPDATE_VAL},
-  "downloadUrl": "http://${PROD_HOST}/download/${TAG}.apk",
-  "downloadUrlIos": "http://${PROD_HOST}/download/${TAG}.ipa",
-  "apkSize": ${ANDROID_SIZE},
-  "ipaSize": ${IOS_SIZE},
-  "appId": "${ANDROID_APP_ID}",
-  "bundleId": "${IOS_BUNDLE_ID}",
-  "updateNotes": "${NOTES}",
-  "publishedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "gitSha": "${SHORT_SHA}"
-}
-JSON
-ok "releases.json 写入完成 (version=${VERSION}, build=${BUILD})"
+# 补全：apkSize + 重新计算 publishedAt/gitSha
+node -e "
+const fs = require('fs');
+const p = JSON.parse(fs.readFileSync('server/data/releases.json'));
+p.apkSize = ${ANDROID_SIZE};
+p.ipaSize = ${IOS_SIZE};
+p.publishedAt = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+fs.writeFileSync('server/data/releases.json', JSON.stringify(p, null, 2));
+console.log('apkSize=' + p.apkSize + ' publishedAt=' + p.publishedAt);
+"
+ok "releases.json 已补全"
 echo ""
 
 # ---------- 5. 上传生产服务器 ----------
@@ -212,16 +239,17 @@ if [ "$SKIP_UPLOAD" != "true" ]; then
     # 创建目录（幂等）
     eval "$SSH 'mkdir -p ${PROD_PATH}/download ${PROD_PATH}/server/data'" 2>/dev/null || true
 
-    # 上传 APK
+    # 上传 APK（用 APK_NAME 统一命名）
     if [ -n "$ANDROID_APK" ]; then
-        eval "$SCP ${ANDROID_APK} ${PROD_USER}@${PROD_HOST}:${PROD_PATH}/download/${TAG}.apk" 2>&1 | tail -1
-        ok "APK 上传: /download/${TAG}.apk"
+        eval "$SCP ${ANDROID_APK} ${PROD_USER}@${PROD_HOST}:${PROD_PATH}/download/${APK_NAME}" 2>&1 | tail -1
+        ok "APK 上传: /download/${APK_NAME}"
     fi
 
     # 上传 IPA（如果有）
     if [ -n "$IOS_IPA" ] && [ -f "$IOS_IPA" ]; then
-        eval "$SCP ${IOS_IPA} ${PROD_USER}@${PROD_HOST}:${PROD_PATH}/download/${TAG}.ipa" 2>&1 | tail -1
-        ok "IPA 上传: /download/${TAG}.ipa"
+        IPA_NAME="milk-can-mes-v${VERSION}-build${BUILD}.ipa"
+        eval "$SCP ${IOS_IPA} ${PROD_USER}@${PROD_HOST}:${PROD_PATH}/download/${IPA_NAME}" 2>&1 | tail -1
+        ok "IPA 上传: /download/${IPA_NAME}"
     fi
 
     # 上传 releases.json — 放在 git pull 之后，避免被 reset --hard 覆盖
@@ -252,7 +280,7 @@ cat << DONE
 │  平台     ${PLATFORM}
 ├─────────────────────────────────────────────────────────┤
 │  📱 APK    ${DOWNLOAD_URL}
-│  🍎 IPA    http://${PROD_HOST}/download/${TAG}.ipa
+│  🍎 IPA    http://${PROD_HOST}/download/milk-can-mes-v${VERSION}-build${BUILD}.ipa
 ├─────────────────────────────────────────────────────────┤
 │  API 校验  curl http://${PROD_HOST}/api/version
 │  PC 入口   http://${PROD_HOST}/  → 侧边栏底部"📱 移动端下载"
