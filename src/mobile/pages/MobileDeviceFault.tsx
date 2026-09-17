@@ -243,48 +243,52 @@ export default function MobileDeviceFault() {
 
   // ===== 渲染 =====
   return (
-    <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 30 }}>
-      {/* 顶部统计卡 */}
-      <div style={{
-        display: 'flex', gap: 8, marginBottom: 12, padding: '10px 12px',
-        background: 'linear-gradient(135deg,#2196F3 0%,#1565C0 100%)',
-        borderRadius: 12, color: '#fff',
-      }}>
-        <Stat label="待派工" v={stats.pending} />
-        <Stat label="维修中" v={stats.repairing} />
-        <Stat label="待审批" v={stats.approving} />
-        <Stat label="紧急" v={stats.urgent} red />
-      </div>
-
-      {/* 搜索 + 上报 */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-        <div style={{ flex: 1 }}>
-          <SearchBar placeholder="故障单号 / 设备" value={keyword} onChange={setKeyword}
-            onSearch={() => loadFaults(tab, keyword.trim())} />
+    <div className="mobile-page-fixed-header">
+      <div className="mobile-sticky-header">
+        {/* 顶部统计卡 */}
+        <div style={{
+          display: 'flex', gap: 8, marginBottom: 12, padding: '10px 12px',
+          background: 'linear-gradient(135deg,#2196F3 0%,#1565C0 100%)',
+          borderRadius: 12, color: '#fff',
+        }}>
+          <Stat label="待派工" v={stats.pending} />
+          <Stat label="维修中" v={stats.repairing} />
+          <Stat label="待审批" v={stats.approving} />
+          <Stat label="紧急" v={stats.urgent} red />
         </div>
-        <Button color="primary" onClick={() => setShowCreate(true)} style={{ height: 40, marginTop: 2 }}>
-          + 上报
-        </Button>
+
+        {/* 搜索 + 上报 */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+          <div style={{ flex: 1 }}>
+            <SearchBar placeholder="故障单号 / 设备" value={keyword} onChange={setKeyword}
+              onSearch={() => loadFaults(tab, keyword.trim())} />
+          </div>
+          <Button color="primary" onClick={() => setShowCreate(true)} style={{ height: 40, marginTop: 2 }}>
+            + 上报
+          </Button>
+        </div>
+
+        {/* 状态 Tab（对齐 PC） */}
+        <div style={{ background: '#fff', borderRadius: 10, padding: '0 8px', marginBottom: 10 }}>
+          <Tabs activeKey={tab} onChange={(k) => setTab(k as StatusTab)}>
+            {STATUS_TABS.map((t) => <Tabs.Tab title={t.label} key={t.key} />)}
+          </Tabs>
+        </div>
       </div>
 
-      {/* 状态 Tab（对齐 PC） */}
-      <div style={{ background: '#fff', borderRadius: 10, padding: '0 8px', marginBottom: 10 }}>
-        <Tabs activeKey={tab} onChange={(k) => setTab(k as StatusTab)}>
-          {STATUS_TABS.map((t) => <Tabs.Tab title={t.label} key={t.key} />)}
-        </Tabs>
+      <div className="mobile-page-scroll-list">
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>
+        ) : faults.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>暂无故障记录</div>
+        ) : (
+          <PullToRefresh onRefresh={() => loadFaults(tab, keyword.trim())}>
+            <List>
+              {faults.map((f) => <FaultCard key={f.fault_id} fault={f} onOpen={() => setSelected(f)} />)}
+            </List>
+          </PullToRefresh>
+        )}
       </div>
-
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>
-      ) : faults.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>暂无故障记录</div>
-      ) : (
-        <PullToRefresh onRefresh={() => loadFaults(tab, keyword.trim())}>
-          <List>
-            {faults.map((f) => <FaultCard key={f.fault_id} fault={f} onOpen={() => setSelected(f)} />)}
-          </List>
-        </PullToRefresh>
-      )}
 
       {/* ======= 新建抽屉 ======= */}
       {showCreate && (

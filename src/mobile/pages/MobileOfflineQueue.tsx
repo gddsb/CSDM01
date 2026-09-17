@@ -175,144 +175,148 @@ export default function MobileOfflineQueue() {
   const filtered = filter === 'all' ? items : items.filter((i) => i.status === filter)
 
   return (
-    <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
-      {/* 顶部状态栏 */}
-      <div style={{
-        background: online ? '#E8F5E9' : '#FFEBEE',
-        borderRadius: 10, padding: '10px 14px', marginBottom: 10,
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        border: `1px solid ${online ? '#A5D6A7' : '#EF9A9A'}`,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{
-            width: 8, height: 8, borderRadius: 4, background: online ? '#4CAF50' : '#F44336',
-          }} />
-          <span style={{ fontSize: 13, color: online ? '#2E7D32' : '#C62828', fontWeight: 500 }}>
-            {online ? (syncing ? '在线 · 同步中' : '在线 · 自动同步') : '离线 · 已暂存本地'}
-          </span>
-        </div>
-        <Button
-          size="mini" fill="outline" color={online ? 'primary' : 'default'}
-          disabled={!online || syncing || counts.all === 0}
-          onClick={triggerSync}
-        >
-          立即同步
-        </Button>
-      </div>
-
-      {/* 统计条 */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6,
-        marginBottom: 10,
-      }}>
-        <Stat label="全部" value={counts.all} active={filter === 'all'} onClick={() => setFilter('all')} />
-        <Stat label="待同步" value={counts.pending} color="#2196F3" active={filter === 'pending'} onClick={() => setFilter('pending')} />
-        <Stat label="同步中" value={counts.syncing} color="#FF9800" active={filter === 'syncing'} onClick={() => setFilter('syncing')} />
-        <Stat label="失败" value={counts.failed} color="#F44336" active={filter === 'failed'} onClick={() => setFilter('failed')} />
-        <Stat label="已完成" value={counts.done} color="#4CAF50" active={filter === 'done'} onClick={() => setFilter('done')} />
-      </div>
-
-      {/* 批量操作 */}
-      {items.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-          <Button size="small" fill="outline" disabled={counts.failed === 0} onClick={handleRetryAllFailed}>
-            重试全部失败 ({counts.failed})
-          </Button>
-          <Button size="small" fill="outline" color="danger" onClick={handleClearAll}>
-            清空
+    <div className="mobile-page-fixed-header">
+      <div className="mobile-sticky-header">
+        {/* 顶部状态栏 */}
+        <div style={{
+          background: online ? '#E8F5E9' : '#FFEBEE',
+          borderRadius: 10, padding: '10px 14px', marginBottom: 10,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          border: `1px solid ${online ? '#A5D6A7' : '#EF9A9A'}`,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{
+              width: 8, height: 8, borderRadius: 4, background: online ? '#4CAF50' : '#F44336',
+            }} />
+            <span style={{ fontSize: 13, color: online ? '#2E7D32' : '#C62828', fontWeight: 500 }}>
+              {online ? (syncing ? '在线 · 同步中' : '在线 · 自动同步') : '离线 · 已暂存本地'}
+            </span>
+          </div>
+          <Button
+            size="mini" fill="outline" color={online ? 'primary' : 'default'}
+            disabled={!online || syncing || counts.all === 0}
+            onClick={triggerSync}
+          >
+            立即同步
           </Button>
         </div>
-      )}
 
-      {/* 列表 */}
-      {loading && items.length === 0 ? (
-        <EmptyHint text="加载中..." />
-      ) : items.length === 0 ? (
-        <Empty description="离线队列为空" />
-      ) : filtered.length === 0 ? (
-        <EmptyHint text={`当前筛选下无数据`} sub={`共 ${items.length} 条，试试其他筛选`} />
-      ) : (
-        <PullToRefresh onRefresh={refresh}>
-          <List>
-            {filtered.map((item) => {
-              const sm = sourceLabel(item.source)
-              const isOpen = expanded.has(item.id!)
-              const isSyncingOne = syncingOneId === item.id
-              const canRetry = item.status === 'pending' || item.status === 'failed'
-              const shortPath = item.url.replace(/^\/api/, '').slice(0, 40)
+        {/* 统计条 */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6,
+          marginBottom: 10,
+        }}>
+          <Stat label="全部" value={counts.all} active={filter === 'all'} onClick={() => setFilter('all')} />
+          <Stat label="待同步" value={counts.pending} color="#2196F3" active={filter === 'pending'} onClick={() => setFilter('pending')} />
+          <Stat label="同步中" value={counts.syncing} color="#FF9800" active={filter === 'syncing'} onClick={() => setFilter('syncing')} />
+          <Stat label="失败" value={counts.failed} color="#F44336" active={filter === 'failed'} onClick={() => setFilter('failed')} />
+          <Stat label="已完成" value={counts.done} color="#4CAF50" active={filter === 'done'} onClick={() => setFilter('done')} />
+        </div>
 
-              return (
-                <div key={item.id} style={{ marginBottom: 2 }}>
-                  <List.Item
-                    onClick={() => toggleExpand(item.id!)}
-                    description={
-                      <div style={{ marginTop: 8 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                          <Tag color={item.method === 'POST' ? 'green' : item.method === 'PUT' ? 'orange' : 'blue'} style={{ margin: 0 }}>
-                            {item.method}
-                          </Tag>
-                          <span style={{ fontSize: 11, color: '#888', fontFamily: 'monospace' }}>{shortPath}</span>
+        {/* 批量操作 */}
+        {items.length > 0 && (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+            <Button size="small" fill="outline" disabled={counts.failed === 0} onClick={handleRetryAllFailed}>
+              重试全部失败 ({counts.failed})
+            </Button>
+            <Button size="small" fill="outline" color="danger" onClick={handleClearAll}>
+              清空
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <div className="mobile-page-scroll-list">
+        {/* 列表 */}
+        {loading && items.length === 0 ? (
+          <EmptyHint text="加载中..." />
+        ) : items.length === 0 ? (
+          <Empty description="离线队列为空" />
+        ) : filtered.length === 0 ? (
+          <EmptyHint text={`当前筛选下无数据`} sub={`共 ${items.length} 条，试试其他筛选`} />
+        ) : (
+          <PullToRefresh onRefresh={refresh}>
+            <List>
+              {filtered.map((item) => {
+                const sm = sourceLabel(item.source)
+                const isOpen = expanded.has(item.id!)
+                const isSyncingOne = syncingOneId === item.id
+                const canRetry = item.status === 'pending' || item.status === 'failed'
+                const shortPath = item.url.replace(/^\/api/, '').slice(0, 40)
+
+                return (
+                  <div key={item.id} style={{ marginBottom: 2 }}>
+                    <List.Item
+                      onClick={() => toggleExpand(item.id!)}
+                      description={
+                        <div style={{ marginTop: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            <Tag color={item.method === 'POST' ? 'green' : item.method === 'PUT' ? 'orange' : 'blue'} style={{ margin: 0 }}>
+                              {item.method}
+                            </Tag>
+                            <span style={{ fontSize: 11, color: '#888', fontFamily: 'monospace' }}>{shortPath}</span>
+                          </div>
+                          <div style={{ fontSize: 11, color: '#bbb', marginTop: 4 }}>
+                            {fmtTime(item.enqueuedAt)}
+                            {item.retries > 0 && <span style={{ marginLeft: 8, color: '#FF9800' }}>已重试 {item.retries} 次</span>}
+                          </div>
                         </div>
-                        <div style={{ fontSize: 11, color: '#bbb', marginTop: 4 }}>
-                          {fmtTime(item.enqueuedAt)}
-                          {item.retries > 0 && <span style={{ marginLeft: 8, color: '#FF9800' }}>已重试 {item.retries} 次</span>}
+                      }
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontSize: 20 }}>{sm.icon}</span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: 500, color: sm.color }}>{sm.label}</div>
+                        </div>
+                        {statusTag(item.status)}
+                      </div>
+                    </List.Item>
+
+                    {/* 展开：详情 + 操作 */}
+                    {isOpen && (
+                      <div style={{
+                        background: '#fafbfc', borderLeft: '3px solid #e0e0e0',
+                        padding: '10px 14px', margin: '0 0 2px 0', fontSize: 12,
+                      }}>
+                        {/* 错误信息 */}
+                        {item.lastError && (
+                          <div style={{
+                            background: '#FFEBEE', borderRadius: 6, padding: '6px 10px',
+                            color: '#C62828', fontSize: 11, marginBottom: 8,
+                          }}>⚠️ {item.lastError}</div>
+                        )}
+
+                        {/* 请求体 */}
+                        <div style={{ marginBottom: 8 }}>
+                          <div style={{ color: '#888', fontSize: 11, marginBottom: 4 }}>请求体：</div>
+                          <pre style={{
+                            background: '#fff', border: '1px solid #eee', borderRadius: 6,
+                            padding: 8, overflowX: 'auto', fontSize: 11,
+                            maxHeight: 200, lineHeight: 1.5,
+                          }}>{fmtBody(item.body)}</pre>
+                        </div>
+
+                        {/* 操作按钮 */}
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <Button
+                            size="mini" color="primary" disabled={!canRetry || !online || isSyncingOne}
+                            loading={isSyncingOne}
+                            onClick={(e) => { e.stopPropagation(); handleRetryOne(item.id!) }}
+                          >立即同步</Button>
+                          <Button
+                            size="mini" fill="outline" color="danger"
+                            onClick={(e) => { e.stopPropagation(); handleDeleteOne(item.id!) }}
+                          >删除</Button>
                         </div>
                       </div>
-                    }
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 20 }}>{sm.icon}</span>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 500, color: sm.color }}>{sm.label}</div>
-                      </div>
-                      {statusTag(item.status)}
-                    </div>
-                  </List.Item>
-
-                  {/* 展开：详情 + 操作 */}
-                  {isOpen && (
-                    <div style={{
-                      background: '#fafbfc', borderLeft: '3px solid #e0e0e0',
-                      padding: '10px 14px', margin: '0 0 2px 0', fontSize: 12,
-                    }}>
-                      {/* 错误信息 */}
-                      {item.lastError && (
-                        <div style={{
-                          background: '#FFEBEE', borderRadius: 6, padding: '6px 10px',
-                          color: '#C62828', fontSize: 11, marginBottom: 8,
-                        }}>⚠️ {item.lastError}</div>
-                      )}
-
-                      {/* 请求体 */}
-                      <div style={{ marginBottom: 8 }}>
-                        <div style={{ color: '#888', fontSize: 11, marginBottom: 4 }}>请求体：</div>
-                        <pre style={{
-                          background: '#fff', border: '1px solid #eee', borderRadius: 6,
-                          padding: 8, overflowX: 'auto', fontSize: 11,
-                          maxHeight: 200, lineHeight: 1.5,
-                        }}>{fmtBody(item.body)}</pre>
-                      </div>
-
-                      {/* 操作按钮 */}
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <Button
-                          size="mini" color="primary" disabled={!canRetry || !online || isSyncingOne}
-                          loading={isSyncingOne}
-                          onClick={(e) => { e.stopPropagation(); handleRetryOne(item.id!) }}
-                        >立即同步</Button>
-                        <Button
-                          size="mini" fill="outline" color="danger"
-                          onClick={(e) => { e.stopPropagation(); handleDeleteOne(item.id!) }}
-                        >删除</Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </List>
-        </PullToRefresh>
-      )}
+                    )}
+                  </div>
+                )
+              })}
+            </List>
+          </PullToRefresh>
+        )}
+      </div>
     </div>
   )
 }

@@ -126,9 +126,9 @@ export default function MobileDeviceInspection() {
   }
 
   return (
-    <div className="mobile-page" style={{ paddingTop: 12 }}>
-      {!selectedDevice ? (
-        <>
+    !selectedDevice ? (
+      <div className="mobile-page-fixed-header">
+        <div className="mobile-sticky-header">
           <SearchBar
             placeholder="扫设备编号 / 手输"
             value={keyword}
@@ -138,6 +138,8 @@ export default function MobileDeviceInspection() {
             style={{ marginBottom: 12 }}
           />
           <Button size="mini" onClick={handleScan} style={{marginTop:8}}>扫码</Button>
+        </div>
+        <div className="mobile-page-scroll-list">
           {loading ? <EmptyHint text="加载中..." /> : devices.length === 0 ? (
             <EmptyHint text="暂无设备" sub="请先在 PC 端创建设备档案" />
           ) : (
@@ -154,8 +156,10 @@ export default function MobileDeviceInspection() {
               ))}
             </List>
           )}
-        </>
-      ) : (
+        </div>
+      </div>
+    ) : (
+      <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 30 }}>
         <>
           <div style={{
             background: '#fff', borderRadius: 10, padding: 14, marginBottom: 14,
@@ -210,8 +214,8 @@ export default function MobileDeviceInspection() {
             </>
           )}
         </>
-      )}
-    </div>
+      </div>
+    )
   )
 }
 

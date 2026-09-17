@@ -163,70 +163,74 @@ export default function MobileSparePart() {
 
   // ====== 渲染 ======
   return (
-    <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 30 }}>
-      {/* 搜索 + 新建 */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-        <div style={{ flex: 1 }}>
-          <SearchBar placeholder="扫/输备件编号" value={keyword} onChange={setKeyword}
-            onSearch={() => refresh()} />
-          <Button size="mini" onClick={onScan} style={{marginTop:8}}>扫码</Button>
+    <div className="mobile-page-fixed-header">
+      <div className="mobile-sticky-header">
+        {/* 搜索 + 新建 */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+          <div style={{ flex: 1 }}>
+            <SearchBar placeholder="扫/输备件编号" value={keyword} onChange={setKeyword}
+              onSearch={() => refresh()} />
+            <Button size="mini" onClick={onScan} style={{marginTop:8}}>扫码</Button>
+          </div>
+          <Button color="primary" onClick={() => setFormType('create')} style={{ height: 40, marginTop: 2 }}>+ 新建</Button>
         </div>
-        <Button color="primary" onClick={() => setFormType('create')} style={{ height: 40, marginTop: 2 }}>+ 新建</Button>
+
+        {/* Tab */}
+        <div style={{ background: '#fff', borderRadius: 10, padding: '0 8px', marginBottom: 10 }}>
+          <Tabs activeKey={tab} onChange={(k) => setTab(k as TabKey)}>
+            {TAB_LIST.map((t) => <Tabs.Tab title={t.label} key={t.key} />)}
+          </Tabs>
+        </div>
       </div>
 
-      {/* Tab */}
-      <div style={{ background: '#fff', borderRadius: 10, padding: '0 8px', marginBottom: 10 }}>
-        <Tabs activeKey={tab} onChange={(k) => setTab(k as TabKey)}>
-          {TAB_LIST.map((t) => <Tabs.Tab title={t.label} key={t.key} />)}
-        </Tabs>
+      <div className="mobile-page-scroll-list">
+        {loading && <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>}
+
+        {/* ==== 台账 ==== */}
+        {tab === 'all' && !loading && (
+          <PullToRefresh onRefresh={loadAll}>
+            {parts.length === 0 ? (
+              <Empty text="暂无备件" sub="点 + 新建" />
+            ) : (
+              parts.map((p) => <PartCard key={p.part_id} part={p}
+                low={Number(p.current_stock ?? 0) < Number(p.safety_stock_min ?? 0)}
+                onIn={() => openForm(p, 'in')}
+                onOut={() => openForm(p, 'out')}
+                onAdjust={() => openForm(p, 'adjust')}
+                onDelete={() => onDelete(p)} />)
+            )}
+          </PullToRefresh>
+        )}
+
+        {/* ==== 低库存 ==== */}
+        {tab === 'low' && !loading && (
+          <PullToRefresh onRefresh={loadAll}>
+            {lowParts.length === 0 ? (
+              <Empty text="🎉 库存充足" sub="无低于安全下限的备件" />
+            ) : (
+              lowParts.map((p) => <PartCard key={p.part_id} part={p}
+                low
+                onIn={() => openForm(p, 'in')}
+                onOut={() => openForm(p, 'out')}
+                onAdjust={() => openForm(p, 'adjust')}
+                onDelete={() => onDelete(p)} />)
+            )}
+          </PullToRefresh>
+        )}
+
+        {/* ==== 流水 ==== */}
+        {tab === 'log' && !loading && (
+          <PullToRefresh onRefresh={loadLogs}>
+            {logs.length === 0 ? (
+              <Empty text="暂无流水" />
+            ) : (
+              logs.map((l, i) => (
+                <LogCard key={l.id || i} log={l} />
+              ))
+            )}
+          </PullToRefresh>
+        )}
       </div>
-
-      {loading && <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>}
-
-      {/* ==== 台账 ==== */}
-      {tab === 'all' && !loading && (
-        <PullToRefresh onRefresh={loadAll}>
-          {parts.length === 0 ? (
-            <Empty text="暂无备件" sub="点 + 新建" />
-          ) : (
-            parts.map((p) => <PartCard key={p.part_id} part={p}
-              low={Number(p.current_stock ?? 0) < Number(p.safety_stock_min ?? 0)}
-              onIn={() => openForm(p, 'in')}
-              onOut={() => openForm(p, 'out')}
-              onAdjust={() => openForm(p, 'adjust')}
-              onDelete={() => onDelete(p)} />)
-          )}
-        </PullToRefresh>
-      )}
-
-      {/* ==== 低库存 ==== */}
-      {tab === 'low' && !loading && (
-        <PullToRefresh onRefresh={loadAll}>
-          {lowParts.length === 0 ? (
-            <Empty text="🎉 库存充足" sub="无低于安全下限的备件" />
-          ) : (
-            lowParts.map((p) => <PartCard key={p.part_id} part={p}
-              low
-              onIn={() => openForm(p, 'in')}
-              onOut={() => openForm(p, 'out')}
-              onAdjust={() => openForm(p, 'adjust')}
-              onDelete={() => onDelete(p)} />)
-          )}
-        </PullToRefresh>
-      )}
-
-      {/* ==== 流水 ==== */}
-      {tab === 'log' && !loading && (
-        <PullToRefresh onRefresh={loadLogs}>
-          {logs.length === 0 ? (
-            <Empty text="暂无流水" />
-          ) : (
-            logs.map((l, i) => (
-              <LogCard key={l.id || i} log={l} />
-            ))
-          )}
-        </PullToRefresh>
-      )}
 
       {/* ======= 表单 Dialog ======= */}
       {formType && formType !== 'create' && selected && (

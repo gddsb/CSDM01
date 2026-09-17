@@ -152,77 +152,81 @@ export default function MobileInspectionHistory() {
   const meta = TYPE_META[type]
 
   return (
-    <div className="mobile-page" style={{ paddingTop: 12 }}>
-      {/* Tab 切换 */}
-      <Tabs activeKey={type} onChange={(k) => setType(k as InspectType)} style={{ marginBottom: 8 }}>
-        <Tabs.Tab title={`📥 来料(${TYPE_META.incoming.label})`} key="incoming" />
-        <Tabs.Tab title={`🔧 过程(${TYPE_META.process.label})`} key="process" />
-        <Tabs.Tab title={`📦 成品(${TYPE_META.product.label})`} key="product" />
-      </Tabs>
+    <div className="mobile-page-fixed-header">
+      <div className="mobile-sticky-header">
+        {/* Tab 切换 */}
+        <Tabs activeKey={type} onChange={(k) => setType(k as InspectType)}>
+          <Tabs.Tab title={`📥 来料(${TYPE_META.incoming.label})`} key="incoming" />
+          <Tabs.Tab title={`🔧 过程(${TYPE_META.process.label})`} key="process" />
+          <Tabs.Tab title={`📦 成品(${TYPE_META.product.label})`} key="product" />
+        </Tabs>
 
-      {/* 搜索 + 日期范围 */}
-      <SearchBar
-        placeholder={`搜${meta.label}单号 / 料号`}
-        value={keyword}
-        onChange={setKeyword}
-        onSearch={onSearch}
-        style={{ marginBottom: 8 }}
-      />
+        {/* 搜索 + 日期范围 */}
+        <SearchBar
+          placeholder={`搜${meta.label}单号 / 料号`}
+          value={keyword}
+          onChange={setKeyword}
+          onSearch={onSearch}
+          style={{ marginBottom: 8 }}
+        />
 
-      {/* 日期快捷过滤 */}
-      <div style={{ display: 'flex', gap: 6, padding: '4px 0 10px', overflowX: 'auto' }}>
-        {[
-          { k: '7d', t: '近7天' },
-          { k: '30d', t: '近30天' },
-          { k: 'all', t: '全部' },
-        ].map((o) => (
-          <span
-            key={o.k}
-            onClick={() => setDateRange(o.k as any)}
-            style={{
-              padding: '5px 12px', borderRadius: 14, fontSize: 12,
-              background: dateRange === o.k ? '#2196F3' : '#f4f5f7',
-              color: dateRange === o.k ? '#fff' : '#666',
-              cursor: 'pointer', whiteSpace: 'nowrap',
-            }}
-          >{o.t}</span>
-        ))}
+        {/* 日期快捷过滤 */}
+        <div style={{ display: 'flex', gap: 6, padding: '4px 0 10px', overflowX: 'auto' }}>
+          {[
+            { k: '7d', t: '近7天' },
+            { k: '30d', t: '近30天' },
+            { k: 'all', t: '全部' },
+          ].map((o) => (
+            <span
+              key={o.k}
+              onClick={() => setDateRange(o.k as any)}
+              style={{
+                padding: '5px 12px', borderRadius: 14, fontSize: 12,
+                background: dateRange === o.k ? '#2196F3' : '#f4f5f7',
+                color: dateRange === o.k ? '#fff' : '#666',
+                cursor: 'pointer', whiteSpace: 'nowrap',
+              }}
+            >{o.t}</span>
+          ))}
+        </div>
       </div>
 
-      {/* 列表 */}
-      {loading && page === 1 ? (
-        <EmptyHint text="加载中..." />
-      ) : list.length === 0 ? (
-        <EmptyHint text={`暂无${meta.label}记录`} sub="试试扩大日期范围或换关键词" />
-      ) : (
-        <PullToRefresh onRefresh={onRefresh}>
-          <List>
-            {list.map((r) => (
-              <List.Item key={`${type}-${r.id}-${r.no}`}
-                description={
-                  <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
-                    {r.materialCode} {r.materialName?.slice(0, 20) || ''}
-                    {r.processName && ` · ${r.processName}`}
-                    {r.lineName && ` · ${r.lineName}`}
-                    {r.supplierName && ` · ${r.supplierName}`}
+      <div className="mobile-page-scroll-list">
+        {/* 列表 */}
+        {loading && page === 1 ? (
+          <EmptyHint text="加载中..." />
+        ) : list.length === 0 ? (
+          <EmptyHint text={`暂无${meta.label}记录`} sub="试试扩大日期范围或换关键词" />
+        ) : (
+          <PullToRefresh onRefresh={onRefresh}>
+            <List>
+              {list.map((r) => (
+                <List.Item key={`${type}-${r.id}-${r.no}`}
+                  description={
+                    <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+                      {r.materialCode} {r.materialName?.slice(0, 20) || ''}
+                      {r.processName && ` · ${r.processName}`}
+                      {r.lineName && ` · ${r.lineName}`}
+                      {r.supplierName && ` · ${r.supplierName}`}
+                    </div>
+                  }
+                >
+                  <div>
+                    <div style={{ fontWeight: 500, fontSize: 13 }}>
+                      {r.no || '(无单号)'}
+                      {resultTag(r.result)}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>
+                      {fmtTime(r.createdAt)} · {r.status || ''}
+                    </div>
                   </div>
-                }
-              >
-                <div>
-                  <div style={{ fontWeight: 500, fontSize: 13 }}>
-                    {r.no || '(无单号)'}
-                    {resultTag(r.result)}
-                  </div>
-                  <div style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>
-                    {fmtTime(r.createdAt)} · {r.status || ''}
-                  </div>
-                </div>
-              </List.Item>
-            ))}
-            <InfiniteScroll loadMore={onLoadMore} hasMore={hasMore} />
-          </List>
-        </PullToRefresh>
-      )}
+                </List.Item>
+              ))}
+              <InfiniteScroll loadMore={onLoadMore} hasMore={hasMore} />
+            </List>
+          </PullToRefresh>
+        )}
+      </div>
     </div>
   )
 }

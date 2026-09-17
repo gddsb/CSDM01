@@ -124,14 +124,15 @@ export default function MobileIncomingInspection() {
   }
 
   return (
-    <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
-      {step === 0 && (
-        <>
+    step === 0 ? (
+      <div className="mobile-page-fixed-header">
+        <div className="mobile-sticky-header">
           <SearchBar placeholder="扫/输检验单号" value={keyword} onChange={setKeyword}
-            onSearch={load}
-            style={{ marginBottom: 12 }} />
+            onSearch={load} />
           {/* 需求3: 扫码按钮已隐藏，保留代码以备后续开启 */}
           {/* <Button size="mini" onClick={onScan} style={{marginTop:8}}>扫码</Button> */}
+        </div>
+        <div className="mobile-page-scroll-list">
           {loading ? <Empty text="加载中..." /> : list.length === 0 ? (
             <Empty text="暂无可检来料单" sub="请先在 PC 端创建来料检验记录" />
           ) : (
@@ -151,9 +152,10 @@ export default function MobileIncomingInspection() {
               </List>
             </PullToRefresh>
           )}
-        </>
-      )}
-
+        </div>
+      </div>
+    ) : (
+    <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
       {step === 1 && selected && (
         <>
           <div style={{ background: '#fff', borderRadius: 10, padding: 14, marginBottom: 14, border: '1px solid #eef0f3' }}>
@@ -201,6 +203,7 @@ export default function MobileIncomingInspection() {
         </>
       )}
     </div>
+    )
   )
 }
 

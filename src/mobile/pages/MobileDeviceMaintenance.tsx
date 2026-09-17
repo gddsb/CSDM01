@@ -295,10 +295,9 @@ export default function MobileDeviceMaintenance() {
   }
 
   return (
-    <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
-{/* ============ Step 0: 设备选择 ============ */}
-      {step === 0 && (
-        <>
+    step === 0 ? (
+      <div className="mobile-page-fixed-header">
+        <div className="mobile-sticky-header">
           <SearchBar
             placeholder="扫设备编号 / 手输"
             value={keyword}
@@ -309,6 +308,8 @@ export default function MobileDeviceMaintenance() {
           />
           {/* 需求3: 扫码按钮已隐藏 */}
           {/* <Button size="mini" onClick={handleScan} style={{marginTop:8}}>扫码</Button> */}
+        </div>
+        <div className="mobile-page-scroll-list">
           {loading ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>
           ) : devices.length === 0 ? (
@@ -339,9 +340,10 @@ export default function MobileDeviceMaintenance() {
               </List>
             </PullToRefresh>
           )}
-        </>
-      )}
-
+        </div>
+      </div>
+    ) : (
+    <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
       {/* ============ Step 1: 记录列表 ============ */}
       {step === 1 && selectedDevice && (
         <>
@@ -511,6 +513,7 @@ export default function MobileDeviceMaintenance() {
         </>
       )}
     </div>
+    )
   )
 }
 

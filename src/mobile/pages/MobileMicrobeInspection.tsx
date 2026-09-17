@@ -212,15 +212,15 @@ export default function MobileMicrobeInspection() {
   }
 
   return (
-    <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
-{step === 0 && (
-        <>
+    step === 0 ? (
+      <div className="mobile-page-fixed-header">
+        <div className="mobile-sticky-header">
           {/* 对象类型 + 关联单据类型 */}
           <div style={{ background: '#fff', borderRadius: 10, padding: 14, border: '1px solid #eef0f3', marginBottom: 12 }}>
             <List.Item onClick={onPickObjectType} extra={objectType} arrow>检验对象类型</List.Item>
           </div>
 
-          {/* 关联单据选择 */}
+          {/* 关联单据选择（搜索+扫码） */}
           {loadMode !== 'none' && (
             <>
               <SearchBar
@@ -228,10 +228,14 @@ export default function MobileMicrobeInspection() {
                 value={keyword}
                 onChange={setKeyword}
                 onSearch={() => loadRelated(keyword.trim())}
-
-                style={{ marginBottom: 12 }}
               />
               <Button size="mini" onClick={handleScan} style={{marginTop:8}}>扫码</Button>
+            </>
+          )}
+        </div>
+        <div className="mobile-page-scroll-list">
+          {loadMode !== 'none' && (
+            <>
               {loading ? <EmptyHint text="加载中..." /> : list.length === 0 ? (
                 <EmptyHint text="未找到关联单据" sub="请先在 PC 端创建报工单或成品检验单" />
               ) : (
@@ -268,9 +272,10 @@ export default function MobileMicrobeInspection() {
               </div>
             </div>
           )}
-        </>
-      )}
-
+        </div>
+      </div>
+    ) : (
+    <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
       {step === 1 && (
         <>
           {/* 关联单据信息卡 */}
@@ -343,6 +348,7 @@ export default function MobileMicrobeInspection() {
         </>
       )}
     </div>
+    )
   )
 }
 

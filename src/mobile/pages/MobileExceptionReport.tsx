@@ -216,18 +216,18 @@ export default function MobileExceptionReport() {
   }
 
   return (
-    <div className="mobile-page" style={{ paddingTop: 12 }}>
-{step === 0 && (
-        <>
+    step === 0 ? (
+      <div className="mobile-page-fixed-header">
+        <div className="mobile-sticky-header">
           <SearchBar
             placeholder="扫报工单号 / 手输"
             value={keyword}
             onChange={setKeyword}
             onSearch={onSearch}
-
-            style={{ marginBottom: 12 }}
           />
           <Button size="mini" onClick={handleScan} style={{marginTop:8}}>扫码</Button>
+        </div>
+        <div className="mobile-page-scroll-list">
           {loading ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>
           ) : orders.length === 0 ? (
@@ -268,9 +268,18 @@ export default function MobileExceptionReport() {
               </List>
             </PullToRefresh>
           )}
-        </>
-      )}
+        </div>
 
+        {/* P-A: 工单详情抽屉 */}
+        <MobileOrderDetail
+          order={detailOrder}
+          orderId={detailOrder?.order_id ?? null}
+          visible={!!detailOrder}
+          onClose={() => setDetailOrder(null)}
+        />
+      </div>
+    ) : (
+    <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
       {step === 1 && selected && (
         <>
           <div
@@ -422,5 +431,6 @@ export default function MobileExceptionReport() {
         onClose={() => setDetailOrder(null)}
       />
     </div>
+    )
   )
 }

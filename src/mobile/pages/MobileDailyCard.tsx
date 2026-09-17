@@ -48,24 +48,27 @@ export default function MobileDailyCard() {
   const onRefresh = async () => { await fetchData(tab) }
 
   return (
-    <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
-      <Tabs activeKey={tab} onChange={(k) => setTab(k as Tab)} style={{ marginBottom: 12 }}>
-        <Tabs.Tab title="🏭 生产" key="production" />
-        <Tabs.Tab title="🔬 质量" key="quality" />
-        <Tabs.Tab title="📊 管理" key="management" />
-      </Tabs>
-
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>加载中...</div>
-      ) : !data ? (
-        <Empty description="暂无数据" />
-      ) : (
-        <PullToRefresh onRefresh={onRefresh}>
-          {tab === 'production' && <ProductionPanel data={data} />}
-          {tab === 'quality' && <QualityPanel data={data} />}
-          {tab === 'management' && <ManagementPanel data={data} />}
-        </PullToRefresh>
-      )}
+    <div className="mobile-page-fixed-header">
+      <div className="mobile-sticky-header">
+        <Tabs activeKey={tab} onChange={(k) => setTab(k as Tab)}>
+          <Tabs.Tab title="🏭 生产" key="production" />
+          <Tabs.Tab title="🔬 质量" key="quality" />
+          <Tabs.Tab title="📊 管理" key="management" />
+        </Tabs>
+      </div>
+      <div className="mobile-page-scroll-list">
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>加载中...</div>
+        ) : !data ? (
+          <Empty description="暂无数据" />
+        ) : (
+          <PullToRefresh onRefresh={onRefresh}>
+            {tab === 'production' && <ProductionPanel data={data} />}
+            {tab === 'quality' && <QualityPanel data={data} />}
+            {tab === 'management' && <ManagementPanel data={data} />}
+          </PullToRefresh>
+        )}
+      </div>
     </div>
   )
 }

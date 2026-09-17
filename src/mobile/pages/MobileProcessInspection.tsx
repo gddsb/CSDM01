@@ -144,18 +144,18 @@ export default function MobileProcessInspection() {
   }
 
   return (
-    <div className="mobile-page" style={{ paddingTop: 12 }}>
-{step === 0 && (
-        <>
+    step === 0 ? (
+      <div className="mobile-page-fixed-header">
+        <div className="mobile-sticky-header">
           <SearchBar
             placeholder="扫工单号 / 手输"
             value={keyword}
             onChange={setKeyword}
             onSearch={onSearch}
-
-            style={{ marginBottom: 12 }}
           />
           <Button size="mini" onClick={onScan} style={{marginTop:8}}>扫码</Button>
+        </div>
+        <div className="mobile-page-scroll-list">
           {loading ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>
           ) : list.length === 0 ? (
@@ -182,9 +182,10 @@ export default function MobileProcessInspection() {
               </List>
             </PullToRefresh>
           )}
-        </>
-      )}
-
+        </div>
+      </div>
+    ) : (
+    <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
       {step === 1 && selected && (
         <>
           <div style={{ background: '#fff', borderRadius: 10, padding: 14, marginBottom: 14, border: '1px solid #eef0f3' }}>
@@ -226,5 +227,6 @@ export default function MobileProcessInspection() {
         </>
       )}
     </div>
+    )
   )
 }
