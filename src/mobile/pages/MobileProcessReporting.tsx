@@ -13,7 +13,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Steps, Button, List, SearchBar, Stepper, Toast, Dialog, Tabs, PullToRefresh, InfiniteScroll, ActionSheet } from 'antd-mobile'
+import { Button, List, SearchBar, Stepper, Toast, Dialog, Tabs, PullToRefresh, InfiniteScroll, ActionSheet } from 'antd-mobile'
 import api from '../../utils/api'
 import { useBarcode } from '../hooks/useBarcode'
 import { MobileOrderDetail, MobileOrderData } from '../components/MobileOrderDetail'
@@ -365,16 +365,6 @@ export default function MobileProcessReporting() {
         </PullToRefresh>
       ) : (
         <>
-          <Steps
-        current={step}
-        direction="vertical"
-        style={{ marginBottom: 16 }}
-      >
-        <Steps.Step title="选订单" description={step > 0 ? selectedOrder?.order_no : ''} />
-        <Steps.Step title="填数据" description={step > 1 ? `${reportQty} × ${selectedLine?.line_name}` : ''} />
-        <Steps.Step title="提交" />
-      </Steps>
-
       {step === 0 && (
         <>
           <SearchBar

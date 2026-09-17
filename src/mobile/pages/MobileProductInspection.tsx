@@ -5,7 +5,7 @@
  * 流程与 PC ProductInspection.tsx 完全对齐：start → items → 样品值 → submit
  */
 import { useEffect, useState } from 'react'
-import { Steps, Button, List, SearchBar, Toast, Dialog, Input, PullToRefresh , TextArea} from 'antd-mobile'
+import { Button, List, SearchBar, Toast, Dialog, Input, PullToRefresh , TextArea} from 'antd-mobile'
 import api from '../../utils/api'
 import { useBarcode } from '../hooks/useBarcode'
 import { useInspectionWorkflow } from '../hooks/useInspectionWorkflow'
@@ -118,12 +118,6 @@ export default function MobileProductInspection() {
 
   return (
     <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
-      <Steps current={step} direction="vertical" style={{ marginBottom: 16 }}>
-        <Steps.Step title="选检验单" description={step > 0 ? selected?.inspection_no : ''} />
-        <Steps.Step title="逐项判定" description={step > 1 ? `${doneItems}/${items.length}` : ''} />
-        <Steps.Step title="提交" />
-      </Steps>
-
       {step === 0 && (
         <>
           <SearchBar placeholder="扫/输检验单号" value={keyword} onChange={setKeyword}

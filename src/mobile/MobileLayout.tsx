@@ -278,6 +278,20 @@ export function MobileLayout() {
         </NavBar>
       </div>
 
+      {/* 离线/同步状态条：仅在需要提醒时出现 */}
+      {(!online || pending > 0) && (
+        <div style={{
+          background: !online ? 'var(--m-warn-bg, #FFF3E0)' : (syncing ? 'var(--m-info-bg, #E3F2FD)' : 'var(--m-amber-bg, #FFF8E1)'),
+          color: !online ? '#E65100' : (syncing ? '#1565C0' : '#8D6E63'),
+          fontSize: 12, padding: '6px 14px', textAlign: 'center',
+          borderBottom: '1px solid var(--m-shadow)',
+        }}>
+          {!online
+            ? '📶 离线模式：提交将暂存，网络恢复后自动同步'
+            : (syncing ? `🔄 正在同步离线请求…（剩余 ${pending}）` : `📥 ${pending} 条离线请求待同步`)}
+        </div>
+      )}
+
       {/* 内容区 —— TabBar 常驻，底部始终留白 */}
       <div className="mobile-app__content mobile-tabbar-padding">
         <Outlet />
