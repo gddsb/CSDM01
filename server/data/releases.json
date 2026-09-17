@@ -1,14 +1,14 @@
 {
-  "version": "1.0.7",
-  "buildNumber": 8,
+  "version": "1.1.0",
+  "buildNumber": 9,
   "forceUpdate": false,
-  "downloadUrl": "http://43.138.218.55/download/milkcanmes-v1.0.7-debug.apk",
-  "downloadUrlIos": "http://43.138.218.55/download/milkcanmes.ipa",
-  "apkSize": 7549747,
+  "downloadUrl": "http://43.138.218.55/download/milk-can-mes-debug.apk",
+  "downloadUrlIos": "",
+  "apkSize": 7345198,
   "ipaSize": 0,
   "appId": "com.daman.milkcanmes",
   "bundleId": "com.daman.milkcanmes",
-  "updateNotes": "v1.0.7：九宫格卡片改为1:1正方形宽高比；移除上下箭头改为长按进入编辑+自由拖拽排序(@dnd-kit)；编辑模式下拖拽即交换位置；右上角小圆点提示可拖。",
-  "publishedAt": "2026-09-16T13:30:00Z",
-  "gitSha": "6184acb"
+  "updateNotes": "v1.1.0：移除全部8个移动端页面顶部Steps步骤条(操作指引图)；扫码权限自动请求(首次扫码时引导用户到系统设置)；统一 HTTP 协议配置(androidScheme=http + network_security_config)；离线状态条保留、主页待办卡保留。",
+  "publishedAt": "2026-09-17T11:55:00Z",
+  "gitSha": "2141aed"
 }
