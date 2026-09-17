@@ -1,14 +1,14 @@
 {
   "version": "1.1.0",
-  "buildNumber": 11,
+  "buildNumber": 12,
   "forceUpdate": false,
-  "downloadUrl": "http://43.138.218.55/download/milk-can-mes-v1.1.0-build11-debug.apk",
+  "downloadUrl": "http://43.138.218.55/download/milk-can-mes-v1.1.0-build12-debug.apk",
   "downloadUrlIos": "",
   "apkSize": 0,
   "ipaSize": 0,
   "appId": "com.daman.milkcanmes",
   "bundleId": "com.daman.milkcanmes",
-  "updateNotes": "移动端5项优化:顶部吸顶-快捷卡片对齐-隐藏扫码-订单卡片重排-状态对齐PC端",
+  "updateNotes": "\u79fb\u52a8\u62a5\u5de5\u5bf9\u6807PC\u7aef\u5b8c\u6574\u91cd\u6784(\u5206\u5de5\u5e8f+\u4e0d\u826f+\u6295\u6599+\u62a5\u5e9f+\u4eba\u5458)+\u751f\u4ea7\u8ba2\u5355\u6eda\u52a8\u9694\u79bb+\u6599\u54c1\u64cd\u4f5c\u540c\u4e00\u884c+Tab\u9884\u52a0\u8f7d\u7f13\u5b58",
   "publishedAt": "2026-09-17T13:02:22Z",
-  "gitSha": "a282763"
+  "gitSha": "a2b747b"
 }
