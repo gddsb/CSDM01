@@ -51,10 +51,54 @@ html.mobile-root textarea {
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  /* 让内部固定高度布局能正确计算 */
+  min-height: 0;
+  position: relative;
+}
+
+/* 当内部页面使用 .mobile-page-fixed-header 时，禁用外层滚动 */
+.mobile-app__content:has(.mobile-page-fixed-header) {
+  overflow-y: hidden;
 }
 
 /* 页面通用间距 */
 .mobile-page {
+  padding: 12px 14px;
+}
+
+/* ===== 需求1：非主页页面顶部功能区吸顶 =====
+ * 移动端业务页面的顶部搜索/Tabs/筛选区需要固定不滚动，
+ * 仅下方列表可滚动。
+ * 用法：页面外层设 .mobile-page-fixed-header，顶部区域包 .mobile-sticky-header，
+ * 列表区包 .mobile-page-scroll-list
+ * MobileDashboard（主页）用 .mobile-page-scrollable 整页滚动保持原样
+ */
+.mobile-page-fixed-header {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  height: calc(100dvh - var(--sat) - var(--sab) - 50px);
+  padding: 0 14px;
+  overflow: hidden;
+}
+.mobile-page-fixed-header .mobile-sticky-header {
+  flex-shrink: 0;
+  padding-top: 12px;
+  padding-bottom: 8px;
+  background: #f5f6f8;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.mobile-page-fixed-header .mobile-page-scroll-list {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 20px;
+}
+
+/* 主页整页滚动（保持原样） */
+.mobile-page-scrollable {
   padding: 12px 14px;
 }
 

@@ -130,7 +130,8 @@ export default function MobileIncomingInspection() {
           <SearchBar placeholder="扫/输检验单号" value={keyword} onChange={setKeyword}
             onSearch={load}
             style={{ marginBottom: 12 }} />
-          <Button size="mini" onClick={onScan} style={{marginTop:8}}>扫码</Button>
+          {/* 需求3: 扫码按钮已隐藏，保留代码以备后续开启 */}
+          {/* <Button size="mini" onClick={onScan} style={{marginTop:8}}>扫码</Button> */}
           {loading ? <Empty text="加载中..." /> : list.length === 0 ? (
             <Empty text="暂无可检来料单" sub="请先在 PC 端创建来料检验记录" />
           ) : (

@@ -493,6 +493,20 @@ function gradientFromHex(hex: string): string {
   return `linear-gradient(135deg, ${hex} 0%, ${hex}dd 40%, ${hex}99 100%)`
 }
 
+/**
+ * 需求2: 5汉字宽度对齐 — 计算标题字符间距让不同长度文本视觉等宽
+ * 基准: 5字标题 letterSpacing=0，4字自动扩展，3字扩展更多
+ * 公式: target=5字宽，设基准字宽≈7px(fontSize=12)，可用剩余空间均分
+ */
+function titleLetterSpacing(title: string): number {
+  const len = title.length
+  if (len >= 5) return 0.5          // 5字及以上：微间距
+  if (len === 4) return 3           // 4字：较宽间距
+  if (len === 3) return 6           // 3字：宽间距
+  if (len === 2) return 9            // 2字：很宽间距
+  return 12                          // 1字
+}
+
 /** 可拖拽卡片 — @dnd-kit useSortable + 1:1 宽高比 */
 function SortableCard({ entry, editing, onClick, onPressStart, onPressEnd, onRemove }: SortableCardProps) {
   const {
@@ -596,6 +610,9 @@ function SortableCard({ entry, editing, onClick, onPressStart, onPressEnd, onRem
           fontSize: 12, fontWeight: 500, color: '#333',
           lineHeight: 1.3, padding: '6px 2px 0',
           textAlign: 'center',
+          /* 需求2: 5汉字宽度对齐 — 用 letterSpacing 让不同长度标题视觉等宽 */
+          letterSpacing: titleLetterSpacing(entry.title),
+          whiteSpace: 'nowrap',
         }}>
           {entry.title}
         </div>

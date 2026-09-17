@@ -307,7 +307,8 @@ export default function MobileDeviceMaintenance() {
 
             style={{ marginBottom: 12 }}
           />
-          <Button size="mini" onClick={handleScan} style={{marginTop:8}}>扫码</Button>
+          {/* 需求3: 扫码按钮已隐藏 */}
+          {/* <Button size="mini" onClick={handleScan} style={{marginTop:8}}>扫码</Button> */}
           {loading ? (
             <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>
           ) : devices.length === 0 ? (

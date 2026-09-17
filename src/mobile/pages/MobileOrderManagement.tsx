@@ -159,12 +159,13 @@ export default function MobileOrderManagement() {
   }
 
   return (
-    <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 30 }}>
-      {/* 搜索 + 扫描 + 同步 */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center' }}>
+    <div className="mobile-page-fixed-header">
+      {/* 需求1: 搜索+同步+Tab — 顶部固定 */}
+      <div className="mobile-sticky-header">
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center' }}>
         <div style={{ flex: 1 }}>
           <SearchBar
-            placeholder="扫/输工单号"
+            placeholder="输入工单号"
             value={keyword}
             onChange={setKeyword}
             onSearch={() => load(tab, keyword.trim())}
@@ -175,11 +176,11 @@ export default function MobileOrderManagement() {
         </Button>
       </div>
 
-      {/* 状态 Tab */}
-      <div style={{
-        background: '#fff', borderRadius: 12, padding: '4px 10px',
-        marginBottom: 12, boxShadow: '0 1px 6px rgba(0,0,0,0.04)',
-      }}>
+        {/* 状态 Tab */}
+        <div style={{
+          background: '#fff', borderRadius: 12, padding: '4px 10px',
+          boxShadow: '0 1px 6px rgba(0,0,0,0.04)',
+        }}>
         <Tabs
           activeKey={tab}
           onChange={(k) => setTab(k as StatusTab)}
@@ -204,7 +205,10 @@ export default function MobileOrderManagement() {
         </Tabs>
       </div>
 
-      {/* 订单列表 */}
+      </div>{/* mobile-sticky-header end */}
+
+      {/* 订单列表 — 独立滚动 */}
+      <div className="mobile-page-scroll-list">
       {loading ? (
         <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>
       ) : orders.length === 0 ? (
@@ -222,9 +226,10 @@ export default function MobileOrderManagement() {
             {orders.map((o) => {
               const statusColor = STATUS_COLOR[o.status || ''] || '#FF9800'
               const statusText = o.status || ''
-              const isReleased = o.status === '开立'
-              const isStarted = o.status === '下发' || o.status === '开工'
-              const isRunning = o.status === '开工'
+              /* 需求5: 状态操作 — 严格对齐 PC 端 */
+              const isCreated = o.status === '开立'
+              const isReleased = o.status === '下发'
+              const isStarted = o.status === '开工'
               const isDone = o.status === '完工'
 
               return (
@@ -245,10 +250,19 @@ export default function MobileOrderManagement() {
                     (e.currentTarget as HTMLElement).style.transform = 'scale(1)'
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontWeight: 700, fontSize: 15, color: '#222' }}>{o.order_no}</div>
+                  {/* 需求4: 第一行 — 订单号 + 报工数量 + 状态 */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: '#222', flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {o.order_no}
+                      {(o.planned_qty ?? 0) > 0 && (
+                        <span style={{ fontSize: 12, fontWeight: 400, color: '#888', marginLeft: 8 }}>
+                          报工 <b style={{ color: statusColor, fontSize: 14 }}>{o.finished_qty ?? 0}</b>
+                          <span style={{ color: '#bbb' }}> / {o.planned_qty}</span>
+                        </span>
+                      )}
+                    </div>
                     <span style={{
-                      fontSize: 11, padding: '3px 10px', borderRadius: 12,
+                      fontSize: 11, padding: '3px 10px', borderRadius: 12, flexShrink: 0,
                       background: statusColor + '15', color: statusColor,
                       fontWeight: 600, border: `1px solid ${statusColor}44`,
                       letterSpacing: 0.5,
@@ -257,39 +271,31 @@ export default function MobileOrderManagement() {
                     </span>
                   </div>
 
-                  <div style={{ fontSize: 13, color: '#555', marginTop: 8, lineHeight: 1.5 }}>
+                  {/* 需求4: 第二行 — 料品信息（自动换行） */}
+                  <div style={{ fontSize: 13, color: '#555', marginTop: 6, lineHeight: 1.5, wordBreak: 'break-all' }}>
                     <span style={{ color: '#888' }}>{o.material_code}</span>
                     {o.material_name && (
-                      <span style={{ marginLeft: 6 }}>· {o.material_name.slice(0, 18)}</span>
+                      <span style={{ marginLeft: 6 }}>· {o.material_name}</span>
                     )}
                   </div>
 
-                  {/* 数量 + 进度条 */}
+                  {/* 进度条 */}
                   {(o.planned_qty ?? 0) > 0 && (
-                    <div style={{ marginTop: 10 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
-                        <span style={{ color: '#888' }}>
-                          已报 <b style={{ color: statusColor, fontSize: 14 }}>{o.finished_qty ?? 0}</b>
-                          <span style={{ color: '#bbb' }}> / {o.planned_qty}</span>
-                        </span>
-                        {(o.finished_qty ?? 0) > 0 && (
-                          <span style={{ color: statusColor, fontWeight: 700 }}>
-                            {Math.round(((o.finished_qty ?? 0) / (o.planned_qty ?? 1)) * 100)}%
-                          </span>
-                        )}
-                      </div>
-                      <div style={{
-                        background: '#f0f2f5', borderRadius: 6, height: 5, overflow: 'hidden',
-                        boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.06)',
-                      }}>
+                    <div style={{ marginTop: 8 }}>
+                      {(o.finished_qty ?? 0) > 0 && (
                         <div style={{
-                          background: `linear-gradient(90deg, ${statusColor}, ${statusColor}cc)`,
-                          height: '100%',
-                          width: `${Math.min(100, ((o.finished_qty ?? 0) / Math.max(1, o.planned_qty ?? 1)) * 100)}%`,
-                          transition: 'width 0.3s',
-                          borderRadius: 6,
-                        }} />
-                      </div>
+                          background: '#f0f2f5', borderRadius: 6, height: 5, overflow: 'hidden',
+                          boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.06)',
+                        }}>
+                          <div style={{
+                            background: `linear-gradient(90deg, ${statusColor}, ${statusColor}cc)`,
+                            height: '100%',
+                            width: `${Math.min(100, ((o.finished_qty ?? 0) / Math.max(1, o.planned_qty ?? 1)) * 100)}%`,
+                            transition: 'width 0.3s',
+                            borderRadius: 6,
+                          }} />
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -301,31 +307,30 @@ export default function MobileOrderManagement() {
                     <span>{o.end_date?.slice(0, 10) || ''}</span>
                   </div>
 
-                  {/* 行内按钮 */}
+                  {/* 需求5: 行内按钮 — 严格对齐 PC 端 状态流转 */}
                   <div style={{
                     display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap',
                     paddingTop: 10, borderTop: '1px dashed #f0f0f0',
                   }} onClick={(e) => e.stopPropagation()}>
-                    {isReleased && (
+                    {isCreated && (
                       <Button size="mini" color="primary" onClick={() => onRelease(o)}>下发</Button>
                     )}
-                    {(isReleased || o.status === '下发') && (
+                    {isReleased && (
                       <Button
-                        size="mini"
-                        color="primary"
-                        fill={isRunning ? 'outline' : 'solid'}
+                        size="mini" color="primary"
                         onClick={() => navigate(`/m/process-reporting?orderId=${o.order_id}`)}
-                      >
-                        {isRunning ? '继续报工' : '开工报工'}
-                      </Button>
+                      >开工</Button>
                     )}
-                    {o.status === '开工' && (
-                      <Button size="mini" color="warning" onClick={() => navigate(`/m/process-reporting?orderId=${o.order_id}`)}>继续报工</Button>
+                    {isStarted && (
+                      <>
+                        <Button
+                          size="mini" color="primary" fill="solid"
+                          onClick={() => navigate(`/m/process-reporting?orderId=${o.order_id}`)}
+                        >继续报工</Button>
+                        <Button size="mini" color="warning" onClick={() => onFinish(o)}>完工</Button>
+                      </>
                     )}
-                    {(isReleased || isStarted) && (
-                      <Button size="mini" fill="outline" onClick={() => onFinish(o)}>完工</Button>
-                    )}
-                    {!isDone && (
+                    {isDone && (
                       <Button size="mini" fill="outline" onClick={() => onClose(o)}>关闭</Button>
                     )}
                   </div>
@@ -335,47 +340,50 @@ export default function MobileOrderManagement() {
           </List>
         </PullToRefresh>
       )}
+      </div>
 
       {/* ===== 订单详情（下属报工单）===== */}
       {selected && activeReportId === null && (
-        <Dialog visible content={
-          <div style={{ maxHeight: '70vh', overflow: 'auto', padding: '10px 6px' }}>
-            <div style={{ fontWeight: 600, marginBottom: 10, fontSize: 15 }}>
-              {selected.order_no} 下属报工单
-              <span style={{ fontSize: 12, color: '#999', fontWeight: 400, marginLeft: 8 }}>
-                （{reports.length} 条）
-              </span>
-            </div>
-            {reports.length === 0 ? (
-              <div style={{ fontSize: 12, color: '#999', padding: 30, textAlign: 'center' }}>
-                暂无报工单 · 请先在 PC 端下发或在移动报工录入
+        <Dialog
+          visible
+          content={
+            <div style={{ maxHeight: '70vh', overflow: 'auto', padding: '10px 6px' }}>
+              <div style={{ fontWeight: 600, marginBottom: 10, fontSize: 15 }}>
+                {selected.order_no} 下属报工单
+                <span style={{ fontSize: 12, color: '#999', fontWeight: 400, marginLeft: 8 }}>
+                  （{reports.length} 条）
+                </span>
               </div>
-            ) : (
-              reports.map((r) => (
-                <div
-                  key={r.report_order_id}
-                  onClick={() => setActiveReportId(r.report_order_id)}
-                  style={{
-                    padding: 12, borderBottom: '1px solid #f5f5f5', cursor: 'pointer',
-                    background: '#fafbfc', borderRadius: 8, marginBottom: 6,
-                  }}
-                >
-                  <div style={{ fontWeight: 600, fontSize: 13.5 }}>{r.report_no}</div>
-                  <div style={{ fontSize: 11, color: '#888', marginTop: 3, display: 'flex', gap: 10 }}>
-                    <span>🏭 {r.line_name}</span>
-                    <span>📦 ×{r.report_qty}</span>
-                    <span style={{
-                      padding: '1px 6px', borderRadius: 4,
-                      background: r.status === '完工' ? '#4CAF5015' : '#2196F315',
-                      color: r.status === '完工' ? '#4CAF50' : '#2196F3',
-                      fontSize: 10, fontWeight: 600,
-                    }}>{r.status}</span>
-                  </div>
+              {reports.length === 0 ? (
+                <div style={{ fontSize: 12, color: '#999', padding: 30, textAlign: 'center' }}>
+                  暂无报工单 · 请先在 PC 端下发或在移动报工录入
                 </div>
-              ))
-            )}
-          </div>
-        }
+              ) : (
+                reports.map((r) => (
+                  <div
+                    key={r.report_order_id}
+                    onClick={() => setActiveReportId(r.report_order_id)}
+                    style={{
+                      padding: 12, borderBottom: '1px solid #f5f5f5', cursor: 'pointer',
+                      background: '#fafbfc', borderRadius: 8, marginBottom: 6,
+                    }}
+                  >
+                    <div style={{ fontWeight: 600, fontSize: 13.5 }}>{r.report_no}</div>
+                    <div style={{ fontSize: 11, color: '#888', marginTop: 3, display: 'flex', gap: 10 }}>
+                      <span>🏭 {r.line_name}</span>
+                      <span>📦 ×{r.report_qty}</span>
+                      <span style={{
+                        padding: '1px 6px', borderRadius: 4,
+                        background: r.status === '完工' ? '#4CAF5015' : '#2196F315',
+                        color: r.status === '完工' ? '#4CAF50' : '#2196F3',
+                        fontSize: 10, fontWeight: 600,
+                      }}>{r.status}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          }
           actions={[{ key: 'close', text: '返回列表', onClick: () => setSelected(null) }]}
         />
       )}

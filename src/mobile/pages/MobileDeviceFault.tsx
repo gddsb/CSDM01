@@ -292,7 +292,8 @@ export default function MobileDeviceFault() {
           <div style={{ maxHeight: '70vh', overflow: 'auto', padding: '10px 6px' }}>
             <div style={{ fontWeight: 600, marginBottom: 10 }}>上报故障</div>
             <div style={{ marginBottom: 8 }}>
-              <Button size="mini" fill="outline" onClick={handleScanForCreate} style={{ marginRight: 8 }}>扫设备</Button>
+              {/* 需求3: 扫码按钮已隐藏 */}
+              {/* <Button size="mini" fill="outline" onClick={handleScanForCreate} style={{ marginRight: 8 }}>扫设备</Button> */}
               <select value={createDeviceId || ''}
                 onChange={(e) => {
                   const id = e.target.value ? Number(e.target.value) : null
