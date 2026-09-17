@@ -257,7 +257,7 @@ if [ "$SKIP_UPLOAD" != "true" ]; then
 
     # 先拉代码 + vite build（此时 releases.json 是仓库里的旧版本）
     log "  生产服务器拉代码 + build ..."
-    eval "$SSH 'cd ${PROD_PATH} && git fetch origin main && git reset --hard origin/main >/dev/null 2>&1 && npx vite build 2>&1 | tail -3'" 2>&1 | tail -5
+    eval "$SSH 'cd ${PROD_PATH} && git stash 2>/dev/null; git fetch origin-backup main && git reset --hard FETCH_HEAD >/dev/null 2>&1 && npx vite build 2>&1 | tail -3'" 2>&1 | tail -5
     ok "代码拉取 + vite build 完成"
 
     # 再上传 releases.json（写入覆盖掉仓库里的旧版本号）

@@ -1,14 +1,14 @@
 {
   "version": "1.1.0",
-  "buildNumber": 9,
+  "buildNumber": 10,
   "forceUpdate": false,
-  "downloadUrl": "http://43.138.218.55/download/milk-can-mes-debug.apk",
+  "downloadUrl": "http://43.138.218.55/download/milk-can-mes-v1.1.0-build10-debug.apk",
   "downloadUrlIos": "",
-  "apkSize": 7345198,
+  "apkSize": 7344782,
   "ipaSize": 0,
   "appId": "com.daman.milkcanmes",
   "bundleId": "com.daman.milkcanmes",
-  "updateNotes": "v1.1.0：移除全部8个移动端页面顶部Steps步骤条(操作指引图)；扫码权限自动请求(首次扫码时引导用户到系统设置)；统一 HTTP 协议配置(androidScheme=http + network_security_config)；离线状态条保留、主页待办卡保留。",
-  "publishedAt": "2026-09-17T11:55:00Z",
-  "gitSha": "2141aed"
+  "updateNotes": "v1.1.0：移动端版本号自动升级；APK文件名带build号；扫码权限自动请求；统一HTTP协议配置。",
+  "publishedAt": "2026-09-17T09:55:44Z",
+  "gitSha": "fbbc0f5"
 }
