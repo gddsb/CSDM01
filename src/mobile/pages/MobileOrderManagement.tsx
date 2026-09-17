@@ -67,7 +67,45 @@ export default function MobileOrderManagement() {
       setOrders(list)
     } catch { setOrders([]) } finally { setLoading(false) }
   }
-  useEffect(() => { load(tab) }, [tab])
+  // 需求3: Tab 预加载缓存 — 进入时一次性拉所有状态，Tab 切换只读缓存
+  const [cache, setCache] = useState<Record<string, OrderRow[]>>({})
+  const [cacheLoaded, setCacheLoaded] = useState(false)
+
+  // 初次进入预加载全部4个状态
+  useEffect(() => {
+    let cancelled = false
+    const preload = async () => {
+      const tabs = (['开立','下发','开工','完工'] as const)
+      const results: Record<string, OrderRow[]> = {}
+      await Promise.all(tabs.map(async (t) => {
+        try {
+          const r: any = await api.get('/production/orders', {
+            params: { status: t, keyword: '', page: 1, pageSize: 50 }
+          })
+          results[t] = r.success ? (r.data?.list || []) : []
+        } catch { results[t] = [] }
+      }))
+      if (!cancelled) {
+        setCache(results)
+        setCacheLoaded(true)
+        setOrders(results[tab] || [])
+        setLoading(false)
+      }
+    }
+    preload()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Tab 切换直接读缓存
+  useEffect(() => {
+    if (cacheLoaded && cache[tab]) {
+      setOrders(cache[tab])
+    } else {
+      load(tab, '')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, cacheLoaded])
 
   // ====== 订单同步 —— 完全对齐 PC 端 ======
   const onSync = async () => {
@@ -271,68 +309,63 @@ export default function MobileOrderManagement() {
                     </span>
                   </div>
 
-                  {/* 需求4: 第二行 — 料品信息（自动换行） */}
-                  <div style={{ fontSize: 13, color: '#555', marginTop: 6, lineHeight: 1.5, wordBreak: 'break-all' }}>
-                    <span style={{ color: '#888' }}>{o.material_code}</span>
-                    {o.material_name && (
-                      <span style={{ marginLeft: 6 }}>· {o.material_name}</span>
-                    )}
-                  </div>
-
-                  {/* 进度条 */}
-                  {(o.planned_qty ?? 0) > 0 && (
-                    <div style={{ marginTop: 8 }}>
-                      {(o.finished_qty ?? 0) > 0 && (
+                  {/* 进度条（保持在顶部两行之间） */}
+                  {(o.planned_qty ?? 0) > 0 && (o.finished_qty ?? 0) > 0 && (
+                    <div style={{ marginTop: 8, marginBottom: 2 }}>
+                      <div style={{
+                        background: '#f0f2f5', borderRadius: 6, height: 5, overflow: 'hidden',
+                        boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.06)',
+                      }}>
                         <div style={{
-                          background: '#f0f2f5', borderRadius: 6, height: 5, overflow: 'hidden',
-                          boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.06)',
-                        }}>
-                          <div style={{
-                            background: `linear-gradient(90deg, ${statusColor}, ${statusColor}cc)`,
-                            height: '100%',
-                            width: `${Math.min(100, ((o.finished_qty ?? 0) / Math.max(1, o.planned_qty ?? 1)) * 100)}%`,
-                            transition: 'width 0.3s',
-                            borderRadius: 6,
-                          }} />
-                        </div>
-                      )}
+                          background: `linear-gradient(90deg, ${statusColor}, ${statusColor}cc)`,
+                          height: '100%',
+                          width: `${Math.min(100, ((o.finished_qty ?? 0) / Math.max(1, o.planned_qty ?? 1)) * 100)}%`,
+                          transition: 'width 0.3s',
+                          borderRadius: 6,
+                        }} />
+                      </div>
                     </div>
                   )}
 
-                  <div style={{ fontSize: 11.5, color: '#aaa', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span>📍 {o.line_name || '—'}</span>
-                    <span style={{ color: '#ddd' }}>|</span>
-                    <span>{o.start_date?.slice(0, 10) || ''}</span>
-                    <span style={{ color: '#bbb' }}>→</span>
-                    <span>{o.end_date?.slice(0, 10) || ''}</span>
-                  </div>
+                  {/* 需求2: 料品 + 操作按钮 同一行 */}
+                  <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {/* 左侧: 料品信息 + 地点日期（flex:1 占满剩余空间） */}
+                    <div style={{ flex: 1, minWidth: 0, lineHeight: 1.4 }}>
+                      <div style={{ fontSize: 13, color: '#555', wordBreak: 'break-all' }}>
+                        <span style={{ color: '#888' }}>{o.material_code}</span>
+                        {o.material_name && (
+                          <span style={{ marginLeft: 6 }}>· {o.material_name}</span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>
+                        📍 {o.line_name || '—'} {o.start_date?.slice(0, 10) || ''}
+                      </div>
+                    </div>
 
-                  {/* 需求5: 行内按钮 — 严格对齐 PC 端 状态流转 */}
-                  <div style={{
-                    display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap',
-                    paddingTop: 10, borderTop: '1px dashed #f0f0f0',
-                  }} onClick={(e) => e.stopPropagation()}>
-                    {isCreated && (
-                      <Button size="mini" color="primary" onClick={() => onRelease(o)}>下发</Button>
-                    )}
-                    {isReleased && (
-                      <Button
-                        size="mini" color="primary"
-                        onClick={() => navigate(`/m/process-reporting?orderId=${o.order_id}`)}
-                      >开工</Button>
-                    )}
-                    {isStarted && (
-                      <>
+                    {/* 右侧: 操作按钮（右对齐，不换行） */}
+                    <div style={{ flexShrink: 0, display: 'flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
+                      {isCreated && (
+                        <Button size="mini" color="primary" onClick={() => onRelease(o)}>下发</Button>
+                      )}
+                      {isReleased && (
                         <Button
-                          size="mini" color="primary" fill="solid"
+                          size="mini" color="primary"
                           onClick={() => navigate(`/m/process-reporting?orderId=${o.order_id}`)}
-                        >继续报工</Button>
-                        <Button size="mini" color="warning" onClick={() => onFinish(o)}>完工</Button>
-                      </>
-                    )}
-                    {isDone && (
-                      <Button size="mini" fill="outline" onClick={() => onClose(o)}>关闭</Button>
-                    )}
+                        >开工</Button>
+                      )}
+                      {isStarted && (
+                        <>
+                          <Button
+                            size="mini" color="primary" fill="solid"
+                            onClick={() => navigate(`/m/process-reporting?orderId=${o.order_id}`)}
+                          >继续报工</Button>
+                          <Button size="mini" color="warning" onClick={() => onFinish(o)}>完工</Button>
+                        </>
+                      )}
+                      {isDone && (
+                        <Button size="mini" fill="outline" onClick={() => onClose(o)}>关闭</Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )
