@@ -5,15 +5,16 @@ const config: CapacitorConfig = {
   appName: '奶粉罐MES',
   webDir: 'dist',
   server: {
-    androidScheme: 'https',
-    // 开发时允许加载本地 dev server（真机调试用）
+    // 用 http 而非 https，避免混合内容阻止向 http://43.138.218.55 的 API 请求
+    androidScheme: 'http',
     cleartext: true,
+    // 允许从任何来源加载资源
+    hostname: 'localhost',
   },
   plugins: {
     SplashScreen: { launchShowDuration: 2000 },
     BarcodeScanner: { saveHistory: false },
   },
-  // Android TV 支持清单：capacitor 会自动处理 CATEGORY_LEANBACK_LAUNCHER
   android: {
     allowMixedContent: true,
     captureInput: false,
