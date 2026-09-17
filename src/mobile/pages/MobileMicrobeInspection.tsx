@@ -11,7 +11,7 @@
  *   GET  /api/basic/microbe-inspections   列表（历史可扩展）
  */
 import { useEffect, useState } from 'react'
-import { Steps, Button, List, SearchBar, Toast, Dialog, Radio, Picker, TextArea, PullToRefresh, Input } from 'antd-mobile'
+import {Button, List, SearchBar, Toast, Dialog, Radio, Picker, TextArea, PullToRefresh, Input } from 'antd-mobile'
 import api from '../../utils/api'
 import { offlinePost } from '../offline/offlineApi'
 import { useBarcode } from '../hooks/useBarcode'
@@ -213,13 +213,7 @@ export default function MobileMicrobeInspection() {
 
   return (
     <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
-      <Steps current={step} direction="vertical" style={{ marginBottom: 16 }}>
-        <Steps.Step title="选对象" description={objectType} />
-        <Steps.Step title="填项目" description={`${items.filter(i => i.result).length}/${items.length}`} />
-        <Steps.Step title="提交" />
-      </Steps>
-
-      {step === 0 && (
+{step === 0 && (
         <>
           {/* 对象类型 + 关联单据类型 */}
           <div style={{ background: '#fff', borderRadius: 10, padding: 14, border: '1px solid #eef0f3', marginBottom: 12 }}>

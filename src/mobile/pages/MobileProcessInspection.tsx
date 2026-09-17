@@ -12,7 +12,7 @@
  */
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, List, SearchBar, Toast, Radio, Input, Steps, PullToRefresh } from 'antd-mobile'
+import { Button, List, SearchBar, Toast, Radio, Input, PullToRefresh } from 'antd-mobile'
 import api from '../../utils/api'
 import { offlinePost } from '../offline/offlineApi'
 import { useBarcode } from '../hooks/useBarcode'
@@ -145,13 +145,7 @@ export default function MobileProcessInspection() {
 
   return (
     <div className="mobile-page" style={{ paddingTop: 12 }}>
-      <Steps current={step} direction="vertical" style={{ marginBottom: 16 }}>
-        <Steps.Step title="选在制品" description={step > 0 ? selected?.work_order_no : ''} />
-        <Steps.Step title="填参数" description={step > 1 ? result : ''} />
-        <Steps.Step title="提交" />
-      </Steps>
-
-      {step === 0 && (
+{step === 0 && (
         <>
           <SearchBar
             placeholder="扫工单号 / 手输"

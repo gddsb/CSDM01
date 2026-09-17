@@ -18,8 +18,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Button, List, SearchBar, Toast, Dialog, TextArea, Radio, Steps,
-  PullToRefresh, Tabs, ImageUploader, Space,
+  Button, List, SearchBar, Toast, Dialog, TextArea, Radio, PullToRefresh, Tabs, ImageUploader, Space,
 } from 'antd-mobile'
 import type { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import api from '../../utils/api'
@@ -297,13 +296,7 @@ export default function MobileDeviceMaintenance() {
 
   return (
     <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
-      <Steps current={step} direction="vertical" style={{ marginBottom: 16 }}>
-        <Steps.Step title="选设备" description={step > 0 ? selectedDevice?.device_name : ''} />
-        <Steps.Step title="选保养项" description={step > 1 ? selectedRecord?.standard_name : ''} />
-        <Steps.Step title="提交" />
-      </Steps>
-
-      {/* ============ Step 0: 设备选择 ============ */}
+{/* ============ Step 0: 设备选择 ============ */}
       {step === 0 && (
         <>
           <SearchBar

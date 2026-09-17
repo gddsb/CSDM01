@@ -13,7 +13,7 @@
  */
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, List, SearchBar, Toast, Dialog, TextArea, Picker, Steps, Card, PullToRefresh } from 'antd-mobile'
+import { Button, List, SearchBar, Toast, Dialog, TextArea, Picker, Card, PullToRefresh } from 'antd-mobile'
 import { RightOutline } from 'antd-mobile-icons'
 import api from '../../utils/api'
 import { offlinePost } from '../offline/offlineApi'
@@ -217,13 +217,7 @@ export default function MobileExceptionReport() {
 
   return (
     <div className="mobile-page" style={{ paddingTop: 12 }}>
-      <Steps current={step} direction="vertical" style={{ marginBottom: 16 }}>
-        <Steps.Step title="选报工单" description={step > 0 ? (selected?.report_no || selected?.order_no) : ''} />
-        <Steps.Step title="填异常" description={step > 1 ? exceptionType : ''} />
-        <Steps.Step title="提交" />
-      </Steps>
-
-      {step === 0 && (
+{step === 0 && (
         <>
           <SearchBar
             placeholder="扫报工单号 / 手输"

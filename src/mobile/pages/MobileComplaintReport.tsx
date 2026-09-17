@@ -8,7 +8,7 @@
  * 后端接口：POST /api/basic/complaints（自动生成 complaint_no）
  */
 import { useState } from 'react'
-import { Steps, Button, List, Toast, Dialog, Picker, TextArea, Input, Radio } from 'antd-mobile'
+import {Button, List, Toast, Dialog, Picker, TextArea, Input, Radio } from 'antd-mobile'
 import { offlinePost } from '../offline/offlineApi'
 
 type Step = 0 | 1 | 2
@@ -127,13 +127,7 @@ export default function MobileComplaintReport() {
 
   return (
     <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
-      <Steps current={step} direction="vertical" style={{ marginBottom: 16 }}>
-        <Steps.Step title="基本信息" description={complaintType || ''} />
-        <Steps.Step title="详细描述" description={complaintDesc.slice(0, 10) || ''} />
-        <Steps.Step title="提交" />
-      </Steps>
-
-      {step === 0 && (
+{step === 0 && (
         <>
           <Card>
             <List.Item
