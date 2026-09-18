@@ -204,7 +204,7 @@ export default function ProductionReport() {
       let totalDefectProcess = 0
       let totalDefectScrap = 0
       let totalInput = 0
-      let totalOutput = Number(wo.actual_output_qty || 0)
+      let totalOutput: number
       let processCount = 0
 
       if (detail) {

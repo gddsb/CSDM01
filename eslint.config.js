@@ -14,6 +14,7 @@ const tsBase = {
   },
   rules: {
     'no-unused-vars': 'off',
+    'no-redeclare': 'off', // TS declaration merging（interface + 同名 function）合法
     '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
     '@typescript-eslint/no-explicit-any': 'off',
     'no-empty': ['warn', { allowEmptyCatch: true }],
@@ -47,7 +48,24 @@ const frontendTs = {
   plugins: { ...tsBase.plugins, 'react-hooks': reactHooks, 'react-refresh': reactRefresh },
   rules: {
     ...tsBase.rules,
-    ...reactHooks.configs.recommended.rules,
+    // 仅保留标准 React Hooks 规则，关闭 React Compiler 专用规则（项目使用 React 18，无 Compiler）
+    'react-hooks/rules-of-hooks': 'error',
+    'react-hooks/exhaustive-deps': 'warn',
+    // 以下 14 条为 React Compiler v7 专用规则，React 18 不适用，全部关闭
+    'react-hooks/static-components': 'off',
+    'react-hooks/use-memo': 'off',
+    'react-hooks/preserve-manual-memoization': 'off',
+    'react-hooks/incompatible-library': 'off',
+    'react-hooks/immutability': 'off',
+    'react-hooks/globals': 'off',
+    'react-hooks/refs': 'off',
+    'react-hooks/set-state-in-effect': 'off',
+    'react-hooks/error-boundaries': 'off',
+    'react-hooks/purity': 'off',
+    'react-hooks/set-state-in-render': 'off',
+    'react-hooks/unsupported-syntax': 'off',
+    'react-hooks/config': 'off',
+    'react-hooks/gating': 'off',
     'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
   },
 }

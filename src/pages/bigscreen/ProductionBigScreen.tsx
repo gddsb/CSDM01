@@ -234,28 +234,6 @@ export default function ProductionBigScreen() {
     { label: '运行产线', value: runningLines.length, unit: '条', color: '#00d4ff' },
   ]
 
-  const mustReportProcessNames = processes.filter(p => Number(p.must_report || p.mustReport || p.is_key) === 1).map(p => p.process_name || p.name)
-  const processStats = {}
-  dateProcessReports.forEach(r => {
-    const pname = r.process_name || r.processName
-    if (!pname) return
-    // 如果配置了必报工序，则只统计必报的；否则全部统计
-    if (mustReportProcessNames.length > 0 && !mustReportProcessNames.includes(pname)) return
-    if (!processStats[pname]) {
-      processStats[pname] = { name: pname, input: 0, output: 0, defect: 0 }
-    }
-    processStats[pname].input += Number(r.input_qty || 0)
-    processStats[pname].output += Number(r.output_qty || 0)
-    processStats[pname].defect += Number(r.defect_material || 0) + Number(r.defect_process || 0) + Number(r.defect_scrap || 0)
-  })
-  let processList = Object.values(processStats)
-  // 如果数据库没有工序报工数据，用工序定义做演示占位
-  if (processList.length === 0 && processes.length > 0) {
-    processList = (mustReportProcessNames.length > 0 ? mustReportProcessNames : processes.map(p => p.process_name || p.name).slice(0, 6)).map(n => ({
-      name: n, input: 0, output: 0, defect: 0,
-    }))
-  }
-
   const defectDistribution: Record<string, number> = {}
   dateProcessReports.forEach(r => {
     defectDistribution['来料不良'] = (defectDistribution['来料不良'] || 0) + Number(r.defect_material || 0)

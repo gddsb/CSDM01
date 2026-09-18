@@ -61,7 +61,7 @@ export function detectDeviceType(): DeviceInfo {
   const ua = capInfo?.ua || (typeof navigator !== 'undefined' ? navigator.userAgent.toLowerCase() : '')
   const platform = capInfo?.platform || detectPlatform(ua)
 
-  let type: DeviceType = 'phone'
+  let type: DeviceType
 
   // 1. TV / Leanback
   if (TV_KEYWORDS.some((k) => ua.includes(k))) {
