@@ -116,6 +116,57 @@ export const DeviceDocumentService = {
       order: [['created_at', 'DESC']],
     })
   },
+
+  // ---------- upload 事务内 DB 操作 ----------
+
+  /** 上传前置：校验设备存在 + 统计同类型文档数量 */
+  async prepareUploadContext(deviceId: number, docType: string, transaction?: any) {
+    const device = await Device.findOne({
+      where: { device_id: deviceId },
+      transaction,
+    })
+    if (!device) throw new AppError('设备不存在', 10002, 404)
+    const existingCount = await DeviceDocument.count({
+      where: { device_id: deviceId, doc_type: docType },
+      transaction,
+    })
+    return { device, existingCount }
+  },
+
+  /** 事务内批量创建文档记录 */
+  async bulkCreate(docs: any[], transaction?: any) {
+    const created: any[] = []
+    for (const d of docs) {
+      created.push(await DeviceDocument.create(d, { transaction }))
+    }
+    return created
+  },
+
+  // ---------- delete 事务内 DB 操作 ----------
+
+  /** 查文档（返回实例 + file_path）用于 Controller 删文件 */
+  async findForDelete(id: number, transaction?: any) {
+    const doc = await DeviceDocument.findOne({
+      where: { doc_id: id },
+      transaction,
+    })
+    if (!doc) throw new AppError('文档不存在', 10002, 404)
+    return doc
+  },
+
+  /** 事务内删除文档记录 */
+  async destroy(doc: any, transaction?: any) {
+    await doc.destroy({ transaction })
+  },
+
+  // ---------- download DB 操作 ----------
+
+  /** 查文档用于下载（返回 file_path + file_name） */
+  async findForDownload(id: number) {
+    const doc = await DeviceDocument.findOne({ where: { doc_id: id } })
+    if (!doc) throw new AppError('文档不存在', 10002, 404)
+    return doc
+  },
 }
 
 export default DeviceDocumentService

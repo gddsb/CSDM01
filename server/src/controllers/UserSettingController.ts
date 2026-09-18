@@ -1,70 +1,44 @@
-import { UserSetting } from '../models/index.js'
+/**
+ * 用户设置 Controller — DB 操作走 UserSettingService；
+ * 业务参数校验（userId 提取、setting_key 非空）保留 Controller
+ */
+import UserSettingService from '../services/UserSettingService.js'
 import { success, fail, ErrorCode } from '../utils/response.js'
-import { logger } from "../utils/logger.js"
+import { asyncHandler } from '../middleware/security.js'
+import type { Request, Response } from 'express'
 
-export const getUserSettings = async (req, res) => {
-  try {
-    const userId = req.user?.user_id || req.user?.username
-    if (!userId) return fail(res, '用户未登录', ErrorCode.UNAUTHORIZED)
-    const { group } = req.query
-    const where: any = { user_id: String(userId) }
-    if (group) where.setting_group = String(group)
-    const rows = await UserSetting.findAll({ where })
-    const result = {}
-    rows.forEach(r => {
-      try {
-        result[r.setting_key] = r.setting_type === 'json' ? JSON.parse(r.setting_value || '{}') : r.setting_value
-      } catch {
-        result[r.setting_key] = r.setting_value
-      }
-    })
-    return success(res, result, '获取成功')
-  } catch (err) {
-    logger.error('获取用户设置失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
-  }
+/** 从 req.user 提取唯一 userId（兼容 user_id / username） */
+function resolveUserId(user: any): string | null {
+  if (!user) return null
+  return String(user.user_id ?? user.userId ?? user.username ?? '')
 }
 
-export const saveUserSetting = async (req, res) => {
-  try {
-    const userId = req.user?.user_id || req.user?.username
-    if (!userId) return fail(res, '用户未登录', ErrorCode.UNAUTHORIZED)
-    const { setting_key, setting_value, setting_group = 'table', setting_type = 'json' } = req.body
-    if (!setting_key) return fail(res, 'setting_key 不能为空', ErrorCode.PARAM_INVALID)
-    const val = typeof setting_value === 'object' ? JSON.stringify(setting_value) : String(setting_value)
-    const [record, created] = await UserSetting.findOrCreate({
-      where: { user_id: String(userId), setting_key: String(setting_key) },
-      defaults: { setting_value: val, setting_group, setting_type },
-    })
-    if (!created) {
-      await record.update({ setting_value: val, setting_group, setting_type })
-    }
-    return success(res, null, '保存成功')
-  } catch (err) {
-    logger.error('保存用户设置失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
-  }
-}
+export const getUserSettings = asyncHandler(async (req: Request, res: Response) => {
+  const userId = resolveUserId((req as any).user)
+  if (!userId) return fail(res, '用户未登录', ErrorCode.UNAUTHORIZED)
+  const { group } = req.query
+  const settings = await UserSettingService.getSettings(userId, group ? String(group) : undefined)
+  return success(res, settings, '获取成功')
+})
 
-export const batchSaveUserSettings = async (req, res) => {
-  try {
-    const userId = req.user?.user_id || req.user?.username
-    if (!userId) return fail(res, '用户未登录', ErrorCode.UNAUTHORIZED)
-    const { settings = {}, setting_group = 'table', setting_type = 'json' } = req.body
-    const uid = String(userId)
-    for (const [key, value] of Object.entries(settings)) {
-      const val = typeof value === 'object' ? JSON.stringify(value) : String(value)
-      const [record, created] = await UserSetting.findOrCreate({
-        where: { user_id: uid, setting_key: key },
-        defaults: { setting_value: val, setting_group, setting_type },
-      })
-      if (!created) {
-        await record.update({ setting_value: val, setting_group, setting_type })
-      }
-    }
-    return success(res, null, `保存成功，共 ${Object.keys(settings).length} 项`)
-  } catch (err) {
-    logger.error('批量保存用户设置失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
-  }
-}
+export const saveUserSetting = asyncHandler(async (req: Request, res: Response) => {
+  const userId = resolveUserId((req as any).user)
+  if (!userId) return fail(res, '用户未登录', ErrorCode.UNAUTHORIZED)
+
+  const { setting_key, setting_value, setting_group = 'table', setting_type = 'json' } = req.body || {}
+  if (!setting_key) return fail(res, 'setting_key 不能为空', ErrorCode.PARAM_INVALID)
+
+  await UserSettingService.saveSetting(userId, String(setting_key), setting_value, setting_group, setting_type)
+  return success(res, null, '保存成功')
+})
+
+export const batchSaveUserSettings = asyncHandler(async (req: Request, res: Response) => {
+  const userId = resolveUserId((req as any).user)
+  if (!userId) return fail(res, '用户未登录', ErrorCode.UNAUTHORIZED)
+
+  const { settings = {}, setting_group = 'table', setting_type = 'json' } = req.body || {}
+  const count = await UserSettingService.batchSaveSettings(userId, settings, setting_group, setting_type)
+  return success(res, null, `保存成功，共 ${count} 项`)
+})
+
+export default { getUserSettings, saveUserSetting, batchSaveUserSettings }
