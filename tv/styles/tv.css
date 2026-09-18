@@ -1,0 +1,465 @@
+/*
+ * tv.css —— TV 大屏统一样式（兼容 Chrome 28 / Android 4.2.1）
+ *
+ * 设计约束：
+ *   - 不用 CSS Grid / Flexbox（Chrome 28 不支持）
+ *   - 用 float + percentage + position 布局
+ *   - 不用 CSS 变量，颜色硬编码（与 React 版视觉一致）
+ *   - 基准字号：28px（1080p 基准 14px × 2，4K 电视显示清晰）
+ *   - 主色：#00d4ff / 背景：#0a0e1a / 面板：rgba(0,212,255,0.06)
+ */
+
+/* ============ 全局重置 ============ */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #0a0e1a;
+    color: #E6EDF3;
+    font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    -webkit-text-size-adjust: 100%;
+}
+
+/* ============ 总控轮播页 ============ */
+.tv-wrapper {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #060d1b;
+    overflow: hidden;
+}
+
+.tv-wrapper iframe {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    border: none;
+    opacity: 0;
+    z-index: 1;
+}
+
+.tv-wrapper iframe.active {
+    opacity: 1;
+    z-index: 2;
+}
+
+.tv-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 10;
+    cursor: default;
+}
+
+/* 遥控器菜单底部条 */
+.tv-menu-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 72px;
+    background: linear-gradient(180deg, transparent 0%, rgba(6,13,27,0.85) 50%, rgba(6,13,27,0.95) 100%);
+    padding: 0 32px;
+    z-index: 20;
+    display: none;
+}
+.tv-menu-bar.visible { display: block; }
+
+.tv-menu-btn {
+    position: relative;
+    top: 50%;
+    margin-top: -24px;
+    float: left;
+    padding: 10px 20px;
+    margin: 0 8px;
+    background: rgba(0,50,80,0.4);
+    border: 1px solid rgba(0,212,255,0.15);
+    border-radius: 4px;
+    color: #5b8ca8;
+    font-size: 16px;
+    letter-spacing: 2px;
+    cursor: pointer;
+}
+.tv-menu-btn.focus {
+    background: linear-gradient(90deg, rgba(0,212,255,0.35), rgba(0,212,255,0.12));
+    border-color: rgba(0,212,255,0.8);
+    color: #8adfff;
+    box-shadow: 0 0 20px rgba(0,212,255,0.4);
+    font-weight: 700;
+}
+
+/* ============ 大屏页面容器 ============ */
+.bs-root {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #0a0e1a;
+    overflow: hidden;
+}
+
+/* ============ 顶部 Header ============ */
+.bs-header {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 68px;
+    background: linear-gradient(180deg, rgba(0,40,70,0.6) 0%, rgba(10,14,26,0) 100%);
+    border-bottom: 1px solid rgba(0,212,255,0.25);
+    padding: 0 32px;
+    z-index: 5;
+}
+
+.bs-header-title {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    -webkit-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+    font-size: 26px;
+    font-weight: 700;
+    color: #00d4ff;
+    letter-spacing: 6px;
+    text-shadow: 0 0 16px rgba(0,212,255,0.5);
+}
+
+.bs-header-left {
+    position: absolute;
+    left: 32px;
+    top: 50%;
+    margin-top: -20px;
+}
+
+.bs-header-right {
+    position: absolute;
+    right: 32px;
+    top: 50%;
+    margin-top: -20px;
+    text-align: right;
+}
+
+.bs-header-time {
+    font-size: 22px;
+    font-weight: 700;
+    color: #E6EDF3;
+    letter-spacing: 2px;
+    font-family: "Courier New", monospace;
+}
+.bs-header-week {
+    font-size: 14px;
+    color: #8B949E;
+    margin-top: 2px;
+}
+.bs-header-update-label {
+    font-size: 14px;
+    color: #8B949E;
+}
+.bs-header-update-time {
+    font-size: 20px;
+    font-weight: 700;
+    color: #00ff88;
+    font-family: "Courier New", monospace;
+}
+
+/* 环境条 */
+.bs-env-bar {
+    position: absolute;
+    left: 240px;
+    top: 50%;
+    margin-top: -16px;
+    font-size: 14px;
+}
+.bs-env-item {
+    display: inline-block;
+    padding: 4px 14px;
+    margin-right: 16px;
+    background: rgba(0,212,255,0.08);
+    border-radius: 4px;
+}
+.bs-env-label {
+    color: #8B949E;
+    margin-right: 6px;
+}
+.bs-env-value {
+    color: #E6EDF3;
+    font-weight: 700;
+    font-family: "Courier New", monospace;
+}
+
+/* ============ KPI 卡片区 ============ */
+.bs-kpi-row {
+    position: absolute;
+    top: 72px;
+    left: 20px;
+    right: 20px;
+    height: 96px;
+}
+
+.bs-kpi-card {
+    position: relative;
+    float: left;
+    width: 16.666%; /* 6 等分 */
+    height: 100%;
+    padding: 0 10px;
+}
+.bs-kpi-card-inner {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(0,212,255,0.12) 0%, rgba(0,212,255,0.02) 100%);
+    border: 1px solid rgba(0,212,255,0.25);
+    border-radius: 4px;
+    padding: 8px 16px;
+}
+.bs-kpi-card-inner::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px; height: 100%;
+    background: #00d4ff;
+    border-radius: 4px 0 0 4px;
+}
+.bs-kpi-value {
+    font-size: 40px;
+    font-weight: 700;
+    font-family: "DIN", "Courier New", monospace;
+    line-height: 1.1;
+}
+.bs-kpi-unit {
+    font-size: 16px;
+    margin-left: 4px;
+    color: #8B949E;
+    font-weight: 400;
+}
+.bs-kpi-label {
+    font-size: 14px;
+    color: #8B949E;
+    margin-top: 4px;
+}
+
+/* ============ 图表区 ============ */
+.bs-chart-area {
+    position: absolute;
+    top: 172px;
+    left: 20px;
+    right: 20px;
+    bottom: 20px;
+}
+
+.bs-chart-row {
+    position: relative;
+    width: 100%;
+    margin-bottom: 10px;
+}
+.bs-chart-row:last-child { margin-bottom: 0; }
+
+.bs-chart-col {
+    position: relative;
+    float: left;
+    padding: 0 5px;
+}
+
+/* ============ Panel 面板 ============ */
+.bs-panel {
+    width: 100%;
+    height: 100%;
+    background: rgba(0,20,40,0.5);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+
+.bs-panel-title {
+    height: 32px;
+    line-height: 32px;
+    padding: 0 16px;
+    font-size: 14px;
+    color: #8adfff;
+    font-weight: 600;
+    background: linear-gradient(90deg, rgba(0,212,255,0.2) 0%, rgba(0,212,255,0) 100%);
+    border-bottom: 1px solid rgba(0,212,255,0.15);
+    letter-spacing: 2px;
+}
+.bs-panel-title::before {
+    content: '';
+    display: inline-block;
+    width: 3px; height: 12px;
+    background: #00d4ff;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.bs-panel-body {
+    position: absolute;
+    top: 33px;
+    left: 0; right: 0; bottom: 0;
+    padding: 4px;
+}
+
+/* canvas 容器 */
+.bs-canvas-wrap {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+.bs-canvas-wrap canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* ============ 列表项（产线状态等） ============ */
+.bs-list-item {
+    padding: 8px 16px;
+    border-bottom: 1px solid rgba(0,212,255,0.06);
+    font-size: 13px;
+    position: relative;
+    border-left: 4px solid transparent;
+    margin-left: 8px;
+}
+
+.bs-list-item .title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #E6EDF3;
+}
+.bs-list-item .sub {
+    font-size: 12px;
+    color: #8B949E;
+    margin-top: 2px;
+}
+
+/* 指示灯 */
+.bs-dot {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+.bs-dot.run    { background: #3FB950; box-shadow: 0 0 8px rgba(63,185,80,0.6); }
+.bs-dot.maintain { background: #D29922; box-shadow: 0 0 8px rgba(210,153,34,0.6); }
+.bs-dot.stop   { background: #8B949E; }
+.bs-dot.fault  { background: #F85149; box-shadow: 0 0 8px rgba(248,81,73,0.6); }
+
+/* ============ Tag 标签 ============ */
+.bs-tag {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    line-height: 1.5;
+}
+.bs-tag-success { background: rgba(63,185,80,0.15); color: #3FB950; border: 1px solid rgba(63,185,80,0.3); }
+.bs-tag-warn    { background: rgba(210,153,34,0.15); color: #D29922; border: 1px solid rgba(210,153,34,0.3); }
+.bs-tag-danger  { background: rgba(248,81,73,0.15); color: #F85149; border: 1px solid rgba(248,81,73,0.3); }
+.bs-tag-info    { background: rgba(0,212,255,0.15); color: #00d4ff; border: 1px solid rgba(0,212,255,0.3); }
+.bs-tag-default { background: rgba(139,148,158,0.15); color: #8B949E; border: 1px solid rgba(139,148,158,0.3); }
+
+/* ============ 数字光晕动画 ============ */
+.bs-number-glow {
+    -webkit-animation: glowPulse 2.5s ease-in-out infinite;
+    animation: glowPulse 2.5s ease-in-out infinite;
+}
+@-webkit-keyframes glowPulse {
+    0%, 100% { text-shadow: 0 0 8px currentColor; }
+    50%      { text-shadow: 0 0 20px currentColor, 0 0 32px currentColor; }
+}
+@keyframes glowPulse {
+    0%, 100% { text-shadow: 0 0 8px currentColor; }
+    50%      { text-shadow: 0 0 20px currentColor, 0 0 32px currentColor; }
+}
+
+/* ============ 数据加载中/错误提示 ============ */
+.bs-loading {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(10,14,26,0.9);
+    z-index: 100;
+    text-align: center;
+    padding-top: 40vh;
+}
+.bs-loading .text {
+    font-size: 20px;
+    color: #00d4ff;
+    letter-spacing: 4px;
+}
+.bs-loading .sub {
+    font-size: 14px;
+    color: #8B949E;
+    margin-top: 12px;
+}
+.bs-loading .dot {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: #00d4ff;
+    margin: 0 4px;
+    -webkit-animation: dotBlink 1.2s infinite;
+    animation: dotBlink 1.2s infinite;
+}
+.bs-loading .dot:nth-child(2) { -webkit-animation-delay: 0.2s; animation-delay: 0.2s; }
+.bs-loading .dot:nth-child(3) { -webkit-animation-delay: 0.4s; animation-delay: 0.4s; }
+@-webkit-keyframes dotBlink {
+    0%, 80%, 100% { opacity: 0.2; }
+    40% { opacity: 1; }
+}
+@keyframes dotBlink {
+    0%, 80%, 100% { opacity: 0.2; }
+    40% { opacity: 1; }
+}
+
+.bs-error {
+    position: absolute;
+    top: 50%; left: 50%;
+    -webkit-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+.bs-error .title {
+    font-size: 20px;
+    color: #F85149;
+}
+.bs-error .sub {
+    font-size: 14px;
+    color: #8B949E;
+    margin-top: 8px;
+}
+
+/* ============ 订单列表（最后一个 panel） ============ */
+.bs-order-row {
+    padding: 6px 16px;
+    border-bottom: 1px solid rgba(0,212,255,0.06);
+    font-size: 12px;
+}
+.bs-order-row .row-top {
+    position: relative;
+    height: 18px;
+}
+.bs-order-row .order-no {
+    font-weight: 600;
+    color: #E6EDF3;
+    float: left;
+}
+.bs-order-row .order-status {
+    float: right;
+}
+.bs-order-row .row-sub {
+    font-size: 12px;
+    color: #8B949E;
+    margin-top: 2px;
+}
+
+/* ============ 清除 float ============ */
+.bs-clear { clear: both; }
+
+/* ============ 空闲模式：降低亮度 ============ */
+.bs-root.idle {
+    opacity: 0.6;
+    transition: opacity 1s;
+}
+.bs-root.idle .bs-number-glow {
+    -webkit-animation: none;
+    animation: none;
+}
