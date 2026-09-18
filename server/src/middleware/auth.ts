@@ -186,10 +186,10 @@ export function logOperation(module: string) {
           ip,
           status: 1,
         }).catch((err: any) => {
-          console.error('[logOperation] 记录操作日志失败:', err.message)
+          logger.error('[logOperation] 记录操作日志失败:', err.message)
         })
       } catch (err: any) {
-        console.error('[logOperation] 记录操作日志异常:', err.message)
+        logger.error('[logOperation] 记录操作日志异常:', err.message)
       }
     })
     next()

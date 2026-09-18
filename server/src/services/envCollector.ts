@@ -1,5 +1,6 @@
 import EnvMonitor from '../models/EnvMonitor.js'
 import EnvAlarm from '../models/EnvAlarm.js'
+import { logger } from "../utils/logger.js"
 
 const BASE_URL = 'http://www.0531yun.com';
 
@@ -57,13 +58,13 @@ export class EnvCollector {
         this.token = json.data.token;
         // expiration 是秒级时间戳
         this.tokenExpireAt = (json.data.expiration || 0) * 1000;
-        console.log('[EnvCollector] Token refreshed, expireAt:', new Date(this.tokenExpireAt).toLocaleString());
+        logger.info('[EnvCollector] Token refreshed, expireAt:', new Date(this.tokenExpireAt).toLocaleString());
         return this.token;
       }
-      console.error('[EnvCollector] getToken failed:', json.message);
+      logger.error('[EnvCollector] getToken failed:', json.message);
       return null;
     } catch (e) {
-      console.error('[EnvCollector] getToken error:', e);
+      logger.error('[EnvCollector] getToken error:', e);
       return null;
     }
   }
@@ -81,10 +82,10 @@ export class EnvCollector {
       if (json.code === 1000 && Array.isArray(json.data)) {
         return json.data as RealTimeDevice[];
       }
-      console.error('[EnvCollector] fetchRealTimeData failed:', json.message);
+      logger.error('[EnvCollector] fetchRealTimeData failed:', json.message);
       return [];
     } catch (e) {
-      console.error('[EnvCollector] fetchRealTimeData error:', e);
+      logger.error('[EnvCollector] fetchRealTimeData error:', e);
       return [];
     }
   }
@@ -140,7 +141,7 @@ export class EnvCollector {
       }
       return coeffMap;
     } catch (e) {
-      console.error('[EnvCollector] fetchDeviceList error:', e);
+      logger.error('[EnvCollector] fetchDeviceList error:', e);
       return new Map();
     }
   }
@@ -212,17 +213,17 @@ export class EnvCollector {
     if (alarmRecords.length > 0) {
       await EnvAlarm.bulkCreate(alarmRecords);
     }
-    console.log(`[EnvCollector] Saved ${records.length} records, ${alarmRecords.length} alarms from ${devices.length} devices`);
+    logger.info(`[EnvCollector] Saved ${records.length} records, ${alarmRecords.length} alarms from ${devices.length} devices`);
     return { saved: records.length, devices: devices.length, alarms: alarmRecords.length, success: true };
   }
 
   /** 启动定时采集 */
   startInterval(minutes = 5): ReturnType<typeof setInterval> {
-    console.log(`[EnvCollector] Auto collect started (every ${minutes} min)`);
+    logger.info(`[EnvCollector] Auto collect started (every ${minutes} min)`);
     // 立即执行一次
-    this.collectAndSave().catch((e) => console.error('[EnvCollector] initial collect error:', e));
+    this.collectAndSave().catch((e) => logger.error('[EnvCollector] initial collect error:', e));
     return setInterval(() => {
-      this.collectAndSave().catch((e) => console.error('[EnvCollector] interval collect error:', e));
+      this.collectAndSave().catch((e) => logger.error('[EnvCollector] interval collect error:', e));
     }, minutes * 60_000);
   }
 }

@@ -1,6 +1,7 @@
 import jwt, { SignOptions } from 'jsonwebtoken'
 import crypto from 'crypto'
 import dotenv from 'dotenv'
+import { logger } from "../utils/logger.js"
 
 dotenv.config()
 
@@ -16,7 +17,7 @@ if (envSecret && envSecret.length >= 16 && envSecret !== 'default-secret') {
 } else {
   // 开发环境临时密钥（每次重启会使旧 token 失效，仅用于本地开发）
   secret = crypto.randomBytes(32).toString('base64url')
-  console.warn('[Security] 未配置 JWT_SECRET，开发环境已生成临时密钥（重启后旧 token 失效）。建议在 server/.env 中配置固定密钥。')
+  logger.warn('[Security] 未配置 JWT_SECRET，开发环境已生成临时密钥（重启后旧 token 失效）。建议在 server/.env 中配置固定密钥。')
 }
 
 const expiresIn: string = process.env.JWT_EXPIRES_IN || '2h'

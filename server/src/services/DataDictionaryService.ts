@@ -8,7 +8,6 @@ import { MAX_PAGE_SIZE, success, fail, ErrorCode } from '../utils/response.js'
 import { logger } from '../utils/logger.js'
 import { formatDateTime, nowBeijingStr } from '../utils/date.js'
 import { tableCategoryMap, collectDatabaseSchema } from './DatabaseMigrationService.js'
-
 type DictRefreshStatus = 'pending' | 'running' | 'success' | 'failed'
 interface DictRefreshTask {
   taskId: string
@@ -123,7 +122,7 @@ export const refreshDictionaryDataIfEmpty = async () => {
   try {
     const n = await DataDictionary.count()
     if (n > 0) {
-      console.log(`[DataDictionary] 字典表已有 ${n} 条记录，跳过初始化扫描`)
+      logger.info(`[DataDictionary] 字典表已有 ${n} 条记录，跳过初始化扫描`)
       return { skipped: true, existing: n }
     }
   } catch (e) {
@@ -165,7 +164,7 @@ async function runDictRefreshAsync(task: DictRefreshTask) {
     task.error = e?.message || String(e)
     task.message = `刷新失败：${task.error}`
     task.finishedAt = Date.now()
-    console.error('[DataDictionary] 异步刷新失败:', e)
+    logger.error('[DataDictionary] 异步刷新失败:', e)
   } finally {
     dictRefreshRunning = false
     dictRefreshLastAt = Date.now()
@@ -280,7 +279,7 @@ export const listDataDictionary = async (req, res) => {
     })
     return success(res, { list: rows, total: count }, '获取成功')
   } catch (err) {
-    console.error('查询数据字典失败:', err)
+    logger.error('查询数据字典失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }

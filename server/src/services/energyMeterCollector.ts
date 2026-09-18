@@ -4,6 +4,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import EnergyMeterData from '../models/EnergyMeterData.js'
 import { isDdddocrAvailable, DDDDOCR_MISSING_HINT } from './pythonDeps.js'
+import { logger } from "../utils/logger.js"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -54,7 +55,7 @@ export class EnergyMeterCollector {
       if (stderr) {
         const lines = stderr.trim().split('\n')
         for (const line of lines) {
-          console.log('[EnergyCollector] ' + line)
+          logger.info('[EnergyCollector] ' + line)
         }
       }
 
@@ -88,13 +89,13 @@ export class EnergyMeterCollector {
           })
           savedCount++
         } catch (err: any) {
-          console.warn('[EnergyCollector] 保存记录失败:', err.message)
+          logger.warn('[EnergyCollector] 保存记录失败:', err.message)
         }
       }
 
       return { success: true, totalRecords: savedCount }
     } catch (err: any) {
-      console.error('[EnergyCollector] 采集失败:', err)
+      logger.error('[EnergyCollector] 采集失败:', err)
       return { success: false, totalRecords: 0, error: err.message || String(err) }
     }
   }

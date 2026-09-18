@@ -21,7 +21,6 @@ import {
 import sequelize from './config/database.js'
 import { logger } from './utils/logger.js'
 
-
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const seedDataDir = path.join(__dirname, 'seed-data')
@@ -75,61 +74,61 @@ function loadSeedData(name) {
     const content = fs.readFileSync(filePath, 'utf-8')
     return JSON.parse(content)
   } catch (err) {
-    console.log(`    ⚠️  读取 ${name}.json 失败: ${err.message}`)
+    logger.info(`    ⚠️  读取 ${name}.json 失败: ${err.message}`)
     return []
   }
 }
 
 async function seed() {
   try {
-    console.log('🔄 开始同步数据库表（force: true）...')
+    logger.info('🔄 开始同步数据库表（force: true）...')
     await sequelize.sync({ force: true })
-    console.log('✅ 数据库表同步完成\n')
+    logger.info('✅ 数据库表同步完成\n')
 
     const counts = {}
 
     for (const { name, model, label } of seedOrder) {
       const data = loadSeedData(name)
       if (data.length === 0) {
-        console.log(`📌 ${label}... 无数据，跳过`)
+        logger.info(`📌 ${label}... 无数据，跳过`)
         counts[name] = 0
         continue
       }
 
-      console.log(`📌 ${label}...`)
+      logger.info(`📌 ${label}...`)
       try {
         await model.bulkCreate(data, { validate: false })
-        console.log(`✅ ${label}创建完成（${data.length}条）`)
+        logger.info(`✅ ${label}创建完成（${data.length}条）`)
         counts[name] = data.length
       } catch (err) {
-        console.log(`❌ ${label}创建失败: ${err.message}`)
-        console.log(`   尝试逐条插入...`)
+        logger.info(`❌ ${label}创建失败: ${err.message}`)
+        logger.info(`   尝试逐条插入...`)
         let success = 0
         for (const item of data) {
           try {
             await model.create(item, { validate: false })
             success++
           } catch (itemErr) {
-            console.log(`   ⚠️  跳过一条数据: ${itemErr.message}`)
+            logger.info(`   ⚠️  跳过一条数据: ${itemErr.message}`)
           }
         }
-        console.log(`✅ ${label}创建完成（${success}/${data.length}条）`)
+        logger.info(`✅ ${label}创建完成（${success}/${data.length}条）`)
         counts[name] = success
       }
     }
 
-    console.log('\n🎉 种子数据初始化完成！')
+    logger.info('\n🎉 种子数据初始化完成！')
     for (const { name, label } of seedOrder) {
       if (counts[name] > 0) {
-        console.log(`   - ${label}：${counts[name]} 条`)
+        logger.info(`   - ${label}：${counts[name]} 条`)
       }
     }
-    console.log(`\n   默认登录账号：admin / 123456`)
+    logger.info(`\n   默认登录账号：admin / 123456`)
 
     await sequelize.close()
     process.exit(0)
   } catch (err) {
-    console.error('❌ 种子数据初始化失败:', err)
+    logger.error('❌ 种子数据初始化失败:', err)
     try {
       await sequelize.close()
     } catch (err) {

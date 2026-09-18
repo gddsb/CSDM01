@@ -12,6 +12,7 @@ import { MAX_PAGE_SIZE } from '../utils/response.js'
 import { AppError } from '../utils/error.js'
 import { clearPermissionCache } from '../middleware/auth.js'
 import { defaultPermissions } from './seeds/DefaultPermissions.js'
+import { logger } from "../utils/logger.js"
 
 const LEGACY_PARENT_MAP: Record<number, string> = {
   1: 'system',
@@ -176,7 +177,7 @@ export const RoleService = {
     const allPerms = await Permission.findAll()
     const toRemove = allPerms.filter((p: any) => !defaultCodes.includes(p.perm_code) && p.type === 'menu')
     if (toRemove.length > 0) {
-      console.log(`🧹 清理废弃菜单项: ${toRemove.map((p: any) => p.perm_name).join(', ')}`)
+      logger.info(`🧹 清理废弃菜单项: ${toRemove.map((p: any) => p.perm_name).join(', ')}`)
       await Permission.destroy({ where: { perm_id: { [Op.in]: toRemove.map((p: any) => p.perm_id) } } })
     }
     const adminRole = await Role.findOne({ where: { role_code: 'SUPER_ADMIN' } })
@@ -184,7 +185,7 @@ export const RoleService = {
       const allPermsAfter = await Permission.findAll()
       await adminRole.setPermissions(allPermsAfter)
     }
-    console.log('✅ 默认权限初始化完成')
+    logger.info('✅ 默认权限初始化完成')
   },
 }
 

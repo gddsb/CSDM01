@@ -1,6 +1,7 @@
 import { Sequelize } from 'sequelize'
 import dotenv from 'dotenv'
 import type { AnyModelStatic } from '../types/model.js'
+import { logger } from "../utils/logger.js"
 
 dotenv.config()
 
@@ -13,7 +14,7 @@ const baseOptions = {
     ? (sql: string, timing?: number) => {
         const duration = typeof timing === 'number' ? timing : undefined
         if (duration !== undefined && duration >= SLOW_SQL_MS) {
-          console.warn(`[SLOW SQL ${duration}ms] ${sql}`)
+          logger.warn(`[SLOW SQL ${duration}ms] ${sql}`)
         }
       }
     : false,

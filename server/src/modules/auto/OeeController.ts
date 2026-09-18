@@ -11,6 +11,7 @@ import {
 } from '../../models/index.js'
 import { nowBeijingDate, formatDate } from '../../utils/date.js'
 import { success, fail, ErrorCode } from '../../utils/response.js'
+import { logger } from "../../utils/logger.js"
 
 const DEFAULT_BASE_RATES = { availability: 85, performance: 85, quality: 95 }
 const clamp = (v: number) => Math.max(0, Math.min(100, v))
@@ -161,7 +162,7 @@ export async function oeeHandler(req: any, res: any) {
     const data = await calcOee(range)
     return success(res, data)
   } catch (err: any) {
-    console.error('[OEE]', err.message)
+    logger.error('[OEE]', err.message)
     return fail(res, err?.message || '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }

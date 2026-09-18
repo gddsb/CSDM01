@@ -1,5 +1,6 @@
 import WeatherInfo from '../models/WeatherInfo.js'
 import { formatDateTime } from '../utils/date.js'
+import { logger } from "../utils/logger.js"
 
 /** 气象抓取结果结构 */
 export interface WeatherData {
@@ -160,54 +161,54 @@ export interface CollectResult {
 export async function collectWeather(): Promise<CollectResult> {
   // 站点1：CMA JSON API（优先）
   try {
-    console.log('[WeatherCollector] trying cma JSON API');
+    logger.info('[WeatherCollector] trying cma JSON API');
     const text = await fetchText(PRIMARY_SITE, 'application/json, text/plain, */*');
     const json = JSON.parse(text);
     const data = parseCmaResponse(json);
     if (data) {
-      console.log('[WeatherCollector] cma OK:', {
+      logger.info('[WeatherCollector] cma OK:', {
         city: data.city, temp: data.temperature, hum: data.humidity,
         pres: data.pressure, time: formatDateTime(data.weatherTime),
       });
       return { data, source: data.source };
     }
-    console.warn('[WeatherCollector] cma JSON parse null');
+    logger.warn('[WeatherCollector] cma JSON parse null');
   } catch (e) {
-    console.warn('[WeatherCollector] cma JSON failed:', e instanceof Error ? e.message : e);
+    logger.warn('[WeatherCollector] cma JSON failed:', e instanceof Error ? e.message : e);
   }
 
   // 站点2：备用1 tianqic
   try {
-    console.log('[WeatherCollector] trying tianqic');
+    logger.info('[WeatherCollector] trying tianqic');
     const html = await fetchText(BACKUP_SITE_1, 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8');
     const data = parseTianqic(html);
     if (data) {
-      console.log('[WeatherCollector] tianqic OK:', {
+      logger.info('[WeatherCollector] tianqic OK:', {
         city: data.city, temp: data.temperature, hum: data.humidity,
         pres: data.pressure, time: formatDateTime(data.weatherTime),
       });
       return { data, source: data.source };
     }
-    console.warn('[WeatherCollector] tianqic parse null');
+    logger.warn('[WeatherCollector] tianqic parse null');
   } catch (e) {
-    console.warn('[WeatherCollector] tianqic failed:', e instanceof Error ? e.message : e);
+    logger.warn('[WeatherCollector] tianqic failed:', e instanceof Error ? e.message : e);
   }
 
   // 站点3：备用2 tianqi24
   try {
-    console.log('[WeatherCollector] trying tianqi24');
+    logger.info('[WeatherCollector] trying tianqi24');
     const html = await fetchText(BACKUP_SITE_2, 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8');
     const data = parseTianqi24(html);
     if (data) {
-      console.log('[WeatherCollector] tianqi24 OK:', {
+      logger.info('[WeatherCollector] tianqi24 OK:', {
         city: data.city, temp: data.temperature, hum: data.humidity,
         pres: data.pressure, time: formatDateTime(data.weatherTime),
       });
       return { data, source: data.source };
     }
-    console.warn('[WeatherCollector] tianqi24 parse null');
+    logger.warn('[WeatherCollector] tianqi24 parse null');
   } catch (e) {
-    console.warn('[WeatherCollector] tianqi24 failed:', e instanceof Error ? e.message : e);
+    logger.warn('[WeatherCollector] tianqi24 failed:', e instanceof Error ? e.message : e);
   }
 
   throw new Error('所有气象站点抓取失败');
@@ -231,9 +232,9 @@ export async function collectAndSaveWeather(): Promise<WeatherData> {
 
 /** 启动定时抓取（默认每小时） */
 export function startWeatherInterval(minutes = 60): ReturnType<typeof setInterval> {
-  console.log(`[WeatherCollector] Auto weather collect started (every ${minutes} min)`);
-  collectAndSaveWeather().catch(e => console.error('[WeatherCollector] initial err:', e));
+  logger.info(`[WeatherCollector] Auto weather collect started (every ${minutes} min)`);
+  collectAndSaveWeather().catch(e => logger.error('[WeatherCollector] initial err:', e));
   return setInterval(() => {
-    collectAndSaveWeather().catch(e => console.error('[WeatherCollector] interval err:', e));
+    collectAndSaveWeather().catch(e => logger.error('[WeatherCollector] interval err:', e));
   }, minutes * 60_000);
 }

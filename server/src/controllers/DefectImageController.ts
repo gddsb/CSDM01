@@ -4,6 +4,7 @@ import crypto from 'crypto'
 import { Op } from 'sequelize'
 import { DefectImage, DefectType } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
+import { logger } from "../utils/logger.js"
 
 const computeFileHash = (filePath) => {
   return new Promise((resolve, reject) => {
@@ -25,7 +26,7 @@ export const listImages = async (req, res) => {
     })
     return success(res, images, '查询成功')
   } catch (err) {
-    console.error('查询不良图片列表失败:', err)
+    logger.error('查询不良图片列表失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
@@ -103,7 +104,7 @@ export const uploadImages = async (req, res) => {
 
     return success(res, created, `成功上传${created.length}张图片`)
   } catch (err) {
-    console.error('上传不良图片失败:', err)
+    logger.error('上传不良图片失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
@@ -122,7 +123,7 @@ export const deleteImage = async (req, res) => {
     await image.destroy()
     return success(res, null, '删除成功')
   } catch (err) {
-    console.error('删除不良图片失败:', err)
+    logger.error('删除不良图片失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }

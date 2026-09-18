@@ -6,9 +6,10 @@ import { AuthService } from '../services/AuthService.js'
 import { success, fail, ErrorCode } from '../utils/response.js'
 import { AppError } from '../middleware/security.js'
 import type { Request, Response } from 'express'
+import { logger } from "../utils/logger.js"
 
 function handleErr(res: Response, err: unknown, fallbackAction: string) {
-  console.error(`${fallbackAction}:`, err)
+  logger.error(`${fallbackAction}:`, err)
   if (err instanceof AppError) return fail(res, err.message, err.code, undefined, err.statusCode)
   return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
 }

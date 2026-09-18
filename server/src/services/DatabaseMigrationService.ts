@@ -14,7 +14,6 @@ import { exec } from 'child_process'
 import { runConcurrently } from './DataDictionaryService.js'
 import { logger } from '../utils/logger.js'
 import { formatDateTime, nowBeijingStr } from '../utils/date.js'
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const BACKUP_DIR = process.env.BACKUP_DIR || path.resolve(__dirname, '..', '..', 'backups')
 const SQLITE_PATH = process.env.DB_STORAGE || path.resolve(__dirname, '..', '..', 'data/milk_can_mes.sqlite')
@@ -1093,7 +1092,7 @@ export const getMigrationTargets = async (req, res) => {
     const list = targets.map(t => ({ ...t, is_current: t.dialect === currentDialect }))
     return success(res, { current: currentDialect, targets: list }, '获取成功')
   } catch (err) {
-    console.error('获取迁移目标失败:', err)
+    logger.error('获取迁移目标失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
@@ -1186,7 +1185,7 @@ export const migrateDatabase = async (req, res) => {
         }
       }
     } catch (e) {
-      console.error('迁移前自动备份失败:', e.message)
+      logger.error('迁移前自动备份失败:', e.message)
     }
 
     // 2. 测试目标数据库连接
@@ -1253,13 +1252,13 @@ export const migrateDatabase = async (req, res) => {
             try {
               await dstModel.bulkCreate(rows, { validate: false, ignoreDuplicates: true })
             } catch (e) {
-              console.warn(`表 ${tableName} 批量插入部分失败:`, e.message)
+              logger.warn(`表 ${tableName} 批量插入部分失败:`, e.message)
             }
           }
           result.tables.push({ name: tableName, rows: rows.length })
           result.total_rows += rows.length
         } catch (e) {
-          console.warn(`表 ${tableName} 数据迁移失败:`, e.message)
+          logger.warn(`表 ${tableName} 数据迁移失败:`, e.message)
           result.tables.push({ name: tableName, rows: 0, error: e.message })
         }
       }
@@ -1296,7 +1295,7 @@ export const migrateDatabase = async (req, res) => {
       note: '迁移已完成。需要重启后端服务以使新数据库生效。',
     }, `数据迁移成功，共迁移 ${result.total_rows} 行数据`)
   } catch (err) {
-    console.error('数据库迁移失败:', err)
+    logger.error('数据库迁移失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }

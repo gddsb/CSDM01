@@ -1,6 +1,7 @@
 import { Op } from 'sequelize'
 import { OperationLog } from '../models/index.js'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
+import { logger } from "../utils/logger.js"
 
 // 日志列表（分页 + 筛选）
 export const list = async (req, res) => {
@@ -27,7 +28,7 @@ export const list = async (req, res) => {
     })
     return success(res, rows, '查询成功', count)
   } catch (err) {
-    console.error('查询操作日志列表失败:', err)
+    logger.error('查询操作日志列表失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }

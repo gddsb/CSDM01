@@ -4,10 +4,11 @@
  */
 import DashboardService from '../../services/DashboardService.js'
 import { success, fail, ErrorCode } from '../../utils/response.js'
+import { logger } from "../../utils/logger.js"
 
 const wrap = (fn: () => Promise<any>) => async (_req: any, res: any) => {
   try { return success(res, await fn()) }
-  catch (err: any) { console.error('[Dashboard]', err.message); return fail(res, err?.message || '服务器错误', ErrorCode.SYSTEM_ERROR) }
+  catch (err: any) { logger.error('[Dashboard]', err.message); return fail(res, err?.message || '服务器错误', ErrorCode.SYSTEM_ERROR) }
 }
 
 export const dashboardOverview = wrap(() => DashboardService.dashboardOverview())

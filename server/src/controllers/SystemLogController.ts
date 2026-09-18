@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import readline from 'readline'
 import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
+import { logger } from "../utils/logger.js"
 
 const LOG_DIR = process.env.LOG_DIR || path.resolve(process.cwd(), '..', 'backups')
 const OUT_LOG = path.join(LOG_DIR, 'pm2-out.log')
@@ -89,7 +90,7 @@ export const list = async (req, res) => {
 
     return success(res, data, '查询成功', total)
   } catch (err) {
-    console.error('查询系统日志失败:', err)
+    logger.error('查询系统日志失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }

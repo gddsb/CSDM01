@@ -9,7 +9,6 @@ import Material from '../models/Material.js';
 import Order from '../models/Order.js';
 import { nowBeijingDate, parseDateTime } from '../utils/date.js';
 import { logger } from '../utils/logger.js';
-
 /** ========= 料品列表 ========= */
 export const ITEM_LIST_PARAMS: Record<string, string> = {
   lnk: 'CBO.Pub.Item.ItemList',
@@ -310,7 +309,7 @@ export async function exportItems(taskId?: string, onProgress?: ProgressCallback
           'unit_code', 'is_active', 'effective_date', 'expiry_date', 'updated_at'],
       });
     } catch (e: any) {
-      console.warn('[exportItems] 数据库写入警告:', e.message);
+      logger.warn('[exportItems] 数据库写入警告:', e.message);
     }
   }
 
@@ -376,7 +375,7 @@ export async function exportCustomers(taskId?: string, onProgress?: ProgressCall
           'is_active', 'expire_date', 'effective_date', 'updated_at'],
       });
     } catch (e: any) {
-      console.warn('[exportCustomers] 数据库写入警告:', e.message);
+      logger.warn('[exportCustomers] 数据库写入警告:', e.message);
     }
   }
 
@@ -469,7 +468,7 @@ export async function exportProductionOrders(taskId?: string, onProgress?: Progr
         });
       } catch (e: any) {
         writeFail++
-        console.warn(`[exportProductionOrders] 批次 ${i / BATCH + 1} 写入失败:`, e.message);
+        logger.warn(`[exportProductionOrders] 批次 ${i / BATCH + 1} 写入失败:`, e.message);
       }
     }
     if (writeFail > 0) {
@@ -554,7 +553,7 @@ export async function exportPurchaseReceipts(taskId?: string, onProgress?: Progr
         validate: false,
       });
     } catch (e: any) {
-      console.warn('[exportPurchaseReceipts] 数据库写入警告:', e.message);
+      logger.warn('[exportPurchaseReceipts] 数据库写入警告:', e.message);
     }
   }
 

@@ -1,5 +1,6 @@
 import { UserSetting } from '../models/index.js'
 import { success, fail, ErrorCode } from '../utils/response.js'
+import { logger } from "../utils/logger.js"
 
 export const getUserSettings = async (req, res) => {
   try {
@@ -19,7 +20,7 @@ export const getUserSettings = async (req, res) => {
     })
     return success(res, result, '获取成功')
   } catch (err) {
-    console.error('获取用户设置失败:', err)
+    logger.error('获取用户设置失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
@@ -40,7 +41,7 @@ export const saveUserSetting = async (req, res) => {
     }
     return success(res, null, '保存成功')
   } catch (err) {
-    console.error('保存用户设置失败:', err)
+    logger.error('保存用户设置失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }
@@ -63,7 +64,7 @@ export const batchSaveUserSettings = async (req, res) => {
     }
     return success(res, null, `保存成功，共 ${Object.keys(settings).length} 项`)
   } catch (err) {
-    console.error('批量保存用户设置失败:', err)
+    logger.error('批量保存用户设置失败:', err)
     return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
   }
 }

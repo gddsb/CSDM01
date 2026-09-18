@@ -50,7 +50,7 @@ if (isProd) {
   if (errors.length > 0) {
     const msg = '[Security] 生产环境启动检查未通过：\n  ' + errors.join('\n  ')
     logger.error(msg)
-    console.error('\n❌ ' + msg + '\n    请在 server/.env 中补齐上述配置后重启\n')
+    logger.error('\n❌ ' + msg + '\n    请在 server/.env 中补齐上述配置后重启\n')
     process.exit(1)
   }
 }
@@ -102,34 +102,34 @@ async function initDatabase() {
   try {
     // 只创建不存在的表，不修改已有表结构
     await sequelize.sync()
-    console.log('✅ 数据库表同步完成')
+    logger.info('✅ 数据库表同步完成')
     await runUmzugSqlFiles()
-    console.log('✅ SQL 文件迁移完成（umzug）')
+    logger.info('✅ SQL 文件迁移完成（umzug）')
     // 补齐已有表缺失的列（ALTER TABLE ADD COLUMN）
     await runMigrations()
-    console.log('✅ 数据库列迁移完成')
+    logger.info('✅ 数据库列迁移完成')
     // 初始化默认系统配置
     await initDefaultConfigs()
-    console.log('✅ 系统配置初始化完成')
+    logger.info('✅ 系统配置初始化完成')
     // 初始化默认权限数据
     await initDefaultPermissions()
-    console.log('✅ 默认权限初始化完成')
+    logger.info('✅ 默认权限初始化完成')
     // 初始化默认编号规则
     await initDefaultRules()
-    console.log('✅ 默认编号规则初始化完成')
+    logger.info('✅ 默认编号规则初始化完成')
     // 初始化默认任务设置
     await initTaskSettings()
-    console.log('✅ 默认任务设置初始化完成')
+    logger.info('✅ 默认任务设置初始化完成')
     // backfill：为已有标准的设备创建生效档案
     await initProfiles()
-    console.log('✅ 维护标准档案初始化完成')
+    logger.info('✅ 维护标准档案初始化完成')
     // 初始化数据字典（仅当字典表为空时才扫描数据库，避免每次重启全表扫描）
     await refreshDictionaryDataIfEmpty()
-    console.log('✅ 数据字典初始化完成（仅空表时刷新）')
+    logger.info('✅ 数据字典初始化完成（仅空表时刷新）')
   } catch (err) {
-    console.error('❌ 数据库初始化失败:', err.message)
+    logger.error('❌ 数据库初始化失败:', err.message)
     if (err.errors) {
-      err.errors.forEach(e => console.error('  -', e.message, e.path, e.value))
+      err.errors.forEach(e => logger.error('  -', e.message, e.path, e.value))
     }
   }
 }
@@ -244,7 +244,7 @@ if (isProd && distExists()) {
   app.use('/', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next()
     proxy.web(req, res, {}, (err) => {
-      console.error('代理错误:', err)
+      logger.error('代理错误:', err)
       res.status(503).json({ success: false, message: '前端服务暂不可用' })
     })
   })
@@ -289,8 +289,8 @@ app.use((err: any, req: any, res: any, next: any) => {
   }
 
   // 未知异常：记录完整堆栈（生产隐藏堆栈），返回通用提示
-  console.error('[GlobalError] 未处理异常 FULL STACK:', err)
-  console.error('[GlobalError] stack:', err?.stack)
+  logger.error('[GlobalError] 未处理异常 FULL STACK:', err)
+  logger.error('[GlobalError] stack:', err?.stack)
   logger.error('[GlobalError] 未处理异常:', JSON.stringify({
     ...reqInfo,
     error: {
@@ -308,10 +308,10 @@ async function start() {
   await initDatabase()
   await startTaskScheduler()
   app.listen(PORT, () => {
-    console.log(`\n🚀 Milk Can MES API Server`)
-    console.log(`   运行地址: http://localhost:${PORT}`)
-    console.log(`   API基础路径: http://localhost:${PORT}/api`)
-    console.log(`   健康检查: http://localhost:${PORT}/api/health\n`)
+    logger.info(`\n🚀 Milk Can MES API Server`)
+    logger.info(`   运行地址: http://localhost:${PORT}`)
+    logger.info(`   API基础路径: http://localhost:${PORT}/api`)
+    logger.info(`   健康检查: http://localhost:${PORT}/api/health\n`)
   })
 }
 start()

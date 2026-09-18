@@ -2,6 +2,7 @@ import { Op } from 'sequelize'
 import { ScheduledTask, SyncTask, TaskSetting } from '../models/index.js'
 import { executeRealTask } from './taskExecutor.js'
 import { nowBeijingStr, nowBeijingDate } from '../utils/date.js'
+import { logger } from "../utils/logger.js"
 
 function pad(n: number) { return String(n).padStart(2, '0') }
 
@@ -57,7 +58,7 @@ export async function updateTaskProgress(taskId: number, step: { message: string
     if (status === 'failed') task.finished_at = nowBeijingDate()
     await task.save()
   } catch (err) {
-    console.error('更新任务进度失败:', err)
+    logger.error('更新任务进度失败:', err)
   }
 }
 
@@ -136,7 +137,7 @@ export async function triggerScheduledTaskById(taskId: number) {
       order: [['task_id', 'DESC']],
     })
     if (activeSame) {
-      console.log(`[Scheduler] 跳过任务 ${task.schedule_biz_id}：已有同类型进行中任务`)
+      logger.info(`[Scheduler] 跳过任务 ${task.schedule_biz_id}：已有同类型进行中任务`)
       return
     }
 
@@ -161,7 +162,7 @@ export async function triggerScheduledTaskById(taskId: number) {
     else if (execMode === 'once') updateData.is_enabled = 0
     await ScheduledTask.update(updateData, { where: { schedule_id: taskId } })
 
-    console.log(`[Scheduler] 已触发任务 ${task.schedule_biz_id} (${type}) -> ${taskBizId}`)
+    logger.info(`[Scheduler] 已触发任务 ${task.schedule_biz_id} (${type}) -> ${taskBizId}`)
 
     // 获取任务设置参数
     let taskParams: Record<string, any> = {}
@@ -169,7 +170,7 @@ export async function triggerScheduledTaskById(taskId: number) {
       const setting = await TaskSetting.findOne({ where: { task_type: type } })
       if (setting) taskParams = (setting as any).params || {}
     } catch (e) {
-      console.warn('[Scheduler] 读取任务设置失败，使用默认参数:', e)
+      logger.warn('[Scheduler] 读取任务设置失败，使用默认参数:', e)
     }
 
     // 异步执行真实采集任务
@@ -177,7 +178,7 @@ export async function triggerScheduledTaskById(taskId: number) {
       await executeRealTask(type, taskBizId, syncTaskId, taskParams)
     })()
   } catch (err) {
-    console.error('[Scheduler] 触发任务失败:', err)
+    logger.error('[Scheduler] 触发任务失败:', err)
   }
 }
 
@@ -185,7 +186,7 @@ let schedulerTimer: NodeJS.Timeout | null = null
 
 export async function startTaskScheduler() {
   if (schedulerTimer) return
-  console.log('⏰ 定时任务调度器已启动（每30秒扫描）')
+  logger.info('⏰ 定时任务调度器已启动（每30秒扫描）')
 
   try {
     const pending = await ScheduledTask.findAll({
@@ -197,11 +198,11 @@ export async function startTaskScheduler() {
       if (nextAt) {
         task.next_run_at = nextAt
         await task.save()
-        console.log(`[Scheduler] 修复任务 ${task.schedule_biz_id} next_run_at -> ${nextAt.toISOString()}`)
+        logger.info(`[Scheduler] 修复任务 ${task.schedule_biz_id} next_run_at -> ${nextAt.toISOString()}`)
       }
     }
   } catch (err) {
-    console.error('[Scheduler] 修复缺失 next_run_at 失败:', err)
+    logger.error('[Scheduler] 修复缺失 next_run_at 失败:', err)
   }
 
   const tick = async () => {
@@ -229,7 +230,7 @@ export async function startTaskScheduler() {
           },
           { where: { task_id: task.task_id } }
         )
-        console.log(`[Scheduler] 超时终止任务 ${task.task_biz_id}`)
+        logger.info(`[Scheduler] 超时终止任务 ${task.task_biz_id}`)
       }
 
       // 2. 触发到期任务
@@ -240,13 +241,13 @@ export async function startTaskScheduler() {
         },
       })
       if (dueTasks.length > 0) {
-        console.log(`[Scheduler] 发现 ${dueTasks.length} 个到期任务`)
+        logger.info(`[Scheduler] 发现 ${dueTasks.length} 个到期任务`)
         for (const t of dueTasks) {
           await triggerScheduledTaskById((t as any).schedule_id)
         }
       }
     } catch (err) {
-      console.error('[Scheduler] 扫描失败:', err)
+      logger.error('[Scheduler] 扫描失败:', err)
     }
   }
 
@@ -258,6 +259,6 @@ export function stopTaskScheduler() {
   if (schedulerTimer) {
     clearInterval(schedulerTimer)
     schedulerTimer = null
-    console.log('⏹ 定时任务调度器已停止')
+    logger.info('⏹ 定时任务调度器已停止')
   }
 }

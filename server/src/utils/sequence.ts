@@ -82,7 +82,7 @@ export async function reloadRulesFromDB(): Promise<void> {
     rules.forEach(applyRuleToConfig)
   } catch (err: any) {
     // 数据库未初始化时静默失败，使用默认配置
-    console.warn('[sequence] 从数据库加载编号规则失败，使用默认配置:', err.message)
+    logger.warn('[sequence] 从数据库加载编号规则失败，使用默认配置:', err.message)
   }
 }
 

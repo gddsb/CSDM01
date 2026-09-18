@@ -5,6 +5,7 @@ import { EnergyMeterCollector } from './energyMeterCollector.js'
 import { exportItems, exportCustomers, exportProductionOrders, exportPurchaseReceipts } from './u9Exporter.js'
 import { decryptParamsObj } from '../utils/crypto.js'
 import { nowBeijingStr, nowBeijingDate } from '../utils/date.js'
+import { logger } from "../utils/logger.js"
 
 export interface TaskProgressUpdater {
   (message: string, percent: number, status?: string, totalRecords?: number): Promise<void>
@@ -25,7 +26,7 @@ export function createProgressUpdater(taskId: number): TaskProgressUpdater {
       if (status === 'completed' || status === 'failed') task.ended_at = new Date()
       await task.save()
     } catch (err) {
-      console.error('[TaskExecutor] 更新进度失败:', err)
+      logger.error('[TaskExecutor] 更新进度失败:', err)
     }
   }
 }
@@ -141,7 +142,7 @@ export async function executeRealTask(
     }
   } catch (err: any) {
     const errorMsg = err.message || String(err)
-    console.error(`[TaskExecutor] 任务执行失败 [${taskType}]:`, err)
+    logger.error(`[TaskExecutor] 任务执行失败 [${taskType}]:`, err)
     try {
       const task = await SyncTask.findByPk(taskId) as any
       if (task) {
@@ -154,7 +155,7 @@ export async function executeRealTask(
         await task.save()
       }
     } catch (e) {
-      console.error('[TaskExecutor] 更新失败状态错误:', e)
+      logger.error('[TaskExecutor] 更新失败状态错误:', e)
     }
     return { success: false, error: errorMsg }
   }

@@ -408,10 +408,10 @@ async function dropObsoleteTables() {
       const exists = await tableExists(tableName)
       if (exists) {
         await sequelize.query(`DROP TABLE IF EXISTS ${tableName}`)
-        console.log(`  🗑️  删除废弃表 ${tableName}`)
+        logger.info(`  🗑️  删除废弃表 ${tableName}`)
       }
     } catch (err) {
-      console.warn(`  ⚠️ 删除废弃表 ${tableName} 时出错:`, err.message)
+      logger.warn(`  ⚠️ 删除废弃表 ${tableName} 时出错:`, err.message)
     }
   }
 }
@@ -427,14 +427,14 @@ async function dropObsoleteColumns() {
         if (existing.includes(col)) {
           try {
             await sequelize.query(`ALTER TABLE ${table} DROP COLUMN ${col}`)
-            console.log(`  🗑️  删除 ${table}.${col}`)
+            logger.info(`  🗑️  删除 ${table}.${col}`)
           } catch (err) {
         logger.warn('[SilentCatch] // 列删除失败时跳过', err?.message)
     }
         }
       }
     } catch (err) {
-      console.warn(`  ⚠️ 清理 ${table} 字段时出错:`, err.message)
+      logger.warn(`  ⚠️ 清理 ${table} 字段时出错:`, err.message)
     }
   }
 }
@@ -456,14 +456,14 @@ export async function runMigrations() {
           const ddl = toDialectType(type)
           try {
             await sequelize.query(`ALTER TABLE ${m.table} ADD COLUMN ${col} ${ddl}`)
-            console.log(`  ➕ ${m.table}.${col} (${ddl})`)
+            logger.info(`  ➕ ${m.table}.${col} (${ddl})`)
           } catch (err) {
         logger.warn('[SilentCatch] // 列已存在或语法不兼容，跳过', err?.message)
     }
         }
       }
     } catch (err) {
-      console.warn(`  ⚠️ 迁移 ${m.table} 时出错:`, err.message)
+      logger.warn(`  ⚠️ 迁移 ${m.table} 时出错:`, err.message)
     }
   }
 
@@ -561,7 +561,7 @@ async function ensureCoreForeignKeys(): Promise<void> {
       `ALTER TABLE production_process_material MODIFY COLUMN bas_material_id CHAR(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '关联基础料品表ID'`
     )
   } catch (err) {
-    console.warn('  ⚠️ 统一 bas_material_id 类型失败:', err?.message)
+    logger.warn('  ⚠️ 统一 bas_material_id 类型失败:', err?.message)
   }
 
   for (const item of statements) {
@@ -569,9 +569,9 @@ async function ensureCoreForeignKeys(): Promise<void> {
       if (!(await tableExists(item.table))) continue
       if (await constraintExists(item.table, item.name)) continue
       await sequelize.query(item.ddl(item.name))
-      console.log(`  🔗 ${item.table}.${item.name}`)
+      logger.info(`  🔗 ${item.table}.${item.name}`)
     } catch (err) {
-      console.warn(`  ⚠️ 外键 ${item.table}.${item.name} 创建失败:`, err?.message)
+      logger.warn(`  ⚠️ 外键 ${item.table}.${item.name} 创建失败:`, err?.message)
     }
   }
 }
@@ -692,9 +692,9 @@ async function ensurePerformanceIndexes(): Promise<void> {
     if (Number((exists[0] as any)?.cnt) === 0) {
       try {
         await sequelize.query(idx.ddl)
-        console.log(`[Migrate] created index ${idx.name} on ${idx.table}`)
+        logger.info(`[Migrate] created index ${idx.name} on ${idx.table}`)
       } catch (err: any) {
-        console.warn(`[Migrate] create index ${idx.name} failed: ${err?.message}`)
+        logger.warn(`[Migrate] create index ${idx.name} failed: ${err?.message}`)
       }
     }
   }
@@ -885,9 +885,9 @@ async function backfillQcItemConfig(): Promise<void> {
     try {
       const [r] = await sequelize.query(q.sql) as any
       const affected = (r as any)?.affectedRows || 0
-      console.log(`  ✅ ${q.name}: ${affected} rows`)
+      logger.info(`  ✅ ${q.name}: ${affected} rows`)
     } catch (err: any) {
-      console.warn(`  ⚠️ ${q.name} failed:`, err?.message)
+      logger.warn(`  ⚠️ ${q.name} failed:`, err?.message)
     }
   }
 }
