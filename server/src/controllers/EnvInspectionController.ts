@@ -1,62 +1,73 @@
 /**
- * 环境检验 Controller — 业务逻辑下沉 EnvInspectionService
- * 保留 default export 供 routes/basic.ts 使用（13 个方法）
+ * 环境检验 Controller — 全部逻辑下沉 EnvInspectionService
+ * 三层结构：inspection / area / template
  */
 import EnvInspectionService from '../services/EnvInspectionService.js'
-import { success, fail, ErrorCode } from '../utils/response.js'
-import { AppError } from '../utils/error.js'
-import { logger } from '../utils/logger.js'
+import { success } from '../utils/response.js'
+import { asyncHandler } from '../middleware/security.js'
 import type { Request, Response } from 'express'
 
-const catchErr = (res: Response, err: any) => {
-  if (err instanceof AppError) return fail(res, err.message, err.code || 10001, err.statusCode || 400)
-  logger.error('[EnvInspection] controller error:', err)
-  return fail(res, err?.message || '服务器错误', ErrorCode.SYSTEM_ERROR)
-}
-
 export default {
-  async list(req: any, res: any) {
-    try { const { count, rows } = await EnvInspectionService.inspection.list(req.query); success(res, { list: rows, total: count, page: Number(req.query.page) || 1, page_size: Number(req.query.page_size) || 20 }) } catch (err: any) { return catchErr(res, err) }
-  },
-  async detail(req: any, res: any) {
-    try { success(res, await EnvInspectionService.inspection.detail(Number(req.params.id))) } catch (err: any) { return catchErr(res, err) }
-  },
-  async create(req: any, res: any) {
-    try { success(res, await EnvInspectionService.inspection.create(req.body), '创建成功') } catch (err: any) { return catchErr(res, err) }
-  },
-  async update(req: any, res: any) {
-    try { success(res, await EnvInspectionService.inspection.update(Number(req.params.id), req.body), '更新成功') } catch (err: any) { return catchErr(res, err) }
-  },
-  async delete(req: any, res: any) {
-    try { await EnvInspectionService.inspection.delete(Number(req.params.id)); success(res, { message: '删除成功' }, '删除成功') } catch (err: any) { return catchErr(res, err) }
-  },
-  // areas
-  async listAreas(req: any, res: any) {
-    try { success(res, await EnvInspectionService.area.list(req.query)) } catch (err: any) { return catchErr(res, err) }
-  },
-  async createArea(req: any, res: any) {
-    try { success(res, await EnvInspectionService.area.create(req.body), '创建成功') } catch (err: any) { return catchErr(res, err) }
-  },
-  async updateArea(req: any, res: any) {
-    try { success(res, await EnvInspectionService.area.update(Number(req.params.id), req.body), '更新成功') } catch (err: any) { return catchErr(res, err) }
-  },
-  async deleteArea(req: any, res: any) {
-    try { await EnvInspectionService.area.remove(Number(req.params.id)); success(res, { message: '删除成功' }, '删除成功') } catch (err: any) { return catchErr(res, err) }
-  },
-  // templates
-  async listTemplates(req: any, res: any) {
-    try { success(res, await EnvInspectionService.template.list(req.query)) } catch (err: any) { return catchErr(res, err) }
-  },
-  async createTemplate(req: any, res: any) {
-    try { success(res, await EnvInspectionService.template.create(req.body), '创建成功') } catch (err: any) { return catchErr(res, err) }
-  },
-  async updateTemplate(req: any, res: any) {
-    try { success(res, await EnvInspectionService.template.update(Number(req.params.id), req.body), '更新成功') } catch (err: any) { return catchErr(res, err) }
-  },
-  async deleteTemplate(req: any, res: any) {
-    try { await EnvInspectionService.template.remove(Number(req.params.id)); success(res, { message: '删除成功' }, '删除成功') } catch (err: any) { return catchErr(res, err) }
-  },
-  async getTemplatesByArea(req: any, res: any) {
-    try { success(res, await EnvInspectionService.template.listByArea(Number(req.params.areaId))) } catch (err: any) { return catchErr(res, err) }
-  },
+  // ==== 环境检验 ====
+  list: asyncHandler(async (req: Request, res: Response) => {
+    const { count, rows } = await EnvInspectionService.inspection.list(req.query)
+    return success(res, { list: rows, total: count, page: Number(req.query.page) || 1, page_size: Number(req.query.page_size) || 20 })
+  }),
+
+  detail: asyncHandler(async (req: Request, res: Response) => {
+    return success(res, await EnvInspectionService.inspection.detail(Number(req.params.id)))
+  }),
+
+  create: asyncHandler(async (req: Request, res: Response) => {
+    return success(res, await EnvInspectionService.inspection.create(req.body), '创建成功')
+  }),
+
+  update: asyncHandler(async (req: Request, res: Response) => {
+    return success(res, await EnvInspectionService.inspection.update(Number(req.params.id), req.body), '更新成功')
+  }),
+
+  delete: asyncHandler(async (req: Request, res: Response) => {
+    await EnvInspectionService.inspection.delete(Number(req.params.id))
+    return success(res, null, '删除成功')
+  }),
+
+  // ==== 环境检验区域 ====
+  listAreas: asyncHandler(async (req: Request, res: Response) => {
+    return success(res, await EnvInspectionService.area.list(req.query))
+  }),
+
+  createArea: asyncHandler(async (req: Request, res: Response) => {
+    return success(res, await EnvInspectionService.area.create(req.body), '创建成功')
+  }),
+
+  updateArea: asyncHandler(async (req: Request, res: Response) => {
+    return success(res, await EnvInspectionService.area.update(Number(req.params.id), req.body), '更新成功')
+  }),
+
+  deleteArea: asyncHandler(async (req: Request, res: Response) => {
+    await EnvInspectionService.area.remove(Number(req.params.id))
+    return success(res, null, '删除成功')
+  }),
+
+  // ==== 环境检验模板 ====
+  listTemplates: asyncHandler(async (req: Request, res: Response) => {
+    return success(res, await EnvInspectionService.template.list(req.query))
+  }),
+
+  createTemplate: asyncHandler(async (req: Request, res: Response) => {
+    return success(res, await EnvInspectionService.template.create(req.body), '创建成功')
+  }),
+
+  updateTemplate: asyncHandler(async (req: Request, res: Response) => {
+    return success(res, await EnvInspectionService.template.update(Number(req.params.id), req.body), '更新成功')
+  }),
+
+  deleteTemplate: asyncHandler(async (req: Request, res: Response) => {
+    await EnvInspectionService.template.remove(Number(req.params.id))
+    return success(res, null, '删除成功')
+  }),
+
+  getTemplatesByArea: asyncHandler(async (req: Request, res: Response) => {
+    return success(res, await EnvInspectionService.template.listByArea(Number(req.params.areaId)))
+  }),
 }

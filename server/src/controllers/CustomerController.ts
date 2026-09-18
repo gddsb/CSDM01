@@ -1,17 +1,10 @@
 /**
- * 客户档案 Controller — 全部逻辑下沉 CustomerService
- * 保留 5 个 named export + default 导出兼容 routes/basic.ts
+ * 客户档案 Controller — CRUD 全部下沉 CustomerService
  */
 import CustomerService from '../services/CustomerService.js'
-import { success, fail, ErrorCode } from '../utils/response.js'
-import { AppError } from '../utils/error.js'
+import { success } from '../utils/response.js'
 import { asyncHandler } from '../middleware/security.js'
 import type { Request, Response } from 'express'
-
-const catchErr = (res: Response, err: any) => {
-  if (err instanceof AppError) return fail(res, err.message, err.code || 10001, err.statusCode || 400)
-  return fail(res, err?.message || '服务器错误', ErrorCode.SYSTEM_ERROR)
-}
 
 export const list = asyncHandler(async (req: Request, res: Response) => {
   const { rows, count } = await CustomerService.list(req.query)
@@ -23,19 +16,15 @@ export const detail = asyncHandler(async (req: Request, res: Response) => {
   return success(res, customer, '查询成功')
 })
 
-export const create = async (req: Request, res: Response) => {
-  try {
-    const customer = await CustomerService.create(req.body, (req as any).user)
-    return success(res, customer, '创建成功')
-  } catch (err: any) { return catchErr(res, err) }
-}
+export const create = asyncHandler(async (req: Request, res: Response) => {
+  const customer = await CustomerService.create(req.body, (req as any).user)
+  return success(res, customer, '创建成功')
+})
 
-export const update = async (req: Request, res: Response) => {
-  try {
-    const customer = await CustomerService.update(Number(req.params.id), req.body)
-    return success(res, customer, '修改成功')
-  } catch (err: any) { return catchErr(res, err) }
-}
+export const update = asyncHandler(async (req: Request, res: Response) => {
+  const customer = await CustomerService.update(Number(req.params.id), req.body)
+  return success(res, customer, '修改成功')
+})
 
 export const remove = asyncHandler(async (req: Request, res: Response) => {
   await CustomerService.remove(Number(req.params.id))
