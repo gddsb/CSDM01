@@ -903,7 +903,7 @@ const stdRows = await DeviceMaintenanceStandard.findAll({
       }
     })
     await DeviceMaintenanceProfile.bulkCreate(rows)
-    console.log(`✅ 维护标准档案 backfill: ${rows.length} 台设备`)
+    logger.info(`✅ 维护标准档案 backfill: ${rows.length} 台设备`)
 }
 
 export async function uploadImageRecord(body: any) {
