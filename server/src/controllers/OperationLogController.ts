@@ -1,36 +1,14 @@
-import { Op } from 'sequelize'
-import { OperationLog } from '../models/index.js'
-import { success, fail, ErrorCode, MAX_PAGE_SIZE } from '../utils/response.js'
-import { logger } from "../utils/logger.js"
+/**
+ * 操作日志 Controller — DB 全走 OperationLogService
+ */
+import OperationLogService from '../services/OperationLogService.js'
+import { success } from '../utils/response.js'
+import { asyncHandler } from '../middleware/security.js'
+import type { Request, Response } from 'express'
 
-// 日志列表（分页 + 筛选）
-export const list = async (req, res) => {
-  try {
-    const { username, module, method, status, startDate, endDate, dateStart, dateEnd, page = 1, pageSize = 20 } = req.query
-    const where: any = {}
-    if (username) where.username = { [Op.like]: `%${username}%` }
-    if (module) where.module = { [Op.like]: `%${module}%` }
-    if (method) where.method = method
-    if (status !== undefined && status !== '') where.status = Number(status)
-    if (startDate || endDate || dateStart || dateEnd) {
-      where.created_at = {}
-      if (startDate || dateStart) where.created_at[Op.gte] = new Date(startDate || dateStart)
-      if (endDate || dateEnd) where.created_at[Op.lte] = new Date((endDate || dateEnd) + ' 23:59:59')
-    }
-
-    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
-    const offset = (Number(page) - 1) * limit
-    const { rows, count } = await OperationLog.findAndCountAll({
-      where,
-      limit,
-      offset,
-      order: [['log_id', 'DESC']],
-    })
-    return success(res, rows, '查询成功', count)
-  } catch (err) {
-    logger.error('查询操作日志列表失败:', err)
-    return fail(res, '服务器错误', ErrorCode.SYSTEM_ERROR)
-  }
-}
+export const list = asyncHandler(async (req: Request, res: Response) => {
+  const { rows, count } = await OperationLogService.list(req.query)
+  return success(res, rows, '查询成功', count)
+})
 
 export default { list }

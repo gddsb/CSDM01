@@ -1,17 +1,18 @@
 /**
  * 设备保养 Controller
  * 业务逻辑（Sequelize CRUD）已下沉 DeviceMaintenanceStandardService / DeviceMaintenanceProfileService
- * 以下 sharp/fs 边界函数保留在 Controller：
- *   - sha256File / buildWatermarkSvg / processImage / buildImageName
- *   - uploadImage（multer 文件 → sharp 压缩+水印 → fs 落盘 → DB 持久化）
+ * sharp/fs 边界函数 + uploadImage 保留在 Controller；DB 操作走 Service
  */
 import path from 'path'
 import fs from 'fs'
 import crypto from 'crypto'
 import sharp from 'sharp'
+import sequelize from '../config/database.js'
 import DeviceMaintenanceStandardService from '../services/DeviceMaintenanceStandardService.js'
-import DeviceMaintenanceProfileService from '../services/DeviceMaintenanceProfileService.js'
-import { DeviceImage, DeviceMaintenanceRecord } from '../models/index.js'
+import DeviceMaintenanceProfileService, {
+  assertRecordExists, countImagesByRecord, findExistingImagesByRecord, createMaintenanceImage,
+  getImages as _svcGetImages,
+} from '../services/DeviceMaintenanceProfileService.js'
 import { success, fail, ErrorCode } from '../utils/response.js'
 import { logger } from '../utils/logger.js'
 import { asyncHandler } from '../middleware/security.js'
@@ -185,33 +186,28 @@ export const deleteRecord = asyncHandler(async (req: Request, res: Response) => 
   return success(res, null, '删除成功')
 })
 
-// ============ 图片上传（sharp/fs 边界） ============
+// ============ 图片查询 + 上传（sharp/fs 边界） ============
 
+/** 查保养执行记录的图片 — DB 全走 Service */
 export const getImages = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params
-  const exists = await DeviceMaintenanceRecord.findOne({ where: { record_id: id }, attributes: ['record_id'] })
-  if (!exists) return fail(res, '执行记录不存在', ErrorCode.RECORD_NOT_FOUND)
-  const images = await DeviceImage.findAll({
-    where: { doc_type: 'maintenance', doc_id: id },
-    order: [['sort_order', 'ASC'], ['image_id', 'ASC']],
-  })
+  await assertRecordExists(Number(id))
+  const images = await _svcGetImages({ record_id: id })
   return success(res, images, '查询成功')
 })
 
+/** sharp 压缩水印 + fs 落盘 + Service 写 DB */
 export const uploadImage = async (req: Request, res: Response) => {
-  const t = await DeviceImage.sequelize.transaction()
+  const t = await sequelize.transaction()
   try {
     const { id } = req.params
     const userInfo: any = (req as any).user || {}
-    const record = await DeviceMaintenanceRecord.findOne({ where: { record_id: id }, transaction: t })
-    if (!record) {
-      const files = (req as any).files || ((req as any).file ? [(req as any).file] : [])
-      files.forEach((f: any) => { try { fs.unlinkSync(f.path) } catch { /* ignore */ } })
-      return fail(res, '执行记录不存在', ErrorCode.RECORD_NOT_FOUND)
-    }
+
+    // DB 前置校验（事务内）
+    const record: any = await assertRecordExists(Number(id), t)
 
     const files: any[] = (req as any).files || ((req as any).file ? [(req as any).file] : [])
-    if (files.length === 0) return fail(res, '请选择要上传的图片', ErrorCode.PARAM_INVALID)
+    if (files.length === 0) { await t.rollback(); return fail(res, '请选择要上传的图片', ErrorCode.PARAM_INVALID) }
 
     const d = new Date()
     const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
@@ -219,14 +215,11 @@ export const uploadImage = async (req: Request, res: Response) => {
     if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true })
 
     const recordId = Number(id)
-    const existingCount = await DeviceImage.count({
-      where: { doc_type: 'maintenance', doc_id: recordId }, transaction: t,
-    })
+    // DB 统计 + 查重列表（事务内）
+    const existingCount = await countImagesByRecord(recordId, t)
+    const existedImages: any[] = await findExistingImagesByRecord(recordId, t)
 
     const existingHashSet = new Set<string>()
-    const existedImages = await DeviceImage.findAll({
-      where: { doc_type: 'maintenance', doc_id: recordId }, attributes: ['file_path'], transaction: t,
-    })
     for (const img of existedImages) {
       const p = path.resolve(process.cwd(), img.getDataValue('file_path').replace(/^\//, ''))
       if (fs.existsSync(p)) {
@@ -255,14 +248,14 @@ export const uploadImage = async (req: Request, res: Response) => {
         const destPath = path.join(uploadsDir, newName)
         fs.writeFileSync(destPath, processed.buffer)
 
-        const img = await DeviceImage.create({
+        const img = await createMaintenanceImage({
           doc_type: 'maintenance', doc_id: recordId,
           file_path: `/uploads/device/maintenance/${ym}/${newName}`,
           file_name: file.originalname || newName,
           file_size: processed.size, sort_order: seqNum,
           uploaded_by: userInfo.userId || null,
           uploaded_by_name: userInfo.username || '',
-        }, { transaction: t })
+        }, t)
         saved.push(img)
       } catch (procErr: any) {
         logger.warn('[DeviceMaintenance] uploadImage skip one:', procErr?.message || procErr)

@@ -278,6 +278,39 @@ export const DeviceCalibrationService = {
       order: [['next_calibration_date', 'ASC']],
     })
   },
+
+  // ---------- uploadCertificate DB 操作 ----------
+
+  /** 校验校准计划存在（事务内） */
+  async assertPlanExists(planId: number, transaction?: any) {
+    const plan = await DeviceCalibrationPlan.findOne({ where: { plan_id: planId }, transaction })
+    if (!plan) throw new AppError('校准计划不存在', 10002, 404)
+    return plan
+  },
+
+  /** 查校准计划下最新一条校准记录（事务内） */
+  async findLatestRecordByPlan(planId: number, transaction?: any) {
+    return await DeviceCalibrationRecord.findOne({
+      where: { plan_id: planId },
+      order: [['calibration_date', 'DESC'], ['record_id', 'DESC']],
+      transaction,
+    })
+  },
+
+  /** 统计校准记录已上传证书数量 */
+  async countCertImages(recordId: number, transaction?: any) {
+    return await DeviceImage.count({ where: { doc_type: 'calibration', doc_id: recordId }, transaction })
+  },
+
+  /** 创建校准证书图片记录 */
+  async createCertImage(data: any, transaction?: any) {
+    return await DeviceImage.create(data, { transaction })
+  },
+
+  /** 记录首张证书路径到校准记录 */
+  async updateCertificatePath(record: any, path: string, transaction?: any) {
+    await record.update({ certificate_path: path }, { transaction })
+  },
 }
 
 export default DeviceCalibrationService

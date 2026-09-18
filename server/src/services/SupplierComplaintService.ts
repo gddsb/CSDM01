@@ -153,6 +153,30 @@ export const SupplierComplaintService = {
     await record.destroy()
     return true
   },
+
+  // ---------- generatePdf DB 操作 ----------
+
+  /** 查投诉记录 + 供应商信息（用于 PDF 生成） */
+  async findForPdf(complaintId: number) {
+    const record = await QualitySupplierComplaint.findOne({
+      where: { complaint_id: complaintId },
+      include: [
+        {
+          model: Supplier,
+          as: 'supplier',
+          attributes: ['supplier_id', 'supplier_name', 'short_name', 'supplier_code', 'contact_person', 'phone'],
+          required: false,
+        },
+      ],
+    })
+    if (!record) throw new AppError('投诉记录不存在', 10002, 404)
+    return record
+  },
+
+  /** 更新 PDF 生成路径 */
+  async updatePdfPath(record: any, pdfPath: string) {
+    await record.update({ pdf_path: pdfPath })
+  },
 }
 
 export default SupplierComplaintService

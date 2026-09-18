@@ -1,14 +1,19 @@
 /**
- * 设备校准 Controller — 仅参数解析 + Service 调用
+ * 设备校准 Controller — DB CRUD 全走 Service；fs 边界（uploadCertificate）保留 Controller
  */
 import path from 'path'
 import fs from 'fs'
+import sequelize from '../config/database.js'
 import DeviceCalibrationService from '../services/DeviceCalibrationService.js'
-import { DeviceImage, DeviceCalibrationPlan, DeviceCalibrationRecord } from '../models/index.js'
 import { success, fail, ErrorCode } from '../utils/response.js'
 import { logger } from '../utils/logger.js'
 import { asyncHandler } from '../middleware/security.js'
 import type { Request, Response } from 'express'
+
+function cleanupFiles(files: any[]) {
+  if (!files || files.length === 0) return
+  for (const f of files) { try { fs.unlinkSync(f.path) } catch { /* ignore */ } }
+}
 
 export default {
   listPlans: asyncHandler(async (req: Request, res: Response) => {
@@ -48,34 +53,37 @@ export default {
     const plans = await DeviceCalibrationService.getOverdue()
     return success(res, plans)
   }),
-  // uploadCertificate 保留原实现（文件系统 IO）
+
+  // ---- fs 边界：uploadCertificate 保留文件操作；DB 全部走 Service ----
+
   async uploadCertificate(req: any, res: any) {
-    const t = await DeviceImage.sequelize.transaction()
+    const t = await sequelize.transaction()
     try {
       const { id } = req.params
       const userInfo: any = (req as any).user || {}
-      const plan = await DeviceCalibrationPlan.findOne({ where: { plan_id: id }, transaction: t })
-      if (!plan) {
-        const files = (req as any).files || ((req as any).file ? [(req as any).file] : [])
-        files.forEach((f: any) => { try { fs.unlinkSync(f.path) } catch { /* ignore */ } })
-        await t.rollback()
-        return fail(res, '校准计划不存在', ErrorCode.RECORD_NOT_FOUND)
-      }
+
+      // DB 前置校验（事务内）
+      await DeviceCalibrationService.assertPlanExists(Number(id), t)
+
       const files: any[] = (req as any).files || ((req as any).file ? [(req as any).file] : [])
       if (files.length === 0) { await t.rollback(); return fail(res, '请选择要上传的证书文件', ErrorCode.PARAM_INVALID) }
-      const record = await DeviceCalibrationRecord.findOne({ where: { plan_id: id }, order: [['calibration_date', 'DESC'], ['record_id', 'DESC']], transaction: t })
+
+      const record = await DeviceCalibrationService.findLatestRecordByPlan(Number(id), t)
       if (!record) {
-        files.forEach((f: any) => { try { fs.unlinkSync(f.path) } catch { /* ignore */ } })
+        cleanupFiles(files)
         await t.rollback()
         return fail(res, '请先提交校准结果后再上传证书', ErrorCode.BUSINESS_ERROR)
       }
+
       const recordId = (record as any).getDataValue('record_id')
       const uploadsDir = path.resolve(process.cwd(), 'uploads', 'device', 'calibration')
       if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true })
-      const existingCount = await DeviceImage.count({ where: { doc_type: 'calibration', doc_id: recordId }, transaction: t })
+
+      const existingCount = await DeviceCalibrationService.countCertImages(recordId, t)
       const created: any[] = []
       const ts = Date.now()
       let primaryPath: string | null = null
+
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
         const seqNum = existingCount + i + 1
@@ -83,18 +91,28 @@ export default {
         const newName = `calibration_${recordId}_${seqNum}_${ts}${ext}`
         fs.renameSync(file.path, path.join(uploadsDir, newName))
         const relPath = `/uploads/device/calibration/${newName}`
-        const rel = await DeviceImage.create({ doc_type: 'calibration', doc_id: recordId, file_path: relPath, file_name: file.originalname || newName, file_size: file.size || null, sort_order: seqNum, uploaded_by: userInfo.userId || null, uploaded_by_name: userInfo.username || '' }, { transaction: t })
+
+        const rel = await DeviceCalibrationService.createCertImage({
+          doc_type: 'calibration', doc_id: recordId,
+          file_path: relPath, file_name: file.originalname || newName,
+          file_size: file.size || null, sort_order: seqNum,
+          uploaded_by: userInfo.userId || null, uploaded_by_name: userInfo.username || '',
+        }, t)
         created.push(rel)
         if (i === 0) primaryPath = relPath
       }
+
+      // 首张证书路径回填（仅当 record.certificate_path 空时）
       const currentPath = (record as any).getDataValue('certificate_path')
-      if (primaryPath && !currentPath) await record.update({ certificate_path: primaryPath }, { transaction: t })
+      if (primaryPath && !currentPath) {
+        await DeviceCalibrationService.updateCertificatePath(record, primaryPath, t)
+      }
       await t.commit()
-      success(res, created, `成功上传${created.length}个证书`)
+      return success(res, created, `成功上传${created.length}个证书`)
     } catch (err: any) {
       if (t && !(t as any).finished) { try { await t.rollback() } catch { /* ignore */ } }
       logger.error('[DeviceCalibration] uploadCertificate error:', err)
-      fail(res, err.message || '上传失败', ErrorCode.SYSTEM_ERROR)
+      return fail(res, err.message || '上传失败', ErrorCode.SYSTEM_ERROR)
     }
   },
 }

@@ -1,10 +1,9 @@
 /**
- * 供应商投诉 Controller — CRUD + 状态流转走 Service；generatePdf 保留原始实现
+ * 供应商投诉 Controller — CRUD + 状态流转走 Service；generatePdf 保留 HTML 生成 + fs
  */
 import path from 'path'
 import fs from 'fs'
 import SupplierComplaintService from '../services/SupplierComplaintService.js'
-import { QualitySupplierComplaint, Supplier } from '../models/index.js'
 import { success, fail, ErrorCode } from '../utils/response.js'
 import { logger } from '../utils/logger.js'
 import { asyncHandler } from '../middleware/security.js'
@@ -44,23 +43,14 @@ export default {
     await SupplierComplaintService.delete(Number(req.params.id))
     return success(res, null, '删除成功')
   }),
+
+  // ---- fs 边界：generatePdf 保留 HTML 拼装 + fs 写文件；DB 查记录/更新走 Service ----
+
   async generatePdf(req: any, res: any) {
     try {
       const { id } = req.params
-      const record = await QualitySupplierComplaint.findOne({
-        where: { complaint_id: id },
-        include: [
-          {
-            model: Supplier,
-            as: 'supplier',
-            attributes: ['supplier_id', 'supplier_name', 'short_name', 'supplier_code', 'contact_person', 'phone'],
-            required: false,
-          },
-        ],
-      })
-      if (!record) {
-        return fail(res, '投诉记录不存在', ErrorCode.RECORD_NOT_FOUND)
-      }
+      // DB 查记录（含 Supplier）
+      const record: any = await SupplierComplaintService.findForPdf(Number(id))
 
       const data: any = record.toJSON()
       const supplierInfo = data.supplier || {}
@@ -171,26 +161,25 @@ export default {
 </body>
 </html>`
 
-      // 保存HTML文件到uploads目录
+      // 保存HTML文件到uploads目录（fs 边界）
       const uploadDir = path.join(__dirname, '..', '..', 'uploads', 'complaints')
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true })
-      }
+      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true })
       const fileName = `complaint_${data.complaint_no}_${Date.now()}.html`
       const filePath = path.join(uploadDir, fileName)
       fs.writeFileSync(filePath, html, 'utf-8')
 
-      // 更新记录的pdf_path
-      await record.update({ pdf_path: `/uploads/complaints/${fileName}` })
+      // DB 更新路径（Service）
+      const pdfPath = `/uploads/complaints/${fileName}`
+      await SupplierComplaintService.updatePdfPath(record, pdfPath)
 
-      success(res, {
-        pdf_path: `/uploads/complaints/${fileName}`,
-        download_url: `/uploads/complaints/${fileName}`,
+      return success(res, {
+        pdf_path: pdfPath,
+        download_url: pdfPath,
         file_name: fileName,
       }, '生成成功')
     } catch (err: any) {
       logger.error('[SupplierComplaint] generatePdf error:', err)
-      fail(res, err.message || '生成失败', ErrorCode.SYSTEM_ERROR)
+      return fail(res, err.message || '生成失败', ErrorCode.SYSTEM_ERROR)
     }
   },
 }

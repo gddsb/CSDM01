@@ -293,6 +293,25 @@ export const DeviceFaultService = {
       : []
     return { fault_images: faultImages, repair_images: repairImages }
   },
+
+  // ---------- uploadImage DB 操作 ----------
+
+  /** 校验故障存在（事务内） */
+  async assertFaultExists(faultId: number, transaction?: any) {
+    const fault = await DeviceFault.findOne({ where: { fault_id: faultId }, transaction })
+    if (!fault) throw new AppError('故障记录不存在', 10002, 404)
+    return fault
+  },
+
+  /** 统计故障已有图片数 */
+  async countFaultImages(faultId: number, transaction?: any) {
+    return await DeviceImage.count({ where: { doc_type: 'fault', doc_id: faultId }, transaction })
+  },
+
+  /** 创建故障图片记录 */
+  async createFaultImage(data: any, transaction?: any) {
+    return await DeviceImage.create(data, { transaction })
+  },
 }
 
 export default DeviceFaultService

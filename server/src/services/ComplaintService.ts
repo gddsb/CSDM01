@@ -182,6 +182,15 @@ export const ComplaintService = {
     await complaint.destroy()
     return true
   },
+
+  // ---------- uploadAttachment DB 操作 ----------
+
+  /** 查客诉记录用于附件上传（返回 complaint_no / complaint_time 等文件命名字段） */
+  async findForUpload(complaintId: number) {
+    const record = await QualityComplaint.findOne({ where: { complaint_id: complaintId } })
+    if (!record) throw new AppError('客诉记录不存在', 10002, 404)
+    return record
+  },
 }
 
 export default ComplaintService

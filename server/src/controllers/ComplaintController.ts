@@ -1,10 +1,9 @@
 /**
- * 客诉管理 Controller — CRUD + addRecord + close 走 Service；uploadAttachment 保留 fs 实现
+ * 客诉管理 Controller — CRUD + addRecord + close 走 Service；uploadAttachment 保留 fs
  */
 import path from 'path'
 import fs from 'fs'
 import ComplaintService from '../services/ComplaintService.js'
-import { QualityComplaint } from '../models/index.js'
 import { success, fail, ErrorCode } from '../utils/response.js'
 import { logger } from '../utils/logger.js'
 import { asyncHandler } from '../middleware/security.js'
@@ -50,20 +49,18 @@ export default {
     await ComplaintService.delete(Number(req.params.id))
     return success(res, null, '删除成功')
   }),
+
+  // ---- fs 边界：uploadAttachment 保留文件操作；DB 查记录走 Service ----
+
   async uploadAttachment(req: any, res: any) {
     const COMPLAINT_MAX_TOTAL_SIZE = 200 * 1024 * 1024
     try {
       const { id } = req.params
-      const record = await QualityComplaint.findOne({ where: { complaint_id: id } })
-      if (!record) {
-        cleanupFiles(req.files || [])
-        return fail(res, '客诉记录不存在', ErrorCode.RECORD_NOT_FOUND)
-      }
+      // DB 查记录（用于文件命名 + 年月目录）
+      const record: any = await ComplaintService.findForUpload(Number(id))
 
       const files: any[] = req.files || (req.file ? [req.file] : [])
-      if (!files.length) {
-        return fail(res, '请选择要上传的文件', ErrorCode.PARAM_INVALID)
-      }
+      if (!files.length) return fail(res, '请选择要上传的文件', ErrorCode.PARAM_INVALID)
 
       // 总大小校验
       const totalSize = files.reduce((acc, f) => acc + (f.size || 0), 0)
@@ -73,19 +70,19 @@ export default {
       }
 
       // 年月目录：用客诉单的 complaint_time 或者 complaint_date 的 YYYYMM
-      const baseDate = (record as any).complaint_time || (record as any).complaint_date || new Date()
-      const ym = new Date(baseDate).toISOString().slice(0, 7).replace('-', '') // 202609
+      const baseDate = record.complaint_time || record.complaint_date || new Date()
+      const ym = new Date(baseDate).toISOString().slice(0, 7).replace('-', '')
       const uploadsDir = path.resolve(process.cwd(), 'uploads', 'complaints', ym)
       ensureDir(uploadsDir)
 
-      const complaintNoPrefix = (record as any).complaint_no || `TS${String(record.complaint_id).padStart(6, '0')}`
-      const datePart = dateStamp().slice(0, 8) // 20260908
+      const complaintNoPrefix = record.complaint_no || `TS${String(record.complaint_id).padStart(6, '0')}`
+      const datePart = dateStamp().slice(0, 8)
       const created: any[] = []
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
         const ext = path.extname(file.originalname || '').toLowerCase()
-        const ts = dateStamp().slice(9) // 143055 时间部分
+        const ts = dateStamp().slice(9)
         const finalName = `${complaintNoPrefix}_${datePart}_${ts}_${i + 1}${ext}`
         const destPath = path.join(uploadsDir, finalName)
         fs.renameSync(file.path, destPath)
@@ -98,15 +95,11 @@ export default {
         })
       }
 
-      success(res, { files: created }, `上传成功 ${created.length} 个文件`)
+      return success(res, { files: created }, `上传成功 ${created.length} 个文件`)
     } catch (err: any) {
       cleanupFiles(req.files || [])
       logger.error('[QualityComplaint] uploadAttachment error:', err)
-      fail(res, err.message || '上传失败', ErrorCode.SYSTEM_ERROR)
+      return fail(res, err.message || '上传失败', ErrorCode.SYSTEM_ERROR)
     }
   },
-
-  /**
-   * 关闭客诉
-   */
 }

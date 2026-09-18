@@ -910,10 +910,40 @@ export async function uploadImageRecord(body: any) {
   // DB-only persistence; actual fs/sharp done in Controller
   const { record_id, image_path, original_name, watermark_text, sort_order = 0, remark } = body
   if (!record_id || !image_path) throw new AppError('record_id / image_path 必填', ErrorCode.PARAM_INVALID)
+  // DeviceImage 模型字段：doc_type / doc_id / file_path / file_name / sort_order
   return await DeviceImage.create({
-    record_id: Number(record_id), record_type: 'maintenance',
-    image_path, original_name, watermark_text, sort_order: Number(sort_order), remark: remark || null,
+    doc_type: 'maintenance', doc_id: Number(record_id),
+    file_path: image_path, file_name: original_name, sort_order: Number(sort_order),
+    // watermark_text / remark 不属于 DeviceImage 模型 → 忽略
   })
+}
+
+// ---------- uploadImage DB 辅助 ----------
+
+/** 校验保养执行记录存在（事务内） */
+export async function assertRecordExists(recordId: number, transaction?: any) {
+  const record = await DeviceMaintenanceRecord.findOne({ where: { record_id: recordId }, transaction })
+  if (!record) throw new AppError('执行记录不存在', ErrorCode.RECORD_NOT_FOUND)
+  return record
+}
+
+/** 统计执行记录已上传图片数 */
+export async function countImagesByRecord(recordId: number, transaction?: any) {
+  return await DeviceImage.count({ where: { doc_type: 'maintenance', doc_id: recordId }, transaction })
+}
+
+/** 查执行记录已有图片（用于 hash 去重） */
+export async function findExistingImagesByRecord(recordId: number, transaction?: any) {
+  return await DeviceImage.findAll({
+    where: { doc_type: 'maintenance', doc_id: recordId },
+    attributes: ['file_path'],
+    transaction,
+  })
+}
+
+/** 创建保养图片记录 */
+export async function createMaintenanceImage(data: any, transaction?: any) {
+  return await DeviceImage.create(data, { transaction })
 }
 
 export default {
@@ -921,4 +951,5 @@ export default {
   generateRecords, getMatrix,
   listRecords, detailRecord, startRecord, submitRecord, batchSubmit, skipRecord, deleteRecord,
   getImages, uploadImageRecord, logRuntime, getRuntimeLog, initProfiles, getRecordDetail,
+  assertRecordExists, countImagesByRecord, findExistingImagesByRecord, createMaintenanceImage,
 }
