@@ -32,11 +32,17 @@ router.post('/upload/image', authRequired, commonUploadMiddleware.single('file')
 router.use('/version', versionRoutes)
 
 // router.use 挂载子路由（Router 实例），不需要 asyncHandler
-router.use('/auth', authRoutes)
-router.use('/system', systemRoutes)
-router.use('/basic', basicRoutes)
-router.use('/production', productionRoutes)
+router.use('/auth', authRoutes) // login 公开，profile/change-password 在 authRoutes 内部已加 authRequired
+
+// 核心业务路由 — 全局鉴权兜底（所有基础数据/生产/系统管理操作都需要登录）
+router.use('/system', authRequired, systemRoutes)
+router.use('/basic', authRequired, basicRoutes)
+router.use('/production', authRequired, productionRoutes)
+
+// auto — 路由内部精细控制（dashboard 公开给大屏，task/sync 等需登录）
 router.use('/auto', autoRoutes)
+
+// energy — 全公开（大屏轮询用，设计如此）
 router.use('/energy', energyRoutes)
 // 阶段3.1 样品测量值 CRUD：/api/inspection-items/:item_id/sample-values
 router.use('/inspection-items', authRequired, sampleValueRoutes)
