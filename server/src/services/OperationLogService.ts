@@ -7,7 +7,6 @@
 import { Op } from 'sequelize'
 import { OperationLog } from '../models/index.js'
 import { MAX_PAGE_SIZE } from '../utils/response.js'
-import { AppError } from '../utils/error.js'
 
 export const OperationLogService = {
   /** 分页查日志（支持 username/module/method/status/dateRange 筛选） */

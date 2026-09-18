@@ -35,7 +35,7 @@ function parseNumber(text: string): number | null {
 function parseDateTime(s: string): Date | null {
   if (!s) return null;
   // 支持 YYYY/MM/DD HH:MM 和 YYYY-MM-DD HH:MM
-  const m = s.match(/(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  const m = s.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
   if (m) {
     return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]), Number(m[6] || 0));
   }
