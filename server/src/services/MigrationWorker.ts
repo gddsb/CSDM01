@@ -41,7 +41,7 @@ export async function collectDatabaseSchema(options: CollectSchemaOptions = {}) 
   if (dialect === 'mysql') {
     // MySQL: 先从 information_schema 拿近似行数（毫秒级，TABLE_ROWS 是 InnoDB 估算值）
     const dbName = (sequelize.config?.database || process.env.DB_NAME) as string
-    let approxRows: any[] = []
+    let approxRows: any[]
     try {
       approxRows = (await sequelize.query(
         `SELECT TABLE_NAME as tbl, TABLE_ROWS as cnt FROM information_schema.TABLES WHERE TABLE_SCHEMA = :dbName`,

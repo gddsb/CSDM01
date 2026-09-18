@@ -130,7 +130,8 @@ export const restartServer = async (req: Request, res: Response) => {
   try {
     logger.info('收到服务器重启指令，5秒后退出进程...')
 
-    return success(res, null, '重启指令已接收，服务将在5秒后重启')
+    // 先返回响应，确保客户端收到确认
+    success(res, null, '重启指令已接收，服务将在5秒后重启')
 
     // 延迟退出，确保响应已发送
     // 注意：生产环境应由 PM2/Docker 等进程管理器自动重启

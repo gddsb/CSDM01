@@ -65,7 +65,6 @@ export async function listProfiles(query: any) {
 const { keyword, status, page = 1, pageSize = 50 } = query
       const where: any = {}
       if (status) where.status = status
-      let deviceIds: number[] | null = null
       if (keyword) {
         const devices = await Device.findAll({
           where: {
@@ -77,7 +76,7 @@ const { keyword, status, page = 1, pageSize = 50 } = query
           attributes: ['device_id'],
           raw: true,
         })
-        deviceIds = devices.map(d => d.device_id)
+        const deviceIds: number[] = devices.map(d => d.device_id)
         if (deviceIds.length === 0) return { list: [], total: 0 }
         where.device_id = { [Op.in]: deviceIds }
       }

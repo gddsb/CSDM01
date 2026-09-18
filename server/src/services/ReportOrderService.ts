@@ -383,7 +383,6 @@ export const ReportOrderService = {
 
     // 产线切换：子表有数据则不允许
     let newLineId: number | null = null
-    let newLineName: string | null = null
     if (input.line_id && input.line_id !== (reportOrder as any).line_id) {
       const [defectCount, materialCount, exceptionCount, manpowerCount, imageCount] = await Promise.all([
         ProcessDefect.count({ where: { report_order_id: Number(id) } }),
@@ -402,7 +401,7 @@ export const ReportOrderService = {
       const line = await ProductionLine.findOne({ where: { line_id: input.line_id } })
       if (!line) throw new AppError('产线不存在', 10002, 404)
       newLineId = (line as any).line_id
-      newLineName = (line as any).line_name
+      const newLineName: string = (line as any).line_name
       updateData.line_id = newLineId
       updateData.line_name = newLineName
     }

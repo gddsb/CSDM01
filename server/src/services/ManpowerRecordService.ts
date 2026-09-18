@@ -26,14 +26,11 @@ export const calcHours = (start: any, end: any): number => {
 export const resolveTimeFromReportOrder = (reportOrder: any) => {
   if (!reportOrder) return { start_time: null, end_time: null, hours: 0 }
   const start_time = reportOrder.report_time || null
-  let end_time = null
   const statusVal = reportOrder.status
   const isFinished = Number(statusVal) === 1 || statusVal === '完工'
-  if (isFinished && reportOrder.finish_time) {
-    end_time = reportOrder.finish_time
-  } else {
-    end_time = nowBeijingDate()
-  }
+  const end_time = (isFinished && reportOrder.finish_time)
+    ? reportOrder.finish_time
+    : nowBeijingDate()
   const hours = calcHours(start_time, end_time)
   return { start_time, end_time, hours }
 }
