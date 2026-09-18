@@ -1,3 +1,4 @@
+import logger from '../../utils/logger.js'
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react'
 import { Spin, Row, Col } from 'antd'
 import * as echarts from 'echarts'
@@ -476,7 +477,7 @@ export default function EnvironmentBigScreen() {
         setOverview({ areas, alarms: raw.alarms || { total: 0, unhandled: 0, today: 0, recent: [] }, dew_points: raw.dew_points || {}, lastUpdate: raw.lastUpdate || null })
       }
       if (t?.data) setTrend(t.data as TrendData)
-    } catch (err) { console.error('加载环境看板失败:', err) }
+    } catch (err) { logger.error('加载环境看板失败:', err) }
     finally { setLoading(false); setLastRefreshTime(new Date()) }
   }, [])
 

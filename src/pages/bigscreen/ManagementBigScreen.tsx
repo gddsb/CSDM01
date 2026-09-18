@@ -1,3 +1,4 @@
+import logger from '../../utils/logger.js'
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import * as echarts from 'echarts'
@@ -122,7 +123,7 @@ export default function ManagementBigScreen() {
         setDataVersion(v => v + 1)
       }
     } catch (err) {
-      console.error('加载经营看板数据失败:', err)
+      logger.error('加载经营看板数据失败:', err)
     }
   }, [])
 

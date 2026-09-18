@@ -1,3 +1,4 @@
+import logger from '../../utils/logger.js'
 /**
  * useBarcode — 扫码 hook
  * - Capacitor 环境（Android/iOS）：调用 @capacitor-community/barcode-scanner
@@ -84,7 +85,7 @@ export function useBarcode() {
         return null
       } catch (err: any) {
         setIsScanning(false)
-        console.warn('Capacitor barcode scan failed:', err)
+        logger.warn('Capacitor barcode scan failed:', err)
         // fallback 到手动输入
       }
     }

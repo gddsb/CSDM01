@@ -1,3 +1,4 @@
+import logger from '../../../utils/logger.js'
 import React, { useState, useEffect, useCallback } from 'react'
 import { Card, Form, Spin } from 'antd'
 import { useApp } from '../../../contexts/AppContext'
@@ -35,7 +36,7 @@ export default function ParamsConfigPage() {
       const list = res.data?.list || res.data || []
       setLineOptions(list.map((l: { line_name?: string; line_code?: string }) => ({ label: l.line_name || l.line_code || '', value: l.line_name || l.line_code || '' })))
     } catch (e: unknown) {
-      console.warn('加载产线列表失败:', e instanceof Error ? e.message : e)
+      logger.warn('加载产线列表失败:', e instanceof Error ? e.message : e)
     }
   }, [])
 

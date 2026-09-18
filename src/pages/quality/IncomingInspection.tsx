@@ -1,3 +1,4 @@
+import logger from '../../utils/logger.js'
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { Table, Tag, Button, Select, DatePicker, Space, Row, Col, Modal, Form, Input, Drawer, Descriptions, Typography, Popconfirm, Table as AntTable, InputNumber, Alert, Checkbox } from 'antd'
@@ -258,7 +259,7 @@ export default function IncomingInspection() {
           })
           if (svRes.success !== false) svSaved++
         } catch (svErr: any) {
-          console.warn('[handleInspectSave] save sample_values failed for item_id=' + itemId, svErr?.response?.data?.message || svErr?.message)
+          logger.warn('[handleInspectSave] save sample_values failed for item_id=' + itemId, svErr?.response?.data?.message || svErr?.message)
         }
       }
 

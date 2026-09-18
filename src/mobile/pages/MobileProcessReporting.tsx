@@ -1,3 +1,4 @@
+import logger from '../../utils/logger.js'
 /**
  * 移动报工 — 对标 PC 端 ProcessReporting.tsx 完整流程
  *
@@ -167,7 +168,7 @@ export default function MobileProcessReporting() {
       const mpList: any[] = (mpR as any).success ? ((mpR as any).data?.list || (mpR as any).data || []) : []
       setManpower(mpList.length > 0 ? { ...mpList[0], id: mpList[0].record_id } : null)
     } catch (e) {
-      console.error('加载报工数据失败', e)
+      logger.error('加载报工数据失败', e)
     }
   }
 

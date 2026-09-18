@@ -1,3 +1,4 @@
+import logger from '../utils/logger.js'
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Layout, Menu, Dropdown, Avatar, Space, Typography, Badge, Button, Modal, Form, Input, Tooltip, Upload, Spin } from 'antd'
 import type { MenuProps } from 'antd'
@@ -188,7 +189,7 @@ export default function MainLayout() {
         setDynamicMenu([])
       }
     } catch (err: any) {
-      console.error('[MainLayout] 加载菜单失败:', err?.message)
+      logger.error('[MainLayout] 加载菜单失败:', err?.message)
       // 已有缓存数据时不弹错误，继续用旧缓存
       const hasCache = (() => {
         try {

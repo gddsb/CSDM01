@@ -1,3 +1,4 @@
+import logger from '../utils/logger.js'
 import ResizableTable from '../components/ResizableTable'
 import { useState, useEffect, useMemo } from 'react'
 import { Row, Col, Table, Tag, Progress, Typography, Space } from 'antd'
@@ -74,7 +75,7 @@ export default function Dashboard() {
         setProcessReports(reportsRes.data || [])
         setDevices(devicesRes.data || [])
       } catch (err) {
-        console.error('加载工作台数据失败:', err.message)
+        logger.error('加载工作台数据失败:', err.message)
       } finally {
         if (!cancelled) setLoading(false)
       }

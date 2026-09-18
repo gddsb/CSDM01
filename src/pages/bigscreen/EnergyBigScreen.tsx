@@ -1,3 +1,4 @@
+import logger from '../../utils/logger.js'
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { Spin } from 'antd'
 import * as echarts from 'echarts'
@@ -289,7 +290,7 @@ export default function EnergyBigScreen() {
       if (Array.isArray(t?.data)) setTrend(t.data as TrendItem[])
       if (Array.isArray(mt?.data)) setMonthTrend(mt.data as MonthTrendItem[])
     } catch (err) {
-      console.error('加载能源看板失败:', err)
+      logger.error('加载能源看板失败:', err)
     } finally {
       setLoading(false)
       setLastRefreshTime(new Date())

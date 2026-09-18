@@ -1,3 +1,4 @@
+import logger from '../../utils/logger.js'
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import * as echarts from 'echarts'
 import api from '../../utils/api'
@@ -102,7 +103,7 @@ export default function QualityBigScreen() {
         setDataVersion(v => v + 1)
       }
     } catch (err) {
-      console.error('加载质量看板数据失败:', err)
+      logger.error('加载质量看板数据失败:', err)
     } finally {
       setLoading(false)
     }

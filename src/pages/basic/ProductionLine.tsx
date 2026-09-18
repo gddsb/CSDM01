@@ -1,3 +1,4 @@
+import logger from '../../utils/logger.js'
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback } from 'react'
 import { Table, Tag, Button, Modal, Form, Input, Select, Row, Col, Space, Drawer, Descriptions, Popconfirm, Card } from 'antd'
@@ -90,7 +91,7 @@ export default function ProductionLine() {
           name: p.process_name,
         })))
       } catch (err) {
-        console.error('获取选项数据失败:', err)
+        logger.error('获取选项数据失败:', err)
       }
     }
     fetchOptions()
@@ -109,7 +110,7 @@ export default function ProductionLine() {
       })
       return processes
     } catch (err) {
-      console.error('获取产线工序失败:', err)
+      logger.error('获取产线工序失败:', err)
       return []
     }
   }
@@ -165,7 +166,7 @@ export default function ProductionLine() {
         }))
         setSelectedProcesses(processes)
       } catch (e) {
-        console.error('获取产线工序失败:', e)
+        logger.error('获取产线工序失败:', e)
       }
     } else {
       form.resetFields()
@@ -214,7 +215,7 @@ export default function ProductionLine() {
         try {
           await api.delete(`/basic/production-lines/${lineId}/processes`)
         } catch (e) {
-          console.warn('清空旧工序关联失败:', e)
+          logger.warn('清空旧工序关联失败:', e)
         }
       }
       for (const p of selectedProcesses) {

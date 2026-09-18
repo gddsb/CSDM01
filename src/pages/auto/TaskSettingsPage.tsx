@@ -1,3 +1,4 @@
+import logger from '../../utils/logger.js'
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useMessage } from '../../contexts/AppContext'
 import { Table, Button, Switch, Form, Input, Modal, Space, Tag, Card, Row, Col, Select, Progress, Timeline, Tooltip, Radio } from 'antd'
@@ -250,7 +251,7 @@ export default function TaskSettingsPage() {
         }
       }
     } catch (err) {
-      console.error('轮询任务进度失败:', err)
+      logger.error('轮询任务进度失败:', err)
     }
   }, [message])
 

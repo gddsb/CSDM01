@@ -1,3 +1,4 @@
+import logger from '../utils/logger.js'
 import React, { Component, ErrorInfo, ReactNode } from 'react'
 
 interface Props {
@@ -30,7 +31,7 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('[ErrorBoundary] 捕获错误:', error, errorInfo)
+    logger.error('[ErrorBoundary] 捕获错误:', error, errorInfo)
 
     // 检测 ChunkLoadError（懒加载 chunk 丢失/版本不匹配）
     const isChunkLoadError =
