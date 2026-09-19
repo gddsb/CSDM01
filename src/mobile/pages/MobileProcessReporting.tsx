@@ -42,7 +42,10 @@ export default function MobileProcessReporting() {
 
   // ========== 阶段2：报工数据 ==========
   const [processes, setProcesses] = useState<ProcessRow[]>([])
-  const [activeProcId, setActiveProcId] = useState<number | null>(null)
+  // 三个独立工序选择器（不良/物料/报废 Tab 各自维护，互不影响）
+  const [defectProcId, setDefectProcId] = useState<number | null>(null)
+  const [materialProcId, setMaterialProcId] = useState<number | null>(null)
+  const [scrapProcId, setScrapProcId] = useState<number | null>(null)
 
   // 一级 Tab: process（工序报工）| report（工单报工）
   const [groupTab, setGroupTab] = useState<'process' | 'report'>('process')
@@ -140,7 +143,12 @@ export default function MobileProcessReporting() {
       const procs: any = await api.get(`/production/report-orders/${report.report_order_id}/processes`)
       const plist = ((procs?.data || []) as ProcessRow[]).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
       setProcesses(plist)
-      if (plist.length > 0) setActiveProcId(plist[0].process_id)
+      if (plist.length > 0) {
+        const first = plist[0].process_id
+        setDefectProcId(first)
+        setMaterialProcId(first)
+        setScrapProcId(first)
+      }
 
       // 全量记录（报废也走 process-defects，前端按 scrapTypes 字典分类）
       const [dr, mr, er, pr]: any[] = await Promise.all([
@@ -254,13 +262,7 @@ export default function MobileProcessReporting() {
         {/* === 工序报工 Tab === */}
         {groupTab === 'process' && (
           <div>
-            {/* 工序 Select（紧凑横排 + 必报红标） */}
-            <ProcessSelector
-              processes={processes}
-              activeProcId={activeProcId}
-              onChange={setActiveProcId}
-            />
-            {/* 工序内部 Tab：不良记录 / 物料记录 / 检验报废（移到这里） */}
+            {/* 工序内部 Tab：不良记录 / 物料记录 / 检验报废 */}
             <Tabs activeKey={processTab} onChange={(k) => setProcessTab(k as any)}>
               <Tabs.Tab title="不良记录" key="defect" />
               <Tabs.Tab title="物料记录" key="material" />
@@ -268,58 +270,79 @@ export default function MobileProcessReporting() {
             </Tabs>
             <div style={{ padding: 10 }}>
               {processTab === 'defect' && (
-                <ProcessDefectPanel
-                  report={current}
-                  activeProcessId={activeProcId}
-                  editable={!!editable}
-                  defectTypes={defectTypes}
-                  allDefects={defects}
-                  // 🔑 defects 是 defectsRaw 的不良子集，包一层只改不良不碰报废
-                  setAllDefects={(updater) => setDefectsRaw(prev => {
-                    const scrap = prev.filter(d => scrapDefectIds.has(Number(d.defect_type_id)))
-                    const nonScrap = prev.filter(d => !scrapDefectIds.has(Number(d.defect_type_id)))
-                    return [...updater(nonScrap), ...scrap]
-                  })}
-                />
+                <>
+                  <ProcessSelector
+                    processes={processes}
+                    activeProcId={defectProcId}
+                    onChange={setDefectProcId}
+                  />
+                  <ProcessDefectPanel
+                    report={current}
+                    activeProcessId={defectProcId}
+                    editable={!!editable}
+                    defectTypes={defectTypes}
+                    allDefects={defects}
+                    // 🔑 defects 是 defectsRaw 的不良子集，包一层只改不良不碰报废
+                    setAllDefects={(updater) => setDefectsRaw(prev => {
+                      const scrap = prev.filter(d => scrapDefectIds.has(Number(d.defect_type_id)))
+                      const nonScrap = prev.filter(d => !scrapDefectIds.has(Number(d.defect_type_id)))
+                      return [...updater(nonScrap), ...scrap]
+                    })}
+                  />
+                </>
               )}
               {processTab === 'material' && (
-                <ProcessMaterialPanel
-                  report={current}
-                  activeProcessId={activeProcId}
-                  editable={!!editable}
-                  materials={materialsMaster}
-                  allMaterials={materials}
-                  setAllMaterials={setMaterials}
-                />
+                <>
+                  <ProcessSelector
+                    processes={processes}
+                    activeProcId={materialProcId}
+                    onChange={setMaterialProcId}
+                  />
+                  <ProcessMaterialPanel
+                    report={current}
+                    activeProcessId={materialProcId}
+                    editable={!!editable}
+                    materials={materialsMaster}
+                    allMaterials={materials}
+                    setAllMaterials={setMaterials}
+                  />
+                </>
               )}
               {processTab === 'scrap' && (
-                <ScrapPanel
-                  report={current}
-                  activeProcessId={activeProcId}
-                  processes={processes}
-                  editable={!!editable}
-                  scrapTypes={scrapTypes}
-                  rows={scraps}
-                  // 🔑 scraps 是 defectsRaw 按 scrapDefectIds 过滤的派生数据，改全量即可联动
-                  setRows={(updater) => setDefectsRaw((prev) => {
-                    const before = prev.filter(d => !scrapDefectIds.has(Number(d.defect_type_id)))
-                    const scrapRows = prev.filter(d => scrapDefectIds.has(Number(d.defect_type_id))) as unknown as ScrapRow[]
-                    const merged = updater(scrapRows)
-                    // 把更新后的 merged 转成 DefectRow 拼回去
-                    const mergedDefects: DefectRow[] = merged.map((s) => ({
-                      id: s.scrap_id ?? s.id,
-                      defect_id: s.scrap_id ?? (s.id as number | undefined),
-                      report_order_id: s.report_order_id,
-                      process_id: processes.find(p => p.process_id === activeProcId)?.process_id,
-                      defect_type_id: s.defect_type_id,
-                      defect_code: s.defect_code,
-                      defect_name: s.defect_name,
-                      defect_type: s.defect_type,
-                      quantity: s.quantity,
-                    }))
-                    return [...before, ...mergedDefects]
-                  })}
-                />
+                <>
+                  <ProcessSelector
+                    processes={processes}
+                    activeProcId={scrapProcId}
+                    onChange={setScrapProcId}
+                  />
+                  <ScrapPanel
+                    report={current}
+                    activeProcessId={scrapProcId}
+                    processes={processes}
+                    editable={!!editable}
+                    scrapTypes={scrapTypes}
+                    rows={scraps}
+                    // 🔑 scraps 是 defectsRaw 按 scrapDefectIds 过滤的派生数据，改全量即可联动
+                    setRows={(updater) => setDefectsRaw((prev) => {
+                      const before = prev.filter(d => !scrapDefectIds.has(Number(d.defect_type_id)))
+                      const scrapRows = prev.filter(d => scrapDefectIds.has(Number(d.defect_type_id))) as unknown as ScrapRow[]
+                      const merged = updater(scrapRows)
+                      // 把更新后的 merged 转成 DefectRow 拼回去
+                      const mergedDefects: DefectRow[] = merged.map((s) => ({
+                        id: s.scrap_id ?? s.id,
+                        defect_id: s.scrap_id ?? (s.id as number | undefined),
+                        report_order_id: s.report_order_id,
+                        process_id: processes.find(p => p.process_id === scrapProcId)?.process_id,
+                        defect_type_id: s.defect_type_id,
+                        defect_code: s.defect_code,
+                        defect_name: s.defect_name,
+                        defect_type: s.defect_type,
+                        quantity: s.quantity,
+                      }))
+                      return [...before, ...mergedDefects]
+                    })}
+                  />
+                </>
               )}
             </div>
           </div>
@@ -395,10 +418,10 @@ function Header({ report, onBack, onFinish }: { report: ReportOrder; onBack: () 
 }
 
 function StatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportStats>; reportQty: number }) {
-  // 6 个指标，分两行：第一行报工数量 + 合格数量（各 16ch），第二行剩余 4 项（各 10ch）
+  // 6 个指标，分两行：第一行报工数量 + 投入数量（各 16ch），第二行剩余 4 项（各 10ch）
   const row1 = [
     { label: '报工数量', value: reportQty, color: '#2196F3', widthCh: 16 },
-    { label: '合格数量', value: stats.expectedOutput > 0 ? Number(stats.expectedOutput.toFixed(1)) : 0, color: '#52c41a', widthCh: 16 },
+    { label: '投入数量', value: stats.inputQty || 0, color: '#1890ff', widthCh: 16 },
   ]
   const row2 = [
     { label: '制程不良', value: stats.defectProcess, color: '#fa8c16', widthCh: 10 },
