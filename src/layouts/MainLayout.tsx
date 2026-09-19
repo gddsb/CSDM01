@@ -681,15 +681,22 @@ export default function MainLayout() {
         </Form>
       </Modal>
 
-      {/* 移动端下载弹窗 */}
+      {/* 移动端下载弹窗（整体 70% 缩放） */}
       <Modal
         title="📱 大满 MES 移动端下载"
         open={mobileDownloadOpen}
         onCancel={() => setMobileDownloadOpen(false)}
         footer={null}
-        width={640}
+        width={914}  // 640 / 0.7 ≈ 914，保证缩放后视觉宽度仍为 640
         destroyOnHidden
       >
+        <div style={{
+          transform: 'scale(0.7)',
+          transformOrigin: 'top center',
+          width: 'calc(100% / 0.7)',   // 撑回原宽度让缩放生效后不留空白
+          marginTop: '-30px',          // 抵消缩放后顶部留白
+          marginBottom: '-60px',       // 抵消底部留白
+        }}>
         {/* 头部：版本信息 */}
         <div style={{ textAlign: 'center', padding: '8px 0 16px', borderBottom: '1px solid #f0f0f0', marginBottom: 16 }}>
           <div style={{ fontSize: 18, fontWeight: 600 }}>
@@ -842,6 +849,7 @@ export default function MainLayout() {
         <div style={{ marginTop: 18, fontSize: 11, color: '#bbb', textAlign: 'center', lineHeight: 1.6 }}>
           💡 提示：扫码下载需手机能访问本服务器 · Android 8.0+ 需开启"允许安装未知来源应用"
           <br />iOS IPA 需通过 TestFlight 或 MDM 分发 · 企业版可用 Safari 直接安装
+        </div>
         </div>
       </Modal>
     </Layout>
