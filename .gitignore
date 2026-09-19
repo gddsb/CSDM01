@@ -26,6 +26,8 @@ server/uploads/
 
 # 构建产物
 server/dist/
+*.apk
+*.ipa
 
 # 日志
 *.log
