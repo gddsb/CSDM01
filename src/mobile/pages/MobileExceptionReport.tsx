@@ -14,7 +14,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, List, SearchBar, Toast, Dialog, TextArea, Picker, Card, PullToRefresh } from 'antd-mobile'
-import { RightOutline } from 'antd-mobile-icons'
 import api from '../../utils/api'
 import { offlinePost } from '../offline/offlineApi'
 import { useBarcode } from '../hooks/useBarcode'
