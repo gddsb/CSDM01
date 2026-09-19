@@ -150,7 +150,22 @@ export default function MobileProcessReporting() {
         api.get('/production/manpower-records', { params: { report_order_id: report.report_order_id, pageSize: 1 } }),
       ])
       const _arr = (r: any) => (r?.data?.items || r?.data || []) as any[]
-      setDefectsRaw(_arr(dr) as DefectRow[])   // 全量 ProcessDefect（不良+报废一起存）
+      // 🔑 后端 include DefectType 后，defect_type 是对象不是字符串，前端渲染会崩溃（React #31）
+      // 这里统一归一化：defect_type 取字符串，同时取出关联的 defect_code/defect_name
+      setDefectsRaw(_arr(dr).map((d: any) => {
+        const dt = d.defect_type
+        if (dt && typeof dt === 'object') {
+          return {
+            ...d,
+            defect_type_id: d.defect_type_id ?? dt.defect_id,
+            defect_code: d.defect_code ?? dt.defect_code,
+            defect_name: d.defect_name ?? dt.defect_name,
+            defect_type: dt.defect_type ?? dt.category_name ?? '',   // ← 关键：对象→字符串
+            defect_unit: d.defect_unit ?? dt.defect_unit,
+          }
+        }
+        return d
+      }) as DefectRow[])
       setMaterials(_arr(mr) as MaterialRow[])
       setExceptions(_arr(er) as ExceptionRow[])
       setManpower((_arr(pr)[0] || null) as ManpowerRow | null)
