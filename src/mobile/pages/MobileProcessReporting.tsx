@@ -418,36 +418,37 @@ function Header({ report, onBack, onFinish }: { report: ReportOrder; onBack: () 
 }
 
 function StatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportStats>; reportQty: number }) {
-  // 6 个指标，分两行：第一行报工数量 + 投入数量（各 16ch），第二行剩余 4 项（各 10ch）
-  const row1 = [
-    { label: '报工数量', value: reportQty, color: '#2196F3', widthCh: 16 },
-    { label: '投入数量', value: stats.inputQty || 0, color: '#1890ff', widthCh: 16 },
+  // 一行 6 项：报工/投入 各 8ch，其余 4 项 flex:1 平均宽度
+  const items: Array<{ label: string; value: number | string; color: string; width?: string | number }> = [
+    { label: '报工数量', value: reportQty, color: '#2196F3', width: '8ch' },
+    { label: '投入数量', value: stats.inputQty || 0, color: '#1890ff', width: '8ch' },
+    { label: '来料不良', value: stats.defectMaterial, color: '#faad14' },
+    { label: '制程不良', value: stats.defectProcess, color: '#fa8c16' },
+    { label: '检验报废', value: stats.defectScrap, color: '#f5222d' },
+    { label: '异常工时', value: `${((stats.exceptionHours || 0) / 60).toFixed(1)}H`, color: '#eb2f96' },
   ]
-  const row2 = [
-    { label: '制程不良', value: stats.defectProcess, color: '#fa8c16', widthCh: 10 },
-    { label: '来料不良', value: stats.defectMaterial, color: '#faad14', widthCh: 10 },
-    { label: '报废数量', value: stats.defectScrap, color: '#f5222d', widthCh: 10 },
-    { label: '异常工时', value: `${((stats.exceptionHours || 0) / 60).toFixed(1)}H`, color: '#eb2f96', widthCh: 10 },
-  ]
-  const renderRow = (items: typeof row1) => (
-    <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
-      {items.map(it => (
-        <div key={it.label} style={{ width: `${it.widthCh}ch`, textAlign: 'center' }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: it.color }}>{it.value}</div>
-          <div style={{ fontSize: 10, color: '#aaa', marginTop: 2 }}>{it.label}</div>
-        </div>
-      ))}
-    </div>
-  )
   return (
     <div style={{
       background: '#fff', margin: '10px 10px 0', borderRadius: 10, padding: '10px 12px',
       boxShadow: '0 1px 4px rgba(0,0,0,.04)',
     }}>
       <div style={{ fontSize: 11, color: '#888', fontWeight: 600, marginBottom: 6 }}>📊 报工单汇总</div>
-      {renderRow(row1)}
-      <div style={{ height: 4 }} />
-      {renderRow(row2)}
+      <div style={{ display: 'flex', gap: 4, alignItems: 'stretch' }}>
+        {items.map(it => (
+          <div
+            key={it.label}
+            style={{
+              width: it.width ?? undefined,
+              flex: it.width ? 'none' : 1,
+              textAlign: 'center',
+              minWidth: 0,
+            }}
+          >
+            <div style={{ fontSize: 15, fontWeight: 700, color: it.color, whiteSpace: 'nowrap' }}>{it.value}</div>
+            <div style={{ fontSize: 10, color: '#aaa', marginTop: 2, whiteSpace: 'nowrap' }}>{it.label}</div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
