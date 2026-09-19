@@ -800,12 +800,9 @@ export default function ProcessReporting() {
       .map(l => ({ label: l.line_name, value: l.line_id }))
   }, [lines])
 
-
-
   // 批量保存生产不良记录（新增 + 已修改）
 
   // 新增一条生产不良记录空行（手动触发，添加前先执行一次保存）
-
 
   const prodDefectDisplayList = useMemo(() => {
     // 改为手动添加模式，不再自动追加空行
@@ -838,13 +835,9 @@ export default function ProcessReporting() {
     openImageDrawer,
   })
 
-
-
-
   // 批量保存检验报废记录（新增 + 已修改）
 
   // 新增一条检验报废记录空行（手动触发，添加前先执行一次保存）
-
 
   const scrapDefectDisplayList = useMemo(() => {
     // 改为手动添加模式，不再自动追加空行
@@ -876,10 +869,6 @@ export default function ProcessReporting() {
     getFilteredOptions: getFilteredScrapDefectOptions,
     openImageDrawer,
   })
-
-
-
-
 
   // 校验单条生产物料记录（批号、数量为必填项）
   const validateMaterialRecord = (record) => {
@@ -976,10 +965,6 @@ export default function ProcessReporting() {
     openImageDrawer,
   })
 
-
-
-
-
   // 校验单条异常工时记录
   const validateExceptionRecord = (record) => {
     if (!record.exception_type) {
@@ -1046,7 +1031,6 @@ export default function ProcessReporting() {
       message.error(err.message || '保存失败')
     }
   }
-
 
   // 校验单条人员工时记录
   const validateManpowerRecord = (record) => {

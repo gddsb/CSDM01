@@ -169,11 +169,6 @@ export async function collectDatabaseSchema(options: CollectSchemaOptions = {}) 
 
 // 数据库配置信息（密码脱敏）+ 数据表清单
 
-
-
-
-
-
 // ---- 迁移目标枚举 ----
 export const getMigrationTargets = async (req, res) => {
   try {
