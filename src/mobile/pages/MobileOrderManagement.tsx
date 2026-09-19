@@ -12,7 +12,7 @@
  * 点击订单 → 下属报工单列表 → 点击报工单 → 复用 ReportOrderDetail
  */
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh } from 'antd-mobile'
 import api from '../../utils/api'
 import { offlinePost } from '../offline/offlineApi'
@@ -53,8 +53,15 @@ const STATUS_COLOR: Record<string, string> = {
 
 export default function MobileOrderManagement() {
   const navigate = useNavigate()
+  const [sp] = useSearchParams()
   const { scan } = useBarcode()
-  const [tab, setTab] = useState<StatusTab>('开立')
+
+  // URL tab 参数 → 初始 tab（Dashboard 待办跳转带来的筛选）
+  const urlTab = sp.get('tab') as StatusTab | null
+  const VALID_TABS: StatusTab[] = ['开立', '下发', '开工', '完工']
+  const initialTab: StatusTab = urlTab && VALID_TABS.includes(urlTab) ? urlTab : '开立'
+
+  const [tab, setTab] = useState<StatusTab>(initialTab)
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(false)
   const [syncing, setSyncing] = useState(false)

@@ -1,68 +1,90 @@
 /**
- * 工单报废记录面板
- * —— 工单级（不分工序），Tab: 报废
+ * 工单报废记录面板（工序级存储，工单级展示）
+ * —— Tab: 报废
  *
- * 后端接口：
- *   GET  /production/scrap-defects?report_order_id=xxx
- *   POST /production/scrap-defects
- *   PUT  /production/scrap-defects/:id
- *   DEL  /production/scrap-defects/:id
+ * 🔑 与 PC 端完全对齐：
+ *   - 报废数据存 ProcessDefect 表（production_process_defect）
+ *   - 报废是工序级存储，**必须带 process_id**（后端强校验）
+ *   - 查询时按工单维度聚合显示（前端过滤 defect_type === '检验报废'）
+ *   - 新增/编辑/删除统一调 /production/process-defects 接口（和工序不良共用接口）
  *
- * 报废类型从 defect_types 字典来，category_name='制程检验类型' AND defect_type='检验报废'
+ * 后端接口（统一走 ProcessDefect）：
+ *   GET  /production/process-defects?report_order_id=xxx
+ *   POST /production/process-defects        (body 必须含 process_id)
+ *   PUT  /production/process-defects/:id
+ *   DEL  /production/process-defects/:id
  */
 import { useCallback, useState } from 'react'
 import React from 'react'
 import { Button, Dialog, Toast } from 'antd-mobile'
 import api from '../../../utils/api'
-import type { DefectType, ReportOrder, ScrapRow } from './types'
+import type { DefectType, ReportOrder, ScrapRow, ProcessRow } from './types'
 
 interface Props {
   report: ReportOrder
+  /** 🔑 当前工序（报废存储必须绑工序，默认第一工序） */
+  activeProcessId: number | null
+  processes: ProcessRow[]
   editable: boolean
-  /** 报废类型下拉选项（已在主文件 preload 好） */
+  /** 报废类型下拉（category_name='报废类型' 或 defect_type='检验报废'） */
   scrapTypes: DefectType[]
+  /** 所有 defect_type_id === 检验报废 的 ProcessDefect 记录（主文件拉一次，前端过滤） */
   rows: ScrapRow[]
   setRows: (updater: (prev: ScrapRow[]) => ScrapRow[]) => void
 }
 
-export function ScrapPanel({ report, editable, scrapTypes, rows, setRows }: Props) {
+export function ScrapPanel({
+  report, activeProcessId, processes, editable, scrapTypes, rows, setRows,
+}: Props) {
   const [draft, setDraft] = useState<ScrapRow>({ quantity: 0 })
 
-  const resetDraft = () => setDraft({ quantity: 0 })
+  // 如果 activeProcessId 为 null，取第一道工序
+  const resolvedProcessId = activeProcessId ?? processes[0]?.process_id ?? null
 
   const handleAdd = useCallback(async () => {
+    if (!resolvedProcessId) { Toast.show({ content: '请选择工序', icon: 'fail' }); return }
     if (!draft.defect_type_id) { Toast.show({ content: '请选报废项目', icon: 'fail' }); return }
-    if (!draft.quantity || draft.quantity <= 0) { Toast.show({ content: '数量 > 0', icon: 'fail' }); return }
+    if (!draft.quantity || Number(draft.quantity) <= 0) { Toast.show({ content: '数量 > 0', icon: 'fail' }); return }
+
     try {
-      const payload = {
+      // 🔑 与 PC 端一致：走 /production/process-defects（工序不良接口）
+      const payload: any = {
         report_order_id: report.report_order_id,
+        process_id: resolvedProcessId,    // 工序级存储（后端强校验）
         defect_type_id: draft.defect_type_id,
-        quantity: draft.quantity,
+        quantity: Number(draft.quantity),
+        unit: draft.unit || '',
       }
-      const r: any = await api.post('/production/scrap-defects', payload)
-      if (!r.success) throw new Error(r.message || '保存失败')
+      const r: any = await api.post('/production/process-defects', payload)
+      if (!r?.success) throw new Error(r?.message || '保存失败')
+
+      const saved = r.data
+      const t = scrapTypes.find(x => x.defect_id === draft.defect_type_id)
       const newRow: ScrapRow = {
-        ...draft,
-        id: r.data?.scrap_id ?? Date.now(),
-        scrap_id: r.data?.scrap_id,
-        defect_code: scrapTypes.find(t => t.defect_id === draft.defect_type_id)?.defect_code,
-        defect_name: scrapTypes.find(t => t.defect_id === draft.defect_type_id)?.defect_name,
+        id: saved.defect_id,
+        scrap_id: saved.defect_id,
+        defect_type_id: saved.defect_type_id,
+        defect_code: t?.defect_code,
+        defect_name: t?.defect_name,
         defect_type: '检验报废',
+        quantity: Number(saved.quantity),
+        _isNew: false,
       }
       setRows(prev => [...prev, newRow])
       Toast.show({ content: '已添加', icon: 'success' })
-      resetDraft()
+      setDraft({ quantity: 0 })
     } catch (e: any) {
       Toast.show({ content: e?.message || '保存失败', icon: 'fail' })
     }
-  }, [draft, report.report_order_id, scrapTypes, setRows])
+  }, [draft, report.report_order_id, resolvedProcessId, scrapTypes, setRows])
 
   const handleDel = useCallback(async (row: ScrapRow) => {
     const ok = await Dialog.confirm({ content: '删除该报废记录？', confirmText: '删除', cancelText: '取消' })
     if (!ok) return
     try {
-      if (row.scrap_id) await api.delete(`/production/scrap-defects/${row.scrap_id}`)
-      setRows(prev => prev.filter(r => r !== row))
+      const id = row.scrap_id ?? row.id
+      if (id) await api.delete(`/production/process-defects/${id}`)
+      setRows(prev => prev.filter(r => (r.scrap_id ?? r.id) !== id))
       Toast.show({ content: '已删除', icon: 'success' })
     } catch (e: any) {
       Toast.show({ content: e?.message || '删除失败', icon: 'fail' })
@@ -70,24 +92,32 @@ export function ScrapPanel({ report, editable, scrapTypes, rows, setRows }: Prop
   }, [setRows])
 
   const selStyle: React.CSSProperties = {
-    width: '100%', padding: '10px 12px', borderRadius: 8,
-    border: '1px solid #e0e0e0', fontSize: 14, background: '#fff',
+    flex: 2, minWidth: 110, padding: '7px 8px', borderRadius: 6,
+    border: '1px solid #ddd', fontSize: 12, background: '#fff',
   }
   const inputStyle: React.CSSProperties = {
-    flex: 1, padding: '10px 12px', borderRadius: 8,
-    border: '1px solid #e0e0e0', fontSize: 15,
+    flex: 1, minWidth: 60, padding: '7px 8px', borderRadius: 6,
+    border: '1px solid #ddd', fontSize: 12, background: '#fff',
   }
 
   return (
     <div>
+      {/* 工序提示（复用工序报工的当前工序，只读展示） */}
+      <div style={{ fontSize: 11, color: '#888', padding: '4px 0 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
+        📌 存储工序:
+        {resolvedProcessId
+          ? <b style={{ color: '#1890ff', fontSize: 12 }}>{processes.find(p => p.process_id === resolvedProcessId)?.process_name || '—'}</b>
+          : <span style={{ color: '#f44336' }}>未选（请到工序报工选择）</span>}
+      </div>
+
       {/* 列表 */}
       {rows.length > 0 && rows.map((row) => (
-        <div key={String(row.id)} style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        <div key={String(row.scrap_id ?? row.id)} style={{
           padding: '10px 0', borderTop: '1px solid #f0f0f0',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, color: '#333', fontWeight: 500 }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: '#333' }}>
               {row.defect_code && <span style={{ color: '#999', fontSize: 11, marginRight: 6 }}>{row.defect_code}</span>}
               {row.defect_name || '—'}
             </div>
@@ -105,36 +135,33 @@ export function ScrapPanel({ report, editable, scrapTypes, rows, setRows }: Prop
         <div style={{ textAlign: 'center', padding: 20, color: '#bbb', fontSize: 12 }}>— 暂无报废记录 —</div>
       )}
 
-      {/* 新增 */}
+      {/* 新增（单行布局） */}
       {editable && (
-        <div style={{
-          borderTop: '1px dashed #ddd', paddingTop: 10, marginTop: 6,
-        }}>
-          <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>➕ 新增报废</div>
-          <select
-            value={draft.defect_type_id || ''}
-            onChange={(e) => {
-              const id = e.target.value ? Number(e.target.value) : null
-              const t = scrapTypes.find(x => x.defect_id === id)
-              setDraft(d => ({ ...d, defect_type_id: id }))
-            }}
-            style={selStyle}
-          >
-            <option value="">请选择报废项目</option>
-            {scrapTypes.map(t => (
-              <option key={t.defect_id} value={t.defect_id}>
-                {t.defect_code} {t.defect_name}
-              </option>
-            ))}
-          </select>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+        <div style={{ borderTop: '1px dashed #ddd', paddingTop: 10, marginTop: 6 }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <select
+              value={draft.defect_type_id || ''}
+              onChange={(e) => setDraft(d => ({ ...d, defect_type_id: e.target.value ? Number(e.target.value) : null }))}
+              style={selStyle}
+            >
+              <option value="">报废项目</option>
+              {scrapTypes.map(t => (
+                <option key={t.defect_id} value={t.defect_id}>{t.defect_code} {t.defect_name}</option>
+              ))}
+            </select>
             <input
               type="number" min={0} value={draft.quantity || ''}
               onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
               placeholder="数量"
-              style={inputStyle}
+              style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }}
             />
-            <Button size="mini" color="primary" onClick={handleAdd}>添加</Button>
+            <input
+              value={draft.unit || ''}
+              onChange={(e) => setDraft(d => ({ ...d, unit: e.target.value }))}
+              placeholder="单位"
+              style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }}
+            />
+            <Button size="mini" color="primary" onClick={handleAdd} style={{ flexShrink: 0 }}>添加</Button>
           </div>
         </div>
       )}

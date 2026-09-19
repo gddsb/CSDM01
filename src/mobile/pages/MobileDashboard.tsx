@@ -122,10 +122,10 @@ export default function MobileDashboard() {
     const apis: Promise<TodoResp>[] = [
       // 下发 → 待开工
       api.get('/production/orders', { params: { page: 1, pageSize: 1, status: 1 } })
-        .then((r: any) => ({ icon: '📋', text: '待开工订单', count: r.data?.total ?? r.total ?? 0, path: '/m/production-orders', color: '#2196F3' })),
+        .then((r: any) => ({ icon: '📋', text: '待开工订单', count: r.data?.total ?? r.total ?? 0, path: '/m/production-orders?tab=下发', color: '#2196F3' })),
       // 开工 → 生产中
       api.get('/production/orders', { params: { page: 1, pageSize: 1, status: 2 } })
-        .then((r: any) => ({ icon: '🏃', text: '生产中订单', count: r.data?.total ?? r.total ?? 0, path: '/m/production-orders', color: '#4CAF50' })),
+        .then((r: any) => ({ icon: '🏃', text: '生产中订单', count: r.data?.total ?? r.total ?? 0, path: '/m/production-orders?tab=开工', color: '#4CAF50' })),
       // 待报工
       api.get('/production/report-orders', { params: { page: 1, pageSize: 1, status: '待报工' } })
         .then((r: any) => ({ icon: '📝', text: '待报工任务', count: r.data?.total ?? r.total ?? 0, path: '/m/process-reporting', color: '#FF9800' })),

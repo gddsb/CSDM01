@@ -57,12 +57,16 @@ export function ProcessDefectPanel({
   // 2. 按当前工序过滤不良类型（related_processes 逻辑）
   const filteredTypes = useMemo(() => {
     if (!activeProcessId) return []
+    // 已存在的同工序不良类型 id 集合 → 去重（同一工序同一不良类型不允许重复报）
+    const existTypeIds = new Set(processDefects.map(d => Number(d.defect_type_id)).filter(Boolean))
     return defectTypes.filter(t => {
+      // 过滤已存在的不良类型
+      if (existTypeIds.has(t.defect_id)) return false
       const rel = Array.isArray(t.related_processes) ? t.related_processes : []
       if (rel.length === 0) return true // 关联工序为空 = 全工序可用
       return rel.some(x => String(x) === String(activeProcessId))
     })
-  }, [defectTypes, activeProcessId])
+  }, [defectTypes, activeProcessId, processDefects])
 
   // 3. 不良类型 → 可用单位
   const getUnitOptions = useCallback((defectTypeId: number | null | undefined): string[] => {

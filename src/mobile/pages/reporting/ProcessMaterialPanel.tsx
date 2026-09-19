@@ -63,18 +63,6 @@ export function ProcessMaterialPanel({
     material_type: '投入',
     quantity: 0,
   })
-  const [searchKey, setSearchKey] = useState('')
-
-  // 搜索过滤料品主数据（在 Select 选项里显示，也可以做独立搜索框）
-  const filteredMasters = useMemo(() => {
-    if (!searchKey) return materials
-    const k = searchKey.toLowerCase()
-    return materials.filter(m =>
-      m.material_code.toLowerCase().includes(k) ||
-      m.material_name.toLowerCase().includes(k) ||
-      (m.specification || '').toLowerCase().includes(k),
-    )
-  }, [materials, searchKey])
 
   const startAdd = () => {
     setDraft({
@@ -170,15 +158,6 @@ export function ProcessMaterialPanel({
 
   return (
     <div>
-      {/* 搜索料品 */}
-      {(expandedId === '__new__' || expandedId !== null) && (
-        <input
-          value={searchKey} onChange={(e) => setSearchKey(e.target.value)}
-          placeholder="🔍 搜索料号/料名"
-          style={{ ...inputStyle, width: '100%', marginBottom: 8 }}
-        />
-      )}
-
       {/* 只读列表 */}
       {processMaterials.length > 0 && processMaterials.map((row) => {
         const rowKey = row.material_id || row.id
@@ -197,7 +176,7 @@ export function ProcessMaterialPanel({
                 <select value={draft.bas_material_id || ''} onChange={(e) => handleMaterialSelect(e.target.value)}
                   style={{ flex: 1, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }}>
                   <option value="">料品</option>
-                  {filteredMasters.map(m => (
+                  {materials.map(m => (
                     <option key={m.bas_material_id} value={m.bas_material_id}>
                       {m.material_code} {m.material_name}
                     </option>
@@ -287,7 +266,7 @@ export function ProcessMaterialPanel({
             <select value={draft.bas_material_id || ''} onChange={(e) => handleMaterialSelect(e.target.value)}
               style={{ flex: 1, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }}>
               <option value="">料品</option>
-              {filteredMasters.map(m => (
+              {materials.map(m => (
                 <option key={m.bas_material_id} value={m.bas_material_id}>{m.material_code} {m.material_name}</option>
               ))}
             </select>

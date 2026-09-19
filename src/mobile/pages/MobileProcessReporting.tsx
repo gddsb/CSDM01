@@ -52,15 +52,20 @@ export default function MobileProcessReporting() {
   const [reportTab, setReportTab] = useState<'scrap' | 'exception' | 'manpower'>('scrap')
 
   // 全量记录（SubPanel 各自按 process_id 过滤）
-  const [defects, setDefects] = useState<DefectRow[]>([])
+  // 🔑 注意：defectsRaw 是 ProcessDefect 全量（不良+报废共用同一张表），前端按 scrapTypes 字典分类
+  const [defectsRaw, setDefectsRaw] = useState<DefectRow[]>([])
   const [materials, setMaterials] = useState<MaterialRow[]>([])
-  const [scraps, setScraps] = useState<ScrapRow[]>([])
   const [exceptions, setExceptions] = useState<ExceptionRow[]>([])
   const [manpower, setManpower] = useState<ManpowerRow | null>(null)
 
   // 字典预加载
   const [defectTypes, setDefectTypes] = useState<DefectType[]>([])
   const [scrapTypes, setScrapTypes] = useState<DefectType[]>([])
+
+  // 🔑 从全量 ProcessDefect 里按字典派生工序不良 / 检验报废
+  const scrapDefectIds = useMemo(() => new Set(scrapTypes.map(t => t.defect_id)), [scrapTypes])
+  const defects = useMemo(() => defectsRaw.filter(d => !scrapDefectIds.has(Number(d.defect_type_id))), [defectsRaw, scrapDefectIds])
+  const scraps = useMemo(() => defectsRaw.filter(d => scrapDefectIds.has(Number(d.defect_type_id))), [defectsRaw, scrapDefectIds])
   const [materialsMaster, setMaterialsMaster] = useState<MaterialMaster[]>([])
 
   // ========== 阶段1 加载：生产订单 ==========
@@ -137,18 +142,16 @@ export default function MobileProcessReporting() {
       setProcesses(plist)
       if (plist.length > 0) setActiveProcId(plist[0].process_id)
 
-      // 全量记录
-      const [dr, mr, sr, er, pr]: any[] = await Promise.all([
+      // 全量记录（报废也走 process-defects，前端按 scrapTypes 字典分类）
+      const [dr, mr, er, pr]: any[] = await Promise.all([
         api.get('/production/process-defects', { params: { report_order_id: report.report_order_id, pageSize: 500 } }),
         api.get('/production/process-materials', { params: { report_order_id: report.report_order_id, pageSize: 500 } }),
-        api.get('/production/scrap-defects', { params: { report_order_id: report.report_order_id, pageSize: 200 } }),
         api.get('/production/process-exceptions', { params: { report_order_id: report.report_order_id, pageSize: 200 } }),
         api.get('/production/manpower-records', { params: { report_order_id: report.report_order_id, pageSize: 1 } }),
       ])
       const _arr = (r: any) => (r?.data?.items || r?.data || []) as any[]
-      setDefects(_arr(dr) as DefectRow[])
+      setDefectsRaw(_arr(dr) as DefectRow[])   // 全量 ProcessDefect（不良+报废一起存）
       setMaterials(_arr(mr) as MaterialRow[])
-      setScraps(_arr(sr) as ScrapRow[])
       setExceptions(_arr(er) as ExceptionRow[])
       setManpower((_arr(pr)[0] || null) as ManpowerRow | null)
     } catch { /* 静默 */ }
@@ -236,24 +239,12 @@ export default function MobileProcessReporting() {
         {/* === 工序报工 Tab === */}
         {groupTab === 'process' && (
           <div>
-            {/* 工序 Select（紧凑横排） */}
-            <div style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0', background: '#fafafa', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 12, color: '#888', flexShrink: 0 }}>工序</span>
-              <select
-                value={activeProcId || ''}
-                onChange={(e) => setActiveProcId(e.target.value ? Number(e.target.value) : null)}
-                style={{
-                  flex: 1, padding: '7px 10px', borderRadius: 6,
-                  border: '1px solid #ddd', fontSize: 13, background: '#fff',
-                }}
-              >
-                {processes.map(p => (
-                  <option key={p.process_id} value={p.process_id}>
-                    {p.sort_order}. {p.process_name}{p.must_report ? ' 必报' : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* 工序 Select（紧凑横排 + 必报红标） */}
+            <ProcessSelector
+              processes={processes}
+              activeProcId={activeProcId}
+              onChange={setActiveProcId}
+            />
             {/* 工序内部 Tab：不良 / 投料 */}
             <Tabs activeKey={processTab} onChange={(k) => setProcessTab(k as any)}>
               <Tabs.Tab title="不良" key="defect" />
@@ -296,10 +287,30 @@ export default function MobileProcessReporting() {
               {reportTab === 'scrap' && (
                 <ScrapPanel
                   report={current}
+                  activeProcessId={activeProcId}
+                  processes={processes}
                   editable={!!editable}
                   scrapTypes={scrapTypes}
                   rows={scraps}
-                  setRows={setScraps}
+                  // 🔑 scraps 是 defectsRaw 按 scrapDefectIds 过滤的派生数据，改全量即可联动
+                  setRows={(updater) => setDefectsRaw((prev) => {
+                    const before = prev.filter(d => !scrapDefectIds.has(Number(d.defect_type_id)))
+                    const scrapRows = prev.filter(d => scrapDefectIds.has(Number(d.defect_type_id))) as unknown as ScrapRow[]
+                    const merged = updater(scrapRows)
+                    // 把更新后的 merged 转成 DefectRow 拼回去
+                    const mergedDefects: DefectRow[] = merged.map((s) => ({
+                      id: s.scrap_id ?? s.id,
+                      defect_id: s.scrap_id ?? (s.id as number | undefined),
+                      report_order_id: s.report_order_id,
+                      process_id: processes.find(p => p.process_id === activeProcId)?.process_id,
+                      defect_type_id: s.defect_type_id,
+                      defect_code: s.defect_code,
+                      defect_name: s.defect_name,
+                      defect_type: s.defect_type,
+                      quantity: s.quantity,
+                    }))
+                    return [...before, ...mergedDefects]
+                  })}
                 />
               )}
               {reportTab === 'exception' && (
@@ -332,35 +343,32 @@ export default function MobileProcessReporting() {
 
 function Header({ report, onBack, onFinish }: { report: ReportOrder; onBack: () => void; onFinish: () => void }) {
   const statusText = { '开工': '生产中', '完工': '已完工', '关闭': '已关闭', '下发': '已下发', '开立': '待开工' }[String(report.status)] || String(report.status)
+  const isDone = String(report.status) === '4' || String(report.status) === '已完工'
   return (
     <div style={{
       background: 'linear-gradient(135deg,#1890ff,#096dd9)', color: '#fff',
       padding: '12px 14px',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-        {/* 左侧：工单信息 */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 16, fontWeight: 700 }}>📝 {report.report_no}</div>
-          <div style={{ fontSize: 11, opacity: .85, marginTop: 2 }}>
-            订单 {report.order_no} · {report.line_name}
-          </div>
-          <div style={{ fontSize: 11, opacity: .85, marginTop: 1 }}>
-            {report.material_code} {report.material_name} · 报工 {report.report_qty}
-          </div>
-        </div>
-        {/* 右侧：状态 + 按钮 */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-          <span style={{
-            fontSize: 11, padding: '2px 8px', borderRadius: 10,
-            background: statusText === '已完工' ? '#52c41a' : statusText === '生产中' ? '#faad14' : 'rgba(255,255,255,.25)',
-          }}>{statusText}</span>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <Button size="mini" fill="outline" color="white" onClick={onBack}>返回</Button>
-            {String(report.status) !== '4' && String(report.status) !== '已完工' && (
-              <Button size="mini" color="danger" onClick={onFinish} style={{ background: '#ff4d4f' }}>完工</Button>
-            )}
-          </div>
-        </div>
+      {/* 行1：编号 + 状态 + 返回/完工按钮 同一行 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 16, fontWeight: 700 }}>📝 {report.report_no}</span>
+        <span style={{
+          fontSize: 11, padding: '2px 8px', borderRadius: 10, flexShrink: 0,
+          background: isDone ? '#52c41a' : statusText === '生产中' ? '#faad14' : 'rgba(255,255,255,.25)',
+        }}>{statusText}</span>
+        <div style={{ flex: 1 }} />
+        <Button size="mini" fill="outline" color="white" onClick={onBack}>返回</Button>
+        {!isDone && (
+          <Button size="mini" color="danger" onClick={onFinish} style={{ background: '#ff4d4f' }}>完工</Button>
+        )}
+      </div>
+      {/* 行2：订单 + 产线 */}
+      <div style={{ fontSize: 11, opacity: .85, marginTop: 4 }}>
+        订单 {report.order_no} · {report.line_name}
+      </div>
+      {/* 行3：料号 + 报工数量 */}
+      <div style={{ fontSize: 11, opacity: .85, marginTop: 1 }}>
+        {report.material_code} {report.material_name} · 报工 {report.report_qty}
       </div>
     </div>
   )
@@ -400,6 +408,47 @@ function SectionDivider({ title, color }: { title: string; color: string }) {
     }}>
       <div style={{ width: 4, height: 16, background: color, borderRadius: 2 }} />
       <div style={{ fontSize: 14, fontWeight: 600, color: '#333' }}>{title}</div>
+    </div>
+  )
+}
+
+/**
+ * 工序选择器 — 必报工序 option 带前缀 "*"，选中后右侧显示红色 [必报] 徽章
+ */
+function ProcessSelector({
+  processes, activeProcId, onChange,
+}: {
+  processes: ProcessRow[]
+  activeProcId: number | null
+  onChange: (id: number | null) => void
+}) {
+  const current = processes.find(p => p.process_id === activeProcId)
+  return (
+    <div style={{
+      padding: '8px 12px', borderBottom: '1px solid #f0f0f0', background: '#fafafa',
+      display: 'flex', alignItems: 'center', gap: 8,
+    }}>
+      <span style={{ fontSize: 12, color: '#888', flexShrink: 0 }}>工序</span>
+      <select
+        value={activeProcId || ''}
+        onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
+        style={{
+          flex: 1, padding: '7px 10px', borderRadius: 6,
+          border: '1px solid #ddd', fontSize: 13, background: '#fff',
+        }}
+      >
+        {processes.map(p => (
+          <option key={p.process_id} value={p.process_id}>
+            {p.must_report ? '* ' : ''}{p.sort_order}. {p.process_name}
+          </option>
+        ))}
+      </select>
+      {current?.must_report && (
+        <span style={{
+          fontSize: 10, padding: '1px 6px', borderRadius: 10,
+          background: '#f44336', color: '#fff', fontWeight: 700, flexShrink: 0,
+        }}>必报</span>
+      )}
     </div>
   )
 }
