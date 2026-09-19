@@ -310,14 +310,10 @@ export default function MobileProcessReporting() {
               )}
               {processTab === 'scrap' && (
                 <>
-                  <ProcessSelector
-                    processes={processes}
-                    activeProcId={scrapProcId}
-                    onChange={setScrapProcId}
-                  />
+                  {/* 报废 Tab 不再显示工序选择器，内部自动兜底：scrapProcId 优先，缺省取首工序 */}
                   <ScrapPanel
                     report={current}
-                    activeProcessId={scrapProcId}
+                    activeProcessId={scrapProcId ?? processes[0]?.process_id ?? null}
                     processes={processes}
                     editable={!!editable}
                     scrapTypes={scrapTypes}
@@ -332,7 +328,7 @@ export default function MobileProcessReporting() {
                         id: s.scrap_id ?? s.id,
                         defect_id: s.scrap_id ?? (s.id as number | undefined),
                         report_order_id: s.report_order_id,
-                        process_id: processes.find(p => p.process_id === scrapProcId)?.process_id,
+                        process_id: processes.find(p => p.process_id === (scrapProcId ?? processes[0]?.process_id))?.process_id,
                         defect_type_id: s.defect_type_id,
                         defect_code: s.defect_code,
                         defect_name: s.defect_name,
@@ -418,10 +414,10 @@ function Header({ report, onBack, onFinish }: { report: ReportOrder; onBack: () 
 }
 
 function StatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportStats>; reportQty: number }) {
-  // 一行 6 项：报工/投入 各 8ch，其余 4 项 flex:1 平均宽度
+  // 一行 6 项：投入数量/合格数量 各 10ch（整数），其余 4 项 flex:1 平均宽度
   const items: Array<{ label: string; value: number | string; color: string; width?: string | number }> = [
-    { label: '报工数量', value: reportQty, color: '#2196F3', width: '8ch' },
-    { label: '投入数量', value: stats.inputQty || 0, color: '#1890ff', width: '8ch' },
+    { label: '投入数量', value: Math.round(stats.inputQty || 0), color: '#1890ff', width: '10ch' },
+    { label: '合格数量', value: Math.round(stats.expectedOutput > 0 ? stats.expectedOutput : 0), color: '#52c41a', width: '10ch' },
     { label: '来料不良', value: stats.defectMaterial, color: '#faad14' },
     { label: '制程不良', value: stats.defectProcess, color: '#fa8c16' },
     { label: '检验报废', value: stats.defectScrap, color: '#f5222d' },
