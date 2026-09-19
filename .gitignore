@@ -53,3 +53,6 @@ AGENTS.md
 *.rej
 *~
 .uploads/
+
+# 版本发布元数据（生产机本地状态，勿纳入 git）
+server/data/releases.json
