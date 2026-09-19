@@ -1111,7 +1111,7 @@ export default function ProcessReporting() {
     },
   ]
 
-  const renderTabContent = (key: string) => {
+  function renderTabContent(key: string) {
     switch (key) {
       case 'production-defect':
         return (
