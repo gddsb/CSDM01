@@ -14,9 +14,9 @@
  *   - 下拉刷新
  *   - 离线暂存条目
  */
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { PullToRefresh, Toast } from 'antd-mobile'
+import { PullToRefresh, Toast, Modal } from 'antd-mobile'
 import {
   BillOutline, CheckOutline, TeamOutline, SetOutline, AppstoreOutline,
   FlagOutline, SearchOutline, CalendarOutline, PieOutline, FolderOutline,
@@ -96,6 +96,9 @@ export default function MobileDashboard() {
 
   // === 快捷操作 ===
   const [ordered, setOrdered] = useState<QuickEntry[]>([])
+  // === 快捷操作编辑 ===
+  const [showEditor, setShowEditor] = useState(false)
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // === 通知区（从 todos 中筛选高优先级）===
   const notices = useMemo(
@@ -191,6 +194,45 @@ export default function MobileDashboard() {
   }
   const handleTodoClick = (todo: TodoItem) => navigate(todo.path)
 
+  // ========== 长按 / 点击 分流 ==========
+  const startPress = () => {
+    pressTimer.current = setTimeout(() => {
+      pressTimer.current = null
+      setShowEditor(true)
+    }, 600)
+  }
+  const cancelPress = () => {
+    if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null }
+  }
+
+  // ========== 编辑操作 ==========
+  const saveOrder = (entries: QuickEntry[]) => {
+    setOrdered(entries)
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries.map(e => e.key))) } catch { /* ignore */ }
+  }
+  const removeEntry = (key: string) => saveOrder(ordered.filter(e => e.key !== key))
+  const addEntry = (key: string) => {
+    const allVisible = DEFAULT_ORDER.filter(e => !e.permCode || hasPermission(e.permCode))
+    const target = allVisible.find(e => e.key === key)
+    if (target && !ordered.find(e => e.key === key)) saveOrder([...ordered, target])
+  }
+  const moveEntry = (key: string, dir: -1 | 1) => {
+    const idx = ordered.findIndex(e => e.key === key)
+    const target = idx + dir
+    if (idx < 0 || target < 0 || target >= ordered.length) return
+    const next = [...ordered]
+    ;[next[idx], next[target]] = [next[target], next[idx]]
+    saveOrder(next)
+  }
+  const resetOrder = () => {
+    const visible = DEFAULT_ORDER.filter(e => !e.permCode || hasPermission(e.permCode))
+    saveOrder(visible)
+  }
+  const allAvailable = useMemo(
+    () => DEFAULT_ORDER.filter(e => (!e.permCode || hasPermission(e.permCode)) && !ordered.find(o => o.key === e.key)),
+    [ordered, hasPermission],
+  )
+
   // ========== 渲染 ==========
   return (
     <PullToRefresh onRefresh={onRefresh}>
@@ -252,32 +294,40 @@ export default function MobileDashboard() {
           )}
         </div>
 
-        {/* ⚡ 快捷操作（35%，横向滑） */}
+        {/* ⚡ 快捷操作（两行固定 + 超出左右滑 + 长按编辑） */}
         <div style={{ marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>⚡ 快捷操作</span>
+            <span style={{ fontSize: 11, color: '#bbb' }}>长按编辑</span>
+          </div>
           <div
             style={{
-              display: 'flex', gap: 12, overflowX: 'auto', padding: '4px 4px 12px 4px',
+              display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+              gridAutoFlow: 'column', gridTemplateRows: 'repeat(2, auto)',
+              gap: 8, overflowX: 'auto', padding: '4px 2px 8px',
               scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch',
             }}
+            onTouchStart={startPress} onTouchEnd={cancelPress} onTouchCancel={cancelPress}
+            onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress}
           >
             {ordered.map((entry) => (
               <div
                 key={entry.key}
                 onClick={() => handleEntryClick(entry)}
-                style={{
-                  flexShrink: 0, width: 72, textAlign: 'center', cursor: 'pointer',
-                }}
+                onTouchStart={startPress} onTouchEnd={cancelPress} onTouchCancel={cancelPress}
+                onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress}
+                style={{ width: 60, textAlign: 'center', cursor: 'pointer' }}
               >
                 <div
                   style={{
-                    width: 56, height: 56, borderRadius: 16, margin: '0 auto 6px',
+                    width: 48, height: 48, borderRadius: 12, margin: '0 auto 4px',
                     background: entry.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     color: entry.color,
                   }}
                 >
                   {entry.icon}
                 </div>
-                <div style={{ fontSize: 11, color: '#555' }}>{entry.title}</div>
+                <div style={{ fontSize: 10, color: '#555' }}>{entry.title}</div>
               </div>
             ))}
           </div>
@@ -337,6 +387,67 @@ export default function MobileDashboard() {
           )}
         </div>
       </div>
+
+      {/* 快捷操作编辑 Modal */}
+      <Modal
+        visible={showEditor}
+        onClose={() => setShowEditor(false)}
+        contentStyle={{ maxHeight: '80vh', overflowY: 'auto', borderRadius: 12 }}
+        title="⚙️ 编辑快捷操作"
+        footer={[
+          { key: 'reset', text: '重置', onClick: () => resetOrder() },
+          { key: 'ok', text: '完成', primary: true, onClick: () => setShowEditor(false) },
+        ]}
+      >
+        {/* 已显示的（可排序 + 删除） */}
+        <div style={{ fontSize: 12, color: '#666', fontWeight: 600, marginBottom: 8 }}>
+          已显示（{ordered.length}）
+        </div>
+        {ordered.map((entry, idx) => (
+          <div key={entry.key} style={{
+            display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0',
+            borderBottom: '1px solid #f5f5f5',
+          }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+              background: entry.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: entry.color,
+            }}>{entry.icon}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, color: '#333' }}>{entry.title}</div>
+            </div>
+            <button onClick={() => moveEntry(entry.key, -1)} disabled={idx === 0}
+              style={{ border: 'none', background: '#f5f5f5', borderRadius: 4, padding: '4px 8px', fontSize: 11, cursor: idx === 0 ? 'not-allowed' : 'pointer', opacity: idx === 0 ? 0.4 : 1 }}>↑</button>
+            <button onClick={() => moveEntry(entry.key, 1)} disabled={idx === ordered.length - 1}
+              style={{ border: 'none', background: '#f5f5f5', borderRadius: 4, padding: '4px 8px', fontSize: 11, cursor: idx === ordered.length - 1 ? 'not-allowed' : 'pointer', opacity: idx === ordered.length - 1 ? 0.4 : 1 }}>↓</button>
+            <button onClick={() => removeEntry(entry.key)}
+              style={{ border: 'none', background: '#ffebee', color: '#f44336', borderRadius: 4, padding: '4px 8px', fontSize: 11, cursor: 'pointer' }}>删除</button>
+          </div>
+        ))}
+
+        {/* 可用但未显示的 */}
+        {allAvailable.length > 0 && (
+          <>
+            <div style={{ fontSize: 12, color: '#666', fontWeight: 600, marginTop: 14, marginBottom: 8 }}>
+              可添加（{allAvailable.length}）
+            </div>
+            {allAvailable.map((entry) => (
+              <div key={entry.key} style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', opacity: 0.7,
+              }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: 6, flexShrink: 0,
+                  background: entry.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: entry.color, fontSize: 14,
+                }}>{entry.icon}</div>
+                <div style={{ flex: 1, fontSize: 12, color: '#555' }}>{entry.title}</div>
+                <button onClick={() => addEntry(entry.key)}
+                  style={{ border: 'none', background: '#e3f2fd', color: '#2196F3', borderRadius: 4, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>+ 添加</button>
+              </div>
+            ))}
+          </>
+        )}
+      </Modal>
     </PullToRefresh>
   )
 }

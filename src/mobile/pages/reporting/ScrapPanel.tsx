@@ -1,18 +1,12 @@
 /**
- * 工单报废记录面板（工序级存储，工单级展示）
+ * 工单报废记录面板
  * —— Tab: 报废
  *
  * 🔑 与 PC 端完全对齐：
  *   - 报废数据存 ProcessDefect 表（production_process_defect）
- *   - 报废是工序级存储，**必须带 process_id**（后端强校验）
+ *   - process_id 改为可选（报废场景允许无工序）
  *   - 查询时按工单维度聚合显示（前端过滤 defect_type === '检验报废'）
- *   - 新增/编辑/删除统一调 /production/process-defects 接口（和工序不良共用接口）
- *
- * 后端接口（统一走 ProcessDefect）：
- *   GET  /production/process-defects?report_order_id=xxx
- *   POST /production/process-defects        (body 必须含 process_id)
- *   PUT  /production/process-defects/:id
- *   DEL  /production/process-defects/:id
+ *   - 新增/编辑/删除统一调 /production/process-defects 接口
  */
 import { useCallback, useState } from 'react'
 import React from 'react'
@@ -22,13 +16,12 @@ import type { DefectType, ReportOrder, ScrapRow, ProcessRow } from './types'
 
 interface Props {
   report: ReportOrder
-  /** 🔑 当前工序（报废存储必须绑工序，默认第一工序） */
+  /** 当前工序（可选，不传则报废不绑工序） */
   activeProcessId: number | null
   processes: ProcessRow[]
   editable: boolean
   /** 报废类型下拉（category_name='报废类型' 或 defect_type='检验报废'） */
   scrapTypes: DefectType[]
-  /** 所有 defect_type_id === 检验报废 的 ProcessDefect 记录（主文件拉一次，前端过滤） */
   rows: ScrapRow[]
   setRows: (updater: (prev: ScrapRow[]) => ScrapRow[]) => void
 }
@@ -38,23 +31,23 @@ export function ScrapPanel({
 }: Props) {
   const [draft, setDraft] = useState<ScrapRow>({ quantity: 0 })
 
-  // 如果 activeProcessId 为 null，取第一道工序
+  // 工序可选：优先 activeProcessId，否则取第一道，再否则 null
   const resolvedProcessId = activeProcessId ?? processes[0]?.process_id ?? null
 
   const handleAdd = useCallback(async () => {
-    if (!resolvedProcessId) { Toast.show({ content: '请选择工序', icon: 'fail' }); return }
     if (!draft.defect_type_id) { Toast.show({ content: '请选报废项目', icon: 'fail' }); return }
     if (!draft.quantity || Number(draft.quantity) <= 0) { Toast.show({ content: '数量 > 0', icon: 'fail' }); return }
 
     try {
-      // 🔑 与 PC 端一致：走 /production/process-defects（工序不良接口）
       const payload: any = {
         report_order_id: report.report_order_id,
-        process_id: resolvedProcessId,    // 工序级存储（后端强校验）
         defect_type_id: draft.defect_type_id,
         quantity: Number(draft.quantity),
         unit: draft.unit || '',
       }
+      // 工序可选：有就传，没有就不传
+      if (resolvedProcessId) payload.process_id = resolvedProcessId
+
       const r: any = await api.post('/production/process-defects', payload)
       if (!r?.success) throw new Error(r?.message || '保存失败')
 

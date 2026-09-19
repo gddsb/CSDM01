@@ -77,27 +77,33 @@ export const ProcessDefectService = {
   /** 创建不良记录 */
   async create(body: any) {
     if (!body.report_order_id) throw new AppError('报工单 ID 不能为空', 10001, 400)
-    if (!body.process_id) throw new AppError('工序 ID 不能为空', 10001, 400)
     if (!body.defect_type_id) throw new AppError('不良类型不能为空', 10001, 400)
+    // 🔑 process_id 改为可选（报废场景允许无工序）
+    const processId = body.process_id ? Number(body.process_id) : null
     const qty = Number(body.quantity)
     if (!Number.isInteger(qty) || qty <= 0) throw new AppError('不良数量必须为正整数', 10001, 400)
 
-    await validateProcessBelongsToReportOrder(Number(body.report_order_id), Number(body.process_id))
+    // 工序归属校验（有 process_id 才做）
+    if (processId !== null) {
+      await validateProcessBelongsToReportOrder(Number(body.report_order_id), processId)
+    }
 
-    // 总不良数量校验
-    const currentSum = await sumDefectQty(Number(body.report_order_id), Number(body.process_id))
-    const outputQty = await getReportOutputQty(Number(body.report_order_id))
-    if (outputQty > 0 && currentSum + qty > outputQty) {
-      throw new AppError(
-        `不良数量超出该工序报工产出（已报${currentSum}，新增${qty}，报工产出${outputQty}）`,
-        20001, 409
-      )
+    // 总不良数量校验（有 process_id 才聚合）
+    if (processId !== null) {
+      const currentSum = await sumDefectQty(Number(body.report_order_id), processId)
+      const outputQty = await getReportOutputQty(Number(body.report_order_id))
+      if (outputQty > 0 && currentSum + qty > outputQty) {
+        throw new AppError(
+          `不良数量超出该工序报工产出（已报${currentSum}，新增${qty}，报工产出${outputQty}）`,
+          20001, 409
+        )
+      }
     }
 
     const defectType = await DefectType.findOne({ where: { defect_id: body.defect_type_id } })
     return await ProcessDefect.create({
       report_order_id: Number(body.report_order_id),
-      process_id: Number(body.process_id),
+      process_id: processId,
       defect_type_id: body.defect_type_id,
       quantity: qty,
       unit: body.unit || defectType?.getDataValue('defect_unit') || '',
@@ -159,10 +165,14 @@ export const ProcessDefectService = {
   /** 批量保存（先删旧后批量创建） */
   async batchSave(body: any) {
     if (!body.report_order_id) throw new AppError('报工单 ID 不能为空', 10001, 400)
-    if (!body.process_id) throw new AppError('工序 ID 不能为空', 10001, 400)
     if (!Array.isArray(body.items)) throw new AppError('不良项目数据格式错误', 10001, 400)
+    // 🔑 process_id 改为可选
+    const processId = body.process_id ? Number(body.process_id) : null
 
-    await validateProcessBelongsToReportOrder(Number(body.report_order_id), Number(body.process_id))
+    // 工序归属校验（有 process_id 才做）
+    if (processId !== null) {
+      await validateProcessBelongsToReportOrder(Number(body.report_order_id), processId)
+    }
 
     const validItems = body.items.filter((item: any) => item.defect_type_id && Number(item.quantity) > 0)
 
@@ -176,17 +186,18 @@ export const ProcessDefectService = {
 
     const t = await sequelize.transaction()
     try {
-      await ProcessDefect.destroy({
-        where: { report_order_id: Number(body.report_order_id), process_id: Number(body.process_id) },
-        transaction: t,
-      })
+      // 🔑 按 process_id 或 process_id IS NULL 删旧
+      const destroyWhere: any = { report_order_id: Number(body.report_order_id) }
+      if (processId !== null) destroyWhere.process_id = processId
+      else destroyWhere.process_id = null
+      await ProcessDefect.destroy({ where: destroyWhere, transaction: t })
 
       const created: any[] = []
       for (const item of validItems) {
         const defectType = await DefectType.findOne({ where: { defect_id: item.defect_type_id } })
         const defect = await ProcessDefect.create({
           report_order_id: Number(body.report_order_id),
-          process_id: Number(body.process_id),
+          process_id: processId,
           defect_type_id: item.defect_type_id,
           quantity: Number(item.quantity),
           unit: item.unit || (defectType?.getDataValue('defect_unit') || ''),
