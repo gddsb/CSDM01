@@ -34,6 +34,14 @@ const STATUS_TABS: { key: StatusTab; label: string; color: string }[] = [
   { key: '完工', label: '完工', color: '#4CAF50' },
 ]
 
+/** 移动端状态 tab → 后端数字 code（与 server/src/services/OrderService.ts ORDER_STATUS_MAP 对齐） */
+const STATUS_CODE: Record<StatusTab, number> = {
+  '开立': 0,
+  '下发': 1,
+  '开工': 2,
+  '完工': 3,
+}
+
 /** 状态 → 徽章配色 */
 const STATUS_COLOR: Record<string, string> = {
   '开立': '#9E9E9E',
@@ -58,10 +66,13 @@ export default function MobileOrderManagement() {
   const load = async (t?: StatusTab, kw?: string) => {
     setLoading(true)
     try {
-      const params: Record<string, unknown> = { page: 1, page_size: 50 }
       const tt = t ?? tab
-      params.status = [tt]  // 数组格式，与 PC OrderManagement.tsx 完全对齐
-      if (kw) params.order_no = kw
+      const params: Record<string, unknown> = {
+        page: 1,
+        pageSize: 50,
+        status: STATUS_CODE[tt],  // 数字 code，避免中文编码问题
+      }
+      if (kw) params.keyword = kw
       const r: any = await api.get('/production/orders', { params })
       const list: OrderRow[] = r.success ? (r.data?.list || r.data || []) : []
       setOrders(list)
@@ -71,7 +82,7 @@ export default function MobileOrderManagement() {
   const [cache, setCache] = useState<Record<string, OrderRow[]>>({})
   const [cacheLoaded, setCacheLoaded] = useState(false)
 
-  // 初次进入预加载全部4个状态
+  // 初次进入预加载全部4个状态（统一用数字 code 请求）
   useEffect(() => {
     let cancelled = false
     const preload = async () => {
@@ -80,9 +91,9 @@ export default function MobileOrderManagement() {
       await Promise.all(tabs.map(async (t) => {
         try {
           const r: any = await api.get('/production/orders', {
-            params: { status: t, keyword: '', page: 1, pageSize: 50 }
+            params: { status: STATUS_CODE[t], page: 1, pageSize: 50 }
           })
-          results[t] = r.success ? (r.data?.list || []) : []
+          results[t] = r.success ? (r.data?.list || r.data || []) : []
         } catch { results[t] = [] }
       }))
       if (!cancelled) {

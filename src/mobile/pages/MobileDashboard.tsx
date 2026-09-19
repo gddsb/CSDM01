@@ -1,33 +1,27 @@
 /**
- * 移动端工作台（Dashboard）— 九宫格可排序版
- * - 顶部欢迎语 + 今日统计
- * - 中部 3×N 九宫格快捷入口（自动排布）
- * - 长按卡片进入「编辑模式」，可上下移动调整顺序
- * - 顺序持久化到 localStorage: mobile_home_order
+ * 移动端工作台（Dashboard）— 三栏式
+ * ┌──────────────────────────────┐
+ * │ 🔔 通知（15%）               │  ← 顶部，从异常/待办中提取高优先级
+ * ├──────────────────────────────┤
+ * │ ⚡ 快捷操作（35%，横向滑）   │  ← ScrollView 横排，超出左右滑
+ * ├──────────────────────────────┤
+ * │ 📋 代办任务（50%）           │  ← 剩余空间
+ * └──────────────────────────────┘
+ *
+ * 保留：
+ *   - 快捷操作权限过滤 + localStorage 排序持久化
+ *   - loadTodos 并发请求待办数量
+ *   - 下拉刷新
+ *   - 离线暂存条目
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Grid, Badge, PullToRefresh, Toast, Button, ActionSheet } from 'antd-mobile'
+import { PullToRefresh, Toast } from 'antd-mobile'
 import {
   BillOutline, CheckOutline, TeamOutline, SetOutline, AppstoreOutline,
   FlagOutline, SearchOutline, CalendarOutline, PieOutline, FolderOutline,
   FileOutline, ChatAddOutline,
 } from 'antd-mobile-icons'
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
-import {
-  SortableContext,
-  useSortable,
-  arrayMove,
-  rectSortingStrategy,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 import { useApp } from '../../contexts/AppContext'
 import { useOfflineQueue } from '../hooks/useOfflineQueue'
 import api from '../../utils/api'
@@ -40,34 +34,17 @@ interface TodoItem {
   color: string
 }
 
-/**
- * 动态计算九宫格列数
- * —— 基于卡片最小宽度 + 容器 padding + Grid gap 算出能放几列
- * —— 结果 clamp 到 [3, 7]，竖屏 3-4 列、横屏宽屏最多 7 列
- *
- * 每张卡片最小占位 ≈ 80px（含 gap），容器左右 padding ≈ 28px
- * cols = floor((width - padding) / (minCardWidth + gap))
- */
-const MIN_CARD_UNIT = 90 // 80px 卡片宽 + 10px gap
-const CONTAINER_PADDING = 28
-function computeColumns(width: number): number {
-  const raw = Math.floor((width - CONTAINER_PADDING) / MIN_CARD_UNIT)
-  return Math.max(3, Math.min(7, raw))
-}
-
 interface QuickEntry {
   key: string
   title: string
   icon: React.ReactNode
   color: string
-  path?: string
-  disabled?: boolean
-  badge?: number
-  /** 权限码：配置后用户需具备该权限码（或父级）才显示 */
+  path: string
   permCode?: string
+  disabled?: boolean
 }
 
-/** 默认顺序（9宫格） */
+/** 快捷操作全集（按权限过滤 + localStorage 排序） */
 const DEFAULT_ORDER: QuickEntry[] = [
   { key: 'reporting', title: '移动报工', icon: <BillOutline fontSize={28} />, color: '#2196F3', path: '/m/process-reporting', permCode: 'production:reporting' },
   { key: 'prod-orders', title: '生产订单', icon: <CalendarOutline fontSize={28} />, color: '#FF9800', path: '/m/production-orders', permCode: 'production:reporting' },
@@ -89,22 +66,7 @@ const DEFAULT_ORDER: QuickEntry[] = [
 
 const STORAGE_KEY = 'mobile_home_order'
 
-function loadOrderKeys(): string[] | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-    const arr = JSON.parse(raw)
-    if (Array.isArray(arr)) return arr.filter((k) => typeof k === 'string')
-  } catch { /* ignore */ }
-  return null
-}
-
-function saveOrderKeys(keys: string[]) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(keys)) } catch { /* ignore */ }
-}
-
-/** 根据 localStorage 里的 key 顺序排列 entries；
- *  删了就是真删 — 仅返回 customKeys 包含的条目，不再把 DEFAULT_ORDER 剩余条目自动追加回来 */
+/** 根据 localStorage 自定义顺序重排（没有就按 DEFAULT_ORDER） */
 function applyCustomOrder(entries: QuickEntry[], customKeys: string[] | null): QuickEntry[] {
   if (!customKeys || customKeys.length === 0) return entries
   const map = new Map(entries.map((e) => [e.key, e]))
@@ -113,113 +75,100 @@ function applyCustomOrder(entries: QuickEntry[], customKeys: string[] | null): Q
     const e = map.get(k)
     if (e) ordered.push(e)
   })
-  // 不再追加剩余！删了就是真删。
-  // 权限新增的条目用户可手动 "+添加" 找回
+  // 自定义列表里没出现的（权限变化新增的）追加到末尾
+  entries.forEach((e) => {
+    if (!ordered.find((o) => o.key === e.key)) ordered.push(e)
+  })
   return ordered
 }
 
+/** 高优先级图标（用作通知区） */
+const HIGH_PRIORITY_ICONS = new Set(['🚨', '🔧', '⚠️'])
+
 export default function MobileDashboard() {
-  const { hasPermission } = useApp()
   const navigate = useNavigate()
-  const { pending, refresh: refreshQueue } = useOfflineQueue()
+  const { hasPermission, currentUser } = useApp()
+  const { pending } = useOfflineQueue()
 
-  // 待办条目
+  // === 待办数据 ===
   const [todos, setTodos] = useState<TodoItem[]>([])
-  // 九宫格列数（响应式）
-  const [columns, setColumns] = useState(() => computeColumns(typeof window !== 'undefined' ? window.innerWidth : 360))
+  const [loading, setLoading] = useState(false)
 
-  // 是否处于编辑模式
-  const [editing, setEditing] = useState(false)
-  // 当前已排序的 entries（权限过滤后 + 用户自定义排序）
+  // === 快捷操作 ===
   const [ordered, setOrdered] = useState<QuickEntry[]>([])
-  // 长按计时器 ref
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // 滚动定时器 ref
-  const scrollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  // 滚动偏移
-  const [scrollOffset, setScrollOffset] = useState(0)
 
-  // ====== DnD 传感器：触摸 + 鼠标都支持，编辑模式下才启用 ======
-  const sensors = useSensors(
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 0, tolerance: 5 },
-    }),
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 5 },
-    }),
+  // === 通知区（从 todos 中筛选高优先级）===
+  const notices = useMemo(
+    () => todos.filter((t) => HIGH_PRIORITY_ICONS.has(t.icon) || t.color === '#E91E63' || t.color === '#F44336').slice(0, 3),
+    [todos],
   )
 
-  // DndContext onDragEnd：交换 arrayMove
-  const handleDragEnd = (event: any) => {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-    setOrdered((items) => {
-      const oldIndex = items.findIndex((i) => i.key === active.id)
-      const newIndex = items.findIndex((i) => i.key === over.id)
-      if (oldIndex === -1 || newIndex === -1) return items
-      return arrayMove(items, oldIndex, newIndex)
-    })
-  }
-
-  // 初始化：按权限过滤 + 应用自定义顺序
+  // ========== 初始化：权限过滤 + 排序持久化 ==========
   useEffect(() => {
     const visible = DEFAULT_ORDER.filter((e) => !e.permCode || hasPermission(e.permCode))
-    const customKeys = loadOrderKeys()
+    let customKeys: string[] | null = null
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (raw) customKeys = JSON.parse(raw)
+    } catch { /* ignore */ }
     setOrdered(applyCustomOrder(visible, customKeys))
   }, [hasPermission])
 
-  // 响应式列数监听
-  useEffect(() => {
-    const onResize = () => setColumns(computeColumns(window.innerWidth))
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
-
-  // 加载待办条目（轻量：各列表接口取 total）
+  // ========== 加载代办 ==========
   const loadTodos = useCallback(async () => {
     const items: TodoItem[] = []
-
-    // 并行拉几个 total（page_size=1 只为拿 total，响应最小）
     type TodoResp = { icon: string; text: string; count: number; path: string; color: string }
+
     const apis: Promise<TodoResp>[] = [
-      // 下发状态订单
-      api.get('/production/orders', { params: { page: 1, page_size: 1, status: '下发' } })
-        .then((r: any) => ({ icon: '📋', text: '待开工订单', count: r.data?.total || r.total || 0, path: '/m/production-orders', color: '#2196F3' })),
-      // 开工状态订单
-      api.get('/production/orders', { params: { page: 1, page_size: 1, status: '开工' } })
-        .then((r: any) => ({ icon: '🏃', text: '生产中订单', count: r.data?.total || r.total || 0, path: '/m/production-orders', color: '#4CAF50' })),
-      // 待报工报工单
-      api.get('/production/report-orders', { params: { page: 1, page_size: 1, status: '待报工' } })
-        .then((r: any) => ({ icon: '📝', text: '待报工任务', count: r.data?.total || r.total || 0, path: '/m/process-reporting', color: '#FF9800' })),
+      // 下发 → 待开工
+      api.get('/production/orders', { params: { page: 1, pageSize: 1, status: 1 } })
+        .then((r: any) => ({ icon: '📋', text: '待开工订单', count: r.data?.total ?? r.total ?? 0, path: '/m/production-orders', color: '#2196F3' })),
+      // 开工 → 生产中
+      api.get('/production/orders', { params: { page: 1, pageSize: 1, status: 2 } })
+        .then((r: any) => ({ icon: '🏃', text: '生产中订单', count: r.data?.total ?? r.total ?? 0, path: '/m/production-orders', color: '#4CAF50' })),
+      // 待报工
+      api.get('/production/report-orders', { params: { page: 1, pageSize: 1, status: '待报工' } })
+        .then((r: any) => ({ icon: '📝', text: '待报工任务', count: r.data?.total ?? r.total ?? 0, path: '/m/process-reporting', color: '#FF9800' })),
     ]
 
-    // 权限过滤：检验/设备接口只给有权限的用户
     if (hasPermission('quality:incoming')) {
       apis.push(
-        api.get('/incoming-inspections', { params: { page: 1, page_size: 1, status: '待检验' } })
-          .then((r: any) => ({ icon: '🔍', text: '待来料检验', count: r.data?.total || r.total || 0, path: '/m/incoming-inspection', color: '#9C27B0' })),
+        api.get('/incoming-inspections', { params: { page: 1, pageSize: 1, status: '待检验' } })
+          .then((r: any) => ({ icon: '🔍', text: '待来料检验', count: r.data?.total ?? r.total ?? 0, path: '/m/incoming-inspection', color: '#9C27B0' })),
       )
     }
     if (hasPermission('device:inspection')) {
       apis.push(
-        api.get('/device-inspections', { params: { page: 1, page_size: 1, status: '待点检' } })
-          .then((r: any) => ({ icon: '⚙️', text: '待设备点检', count: r.data?.total || r.total || 0, path: '/m/device-inspection', color: '#00BCD4' })),
+        api.get('/device-inspections', { params: { page: 1, pageSize: 1, status: '待点检' } })
+          .then((r: any) => ({ icon: '⚙️', text: '待设备点检', count: r.data?.total ?? r.total ?? 0, path: '/m/device-inspection', color: '#00BCD4' })),
+      )
+    }
+
+    // 高优先级：异常/故障/校准（用不同 icon 标记 → 通知区）
+    if (hasPermission('device:fault')) {
+      apis.push(
+        api.get('/device-faults', { params: { page: 1, pageSize: 1, status: '待处理' } })
+          .then((r: any) => ({ icon: '🚨', text: '设备故障待处理', count: r.data?.total ?? r.total ?? 0, path: '/m/device-fault', color: '#F44336' })),
+      )
+    }
+    if (hasPermission('device:calibration')) {
+      apis.push(
+        api.get('/device-calibrations', { params: { page: 1, pageSize: 1, status: '待校准' } })
+          .then((r: any) => ({ icon: '⚠️', text: '校准到期提醒', count: r.data?.total ?? r.total ?? 0, path: '/m/calibration-reminder', color: '#FF5722' })),
       )
     }
 
     try {
       const results = await Promise.allSettled(apis)
-      results.forEach(res => {
-        if (res.status !== 'fulfilled') return
-        items.push(res.value)
+      results.forEach((res) => {
+        if (res.status === 'fulfilled') items.push(res.value)
       })
     } catch { /* ignore */ }
 
-    // 离线暂存条数总是显示
+    // 离线暂存总是显示
     items.push({ icon: '📥', text: '离线暂存待同步', count: pending, path: '/m/offline-queue', color: '#E65100' })
 
-    // 只显示 count > 0 的（但保留离线条目即使为 0 也显示）
-    const filtered = items.filter(i => i.count > 0 || i.path === '/m/offline-queue')
+    const filtered = items.filter((i) => i.count > 0 || i.path === '/m/offline-queue')
     setTodos(filtered)
   }, [hasPermission, pending])
 
@@ -227,399 +176,167 @@ export default function MobileDashboard() {
     loadTodos()
   }, [loadTodos])
 
-  // 自动滚动：每 2.5s 滚一行
-  useEffect(() => {
-    if (todos.length <= 3) {
-      setScrollOffset(0)
-      return
-    }
-    scrollTimerRef.current = setInterval(() => {
-      setScrollOffset(prev => {
-        const max = todos.length - 3
-        return prev >= max ? 0 : prev + 1
-      })
-    }, 2500)
-    return () => {
-      if (scrollTimerRef.current) clearInterval(scrollTimerRef.current)
-    }
-  }, [todos.length])
-
-  // 下拉刷新
   const onRefresh = async () => {
-    await loadTodos()
-    await refreshQueue()
-    Toast.show({ content: '已刷新', icon: 'success', position: 'bottom', duration: 600 })
-  }
-
-  // === 编辑模式：拖拽排序（已由 DndContext 接管）===
-
-  const saveEdit = () => {
-    saveOrderKeys(ordered.map((e) => e.key))
-    setEditing(false)
-    Toast.show({ content: '顺序已保存', icon: 'success', position: 'bottom', duration: 800 })
-  }
-
-  const resetEdit = () => {
-    setEditing(false)
-  }
-
-  const resetToDefault = () => {
-    localStorage.removeItem(STORAGE_KEY)
-    const visible = DEFAULT_ORDER.filter((e) => !e.permCode || hasPermission(e.permCode))
-    setOrdered(visible)
-    Toast.show({ content: '已恢复默认顺序（点保存生效）', icon: 'success', position: 'bottom', duration: 1200 })
-  }
-
-  // === 编辑模式：删除某个快捷操作 ===
-  const removeEntry = (key: string) => {
-    if (ordered.length <= 1) {
-      Toast.show({ content: '至少保留 1 个快捷操作', position: 'bottom' })
-      return
-    }
-    setOrdered((items) => items.filter((e) => e.key !== key))
-  }
-
-  // === 编辑模式：从全量列表添加一个（弹 ActionSheet 选） ===
-  const addEntry = () => {
-    const existingKeys = new Set(ordered.map((e) => e.key))
-    const candidates = DEFAULT_ORDER.filter(
-      (e) => !existingKeys.has(e.key) && (!e.permCode || hasPermission(e.permCode)),
-    )
-    if (candidates.length === 0) {
-      Toast.show({ content: '全部功能已在快捷操作中', position: 'bottom' })
-      return
-    }
-    ActionSheet.show({
-      actions: candidates.map((e) => ({
-        text: `${e.title}`,
-        key: e.key,
-      })),
-      cancelText: '取消',
-      onAction: (action) => {
-        const pick = candidates.find((e) => e.key === action.key)
-        if (pick) setOrdered((items) => [...items, pick])
-      },
-    })
-  }
-
-  // === 长按 600ms → 进入编辑模式 ===
-  const handlePressStart = () => {
-    if (editing) return // 已在编辑模式下不重复触发
-    longPressTimer.current = setTimeout(() => {
-      setEditing(true)
-      Toast.show({ content: '已进入编辑模式：拖动图标排序', position: 'bottom', duration: 1500 })
-    }, 600)
-  }
-  const handlePressEnd = () => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current)
-      longPressTimer.current = null
+    setLoading(true)
+    try {
+      await loadTodos()
+      Toast.show({ content: '已刷新', position: 'bottom', duration: 1000 })
+    } finally {
+      setLoading(false)
     }
   }
 
-  // 非编辑模式下点击 → 跳转；编辑模式下点击不跳转
-  const handleCardClick = (entry: QuickEntry) => {
-    if (editing) return
-    if (entry.disabled) return
+  const handleEntryClick = (entry: QuickEntry) => {
     if (entry.path) navigate(entry.path)
   }
+  const handleTodoClick = (todo: TodoItem) => navigate(todo.path)
 
+  // ========== 渲染 ==========
   return (
     <PullToRefresh onRefresh={onRefresh}>
-      {/* 待办卡 — 玻璃拟态 + 渐变 */}
-      <div style={{
-        background: 'linear-gradient(135deg, #1976D2 0%, #2196F3 45%, #42A5F5 100%)',
-        borderRadius: 16, padding: '16px 18px', color: '#fff', marginBottom: 20,
-        boxShadow: '0 8px 24px rgba(33,150,243,0.3), inset 0 1px 0 rgba(255,255,255,0.2)',
-        position: 'relative', overflow: 'hidden',
-      }}>
-        {/* 顶部装饰光斑 */}
-        <div style={{
-          position: 'absolute', top: -30, right: -30, width: 120, height: 120,
-          borderRadius: '50%', background: 'rgba(255,255,255,0.1)',
-          filter: 'blur(8px)', pointerEvents: 'none',
-        }} />
-        <div style={{
-          position: 'absolute', bottom: -20, left: -20, width: 80, height: 80,
-          borderRadius: '50%', background: 'rgba(255,255,255,0.08)',
-          filter: 'blur(6px)', pointerEvents: 'none',
-        }} />
+      <div className="mobile-page" style={{ padding: '12px 12px 80px', minHeight: '100vh', background: '#F5F7FA' }}>
 
-        <div style={{
-          fontSize: 13, opacity: 0.95, marginBottom: 10,
-          display: 'flex', alignItems: 'center', gap: 6,
-          position: 'relative', zIndex: 1,
-        }}>
-          <span style={{ fontSize: 16 }}>📌</span>
-          <span style={{ fontWeight: 600, letterSpacing: 0.5 }}>待办事项</span>
-          <span style={{ fontSize: 11, opacity: 0.65, marginLeft: 'auto' }}>下拉刷新</span>
+        {/* ============ 顶部：欢迎 + 通知 ============ */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 18, fontWeight: 600, color: '#1a1a1a', marginBottom: 4 }}>
+            你好，{currentUser?.real_name || '同事'} 👋
+          </div>
+          <div style={{ fontSize: 12, color: '#999' }}>
+            {new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })}
+          </div>
         </div>
 
-        {/* 固定 3 行高度的滚动容器 */}
-        <div style={{
-          height: 132, // 3 行 × 44px (加 padding 后更宽松)
-          overflow: 'hidden',
-          position: 'relative',
-          zIndex: 1,
-        }}>
-          <div style={{
-            transform: `translateY(-${scrollOffset * 44}px)`,
-            transition: 'transform 0.5s cubic-bezier(.4,0,.2,1)',
-          }}>
-            {(todos.length > 0 ? todos : [
-              { icon: '📋', text: '加载中...', count: 0, path: '', color: '#fff' },
-            ]).map((t, i) => (
+        {/* 🔔 通知区（15%） */}
+        <div
+          style={{
+            borderRadius: 12,
+            background: notices.length > 0
+              ? 'linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%)'
+              : '#FAFAFA',
+            borderLeft: notices.length > 0 ? '3px solid #FF9800' : '3px solid #E0E0E0',
+            padding: '10px 14px',
+            marginBottom: 12,
+            minHeight: 56,
+          }}
+        >
+          {notices.length > 0 ? (
+            <div
+              style={{ display: 'flex', gap: 14, alignItems: 'center', overflowX: 'auto', whiteSpace: 'nowrap', paddingBottom: 2 }}
+            >
+              {notices.map((n) => (
+                <div
+                  key={n.path}
+                  onClick={() => handleTodoClick(n)}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    flexShrink: 0, fontSize: 13, color: '#BF360C', cursor: 'pointer',
+                  }}
+                >
+                  <span style={{ fontSize: 18 }}>{n.icon}</span>
+                  <span>{n.text}</span>
+                  <span
+                    style={{
+                      background: '#F44336', color: '#fff', fontSize: 11,
+                      padding: '0 6px', borderRadius: 10, fontWeight: 600,
+                    }}
+                  >
+                    {n.count}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: '#aaa', textAlign: 'center', padding: '4px 0' }}>
+              ✨ 当前无紧急通知
+            </div>
+          )}
+        </div>
+
+        {/* ⚡ 快捷操作（35%，横向滑） */}
+        <div style={{ marginBottom: 12 }}>
+          <div
+            style={{
+              display: 'flex', gap: 12, overflowX: 'auto', padding: '4px 4px 12px 4px',
+              scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch',
+            }}
+          >
+            {ordered.map((entry) => (
               <div
-                key={`${t.path}-${i}`}
-                onClick={() => t.path && navigate(t.path)}
+                key={entry.key}
+                onClick={() => handleEntryClick(entry)}
                 style={{
-                  height: 44,
-                  display: 'flex', alignItems: 'center',
-                  padding: '0 8px',
-                  marginBottom: 2,
-                  cursor: t.path ? 'pointer' : 'default',
-                  fontSize: 14,
-                  borderRadius: 8,
-                  background: i % 2 === 0 ? 'rgba(255,255,255,0.06)' : 'transparent',
-                  transition: 'background 0.15s',
-                  ...(t.path ? {
-                    // 点击态
-                    ':active': { background: 'rgba(255,255,255,0.18)' },
-                  } : {}),
+                  flexShrink: 0, width: 72, textAlign: 'center', cursor: 'pointer',
                 }}
-                className={t.path ? 'mobile-dashboard-todo-item' : ''}
               >
-                <span style={{
-                  width: 28, height: 28, borderRadius: 8,
-                  background: `rgba(255,255,255,0.15)`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  marginRight: 10, fontSize: 15,
-                }}>{t.icon}</span>
-                <span style={{ flex: 1, fontWeight: 500, fontSize: 13.5 }}>{t.text}</span>
-                <span style={{
-                  background: t.count > 0 ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.1)',
-                  border: '1px solid rgba(255,255,255,0.25)',
-                  padding: '3px 12px', borderRadius: 12,
-                  fontSize: 13, fontWeight: 700,
-                  minWidth: 32, textAlign: 'center',
-                  backdropFilter: 'blur(4px)',
-                }}>
-                  {t.count}
-                </span>
+                <div
+                  style={{
+                    width: 56, height: 56, borderRadius: 16, margin: '0 auto 6px',
+                    background: entry.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: entry.color,
+                  }}
+                >
+                  {entry.icon}
+                </div>
+                <div style={{ fontSize: 11, color: '#555' }}>{entry.title}</div>
               </div>
             ))}
           </div>
+        </div>
 
-          {/* 渐变遮罩 */}
-          {todos.length > 3 && (
-            <>
-              <div style={{
-                position: 'absolute', top: 0, left: 0, right: 0, height: 14,
-                background: 'linear-gradient(to bottom, rgba(25,118,210,0.95), transparent)',
-                pointerEvents: 'none',
-              }} />
-              <div style={{
-                position: 'absolute', bottom: 0, left: 0, right: 0, height: 14,
-                background: 'linear-gradient(to top, rgba(25,118,210,0.95), transparent)',
-                pointerEvents: 'none',
-              }} />
-            </>
+        {/* 📋 代办任务（50%） */}
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: '#333', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+            📋 待办事项
+            <span style={{ fontSize: 11, color: '#999', fontWeight: 400 }}>（{todos.length} 项）</span>
+          </div>
+
+          {todos.length === 0 ? (
+            <div style={{
+              background: '#fff', borderRadius: 12, padding: '30px 16px',
+              textAlign: 'center', color: '#bbb', fontSize: 13,
+            }}>
+              🎉 太棒了！暂无待办任务
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {todos.map((t) => (
+                <div
+                  key={t.path + t.text}
+                  onClick={() => handleTodoClick(t)}
+                  style={{
+                    background: '#fff', borderRadius: 12, padding: '12px 14px',
+                    display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                      background: t.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 18,
+                    }}
+                  >
+                    {t.icon}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, color: '#333', fontWeight: 500 }}>{t.text}</div>
+                    <div style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>点击查看</div>
+                  </div>
+                  <div
+                    style={{
+                      background: t.color, color: '#fff', fontSize: 13,
+                      fontWeight: 700, padding: '2px 10px', borderRadius: 12, flexShrink: 0,
+                    }}
+                  >
+                    {t.count}
+                  </div>
+                  <span style={{ color: '#ccc', fontSize: 16 }}>›</span>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
-
-      {/* 快捷入口 标题 + 编辑操作栏 */}
-      <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        marginBottom: 10,
-      }}>
-        <span style={{ fontSize: 15, fontWeight: 600, color: '#333' }}>快捷操作</span>
-        {editing ? (
-          <div style={{ display: 'flex', gap: 6 }}>
-            <Button size="mini" color="primary" onClick={addEntry}>+ 添加</Button>
-            <Button size="mini" fill="outline" onClick={resetToDefault}>恢复默认</Button>
-            <Button size="mini" fill="outline" onClick={resetEdit}>取消</Button>
-            <Button size="mini" color="primary" onClick={saveEdit}>保存</Button>
-          </div>
-        ) : (
-          <span style={{ fontSize: 12, color: '#999' }}>长按可调整顺序</span>
-        )}
-      </div>
-
-      {/* 九宫格 — 拖拽排序（编辑模式下可用） */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={ordered.map((e) => e.key)}
-          strategy={rectSortingStrategy}
-        >
-          <Grid columns={columns} gap={10} style={{ paddingLeft: 10, paddingRight: 4 }}>
-            {ordered.map((entry) => (
-              <Grid.Item key={entry.key} style={{ width: '100%' }}>
-                <SortableCard
-                  entry={entry}
-                  editing={editing}
-                  onClick={() => handleCardClick(entry)}
-                  onPressStart={handlePressStart}
-                  onPressEnd={handlePressEnd}
-                  onRemove={() => removeEntry(entry.key)}
-                />
-              </Grid.Item>
-            ))}
-          </Grid>
-        </SortableContext>
-      </DndContext>
-
-      {/* 底部空出 TabBar + safe-area */}
-      <div style={{ height: 20 }} />
     </PullToRefresh>
-  )
-}
-
-interface SortableCardProps {
-  entry: QuickEntry
-  editing: boolean
-  onClick: () => void
-  onPressStart: () => void
-  onPressEnd: () => void
-  onRemove: () => void
-}
-
-/** 图标渐变背景 — 根据 color 生成同色系渐变 */
-function gradientFromHex(hex: string): string {
-  return `linear-gradient(135deg, ${hex} 0%, ${hex}dd 40%, ${hex}99 100%)`
-}
-
-/**
- * 需求2: 5汉字宽度对齐 — 计算标题字符间距让不同长度文本视觉等宽
- * 基准: 5字标题 letterSpacing=0，4字自动扩展，3字扩展更多
- * 公式: target=5字宽，设基准字宽≈7px(fontSize=12)，可用剩余空间均分
- */
-function titleLetterSpacing(title: string): number {
-  const len = title.length
-  if (len >= 5) return 0.5          // 5字及以上：微间距
-  if (len === 4) return 3           // 4字：较宽间距
-  if (len === 3) return 6           // 3字：宽间距
-  if (len === 2) return 9            // 2字：很宽间距
-  return 12                          // 1字
-}
-
-/** 可拖拽卡片 — @dnd-kit useSortable + 1:1 宽高比 */
-function SortableCard({ entry, editing, onClick, onPressStart, onPressEnd, onRemove }: SortableCardProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: entry.key })
-
-  const style: React.CSSProperties = {
-    position: 'relative',
-    background: entry.disabled ? '#f5f6f8' : '#fff',
-    borderRadius: 14,
-    // 核心：始终 1:1 正方形
-    width: '100%',
-    aspectRatio: '1 / 1',
-    // 防止 Grid 子项被 flex 撑开高度或宽度
-    minWidth: 0, maxWidth: '100%',
-    minHeight: 0,
-    // 内容居中垂直
-    display: 'flex', flexDirection: 'column',
-    alignItems: 'center', justifyContent: 'center',
-    padding: '10px 6px',
-    boxSizing: 'border-box',
-    border: editing ? '2px solid #2196F3' : 'none',
-    opacity: entry.disabled ? 0.55 : 1,
-    cursor: editing ? 'grab' : (entry.disabled ? 'not-allowed' : 'pointer'),
-    transition: isDragging ? 'none' : 'transform 0.15s cubic-bezier(.4,0,.2,1), box-shadow 0.2s',
-    userSelect: 'none',
-    // 拖拽时的视觉反馈
-    boxShadow: isDragging
-      ? '0 12px 32px rgba(33,150,243,0.35)'
-      : (editing
-          ? '0 0 0 3px rgba(33,150,243,0.15)'
-          : (entry.disabled ? 'none' : '0 2px 10px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.03)')),
-    transform: CSS.Transform.toString(transform),
-    zIndex: isDragging ? 999 : undefined,
-    touchAction: 'none', // 禁用浏览器触摸默认行为
-    overflow: 'hidden',
-  }
-
-  return (
-    <Badge content={entry.badge || null}>
-      <div
-        ref={setNodeRef}
-        style={style}
-        onClick={onClick}
-        // 长按进入编辑（仅非编辑模式下触发）
-        onMouseDown={onPressStart}
-        onMouseUp={onPressEnd}
-        onMouseLeave={onPressEnd}
-        onTouchStart={onPressStart}
-        onTouchEnd={onPressEnd}
-        onTouchCancel={onPressEnd}
-        // 编辑模式下：useSortable 接管拖拽事件
-        {...(editing ? { ...attributes, ...listeners } : {})}
-        className="mobile-clickable mobile-dashboard-card"
-      >
-        {/* 编辑模式：左上 × 删除按钮 + 右上拖动提示点 */}
-        {editing && (
-          <>
-            <div
-              onClick={(e) => { e.stopPropagation(); onRemove() }}
-              style={{
-                position: 'absolute', top: -6, left: -6,
-                width: 22, height: 22, borderRadius: '50%',
-                background: '#F44336', color: '#fff',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 14, fontWeight: 700, lineHeight: 1,
-                boxShadow: '0 2px 6px rgba(244,67,54,0.4)',
-                cursor: 'pointer', zIndex: 10,
-              }}
-              onTouchStart={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
-            >×</div>
-            <div style={{
-              position: 'absolute', top: 6, right: 6,
-              width: 10, height: 10, borderRadius: 5,
-              background: entry.color,
-              boxShadow: `0 2px 4px ${entry.color}66`,
-            }} />
-          </>
-        )}
-
-        {/* 渐变圆角图标 */}
-        <div style={{
-          width: 44, height: 44,
-          borderRadius: 14,
-          background: gradientFromHex(entry.color),
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#fff',
-          boxShadow: `0 4px 10px ${entry.color}55`,
-          flexShrink: 0,
-        }}>
-          {entry.icon}
-        </div>
-
-        <div style={{
-          fontSize: 12, fontWeight: 500, color: '#333',
-          lineHeight: 1.3, padding: '6px 2px 0',
-          textAlign: 'center',
-          /* 需求2: 5汉字宽度对齐 — 用 letterSpacing 让不同长度标题视觉等宽 */
-          letterSpacing: titleLetterSpacing(entry.title),
-          whiteSpace: 'nowrap',
-        }}>
-          {entry.title}
-        </div>
-        {entry.disabled && (
-          <div style={{ fontSize: 10, color: '#bbb', marginTop: 2 }}>即将上线</div>
-        )}
-      </div>
-    </Badge>
   )
 }

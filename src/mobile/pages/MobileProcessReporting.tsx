@@ -54,7 +54,7 @@ export default function MobileProcessReporting() {
   const [current, setCurrent] = useState<ReportOrder | null>(null)
   const [processes, setProcesses] = useState<ProcessRow[]>([])
   const [activeProcId, setActiveProcId] = useState<number | null>(null)
-  const [activeTab, setActiveTab] = useState<string>('input')
+  const [activeTab, setActiveTab] = useState<string>('defect')
 
   // 基础字典
   const [defectTypes, setDefectTypes] = useState<DefectType[]>([])
@@ -144,7 +144,7 @@ export default function MobileProcessReporting() {
 
   // ========== 进入报工 ==========
   const enterReporting = async (report: ReportOrder) => {
-    setCurrent(report); setPhase('reporting'); setActiveTab('input')
+    setCurrent(report); setPhase('reporting'); setActiveTab('defect')
     try {
       // 工序
       const pR: any = await api.get(`/production/report-orders/${report.report_order_id}/processes`)
@@ -294,7 +294,6 @@ export default function MobileProcessReporting() {
         ) : (
           <>
             <TabBar active={activeTab} onChange={setActiveTab} />
-            {activeTab === 'input' && <InputPanel {...{ activeProcess, current, procMaterials, isFirstProcess, setMaterials }} />}
             {activeTab === 'defect' && (
               <DefectPanel
                 {...{
@@ -306,6 +305,7 @@ export default function MobileProcessReporting() {
             )}
             {activeTab === 'material' && <MaterialPanel {...{ editable: isEditable, rows: procMaterials, activeProcess, isFirstProcess, current, setMaterials }} />}
             {activeTab === 'scrap' && <ScrapPanel {...{ editable: isEditable, rows: procScraps, types: filteredScrapTypes, current, setScraps }} />}
+            {activeTab === 'exception' && <ExceptionPanel {...{ editable: isEditable, rows: procExceptions, current, setExceptions }} />}
             {activeTab === 'manpower' && <ManpowerPanel {...{ editable: isEditable, manpower, current, setManpower }} />}
           </>
         )}
@@ -327,10 +327,10 @@ function ProcTabLabel({ p }: { p: ProcessRow }) {
 
 function TabBar({ active, onChange }: { active: string; onChange: (k: string) => void }) {
   const tabs = [
-    { key: 'input', label: '投入' },
     { key: 'defect', label: '不良' },
     { key: 'material', label: '投料' },
     { key: 'scrap', label: '报废' },
+    { key: 'exception', label: '工时' },
     { key: 'manpower', label: '人员' },
   ]
   return (
@@ -598,6 +598,90 @@ function ScrapPanel({ editable, rows, types, current, setScraps }: any) {
           <div key={s.id} style={{ borderTop: '1px solid #f0f0f0', padding: '8px 0', fontSize: 13, display: 'flex', justifyContent: 'space-between' }}>
             <span>{s.defect_name || s.defect_type || '—'}</span>
             <span style={{ color: '#f44336', fontWeight: 600 }}>×{s.quantity}</span>
+          </div>
+        ))
+      )}
+    </Section>
+  )
+}
+
+// --- 工时记录 ---
+function ExceptionPanel({ editable, rows, current, setExceptions }: any) {
+  const [exceptionType, setExceptionType] = useState('')
+  const [startTime, setStartTime] = useState('')
+  const [endTime, setEndTime] = useState('')
+  const [remark, setRemark] = useState('')
+
+  const EXCEPTION_TYPES = ['换型换线', '设备故障', '质量异常', '待料', '工装调整', '其他']
+
+  const save = async () => {
+    if (!current) return
+    if (!exceptionType) { Toast.show({ content: '请选异常类型', icon: 'fail' }); return }
+    try {
+      const payload: any = {
+        report_order_id: current.report_order_id,
+        exception_type: exceptionType,
+        start_time: startTime || new Date().toISOString().slice(0, 19).replace('T', ' '),
+        end_time: endTime || null,
+        remark: remark || null,
+      }
+      if (startTime && endTime) {
+        const s = new Date(startTime).getTime()
+        const e = new Date(endTime).getTime()
+        if (e > s) payload.duration = Math.round((e - s) / 60000)
+      }
+      const r: any = await api.post('/production/process-exceptions', payload)
+      const d = r.data || {}
+      setExceptions((prev: any[]) => [...prev, { ...d, id: d.exception_id || Date.now() }])
+      Toast.show({ content: '已保存', icon: 'success' })
+      setExceptionType(''); setStartTime(''); setEndTime(''); setRemark('')
+    } catch (e: any) { Toast.show({ content: e?.message || '保存失败', icon: 'fail' }) }
+  }
+
+  return (
+    <Section title={`工时记录（工单级 · ${rows.length}）`}>
+      {!editable && <ReadonlyBanner />}
+      {editable && (
+        <div style={{ borderTop: '1px solid #f0f0f0', padding: '10px 0' }}>
+          <SelectField
+            label="异常类型" value={exceptionType}
+            options={EXCEPTION_TYPES.map(t => ({ label: t, value: t }))}
+            onChange={setExceptionType}
+          />
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <input
+              type="datetime-local" value={startTime} onChange={e => setStartTime(e.target.value)}
+              placeholder="开始时间"
+              style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid #e0e0e0', fontSize: 13 }}
+            />
+            <input
+              type="datetime-local" value={endTime} onChange={e => setEndTime(e.target.value)}
+              placeholder="结束时间"
+              style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid #e0e0e0', fontSize: 13 }}
+            />
+          </div>
+          <input
+            type="text" placeholder="备注（可选）" value={remark} onChange={e => setRemark(e.target.value)}
+            style={{ width: '100%', marginTop: 8, padding: '10px 12px', borderRadius: 8, border: '1px solid #e0e0e0', fontSize: 13 }}
+          />
+          <div style={{ marginTop: 10 }}>
+            <Button size="small" color="primary" onClick={save}>添加工时</Button>
+          </div>
+        </div>
+      )}
+      {rows.length === 0 ? (
+        <EmptyTip text="暂无工时记录" />
+      ) : (
+        rows.map((e: any) => (
+          <div key={e.id} style={{ borderTop: '1px solid #f0f0f0', padding: '8px 0', fontSize: 13 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 500 }}>{e.exception_type || '—'}</span>
+              <span style={{ color: '#ff9800' }}>{e.duration ? `${e.duration}分钟` : '进行中'}</span>
+            </div>
+            <div style={{ color: '#999', fontSize: 11, marginTop: 2 }}>
+              {e.start_time ? e.start_time.slice(5, 16).replace('T', ' ') : '—'} → {e.end_time ? e.end_time.slice(5, 16).replace('T', ' ') : '至今'}
+            </div>
+            {e.remark && <div style={{ color: '#aaa', fontSize: 11, marginTop: 2 }}>📝 {e.remark}</div>}
           </div>
         ))
       )}
