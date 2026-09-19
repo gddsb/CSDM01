@@ -59,7 +59,7 @@ export function ReportOrderDetail({ meta, onClose }: Props) {
       list.sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0))
       setProcesses(list)
     }).catch(() => {})
-    api.get('/basic/defect-types', { params: { page: 1, page_size: 100 } }).then((r: any) => {
+    api.get('/basic/defect-types', { params: { page: 1, pageSize: 100 } }).then((r: any) => {
       const list: any[] = r.success ? (r.data?.list || r.data || []) : []
       setDefectTypes(list)
     }).catch(() => {})

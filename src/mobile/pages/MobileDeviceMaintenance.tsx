@@ -73,7 +73,7 @@ export default function MobileDeviceMaintenance() {
   const loadDevices = async (kw?: string): Promise<DeviceRow[]> => {
     setLoading(true)
     try {
-      const params: Record<string, unknown> = { page: 1, page_size: 50 }
+      const params: Record<string, unknown> = { page: 1, pageSize: 50 }
       if (kw) params.device_code = kw
       const r: any = await api.get('/basic/devices', { params })
       const list: DeviceRow[] = r.success ? (r.data?.list || r.data || []) : []
@@ -93,7 +93,7 @@ export default function MobileDeviceMaintenance() {
     setLoading(true)
     try {
       const params: Record<string, unknown> = {
-        page: 1, page_size: 50, device_id: device.device_id,
+        page: 1, pageSize: 50, device_id: device.device_id,
       }
       const s = (status || statusTab)
       if (s !== 'all') params.status = s

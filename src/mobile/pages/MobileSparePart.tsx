@@ -68,11 +68,11 @@ export default function MobileSparePart() {
   const loadAll = async () => {
     setLoading(true)
     try {
-      const params: Record<string, unknown> = { page: 1, page_size: 100 }
+      const params: Record<string, unknown> = { page: 1, pageSize: 100 }
       if (keyword) params.part_code = keyword
       const [r1, r2] = await Promise.all([
         api.get('/basic/device-spare-parts', { params }),
-        api.get('/basic/device-spare-parts/low-stock/list', { params: { page: 1, page_size: 100 } }),
+        api.get('/basic/device-spare-parts/low-stock/list', { params: { page: 1, pageSize: 100 } }),
       ])
       setParts(r1.success ? (r1.data?.list || r1.data || []) : [])
       setLowParts(r2.success ? (r2.data?.list || r2.data || []) : [])
@@ -81,7 +81,7 @@ export default function MobileSparePart() {
   const loadLogs = async () => {
     setLoading(true)
     try {
-      const r: any = await api.get('/basic/device-spare-part-logs', { params: { page: 1, page_size: 100 } })
+      const r: any = await api.get('/basic/device-spare-part-logs', { params: { page: 1, pageSize: 100 } })
       setLogs(r.success ? (r.data?.list || r.data || []) : [])
     } catch { setLogs([]) } finally { setLoading(false) }
   }

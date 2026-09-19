@@ -47,7 +47,7 @@ export default function MobileProcessInspection() {
   const load = async (kw?: string): Promise<WipRow[]> => {
     setLoading(true)
     try {
-      const params: Record<string, unknown> = { page: 1, page_size: 30 }
+      const params: Record<string, unknown> = { page: 1, pageSize: 30 }
       if (kw) params.keyword = kw
       const r: any = await api.get('/basic/process-inspections/wip', { params })
       const list: WipRow[] = r.success ? (r.data?.list || []) : []

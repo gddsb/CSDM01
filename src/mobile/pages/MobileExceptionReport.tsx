@@ -100,7 +100,7 @@ export default function MobileExceptionReport() {
   const loadOrders = async (kw?: string): Promise<ReportOrderRow[]> => {
     setLoading(true)
     try {
-      const params: Record<string, unknown> = { page: 1, page_size: 30, status: '开工' }
+      const params: Record<string, unknown> = { page: 1, pageSize: 30, status: '开工' }
       if (kw) params.keyword = kw
       const r: any = await api.get('/production/report-orders', { params })
       const list: ReportOrderRow[] = r.success ? (r.data?.list || r.data?.rows || []) : []
@@ -115,7 +115,7 @@ export default function MobileExceptionReport() {
   const loadDevices = async () => {
     if (devices.length > 0) return
     try {
-      const r: any = await api.get('/basic/devices', { params: { page: 1, page_size: 200 } })
+      const r: any = await api.get('/basic/devices', { params: { page: 1, pageSize: 200 } })
       if (r.success) setDevices(r.data?.list || r.data || [])
     } catch { /* 静默降级 */ }
   }

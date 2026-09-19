@@ -35,7 +35,7 @@ export default function MobileProductInspection() {
   const load = async (kw?: string): Promise<Row[]> => {
     setLoading(true)
     try {
-      const params: Record<string, unknown> = { page: 1, page_size: 30 }
+      const params: Record<string, unknown> = { page: 1, pageSize: 30 }
       const k = kw ?? keyword
       if (k) params.inspection_no = k
       const r: any = await api.get('/basic/product-inspections', { params })

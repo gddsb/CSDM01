@@ -112,7 +112,7 @@ export default function MobileInspectionHistory() {
     setLoading(true)
     try {
       const meta = TYPE_META[typeKey]
-      const params: Record<string, unknown> = { page: pg, page_size: 20 }
+      const params: Record<string, unknown> = { page: pg, pageSize: 20 }
       if (kw) params.keyword = kw
       const today = new Date()
       const pad = (n: number) => String(n).padStart(2, '0')

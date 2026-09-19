@@ -86,11 +86,11 @@ export default function MobileDeviceFault() {
 
   // ===== 拉取设备/用户（用于新建/派单）=====
   useEffect(() => {
-    api.get('/basic/devices', { params: { page: 1, page_size: 500 } }).then((r: any) => {
+    api.get('/basic/devices', { params: { page: 1, pageSize: 500 } }).then((r: any) => {
       const list: FaultDevice[] = r.success ? (r.data?.list || r.data || []) : []
       setDevices(list)
     }).catch(() => {})
-    api.get('/system/users', { params: { page: 1, page_size: 200 } }).then((r: any) => {
+    api.get('/system/users', { params: { page: 1, pageSize: 200 } }).then((r: any) => {
       const list: UserRow[] = r.success ? (r.data?.list || r.data || []) : []
       setUsers(list)
     }).catch(() => {})
@@ -100,7 +100,7 @@ export default function MobileDeviceFault() {
   const loadFaults = async (status?: StatusTab, kw?: string) => {
     setLoading(true)
     try {
-      const params: Record<string, unknown> = { page: 1, page_size: 50 }
+      const params: Record<string, unknown> = { page: 1, pageSize: 50 }
       const s = (status || tab)
       if (s !== 'all') params.status = s
       if (kw) params.fault_no = kw

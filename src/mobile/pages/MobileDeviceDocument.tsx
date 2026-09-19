@@ -55,7 +55,7 @@ export default function MobileDeviceDocument() {
   const loadDevices = async (kw?: string): Promise<DeviceRow[]> => {
     setLoading(true)
     try {
-      const params: Record<string, unknown> = { page: 1, page_size: 200 }
+      const params: Record<string, unknown> = { page: 1, pageSize: 200 }
       if (kw) params.device_code = kw
       const r: any = await api.get('/basic/devices', { params })
       const list: DeviceRow[] = r.success ? (r.data?.list || r.data || []) : []

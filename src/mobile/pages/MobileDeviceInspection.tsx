@@ -46,7 +46,7 @@ export default function MobileDeviceInspection() {
   const loadDevices = async (kw?: string): Promise<DeviceRow[]> => {
     setLoading(true)
     try {
-      const params: Record<string, unknown> = { page: 1, page_size: 50 }
+      const params: Record<string, unknown> = { page: 1, pageSize: 50 }
       const k = kw ?? keyword
       if (k) params.device_code = k
       const r: any = await api.get('/basic/devices', { params })
@@ -64,7 +64,7 @@ export default function MobileDeviceInspection() {
     setSelectedDevice(device)
     try {
       const r: any = await api.get('/basic/device-records', {
-        params: { page: 1, page_size: 20, status: '待执行', device_id: device.device_id },
+        params: { page: 1, pageSize: 20, status: '待执行', device_id: device.device_id },
       })
       if (r.success) setRecords(r.data?.list || r.data || [])
       else setRecords([])

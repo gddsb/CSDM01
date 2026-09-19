@@ -81,7 +81,7 @@ export default function MobileMicrobeInspection() {
     if (!endpoint) return []
     setLoading(true)
     try {
-      const params: Record<string, unknown> = { page: 1, page_size: 30 }
+      const params: Record<string, unknown> = { page: 1, pageSize: 30 }
       const k = kw ?? keyword
       if (k) {
         if (loadMode === 'report') params.report_no = k

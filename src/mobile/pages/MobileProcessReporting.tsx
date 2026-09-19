@@ -14,6 +14,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Dialog, Toast, Button, Tabs, Badge } from 'antd-mobile'
 import api from '../../utils/api'
+import { calcReportStats } from '../../pages/production/reportStats'
 
 // ============ 类型 ============
 interface ProcessRow {
@@ -182,6 +183,14 @@ export default function MobileProcessReporting() {
     [processes, activeProcId],
   )
 
+  // ========== 整单统计（与 PC 端 reportStats.ts 完全一致） ==========
+  const stats = useMemo(() => calcReportStats({
+    defects, scraps, exceptions, materials,
+    manpowers: manpower ? [manpower] : [],
+    lineProcesses: processes,
+    selectedReport: current ? { ...current, status: current.status != null ? String(current.status) : null } : null,
+  }), [defects, scraps, exceptions, materials, manpower, processes, current])
+
   // 过滤不良类型（按当前工序）
   const filteredDefectTypes = useMemo(() => {
     return defectTypes
@@ -294,6 +303,7 @@ export default function MobileProcessReporting() {
         ) : (
           <>
             <TabBar active={activeTab} onChange={setActiveTab} />
+            <MobileReportStatsBar stats={stats} reportQty={current?.report_qty || 0} />
             {activeTab === 'defect' && (
               <DefectPanel
                 {...{
@@ -343,6 +353,38 @@ function TabBar({ active, onChange }: { active: string; onChange: (k: string) =>
           color: active === t.key ? '#2196F3' : '#666',
         }}>{t.label}</div>
       ))}
+    </div>
+  )
+}
+
+/** 移动端紧凑版报工统计栏 — 2行5列网格，与PC端calcReportStats计算完全一致 */
+function MobileReportStatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportStats>; reportQty: number }) {
+  const items = [
+    { label: '报工数量', value: reportQty, color: '#2196F3' },
+    { label: '投入数量', value: stats.inputQty, color: '#1890ff' },
+    { label: '合格数量', value: stats.expectedOutput > 0 ? Number(stats.expectedOutput.toFixed(1)) : 0, color: '#52c41a' },
+    { label: '制程不良', value: stats.defectProcess, color: '#fa8c16' },
+    { label: '来料不良', value: stats.defectMaterial, color: '#faad14' },
+    { label: '报废数量', value: stats.defectScrap, color: '#f5222d' },
+    { label: '异常工时', value: `${((stats.exceptionHours || 0) / 60).toFixed(2)}H`, color: '#eb2f96' },
+    { label: '总工时', value: `${(stats.manpowerHours || 0).toFixed(1)}h`, color: '#13c2c2' },
+  ]
+  return (
+    <div style={{
+      background: '#fff', borderRadius: 10, padding: '10px 12px', marginBottom: 10,
+      boxShadow: '0 1px 4px rgba(0,0,0,0.03)',
+    }}>
+      <div style={{ fontSize: 11, color: '#888', fontWeight: 600, marginBottom: 6 }}>
+        📊 报工单汇总统计
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px 4px' }}>
+        {items.map((it) => (
+          <div key={it.label} style={{ textAlign: 'center', padding: '4px 0' }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: it.color, lineHeight: 1.2 }}>{it.value}</div>
+            <div style={{ fontSize: 10, color: '#aaa', marginTop: 2 }}>{it.label}</div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

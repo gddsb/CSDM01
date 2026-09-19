@@ -184,7 +184,7 @@ export default function MobileOrderManagement() {
   const openDetail = async (o: OrderRow) => {
     setSelected(o); setActiveReportId(null)
     try {
-      const r: any = await api.get('/production/report-orders', { params: { page: 1, page_size: 50, order_id: o.order_id } })
+      const r: any = await api.get('/production/report-orders', { params: { page: 1, pageSize: 50, order_id: o.order_id } })
       const list: any[] = r.success ? (r.data?.list || r.data || []) : []
       setReports(list.map((x) => ({
         report_order_id: x.report_order_id, report_no: x.report_no,
