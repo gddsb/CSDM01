@@ -170,7 +170,7 @@ export default function MobileProcessReporting() {
       if (!r?.success) throw new Error(r?.message || '完工失败')
       Toast.show({ content: '✅ 已完工', icon: 'success' })
       setCurrent(null); setPhase('select')
-      setDefects([]); setMaterials([]); setScraps([]); setExceptions([])
+      setDefectsRaw([]); setMaterials([]); setExceptions([]); setManpower(null)
     } catch (e: any) {
       Toast.show({ content: e?.message || '完工失败', icon: 'fail' })
     }
@@ -258,7 +258,12 @@ export default function MobileProcessReporting() {
                   editable={!!editable}
                   defectTypes={defectTypes}
                   allDefects={defects}
-                  setAllDefects={setDefects}
+                  // 🔑 defects 是 defectsRaw 的不良子集，包一层只改不良不碰报废
+                  setAllDefects={(updater) => setDefectsRaw(prev => {
+                    const scrap = prev.filter(d => scrapDefectIds.has(Number(d.defect_type_id)))
+                    const nonScrap = prev.filter(d => !scrapDefectIds.has(Number(d.defect_type_id)))
+                    return [...updater(nonScrap), ...scrap]
+                  })}
                 />
               )}
               {processTab === 'material' && (
