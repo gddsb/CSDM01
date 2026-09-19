@@ -1,41 +1,31 @@
-import logger from '../../utils/logger.js'
 /**
- * 移动报工 — 对标 PC 端 ProcessReporting.tsx 完整流程
+ * 移动报工主页面 — 职责：阶段切换 + 数据加载 + 布局
+ * 各 Tab 的业务逻辑（新增/编辑/删除/图片上传）已抽到 reporting/ 目录下 6 个独立 SubPanel
  *
- * 流程：选工单 → 开工创建报工单 → 分工序报工（5 Tab）→ 完工
- * 约束（对齐 PC）：
- *   - 工序从 report_processes 子表读取，按 sort_order 排序
- *   - 不良类型按 related_processes 过滤（空=全工序，有=仅关联工序）
- *   - 投料第一道工序可录投入/退回
- *   - 人员工时后端自动创建（开工时），前端只改人数
- *   - 数量校验 + 完工二次确认
+ * 页面结构（按需求 v2）：
+ *   ┌─ 工单信息 + 报工统计（顶部）
+ *   ├─ 工序报工（分组容器，工序 Select + [不良][投料] 两 Tab）
+ *   ├─ 工单报工（分组容器，[报废][工时][人员] 三 Tab）
+ *   └─ 完工/返回 按钮
  */
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Dialog, Toast, Button, Tabs, Badge } from 'antd-mobile'
 import api from '../../utils/api'
 import { calcReportStats } from '../../pages/production/reportStats'
 
-// ============ 类型 ============
-interface ProcessRow {
-  report_process_id: number; process_id: number; process_code: string
-  process_name: string; must_report: boolean; has_material: boolean
-  sort_order: number;
-}
-interface ReportOrder {
-  report_order_id: number; report_no: string; order_id: number; order_no: string
-  line_id: number; line_name: string; material_code: string; material_name: string
-  report_qty: number; status: number | string; report_time?: string; finish_time?: string
-}
-interface OrderRow {
-  order_id: number; order_no: string; status: string
-  material_code: string; material_name: string
-  planned_qty: number; finished_qty: number; line_name?: string
-}
-interface DefectType {
-  defect_id: number; defect_code: string; defect_type: string; defect_name: string
-  category_name: string; status: string; related_processes?: number[]
-}
+// SubPanel
+import { ProcessDefectPanel } from './reporting/ProcessDefectPanel'
+import { ProcessMaterialPanel } from './reporting/ProcessMaterialPanel'
+import { ScrapPanel } from './reporting/ScrapPanel'
+import { ExceptionPanel } from './reporting/ExceptionPanel'
+import { ManpowerPanel } from './reporting/ManpowerPanel'
+
+// 共享类型（集中导出）
+import type {
+  ProcessRow, ReportOrder, OrderRow, DefectType, MaterialMaster,
+  DefectRow, MaterialRow, ScrapRow, ExceptionRow, ManpowerRow,
+} from './reporting/types'
 
 // ============ 主组件 ============
 export default function MobileProcessReporting() {
@@ -43,147 +33,144 @@ export default function MobileProcessReporting() {
   const [sp] = useSearchParams()
   const urlOrderId = sp.get('orderId')
 
-  // 阶段：select → reporting
+  // 阶段：select（选工单）→ reporting（报工）
   const [phase, setPhase] = useState<'select' | 'reporting'>('select')
 
-  // ========== 阶段1 数据 ==========
+  // ========== 阶段1：工单选择 ==========
   const [orders, setOrders] = useState<OrderRow[]>([])
-  const [openReports, setOpenReports] = useState<ReportOrder[]>([])
-  const [loading, setLoading] = useState(false)
-
-  // ========== 阶段2 数据 ==========
   const [current, setCurrent] = useState<ReportOrder | null>(null)
+
+  // ========== 阶段2：报工数据 ==========
   const [processes, setProcesses] = useState<ProcessRow[]>([])
   const [activeProcId, setActiveProcId] = useState<number | null>(null)
-  const [activeTab, setActiveTab] = useState<string>('defect')
 
-  // 基础字典
+  // 工序报工组内部 Tab: defect | material
+  const [processTab, setProcessTab] = useState<'defect' | 'material'>('defect')
+  // 工单报工组内部 Tab: scrap | exception | manpower
+  const [reportTab, setReportTab] = useState<'scrap' | 'exception' | 'manpower'>('scrap')
+
+  // 全量记录（SubPanel 各自按 process_id 过滤）
+  const [defects, setDefects] = useState<DefectRow[]>([])
+  const [materials, setMaterials] = useState<MaterialRow[]>([])
+  const [scraps, setScraps] = useState<ScrapRow[]>([])
+  const [exceptions, setExceptions] = useState<ExceptionRow[]>([])
+  const [manpower, setManpower] = useState<ManpowerRow | null>(null)
+
+  // 字典预加载
   const [defectTypes, setDefectTypes] = useState<DefectType[]>([])
+  const [scrapTypes, setScrapTypes] = useState<DefectType[]>([])
+  const [materialsMaster, setMaterialsMaster] = useState<MaterialMaster[]>([])
 
-  // 各工序报工子记录（useMap: process_id → records[]）
-  const [defects, setDefects] = useState<any[]>([])
-  const [scraps, setScraps] = useState<any[]>([])
-  const [materials, setMaterials] = useState<any[]>([])
-  const [exceptions, setExceptions] = useState<any[]>([])
-  const [manpower, setManpower] = useState<any | null>(null)
+  // ========== 阶段1 加载：生产订单 ==========
+  useEffect(() => {
+    if (phase !== 'select') return
+    ;(async () => {
+      try {
+        const res: any = await api.get('/production/orders', { params: { status: '开工', pageSize: 50 } })
+        const list = (res?.data?.items || res?.data || []) as OrderRow[]
+        const started = list.filter(o => o.status === '开工')
+        setOrders(started)
 
-  // ========== 阶段1 加载 ==========
-  const loadSelect = useCallback(async () => {
-    setLoading(true)
-    try {
-      const [oR, rR, dR] = await Promise.all([
-        api.get('/production/orders', { params: { status: ['下发', '开工'], page: 1, pageSize: 50 } }),
-        api.get('/production/report-orders', { params: { page: 1, pageSize: 100, status: 0 } }),
-        api.get('/basic/defect-types', { params: { page: 1, pageSize: 500, status: '启用' } }),
-      ])
-      const oData: any = (oR as any).success ? ((oR as any).data?.list || (oR as any).data || []) : []
-      const rData: any = (rR as any).success ? ((rR as any).data?.list || (rR as any).data || []) : []
-      const dData: any = (dR as any).success ? ((dR as any).data?.list || (dR as any).data || []) : []
-      setOrders(oData)
-      setOpenReports(rData)
-      setDefectTypes(dData)
-    } catch (e: any) {
-      Toast.show({ content: '加载失败: ' + (e?.message || ''), icon: 'fail' })
-    } finally { setLoading(false) }
+        // URL 带 orderId 自动开工
+        if (urlOrderId) {
+          const order = started.find(o => String(o.order_id) === String(urlOrderId))
+          if (order) await handleStartNew(order)
+        }
+      } catch (e) { /* 静默 */ }
+    })()
+  }, [phase, urlOrderId])
+
+  // ========== 字典预加载 ==========
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const [dtr, mtr] = await Promise.all([
+          api.get('/basic/defect-types', { params: { pageSize: 500 } }) as Promise<any>,
+          api.get('/basic/materials', { params: { page: 1, pageSize: 1000 } }) as Promise<any>,
+        ])
+        const dt = (dtr?.data?.items || dtr?.data || []) as DefectType[]
+        const mt = (mtr?.data?.items || mtr?.data || []) as MaterialMaster[]
+        // 工序不良类型
+        setDefectTypes(dt.filter(t => t.category_name === '制程检验类型' && t.defect_type !== '检验报废'))
+        // 报废类型
+        setScrapTypes(dt.filter(t => t.defect_type === '检验报废' || t.category_name === '报废类型'))
+        setMaterialsMaster(mt)
+      } catch { /* 静默 */ }
+    })()
   }, [])
 
-  useEffect(() => {
-    if (phase === 'select') loadSelect()
-  }, [phase, loadSelect])
-
-  // URL orderId 自动匹配/开工
-  useEffect(() => {
-    if (!urlOrderId || phase !== 'select') return
-    const existing = openReports.find(r => String(r.order_id) === urlOrderId)
-    if (existing) { enterReporting(existing); return }
-    const t = setTimeout(async () => {
-      const o = orders.find(x => String(x.order_id) === urlOrderId)
-      if (o) await handleStartNew(o)
-    }, 1200)
-    return () => clearTimeout(t)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlOrderId, phase, orders, openReports])
-
-  // ========== 开工（创建报工单） ==========
+  // ========== 开工创建报工单 ==========
   const handleStartNew = async (order: OrderRow) => {
-    // 查是否已有未完工报工单
-    const existing = openReports.find(r => r.order_id === order.order_id && String(r.status ?? 0) !== '1')
-    if (existing) {
-      const ok = await Dialog.confirm({
-        content: `该订单已有开工报工单 ${existing.report_no}，直接进入？`,
-        confirmText: '进入', cancelText: '取消',
-      })
-      if (ok) enterReporting(existing); return
-    }
-    // 弹窗选产线（如果订单没指定产线）
     try {
-      const res: any = await api.post('/production/report-orders', {
-        order_id: order.order_id,
-        report_qty: order.planned_qty > 0 ? Math.min(1, order.planned_qty - order.finished_qty) : 1,
-      })
-      if (!res.success) throw new Error(res.message || '创建失败')
-      const report = res.data?.reportOrder || res.data
-      Toast.show({ content: `已开工：${report.report_no}`, icon: 'success' })
-      await loadSelect()  // 刷新 openReports
-      enterReporting(report)
-    } catch (e: any) {
-      if (e?.data?.need_confirm) {
-        const ok = await Dialog.confirm({ content: e.message, confirmText: '继续', cancelText: '取消' })
-        if (!ok) return
-        try {
-          const r2: any = await api.post('/production/report-orders', {
-            order_id: order.order_id, report_qty: 1, confirmed: true,
-          })
-          const report2 = r2.data?.reportOrder || r2.data
-          enterReporting(report2)
-        } catch (e2: any) { Toast.show({ content: e2?.message || '失败', icon: 'fail' }) }
-      } else {
-        Toast.show({ content: e?.message || '失败', icon: 'fail' })
+      // 检查是否已有报工单
+      const exist: any = await api.get('/production/report-orders', { params: { order_id: order.order_id, status: '生产中', pageSize: 1 } })
+      const activeReport = (exist?.data?.items || exist?.data || [])[0]
+      if (activeReport) {
+        await enterReporting(activeReport)
+        return
       }
+      Toast.show({ content: '正在创建报工单...', icon: 'loading' })
+      const create: any = await api.post('/production/report-orders', {
+        order_id: order.order_id, line_id: order.line_id, report_qty: order.finished_qty || order.planned_qty,
+      })
+      if (!create?.success) throw new Error(create?.message || '创建失败')
+      Toast.show({ content: '报工单已创建', icon: 'success' })
+      await enterReporting(create.data)
+    } catch (e: any) {
+      Toast.show({ content: e?.message || '开工失败', icon: 'fail' })
     }
   }
 
-  // ========== 进入报工 ==========
+  // ========== 进入报工：拉全量数据 ==========
   const enterReporting = async (report: ReportOrder) => {
-    setCurrent(report); setPhase('reporting'); setActiveTab('defect')
+    setCurrent(report)
+    setPhase('reporting')
+    setProcessTab('defect')
+    setReportTab('scrap')
     try {
       // 工序
-      const pR: any = await api.get(`/production/report-orders/${report.report_order_id}/processes`)
-      const procs: ProcessRow[] = pR.success ? (pR.data || []) : []
-      procs.sort((a, b) => Number(a.sort_order) - Number(b.sort_order))
-      setProcesses(procs)
-      if (procs.length > 0) setActiveProcId(procs[0].process_id)
+      const procs: any = await api.get(`/production/report-orders/${report.report_order_id}/processes`)
+      const plist = ((procs?.data || []) as ProcessRow[]).sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+      setProcesses(plist)
+      if (plist.length > 0) setActiveProcId(plist[0].process_id)
 
-      // 所有子记录（一次性拉全，前端按工序过滤 — 省网络请求）
-      const [dR, sR, mR, eR, mpR] = await Promise.all([
-        api.get('/production/process-defects', { params: { report_order_id: report.report_order_id, page: 1, pageSize: 1000 } }),
-        api.get('/production/scrap-defects', { params: { report_order_id: report.report_order_id, page: 1, pageSize: 1000 } }),
-        api.get('/production/process-materials', { params: { report_order_id: report.report_order_id, page: 1, pageSize: 1000 } }),
-        api.get('/production/process-exceptions', { params: { report_order_id: report.report_order_id, page: 1, pageSize: 1000 } }),
-        api.get('/production/manpower-records', { params: { report_order_id: report.report_order_id, page: 1, pageSize: 50 } }),
+      // 全量记录
+      const [dr, mr, sr, er, pr]: any[] = await Promise.all([
+        api.get('/production/process-defects', { params: { report_order_id: report.report_order_id, pageSize: 500 } }),
+        api.get('/production/process-materials', { params: { report_order_id: report.report_order_id, pageSize: 500 } }),
+        api.get('/production/scrap-defects', { params: { report_order_id: report.report_order_id, pageSize: 200 } }),
+        api.get('/production/process-exceptions', { params: { report_order_id: report.report_order_id, pageSize: 200 } }),
+        api.get('/production/manpower-records', { params: { report_order_id: report.report_order_id, pageSize: 1 } }),
       ])
-      setDefects(((dR as any).success ? ((dR as any).data?.list || (dR as any).data || []) : []).map((d: any) => ({ ...d, id: d.defect_id })))
-      setScraps(((sR as any).success ? ((sR as any).data?.list || (sR as any).data || []) : []).map((d: any) => ({ ...d, id: d.scrap_id })))
-      setMaterials(((mR as any).success ? ((mR as any).data?.list || (mR as any).data || []) : []).map((m: any) => ({ ...m, id: m.material_id })))
-      setExceptions(((eR as any).success ? ((eR as any).data?.list || (eR as any).data || []) : []).map((e: any) => ({ ...e, id: e.exception_id })))
-      const mpList: any[] = (mpR as any).success ? ((mpR as any).data?.list || (mpR as any).data || []) : []
-      setManpower(mpList.length > 0 ? { ...mpList[0], id: mpList[0].record_id } : null)
-    } catch (e) {
-      logger.error('加载报工数据失败', e)
-    }
+      const _arr = (r: any) => (r?.data?.items || r?.data || []) as any[]
+      setDefects(_arr(dr) as DefectRow[])
+      setMaterials(_arr(mr) as MaterialRow[])
+      setScraps(_arr(sr) as ScrapRow[])
+      setExceptions(_arr(er) as ExceptionRow[])
+      setManpower((_arr(pr)[0] || null) as ManpowerRow | null)
+    } catch { /* 静默 */ }
   }
 
-  // ========== 当前工序 ==========
-  const activeProcess = useMemo(
-    () => processes.find(p => p.process_id === activeProcId) || null,
-    [processes, activeProcId],
-  )
-  const isFirstProcess = useMemo(
-    () => processes[0]?.process_id === activeProcId,
-    [processes, activeProcId],
-  )
+  // ========== 完工 ==========
+  const finishReport = useCallback(async () => {
+    if (!current) return
+    const ok = await Dialog.confirm({
+      content: `确认完工 ${current.report_no}？完工后不可撤销。`,
+      confirmText: '确认完工', cancelText: '继续报工',
+    })
+    if (!ok) return
+    try {
+      const r: any = await api.post(`/production/report-orders/${current.report_order_id}/close`)
+      if (!r?.success) throw new Error(r?.message || '完工失败')
+      Toast.show({ content: '✅ 已完工', icon: 'success' })
+      setCurrent(null); setPhase('select')
+      setDefects([]); setMaterials([]); setScraps([]); setExceptions([])
+    } catch (e: any) {
+      Toast.show({ content: e?.message || '完工失败', icon: 'fail' })
+    }
+  }, [current])
 
-  // ========== 整单统计（与 PC 端 reportStats.ts 完全一致） ==========
+  // ========== 报工统计（复用 PC 端纯函数） ==========
   const stats = useMemo(() => calcReportStats({
     defects, scraps, exceptions, materials,
     manpowers: manpower ? [manpower] : [],
@@ -191,196 +178,191 @@ export default function MobileProcessReporting() {
     selectedReport: current ? { ...current, status: current.status != null ? String(current.status) : null } : null,
   }), [defects, scraps, exceptions, materials, manpower, processes, current])
 
-  // 过滤不良类型（按当前工序）
-  const filteredDefectTypes = useMemo(() => {
-    return defectTypes
-      .filter(d => d.category_name === '制程检验类型' && d.defect_type !== '检验报废' && d.status === '启用')
-      .filter(d => {
-        const rel: any[] = Array.isArray(d.related_processes) ? d.related_processes : []
-        if (!activeProcess) return rel.length === 0
-        if (rel.length === 0) return true
-        return rel.some(x => String(x) === String(activeProcess.process_id))
-      })
-  }, [defectTypes, activeProcess])
+  const editable = useMemo(() => current && String(current.status) !== '已完工' && String(current.status) !== '4', [current])
 
-  const filteredScrapTypes = useMemo(() => {
-    return defectTypes
-      .filter(d => d.category_name === '制程检验类型' && d.defect_type === '检验报废' && d.status === '启用')
-      .filter(d => {
-        const rel: any[] = Array.isArray(d.related_processes) ? d.related_processes : []
-        if (!activeProcess) return rel.length === 0
-        if (rel.length === 0) return true
-        return rel.some(x => String(x) === String(activeProcess.process_id))
-      })
-  }, [defectTypes, activeProcess])
-
-  // ========== 当前工序过滤后的子记录 ==========
-  const procDefects = useMemo(() =>
-    defects.filter(d => String(d.process_id) === String(activeProcId)),
-    [defects, activeProcId],
-  )
-  const procMaterials = useMemo(() =>
-    materials.filter(m => String(m.process_id) === String(activeProcId)),
-    [materials, activeProcId],
-  )
-  const procScraps = useMemo(() => scraps, [scraps])  // 检验报废是工单级
-  const procExceptions = useMemo(() => exceptions, [exceptions])  // 异常是工单级
-
-  // ========== CRUD ==========
-  const addDefect = async () => {
-    if (!current || !activeProcess) return
-    const newRow = { report_order_id: current.report_order_id, process_id: activeProcess.process_id, quantity: 0 }
-    setDefects(prev => [...prev, { ...newRow, id: `tmp_${Date.now()}`, _isNew: true }])
-  }
-  const saveDefect = async (row: any) => {
-    if (!current) return
-    if (!row.defect_type_id) { Toast.show({ content: '请选择不良类型', icon: 'fail' }); return }
-    if (!row.quantity || row.quantity <= 0) { Toast.show({ content: '数量 > 0', icon: 'fail' }); return }
-    try {
-      if (row._isNew || String(row.id).startsWith('tmp_')) {
-        const r: any = await api.post('/production/process-defects', row)
-        const saved = r.data || (r.success ? r.data : null)
-        if (saved) setDefects(prev => prev.map(d => d === row ? { ...saved, id: saved.defect_id } : d))
-      } else {
-        await api.put(`/production/process-defects/${row.defect_id || row.id}`, row)
-        Toast.show({ content: '已保存', icon: 'success' })
-      }
-    } catch (e: any) { Toast.show({ content: e?.message || '保存失败', icon: 'fail' }) }
-  }
-  const delDefect = async (row: any) => {
-    if (row._isNew || String(row.id).startsWith('tmp_')) {
-      setDefects(prev => prev.filter(d => d !== row)); return
-    }
-    const ok = await Dialog.confirm({ content: '删除该不良记录？', confirmText: '删除', cancelText: '取消' })
-    if (!ok) return
-    try {
-      await api.delete(`/production/process-defects/${row.defect_id || row.id}`)
-      setDefects(prev => prev.filter(d => d.id !== row.id))
-    } catch (e: any) { Toast.show({ content: e?.message || '删除失败', icon: 'fail' }) }
+  // ========== 渲染 ==========
+  if (phase === 'select') {
+    return (
+      <div style={{ padding: 16, background: '#f5f6fa', minHeight: '100vh' }}>
+        <h2 style={{ fontSize: 18, margin: '0 0 12px', color: '#333' }}>📋 选择开工订单</h2>
+        {orders.length === 0 && <div style={{ color: '#999', textAlign: 'center', padding: 30 }}>— 暂无开工订单 —</div>}
+        {orders.map((o) => (
+          <div key={o.order_id} style={{
+            background: '#fff', borderRadius: 10, padding: 12, marginBottom: 10,
+            border: '1px solid #eef0f3',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 600 }}>{o.order_no}</div>
+                <div style={{ fontSize: 12, color: '#888', marginTop: 3 }}>{o.material_code} · {o.material_name}</div>
+              </div>
+              <Badge content={`${o.finished_qty}/${o.planned_qty}`} style={{ '--right': '-4px', '--top': '-4px' }} />
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <Button size="mini" color="primary" onClick={() => handleStartNew(o)}>▶ 开工报工</Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
   }
 
-  // ========== 完工 ==========
-  const finishReport = async () => {
-    if (!current) return
-    const ok = await Dialog.confirm({ content: '完工后不可继续编辑，确认？', confirmText: '完工', cancelText: '取消' })
-    if (!ok) return
-    try {
-      await api.post(`/production/report-orders/${current.report_order_id}/finish`)
-      Toast.show({ content: '已完工', icon: 'success' })
-      navigate('/m/production-orders')
-    } catch (e: any) { Toast.show({ content: e?.message || '失败', icon: 'fail' }) }
-  }
-
-  const isEditable = String(current?.status ?? 0) !== '1'
-
-  // ============ 渲染 ============
-  if (phase === 'select') return <SelectPhase {...{ orders, openReports, loading, onStart: handleStartNew, onEnter: enterReporting }} />
   if (!current) return null
 
   return (
-    <div className="mobile-page-fixed-header">
-      {/* 顶部固定：工单信息 + 工序 Tab */}
-      <div className="mobile-sticky-header">
-        <ReportHeader report={current} onFinish={finishReport} onBack={() => { setPhase('select'); setCurrent(null) }} />
-        {processes.length > 0 && (
-          <div style={{ background: '#fff', borderRadius: 10, padding: '4px 6px', marginTop: 8, boxShadow: '0 1px 6px rgba(0,0,0,0.04)' }}>
-            <Tabs activeKey={String(activeProcId)} onChange={k => setActiveProcId(Number(k))}>
-              {processes.map(p => (
-                <Tabs.Tab
-                  title={<ProcTabLabel p={p} />}
-                  key={String(p.process_id)}
-                />
-              ))}
-            </Tabs>
-          </div>
-        )}
+    <div style={{ background: '#f5f6fa', minHeight: '100vh' }}>
+      {/* ========== ① 工单信息 + 报工统计 ========== */}
+      <Header report={current} onBack={() => { setCurrent(null); setPhase('select') }} onFinish={finishReport} />
+      <StatsBar stats={stats} reportQty={current.report_qty || 0} />
+
+      {/* ========== ② 工序报工组 ========== */}
+      <SectionDivider title="🔧 工序报工（分工序）" color="#1890ff" />
+
+      {/* 工序 Select */}
+      <div style={{
+        background: '#fff', padding: '10px 14px', borderBottom: '1px solid #eef0f3',
+      }}>
+        <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>当前工序</div>
+        <select
+          value={activeProcId || ''}
+          onChange={(e) => setActiveProcId(e.target.value ? Number(e.target.value) : null)}
+          style={{
+            width: '100%', padding: '10px 12px', borderRadius: 8,
+            border: '1px solid #d9d9d9', fontSize: 14, background: '#fff',
+          }}
+        >
+          {processes.map(p => (
+            <option key={p.process_id} value={p.process_id}>
+              {p.sort_order}. {p.process_name} {p.must_report ? '（必报）' : ''}
+            </option>
+          ))}
+        </select>
       </div>
 
-      {/* 内容区独立滚动 */}
-      <div className="mobile-page-scroll-list">
-        {!activeProcess ? (
-          <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>该产线未配置工序</div>
-        ) : (
-          <>
-            <TabBar active={activeTab} onChange={setActiveTab} />
-            <MobileReportStatsBar stats={stats} reportQty={current?.report_qty || 0} />
-            {activeTab === 'defect' && (
-              <DefectPanel
-                {...{
-                  editable: isEditable, rows: procDefects, types: filteredDefectTypes,
-                  activeProcess, onAdd: addDefect, onSave: saveDefect, onDel: delDefect,
-                  onChange: (row, patch) => setDefects(prev => prev.map(d => d === row ? { ...d, ...patch } : d)),
-                }}
-              />
-            )}
-            {activeTab === 'material' && <MaterialPanel {...{ editable: isEditable, rows: procMaterials, activeProcess, isFirstProcess, current, setMaterials }} />}
-            {activeTab === 'scrap' && <ScrapPanel {...{ editable: isEditable, rows: procScraps, types: filteredScrapTypes, current, setScraps }} />}
-            {activeTab === 'exception' && <ExceptionPanel {...{ editable: isEditable, rows: procExceptions, current, setExceptions }} />}
-            {activeTab === 'manpower' && <ManpowerPanel {...{ editable: isEditable, manpower, current, setManpower }} />}
-          </>
+      {/* 工序内部 Tab：不良 / 投料 */}
+      <div style={{ background: '#fff', marginTop: 1 }}>
+        <Tabs activeKey={processTab} onChange={(k) => setProcessTab(k as any)}>
+          <Tabs.Tab title="不良" key="defect" />
+          <Tabs.Tab title="投料" key="material" />
+        </Tabs>
+        <div style={{ padding: 12 }}>
+          {processTab === 'defect' && (
+            <ProcessDefectPanel
+              report={current}
+              activeProcessId={activeProcId}
+              editable={!!editable}
+              defectTypes={defectTypes}
+              allDefects={defects}
+              setAllDefects={setDefects}
+            />
+          )}
+          {processTab === 'material' && (
+            <ProcessMaterialPanel
+              report={current}
+              activeProcessId={activeProcId}
+              editable={!!editable}
+              materials={materialsMaster}
+              allMaterials={materials}
+              setAllMaterials={setMaterials}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* ========== ③ 工单报工组 ========== */}
+      <SectionDivider title="📊 工单报工（全流程）" color="#722ed1" />
+
+      <div style={{ background: '#fff', marginTop: 1 }}>
+        <Tabs activeKey={reportTab} onChange={(k) => setReportTab(k as any)}>
+          <Tabs.Tab title="报废" key="scrap" />
+          <Tabs.Tab title="工时" key="exception" />
+          <Tabs.Tab title="人员" key="manpower" />
+        </Tabs>
+        <div style={{ padding: 12 }}>
+          {reportTab === 'scrap' && (
+            <ScrapPanel
+              report={current}
+              editable={!!editable}
+              scrapTypes={scrapTypes}
+              rows={scraps}
+              setRows={setScraps}
+            />
+          )}
+          {reportTab === 'exception' && (
+            <ExceptionPanel
+              report={current}
+              editable={!!editable}
+              rows={exceptions}
+              setRows={setExceptions}
+            />
+          )}
+          {reportTab === 'manpower' && (
+            <ManpowerPanel
+              report={current}
+              editable={!!editable}
+              manpower={manpower}
+              setManpower={setManpower}
+            />
+          )}
+        </div>
+      </div>
+
+      <div style={{ height: 40 }} />
+    </div>
+  )
+}
+
+// ========== 小组件 ==========
+
+function Header({ report, onBack, onFinish }: { report: ReportOrder; onBack: () => void; onFinish: () => void }) {
+  const statusText = { '开工': '生产中', '完工': '已完工', '关闭': '已关闭', '下发': '已下发', '开立': '待开工' }[String(report.status)] || String(report.status)
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg,#1890ff,#096dd9)', color: '#fff',
+      padding: '14px 16px',
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <div style={{ fontSize: 17, fontWeight: 700 }}>📝 {report.report_no}</div>
+        <span style={{
+          fontSize: 11, padding: '2px 8px', borderRadius: 10,
+          background: statusText === '已完工' ? '#52c41a' : statusText === '生产中' ? '#faad14' : 'rgba(255,255,255,.25)',
+        }}>{statusText}</span>
+      </div>
+      <div style={{ fontSize: 12, opacity: .9 }}>
+        订单 {report.order_no} · {report.line_name}
+      </div>
+      <div style={{ fontSize: 12, opacity: .9, marginTop: 2 }}>
+        {report.material_code} {report.material_name} · 报工 {report.report_qty}
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+        <Button size="mini" fill="outline" color="white" onClick={onBack}>← 返回</Button>
+        {String(report.status) !== '4' && String(report.status) !== '已完工' && (
+          <Button size="mini" color="danger" onClick={onFinish} style={{ background: '#ff4d4f' }}>✓ 完工</Button>
         )}
       </div>
     </div>
   )
 }
 
-// ============ 子组件 ============
-
-function ProcTabLabel({ p }: { p: ProcessRow }) {
-  return (
-    <span style={{ fontSize: 12, padding: '2px 6px', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-      {p.sort_order}. {p.process_name}
-      {p.must_report && <Badge content="必" style={{ marginLeft: 2 }} />}
-    </span>
-  )
-}
-
-function TabBar({ active, onChange }: { active: string; onChange: (k: string) => void }) {
-  const tabs = [
-    { key: 'defect', label: '不良' },
-    { key: 'material', label: '投料' },
-    { key: 'scrap', label: '报废' },
-    { key: 'exception', label: '工时' },
-    { key: 'manpower', label: '人员' },
-  ]
-  return (
-    <div style={{ display: 'flex', background: '#fff', borderRadius: 8, padding: 4, marginBottom: 10, gap: 4 }}>
-      {tabs.map(t => (
-        <div key={t.key} onClick={() => onChange(t.key)} style={{
-          flex: 1, textAlign: 'center', padding: '8px 0', fontSize: 13,
-          borderRadius: 6, fontWeight: active === t.key ? 600 : 400,
-          background: active === t.key ? '#2196F315' : 'transparent',
-          color: active === t.key ? '#2196F3' : '#666',
-        }}>{t.label}</div>
-      ))}
-    </div>
-  )
-}
-
-/** 移动端紧凑版报工统计栏 — 2行5列网格，与PC端calcReportStats计算完全一致 */
-function MobileReportStatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportStats>; reportQty: number }) {
+function StatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportStats>; reportQty: number }) {
   const items = [
     { label: '报工数量', value: reportQty, color: '#2196F3' },
-    { label: '投入数量', value: stats.inputQty, color: '#1890ff' },
     { label: '合格数量', value: stats.expectedOutput > 0 ? Number(stats.expectedOutput.toFixed(1)) : 0, color: '#52c41a' },
     { label: '制程不良', value: stats.defectProcess, color: '#fa8c16' },
     { label: '来料不良', value: stats.defectMaterial, color: '#faad14' },
     { label: '报废数量', value: stats.defectScrap, color: '#f5222d' },
-    { label: '异常工时', value: `${((stats.exceptionHours || 0) / 60).toFixed(2)}H`, color: '#eb2f96' },
-    { label: '总工时', value: `${(stats.manpowerHours || 0).toFixed(1)}h`, color: '#13c2c2' },
+    { label: '异常工时', value: `${((stats.exceptionHours || 0) / 60).toFixed(1)}H`, color: '#eb2f96' },
   ]
   return (
     <div style={{
-      background: '#fff', borderRadius: 10, padding: '10px 12px', marginBottom: 10,
-      boxShadow: '0 1px 4px rgba(0,0,0,0.03)',
+      background: '#fff', margin: '10px 10px 0', borderRadius: 10, padding: '10px 12px',
+      boxShadow: '0 1px 4px rgba(0,0,0,.04)',
     }}>
-      <div style={{ fontSize: 11, color: '#888', fontWeight: 600, marginBottom: 6 }}>
-        📊 报工单汇总统计
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px 4px' }}>
+      <div style={{ fontSize: 11, color: '#888', fontWeight: 600, marginBottom: 6 }}>📊 报工单汇总</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px 4px' }}>
         {items.map((it) => (
-          <div key={it.label} style={{ textAlign: 'center', padding: '4px 0' }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: it.color, lineHeight: 1.2 }}>{it.value}</div>
+          <div key={it.label} style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: it.color }}>{it.value}</div>
             <div style={{ fontSize: 10, color: '#aaa', marginTop: 2 }}>{it.label}</div>
           </div>
         ))}
@@ -389,538 +371,13 @@ function MobileReportStatsBar({ stats, reportQty }: { stats: ReturnType<typeof c
   )
 }
 
-function ReportHeader({ report, onFinish, onBack }: { report: ReportOrder; onFinish: () => void; onBack: () => void }) {
-  const statusColor = String(report.status ?? 0) === '0' ? '#2196F3' : '#4CAF50'
+function SectionDivider({ title, color }: { title: string; color: string }) {
   return (
     <div style={{
-      background: '#fff', borderRadius: 10, padding: '10px 12px',
-      borderLeft: `3px solid ${statusColor}`, boxShadow: '0 1px 6px rgba(0,0,0,0.04)',
+      padding: '14px 12px 6px', display: 'flex', alignItems: 'center', gap: 8,
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontWeight: 700, fontSize: 14 }}>{report.report_no}</div>
-        <span style={{
-          fontSize: 11, padding: '2px 10px', borderRadius: 10,
-          background: statusColor + '15', color: statusColor, fontWeight: 600,
-        }}>{String(report.status ?? 0) === '0' ? '开工' : '完工'}</span>
-      </div>
-      <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>
-        {report.order_no} · {report.material_code} · {report.line_name}
-      </div>
-      <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>
-        报工数量 <b style={{ color: '#2196F3' }}>{report.report_qty}</b>
-      </div>
-      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-        <Button size="mini" fill="outline" onClick={onBack}>← 返回工单</Button>
-        {String(report.status ?? 0) === '0' && (
-          <Button size="mini" color="danger" onClick={onFinish}>完工</Button>
-        )}
-      </div>
+      <div style={{ width: 4, height: 16, background: color, borderRadius: 2 }} />
+      <div style={{ fontSize: 14, fontWeight: 600, color: '#333' }}>{title}</div>
     </div>
   )
 }
-
-// --- 投入/产出 ---
-function InputPanel({ activeProcess, current, procMaterials, isFirstProcess, setMaterials }: any) {
-  const [input, setInput] = useState('')
-  const [output, setOutput] = useState('')
-
-  const existingInput = procMaterials
-    .filter((m: any) => m.material_type === '投入')
-    .reduce((s: number, m: any) => s + (Number(m.quantity) || 0), 0)
-  const existingOutput = Number(current?.report_qty || 0)
-
-  const save = async () => {
-    if (!current || !activeProcess) return
-    const inv = Number(input), outv = Number(output)
-    if (!inv || inv <= 0) { Toast.show({ content: '请填投入数量', icon: 'fail' }); return }
-    try {
-      const r: any = await api.post('/production/process-materials', {
-        report_order_id: current.report_order_id, process_id: activeProcess.process_id,
-        material_type: '投入', quantity: inv, remarks: '',
-      })
-      Toast.show({ content: '已保存投入', icon: 'success' })
-      setMaterials((prev: any[]) => {
-        const r2 = r.data || {}
-        return [...prev, { ...r2, id: r2.material_id || Date.now(), process_id: activeProcess.process_id }]
-      })
-      setInput('')
-    } catch (e: any) { Toast.show({ content: e?.message || '保存失败', icon: 'fail' }) }
-  }
-
-  return (
-    <Section title={`${activeProcess.process_name} · 投入/产出`}>
-      <Stat label="已投入" value={existingInput} unit="件" />
-      <Stat label="工单报工" value={existingOutput} unit="件" />
-      <div style={{ marginTop: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
-        <label style={{ fontSize: 13, color: '#666' }}>新投入</label>
-        <input
-          type="number" value={input} onChange={e => setInput(e.target.value)}
-          placeholder="数量"
-          style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid #e0e0e0', fontSize: 15 }}
-        />
-        <Button color="primary" size="small" onClick={save}>保存</Button>
-      </div>
-      {!isFirstProcess && (
-        <div style={{ marginTop: 10, fontSize: 11, color: '#aaa' }}>※ 第一道工序的投入数量将作为工单级投入量</div>
-      )}
-    </Section>
-  )
-}
-
-// --- 不良记录 ---
-function DefectPanel({ editable, rows, types, activeProcess, onAdd, onSave, onDel, onChange }: any) {
-  return (
-    <Section title={`${activeProcess.process_name} · 生产不良（${rows.length}）`}>
-      {!editable && <ReadonlyBanner />}
-      {types.length === 0 && (
-        <div style={{ fontSize: 12, color: '#999', padding: 10 }}>该工序无可用不良项目</div>
-      )}
-      {editable && types.length > 0 && (
-        <Button size="mini" color="primary" onClick={onAdd} style={{ marginBottom: 10 }}>+ 添加不良</Button>
-      )}
-      {rows.length === 0 ? (
-        <EmptyTip text="暂无不良记录" />
-      ) : (
-        rows.map((row: any, i: number) => {
-          const selectedType = types.find((t: any) => String(t.defect_id) === String(row.defect_type_id))
-          return (
-            <div key={row.id || i} style={{ borderTop: '1px solid #f0f0f0', padding: '10px 0' }}>
-              <SelectField
-                label="不良类型"
-                value={String(row.defect_type_id || '')}
-                options={types.map((t: any) => ({ label: `${t.defect_code} ${t.defect_name}`, value: String(t.defect_id) }))}
-                disabled={!editable}
-                onChange={(v) => {
-                  const t = types.find((x: any) => String(x.defect_id) === v)
-                  onChange(row, { defect_type_id: v, defect_code: t?.defect_code, defect_name: t?.defect_name })
-                }}
-              />
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
-                <label style={{ fontSize: 13, color: '#666' }}>数量</label>
-                <input
-                  type="number" min={0} value={Number(row.quantity || 0)}
-                  disabled={!editable}
-                  onChange={(e) => onChange(row, { quantity: Number(e.target.value) || 0 })}
-                  style={{
-                    flex: 1, padding: '8px 12px', borderRadius: 8,
-                    border: '1px solid #e0e0e0', fontSize: 15,
-                    background: !editable ? '#f5f5f5' : '#fff',
-                  }}
-                />
-                {editable && (
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <Button size="mini" color="primary" onClick={() => onSave(row)}>保存</Button>
-                    <Button size="mini" fill="outline" onClick={() => onDel(row)}>删</Button>
-                  </div>
-                )}
-              </div>
-              {selectedType?.defect_type && (
-                <div style={{ fontSize: 11, color: '#aaa', marginTop: 4 }}>分类: {selectedType.defect_type}</div>
-              )}
-            </div>
-          )
-        })
-      )}
-    </Section>
-  )
-}
-
-// --- 投料 ---
-function MaterialPanel({ editable, rows, activeProcess, isFirstProcess, current, setMaterials }: any) {
-  const [code, setCode] = useState('')
-  const [qty, setQty] = useState('')
-  const [type, setType] = useState<'投入' | '退回'>('投入')
-
-  const save = async () => {
-    if (!current || !activeProcess) return
-    if (!qty || Number(qty) <= 0) { Toast.show({ content: '数量 > 0', icon: 'fail' }); return }
-    if (!isFirstProcess && type === '退回') {
-      Toast.show({ content: '退回仅支持第一道工序', icon: 'fail' }); return
-    }
-    try {
-      const r: any = await api.post('/production/process-materials', {
-        report_order_id: current.report_order_id, process_id: activeProcess.process_id,
-        material_code: code, material_name: '', material_type: type,
-        quantity: Number(qty), remarks: '',
-      })
-      const d = r.data || {}
-      setMaterials((prev: any[]) => [...prev, { ...d, id: d.material_id || Date.now(), process_id: activeProcess.process_id }])
-      Toast.show({ content: '已保存', icon: 'success' }); setCode(''); setQty('')
-    } catch (e: any) { Toast.show({ content: e?.message || '失败', icon: 'fail' }) }
-  }
-
-  return (
-    <Section title={`${activeProcess.process_name} · 投料记录（${rows.length}）`}>
-      {!editable && <ReadonlyBanner />}
-      {editable && (
-        <div style={{ borderTop: '1px solid #f0f0f0', padding: '10px 0' }}>
-          <SelectField
-            label="类型"
-            value={type}
-            options={[
-              { label: '投入', value: '投入' },
-              ...(isFirstProcess ? [{ label: '退回', value: '退回' }] : []),
-            ]}
-            onChange={(v: any) => setType(v)}
-          />
-          <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input
-              placeholder="料号/说明" value={code} onChange={e => setCode(e.target.value)}
-              style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid #e0e0e0', fontSize: 14 }}
-            />
-            <input
-              type="number" placeholder="数量" value={qty} onChange={e => setQty(e.target.value)}
-              style={{ width: 100, padding: '10px 12px', borderRadius: 8, border: '1px solid #e0e0e0', fontSize: 14 }}
-            />
-            <Button size="small" color="primary" onClick={save}>添加</Button>
-          </div>
-        </div>
-      )}
-      {rows.length === 0 ? (
-        <EmptyTip text="暂无投料" />
-      ) : (
-        rows.map((m: any) => (
-          <div key={m.id} style={{ borderTop: '1px solid #f0f0f0', padding: '8px 0', fontSize: 13 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: m.material_type === '退回' ? '#f44336' : '#2196F3', fontWeight: 600 }}>
-                [{m.material_type}] {m.material_code || m.material_name || '—'}
-              </span>
-              <span style={{ fontWeight: 600 }}>×{m.quantity}</span>
-            </div>
-          </div>
-        ))
-      )}
-    </Section>
-  )
-}
-
-// --- 检验报废 ---
-function ScrapPanel({ editable, rows, types, current, setScraps }: any) {
-  const [defectTypeId, setDefectTypeId] = useState<string>('')
-  const [qty, setQty] = useState('')
-
-  const save = async () => {
-    if (!current) return
-    if (!defectTypeId) { Toast.show({ content: '请选报废项目', icon: 'fail' }); return }
-    if (!qty || Number(qty) <= 0) { Toast.show({ content: '数量 > 0', icon: 'fail' }); return }
-    try {
-      const r: any = await api.post('/production/scrap-defects', {
-        report_order_id: current.report_order_id, defect_type_id: Number(defectTypeId), quantity: Number(qty),
-      })
-      const d = r.data || {}
-      setScraps((prev: any[]) => [...prev, { ...d, id: d.scrap_id || Date.now() }])
-      Toast.show({ content: '已保存', icon: 'success' }); setQty(''); setDefectTypeId('')
-    } catch (e: any) { Toast.show({ content: e?.message || '失败', icon: 'fail' }) }
-  }
-
-  return (
-    <Section title={`检验报废（工单级 · ${rows.length}）`}>
-      {!editable && <ReadonlyBanner />}
-      {editable && types.length > 0 && (
-        <div style={{ borderTop: '1px solid #f0f0f0', padding: '10px 0' }}>
-          <SelectField
-            label="报废项目"
-            value={defectTypeId}
-            options={types.map((t: any) => ({ label: `${t.defect_code} ${t.defect_name}`, value: String(t.defect_id) }))}
-            onChange={setDefectTypeId}
-          />
-          <div style={{ marginTop: 8, display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input
-              type="number" placeholder="数量" value={qty} onChange={e => setQty(e.target.value)}
-              style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid #e0e0e0', fontSize: 14 }}
-            />
-            <Button size="small" color="primary" onClick={save}>添加</Button>
-          </div>
-        </div>
-      )}
-      {rows.length === 0 ? (
-        <EmptyTip text="暂无报废" />
-      ) : (
-        rows.map((s: any) => (
-          <div key={s.id} style={{ borderTop: '1px solid #f0f0f0', padding: '8px 0', fontSize: 13, display: 'flex', justifyContent: 'space-between' }}>
-            <span>{s.defect_name || s.defect_type || '—'}</span>
-            <span style={{ color: '#f44336', fontWeight: 600 }}>×{s.quantity}</span>
-          </div>
-        ))
-      )}
-    </Section>
-  )
-}
-
-// --- 工时记录 ---
-function ExceptionPanel({ editable, rows, current, setExceptions }: any) {
-  const [exceptionType, setExceptionType] = useState('')
-  const [startTime, setStartTime] = useState('')
-  const [endTime, setEndTime] = useState('')
-  const [remark, setRemark] = useState('')
-
-  const EXCEPTION_TYPES = ['换型换线', '设备故障', '质量异常', '待料', '工装调整', '其他']
-
-  const save = async () => {
-    if (!current) return
-    if (!exceptionType) { Toast.show({ content: '请选异常类型', icon: 'fail' }); return }
-    try {
-      const payload: any = {
-        report_order_id: current.report_order_id,
-        exception_type: exceptionType,
-        start_time: startTime || new Date().toISOString().slice(0, 19).replace('T', ' '),
-        end_time: endTime || null,
-        remark: remark || null,
-      }
-      if (startTime && endTime) {
-        const s = new Date(startTime).getTime()
-        const e = new Date(endTime).getTime()
-        if (e > s) payload.duration = Math.round((e - s) / 60000)
-      }
-      const r: any = await api.post('/production/process-exceptions', payload)
-      const d = r.data || {}
-      setExceptions((prev: any[]) => [...prev, { ...d, id: d.exception_id || Date.now() }])
-      Toast.show({ content: '已保存', icon: 'success' })
-      setExceptionType(''); setStartTime(''); setEndTime(''); setRemark('')
-    } catch (e: any) { Toast.show({ content: e?.message || '保存失败', icon: 'fail' }) }
-  }
-
-  return (
-    <Section title={`工时记录（工单级 · ${rows.length}）`}>
-      {!editable && <ReadonlyBanner />}
-      {editable && (
-        <div style={{ borderTop: '1px solid #f0f0f0', padding: '10px 0' }}>
-          <SelectField
-            label="异常类型" value={exceptionType}
-            options={EXCEPTION_TYPES.map(t => ({ label: t, value: t }))}
-            onChange={setExceptionType}
-          />
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <input
-              type="datetime-local" value={startTime} onChange={e => setStartTime(e.target.value)}
-              placeholder="开始时间"
-              style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid #e0e0e0', fontSize: 13 }}
-            />
-            <input
-              type="datetime-local" value={endTime} onChange={e => setEndTime(e.target.value)}
-              placeholder="结束时间"
-              style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1px solid #e0e0e0', fontSize: 13 }}
-            />
-          </div>
-          <input
-            type="text" placeholder="备注（可选）" value={remark} onChange={e => setRemark(e.target.value)}
-            style={{ width: '100%', marginTop: 8, padding: '10px 12px', borderRadius: 8, border: '1px solid #e0e0e0', fontSize: 13 }}
-          />
-          <div style={{ marginTop: 10 }}>
-            <Button size="small" color="primary" onClick={save}>添加工时</Button>
-          </div>
-        </div>
-      )}
-      {rows.length === 0 ? (
-        <EmptyTip text="暂无工时记录" />
-      ) : (
-        rows.map((e: any) => (
-          <div key={e.id} style={{ borderTop: '1px solid #f0f0f0', padding: '8px 0', fontSize: 13 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontWeight: 500 }}>{e.exception_type || '—'}</span>
-              <span style={{ color: '#ff9800' }}>{e.duration ? `${e.duration}分钟` : '进行中'}</span>
-            </div>
-            <div style={{ color: '#999', fontSize: 11, marginTop: 2 }}>
-              {e.start_time ? e.start_time.slice(5, 16).replace('T', ' ') : '—'} → {e.end_time ? e.end_time.slice(5, 16).replace('T', ' ') : '至今'}
-            </div>
-            {e.remark && <div style={{ color: '#aaa', fontSize: 11, marginTop: 2 }}>📝 {e.remark}</div>}
-          </div>
-        ))
-      )}
-    </Section>
-  )
-}
-
-// --- 人员工时 ---
-function ManpowerPanel({ editable, manpower, current, setManpower }: any) {
-  const [skilled, setSkilled] = useState<number>(0)
-  const [general, setGeneral] = useState<number>(0)
-  const [labor, setLabor] = useState<number>(0)
-  const [other, setOther] = useState<number>(0)
-
-  useEffect(() => {
-    if (manpower) {
-      setSkilled(Number(manpower.skilled_count || 0))
-      setGeneral(Number(manpower.general_count || 0))
-      setLabor(Number(manpower.labor_count || 0))
-      setOther(Number(manpower.other_count || 0))
-    }
-  }, [manpower])
-
-  const save = async () => {
-    if (!current) return
-    const total = skilled + general + labor + other
-    if (total <= 0) { Toast.show({ content: '请填至少一项人数', icon: 'fail' }); return }
-    const payload = {
-      report_order_id: current.report_order_id,
-      skilled_count: skilled, general_count: general,
-      labor_count: labor, other_count: other,
-    }
-    try {
-      let r: any
-      if (manpower?.record_id) {
-        r = await api.put(`/production/manpower-records/${manpower.record_id}`, payload)
-      } else {
-        r = await api.post('/production/manpower-records', payload)
-      }
-      const d = (r as any).data || manpower || {}
-      setManpower({ ...d, id: d.record_id || d.id })
-      Toast.show({ content: '已保存', icon: 'success' })
-    } catch (e: any) { Toast.show({ content: e?.message || '失败', icon: 'fail' }) }
-  }
-
-  return (
-    <Section title="人员工时（改人数即可，工时自动算）">
-      {!editable && <ReadonlyBanner />}
-      <div style={{ fontSize: 12, color: '#888', marginBottom: 10 }}>
-        开工时间: {current?.report_time?.slice(0, 16) || '—'}
-      </div>
-      <NumField label="技工" value={skilled} onChange={setSkilled} disabled={!editable} />
-      <NumField label="普工" value={general} onChange={setGeneral} disabled={!editable} />
-      <NumField label="劳务" value={labor} onChange={setLabor} disabled={!editable} />
-      <NumField label="其他" value={other} onChange={setOther} disabled={!editable} />
-      {editable && <Button color="primary" size="small" block onClick={save} style={{ marginTop: 12 }}>保存人员配置</Button>}
-    </Section>
-  )
-}
-
-// ============= 通用小组件 =============
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div style={{
-      background: '#fff', borderRadius: 10, padding: '12px 14px',
-      marginBottom: 10, boxShadow: '0 1px 4px rgba(0,0,0,0.03)',
-    }}>
-      <div style={{ fontSize: 12, color: '#888', fontWeight: 600, marginBottom: 8 }}>{title}</div>
-      {children}
-    </div>
-  )
-}
-function Stat({ label, value, unit }: { label: string; value: number; unit?: string }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 13 }}>
-      <span style={{ color: '#666' }}>{label}</span>
-      <span style={{ fontWeight: 600, color: '#2196F3' }}>{value}{unit}</span>
-    </div>
-  )
-}
-function EmptyTip({ text }: { text: string }) {
-  return <div style={{ textAlign: 'center', padding: 20, color: '#bbb', fontSize: 12 }}>— {text} —</div>
-}
-function ReadonlyBanner() {
-  return (
-    <div style={{
-      background: '#f5f5f5', color: '#999', fontSize: 11, padding: '6px 10px',
-      borderRadius: 6, marginBottom: 10, textAlign: 'center',
-    }}>报工单已完工 · 只读</div>
-  )
-}
-function NumField({ label, value, onChange, disabled }: { label: string; value: number; onChange: (v: number) => void; disabled?: boolean }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0' }}>
-      <span style={{ width: 50, fontSize: 13, color: '#666' }}>{label}</span>
-      <input
-        type="number" min={0} value={value} disabled={disabled}
-        onChange={(e) => onChange(Number(e.target.value) || 0)}
-        style={{
-          flex: 1, padding: '8px 12px', borderRadius: 8,
-          border: '1px solid #e0e0e0', fontSize: 15, background: disabled ? '#f5f5f5' : '#fff',
-        }}
-      />
-    </div>
-  )
-}
-function SelectField({ label, value, options, onChange, disabled }: any) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <span style={{ width: 60, fontSize: 13, color: '#666' }}>{label}</span>
-      <select
-        value={value} disabled={disabled}
-        onChange={(e) => onChange(e.target.value)}
-        style={{
-          flex: 1, padding: '10px 12px', borderRadius: 8,
-          border: '1px solid #e0e0e0', fontSize: 14, background: '#fff',
-        }}
-      >
-        <option value="">请选择</option>
-        {options.map((o: any) => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-    </div>
-  )
-}
-
-// ============= 阶段1：工单选择 =============
-function SelectPhase({ orders, openReports, loading, onStart, onEnter }: any) {
-  return (
-    <div className="mobile-page-fixed-header">
-      <div className="mobile-sticky-header">
-        <div style={{ fontWeight: 600, fontSize: 16, padding: '8px 0' }}>选择或创建报工单</div>
-      </div>
-      <div className="mobile-page-scroll-list">
-        {loading && <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>}
-
-        {/* 已开工 */}
-        {openReports.length > 0 && (
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 12, color: '#888', padding: '4px 4px 6px', fontWeight: 600 }}>
-              🔥 已开工（{openReports.length}）
-            </div>
-            {openReports.map((r: ReportOrder) => (
-              <div key={r.report_order_id} onClick={() => onEnter(r)} style={selectCard('#2196F3')}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontWeight: 700, fontSize: 14 }}>{r.report_no}</span>
-                  <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#2196F315', color: '#2196F3' }}>开工</span>
-                </div>
-                <div style={{ fontSize: 12, color: '#666', marginTop: 6 }}>{r.order_no} · {r.material_code}</div>
-                <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>📍 {r.line_name} · 报工{r.report_qty}</div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* 待开工 */}
-        <div style={{ fontSize: 12, color: '#888', padding: '8px 4px 6px', fontWeight: 600 }}>
-          📋 待开工订单（{orders.length}）
-        </div>
-        {orders.length === 0 && !loading && (
-          <div style={{ textAlign: 'center', padding: 40, color: '#bbb', fontSize: 13 }}>
-            暂无可开工订单，请先在 PC 端下发生产订单
-          </div>
-        )}
-        {orders.map((o: OrderRow) => {
-          const hasOpen = openReports.some(r => r.order_id === o.order_id && String(r.status ?? 0) !== '1')
-          return (
-            <div key={o.order_id} style={selectCard('#FF9800')}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontWeight: 700, fontSize: 14 }}>{o.order_no}</span>
-                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 10, background: '#FF980015', color: '#FF9800' }}>{o.status}</span>
-              </div>
-              <div style={{ fontSize: 12, color: '#666', marginTop: 6, wordBreak: 'break-all' }}>
-                {o.material_code} · {o.material_name}
-              </div>
-              <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>
-                计划 {o.planned_qty} · 已报 {o.finished_qty ?? 0}
-              </div>
-              <div style={{ marginTop: 10 }} onClick={e => e.stopPropagation()}>
-                {hasOpen ? (
-                  <Button size="mini" color="primary" onClick={() => {
-                    const r = openReports.find(x => x.order_id === o.order_id && String(x.status ?? 0) !== '1')
-                    if (r) onEnter(r)
-                  }}>进入报工</Button>
-                ) : (
-                  <Button size="mini" color="primary" onClick={() => onStart(o)}>开工</Button>
-                )}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-const selectCard = (color: string): React.CSSProperties => ({
-  background: '#fff', borderRadius: 12, padding: 14, marginBottom: 10,
-  boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
-  borderLeft: `3px solid ${color}`, cursor: 'pointer',
-})
