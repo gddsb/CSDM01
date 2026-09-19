@@ -44,9 +44,11 @@ export default function MobileProcessReporting() {
   const [processes, setProcesses] = useState<ProcessRow[]>([])
   const [activeProcId, setActiveProcId] = useState<number | null>(null)
 
-  // 工序报工组内部 Tab: defect | material
+  // 一级 Tab: process（工序报工）| report（工单报工）
+  const [groupTab, setGroupTab] = useState<'process' | 'report'>('process')
+  // 工序报工内部 Tab: defect | material
   const [processTab, setProcessTab] = useState<'defect' | 'material'>('defect')
-  // 工单报工组内部 Tab: scrap | exception | manpower
+  // 工单报工内部 Tab: scrap | exception | manpower
   const [reportTab, setReportTab] = useState<'scrap' | 'exception' | 'manpower'>('scrap')
 
   // 全量记录（SubPanel 各自按 process_id 过滤）
@@ -125,6 +127,7 @@ export default function MobileProcessReporting() {
   const enterReporting = async (report: ReportOrder) => {
     setCurrent(report)
     setPhase('reporting')
+    setGroupTab('process')
     setProcessTab('defect')
     setReportTab('scrap')
     try {
@@ -215,96 +218,109 @@ export default function MobileProcessReporting() {
       <Header report={current} onBack={() => { setCurrent(null); setPhase('select') }} onFinish={finishReport} />
       <StatsBar stats={stats} reportQty={current.report_qty || 0} />
 
-      {/* ========== ② 工序报工组 ========== */}
-      <SectionDivider title="🔧 工序报工（分工序）" color="#1890ff" />
-
-      {/* 工序 Select */}
+      {/* ========== 报工区域（一个卡片 + 两个一级 Tab） ========== */}
       <div style={{
-        background: '#fff', padding: '10px 14px', borderBottom: '1px solid #eef0f3',
+        background: '#fff', margin: '8px 10px', borderRadius: 10,
+        boxShadow: '0 1px 4px rgba(0,0,0,.04)', overflow: 'hidden',
       }}>
-        <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>当前工序</div>
-        <select
-          value={activeProcId || ''}
-          onChange={(e) => setActiveProcId(e.target.value ? Number(e.target.value) : null)}
-          style={{
-            width: '100%', padding: '10px 12px', borderRadius: 8,
-            border: '1px solid #d9d9d9', fontSize: 14, background: '#fff',
-          }}
+        {/* 一级 Tab：工序报工 / 工单报工 */}
+        <Tabs
+          activeKey={groupTab}
+          onChange={(k) => setGroupTab(k as any)}
+          style={{ background: '#fafafa' }}
         >
-          {processes.map(p => (
-            <option key={p.process_id} value={p.process_id}>
-              {p.sort_order}. {p.process_name} {p.must_report ? '（必报）' : ''}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* 工序内部 Tab：不良 / 投料 */}
-      <div style={{ background: '#fff', marginTop: 1 }}>
-        <Tabs activeKey={processTab} onChange={(k) => setProcessTab(k as any)}>
-          <Tabs.Tab title="不良" key="defect" />
-          <Tabs.Tab title="投料" key="material" />
+          <Tabs.Tab title="🔧 工序报工" key="process" />
+          <Tabs.Tab title="📊 工单报工" key="report" />
         </Tabs>
-        <div style={{ padding: 12 }}>
-          {processTab === 'defect' && (
-            <ProcessDefectPanel
-              report={current}
-              activeProcessId={activeProcId}
-              editable={!!editable}
-              defectTypes={defectTypes}
-              allDefects={defects}
-              setAllDefects={setDefects}
-            />
-          )}
-          {processTab === 'material' && (
-            <ProcessMaterialPanel
-              report={current}
-              activeProcessId={activeProcId}
-              editable={!!editable}
-              materials={materialsMaster}
-              allMaterials={materials}
-              setAllMaterials={setMaterials}
-            />
-          )}
-        </div>
-      </div>
 
-      {/* ========== ③ 工单报工组 ========== */}
-      <SectionDivider title="📊 工单报工（全流程）" color="#722ed1" />
+        {/* === 工序报工 Tab === */}
+        {groupTab === 'process' && (
+          <div>
+            {/* 工序 Select（紧凑横排） */}
+            <div style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0', background: '#fafafa', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 12, color: '#888', flexShrink: 0 }}>工序</span>
+              <select
+                value={activeProcId || ''}
+                onChange={(e) => setActiveProcId(e.target.value ? Number(e.target.value) : null)}
+                style={{
+                  flex: 1, padding: '7px 10px', borderRadius: 6,
+                  border: '1px solid #ddd', fontSize: 13, background: '#fff',
+                }}
+              >
+                {processes.map(p => (
+                  <option key={p.process_id} value={p.process_id}>
+                    {p.sort_order}. {p.process_name}{p.must_report ? ' 必报' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {/* 工序内部 Tab：不良 / 投料 */}
+            <Tabs activeKey={processTab} onChange={(k) => setProcessTab(k as any)}>
+              <Tabs.Tab title="不良" key="defect" />
+              <Tabs.Tab title="投料" key="material" />
+            </Tabs>
+            <div style={{ padding: 10 }}>
+              {processTab === 'defect' && (
+                <ProcessDefectPanel
+                  report={current}
+                  activeProcessId={activeProcId}
+                  editable={!!editable}
+                  defectTypes={defectTypes}
+                  allDefects={defects}
+                  setAllDefects={setDefects}
+                />
+              )}
+              {processTab === 'material' && (
+                <ProcessMaterialPanel
+                  report={current}
+                  activeProcessId={activeProcId}
+                  editable={!!editable}
+                  materials={materialsMaster}
+                  allMaterials={materials}
+                  setAllMaterials={setMaterials}
+                />
+              )}
+            </div>
+          </div>
+        )}
 
-      <div style={{ background: '#fff', marginTop: 1 }}>
-        <Tabs activeKey={reportTab} onChange={(k) => setReportTab(k as any)}>
-          <Tabs.Tab title="报废" key="scrap" />
-          <Tabs.Tab title="工时" key="exception" />
-          <Tabs.Tab title="人员" key="manpower" />
-        </Tabs>
-        <div style={{ padding: 12 }}>
-          {reportTab === 'scrap' && (
-            <ScrapPanel
-              report={current}
-              editable={!!editable}
-              scrapTypes={scrapTypes}
-              rows={scraps}
-              setRows={setScraps}
-            />
-          )}
-          {reportTab === 'exception' && (
-            <ExceptionPanel
-              report={current}
-              editable={!!editable}
-              rows={exceptions}
-              setRows={setExceptions}
-            />
-          )}
-          {reportTab === 'manpower' && (
-            <ManpowerPanel
-              report={current}
-              editable={!!editable}
-              manpower={manpower}
-              setManpower={setManpower}
-            />
-          )}
-        </div>
+        {/* === 工单报工 Tab === */}
+        {groupTab === 'report' && (
+          <div>
+            <Tabs activeKey={reportTab} onChange={(k) => setReportTab(k as any)}>
+              <Tabs.Tab title="报废" key="scrap" />
+              <Tabs.Tab title="工时" key="exception" />
+              <Tabs.Tab title="人员" key="manpower" />
+            </Tabs>
+            <div style={{ padding: 10 }}>
+              {reportTab === 'scrap' && (
+                <ScrapPanel
+                  report={current}
+                  editable={!!editable}
+                  scrapTypes={scrapTypes}
+                  rows={scraps}
+                  setRows={setScraps}
+                />
+              )}
+              {reportTab === 'exception' && (
+                <ExceptionPanel
+                  report={current}
+                  editable={!!editable}
+                  rows={exceptions}
+                  setRows={setExceptions}
+                />
+              )}
+              {reportTab === 'manpower' && (
+                <ManpowerPanel
+                  report={current}
+                  editable={!!editable}
+                  manpower={manpower}
+                  setManpower={setManpower}
+                />
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <div style={{ height: 40 }} />
@@ -319,26 +335,32 @@ function Header({ report, onBack, onFinish }: { report: ReportOrder; onBack: () 
   return (
     <div style={{
       background: 'linear-gradient(135deg,#1890ff,#096dd9)', color: '#fff',
-      padding: '14px 16px',
+      padding: '12px 14px',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <div style={{ fontSize: 17, fontWeight: 700 }}>📝 {report.report_no}</div>
-        <span style={{
-          fontSize: 11, padding: '2px 8px', borderRadius: 10,
-          background: statusText === '已完工' ? '#52c41a' : statusText === '生产中' ? '#faad14' : 'rgba(255,255,255,.25)',
-        }}>{statusText}</span>
-      </div>
-      <div style={{ fontSize: 12, opacity: .9 }}>
-        订单 {report.order_no} · {report.line_name}
-      </div>
-      <div style={{ fontSize: 12, opacity: .9, marginTop: 2 }}>
-        {report.material_code} {report.material_name} · 报工 {report.report_qty}
-      </div>
-      <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-        <Button size="mini" fill="outline" color="white" onClick={onBack}>← 返回</Button>
-        {String(report.status) !== '4' && String(report.status) !== '已完工' && (
-          <Button size="mini" color="danger" onClick={onFinish} style={{ background: '#ff4d4f' }}>✓ 完工</Button>
-        )}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+        {/* 左侧：工单信息 */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 16, fontWeight: 700 }}>📝 {report.report_no}</div>
+          <div style={{ fontSize: 11, opacity: .85, marginTop: 2 }}>
+            订单 {report.order_no} · {report.line_name}
+          </div>
+          <div style={{ fontSize: 11, opacity: .85, marginTop: 1 }}>
+            {report.material_code} {report.material_name} · 报工 {report.report_qty}
+          </div>
+        </div>
+        {/* 右侧：状态 + 按钮 */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+          <span style={{
+            fontSize: 11, padding: '2px 8px', borderRadius: 10,
+            background: statusText === '已完工' ? '#52c41a' : statusText === '生产中' ? '#faad14' : 'rgba(255,255,255,.25)',
+          }}>{statusText}</span>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <Button size="mini" fill="outline" color="white" onClick={onBack}>返回</Button>
+            {String(report.status) !== '4' && String(report.status) !== '已完工' && (
+              <Button size="mini" color="danger" onClick={onFinish} style={{ background: '#ff4d4f' }}>完工</Button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )

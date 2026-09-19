@@ -187,56 +187,53 @@ export function ProcessMaterialPanel({
         if (isExpanded) {
           return (
             <div key={rowKey} style={{ borderTop: '1px solid #e8e8e8', paddingTop: 10, marginTop: 6 }}>
-              {/* 编辑表单 */}
-              <select value={draft.material_type || '投入'} onChange={(e) => setDraft(d => ({ ...d, material_type: e.target.value as any }))} style={selStyle}>
-                <option value="投入">投入</option>
-                <option value="退回">退回</option>
-              </select>
-              <select value={draft.bas_material_id || ''} onChange={(e) => handleMaterialSelect(e.target.value)} style={{ ...selStyle, marginTop: 6 }}>
-                <option value="">请选择料品</option>
-                {filteredMasters.map(m => (
-                  <option key={m.bas_material_id} value={m.bas_material_id}>
-                    {m.material_code} {m.material_name} {m.specification ? `(${m.specification})` : ''}
-                  </option>
-                ))}
-              </select>
+              {/* 行1：类型 + 料品 同一行 */}
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <select value={draft.material_type || '投入'} onChange={(e) => setDraft(d => ({ ...d, material_type: e.target.value as any }))}
+                  style={{ width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }}>
+                  <option value="投入">投入</option>
+                  <option value="退回">退回</option>
+                </select>
+                <select value={draft.bas_material_id || ''} onChange={(e) => handleMaterialSelect(e.target.value)}
+                  style={{ flex: 1, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }}>
+                  <option value="">料品</option>
+                  {filteredMasters.map(m => (
+                    <option key={m.bas_material_id} value={m.bas_material_id}>
+                      {m.material_code} {m.material_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
               {draft.material_name && (
-                <div style={{ fontSize: 11, color: '#2196F3', marginTop: 4, marginBottom: 4 }}>
+                <div style={{ fontSize: 11, color: '#2196F3', marginTop: 3, marginBottom: 4 }}>
                   自动带出: {draft.material_name} {draft.specification && `· ${draft.specification}`}
                 </div>
               )}
-              <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-                <input
-                  placeholder="批号" value={draft.material_batch || ''}
+              {/* 行2：批号 + 包号 + 数量 + 保存/取消 同一行 */}
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
+                <input placeholder="批号" value={draft.material_batch || ''}
                   onChange={(e) => setDraft(d => ({ ...d, material_batch: e.target.value }))}
-                  style={{ ...inputStyle, flex: 1 }}
-                />
-                <input
-                  placeholder="包号" value={draft.package_no || ''}
+                  style={{ flex: 2, minWidth: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }} />
+                <input placeholder="包号" value={draft.package_no || ''}
                   onChange={(e) => setDraft(d => ({ ...d, package_no: e.target.value }))}
-                  style={{ ...inputStyle, flex: 1 }}
-                />
+                  style={{ flex: 2, minWidth: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }} />
+                <input type="number" min={0} placeholder="数量" value={draft.quantity || ''}
+                  onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
+                  style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }} />
+                <Button size="mini" color="primary" onClick={handleSave} style={{ flexShrink: 0 }}>保存</Button>
+                <Button size="mini" fill="outline" onClick={cancelEdit} style={{ flexShrink: 0 }}>取消</Button>
+                {draft.material_id && (
+                  <Button size="mini" fill="outline" onClick={() => handleDel(draft as MaterialRow)} style={{ flexShrink: 0 }}>删除</Button>
+                )}
               </div>
-              <input
-                type="number" min={0} value={draft.quantity || ''}
-                onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
-                placeholder="数量"
-                style={{ ...inputStyle, width: 130, marginTop: 8 }}
-              />
-              <div style={{ marginTop: 10 }}>
+              {/* 标签图片 */}
+              <div style={{ marginTop: 8 }}>
                 <ProcessImageUploader
                   reportNo={report.report_no} category="label"
                   value={Array.isArray(draft.label_images) ? draft.label_images : []}
                   onChange={(urls) => setDraft(d => ({ ...d, label_images: urls }))}
                   label="标签图片"
                 />
-              </div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                <Button size="mini" color="primary" onClick={handleSave}>💾 保存</Button>
-                <Button size="mini" fill="outline" onClick={cancelEdit}>取消</Button>
-                {draft.material_id && (
-                  <Button size="mini" fill="outline" style={{ marginLeft: 'auto' }} onClick={() => handleDel(draft as MaterialRow)}>🗑 删除</Button>
-                )}
               </div>
             </div>
           )
@@ -280,39 +277,48 @@ export function ProcessMaterialPanel({
 
       {expandedId === '__new__' && (
         <div style={{ borderTop: '1px dashed #ddd', paddingTop: 10, marginTop: 6 }}>
-          <select value={draft.material_type} onChange={(e) => setDraft(d => ({ ...d, material_type: e.target.value as any }))} style={selStyle}>
-            <option value="投入">投入</option>
-            <option value="退回">退回</option>
-          </select>
-          <select value={draft.bas_material_id || ''} onChange={(e) => handleMaterialSelect(e.target.value)} style={{ ...selStyle, marginTop: 6 }}>
-            <option value="">请选择料品（先搜索）</option>
-            {filteredMasters.map(m => (
-              <option key={m.bas_material_id} value={m.bas_material_id}>
-                {m.material_code} {m.material_name} {m.specification ? `(${m.specification})` : ''}
-              </option>
-            ))}
-          </select>
+          {/* 行1：类型 + 料品 同一行 */}
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <select value={draft.material_type} onChange={(e) => setDraft(d => ({ ...d, material_type: e.target.value as any }))}
+              style={{ width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }}>
+              <option value="投入">投入</option>
+              <option value="退回">退回</option>
+            </select>
+            <select value={draft.bas_material_id || ''} onChange={(e) => handleMaterialSelect(e.target.value)}
+              style={{ flex: 1, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }}>
+              <option value="">料品</option>
+              {filteredMasters.map(m => (
+                <option key={m.bas_material_id} value={m.bas_material_id}>{m.material_code} {m.material_name}</option>
+              ))}
+            </select>
+          </div>
           {draft.material_name && (
-            <div style={{ fontSize: 11, color: '#2196F3', marginTop: 4, marginBottom: 4 }}>
+            <div style={{ fontSize: 11, color: '#2196F3', marginTop: 3, marginBottom: 4 }}>
               自动带出: {draft.material_name} {draft.specification && `· ${draft.specification}`}
             </div>
           )}
-          <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-            <input placeholder="批号" value={draft.material_batch || ''} onChange={(e) => setDraft(d => ({ ...d, material_batch: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
-            <input placeholder="包号" value={draft.package_no || ''} onChange={(e) => setDraft(d => ({ ...d, package_no: e.target.value }))} style={{ ...inputStyle, flex: 1 }} />
+          {/* 行2：批号 + 包号 + 数量 + 保存/取消 同一行 */}
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
+            <input placeholder="批号" value={draft.material_batch || ''}
+              onChange={(e) => setDraft(d => ({ ...d, material_batch: e.target.value }))}
+              style={{ flex: 2, minWidth: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }} />
+            <input placeholder="包号" value={draft.package_no || ''}
+              onChange={(e) => setDraft(d => ({ ...d, package_no: e.target.value }))}
+              style={{ flex: 2, minWidth: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }} />
+            <input type="number" min={0} placeholder="数量" value={draft.quantity || ''}
+              onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
+              style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }} />
+            <Button size="mini" color="primary" onClick={handleSave} style={{ flexShrink: 0 }}>保存</Button>
+            <Button size="mini" fill="outline" onClick={cancelEdit} style={{ flexShrink: 0 }}>取消</Button>
           </div>
-          <input type="number" min={0} value={draft.quantity || ''} onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))} placeholder="数量" style={{ ...inputStyle, width: 130, marginTop: 8 }} />
-          <div style={{ marginTop: 10 }}>
+          {/* 标签图片 */}
+          <div style={{ marginTop: 8 }}>
             <ProcessImageUploader
               reportNo={report.report_no} category="label"
               value={Array.isArray(draft.label_images) ? draft.label_images : []}
               onChange={(urls) => setDraft(d => ({ ...d, label_images: urls }))}
               label="标签图片"
             />
-          </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <Button size="mini" color="primary" onClick={handleSave}>💾 保存</Button>
-            <Button size="mini" fill="outline" onClick={cancelEdit}>取消</Button>
           </div>
         </div>
       )}

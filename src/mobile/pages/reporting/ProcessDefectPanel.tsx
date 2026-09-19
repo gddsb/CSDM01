@@ -177,59 +177,51 @@ export function ProcessDefectPanel({
         if (isExpanded) {
           return (
             <div key={rowKey} style={{ borderTop: '1px solid #e8e8e8', paddingTop: 10, marginTop: 6 }}>
-              {/* 编辑表单 */}
-              <select
-                value={draft.defect_type_id || ''}
-                onChange={(e) => {
-                  const id = e.target.value ? Number(e.target.value) : null
-                  const t = filteredTypes.find(x => x.defect_id === id)
-                  const defaultUnit = (t?.available_units && t.available_units[0]) || t?.defect_unit || ''
-                  setDraft(d => ({ ...d, defect_type_id: id, unit: d.unit || defaultUnit }))
-                }}
-                style={selStyle}
-              >
-                <option value="">请选择不良类型</option>
-                {filteredTypes.map(t => (
-                  <option key={t.defect_id} value={t.defect_id}>
-                    {t.defect_code} {t.defect_name}
-                  </option>
-                ))}
-              </select>
-              <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
-                <div style={{ flex: 1, display: 'flex', gap: 8 }}>
-                  <select
-                    value={draft.unit || ''}
-                    onChange={(e) => setDraft(d => ({ ...d, unit: e.target.value }))}
-                    style={{ ...selStyle, flex: 1 }}
-                  >
-                    <option value="">单位</option>
-                    {getUnitOptions(draft.defect_type_id).map(u => (
-                      <option key={u} value={u}>{u}</option>
-                    ))}
-                  </select>
-                  <input
-                    type="number" min={0} value={draft.quantity || ''}
-                    onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
-                    placeholder="数量"
-                    style={{ ...inputStyle, width: 100 }}
-                  />
-                </div>
+              {/* 紧凑一行：类型 + 单位 + 数量 + 保存/取消 */}
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                <select
+                  value={draft.defect_type_id || ''}
+                  onChange={(e) => {
+                    const id = e.target.value ? Number(e.target.value) : null
+                    const t = filteredTypes.find(x => x.defect_id === id)
+                    const defaultUnit = (t?.available_units && t.available_units[0]) || t?.defect_unit || ''
+                    setDraft(d => ({ ...d, defect_type_id: id, unit: d.unit || defaultUnit }))
+                  }}
+                  style={{ flex: 2, minWidth: 110, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }}
+                >
+                  <option value="">不良类型</option>
+                  {filteredTypes.map(t => (
+                    <option key={t.defect_id} value={t.defect_id}>{t.defect_code} {t.defect_name}</option>
+                  ))}
+                </select>
+                <select
+                  value={draft.unit || ''}
+                  onChange={(e) => setDraft(d => ({ ...d, unit: e.target.value }))}
+                  style={{ flex: 1, minWidth: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }}
+                >
+                  <option value="">单位</option>
+                  {getUnitOptions(draft.defect_type_id).map(u => <option key={u} value={u}>{u}</option>)}
+                </select>
+                <input
+                  type="number" min={0} value={draft.quantity || ''}
+                  onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
+                  placeholder="数量"
+                  style={{ width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }}
+                />
+                <Button size="mini" color="primary" onClick={handleSave} style={{ flexShrink: 0 }}>保存</Button>
+                <Button size="mini" fill="outline" onClick={cancelEdit} style={{ flexShrink: 0 }}>取消</Button>
+                {draft.defect_id && (
+                  <Button size="mini" fill="outline" onClick={() => handleDel(draft as DefectRow)} style={{ flexShrink: 0 }}>删除</Button>
+                )}
               </div>
-              <div style={{ marginTop: 10 }}>
+              {/* 不良图片 */}
+              <div style={{ marginTop: 8 }}>
                 <ProcessImageUploader
-                  reportNo={report.report_no}
-                  category="defect"
+                  reportNo={report.report_no} category="defect"
                   value={Array.isArray(draft.defect_images) ? draft.defect_images : []}
                   onChange={(urls) => setDraft(d => ({ ...d, defect_images: urls }))}
                   label="不良图片"
                 />
-              </div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                <Button size="mini" color="primary" onClick={handleSave}>💾 保存</Button>
-                <Button size="mini" fill="outline" onClick={cancelEdit}>取消</Button>
-                {draft.defect_id && (
-                  <Button size="mini" fill="outline" style={{ marginLeft: 'auto' }} onClick={() => handleDel(draft as DefectRow)}>🗑 删除</Button>
-                )}
               </div>
             </div>
           )
@@ -273,48 +265,48 @@ export function ProcessDefectPanel({
       {/* 新增展开表单 */}
       {expandedId === '__new__' && (
         <div style={{ borderTop: '1px dashed #ddd', paddingTop: 10, marginTop: 6 }}>
-          <select
-            value={draft.defect_type_id || ''}
-            onChange={(e) => {
-              const id = e.target.value ? Number(e.target.value) : null
-              const t = filteredTypes.find(x => x.defect_id === id)
-              const defaultUnit = (t?.available_units && t.available_units[0]) || t?.defect_unit || ''
-              setDraft(d => ({ ...d, defect_type_id: id, unit: defaultUnit }))
-            }}
-            style={selStyle}
-          >
-            <option value="">请选择不良类型</option>
-            {filteredTypes.map(t => (
-              <option key={t.defect_id} value={t.defect_id}>{t.defect_code} {t.defect_name}</option>
-            ))}
-          </select>
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          {/* 紧凑一行：类型 + 单位 + 数量 + 保存/取消 */}
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <select
+              value={draft.defect_type_id || ''}
+              onChange={(e) => {
+                const id = e.target.value ? Number(e.target.value) : null
+                const t = filteredTypes.find(x => x.defect_id === id)
+                const defaultUnit = (t?.available_units && t.available_units[0]) || t?.defect_unit || ''
+                setDraft(d => ({ ...d, defect_type_id: id, unit: defaultUnit }))
+              }}
+              style={{ flex: 2, minWidth: 110, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }}
+            >
+              <option value="">不良类型</option>
+              {filteredTypes.map(t => (
+                <option key={t.defect_id} value={t.defect_id}>{t.defect_code} {t.defect_name}</option>
+              ))}
+            </select>
             <select
               value={draft.unit || ''}
               onChange={(e) => setDraft(d => ({ ...d, unit: e.target.value }))}
-              style={{ ...selStyle, flex: 1 }}
+              style={{ flex: 1, minWidth: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }}
             >
-              <option value="">单位（不良类型自动带）</option>
+              <option value="">单位</option>
               {getUnitOptions(draft.defect_type_id).map(u => <option key={u} value={u}>{u}</option>)}
             </select>
             <input
               type="number" min={0} value={draft.quantity || ''}
               onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
               placeholder="数量"
-              style={{ ...inputStyle, width: 110 }}
+              style={{ width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }}
             />
+            <Button size="mini" color="primary" onClick={handleSave} style={{ flexShrink: 0 }}>保存</Button>
+            <Button size="mini" fill="outline" onClick={cancelEdit} style={{ flexShrink: 0 }}>取消</Button>
           </div>
-          <div style={{ marginTop: 10 }}>
+          {/* 不良图片 */}
+          <div style={{ marginTop: 8 }}>
             <ProcessImageUploader
               reportNo={report.report_no} category="defect"
               value={Array.isArray(draft.defect_images) ? draft.defect_images : []}
               onChange={(urls) => setDraft(d => ({ ...d, defect_images: urls }))}
               label="不良图片"
             />
-          </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <Button size="mini" color="primary" onClick={handleSave}>💾 保存</Button>
-            <Button size="mini" fill="outline" onClick={cancelEdit}>取消</Button>
           </div>
         </div>
       )}
