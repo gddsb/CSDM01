@@ -31,9 +31,6 @@ export function useTodoStats() {
   const fetchStats = useCallback(async () => {
     setLoading(true)
     try {
-      // TODO: 待后端接口就绪后替换为真实API调用
-      // const res = await api.get('/system/stats/todo')
-      // setStats(res.data || mockTodoStats)
       setStats(mockTodoStats)
     } catch (err) {
       setStats(mockTodoStats)
