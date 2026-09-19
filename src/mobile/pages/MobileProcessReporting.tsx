@@ -46,10 +46,10 @@ export default function MobileProcessReporting() {
 
   // 一级 Tab: process（工序报工）| report（工单报工）
   const [groupTab, setGroupTab] = useState<'process' | 'report'>('process')
-  // 工序报工内部 Tab: defect | material
-  const [processTab, setProcessTab] = useState<'defect' | 'material'>('defect')
-  // 工单报工内部 Tab: scrap | exception | manpower
-  const [reportTab, setReportTab] = useState<'scrap' | 'exception' | 'manpower'>('scrap')
+  // 工序报工内部 Tab: defect | material | scrap（检验报废移到这里）
+  const [processTab, setProcessTab] = useState<'defect' | 'material' | 'scrap'>('defect')
+  // 工单报工内部 Tab: exception | manpower（报废已移到工序记录）
+  const [reportTab, setReportTab] = useState<'exception' | 'manpower'>('exception')
 
   // 全量记录（SubPanel 各自按 process_id 过滤）
   // 🔑 注意：defectsRaw 是 ProcessDefect 全量（不良+报废共用同一张表），前端按 scrapTypes 字典分类
@@ -134,7 +134,7 @@ export default function MobileProcessReporting() {
     setPhase('reporting')
     setGroupTab('process')
     setProcessTab('defect')
-    setReportTab('scrap')
+    setReportTab('exception')
     try {
       // 工序
       const procs: any = await api.get(`/production/report-orders/${report.report_order_id}/processes`)
@@ -247,8 +247,8 @@ export default function MobileProcessReporting() {
           onChange={(k) => setGroupTab(k as any)}
           style={{ background: '#fafafa' }}
         >
-          <Tabs.Tab title="🔧 工序报工" key="process" />
-          <Tabs.Tab title="📊 工单报工" key="report" />
+          <Tabs.Tab title="🔧 工序记录" key="process" />
+          <Tabs.Tab title="📊 工单记录" key="report" />
         </Tabs>
 
         {/* === 工序报工 Tab === */}
@@ -260,10 +260,11 @@ export default function MobileProcessReporting() {
               activeProcId={activeProcId}
               onChange={setActiveProcId}
             />
-            {/* 工序内部 Tab：不良 / 投料 */}
+            {/* 工序内部 Tab：不良记录 / 物料记录 / 检验报废（移到这里） */}
             <Tabs activeKey={processTab} onChange={(k) => setProcessTab(k as any)}>
-              <Tabs.Tab title="不良" key="defect" />
-              <Tabs.Tab title="投料" key="material" />
+              <Tabs.Tab title="不良记录" key="defect" />
+              <Tabs.Tab title="物料记录" key="material" />
+              <Tabs.Tab title="检验报废" key="scrap" />
             </Tabs>
             <div style={{ padding: 10 }}>
               {processTab === 'defect' && (
@@ -291,20 +292,7 @@ export default function MobileProcessReporting() {
                   setAllMaterials={setMaterials}
                 />
               )}
-            </div>
-          </div>
-        )}
-
-        {/* === 工单报工 Tab === */}
-        {groupTab === 'report' && (
-          <div>
-            <Tabs activeKey={reportTab} onChange={(k) => setReportTab(k as any)}>
-              <Tabs.Tab title="报废" key="scrap" />
-              <Tabs.Tab title="工时" key="exception" />
-              <Tabs.Tab title="人员" key="manpower" />
-            </Tabs>
-            <div style={{ padding: 10 }}>
-              {reportTab === 'scrap' && (
+              {processTab === 'scrap' && (
                 <ScrapPanel
                   report={current}
                   activeProcessId={activeProcId}
@@ -333,6 +321,18 @@ export default function MobileProcessReporting() {
                   })}
                 />
               )}
+            </div>
+          </div>
+        )}
+
+        {/* === 工单记录 Tab（只剩工时 + 人员，报废已移到工序记录） === */}
+        {groupTab === 'report' && (
+          <div>
+            <Tabs activeKey={reportTab} onChange={(k) => setReportTab(k as any)}>
+              <Tabs.Tab title="工时记录" key="exception" />
+              <Tabs.Tab title="人员记录" key="manpower" />
+            </Tabs>
+            <div style={{ padding: 10 }}>
               {reportTab === 'exception' && (
                 <ExceptionPanel
                   report={current}

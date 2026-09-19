@@ -46,6 +46,17 @@ export default function ProcessReporting() {
 
   const [selectedProcessId, setSelectedProcessId] = useState(null)
   const [activeTab, setActiveTab] = useState('production-defect')
+  // 🔑 一级分组 Tab：工序记录 / 工单记录
+  const [activeGroup, setActiveGroup] = useState<'process' | 'report'>('process')
+  // 子 Tab 归属映射 → 切换一级 Tab 时自动落到合理的子 Tab
+  const tabToGroup = {
+    'production-defect': 'process',
+    'production-material': 'process',
+    'scrap-defect': 'process',
+    'exception': 'report',
+    'manpower': 'report',
+  } as const
+  const defaultSubTabOfGroup = { process: 'production-defect', report: 'exception' } as const
   const [prevProcessQualifiedQty, setPrevProcessQualifiedQty] = useState(0)
 
   const [imageDrawerVisible, setImageDrawerVisible] = useState(false)
@@ -597,11 +608,29 @@ export default function ProcessReporting() {
         okText: '确认离开',
         okType: 'danger',
         cancelText: '继续编辑',
-        onOk: () => setActiveTab(newTab),
+        onOk: () => { setActiveTab(newTab); setActiveGroup(tabToGroup[newTab as keyof typeof tabToGroup] ?? activeGroup) },
       })
       return
     }
     setActiveTab(newTab)
+    setActiveGroup(tabToGroup[newTab as keyof typeof tabToGroup] ?? activeGroup)
+  }
+
+  // 🔑 切换一级分组 Tab（工序记录 / 工单记录）
+  const handleGroupChange = (group: 'process' | 'report') => {
+    if (hasUnsavedChanges) {
+      Modal.confirm({
+        title: '存在未保存的记录',
+        content: '当前页签有未保存的记录，离开将丢失这些数据。是否确认离开？',
+        okText: '确认离开',
+        okType: 'danger',
+        cancelText: '继续编辑',
+        onOk: () => { setActiveGroup(group); setActiveTab(defaultSubTabOfGroup[group]) },
+      })
+      return
+    }
+    setActiveGroup(group)
+    setActiveTab(defaultSubTabOfGroup[group])
   }
 
   // 打开新增报工 Modal
@@ -1037,12 +1066,49 @@ export default function ProcessReporting() {
     onChange: handleManpowerChange,
   })
 
+  // 所有子 Tab（平级定义，分组在下面 groupTabItems 里完成）
   const tabItems = [
     { key: 'production-defect', label: '不良记录' },
     { key: 'production-material', label: '物料记录' },
     { key: 'scrap-defect', label: '检验报废' },
     { key: 'exception', label: '工时记录' },
     { key: 'manpower', label: '人员记录' },
+  ]
+
+  // 🔑 一级 Tab 分组：工序记录 / 工单记录
+  const groupTabItems = [
+    {
+      key: 'process',
+      label: '🔧 工序记录',
+      children: (
+        <>
+          <Tabs
+            activeKey={activeTab}
+            onChange={handleTabChange}
+            items={tabItems.filter(t => tabToGroup[t.key as keyof typeof tabToGroup] === 'process')}
+          />
+          <div style={{ marginTop: 16 }}>
+            {renderTabContent(activeTab)}
+          </div>
+        </>
+      ),
+    },
+    {
+      key: 'report',
+      label: '📊 工单记录',
+      children: (
+        <>
+          <Tabs
+            activeKey={activeTab}
+            onChange={handleTabChange}
+            items={tabItems.filter(t => tabToGroup[t.key as keyof typeof tabToGroup] === 'report')}
+          />
+          <div style={{ marginTop: 16 }}>
+            {renderTabContent(activeTab)}
+          </div>
+        </>
+      ),
+    },
   ]
 
   const renderTabContent = (key: string) => {
@@ -1307,16 +1373,12 @@ export default function ProcessReporting() {
         <Card>
     <ReportStatsBar items={reportStatItems} />
 
+          {/* 🔑 一级分组 Tab：工序记录 / 工单记录，内嵌各自子 Tab */}
           <Tabs
-            activeKey={activeTab}
-            onChange={handleTabChange}
-            items={tabItems}
-          >
-          </Tabs>
-
-          <div style={{ marginTop: 16 }}>
-            {renderTabContent(activeTab)}
-          </div>
+            activeKey={activeGroup}
+            onChange={handleGroupChange}
+            items={groupTabItems}
+          />
         </Card>
       )}
 
