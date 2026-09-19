@@ -395,28 +395,36 @@ function Header({ report, onBack, onFinish }: { report: ReportOrder; onBack: () 
 }
 
 function StatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportStats>; reportQty: number }) {
-  const items = [
-    { label: '报工数量', value: reportQty, color: '#2196F3' },
-    { label: '合格数量', value: stats.expectedOutput > 0 ? Number(stats.expectedOutput.toFixed(1)) : 0, color: '#52c41a' },
-    { label: '制程不良', value: stats.defectProcess, color: '#fa8c16' },
-    { label: '来料不良', value: stats.defectMaterial, color: '#faad14' },
-    { label: '报废数量', value: stats.defectScrap, color: '#f5222d' },
-    { label: '异常工时', value: `${((stats.exceptionHours || 0) / 60).toFixed(1)}H`, color: '#eb2f96' },
+  // 6 个指标，分两行：第一行报工数量 + 合格数量（各 16ch），第二行剩余 4 项（各 10ch）
+  const row1 = [
+    { label: '报工数量', value: reportQty, color: '#2196F3', widthCh: 16 },
+    { label: '合格数量', value: stats.expectedOutput > 0 ? Number(stats.expectedOutput.toFixed(1)) : 0, color: '#52c41a', widthCh: 16 },
   ]
+  const row2 = [
+    { label: '制程不良', value: stats.defectProcess, color: '#fa8c16', widthCh: 10 },
+    { label: '来料不良', value: stats.defectMaterial, color: '#faad14', widthCh: 10 },
+    { label: '报废数量', value: stats.defectScrap, color: '#f5222d', widthCh: 10 },
+    { label: '异常工时', value: `${((stats.exceptionHours || 0) / 60).toFixed(1)}H`, color: '#eb2f96', widthCh: 10 },
+  ]
+  const renderRow = (items: typeof row1) => (
+    <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+      {items.map(it => (
+        <div key={it.label} style={{ width: `${it.widthCh}ch`, textAlign: 'center' }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: it.color }}>{it.value}</div>
+          <div style={{ fontSize: 10, color: '#aaa', marginTop: 2 }}>{it.label}</div>
+        </div>
+      ))}
+    </div>
+  )
   return (
     <div style={{
       background: '#fff', margin: '10px 10px 0', borderRadius: 10, padding: '10px 12px',
       boxShadow: '0 1px 4px rgba(0,0,0,.04)',
     }}>
       <div style={{ fontSize: 11, color: '#888', fontWeight: 600, marginBottom: 6 }}>📊 报工单汇总</div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px 4px' }}>
-        {items.map((it) => (
-          <div key={it.label} style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: it.color }}>{it.value}</div>
-            <div style={{ fontSize: 10, color: '#aaa', marginTop: 2 }}>{it.label}</div>
-          </div>
-        ))}
-      </div>
+      {renderRow(row1)}
+      <div style={{ height: 4 }} />
+      {renderRow(row2)}
     </div>
   )
 }

@@ -44,7 +44,11 @@ export default function ProcessReporting() {
   const [createForm] = Form.useForm()
   const [selectedCreateOrder, setSelectedCreateOrder] = useState<any>(null)
 
-  const [selectedProcessId, setSelectedProcessId] = useState(null)
+  // 三个独立工序选择器（不良/物料/报废 各自维护，互不影响）
+  const [defectProcessId, setDefectProcessId] = useState<number | null>(null)
+  const [materialProcessId, setMaterialProcessId] = useState<number | null>(null)
+  const [scrapProcessId, setScrapProcessId] = useState<number | null>(null)
+
   const [activeTab, setActiveTab] = useState('production-defect')
   // 🔑 一级分组 Tab：工序记录 / 工单记录
   const [activeGroup, setActiveGroup] = useState<'process' | 'report'>('process')
@@ -106,7 +110,7 @@ export default function ProcessReporting() {
 
   // 不良类型下拉选项（必须在 fetchAllData 之前定义，避免 TDZ 错误）
   // 制程不良记录页签：检验类型=制程检验类（兼容旧数据"制程检验类型"），不良类型=制程不良或来料不良
-  // 根据当前工序过滤：关联工序为空的不良项目在所有工序可用，有关联工序的只在关联工序中可用
+  // 按 defectProcessId 过滤关联工序
   const defectTypeOptions = useMemo(() => {
     const seen = new Set()
     return defectTypes
@@ -116,7 +120,7 @@ export default function ProcessReporting() {
       .filter(d => {
         const relatedProcesses = Array.isArray(d.related_processes) ? d.related_processes : []
         if (relatedProcesses.length === 0) return true
-        return relatedProcesses.includes(selectedProcessId)
+        return defectProcessId != null && relatedProcesses.includes(defectProcessId)
       })
       .filter(d => {
         if (seen.has(d.defect_id)) return false
@@ -132,10 +136,10 @@ export default function ProcessReporting() {
         defect_unit: d.defect_unit || '',
         available_units: d.available_units || '',
       }))
-  }, [defectTypes, selectedProcessId])
+  }, [defectTypes, defectProcessId])
 
   // 检验报废记录页签：检验类型=制程检验类型，不良类型=检验报废
-  // 根据当前工序过滤：关联工序为空的不良项目在所有工序可用，有关联工序的只在关联工序中可用
+  // 按 scrapProcessId 过滤关联工序
   const scrapTypeOptions = useMemo(() => {
     const seen = new Set()
     return defectTypes
@@ -145,7 +149,7 @@ export default function ProcessReporting() {
       .filter(d => {
         const relatedProcesses = Array.isArray(d.related_processes) ? d.related_processes : []
         if (relatedProcesses.length === 0) return true
-        return relatedProcesses.includes(selectedProcessId)
+        return scrapProcessId != null && relatedProcesses.includes(scrapProcessId)
       })
       .filter(d => {
         if (seen.has(d.defect_id)) return false
@@ -161,7 +165,7 @@ export default function ProcessReporting() {
         defect_unit: d.defect_unit || '',
         available_units: d.available_units || '',
       }))
-  }, [defectTypes, selectedProcessId])
+  }, [defectTypes, scrapProcessId])
 
   // 初始加载：不良类型、设备、订单、产线
   useEffect(() => {
@@ -222,6 +226,9 @@ export default function ProcessReporting() {
   const fetchReportProcesses = useCallback(async (reportOrderId) => {
     if (!reportOrderId) {
       setLineProcesses([])
+      setDefectProcessId(null)
+      setMaterialProcessId(null)
+      setScrapProcessId(null)
       return
     }
     try {
@@ -229,14 +236,15 @@ export default function ProcessReporting() {
       const procs = res.data || []
       const sorted = [...procs].sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0))
       setLineProcesses(sorted)
-      if (sorted.length > 0) {
-        setSelectedProcessId(sorted[0].process_id)
-      } else {
-        setSelectedProcessId(null)
-      }
+      const firstId = sorted.length > 0 ? sorted[0].process_id : null
+      setDefectProcessId(firstId)
+      setMaterialProcessId(firstId)
+      setScrapProcessId(firstId)
     } catch (err) {
       setLineProcesses([])
-      setSelectedProcessId(null)
+      setDefectProcessId(null)
+      setMaterialProcessId(null)
+      setScrapProcessId(null)
     }
   }, [])
 
@@ -332,18 +340,47 @@ export default function ProcessReporting() {
   }
 
   const fetchAllData = useCallback(async (reportOrderId) => {
-    if (!reportOrderId || !selectedProcessId) return
+    if (!reportOrderId) return
+    if (!defectProcessId && !materialProcessId && !scrapProcessId) return
     try {
-      const [defectRes, scrapRes, exceptionRes, manpowerRes, materialRes] = await Promise.all([
-        api.get('/production/process-defects', { params: { report_order_id: reportOrderId, process_id: selectedProcessId, page: 1, pageSize: 1000 } }),
-        api.get('/production/scrap-defects', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } }),
-        api.get('/production/process-exceptions', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } }),
-        api.get('/production/manpower-records', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } }),
-        api.get('/production/process-materials', { params: { report_order_id: reportOrderId, process_id: selectedProcessId, page: 1, pageSize: 1000 } }),
-      ])
+      const fetches: Promise<any>[] = []
+      // 不良（按 defectProcessId）
+      if (defectProcessId != null) {
+        fetches.push(api.get('/production/process-defects', {
+          params: { report_order_id: reportOrderId, process_id: defectProcessId, page: 1, pageSize: 1000 },
+        }))
+      } else {
+        fetches.push(Promise.resolve({ data: [] }))
+      }
+      // 报废（按 scrapProcessId，统一走 /process-defects）
+      if (scrapProcessId != null) {
+        fetches.push(api.get('/production/process-defects', {
+          params: { report_order_id: reportOrderId, process_id: scrapProcessId, page: 1, pageSize: 1000 },
+        }))
+      } else {
+        fetches.push(Promise.resolve({ data: [] }))
+      }
+      // 异常
+      fetches.push(api.get('/production/process-exceptions', {
+        params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 },
+      }))
+      // 人员
+      fetches.push(api.get('/production/manpower-records', {
+        params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 },
+      }))
+      // 物料（按 materialProcessId）
+      if (materialProcessId != null) {
+        fetches.push(api.get('/production/process-materials', {
+          params: { report_order_id: reportOrderId, process_id: materialProcessId, page: 1, pageSize: 1000 },
+        }))
+      } else {
+        fetches.push(Promise.resolve({ data: [] }))
+      }
+
+      const [defectRes, scrapRes, exceptionRes, manpowerRes, materialRes] = await Promise.all(fetches)
+
       setProdDefectList((defectRes.data || []).map(d => {
-        // 历史数据可能缺少 defect_code/defect_type，从下拉选项补充
-        let enriched = { ...d, id: d.defect_id, defect_images: parseImages(d.defect_images) }
+        let enriched: any = { ...d, id: d.defect_id, defect_images: parseImages(d.defect_images) }
         if ((!enriched.defect_code || !enriched.defect_type) && enriched.defect_type_id) {
           const opt = defectTypeOptions.find(o => String(o.value) === String(enriched.defect_type_id))
           if (opt) {
@@ -354,8 +391,9 @@ export default function ProcessReporting() {
         }
         return enriched
       }))
-      setScrapDefectList((scrapRes.data || []).filter(d => d.defect_type === '检验报废').map(d => {
-        let enriched = { ...d, id: d.scrap_id, defect_images: parseImages(d.defect_images) }
+      // 报废：从 /process-defects 结果里过滤 defect_type === '检验报废'
+      setScrapDefectList((scrapRes.data || []).filter((d: any) => d.defect_type === '检验报废').map((d: any) => {
+        let enriched: any = { ...d, id: d.defect_id ?? d.scrap_id, defect_images: parseImages(d.defect_images) }
         if ((!enriched.defect_code || !enriched.defect_type) && enriched.defect_type_id) {
           const opt = scrapTypeOptions.find(o => String(o.value) === String(enriched.defect_type_id))
           if (opt) {
@@ -366,11 +404,10 @@ export default function ProcessReporting() {
         }
         return enriched
       }))
-      setExceptionList((exceptionRes.data || []).map(e => ({ ...e, id: e.exception_id, exception_images: parseImages(e.exception_images) })))
-      setManpowerList((manpowerRes.data || []).map(m => ({ ...m, id: m.record_id })))
-      setMaterialList((materialRes.data || []).map(m => {
-        let enriched = { ...m, id: m.material_id, label_images: parseImages(m.label_images) }
-        // 后端只记录 bas_material_id，从物料主数据补充 material_code/material_name/specification
+      setExceptionList((exceptionRes.data || []).map((e: any) => ({ ...e, id: e.exception_id, exception_images: parseImages(e.exception_images) })))
+      setManpowerList((manpowerRes.data || []).map((m: any) => ({ ...m, id: m.record_id })))
+      setMaterialList((materialRes.data || []).map((m: any) => {
+        let enriched: any = { ...m, id: m.material_id, label_images: parseImages(m.label_images) }
         if (!enriched.material_code && enriched.bas_material_id) {
           const mat = materialOptions.find(opt => String(opt.value) === String(enriched.bas_material_id))
           if (mat) {
@@ -381,10 +418,10 @@ export default function ProcessReporting() {
         }
         return enriched
       }))
-    } catch (err) {
+    } catch (err: any) {
       message.error(err.message || '获取数据失败')
     }
-  }, [selectedProcessId, defectTypeOptions, scrapTypeOptions, materialOptions])
+  }, [defectProcessId, materialProcessId, scrapProcessId, defectTypeOptions, scrapTypeOptions, materialOptions])
 
   // 根据报工单信息和人员记录列表计算人工工时（本地计算，用于保存后立即更新）
   const calcManpowerHoursLocal = useCallback((manpowerRecords, reportInfo) => {
@@ -497,7 +534,9 @@ export default function ProcessReporting() {
   useEffect(() => {
     if (!selectedReport) {
       setLineProcesses([])
-      setSelectedProcessId(null)
+      setDefectProcessId(null)
+      setMaterialProcessId(null)
+      setScrapProcessId(null)
       setProdDefectList([])
       setScrapDefectList([])
       setExceptionList([])
@@ -532,7 +571,7 @@ export default function ProcessReporting() {
       return
     }
     fetchAllData(selectedReport.report_order_id)
-  }, [selectedReport, selectedProcessId, fetchAllData])
+  }, [selectedReport, defectProcessId, materialProcessId, scrapProcessId, fetchAllData])
 
   // 报工单状态：'开工'=可编辑，'完工'=只读
   const isEditable = selectedReport?.status === '开工'
@@ -549,7 +588,9 @@ export default function ProcessReporting() {
   } = useReportDetailRecords({
     selectedReport: selectedReport as any,
     isEditable,
-    selectedProcessId,
+    defectProcessId,
+    materialProcessId,
+    scrapProcessId,
     lineProcesses: lineProcesses as any,
     openImageDrawer: openImageDrawer as any,
     message,
@@ -867,17 +908,17 @@ export default function ProcessReporting() {
   }, [materialList])
 
   const isFirstProcess = useMemo(() => {
-    if (!lineProcesses.length || !selectedProcessId) return false
-    return lineProcesses[0].process_id === selectedProcessId
-  }, [lineProcesses, selectedProcessId])
+    if (!lineProcesses.length || defectProcessId == null) return false
+    return lineProcesses[0].process_id === defectProcessId
+  }, [lineProcesses, defectProcessId])
 
-  // 获取上一道工序的合格数
+  // 获取上一道工序的合格数（绑定 defectProcessId，仅不良记录 Tab 用到）
   useEffect(() => {
-    if (!selectedReport || !selectedProcessId || !lineProcesses.length || isFirstProcess) {
+    if (!selectedReport || defectProcessId == null || !lineProcesses.length || isFirstProcess) {
       setPrevProcessQualifiedQty(0)
       return
     }
-    const currentIndex = lineProcesses.findIndex(p => p.process_id === selectedProcessId)
+    const currentIndex = lineProcesses.findIndex(p => p.process_id === defectProcessId)
     if (currentIndex <= 0) {
       setPrevProcessQualifiedQty(0)
       return
@@ -909,7 +950,7 @@ export default function ProcessReporting() {
     }
     run()
     return () => { cancelled = true }
-  }, [selectedReport, selectedProcessId, lineProcesses, isFirstProcess])
+  }, [selectedReport, defectProcessId, lineProcesses, isFirstProcess])
 
   // 当前工序统计数据
 
@@ -1116,9 +1157,9 @@ export default function ProcessReporting() {
       case 'production-defect':
         return (
           <ProcessDefectTab
-            selectedProcessId={selectedProcessId}
+            selectedProcessId={defectProcessId}
             processes={lineProcesses}
-            onSelectProcess={setSelectedProcessId}
+            onSelectProcess={setDefectProcessId}
             editable={isEditable}
             columns={prodDefectColumns as any}
             data={prodDefectDisplayList}
@@ -1131,13 +1172,18 @@ export default function ProcessReporting() {
         return (
           <GenericRecordTab
             tableKey="pages_production_ProcessReporting_material"
-            title="选择工序"
+            title="物料记录"
             editable={isEditable}
             columns={materialColumns as any}
             data={materialDisplayList}
             onSave={handleSaveAllMaterials}
             onAdd={handleAddMaterialRow}
             scrollX={1000}
+            // 工序选择器
+            showProcessSelector
+            selectedProcessId={materialProcessId}
+            processes={lineProcesses}
+            onSelectProcess={setMaterialProcessId}
           />
         )
       case 'scrap-defect':
@@ -1151,6 +1197,11 @@ export default function ProcessReporting() {
             onSave={handleSaveAllScrapDefects}
             onAdd={handleAddScrapDefectRow}
             scrollX={800}
+            // 工序选择器
+            showProcessSelector
+            selectedProcessId={scrapProcessId}
+            processes={lineProcesses}
+            onSelectProcess={setScrapProcessId}
           />
         )
       case 'exception':

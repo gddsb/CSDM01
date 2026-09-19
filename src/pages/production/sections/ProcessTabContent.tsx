@@ -90,17 +90,35 @@ interface GenericTabProps<T> {
   readOnlyHint?: string
   scrollX?: number
   tableKey: string
+  // 可选：工序选择器（物料/报废 Tab 各独立绑定自己的工序）
+  showProcessSelector?: boolean
+  selectedProcessId?: number | null
+  processes?: Array<{ process_id: number; process_name: string }>
+  onSelectProcess?: (id: number) => void
 }
 
 export function GenericRecordTab<T extends { id: string | number }>({
   editable, columns, data, onSave, onAdd, title, hint = '点"添加"前会自动保存未提交记录；录入数据后请点"保存"提交',
   readOnlyHint = '已完工，数据只读', scrollX = 900, tableKey,
+  showProcessSelector, selectedProcessId, processes, onSelectProcess,
 }: GenericTabProps<T>) {
   return (
     <div>
       <Row style={{ marginBottom: 16 }} align="middle">
         <Col span={12}>
           <Space>
+            {showProcessSelector && processes && onSelectProcess && (
+              <>
+                <span style={{ color: '#666' }}>选择工序：</span>
+                <Select
+                  value={selectedProcessId ?? undefined}
+                  onChange={onSelectProcess}
+                  options={processes.map(p => ({ label: p.process_name, value: p.process_id }))}
+                  style={{ width: 180 }}
+                  placeholder="请选择工序"
+                />
+              </>
+            )}
             <span style={{ color: '#666' }}>{title}</span>
             {editable && (
               <>

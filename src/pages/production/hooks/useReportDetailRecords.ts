@@ -18,7 +18,9 @@ interface SelectedReportLike {
 interface Options {
   selectedReport: SelectedReportLike | null
   isEditable: boolean
-  selectedProcessId: number | null
+  defectProcessId: number | null
+  materialProcessId: number | null
+  scrapProcessId: number | null
   lineProcesses: Array<{ process_id: number; process_name: string }>
   openImageDrawer: (label: string, images: any[], context: any) => void
   message: { success: (m: string) => void; error: (m: string) => void; warning: (m: string) => void }
@@ -26,10 +28,14 @@ interface Options {
 
 /**
  * 工序报工：5 类明细记录（制程不良/报废不良/物料/异常/人员）的状态与 CRUD 逻辑。
- * 主组件只负责初始加载（调用 replace 方法）和提交校验。
+ * 不良/物料/报废 三类记录各绑定独立的工序选择器，互不影响。
  */
 export function useReportDetailRecords(opts: Options) {
-  const { selectedReport, isEditable, selectedProcessId, lineProcesses, openImageDrawer, message: msg } = opts
+  const {
+    selectedReport, isEditable,
+    defectProcessId, materialProcessId, scrapProcessId,
+    lineProcesses, openImageDrawer, message: msg,
+  } = opts
 
   const [prodDefectList, setProdDefectList] = useState<DefectRecord[]>([])
   const [scrapDefectList, setScrapDefectList] = useState<DefectRecord[]>([])
@@ -49,15 +55,15 @@ export function useReportDetailRecords(opts: Options) {
   // ---------- 制程不良 ----------
   const handleAddProdDefectRow = useCallback(() => {
     if (!isEditable) { msg.warning('请先开工报工单'); return }
-    if (!selectedProcessId) { msg.warning('请选择工序'); return }
+    if (!defectProcessId) { msg.warning('请选择工序'); return }
     const row: DefectRecord = {
       id: genId('pd'), defect_name: '', defect_quantity: 0, defect_unit: 'PCS',
-      status: 'pending', _dirty: true, process_id: selectedProcessId,
-      process_step_id: lineProcesses.find(p => p.process_id === selectedProcessId)?.process_id,
+      status: 'pending', _dirty: true, process_id: defectProcessId,
+      process_step_id: lineProcesses.find(p => p.process_id === defectProcessId)?.process_id,
       report_order_id: selectedReport?.report_order_id,
     }
     setProdDefectList(prev => [row, ...prev])
-  }, [isEditable, selectedProcessId, lineProcesses, selectedReport, msg])
+  }, [isEditable, defectProcessId, lineProcesses, selectedReport, msg])
 
   const handleDeleteProdDefect = useCallback(async (id: string | number) => {
     if (!String(id).startsWith('tmp_')) {
@@ -97,15 +103,15 @@ export function useReportDetailRecords(opts: Options) {
   // ---------- 报废不良 ----------
   const handleAddScrapDefectRow = useCallback(() => {
     if (!isEditable) { msg.warning('请先开工报工单'); return }
-    if (!selectedProcessId) { msg.warning('请选择工序'); return }
+    if (!scrapProcessId) { msg.warning('请选择工序'); return }
     const row: DefectRecord = {
       id: genId('sc'), defect_name: '', defect_quantity: 0, defect_unit: 'PCS',
-      status: 'pending', _dirty: true, process_id: selectedProcessId,
-      process_step_id: lineProcesses.find(p => p.process_id === selectedProcessId)?.process_id,
+      status: 'pending', _dirty: true, process_id: scrapProcessId,
+      process_step_id: lineProcesses.find(p => p.process_id === scrapProcessId)?.process_id,
       report_order_id: selectedReport?.report_order_id,
     }
     setScrapDefectList(prev => [row, ...prev])
-  }, [isEditable, selectedProcessId, lineProcesses, selectedReport, msg])
+  }, [isEditable, scrapProcessId, lineProcesses, selectedReport, msg])
 
   const handleDeleteScrapDefect = useCallback(async (id: string | number) => {
     if (!String(id).startsWith('tmp_')) {
@@ -144,15 +150,15 @@ export function useReportDetailRecords(opts: Options) {
   // ---------- 物料 ----------
   const handleAddMaterialRow = useCallback(() => {
     if (!isEditable) { msg.warning('请先开工报工单'); return }
-    if (!selectedProcessId) { msg.warning('请选择工序'); return }
+    if (!materialProcessId) { msg.warning('请选择工序'); return }
     const row: MaterialRecord = {
       id: genId('ma'), material_name: '', quantity: 0, unit: 'PCS',
-      _dirty: true, process_id: selectedProcessId,
-      process_step_id: lineProcesses.find(p => p.process_id === selectedProcessId)?.process_id,
+      _dirty: true, process_id: materialProcessId,
+      process_step_id: lineProcesses.find(p => p.process_id === materialProcessId)?.process_id,
       report_order_id: selectedReport?.report_order_id,
     }
     setMaterialList(prev => [row, ...prev])
-  }, [isEditable, selectedProcessId, lineProcesses, selectedReport, msg])
+  }, [isEditable, materialProcessId, lineProcesses, selectedReport, msg])
 
   const handleDeleteMaterial = useCallback(async (id: string | number) => {
     if (!String(id).startsWith('tmp_')) {
@@ -291,17 +297,14 @@ export function useReportDetailRecords(opts: Options) {
 
   // ---------- 汇总统计（基于当前明细）----------
   const processStats = useMemo(() => {
-    if (!selectedProcessId) return { inputQty: 0, qualifiedQty: 0, processDefectQty: 0, materialDefectQty: 0 }
-    const inputQty = 0
-    const qualifiedQty = 0
     const processDefectQty = prodDefectList
-      .filter(r => r.process_id === selectedProcessId && !(r as any)._deleting)
+      .filter(r => r.process_id === defectProcessId && !(r as any)._deleting)
       .reduce((sum, r) => sum + (Number(r.defect_quantity) || 0), 0)
     const materialDefectQty = materialList
-      .filter(r => r.process_id === selectedProcessId && !(r as any)._deleting)
+      .filter(r => r.process_id === materialProcessId && !(r as any)._deleting)
       .reduce((sum, r) => sum + (Number(r.defect_quantity) || 0), 0)
-    return { inputQty, qualifiedQty, processDefectQty, materialDefectQty }
-  }, [selectedProcessId, prodDefectList, materialList])
+    return { inputQty: 0, qualifiedQty: 0, processDefectQty, materialDefectQty }
+  }, [defectProcessId, materialProcessId, prodDefectList, materialList])
 
   return {
     // states
