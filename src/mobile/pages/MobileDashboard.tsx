@@ -198,36 +198,130 @@ export default function MobileDashboard() {
   const startPress = () => {
     pressTimer.current = setTimeout(() => {
       pressTimer.current = null
-      setShowEditor(true)
+      openEditor()
     }, 600)
   }
   const cancelPress = () => {
     if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null }
   }
 
-  // ========== 编辑操作 ==========
+  // ========== 编辑操作（拖拽版） ==========
+  /** 编辑区的两部分 state：上=已显示（最多12），下=未显示 */
+  const [editShownKeys, setEditShownKeys] = useState<string[]>([])
+  const [editHiddenKeys, setEditHiddenKeys] = useState<string[]>([])
+  /** 当前拖拽中的 key */
+  const dragKeyRef = useRef<string | null>(null)
+  /** 当前拖拽悬停的目标 key（用于高亮） */
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null)
+  /** 当前拖拽悬停的目标区（shown / hidden） */
+  const [dragOverZone, setDragOverZone] = useState<'shown' | 'hidden' | null>(null)
+
+  const openEditor = () => {
+    const visible = DEFAULT_ORDER.filter(e => !e.permCode || hasPermission(e.permCode))
+    const visibleKeys = visible.map(e => e.key)
+    const orderedKeys = ordered.map(e => e.key)
+    setEditShownKeys(orderedKeys.filter(k => visibleKeys.includes(k)))
+    // 未显示 = 有可见权限 但 不在 ordered 里的
+    setEditHiddenKeys(visibleKeys.filter(k => !orderedKeys.includes(k)))
+    setShowEditor(true)
+  }
+
+  const closeEditor = () => {
+    setShowEditor(false)
+    setDragOverKey(null); setDragOverZone(null); dragKeyRef.current = null
+  }
+
+  const applyEditor = () => {
+    const keyToEntry = new Map(ordered.map(e => [e.key, e]))
+    const allVisible = DEFAULT_ORDER.filter(e => !e.permCode || hasPermission(e.permCode))
+    allVisible.forEach(e => keyToEntry.set(e.key, e))
+    const merged = [
+      ...editShownKeys.map(k => keyToEntry.get(k)).filter(Boolean) as QuickEntry[],
+      ...editHiddenKeys.map(k => keyToEntry.get(k)).filter(Boolean) as QuickEntry[],
+    ]
+    saveOrder(merged)
+    closeEditor()
+  }
+
   const saveOrder = (entries: QuickEntry[]) => {
     setOrdered(entries)
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries.map(e => e.key))) } catch { /* ignore */ }
   }
-  const removeEntry = (key: string) => saveOrder(ordered.filter(e => e.key !== key))
-  const addEntry = (key: string) => {
-    const allVisible = DEFAULT_ORDER.filter(e => !e.permCode || hasPermission(e.permCode))
-    const target = allVisible.find(e => e.key === key)
-    if (target && !ordered.find(e => e.key === key)) saveOrder([...ordered, target])
-  }
-  const moveEntry = (key: string, dir: -1 | 1) => {
-    const idx = ordered.findIndex(e => e.key === key)
-    const target = idx + dir
-    if (idx < 0 || target < 0 || target >= ordered.length) return
-    const next = [...ordered]
-    ;[next[idx], next[target]] = [next[target], next[idx]]
-    saveOrder(next)
-  }
+
   const resetOrder = () => {
     const visible = DEFAULT_ORDER.filter(e => !e.permCode || hasPermission(e.permCode))
     saveOrder(visible)
+    closeEditor()
   }
+
+  /** 拖拽开始 */
+  const onDragStart = (key: string) => (e: React.DragEvent) => {
+    dragKeyRef.current = key
+    e.dataTransfer.effectAllowed = 'move'
+    // 必须设置一个 data 才能让 Firefox 识别为可拖拽
+    e.dataTransfer.setData('text/plain', key)
+  }
+
+  /** 拖拽悬停在某个 item 上（用于插入到该位置之前） */
+  const onItemDragOver = (key: string) => (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverKey(key)
+  }
+  const onItemDragLeave = () => setDragOverKey(null)
+
+  /** 拖拽悬停在某区（不放在具体 item 上时，追加到该区末尾） */
+  const onZoneDragOver = (zone: 'shown' | 'hidden') => (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverZone(zone)
+  }
+  const onZoneDragLeave = () => setDragOverZone(null)
+
+  /** 放下：source zone + source key 挪到 target zone + target key 位置 */
+  const onDrop = (targetKey?: string) => (e: React.DragEvent) => {
+    e.preventDefault()
+    const srcKey = dragKeyRef.current
+    if (!srcKey) return
+    setDragOverKey(null); setDragOverZone(null); dragKeyRef.current = null
+
+    const srcInShown = editShownKeys.includes(srcKey)
+    const srcInHidden = editHiddenKeys.includes(srcKey)
+    if (!srcInShown && !srcInHidden) return
+
+    let newShown = [...editShownKeys]
+    let newHidden = [...editHiddenKeys]
+
+    // 先从源区移除
+    if (srcInShown) newShown = newShown.filter(k => k !== srcKey)
+    else newHidden = newHidden.filter(k => k !== srcKey)
+
+    // 目标区和位置
+    let targetInShown: boolean
+    if (!targetKey) {
+      // 没指定 target key → 追加到 dragOverZone 或原区
+      targetInShown = dragOverZone === 'shown' || (!dragOverZone && srcInShown)
+    } else {
+      targetInShown = editShownKeys.includes(targetKey)
+    }
+
+    if (targetInShown && newShown.length >= 12 && !srcInShown) {
+      // 移到 shown 但已满 12 且源不在 shown → 拒绝
+      return
+    }
+
+    const targetList = targetInShown ? newShown : newHidden
+    const targetIdx = targetKey ? targetList.indexOf(targetKey) : -1
+    if (targetIdx >= 0) {
+      targetList.splice(targetIdx, 0, srcKey)
+    } else {
+      targetList.push(srcKey)
+    }
+
+    setEditShownKeys(newShown)
+    setEditHiddenKeys(newHidden)
+  }
+
   const allAvailable = useMemo(
     () => DEFAULT_ORDER.filter(e => (!e.permCode || hasPermission(e.permCode)) && !ordered.find(o => o.key === e.key)),
     [ordered, hasPermission],
@@ -294,7 +388,7 @@ export default function MobileDashboard() {
           )}
         </div>
 
-        {/* ⚡ 快捷操作（两行固定 + 超出左右滑 + 长按编辑） */}
+        {/* ⚡ 快捷操作（两行固定 8 个 + 长按编辑） */}
         <div style={{ marginBottom: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>⚡ 快捷操作</span>
@@ -303,20 +397,18 @@ export default function MobileDashboard() {
           <div
             style={{
               display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
-              gridAutoFlow: 'column', gridTemplateRows: 'repeat(2, auto)',
-              gap: 8, overflowX: 'auto', padding: '4px 2px 8px',
-              scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch',
+              gap: 6, padding: '4px 2px 8px',
             }}
             onTouchStart={startPress} onTouchEnd={cancelPress} onTouchCancel={cancelPress}
             onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress}
           >
-            {ordered.map((entry) => (
+            {ordered.slice(0, 8).map((entry) => (
               <div
                 key={entry.key}
                 onClick={() => handleEntryClick(entry)}
                 onTouchStart={startPress} onTouchEnd={cancelPress} onTouchCancel={cancelPress}
                 onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress}
-                style={{ width: 60, textAlign: 'center', cursor: 'pointer' }}
+                style={{ textAlign: 'center', cursor: 'pointer' }}
               >
                 <div
                   style={{

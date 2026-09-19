@@ -71,19 +71,16 @@ export function ExceptionPanel({ report, editable, rows, setRows }: Props) {
     const e = new Date(endISO).getTime()
     const duration = Math.max(0, Math.round((e - s) / 60000))
     try {
+      const payload: any = { ...row, end_time: endISO, duration, description: '', remark: null }
       if (row.exception_id) {
-        await api.put(`/production/process-exceptions/${row.exception_id}`, {
-          ...row,
-          end_time: endISO,
-          duration,
-        })
+        await api.put(`/production/process-exceptions/${row.exception_id}`, payload)
       }
       setRows(prev => prev.map(r =>
         (r.exception_id ?? r.id) === (row.exception_id ?? row.id)
-          ? { ...r, end_time: endISO, duration }
+          ? { ...r, end_time: endISO, duration, remark: null, description: '' }
           : r,
       ))
-      Toast.show({ content: '已结束', icon: 'success' })
+      Toast.show({ content: `已结束（${duration} 分钟）`, icon: 'success' })
     } catch (e: any) {
       Toast.show({ content: e?.message || '结束失败', icon: 'fail' })
     }
@@ -129,7 +126,8 @@ export function ExceptionPanel({ report, editable, rows, setRows }: Props) {
                 {editable && isUnfinished && (
                   <Button size="mini" color="primary" onClick={() => handleFinish(row)}>结束</Button>
                 )}
-                {editable && (
+                {/* 已结束的记录不允许删除 */}
+                {editable && isUnfinished && (
                   <Button size="mini" fill="outline" onClick={() => handleDel(row)}>删</Button>
                 )}
               </div>

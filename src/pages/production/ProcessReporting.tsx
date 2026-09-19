@@ -583,7 +583,7 @@ export default function ProcessReporting() {
     handleAddProdDefectRow, handleDeleteProdDefect, handleProdDefectChange, handleSaveAllProdDefects,
     handleAddScrapDefectRow, handleDeleteScrapDefect, handleScrapDefectChange, handleSaveAllScrapDefects,
     handleAddMaterialRow, handleDeleteMaterial, handleMaterialChange, handleSaveAllMaterials,
-    handleAddExceptionRow, handleDeleteException, handleExceptionChange, handleSaveAllExceptions,
+    handleAddExceptionRow, handleDeleteException, handleExceptionChange, handleSaveAllExceptions, handleFinishException,
     handleManpowerChange, handleSaveAllManpowers,
   } = useReportDetailRecords({
     selectedReport: selectedReport as any,
@@ -1010,8 +1010,12 @@ export default function ProcessReporting() {
     reportTime: selectedReport?.report_time,
     onChange: handleExceptionChange,
     onDelete: ((record: any) => handleDeleteException(record.id)),
+    onFinish: (record: any) => handleFinishException(record),
     openImageDrawer,
   })
+
+  // 异常工时：存在未结束记录时禁用"添加"按钮
+  const hasUnfinishedException = useMemo(() => !!exceptionList.find((e: any) => !e.end_time), [exceptionList])
 
   const saveManpowerItem = async (item) => {
     if (!selectedReport) return
@@ -1214,6 +1218,7 @@ export default function ProcessReporting() {
             data={exceptionDisplayList}
             onSave={handleSaveAllExceptions}
             onAdd={handleAddExceptionRow}
+            disableAdd={hasUnfinishedException}
             scrollX={900}
           />
         )

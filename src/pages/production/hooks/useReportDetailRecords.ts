@@ -254,6 +254,52 @@ export function useReportDetailRecords(opts: Options) {
     if (ok) msg.success(`已保存 ${ok} 条记录`)
   }, [exceptionList, saveExceptionItem, msg])
 
+  /** 结束一条未完成的异常工时：自动填当前结束时间、算 duration、清空描述（视为已解决） */
+  const handleFinishException = useCallback(async (record: ExceptionRecord) => {
+    const nowISO = new Date().toISOString()
+    const start = new Date(record.start_time as string | number | Date).getTime()
+    const end = new Date(nowISO).getTime()
+    const duration = Math.max(0, Math.round((end - start) / 60000))
+    const finished: any = {
+      ...record,
+      end_time: nowISO,
+      duration,
+      description: '',
+      _dirty: true,
+    }
+    // 立即持久化 —— 结束后不可再编辑
+    try {
+      if (String(record.id).startsWith('tmp_')) {
+        const res = await api.post('/production/process-exceptions', {
+          report_order_id: selectedReport?.report_order_id,
+          exception_type: finished.exception_type,
+          device_id: finished.device_id,
+          stop_type: finished.stop_type,
+          start_time: finished.start_time,
+          end_time: finished.end_time,
+          duration: finished.duration,
+          exception_images: finished.exception_images,
+        })
+        finished.exception_id = res.data?.exception_id ?? res.data?.id
+        finished.id = res.data?.exception_id ?? record.id
+      } else if (finished.exception_id) {
+        await api.put(`/production/process-exceptions/${finished.exception_id}`, {
+          end_time: finished.end_time,
+          duration: finished.duration,
+          description: '',
+        })
+      }
+      finished._dirty = false
+      setExceptionList(prev => prev.map(r => (
+        String(r.id) === String(record.id) || (r.exception_id && r.exception_id === record.exception_id)
+          ? finished : r
+      )))
+      msg.success(`已结束（${duration} 分钟）`)
+    } catch (e: any) {
+      msg.error(e?.message || '结束失败')
+    }
+  }, [selectedReport?.report_order_id, msg])
+
   // ---------- 人员 ----------
   const handleManpowerChange = useCallback((id: string | number, field: string, value: unknown) => {
     setManpowerList(prev => prev.map(r => {
@@ -319,7 +365,7 @@ export function useReportDetailRecords(opts: Options) {
     // material
     handleAddMaterialRow, handleDeleteMaterial, handleMaterialChange, handleSaveAllMaterials,
     // exception
-    handleAddExceptionRow, handleDeleteException, handleExceptionChange, handleSaveAllExceptions,
+    handleAddExceptionRow, handleDeleteException, handleExceptionChange, handleSaveAllExceptions, handleFinishException,
     // manpower
     handleManpowerChange, handleSaveAllManpowers,
   }

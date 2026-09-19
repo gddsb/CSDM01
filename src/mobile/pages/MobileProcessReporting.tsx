@@ -310,10 +310,14 @@ export default function MobileProcessReporting() {
               )}
               {processTab === 'scrap' && (
                 <>
-                  {/* 报废 Tab 不再显示工序选择器，内部自动兜底：scrapProcId 优先，缺省取首工序 */}
+                  <ProcessSelector
+                    processes={processes}
+                    activeProcId={scrapProcId}
+                    onChange={setScrapProcId}
+                  />
                   <ScrapPanel
                     report={current}
-                    activeProcessId={scrapProcId ?? processes[0]?.process_id ?? null}
+                    activeProcessId={scrapProcId}
                     processes={processes}
                     editable={!!editable}
                     scrapTypes={scrapTypes}
@@ -323,12 +327,11 @@ export default function MobileProcessReporting() {
                       const before = prev.filter(d => !scrapDefectIds.has(Number(d.defect_type_id)))
                       const scrapRows = prev.filter(d => scrapDefectIds.has(Number(d.defect_type_id))) as unknown as ScrapRow[]
                       const merged = updater(scrapRows)
-                      // 把更新后的 merged 转成 DefectRow 拼回去
                       const mergedDefects: DefectRow[] = merged.map((s) => ({
                         id: s.scrap_id ?? s.id,
                         defect_id: s.scrap_id ?? (s.id as number | undefined),
                         report_order_id: s.report_order_id,
-                        process_id: processes.find(p => p.process_id === (scrapProcId ?? processes[0]?.process_id))?.process_id,
+                        process_id: processes.find(p => p.process_id === scrapProcId)?.process_id,
                         defect_type_id: s.defect_type_id,
                         defect_code: s.defect_code,
                         defect_name: s.defect_name,

@@ -260,23 +260,28 @@ export function MobileLayout() {
     navigate(key)
   }
 
+  // 仅子功能页面渲染 NavBar；首页/我的自绘顶部，避免标题重复
+  const showNavBar = canBack
+
   return (
     <div className="mobile-app">
-      {/* NavBar — 适配 safe-area */}
-      <div style={{ paddingTop: 'var(--sat)' }}>
-        <NavBar
-          style={{ background: 'var(--m-surface)', borderBottom: '1px solid var(--m-border)' }}
-          back={canBack}
-          onBack={() => navigate(-1)}
-        >
-          {title}
-          {currentUser && (
-            <span style={{ fontSize: 12, color: 'var(--m-text-3)', marginLeft: 8, fontWeight: 'normal' }}>
-              {currentUser.real_name}
-            </span>
-          )}
-        </NavBar>
-      </div>
+      {/* NavBar — 仅子功能页面显示，适配 safe-area，固定顶部 */}
+      {showNavBar && (
+        <div style={{ paddingTop: 'var(--sat)' }}>
+          <NavBar
+            style={{ background: 'var(--m-surface)', borderBottom: '1px solid var(--m-border)' }}
+            back={canBack}
+            onBack={() => navigate(-1)}
+          >
+            {title}
+            {currentUser && (
+              <span style={{ fontSize: 12, color: 'var(--m-text-3)', marginLeft: 8, fontWeight: 'normal' }}>
+                {currentUser.real_name}
+              </span>
+            )}
+          </NavBar>
+        </div>
+      )}
 
       {/* 离线/同步状态条：仅在需要提醒时出现 */}
       {(!online || pending > 0) && (

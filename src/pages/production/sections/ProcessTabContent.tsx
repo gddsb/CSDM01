@@ -85,6 +85,7 @@ interface GenericTabProps<T> {
   data: T[]
   onSave: () => void
   onAdd: () => void
+  disableAdd?: boolean
   title?: string
   hint?: string
   readOnlyHint?: string
@@ -98,7 +99,7 @@ interface GenericTabProps<T> {
 }
 
 export function GenericRecordTab<T extends { id: string | number }>({
-  editable, columns, data, onSave, onAdd, title, hint = '点"添加"前会自动保存未提交记录；录入数据后请点"保存"提交',
+  editable, columns, data, onSave, onAdd, disableAdd, title, hint = '点"添加"前会自动保存未提交记录；录入数据后请点"保存"提交',
   readOnlyHint = '已完工，数据只读', scrollX = 900, tableKey,
   showProcessSelector, selectedProcessId, processes, onSelectProcess,
 }: GenericTabProps<T>) {
@@ -123,13 +124,13 @@ export function GenericRecordTab<T extends { id: string | number }>({
             {editable && (
               <>
                 <Button type="primary" icon={<SaveOutlined />} onClick={onSave}>保存</Button>
-                <Button type="primary" icon={<PlusOutlined />} onClick={onAdd}>添加</Button>
+                <Button type="primary" icon={<PlusOutlined />} onClick={onAdd} disabled={disableAdd}>添加</Button>
               </>
             )}
           </Space>
         </Col>
         <Col span={12} style={{ textAlign: 'right' }}>
-          {editable ? <Tag color="blue">{hint}</Tag> : <Tag color="default">{readOnlyHint}</Tag>}
+          {editable ? <Tag color="blue">{disableAdd ? '⚠️ 存在未结束工时，先点"结束"再新增' : hint}</Tag> : <Tag color="default">{readOnlyHint}</Tag>}
         </Col>
       </Row>
       <ResizableTable tableKey={tableKey} columns={columns} dataSource={data} rowKey="id" size="small" pagination={false} scroll={{ x: scrollX }} tableLayout="fixed" />

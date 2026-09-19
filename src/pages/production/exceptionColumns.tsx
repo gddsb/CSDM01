@@ -1,7 +1,7 @@
 import React from 'react'
 import dayjs from 'dayjs'
 import { Button, Input, Select, TimePicker, Popconfirm, message } from 'antd'
-import { DeleteOutlined, PictureOutlined } from '@ant-design/icons'
+import { DeleteOutlined, PictureOutlined, CheckCircleOutlined } from '@ant-design/icons'
 import { ColumnsType } from 'antd/es/table'
 import { formatDateTime } from '../../utils'
 import { ExceptionRecord } from './types'
@@ -14,26 +14,20 @@ interface BuildExceptionColumnsParams {
   reportTime?: string | Date | null
   onChange: (id: number | string, field: string, value: unknown) => void
   onDelete: (record: ExceptionRecord) => void
+  onFinish: (record: ExceptionRecord) => void
   openImageDrawer: (title: string, images: unknown[], context: Record<string, unknown>) => void
 }
 
 export function buildExceptionColumns(params: BuildExceptionColumnsParams): ColumnsType<ExceptionRecord> {
-  const { isEditable, deviceOptions, exceptionCategories, exceptionList, reportTime, onChange, onDelete, openImageDrawer } = params
+  const { isEditable, deviceOptions, exceptionCategories, exceptionList, reportTime, onChange, onDelete, onFinish, openImageDrawer } = params
 
-  // 判断记录是否不可编辑/不可删除
-  // 规则：已保存（有 exception_id）不可编辑/删除；自动创建（换型换线）不可删除
-  const isRecordLocked = (record: any): boolean => {
-    if (record.exception_id) return true
-    return false
-  }
-  const isRecordAutoCreated = (record: any): boolean => {
-    return record.exception_type === '换型换线'
-      || (record.description && String(record.description).includes('自动生成'))
-  }
-  // 不可删除 = 自动创建 或 已保存
-  const canDelete = (record: any): boolean => {
-    return !isRecordAutoCreated(record) && !isRecordLocked(record)
-  }
+  // 规则：已结束（end_time 非空）→ 不可编辑、不可删除
+  //       已保存未结束 → 可编辑、可删除
+  const isFinished = (record: any): boolean => !!record.end_time
+  const canEdit = (record: any): boolean => !isFinished(record)
+  const canDelete = (record: any): boolean => !isFinished(record)
+  const isAutoCreated = (record: any): boolean =>
+    record.exception_type === '换型换线' || (record.description && String(record.description).includes('自动生成'))
 
   const disabledTime = () => {
     const baseDate = reportTime ? dayjs(reportTime).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')
@@ -58,7 +52,7 @@ export function buildExceptionColumns(params: BuildExceptionColumnsParams): Colu
     {
       title: '异常类型', dataIndex: 'exception_type', key: 'exception_type', width: 120,
       render: (val, record) => {
-        if (!isEditable || isRecordLocked(record)) return val || '-'
+        if (!isEditable || !canEdit(record)) return val || '-'
         return (
           <Select
             placeholder="请选择"
@@ -75,7 +69,7 @@ export function buildExceptionColumns(params: BuildExceptionColumnsParams): Colu
     {
       title: '设备', dataIndex: 'device_name', key: 'device_name', width: 150,
       render: (_, record) => {
-        if (!isEditable || isRecordLocked(record)) return record.device_name || '-'
+        if (!isEditable || !canEdit(record)) return record.device_name || '-'
         return (
           <Select
             placeholder="请选择设备"
@@ -95,7 +89,7 @@ export function buildExceptionColumns(params: BuildExceptionColumnsParams): Colu
     {
       title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 150,
       render: (val, record) => {
-        if (!isEditable || isRecordLocked(record)) return formatDateTime(val)
+        if (!isEditable || !canEdit(record)) return formatDateTime(val)
         return (
           <TimePicker
             value={val ? dayjs(val) : null}
@@ -141,10 +135,11 @@ export function buildExceptionColumns(params: BuildExceptionColumnsParams): Colu
     {
       title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 150,
       render: (val, record) => {
-        if (!isEditable || isRecordLocked(record)) return formatDateTime(val)
+        if (!isEditable || !canEdit(record)) return formatDateTime(val)
         return (
           <TimePicker
             value={val ? dayjs(val) : null}
+            placeholder="未结束"
             onChange={(d) => {
               if (d) {
                 const newTime = buildTime(d)
@@ -190,7 +185,7 @@ export function buildExceptionColumns(params: BuildExceptionColumnsParams): Colu
     {
       title: '异常描述', dataIndex: 'description', key: 'description', width: 240,
       render: (val, record) => {
-        if (!isEditable || isRecordLocked(record)) {
+        if (!isEditable || !canEdit(record)) {
           return <span style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', display: 'block' }}>{val || '-'}</span>
         }
         return (
@@ -215,14 +210,33 @@ export function buildExceptionColumns(params: BuildExceptionColumnsParams): Colu
       ),
     },
     {
-      title: '操作', key: 'action', width: 80,
+      title: '状态', key: 'status', width: 100,
       render: (_, record) => {
-        if (!isEditable || !canDelete(record)) return null
-        return (
-          <Popconfirm title="确认删除？" onConfirm={() => onDelete(record)}>
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
-          </Popconfirm>
-        )
+        if (isFinished(record)) {
+          return <span style={{ color: '#52c41a', fontSize: 12 }}><CheckCircleOutlined /> 已结束</span>
+        }
+        return <span style={{ color: '#f5222d', fontSize: 12 }}>进行中</span>
+      },
+    },
+    {
+      title: '操作', key: 'action', width: 140,
+      render: (_, record) => {
+        if (!isEditable) return null
+        const actions: React.ReactNode[] = []
+        if (!isFinished(record)) {
+          actions.push(
+            <Button key="finish" type="link" size="small" icon={<CheckCircleOutlined />}
+              onClick={() => onFinish(record)}>结束</Button>,
+          )
+        }
+        if (canDelete(record) && !isAutoCreated(record)) {
+          actions.push(
+            <Popconfirm key="del" title="确认删除？" onConfirm={() => onDelete(record)}>
+              <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
+            </Popconfirm>,
+          )
+        }
+        return <div style={{ display: 'flex', gap: 4 }}>{actions}</div>
       },
     },
   ]
