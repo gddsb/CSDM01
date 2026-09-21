@@ -176,7 +176,7 @@ export default function MobileSparePart() {
         </div>
 
         {/* Tab */}
-        <div style={{ background: '#fff', borderRadius: 10, padding: '0 8px', marginBottom: 10 }}>
+        <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: '0 8px', marginBottom: 10 }}>
           <Tabs activeKey={tab} onChange={(k) => setTab(k as TabKey)}>
             {TAB_LIST.map((t) => <Tabs.Tab title={t.label} key={t.key} />)}
           </Tabs>
@@ -184,7 +184,7 @@ export default function MobileSparePart() {
       </div>
 
       <div className="mobile-page-scroll-list">
-        {loading && <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>}
+        {loading && <div style={{ textAlign: 'center', padding: 40, color: 'var(--m-text-3)' }}>加载中...</div>}
 
         {/* ==== 台账 ==== */}
         {tab === 'all' && !loading && (
@@ -340,7 +340,7 @@ function PartCard({ part, low, onIn, onOut, onAdjust, onDelete }: {
 }) {
   return (
     <div style={{
-      background: low ? '#fff5f5' : '#fff', borderRadius: 10, padding: 12, marginBottom: 10,
+      background: low ? '#fff5f5' : 'var(--m-surface)', borderRadius: 10, padding: 12, marginBottom: 10,
       border: '1px solid ' + (low ? '#ffccc7' : '#eef0f3'),
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -351,10 +351,10 @@ function PartCard({ part, low, onIn, onOut, onAdjust, onDelete }: {
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: low ? '#F44336' : '#333' }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: low ? 'var(--brand-color-danger)' : 'var(--m-text)' }}>
             {part.current_stock ?? 0}
           </div>
-          <div style={{ fontSize: 10, color: low ? '#F44336' : '#aaa' }}>
+          <div style={{ fontSize: 10, color: low ? 'var(--brand-color-danger)' : '#aaa' }}>
             下限 {part.safety_stock_min ?? 0}{part.unit ? ` ${part.unit}` : ''}
           </div>
         </div>
@@ -370,11 +370,11 @@ function PartCard({ part, low, onIn, onOut, onAdjust, onDelete }: {
 }
 
 function LogCard({ log }: { log: LogRow }) {
-  const map = { in: { c: '#4CAF50', t: '入库' }, out: { c: '#FF9800', t: '出库' }, adjust: { c: '#2196F3', t: '调整' } }
+  const map = { in: { c: 'var(--brand-color-success)', t: '入库' }, out: { c: 'var(--brand-color-warning)', t: '出库' }, adjust: { c: 'var(--brand-color)', t: '调整' } }
   const info = map[(log.log_type as keyof typeof map) || 'adjust']
   return (
     <div style={{
-      background: '#fff', borderRadius: 10, padding: 10, marginBottom: 8,
+      background: 'var(--m-surface)', borderRadius: 10, padding: 10, marginBottom: 8,
       border: '1px solid #eef0f3',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -385,7 +385,7 @@ function LogCard({ log }: { log: LogRow }) {
           {info.t}
         </span>
       </div>
-      <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+      <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginTop: 4 }}>
         数量 {log.quantity ?? 0} · 单价 {log.unit_price ?? 0} · 合计 ¥{log.total_price ?? 0}
       </div>
       {(log.related_order || log.remarks) && (
@@ -394,7 +394,7 @@ function LogCard({ log }: { log: LogRow }) {
         </div>
       )}
       {log.created_at && (
-        <div style={{ fontSize: 10, color: '#bbb', marginTop: 2 }}>{new Date(log.created_at).toLocaleString('zh-CN')}</div>
+        <div style={{ fontSize: 10, color: 'var(--m-text-3)', marginTop: 2 }}>{new Date(log.created_at).toLocaleString('zh-CN')}</div>
       )}
     </div>
   )
@@ -411,10 +411,10 @@ function FormPanel({ title, children }: { title: string; children: any }) {
 
 function Empty({ text, sub }: { text: string; sub?: string }) {
   return (
-    <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>
+    <div style={{ textAlign: 'center', padding: 60, color: 'var(--m-text-3)' }}>
       {text}{sub && <div style={{ fontSize: 12, marginTop: 6 }}>{sub}</div>}
     </div>
   )
 }
 
-const selStyle: React.CSSProperties = { padding: 6, borderRadius: 6, border: '1px solid #ddd', width: '100%', background: '#fff' }
+const selStyle: React.CSSProperties = { padding: 6, borderRadius: 6, border: '1px solid #ddd', width: '100%', background: 'var(--m-surface)' }

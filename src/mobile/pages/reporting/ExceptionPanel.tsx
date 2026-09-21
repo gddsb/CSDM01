@@ -104,7 +104,7 @@ export function ExceptionPanel({ report, editable, rows, setRows }: Props) {
   }
   const selStyle: React.CSSProperties = {
     width: '100%', padding: '10px 12px', borderRadius: 8,
-    border: '1px solid #e0e0e0', fontSize: 14, background: '#fff',
+    border: '1px solid #e0e0e0', fontSize: 14, background: 'var(--m-surface)',
   }
 
   return (
@@ -115,7 +115,7 @@ export function ExceptionPanel({ report, editable, rows, setRows }: Props) {
         return (
           <div key={String(row.id)} style={{ padding: '10px 0', borderTop: '1px solid #f0f0f0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: 14, fontWeight: 500, color: isUnfinished ? '#f5222d' : '#333' }}>
+              <div style={{ fontSize: 14, fontWeight: 500, color: isUnfinished ? '#f5222d' : 'var(--m-text)' }}>
                 {row.exception_type || '—'}
                 {isUnfinished && <span style={{ fontSize: 11, color: '#f5222d', marginLeft: 6 }}>进行中</span>}
               </div>
@@ -132,7 +132,7 @@ export function ExceptionPanel({ report, editable, rows, setRows }: Props) {
                 )}
               </div>
             </div>
-            <div style={{ fontSize: 11, color: '#999', marginTop: 3 }}>
+            <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 3 }}>
               {(row.start_time || '—').slice(5, 16).replace('T', ' ')} → {(row.end_time || '至今').slice(5, 16).replace('T', ' ')}
             </div>
             {row.remark && (
@@ -142,13 +142,13 @@ export function ExceptionPanel({ report, editable, rows, setRows }: Props) {
         )
       })}
       {rows.length === 0 && (
-        <div style={{ textAlign: 'center', padding: 20, color: '#bbb', fontSize: 12 }}>— 暂无工时记录 —</div>
+        <div style={{ textAlign: 'center', padding: 20, color: 'var(--m-text-3)', fontSize: 12 }}>— 暂无工时记录 —</div>
       )}
 
       {/* 新增 */}
       {editable && (
         <div style={{ borderTop: '1px dashed #ddd', paddingTop: 10, marginTop: 6 }}>
-          <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>➕ 新加工时</div>
+          <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginBottom: 6 }}>➕ 新加工时</div>
           {hasUnfinished && (
             <div style={{ color: '#f5222d', fontSize: 11, marginBottom: 6 }}>
               ⚠️ 存在未结束的工时记录，请先点「结束」

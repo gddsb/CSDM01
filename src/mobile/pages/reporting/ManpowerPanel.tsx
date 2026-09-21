@@ -26,7 +26,7 @@ interface Props {
 const COUNT_STYLE: React.CSSProperties = {
   flex: 1, padding: '10px 12px', borderRadius: 8,
   border: '1px solid #e0e0e0', fontSize: 15,
-  background: '#fff',
+  background: 'var(--m-surface)',
 }
 
 export function ManpowerPanel({ report, editable, manpower, setManpower }: Props) {
@@ -80,17 +80,17 @@ export function ManpowerPanel({ report, editable, manpower, setManpower }: Props
   return (
     <div>
       <div style={{ fontSize: 12, color: '#888', marginBottom: 10 }}>
-        🕐 开工时间: <b style={{ color: '#333' }}>{report.report_time?.slice(0, 16) || '—'}</b>
-        {report.finish_time && <span style={{ marginLeft: 8 }}>完工: <b style={{ color: '#333' }}>{report.finish_time.slice(0, 16)}</b></span>}
-        <span style={{ marginLeft: 10, color: '#2196F3' }}>总人数: <b>{totalPeople}</b></span>
+        🕐 开工时间: <b style={{ color: 'var(--m-text)' }}>{report.report_time?.slice(0, 16) || '—'}</b>
+        {report.finish_time && <span style={{ marginLeft: 8 }}>完工: <b style={{ color: 'var(--m-text)' }}>{report.finish_time.slice(0, 16)}</b></span>}
+        <span style={{ marginLeft: 10, color: 'var(--brand-color)' }}>总人数: <b>{totalPeople}</b></span>
       </div>
       {rows.map(({ label, v, setV }) => (
         <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0' }}>
-          <span style={{ width: 50, fontSize: 13, color: '#666' }}>{label}</span>
+          <span style={{ width: 50, fontSize: 13, color: 'var(--m-text-2)' }}>{label}</span>
           <input
             type="number" min={0} value={v} disabled={!editable}
             onChange={(e) => setV(Number(e.target.value) || 0)}
-            style={{ ...COUNT_STYLE, background: editable ? '#fff' : '#f5f5f5' }}
+            style={{ ...COUNT_STYLE, background: editable ? 'var(--m-surface)' : 'var(--m-surface-2)' }}
           />
         </div>
       ))}
@@ -100,7 +100,7 @@ export function ManpowerPanel({ report, editable, manpower, setManpower }: Props
         </Button>
       )}
       {!editable && (
-        <div style={{ fontSize: 11, color: '#bbb', textAlign: 'center', marginTop: 8 }}>
+        <div style={{ fontSize: 11, color: 'var(--m-text-3)', textAlign: 'center', marginTop: 8 }}>
           报工单已完工 · 只读
         </div>
       )}

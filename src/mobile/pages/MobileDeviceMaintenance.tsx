@@ -311,9 +311,9 @@ export default function MobileDeviceMaintenance() {
         </div>
         <div className="mobile-page-scroll-list">
           {loading ? (
-            <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>
+            <div style={{ textAlign: 'center', padding: 40, color: 'var(--m-text-3)' }}>加载中...</div>
           ) : devices.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
+            <div style={{ textAlign: 'center', padding: 40, color: 'var(--m-text-3)' }}>
               暂无设备<br /><span style={{ fontSize: 12 }}>请先在 PC 端创建设备档案</span>
             </div>
           ) : (
@@ -348,7 +348,7 @@ export default function MobileDeviceMaintenance() {
       {step === 1 && selectedDevice && (
         <>
           <div style={{
-            background: '#fff', borderRadius: 10, padding: 12, marginBottom: 10,
+            background: 'var(--m-surface)', borderRadius: 10, padding: 12, marginBottom: 10,
             border: '1px solid #eef0f3',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -364,7 +364,7 @@ export default function MobileDeviceMaintenance() {
           </div>
 
           {/* 5-A 新增：状态 Tab（对齐 PC 端） */}
-          <div style={{ background: '#fff', borderRadius: 10, padding: '0 10px', marginBottom: 10 }}>
+          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: '0 10px', marginBottom: 10 }}>
             <Tabs activeKey={statusTab} onChange={(k) => {
               const sk = k as StatusTab
               setStatusTab(sk); loadRecords(selectedDevice, sk)
@@ -376,9 +376,9 @@ export default function MobileDeviceMaintenance() {
           </div>
 
           {loading ? (
-            <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>
+            <div style={{ textAlign: 'center', padding: 40, color: 'var(--m-text-3)' }}>加载中...</div>
           ) : records.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
+            <div style={{ textAlign: 'center', padding: 40, color: 'var(--m-text-3)' }}>
               暂无保养记录<br />
               <span style={{ fontSize: 12 }}>点击上方「🧩 生成」新建保养任务</span>
             </div>
@@ -389,11 +389,11 @@ export default function MobileDeviceMaintenance() {
                   const isPending = r.status === '待执行'
                   const isDoing = r.status === '进行中'
                   const badge = (() => {
-                    if (isPending) return { txt: '待执行', c: '#FF9800' }
-                    if (isDoing) return { txt: '进行中', c: '#2196F3' }
-                    if (r.status === '已完成') return { txt: '已完成', c: '#4CAF50' }
+                    if (isPending) return { txt: '待执行', c: 'var(--brand-color-warning)' }
+                    if (isDoing) return { txt: '进行中', c: 'var(--brand-color)' }
+                    if (r.status === '已完成') return { txt: '已完成', c: 'var(--brand-color-success)' }
                     if (r.status === '已跳过') return { txt: '已跳过', c: '#9E9E9E' }
-                    return { txt: r.status || '', c: '#666' }
+                    return { txt: r.status || '', c: 'var(--m-text-2)' }
                   })()
                   return (
                     <List.Item
@@ -453,7 +453,7 @@ export default function MobileDeviceMaintenance() {
       {/* ============ Step 2: 保养表单 ============ */}
       {step === 2 && selectedRecord && (
         <>
-          <div style={{ background: '#fff', borderRadius: 10, padding: 14, marginBottom: 12, border: '1px solid #eef0f3' }}>
+          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginBottom: 12, border: '1px solid #eef0f3' }}>
             <div style={{ fontSize: 15, fontWeight: 600 }}>
               {selectedRecord.standard_name || '保养项'}
             </div>
@@ -464,13 +464,13 @@ export default function MobileDeviceMaintenance() {
 
           <Card title="实测值（可选）">
             <TextArea value={actualValue} onChange={setActualValue} rows={2}
-              placeholder="如：压力 0.4MPa" style={{ background: '#f7f8fa', borderRadius: 8, padding: 8 }} />
+              placeholder="如：压力 0.4MPa" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
           </Card>
 
           <Card title="保养内容">
             <TextArea value={content} onChange={setContent} rows={3}
               placeholder="保养作业内容、更换备件、清洁润滑等"
-              style={{ background: '#f7f8fa', borderRadius: 8, padding: 8 }} />
+              style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
           </Card>
 
           <Card title="执行结果">
@@ -485,14 +485,14 @@ export default function MobileDeviceMaintenance() {
               <div style={{ marginTop: 10 }}>
                 <TextArea value={abnormalDesc} onChange={setAbnormalDesc} rows={2}
                   placeholder="请描述异常情况"
-                  style={{ background: '#f7f8fa', borderRadius: 8, padding: 8 }} />
+                  style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
               </div>
             )}
           </Card>
 
           <Card title="备注（可选）">
             <TextArea value={remarks} onChange={setRemarks} rows={2}
-              placeholder="备注" style={{ background: '#f7f8fa', borderRadius: 8, padding: 8 }} />
+              placeholder="备注" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
           </Card>
 
           {/* 5-A 新增：图片上传 */}
@@ -522,10 +522,10 @@ export default function MobileDeviceMaintenance() {
 function Card({ title, children }: { title: string; children: any }) {
   return (
     <div style={{
-      background: '#fff', borderRadius: 10, padding: 14,
+      background: 'var(--m-surface)', borderRadius: 10, padding: 14,
       border: '1px solid #eef0f3', marginBottom: 12,
     }}>
-      <div style={{ fontSize: 13, color: '#666', marginBottom: 8 }}>{title}</div>
+      <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 8 }}>{title}</div>
       {children}
     </div>
   )

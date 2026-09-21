@@ -23,10 +23,10 @@ const RANGE_TABS: { key: Range; label: string }[] = [
 ]
 
 const getStatus = (oee: number) =>
-  oee >= 85 ? { label: '优秀', color: '#4CAF50' }
-  : oee >= 70 ? { label: '良好', color: '#2196F3' }
-  : oee >= 60 ? { label: '一般', color: '#FF9800' }
-  : { label: '预警', color: '#F44336' }
+  oee >= 85 ? { label: '优秀', color: 'var(--brand-color-success)' }
+  : oee >= 70 ? { label: '良好', color: 'var(--brand-color)' }
+  : oee >= 60 ? { label: '一般', color: 'var(--brand-color-warning)' }
+  : { label: '预警', color: 'var(--brand-color-danger)' }
 
 interface OeeDevice {
   device_id: number
@@ -96,7 +96,7 @@ function OeeRing({ value, size = 140 }: { value: number; size?: number }) {
         <span style={{ fontSize, fontWeight: 700, color: status.color, lineHeight: 1 }}>
           {percent.toFixed(1)}
         </span>
-        <span style={{ fontSize: subSize, color: '#999', marginTop: 2 }}>OEE %</span>
+        <span style={{ fontSize: subSize, color: 'var(--m-text-3)', marginTop: 2 }}>OEE %</span>
         <span style={{ fontSize: subSize - 2, color: status.color, marginTop: 2, fontWeight: 500 }}>
           {status.label}
         </span>
@@ -119,7 +119,7 @@ function TrendChart({ data }: { data: OeeTrendPoint[] }) {
     return (
       <div style={{
         height, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: '#bbb', fontSize: 12,
+        color: 'var(--m-text-3)', fontSize: 12,
       }}>
         趋势数据不足
       </div>
@@ -210,7 +210,7 @@ export default function MobileOeeDashboard() {
       </Tabs>
 
       {loading && !data ? (
-        <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>加载中...</div>
+        <div style={{ textAlign: 'center', padding: 60, color: 'var(--m-text-3)' }}>加载中...</div>
       ) : !data || devices.length === 0 ? (
         <Empty description="暂无设备数据" />
       ) : (
@@ -218,7 +218,7 @@ export default function MobileOeeDashboard() {
           {/* ========== 整体概览 ========== */}
           <div style={{
             background: 'linear-gradient(135deg, #2196F3 0%, #1565C0 100%)',
-            borderRadius: 12, padding: 16, color: '#fff',
+            borderRadius: 12, padding: 16, color: 'var(--m-surface)',
             display: 'flex', gap: 16, alignItems: 'center', marginBottom: 12,
           }}>
             <OeeRing value={summary?.avg_oee || 0} size={128} />
@@ -236,10 +236,10 @@ export default function MobileOeeDashboard() {
           </div>
 
           {/* ========== 设备排行 ========== */}
-          <div style={{ background: '#fff', borderRadius: 12, padding: 12, marginBottom: 12 }}>
+          <div style={{ background: 'var(--m-surface)', borderRadius: 12, padding: 12, marginBottom: 12 }}>
             <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span>🏆 设备 OEE 排行</span>
-              <span style={{ fontSize: 11, color: '#999' }}>Top {topDevices.length}</span>
+              <span style={{ fontSize: 11, color: 'var(--m-text-3)' }}>Top {topDevices.length}</span>
             </div>
             {topDevices.map((d, i) => {
               const st = getStatus(d.oee)
@@ -253,15 +253,15 @@ export default function MobileOeeDashboard() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{
                         width: 20, height: 20, borderRadius: 10,
-                        background: i === 0 ? '#FFD54F' : i === 1 ? '#BDBDBD' : i === 2 ? '#FFAB91' : '#f5f5f5',
-                        color: i < 3 ? '#fff' : '#999',
+                        background: i === 0 ? '#FFD54F' : i === 1 ? '#BDBDBD' : i === 2 ? '#FFAB91' : 'var(--m-surface-2)',
+                        color: i < 3 ? 'var(--m-surface)' : 'var(--m-text-3)',
                         fontSize: 10, fontWeight: 700,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}>{i + 1}</span>
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 500, color: '#333' }}>{d.device_name}</div>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--m-text)' }}>{d.device_name}</div>
                         {d.device_code && (
-                          <div style={{ fontSize: 10, color: '#bbb' }}>{d.device_code}</div>
+                          <div style={{ fontSize: 10, color: 'var(--m-text-3)' }}>{d.device_code}</div>
                         )}
                       </div>
                     </div>
@@ -286,7 +286,7 @@ export default function MobileOeeDashboard() {
           </div>
 
           {/* ========== 质量率趋势 ========== */}
-          <div style={{ background: '#fff', borderRadius: 12, padding: 12 }}>
+          <div style={{ background: 'var(--m-surface)', borderRadius: 12, padding: 12 }}>
             <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>📈 质量率趋势 · {summary?.range_label}</div>
             <TrendChart data={data.trend} />
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#aaa', marginTop: 4 }}>
@@ -313,7 +313,7 @@ function MiniBar({ label, value }: { label: string; value: number }) {
       </div>
       <div style={{ background: 'rgba(255,255,255,0.25)', height: 4, borderRadius: 2, overflow: 'hidden' }}>
         <div style={{
-          width: `${v}%`, height: '100%', background: '#fff', borderRadius: 2,
+          width: `${v}%`, height: '100%', background: 'var(--m-surface)', borderRadius: 2,
         }} />
       </div>
       {/* st 引用避免 linter 抱怨（用于后续可能扩展颜色） */}

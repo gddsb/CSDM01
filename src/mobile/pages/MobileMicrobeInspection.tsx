@@ -199,7 +199,7 @@ export default function MobileMicrobeInspection() {
       <div className="mobile-page" style={{ textAlign: 'center', padding: '60px 20px' }}>
         <div style={{ fontSize: 60 }}>🔬</div>
         <div style={{ fontSize: 18, fontWeight: 600, margin: '16px 0 8px' }}>微生物检验提交成功</div>
-        {successNo && <div style={{ fontSize: 13, color: '#666', marginBottom: 4 }}>单号：{successNo}</div>}
+        {successNo && <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 4 }}>单号：{successNo}</div>}
         <div style={{ fontSize: 13, color: '#888', marginBottom: 24 }}>
           {objectType} {selected ? `· ${selected.no}` : ''}
         </div>
@@ -216,7 +216,7 @@ export default function MobileMicrobeInspection() {
       <div className="mobile-page-fixed-header">
         <div className="mobile-sticky-header">
           {/* 对象类型 + 关联单据类型 */}
-          <div style={{ background: '#fff', borderRadius: 10, padding: 14, border: '1px solid #eef0f3', marginBottom: 12 }}>
+          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, border: '1px solid #eef0f3', marginBottom: 12 }}>
             <List.Item onClick={onPickObjectType} extra={objectType} arrow>检验对象类型</List.Item>
           </div>
 
@@ -263,7 +263,7 @@ export default function MobileMicrobeInspection() {
 
           {loadMode === 'none' && (
             <div style={{
-              background: '#fff', borderRadius: 10, padding: 24, textAlign: 'center',
+              background: 'var(--m-surface)', borderRadius: 10, padding: 24, textAlign: 'center',
               border: '1px solid #eef0f3', color: '#888', fontSize: 13,
             }}>
               当前选择"{objectType}"无需关联单据，下一步直接填检验项目
@@ -280,18 +280,18 @@ export default function MobileMicrobeInspection() {
         <>
           {/* 关联单据信息卡 */}
           {selected && (
-            <div style={{ background: '#fff', borderRadius: 10, padding: 14, border: '1px solid #eef0f3', marginBottom: 12 }}>
+            <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, border: '1px solid #eef0f3', marginBottom: 12 }}>
               <div style={{ fontSize: 13, color: '#888', marginBottom: 4 }}>关联单据</div>
               <div style={{ fontSize: 15, fontWeight: 600 }}>{selected.no}</div>
-              <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+              <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginTop: 4 }}>
                 {selected.material_code} {selected.material_name || ''}
               </div>
             </div>
           )}
 
           {/* 检验项目 */}
-          <div style={{ background: '#fff', borderRadius: 10, padding: 14, border: '1px solid #eef0f3', marginBottom: 12 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#666', marginBottom: 10 }}>微生物检验项目</div>
+          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, border: '1px solid #eef0f3', marginBottom: 12 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--m-text-2)', marginBottom: 10 }}>微生物检验项目</div>
             {items.map((it, idx) => (
               <div key={idx} style={{ padding: '10px 0', borderBottom: idx < items.length - 1 ? '1px dashed #f0f0f0' : 'none' }}>
                 <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 6 }}>{it.name}</div>
@@ -300,20 +300,20 @@ export default function MobileMicrobeInspection() {
                     placeholder="数值"
                     value={it.value}
                     onChange={(v) => updateItem(idx, 'value', v)}
-                    style={{ flex: 1, fontSize: 13, background: '#f7f8fa', borderRadius: 6, padding: '4px 8px' }}
+                    style={{ flex: 1, fontSize: 13, background: 'var(--m-surface-2)', borderRadius: 6, padding: '4px 8px' }}
                   />
                   <Input
                     placeholder="单位"
                     value={it.unit}
                     onChange={(v) => updateItem(idx, 'unit', v)}
-                    style={{ width: 80, fontSize: 13, background: '#f7f8fa', borderRadius: 6, padding: '4px 8px' }}
+                    style={{ width: 80, fontSize: 13, background: 'var(--m-surface-2)', borderRadius: 6, padding: '4px 8px' }}
                   />
                 </div>
                 <div style={{ display: 'flex', gap: 20 }}>
 <Radio.Group value={it.result} onChange={(v) => updateItem(idx, 'result', v as any)}>
 
-                  <Radio value="合格" style={{ color: '#4CAF50' }}>合格</Radio>
-                  <Radio value="不合格" style={{ color: '#F44336' }}>不合格</Radio>
+                  <Radio value="合格" style={{ color: 'var(--brand-color-success)' }}>合格</Radio>
+                  <Radio value="不合格" style={{ color: 'var(--brand-color-danger)' }}>不合格</Radio>
                 </Radio.Group>                </div>
 
               </div>
@@ -321,21 +321,21 @@ export default function MobileMicrobeInspection() {
           </div>
 
           {/* 检验时间 + 备注 */}
-          <div style={{ background: '#fff', borderRadius: 10, padding: 14, border: '1px solid #eef0f3', marginBottom: 14 }}>
-            <div style={{ fontSize: 13, color: '#666', marginBottom: 8 }}>检验时间</div>
+          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, border: '1px solid #eef0f3', marginBottom: 14 }}>
+            <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 8 }}>检验时间</div>
             <input
               type="datetime-local"
               value={inspectionTime}
               onChange={(e) => setInspectionTime(e.target.value)}
               style={{ width: '100%', padding: '8px 10px', fontSize: 14, border: '1px solid #eef0f3', borderRadius: 8 }}
             />
-            <div style={{ fontSize: 13, color: '#666', margin: '10px 0 6px' }}>备注</div>
+            <div style={{ fontSize: 13, color: 'var(--m-text-2)', margin: '10px 0 6px' }}>备注</div>
             <TextArea
               placeholder="选填：异常描述、处理建议..."
               value={remarks}
               onChange={setRemarks}
               rows={2}
-              style={{ background: '#f7f8fa', borderRadius: 8, padding: 8 }}
+              style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }}
             />
           </div>
 
@@ -353,5 +353,5 @@ export default function MobileMicrobeInspection() {
 }
 
 function EmptyHint({ text, sub }: { text: string; sub?: string }) {
-  return <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>{text}{sub && <div style={{ fontSize: 12, marginTop: 6 }}>{sub}</div>}</div>
+  return <div style={{ textAlign: 'center', padding: 40, color: 'var(--m-text-3)' }}>{text}{sub && <div style={{ fontSize: 12, marginTop: 6 }}>{sub}</div>}</div>
 }

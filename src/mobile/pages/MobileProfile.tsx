@@ -144,7 +144,7 @@ export function MobileProfile() {
           </div>
           <span
             onClick={() => navigate('/m/offline-queue')}
-            style={{ fontSize: 12, color: '#2196F3', cursor: 'pointer', fontWeight: 500 }}
+            style={{ fontSize: 12, color: 'var(--brand-color)', cursor: 'pointer', fontWeight: 500 }}
           >查看详情 →</span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -170,7 +170,7 @@ export function MobileProfile() {
         block
         color="primary"
         shape="rounded"
-        style={{ background: '#F44336', height: 46, fontSize: 15 }}
+        style={{ background: 'var(--brand-color-danger)', height: 46, fontSize: 15 }}
         onClick={handleLogout}
       >
         退出登录

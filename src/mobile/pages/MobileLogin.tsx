@@ -53,9 +53,9 @@ export default function MobileLogin() {
       background: 'linear-gradient(160deg, #1976D2 0%, #42A5F5 45%, #64B5F6 100%)',
     }}>
       {/* Logo + 标题 */}
-      <div style={{ textAlign: 'center', color: '#fff', marginBottom: 40 }}>
+      <div style={{ textAlign: 'center', color: 'var(--m-surface)', marginBottom: 40 }}>
         <div style={{
-          width: 72, height: 72, borderRadius: 18, background: '#fff',
+          width: 72, height: 72, borderRadius: 18, background: 'var(--m-surface)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           margin: '0 auto 16px', fontSize: 28, fontWeight: 800, color: '#1976D2',
           boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
@@ -68,10 +68,10 @@ export default function MobileLogin() {
 
       {/* 登录卡片 */}
       <div style={{
-        width: '100%', background: '#fff', borderRadius: 16, padding: '28px 22px',
+        width: '100%', background: 'var(--m-surface)', borderRadius: 16, padding: '28px 22px',
         boxShadow: '0 12px 32px rgba(0,0,0,0.12)',
       }}>
-        <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 20, color: '#333' }}>
+        <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 20, color: 'var(--m-text)' }}>
           账号登录
         </div>
 
@@ -103,7 +103,7 @@ export default function MobileLogin() {
           loading={loading}
           onClick={onSubmit}
           style={{
-            background: '#2196F3',
+            background: 'var(--brand-color)',
             borderRadius: 10,
             height: 48,
             fontSize: 17,
@@ -113,7 +113,7 @@ export default function MobileLogin() {
           登录
         </Button>
 
-        <div style={{ marginTop: 14, fontSize: 12, color: '#999', textAlign: 'center' }}>
+        <div style={{ marginTop: 14, fontSize: 12, color: 'var(--m-text-3)', textAlign: 'center' }}>
           东莞大满包装 · 长沙分公司
         </div>
       </div>

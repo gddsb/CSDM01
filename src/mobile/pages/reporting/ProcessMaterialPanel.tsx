@@ -149,11 +149,11 @@ export function ProcessMaterialPanel({
 
   const selStyle: React.CSSProperties = {
     width: '100%', padding: '10px 12px', borderRadius: 8,
-    border: '1px solid #e0e0e0', fontSize: 14, background: '#fff',
+    border: '1px solid #e0e0e0', fontSize: 14, background: 'var(--m-surface)',
   }
   const inputStyle: React.CSSProperties = {
     padding: '10px 12px', borderRadius: 8,
-    border: '1px solid #e0e0e0', fontSize: 14, background: '#fff',
+    border: '1px solid #e0e0e0', fontSize: 14, background: 'var(--m-surface)',
   }
 
   return (
@@ -169,12 +169,12 @@ export function ProcessMaterialPanel({
               {/* 行1：类型 + 料品 同一行 */}
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 <select value={draft.material_type || '投入'} onChange={(e) => setDraft(d => ({ ...d, material_type: e.target.value as any }))}
-                  style={{ width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }}>
+                  style={{ width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }}>
                   <option value="投入">投入</option>
                   <option value="退回">退回</option>
                 </select>
                 <select value={draft.bas_material_id || ''} onChange={(e) => handleMaterialSelect(e.target.value)}
-                  style={{ flex: 1, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }}>
+                  style={{ flex: 1, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }}>
                   <option value="">料品</option>
                   {materials.map(m => (
                     <option key={m.bas_material_id} value={m.bas_material_id}>
@@ -184,7 +184,7 @@ export function ProcessMaterialPanel({
                 </select>
               </div>
               {draft.material_name && (
-                <div style={{ fontSize: 11, color: '#2196F3', marginTop: 3, marginBottom: 4 }}>
+                <div style={{ fontSize: 11, color: 'var(--brand-color)', marginTop: 3, marginBottom: 4 }}>
                   自动带出: {draft.material_name} {draft.specification && `· ${draft.specification}`}
                 </div>
               )}
@@ -192,13 +192,13 @@ export function ProcessMaterialPanel({
               <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
                 <input placeholder="批号" value={draft.material_batch || ''}
                   onChange={(e) => setDraft(d => ({ ...d, material_batch: e.target.value }))}
-                  style={{ flex: 2, minWidth: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }} />
+                  style={{ flex: 2, minWidth: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }} />
                 <input placeholder="包号" value={draft.package_no || ''}
                   onChange={(e) => setDraft(d => ({ ...d, package_no: e.target.value }))}
-                  style={{ flex: 2, minWidth: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }} />
+                  style={{ flex: 2, minWidth: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }} />
                 <input type="number" min={0} placeholder="数量" value={draft.quantity || ''}
                   onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
-                  style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }} />
+                  style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }} />
                 <Button size="mini" color="primary" onClick={handleSave} style={{ flexShrink: 0 }}>保存</Button>
                 <Button size="mini" fill="outline" onClick={cancelEdit} style={{ flexShrink: 0 }}>取消</Button>
                 {draft.material_id && (
@@ -224,12 +224,12 @@ export function ProcessMaterialPanel({
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 500, color: row.material_type === '退回' ? '#f44336' : '#333' }}>
-                  {row.material_code && <span style={{ color: '#999', fontSize: 11, marginRight: 6 }}>{row.material_code}</span>}
+                <div style={{ fontSize: 14, fontWeight: 500, color: row.material_type === '退回' ? '#f44336' : 'var(--m-text)' }}>
+                  {row.material_code && <span style={{ color: 'var(--m-text-3)', fontSize: 11, marginRight: 6 }}>{row.material_code}</span>}
                   {row.material_name || '—'}
                   {row.material_type === '退回' && <span style={{ color: '#f44336', fontSize: 10, marginLeft: 4 }}>[退回]</span>}
                 </div>
-                <div style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>
+                <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>
                   数量 ×{row.quantity}
                   {row.material_batch && <span style={{ marginLeft: 6 }}>批:{row.material_batch}</span>}
                   {row.package_no && <span style={{ marginLeft: 6 }}>包:{row.package_no}</span>}
@@ -238,14 +238,14 @@ export function ProcessMaterialPanel({
                   )}
                 </div>
               </div>
-              {editable && <span style={{ color: '#ccc', fontSize: 16 }}>›</span>}
+              {editable && <span style={{ color: 'var(--m-text-3)', fontSize: 16 }}>›</span>}
             </div>
           </div>
         )
       })}
 
       {processMaterials.length === 0 && (
-        <div style={{ textAlign: 'center', padding: 20, color: '#bbb', fontSize: 12 }}>— 该工序暂无投料记录 —</div>
+        <div style={{ textAlign: 'center', padding: 20, color: 'var(--m-text-3)', fontSize: 12 }}>— 该工序暂无投料记录 —</div>
       )}
 
       {editable && activeProcessId && expandedId !== '__new__' && (
@@ -259,12 +259,12 @@ export function ProcessMaterialPanel({
           {/* 行1：类型 + 料品 同一行 */}
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             <select value={draft.material_type} onChange={(e) => setDraft(d => ({ ...d, material_type: e.target.value as any }))}
-              style={{ width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }}>
+              style={{ width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }}>
               <option value="投入">投入</option>
               <option value="退回">退回</option>
             </select>
             <select value={draft.bas_material_id || ''} onChange={(e) => handleMaterialSelect(e.target.value)}
-              style={{ flex: 1, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }}>
+              style={{ flex: 1, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }}>
               <option value="">料品</option>
               {materials.map(m => (
                 <option key={m.bas_material_id} value={m.bas_material_id}>{m.material_code} {m.material_name}</option>
@@ -272,7 +272,7 @@ export function ProcessMaterialPanel({
             </select>
           </div>
           {draft.material_name && (
-            <div style={{ fontSize: 11, color: '#2196F3', marginTop: 3, marginBottom: 4 }}>
+            <div style={{ fontSize: 11, color: 'var(--brand-color)', marginTop: 3, marginBottom: 4 }}>
               自动带出: {draft.material_name} {draft.specification && `· ${draft.specification}`}
             </div>
           )}
@@ -280,13 +280,13 @@ export function ProcessMaterialPanel({
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
             <input placeholder="批号" value={draft.material_batch || ''}
               onChange={(e) => setDraft(d => ({ ...d, material_batch: e.target.value }))}
-              style={{ flex: 2, minWidth: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }} />
+              style={{ flex: 2, minWidth: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }} />
             <input placeholder="包号" value={draft.package_no || ''}
               onChange={(e) => setDraft(d => ({ ...d, package_no: e.target.value }))}
-              style={{ flex: 2, minWidth: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }} />
+              style={{ flex: 2, minWidth: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }} />
             <input type="number" min={0} placeholder="数量" value={draft.quantity || ''}
               onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
-              style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }} />
+              style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }} />
             <Button size="mini" color="primary" onClick={handleSave} style={{ flexShrink: 0 }}>保存</Button>
             <Button size="mini" fill="outline" onClick={cancelEdit} style={{ flexShrink: 0 }}>取消</Button>
           </div>
@@ -303,7 +303,7 @@ export function ProcessMaterialPanel({
       )}
 
       {!activeProcessId && (
-        <div style={{ textAlign: 'center', padding: 20, color: '#bbb', fontSize: 12 }}>请先选择工序</div>
+        <div style={{ textAlign: 'center', padding: 20, color: 'var(--m-text-3)', fontSize: 12 }}>请先选择工序</div>
       )}
     </div>
   )

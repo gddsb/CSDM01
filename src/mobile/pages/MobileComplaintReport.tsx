@@ -115,7 +115,7 @@ export default function MobileComplaintReport() {
       <div className="mobile-page" style={{ textAlign: 'center', padding: '60px 20px' }}>
         <div style={{ fontSize: 60 }}>📢</div>
         <div style={{ fontSize: 18, fontWeight: 600, margin: '16px 0 8px' }}>投诉上报成功</div>
-        {successNo && <div style={{ fontSize: 13, color: '#666', marginBottom: 4 }}>投诉单号：{successNo}</div>}
+        {successNo && <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 4 }}>投诉单号：{successNo}</div>}
         <div style={{ fontSize: 13, color: '#888', marginBottom: 24 }}>{complaintType} · {source}</div>
         <div style={{ display: 'flex', gap: 12 }}>
           <Button block fill="outline" onClick={() => reset()}>继续上报</Button>
@@ -132,9 +132,9 @@ export default function MobileComplaintReport() {
           <Card>
             <List.Item
               onClick={() => pick('投诉类型', COMPLAINT_TYPES.map((v) => ({ label: v, value: v })), complaintType, setComplaintType)}
-              extra={complaintType || <span style={{ color: '#bbb' }}>请选择</span>}
+              extra={complaintType || <span style={{ color: 'var(--m-text-3)' }}>请选择</span>}
               arrow
-            >投诉类型 <span style={{ color: '#F44336' }}>*</span></List.Item>
+            >投诉类型 <span style={{ color: 'var(--brand-color-danger)' }}>*</span></List.Item>
             <List.Item
               onClick={() => pick('投诉来源', SOURCES.map((v) => ({ label: v, value: v })), source, setSource)}
               extra={source}
@@ -178,15 +178,15 @@ export default function MobileComplaintReport() {
         <>
           <Card>
             <div style={{ padding: 14 }}>
-              <div style={{ fontSize: 13, color: '#666', marginBottom: 8 }}>
-                投诉详细描述 <span style={{ color: '#F44336' }}>*</span>
+              <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 8 }}>
+                投诉详细描述 <span style={{ color: 'var(--brand-color-danger)' }}>*</span>
               </div>
               <TextArea
                 placeholder="请描述具体的问题现象、影响范围、客户诉求..."
                 value={complaintDesc}
                 onChange={setComplaintDesc}
                 rows={5}
-                style={{ background: '#f7f8fa', borderRadius: 8, padding: 8 }}
+                style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }}
               />
             </div>
           </Card>
@@ -195,7 +195,7 @@ export default function MobileComplaintReport() {
           <Card>
             <List.Item
               onClick={() => pick('处理方向', HANDLE_DIRECTIONS.map((v) => ({ label: v, value: v })), handleDirection, setHandleDirection)}
-              extra={handleDirection || <span style={{ color: '#bbb' }}>请选择</span>}
+              extra={handleDirection || <span style={{ color: 'var(--m-text-3)' }}>请选择</span>}
               arrow
             >建议处理方向</List.Item>
             <div style={{ padding: '10px 16px', borderTop: '1px solid #f0f0f0' }}>
@@ -218,7 +218,7 @@ export default function MobileComplaintReport() {
                 value={remarks}
                 onChange={setRemarks}
                 rows={2}
-                style={{ background: '#f7f8fa', borderRadius: 8, padding: 8 }}
+                style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }}
               />
             </div>
           </Card>
@@ -241,7 +241,7 @@ export default function MobileComplaintReport() {
 function Card({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
-      background: '#fff', borderRadius: 10, border: '1px solid #eef0f3',
+      background: 'var(--m-surface)', borderRadius: 10, border: '1px solid #eef0f3',
       marginBottom: 12, overflow: 'hidden',
     }}>
       {children}
@@ -251,7 +251,7 @@ function Card({ children }: { children: React.ReactNode }) {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ fontSize: 13, fontWeight: 600, color: '#666', marginTop: 16, marginBottom: 6, paddingLeft: 4 }}>
+    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--m-text-2)', marginTop: 16, marginBottom: 6, paddingLeft: 4 }}>
       {children}
     </div>
   )
@@ -262,7 +262,7 @@ function InputField({ label, value, onChange, placeholder, type = 'text' }: {
 }) {
   return (
     <div style={{ padding: '10px 16px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: 12 }}>
-      <div style={{ width: 70, fontSize: 13, color: '#666' }}>{label}</div>
+      <div style={{ width: 70, fontSize: 13, color: 'var(--m-text-2)' }}>{label}</div>
       <Input
         type={type}
         placeholder={placeholder}

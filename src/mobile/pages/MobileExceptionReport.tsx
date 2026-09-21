@@ -198,7 +198,7 @@ export default function MobileExceptionReport() {
       <div className="mobile-page" style={{ textAlign: 'center', padding: '60px 20px' }}>
         <div style={{ fontSize: 60 }}>✅</div>
         <div style={{ fontSize: 18, fontWeight: 600, margin: '16px 0 8px' }}>异常已上报</div>
-        <div style={{ fontSize: 13, color: '#666', marginBottom: 4 }}>
+        <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 4 }}>
           {exceptionType} · {selected.report_no || selected.order_no}
         </div>
         {successNo && (
@@ -228,9 +228,9 @@ export default function MobileExceptionReport() {
         </div>
         <div className="mobile-page-scroll-list">
           {loading ? (
-            <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>
+            <div style={{ textAlign: 'center', padding: 40, color: 'var(--m-text-3)' }}>加载中...</div>
           ) : orders.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
+            <div style={{ textAlign: 'center', padding: 40, color: 'var(--m-text-3)' }}>
               暂无开工报工单<br />
               <span style={{ fontSize: 12 }}>请先在 PC 端下发订单并报工</span>
             </div>
@@ -245,7 +245,7 @@ export default function MobileExceptionReport() {
                     description={
                       <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
                         {o.material_name || ''} · {o.line_name || '—'}
-                        <span style={{ marginLeft: 8, color: '#4CAF50' }}>{o.status}</span>
+                        <span style={{ marginLeft: 8, color: 'var(--brand-color-success)' }}>{o.status}</span>
                       </div>
                     }
                   >
@@ -255,7 +255,7 @@ export default function MobileExceptionReport() {
                         <span
                           onClick={(e) => { e.stopPropagation(); setDetailOrder({ order_id: o.order_id!, order_no: o.order_no || o.report_no } as MobileOrderData) }}
                           style={{
-                            fontSize: 11, color: '#2196F3', fontWeight: 400,
+                            fontSize: 11, color: 'var(--brand-color)', fontWeight: 400,
                             border: '1px solid #2196F3', borderRadius: 10,
                             padding: '1px 7px', cursor: 'pointer',
                           }}
@@ -284,7 +284,7 @@ export default function MobileExceptionReport() {
           <div
             onClick={() => selected.order_id && setDetailOrder({ order_id: selected.order_id!, order_no: selected.order_no || selected.report_no } as MobileOrderData)}
             style={{
-              background: '#fff', borderRadius: 10, padding: 14, marginBottom: 14,
+              background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginBottom: 14,
               border: '1px solid #eef0f3',
               cursor: selected.order_id ? 'pointer' : 'default',
             }}
@@ -292,7 +292,7 @@ export default function MobileExceptionReport() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ fontSize: 15, fontWeight: 600 }}>{selected.report_no || selected.order_no}</div>
               {selected.order_id && (
-                <span style={{ fontSize: 11, color: '#2196F3', border: '1px solid #2196F3', borderRadius: 10, padding: '1px 7px' }}>
+                <span style={{ fontSize: 11, color: 'var(--brand-color)', border: '1px solid #2196F3', borderRadius: 10, padding: '1px 7px' }}>
                   查看工单详情 ›
                 </span>
               )}
@@ -356,24 +356,24 @@ export default function MobileExceptionReport() {
             style={{ '--border-radius': '10px', marginBottom: 14 } as any}
           >
             <div style={{ padding: '0 12px' }}>
-              <div style={{ fontSize: 13, color: '#666', margin: '8px 0 6px' }}>开始时间</div>
+              <div style={{ fontSize: 13, color: 'var(--m-text-2)', margin: '8px 0 6px' }}>开始时间</div>
               <input
                 type="datetime-local"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
                 style={{
                   width: '100%', padding: '8px 10px', fontSize: 14,
-                  border: '1px solid #eef0f3', borderRadius: 8, background: '#fff',
+                  border: '1px solid #eef0f3', borderRadius: 8, background: 'var(--m-surface)',
                 }}
               />
-              <div style={{ fontSize: 13, color: '#666', margin: '12px 0 6px' }}>结束时间（可选）</div>
+              <div style={{ fontSize: 13, color: 'var(--m-text-2)', margin: '12px 0 6px' }}>结束时间（可选）</div>
               <input
                 type="datetime-local"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
                 style={{
                   width: '100%', padding: '8px 10px', fontSize: 14,
-                  border: '1px solid #eef0f3', borderRadius: 8, background: '#fff',
+                  border: '1px solid #eef0f3', borderRadius: 8, background: 'var(--m-surface)',
                 }}
               />
             </div>
@@ -389,7 +389,7 @@ export default function MobileExceptionReport() {
                 value={description}
                 onChange={setDescription}
                 rows={4}
-                style={{ background: '#f7f8fa', borderRadius: 8, padding: 8, marginTop: 8 }}
+                style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8, marginTop: 8 }}
               />
             </div>
           </Card>

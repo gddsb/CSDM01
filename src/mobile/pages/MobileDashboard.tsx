@@ -48,7 +48,7 @@ export default function MobileDashboard() {
 
   // === 通知区（从 todos 中筛选高优先级）===
   const notices = useMemo(
-    () => todos.filter((t) => HIGH_PRIORITY_ICONS.has(t.icon) || t.color === '#E91E63' || t.color === '#F44336').slice(0, 3),
+    () => todos.filter((t) => HIGH_PRIORITY_ICONS.has(t.icon) || t.color === 'var(--brand-color-danger)' || t.color === 'var(--brand-color-danger)').slice(0, 3),
     [todos],
   )
 
@@ -71,13 +71,13 @@ export default function MobileDashboard() {
     const apis: Promise<TodoResp>[] = [
       // 下发 → 待开工
       api.get('/production/orders', { params: { page: 1, pageSize: 1, status: 1 } })
-        .then((r: any) => ({ icon: '📋', text: '待开工订单', count: r.data?.total ?? r.total ?? 0, path: '/m/production-orders?tab=下发', color: '#2196F3' })),
+        .then((r: any) => ({ icon: '📋', text: '待开工订单', count: r.data?.total ?? r.total ?? 0, path: '/m/production-orders?tab=下发', color: 'var(--brand-color)' })),
       // 开工 → 生产中
       api.get('/production/orders', { params: { page: 1, pageSize: 1, status: 2 } })
-        .then((r: any) => ({ icon: '🏃', text: '生产中订单', count: r.data?.total ?? r.total ?? 0, path: '/m/production-orders?tab=开工', color: '#4CAF50' })),
+        .then((r: any) => ({ icon: '🏃', text: '生产中订单', count: r.data?.total ?? r.total ?? 0, path: '/m/production-orders?tab=开工', color: 'var(--brand-color-success)' })),
       // 待报工
       api.get('/production/report-orders', { params: { page: 1, pageSize: 1, status: '待报工' } })
-        .then((r: any) => ({ icon: '📝', text: '待报工任务', count: r.data?.total ?? r.total ?? 0, path: '/m/process-reporting', color: '#FF9800' })),
+        .then((r: any) => ({ icon: '📝', text: '待报工任务', count: r.data?.total ?? r.total ?? 0, path: '/m/process-reporting', color: 'var(--brand-color-warning)' })),
     ]
 
     if (hasPermission('quality:incoming')) {
@@ -97,7 +97,7 @@ export default function MobileDashboard() {
     if (hasPermission('device:fault')) {
       apis.push(
         api.get('/device-faults', { params: { page: 1, pageSize: 1, status: '待处理' } })
-          .then((r: any) => ({ icon: '🚨', text: '设备故障待处理', count: r.data?.total ?? r.total ?? 0, path: '/m/device-fault', color: '#F44336' })),
+          .then((r: any) => ({ icon: '🚨', text: '设备故障待处理', count: r.data?.total ?? r.total ?? 0, path: '/m/device-fault', color: 'var(--brand-color-danger)' })),
       )
     }
     if (hasPermission('device:calibration')) {
@@ -280,10 +280,10 @@ export default function MobileDashboard() {
 
         {/* ============ 顶部：欢迎 + 通知 ============ */}
         <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 18, fontWeight: 600, color: '#1a1a1a', marginBottom: 4 }}>
+          <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--m-text)', marginBottom: 4 }}>
             你好，{currentUser?.real_name || '同事'} 👋
           </div>
-          <div style={{ fontSize: 12, color: '#999' }}>
+          <div style={{ fontSize: 12, color: 'var(--m-text-3)' }}>
             {new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })}
           </div>
         </div>
@@ -316,7 +316,7 @@ export default function MobileDashboard() {
                   <span>{n.text}</span>
                   <span
                     style={{
-                      background: '#F44336', color: '#fff', fontSize: 11,
+                      background: 'var(--brand-color-danger)', color: 'var(--m-surface)', fontSize: 11,
                       padding: '0 6px', borderRadius: 10, fontWeight: 600,
                     }}
                   >
@@ -335,8 +335,8 @@ export default function MobileDashboard() {
         {/* ⚡ 快捷操作（两行固定 8 个 + 长按编辑） */}
         <div style={{ marginBottom: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#333' }}>⚡ 快捷操作</span>
-            <span style={{ fontSize: 11, color: '#bbb' }}>长按编辑</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--m-text)' }}>⚡ 快捷操作</span>
+            <span style={{ fontSize: 11, color: 'var(--m-text-3)' }}>长按编辑</span>
           </div>
           <div
             style={{
@@ -371,15 +371,15 @@ export default function MobileDashboard() {
 
         {/* 📋 代办任务（50%） */}
         <div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: '#333', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--m-text)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
             📋 待办事项
-            <span style={{ fontSize: 11, color: '#999', fontWeight: 400 }}>（{todos.length} 项）</span>
+            <span style={{ fontSize: 11, color: 'var(--m-text-3)', fontWeight: 400 }}>（{todos.length} 项）</span>
           </div>
 
           {todos.length === 0 ? (
             <div style={{
               background: 'var(--m-surface)', borderRadius: 'var(--m-radius-lg)', padding: '30px 16px',
-              textAlign: 'center', color: '#bbb', fontSize: 13,
+              textAlign: 'center', color: 'var(--m-text-3)', fontSize: 13,
             }}>
               🎉 太棒了！暂无待办任务
             </div>
@@ -405,18 +405,18 @@ export default function MobileDashboard() {
                     {t.icon}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, color: '#333', fontWeight: 500 }}>{t.text}</div>
-                    <div style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>点击查看</div>
+                    <div style={{ fontSize: 14, color: 'var(--m-text)', fontWeight: 500 }}>{t.text}</div>
+                    <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>点击查看</div>
                   </div>
                   <div
                     style={{
-                      background: t.color, color: '#fff', fontSize: 13,
+                      background: t.color, color: 'var(--m-surface)', fontSize: 13,
                       fontWeight: 700, padding: '2px 10px', borderRadius: 12, flexShrink: 0,
                     }}
                   >
                     {t.count}
                   </div>
-                  <span style={{ color: '#ccc', fontSize: 16 }}>›</span>
+                  <span style={{ color: 'var(--m-text-3)', fontSize: 16 }}>›</span>
                 </div>
               ))}
             </div>
@@ -436,7 +436,7 @@ export default function MobileDashboard() {
         ]}
       >
         {/* 已显示的（可排序 + 删除） */}
-        <div style={{ fontSize: 12, color: '#666', fontWeight: 600, marginBottom: 8 }}>
+        <div style={{ fontSize: 12, color: 'var(--m-text-2)', fontWeight: 600, marginBottom: 8 }}>
           已显示（{ordered.length}）
         </div>
         {ordered.map((entry, idx) => (
@@ -450,12 +450,12 @@ export default function MobileDashboard() {
               color: entry.color,
             }}>{entry.icon}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, color: '#333' }}>{entry.title}</div>
+              <div style={{ fontSize: 13, color: 'var(--m-text)' }}>{entry.title}</div>
             </div>
             <button onClick={() => moveEntry(entry.key, -1)} disabled={idx === 0}
-              style={{ border: 'none', background: '#f5f5f5', borderRadius: 4, padding: '4px 8px', fontSize: 11, cursor: idx === 0 ? 'not-allowed' : 'pointer', opacity: idx === 0 ? 0.4 : 1 }}>↑</button>
+              style={{ border: 'none', background: 'var(--m-surface-2)', borderRadius: 4, padding: '4px 8px', fontSize: 11, cursor: idx === 0 ? 'not-allowed' : 'pointer', opacity: idx === 0 ? 0.4 : 1 }}>↑</button>
             <button onClick={() => moveEntry(entry.key, 1)} disabled={idx === ordered.length - 1}
-              style={{ border: 'none', background: '#f5f5f5', borderRadius: 4, padding: '4px 8px', fontSize: 11, cursor: idx === ordered.length - 1 ? 'not-allowed' : 'pointer', opacity: idx === ordered.length - 1 ? 0.4 : 1 }}>↓</button>
+              style={{ border: 'none', background: 'var(--m-surface-2)', borderRadius: 4, padding: '4px 8px', fontSize: 11, cursor: idx === ordered.length - 1 ? 'not-allowed' : 'pointer', opacity: idx === ordered.length - 1 ? 0.4 : 1 }}>↓</button>
             <button onClick={() => removeEntry(entry.key)}
               style={{ border: 'none', background: '#ffebee', color: '#f44336', borderRadius: 4, padding: '4px 8px', fontSize: 11, cursor: 'pointer' }}>删除</button>
           </div>
@@ -464,7 +464,7 @@ export default function MobileDashboard() {
         {/* 可用但未显示的 */}
         {allAvailable.length > 0 && (
           <>
-            <div style={{ fontSize: 12, color: '#666', fontWeight: 600, marginTop: 14, marginBottom: 8 }}>
+            <div style={{ fontSize: 12, color: 'var(--m-text-2)', fontWeight: 600, marginTop: 14, marginBottom: 8 }}>
               可添加（{allAvailable.length}）
             </div>
             {allAvailable.map((entry) => (
@@ -476,9 +476,9 @@ export default function MobileDashboard() {
                   background: hexToRgba(entry.color, 0.08), display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: entry.color, fontSize: 14,
                 }}>{entry.icon}</div>
-                <div style={{ flex: 1, fontSize: 12, color: '#555' }}>{entry.title}</div>
+                <div style={{ flex: 1, fontSize: 12, color: 'var(--m-text-2)' }}>{entry.title}</div>
                 <button onClick={() => addEntry(entry.key)}
-                  style={{ border: 'none', background: '#e3f2fd', color: '#2196F3', borderRadius: 4, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>+ 添加</button>
+                  style={{ border: 'none', background: '#e3f2fd', color: 'var(--brand-color)', borderRadius: 4, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>+ 添加</button>
               </div>
             ))}
           </>

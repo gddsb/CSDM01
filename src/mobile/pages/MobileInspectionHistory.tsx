@@ -84,7 +84,7 @@ function resultTag(r?: string) {
     <span style={{
       fontSize: 11, padding: '1px 8px', borderRadius: 8,
       background: isOk ? '#E8F5E9' : '#FFEBEE',
-      color: isOk ? '#4CAF50' : '#F44336',
+      color: isOk ? 'var(--brand-color-success)' : 'var(--brand-color-danger)',
       marginLeft: 6,
     }}>{r}</span>
   )
@@ -182,8 +182,8 @@ export default function MobileInspectionHistory() {
               onClick={() => setDateRange(o.k as any)}
               style={{
                 padding: '5px 12px', borderRadius: 14, fontSize: 12,
-                background: dateRange === o.k ? '#2196F3' : '#f4f5f7',
-                color: dateRange === o.k ? '#fff' : '#666',
+                background: dateRange === o.k ? 'var(--brand-color)' : '#f4f5f7',
+                color: dateRange === o.k ? 'var(--m-surface)' : 'var(--m-text-2)',
                 cursor: 'pointer', whiteSpace: 'nowrap',
               }}
             >{o.t}</span>
@@ -216,7 +216,7 @@ export default function MobileInspectionHistory() {
                       {r.no || '(无单号)'}
                       {resultTag(r.result)}
                     </div>
-                    <div style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>
+                    <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>
                       {fmtTime(r.createdAt)} · {r.status || ''}
                     </div>
                   </div>
@@ -232,5 +232,5 @@ export default function MobileInspectionHistory() {
 }
 
 function EmptyHint({ text, sub }: { text: string; sub?: string }) {
-  return <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>{text}{sub && <div style={{ fontSize: 12, marginTop: 6 }}>{sub}</div>}</div>
+  return <div style={{ textAlign: 'center', padding: 40, color: 'var(--m-text-3)' }}>{text}{sub && <div style={{ fontSize: 12, marginTop: 6 }}>{sub}</div>}</div>
 }

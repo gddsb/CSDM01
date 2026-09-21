@@ -213,11 +213,11 @@ export default function MobileProcessReporting() {
   if (phase === 'select') {
     return (
       <div style={{ padding: 16, background: '#f5f6fa', minHeight: '100vh' }}>
-        <h2 style={{ fontSize: 18, margin: '0 0 12px', color: '#333' }}>📋 选择开工订单</h2>
-        {orders.length === 0 && <div style={{ color: '#999', textAlign: 'center', padding: 30 }}>— 暂无开工订单 —</div>}
+        <h2 style={{ fontSize: 18, margin: '0 0 12px', color: 'var(--m-text)' }}>📋 选择开工订单</h2>
+        {orders.length === 0 && <div style={{ color: 'var(--m-text-3)', textAlign: 'center', padding: 30 }}>— 暂无开工订单 —</div>}
         {orders.map((o) => (
           <div key={o.order_id} style={{
-            background: '#fff', borderRadius: 10, padding: 12, marginBottom: 10,
+            background: 'var(--m-surface)', borderRadius: 10, padding: 12, marginBottom: 10,
             border: '1px solid #eef0f3',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -246,7 +246,7 @@ export default function MobileProcessReporting() {
 
       {/* ========== 报工区域（一个卡片 + 两个一级 Tab） ========== */}
       <div style={{
-        background: '#fff', margin: '8px 10px', borderRadius: 10,
+        background: 'var(--m-surface)', margin: '8px 10px', borderRadius: 10,
         boxShadow: '0 1px 4px rgba(0,0,0,.04)', overflow: 'hidden',
       }}>
         {/* 一级 Tab：工序报工 / 工单报工 */}
@@ -388,7 +388,7 @@ function Header({ report, onBack, onFinish }: { report: ReportOrder; onBack: () 
   const isDone = String(report.status) === '4' || String(report.status) === '已完工'
   return (
     <div style={{
-      background: 'linear-gradient(135deg,#1890ff,#096dd9)', color: '#fff',
+      background: 'linear-gradient(135deg,#1890ff,#096dd9)', color: 'var(--m-surface)',
       padding: '12px 14px',
     }}>
       {/* 行1：编号 + 状态 + 返回/完工按钮 同一行 */}
@@ -428,7 +428,7 @@ function StatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportSta
   ]
   return (
     <div style={{
-      background: '#fff', margin: '10px 10px 0', borderRadius: 10, padding: '10px 12px',
+      background: 'var(--m-surface)', margin: '10px 10px 0', borderRadius: 10, padding: '10px 12px',
       boxShadow: '0 1px 4px rgba(0,0,0,.04)',
     }}>
       <div style={{ fontSize: 11, color: '#888', fontWeight: 600, marginBottom: 6 }}>📊 报工单汇总</div>
@@ -458,7 +458,7 @@ function SectionDivider({ title, color }: { title: string; color: string }) {
       padding: '14px 12px 6px', display: 'flex', alignItems: 'center', gap: 8,
     }}>
       <div style={{ width: 4, height: 16, background: color, borderRadius: 2 }} />
-      <div style={{ fontSize: 14, fontWeight: 600, color: '#333' }}>{title}</div>
+      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--m-text)' }}>{title}</div>
     </div>
   )
 }
@@ -485,7 +485,7 @@ function ProcessSelector({
         onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
         style={{
           flex: 1, padding: '7px 10px', borderRadius: 6,
-          border: '1px solid #ddd', fontSize: 13, background: '#fff',
+          border: '1px solid #ddd', fontSize: 13, background: 'var(--m-surface)',
         }}
       >
         {processes.map(p => (
@@ -497,7 +497,7 @@ function ProcessSelector({
       {current?.must_report && (
         <span style={{
           fontSize: 10, padding: '1px 6px', borderRadius: 10,
-          background: '#f44336', color: '#fff', fontWeight: 700, flexShrink: 0,
+          background: '#f44336', color: 'var(--m-surface)', fontWeight: 700, flexShrink: 0,
         }}>必报</span>
       )}
     </div>

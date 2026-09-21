@@ -156,16 +156,16 @@ export function MobileLayout() {
 
         const content = (
           <div>
-            <div style={{ fontSize: 14, color: '#333', marginBottom: 8, fontWeight: 500 }}>
+            <div style={{ fontSize: 14, color: 'var(--m-text)', marginBottom: 8, fontWeight: 500 }}>
               新版本 v{rel.version}（build {rel.buildNumber}）
             </div>
             {rel.updateNotes && (
-              <div style={{ fontSize: 12, color: '#666', background: '#f5f7fa', padding: 10, borderRadius: 6, marginBottom: 8 }}>
+              <div style={{ fontSize: 12, color: 'var(--m-text-2)', background: '#f5f7fa', padding: 10, borderRadius: 6, marginBottom: 8 }}>
                 {rel.updateNotes}
               </div>
             )}
             {rel.apkSize && (
-              <div style={{ fontSize: 11, color: '#999' }}>
+              <div style={{ fontSize: 11, color: 'var(--m-text-3)' }}>
                 📦 {(rel.apkSize / 1024 / 1024).toFixed(1)}MB · Android
               </div>
             )}

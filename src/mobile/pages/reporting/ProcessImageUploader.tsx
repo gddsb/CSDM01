@@ -76,9 +76,9 @@ export function ProcessImageUploader({
   return (
     <div>
       {label && (
-        <div style={{ fontSize: 12, color: '#666', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+        <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
           📷 {label}
-          <span style={{ color: '#bbb', fontSize: 10 }}>（最多 {maxCount} 张）</span>
+          <span style={{ color: 'var(--m-text-3)', fontSize: 10 }}>（最多 {maxCount} 张）</span>
         </div>
       )}
       <ImageUploader

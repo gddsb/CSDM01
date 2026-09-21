@@ -162,24 +162,24 @@ export default function MobileDeviceInspection() {
       <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 30 }}>
         <>
           <div style={{
-            background: '#fff', borderRadius: 10, padding: 14, marginBottom: 14,
+            background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginBottom: 14,
             border: '1px solid #eef0f3', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}>
             <div>
               <div style={{ fontSize: 15, fontWeight: 600 }}>{selectedDevice.device_name}</div>
               <div style={{ fontSize: 12, color: '#888' }}>{selectedDevice.device_code}</div>
             </div>
-            <span style={{ fontSize: 12, color: '#2196F3', cursor: 'pointer' }} onClick={() => setSelectedDevice(null)}>更换</span>
+            <span style={{ fontSize: 12, color: 'var(--brand-color)', cursor: 'pointer' }} onClick={() => setSelectedDevice(null)}>更换</span>
           </div>
 
           {records.length === 0 ? (
             <EmptyHint text="该设备暂无可执行的点检/保养任务" />
           ) : (
             <>
-              <div style={{ fontSize: 13, color: '#666', marginBottom: 8 }}>待执行记录（{records.length}）</div>
+              <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 8 }}>待执行记录（{records.length}）</div>
               {records.map((r) => (
                 <div key={r.record_id} style={{
-                  background: '#fff', borderRadius: 10, padding: 12, marginBottom: 10, border: '1px solid #eef0f3',
+                  background: 'var(--m-surface)', borderRadius: 10, padding: 12, marginBottom: 10, border: '1px solid #eef0f3',
                 }}>
                   <div style={{ fontWeight: 500, marginBottom: 4 }}>{r.standard_name || '点检项'}</div>
                   <div style={{ fontSize: 12, color: '#888' }}>状态: {r.status} · 计划日期: {r.plan_date || '—'}</div>
@@ -187,11 +187,11 @@ export default function MobileDeviceInspection() {
               ))}
 
               {/* 点检表单（简化：合格项数 + 不合格项列表）*/}
-              <div style={{ background: '#fff', borderRadius: 10, padding: 14, marginTop: 14, border: '1px solid #eef0f3' }}>
+              <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginTop: 14, border: '1px solid #eef0f3' }}>
                 <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 10 }}>点检结果</div>
-                <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>合格项数（简化）</div>
+                <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginBottom: 6 }}>合格项数（简化）</div>
                 <Stepper value={okCount} min={0} onChange={(v) => setOkCount(Number(v) || 0)} style={{ '--width': '140px' } as any} />
-                <div style={{ fontSize: 12, color: '#666', marginTop: 14, marginBottom: 6 }}>
+                <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginTop: 14, marginBottom: 6 }}>
                   不合格项（勾选）
                 </div>
                 <Checkbox.Group value={fail} onChange={(v) => setFail(v as string[])}>
@@ -221,7 +221,7 @@ export default function MobileDeviceInspection() {
 
 function EmptyHint({ text, sub }: { text: string; sub?: string }) {
   return (
-    <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
+    <div style={{ textAlign: 'center', padding: 40, color: 'var(--m-text-3)' }}>
       {text}{sub && <div style={{ fontSize: 12, marginTop: 6 }}>{sub}</div>}
     </div>
   )

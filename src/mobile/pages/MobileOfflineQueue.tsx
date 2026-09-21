@@ -23,20 +23,20 @@ type Filter = 'all' | 'pending' | 'failed' | 'done' | 'syncing'
 
 // source 业务标签 → 友好展示
 const SOURCE_META: Record<string, { label: string; icon: string; color: string }> = {
-  'process-reporting': { label: '移动报工', icon: '📝', color: '#2196F3' },
-  'exception-report': { label: '异常上报', icon: '⚠️', color: '#F44336' },
+  'process-reporting': { label: '移动报工', icon: '📝', color: 'var(--brand-color)' },
+  'exception-report': { label: '异常上报', icon: '⚠️', color: 'var(--brand-color-danger)' },
   'process-inspection': { label: '过程检验', icon: '🔍', color: '#3F51B5' },
-  'product-inspection': { label: '成品检验', icon: '🏷️', color: '#FF9800' },
-  'incoming-inspection': { label: '来料检验', icon: '📦', color: '#4CAF50' },
-  'device-inspection': { label: '设备点检', icon: '🔧', color: '#FF9800' },
+  'product-inspection': { label: '成品检验', icon: '🏷️', color: 'var(--brand-color-warning)' },
+  'incoming-inspection': { label: '来料检验', icon: '📦', color: 'var(--brand-color-success)' },
+  'device-inspection': { label: '设备点检', icon: '🔧', color: 'var(--brand-color-warning)' },
   'device-maintenance': { label: '设备保养', icon: '🛠️', color: '#00BCD4' },
-  'device-fault': { label: '设备故障', icon: '⚙️', color: '#E91E63' },
+  'device-fault': { label: '设备故障', icon: '⚙️', color: 'var(--brand-color-danger)' },
   'microbe-inspection': { label: '微生物检验', icon: '🔬', color: '#673AB7' },
   'complaint-report': { label: '投诉上报', icon: '📢', color: '#FF4081' },
 }
 
 function sourceLabel(source?: string) {
-  if (!source) return { label: '未知来源', icon: '❓', color: '#999' }
+  if (!source) return { label: '未知来源', icon: '❓', color: 'var(--m-text-3)' }
   return SOURCE_META[source] || { label: source, icon: '📄', color: '#888' }
 }
 
@@ -57,10 +57,10 @@ function fmtBody(body?: string | null): string {
 
 function statusTag(s: QueuedRequest['status']) {
   const map: Record<QueuedRequest['status'], { text: string; bg: string; color: string }> = {
-    pending: { text: '待同步', bg: '#E3F2FD', color: '#2196F3' },
-    syncing: { text: '同步中', bg: '#FFF3E0', color: '#FF9800' },
-    failed: { text: '失败', bg: '#FFEBEE', color: '#F44336' },
-    done: { text: '已完成', bg: '#E8F5E9', color: '#4CAF50' },
+    pending: { text: '待同步', bg: '#E3F2FD', color: 'var(--brand-color)' },
+    syncing: { text: '同步中', bg: '#FFF3E0', color: 'var(--brand-color-warning)' },
+    failed: { text: '失败', bg: '#FFEBEE', color: 'var(--brand-color-danger)' },
+    done: { text: '已完成', bg: '#E8F5E9', color: 'var(--brand-color-success)' },
   }
   const m = map[s]
   return (
@@ -186,7 +186,7 @@ export default function MobileOfflineQueue() {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{
-              width: 8, height: 8, borderRadius: 4, background: online ? '#4CAF50' : '#F44336',
+              width: 8, height: 8, borderRadius: 4, background: online ? 'var(--brand-color-success)' : 'var(--brand-color-danger)',
             }} />
             <span style={{ fontSize: 13, color: online ? '#2E7D32' : '#C62828', fontWeight: 500 }}>
               {online ? (syncing ? '在线 · 同步中' : '在线 · 自动同步') : '离线 · 已暂存本地'}
@@ -256,9 +256,9 @@ export default function MobileOfflineQueue() {
                             </Tag>
                             <span style={{ fontSize: 11, color: '#888', fontFamily: 'monospace' }}>{shortPath}</span>
                           </div>
-                          <div style={{ fontSize: 11, color: '#bbb', marginTop: 4 }}>
+                          <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 4 }}>
                             {fmtTime(item.enqueuedAt)}
-                            {item.retries > 0 && <span style={{ marginLeft: 8, color: '#FF9800' }}>已重试 {item.retries} 次</span>}
+                            {item.retries > 0 && <span style={{ marginLeft: 8, color: 'var(--brand-color-warning)' }}>已重试 {item.retries} 次</span>}
                           </div>
                         </div>
                       }
@@ -290,7 +290,7 @@ export default function MobileOfflineQueue() {
                         <div style={{ marginBottom: 8 }}>
                           <div style={{ color: '#888', fontSize: 11, marginBottom: 4 }}>请求体：</div>
                           <pre style={{
-                            background: '#fff', border: '1px solid #eee', borderRadius: 6,
+                            background: 'var(--m-surface)', border: '1px solid #eee', borderRadius: 6,
                             padding: 8, overflowX: 'auto', fontSize: 11,
                             maxHeight: 200, lineHeight: 1.5,
                           }}>{fmtBody(item.body)}</pre>
@@ -323,15 +323,15 @@ export default function MobileOfflineQueue() {
 
 // ==================== 小工具组件 ====================
 
-function Stat({ label, value, color = '#333', active, onClick }: {
+function Stat({ label, value, color = 'var(--m-text)', active, onClick }: {
   label: string; value: number; color?: string; active?: boolean; onClick?: () => void
 }) {
   return (
     <div
       onClick={onClick}
       style={{
-        background: active ? color : '#fff',
-        color: active ? '#fff' : color,
+        background: active ? color : 'var(--m-surface)',
+        color: active ? 'var(--m-surface)' : color,
         borderRadius: 8, padding: '8px 4px', textAlign: 'center',
         border: `1px solid ${active ? color : '#eef0f3'}`,
         cursor: onClick ? 'pointer' : 'default',
@@ -345,5 +345,5 @@ function Stat({ label, value, color = '#333', active, onClick }: {
 }
 
 function EmptyHint({ text, sub }: { text: string; sub?: string }) {
-  return <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>{text}{sub && <div style={{ fontSize: 12, marginTop: 6 }}>{sub}</div>}</div>
+  return <div style={{ textAlign: 'center', padding: 40, color: 'var(--m-text-3)' }}>{text}{sub && <div style={{ fontSize: 12, marginTop: 6 }}>{sub}</div>}</div>
 }

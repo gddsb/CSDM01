@@ -63,8 +63,8 @@ interface Props {
 const STATUS_COLOR: Record<string, string> = {
   '开立': '#90A4AE',
   '已下发': '#1976D2',
-  '开工': '#FF9800',
-  '完工': '#4CAF50',
+  '开工': 'var(--brand-color-warning)',
+  '完工': 'var(--brand-color-success)',
   '关闭': '#9E9E9E',
 }
 
@@ -187,11 +187,11 @@ export function MobileOrderDetail({ order, orderId, visible, onClose }: Props) {
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: 'var(--m-text-3)' }}>已完工</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: progress >= 100 ? '#4CAF50' : 'var(--m-text)' }}>{fmtNum(finished)}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: progress >= 100 ? 'var(--brand-color-success)' : 'var(--m-text)' }}>{fmtNum(finished)}</div>
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: 'var(--m-text-3)' }}>合格 / 良品率</div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#4CAF50', marginTop: 2 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--brand-color-success)', marginTop: 2 }}>
                   {fmtNum(qualified)}
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--m-text-3)' }}>{qualifiedRate}%</div>
@@ -204,7 +204,7 @@ export function MobileOrderDetail({ order, orderId, visible, onClose }: Props) {
             }}>
               <div style={{
                 height: '100%', width: `${progress}%`,
-                background: progress >= 100 ? '#4CAF50' : '#1976D2',
+                background: progress >= 100 ? 'var(--brand-color-success)' : '#1976D2',
                 transition: 'width .3s',
               }} />
             </div>

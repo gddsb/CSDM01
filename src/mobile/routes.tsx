@@ -41,7 +41,7 @@ function MobileLoading() {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      height: '60dvh', color: '#999', fontSize: 14,
+      height: '60dvh', color: 'var(--m-text-3)', fontSize: 14,
     }}>
       加载中...
     </div>

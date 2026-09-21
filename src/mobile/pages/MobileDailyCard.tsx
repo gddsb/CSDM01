@@ -58,7 +58,7 @@ export default function MobileDailyCard() {
       </div>
       <div className="mobile-page-scroll-list">
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>加载中...</div>
+          <div style={{ textAlign: 'center', padding: 60, color: 'var(--m-text-3)' }}>加载中...</div>
         ) : !data ? (
           <Empty description="暂无数据" />
         ) : (
@@ -137,7 +137,7 @@ function ProductionPanel({ data }: { data: any }) {
                 padding: '8px 0', borderBottom: i < defectList.slice(0, 5).length - 1 ? '1px solid #f0f0f0' : 'none',
               }}>
                 <span style={{ fontSize: 13 }}>{i + 1}. {p.name}</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#F44336' }}>{fmtNum(p.total)}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--brand-color-danger)' }}>{fmtNum(p.total)}</span>
               </div>
             ))}
           </Card>
@@ -204,7 +204,7 @@ function QualityPanel({ data }: { data: any }) {
                 <span style={{
                   fontSize: 11, padding: '1px 8px', borderRadius: 8,
                   background: it.status === '已校准' ? '#E8F5E9' : '#FFEBEE',
-                  color: it.status === '已校准' ? '#4CAF50' : '#F44336',
+                  color: it.status === '已校准' ? 'var(--brand-color-success)' : 'var(--brand-color-danger)',
                 }}>{it.status || '—'}</span>
               </div>
             ))}
@@ -273,7 +273,7 @@ function ManagementPanel({ data }: { data: any }) {
 function KpiCard({ label, value, color, unit }: { label: string; value: string; color: string; unit?: string }) {
   return (
     <div style={{
-      flex: 1, background: '#fff', borderRadius: 10, padding: 14,
+      flex: 1, background: 'var(--m-surface)', borderRadius: 10, padding: 14,
       border: '1px solid #eef0f3',
     }}>
       <div style={{ fontSize: 12, color: '#888', marginBottom: 6 }}>{label}</div>
@@ -287,7 +287,7 @@ function KpiCard({ label, value, color, unit }: { label: string; value: string; 
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ fontSize: 13, fontWeight: 600, color: '#666', marginTop: 16, marginBottom: 8, paddingLeft: 4 }}>
+    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--m-text-2)', marginTop: 16, marginBottom: 8, paddingLeft: 4 }}>
       {children}
     </div>
   )
@@ -296,7 +296,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 function Card({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
-      background: '#fff', borderRadius: 10, padding: '6px 14px',
+      background: 'var(--m-surface)', borderRadius: 10, padding: '6px 14px',
       border: '1px solid #eef0f3',
     }}>
       {children}
@@ -308,15 +308,15 @@ function RateRow({ label, rate, color }: { label: string; rate: { ok: number; to
   if (!rate) {
     return (
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', fontSize: 13, borderBottom: '1px dashed #f0f0f0' }}>
-        <span style={{ color: '#666' }}>{label}</span>
-        <span style={{ color: '#bbb' }}>今日暂无数据</span>
+        <span style={{ color: 'var(--m-text-2)' }}>{label}</span>
+        <span style={{ color: 'var(--m-text-3)' }}>今日暂无数据</span>
       </div>
     )
   }
   return (
     <div style={{ padding: '10px 0', borderBottom: '1px dashed #f0f0f0' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
-        <span style={{ color: '#666' }}>{label}</span>
+        <span style={{ color: 'var(--m-text-2)' }}>{label}</span>
         <span style={{ fontWeight: 600, color }}>{fmtPct(rate.rate)} <span style={{ color: '#aaa', fontWeight: 400 }}>({rate.ok}/{rate.total})</span></span>
       </div>
       <div style={{ height: 4, background: '#f0f0f0', borderRadius: 2, overflow: 'hidden' }}>
@@ -327,5 +327,5 @@ function RateRow({ label, rate, color }: { label: string; rate: { ok: number; to
 }
 
 function EmptyHint({ text, sub }: { text: string; sub?: string }) {
-  return <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>{text}{sub && <div style={{ fontSize: 12, marginTop: 6 }}>{sub}</div>}</div>
+  return <div style={{ textAlign: 'center', padding: 40, color: 'var(--m-text-3)' }}>{text}{sub && <div style={{ fontSize: 12, marginTop: 6 }}>{sub}</div>}</div>
 }

@@ -105,7 +105,7 @@ export default function MobileProductInspection() {
         <div style={{ fontSize: 18, fontWeight: 600, margin: '16px 0 8px' }}>
           成品检验{allOk ? '合格' : '不合格'}
         </div>
-        <div style={{ fontSize: 13, color: '#666', marginBottom: 24 }}>
+        <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 24 }}>
           单号: {selected?.inspection_no} · {items.length} 项 · {totalSamples} 个样品
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
@@ -135,7 +135,7 @@ export default function MobileProductInspection() {
                     description={
                       <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
                         {r.material_code} {r.material_name?.slice(0, 20)}
-                        <span style={{ marginLeft: 8, color: '#bbb' }}>{r.status}</span>
+                        <span style={{ marginLeft: 8, color: 'var(--m-text-3)' }}>{r.status}</span>
                       </div>
                     }>
                     <div style={{ fontWeight: 500 }}>{r.inspection_no}</div>
@@ -150,7 +150,7 @@ export default function MobileProductInspection() {
     <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
       {step === 1 && selected && (
         <>
-          <div style={{ background: '#fff', borderRadius: 10, padding: 14, marginBottom: 14, border: '1px solid #eef0f3' }}>
+          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginBottom: 14, border: '1px solid #eef0f3' }}>
             <div style={{ fontSize: 15, fontWeight: 600 }}>{selected.inspection_no}</div>
             <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
               {selected.material_code} · {selected.material_name?.slice(0, 20)}
@@ -162,7 +162,7 @@ export default function MobileProductInspection() {
 
           <Section title={`检验项（${doneItems}/${items.length}）`}>
             {items.length === 0 ? (
-              <div style={{ fontSize: 12, color: '#999', padding: 10 }}>
+              <div style={{ fontSize: 12, color: 'var(--m-text-3)', padding: 10 }}>
                 该单暂无检验项（PC 端未加载标准），无法移动端判定
               </div>
             ) : items.map((it, idx) => (

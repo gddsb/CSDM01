@@ -86,11 +86,11 @@ export function ScrapPanel({
 
   const selStyle: React.CSSProperties = {
     flex: 2, minWidth: 110, padding: '7px 8px', borderRadius: 6,
-    border: '1px solid #ddd', fontSize: 12, background: '#fff',
+    border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)',
   }
   const inputStyle: React.CSSProperties = {
     flex: 1, minWidth: 60, padding: '7px 8px', borderRadius: 6,
-    border: '1px solid #ddd', fontSize: 12, background: '#fff',
+    border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)',
   }
 
   return (
@@ -110,8 +110,8 @@ export function ScrapPanel({
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 500, color: '#333' }}>
-              {row.defect_code && <span style={{ color: '#999', fontSize: 11, marginRight: 6 }}>{row.defect_code}</span>}
+            <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--m-text)' }}>
+              {row.defect_code && <span style={{ color: 'var(--m-text-3)', fontSize: 11, marginRight: 6 }}>{row.defect_code}</span>}
               {row.defect_name || '—'}
             </div>
             {row.defect_type && <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{row.defect_type}</div>}
@@ -125,7 +125,7 @@ export function ScrapPanel({
         </div>
       ))}
       {rows.length === 0 && (
-        <div style={{ textAlign: 'center', padding: 20, color: '#bbb', fontSize: 12 }}>— 暂无报废记录 —</div>
+        <div style={{ textAlign: 'center', padding: 20, color: 'var(--m-text-3)', fontSize: 12 }}>— 暂无报废记录 —</div>
       )}
 
       {/* 新增（单行布局） */}
@@ -146,13 +146,13 @@ export function ScrapPanel({
               type="number" min={0} value={draft.quantity || ''}
               onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
               placeholder="数量"
-              style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }}
+              style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }}
             />
             <input
               value={draft.unit || ''}
               onChange={(e) => setDraft(d => ({ ...d, unit: e.target.value }))}
               placeholder="单位"
-              style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: '#fff' }}
+              style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }}
             />
             <Button size="mini" color="primary" onClick={handleAdd} style={{ flexShrink: 0 }}>添加</Button>
           </div>

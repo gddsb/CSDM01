@@ -187,7 +187,7 @@ export default function MobileDeviceDocument() {
     // 设备选择 Step
     return (
       <div className="mobile-page" style={{ paddingTop: 12 }}>
-        <div style={{ fontSize: 13, color: '#666', marginBottom: 10, padding: '0 4px' }}>
+        <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 10, padding: '0 4px' }}>
           扫码或选设备 → 查看该设备的全部电子档案
         </div>
         <SearchBar placeholder="扫/输设备编号" value={keyword} onChange={setKeyword}
@@ -195,9 +195,9 @@ export default function MobileDeviceDocument() {
           style={{ marginBottom: 12 }} />
         <Button size="mini" onClick={onScan} style={{marginTop:8}}>扫码</Button>
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>
+          <div style={{ textAlign: 'center', padding: 40, color: 'var(--m-text-3)' }}>加载中...</div>
         ) : devices.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>
+          <div style={{ textAlign: 'center', padding: 60, color: 'var(--m-text-3)' }}>
             暂无设备<br /><span style={{ fontSize: 12 }}>请先在 PC 端创建设备档案</span>
           </div>
         ) : (
@@ -229,7 +229,7 @@ export default function MobileDeviceDocument() {
       }}>
         <div>
           <div style={{ fontSize: 14, fontWeight: 600 }}>{selectedDevice.device_name}</div>
-          <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>{selectedDevice.device_code}</div>
+          <div style={{ fontSize: 11, color: 'var(--m-text-2)', marginTop: 2 }}>{selectedDevice.device_code}</div>
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           <Button size="mini" color="primary" fill="outline" onClick={openUpload}>⬆️ 上传</Button>
@@ -238,7 +238,7 @@ export default function MobileDeviceDocument() {
       </div>
 
       {/* 类型 Tab */}
-      <div style={{ background: '#fff', borderRadius: 10, padding: '0 8px', marginBottom: 10 }}>
+      <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: '0 8px', marginBottom: 10 }}>
         <Tabs activeKey={activeTab} onChange={(k) => setActiveTab(k)}>
           <Tabs.Tab title={`全部(${docs.length})`} key="all" />
           {Object.entries(DOC_TYPE_MAP).map(([k, v]) => (
@@ -248,9 +248,9 @@ export default function MobileDeviceDocument() {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>
+        <div style={{ textAlign: 'center', padding: 40, color: 'var(--m-text-3)' }}>加载中...</div>
       ) : filteredDocs.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>
+        <div style={{ textAlign: 'center', padding: 60, color: 'var(--m-text-3)' }}>
           暂无{activeTab === 'all' ? '' : DOC_TYPE_MAP[activeTab]}文档
           <div style={{ fontSize: 12, marginTop: 6 }}>点右上角 ⬆️ 上传</div>
         </div>
@@ -301,7 +301,7 @@ export default function MobileDeviceDocument() {
               📁 {fileList.length > 0 ? `已选 ${fileList.length} 个` : '点此选择'}
             </Button>
             {fileList.length > 0 && (
-              <div style={{ fontSize: 11, color: '#666', marginTop: 6 }}>
+              <div style={{ fontSize: 11, color: 'var(--m-text-2)', marginTop: 6 }}>
                 {fileList.map((f) => <div key={f.name}>· {f.name} ({(f.size / 1024).toFixed(1)} KB)</div>)}
               </div>
             )}
@@ -329,7 +329,7 @@ function DocCard({ doc, onDownload, onDelete }: {
     : '📄'
   return (
     <div style={{
-      background: '#fff', borderRadius: 10, padding: 10, marginBottom: 8,
+      background: 'var(--m-surface)', borderRadius: 10, padding: 10, marginBottom: 8,
       border: '1px solid #eef0f3',
     }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
@@ -357,4 +357,4 @@ function DocCard({ doc, onDownload, onDelete }: {
   )
 }
 
-const selStyle: React.CSSProperties = { padding: 6, borderRadius: 6, border: '1px solid #ddd', width: '100%', background: '#fff' }
+const selStyle: React.CSSProperties = { padding: 6, borderRadius: 6, border: '1px solid #ddd', width: '100%', background: 'var(--m-surface)' }

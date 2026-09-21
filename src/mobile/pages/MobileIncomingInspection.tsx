@@ -112,7 +112,7 @@ export default function MobileIncomingInspection() {
         <div style={{ fontSize: 18, fontWeight: 600, margin: '16px 0 8px' }}>
           来料检验{allOk ? '合格' : '不合格'}
         </div>
-        <div style={{ fontSize: 13, color: '#666', marginBottom: 24 }}>
+        <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 24 }}>
           单号: {successNo} · {items.length} 项判定 · {totalSamples} 个样品
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
@@ -143,7 +143,7 @@ export default function MobileIncomingInspection() {
                     description={
                       <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
                         {r.supplier_name || '—'} · {r.material_code} {r.material_name || ''} · {r.quantity ?? '—'}
-                        <span style={{ marginLeft: 8, color: '#bbb' }}>{r.status}</span>
+                        <span style={{ marginLeft: 8, color: 'var(--m-text-3)' }}>{r.status}</span>
                       </div>
                     }>
                     <div style={{ fontWeight: 500 }}>{r.inspection_no}</div>
@@ -158,7 +158,7 @@ export default function MobileIncomingInspection() {
     <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
       {step === 1 && selected && (
         <>
-          <div style={{ background: '#fff', borderRadius: 10, padding: 14, marginBottom: 14, border: '1px solid #eef0f3' }}>
+          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginBottom: 14, border: '1px solid #eef0f3' }}>
             <div style={{ fontSize: 15, fontWeight: 600 }}>{selected.inspection_no}</div>
             <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
               {selected.supplier_name} · {selected.material_code} {selected.material_name} · 数量 {selected.quantity ?? '—'}
@@ -167,7 +167,7 @@ export default function MobileIncomingInspection() {
 
           <Section title={`检验项（${doneItems}/${items.length}）`}>
             {items.length === 0 ? (
-              <div style={{ fontSize: 12, color: '#999', padding: 10 }}>
+              <div style={{ fontSize: 12, color: 'var(--m-text-3)', padding: 10 }}>
                 该单暂无检验项（PC 端未加载标准），请直接整体判定
               </div>
             ) : items.map((it, idx) => (
@@ -186,7 +186,7 @@ export default function MobileIncomingInspection() {
               <Radio value="不合格">不合格（{items.filter((i) => i.result === '不合格').length} 项）</Radio>
             </Radio.Group>            </div>
 
-            <div style={{ fontSize: 11, color: '#999' }}>整体结果 = 所有项都合格才算合格</div>
+            <div style={{ fontSize: 11, color: 'var(--m-text-3)' }}>整体结果 = 所有项都合格才算合格</div>
           </Section>
 
           <Section title="备注（可选）">
@@ -221,12 +221,12 @@ export function ItemRow({
   const status = item.result || '待判'
   const ok = item.result === '合格'
   const fail = item.result === '不合格'
-  const color = ok ? '#4CAF50' : fail ? '#F44336' : '#FF9800'
+  const color = ok ? 'var(--brand-color-success)' : fail ? 'var(--brand-color-danger)' : 'var(--brand-color-warning)'
   return (
     <div style={{
       marginBottom: 10, padding: 10, borderRadius: 8,
       background: ok ? '#f1f8e9' : fail ? '#ffebee' : '#fafafa',
-      border: '1px solid ' + (ok ? '#c5e1a5' : fail ? '#ef9a9a' : '#eee'),
+      border: '1px solid ' + (ok ? '#c5e1a5' : fail ? '#ef9a9a' : 'var(--m-border)'),
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
         <div>
@@ -284,7 +284,7 @@ export function ItemRow({
 export function Section({ title, children }: { title: string; children: any }) {
   return (
     <div style={{
-      background: '#fff', borderRadius: 10, padding: 12,
+      background: 'var(--m-surface)', borderRadius: 10, padding: 12,
       border: '1px solid #eef0f3', marginBottom: 12,
     }}>
       <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>{title}</div>
@@ -295,7 +295,7 @@ export function Section({ title, children }: { title: string; children: any }) {
 
 export function Empty({ text, sub }: { text: string; sub?: string }) {
   return (
-    <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
+    <div style={{ textAlign: 'center', padding: 40, color: 'var(--m-text-3)' }}>
       {text}{sub && <div style={{ fontSize: 12, marginTop: 6 }}>{sub}</div>}
     </div>
   )

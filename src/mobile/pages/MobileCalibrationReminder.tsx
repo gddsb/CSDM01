@@ -42,7 +42,7 @@ function statusTag(s?: string | number) {
   const isOk = text.includes('已校准')
   const isLocked = text.includes('锁定')
   const bg = isOk ? '#E8F5E9' : isLocked ? '#EEE' : '#FFF3E0'
-  const color = isOk ? '#4CAF50' : isLocked ? '#999' : '#FF9800'
+  const color = isOk ? 'var(--brand-color-success)' : isLocked ? 'var(--m-text-3)' : 'var(--brand-color-warning)'
   return (
     <span style={{
       fontSize: 11, padding: '1px 8px', borderRadius: 8, background: bg, color,
@@ -115,8 +115,8 @@ export default function MobileCalibrationReminder() {
               onClick={() => setDaysFilter(d)}
               style={{
                 padding: '5px 12px', borderRadius: 14, fontSize: 12,
-                background: daysFilter === d ? '#FF9800' : '#f4f5f7',
-                color: daysFilter === d ? '#fff' : '#666',
+                background: daysFilter === d ? 'var(--brand-color-warning)' : '#f4f5f7',
+                color: daysFilter === d ? 'var(--m-surface)' : 'var(--m-text-2)',
                 cursor: 'pointer', whiteSpace: 'nowrap',
               }}
             >{d}天内</span>
@@ -125,7 +125,7 @@ export default function MobileCalibrationReminder() {
       )}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>
+        <div style={{ textAlign: 'center', padding: 40, color: 'var(--m-text-3)' }}>加载中...</div>
       ) : list.length === 0 ? (
         <Empty description={tab === 'expiring' ? `${daysFilter}天内无到期校准计划` : '暂无逾期校准计划'} />
       ) : (
@@ -146,18 +146,18 @@ export default function MobileCalibrationReminder() {
                 >
                   <div>
                     <div style={{ fontWeight: 500, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={urgent ? { color: '#F44336' } : undefined}>
+                      <span style={urgent ? { color: 'var(--brand-color-danger)' } : undefined}>
                         {p.asset_code} · {p.asset_name}
                       </span>
                       {statusTag(p.status)}
                     </div>
-                    <div style={{ fontSize: 12, color: urgent ? '#F44336' : '#666', marginTop: 3, fontWeight: 500 }}>
+                    <div style={{ fontSize: 12, color: urgent ? 'var(--brand-color-danger)' : 'var(--m-text-2)', marginTop: 3, fontWeight: 500 }}>
                       到期：{p.next_calibration_date || '—'}
                       {days !== null && tab === 'expiring' && (
                         <span style={{ marginLeft: 6 }}>（还有 {days} 天）</span>
                       )}
                       {days !== null && tab === 'overdue' && (
-                        <span style={{ marginLeft: 6, color: '#F44336' }}>（逾期 {Math.abs(days)} 天）</span>
+                        <span style={{ marginLeft: 6, color: 'var(--brand-color-danger)' }}>（逾期 {Math.abs(days)} 天）</span>
                       )}
                     </div>
                   </div>

@@ -107,11 +107,11 @@ export function ReportOrderDetail({ meta, onClose }: Props) {
       {/* 头 */}
       <div style={{ padding: 10, background: '#E3F2FD', borderRadius: 8, marginBottom: 10 }}>
         <div style={{ fontSize: 14, fontWeight: 600 }}>{meta.report_no}</div>
-        <div style={{ fontSize: 11, color: '#555', marginTop: 3 }}>
+        <div style={{ fontSize: 11, color: 'var(--m-text-2)', marginTop: 3 }}>
           {meta.order_no} · {meta.material_code} {meta.material_name?.slice(0, 16)} · ×{meta.report_qty}
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
-          <span style={{ fontSize: 11, padding: '2px 6px', borderRadius: 8, background: '#fff', color: '#1565C0' }}>
+          <span style={{ fontSize: 11, padding: '2px 6px', borderRadius: 8, background: 'var(--m-surface)', color: '#1565C0' }}>
             {meta.status}
           </span>
           {!isClosed && (
@@ -151,7 +151,7 @@ export function ReportOrderDetail({ meta, onClose }: Props) {
 // ========== 各子 Panel ==========
 
 function ProcessPanel({ processes }: { processes: ProcessRow[] }) {
-  if (processes.length === 0) return <div style={{ fontSize: 12, color: '#999', padding: 20, textAlign: 'center' }}>无工序数据</div>
+  if (processes.length === 0) return <div style={{ fontSize: 12, color: 'var(--m-text-3)', padding: 20, textAlign: 'center' }}>无工序数据</div>
   return (
     <List>
       {processes.map((p, i) => (
@@ -424,12 +424,12 @@ function ImagePanel({ reportNo, images, setImages }: { reportNo: string; images:
 function Panel({ children }: { children: any }) {
   return (
     <div style={{
-      background: '#fff', borderRadius: 10, padding: 10,
+      background: 'var(--m-surface)', borderRadius: 10, padding: 10,
       border: '1px solid #eef0f3', marginBottom: 10,
     }}>{children}</div>
   )
 }
 
 const selStyle: React.CSSProperties = {
-  padding: 6, borderRadius: 6, border: '1px solid #ddd', width: '100%', background: '#fff',
+  padding: 6, borderRadius: 6, border: '1px solid #ddd', width: '100%', background: 'var(--m-surface)',
 }

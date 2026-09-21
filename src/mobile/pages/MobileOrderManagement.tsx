@@ -29,9 +29,9 @@ interface OrderRow {
 type StatusTab = '开立' | '下发' | '开工' | '完工'
 const STATUS_TABS: { key: StatusTab; label: string; color: string }[] = [
   { key: '开立', label: '开立', color: '#9E9E9E' },
-  { key: '下发', label: '下发', color: '#2196F3' },
-  { key: '开工', label: '开工', color: '#FF9800' },
-  { key: '完工', label: '完工', color: '#4CAF50' },
+  { key: '下发', label: '下发', color: 'var(--brand-color)' },
+  { key: '开工', label: '开工', color: 'var(--brand-color-warning)' },
+  { key: '完工', label: '完工', color: 'var(--brand-color-success)' },
 ]
 
 /** 移动端状态 tab → 后端数字 code（与 server/src/services/OrderService.ts ORDER_STATUS_MAP 对齐） */
@@ -45,9 +45,9 @@ const STATUS_CODE: Record<StatusTab, number> = {
 /** 状态 → 徽章配色 */
 const STATUS_COLOR: Record<string, string> = {
   '开立': '#9E9E9E',
-  '下发': '#2196F3',
-  '开工': '#FF9800',
-  '完工': '#4CAF50',
+  '下发': 'var(--brand-color)',
+  '开工': 'var(--brand-color-warning)',
+  '完工': 'var(--brand-color-success)',
   '关闭': '#757575',
 }
 
@@ -234,7 +234,7 @@ export default function MobileOrderManagement() {
 
         {/* 状态 Tab */}
         <div style={{
-          background: '#fff', borderRadius: 12, padding: '4px 10px',
+          background: 'var(--m-surface)', borderRadius: 12, padding: '4px 10px',
           boxShadow: '0 1px 6px rgba(0,0,0,0.04)',
         }}>
         <Tabs
@@ -266,21 +266,21 @@ export default function MobileOrderManagement() {
       {/* 订单列表 — 独立滚动 */}
       <div className="mobile-page-scroll-list">
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>
+        <div style={{ textAlign: 'center', padding: 40, color: 'var(--m-text-3)' }}>加载中...</div>
       ) : orders.length === 0 ? (
         <div style={{
-          textAlign: 'center', padding: 60, color: '#bbb',
-          background: '#fff', borderRadius: 12, margin: '0 4px',
+          textAlign: 'center', padding: 60, color: 'var(--m-text-3)',
+          background: 'var(--m-surface)', borderRadius: 12, margin: '0 4px',
         }}>
-          <div style={{ fontSize: 48, color: '#e0e0e0', marginBottom: 12 }}>📋</div>
-          <div style={{ fontSize: 15, color: '#999', marginBottom: 4 }}>暂无订单</div>
+          <div style={{ fontSize: 48, color: 'var(--m-text-3)', marginBottom: 12 }}>📋</div>
+          <div style={{ fontSize: 15, color: 'var(--m-text-3)', marginBottom: 4 }}>暂无订单</div>
           <div style={{ fontSize: 12 }}>点上方同步按钮拉取 ERP 订单</div>
         </div>
       ) : (
         <PullToRefresh onRefresh={() => load(tab, keyword.trim())}>
           <List>
             {orders.map((o) => {
-              const statusColor = STATUS_COLOR[o.status || ''] || '#FF9800'
+              const statusColor = STATUS_COLOR[o.status || ''] || 'var(--brand-color-warning)'
               const statusText = o.status || ''
               /* 需求5: 状态操作 — 严格对齐 PC 端 */
               const isCreated = o.status === '开立'
@@ -293,7 +293,7 @@ export default function MobileOrderManagement() {
                   key={o.order_id}
                   onClick={() => openDetail(o)}
                   style={{
-                    background: '#fff', borderRadius: 14, padding: '14px 14px 14px 18px',
+                    background: 'var(--m-surface)', borderRadius: 14, padding: '14px 14px 14px 18px',
                     marginBottom: 10, cursor: 'pointer',
                     boxShadow: '0 2px 12px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.02)',
                     borderLeft: `3px solid ${statusColor}`,
@@ -313,7 +313,7 @@ export default function MobileOrderManagement() {
                       {(o.planned_qty ?? 0) > 0 && (
                         <span style={{ fontSize: 12, fontWeight: 400, color: '#888', marginLeft: 8 }}>
                           报工 <b style={{ color: statusColor, fontSize: 14 }}>{o.finished_qty ?? 0}</b>
-                          <span style={{ color: '#bbb' }}> / {o.planned_qty}</span>
+                          <span style={{ color: 'var(--m-text-3)' }}> / {o.planned_qty}</span>
                         </span>
                       )}
                     </div>
@@ -349,13 +349,13 @@ export default function MobileOrderManagement() {
                   <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
                     {/* 左侧: 料品信息 + 地点日期（flex:1 占满剩余空间） */}
                     <div style={{ flex: 1, minWidth: 0, lineHeight: 1.4 }}>
-                      <div style={{ fontSize: 13, color: '#555', wordBreak: 'break-all' }}>
+                      <div style={{ fontSize: 13, color: 'var(--m-text-2)', wordBreak: 'break-all' }}>
                         <span style={{ color: '#888' }}>{o.material_code}</span>
                         {o.material_name && (
                           <span style={{ marginLeft: 6 }}>· {o.material_name}</span>
                         )}
                       </div>
-                      <div style={{ fontSize: 11, color: '#bbb', marginTop: 2 }}>
+                      <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>
                         📍 {o.line_name || '—'} {o.start_date?.slice(0, 10) || ''}
                       </div>
                     </div>
@@ -401,12 +401,12 @@ export default function MobileOrderManagement() {
             <div style={{ maxHeight: '70vh', overflow: 'auto', padding: '10px 6px' }}>
               <div style={{ fontWeight: 600, marginBottom: 10, fontSize: 15 }}>
                 {selected.order_no} 下属报工单
-                <span style={{ fontSize: 12, color: '#999', fontWeight: 400, marginLeft: 8 }}>
+                <span style={{ fontSize: 12, color: 'var(--m-text-3)', fontWeight: 400, marginLeft: 8 }}>
                   （{reports.length} 条）
                 </span>
               </div>
               {reports.length === 0 ? (
-                <div style={{ fontSize: 12, color: '#999', padding: 30, textAlign: 'center' }}>
+                <div style={{ fontSize: 12, color: 'var(--m-text-3)', padding: 30, textAlign: 'center' }}>
                   暂无报工单 · 请先在 PC 端下发或在移动报工录入
                 </div>
               ) : (
@@ -426,7 +426,7 @@ export default function MobileOrderManagement() {
                       <span style={{
                         padding: '1px 6px', borderRadius: 4,
                         background: r.status === '完工' ? '#4CAF5015' : '#2196F315',
-                        color: r.status === '完工' ? '#4CAF50' : '#2196F3',
+                        color: r.status === '完工' ? 'var(--brand-color-success)' : 'var(--brand-color)',
                         fontSize: 10, fontWeight: 600,
                       }}>{r.status}</span>
                     </div>

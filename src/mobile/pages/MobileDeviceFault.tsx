@@ -249,7 +249,7 @@ export default function MobileDeviceFault() {
         <div style={{
           display: 'flex', gap: 8, marginBottom: 12, padding: '10px 12px',
           background: 'linear-gradient(135deg,#2196F3 0%,#1565C0 100%)',
-          borderRadius: 12, color: '#fff',
+          borderRadius: 12, color: 'var(--m-surface)',
         }}>
           <Stat label="待派工" v={stats.pending} />
           <Stat label="维修中" v={stats.repairing} />
@@ -269,7 +269,7 @@ export default function MobileDeviceFault() {
         </div>
 
         {/* 状态 Tab（对齐 PC） */}
-        <div style={{ background: '#fff', borderRadius: 10, padding: '0 8px', marginBottom: 10 }}>
+        <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: '0 8px', marginBottom: 10 }}>
           <Tabs activeKey={tab} onChange={(k) => setTab(k as StatusTab)}>
             {STATUS_TABS.map((t) => <Tabs.Tab title={t.label} key={t.key} />)}
           </Tabs>
@@ -278,9 +278,9 @@ export default function MobileDeviceFault() {
 
       <div className="mobile-page-scroll-list">
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>加载中...</div>
+          <div style={{ textAlign: 'center', padding: 40, color: 'var(--m-text-3)' }}>加载中...</div>
         ) : faults.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>暂无故障记录</div>
+          <div style={{ textAlign: 'center', padding: 40, color: 'var(--m-text-3)' }}>暂无故障记录</div>
         ) : (
           <PullToRefresh onRefresh={() => loadFaults(tab, keyword.trim())}>
             <List>
@@ -316,20 +316,20 @@ export default function MobileDeviceFault() {
                 ))}
               </select>
             </div>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>故障等级</div>
+            <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginBottom: 4 }}>故障等级</div>
             <div style={{ display: 'flex', gap: 16 }}>
 <Radio.Group value={createLevel} onChange={(v) => setCreateLevel(v as string)}>
 
               {LEVELS.map((l) => <Radio key={l} value={l}>{l}</Radio>)}
             </Radio.Group>            </div>
 
-            <div style={{ fontSize: 12, color: '#666', margin: '8px 0 4px' }}>故障描述 *</div>
+            <div style={{ fontSize: 12, color: 'var(--m-text-2)', margin: '8px 0 4px' }}>故障描述 *</div>
             <TextArea value={createDesc} onChange={setCreateDesc} rows={3}
-              placeholder="详细描述故障现象" style={{ background: '#f7f8fa', borderRadius: 8, padding: 8 }} />
-            <div style={{ fontSize: 12, color: '#666', margin: '8px 0 4px' }}>影响范围（可选）</div>
+              placeholder="详细描述故障现象" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
+            <div style={{ fontSize: 12, color: 'var(--m-text-2)', margin: '8px 0 4px' }}>影响范围（可选）</div>
             <TextArea value={createImpact} onChange={setCreateImpact} rows={2}
-              placeholder="影响的产线/批次/人员" style={{ background: '#f7f8fa', borderRadius: 8, padding: 8 }} />
-            <div style={{ fontSize: 12, color: '#666', margin: '8px 0 4px' }}>故障现场照片（可选）</div>
+              placeholder="影响的产线/批次/人员" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
+            <div style={{ fontSize: 12, color: 'var(--m-text-2)', margin: '8px 0 4px' }}>故障现场照片（可选）</div>
             <ImageUploader value={createImages} onChange={setCreateImages}
               upload={async (f) => ({ url: URL.createObjectURL(f) })} maxCount={6} />
           </div>
@@ -370,23 +370,23 @@ export default function MobileDeviceFault() {
 function Stat({ label, v, red }: { label: string; v: number; red?: boolean }) {
   return (
     <div style={{ flex: 1, textAlign: 'center' }}>
-      <div style={{ fontSize: 20, fontWeight: 700, color: red ? '#FFCDD2' : '#fff' }}>{v}</div>
+      <div style={{ fontSize: 20, fontWeight: 700, color: red ? '#FFCDD2' : 'var(--m-surface)' }}>{v}</div>
       <div style={{ fontSize: 10, opacity: 0.85, marginTop: 2 }}>{label}</div>
     </div>
   )
 }
 
 function FaultCard({ fault, onOpen }: { fault: FaultRow; onOpen: () => void }) {
-  const levelColor = fault.fault_level === '紧急' ? '#F44336'
-    : fault.fault_level === '严重' ? '#FF9800' : '#2196F3'
-  const statusColor = fault.status === '待派工' ? '#FF9800'
-    : fault.status === '维修中' ? '#2196F3'
+  const levelColor = fault.fault_level === '紧急' ? 'var(--brand-color-danger)'
+    : fault.fault_level === '严重' ? 'var(--brand-color-warning)' : 'var(--brand-color)'
+  const statusColor = fault.status === '待派工' ? 'var(--brand-color-warning)'
+    : fault.status === '维修中' ? 'var(--brand-color)'
     : fault.status === '待审批' ? '#9C27B0'
     : fault.status === '已挂起' ? '#FF5722'
     : '#9E9E9E'
   return (
     <div onClick={onOpen} style={{
-      background: '#fff', borderRadius: 10, padding: 12, marginBottom: 10,
+      background: 'var(--m-surface)', borderRadius: 10, padding: 12, marginBottom: 10,
       border: '1px solid #eef0f3', cursor: 'pointer',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -400,7 +400,7 @@ function FaultCard({ fault, onOpen }: { fault: FaultRow; onOpen: () => void }) {
           </span>
         </Space>
       </div>
-      <div style={{ fontSize: 12, color: '#666', marginTop: 6 }}>
+      <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginTop: 6 }}>
         📍 {fault.device_name} ({fault.device_code})
       </div>
       {fault.fault_desc && (
@@ -464,7 +464,7 @@ function FaultDetail(p: FaultDetailProps) {
             ))}
           </select>
           <TextArea value={p.assignNote} onChange={p.setAssignNote} rows={1} placeholder="派工备注（可选）"
-            style={{ background: '#f7f8fa', borderRadius: 8, padding: 8 }} />
+            style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
           <Button color="primary" size="mini" block onClick={p.onAssign} style={{ marginTop: 8 }}>确认派工</Button>
         </Section>
       )}
@@ -472,12 +472,12 @@ function FaultDetail(p: FaultDetailProps) {
       {/* 维修 */}
       {f.status === '维修中' && (
         <Section title="🔧 维修记录">
-          <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>故障原因</div>
+          <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginBottom: 4 }}>故障原因</div>
           <TextArea value={p.repairCause} onChange={p.setRepairCause} rows={2}
-            placeholder="分析故障根因" style={{ background: '#f7f8fa', borderRadius: 8, padding: 8 }} />
-          <div style={{ fontSize: 12, color: '#666', margin: '8px 0 4px' }}>维修方案</div>
+            placeholder="分析故障根因" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
+          <div style={{ fontSize: 12, color: 'var(--m-text-2)', margin: '8px 0 4px' }}>维修方案</div>
           <TextArea value={p.repairSolution} onChange={p.setRepairSolution} rows={2}
-            placeholder="采取的修复措施" style={{ background: '#f7f8fa', borderRadius: 8, padding: 8 }} />
+            placeholder="采取的修复措施" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 11, color: '#888' }}>工时(h)</div>
@@ -499,7 +499,7 @@ function FaultDetail(p: FaultDetailProps) {
       {/* 验收 */}
       {f.status === '待审批' && (
         <Section title="✅ 验收审批">
-          <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>验收结果</div>
+          <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginBottom: 4 }}>验收结果</div>
           <div style={{ display: 'flex', gap: 16 }}>
 <Radio.Group value={p.approveResult} onChange={(v) => p.setApproveResult(v as any)}>
 
@@ -507,9 +507,9 @@ function FaultDetail(p: FaultDetailProps) {
             <Radio value="驳回">驳回</Radio>
           </Radio.Group>          </div>
 
-          <div style={{ fontSize: 12, color: '#666', margin: '8px 0 4px' }}>审批意见</div>
+          <div style={{ fontSize: 12, color: 'var(--m-text-2)', margin: '8px 0 4px' }}>审批意见</div>
           <TextArea value={p.approveOpinion} onChange={p.setApproveOpinion} rows={2}
-            placeholder="验收备注" style={{ background: '#f7f8fa', borderRadius: 8, padding: 8 }} />
+            placeholder="验收备注" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
           <Button color="primary" size="mini" block onClick={p.onApprove} style={{ marginTop: 8 }}>提交验收</Button>
         </Section>
       )}
@@ -518,8 +518,8 @@ function FaultDetail(p: FaultDetailProps) {
       {f.status !== '已关闭' && f.status !== '待派工' && (
         <Section title="📌 关闭故障">
           <TextArea value={p.closeRemark} onChange={p.setCloseRemark} rows={1}
-            placeholder="关闭备注（可选）" style={{ background: '#f7f8fa', borderRadius: 8, padding: 8 }} />
-          <Button size="mini" block onClick={p.onClose} style={{ marginTop: 8, color: '#F44336', borderColor: '#F44336' }}>
+            placeholder="关闭备注（可选）" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
+          <Button size="mini" block onClick={p.onClose} style={{ marginTop: 8, color: 'var(--brand-color-danger)', borderColor: 'var(--brand-color-danger)' }}>
             关闭故障单
           </Button>
         </Section>
@@ -540,7 +540,7 @@ function DetailLine({ label, children }: { label: string; children: any }) {
   return (
     <div style={{ display: 'flex', marginBottom: 4, fontSize: 12 }}>
       <div style={{ color: '#888', width: 70, flexShrink: 0 }}>{label}：</div>
-      <div style={{ color: '#333', flex: 1 }}>{children}</div>
+      <div style={{ color: 'var(--m-text)', flex: 1 }}>{children}</div>
     </div>
   )
 }
@@ -548,7 +548,7 @@ function DetailLine({ label, children }: { label: string; children: any }) {
 function Section({ title, children }: { title: string; children: any }) {
   return (
     <div style={{
-      marginTop: 12, padding: 10, borderRadius: 8, background: '#f7f8fa', border: '1px solid #eef0f3',
+      marginTop: 12, padding: 10, borderRadius: 8, background: 'var(--m-surface-2)', border: '1px solid #eef0f3',
     }}>
       <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>{title}</div>
       {children}
