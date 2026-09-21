@@ -40,6 +40,21 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
 }
 
+/** 根据 localStorage 自定义顺序重排快捷操作；新增项（权限变化导致）追加到末尾 */
+function applyCustomOrder(entries: QuickEntry[], customKeys: string[] | null): QuickEntry[] {
+  if (!customKeys || customKeys.length === 0) return entries
+  const map = new Map(entries.map((e) => [e.key, e]))
+  const ordered: QuickEntry[] = []
+  customKeys.forEach((k) => {
+    const e = map.get(k)
+    if (e) ordered.push(e)
+  })
+  entries.forEach((e) => {
+    if (!ordered.find((o) => o.key === e.key)) ordered.push(e)
+  })
+  return ordered
+}
+
 export default function MobileDashboard() {
   const navigate = useNavigate()
   const { hasPermission, currentUser } = useApp()
