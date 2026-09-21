@@ -1,16 +1,19 @@
 /**
  * 移动端路由子树
  * 特点：
- * - 独立的 antd-mobile ConfigProvider（不能和 PC 的 antd ConfigProvider 嵌套）
- * - 移动端入口重定向（在 DeviceEntryRedirect 里处理，路由内不再重复）
+ * - 外层 MobileThemeProvider 注入 CSS 变量（--m-* / --brand-*）供 Tailwind @theme + mobile.css 消费
+ * - 内层 MobileConfigProvider（antd-mobile）统一组件主题色，动态跟随深浅主题切换
+ * - 两者互不干扰：CSS 变量层 vs 组件层
  * - 登录守卫：未登录访问 /m/* → Navigate /m/login
  * - /m/login 可公开访问
  */
 import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { ConfigProvider as MobileConfigProvider } from 'antd-mobile'
 import { useApp } from '../contexts/AppContext'
 import { MobileLayout } from './MobileLayout'
-import { MobileThemeProvider } from './theme'
+import { MobileThemeProvider, lightTheme, darkTheme } from './theme'
+import { useMobileTheme } from './hooks/useMobileTheme'
 import MobileLogin from './pages/MobileLogin'
 
 const MobileDashboard = lazy(() => import('./pages/MobileDashboard'))
@@ -53,9 +56,17 @@ function MobileProtected({ children }: { children: React.ReactNode }) {
 }
 
 export default function MobileRoutes() {
+  // 读深浅主题（独立 hook 实例，与 MobileThemeProvider 内部实例共享同一 localStorage / matchMedia）
+  const { isDark } = useMobileTheme()
+  // antd-mobile ConfigProvider 动态 token：品牌色跟随 theme.tsx 的 lightTheme / darkTheme 常量
+  const brandColor = isDark
+    ? darkTheme['--brand-color']
+    : lightTheme['--brand-color']
+
   return (
     <MobileThemeProvider>
-      <Routes>
+      <MobileConfigProvider theme={{ token: { colorPrimary: brandColor } }}>
+        <Routes>
         {/* 登录页 — 可公开访问；已登录用户跳到 Dashboard */}
         <Route path="/login" element={<MobileLoginOrDashboard />} />
 
@@ -169,6 +180,7 @@ export default function MobileRoutes() {
         {/* 兜底：/m 根 → /m/dashboard */}
         <Route path="" element={<Navigate to="/m/dashboard" replace />} />
       </Routes>
+      </MobileConfigProvider>
     </MobileThemeProvider>
   )
 }

@@ -75,4 +75,4 @@ export function useMobileThemeContext(): MobileThemeContextValue {
   return ctx
 }
 
-export { lightTheme as mobileTheme }
+export { lightTheme as mobileTheme, lightTheme, darkTheme }
