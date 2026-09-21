@@ -28,6 +28,10 @@ interface WipRow {
 
 type Step = 0 | 1 | 2
 
+/** 状态标记 — WIP 接口的在制品全是待检验态 */
+const PROCESS_STATUS_COLOR = 'var(--brand-color-warning)'
+const PROCESS_STATUS_TEXT = '待检'
+
 export default function MobileProcessInspection() {
   const navigate = useNavigate()
   const { scan } = useBarcode()
@@ -165,21 +169,50 @@ export default function MobileProcessInspection() {
             </div>
           ) : (
             <PullToRefresh onRefresh={async () => { await load(keyword.trim() || undefined) }}>
-              <List>
-                {list.map(r => (
-                  <List.Item
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '4px 2px' }}>
+                {list.map((r) => (
+                  <div
                     key={r.report_order_id}
                     onClick={() => { setSelected(r); setStep(1) }}
-                    arrow
-                    description={
-                      <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>
-                        {r.process_name} · {r.product_name} · {r.quantity ?? '—'}件
+                    style={{
+                      background: 'var(--m-surface)', borderRadius: 14, padding: '14px 14px 12px 18px',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 12px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.02)',
+                      borderLeft: `3px solid ${PROCESS_STATUS_COLOR}`,
+                    }}
+                  >
+                    {/* 第一行 — 工单号 + 状态 */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--m-text)', flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {r.work_order_no}
                       </div>
-                    }>
-                    <div style={{ fontWeight: 500 }}>{r.work_order_no}</div>
-                  </List.Item>
+                      <span style={{
+                        fontSize: 11, padding: '3px 10px', borderRadius: 12, flexShrink: 0,
+                        background: PROCESS_STATUS_COLOR + '15', color: PROCESS_STATUS_COLOR,
+                        fontWeight: 600, border: `1px solid ${PROCESS_STATUS_COLOR}44`, letterSpacing: 0.5,
+                      }}>
+                        {PROCESS_STATUS_TEXT}
+                      </span>
+                    </div>
+                    {/* 第二行 — 工序/产品（左） + 检验按钮（右） */}
+                    <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ flex: 1, minWidth: 0, lineHeight: 1.4, fontSize: 13, color: 'var(--m-text-2)' }}>
+                        <span style={{ color: 'var(--brand-color)' }}>{r.process_name}</span>
+                        <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>
+                          {r.product_name || '—'} · 计划 {r.quantity ?? '—'} 件
+                        </div>
+                      </div>
+                      <Button
+                        size="mini"
+                        color="primary"
+                        onClick={(e) => { e.stopPropagation(); setSelected(r); setStep(1) }}
+                      >
+                        检验
+                      </Button>
+                    </div>
+                  </div>
                 ))}
-              </List>
+              </div>
             </PullToRefresh>
           )}
         </div>

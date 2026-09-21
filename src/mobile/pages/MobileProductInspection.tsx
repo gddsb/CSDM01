@@ -5,7 +5,7 @@
  * 流程与 PC ProductInspection.tsx 完全对齐：start → items → 样品值 → submit
  */
 import { useEffect, useState } from 'react'
-import { Button, List, SearchBar, Toast, Dialog, Input, PullToRefresh , TextArea} from 'antd-mobile'
+import { Button, List, SearchBar, Toast, Dialog, Input, PullToRefresh, Tabs, TextArea } from 'antd-mobile'
 import api from '../../utils/api'
 import { useBarcode } from '../hooks/useBarcode'
 import { useInspectionWorkflow } from '../hooks/useInspectionWorkflow'
@@ -19,6 +19,16 @@ interface Row {
 
 type Step = 0 | 1 | 2
 
+/** 状态 Tab — 与 PC 端 ProductInspection.tsx 对齐（不显示 已关闭） */
+type StatusTab = '全部' | '待检' | '检验中' | '审核中' | '已完成'
+const PRODUCT_TABS: { key: StatusTab; label: string; color: string }[] = [
+  { key: '全部',   label: '全部',   color: 'var(--m-text-3)' },
+  { key: '待检',   label: '待检',   color: 'var(--brand-color-warning)' },
+  { key: '检验中', label: '检验中', color: 'var(--brand-color)' },
+  { key: '审核中', label: '审核中', color: 'var(--brand-color-warning)' },
+  { key: '已完成', label: '已完成', color: 'var(--brand-color-success)' },
+]
+
 export default function MobileProductInspection() {
   const { scan } = useBarcode()
   const [step, setStep] = useState<Step>(0)
@@ -28,22 +38,25 @@ export default function MobileProductInspection() {
   const [selected, setSelected] = useState<Row | null>(null)
   const [remarks, setRemarks] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [tab, setTab] = useState<StatusTab>('全部')
 
   const workflow = useInspectionWorkflow('product')
   const { items, loadDetail, setItemResult, addSampleValue, updateSample, removeSample, submitAll } = workflow
 
-  const load = async (kw?: string): Promise<Row[]> => {
+  const load = async (kw?: string, status?: StatusTab): Promise<Row[]> => {
     setLoading(true)
     try {
       const params: Record<string, unknown> = { page: 1, pageSize: 30 }
       const k = kw ?? keyword
       if (k) params.inspection_no = k
+      const s = status ?? tab
+      if (s !== '全部') params.status = s
       const r: any = await api.get('/basic/product-inspections', { params })
       const l: Row[] = r.success ? (r.data?.list || r.data?.rows || []) : []
       setList(l); return l
     } catch { return [] } finally { setLoading(false) }
   }
-  useEffect(() => { load() }, [])
+  useEffect(() => { load(undefined, tab) }, [tab])
 
   const onPick = async (row: Row) => {
     setSelected(row); setStep(1)
@@ -121,27 +134,83 @@ export default function MobileProductInspection() {
       <div className="mobile-page-fixed-header">
         <div className="mobile-sticky-header">
           <SearchBar placeholder="扫/输检验单号" value={keyword} onChange={setKeyword}
-            onSearch={load} />
-          <Button size="mini" onClick={onScan} style={{marginTop:8}}>扫码</Button>
+            onSearch={(v) => load(v, tab)} />
+          {/* 状态 Tab */}
+          <div style={{
+            background: 'var(--m-surface)', borderRadius: 12, padding: '4px 10px', marginTop: 8,
+            boxShadow: '0 1px 6px rgba(0,0,0,0.04)',
+          }}>
+            <Tabs activeKey={tab} onChange={(k) => setTab(k as StatusTab)}>
+              {PRODUCT_TABS.map((t) => (
+                <Tabs.Tab
+                  key={t.key}
+                  title={
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 6px' }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: t.color }} />
+                      {t.label}
+                    </span>
+                  }
+                />
+              ))}
+            </Tabs>
+          </div>
         </div>
         <div className="mobile-page-scroll-list">
           {loading ? <Empty text="加载中..." /> : list.length === 0 ? (
             <Empty text="暂无可检成品单" sub="请先在 PC 端创建成品检验单" />
           ) : (
-            <PullToRefresh onRefresh={() => load()}>
-              <List>
-                {list.map((r) => (
-                  <List.Item key={r.inspection_id} onClick={() => onPick(r)} arrow
-                    description={
-                      <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>
-                        {r.material_code} {r.material_name?.slice(0, 20)}
-                        <span style={{ marginLeft: 8, color: 'var(--m-text-3)' }}>{r.status}</span>
+            <PullToRefresh onRefresh={() => load(undefined, tab)}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '4px 2px' }}>
+                {list.map((r) => {
+                  const st = r.status || '待检'
+                  const isDone = st === '已完成'
+                  const stColor = PRODUCT_TABS.find((t) => t.key === st)?.color || 'var(--brand-color-warning)'
+                  return (
+                    <div
+                      key={r.inspection_id}
+                      onClick={() => onPick(r)}
+                      style={{
+                        background: 'var(--m-surface)', borderRadius: 14, padding: '14px 14px 12px 18px',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 12px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.02)',
+                        borderLeft: `3px solid ${stColor}`,
+                      }}
+                    >
+                      {/* 第一行 — 单号 + 状态 */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                        <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--m-text)', flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {r.inspection_no}
+                        </div>
+                        <span style={{
+                          fontSize: 11, padding: '3px 10px', borderRadius: 12, flexShrink: 0,
+                          background: stColor + '15', color: stColor,
+                          fontWeight: 600, border: `1px solid ${stColor}44`, letterSpacing: 0.5,
+                        }}>
+                          {st}
+                        </span>
                       </div>
-                    }>
-                    <div style={{ fontWeight: 500 }}>{r.inspection_no}</div>
-                  </List.Item>
-                ))}
-              </List>
+                      {/* 第二行 — 物料信息（左） + 操作按钮（右） */}
+                      <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ flex: 1, minWidth: 0, lineHeight: 1.4, fontSize: 13, color: 'var(--m-text-2)' }}>
+                          <span style={{ color: 'var(--m-text-3)' }}>{r.material_code}</span>
+                          {r.material_name && <span style={{ marginLeft: 6 }}>· {r.material_name?.slice(0, 20)}</span>}
+                          <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>
+                            工单 {r.report_order_no || '—'} · {r.standard_name || '—'}
+                          </div>
+                        </div>
+                        <Button
+                          size="mini"
+                          color="primary"
+                          disabled={isDone}
+                          onClick={(e) => { e.stopPropagation(); onPick(r) }}
+                        >
+                          {isDone ? '已完成' : '检验'}
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </PullToRefresh>
           )}
         </div>
