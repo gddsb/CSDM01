@@ -110,6 +110,100 @@ export default function MobileProductInspection() {
     workflow.setItems([]); load()
   }
 
+  /** 打开新增弹窗 — 弹 Dialog 让用户选检验类型 + 开工态报工单 */
+  const openCreate = async () => {
+    let wipList: any[] = []
+    try {
+      const r: any = await api.get('/production/report-orders', { params: { page: 1, pageSize: 20, status: 0 } })
+      wipList = r.success ? (r.data?.list || r.data?.rows || []) : []
+    } catch (e: any) {
+      Toast.show({ content: e?.message || '加载报工单失败', position: 'bottom' }); return
+    }
+    if (wipList.length === 0) {
+      Toast.show({ content: '当前无开工中的报工单，请先开工', position: 'bottom' }); return
+    }
+
+    type Callback = (type: string, reportOrderId: number) => Promise<boolean | void>
+    const FormComponent: React.FC<{ wipList: any[]; onConfirm: Callback }> = ({ wipList, onConfirm }) => {
+      const [type, setType] = useState('终检')
+      const [selectedId, setSelId] = useState<number | null>(null)
+      const [submitting, setSubmitting] = useState(false)
+      return (
+        <div style={{ padding: '0 0 8px' }}>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 10 }}>检验类型</div>
+          <Radio.Group
+            value={type}
+            onChange={(v) => setType(v as string)}
+            style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}
+          >
+            {['首件检验', '巡检', '终检', '抽检'].map((t) => (
+              <Radio key={t} value={t}>{t}</Radio>
+            ))}
+          </Radio.Group>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 10 }}>选择报工单（开工中）</div>
+          <div style={{ maxHeight: 260, overflowY: 'auto', border: '1px solid var(--m-border)', borderRadius: 10 }}>
+            {wipList.map((o: any) => {
+              const isSel = selectedId === o.report_order_id
+              return (
+                <div
+                  key={o.report_order_id}
+                  onClick={() => setSelId(o.report_order_id)}
+                  style={{
+                    padding: '10px 12px', borderBottom: '1px solid var(--m-border)', cursor: 'pointer',
+                    background: isSel ? 'var(--brand-color)' : 'var(--m-surface)',
+                    color: isSel ? 'var(--m-surface)' : 'var(--m-text)',
+                    fontSize: 13,
+                  }}
+                >
+                  <div style={{ fontWeight: 600 }}>{o.report_no || o.work_order_no}</div>
+                  <div style={{ fontSize: 11, opacity: 0.85, marginTop: 2 }}>
+                    {o.material_code || ''} · {o.material_name || ''} · 计划 {Math.round(o.planned_qty || o.quantity || 0)} 件
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          <Button
+            block color="primary"
+            loading={submitting}
+            disabled={!selectedId}
+            style={{ marginTop: 16 }}
+            onClick={async () => {
+              if (!selectedId) { Toast.show({ content: '请选一个报工单', position: 'bottom' }); return }
+              setSubmitting(true)
+              try {
+                const ok = await onConfirm(type, selectedId)
+                if (ok !== false) Dialog.clear()
+              } finally { setSubmitting(false) }
+            }}
+          >
+            创建检验单
+          </Button>
+        </div>
+      )
+    }
+
+    Dialog.show({
+      content: <FormComponent wipList={wipList} onConfirm={async (type, id) => {
+        try {
+          const r: any = await api.post('/basic/product-inspections', {
+            inspection_type: type, report_order_id: id, trigger_type: '手工',
+          })
+          if (r.success) {
+            Toast.show({ content: '已创建，去待检 Tab 查看', position: 'bottom' })
+            setTab('待检'); await load(undefined, '待检')
+          } else {
+            Toast.show({ content: r.message || '创建失败', position: 'bottom' }); return false
+          }
+        } catch (e: any) { Toast.show({ content: e?.message || '创建失败', position: 'bottom' }); return false }
+      }} />,
+      closeOnMaskClick: true,
+      actions: [
+        { key: 'cancel', text: '取消', onClick: () => { /* Dialog 自行关闭 */ } },
+      ],
+    })
+  }
+
   if (step === 2) {
     const allOk = items.every((i) => i.result === '合格')
     return (
@@ -133,6 +227,14 @@ export default function MobileProductInspection() {
     step === 0 ? (
       <div className="mobile-page-fixed-header">
         <div className="mobile-sticky-header">
+          {/* ➕ 新增检验按钮 */}
+          <Button
+            color="primary" fill="outline"
+            style={{ marginBottom: 10, width: '100%', height: 40, borderRadius: 10 }}
+            onClick={openCreate}
+          >
+            ➕ 新建检验
+          </Button>
           <SearchBar placeholder="扫/输检验单号" value={keyword} onChange={setKeyword}
             onSearch={(v) => load(v, tab)} />
           {/* 状态 Tab */}

@@ -11,20 +11,30 @@
  *   GET  /api/basic/microbe-inspections   列表（历史可扩展）
  */
 import { useEffect, useState } from 'react'
-import {Button, List, SearchBar, Toast, Dialog, Radio, Picker, TextArea, PullToRefresh, Input } from 'antd-mobile'
+import { Button, List, SearchBar, Toast, Dialog, Radio, Picker, TextArea, PullToRefresh, Input, Tabs } from 'antd-mobile'
 import api from '../../utils/api'
 import { offlinePost } from '../offline/offlineApi'
-import { useBarcode } from '../hooks/useBarcode'
 
 interface RelatedRow {
   id: number
+  inspection_id?: number
+  inspection_no?: string
   no: string
   material_code?: string
   material_name?: string
   report_time?: string
+  object_type?: string
+  status?: number
+  quantity?: number
 }
 
 type Step = 0 | 1 | 2
+type StatusTab = '全部' | '待检' | '已完成'
+const MICROBE_TABS: { key: StatusTab; label: string; color: string }[] = [
+  { key: '全部',   label: '全部',   color: 'var(--m-text-3)' },
+  { key: '待检',   label: '待检',   color: 'var(--brand-color-warning)' },
+  { key: '已完成', label: '已完成', color: 'var(--brand-color-success)' },
+]
 
 // 预设微生物项目（现场常用）
 const DEFAULT_ITEMS = [
@@ -52,15 +62,13 @@ function nowLocalInput() {
 }
 
 export default function MobileMicrobeInspection() {
-  const { scan } = useBarcode()
-
   const [step, setStep] = useState<Step>(0)
-  const [loadMode, setLoadMode] = useState<'report' | 'product' | 'none'>('report')
   const [list, setList] = useState<RelatedRow[]>([])
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(false)
   const [selected, setSelected] = useState<RelatedRow | null>(null)
-  const [objectType, setObjectType] = useState('过程检验')
+  const [objectType, setObjectType] = useState('环境')
+  const [tab, setTab] = useState<StatusTab>('全部')
 
   // Step 1 表单
   const [items, setItems] = useState<{ name: string; value: string; unit: string; result: '合格' | '不合格' | '' }[]>(
@@ -71,30 +79,28 @@ export default function MobileMicrobeInspection() {
   const [submitting, setSubmitting] = useState(false)
   const [successNo, setSuccessNo] = useState('')
 
-  const endpoint = loadMode === 'report'
-    ? '/production/report-orders'
-    : loadMode === 'product'
-    ? '/basic/product-inspections'
-    : ''
-
-  const loadRelated = async (kw?: string): Promise<RelatedRow[]> => {
-    if (!endpoint) return []
+  const loadRelated = async (kw?: string, t?: StatusTab): Promise<RelatedRow[]> => {
     setLoading(true)
     try {
       const params: Record<string, unknown> = { page: 1, pageSize: 30 }
       const k = kw ?? keyword
-      if (k) {
-        if (loadMode === 'report') params.report_no = k
-        else params.inspection_no = k
-      }
-      const r: any = await api.get(endpoint, { params })
+      const tabKey = t ?? tab
+      if (k) params.inspection_no = k
+      if (tabKey === '待检') params.status = 0
+      else if (tabKey === '已完成') params.status = 3
+      const r: any = await api.get('/basic/microbe-inspections', { params })
       const raw: any[] = r.success ? (r.data?.list || r.data?.rows || r.data || []) : []
       const mapped: RelatedRow[] = raw.map((x) => ({
-        id: x.report_order_id ?? x.inspection_id ?? x.id,
-        no: x.report_no ?? x.inspection_no ?? x.order_no ?? String(x.id),
+        id: x.inspection_id ?? x.id,
+        inspection_id: x.inspection_id ?? x.id,
+        inspection_no: x.inspection_no,
+        no: x.inspection_no ?? x.order_no ?? String(x.inspection_id ?? x.id),
         material_code: x.material_code,
         material_name: x.material_name || x.product_name,
-        report_time: x.report_time || x.created_at,
+        report_time: x.inspection_time || x.report_time || x.created_at,
+        object_type: x.object_type,
+        status: x.status,
+        quantity: x.quantity,
       }))
       setList(mapped)
       return mapped
@@ -104,32 +110,13 @@ export default function MobileMicrobeInspection() {
   }
 
   useEffect(() => {
-    if (loadMode !== 'none') loadRelated()
-    else { setList([]) }
-  }, [loadMode])
-
-  const handleScan = async () => {
-    if (loadMode === 'none') {
-      Toast.show({ content: '请先选择关联单据类型', position: 'bottom' }); return
-    }
-    const r = await scan()
-    if (!r) return
-    setKeyword(r.code)
-    const list2 = await loadRelated(r.code)
-    if (list2.length === 1) { setSelected(list2[0]); setStep(1) }
-    else if (list2.length > 1) Toast.show({ content: `命中 ${list2.length} 条，请手动选择`, position: 'bottom' })
-    else Toast.show({ content: '未找到匹配单据', position: 'bottom' })
-  }
+    loadRelated(keyword.trim(), tab)
+  }, [tab])
 
   const onPickObjectType = async () => {
     const ok = await Picker.prompt({ columns: [OBJECT_TYPES] })
     if (ok && ok[0]) {
       setObjectType(ok[0] as string)
-      // 跟着调 loadMode
-      const v = ok[0] as string
-      if (v === '过程检验') setLoadMode('report')
-      else if (v === '成品检验') setLoadMode('product')
-      else setLoadMode('none')
     }
   }
 
@@ -164,12 +151,15 @@ export default function MobileMicrobeInspection() {
           result: it.result,
         })),
       }
-      if (selected) {
-        if (loadMode === 'report') payload.report_order_id = selected.id
-        else if (loadMode === 'product') payload.order_id = selected.id
+      const inspectionId = selected?.inspection_id ?? selected?.id
+      let r: any
+      if (inspectionId) {
+        // 从列表进入 → 更新已有检验记录，置为已完成
+        payload.status = 3
+        r = await api.put(`/basic/microbe-inspections/${inspectionId}`, payload)
+      } else {
+        r = await offlinePost('/basic/microbe-inspections', payload, { source: 'microbe-inspection' })
       }
-
-      const r: any = await offlinePost('/basic/microbe-inspections', payload, { source: 'microbe-inspection' })
       if (!r.success) {
         Toast.show({ content: r.message || '提交失败', position: 'bottom' }); return
       }
@@ -189,7 +179,7 @@ export default function MobileMicrobeInspection() {
     setStep(0); setSelected(null); setKeyword(''); setSuccessNo('')
     setItems(DEFAULT_ITEMS.map((n) => ({ name: n, value: '', unit: 'CFU/g', result: '' })))
     setRemarks(''); setInspectionTime(nowLocalInput())
-    if (loadMode !== 'none') loadRelated()
+    loadRelated('', tab)
   }
 
   // ========== Render ==========
@@ -211,66 +201,117 @@ export default function MobileMicrobeInspection() {
     )
   }
 
+  // 状态徽章映射
+  const statusBadge = (status?: number) => {
+    if (status === 0) return { text: '待检', color: 'var(--brand-color-warning)' }
+    if (status === 3 || status === 2) return { text: '已完成', color: 'var(--brand-color-success)' }
+    return { text: '检验中', color: 'var(--m-text-2)' }
+  }
+
   return (
     step === 0 ? (
       <div className="mobile-page-fixed-header">
         <div className="mobile-sticky-header">
-          {/* 对象类型 + 关联单据类型 */}
-          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, border: '1px solid var(--m-border)', marginBottom: 12 }}>
+          {/* 新建检验按钮 */}
+          <Button
+            color="primary"
+            fill="outline"
+            style={{ marginBottom: 10, width: '100%', height: 40, borderRadius: 10 }}
+            onClick={async () => {
+              try {
+                const r: any = await api.post('/basic/microbe-inspections', {
+                  object_type: '环境',
+                  trigger_type: '手工',
+                })
+                const id = r.success ? r.data?.inspection_id : null
+                if (!id) { Toast.show({ content: r.message || '创建失败', position: 'bottom' }); return }
+                Toast.show({ content: '已创建', position: 'bottom' })
+                await loadRelated(keyword.trim(), tab)
+              } catch (e: any) {
+                Toast.show({ content: e?.message || '创建失败', position: 'bottom' })
+              }
+            }}
+          >
+            ➕ 新建检验
+          </Button>
+
+          {/* 检验对象类型选择 */}
+          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, border: '1px solid var(--m-border)', marginBottom: 8 }}>
             <List.Item onClick={onPickObjectType} extra={objectType} arrow>检验对象类型</List.Item>
           </div>
 
-          {/* 关联单据选择（搜索+扫码） */}
-          {loadMode !== 'none' && (
-            <>
-              <SearchBar
-                placeholder={`扫/搜${loadMode === 'report' ? '在制品报工单号' : '成品检验单号'}`}
-                value={keyword}
-                onChange={setKeyword}
-                onSearch={() => loadRelated(keyword.trim())}
-              />
-              <Button size="mini" onClick={handleScan} style={{marginTop:8}}>扫码</Button>
-            </>
-          )}
+          {/* 搜索栏 */}
+          <SearchBar
+            placeholder="搜索检验单号"
+            value={keyword}
+            onChange={setKeyword}
+            onSearch={() => loadRelated(keyword.trim(), tab)}
+          />
+
+          {/* 状态 Tab */}
+          <div style={{
+            background: 'var(--m-surface)', borderRadius: 12, padding: '4px 10px', marginTop: 8,
+            boxShadow: '0 1px 6px rgba(0,0,0,0.04)',
+          }}>
+            <Tabs activeKey={tab} onChange={(k) => setTab(k as StatusTab)}>
+              {MICROBE_TABS.map((t) => (
+                <Tabs.Tab
+                  key={t.key}
+                  title={
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 6px' }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: t.color }} />
+                      {t.label}
+                    </span>
+                  }
+                />
+              ))}
+            </Tabs>
+          </div>
         </div>
         <div className="mobile-page-scroll-list">
-          {loadMode !== 'none' && (
-            <>
-              {loading ? <EmptyHint text="加载中..." /> : list.length === 0 ? (
-                <EmptyHint text="未找到关联单据" sub="请先在 PC 端创建报工单或成品检验单" />
-              ) : (
-                <PullToRefresh onRefresh={async () => { await loadRelated(keyword.trim() || undefined) }}>
-                  <List>
-                    {list.map((r) => (
-                      <List.Item
-                        key={r.id}
-                        onClick={() => { setSelected(r); setStep(1) }}
-                        arrow
-                        description={
-                          <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>
-                            {r.material_code} {r.material_name?.slice(0, 20) || ''}
+          {loading ? <EmptyHint text="加载中..." /> : list.length === 0 ? (
+            <EmptyHint text="暂无检验记录" sub="点击上方 + 新建检验" />
+          ) : (
+            <PullToRefresh onRefresh={async () => { await loadRelated(keyword.trim() || undefined, tab) }}>
+              <List>
+                {list.map((r) => {
+                  const badge = statusBadge(r.status)
+                  const isDone = r.status === 3 || r.status === 2
+                  return (
+                    <List.Item
+                      key={r.id}
+                      onClick={() => { setSelected(r); setStep(1) }}
+                      arrow
+                      description={
+                        <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>
+                          {/* 第一行：单号 + 状态徽章 */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                            <span style={{ fontWeight: 600, color: 'var(--m-text-1)' }}>{r.no}</span>
+                            <span style={{
+                              fontSize: 11, padding: '2px 8px', borderRadius: 8,
+                              background: badge.color + '18', color: badge.color, fontWeight: 500,
+                            }}>{badge.text}</span>
                           </div>
-                        }
-                      >
-                        <div style={{ fontWeight: 500 }}>{r.no}</div>
-                      </List.Item>
-                    ))}
-                  </List>
-                </PullToRefresh>
-              )}
-            </>
-          )}
-
-          {loadMode === 'none' && (
-            <div style={{
-              background: 'var(--m-surface)', borderRadius: 10, padding: 24, textAlign: 'center',
-              border: '1px solid var(--m-border)', color: 'var(--m-text-3)', fontSize: 13,
-            }}>
-              当前选择"{objectType}"无需关联单据，下一步直接填检验项目
-              <div style={{ marginTop: 16 }}>
-                <Button color="primary" onClick={() => setStep(1)}>下一步：填项目</Button>
-              </div>
-            </div>
+                          {/* 第二行：物料/对象 + 数量 + 操作提示 */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                              {r.material_code ? `${r.material_code} ` : ''}
+                              {r.material_name?.slice(0, 16) || r.object_type || ''}
+                              {typeof r.quantity === 'number' ? ` · ${Math.round(r.quantity)}` : ''}
+                            </span>
+                            <span style={{
+                              marginLeft: 8, fontSize: 11, padding: '2px 8px', borderRadius: 8,
+                              background: isDone ? 'var(--m-surface-2)' : 'var(--brand-color-primary)18',
+                              color: isDone ? 'var(--m-text-3)' : 'var(--brand-color-primary)',
+                            }}>{isDone ? '已完成' : '检验'}</span>
+                          </div>
+                        </div>
+                      }
+                    />
+                  )
+                })}
+              </List>
+            </PullToRefresh>
           )}
         </div>
       </div>

@@ -277,8 +277,12 @@ export default function MobileDashboard() {
           </div>
           <div
             style={{
-              display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, 52px)',
               gap: 6, padding: '4px 2px 8px',
+              justifyContent: 'center',
+              maxWidth: 460,
+              margin: '0 auto',
               background: isEditing ? 'var(--m-surface-2)' : 'transparent',
               borderRadius: 12,
             }}
