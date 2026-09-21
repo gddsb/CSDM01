@@ -25,65 +25,11 @@ import {
 import { useApp } from '../../contexts/AppContext'
 import { useOfflineQueue } from '../hooks/useOfflineQueue'
 import api from '../../utils/api'
+import {
+  DEFAULT_ORDER, STORAGE_KEY, HIGH_PRIORITY_ICONS,
+  type QuickEntry, type TodoItem,
+} from './dashboard/constants.tsx'
 
-interface TodoItem {
-  icon: string
-  text: string
-  count: number
-  path: string
-  color: string
-}
-
-interface QuickEntry {
-  key: string
-  title: string
-  icon: React.ReactNode
-  color: string
-  path: string
-  permCode?: string
-  disabled?: boolean
-}
-
-/** 快捷操作全集（按权限过滤 + localStorage 排序） */
-const DEFAULT_ORDER: QuickEntry[] = [
-  { key: 'reporting', title: '移动报工', icon: <BillOutline fontSize={28} />, color: '#2196F3', path: '/m/process-reporting', permCode: 'production:reporting' },
-  { key: 'prod-orders', title: '生产订单', icon: <CalendarOutline fontSize={28} />, color: '#FF9800', path: '/m/production-orders', permCode: 'production:reporting' },
-  { key: 'incoming', title: '来料检验', icon: <CheckOutline fontSize={28} />, color: '#4CAF50', path: '/m/incoming-inspection', permCode: 'quality:incoming' },
-  { key: 'process', title: '过程检验', icon: <CheckOutline fontSize={28} />, color: '#3F51B5', path: '/m/process-inspection', permCode: 'quality:process' },
-  { key: 'device', title: '设备点检', icon: <TeamOutline fontSize={28} />, color: '#FF9800', path: '/m/device-inspection', permCode: 'device:inspection' },
-  { key: 'maintenance', title: '设备保养', icon: <SetOutline fontSize={28} />, color: '#00BCD4', path: '/m/device-maintenance', permCode: 'device:maintenance' },
-  { key: 'spare-parts', title: '备件管理', icon: <FolderOutline fontSize={28} />, color: '#607D8B', path: '/m/spare-parts', permCode: 'device:spare-part' },
-  { key: 'device-fault', title: '设备故障', icon: <FlagOutline fontSize={28} />, color: '#E91E63', path: '/m/device-fault', permCode: 'device:fault' },
-  { key: 'exception', title: '异常上报', icon: <AppstoreOutline fontSize={28} />, color: '#F44336', path: '/m/exception-report', permCode: 'production:reporting' },
-  { key: 'daily-card', title: '日报卡', icon: <CalendarOutline fontSize={28} />, color: '#009688', path: '/m/daily-card' },
-  { key: 'device-documents', title: '电子档案', icon: <FileOutline fontSize={28} />, color: '#795548', path: '/m/device-documents', permCode: 'device:document' },
-  { key: 'oee', title: '设备OEE', icon: <PieOutline fontSize={28} />, color: '#5E35B1', path: '/m/device-oee', permCode: 'device:oee' },
-  { key: 'calibration', title: '校准提醒', icon: <SetOutline fontSize={28} />, color: '#FF5722', path: '/m/calibration-reminder', permCode: 'device:calibration' },
-  { key: 'inspection-history', title: '检验历史', icon: <SearchOutline fontSize={28} />, color: '#795548', path: '/m/inspection-history', permCode: 'quality:incoming' },
-  { key: 'microbe', title: '微生物检验', icon: <CheckOutline fontSize={28} />, color: '#673AB7', path: '/m/microbe-inspection', permCode: 'quality:incoming' },
-  { key: 'complaint', title: '投诉上报', icon: <ChatAddOutline fontSize={28} />, color: '#FF4081', path: '/m/complaint-report', permCode: 'quality:incoming' },
-]
-
-const STORAGE_KEY = 'mobile_home_order'
-
-/** 根据 localStorage 自定义顺序重排（没有就按 DEFAULT_ORDER） */
-function applyCustomOrder(entries: QuickEntry[], customKeys: string[] | null): QuickEntry[] {
-  if (!customKeys || customKeys.length === 0) return entries
-  const map = new Map(entries.map((e) => [e.key, e]))
-  const ordered: QuickEntry[] = []
-  customKeys.forEach((k) => {
-    const e = map.get(k)
-    if (e) ordered.push(e)
-  })
-  // 自定义列表里没出现的（权限变化新增的）追加到末尾
-  entries.forEach((e) => {
-    if (!ordered.find((o) => o.key === e.key)) ordered.push(e)
-  })
-  return ordered
-}
-
-/** 高优先级图标（用作通知区） */
-const HIGH_PRIORITY_ICONS = new Set(['🚨', '🔧', '⚠️'])
 
 export default function MobileDashboard() {
   const navigate = useNavigate()
