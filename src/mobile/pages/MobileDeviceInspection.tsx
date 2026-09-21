@@ -149,7 +149,7 @@ export default function MobileDeviceInspection() {
                   key={d.device_id}
                   onClick={() => loadRecords(d)}
                   arrow
-                  description={<div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>{d.device_code}</div>}
+                  description={<div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>{d.device_code}</div>}
                 >
                   <div style={{ fontWeight: 500 }}>{d.device_name}</div>
                 </List.Item>
@@ -163,11 +163,11 @@ export default function MobileDeviceInspection() {
         <>
           <div style={{
             background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginBottom: 14,
-            border: '1px solid #eef0f3', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            border: '1px solid var(--m-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}>
             <div>
               <div style={{ fontSize: 15, fontWeight: 600 }}>{selectedDevice.device_name}</div>
-              <div style={{ fontSize: 12, color: '#888' }}>{selectedDevice.device_code}</div>
+              <div style={{ fontSize: 12, color: 'var(--m-text-3)' }}>{selectedDevice.device_code}</div>
             </div>
             <span style={{ fontSize: 12, color: 'var(--brand-color)', cursor: 'pointer' }} onClick={() => setSelectedDevice(null)}>更换</span>
           </div>
@@ -179,15 +179,15 @@ export default function MobileDeviceInspection() {
               <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 8 }}>待执行记录（{records.length}）</div>
               {records.map((r) => (
                 <div key={r.record_id} style={{
-                  background: 'var(--m-surface)', borderRadius: 10, padding: 12, marginBottom: 10, border: '1px solid #eef0f3',
+                  background: 'var(--m-surface)', borderRadius: 10, padding: 12, marginBottom: 10, border: '1px solid var(--m-border)',
                 }}>
                   <div style={{ fontWeight: 500, marginBottom: 4 }}>{r.standard_name || '点检项'}</div>
-                  <div style={{ fontSize: 12, color: '#888' }}>状态: {r.status} · 计划日期: {r.plan_date || '—'}</div>
+                  <div style={{ fontSize: 12, color: 'var(--m-text-3)' }}>状态: {r.status} · 计划日期: {r.plan_date || '—'}</div>
                 </div>
               ))}
 
               {/* 点检表单（简化：合格项数 + 不合格项列表）*/}
-              <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginTop: 14, border: '1px solid #eef0f3' }}>
+              <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginTop: 14, border: '1px solid var(--m-border)' }}>
                 <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 10 }}>点检结果</div>
                 <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginBottom: 6 }}>合格项数（简化）</div>
                 <Stepper value={okCount} min={0} onChange={(v) => setOkCount(Number(v) || 0)} style={{ '--width': '140px' } as any} />

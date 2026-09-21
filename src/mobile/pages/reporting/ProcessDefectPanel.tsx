@@ -164,11 +164,11 @@ export function ProcessDefectPanel({
 
   const selStyle: React.CSSProperties = {
     width: '100%', padding: '10px 12px', borderRadius: 8,
-    border: '1px solid #e0e0e0', fontSize: 14, background: 'var(--m-surface)',
+    border: '1px solid var(--m-border)', fontSize: 14, background: 'var(--m-surface)',
   }
   const inputStyle: React.CSSProperties = {
     padding: '10px 12px', borderRadius: 8,
-    border: '1px solid #e0e0e0', fontSize: 15,
+    border: '1px solid var(--m-border)', fontSize: 15,
     background: 'var(--m-surface)',
   }
 
@@ -240,7 +240,7 @@ export function ProcessDefectPanel({
                 <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--m-text)' }}>
                   {row.defect_code && <span style={{ color: 'var(--m-text-3)', fontSize: 11, marginRight: 6 }}>{row.defect_code}</span>}
                   {row.defect_name || '—'}
-                  {row.defect_type && <span style={{ color: '#aaa', fontSize: 11, marginLeft: 6 }}>({row.defect_type})</span>}
+                  {row.defect_type && <span style={{ color: 'var(--m-text-3)', fontSize: 11, marginLeft: 6 }}>({row.defect_type})</span>}
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>
                   数量 ×{row.quantity} {row.unit || ''}

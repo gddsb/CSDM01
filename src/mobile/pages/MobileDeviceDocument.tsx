@@ -207,7 +207,7 @@ export default function MobileDeviceDocument() {
                 <List.Item key={d.device_id} arrow onClick={async () => {
                   setSelectedDevice(d); await loadDocs(d.device_id)
                 }} description={
-                  <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>{d.device_code}</div>
+                  <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>{d.device_code}</div>
                 }>
                   {d.device_name}
                 </List.Item>
@@ -224,7 +224,7 @@ export default function MobileDeviceDocument() {
     <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 30 }}>
       {/* 设备卡 */}
       <div style={{
-        background: '#E3F2FD', borderRadius: 10, padding: 12, marginBottom: 10,
+        background: 'var(--m-info-bg)', borderRadius: 10, padding: 12, marginBottom: 10,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <div>
@@ -269,34 +269,34 @@ export default function MobileDeviceDocument() {
         <Dialog visible content={
           <div style={{ maxHeight: '70vh', overflow: 'auto', padding: '6px 2px' }}>
             <div style={{ fontWeight: 600, marginBottom: 10 }}>⬆️ 上传电子档案</div>
-            <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>设备</div>
-            <div style={{ padding: 6, background: '#f0f7ff', borderRadius: 6, fontSize: 12 }}>
+            <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginBottom: 4 }}>设备</div>
+            <div style={{ padding: 6, background: 'var(--m-info-bg)', borderRadius: 6, fontSize: 12 }}>
               {selectedDevice.device_name} ({selectedDevice.device_code})
             </div>
 
-            <div style={{ fontSize: 11, color: '#888', margin: '10px 0 4px' }}>文档类型</div>
+            <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '10px 0 4px' }}>文档类型</div>
             <select value={form.doc_type} onChange={(e) => setForm({ ...form, doc_type: e.target.value })} style={selStyle}>
               {Object.entries(DOC_TYPE_MAP).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
 
-            <div style={{ fontSize: 11, color: '#888', margin: '10px 0 4px' }}>文档名称 *</div>
+            <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '10px 0 4px' }}>文档名称 *</div>
             <Input value={form.doc_name} onChange={(v) => setForm({ ...form, doc_name: v })} placeholder="如：使用说明书、合格证" />
 
             <div style={{ display: 'flex', gap: 6 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: '#888', margin: '10px 0 4px' }}>版本号</div>
+                <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '10px 0 4px' }}>版本号</div>
                 <Input value={form.version} onChange={(v) => setForm({ ...form, version: v })} placeholder="v1" />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: '#888', margin: '10px 0 4px' }}>关联工单</div>
+                <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '10px 0 4px' }}>关联工单</div>
                 <Input value={form.related_order} onChange={(v) => setForm({ ...form, related_order: v })} placeholder="可选" />
               </div>
             </div>
 
-            <div style={{ fontSize: 11, color: '#888', margin: '10px 0 4px' }}>有效期至（可选）</div>
+            <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '10px 0 4px' }}>有效期至（可选）</div>
             <Input type="date" value={form.valid_until} onChange={(v) => setForm({ ...form, valid_until: v })} />
 
-            <div style={{ fontSize: 11, color: '#888', margin: '10px 0 4px' }}>选择文件（可多选，≤10）</div>
+            <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '10px 0 4px' }}>选择文件（可多选，≤10）</div>
             <Button size="mini" fill="outline" block onClick={onPickFiles}>
               📁 {fileList.length > 0 ? `已选 ${fileList.length} 个` : '点此选择'}
             </Button>
@@ -330,22 +330,22 @@ function DocCard({ doc, onDownload, onDelete }: {
   return (
     <div style={{
       background: 'var(--m-surface)', borderRadius: 10, padding: 10, marginBottom: 8,
-      border: '1px solid #eef0f3',
+      border: '1px solid var(--m-border)',
     }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
         <div style={{ fontSize: 24, width: 32, textAlign: 'center' }}>{icon}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 500, fontSize: 13 }}>
             {doc.doc_name}
-            {doc.version && <span style={{ fontSize: 10, color: '#888', marginLeft: 6 }}>v{doc.version}</span>}
+            {doc.version && <span style={{ fontSize: 10, color: 'var(--m-text-3)', marginLeft: 6 }}>v{doc.version}</span>}
           </div>
-          <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
+          <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>
             {doc.doc_type_name || DOC_TYPE_MAP[doc.doc_type] || doc.doc_type}
             {doc.file_format ? ` · ${doc.file_format.toUpperCase()}` : ''}
             {doc.file_size_text ? ` · ${doc.file_size_text}` : ''}
           </div>
           {doc.related_order && (
-            <div style={{ fontSize: 10, color: '#aaa', marginTop: 2 }}>工单: {doc.related_order}</div>
+            <div style={{ fontSize: 10, color: 'var(--m-text-3)', marginTop: 2 }}>工单: {doc.related_order}</div>
           )}
         </div>
       </div>

@@ -37,7 +37,7 @@ const SOURCE_META: Record<string, { label: string; icon: string; color: string }
 
 function sourceLabel(source?: string) {
   if (!source) return { label: '未知来源', icon: '❓', color: 'var(--m-text-3)' }
-  return SOURCE_META[source] || { label: source, icon: '📄', color: '#888' }
+  return SOURCE_META[source] || { label: source, icon: '📄', color: 'var(--m-text-3)' }
 }
 
 function fmtTime(ts: number): string {
@@ -254,7 +254,7 @@ export default function MobileOfflineQueue() {
                             <Tag color={item.method === 'POST' ? 'green' : item.method === 'PUT' ? 'orange' : 'blue'} style={{ margin: 0 }}>
                               {item.method}
                             </Tag>
-                            <span style={{ fontSize: 11, color: '#888', fontFamily: 'monospace' }}>{shortPath}</span>
+                            <span style={{ fontSize: 11, color: 'var(--m-text-3)', fontFamily: 'monospace' }}>{shortPath}</span>
                           </div>
                           <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 4 }}>
                             {fmtTime(item.enqueuedAt)}
@@ -275,22 +275,22 @@ export default function MobileOfflineQueue() {
                     {/* 展开：详情 + 操作 */}
                     {isOpen && (
                       <div style={{
-                        background: '#fafbfc', borderLeft: '3px solid #e0e0e0',
+                        background: 'var(--m-surface-2)', borderLeft: '3px solid #e0e0e0',
                         padding: '10px 14px', margin: '0 0 2px 0', fontSize: 12,
                       }}>
                         {/* 错误信息 */}
                         {item.lastError && (
                           <div style={{
-                            background: '#FFEBEE', borderRadius: 6, padding: '6px 10px',
+                            background: 'var(--m-danger-bg)', borderRadius: 6, padding: '6px 10px',
                             color: '#C62828', fontSize: 11, marginBottom: 8,
                           }}>⚠️ {item.lastError}</div>
                         )}
 
                         {/* 请求体 */}
                         <div style={{ marginBottom: 8 }}>
-                          <div style={{ color: '#888', fontSize: 11, marginBottom: 4 }}>请求体：</div>
+                          <div style={{ color: 'var(--m-text-3)', fontSize: 11, marginBottom: 4 }}>请求体：</div>
                           <pre style={{
-                            background: 'var(--m-surface)', border: '1px solid #eee', borderRadius: 6,
+                            background: 'var(--m-surface)', border: '1px solid var(--m-border)', borderRadius: 6,
                             padding: 8, overflowX: 'auto', fontSize: 11,
                             maxHeight: 200, lineHeight: 1.5,
                           }}>{fmtBody(item.body)}</pre>

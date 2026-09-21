@@ -132,7 +132,7 @@ export default function MobileProcessInspection() {
             单号：{successNo}
           </div>
         )}
-        <div style={{ fontSize: 13, color: '#888', marginBottom: 24 }}>
+        <div style={{ fontSize: 13, color: 'var(--m-text-3)', marginBottom: 24 }}>
           {selected.work_order_no} · {selected.process_name}
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
@@ -172,7 +172,7 @@ export default function MobileProcessInspection() {
                     onClick={() => { setSelected(r); setStep(1) }}
                     arrow
                     description={
-                      <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+                      <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>
                         {r.process_name} · {r.product_name} · {r.quantity ?? '—'}件
                       </div>
                     }>
@@ -188,14 +188,14 @@ export default function MobileProcessInspection() {
     <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
       {step === 1 && selected && (
         <>
-          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginBottom: 14, border: '1px solid #eef0f3' }}>
+          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginBottom: 14, border: '1px solid var(--m-border)' }}>
             <div style={{ fontSize: 15, fontWeight: 600 }}>{selected.work_order_no} · {selected.process_name}</div>
-            <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>
               {selected.product_name} · 计划 {selected.quantity ?? '—'}
             </div>
           </div>
 
-          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, border: '1px solid #eef0f3', marginBottom: 14 }}>
+          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, border: '1px solid var(--m-border)', marginBottom: 14 }}>
             <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 8 }}>过程参数（快速填写）</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <Input placeholder="温度 (°C)" type="number" value={temperature} onChange={setTemperature} />
@@ -204,7 +204,7 @@ export default function MobileProcessInspection() {
             </div>
           </div>
 
-          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, border: '1px solid #eef0f3', marginBottom: 14 }}>
+          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, border: '1px solid var(--m-border)', marginBottom: 14 }}>
             <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 10 }}>判定</div>
             <div style={{ display: 'flex', gap: 20 }}>
 <Radio.Group value={result} onChange={(v) => setResult(v as any)}>
@@ -216,7 +216,7 @@ export default function MobileProcessInspection() {
             <textarea
               value={remarks} onChange={(e) => setRemarks(e.target.value)}
               placeholder="说明（可选）" rows={2}
-              style={{ width: '100%', marginTop: 12, padding: 8, borderRadius: 8, border: '1px solid #eef0f3', fontSize: 14 }}
+              style={{ width: '100%', marginTop: 12, padding: 8, borderRadius: 8, border: '1px solid var(--m-border)', fontSize: 14 }}
             />
           </div>
 

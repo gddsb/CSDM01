@@ -25,7 +25,7 @@ interface Props {
 
 const COUNT_STYLE: React.CSSProperties = {
   flex: 1, padding: '10px 12px', borderRadius: 8,
-  border: '1px solid #e0e0e0', fontSize: 15,
+  border: '1px solid var(--m-border)', fontSize: 15,
   background: 'var(--m-surface)',
 }
 
@@ -79,7 +79,7 @@ export function ManpowerPanel({ report, editable, manpower, setManpower }: Props
 
   return (
     <div>
-      <div style={{ fontSize: 12, color: '#888', marginBottom: 10 }}>
+      <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginBottom: 10 }}>
         🕐 开工时间: <b style={{ color: 'var(--m-text)' }}>{report.report_time?.slice(0, 16) || '—'}</b>
         {report.finish_time && <span style={{ marginLeft: 8 }}>完工: <b style={{ color: 'var(--m-text)' }}>{report.finish_time.slice(0, 16)}</b></span>}
         <span style={{ marginLeft: 10, color: 'var(--brand-color)' }}>总人数: <b>{totalPeople}</b></span>

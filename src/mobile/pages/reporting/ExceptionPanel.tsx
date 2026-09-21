@@ -100,11 +100,11 @@ export function ExceptionPanel({ report, editable, rows, setRows }: Props) {
 
   const inputStyle: React.CSSProperties = {
     flex: 1, padding: '10px 12px', borderRadius: 8,
-    border: '1px solid #e0e0e0', fontSize: 14,
+    border: '1px solid var(--m-border)', fontSize: 14,
   }
   const selStyle: React.CSSProperties = {
     width: '100%', padding: '10px 12px', borderRadius: 8,
-    border: '1px solid #e0e0e0', fontSize: 14, background: 'var(--m-surface)',
+    border: '1px solid var(--m-border)', fontSize: 14, background: 'var(--m-surface)',
   }
 
   return (
@@ -117,10 +117,10 @@ export function ExceptionPanel({ report, editable, rows, setRows }: Props) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ fontSize: 14, fontWeight: 500, color: isUnfinished ? '#f5222d' : 'var(--m-text)' }}>
                 {row.exception_type || '—'}
-                {isUnfinished && <span style={{ fontSize: 11, color: '#f5222d', marginLeft: 6 }}>进行中</span>}
+                {isUnfinished && <span style={{ fontSize: 11, color: 'var(--brand-color-danger)', marginLeft: 6 }}>进行中</span>}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ color: '#ff9800', fontWeight: 600, fontSize: 13 }}>
+                <span style={{ color: 'var(--brand-color-warning)', fontWeight: 600, fontSize: 13 }}>
                   {isUnfinished ? '—' : `${row.duration ?? 0}分钟`}
                 </span>
                 {editable && isUnfinished && (
@@ -136,7 +136,7 @@ export function ExceptionPanel({ report, editable, rows, setRows }: Props) {
               {(row.start_time || '—').slice(5, 16).replace('T', ' ')} → {(row.end_time || '至今').slice(5, 16).replace('T', ' ')}
             </div>
             {row.remark && (
-              <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>📝 {row.remark}</div>
+              <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>📝 {row.remark}</div>
             )}
           </div>
         )
@@ -150,7 +150,7 @@ export function ExceptionPanel({ report, editable, rows, setRows }: Props) {
         <div style={{ borderTop: '1px dashed #ddd', paddingTop: 10, marginTop: 6 }}>
           <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginBottom: 6 }}>➕ 新加工时</div>
           {hasUnfinished && (
-            <div style={{ color: '#f5222d', fontSize: 11, marginBottom: 6 }}>
+            <div style={{ color: 'var(--brand-color-danger)', fontSize: 11, marginBottom: 6 }}>
               ⚠️ 存在未结束的工时记录，请先点「结束」
             </div>
           )}

@@ -203,7 +203,7 @@ export default function MobileInspectionHistory() {
               {list.map((r) => (
                 <List.Item key={`${type}-${r.id}-${r.no}`}
                   description={
-                    <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+                    <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>
                       {r.materialCode} {r.materialName?.slice(0, 20) || ''}
                       {r.processName && ` · ${r.processName}`}
                       {r.lineName && ` · ${r.lineName}`}

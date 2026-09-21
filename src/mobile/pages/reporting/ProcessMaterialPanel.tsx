@@ -149,11 +149,11 @@ export function ProcessMaterialPanel({
 
   const selStyle: React.CSSProperties = {
     width: '100%', padding: '10px 12px', borderRadius: 8,
-    border: '1px solid #e0e0e0', fontSize: 14, background: 'var(--m-surface)',
+    border: '1px solid var(--m-border)', fontSize: 14, background: 'var(--m-surface)',
   }
   const inputStyle: React.CSSProperties = {
     padding: '10px 12px', borderRadius: 8,
-    border: '1px solid #e0e0e0', fontSize: 14, background: 'var(--m-surface)',
+    border: '1px solid var(--m-border)', fontSize: 14, background: 'var(--m-surface)',
   }
 
   return (
@@ -227,7 +227,7 @@ export function ProcessMaterialPanel({
                 <div style={{ fontSize: 14, fontWeight: 500, color: row.material_type === '退回' ? '#f44336' : 'var(--m-text)' }}>
                   {row.material_code && <span style={{ color: 'var(--m-text-3)', fontSize: 11, marginRight: 6 }}>{row.material_code}</span>}
                   {row.material_name || '—'}
-                  {row.material_type === '退回' && <span style={{ color: '#f44336', fontSize: 10, marginLeft: 4 }}>[退回]</span>}
+                  {row.material_type === '退回' && <span style={{ color: 'var(--brand-color-danger)', fontSize: 10, marginLeft: 4 }}>[退回]</span>}
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>
                   数量 ×{row.quantity}

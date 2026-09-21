@@ -218,12 +218,12 @@ export default function MobileProcessReporting() {
         {orders.map((o) => (
           <div key={o.order_id} style={{
             background: 'var(--m-surface)', borderRadius: 10, padding: 12, marginBottom: 10,
-            border: '1px solid #eef0f3',
+            border: '1px solid var(--m-border)',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ fontSize: 15, fontWeight: 600 }}>{o.order_no}</div>
-                <div style={{ fontSize: 12, color: '#888', marginTop: 3 }}>{o.material_code} · {o.material_name}</div>
+                <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 3 }}>{o.material_code} · {o.material_name}</div>
               </div>
               <Badge content={`${o.finished_qty}/${o.planned_qty}`} style={{ '--right': '-4px', '--top': '-4px' }} />
             </div>
@@ -419,11 +419,11 @@ function Header({ report, onBack, onFinish }: { report: ReportOrder; onBack: () 
 function StatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportStats>; reportQty: number }) {
   // 一行 6 项：投入数量/合格数量 各 10ch（整数），其余 4 项 flex:1 平均宽度
   const items: Array<{ label: string; value: number | string; color: string; width?: string | number }> = [
-    { label: '投入数量', value: Math.round(stats.inputQty || 0), color: '#1890ff', width: '10ch' },
+    { label: '投入数量', value: Math.round(stats.inputQty || 0), color: 'var(--brand-color)', width: '10ch' },
     { label: '合格数量', value: Math.round(stats.expectedOutput > 0 ? stats.expectedOutput : 0), color: '#52c41a', width: '10ch' },
     { label: '来料不良', value: stats.defectMaterial, color: '#faad14' },
     { label: '制程不良', value: stats.defectProcess, color: '#fa8c16' },
-    { label: '检验报废', value: stats.defectScrap, color: '#f5222d' },
+    { label: '检验报废', value: stats.defectScrap, color: 'var(--brand-color-danger)' },
     { label: '异常工时', value: `${((stats.exceptionHours || 0) / 60).toFixed(1)}H`, color: '#eb2f96' },
   ]
   return (
@@ -431,7 +431,7 @@ function StatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportSta
       background: 'var(--m-surface)', margin: '10px 10px 0', borderRadius: 10, padding: '10px 12px',
       boxShadow: '0 1px 4px rgba(0,0,0,.04)',
     }}>
-      <div style={{ fontSize: 11, color: '#888', fontWeight: 600, marginBottom: 6 }}>📊 报工单汇总</div>
+      <div style={{ fontSize: 11, color: 'var(--m-text-3)', fontWeight: 600, marginBottom: 6 }}>📊 报工单汇总</div>
       <div style={{ display: 'flex', gap: 4, alignItems: 'stretch' }}>
         {items.map(it => (
           <div
@@ -444,7 +444,7 @@ function StatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportSta
             }}
           >
             <div style={{ fontSize: 15, fontWeight: 700, color: it.color, whiteSpace: 'nowrap' }}>{it.value}</div>
-            <div style={{ fontSize: 10, color: '#aaa', marginTop: 2, whiteSpace: 'nowrap' }}>{it.label}</div>
+            <div style={{ fontSize: 10, color: 'var(--m-text-3)', marginTop: 2, whiteSpace: 'nowrap' }}>{it.label}</div>
           </div>
         ))}
       </div>
@@ -479,7 +479,7 @@ function ProcessSelector({
       padding: '8px 12px', borderBottom: '1px solid #f0f0f0', background: '#fafafa',
       display: 'flex', alignItems: 'center', gap: 8,
     }}>
-      <span style={{ fontSize: 12, color: '#888', flexShrink: 0 }}>工序</span>
+      <span style={{ fontSize: 12, color: 'var(--m-text-3)', flexShrink: 0 }}>工序</span>
       <select
         value={activeProcId || ''}
         onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}

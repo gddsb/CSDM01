@@ -311,7 +311,7 @@ export default function MobileOrderManagement() {
                     <div style={{ fontWeight: 700, fontSize: 15, color: '#222', flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {o.order_no}
                       {(o.planned_qty ?? 0) > 0 && (
-                        <span style={{ fontSize: 12, fontWeight: 400, color: '#888', marginLeft: 8 }}>
+                        <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--m-text-3)', marginLeft: 8 }}>
                           报工 <b style={{ color: statusColor, fontSize: 14 }}>{o.finished_qty ?? 0}</b>
                           <span style={{ color: 'var(--m-text-3)' }}> / {o.planned_qty}</span>
                         </span>
@@ -350,7 +350,7 @@ export default function MobileOrderManagement() {
                     {/* 左侧: 料品信息 + 地点日期（flex:1 占满剩余空间） */}
                     <div style={{ flex: 1, minWidth: 0, lineHeight: 1.4 }}>
                       <div style={{ fontSize: 13, color: 'var(--m-text-2)', wordBreak: 'break-all' }}>
-                        <span style={{ color: '#888' }}>{o.material_code}</span>
+                        <span style={{ color: 'var(--m-text-3)' }}>{o.material_code}</span>
                         {o.material_name && (
                           <span style={{ marginLeft: 6 }}>· {o.material_name}</span>
                         )}
@@ -416,11 +416,11 @@ export default function MobileOrderManagement() {
                     onClick={() => setActiveReportId(r.report_order_id)}
                     style={{
                       padding: 12, borderBottom: '1px solid #f5f5f5', cursor: 'pointer',
-                      background: '#fafbfc', borderRadius: 8, marginBottom: 6,
+                      background: 'var(--m-surface-2)', borderRadius: 8, marginBottom: 6,
                     }}
                   >
                     <div style={{ fontWeight: 600, fontSize: 13.5 }}>{r.report_no}</div>
-                    <div style={{ fontSize: 11, color: '#888', marginTop: 3, display: 'flex', gap: 10 }}>
+                    <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 3, display: 'flex', gap: 10 }}>
                       <span>🏭 {r.line_name}</span>
                       <span>📦 ×{r.report_qty}</span>
                       <span style={{

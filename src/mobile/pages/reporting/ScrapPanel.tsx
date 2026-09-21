@@ -96,11 +96,11 @@ export function ScrapPanel({
   return (
     <div>
       {/* 工序提示（复用工序报工的当前工序，只读展示） */}
-      <div style={{ fontSize: 11, color: '#888', padding: '4px 0 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
+      <div style={{ fontSize: 11, color: 'var(--m-text-3)', padding: '4px 0 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
         📌 存储工序:
         {resolvedProcessId
-          ? <b style={{ color: '#1890ff', fontSize: 12 }}>{processes.find(p => p.process_id === resolvedProcessId)?.process_name || '—'}</b>
-          : <span style={{ color: '#f44336' }}>未选（请到工序报工选择）</span>}
+          ? <b style={{ color: 'var(--brand-color)', fontSize: 12 }}>{processes.find(p => p.process_id === resolvedProcessId)?.process_name || '—'}</b>
+          : <span style={{ color: 'var(--brand-color-danger)' }}>未选（请到工序报工选择）</span>}
       </div>
 
       {/* 列表 */}
@@ -114,10 +114,10 @@ export function ScrapPanel({
               {row.defect_code && <span style={{ color: 'var(--m-text-3)', fontSize: 11, marginRight: 6 }}>{row.defect_code}</span>}
               {row.defect_name || '—'}
             </div>
-            {row.defect_type && <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{row.defect_type}</div>}
+            {row.defect_type && <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>{row.defect_type}</div>}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-            <span style={{ color: '#f44336', fontWeight: 700, fontSize: 16 }}>×{row.quantity}</span>
+            <span style={{ color: 'var(--brand-color-danger)', fontWeight: 700, fontSize: 16 }}>×{row.quantity}</span>
             {editable && (
               <Button size="mini" fill="outline" onClick={() => handleDel(row)}>删</Button>
             )}

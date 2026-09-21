@@ -387,7 +387,7 @@ function FaultCard({ fault, onOpen }: { fault: FaultRow; onOpen: () => void }) {
   return (
     <div onClick={onOpen} style={{
       background: 'var(--m-surface)', borderRadius: 10, padding: 12, marginBottom: 10,
-      border: '1px solid #eef0f3', cursor: 'pointer',
+      border: '1px solid var(--m-border)', cursor: 'pointer',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ fontWeight: 600, fontSize: 14 }}>{fault.fault_no || `#${fault.fault_id}`}</div>
@@ -404,13 +404,13 @@ function FaultCard({ fault, onOpen }: { fault: FaultRow; onOpen: () => void }) {
         📍 {fault.device_name} ({fault.device_code})
       </div>
       {fault.fault_desc && (
-        <div style={{ fontSize: 12, color: '#888', marginTop: 4,
+        <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4,
           overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
           {fault.fault_desc}
         </div>
       )}
       {(fault.repair_person_name || fault.fault_time) && (
-        <div style={{ fontSize: 11, color: '#aaa', marginTop: 6, display: 'flex', gap: 10 }}>
+        <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 6, display: 'flex', gap: 10 }}>
           {fault.repair_person_name && <span>👷 {fault.repair_person_name}</span>}
           {fault.fault_time && <span>⏰ {String(fault.fault_time).slice(0, 16)}</span>}
         </div>
@@ -442,7 +442,7 @@ function FaultDetail(p: FaultDetailProps) {
         {f.fault_no || `故障 #${f.fault_id}`}
         <span style={{
           marginLeft: 8, fontSize: 11, padding: '2px 6px', borderRadius: 8,
-          background: '#E3F2FD', color: '#1565C0', fontWeight: 400,
+          background: 'var(--m-info-bg)', color: 'var(--brand-color)', fontWeight: 400,
         }}>{f.status}</span>
       </div>
       <DetailLine label="设备">{f.device_name} ({f.device_code})</DetailLine>
@@ -480,15 +480,15 @@ function FaultDetail(p: FaultDetailProps) {
             placeholder="采取的修复措施" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, color: '#888' }}>工时(h)</div>
+              <div style={{ fontSize: 11, color: 'var(--m-text-3)' }}>工时(h)</div>
               <Input value={p.repairHours} onChange={p.setRepairHours} type="number" placeholder="0" />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, color: '#888' }}>备件费</div>
+              <div style={{ fontSize: 11, color: 'var(--m-text-3)' }}>备件费</div>
               <Input value={p.partsCost} onChange={p.setPartsCost} type="number" placeholder="0" />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, color: '#888' }}>人工费</div>
+              <div style={{ fontSize: 11, color: 'var(--m-text-3)' }}>人工费</div>
               <Input value={p.laborCost} onChange={p.setLaborCost} type="number" placeholder="0" />
             </div>
           </div>
@@ -539,7 +539,7 @@ function FaultDetail(p: FaultDetailProps) {
 function DetailLine({ label, children }: { label: string; children: any }) {
   return (
     <div style={{ display: 'flex', marginBottom: 4, fontSize: 12 }}>
-      <div style={{ color: '#888', width: 70, flexShrink: 0 }}>{label}：</div>
+      <div style={{ color: 'var(--m-text-3)', width: 70, flexShrink: 0 }}>{label}：</div>
       <div style={{ color: 'var(--m-text)', flex: 1 }}>{children}</div>
     </div>
   )
@@ -548,7 +548,7 @@ function DetailLine({ label, children }: { label: string; children: any }) {
 function Section({ title, children }: { title: string; children: any }) {
   return (
     <div style={{
-      marginTop: 12, padding: 10, borderRadius: 8, background: 'var(--m-surface-2)', border: '1px solid #eef0f3',
+      marginTop: 12, padding: 10, borderRadius: 8, background: 'var(--m-surface-2)', border: '1px solid var(--m-border)',
     }}>
       <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>{title}</div>
       {children}

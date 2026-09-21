@@ -116,7 +116,7 @@ export default function MobileComplaintReport() {
         <div style={{ fontSize: 60 }}>📢</div>
         <div style={{ fontSize: 18, fontWeight: 600, margin: '16px 0 8px' }}>投诉上报成功</div>
         {successNo && <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 4 }}>投诉单号：{successNo}</div>}
-        <div style={{ fontSize: 13, color: '#888', marginBottom: 24 }}>{complaintType} · {source}</div>
+        <div style={{ fontSize: 13, color: 'var(--m-text-3)', marginBottom: 24 }}>{complaintType} · {source}</div>
         <div style={{ display: 'flex', gap: 12 }}>
           <Button block fill="outline" onClick={() => reset()}>继续上报</Button>
           <Button block color="primary" onClick={() => reset()}>返回首页</Button>
@@ -141,12 +141,12 @@ export default function MobileComplaintReport() {
               arrow
             >投诉来源</List.Item>
             <div style={{ padding: '10px 16px', borderTop: '1px solid #f0f0f0' }}>
-              <div style={{ fontSize: 12, color: '#888', marginBottom: 4 }}>发生时间</div>
+              <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginBottom: 4 }}>发生时间</div>
               <input
                 type="datetime-local"
                 value={complaintTime}
                 onChange={(e) => setComplaintTime(e.target.value)}
-                style={{ width: '100%', padding: '6px 8px', fontSize: 13, border: '1px solid #eef0f3', borderRadius: 6 }}
+                style={{ width: '100%', padding: '6px 8px', fontSize: 13, border: '1px solid var(--m-border)', borderRadius: 6 }}
               />
             </div>
           </Card>
@@ -199,7 +199,7 @@ export default function MobileComplaintReport() {
               arrow
             >建议处理方向</List.Item>
             <div style={{ padding: '10px 16px', borderTop: '1px solid #f0f0f0' }}>
-              <div style={{ fontSize: 12, color: '#888', marginBottom: 6 }}>是否需要回复客户</div>
+              <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginBottom: 6 }}>是否需要回复客户</div>
               <div style={{ display: 'flex', gap: 24 }}>
 <Radio.Group value={requireReply} onChange={(v) => setRequireReply(v as any)}>
 
@@ -241,7 +241,7 @@ export default function MobileComplaintReport() {
 function Card({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
-      background: 'var(--m-surface)', borderRadius: 10, border: '1px solid #eef0f3',
+      background: 'var(--m-surface)', borderRadius: 10, border: '1px solid var(--m-border)',
       marginBottom: 12, overflow: 'hidden',
     }}>
       {children}

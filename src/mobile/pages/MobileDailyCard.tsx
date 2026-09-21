@@ -103,7 +103,7 @@ function ProductionPanel({ data }: { data: any }) {
         {last3.length === 0 ? <EmptyHint text="暂无趋势数据" /> : (
           <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ color: '#888', borderBottom: '1px solid #eee' }}>
+              <tr style={{ color: 'var(--m-text-3)', borderBottom: '1px solid var(--m-border)' }}>
                 <th style={{ textAlign: 'left', padding: '6px 0' }}>日期</th>
                 {lines.slice(0, 3).map((ln) => (
                   <th key={ln} style={{ textAlign: 'right', padding: '6px 0' }}>{ln.slice(0, 6)}</th>
@@ -113,7 +113,7 @@ function ProductionPanel({ data }: { data: any }) {
             <tbody>
               {last3.map((d) => (
                 <tr key={d.date} style={{ borderBottom: '1px dashed #f0f0f0' }}>
-                  <td style={{ padding: '8px 0', color: '#444' }}>{String(d.date).slice(5)}</td>
+                  <td style={{ padding: '8px 0', color: 'var(--m-text-2)' }}>{String(d.date).slice(5)}</td>
                   {lines.slice(0, 3).map((ln) => (
                     <td key={ln} style={{ textAlign: 'right', padding: '8px 0', fontWeight: 500 }}>
                       {fmtNum(d[ln] || 0)}
@@ -253,11 +253,11 @@ function ManagementPanel({ data }: { data: any }) {
               }}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 500 }}>{wo.report_no || wo.work_order_no || wo.order_no}</div>
-                  <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>{wo.line_name || '—'} · {wo.material_name || ''}</div>
+                  <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>{wo.line_name || '—'} · {wo.material_name || ''}</div>
                 </div>
                 <div style={{ textAlign: 'right', fontSize: 12 }}>
                   <div>{fmtNum(wo.report_qty || wo.planned_qty)} 件</div>
-                  <div style={{ color: '#888', marginTop: 2 }}>{wo.status || ''}</div>
+                  <div style={{ color: 'var(--m-text-3)', marginTop: 2 }}>{wo.status || ''}</div>
                 </div>
               </div>
             ))}
@@ -274,12 +274,12 @@ function KpiCard({ label, value, color, unit }: { label: string; value: string; 
   return (
     <div style={{
       flex: 1, background: 'var(--m-surface)', borderRadius: 10, padding: 14,
-      border: '1px solid #eef0f3',
+      border: '1px solid var(--m-border)',
     }}>
-      <div style={{ fontSize: 12, color: '#888', marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginBottom: 6 }}>{label}</div>
       <div style={{ fontSize: 22, fontWeight: 700, color }}>
         {value}
-        {unit && <span style={{ fontSize: 12, color: '#aaa', fontWeight: 400, marginLeft: 4 }}>{unit}</span>}
+        {unit && <span style={{ fontSize: 12, color: 'var(--m-text-3)', fontWeight: 400, marginLeft: 4 }}>{unit}</span>}
       </div>
     </div>
   )
@@ -297,7 +297,7 @@ function Card({ children }: { children: React.ReactNode }) {
   return (
     <div style={{
       background: 'var(--m-surface)', borderRadius: 10, padding: '6px 14px',
-      border: '1px solid #eef0f3',
+      border: '1px solid var(--m-border)',
     }}>
       {children}
     </div>
@@ -317,9 +317,9 @@ function RateRow({ label, rate, color }: { label: string; rate: { ok: number; to
     <div style={{ padding: '10px 0', borderBottom: '1px dashed #f0f0f0' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
         <span style={{ color: 'var(--m-text-2)' }}>{label}</span>
-        <span style={{ fontWeight: 600, color }}>{fmtPct(rate.rate)} <span style={{ color: '#aaa', fontWeight: 400 }}>({rate.ok}/{rate.total})</span></span>
+        <span style={{ fontWeight: 600, color }}>{fmtPct(rate.rate)} <span style={{ color: 'var(--m-text-3)', fontWeight: 400 }}>({rate.ok}/{rate.total})</span></span>
       </div>
-      <div style={{ height: 4, background: '#f0f0f0', borderRadius: 2, overflow: 'hidden' }}>
+      <div style={{ height: 4, background: 'var(--m-border-2)', borderRadius: 2, overflow: 'hidden' }}>
         <div style={{ height: '100%', width: `${rate.rate}%`, background: color, transition: 'width .3s' }} />
       </div>
     </div>

@@ -31,6 +31,18 @@
   --color-danger-bg: var(--m-danger-bg);
   --color-info-bg: var(--m-info-bg);
   --color-amber-bg: var(--m-amber-bg);
+
+  /* ===== 字号（覆盖 Tailwind 默认 scale，统一消费 --m-font-* token）===== */
+  --font-size-m-xs: var(--m-font-xs);  /* 11px */
+  --font-size-m-sm: var(--m-font-sm);  /* 12px */
+  --font-size-m-md: var(--m-font-md);  /* 14px */
+  --font-size-m-lg: var(--m-font-lg);  /* 16px */
+  --font-size-m-xl: var(--m-font-xl);  /* 18px */
+
+  /* ===== 圆角 ===== */
+  --radius-m-sm: var(--m-radius-sm);   /* 6px */
+  --radius-m-md: var(--m-radius-md);   /* 10px */
+  --radius-m-lg: var(--m-radius-lg);   /* 12px */
 }
 
 /* ============ 以下为原有样式，不动 ============ */

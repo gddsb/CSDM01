@@ -274,7 +274,7 @@ export default function MobileOeeDashboard() {
                     percent={Math.round(d.oee)}
                     style={{ height: 4, '--border-radius': 2, '--fill-color': st.color, '--track-color': '#f0f0f0' } as any}
                   />
-                  <div style={{ display: 'flex', gap: 8, marginTop: 6, fontSize: 11, color: '#888' }}>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 6, fontSize: 11, color: 'var(--m-text-3)' }}>
                     <span>A {d.availability}%</span>
                     <span>P {d.performance}%</span>
                     <span>Q {d.quality}%</span>
@@ -289,7 +289,7 @@ export default function MobileOeeDashboard() {
           <div style={{ background: 'var(--m-surface)', borderRadius: 12, padding: 12 }}>
             <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>📈 质量率趋势 · {summary?.range_label}</div>
             <TrendChart data={data.trend} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#aaa', marginTop: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--m-text-3)', marginTop: 4 }}>
               <span>蓝色折线 · 每日质量率</span>
               <span>产量 {sumTrendField(data.trend, 'output').toLocaleString()} · 不良 {sumTrendField(data.trend, 'defect').toLocaleString()}</span>
             </div>

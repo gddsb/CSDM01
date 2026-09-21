@@ -350,7 +350,7 @@ export default function MobileDashboard() {
               ))}
             </div>
           ) : (
-            <div style={{ fontSize: 12, color: '#aaa', textAlign: 'center', padding: '4px 0' }}>
+            <div style={{ fontSize: 12, color: 'var(--m-text-3)', textAlign: 'center', padding: '4px 0' }}>
               ✨ 当前无紧急通知
             </div>
           )}
@@ -481,7 +481,7 @@ export default function MobileDashboard() {
             <button onClick={() => moveEntry(entry.key, 1)} disabled={idx === ordered.length - 1}
               style={{ border: 'none', background: 'var(--m-surface-2)', borderRadius: 4, padding: '4px 8px', fontSize: 11, cursor: idx === ordered.length - 1 ? 'not-allowed' : 'pointer', opacity: idx === ordered.length - 1 ? 0.4 : 1 }}>↓</button>
             <button onClick={() => removeEntry(entry.key)}
-              style={{ border: 'none', background: '#ffebee', color: '#f44336', borderRadius: 4, padding: '4px 8px', fontSize: 11, cursor: 'pointer' }}>删除</button>
+              style={{ border: 'none', background: 'var(--m-danger-bg)', color: 'var(--brand-color-danger)', borderRadius: 4, padding: '4px 8px', fontSize: 11, cursor: 'pointer' }}>删除</button>
           </div>
         ))}
 
@@ -502,7 +502,7 @@ export default function MobileDashboard() {
                 }}>{entry.icon}</div>
                 <div style={{ flex: 1, fontSize: 12, color: 'var(--m-text-2)' }}>{entry.title}</div>
                 <button onClick={() => addEntry(entry.key)}
-                  style={{ border: 'none', background: '#e3f2fd', color: 'var(--brand-color)', borderRadius: 4, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>+ 添加</button>
+                  style={{ border: 'none', background: 'var(--m-info-bg)', color: 'var(--brand-color)', borderRadius: 4, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>+ 添加</button>
               </div>
             ))}
           </>

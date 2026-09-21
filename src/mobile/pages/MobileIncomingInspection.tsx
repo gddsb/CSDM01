@@ -141,7 +141,7 @@ export default function MobileIncomingInspection() {
                 {list.map((r) => (
                   <List.Item key={r.inspection_id} onClick={() => onPick(r)} arrow
                     description={
-                      <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+                      <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>
                         {r.supplier_name || '—'} · {r.material_code} {r.material_name || ''} · {r.quantity ?? '—'}
                         <span style={{ marginLeft: 8, color: 'var(--m-text-3)' }}>{r.status}</span>
                       </div>
@@ -158,9 +158,9 @@ export default function MobileIncomingInspection() {
     <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
       {step === 1 && selected && (
         <>
-          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginBottom: 14, border: '1px solid #eef0f3' }}>
+          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginBottom: 14, border: '1px solid var(--m-border)' }}>
             <div style={{ fontSize: 15, fontWeight: 600 }}>{selected.inspection_no}</div>
-            <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>
               {selected.supplier_name} · {selected.material_code} {selected.material_name} · 数量 {selected.quantity ?? '—'}
             </div>
           </div>
@@ -234,7 +234,7 @@ export function ItemRow({
             {idx + 1}. {item.item_name}
           </div>
           {item.standard_value != null && (
-            <div style={{ fontSize: 11, color: '#888' }}>标准值: {item.standard_value}</div>
+            <div style={{ fontSize: 11, color: 'var(--m-text-3)' }}>标准值: {item.standard_value}</div>
           )}
         </div>
         <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 8, background: color + '22', color }}>
@@ -252,7 +252,7 @@ export function ItemRow({
       {/* 样品值 */}
       {item.sample_values.length > 0 && (
         <div style={{ marginTop: 8 }}>
-          <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>
+          <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginBottom: 4 }}>
             样品值（{item.sample_values.length}）
           </div>
           {item.sample_values.map((sv, si) => (
@@ -285,7 +285,7 @@ export function Section({ title, children }: { title: string; children: any }) {
   return (
     <div style={{
       background: 'var(--m-surface)', borderRadius: 10, padding: 12,
-      border: '1px solid #eef0f3', marginBottom: 12,
+      border: '1px solid var(--m-border)', marginBottom: 12,
     }}>
       <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>{title}</div>
       {children}

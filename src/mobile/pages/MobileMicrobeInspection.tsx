@@ -200,7 +200,7 @@ export default function MobileMicrobeInspection() {
         <div style={{ fontSize: 60 }}>🔬</div>
         <div style={{ fontSize: 18, fontWeight: 600, margin: '16px 0 8px' }}>微生物检验提交成功</div>
         {successNo && <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 4 }}>单号：{successNo}</div>}
-        <div style={{ fontSize: 13, color: '#888', marginBottom: 24 }}>
+        <div style={{ fontSize: 13, color: 'var(--m-text-3)', marginBottom: 24 }}>
           {objectType} {selected ? `· ${selected.no}` : ''}
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
@@ -216,7 +216,7 @@ export default function MobileMicrobeInspection() {
       <div className="mobile-page-fixed-header">
         <div className="mobile-sticky-header">
           {/* 对象类型 + 关联单据类型 */}
-          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, border: '1px solid #eef0f3', marginBottom: 12 }}>
+          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, border: '1px solid var(--m-border)', marginBottom: 12 }}>
             <List.Item onClick={onPickObjectType} extra={objectType} arrow>检验对象类型</List.Item>
           </div>
 
@@ -247,7 +247,7 @@ export default function MobileMicrobeInspection() {
                         onClick={() => { setSelected(r); setStep(1) }}
                         arrow
                         description={
-                          <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+                          <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>
                             {r.material_code} {r.material_name?.slice(0, 20) || ''}
                           </div>
                         }
@@ -264,7 +264,7 @@ export default function MobileMicrobeInspection() {
           {loadMode === 'none' && (
             <div style={{
               background: 'var(--m-surface)', borderRadius: 10, padding: 24, textAlign: 'center',
-              border: '1px solid #eef0f3', color: '#888', fontSize: 13,
+              border: '1px solid var(--m-border)', color: 'var(--m-text-3)', fontSize: 13,
             }}>
               当前选择"{objectType}"无需关联单据，下一步直接填检验项目
               <div style={{ marginTop: 16 }}>
@@ -280,8 +280,8 @@ export default function MobileMicrobeInspection() {
         <>
           {/* 关联单据信息卡 */}
           {selected && (
-            <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, border: '1px solid #eef0f3', marginBottom: 12 }}>
-              <div style={{ fontSize: 13, color: '#888', marginBottom: 4 }}>关联单据</div>
+            <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, border: '1px solid var(--m-border)', marginBottom: 12 }}>
+              <div style={{ fontSize: 13, color: 'var(--m-text-3)', marginBottom: 4 }}>关联单据</div>
               <div style={{ fontSize: 15, fontWeight: 600 }}>{selected.no}</div>
               <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginTop: 4 }}>
                 {selected.material_code} {selected.material_name || ''}
@@ -290,7 +290,7 @@ export default function MobileMicrobeInspection() {
           )}
 
           {/* 检验项目 */}
-          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, border: '1px solid #eef0f3', marginBottom: 12 }}>
+          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, border: '1px solid var(--m-border)', marginBottom: 12 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--m-text-2)', marginBottom: 10 }}>微生物检验项目</div>
             {items.map((it, idx) => (
               <div key={idx} style={{ padding: '10px 0', borderBottom: idx < items.length - 1 ? '1px dashed #f0f0f0' : 'none' }}>
@@ -321,13 +321,13 @@ export default function MobileMicrobeInspection() {
           </div>
 
           {/* 检验时间 + 备注 */}
-          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, border: '1px solid #eef0f3', marginBottom: 14 }}>
+          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, border: '1px solid var(--m-border)', marginBottom: 14 }}>
             <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 8 }}>检验时间</div>
             <input
               type="datetime-local"
               value={inspectionTime}
               onChange={(e) => setInspectionTime(e.target.value)}
-              style={{ width: '100%', padding: '8px 10px', fontSize: 14, border: '1px solid #eef0f3', borderRadius: 8 }}
+              style={{ width: '100%', padding: '8px 10px', fontSize: 14, border: '1px solid var(--m-border)', borderRadius: 8 }}
             />
             <div style={{ fontSize: 13, color: 'var(--m-text-2)', margin: '10px 0 6px' }}>备注</div>
             <TextArea

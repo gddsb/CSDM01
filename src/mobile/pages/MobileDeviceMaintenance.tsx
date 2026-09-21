@@ -332,7 +332,7 @@ export default function MobileDeviceMaintenance() {
                       else setStep(1)
                     }}
                     arrow
-                    description={<div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>{d.device_code}</div>}
+                    description={<div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>{d.device_code}</div>}
                   >
                     <div style={{ fontWeight: 500 }}>{d.device_name}</div>
                   </List.Item>
@@ -349,12 +349,12 @@ export default function MobileDeviceMaintenance() {
         <>
           <div style={{
             background: 'var(--m-surface)', borderRadius: 10, padding: 12, marginBottom: 10,
-            border: '1px solid #eef0f3',
+            border: '1px solid var(--m-border)',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ fontSize: 15, fontWeight: 600 }}>{selectedDevice.device_name}</div>
-                <div style={{ fontSize: 12, color: '#888' }}>{selectedDevice.device_code}</div>
+                <div style={{ fontSize: 12, color: 'var(--m-text-3)' }}>{selectedDevice.device_code}</div>
               </div>
               <Space>
                 <Button size="mini" color="primary" fill="outline" onClick={handleGenerate}>🧩 生成</Button>
@@ -399,7 +399,7 @@ export default function MobileDeviceMaintenance() {
                     <List.Item
                       key={r.record_id}
                       description={
-                        <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+                        <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>
                           {r.trigger_mode || ''} · {r.period_key || r.plan_date || '—'}
                         </div>
                       }
@@ -453,11 +453,11 @@ export default function MobileDeviceMaintenance() {
       {/* ============ Step 2: 保养表单 ============ */}
       {step === 2 && selectedRecord && (
         <>
-          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginBottom: 12, border: '1px solid #eef0f3' }}>
+          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginBottom: 12, border: '1px solid var(--m-border)' }}>
             <div style={{ fontSize: 15, fontWeight: 600 }}>
               {selectedRecord.standard_name || '保养项'}
             </div>
-            <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>
               {selectedDevice?.device_name} · {selectedRecord.trigger_mode || ''} · {selectedRecord.period_key || selectedRecord.plan_date || '—'}
             </div>
           </div>
@@ -523,7 +523,7 @@ function Card({ title, children }: { title: string; children: any }) {
   return (
     <div style={{
       background: 'var(--m-surface)', borderRadius: 10, padding: 14,
-      border: '1px solid #eef0f3', marginBottom: 12,
+      border: '1px solid var(--m-border)', marginBottom: 12,
     }}>
       <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 8 }}>{title}</div>
       {children}

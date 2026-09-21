@@ -242,40 +242,40 @@ export default function MobileSparePart() {
           }>
             {formType !== 'adjust' && (
               <>
-                <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>数量 *</div>
+                <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginBottom: 4 }}>数量 *</div>
                 <Input type="number" value={qty} onChange={setQty} />
-                <div style={{ fontSize: 11, color: '#888', margin: '8px 0 4px' }}>单价（元，可选）</div>
+                <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>单价（元，可选）</div>
                 <Input type="number" value={unitPrice} onChange={setUnitPrice} />
               </>
             )}
             {formType === 'adjust' && (
               <>
-                <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>当前系统库存: {selected.current_stock ?? 0}</div>
-                <div style={{ fontSize: 11, color: '#888', margin: '8px 0 4px' }}>实际库存 *</div>
+                <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginBottom: 4 }}>当前系统库存: {selected.current_stock ?? 0}</div>
+                <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>实际库存 *</div>
                 <Input type="number" value={actualStock} onChange={setActualStock} />
               </>
             )}
             {formType === 'in' && (
               <>
-                <div style={{ fontSize: 11, color: '#888', margin: '8px 0 4px' }}>采购单号</div>
+                <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>采购单号</div>
                 <Input value={purchaseNo} onChange={setPurchaseNo} />
-                <div style={{ fontSize: 11, color: '#888', margin: '8px 0 4px' }}>供应商</div>
+                <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>供应商</div>
                 <Input value={supplier} onChange={setSupplier} />
               </>
             )}
             {formType === 'out' && (
               <>
-                <div style={{ fontSize: 11, color: '#888', margin: '8px 0 4px' }}>关联工单（维护/维修）</div>
+                <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>关联工单（维护/维修）</div>
                 <Input value={relatedOrder} onChange={setRelatedOrder} placeholder="维护工单或维修单号" />
               </>
             )}
             {(formType === 'in' || formType === 'adjust') && (
               <>
-                <div style={{ fontSize: 11, color: '#888', margin: '8px 0 4px' }}>关联工单（可选）</div>
+                <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>关联工单（可选）</div>
                 <Input value={relatedOrder} onChange={setRelatedOrder} />
               </>
             )}
-            <div style={{ fontSize: 11, color: '#888', margin: '8px 0 4px' }}>备注{formType === 'out' ? '（用途必填）' : '（可选）'}</div>
+            <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>备注{formType === 'out' ? '（用途必填）' : '（可选）'}</div>
             <TextArea  rows={2} value={remarks} onChange={setRemarks} placeholder={formType === 'out' ? '请填用途，如：5#空压机保养领用' : ''} />
           </FormPanel>
         }
@@ -290,19 +290,19 @@ export default function MobileSparePart() {
       {formType === 'create' && (
         <Dialog visible content={
           <FormPanel title="➕ 新建备件">
-            <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>备件编号</div>
+            <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginBottom: 4 }}>备件编号</div>
             <Input value={createForm.part_code} onChange={(v) => setCreateForm({ ...createForm, part_code: v })} />
-            <div style={{ fontSize: 11, color: '#888', margin: '8px 0 4px' }}>备件名称 *</div>
+            <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>备件名称 *</div>
             <Input value={createForm.part_name} onChange={(v) => setCreateForm({ ...createForm, part_name: v })} />
-            <div style={{ fontSize: 11, color: '#888', margin: '8px 0 4px' }}>规格型号</div>
+            <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>规格型号</div>
             <Input value={createForm.specification} onChange={(v) => setCreateForm({ ...createForm, specification: v })} />
             <div style={{ display: 'flex', gap: 6 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: '#888', margin: '8px 0 4px' }}>单位</div>
+                <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>单位</div>
                 <Input value={createForm.unit} onChange={(v) => setCreateForm({ ...createForm, unit: v })} />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: '#888', margin: '8px 0 4px' }}>分类</div>
+                <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>分类</div>
                 <select value={createForm.category} onChange={(e) => setCreateForm({ ...createForm, category: e.target.value })} style={selStyle}>
                   {['机械', '电气', '液压', '气动', '电子', '其他'].map((c) => <option key={c}>{c}</option>)}
                 </select>
@@ -310,15 +310,15 @@ export default function MobileSparePart() {
             </div>
             <div style={{ display: 'flex', gap: 6 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: '#888', margin: '8px 0 4px' }}>当前库存</div>
+                <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>当前库存</div>
                 <Input type="number" value={String(createForm.current_stock)} onChange={(v) => setCreateForm({ ...createForm, current_stock: Number(v) || 0 })} />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: '#888', margin: '8px 0 4px' }}>安全下限</div>
+                <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>安全下限</div>
                 <Input type="number" value={String(createForm.safety_stock_min)} onChange={(v) => setCreateForm({ ...createForm, safety_stock_min: Number(v) || 0 })} />
               </div>
             </div>
-            <div style={{ fontSize: 11, color: '#888', margin: '8px 0 4px' }}>单价（元）</div>
+            <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>单价（元）</div>
             <Input type="number" value={String(createForm.unit_price)} onChange={(v) => setCreateForm({ ...createForm, unit_price: Number(v) || 0 })} />
           </FormPanel>
         }
@@ -340,13 +340,13 @@ function PartCard({ part, low, onIn, onOut, onAdjust, onDelete }: {
 }) {
   return (
     <div style={{
-      background: low ? '#fff5f5' : 'var(--m-surface)', borderRadius: 10, padding: 12, marginBottom: 10,
-      border: '1px solid ' + (low ? '#ffccc7' : '#eef0f3'),
+      background: low ? 'var(--m-danger-bg)' : 'var(--m-surface)', borderRadius: 10, padding: 12, marginBottom: 10,
+      border: '1px solid ' + (low ? 'var(--brand-color-danger)' : 'var(--m-border)'),
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <div style={{ fontWeight: 600 }}>{part.part_name}</div>
-          <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
+          <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>
             {part.part_code} · {part.specification || ''}
           </div>
         </div>
@@ -354,7 +354,7 @@ function PartCard({ part, low, onIn, onOut, onAdjust, onDelete }: {
           <div style={{ fontSize: 18, fontWeight: 700, color: low ? 'var(--brand-color-danger)' : 'var(--m-text)' }}>
             {part.current_stock ?? 0}
           </div>
-          <div style={{ fontSize: 10, color: low ? 'var(--brand-color-danger)' : '#aaa' }}>
+          <div style={{ fontSize: 10, color: low ? 'var(--brand-color-danger)' : 'var(--m-text-3)' }}>
             下限 {part.safety_stock_min ?? 0}{part.unit ? ` ${part.unit}` : ''}
           </div>
         </div>
@@ -375,7 +375,7 @@ function LogCard({ log }: { log: LogRow }) {
   return (
     <div style={{
       background: 'var(--m-surface)', borderRadius: 10, padding: 10, marginBottom: 8,
-      border: '1px solid #eef0f3',
+      border: '1px solid var(--m-border)',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ fontSize: 13, fontWeight: 500 }}>
@@ -389,7 +389,7 @@ function LogCard({ log }: { log: LogRow }) {
         数量 {log.quantity ?? 0} · 单价 {log.unit_price ?? 0} · 合计 ¥{log.total_price ?? 0}
       </div>
       {(log.related_order || log.remarks) && (
-        <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>
+        <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>
           {log.related_order ? `工单: ${log.related_order}` : ''}{log.remarks ? ` ${log.remarks}` : ''}
         </div>
       )}

@@ -105,7 +105,7 @@ export function ReportOrderDetail({ meta, onClose }: Props) {
   return (
     <div style={{ maxHeight: '75vh', overflow: 'auto', padding: '6px 2px' }}>
       {/* 头 */}
-      <div style={{ padding: 10, background: '#E3F2FD', borderRadius: 8, marginBottom: 10 }}>
+      <div style={{ padding: 10, background: 'var(--m-info-bg)', borderRadius: 8, marginBottom: 10 }}>
         <div style={{ fontSize: 14, fontWeight: 600 }}>{meta.report_no}</div>
         <div style={{ fontSize: 11, color: 'var(--m-text-2)', marginTop: 3 }}>
           {meta.order_no} · {meta.material_code} {meta.material_name?.slice(0, 16)} · ×{meta.report_qty}
@@ -205,7 +205,7 @@ function DefectPanel({ reportId, processes, defectTypes, list, onChange, disable
             {list.map((d: any) => (
               <div key={d.id || d.defect_id} style={{ padding: '6px 0', borderBottom: '1px solid #f0f0f0' }}>
                 <div>{d.defect_type_name || d.defect_type} · {d.quantity}{d.unit || ''}
-                  <span style={{ marginLeft: 8, color: '#aaa' }}>
+                  <span style={{ marginLeft: 8, color: 'var(--m-text-3)' }}>
                     {d.defect_desc?.slice(0, 30)}
                   </span>
                 </div>
@@ -216,7 +216,7 @@ function DefectPanel({ reportId, processes, defectTypes, list, onChange, disable
       )}
       {!disabled && (
         <>
-          <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>工序</div>
+          <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginBottom: 4 }}>工序</div>
           <select value={form.process_id} onChange={(e) => {
             const pid = Number(e.target.value)
             const proc = processes.find((p) => p.process_id === pid)
@@ -226,7 +226,7 @@ function DefectPanel({ reportId, processes, defectTypes, list, onChange, disable
             {processes.map((p) => <option key={p.process_id} value={p.process_id}>{p.process_name}</option>)}
           </select>
 
-          <div style={{ fontSize: 11, color: '#888', marginTop: 6, marginBottom: 4 }}>不良类型</div>
+          <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 6, marginBottom: 4 }}>不良类型</div>
           <select value={form.defect_type_id || ''} onChange={(e) => {
             const id = e.target.value ? Number(e.target.value) : null
             const t = defectTypes.find((x) => (x.id ?? x.defect_type_id) === id)
@@ -388,14 +388,14 @@ function MaterialPanel({ reportId, processes, list, onChange, disabled }: {
       ))}
       {!disabled && (
         <>
-          <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>工序</div>
+          <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginBottom: 4 }}>工序</div>
           <select value={f.process_id || ''} onChange={(e) => setF({ ...f, process_id: e.target.value ? Number(e.target.value) : null })} style={selStyle}>
             <option value="">选择工序</option>
             {processes.map((p) => <option key={p.process_id} value={p.process_id}>{p.process_name}</option>)}
           </select>
-          <div style={{ fontSize: 11, color: '#888', marginTop: 6, marginBottom: 4 }}>物料 ID</div>
+          <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 6, marginBottom: 4 }}>物料 ID</div>
           <Input type="number" value={String(f.material_id || '')} onChange={(v) => setF({ ...f, material_id: v ? Number(v) : null })} placeholder="物料 ID" />
-          <div style={{ fontSize: 11, color: '#888', marginTop: 6, marginBottom: 4 }}>数量</div>
+          <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 6, marginBottom: 4 }}>数量</div>
           <Input type="number" value={String(f.quantity)} onChange={(v) => setF({ ...f, quantity: Number(v) || 0 })} placeholder="投料数量" />
           <Button block color="primary" size="mini" style={{ marginTop: 8 }} onClick={add}>添加投料</Button>
         </>
@@ -414,7 +414,7 @@ function ImagePanel({ reportNo, images, setImages }: { reportNo: string; images:
   return (
     <Panel>
       <ImageUploader value={images} onChange={setImages} upload={upload} maxCount={10} />
-      <div style={{ fontSize: 11, color: '#aaa', marginTop: 6 }}>上传后自动关联到报工单 inspection 分类</div>
+      <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 6 }}>上传后自动关联到报工单 inspection 分类</div>
     </Panel>
   )
 }
@@ -425,7 +425,7 @@ function Panel({ children }: { children: any }) {
   return (
     <div style={{
       background: 'var(--m-surface)', borderRadius: 10, padding: 10,
-      border: '1px solid #eef0f3', marginBottom: 10,
+      border: '1px solid var(--m-border)', marginBottom: 10,
     }}>{children}</div>
   )
 }

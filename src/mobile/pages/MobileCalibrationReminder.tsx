@@ -138,7 +138,7 @@ export default function MobileCalibrationReminder() {
                 <List.Item
                   key={p.plan_id}
                   description={
-                    <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+                    <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>
                       上次：{p.last_calibration_date || '—'} · 周期：{p.calibration_cycle || '—'}月
                       {p.calibration_org && ` · ${p.calibration_org}`}
                     </div>

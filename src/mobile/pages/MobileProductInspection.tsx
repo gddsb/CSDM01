@@ -133,7 +133,7 @@ export default function MobileProductInspection() {
                 {list.map((r) => (
                   <List.Item key={r.inspection_id} onClick={() => onPick(r)} arrow
                     description={
-                      <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+                      <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>
                         {r.material_code} {r.material_name?.slice(0, 20)}
                         <span style={{ marginLeft: 8, color: 'var(--m-text-3)' }}>{r.status}</span>
                       </div>
@@ -150,12 +150,12 @@ export default function MobileProductInspection() {
     <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
       {step === 1 && selected && (
         <>
-          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginBottom: 14, border: '1px solid #eef0f3' }}>
+          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginBottom: 14, border: '1px solid var(--m-border)' }}>
             <div style={{ fontSize: 15, fontWeight: 600 }}>{selected.inspection_no}</div>
-            <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>
               {selected.material_code} · {selected.material_name?.slice(0, 20)}
             </div>
-            <div style={{ fontSize: 12, color: '#888' }}>
+            <div style={{ fontSize: 12, color: 'var(--m-text-3)' }}>
               工单: {selected.report_order_no} · 标准: {selected.standard_name}
             </div>
           </div>

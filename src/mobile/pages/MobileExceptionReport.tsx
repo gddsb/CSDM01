@@ -202,7 +202,7 @@ export default function MobileExceptionReport() {
           {exceptionType} · {selected.report_no || selected.order_no}
         </div>
         {successNo && (
-          <div style={{ fontSize: 13, color: '#888', marginBottom: 24 }}>
+          <div style={{ fontSize: 13, color: 'var(--m-text-3)', marginBottom: 24 }}>
             记录 ID：{successNo}
           </div>
         )}
@@ -243,7 +243,7 @@ export default function MobileExceptionReport() {
                     onClick={() => { setSelected(o); setStep(1) }}
                     arrow
                     description={
-                      <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+                      <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>
                         {o.material_name || ''} · {o.line_name || '—'}
                         <span style={{ marginLeft: 8, color: 'var(--brand-color-success)' }}>{o.status}</span>
                       </div>
@@ -285,7 +285,7 @@ export default function MobileExceptionReport() {
             onClick={() => selected.order_id && setDetailOrder({ order_id: selected.order_id!, order_no: selected.order_no || selected.report_no } as MobileOrderData)}
             style={{
               background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginBottom: 14,
-              border: '1px solid #eef0f3',
+              border: '1px solid var(--m-border)',
               cursor: selected.order_id ? 'pointer' : 'default',
             }}
           >
@@ -297,7 +297,7 @@ export default function MobileExceptionReport() {
                 </span>
               )}
             </div>
-            <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>
               {selected.material_name || ''} · {selected.line_name || ''}
             </div>
           </div>
@@ -363,7 +363,7 @@ export default function MobileExceptionReport() {
                 onChange={(e) => setStartTime(e.target.value)}
                 style={{
                   width: '100%', padding: '8px 10px', fontSize: 14,
-                  border: '1px solid #eef0f3', borderRadius: 8, background: 'var(--m-surface)',
+                  border: '1px solid var(--m-border)', borderRadius: 8, background: 'var(--m-surface)',
                 }}
               />
               <div style={{ fontSize: 13, color: 'var(--m-text-2)', margin: '12px 0 6px' }}>结束时间（可选）</div>
@@ -373,7 +373,7 @@ export default function MobileExceptionReport() {
                 onChange={(e) => setEndTime(e.target.value)}
                 style={{
                   width: '100%', padding: '8px 10px', fontSize: 14,
-                  border: '1px solid #eef0f3', borderRadius: 8, background: 'var(--m-surface)',
+                  border: '1px solid var(--m-border)', borderRadius: 8, background: 'var(--m-surface)',
                 }}
               />
             </div>
