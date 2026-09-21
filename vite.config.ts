@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import type { ProxyOptions } from 'vite'
 import pkg from './package.json'
@@ -48,6 +49,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    tailwindcss(),
     // PWA：支持"添加到主屏幕"、离线缓存，覆盖安卓/苹果双端浏览器场景
     VitePWA({
       registerType: 'autoUpdate',

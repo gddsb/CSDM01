@@ -1,7 +1,39 @@
 /**
  * 移动端全局样式
  * 注意：这个文件只在 /m/* 路由子树下 import，避免影响 PC 布局
+ *
+ * ====== Tailwind v4 入口 ======
+ * - 用 @theme 直接消费 theme.tsx 定义的 CSS 变量，统一源头
+ * - 深浅主题切换自动生效（因为 theme.tsx 已在切 data-theme 属性）
+ * - 不启用 preflight（v4 默认关闭），避免重置 antd-mobile 组件默认样式
  */
+@import "tailwindcss";
+
+@theme {
+  /* ===== 语义色（与 theme.tsx 定义的 --m-* / --brand-* 一一对应）===== */
+  --color-bg: var(--m-bg);
+  --color-surface: var(--m-surface);
+  --color-surface-2: var(--m-surface-2);
+  --color-text: var(--m-text);
+  --color-text-2: var(--m-text-2);
+  --color-text-3: var(--m-text-3);
+  --color-border: var(--m-border);
+  --color-border-2: var(--m-border-2);
+  --color-primary: var(--brand-color);
+  --color-primary-fill: var(--brand-color-fill);
+  --color-primary-hover: var(--brand-color-hover);
+  --color-primary-active: var(--brand-color-active);
+  --color-success: var(--brand-color-success);
+  --color-success-bg: var(--m-success-bg);
+  --color-warn: var(--brand-color-warning);
+  --color-warn-bg: var(--m-warn-bg);
+  --color-danger: var(--brand-color-danger);
+  --color-danger-bg: var(--m-danger-bg);
+  --color-info-bg: var(--m-info-bg);
+  --color-amber-bg: var(--m-amber-bg);
+}
+
+/* ============ 以下为原有样式，不动 ============ */
 
 /* 安全区适配（iPhone X+ 刘海屏 / 底部 Home Indicator） */
 :root {
