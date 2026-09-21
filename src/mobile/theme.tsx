@@ -4,8 +4,9 @@
  * 在 .mobile-app 容器上挂 data-theme 属性 + CSS 变量供 mobile.css 覆盖背景/文字色。
  */
 import { createContext, useContext } from 'react'
-import type { ReactNode, CSSProperties } from 'react'
+import type { ReactNode } from 'react'
 import { useMobileTheme, MobileThemeKey } from './hooks/useMobileTheme'
+import { ConfigProvider as MobileConfigProvider } from 'antd-mobile'
 
 /** 浅色主题 token（与 PC 端品牌色 #2196F3 一致） */
 const lightTheme = {
@@ -50,12 +51,12 @@ const MobileThemeContext = createContext<MobileThemeContextValue | null>(null)
 
 export function MobileThemeProvider({ children }: { children: ReactNode }) {
   const { theme, isDark, changeTheme, toggleTheme } = useMobileTheme()
-  const tokens = (isDark ? darkTheme : lightTheme) as unknown as CSSProperties
+  const brandColor = isDark ? darkTheme['--brand-color'] : lightTheme['--brand-color']
   return (
     <MobileThemeContext.Provider value={{ theme, isDark, changeTheme, toggleTheme }}>
-      <div style={tokens} data-theme={isDark ? 'dark' : 'light'}>
+      <MobileConfigProvider theme={{ token: { colorPrimary: brandColor } }}>
         {children}
-      </div>
+      </MobileConfigProvider>
     </MobileThemeContext.Provider>
   )
 }
