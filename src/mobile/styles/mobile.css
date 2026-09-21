@@ -178,6 +178,7 @@ html.mobile-root input:-webkit-autofill {
   --m-shadow: rgba(0, 0, 0, 0.04);
   --m-shadow-card: 0 1px 4px rgba(0, 0, 0, 0.06);
   --m-shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.10);
+  --m-notice-grad: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
   --m-radius-xs: 4px;
   --m-radius-sm: 6px;
   --m-radius-md: 10px;
@@ -215,6 +216,7 @@ html[data-theme="dark"].mobile-root .mobile-app {
   --m-shadow: rgba(0, 0, 0, 0.4);
   --m-shadow-card: 0 1px 4px rgba(0, 0, 0, 0.5);
   --m-shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.65);
+  --m-notice-grad: linear-gradient(135deg, #3D2E14 0%, #2A2614 100%);
   --m-radius-xs: 4px;
   --m-radius-sm: 6px;
   --m-radius-md: 10px;

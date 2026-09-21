@@ -276,7 +276,7 @@ export default function MobileDashboard() {
   // ========== 渲染 ==========
   return (
     <PullToRefresh onRefresh={onRefresh}>
-      <div className="mobile-page" style={{ padding: '12px 12px 80px', minHeight: '100vh', background: '#F5F7FA' }}>
+      <div className="mobile-page" style={{ padding: '12px 12px 80px', minHeight: '100vh', background: 'var(--m-bg)' }}>
 
         {/* ============ 顶部：欢迎 + 通知 ============ */}
         <div style={{ marginBottom: 12 }}>
@@ -292,10 +292,8 @@ export default function MobileDashboard() {
         <div
           style={{
             borderRadius: 12,
-            background: notices.length > 0
-              ? 'linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%)'
-              : '#FAFAFA',
-            borderLeft: notices.length > 0 ? '3px solid #FF9800' : '3px solid #E0E0E0',
+            background: notices.length > 0 ? 'var(--m-notice-grad)' : 'var(--m-surface-2)',
+            borderLeft: notices.length > 0 ? '3px solid var(--brand-color-warning)' : '3px solid var(--m-border)',
             padding: '10px 14px',
             marginBottom: 12,
             minHeight: 56,
@@ -359,13 +357,13 @@ export default function MobileDashboard() {
                 <div
                   style={{
                     width: 48, height: 48, borderRadius: 12, margin: '0 auto 4px',
-                    background: entry.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: hexToRgba(entry.color, 0.08), display: 'flex', alignItems: 'center', justifyContent: 'center',
                     color: entry.color,
                   }}
                 >
                   {entry.icon}
                 </div>
-                <div style={{ fontSize: 10, color: '#555' }}>{entry.title}</div>
+                <div style={{ fontSize: 12, color: 'var(--m-text-3)' }}>{entry.title}</div>
               </div>
             ))}
           </div>
@@ -380,7 +378,7 @@ export default function MobileDashboard() {
 
           {todos.length === 0 ? (
             <div style={{
-              background: '#fff', borderRadius: 12, padding: '30px 16px',
+              background: 'var(--m-surface)', borderRadius: 'var(--m-radius-lg)', padding: '30px 16px',
               textAlign: 'center', color: '#bbb', fontSize: 13,
             }}>
               🎉 太棒了！暂无待办任务
@@ -392,7 +390,7 @@ export default function MobileDashboard() {
                   key={t.path + t.text}
                   onClick={() => handleTodoClick(t)}
                   style={{
-                    background: '#fff', borderRadius: 12, padding: '12px 14px',
+                    background: 'var(--m-surface)', borderRadius: 'var(--m-radius-lg)', padding: '12px 14px',
                     display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
                     boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
                   }}
@@ -400,7 +398,7 @@ export default function MobileDashboard() {
                   <div
                     style={{
                       width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-                      background: t.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: hexToRgba(t.color, 0.08), display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 18,
                     }}
                   >
@@ -434,7 +432,7 @@ export default function MobileDashboard() {
         title="⚙️ 编辑快捷操作"
         footer={[
           { key: 'reset', text: '重置', onClick: () => resetOrder() },
-          { key: 'ok', text: '完成', primary: true, onClick: () => setShowEditor(false) },
+          { key: 'ok', text: '完成', primary: true, onClick: () => { applyEditor(); setShowEditor(false); } },
         ]}
       >
         {/* 已显示的（可排序 + 删除） */}
@@ -448,7 +446,7 @@ export default function MobileDashboard() {
           }}>
             <div style={{
               width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-              background: entry.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: hexToRgba(entry.color, 0.08), display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: entry.color,
             }}>{entry.icon}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -475,7 +473,7 @@ export default function MobileDashboard() {
               }}>
                 <div style={{
                   width: 28, height: 28, borderRadius: 6, flexShrink: 0,
-                  background: entry.color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: hexToRgba(entry.color, 0.08), display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: entry.color, fontSize: 14,
                 }}>{entry.icon}</div>
                 <div style={{ flex: 1, fontSize: 12, color: '#555' }}>{entry.title}</div>
