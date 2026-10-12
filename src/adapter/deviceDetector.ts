@@ -40,6 +40,35 @@ function detectPlatform(ua: string): 'android' | 'ios' | 'web' | 'unknown' {
   return 'unknown'
 }
 
+/**
+ * 判断是否运行在 Capacitor **原生壳内**（Android APK / iOS IPA）
+ *
+ * ⚠️ 为什么不用 `!!window.Capacitor` 做判定：
+ *   Vite + Capacitor 打包时，`@capacitor/core` 会把 `window.Capacitor` 对象注入到
+ *   JS bundle 里 —— 不管跑在 Web 还是原生壳！所以 `!!window.Capacitor` 在纯 PC
+ *   浏览器里也返回 true，这就是之前 PC 被误判跳到 /m/dashboard 的根因。
+ *
+ * 正确判定：`window.Capacitor.isNativePlatform() === true`
+ *   - Web 环境：isNativePlatform() 返回 false，getPlatform() 返回 "web"
+ *   - 原生壳内：isNativePlatform() 返回 true，getPlatform() 返回 "android"/"ios"
+ *
+ * UA 兜底：壳内某些早期版本 isNativePlatform 可能不可用，此时 UA 含 "Capacitor"
+ *
+ * 本函数已统一 export 到 adapter/index，路由判定、扫码、版本检测都用这一个。
+ */
+export function isInNativeShell(): boolean {
+  if (typeof window === 'undefined') return false
+  const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor
+  if (cap && typeof cap.isNativePlatform === 'function') {
+    return cap.isNativePlatform() === true
+  }
+  // UA 兜底（某些壳内版本 isNativePlatform 可能不可用）
+  if (typeof navigator !== 'undefined' && /capacitor/i.test(navigator.userAgent)) {
+    return true
+  }
+  return false
+}
+
 function getCapacitorDeviceInfo(): Partial<DeviceInfo> | null {
   try {
     // 运行在 Capacitor 壳内时可读取原生 API

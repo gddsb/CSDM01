@@ -1,8 +1,9 @@
 import logger from '../../utils/logger.js'
+import { isInNativeShell } from '../../adapter'
 /**
  * useBarcode — 扫码 hook
- * - Capacitor 环境（Android/iOS）：调用 @capacitor-community/barcode-scanner
- * - Web 环境：弹出 window.prompt 手动输入
+ * - Capacitor 原生壳内（Android/iOS）：调用 @capacitor-community/barcode-scanner
+ * - Web 环境（PC 浏览器）：弹出 window.prompt 手动输入
  * - 权限处理：主动请求相机权限，被拒时引导用户到系统设置
  */
 import { useCallback, useRef, useState } from 'react'
@@ -13,18 +14,13 @@ export interface BarcodeResult {
   source: 'native' | 'manual'
 }
 
-function isCapacitor(): boolean {
-  const win: any = window
-  return typeof win.Capacitor !== 'undefined' || /Capacitor/i.test(navigator.userAgent)
-}
-
 export function useBarcode() {
   const [isScanning, setIsScanning] = useState(false)
   const lastCancel = useRef<(() => void) | null>(null)
 
   const scan = useCallback(async (): Promise<BarcodeResult | null> => {
     // 1) Capacitor 原生扫码
-    if (isCapacitor()) {
+    if (isInNativeShell()) {
       try {
         const { BarcodeScanner } = await import('@capacitor-community/barcode-scanner')
 

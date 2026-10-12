@@ -15,7 +15,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from './queryClient'
 import MainLayout from './layouts/MainLayout'
 import ErrorBoundary from './components/ErrorBoundary'
-import { DeviceProvider, useDevice, isRouteAllowed } from './adapter'
+import { DeviceProvider, useDevice, isRouteAllowed, isInNativeShell } from './adapter'
 import { useAppUpdate } from './adapter/update'
 
 // 首屏关键页面同步加载（避免白屏）
@@ -146,9 +146,8 @@ function AppRoutes() {
   const isTv = type === 'tv'
 
   // 是否在 Capacitor 原生壳内（只有壳内才自动跳转移动端路由）
-  const inCapacitorShell = typeof window !== 'undefined' && (
-    (window as any).Capacitor || /capacitor/i.test(navigator.userAgent)
-  )
+  // ⚠️ 不能用 !!window.Capacitor —— Vite 打包后它在 Web 环境也存在，必须用 isNativePlatform()
+  const inCapacitorShell = isInNativeShell()
   const forceMobileOverride = typeof window !== 'undefined' && (
     window.location.search.toLowerCase().includes('mobile=1') ||
     window.location.hash.toLowerCase().includes('mobile=1')
@@ -322,10 +321,7 @@ function AppInner({ setMessageApi, setModalApi, setNotificationApi }: {
  *  - TV 大屏 → 不启用（电视用户一般不知道怎么点下载 APK）
  */
 function AppUpdateLoader() {
-  const inCapacitorShell = typeof window !== 'undefined' && (
-    (window as any).Capacitor || /capacitor/i.test(navigator.userAgent)
-  )
-  return useAppUpdate(/* enabled */ inCapacitorShell)
+  return useAppUpdate(/* enabled */ isInNativeShell())
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

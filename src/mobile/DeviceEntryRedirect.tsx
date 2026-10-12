@@ -3,22 +3,13 @@
  * - 仅在 **Capacitor 原生壳内** 才自动跳转移动端路由
  * - 纯 Web 浏览器（PC / 移动浏览器调试）一律留 PC 端，避免误判
  *
- * 判断依据优先级（递减）：
- *   1. window.Capacitor 存在 → 原生壳内
- *   2. URL 带 ?mobile=1 / hash #mobile → 强制进入移动端（调试用）
- *   3. Web 环境 → 永远留在 PC 端
+ * 判断依据（统一用 isInNativeShell()，不能直接 !!window.Capacitor ——
+ * 因为 Vite 打包后 window.Capacitor 对象在 Web 环境也存在！）
  *
  * 反向跳转（PC 浏览器访问 /m/* → 跳 /dashboard）始终生效。
  */
 import { Navigate, useLocation } from 'react-router-dom'
-
-function isInCapacitorShell(): boolean {
-  const win: any = typeof window !== 'undefined' ? window : {}
-  if (win.Capacitor) return true
-  // UA 兜底（某些版本壳内 UA 带 Capacitor）
-  if (typeof navigator !== 'undefined' && /capacitor/i.test(navigator.userAgent)) return true
-  return false
-}
+import { isInNativeShell } from '../adapter'
 
 function isForceMobileOverride(): boolean {
   if (typeof window === 'undefined') return false
@@ -35,7 +26,7 @@ export function DeviceEntryRedirect({ children }: { children: React.ReactNode })
   const location = useLocation()
 
   // 1) 原生壳内 或 强制移动端 → 走移动端路由
-  const shouldUseMobile = isInCapacitorShell() || isForceMobileOverride()
+  const shouldUseMobile = isInNativeShell() || isForceMobileOverride()
 
   if (shouldUseMobile && !isMobilePath(location.pathname)) {
     return <Navigate to="/m/dashboard" replace />
