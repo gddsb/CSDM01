@@ -8,7 +8,7 @@
  *   ├─ 工单报工（分组容器，[报废][工时][人员] 三 Tab）
  *   └─ 完工/返回 按钮
  */
-import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useEffect, useMemo, useState, useCallback, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Dialog, Toast, Button, Tabs, Badge } from 'antd-mobile'
 import api from '../../utils/api'
@@ -212,26 +212,39 @@ export default function MobileProcessReporting() {
   // ========== 渲染 ==========
   if (phase === 'select') {
     return (
-      <div style={{ padding: 16, background: '#f5f6fa', minHeight: '100vh' }}>
-        <h2 style={{ fontSize: 18, margin: '0 0 12px', color: 'var(--m-text)' }}>📋 选择开工订单</h2>
-        {orders.length === 0 && <div style={{ color: 'var(--m-text-3)', textAlign: 'center', padding: 30 }}>— 暂无开工订单 —</div>}
-        {orders.map((o) => (
-          <div key={o.order_id} style={{
-            background: 'var(--m-surface)', borderRadius: 10, padding: 12, marginBottom: 10,
-            border: '1px solid var(--m-border)',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontSize: 15, fontWeight: 600 }}>{o.order_no}</div>
-                <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 3 }}>{o.material_code} · {o.material_name}</div>
-              </div>
-              <Badge content={`${o.finished_qty}/${o.planned_qty}`} style={{ '--right': '-4px', '--top': '-4px' }} />
-            </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <Button size="mini" color="primary" onClick={() => handleStartNew(o)}>▶ 开工报工</Button>
-            </div>
+      <div className="mobile-page-fixed-header">
+        <div className="mobile-sticky-header">
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--m-text)', paddingTop: 4 }}>
+            📋 选择开工订单
           </div>
-        ))}
+          <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 2 }}>
+            选一个已开工的报工单开始报工
+          </div>
+        </div>
+        <div className="mobile-page-scroll-list mobile-scroll">
+          {orders.length === 0 && (
+            <div style={{ color: 'var(--m-text-3)', textAlign: 'center', padding: 40 }}>
+              — 暂无开工订单 —
+            </div>
+          )}
+          {orders.map((o) => (
+            <div key={o.order_id} style={{
+              background: 'var(--m-surface)', borderRadius: 10, padding: 12, margin: '0 2px 10px',
+              border: '1px solid var(--m-border)',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 600 }}>{o.order_no}</div>
+                  <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 3 }}>{o.material_code} · {o.material_name}</div>
+                </div>
+                <Badge content={`${o.finished_qty}/${o.planned_qty}`} style={{ '--right': '-4px', '--top': '-4px' }} />
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <Button size="mini" color="primary" onClick={() => handleStartNew(o)}>▶ 开工报工</Button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
@@ -239,144 +252,143 @@ export default function MobileProcessReporting() {
   if (!current) return null
 
   return (
-    <div style={{ background: '#f5f6fa', minHeight: '100vh' }}>
-      {/* ========== ① 工单信息 + 报工统计 ========== */}
-      <Header report={current} onBack={() => { setCurrent(null); setPhase('select') }} onFinish={finishReport} />
-      <StatsBar stats={stats} reportQty={current.report_qty || 0} />
+    <div className="mobile-page-fixed-header">
+      {/* ========== 吸顶区：工单信息 + 统计 + 一级 Tab ========== */}
+      <div className="mobile-sticky-header" style={{ padding: '0 10px', background: '#f5f6fa' }}>
+        <Header report={current} onBack={() => { setCurrent(null); setPhase('select') }} onFinish={finishReport} />
+        <StatsBar stats={stats} reportQty={current.report_qty || 0} />
 
-      {/* ========== 报工区域（一个卡片 + 两个一级 Tab） ========== */}
-      <div style={{
-        background: 'var(--m-surface)', margin: '8px 10px', borderRadius: 10,
-        boxShadow: '0 1px 4px rgba(0,0,0,.04)', overflow: 'hidden',
-      }}>
-        {/* 一级 Tab：工序报工 / 工单报工 */}
-        <Tabs
-          activeKey={groupTab}
-          onChange={(k) => setGroupTab(k as any)}
-          style={{ background: '#fafafa' }}
-        >
-          <Tabs.Tab title="🔧 工序记录" key="process" />
-          <Tabs.Tab title="📊 工单记录" key="report" />
-        </Tabs>
+        {/* 报工区域卡片 —— 一级 Tab 固定 */}
+        <div style={{
+          background: 'var(--m-surface)', margin: '8px 0 0', borderRadius: 10,
+          boxShadow: '0 1px 4px rgba(0,0,0,.04)', overflow: 'hidden',
+        }}>
+          <Tabs
+            activeKey={groupTab}
+            onChange={(k) => setGroupTab(k as any)}
+            style={{ background: '#fafafa' }}
+          >
+            <Tabs.Tab title="🔧 工序记录" key="process" />
+            <Tabs.Tab title="📊 工单记录" key="report" />
+          </Tabs>
+        </div>
+      </div>
 
+      {/* ========== 滚动区：二级 Tab + Panel 内容 ========== */}
+      <div className="mobile-page-scroll-list mobile-scroll" style={{ padding: '8px 10px 20px' }}>
         {/* === 工序报工 Tab === */}
         {groupTab === 'process' && (
           <div>
-            {/* 工序内部 Tab：不良记录 / 物料记录 / 检验报废 */}
-            <Tabs activeKey={processTab} onChange={(k) => setProcessTab(k as any)}>
+            <PanelSubTabs active={processTab} onChange={(k) => setProcessTab(k as any)}>
               <Tabs.Tab title="不良记录" key="defect" />
               <Tabs.Tab title="物料记录" key="material" />
               <Tabs.Tab title="检验报废" key="scrap" />
-            </Tabs>
-            <div style={{ padding: 10 }}>
-              {processTab === 'defect' && (
-                <>
-                  <ProcessSelector
-                    processes={processes}
-                    activeProcId={defectProcId}
-                    onChange={setDefectProcId}
-                  />
-                  <ProcessDefectPanel
-                    report={current}
-                    activeProcessId={defectProcId}
-                    editable={!!editable}
-                    defectTypes={defectTypes}
-                    allDefects={defects}
-                    // 🔑 defects 是 defectsRaw 的不良子集，包一层只改不良不碰报废
-                    setAllDefects={(updater) => setDefectsRaw(prev => {
-                      const scrap = prev.filter(d => scrapDefectIds.has(Number(d.defect_type_id)))
-                      const nonScrap = prev.filter(d => !scrapDefectIds.has(Number(d.defect_type_id)))
-                      return [...updater(nonScrap), ...scrap]
-                    })}
-                  />
-                </>
-              )}
-              {processTab === 'material' && (
-                <>
-                  <ProcessSelector
-                    processes={processes}
-                    activeProcId={materialProcId}
-                    onChange={setMaterialProcId}
-                  />
-                  <ProcessMaterialPanel
-                    report={current}
-                    activeProcessId={materialProcId}
-                    editable={!!editable}
-                    materials={materialsMaster}
-                    allMaterials={materials}
-                    setAllMaterials={setMaterials}
-                  />
-                </>
-              )}
-              {processTab === 'scrap' && (
-                <>
-                  <ProcessSelector
-                    processes={processes}
-                    activeProcId={scrapProcId}
-                    onChange={setScrapProcId}
-                  />
-                  <ScrapPanel
-                    report={current}
-                    activeProcessId={scrapProcId}
-                    processes={processes}
-                    editable={!!editable}
-                    scrapTypes={scrapTypes}
-                    rows={scraps}
-                    // 🔑 scraps 是 defectsRaw 按 scrapDefectIds 过滤的派生数据，改全量即可联动
-                    setRows={(updater) => setDefectsRaw((prev) => {
-                      const before = prev.filter(d => !scrapDefectIds.has(Number(d.defect_type_id)))
-                      const scrapRows = prev.filter(d => scrapDefectIds.has(Number(d.defect_type_id))) as unknown as ScrapRow[]
-                      const merged = updater(scrapRows)
-                      const mergedDefects: DefectRow[] = merged.map((s) => ({
-                        id: s.scrap_id ?? s.id,
-                        defect_id: s.scrap_id ?? (s.id as number | undefined),
-                        report_order_id: s.report_order_id,
-                        process_id: processes.find(p => p.process_id === scrapProcId)?.process_id,
-                        defect_type_id: s.defect_type_id,
-                        defect_code: s.defect_code,
-                        defect_name: s.defect_name,
-                        defect_type: s.defect_type,
-                        quantity: s.quantity,
-                      }))
-                      return [...before, ...mergedDefects]
-                    })}
-                  />
-                </>
-              )}
-            </div>
+            </PanelSubTabs>
+            {processTab === 'defect' && (
+              <ReportPanel>
+                <ProcessSelector
+                  processes={processes}
+                  activeProcId={defectProcId}
+                  onChange={setDefectProcId}
+                />
+                <ProcessDefectPanel
+                  report={current}
+                  activeProcessId={defectProcId}
+                  editable={!!editable}
+                  defectTypes={defectTypes}
+                  allDefects={defects}
+                  setAllDefects={(updater) => setDefectsRaw(prev => {
+                    const scrap = prev.filter(d => scrapDefectIds.has(Number(d.defect_type_id)))
+                    const nonScrap = prev.filter(d => !scrapDefectIds.has(Number(d.defect_type_id)))
+                    return [...updater(nonScrap), ...scrap]
+                  })}
+                />
+              </ReportPanel>
+            )}
+            {processTab === 'material' && (
+              <ReportPanel>
+                <ProcessSelector
+                  processes={processes}
+                  activeProcId={materialProcId}
+                  onChange={setMaterialProcId}
+                />
+                <ProcessMaterialPanel
+                  report={current}
+                  activeProcessId={materialProcId}
+                  editable={!!editable}
+                  materials={materialsMaster}
+                  allMaterials={materials}
+                  setAllMaterials={setMaterials}
+                />
+              </ReportPanel>
+            )}
+            {processTab === 'scrap' && (
+              <ReportPanel>
+                <ProcessSelector
+                  processes={processes}
+                  activeProcId={scrapProcId}
+                  onChange={setScrapProcId}
+                />
+                <ScrapPanel
+                  report={current}
+                  activeProcessId={scrapProcId}
+                  processes={processes}
+                  editable={!!editable}
+                  scrapTypes={scrapTypes}
+                  rows={scraps}
+                  setRows={(updater) => setDefectsRaw((prev) => {
+                    const before = prev.filter(d => !scrapDefectIds.has(Number(d.defect_type_id)))
+                    const scrapRows = prev.filter(d => scrapDefectIds.has(Number(d.defect_type_id))) as unknown as ScrapRow[]
+                    const merged = updater(scrapRows)
+                    const mergedDefects: DefectRow[] = merged.map((s) => ({
+                      id: s.scrap_id ?? s.id,
+                      defect_id: s.scrap_id ?? (s.id as number | undefined),
+                      report_order_id: s.report_order_id,
+                      process_id: processes.find(p => p.process_id === scrapProcId)?.process_id,
+                      defect_type_id: s.defect_type_id,
+                      defect_code: s.defect_code,
+                      defect_name: s.defect_name,
+                      defect_type: s.defect_type,
+                      quantity: s.quantity,
+                    }))
+                    return [...before, ...mergedDefects]
+                  })}
+                />
+              </ReportPanel>
+            )}
           </div>
         )}
 
-        {/* === 工单记录 Tab（只剩工时 + 人员，报废已移到工序记录） === */}
+        {/* === 工单记录 Tab（工时 + 人员） === */}
         {groupTab === 'report' && (
           <div>
-            <Tabs activeKey={reportTab} onChange={(k) => setReportTab(k as any)}>
+            <PanelSubTabs active={reportTab} onChange={(k) => setReportTab(k as any)}>
               <Tabs.Tab title="工时记录" key="exception" />
               <Tabs.Tab title="人员记录" key="manpower" />
-            </Tabs>
-            <div style={{ padding: 10 }}>
-              {reportTab === 'exception' && (
+            </PanelSubTabs>
+            {reportTab === 'exception' && (
+              <ReportPanel>
                 <ExceptionPanel
                   report={current}
                   editable={!!editable}
                   rows={exceptions}
                   setRows={setExceptions}
                 />
-              )}
-              {reportTab === 'manpower' && (
+              </ReportPanel>
+            )}
+            {reportTab === 'manpower' && (
+              <ReportPanel>
                 <ManpowerPanel
                   report={current}
                   editable={!!editable}
                   manpower={manpower}
                   setManpower={setManpower}
                 />
-              )}
-            </div>
+              </ReportPanel>
+            )}
           </div>
         )}
       </div>
-
-      <div style={{ height: 40 }} />
     </div>
   )
 }
@@ -452,13 +464,33 @@ function StatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportSta
   )
 }
 
-function SectionDivider({ title, color }: { title: string; color: string }) {
+/** 报工 Panel 统一卡片容器 —— 工序选择器 + 操作面板包一层圆角卡 */
+function ReportPanel({ children }: { children: ReactNode }) {
   return (
     <div style={{
-      padding: '14px 12px 6px', display: 'flex', alignItems: 'center', gap: 8,
+      background: 'var(--m-surface)', borderRadius: 10,
+      boxShadow: '0 1px 4px rgba(0,0,0,.04)', overflow: 'hidden',
+      marginTop: 8,
     }}>
-      <div style={{ width: 4, height: 16, background: color, borderRadius: 2 }} />
-      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--m-text)' }}>{title}</div>
+      {children}
+    </div>
+  )
+}
+
+/** 工序/工单 二级 Tab 容器 —— 统一卡片样式 + flex-shrink 防止被压扁 */
+function PanelSubTabs({
+  active, onChange, children,
+}: {
+  active: string
+  onChange: (k: string) => void
+  children: ReactNode
+}) {
+  return (
+    <div style={{
+      background: 'var(--m-surface)', borderRadius: 10,
+      boxShadow: '0 1px 4px rgba(0,0,0,.04)', overflow: 'hidden',
+    }}>
+      <Tabs activeKey={active} onChange={(k) => onChange(k as string)}>{children}</Tabs>
     </div>
   )
 }

@@ -211,7 +211,12 @@ export default function MobileDashboard() {
   // ========== 渲染 ==========
   return (
     <PullToRefresh onRefresh={onRefresh}>
-      <div className="mobile-page" style={{ padding: '12px 12px 80px', minHeight: '100vh', background: 'var(--m-bg)' }}>
+      <div className="mobile-page" style={{
+        padding: '12px 12px 80px',
+        paddingTop: 'calc(var(--sat) + 12px)',
+        flex: 1, minHeight: 0,
+        background: 'var(--m-bg)',
+      }}>
 
         {/* ============ 顶部：欢迎 + 通知 ============ */}
         <div style={{ marginBottom: 12 }}>

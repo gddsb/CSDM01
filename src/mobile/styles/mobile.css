@@ -80,25 +80,25 @@ html.mobile-root textarea {
   font-size: 16px !important; /* 防止 iOS 聚焦时自动放大 */
 }
 
-/* 移动端容器 */
+/* 移动端容器 —— 固定视口高度，禁止外层滚，滚动由内部页面接管 */
 .mobile-app {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
-  min-height: 100vh; /* fallback */
+  height: 100dvh;
+  height: 100vh; /* fallback */
   background: #f5f6f8;
-  padding-top: var(--sat);
-  padding-bottom: var(--sab);
+  /* 顶部安全区由 NavBar 包层（子功能页）或 Dashboard/Profile 各自处理 —— 此处不重复 */
+  /* 底部 safe-area 由 .mobile-app__content + TabBar 分担 */
 }
 
 .mobile-app__content {
   flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   min-height: 0;                   /* 关键！让子页面 flex:1 能正确填充 */
   position: relative;
   display: flex;                    /* 让子页面 flex column 正确伸展 */
   flex-direction: column;
+  overflow-y: auto;                /* 默认整页滚；子页面套吸顶方案时被 :has() 规则关掉 */
+  -webkit-overflow-scrolling: touch;
 }
 
 /* 当内部页面使用 .mobile-page-fixed-header 时，外层由内层接管滚动 */
