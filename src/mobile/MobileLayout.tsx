@@ -265,22 +265,20 @@ export function MobileLayout() {
 
   return (
     <div className="mobile-app">
-      {/* NavBar — 仅子功能页面显示，适配 safe-area，固定顶部 */}
+      {/* NavBar —— 仅子功能页面显示，外层 .mobile-app 已统一吃 safe-area */}
       {showNavBar && (
-        <div style={{ paddingTop: 'var(--sat)' }}>
-          <NavBar
-            style={{ background: 'var(--m-surface)', borderBottom: '1px solid var(--m-border)' }}
-            back={canBack}
-            onBack={() => navigate(-1)}
-          >
-            {title}
-            {currentUser && (
-              <span style={{ fontSize: 12, color: 'var(--m-text-3)', marginLeft: 8, fontWeight: 'normal' }}>
-                {currentUser.real_name}
-              </span>
-            )}
-          </NavBar>
-        </div>
+        <NavBar
+          style={{ background: 'var(--m-surface)', borderBottom: '1px solid var(--m-border)', flexShrink: 0 }}
+          back={canBack}
+          onBack={() => navigate(-1)}
+        >
+          {title}
+          {currentUser && (
+            <span style={{ fontSize: 12, color: 'var(--m-text-3)', marginLeft: 8, fontWeight: 'normal' }}>
+              {currentUser.real_name}
+            </span>
+          )}
+        </NavBar>
       )}
 
       {/* 离线/同步状态条：仅在需要提醒时出现 */}

@@ -100,7 +100,7 @@ export default function MobileCalibrationReminder() {
   const onRefresh = async () => { await fetchList(); await fetchCounts(); Toast.show({ content: '已刷新', icon: 'success', position: 'bottom', duration: 600 }) }
 
   return (
-    <div className="mobile-page" style={{ paddingTop: 12 }}>
+    <div className="mobile-page mobile-page-scrollable" style={{ paddingTop: 12 }}>
       <Tabs activeKey={tab} onChange={(k) => setTab(k as Tab)} style={{ marginBottom: 8 }}>
         <Tabs.Tab title={`⏰ 即将到期(${expiringCount})`} key="expiring" />
         <Tabs.Tab title={`🚨 已逾期(${overdueCount})`} key="overdue" />

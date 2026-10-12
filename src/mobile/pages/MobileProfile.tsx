@@ -62,10 +62,7 @@ export function MobileProfile() {
 
   if (!currentUser) {
     return (
-      <div className="mobile-page" style={{
-        paddingTop: 'calc(var(--sat) + 24px)',
-        flex: 1, minHeight: 0,
-      }}>
+      <div className="mobile-page mobile-page-scrollable" style={{ paddingTop: 24 }}>
         <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--m-text-3)' }}>
           未登录
         </div>
@@ -75,10 +72,7 @@ export function MobileProfile() {
   }
 
   return (
-    <div className="mobile-page" style={{
-      paddingTop: 'calc(var(--sat) + 20px)',
-      flex: 1, minHeight: 0,
-    }}>
+    <div className="mobile-page mobile-page-scrollable" style={{ paddingTop: 20 }}>
       {/* 用户卡片 */}
       <div style={{
         background: 'var(--m-surface)', borderRadius: 14, padding: 20,

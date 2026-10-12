@@ -112,7 +112,7 @@ export default function MobileComplaintReport() {
 
   if (step === 2) {
     return (
-      <div className="mobile-page" style={{ textAlign: 'center', padding: '60px 20px' }}>
+      <div className="mobile-page mobile-page-scrollable" style={{ textAlign: 'center', padding: '60px 20px' }}>
         <div style={{ fontSize: 60 }}>📢</div>
         <div style={{ fontSize: 18, fontWeight: 600, margin: '16px 0 8px' }}>投诉上报成功</div>
         {successNo && <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 4 }}>投诉单号：{successNo}</div>}
@@ -126,7 +126,7 @@ export default function MobileComplaintReport() {
   }
 
   return (
-    <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
+    <div className="mobile-page mobile-page-scrollable" style={{ paddingTop: 12, paddingBottom: 24 }}>
 {step === 0 && (
         <>
           <Card>

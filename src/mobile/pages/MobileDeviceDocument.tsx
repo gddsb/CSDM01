@@ -186,7 +186,7 @@ export default function MobileDeviceDocument() {
   if (!selectedDevice) {
     // 设备选择 Step
     return (
-      <div className="mobile-page" style={{ paddingTop: 12 }}>
+      <div className="mobile-page mobile-page-scrollable" style={{ paddingTop: 12 }}>
         <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 10, padding: '0 4px' }}>
           扫码或选设备 → 查看该设备的全部电子档案
         </div>
@@ -221,7 +221,7 @@ export default function MobileDeviceDocument() {
 
   // 文档详情 Step
   return (
-    <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 30 }}>
+    <div className="mobile-page mobile-page-scrollable" style={{ paddingTop: 12, paddingBottom: 30 }}>
       {/* 设备卡 */}
       <div style={{
         background: 'var(--m-info-bg)', borderRadius: 10, padding: 12, marginBottom: 10,

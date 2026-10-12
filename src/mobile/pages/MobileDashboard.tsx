@@ -211,10 +211,8 @@ export default function MobileDashboard() {
   // ========== 渲染 ==========
   return (
     <PullToRefresh onRefresh={onRefresh}>
-      <div className="mobile-page" style={{
+      <div className="mobile-page mobile-page-scrollable" style={{
         padding: '12px 12px 80px',
-        paddingTop: 'calc(var(--sat) + 12px)',
-        flex: 1, minHeight: 0,
         background: 'var(--m-bg)',
       }}>
 

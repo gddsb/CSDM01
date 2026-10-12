@@ -201,7 +201,7 @@ export default function MobileOeeDashboard() {
   const onRefresh = async () => { await fetchData(range) }
 
   return (
-    <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
+    <div className="mobile-page mobile-page-scrollable" style={{ paddingTop: 12, paddingBottom: 24 }}>
       {/* 范围切换 */}
       <Tabs activeKey={range} onChange={(k) => setRange(k as Range)} style={{ marginBottom: 12 }}>
         {RANGE_TABS.map((t) => (
