@@ -15,8 +15,8 @@ export type MobileThemeKey = 'light' | 'dark'
 const STORAGE_KEY = 'mes_mobile_theme'
 
 function detectSystemTheme(): MobileThemeKey {
-  if (typeof window === 'undefined' || !window.matchMedia) return 'light'
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  // 移动端 APP 安装后默认浅色，不跟随系统 prefers-color-scheme（避免用户手机系统深色导致 APP 默认深色）
+  return 'light'
 }
 
 function readStoredTheme(): MobileThemeKey | null {
@@ -41,25 +41,10 @@ export function useMobileTheme() {
     return stored || detectSystemTheme()
   })
 
-  // 应用到 <html> + 监听系统主题变化
+  // 应用到 <html>
   useEffect(() => {
     applyTheme(theme)
-    const media = window.matchMedia?.('(prefers-color-scheme: dark)')
-    if (!media) return
-    const handler = (e: MediaQueryListEvent) => {
-      // 仅当用户未手动设置时跟随系统
-      if (!readStoredTheme()) {
-        setTheme(e.matches ? 'dark' : 'light')
-      }
-    }
-    // 兼容 Safari < 14：addEventListener 不可用时回退 addListener
-    if (media.addEventListener) {
-      media.addEventListener('change', handler)
-      return () => media.removeEventListener('change', handler)
-    } else if ((media as any).addListener) {
-      ;(media as any).addListener(handler)
-      return () => (media as any).removeListener(handler)
-    }
+    // 注意：不再监听系统主题变化 — APP 默认浅色，用户切换后持久化存储
   }, [theme])
 
   const changeTheme = useCallback((key: MobileThemeKey) => {
