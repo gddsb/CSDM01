@@ -1,18 +1,23 @@
 /**
- * 设备自动识别器
+ * 设备自动识别器（v2 — 修复 PC 被误判）
+ *
+ * 核心设计：**先看 platform，再看宽度/UA**
+ *   platform === 'web'   → 一定是 PC 浏览器（不管宽度、不管 UA 关键词）
+ *   platform === 'android'|'ios' → 才走移动端三档（tablet → pda → phone）
+ *   platform === 'unknown' → 兜底 phone
+ *
+ * 为什么这样改：
+ *   旧版 UA 排除列表 `!/mobile|phone|android|iphone|ipad|ipod/.test(ua)` 会误伤：
+ *   比如 PC Chrome 开了移动模拟后忘了关，UA 里还留着 "Mobile" 关键字 → 被漏掉 PC 分支
+ *   → 落到 tablet/phone 分支 → PC 用户被迫看移动端 UI
  *
  * 优先级（递减）:
- *  1. Android TV / Leanback UA → tv
- *  2. 宽度 ≥ 1200px（桌面浏览器调试）→ tablet
- *  3. 宽度 ≥ 768px 且非 mobile UA → tablet
- *  4. UA 包含手持设备特征（PDA/手持终端关键词）→ pda
- *  5. 宽度在 480~768px → phone
- *  6. 宽度 < 480px → phone
- *  7. 兜底 → phone（弹出手动选择弹窗）
- *
- * 注意：Android TV 在 WebView 环境下 Capacitor Device API
- * 会给出更精确的 platform 信息，这里做两层降级：
- *   try { Capacitor Device.getInfo() } → catch → 走纯 Web heuristic
+ *   1. Android TV / Leanback UA → tv
+ *   2. PC 浏览器（platform === 'web'）→ pc
+ *   3. 壳内宽屏（android/ios + width >= 768）→ tablet
+ *   4. PDA 关键词 / 工业 PDA 启发式 → pda
+ *   5. 常规手机 → phone
+ *   6. 兜底 → phone
  */
 import type { DeviceType, DeviceInfo } from './types'
 
@@ -25,13 +30,13 @@ const PDA_KEYWORDS = [
 const TV_KEYWORDS = ['android tv', 'leanback', 'atv', 'androidtv', 'bigscreen', 'smarttv']
 
 const TABLET_WIDTH_MIN = 768
-const PHONE_WIDTH_MIN = 480
 
 function detectPlatform(ua: string): 'android' | 'ios' | 'web' | 'unknown' {
   const lower = ua.toLowerCase()
   if (/android/.test(lower)) return 'android'
   if (/iphone|ipad|ipod/.test(lower)) return 'ios'
-  if (/mac|windows|linux|cros/.test(lower)) return 'web'
+  // Windows / Mac / Linux / ChromeOS → 纯浏览器 Web 平台
+  if (/windows|mac os x|linux|cros|x11/.test(lower)) return 'web'
   return 'unknown'
 }
 
@@ -63,35 +68,28 @@ export function detectDeviceType(): DeviceInfo {
 
   let type: DeviceType
 
-  // 1. TV / Leanback
+  // 1. TV / Leanback（最高优先级，TV 大屏必须单独路由）
   if (TV_KEYWORDS.some((k) => ua.includes(k))) {
     type = 'tv'
   }
-  // 2. PC 桌面浏览器（Web platform + 宽屏 + 非移动端 UA）
-  else if (platform === 'web' && width >= 1024 && !/mobile|phone|android|iphone|ipad|ipod/.test(ua)) {
+  // 2. PC 浏览器（Web 平台 → 一定是 PC，不管宽度！）
+  //    Chrome DevTools 移动模拟也改变不了 platform，所以不会误判
+  else if (platform === 'web') {
     type = 'pc'
   }
-  // 3. 宽屏 tablet（桌面浏览器调试常见）
-  else if (width >= 1200 && platform === 'web') {
+  // 3. 壳内宽屏 tablet（Android tablet / iPad）
+  else if (width >= TABLET_WIDTH_MIN) {
     type = 'tablet'
   }
-  // 4. 常规 tablet（Android tablet / iPad）
-  else if (width >= TABLET_WIDTH_MIN && !/mobile|phone/.test(ua)) {
-    type = 'tablet'
-  }
-  // 5. PDA 关键词
+  // 4. PDA 关键词命中（手持终端）
   else if (PDA_KEYWORDS.some((k) => ua.includes(k))) {
     type = 'pda'
   }
-  // 6. 工业 PDA 启发式：Android + 中等宽度 + 较高 DPI
+  // 5. 工业 PDA 启发式：Android + 中等宽度 + 较高 DPI
   else if (platform === 'android' && width >= 360 && width <= 600 && dpr >= 2.5) {
     type = 'pda'
   }
-  // 7. Phone
-  else if (width < PHONE_WIDTH_MIN || /mobile|phone/.test(ua)) {
-    type = 'phone'
-  }
-  // 8. 兜底（小屏 web → phone）
+  // 6. 常规手机（剩下的壳内小屏）
   else {
     type = 'phone'
   }

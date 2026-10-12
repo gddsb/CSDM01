@@ -4,7 +4,12 @@
  * 与旧版 console 包装器保持相同的 API 签名（debug/info/warn/error，接受任意参数），
  * 业务代码无需改动即可获得 JSON 结构化输出。
  *
- * 开发环境：pino-pretty transport，彩色可读
+ * ⚠️ 时区统一：所有时间戳强制北京时间（UTC+8）
+ *   pino.stdTimeFunctions.isoTime 返回的是标准 UTC ISO（如 2026-10-12T05:55:23.456Z），
+ *   跟 PM2 显示、MySQL 存的 CST 时间不一致。这里自定义 time 函数返回
+ *   北京时间 ISO 格式（如 2026-10-12T13:55:23.456+08:00）。
+ *
+ * 开发环境：pino-pretty transport，彩色可读，translateTime 用 UTC+8
  * 生产环境：纯 JSON 输出，PM2 自动轮转
  */
 import pino from 'pino'
@@ -12,20 +17,30 @@ import pino from 'pino'
 const level = (process.env.LOG_LEVEL || 'info').toLowerCase()
 const isProd = process.env.NODE_ENV === 'production'
 
+/** 北京时间 ISO 时间戳（UTC+8） */
+function beijingIsoTime(): string {
+  const now = new Date()
+  // UTC+8：在 UTC 上加 8 小时
+  const bj = new Date(now.getTime() + 8 * 60 * 60 * 1000)
+  const pad = (n: number, w = 2) => String(n).padStart(w, '0')
+  return `${bj.getUTCFullYear()}-${pad(bj.getUTCMonth() + 1)}-${pad(bj.getUTCDate())}T${pad(bj.getUTCHours())}:${pad(bj.getUTCMinutes())}:${pad(bj.getUTCSeconds())}.${pad(bj.getUTCMilliseconds(), 3)}+08:00`
+}
+
 const pinoInstance = isProd
   ? pino({
       level,
       base: undefined,
-      timestamp: pino.stdTimeFunctions.isoTime,
+      timestamp: beijingIsoTime,
     })
   : pino({
       level,
       base: undefined,
+      timestamp: beijingIsoTime,
       transport: {
         target: 'pino-pretty',
         options: {
           colorize: true,
-          translateTime: 'HH:MM:ss',
+          translateTime: 'yyyy-mm-dd HH:MM:ss',
           ignore: 'pid,hostname',
         },
       },
