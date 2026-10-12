@@ -17,13 +17,17 @@ import pino from 'pino'
 const level = (process.env.LOG_LEVEL || 'info').toLowerCase()
 const isProd = process.env.NODE_ENV === 'production'
 
-/** 北京时间 ISO 时间戳（UTC+8） */
+/** 北京时间 ISO 时间戳（UTC+8）
+ * pino timestamp 函数要求返回完整 JSON 片段（含前导逗号和 key）
+ * 参考 pino.stdTimeFunctions.isoTime 的格式：,"time":"2026-10-12T13:59:39.807+08:00"
+ */
 function beijingIsoTime(): string {
   const now = new Date()
   // UTC+8：在 UTC 上加 8 小时
   const bj = new Date(now.getTime() + 8 * 60 * 60 * 1000)
   const pad = (n: number, w = 2) => String(n).padStart(w, '0')
-  return `${bj.getUTCFullYear()}-${pad(bj.getUTCMonth() + 1)}-${pad(bj.getUTCDate())}T${pad(bj.getUTCHours())}:${pad(bj.getUTCMinutes())}:${pad(bj.getUTCSeconds())}.${pad(bj.getUTCMilliseconds(), 3)}+08:00`
+  const t = `${bj.getUTCFullYear()}-${pad(bj.getUTCMonth() + 1)}-${pad(bj.getUTCDate())}T${pad(bj.getUTCHours())}:${pad(bj.getUTCMinutes())}:${pad(bj.getUTCSeconds())}.${pad(bj.getUTCMilliseconds(), 3)}+08:00`
+  return `,"time":"${t}"`
 }
 
 const pinoInstance = isProd
