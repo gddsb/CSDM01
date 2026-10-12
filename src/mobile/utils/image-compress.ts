@@ -75,8 +75,8 @@ export async function compressImage(file: File, opts: CompressOptions = {}): Pro
   if (blob.size >= file.size) return file
 
   const compressed = new File([blob], file.name, { type: mime, lastModified: file.lastModified })
-  compressed = Object.defineProperty(compressed, '_compressed', {
+  Object.defineProperty(compressed, '_compressed', {
     value: { from: file.size, to: blob.size, ratio: `${Math.round(blob.size / file.size * 100)}%` },
-  }) as File
+  })
   return compressed
 }

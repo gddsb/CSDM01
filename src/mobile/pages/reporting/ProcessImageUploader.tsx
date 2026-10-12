@@ -2,9 +2,9 @@
  * 报工图片上传组件（通用）
  * —— 不良图片 / 标签图片 共用
  *
- * 技术栈：antd-mobile ImageUploader + HTTP 上传接口
- *   - 生产环境 Android Capacitor 壳中会自动调起原生相机/相册
- *   - Web 环境用 <input type="file"> 弹窗
+ * 技术栈：antd-mobile ImageUploader（预览+删除）+ 两个独立隐藏 <input type="file">
+ *   - 📷 拍照按钮：capture="environment" → 强制调起后置相机
+ *   - 🖼️ 相册按钮：无 capture → 系统弹图库 / 相册选择器
  *   - 上传接口：POST /production/report-images/:report_no/:category/upload
  *
  * 存储形态：后端 JSON 字段存 string[]，前端 ImageUploadItem[] 自动映射
@@ -12,7 +12,7 @@
  * 调试日志：所有上传阶段都带 [IMG-UPLOAD] prefix，真机可在
  *   Android Studio Logcat（tag: chromium）或 chrome://inspect/#devices 看到
  */
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ImageUploader, Toast } from 'antd-mobile'
 import type { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import api from '../../../utils/api'
@@ -51,27 +51,41 @@ function toUrls(items: ImageUploadItem[]): string[] {
   return items.map((i) => i.url).filter(Boolean)
 }
 
+/** 隐藏 input 清空 value，确保下次选同一文件也能触发 change */
+function resetInput(input: HTMLInputElement | null) {
+  if (input) input.value = ''
+}
+
 export function ProcessImageUploader({
   reportNo, category, value, onChange, maxCount = 9, label,
 }: Props) {
-  const items = useMemo(() => toItems(value), [value])
+  /** 当前已上传图片（内部 state，手动管理上传流程） */
+  const [items, setItems] = useState<ImageUploadItem[]>(() => toItems(value))
 
-  // 上传函数：调后端 multipart 接口，返回 ImageUploadItem
+  /** 外部 value 变化 → 同步内部 items（比如父组件重新拉后端数据） */
+  useEffect(() => {
+    setItems(toItems(value))
+  }, [JSON.stringify(value)])
+
+  /** 两个隐藏 input —— 分别对应 📷拍照 / 🖼️相册 */
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
+
+  const remaining = maxCount - items.length
+
+  // ========== 上传核心逻辑（复用 build41 的压缩 + POST + 日志） ==========
   const upload = useCallback(async (file: File): Promise<ImageUploadItem> => {
     const stageStart = performance.now()
     const ctx = { reportNo, category, fileName: file?.name, size: file?.size, type: file?.type }
 
     log.info('START', ctx)
 
-    // 防御：antd-mobile 在旧版 Android 返回 Blob 而非 File
     if (!file || !(file instanceof File)) {
       log.error('ABORT — upload 收到的不是 File 实例', file)
       Toast.show({ content: '图片文件异常，请重试', position: 'bottom' })
       throw new Error('invalid file')
     }
 
-    // 前端 Canvas 压缩：最长边 1920px + JPEG 0.82
-    // 手机拍的 8~15MB 原图一般能压到 0.5~1MB，避免触发后端 LIMIT_FILE_SIZE
     const beforeSize = file.size
     try {
       file = await compressImage(file)
@@ -80,7 +94,8 @@ export function ProcessImageUploader({
     }
     const afterSize = file.size
     if (afterSize !== beforeSize) {
-      log.info('COMPRESS', `${(beforeSize / 1024 / 1024).toFixed(1)}MB → ${(afterSize / 1024 / 1024).toFixed(1)}MB`,
+      log.info('COMPRESS',
+        `${(beforeSize / 1024 / 1024).toFixed(1)}MB → ${(afterSize / 1024 / 1024).toFixed(1)}MB`,
         `(${Math.round(afterSize / beforeSize * 100)}%)`)
     } else {
       log.info('COMPRESS_SKIP', `≤1MB 已是 / 不可压缩 (${(beforeSize / 1024 / 1024).toFixed(1)}MB)`)
@@ -104,7 +119,6 @@ export function ProcessImageUploader({
         throw new Error(msg)
       }
 
-      // 后端返回 { url } 或 { urls: [...] }
       const uploadedUrl: string = res.data?.url
         || (Array.isArray(res.data?.urls) ? res.data.urls[0] : res.data)
         || ''
@@ -119,7 +133,6 @@ export function ProcessImageUploader({
       return { url: uploadedUrl }
     } catch (e: any) {
       const ms = Math.round(performance.now() - stageStart)
-      // 区分：网络错 / HTTP 错 / 超时
       const isTimeout = e?.code === 'ECONNABORTED' || /timeout/i.test(String(e?.message))
       const status = e?.response?.status
       log.error('FAIL ✗', `耗时=${ms}ms`,
@@ -136,29 +149,123 @@ export function ProcessImageUploader({
     }
   }, [reportNo, category])
 
-  const handleChange = (newItems: ImageUploadItem[]) => {
-    const before = items.length
-    const after = newItems.length
-    log.info('CHANGE', `数量 ${before} → ${after}`, 'urls=', toUrls(newItems))
+  // ========== 文件处理入口（两个隐藏 input 的 onChange 共用） ==========
+  const handleFiles = useCallback(async (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return
+
+    // 不能传超过剩余数量
+    const files = Array.from(fileList).slice(0, remaining)
+    if (files.length === 0) {
+      Toast.show({ content: `最多 ${maxCount} 张`, position: 'bottom' })
+      return
+    }
+
+    log.info('HANDLE_FILES', `count=${files.length} remaining=${remaining}`)
+
+    // 顺序上传（避免并发塞爆后端 + 预览图顺序可控）
+    for (const file of files) {
+      try {
+        const result = await upload(file)
+        setItems(prev => {
+          const next = [...prev, result]
+          onChange(toUrls(next))
+          log.info('CHANGE', `数量 ${prev.length} → ${next.length}`, 'urls=', toUrls(next))
+          return next
+        })
+      } catch {
+        // upload 内部已 Toast，这里静默跳过继续下一张
+      }
+    }
+  }, [upload, remaining, maxCount, onChange])
+
+  // ========== ImageUploader 预览/删除回调 ==========
+  const handlePreviewChange = (newItems: ImageUploadItem[]) => {
+    // 只处理删除（新增走我们的 handleFiles）
+    setItems(newItems)
     onChange(toUrls(newItems))
+    log.info('CHANGE(删除)', `数量 ${items.length} → ${newItems.length}`, 'urls=', toUrls(newItems))
   }
+
+  const cellButtonStyle = useMemo(() => ({
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    cursor: 'pointer',
+    color: 'var(--m-text-2)',
+    fontSize: 11,
+  }), [])
 
   return (
     <div>
       {label && (
         <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
           📷 {label}
-          <span style={{ color: 'var(--m-text-3)', fontSize: 10 }}>（最多 {maxCount} 张）</span>
+          <span style={{ color: 'var(--m-text-3)', fontSize: 10 }}>（已 {items.length}/{maxCount}）</span>
         </div>
       )}
+
+      {/* 预览 + 删除：ImageUploader 禁用内置 upload，只渲染已有图片 */}
       <ImageUploader
         value={items}
-        onChange={handleChange}
-        upload={upload}
+        onChange={handlePreviewChange}
+        upload={() => Promise.reject(new Error('disabled'))}
+        disableUpload
         maxCount={maxCount}
-        multiple
+      />
+
+      {/* 剩余数量 > 0 时显示两个触发按钮 */}
+      {remaining > 0 && (
+        <div style={{ display: 'flex', gap: 'var(--gap, 12px)', marginTop: 4 }}>
+          {/* 📷 拍照 —— capture="environment" 强制后置相机 */}
+          <span
+            className="adm-image-uploader-cell adm-image-uploader-upload-button"
+            style={cellButtonStyle}
+            onClick={() => cameraInputRef.current?.click()}
+            role="button"
+            aria-label="拍照"
+          >
+            <span style={{ fontSize: 22 }}>📷</span>
+            <span>拍照</span>
+          </span>
+
+          {/* 🖼️ 相册 —— 无 capture，系统弹图库选择器 */}
+          <span
+            className="adm-image-uploader-cell adm-image-uploader-upload-button"
+            style={cellButtonStyle}
+            onClick={() => galleryInputRef.current?.click()}
+            role="button"
+            aria-label="从相册选择"
+          >
+            <span style={{ fontSize: 22 }}>🖼️</span>
+            <span>相册</span>
+          </span>
+        </div>
+      )}
+
+      {/* 两个隐藏 <input type="file"> —— 用户看不到，被上面按钮的 click() 触发 */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
         capture="environment"
-        showUpload={items.length < maxCount}
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          handleFiles(e.target.files)
+          resetInput(e.target)
+        }}
+      />
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          handleFiles(e.target.files)
+          resetInput(e.target)
+        }}
       />
     </div>
   )
