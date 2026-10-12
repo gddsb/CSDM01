@@ -22,8 +22,9 @@ const SERVER_ORIGIN: string = API_BASE.replace(/\/api\/?$/, '')
  * @param url 后端返回的 image_url（相对 "/uploads/..." 或绝对 "http(s)://..."）
  * @returns 可直接用于 <img src> 的完整 URL
  */
-export function resolveUploadUrl(url: string | null | undefined): string {
-  if (!url) return ''
+export function resolveUploadUrl(url: string | null | undefined | unknown): string {
+  // 防御：上游可能误传非 string（如 ImageUploadItem 对象、数字等）
+  if (typeof url !== 'string' || !url) return ''
 
   // 已经是绝对 URL → 原样返回
   if (/^https?:\/\//i.test(url)) return url

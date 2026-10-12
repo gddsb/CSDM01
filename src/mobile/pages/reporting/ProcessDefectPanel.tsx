@@ -38,9 +38,9 @@ interface Props {
 /** 后端返回的 defect_images 可能是 JSON string 或 null，前端统一转 string[] */
 function parseImages(raw: unknown): string[] {
   if (!raw) return []
-  if (Array.isArray(raw)) return raw.filter(Boolean) as string[]
+  if (Array.isArray(raw)) return raw.filter((v: unknown) => typeof v === "string" && v.trim())
   if (typeof raw === 'string') {
-    try { return JSON.parse(raw).filter(Boolean) } catch { return [] }
+    try { return JSON.parse(raw).filter((v: unknown) => typeof v === "string" && v.trim()) } catch { return [] }
   }
   return []
 }

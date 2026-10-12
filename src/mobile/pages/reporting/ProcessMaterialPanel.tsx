@@ -43,9 +43,9 @@ interface Props {
 
 function parseImages(raw: unknown): string[] {
   if (!raw) return []
-  if (Array.isArray(raw)) return raw.filter(Boolean) as string[]
+  if (Array.isArray(raw)) return raw.filter((v: unknown) => typeof v === "string" && v.trim())
   if (typeof raw === 'string') {
-    try { return JSON.parse(raw).filter(Boolean) } catch { return [] }
+    try { return JSON.parse(raw).filter((v: unknown) => typeof v === "string" && v.trim()) } catch { return [] }
   }
   return []
 }
