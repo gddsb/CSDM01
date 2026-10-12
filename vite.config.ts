@@ -73,10 +73,27 @@ export default defineConfig({
       workbox: {
         // 允许大文件（antd chunk 超 2MB）预缓存
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-        // 构建产物全量预缓存（html/js/css/img/svg/ico/png/webp/woff2），保证安装后离线可用首页/已缓存页面
-        globPatterns: ['**/*.{html,js,css,png,svg,ico,webp,jpg,jpeg,woff2,ttf,json}'],
-        // API / uploads 不缓存（实时数据）
+        // ⚠️ 关键：禁用 navigateFallback
+        // vite-plugin-pwa 默认值是 "index.html"，会把 index.html 加入 precache 并注册 NavigationRoute，
+        // 导致旧 SW 锁死旧 HTML → 服务器更新后用户浏览器仍加载旧 JS（PC 误判 bug 永远不生效）。
+        // 我们自己在 runtimeCaching 里用 NetworkFirst 处理 HTML（见下），保证每次拿最新版本。
+        navigateFallback: null,
+        // JS/CSS/图片走 precache；HTML 不在此列表（由 runtimeCaching 处理）
+        globPatterns: ['**/*.{js,css,png,svg,ico,webp,jpg,jpeg,woff2,ttf,json}'],
+        // API / uploads / HTML 分别处理
         runtimeCaching: [
+          {
+            // ⚠️ 关键修复：HTML 每次走 NetworkFirst
+            // 旧 SW 的 NavigationRoute + precache index.html 会把入口锁死在旧版本，
+            // 服务器更新后用户浏览器加载的仍是旧 JS → PC 误判 bug 永远不生效。
+            // 让 HTML 每次从服务器拿最新版本，JS 引用才会随构建更新。
+            urlPattern: ({ url }) => url.pathname === '/' || url.pathname.endsWith('.html'),
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'html-network-first',
+              networkTimeoutSeconds: 10,
+            },
+          },
           {
             urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
             handler: 'NetworkFirst',
