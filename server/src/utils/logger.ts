@@ -12,6 +12,7 @@
  * 开发环境：pino-pretty transport，彩色可读，translateTime 用 UTC+8
  * 生产环境：纯 JSON 输出，PM2 自动轮转
  */
+import 'dotenv/config' // ⚠️ 必须在最顶部！确保 process.env 在所有顶层常量求值前就加载
 import pino from 'pino'
 
 const level = (process.env.LOG_LEVEL || 'info').toLowerCase()
