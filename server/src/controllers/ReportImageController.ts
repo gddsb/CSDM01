@@ -27,13 +27,29 @@ const getFileMd5 = (filePath: string) => {
 
 /** 上传报工图片 —— fs 逻辑保留 */
 export const uploadImages = asyncHandler(async (req: Request, res: Response) => {
+  const stageStart = Date.now()
   const { report_no, category } = req.params as any
   const files = (req as any).files || []
-  if (files.length === 0) return fail(res, '请选择要上传的图片')
-  if (!report_no) return fail(res, '报工单号不能为空')
-  if (!category) return fail(res, '图片分类不能为空')
+
+  logger.info('[ReportImage] UPLOAD.ENTRY', { report_no, category, fileCount: files.length,
+    fileInfo: files.map((f: any) => ({ name: f.originalname, size: f.size, mimetype: f.mimetype })) })
+
+  if (files.length === 0) {
+    logger.warn('[ReportImage] UPLOAD.REJECT — 无文件')
+    return fail(res, '请选择要上传的图片')
+  }
+  if (!report_no) {
+    logger.warn('[ReportImage] UPLOAD.REJECT — report_no 为空')
+    return fail(res, '报工单号不能为空')
+  }
+  if (!category) {
+    logger.warn('[ReportImage] UPLOAD.REJECT — category 为空')
+    return fail(res, '图片分类不能为空')
+  }
 
   const reportOrder = await ReportImageService.ensureReportOrder(report_no)
+  logger.info('[ReportImage] UPLOAD.ORDER_FOUND', { reportOrderId: (reportOrder as any)?.report_order_id })
+
   const dir = ensureDir()
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '')
   const prefix = report_no + '-' + dateStr + '-'
@@ -57,34 +73,44 @@ export const uploadImages = asyncHandler(async (req: Request, res: Response) => 
   let currentSeq = maxSeq
 
   for (const file of files) {
-    const fileMd5 = getFileMd5(file.path)
-    if (existingMap.has(fileMd5)) {
-      const existName = existingMap.get(fileMd5)!
-      skipped.push(existName)
-      uploaded.push(`/${UPLOAD_DIR}/${existName}`)
-      fs.unlinkSync(file.path)
-      continue
+    try {
+      const fileMd5 = getFileMd5(file.path)
+      if (existingMap.has(fileMd5)) {
+        const existName = existingMap.get(fileMd5)!
+        skipped.push(existName)
+        uploaded.push(`/${UPLOAD_DIR}/${existName}`)
+        fs.unlinkSync(file.path)
+        logger.info('[ReportImage] UPLOAD.SKIP_DUP', { md5: fileMd5, reuse: existName })
+        continue
+      }
+      currentSeq += 1
+      const newName = `${prefix}${String(currentSeq).padStart(3, '0')}${path.extname(file.originalname) || '.jpg'}`
+      const destPath = path.join(dir, newName)
+      fs.renameSync(file.path, destPath)
+      const newUrl = `/${UPLOAD_DIR}/${newName}`
+      uploaded.push(newUrl)
+      existingMap.set(fileMd5, newName)
+      newRecords.push({
+        report_order_id: Number((reportOrder as any).report_order_id),
+        category,
+        image_url: newUrl,
+        file_hash: fileMd5,
+      })
+      logger.info('[ReportImage] UPLOAD.FILE_OK', { name: newName, url: newUrl, size: file.size, md5: fileMd5 })
+    } catch (err: any) {
+      logger.error('[ReportImage] UPLOAD.FILE_FAIL', { name: file.originalname, err: err?.message, stack: err?.stack?.slice(0, 300) })
+      throw err
     }
-    currentSeq += 1
-    const newName = `${prefix}${String(currentSeq).padStart(3, '0')}${path.extname(file.originalname) || '.jpg'}`
-    const destPath = path.join(dir, newName)
-    fs.renameSync(file.path, destPath)
-    const newUrl = `/${UPLOAD_DIR}/${newName}`
-    uploaded.push(newUrl)
-    existingMap.set(fileMd5, newName)
-    newRecords.push({
-      report_order_id: Number((reportOrder as any).report_order_id),
-      category,
-      image_url: newUrl,
-      file_hash: fileMd5,
-    })
   }
 
   await ReportImageService.bulkCreateRecords(newRecords)
+  const ms = Date.now() - stageStart
   const newCount = uploaded.length - skipped.length
   const msg = skipped.length > 0
     ? `成功上传${newCount}张图片，跳过${skipped.length}张重复图片`
     : `成功上传${uploaded.length}张图片`
+  logger.info('[ReportImage] UPLOAD.DONE', { report_no, category, total: uploaded.length,
+    newCount, skipped: skipped.length, urls: uploaded, costMs: ms })
   return success(res, uploaded, msg)
 })
 
