@@ -16,12 +16,13 @@
 import { useEffect, useState } from 'react'
 import {
   Button, List, SearchBar, Toast, Dialog, TextArea, Radio, Tabs,
-  PullToRefresh, ImageUploader, Input, Space,
+  PullToRefresh, Input, Space,
 } from 'antd-mobile'
 import type { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import api from '../../utils/api'
 import { offlinePost, offlinePut } from '../offline/offlineApi'
 import { useBarcode } from '../hooks/useBarcode'
+import { MobileDualImageUploader } from '../components/MobileDualImageUploader'
 
 type FaultStatus = '待派工' | '维修中' | '待审批' | '已挂起' | '已关闭'
 type StatusTab = 'all' | FaultStatus
@@ -330,8 +331,12 @@ export default function MobileDeviceFault() {
             <TextArea value={createImpact} onChange={setCreateImpact} rows={2}
               placeholder="影响的产线/批次/人员" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
             <div style={{ fontSize: 12, color: 'var(--m-text-2)', margin: '8px 0 4px' }}>故障现场照片（可选）</div>
-            <ImageUploader value={createImages} onChange={setCreateImages}
-              upload={async (f) => ({ url: URL.createObjectURL(f) })} maxCount={6} />
+            <MobileDualImageUploader
+              value={createImages}
+              onChange={setCreateImages}
+              upload={async (f) => ({ url: URL.createObjectURL(f) })}
+              maxCount={6}
+            />
           </div>
         }
           actions={[

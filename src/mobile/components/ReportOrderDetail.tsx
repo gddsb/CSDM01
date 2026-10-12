@@ -14,10 +14,11 @@
  * 作为独立组件：可在 MobileProcessReporting 历史列表和 MobileOrderManagement 下属报工单中复用
  */
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Tabs, Toast, Dialog, Input, TextArea, List, ImageUploader } from 'antd-mobile'
+import { Button, Tabs, Toast, Dialog, Input, TextArea, List } from 'antd-mobile'
 import type { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import api from '../../utils/api'
 import { offlinePost, offlinePut } from '../offline/offlineApi'
+import { MobileDualImageUploader } from './MobileDualImageUploader'
 
 type TabKey = 'process' | 'defect' | 'scrap' | 'exception' | 'manpower' | 'material' | 'image'
 
@@ -405,15 +406,33 @@ function MaterialPanel({ reportId, processes, list, onChange, disabled }: {
 }
 
 function ImagePanel({ reportNo, images, setImages }: { reportNo: string; images: ImageUploadItem[]; setImages: (v: ImageUploadItem[]) => void }) {
-  const upload = async (file: File) => {
+  /** 真实上传：POST 后端，返回服务器 URL（修复了之前返回 URL.createObjectURL(file) 的 bug） */
+  const upload = async (file: File): Promise<ImageUploadItem> => {
     const fd = new FormData(); fd.append('files', file)
-    const r: any = await api.post(`/production/report-images/${reportNo}/inspection/upload`, fd, { timeout: 60000 })
-    if (r.success) Toast.show({ content: '图片已上传', icon: 'success', position: 'bottom' })
-    return { url: URL.createObjectURL(file) }
+    const r: any = await api.post(
+      `/production/report-images/${reportNo}/inspection/upload`, fd, { timeout: 60000 },
+    )
+    if (!r?.success) {
+      Toast.show({ content: r?.message || '上传失败', icon: 'fail', position: 'bottom' })
+      throw new Error(r?.message || 'upload failed')
+    }
+    // 后端返回 { data: { url } } 或 { data: { urls: [...] } } —— 跟 ProcessImageUploader 保持一致
+    const serverUrl: string = r.data?.url
+      || (Array.isArray(r.data?.urls) ? r.data.urls[0] : r.data)
+      || ''
+    if (!serverUrl) throw new Error('服务器未返回图片地址')
+    Toast.show({ content: '图片已上传', icon: 'success', position: 'bottom' })
+    return { url: serverUrl }
   }
   return (
     <Panel>
-      <ImageUploader value={images} onChange={setImages} upload={upload} maxCount={10} />
+      <MobileDualImageUploader
+        value={images}
+        onChange={setImages}
+        upload={upload}
+        maxCount={10}
+        label="报工单图片"
+      />
       <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 6 }}>上传后自动关联到报工单 inspection 分类</div>
     </Panel>
   )

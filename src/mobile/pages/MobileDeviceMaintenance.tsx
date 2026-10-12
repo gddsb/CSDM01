@@ -15,15 +15,16 @@
  *
  * 离线：所有写操作走 offlineApi；图片先缓存后上传或跳过
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Button, List, SearchBar, Toast, Dialog, TextArea, Radio, PullToRefresh, Tabs, ImageUploader, Space,
+  Button, List, SearchBar, Toast, Dialog, TextArea, Radio, PullToRefresh, Tabs, Space,
 } from 'antd-mobile'
 import type { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import api from '../../utils/api'
 import { offlinePost, offlinePut, offlineDelete } from '../offline/offlineApi'
 import { useBarcode } from '../hooks/useBarcode'
+import { MobileDualImageUploader } from '../components/MobileDualImageUploader'
 
 interface DeviceRow { device_id: number; device_code?: string; device_name?: string }
 interface RecordRow {
@@ -48,7 +49,6 @@ const STATUS_TABS: { key: StatusTab; label: string }[] = [
 export default function MobileDeviceMaintenance() {
   const navigate = useNavigate()
   const { scan } = useBarcode()
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const [step, setStep] = useState<Step>(0)
   const [keyword, setKeyword] = useState('')
@@ -495,15 +495,14 @@ export default function MobileDeviceMaintenance() {
               placeholder="备注" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
           </Card>
 
-          {/* 5-A 新增：图片上传 */}
+          {/* 5-A 新增：图片上传（拍照 + 相册双通道） */}
           <Card title="现场照片（可选）">
-            <ImageUploader
+            <MobileDualImageUploader
               value={images}
               onChange={setImages}
               upload={async (file) => ({ url: URL.createObjectURL(file) })}
               maxCount={6}
             />
-            <input type="file" multiple accept="image/*" hidden ref={fileInputRef} />
           </Card>
 
           <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
