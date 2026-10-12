@@ -49,7 +49,8 @@
 
 /* 安全区适配（iPhone X+ 刘海屏 / 底部 Home Indicator） */
 :root {
-  --sat: env(safe-area-inset-top, 0px);
+  /* safe-area 变量：iOS 刘海 env() 精准返回；Android 非刘海 env() 返回 0 → 用 JS 插件注入覆盖 */
+  --sat: env(safe-area-inset-top, 0px);       /* 顶部状态栏高度（由 StatusBar 插件精确覆盖） */
   --sar: env(safe-area-inset-right, 0px);
   --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);

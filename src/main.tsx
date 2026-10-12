@@ -7,6 +7,7 @@ import dayjs from 'dayjs'
 import 'dayjs/locale/zh-cn'
 import './styles/global.css'
 import './mobile/styles/mobile.css' // 移动端全局样式（有 html.mobile-root 前缀，不影响 PC）
+import { initStatusBarHeight } from './mobile/utils/safe-area'
 import MobileRoutes from './mobile/routes'
 import { DeviceEntryRedirect, isMobilePath } from './mobile/DeviceEntryRedirect'
 import { AppProvider, useApp } from './contexts/AppContext'
@@ -83,6 +84,10 @@ const TaskLogPage = lazy(() => import('./pages/auto/TaskLogPage'))
 const ScheduledTaskPage = lazy(() => import('./pages/auto/ScheduledTaskPage'))
 
 dayjs.locale('zh-cn')
+
+// 启动时探测状态栏高度：原生插件 → env() 估测 → 24px 兜底
+// 在 React 渲染前调用，让 CSS --sat 变量在首屏 paint 就有正确值
+void initStatusBarHeight()
 
 function PageFallback() {
   return (
