@@ -5,12 +5,21 @@
  * - batchSave 先删旧后批量创建 + 总不良数量不能超过报工产出
  * - validateProcessBelongsToReportOrder 工序必须属于报工单
  * - 有 scrap（报废）子模块
+ *
+ * 图片清理（级联删除链路）：
+ *   ProcessDefect.defect_images 是 JSON 字段存 URL 数组，
+ *   同时 ReportImage 表也有对应记录（image_url 字段 + fs 物理文件）。
+ *   删 ProcessDefect / 清空 defect_images 时必须同步清理 ReportImage + fs 文件，
+ *   否则会产生孤文件（服务器磁盘永不释放）。
  */
+import fs from 'fs'
+import path from 'path'
 import { Op } from 'sequelize'
 import sequelize from '../config/database.js'
-import { ProcessDefect, DefectType, ReportProcess, ReportOrder } from '../models/index.js'
+import { ProcessDefect, DefectType, ReportProcess, ReportOrder, ReportImage } from '../models/index.js'
 import { MAX_PAGE_SIZE } from '../utils/response.js'
 import { AppError } from '../utils/error.js'
+import { logger } from '../utils/logger.js'
 
 // ---------- 纯函数 ----------
 
@@ -22,6 +31,52 @@ export function buildDefectWhere(query: any): any {
   if (process_id) where.process_id = process_id
   if (defect_type_id) where.defect_type_id = defect_type_id
   return where
+}
+
+/** 解析 defect_images JSON 为 URL 数组（容错） */
+function parseImageUrls(raw: string | null | undefined): string[] {
+  if (!raw) return []
+  try {
+    const arr = JSON.parse(raw)
+    return Array.isArray(arr) ? arr.filter((v: any) => typeof v === 'string' && v.trim()) : []
+  } catch {
+    return []
+  }
+}
+
+/** fs 物理文件删除（容错，失败只 warn） */
+function tryDeletePhysicalFile(url: string): void {
+  try {
+    const filePath = path.resolve(process.cwd(), String(url).replace(/^\//, ''))
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath)
+      logger.info('[ProcessDefect] PHYSICAL_DEL', { url, filePath })
+    }
+  } catch (err: any) {
+    logger.warn('[ProcessDefect] PHYSICAL_DEL_FAIL', { url, err: err?.message })
+  }
+}
+
+// ---------- DB helper ----------
+
+/**
+ * 级联清理图片：ReportImage 表删记录 + fs 删物理文件
+ * @param urls 要清理的 image_url 数组（如 ["/uploads/reports/WOxxx.jpg"]）
+ * 全链路容错：ReportImage 找不到 / fs 删失败 都不影响主业务
+ */
+async function cleanupImageFiles(urls: string[]): Promise<void> {
+  if (!urls || urls.length === 0) return
+
+  for (const url of urls) {
+    try {
+      // 1. 删 ReportImage 记录
+      await ReportImage.destroy({ where: { image_url: url } })
+      // 2. 删物理文件
+      tryDeletePhysicalFile(url)
+    } catch (err: any) {
+      logger.warn('[ProcessDefect] IMAGE_CLEANUP_FAIL', { url, err: err?.message })
+    }
+  }
 }
 
 // ---------- DB helper ----------
@@ -105,10 +160,20 @@ export const ProcessDefectService = {
     } as any)
   },
 
-  /** 修改不良记录 */
+  /** 修改不良记录 — 自动 diff 删除被移除的图片 */
   async update(id: number | string, body: any) {
     const defect = await ProcessDefect.findOne({ where: { defect_id: Number(id) } })
     if (!defect) throw new AppError('记录不存在', 10002, 404)
+
+    // 图片 diff：旧 URL 集合 vs 新 URL 集合 — 差集为要清理的图片
+    let toCleanupUrls: string[] = []
+    if (body.defect_images !== undefined) {
+      const oldUrls = parseImageUrls((defect as any).defect_images)
+      const newUrls: string[] = Array.isArray(body.defect_images)
+        ? body.defect_images.filter((v: any) => typeof v === 'string' && v.trim())
+        : []
+      toCleanupUrls = oldUrls.filter(u => !newUrls.includes(u))
+    }
 
     const qty = body.defect_qty !== undefined ? body.defect_qty : body.quantity
     if (qty !== undefined) {
@@ -140,6 +205,13 @@ export const ProcessDefectService = {
     if (body.defect_images !== undefined) updateData.defect_images = JSON.stringify(body.defect_images || [])
 
     await defect.update(updateData)
+
+    // 清理被移除的图片（update 成功后执行，容错）
+    if (toCleanupUrls.length > 0) {
+      logger.info('[ProcessDefect] UPDATE_IMAGE_CLEANUP', { defect_id: id, urls: toCleanupUrls })
+      cleanupImageFiles(toCleanupUrls).catch(() => { /* 已内部容错 */ })
+    }
+
     return {
       ...(defect as any).toJSON(),
       defect_qty: (defect as any).quantity,
@@ -148,15 +220,22 @@ export const ProcessDefectService = {
     }
   },
 
-  /** 删除不良记录 */
+  /** 删除不良记录 — 级联清理关联图片（ReportImage + fs 物理文件） */
   async remove(id: number | string) {
     const defect = await ProcessDefect.findOne({ where: { defect_id: Number(id) } })
     if (!defect) throw new AppError('记录不存在', 10002, 404)
+
+    const imageUrls = parseImageUrls((defect as any).defect_images)
     await defect.destroy()
+
+    if (imageUrls.length > 0) {
+      logger.info('[ProcessDefect] REMOVE_IMAGE_CLEANUP', { defect_id: id, urls: imageUrls })
+      cleanupImageFiles(imageUrls).catch(() => { /* 已内部容错 */ })
+    }
     return true
   },
 
-  /** 批量保存（先删旧后批量创建，process_id 必填） */
+  /** 批量保存（先删旧后批量创建，process_id 必填） — 删旧前先清理旧图片 */
   async batchSave(body: any) {
     if (!body.report_order_id) throw new AppError('报工单 ID 不能为空', 10001, 400)
     if (!body.process_id) throw new AppError('工序 ID 不能为空', 10001, 400)
@@ -174,6 +253,14 @@ export const ProcessDefectService = {
         throw new AppError(`不良数量超出该工序报工产出（合计${newTotalDefectQty}，报工产出${outputQty}）`, 20001, 409)
       }
     }
+
+    // 删旧前先收集所有旧 defect_images URL → 用于级联清理
+    const oldDefects = await ProcessDefect.findAll({
+      where: { report_order_id: Number(body.report_order_id), process_id: processId },
+      attributes: ['defect_images'],
+      raw: true,
+    })
+    const oldImageUrls = oldDefects.flatMap((d: any) => parseImageUrls(d.defect_images))
 
     const t = await sequelize.transaction()
     try {
@@ -196,6 +283,21 @@ export const ProcessDefectService = {
       }
 
       await t.commit()
+
+      // 新记录里保留的 URL（从 validItems 收集）→ 这些不应该被清理
+      const keptUrls = new Set<string>()
+      validItems.forEach((item: any) => {
+        if (Array.isArray(item.defect_images)) {
+          item.defect_images.forEach((u: any) => { if (typeof u === 'string') keptUrls.add(u) })
+        }
+      })
+      // 旧 URL 差集 = 新集合没有的旧 URL → 要清理
+      const urlsToCleanup = oldImageUrls.filter(u => !keptUrls.has(u))
+      if (urlsToCleanup.length > 0) {
+        logger.info('[ProcessDefect] BATCH_SAVE_IMAGE_CLEANUP', { urls: urlsToCleanup })
+        cleanupImageFiles(urlsToCleanup).catch(() => { /* 已内部容错 */ })
+      }
+
       return { count: created.length, items: created }
     } catch (err) {
       if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }

@@ -16,6 +16,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ImageUploader, Toast } from 'antd-mobile'
 import type { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import api from '../../../utils/api'
+import { resolveUploadUrl } from '../../../utils/resolveUploadUrl'
 import { compressImage } from '../../utils/image-compress'
 
 const LOG_TAG = '[IMG-UPLOAD]'
@@ -42,18 +43,40 @@ interface Props {
   label?: string
 }
 
-/** 后端 JSON 字段 ↔ antd-mobile ImageUploadItem[] 互转工具 */
+/**
+ * 后端 JSON 字段（存相对路径） ↔ antd-mobile ImageUploadItem[]（必须完整 URL）
+ *
+ * 后端存 "/uploads/reports/xxx.jpg"（相对路径）
+ * PC 浏览器 origin = http://43.138.218.55/ → 相对路径直接可用
+ * Capacitor WebView origin = http://localhost/ → 相对路径 404，必须拼全域名
+ * resolveUploadUrl 统一处理这个差异
+ */
 function toItems(urls: string[] | undefined | null): ImageUploadItem[] {
   if (!urls || urls.length === 0) return []
-  return urls.filter(Boolean).map((u) => ({ url: u, key: u }))
+  return urls.filter(Boolean).map((u) => ({ url: resolveUploadUrl(u), key: u }))
 }
 function toUrls(items: ImageUploadItem[]): string[] {
-  return items.map((i) => i.url).filter(Boolean)
+  // onChange 回传必须是原始相对路径（和后端存的格式一致）
+  return items
+    .map((i) => (typeof i.key === 'string' && i.key) ? i.key : (typeof i.url === 'string' ? i.url : ''))
+    .filter(Boolean)
 }
 
 /** 隐藏 input 清空 value，确保下次选同一文件也能触发 change */
 function resetInput(input: HTMLInputElement | null) {
   if (input) input.value = ''
+}
+
+/** 从 localStorage.mes_user 取当前登录用户名（水印用） */
+function getCurrentUsername(): string {
+  try {
+    const raw = localStorage.getItem('mes_user')
+    if (!raw) return ''
+    const user = JSON.parse(raw)
+    return user?.username || ''
+  } catch {
+    return ''
+  }
 }
 
 export function ProcessImageUploader({
@@ -87,8 +110,9 @@ export function ProcessImageUploader({
     }
 
     const beforeSize = file.size
+    const watermark = { timestamp: Date.now(), username: getCurrentUsername() }
     try {
-      file = await compressImage(file)
+      file = await compressImage(file, { watermark })
     } catch (err: any) {
       log.warn('COMPRESS_SKIP — 压缩异常，用原图继续：', err?.message)
     }
