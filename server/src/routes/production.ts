@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { asyncHandler } from '../middleware/security.js'
 import multer from 'multer'
+import { logger } from '../utils/logger.js'
 import {
   list as orderList,
   detail as orderDetail,
@@ -60,12 +61,41 @@ import { authRequired, permissionRequired } from '../middleware/auth.js'
 
 const router = Router()
 
+/**
+ * 统一 MulterError 处理中间件 —— 413 带清晰 message
+ * multer 抛的错误在 busboy 层，asyncHandler 捕获后返回 500 裸 JSON
+ * 这里单独识别 LIMIT_FILE_SIZE / LIMIT_FILE_COUNT / LIMIT_FIELD_KEY / 非图片
+ */
+function multerErrorHandler(err: any, _req: any, res: any, next: any) {
+  if (err?.name === 'MulterError') {
+    const code = err.code
+    const msg = ({
+      LIMIT_FILE_SIZE: `图片过大：单张请不超过 ${Math.round(UPLOAD_MAX_MB)}MB，建议压缩后重试`,
+      LIMIT_FILE_COUNT: `上传张数过多（最多 ${UPLOAD_MAX_COUNT} 张）`,
+      LIMIT_FIELD_KEY: '上传字段名不合法',
+      LIMIT_FIELD_COUNT: '上传字段过多',
+    } as any)[code] || `上传失败 (${code})`
+    logger.warn('[ReportImage] MulterError', { code, field: err.field, msg })
+    return res.status(413).json({ success: false, message: msg, code })
+  }
+  // 非 MulterError（如 fileFilter 里抛的 Error）
+  if (err?.message?.includes('图片格式')) {
+    logger.warn('[ReportImage] Rejected non-image mimetype')
+    return res.status(400).json({ success: false, message: err.message })
+  }
+  next(err) // 其他错误交给全局 error handler
+}
+
+/** 移动端单张拍照常见 8~15MB，留足余量 */
+const UPLOAD_MAX_MB = 30
+const UPLOAD_MAX_COUNT = 10
+
 const reportImageUpload = multer({
   dest: 'uploads/tmp/',
-  limits: { fileSize: 5 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
+  limits: { fileSize: UPLOAD_MAX_MB * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
     if (!file.mimetype || !file.mimetype.startsWith('image/')) {
-      return cb(new Error('请上传图片格式的文件'))
+      return cb(new Error('只支持 jpg/png/webp 等图片格式'))
     }
     cb(null, true)
   },
@@ -126,9 +156,14 @@ router.post('/process-materials', asyncHandler(materialCreate))
 router.put('/process-materials/:id', asyncHandler(materialUpdate))
 router.delete('/process-materials/:id', asyncHandler(materialRemove))
 
-// 报工图片
+// 报工图片 —— 单独路由级 MulterError handler，返回 HTTP 413 + 清晰 message
 router.get('/report-images', asyncHandler(reportImageList))
 router.delete('/report-images/:id', asyncHandler(reportImageRemove))
-router.post('/report-images/:report_no/:category/upload', reportImageUpload.array('files', 10), asyncHandler(uploadReportImages))
+router.post(
+  '/report-images/:report_no/:category/upload',
+  reportImageUpload.array('files', UPLOAD_MAX_COUNT),
+  multerErrorHandler,
+  asyncHandler(uploadReportImages),
+)
 
 export default router

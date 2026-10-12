@@ -16,6 +16,7 @@ import { useCallback, useMemo } from 'react'
 import { ImageUploader, Toast } from 'antd-mobile'
 import type { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import api from '../../../utils/api'
+import { compressImage } from '../../utils/image-compress'
 
 const LOG_TAG = '[IMG-UPLOAD]'
 
@@ -67,6 +68,22 @@ export function ProcessImageUploader({
       log.error('ABORT — upload 收到的不是 File 实例', file)
       Toast.show({ content: '图片文件异常，请重试', position: 'bottom' })
       throw new Error('invalid file')
+    }
+
+    // 前端 Canvas 压缩：最长边 1920px + JPEG 0.82
+    // 手机拍的 8~15MB 原图一般能压到 0.5~1MB，避免触发后端 LIMIT_FILE_SIZE
+    const beforeSize = file.size
+    try {
+      file = await compressImage(file)
+    } catch (err: any) {
+      log.warn('COMPRESS_SKIP — 压缩异常，用原图继续：', err?.message)
+    }
+    const afterSize = file.size
+    if (afterSize !== beforeSize) {
+      log.info('COMPRESS', `${(beforeSize / 1024 / 1024).toFixed(1)}MB → ${(afterSize / 1024 / 1024).toFixed(1)}MB`,
+        `(${Math.round(afterSize / beforeSize * 100)}%)`)
+    } else {
+      log.info('COMPRESS_SKIP', `≤1MB 已是 / 不可压缩 (${(beforeSize / 1024 / 1024).toFixed(1)}MB)`)
     }
 
     const fd = new FormData()
