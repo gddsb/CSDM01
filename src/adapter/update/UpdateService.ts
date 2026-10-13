@@ -108,8 +108,8 @@ function readLocalVersion(): NativeInfo {
 let cachedRelease: ReleaseInfo | null | undefined
 
 /** 构建时注入的 API 绝对地址（rebuild_v2.sh Step 4 传 VITE_API_BASE_URL）
- *  - Capacitor Android：file:// 协议下必须用绝对路径 http://43.138.218.55
- *  - 浏览器开发环境：VITE_API_BASE_URL 为空 → fallback 相对路径
+ *  - rebuild_v2.sh 注入的是 http://43.138.218.55/api（带 /api 前缀！）
+ *  - 浏览器开发环境：VITE_API_BASE_URL 为空 → fallback 到相对路径
  */
 const API_BASE: string =
   ((import.meta as any).env?.VITE_API_BASE_URL as string) || ''
@@ -118,7 +118,8 @@ async function fetchRelease(): Promise<ReleaseInfo | null> {
   // 短 TTL 避免每个冷启动都请求；同时允许缓存失效后重拉
   if (cachedRelease) return cachedRelease
   try {
-    const url = API_BASE ? `${API_BASE}/api/version` : '/api/version'
+    // API_BASE 已带 /api 前缀，所以拼 /version（不是 /api/version！）
+    const url = API_BASE ? `${API_BASE}/version` : '/api/version'
     const { data } = await axios.get(url, { timeout: 5000 })
     if (data?.success && data.data) {
       cachedRelease = data.data as ReleaseInfo
