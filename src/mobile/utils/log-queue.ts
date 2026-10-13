@@ -4,10 +4,13 @@
  * 设计：
  *   - 所有 [IMG-UPLOAD] 阶段日志除了 console.log（真机 Logcat 可见），
  *     还同步存一份到 localStorage 队列（最多 500 条，超了丢最旧的）
- *   - 每次 APP 启动 / 登录成功后，后台静默 POST 到
- *     POST /production/report-images/upload-logs 服务器临时目录
+ *   - 每次 ProcessImageUploader 组件挂载时，后台静默 flush 到
+ *     POST /api/production/report-images/upload-logs 服务器临时目录
  *   - 日志队列 flush 成功后清空
  *   - flush 失败不影响主业务，下次启动继续尝试
+ *
+ * 注意：后端 upload-logs 路由挂在 authRequired 下，这里用 api.ts 发请求
+ *       自动带 Authorization header（用户已登录）
  */
 import api from '../../utils/api'
 
@@ -46,31 +49,23 @@ export function readAll(): QueuedLogEntry[] {
 
 /**
  * 批量 flush 到服务器（静默，不弹 UI）
- * 成功返回 true，失败返回 false（但不抛异常，让调用方 try/catch 可选）
+ * 用 api.ts 发 —— 自动带 Authorization header（用户已登录）
+ * 成功返回 true，失败返回 false（但不抛异常）
  */
 export async function flushLogs(): Promise<boolean> {
   const queue = readAll()
   if (queue.length === 0) return true
 
   try {
-    // 用裸 fetch 不用 api.ts —— 避免阻塞全局请求链
-    const API_BASE =
-      ((import.meta as any).env?.VITE_API_BASE_URL as string) || ''
-    const url = API_BASE
-      ? `${API_BASE}/report-images/upload-logs`
-      : '/api/production/report-images/upload-logs'
-
-    await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ logs: queue }),
-      // 短超时：日志上报不能卡 APP 启动
-      signal: AbortSignal.timeout?.(5000),
-    })
+    // api.ts baseURL 已由 rebuild_v2.sh 注入 VITE_API_BASE_URL=http://43.138.218.55/api
+    // 请求路径 /production/report-images/upload-logs
+    // 拼接后 http://43.138.218.55/api/production/report-images/upload-logs ✅
+    await api.post('/production/report-images/upload-logs', { logs: queue })
     // 上报成功才清，失败下次继续
     localStorage.removeItem(QUEUE_KEY)
     return true
   } catch {
+    // 静默：日志上报不影响主业务
     return false
   }
 }
