@@ -153,6 +153,11 @@ echo "  $(cat server/data/releases.json | head -3)"
 echo ""
 echo "=== 4. Vite 前端构建 ==="
 rm -rf dist
+# 关键：注入 API 绝对地址 —— Capacitor Android WebView 是 file:// 协议
+# 相对路径 '/api/xxx' 会解析为 'file:///api/xxx' → 404
+# 必须传 VITE_API_BASE_URL=http://43.138.218.55 让所有 fetch/axios 用绝对路径
+export VITE_API_BASE_URL="http://43.138.218.55"
+echo "  VITE_API_BASE_URL=$VITE_API_BASE_URL"
 npx vite build 2>&1 | tail -4
 
 # ============================================================

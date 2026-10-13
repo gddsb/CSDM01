@@ -15,6 +15,13 @@
 
 const STORAGE_KEY = 'mes_app_version'
 
+/** vite build 时注入的 API 绝对地址（rebuild_v2.sh Step 4 传 VITE_API_BASE_URL）
+ *  - Capacitor Android：file:// 协议下必须用绝对路径 http://43.138.218.55
+ *  - 浏览器开发环境：VITE_API_BASE_URL 为空 → fallback 到相对路径（Vite proxy 会转）
+ */
+const API_BASE: string =
+  ((import.meta as any).env?.VITE_API_BASE_URL as string) || ''
+
 export interface AppVersionInfo {
   version: string        // "1.2.0"
   build: string          // "53"
@@ -45,8 +52,10 @@ export function getAppVersion(): AppVersionInfo {
 /** 启动时异步更新缓存 —— 在 Layout/App 入口调用一次即可 */
 export async function refreshAppVersion(): Promise<AppVersionInfo | null> {
   try {
-    // /api/version 是公开端点，不走 auth interceptor 也能调
-    const resp = await fetch('/api/version', {
+    // 拼接绝对 URL：VITE_API_BASE_URL=http://43.138.218.55 → http://43.138.218.55/api/version
+    // 浏览器开发环境 API_BASE 为空 → 相对路径 /api/version → Vite proxy 转发
+    const url = API_BASE ? `${API_BASE}/api/version` : '/api/version'
+    const resp = await fetch(url, {
       method: 'GET',
       headers: { Accept: 'application/json' },
       cache: 'no-store',
