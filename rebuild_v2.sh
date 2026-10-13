@@ -32,10 +32,35 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ============================================================
-# Step 1: Git pull
+# Step 1: Git pull（双源 fallback）
+#   先试 origin（github.com 直连），超时/失败自动切 origin-backup（gh-proxy 镜像）
+#   服务器裸连 github.com:443 经常超时（国内云环境），gh-proxy 是可靠镜像
 # ============================================================
 echo "=== 1. git pull ==="
-git pull origin main 2>&1 | tail -5
+PULL_OK=false
+
+# 先试主源 origin
+if git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 fetch origin main 2>&1 | tail -5; then
+  git merge --no-edit FETCH_HEAD 2>&1 | tail -3
+  PULL_OK=true
+  echo "  ✓ 来自 origin (github.com)"
+fi
+
+# 主源失败 → 备源 origin-backup
+if ! $PULL_OK; then
+  echo "  ⚠ origin 失败，切 origin-backup (gh-proxy)..."
+  if git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 fetch origin-backup main 2>&1 | tail -5; then
+    git merge --no-edit FETCH_HEAD 2>&1 | tail -3
+    PULL_OK=true
+    echo "  ✓ 来自 origin-backup (gh-proxy)"
+  fi
+fi
+
+# 两次都失败 → 仍继续（上次构建已拉到代码时不阻塞），仅 WARN
+if ! $PULL_OK; then
+  echo "  ⚠ 两个远程都拉取失败，继续用当前本地代码构建"
+fi
+
 SHORT_SHA=$(git rev-parse --short HEAD)
 
 # ============================================================
