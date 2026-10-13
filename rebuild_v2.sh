@@ -162,6 +162,19 @@ export VITE_API_BASE_URL="http://43.138.218.55/api"
 echo "  VITE_API_BASE_URL=$VITE_API_BASE_URL"
 npx vite build 2>&1 | tail -4
 
+# Step 4.5: 后端 TypeScript 编译（之前漏了！导致 src/ 改了但 dist/ 不更新）
+# ============================================================
+echo ""
+echo "=== 4.5 后端 TypeScript 编译 ==="
+cd server && rm -rf dist && npx tsc 2>&1 | tail -3
+BACKEND_TSC_RC=$?
+cd ..
+if [ $BACKEND_TSC_RC -ne 0 ]; then
+  echo "⚠️ 后端 tsc build 有警告或错误，先继续（旧 dist 还在）"
+else
+  echo "  ✓ 后端编译成功"
+fi
+
 # ============================================================
 # Step 5: Capacitor sync + Gradle APK 编译
 # ============================================================
