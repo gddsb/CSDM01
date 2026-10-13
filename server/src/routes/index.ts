@@ -1,3 +1,5 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import { Router } from 'express'
 import multer from 'multer'
 import authRoutes from './auth.js'
@@ -7,11 +9,11 @@ import productionRoutes from './production.js'
 import autoRoutes from './auto.js'
 import energyRoutes from './energy.js'
 import versionRoutes from './version.js'
-// 检验数据统一存储改造（阶段3.1）：样品测量值 CRUD + 自动判定
 import sampleValueRoutes from './sample-value.js'
 import { uploadImage } from '../controllers/UploadController.js'
 import { authRequired } from '../middleware/auth.js'
 import { asyncHandler } from '../middleware/security.js'
+import { logger } from '../utils/logger.js'
 
 const router = Router()
 
@@ -39,34 +41,37 @@ router.use('/system', authRequired, systemRoutes)
 router.use('/basic', authRequired, basicRoutes)
 // ============ 公开路由（不需要 authRequired）============
 // upload-logs — APP 端日志上报（纯日志写，无敏感操作；新 APP / token 过期也能上报）
+// 注意：不能写在 router.use('/production', authRequired, ...) 之后，
+// 否则会被 authRequired 拦截导致 token 过期时也无法上报
 router.post(
   '/production/report-images/upload-logs',
-  asyncHandler(async (req: any, res: any) => {
-    const fs = await import('fs')
-    const path = await import('path')
-    const logger = (await import('../utils/logger.js')).logger
+  (req: any, res: any) => {
+    try {
+      const logs = Array.isArray(req.body?.logs) ? req.body.logs : []
+      if (logs.length === 0) {
+        return res.json({ success: true, message: '空日志忽略', data: { accepted: 0 } })
+      }
+      const dir = path.resolve(process.cwd(), 'server/data/img_upload_logs')
+      fs.mkdirSync(dir, { recursive: true })
 
-    const logs = Array.isArray(req.body?.logs) ? req.body.logs : []
-    if (logs.length === 0) return { success: true, message: '空日志忽略', data: { accepted: 0 } } as any
-
-    const dir = path.resolve(process.cwd(), 'server/data/img_upload_logs')
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-
-    const now = new Date()
-    const fname = now.toISOString().replace(/[:.]/g, '-') + '.json'
-    const fpath = path.join(dir, fname)
-
-    const payload = {
-      receivedAt: now.toISOString(),
-      ua: req.headers['user-agent'],
-      ip: (req as any).ip || req.headers['x-forwarded-for'] || '',
-      count: logs.length,
-      logs,
+      const now = new Date()
+      const fname = now.toISOString().replace(/[:.]/g, '-') + '.json'
+      const fpath = path.join(dir, fname)
+      const payload = {
+        receivedAt: now.toISOString(),
+        ua: req.headers['user-agent'],
+        ip: req.ip || req.headers['x-forwarded-for'] || '',
+        count: logs.length,
+        logs,
+      }
+      fs.writeFileSync(fpath, JSON.stringify(payload, null, 2), 'utf-8')
+      logger.info('[ReportImage] UPLOAD_LOGS.SAVED', { fname, count: logs.length })
+      res.json({ success: true, data: { fname, accepted: logs.length }, message: '日志已接收' })
+    } catch (err: any) {
+      logger.error('[ReportImage] UPLOAD_LOGS.ERR', err?.message || err)
+      res.status(500).json({ success: false, message: '日志写入失败', error: err?.message })
     }
-    fs.writeFileSync(fpath, JSON.stringify(payload, null, 2), 'utf-8')
-    logger.info('[ReportImage] UPLOAD_LOGS.SAVED', { fname, count: logs.length })
-    return { success: true, data: { fname, accepted: logs.length }, message: '日志已接收' } as any
-  }),
+  },
 )
 
 // ============ 以下生产业务路由需要登录 ============
