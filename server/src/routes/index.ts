@@ -51,7 +51,8 @@ router.post(
       if (logs.length === 0) {
         return res.json({ success: true, message: '空日志忽略', data: { accepted: 0 } })
       }
-      const dir = path.resolve(process.cwd(), 'server/data/img_upload_logs')
+      // cwd 是 /opt/milk-can-mes/server（PM2 npm start 启动）
+      const dir = path.resolve(process.cwd(), 'data/img_upload_logs')
       fs.mkdirSync(dir, { recursive: true })
 
       const now = new Date()
