@@ -1,170 +1,176 @@
 /**
- * 报工图片上传组件（通用）
- * —— 不良图片 / 标签图片 共用
+ * 报工图片上传组件（通用）—— 重构版
  *
- * 技术栈：antd-mobile ImageUploader（预览+删除）+ 两个独立隐藏 <input type="file">
- *   - 📷 拍照按钮：capture="environment" → 强制调起后置相机
- *   - 🖼️ 相册按钮：无 capture → 系统弹图库 / 相册选择器
- *   - 上传接口：POST /production/report-images/:report_no/:category/upload
+ * 改动点（对比旧版 build41）：
+ *   1. 两个独立按钮（📷 / 🖼️）→ 合并成一个 "+" 上传按钮 + ActionSheet 二选一
+ *   2. 删除图片时先调 DELETE /production/report-images/by-url (后端 DB+fs 双删)，再改前端 state
+ *   3. 日志同步存 localStorage 队列（log-queue.ts），下次启动批量上报服务器临时目录
  *
- * 存储形态：后端 JSON 字段存 string[]，前端 ImageUploadItem[] 自动映射
- *
- * 调试日志：所有上传阶段都带 [IMG-UPLOAD] prefix，真机可在
- *   Android Studio Logcat（tag: chromium）或 chrome://inspect/#devices 看到
+ * 后端联动：
+ *   - 删除单张图: DELETE /production/report-images/by-url?url=xxx
+ *     → ReportImageService.destroy + fs.unlinkSync 物理文件
+ *   - 删除不良记录: DELETE /production/process-defects/:id
+ *     → ProcessDefectService.remove 内部已自动调 cleanupImageFiles()（DB+fs 双删）
+ *     前端 handleDel 不需要额外处理图片清理 ✅
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ImageUploader, Toast } from 'antd-mobile'
+import { ActionSheet, ImageUploader, Toast } from 'antd-mobile'
 import type { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import api from '../../../utils/api'
 import { resolveUploadUrl } from '../../../utils/resolveUploadUrl'
 import { compressImage } from '../../utils/image-compress'
+import { pushLog, flushLogs } from '../../utils/log-queue'
 
-const LOG_TAG = '[IMG-UPLOAD]'
+/** 统一日志入口 —— console 真机 Logcat 可见 + 同步 localStorage 队列 */
+function log(level: 'info' | 'warn' | 'error', stage: string, ctx: any) {
+  const tag = `[IMG-UPLOAD] [${stage}]`
+  if (level === 'info') console.log(tag, ctx)
+  else if (level === 'warn') console.warn(tag, ctx)
+  else console.error(tag, ctx)
 
-/** 统一日志入口 —— 真机可抓 Logcat */
-const log = {
-  info: (...a: any[]) => console.log(LOG_TAG, ...a),
-  warn: (...a: any[]) => console.warn(LOG_TAG, ...a),
-  error: (...a: any[]) => console.error(LOG_TAG, ...a),
+  try {
+    pushLog({
+      time: new Date().toISOString(),
+      stage,
+      ctx: typeof ctx === 'object' ? JSON.parse(JSON.stringify(ctx)) : ctx,
+      level,
+    })
+  } catch { /* 循环引用等异常静默跳过 */ }
+}
+
+function getCurrentUsername(): string {
+  try {
+    const raw = localStorage.getItem('mes_user')
+    if (!raw) return ''
+    return JSON.parse(raw)?.username || ''
+  } catch { return '' }
+}
+function resetInput(input: HTMLInputElement | null) {
+  if (input) input.value = ''
 }
 
 interface Props {
-  /** 当前报工单号（用于上传路径） */
   reportNo: string
-  /** 图片分类：defect / label / inspection 等，决定存储路径 */
   category: string
-  /** 图片 URL 数组（从后端 JSON 字段解析出来） */
   value: string[]
-  /** 更新后回传 URL 数组 */
   onChange: (urls: string[]) => void
-  /** 最多几张，默认 9 */
   maxCount?: number
-  /** 标签文本（"不良图片"/"标签图片"） */
   label?: string
 }
 
-/**
- * 后端 JSON 字段（存相对路径） ↔ antd-mobile ImageUploadItem[]（必须完整 URL）
- *
- * 后端存 "/uploads/reports/xxx.jpg"（相对路径）
- * PC 浏览器 origin = http://43.138.218.55/ → 相对路径直接可用
- * Capacitor WebView origin = http://localhost/ → 相对路径 404，必须拼全域名
- * resolveUploadUrl 统一处理这个差异
- */
+/** 后端相对路径 ↔ ImageUploadItem[] */
 function toItems(urls: string[] | undefined | null): ImageUploadItem[] {
   if (!urls || urls.length === 0) return []
   return urls.filter(Boolean).map((u) => ({ url: resolveUploadUrl(u), key: u }))
 }
 function toUrls(items: ImageUploadItem[]): string[] {
-  // onChange 回传必须是原始相对路径（和后端存的格式一致）
   return items
     .map((i) => (typeof i.key === 'string' && i.key) ? i.key : (typeof i.url === 'string' ? i.url : ''))
     .filter(Boolean)
 }
-
-/** 隐藏 input 清空 value，确保下次选同一文件也能触发 change */
-function resetInput(input: HTMLInputElement | null) {
-  if (input) input.value = ''
-}
-
-/** 从 localStorage.mes_user 取当前登录用户名（水印用） */
-function getCurrentUsername(): string {
-  try {
-    const raw = localStorage.getItem('mes_user')
-    if (!raw) return ''
-    const user = JSON.parse(raw)
-    return user?.username || ''
-  } catch {
-    return ''
-  }
+function getRawUrl(item: ImageUploadItem): string {
+  if (typeof item.key === 'string' && item.key) return item.key
+  return typeof item.url === 'string' ? item.url : ''
 }
 
 export function ProcessImageUploader({
   reportNo, category, value, onChange, maxCount = 9, label,
 }: Props) {
-  /** 当前已上传图片（内部 state，手动管理上传流程） */
   const [items, setItems] = useState<ImageUploadItem[]>(() => toItems(value))
+  useEffect(() => { setItems(toItems(value)) }, [JSON.stringify(value)])
 
-  /** 外部 value 变化 → 同步内部 items（比如父组件重新拉后端数据） */
-  useEffect(() => {
-    setItems(toItems(value))
-  }, [JSON.stringify(value)])
-
-  /** 两个隐藏 input —— 分别对应 📷拍照 / 🖼️相册 */
+  // 隐藏 input —— 被 ActionSheet 选择后触发
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
 
   const remaining = maxCount - items.length
 
-  // ========== 上传核心逻辑（复用 build41 的压缩 + POST + 日志） ==========
+  // flushLogs 放 useEffect 只在挂载时跑一次（不能写在 JSX 里每次 render 都跑）
+  useEffect(() => { flushLogs() }, [])
+
+  // ========== "+" 按钮点击 → 弹 ActionSheet ==========
+  const handleAddClick = useCallback(() => {
+    if (remaining <= 0) {
+      Toast.show({ content: `已达上限（${maxCount} 张）`, position: 'bottom' })
+      return
+    }
+    ActionSheet.show({
+      actions: [
+        { text: '📷 相机拍摄', key: 'camera' },
+        { text: '🖼️ 从相册选择', key: 'gallery' },
+      ],
+      cancelText: '取消',
+      onAction: (action) => {
+        log('info', 'ACTION', { target: action.key, remaining })
+        if (action.key === 'camera') cameraInputRef.current?.click()
+        else if (action.key === 'gallery') galleryInputRef.current?.click()
+      },
+    })
+  }, [remaining, maxCount])
+
+  // ========== 上传核心 ==========
   const upload = useCallback(async (file: File): Promise<ImageUploadItem> => {
     const stageStart = performance.now()
-    const ctx = { reportNo, category, fileName: file?.name, size: file?.size, type: file?.type }
-
-    log.info('START', ctx)
+    const ctx: any = { reportNo, category, fileName: file?.name, size: file?.size, type: file?.type }
+    log('info', 'START', ctx)
 
     if (!file || !(file instanceof File)) {
-      log.error('ABORT — upload 收到的不是 File 实例', file)
+      log('error', 'ABORT', { reason: 'not a File instance' })
       Toast.show({ content: '图片文件异常，请重试', position: 'bottom' })
       throw new Error('invalid file')
     }
 
     const beforeSize = file.size
-    const watermark = { timestamp: Date.now(), username: getCurrentUsername() }
     try {
-      file = await compressImage(file, { watermark })
+      file = await compressImage(file, { watermark: { timestamp: Date.now(), username: getCurrentUsername() } })
     } catch (err: any) {
-      log.warn('COMPRESS_SKIP — 压缩异常，用原图继续：', err?.message)
+      log('warn', 'COMPRESS_SKIP', { reason: err?.message })
     }
     const afterSize = file.size
     if (afterSize !== beforeSize) {
-      log.info('COMPRESS',
-        `${(beforeSize / 1024 / 1024).toFixed(1)}MB → ${(afterSize / 1024 / 1024).toFixed(1)}MB`,
-        `(${Math.round(afterSize / beforeSize * 100)}%)`)
+      log('info', 'COMPRESS', {
+        beforeMB: (beforeSize / 1024 / 1024).toFixed(1),
+        afterMB: (afterSize / 1024 / 1024).toFixed(1),
+        ratio: `${Math.round(afterSize / beforeSize * 100)}%`,
+      })
     } else {
-      log.info('COMPRESS_SKIP', `≤1MB 已是 / 不可压缩 (${(beforeSize / 1024 / 1024).toFixed(1)}MB)`)
+      log('info', 'COMPRESS_SKIP', { reason: '≤1MB / 不可压缩' })
     }
 
     const fd = new FormData()
     fd.append('files', file)
     const url = `/production/report-images/${reportNo}/${category}/upload`
-    log.info('REQUEST → POST', url, 'Content-Type=multipart/form-data', `${file.size}B`)
+    log('info', 'REQUEST', { method: 'POST', url, bytes: file.size })
 
     try {
       const res: any = await api.post(url, fd, { timeout: 60000 })
       const ms = Math.round(performance.now() - stageStart)
-
-      log.info('RESPONSE ✓', `status=${res?.success ? 'ok' : 'fail'}`, `耗时=${ms}ms`, 'data=', res?.data ?? res)
+      log('info', 'RESPONSE', { ok: !!res?.success, ms })
 
       if (!res?.success) {
-        const msg = res?.message || '上传失败'
-        log.error('REJECT — 后端返回失败：', msg)
-        Toast.show({ content: msg, icon: 'fail', position: 'bottom' })
-        throw new Error(msg)
+        log('error', 'REJECT', { msg: res?.message || '上传失败' })
+        Toast.show({ content: res?.message || '上传失败', icon: 'fail', position: 'bottom' })
+        throw new Error(res?.message || '上传失败')
       }
 
-      const uploadedUrl: string = res.data?.url
+      const rawUrl: string = res.data?.url
         || (Array.isArray(res.data?.urls) ? res.data.urls[0] : res.data)
         || ''
 
-      if (!uploadedUrl) {
-        log.error('REJECT — 上传成功但未返回 URL：', res?.data)
+      if (!rawUrl) {
+        log('error', 'REJECT', { reason: 'no url in response', data: res?.data })
         Toast.show({ content: '服务器未返回图片地址', icon: 'fail', position: 'bottom' })
         throw new Error('no url returned')
       }
 
-      log.info('DONE ✓', uploadedUrl, `总耗时=${ms}ms`)
-      return { url: uploadedUrl }
+      log('info', 'DONE', { rawUrl, totalMs: ms })
+      // key 存后端相对路径（用来删图时传 by-url 端点）
+      return { url: resolveUploadUrl(rawUrl), key: rawUrl }
     } catch (e: any) {
       const ms = Math.round(performance.now() - stageStart)
       const isTimeout = e?.code === 'ECONNABORTED' || /timeout/i.test(String(e?.message))
       const status = e?.response?.status
-      log.error('FAIL ✗', `耗时=${ms}ms`,
-        isTimeout ? '【超时】' : '',
-        status ? `【HTTP ${status}】` : '',
-        e?.message,
-        e?.stack?.slice(0, 200) ?? '',
-      )
+      log('error', 'FAIL', { ms, isTimeout, status, message: e?.message })
       Toast.show({
         content: isTimeout ? '上传超时，请检查网络后重试' : (e?.message || '图片上传失败'),
         icon: 'fail', position: 'bottom',
@@ -173,64 +179,80 @@ export function ProcessImageUploader({
     }
   }, [reportNo, category])
 
-  // ========== 文件处理入口（两个隐藏 input 的 onChange 共用） ==========
+  // ========== 文件处理入口 ==========
   const handleFiles = useCallback(async (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return
-
-    // 不能传超过剩余数量
     const files = Array.from(fileList).slice(0, remaining)
     if (files.length === 0) {
       Toast.show({ content: `最多 ${maxCount} 张`, position: 'bottom' })
       return
     }
-
-    log.info('HANDLE_FILES', `count=${files.length} remaining=${remaining}`)
-
-    // 顺序上传（避免并发塞爆后端 + 预览图顺序可控）
+    log('info', 'HANDLE_FILES', { count: files.length, remaining })
     for (const file of files) {
       try {
         const result = await upload(file)
         setItems(prev => {
           const next = [...prev, result]
           onChange(toUrls(next))
-          log.info('CHANGE', `数量 ${prev.length} → ${next.length}`, 'urls=', toUrls(next))
+          log('info', 'UI_CHANGE', { prev: prev.length, next: next.length })
           return next
         })
-      } catch {
-        // upload 内部已 Toast，这里静默跳过继续下一张
-      }
+      } catch { /* upload 内部已 Toast */ }
     }
   }, [upload, remaining, maxCount, onChange])
 
-  // ========== ImageUploader 预览/删除回调 ==========
-  const handlePreviewChange = (newItems: ImageUploadItem[]) => {
-    // 只处理删除（新增走我们的 handleFiles）
-    setItems(newItems)
-    onChange(toUrls(newItems))
-    log.info('CHANGE(删除)', `数量 ${items.length} → ${newItems.length}`, 'urls=', toUrls(newItems))
-  }
+  // ========== 删除图片：后端 by-url 端点（DB+fs 双删） ==========
+  const deleteSingleImage = useCallback(async (rawUrl: string) => {
+    try {
+      const encoded = encodeURIComponent(rawUrl)
+      await api.delete(`/production/report-images/by-url?url=${encoded}`)
+      log('info', 'IMAGE_DELETED', { url: rawUrl })
+    } catch (e: any) {
+      log('error', 'IMAGE_DELETE_FAIL', { url: rawUrl, msg: e?.message, status: e?.response?.status })
+      throw e
+    }
+  }, [])
 
-  const cellButtonStyle = useMemo(() => ({
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    cursor: 'pointer',
-    color: 'var(--m-text-2)',
-    fontSize: 11,
+  const handlePreviewChange = useCallback(async (newItems: ImageUploadItem[]) => {
+    // 新增走 handleFiles，不在这里处理
+    if (newItems.length >= items.length) {
+      setItems(newItems); onChange(toUrls(newItems)); return
+    }
+
+    // diff 出被删的项（ImageUploadItem.key 存的是后端相对路径）
+    const prevKeys = new Set(items.map(getRawUrl))
+    const nextKeys = new Set(newItems.map(getRawUrl))
+    const removed = items.filter(i => !nextKeys.has(getRawUrl(i)))
+
+    // 先乐观更新 UI，再删后端。后端失败则 Toast 但不回滚（删除是破坏性操作）
+    setItems(newItems); onChange(toUrls(newItems))
+    log('info', 'UI_DELETE', { removed: removed.map(getRawUrl), remaining: newItems.length })
+
+    // 逐条删后端（失败独立互不影响）
+    for (const item of removed) {
+      try { await deleteSingleImage(getRawUrl(item)) }
+      catch (e: any) { Toast.show({ content: `图片删除失败：${e?.message || '网络问题'}`, icon: 'fail', position: 'bottom' }) }
+    }
+  }, [items, onChange, deleteSingleImage])
+
+  // ========== 样式 ==========
+  const plusBtnStyle = useMemo(() => ({
+    display: 'flex', flexDirection: 'column' as const,
+    alignItems: 'center', justifyContent: 'center',
+    gap: 4, cursor: 'pointer', color: 'var(--m-text-2)', fontSize: 11,
   }), [])
 
   return (
     <div>
       {label && (
-        <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+        <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginBottom: 4,
+          display: 'flex', alignItems: 'center', gap: 4 }}>
           📷 {label}
           <span style={{ color: 'var(--m-text-3)', fontSize: 10 }}>（已 {items.length}/{maxCount}）</span>
         </div>
       )}
 
-      {/* 预览 + 删除：ImageUploader 禁用内置 upload，只渲染已有图片 */}
+      {/* 预览 + 删除：ImageUploader 禁用内置上传，只用它的网格展示 */}
       <ImageUploader
         value={items}
         onChange={handlePreviewChange}
@@ -239,58 +261,29 @@ export function ProcessImageUploader({
         maxCount={maxCount}
       />
 
-      {/* 剩余数量 > 0 时显示两个触发按钮 */}
+      {/* 剩余数量 > 0 时显示 "+" 合并按钮（点击弹 ActionSheet 选择相机/相册） */}
       {remaining > 0 && (
         <div style={{ display: 'flex', gap: 'var(--gap, 12px)', marginTop: 4 }}>
-          {/* 📷 拍照 —— capture="environment" 强制后置相机 */}
           <span
             className="adm-image-uploader-cell adm-image-uploader-upload-button"
-            style={cellButtonStyle}
-            onClick={() => cameraInputRef.current?.click()}
+            style={plusBtnStyle}
+            onClick={handleAddClick}
             role="button"
-            aria-label="拍照"
+            aria-label="添加图片"
           >
-            <span style={{ fontSize: 22 }}>📷</span>
-            <span>拍照</span>
-          </span>
-
-          {/* 🖼️ 相册 —— 无 capture，系统弹图库选择器 */}
-          <span
-            className="adm-image-uploader-cell adm-image-uploader-upload-button"
-            style={cellButtonStyle}
-            onClick={() => galleryInputRef.current?.click()}
-            role="button"
-            aria-label="从相册选择"
-          >
-            <span style={{ fontSize: 22 }}>🖼️</span>
-            <span>相册</span>
+            <span style={{ fontSize: 22 }}>+</span>
+            <span>添加图片</span>
           </span>
         </div>
       )}
 
-      {/* 两个隐藏 <input type="file"> —— 用户看不到，被上面按钮的 click() 触发 */}
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
+      {/* 两个隐藏 <input type="file"> —— 被 ActionSheet 选择后触发 */}
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment"
         style={{ display: 'none' }}
-        onChange={(e) => {
-          handleFiles(e.target.files)
-          resetInput(e.target)
-        }}
-      />
-      <input
-        ref={galleryInputRef}
-        type="file"
-        accept="image/*"
-        multiple
+        onChange={(e) => { handleFiles(e.target.files); resetInput(e.target) }} />
+      <input ref={galleryInputRef} type="file" accept="image/*" multiple
         style={{ display: 'none' }}
-        onChange={(e) => {
-          handleFiles(e.target.files)
-          resetInput(e.target)
-        }}
-      />
+        onChange={(e) => { handleFiles(e.target.files); resetInput(e.target) }} />
     </div>
   )
 }

@@ -131,4 +131,26 @@ export const remove = asyncHandler(async (req: Request, res: Response) => {
   return success(res, null, '删除成功')
 })
 
-export default { uploadImages, list, remove }
+/** 按 url 删除 —— 前端只知道相对路径（如 '/uploads/reports/WOxxx.jpg'），
+ *  查不到 image_id 时用这个端点。后端自己找记录 + DB + fs 双删。 */
+export const removeByUrl = asyncHandler(async (req: Request, res: Response) => {
+  const { url } = req.query as { url?: string }
+  if (!url) return fail(res, '缺少 url 参数')
+
+  // 直接 findOne 绕过 Service.list（Service.list 只支持 report_order_id/category 过滤）
+  const model = await import('../models/ReportImage.js').then(m => m.default)
+  const target: any = await model.findOne({ where: { image_url: url }, raw: true })
+  if (!target) return fail(res, '图片记录不存在', undefined, 404)
+
+  // DB destroy + fs 物理删除
+  await ReportImageService.remove(Number(target.image_id))
+  try {
+    const filePath = path.resolve(process.cwd(), String(url).replace(/^\//, ''))
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
+  } catch (err: any) {
+    logger.warn('[ReportImage.byUrl] 物理文件删除失败:', err?.message)
+  }
+  return success(res, null, '删除成功')
+})
+
+export default { uploadImages, list, remove, removeByUrl }

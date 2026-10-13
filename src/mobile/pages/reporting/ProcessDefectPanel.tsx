@@ -19,8 +19,9 @@
  */
 import { useCallback, useMemo, useState } from 'react'
 import React from 'react'
-import { Button, Dialog, Toast } from 'antd-mobile'
+import { Button, Dialog, Image as AntdImage, Toast } from 'antd-mobile'
 import api from '../../../utils/api'
+import { resolveUploadUrl } from '../../../utils/resolveUploadUrl'
 import { ProcessImageUploader } from './ProcessImageUploader'
 import type { DefectRow, DefectType, ProcessRow, ReportOrder } from './types'
 
@@ -244,10 +245,26 @@ export function ProcessDefectPanel({
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>
                   数量 ×{row.quantity} {row.unit || ''}
-                  {parseImages(row.defect_images).length > 0 && (
-                    <span style={{ marginLeft: 8 }}>📷 {parseImages(row.defect_images).length} 张图片</span>
-                  )}
                 </div>
+                {/* 不良图片缩略图 —— 只读展示 */}
+                {(() => {
+                  const imgs = parseImages(row.defect_images)
+                  if (imgs.length === 0) return null
+                  return (
+                    <div style={{ display: 'flex', gap: 4, marginTop: 6, flexWrap: 'wrap' }}>
+                      {imgs.map((u, idx) => (
+                        <AntdImage
+                          key={idx}
+                          src={resolveUploadUrl(u)}
+                          width={44}
+                          height={44}
+                          fit="cover"
+                          style={{ borderRadius: 4, border: '1px solid #eee', objectFit: 'cover' }}
+                        />
+                      ))}
+                    </div>
+                  )
+                })()}
               </div>
               {editable && <span style={{ color: 'var(--m-text-3)', fontSize: 16 }}>›</span>}
             </div>

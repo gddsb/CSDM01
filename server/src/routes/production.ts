@@ -1,6 +1,8 @@
 import { Router } from 'express'
 import { asyncHandler } from '../middleware/security.js'
 import multer from 'multer'
+import path from 'path'
+import fs from 'fs'
 import { logger } from '../utils/logger.js'
 import {
   list as orderList,
@@ -56,6 +58,7 @@ import {
   uploadImages as uploadReportImages,
   list as reportImageList,
   remove as reportImageRemove,
+  removeByUrl as reportImageRemoveByUrl,
 } from '../controllers/ReportImageController.js'
 import { authRequired, permissionRequired } from '../middleware/auth.js'
 
@@ -159,11 +162,38 @@ router.delete('/process-materials/:id', asyncHandler(materialRemove))
 // 报工图片 —— 单独路由级 MulterError handler，返回 HTTP 413 + 清晰 message
 router.get('/report-images', asyncHandler(reportImageList))
 router.delete('/report-images/:id', asyncHandler(reportImageRemove))
+router.delete('/report-images/by-url', asyncHandler(reportImageRemoveByUrl))
 router.post(
   '/report-images/:report_no/:category/upload',
   reportImageUpload.array('files', UPLOAD_MAX_COUNT),
   multerErrorHandler,
   asyncHandler(uploadReportImages),
 )
+
+// 图片上传调试日志上报 —— APP 端把 [IMG-UPLOAD] 阶段日志批量上报到服务器临时目录
+// 格式：POST body = { logs: [{ time, stage, ctx, level }] }
+// 写入目录: data/img_upload_logs/YYYY-MM-DD_HH-MM-SS.json
+router.post('/report-images/upload-logs', asyncHandler(async (req: any, res: any) => {
+  const logs = Array.isArray(req.body?.logs) ? req.body.logs : []
+  if (logs.length === 0) return { success: true, message: '空日志忽略', data: { accepted: 0 } } as any
+
+  const dir = path.resolve(process.cwd(), 'data/img_upload_logs')
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+
+  const now = new Date()
+  const fname = now.toISOString().replace(/[:.]/g, '-') + '.json'
+  const fpath = path.join(dir, fname)
+
+  const payload = {
+    receivedAt: now.toISOString(),
+    ua: req.headers['user-agent'],
+    ip: (req as any).ip || req.headers['x-forwarded-for'] || '',
+    count: logs.length,
+    logs,
+  }
+  fs.writeFileSync(fpath, JSON.stringify(payload, null, 2), 'utf-8')
+  logger.info('[ReportImage] UPLOAD_LOGS.SAVED', { fname, count: logs.length })
+  return { success: true, data: { fname, accepted: logs.length }, message: '日志已接收' } as any
+}))
 
 export default router
