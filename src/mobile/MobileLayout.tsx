@@ -13,6 +13,7 @@ import { TabBar, NavBar, ActionSheet, Dialog, Badge } from 'antd-mobile'
 import { AppOutline, BillOutline, CheckOutline, TeamOutline, UserOutline } from 'antd-mobile-icons'
 import { useApp } from '../contexts/AppContext'
 import { checkForUpdate, skipUpdate } from '../adapter/update'
+import { refreshAppVersion } from './utils/app-version'
 import { useOfflineQueue } from './hooks/useOfflineQueue'
 
 interface TabDef {
@@ -145,6 +146,8 @@ export function MobileLayout() {
   useEffect(() => {
     let cancelled = false
     const run = async () => {
+      // 先刷新版本号缓存（/api/version 公开端点，无 auth 也能调）
+      void refreshAppVersion()
       try {
         const result = await checkForUpdate()
         if (cancelled || !result.hasUpdate || !result.release) return

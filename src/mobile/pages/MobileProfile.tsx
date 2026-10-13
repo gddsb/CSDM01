@@ -10,12 +10,13 @@ import { Button, Dialog, Toast, Switch } from 'antd-mobile'
 import { useApp } from '../../contexts/AppContext'
 import { useOfflineQueue } from '../hooks/useOfflineQueue'
 import { useMobileThemeContext } from '../theme'
+import { getAppVersion, formatAppVersion } from '../utils/app-version'
 
 export function MobileProfile() {
   const { currentUser, logout } = useApp()
   const navigate = useNavigate()
-  const version = __APP_VERSION__ || 'dev'
-  const build = __APP_BUILD__ || '0'
+  // 从单一数据源（后端 /api/version 缓存）读版本号，不再用编译时静态值
+  const appVer = getAppVersion()
   const { online, pending, syncing, triggerSync, retryFailed, clearAll } = useOfflineQueue()
   const { isDark, toggleTheme } = useMobileThemeContext()
 
@@ -165,24 +166,24 @@ export function MobileProfile() {
         </div>
       </div>
 
-      {/* 退出按钮 */}
+      {/* 退出按钮 —— color="danger" 自动红底白字，不用硬覆写 background */}
       <Button
         block
-        color="primary"
+        color="danger"
         shape="rounded"
-        style={{ background: 'var(--brand-color-danger)', height: 46, fontSize: 15 }}
+        style={{ height: 46, fontSize: 15 }}
         onClick={handleLogout}
       >
         退出登录
       </Button>
 
-      {/* 版本号 — 与 vite build 注入的编译版本保持一致 */}
+      {/* 版本号 —— 与后端 /api/version 保持同步（启动时 refresh 缓存） */}
       <div style={{
         textAlign: 'center', fontSize: 11, color: 'var(--m-text-3)',
         marginTop: 28, paddingTop: 16,
         borderTop: '1px solid var(--m-border-2)',
       }}>
-        奶粉罐MES · v{version} (build {build})
+        奶粉罐MES · {formatAppVersion(appVer)}
       </div>
     </div>
   )

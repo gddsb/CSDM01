@@ -4,10 +4,11 @@
  * - 大字简洁，适配软键盘弹起（adjustPan）
  * - 登录成功后跳 /m/dashboard
  */
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Input, Toast } from 'antd-mobile'
 import { useApp } from '../../contexts/AppContext'
+import { formatAppVersion, getAppVersion, refreshAppVersion } from '../utils/app-version'
 
 export default function MobileLogin() {
   const { login } = useApp()
@@ -15,6 +16,15 @@ export default function MobileLogin() {
   const [username, setUsername] = useState(() => localStorage.getItem('mes_last_username') || '')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  // 启动时刷新版本号缓存（/api/version 公开端点，无需 auth）
+  const [verLabel, setVerLabel] = useState(() => formatAppVersion())
+  useEffect(() => {
+    refreshAppVersion().then((info) => {
+      if (info) setVerLabel(formatAppVersion(info))
+    })
+    // 单次 fire-and-forget，不依赖取消（页面很少 unmount）
+  }, [])
+  void getAppVersion // lint: 预留扩展
 
   const onSubmit = async () => {
     if (!username.trim()) {
@@ -115,6 +125,9 @@ export default function MobileLogin() {
 
         <div style={{ marginTop: 14, fontSize: 12, color: 'var(--m-text-3)', textAlign: 'center' }}>
           东莞大满包装 · 长沙分公司
+        </div>
+        <div style={{ marginTop: 4, fontSize: 11, color: 'var(--m-text-4)', textAlign: 'center', letterSpacing: 0.5 }}>
+          {verLabel}
         </div>
       </div>
     </div>
