@@ -18,6 +18,7 @@ import api from '../../utils/api'
 import { offlinePost } from '../offline/offlineApi'
 import { useBarcode } from '../hooks/useBarcode'
 import { ReportOrderDetail, type ReportOrderMeta } from '../components/ReportOrderDetail'
+import { fmtInt } from '../utils/format'
 
 interface OrderRow {
   order_id: number; order_no: string; status?: string
@@ -312,8 +313,8 @@ export default function MobileOrderManagement() {
                       {o.order_no}
                       {(o.planned_qty ?? 0) > 0 && (
                         <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--m-text-3)', marginLeft: 8 }}>
-                          报工 <b style={{ color: statusColor, fontSize: 14 }}>{o.finished_qty ?? 0}</b>
-                          <span style={{ color: 'var(--m-text-3)' }}> / {o.planned_qty}</span>
+                          报工 <b style={{ color: statusColor, fontSize: 14 }}>{fmtInt(o.finished_qty)}</b>
+                          <span style={{ color: 'var(--m-text-3)' }}> / {fmtInt(o.planned_qty)}</span>
                         </span>
                       )}
                     </div>
@@ -422,7 +423,7 @@ export default function MobileOrderManagement() {
                     <div style={{ fontWeight: 600, fontSize: 13.5 }}>{r.report_no}</div>
                     <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 3, display: 'flex', gap: 10 }}>
                       <span>🏭 {r.line_name}</span>
-                      <span>📦 ×{r.report_qty}</span>
+                      <span>📦 ×{fmtInt(r.report_qty)}</span>
                       <span style={{
                         padding: '1px 6px', borderRadius: 4,
                         background: r.status === '完工' ? '#4CAF5015' : '#2196F315',

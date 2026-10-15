@@ -22,6 +22,7 @@ import React from 'react'
 import { Button, Dialog, Image as AntdImage, Toast } from 'antd-mobile'
 import api from '../../../utils/api'
 import { resolveUploadUrl } from '../../../utils/resolveUploadUrl'
+import { fmtInt } from '../../../utils/format'
 import { ProcessImageUploader } from './ProcessImageUploader'
 import type { DefectRow, DefectType, ProcessRow, ReportOrder } from './types'
 
@@ -253,7 +254,7 @@ export function ProcessDefectPanel({
                   {row.defect_type && <span style={{ color: 'var(--m-text-3)', fontSize: 11, marginLeft: 6 }}>({row.defect_type})</span>}
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>
-                  数量 ×{row.quantity} {row.unit || ''}
+                  数量 ×{fmtInt(row.quantity)} {row.unit || ''}
                 </div>
                 {/* 不良图片缩略图 —— 只读展示 */}
                 {(() => {

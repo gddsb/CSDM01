@@ -29,6 +29,7 @@ import React from 'react'
 import { Button, Dialog, Toast } from 'antd-mobile'
 import api from '../../../utils/api'
 import { ProcessImageUploader } from './ProcessImageUploader'
+import { fmtInt } from '../../../utils/format'
 import type { MaterialMaster, MaterialRow, ReportOrder } from './types'
 
 interface Props {
@@ -230,7 +231,7 @@ export function ProcessMaterialPanel({
                   {row.material_type === '退回' && <span style={{ color: 'var(--brand-color-danger)', fontSize: 10, marginLeft: 4 }}>[退回]</span>}
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>
-                  数量 ×{row.quantity}
+                  数量 ×{fmtInt(row.quantity)}
                   {row.material_batch && <span style={{ marginLeft: 6 }}>批:{row.material_batch}</span>}
                   {row.package_no && <span style={{ marginLeft: 6 }}>包:{row.package_no}</span>}
                   {parseImages(row.label_images).length > 0 && (

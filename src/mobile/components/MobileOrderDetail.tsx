@@ -17,6 +17,7 @@
 import { useEffect, useState } from 'react'
 import { Popup, Loading, Empty } from 'antd-mobile'
 import api from '../../utils/api'
+import { fmtInt } from '../utils/format'
 
 export interface MobileOrderData {
   order_id: number
@@ -183,16 +184,16 @@ export function MobileOrderDetail({ order, orderId, visible, onClose }: Props) {
             <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: 'var(--m-text-3)' }}>计划</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--m-text)' }}>{fmtNum(planned)}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--m-text)' }}>{fmtInt(planned)}</div>
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: 'var(--m-text-3)' }}>已完工</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: progress >= 100 ? 'var(--brand-color-success)' : 'var(--m-text)' }}>{fmtNum(finished)}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: progress >= 100 ? 'var(--brand-color-success)' : 'var(--m-text)' }}>{fmtInt(finished)}</div>
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: 'var(--m-text-3)' }}>合格 / 良品率</div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--brand-color-success)', marginTop: 2 }}>
-                  {fmtNum(qualified)}
+                  {fmtInt(qualified)}
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--m-text-3)' }}>{qualifiedRate}%</div>
               </div>
@@ -244,7 +245,7 @@ export function MobileOrderDetail({ order, orderId, visible, onClose }: Props) {
                       </span>
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginTop: 4 }}>
-                      {ro.line_name || '—'} · {fmtNum(ro.report_qty)}件 · {ro.status || '—'}
+                      {ro.line_name || '—'} · {fmtInt(ro.report_qty)}件 · {ro.status || '—'}
                       {ro.report_user_name ? ` · ${ro.report_user_name}` : ''}
                     </div>
                   </div>

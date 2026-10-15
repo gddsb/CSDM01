@@ -12,6 +12,7 @@ import { useCallback, useState } from 'react'
 import React from 'react'
 import { Button, Dialog, Toast } from 'antd-mobile'
 import api from '../../../utils/api'
+import { fmtInt } from '../../../utils/format'
 import type { DefectType, ReportOrder, ScrapRow, ProcessRow } from './types'
 
 interface Props {
@@ -117,7 +118,7 @@ export function ScrapPanel({
             {row.defect_type && <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>{row.defect_type}</div>}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-            <span style={{ color: 'var(--brand-color-danger)', fontWeight: 700, fontSize: 16 }}>×{row.quantity}</span>
+            <span style={{ color: 'var(--brand-color-danger)', fontWeight: 700, fontSize: 16 }}>×{fmtInt(row.quantity)}</span>
             {editable && (
               <Button size="mini" fill="outline" onClick={() => handleDel(row)}>删</Button>
             )}

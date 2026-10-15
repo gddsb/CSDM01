@@ -13,6 +13,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Dialog, Toast, Button, Tabs, Badge } from 'antd-mobile'
 import api from '../../utils/api'
 import { calcReportStats } from '../../pages/production/reportStats'
+import { fmtInt } from '../utils/format'
 
 // SubPanel
 import { ProcessDefectPanel } from './reporting/ProcessDefectPanel'
@@ -237,7 +238,7 @@ export default function MobileProcessReporting() {
                   <div style={{ fontSize: 15, fontWeight: 600 }}>{o.order_no}</div>
                   <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 3 }}>{o.material_code} · {o.material_name}</div>
                 </div>
-                <Badge content={`${o.finished_qty}/${o.planned_qty}`} style={{ '--right': '-4px', '--top': '-4px' }} />
+                <Badge content={`${fmtInt(o.finished_qty)}/${fmtInt(o.planned_qty)}`} style={{ '--right': '-4px', '--top': '-4px' }} />
               </div>
               <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                 <Button size="mini" color="primary" onClick={() => handleStartNew(o)}>▶ 开工报工</Button>
@@ -422,20 +423,30 @@ function Header({ report, onBack, onFinish }: { report: ReportOrder; onBack: () 
       </div>
       {/* 行3：料号 + 报工数量 */}
       <div style={{ fontSize: 11, opacity: .85, marginTop: 1 }}>
-        {report.material_code} {report.material_name} · 报工 {report.report_qty}
+        {report.material_code} {report.material_name} · 报工 {fmtInt(report.report_qty)}
       </div>
     </div>
   )
 }
 
 function StatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportStats>; reportQty: number }) {
-  // 一行 6 项：投入数量/合格数量 各 10ch（整数），其余 4 项 flex:1 平均宽度
-  const items: Array<{ label: string; value: number | string; color: string; width?: string | number }> = [
-    { label: '投入数量', value: Math.round(stats.inputQty || 0), color: 'var(--brand-color)', width: '10ch' },
-    { label: '合格数量', value: Math.round(stats.expectedOutput > 0 ? stats.expectedOutput : 0), color: '#52c41a', width: '10ch' },
-    { label: '来料不良', value: stats.defectMaterial, color: '#faad14' },
-    { label: '制程不良', value: stats.defectProcess, color: '#fa8c16' },
-    { label: '检验报废', value: stats.defectScrap, color: 'var(--brand-color-danger)' },
+  // 合格数量/投入数量 合并显示为 "分子/分母"，两个数字颜色区分，无 label
+  const inputInt = fmtInt(stats.inputQty)
+  const qualifiedInt = fmtInt(stats.expectedOutput > 0 ? stats.expectedOutput : 0)
+  const items: Array<{ label?: string; value: React.ReactNode; width?: string | number }> = [
+    {
+      width: 'auto',
+      value: (
+        <span style={{ whiteSpace: 'nowrap' }}>
+          <span style={{ color: '#52c41a' }}>{qualifiedInt}</span>
+          <span style={{ color: 'var(--m-text-3)', margin: '0 2px' }}>/</span>
+          <span style={{ color: 'var(--brand-color)' }}>{inputInt}</span>
+        </span>
+      ),
+    },
+    { label: '来料不良', value: fmtInt(stats.defectMaterial), color: '#faad14' },
+    { label: '制程不良', value: fmtInt(stats.defectProcess), color: '#fa8c16' },
+    { label: '检验报废', value: fmtInt(stats.defectScrap), color: 'var(--brand-color-danger)' },
     { label: '异常工时', value: `${((stats.exceptionHours || 0) / 60).toFixed(1)}H`, color: '#eb2f96' },
   ]
   return (
@@ -447,7 +458,7 @@ function StatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportSta
       <div style={{ display: 'flex', gap: 4, alignItems: 'stretch' }}>
         {items.map(it => (
           <div
-            key={it.label}
+            key={it.label ?? 'qualified-input'}
             style={{
               width: it.width ?? undefined,
               flex: it.width ? 'none' : 1,
@@ -455,8 +466,10 @@ function StatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportSta
               minWidth: 0,
             }}
           >
-            <div style={{ fontSize: 15, fontWeight: 700, color: it.color, whiteSpace: 'nowrap' }}>{it.value}</div>
-            <div style={{ fontSize: 10, color: 'var(--m-text-3)', marginTop: 2, whiteSpace: 'nowrap' }}>{it.label}</div>
+            <div style={{ fontSize: 15, fontWeight: 700, whiteSpace: 'nowrap' }}>{it.value}</div>
+            {it.label && (
+              <div style={{ fontSize: 10, color: 'var(--m-text-3)', marginTop: 2, whiteSpace: 'nowrap' }}>{it.label}</div>
+            )}
           </div>
         ))}
       </div>
