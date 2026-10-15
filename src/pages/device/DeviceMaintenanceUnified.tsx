@@ -469,7 +469,7 @@ export default function DeviceMaintenanceUnified() {
               rowKey="device_id"
               columns={deviceColumns}
               dataSource={deviceGroups}
-              scroll={{ x: 620, y: 260 }}
+              scroll={{ x: 620, y: 235 }}
               pagination={false}
               size="small"
               onRow={(r) => ({
