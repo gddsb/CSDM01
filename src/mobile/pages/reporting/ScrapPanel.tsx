@@ -12,7 +12,7 @@ import { useCallback, useState } from 'react'
 import React from 'react'
 import { Button, Dialog, Toast } from 'antd-mobile'
 import api from '../../../utils/api'
-import { fmtInt } from '../../../utils/format'
+import { fmtInt } from '../../utils/format'
 import type { DefectType, ReportOrder, ScrapRow, ProcessRow } from './types'
 
 interface Props {

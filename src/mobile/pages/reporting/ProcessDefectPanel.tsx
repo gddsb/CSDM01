@@ -22,7 +22,7 @@ import React from 'react'
 import { Button, Dialog, Image as AntdImage, Toast } from 'antd-mobile'
 import api from '../../../utils/api'
 import { resolveUploadUrl } from '../../../utils/resolveUploadUrl'
-import { fmtInt } from '../../../utils/format'
+import { fmtInt } from '../../utils/format'
 import { ProcessImageUploader } from './ProcessImageUploader'
 import type { DefectRow, DefectType, ProcessRow, ReportOrder } from './types'
 

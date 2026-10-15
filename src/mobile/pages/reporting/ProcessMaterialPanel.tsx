@@ -29,7 +29,7 @@ import React from 'react'
 import { Button, Dialog, Toast } from 'antd-mobile'
 import api from '../../../utils/api'
 import { ProcessImageUploader } from './ProcessImageUploader'
-import { fmtInt } from '../../../utils/format'
+import { fmtInt } from '../../utils/format'
 import type { MaterialMaster, MaterialRow, ReportOrder } from './types'
 
 interface Props {
