@@ -153,9 +153,16 @@ export function ProcessImageUploader({
         throw new Error(res?.message || '上传失败')
       }
 
-      const rawUrl: string = res.data?.url
-        || (Array.isArray(res.data?.urls) ? res.data.urls[0] : res.data)
-        || ''
+      // 兼容后端返回的三种形态：{url: str} / {urls: str[]} / data 本身就是 string[]
+      const rawUrl: string = (() => {
+        const d = res.data
+        if (!d) return ''
+        if (typeof d === 'string') return d
+        if (Array.isArray(d)) return String(d[0] || '')
+        if (typeof d.url === 'string') return d.url
+        if (Array.isArray(d.urls)) return String(d.urls[0] || '')
+        return String(d)
+      })()
 
       if (!rawUrl) {
         log('error', 'REJECT', { reason: 'no url in response', data: res?.data })
