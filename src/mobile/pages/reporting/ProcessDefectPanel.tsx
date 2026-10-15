@@ -132,6 +132,15 @@ export function ProcessDefectPanel({
       // 把新/更新的记录合并回 allDefects
       const saved = r.data
       const idx = allDefects.findIndex(d => d.defect_id === saved.defect_id || d.id === expandedId)
+      // merged.defect_images 必须统一成 string[]：
+      //   PUT 返回 { images: string[] }  +  { defect_images: JSON string }
+      //   POST/list 只返回 { defect_images: JSON string }
+      // 优先级：PUT 原生数组 > parse 后端 string > 直接用 draft 当前数组（最可靠）
+      const mergedImages: string[] = Array.isArray(saved?.images)
+        ? saved.images
+        : parseImages(saved?.defect_images)?.length > 0
+          ? parseImages(saved.defect_images)
+          : images
       const merged: DefectRow = {
         defect_id: saved.defect_id,
         id: saved.defect_id,
@@ -141,7 +150,7 @@ export function ProcessDefectPanel({
         defect_code: filteredTypes.find(t => t.defect_id === saved.defect_type_id)?.defect_code,
         defect_name: filteredTypes.find(t => t.defect_id === saved.defect_type_id)?.defect_name,
         defect_type: filteredTypes.find(t => t.defect_id === saved.defect_type_id)?.defect_type,
-        defect_images: saved.defect_images || images,
+        defect_images: mergedImages,
         report_order_id: saved.report_order_id,
         process_id: saved.process_id,
       }

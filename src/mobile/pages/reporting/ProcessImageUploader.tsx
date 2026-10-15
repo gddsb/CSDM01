@@ -13,7 +13,7 @@
  *     → ProcessDefectService.remove 内部已自动调 cleanupImageFiles()（DB+fs 双删）
  *     前端 handleDel 不需要额外处理图片清理 ✅
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ActionSheet, ImageUploader, Toast } from 'antd-mobile'
 import type { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import api from '../../../utils/api'
@@ -243,11 +243,6 @@ export function ProcessImageUploader({
   }, [items, onChange, deleteSingleImage])
 
   // ========== 样式 ==========
-  const plusBtnStyle = useMemo(() => ({
-    display: 'flex', flexDirection: 'column' as const,
-    alignItems: 'center', justifyContent: 'center',
-    gap: 4, cursor: 'pointer', color: 'var(--m-text-2)', fontSize: 11,
-  }), [])
 
   return (
     <div>
@@ -259,30 +254,13 @@ export function ProcessImageUploader({
         </div>
       )}
 
-      {/* 预览 + 删除：ImageUploader 禁用内置上传，只用它的网格展示 */}
+      {/* 内置 "+" cell 直接触发 ActionSheet —— 返回永不 resolve 的 Promise 防止 antd-mobile 走自己的上传 */}
       <ImageUploader
         value={items}
         onChange={handlePreviewChange}
-        upload={() => Promise.reject(new Error('disabled'))}
-        disableUpload
+        upload={() => { handleAddClick(); return new Promise(() => {}) }}
         maxCount={maxCount}
       />
-
-      {/* 剩余数量 > 0 时显示 "+" 合并按钮（点击弹 ActionSheet 选择相机/相册） */}
-      {remaining > 0 && (
-        <div style={{ display: 'flex', gap: 'var(--gap, 12px)', marginTop: 4 }}>
-          <span
-            className="adm-image-uploader-cell adm-image-uploader-upload-button"
-            style={plusBtnStyle}
-            onClick={handleAddClick}
-            role="button"
-            aria-label="添加图片"
-          >
-            <span style={{ fontSize: 22 }}>+</span>
-            <span>添加图片</span>
-          </span>
-        </div>
-      )}
 
       {/* 两个隐藏 <input type="file"> —— 被 ActionSheet 选择后触发 */}
       <input ref={cameraInputRef} type="file" accept="image/*" capture="environment"
