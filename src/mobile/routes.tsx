@@ -92,11 +92,7 @@ export default function MobileRoutes() {
               <MobileProcessInspection />
             </Suspense>
           } />
-          <Route path="device-inspection" element={
-            <Suspense fallback={<MobileLoading />}>
-              <MobileDeviceInspection />
-            </Suspense>
-          } />
+          <Route path="device-inspection" element={<Navigate to="/m/device-maintenance" replace />} />
           <Route path="device-maintenance" element={
             <Suspense fallback={<MobileLoading />}>
               <MobileDeviceMaintenance />

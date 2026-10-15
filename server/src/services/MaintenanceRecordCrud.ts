@@ -35,7 +35,9 @@ const {
       if (device_id) where.device_id = device_id
       if (device_name) where.device_name = { [Op.like]: `%${device_name}%` }
       if (device_code) where.device_code = { [Op.like]: `%${device_code}%` }
-      if (trigger_mode) where.trigger_mode = trigger_mode
+      if (trigger_mode) where.trigger_mode = trigger_mode.includes(',')
+        ? { [Op.in]: trigger_mode.split(',').map((s: string) => s.trim()).filter(Boolean) }
+        : trigger_mode
       if (period_key) where.period_key = period_key
 
       const statusArr = parseMultiStatus(status, STATUS_REVERSE)

@@ -27,10 +27,32 @@ import { useBarcode } from '../hooks/useBarcode'
 import { MobileDualImageUploader } from '../components/MobileDualImageUploader'
 
 interface DeviceRow { device_id: number; device_code?: string; device_name?: string }
+
+/** 保养标准详情（后端 DeviceMaintenanceStandard Sequelize 模型） */
+interface MaintenanceStandard {
+  standard_id?: number
+  item_name?: string          // 保养项名称
+  mechanism?: string          // 机构
+  component?: string          // 部件
+  location?: string           // 部位
+  maintenance_method?: string // 保养方法
+  maintenance_content?: string // 保养内容
+  judge_type?: string         // 判定类型（定性/定量）
+  standard_value?: string     // 判定基准
+  unit?: string
+}
+
 interface RecordRow {
   record_id: number; device_id?: number; device_code?: string; device_name?: string
   status?: string; plan_date?: string; period_key?: string; trigger_mode?: string
   standard_name?: string; standard_id?: number; maintenance_images?: any[]
+  standard?: MaintenanceStandard | null  // 后端 JOIN DeviceMaintenanceStandard 返回
+}
+
+/** 维保类型 Tab → trigger_mode 过滤值 */
+const TRIGGER_MODES: Record<'maintenance' | 'inspection', string> = {
+  maintenance: 'daily,weekly,monthly,runtime',
+  inspection: 'inspection,check',
 }
 
 type Step = 0 | 1 | 2 | 3
@@ -53,6 +75,7 @@ export default function MobileDeviceMaintenance() {
   const [step, setStep] = useState<Step>(0)
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [typeTab, setTypeTab] = useState<'maintenance' | 'inspection'>('maintenance')
   const [statusTab, setStatusTab] = useState<StatusTab>('待执行')
 
   const [devices, setDevices] = useState<DeviceRow[]>([])
@@ -94,6 +117,7 @@ export default function MobileDeviceMaintenance() {
     try {
       const params: Record<string, unknown> = {
         page: 1, pageSize: 50, device_id: device.device_id,
+        trigger_mode: TRIGGER_MODES[typeTab],
       }
       const s = (status || statusTab)
       if (s !== 'all') params.status = s
@@ -363,6 +387,17 @@ export default function MobileDeviceMaintenance() {
             </div>
           </div>
 
+          {/* 维保类型 Tab：保养项 / 点检项 */}
+          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: '0 10px', marginBottom: 10 }}>
+            <Tabs activeKey={typeTab} onChange={(k) => {
+              setTypeTab(k as 'maintenance' | 'inspection')
+              loadRecords(selectedDevice, statusTab)
+            }}>
+              <Tabs.Tab title="🛠️ 保养项" key="maintenance" />
+              <Tabs.Tab title="🔍 点检项" key="inspection" />
+            </Tabs>
+          </div>
+
           {/* 5-A 新增：状态 Tab（对齐 PC 端） */}
           <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: '0 10px', marginBottom: 10 }}>
             <Tabs activeKey={statusTab} onChange={(k) => {
@@ -450,17 +485,47 @@ export default function MobileDeviceMaintenance() {
         </>
       )}
 
-      {/* ============ Step 2: 保养表单 ============ */}
+      {/* ============ Step 2: 保养/点检执行表单 ============ */}
       {step === 2 && selectedRecord && (
-        <>
+        <div style={{ maxHeight: 'calc(100vh - 132px)', overflowY: 'auto', paddingBottom: 24 }}>
+          {/* 保养项标题 + 设备信息 */}
           <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginBottom: 12, border: '1px solid var(--m-border)' }}>
             <div style={{ fontSize: 15, fontWeight: 600 }}>
-              {selectedRecord.standard_name || '保养项'}
+              {selectedRecord.standard?.item_name || selectedRecord.standard_name || '保养项'}
             </div>
             <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>
               {selectedDevice?.device_name} · {selectedRecord.trigger_mode || ''} · {selectedRecord.period_key || selectedRecord.plan_date || '—'}
             </div>
           </div>
+
+          {/* 保养标准详情（只读，来自后端 JOIN DeviceMaintenanceStandard） */}
+          {(() => {
+            const s = selectedRecord.standard
+            if (!s) return null
+            const rows: Array<[string, string | undefined]> = [
+              ['机构', s.mechanism],
+              ['部件', s.component],
+              ['部位', s.location],
+              ['保养方法', s.maintenance_method],
+              ['保养内容', s.maintenance_content],
+              ['判定类型', s.judge_type],
+              ['判定基准', s.standard_value ? `${s.standard_value}${s.unit || ''}` : undefined],
+            ]
+            const visible = rows.filter(([, v]) => v && v.trim())
+            if (visible.length === 0) return null
+            return (
+              <Card title="保养标准">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {visible.map(([k, v]) => (
+                    <div key={k} style={{ display: 'flex', fontSize: 13 }}>
+                      <span style={{ color: 'var(--m-text-3)', width: 80, flexShrink: 0 }}>{k}</span>
+                      <span style={{ color: 'var(--m-text-2)', flex: 1 }}>{v}</span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )
+          })()}
 
           <Card title="实测值（可选）">
             <TextArea value={actualValue} onChange={setActualValue} rows={2}
@@ -509,7 +574,7 @@ export default function MobileDeviceMaintenance() {
             <Button block fill="outline" onClick={() => setStep(1)}>上一步</Button>
             <Button block color="primary" loading={submitting} onClick={onSubmit}>提交保养</Button>
           </div>
-        </>
+        </div>
       )}
     </div>
     )

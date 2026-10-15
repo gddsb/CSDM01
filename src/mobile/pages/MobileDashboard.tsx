@@ -113,7 +113,7 @@ export default function MobileDashboard() {
     if (hasPermission('device:inspection')) {
       apis.push(
         api.get('/device-inspections', { params: { page: 1, pageSize: 1, status: '待点检' } })
-          .then((r: any) => ({ icon: '⚙️', text: '待设备点检', count: r.data?.total ?? r.total ?? 0, path: '/m/device-inspection', color: '#00BCD4' })),
+          .then((r: any) => ({ icon: '⚙️', text: '待设备点检', count: r.data?.total ?? r.total ?? 0, path: '/m/device-maintenance', color: '#00BCD4' })),
       )
     }
     if (hasPermission('device:fault')) {
@@ -210,8 +210,8 @@ export default function MobileDashboard() {
 
   // ========== 渲染 ==========
   return (
-    <PullToRefresh onRefresh={onRefresh}>
-      <div className="mobile-page mobile-page-scrollable" style={{
+    <PullToRefresh onRefresh={onRefresh} className="mobile-page-scrollable">
+      <div style={{
         padding: '12px 12px 80px',
         background: 'var(--m-bg)',
       }}>
@@ -289,8 +289,6 @@ export default function MobileDashboard() {
               background: isEditing ? 'var(--m-surface-2)' : 'transparent',
               borderRadius: 12,
             }}
-            onTouchStart={startPress} onTouchEnd={cancelPress} onTouchCancel={cancelPress}
-            onMouseDown={startPress} onMouseUp={cancelPress} onMouseLeave={cancelPress}
             onDragEnd={onGridDragEnd}
           >
             {ordered.map((entry) => {

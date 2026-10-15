@@ -70,8 +70,7 @@ const INSPECTION_ITEMS = [
 
 /** "设备" ActionSheet 子项（每项独立鉴权，全部不可见时隐藏设备 Tab） */
 const DEVICE_ITEMS = [
-  { text: '🔍 设备点检', key: 'inspection', route: '/m/device-inspection', permCode: 'device:inspection' },
-  { text: '🛠️ 设备保养', key: 'maintenance', route: '/m/device-maintenance', permCode: 'device:maintenance' },
+  { text: '🛠️ 设备维保', key: 'maintenance', route: '/m/device-maintenance', permCode: 'device:maintenance' },
   { text: '⚠️ 设备故障', key: 'fault', route: '/m/device-fault', permCode: 'device:fault' },
   { text: '⏰ 校准提醒', key: 'calibration', route: '/m/calibration-reminder', permCode: 'device:calibration' },
   { text: '📊 设备OEE', key: 'oee', route: '/m/device-oee', permCode: 'device:oee' },
@@ -86,8 +85,8 @@ const TITLE_MAP: Record<string, string> = {
   '/m/incoming-inspection': '来料检验',
   '/m/product-inspection': '成品检验',
   '/m/process-inspection': '过程检验',
-  '/m/device-inspection': '设备点检',
-  '/m/device-maintenance': '设备保养',
+  '/m/device-inspection': '设备维保',
+  '/m/device-maintenance': '设备维保',
   '/m/device-fault': '设备故障上报',
   '/m/calibration-reminder': '校准提醒',
   '/m/inspection-history': '检验历史',
