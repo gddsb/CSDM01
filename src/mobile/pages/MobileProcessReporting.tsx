@@ -430,20 +430,10 @@ function Header({ report, onBack, onFinish }: { report: ReportOrder; onBack: () 
 }
 
 function StatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportStats>; reportQty: number }) {
-  // 合格数量/投入数量 合并显示为 "分子/分母"，两个数字颜色区分，无 label
+  // 合格数量/投入数量 上移到标题行右侧（右对齐），下方只保留 4 项不良/工时
   const inputInt = fmtInt(stats.inputQty)
   const qualifiedInt = fmtInt(stats.expectedOutput > 0 ? stats.expectedOutput : 0)
-  const items: Array<{ label?: string; value: React.ReactNode; width?: string | number }> = [
-    {
-      width: 'auto',
-      value: (
-        <span style={{ whiteSpace: 'nowrap' }}>
-          <span style={{ color: '#52c41a' }}>{qualifiedInt}</span>
-          <span style={{ color: 'var(--m-text-3)', margin: '0 2px' }}>/</span>
-          <span style={{ color: 'var(--brand-color)' }}>{inputInt}</span>
-        </span>
-      ),
-    },
+  const items: Array<{ label: string; value: React.ReactNode; color?: string }> = [
     { label: '来料不良', value: fmtInt(stats.defectMaterial), color: '#faad14' },
     { label: '制程不良', value: fmtInt(stats.defectProcess), color: '#fa8c16' },
     { label: '检验报废', value: fmtInt(stats.defectScrap), color: 'var(--brand-color-danger)' },
@@ -454,22 +444,21 @@ function StatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportSta
       background: 'var(--m-surface)', margin: '10px 10px 0', borderRadius: 10, padding: '10px 12px',
       boxShadow: '0 1px 4px rgba(0,0,0,.04)',
     }}>
-      <div style={{ fontSize: 11, color: 'var(--m-text-3)', fontWeight: 600, marginBottom: 6 }}>📊 报工单汇总</div>
+      {/* 标题行：左标题 + 右合格/投入比值（右对齐） */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+        <div style={{ fontSize: 11, color: 'var(--m-text-3)', fontWeight: 600 }}>📊 报工单汇总</div>
+        <div style={{ fontSize: 16, fontWeight: 700 }}>
+          <span style={{ color: '#52c41a' }}>{qualifiedInt}</span>
+          <span style={{ color: 'var(--m-text-3)', margin: '0 2px' }}>/</span>
+          <span style={{ color: 'var(--brand-color)' }}>{inputInt}</span>
+        </div>
+      </div>
+      {/* 数据行：4 项 flex 平分 */}
       <div style={{ display: 'flex', gap: 4, alignItems: 'stretch' }}>
         {items.map(it => (
-          <div
-            key={it.label ?? 'qualified-input'}
-            style={{
-              width: it.width ?? undefined,
-              flex: it.width ? 'none' : 1,
-              textAlign: 'center',
-              minWidth: 0,
-            }}
-          >
-            <div style={{ fontSize: 15, fontWeight: 700, whiteSpace: 'nowrap' }}>{it.value}</div>
-            {it.label && (
-              <div style={{ fontSize: 10, color: 'var(--m-text-3)', marginTop: 2, whiteSpace: 'nowrap' }}>{it.label}</div>
-            )}
+          <div key={it.label} style={{ flex: 1, textAlign: 'center', minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: it.color, whiteSpace: 'nowrap' }}>{it.value}</div>
+            <div style={{ fontSize: 10, color: 'var(--m-text-3)', marginTop: 2, whiteSpace: 'nowrap' }}>{it.label}</div>
           </div>
         ))}
       </div>
