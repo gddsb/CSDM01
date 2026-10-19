@@ -24,7 +24,7 @@
  *   quantity: DECIMAL
  *   label_images: TEXT (JSON)
  */
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import React from 'react'
 import { Button, Dialog, Toast } from 'antd-mobile'
 import api from '../../../utils/api'
@@ -40,6 +40,7 @@ interface Props {
   materials: MaterialMaster[]
   allMaterials: MaterialRow[]
   setAllMaterials: (updater: (prev: MaterialRow[]) => MaterialRow[]) => void
+  onDirtyChange?: (dirty: boolean) => void
 }
 
 function parseImages(raw: unknown): string[] {
@@ -52,7 +53,7 @@ function parseImages(raw: unknown): string[] {
 }
 
 export function ProcessMaterialPanel({
-  report, activeProcessId, editable, materials, allMaterials, setAllMaterials,
+  report, activeProcessId, editable, materials, allMaterials, setAllMaterials, onDirtyChange,
 }: Props) {
   const processMaterials = useMemo(
     () => allMaterials.filter(m => String(m.process_id) === String(activeProcessId)),
@@ -64,6 +65,10 @@ export function ProcessMaterialPanel({
     material_type: '投入',
     quantity: 0,
   })
+
+  useEffect(() => {
+    onDirtyChange?.(expandedId !== null)
+  }, [expandedId, onDirtyChange])
 
   const startAdd = () => {
     setDraft({

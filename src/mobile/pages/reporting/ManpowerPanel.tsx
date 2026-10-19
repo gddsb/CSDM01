@@ -21,6 +21,7 @@ interface Props {
   editable: boolean
   manpower: ManpowerRow | null
   setManpower: (updater: (prev: ManpowerRow | null) => ManpowerRow | null) => void
+  onDirtyChange?: (dirty: boolean) => void
 }
 
 const COUNT_STYLE: React.CSSProperties = {
@@ -29,7 +30,7 @@ const COUNT_STYLE: React.CSSProperties = {
   background: 'var(--m-surface)',
 }
 
-export function ManpowerPanel({ report, editable, manpower, setManpower }: Props) {
+export function ManpowerPanel({ report, editable, manpower, setManpower, onDirtyChange }: Props) {
   const [skilled, setSkilled] = useState(0)
   const [general, setGeneral] = useState(0)
   const [labor, setLabor] = useState(0)
@@ -43,6 +44,17 @@ export function ManpowerPanel({ report, editable, manpower, setManpower }: Props
       setOther(Number(manpower.other_count || 0))
     }
   }, [manpower])
+
+  // dirty：当前计数 vs 已保存 manpower 有差异
+  useEffect(() => {
+    const saved = manpower || { skilled_count: 0, general_count: 0, labor_count: 0, other_count: 0 }
+    const dirty =
+      skilled !== Number(saved.skilled_count || 0) ||
+      general !== Number(saved.general_count || 0) ||
+      labor !== Number(saved.labor_count || 0) ||
+      other !== Number(saved.other_count || 0)
+    onDirtyChange?.(dirty)
+  }, [skilled, general, labor, other, manpower, onDirtyChange])
 
   const handleSave = useCallback(async () => {
     const total = skilled + general + labor + other

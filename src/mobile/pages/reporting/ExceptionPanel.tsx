@@ -11,7 +11,7 @@
  *   PUT  /production/process-exceptions/:id
  *   DEL  /production/process-exceptions/:id
  */
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import React from 'react'
 import { Button, Dialog, Toast } from 'antd-mobile'
 import api from '../../../utils/api'
@@ -24,10 +24,17 @@ interface Props {
   editable: boolean
   rows: ExceptionRow[]
   setRows: (updater: (prev: ExceptionRow[]) => ExceptionRow[]) => void
+  onDirtyChange?: (dirty: boolean) => void
 }
 
-export function ExceptionPanel({ report, editable, rows, setRows }: Props) {
+export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange }: Props) {
   const [draft, setDraft] = useState<ExceptionRow>({})
+
+  // dirty：draft 有内容（默认 {}）
+  useEffect(() => {
+    const dirty = Object.values(draft).some(v => v !== undefined && v !== '' && v !== null)
+    onDirtyChange?.(dirty)
+  }, [draft, onDirtyChange])
 
   // 当前是否存在未结束记录 —— 用于禁用「添加工时」
   const unfinishedRow = useMemo(

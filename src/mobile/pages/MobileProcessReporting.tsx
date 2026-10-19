@@ -55,6 +55,49 @@ export default function MobileProcessReporting() {
   // 工单报工内部 Tab: exception | manpower（报废已移到工序记录）
   const [reportTab, setReportTab] = useState<'exception' | 'manpower'>('exception')
 
+  // ========== 未保存 dirty 收集 ==========
+  // 每个 Panel 通过 onDirtyChange(key, dirty) 上报，父组件汇总
+  const [dirtyMap, setDirtyMap] = useState<Record<string, boolean>>({})
+  const dirtyCount = useMemo(() => Object.values(dirtyMap).filter(Boolean).length, [dirtyMap])
+  const setPanelDirty = useCallback((key: string, dirty: boolean) => {
+    setDirtyMap(prev => {
+      if (prev[key] === dirty) return prev
+      return { ...prev, [key]: dirty }
+    })
+  }, [])
+
+  /** 通用离开拦截：有 dirty 弹 Dialog 确认 */
+  const guardLeave = useCallback(async (label: string): Promise<boolean> => {
+    if (dirtyCount === 0) return true
+    const ok = await Dialog.confirm({
+      content: `当前有 ${dirtyCount} 处未保存的修改，确定${label}？`,
+      confirmText: '确定',
+      cancelText: '取消',
+    })
+    return !!ok
+  }, [dirtyCount])
+
+  const trySwitchGroupTab = useCallback(async (k: 'process' | 'report') => {
+    if (k === groupTab) return
+    if (await guardLeave('切换页签')) setGroupTab(k)
+  }, [groupTab, guardLeave])
+
+  const trySwitchProcessTab = useCallback(async (k: 'defect' | 'material' | 'scrap') => {
+    if (k === processTab) return
+    if (await guardLeave('切换页签')) setProcessTab(k)
+  }, [processTab, guardLeave])
+
+  const trySwitchReportTab = useCallback(async (k: 'exception' | 'manpower') => {
+    if (k === reportTab) return
+    if (await guardLeave('切换页签')) setReportTab(k)
+  }, [reportTab, guardLeave])
+
+  const tryBack = useCallback(async () => {
+    if (await guardLeave('返回工单列表')) {
+      setCurrent(null); setPhase('select')
+    }
+  }, [guardLeave])
+
   // 全量记录（SubPanel 各自按 process_id 过滤）
   // 🔑 注意：defectsRaw 是 ProcessDefect 全量（不良+报废共用同一张表），前端按 scrapTypes 字典分类
   const [defectsRaw, setDefectsRaw] = useState<DefectRow[]>([])
@@ -256,7 +299,7 @@ export default function MobileProcessReporting() {
     <div className="mobile-page-fixed-header">
       {/* ========== 吸顶区：工单信息 + 统计 + 一级 Tab ========== */}
       <div className="mobile-sticky-header" style={{ padding: '0 10px', background: '#f5f6fa' }}>
-        <Header report={current} onBack={() => { setCurrent(null); setPhase('select') }} onFinish={finishReport} />
+        <Header report={current} onBack={tryBack} onFinish={finishReport} />
         <StatsBar stats={stats} reportQty={current.report_qty || 0} />
 
         {/* 报工区域卡片 —— 一级 Tab 固定 */}
@@ -266,7 +309,7 @@ export default function MobileProcessReporting() {
         }}>
           <Tabs
             activeKey={groupTab}
-            onChange={(k) => setGroupTab(k as any)}
+            onChange={(k) => trySwitchGroupTab(k as any)}
             style={{ background: '#fafafa' }}
           >
             <Tabs.Tab title="🔧 工序记录" key="process" />
@@ -280,7 +323,7 @@ export default function MobileProcessReporting() {
         {/* === 工序报工 Tab === */}
         {groupTab === 'process' && (
           <div>
-            <PanelSubTabs active={processTab} onChange={(k) => setProcessTab(k as any)}>
+            <PanelSubTabs active={processTab} onChange={(k) => trySwitchProcessTab(k as any)}>
               <Tabs.Tab title="不良记录" key="defect" />
               <Tabs.Tab title="物料记录" key="material" />
               <Tabs.Tab title="检验报废" key="scrap" />
@@ -303,6 +346,7 @@ export default function MobileProcessReporting() {
                     const nonScrap = prev.filter(d => !scrapDefectIds.has(Number(d.defect_type_id)))
                     return [...updater(nonScrap), ...scrap]
                   })}
+                  onDirtyChange={(d) => setPanelDirty('defect', d)}
                 />
               </ReportPanel>
             )}
@@ -320,6 +364,7 @@ export default function MobileProcessReporting() {
                   materials={materialsMaster}
                   allMaterials={materials}
                   setAllMaterials={setMaterials}
+                  onDirtyChange={(d) => setPanelDirty('material', d)}
                 />
               </ReportPanel>
             )}
@@ -354,6 +399,7 @@ export default function MobileProcessReporting() {
                     }))
                     return [...before, ...mergedDefects]
                   })}
+                  onDirtyChange={(d) => setPanelDirty('scrap', d)}
                 />
               </ReportPanel>
             )}
@@ -363,7 +409,7 @@ export default function MobileProcessReporting() {
         {/* === 工单记录 Tab（工时 + 人员） === */}
         {groupTab === 'report' && (
           <div>
-            <PanelSubTabs active={reportTab} onChange={(k) => setReportTab(k as any)}>
+            <PanelSubTabs active={reportTab} onChange={(k) => trySwitchReportTab(k as any)}>
               <Tabs.Tab title="工时记录" key="exception" />
               <Tabs.Tab title="人员记录" key="manpower" />
             </PanelSubTabs>
@@ -374,6 +420,7 @@ export default function MobileProcessReporting() {
                   editable={!!editable}
                   rows={exceptions}
                   setRows={setExceptions}
+                  onDirtyChange={(d) => setPanelDirty('exception', d)}
                 />
               </ReportPanel>
             )}
@@ -384,6 +431,7 @@ export default function MobileProcessReporting() {
                   editable={!!editable}
                   manpower={manpower}
                   setManpower={setManpower}
+                  onDirtyChange={(d) => setPanelDirty('manpower', d)}
                 />
               </ReportPanel>
             )}

@@ -17,7 +17,7 @@
  *   - 工序必须属于当前报工单（后端 validateProcessBelongsToReportOrder）
  *   - 不良数量不能超该工序报工产出（后端校验）
  */
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import React from 'react'
 import { Button, Dialog, Image as AntdImage, Toast } from 'antd-mobile'
 import api from '../../../utils/api'
@@ -35,6 +35,8 @@ interface Props {
   /** 全量缺陷记录（主文件拉了一次，这里按 process_id 过滤） */
   allDefects: DefectRow[]
   setAllDefects: (updater: (prev: DefectRow[]) => DefectRow[]) => void
+  /** 上报 dirty 状态 —— 父组件 Tab 切换拦截用 */
+  onDirtyChange?: (dirty: boolean) => void
 }
 
 /** 后端返回的 defect_images 可能是 JSON string 或 null，前端统一转 string[] */
@@ -48,7 +50,7 @@ function parseImages(raw: unknown): string[] {
 }
 
 export function ProcessDefectPanel({
-  report, activeProcessId, editable, defectTypes, allDefects, setAllDefects,
+  report, activeProcessId, editable, defectTypes, allDefects, setAllDefects, onDirtyChange,
 }: Props) {
   // 1. 按当前工序过滤记录
   const processDefects = useMemo(
@@ -85,6 +87,11 @@ export function ProcessDefectPanel({
   // ========== 新增 / 编辑 ==========
   const [expandedId, setExpandedId] = useState<number | string | null>(null) // 哪一行在编辑
   const [draft, setDraft] = useState<DefectRow>({ quantity: 0 })
+
+  // dirty 上报：正在编辑（expandedId 非空）即为 dirty
+  useEffect(() => {
+    onDirtyChange?.(expandedId !== null)
+  }, [expandedId, onDirtyChange])
 
   const startAdd = () => {
     setDraft({

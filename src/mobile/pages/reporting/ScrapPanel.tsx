@@ -8,7 +8,7 @@
  *   - 查询时按工单维度聚合显示（前端过滤 defect_type === '检验报废'）
  *   - 新增/编辑/删除统一调 /production/process-defects 接口
  */
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import React from 'react'
 import { Button, Dialog, Toast } from 'antd-mobile'
 import api from '../../../utils/api'
@@ -25,12 +25,19 @@ interface Props {
   scrapTypes: DefectType[]
   rows: ScrapRow[]
   setRows: (updater: (prev: ScrapRow[]) => ScrapRow[]) => void
+  onDirtyChange?: (dirty: boolean) => void
 }
 
 export function ScrapPanel({
-  report, activeProcessId, processes, editable, scrapTypes, rows, setRows,
+  report, activeProcessId, processes, editable, scrapTypes, rows, setRows, onDirtyChange,
 }: Props) {
   const [draft, setDraft] = useState<ScrapRow>({ quantity: 0 })
+
+  // dirty：选了报废项目 或 数量 > 0
+  useEffect(() => {
+    const dirty = !!(draft.defect_type_id) || (Number(draft.quantity) > 0)
+    onDirtyChange?.(dirty)
+  }, [draft.defect_type_id, draft.quantity, onDirtyChange])
 
   // 工序可选：优先 activeProcessId，否则取第一道，再否则 null
   const resolvedProcessId = activeProcessId ?? processes[0]?.process_id ?? null

@@ -254,13 +254,30 @@ export function ProcessImageUploader({
         </div>
       )}
 
-      {/* 内置 "+" cell 直接触发 ActionSheet —— 返回永不 resolve 的 Promise 防止 antd-mobile 走自己的上传 */}
+      {/* disableUpload 干掉 antd-mobile 内置 "+" cell 和隐藏 input —— 彻底避免上传转圈永不消失 & 直接跳相册 */}
       <ImageUploader
         value={items}
         onChange={handlePreviewChange}
-        upload={() => { handleAddClick(); return new Promise(() => {}) }}
+        disableUpload
         maxCount={maxCount}
       />
+
+      {/* 自绘 "+" cell —— 触发我们的 ActionSheet，样式与 antd-mobile 原版一致 */}
+      {remaining > 0 && (
+        <div
+          onClick={handleAddClick}
+          style={{
+            width: 80, height: 80,
+            border: '1px dashed var(--adm-color-border, #cccccc)',
+            borderRadius: 8,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            color: 'var(--adm-color-weak, #999)', fontSize: 36, fontWeight: 300, lineHeight: 1,
+            cursor: 'pointer', userSelect: 'none',
+            marginLeft: 8, marginTop: 8,
+            boxSizing: 'border-box',
+          }}
+        >+</div>
+      )}
 
       {/* 两个隐藏 <input type="file"> —— 被 ActionSheet 选择后触发 */}
       <input ref={cameraInputRef} type="file" accept="image/*" capture="environment"
