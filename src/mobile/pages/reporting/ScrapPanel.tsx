@@ -74,6 +74,7 @@ export function ScrapPanel({
       setRows(prev => [...prev, newRow])
       Toast.show({ content: '已添加', icon: 'success' })
       setDraft({ quantity: 0 })
+      onDirtyChange?.(false)
     } catch (e: any) {
       Toast.show({ content: e?.message || '保存失败', icon: 'fail' })
     }

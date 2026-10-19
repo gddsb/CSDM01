@@ -67,6 +67,7 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
       setRows(prev => [...prev, { ...draft, ...payload, id: r.data?.exception_id ?? Date.now() }])
       Toast.show({ content: '已添加', icon: 'success' })
       setDraft({})
+      onDirtyChange?.(false)
     } catch (e: any) {
       Toast.show({ content: e?.message || '保存失败', icon: 'fail' })
     }

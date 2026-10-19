@@ -140,6 +140,7 @@ export function ProcessMaterialPanel({
       setAllMaterials(prev => idx >= 0 ? prev.map(m => m.id === merged.id ? merged : m) : [...prev, merged])
       Toast.show({ content: '已保存', icon: 'success' })
       cancelEdit()
+      onDirtyChange?.(false)
     } catch (e: any) { Toast.show({ content: e?.message || '保存失败', icon: 'fail' }) }
   }, [draft, expandedId, report.report_order_id, activeProcessId, allMaterials, setAllMaterials])
 

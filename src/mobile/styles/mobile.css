@@ -106,7 +106,9 @@ html.mobile-root textarea {
   position: relative;
   display: flex;
   flex-direction: column;
-  overflow: hidden;                 /* 再次禁滚 —— 所有滚动由子页面自己接管 */
+  overflow-y: auto;                /* 允许外层滚动（横屏/窄屏时兜底） */
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* 页面通用间距 */

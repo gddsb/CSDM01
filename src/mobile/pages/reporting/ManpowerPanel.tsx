@@ -76,6 +76,7 @@ export function ManpowerPanel({ report, editable, manpower, setManpower, onDirty
       const data = (r as any).data || manpower || payload
       setManpower(() => ({ ...data, record_id: data.record_id }))
       Toast.show({ content: '已保存人员配置', icon: 'success' })
+      onDirtyChange?.(false)
     } catch (e: any) {
       Toast.show({ content: e?.message || '保存失败', icon: 'fail' })
     }

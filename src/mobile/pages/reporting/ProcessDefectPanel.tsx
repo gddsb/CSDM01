@@ -139,7 +139,6 @@ export function ProcessDefectPanel({
 
       // 把新/更新的记录合并回 allDefects
       const saved = r.data
-      const idx = allDefects.findIndex(d => d.defect_id === saved.defect_id || d.id === expandedId)
       // merged.defect_images 必须统一成 string[]：
       //   PUT 返回 { images: string[] }  +  { defect_images: JSON string }
       //   POST/list 只返回 { defect_images: JSON string }
@@ -162,9 +161,18 @@ export function ProcessDefectPanel({
         report_order_id: saved.report_order_id,
         process_id: saved.process_id,
       }
-      setAllDefects(prev => idx >= 0 ? prev.map(d => d.id === merged.id ? merged : d) : [...prev, merged])
+      // 双字段匹配：旧项可能用 defect_id 或 id 存后端编号
+      const isSame = (d: DefectRow) =>
+        Number(d.defect_id) === Number(merged.defect_id) ||
+        Number(d.id) === Number(merged.id) ||
+        String(d.defect_id) === String(expandedId)
+      setAllDefects(prev => {
+        const has = prev.find(isSame)
+        return has ? prev.map(d => isSame(d) ? merged : d) : [...prev, merged]
+      })
       Toast.show({ content: '已保存', icon: 'success' })
       cancelEdit()
+      onDirtyChange?.(false)
     } catch (e: any) {
       Toast.show({ content: e?.message || '保存失败', icon: 'fail' })
     }
