@@ -352,3 +352,9 @@ html[data-theme="dark"] .mobile-app textarea::placeholder {
 .adm-image-uploader .adm-image-uploader-cell-empty {
   display: none !important;
 }
+
+/* ========== 修正：antd-mobile 5.42.3 内置 +/input 的真实 class ========== */
+.adm-image-uploader .adm-image-uploader-upload-button,
+.adm-image-uploader .adm-image-uploader-input {
+  display: none !important;
+}
