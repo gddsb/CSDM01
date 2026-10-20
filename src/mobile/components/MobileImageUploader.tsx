@@ -28,9 +28,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ActionSheet, ImageUploader, Toast } from 'antd-mobile'
 import type { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
-import api from '../../utils/api'
-import { resolveUploadUrl } from '../../utils/resolveUploadUrl'
-import { compressImage } from '../../utils/image-compress'
+import api from '../utils/api'
+import { resolveUploadUrl } from '../utils/resolveUploadUrl'
+import { compressImage } from '../utils/image-compress'
 
 type LogLevel = 'info' | 'warn' | 'error'
 
