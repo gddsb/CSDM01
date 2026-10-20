@@ -160,9 +160,10 @@ router.put('/process-materials/:id', asyncHandler(materialUpdate))
 router.delete('/process-materials/:id', asyncHandler(materialRemove))
 
 // 报工图片 —— 单独路由级 MulterError handler，返回 HTTP 413 + 清晰 message
+// 注意：字面路由 by-url 必须在参数路由 :id 之前注册，否则 Express 会优先匹配 :id
 router.get('/report-images', asyncHandler(reportImageList))
-router.delete('/report-images/:id', asyncHandler(reportImageRemove))
 router.delete('/report-images/by-url', asyncHandler(reportImageRemoveByUrl))
+router.delete('/report-images/:id', asyncHandler(reportImageRemove))
 router.post(
   '/report-images/:report_no/:category/upload',
   reportImageUpload.array('files', UPLOAD_MAX_COUNT),

@@ -256,36 +256,44 @@ export function MobileImageUploader({
       )}
 
       {/*
-        disableUpload 干掉 antd-mobile 内置 "+" cell 和内部隐藏 input —— 根因修复。
-        我们不传 upload prop，antd-mobile 完全不参与上传状态机：
-          ✓ 没有 uploading cell 永不消失的问题
-          ✓ 没有内部 input 漏触发直接跳系统选择器的问题
-          ✓ 只靠 value={items} 受控渲染已有缩略图
+        关键布局：外层用 flex-wrap + gap，让 ImageUploader 内部 cell 和自绘 "+"
+        处于同一个 flex 上下文，"+" 才能紧跟最后一张图片而不掉到下一行。
+        CSS 里 .adm-image-uploader { display: contents } 让 antd-mobile 容器"透明化"。
       */}
-      <ImageUploader
-        value={items}
-        onChange={handleChange}
-        disableUpload
-        maxCount={maxCount}
-      />
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        {/*
+          disableUpload 干掉 antd-mobile 内置 "+" cell 和内部隐藏 input —— 根因修复。
+          我们不传 upload prop，antd-mobile 完全不参与上传状态机：
+            ✓ 没有 uploading cell 永不消失的问题
+            ✓ 没有内部 input 漏触发直接跳系统选择器的问题
+            ✓ 只靠 value={items} 受控渲染已有缩略图
+        */}
+        <ImageUploader
+          value={items}
+          onChange={handleChange}
+          disableUpload
+          maxCount={maxCount}
+        />
 
-      {/* 自绘 "+" cell —— 触发 ActionSheet，样式与 antd-mobile 原版一致 */}
-      {remaining > 0 && (
-        <div
-          onClick={handleAddClick}
-          style={{
-            width: 80, height: 80,
-            border: '1px dashed var(--adm-color-border, #cccccc)',
-            borderRadius: 8,
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            color: 'var(--adm-color-weak, #999)',
-            fontSize: 36, fontWeight: 300, lineHeight: 1,
-            cursor: 'pointer', userSelect: 'none',
-            marginLeft: 8, marginTop: 8,
-            boxSizing: 'border-box',
-          }}
-        >+</div>
-      )}
+        {/* 自绘 "+" cell —— 触发 ActionSheet，样式与 antd-mobile 原版一致。
+            margin 改由外层 gap 统一控制，不再单独写 marginTop/marginLeft */}
+        {remaining > 0 && (
+          <div
+            onClick={handleAddClick}
+            style={{
+              width: 80, height: 80,
+              border: '1px dashed var(--adm-color-border, #cccccc)',
+              borderRadius: 8,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--adm-color-weak, #999)',
+              fontSize: 36, fontWeight: 300, lineHeight: 1,
+              cursor: 'pointer', userSelect: 'none',
+              boxSizing: 'border-box',
+              flexShrink: 0,
+            }}
+          >+</div>
+        )}
+      </div>
 
       {/* 两个隐藏 <input type="file"> —— 被 ActionSheet 选择后触发 */}
       <input

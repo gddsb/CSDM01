@@ -21,7 +21,7 @@
  *   PUT  /production/process-materials/:id
  *   DEL  /production/process-materials/:id
  */
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import React from 'react'
 import { Button, Dialog, Input, Popup, Toast } from 'antd-mobile'
 import api from '../../../utils/api'
@@ -73,6 +73,25 @@ export function ProcessMaterialPanel({
     material_type: '投入',
     quantity: 0,
   })
+  // 批号/包号/数量 改用非受控 input + ref —— 彻底解决受控 re-render 导致的输入法关闭问题
+  const batchInputRef = useRef<HTMLInputElement>(null)
+  const pkgInputRef = useRef<HTMLInputElement>(null)
+  const qtyInputRef = useRef<HTMLInputElement>(null)
+
+  /** 同步 input ref 值 —— draft 变化时（新增/编辑切换/退回自动带出）手动更新 DOM */
+  const syncInputRefs = useCallback((row: MaterialRow) => {
+    if (batchInputRef.current) batchInputRef.current.value = row.material_batch || ''
+    if (pkgInputRef.current) pkgInputRef.current.value = row.package_no || ''
+    if (qtyInputRef.current) qtyInputRef.current.value = String(row.quantity ?? '')
+  }, [])
+
+  /** 从 ref 读取三个 input 的当前值 —— 用于保存时收集用户输入 */
+  const readInputRefs = useCallback((): Partial<MaterialRow> => ({
+    material_batch: batchInputRef.current?.value || '',
+    package_no: pkgInputRef.current?.value || '',
+    quantity: Number(qtyInputRef.current?.value) || 0,
+  }), [])
+
   // 料品选择器 Popup
   const [showPicker, setShowPicker] = useState(false)
   const [pickerKeyword, setPickerKeyword] = useState('')
@@ -151,17 +170,19 @@ export function ProcessMaterialPanel({
     if (draft.material_type === '退回') {
       // 退回：自动带出原投入的批次/包号 + 限制数量上限
       const rinfo = returnableMap.get(basMaterialId)
-      setDraft(d => ({
-        ...d,
+      const nextDraft: MaterialRow = {
+        ...draft,
         bas_material_id: basMaterialId,
         material_code: m?.material_code,
         material_name: m?.material_name,
         specification: m?.specification,
-        material_batch: rinfo?.material_batch || d.material_batch || '',
-        package_no: rinfo?.package_no || d.package_no || '',
-        // 数量默认取原投入汇总（用户可手动改，但不能超过）
-        quantity: rinfo?.totalInputQty || d.quantity || 0,
-      }))
+        material_batch: rinfo?.material_batch || draft.material_batch || '',
+        package_no: rinfo?.package_no || draft.package_no || '',
+        quantity: rinfo?.totalInputQty || draft.quantity || 0,
+      }
+      setDraft(nextDraft)
+      // 退回自动带出后同步 input ref 值（当前 DOM 已挂载）
+      syncInputRefs(nextDraft)
       Toast.show({ content: '已带出原投入批次信息', position: 'bottom' })
     } else {
       setDraft(d => ({
@@ -176,19 +197,27 @@ export function ProcessMaterialPanel({
 
   // ========== 动作 ==========
   const startAdd = () => {
-    setDraft({
+    const initRow: MaterialRow = {
       report_order_id: report.report_order_id,
       process_id: activeProcessId || undefined,
       material_type: '投入',
       quantity: 0,
-    })
+    }
+    setDraft(initRow)
     setExpandedId('__new__')
+    // 延迟一拍等 DOM 挂载后再填值
+    setTimeout(() => syncInputRefs(initRow), 0)
   }
   const startEdit = (row: MaterialRow) => {
-    setDraft({ ...row, label_images: parseImages(row.label_images) })
+    const initRow = { ...row, label_images: parseImages(row.label_images) }
+    setDraft(initRow)
     setExpandedId(row.id || row.material_id! || '__unknown__')
+    setTimeout(() => syncInputRefs(initRow), 0)
   }
-  const cancelEdit = () => { setExpandedId(null); setDraft({ material_type: '投入', quantity: 0 }) }
+  const cancelEdit = () => {
+    setExpandedId(null)
+    setDraft({ material_type: '投入', quantity: 0 })
+  }
 
   // 切换物料类型时，清空料品选择（投入/退回候选互斥）
   const handleTypeChange = (newType: '投入' | '退回') => {
@@ -198,24 +227,30 @@ export function ProcessMaterialPanel({
       Toast.show({ content: '当前工序暂无投入记录可退回', icon: 'fail', position: 'bottom' })
       return
     }
-    setDraft(d => ({
-      ...d,
+    const nextDraft: MaterialRow = {
+      ...draft,
       material_type: newType,
-      bas_material_id: undefined,   // 清空料品
+      bas_material_id: undefined,
       material_code: undefined,
       material_name: undefined,
       specification: undefined,
-      material_batch: newType === '投入' ? '' : d.material_batch,
-      package_no: newType === '投入' ? '' : d.package_no,
-      quantity: 0,                  // 清空数量
-    }))
+      material_batch: newType === '投入' ? '' : draft.material_batch,
+      package_no: newType === '投入' ? '' : draft.package_no,
+      quantity: 0,
+    }
+    setDraft(nextDraft)
+    // 同步 ref —— 切换类型后批号/包号/数量要反映新值
+    syncInputRefs(nextDraft)
   }
 
   const handleSave = useCallback(async () => {
     if (!draft.bas_material_id) { Toast.show({ content: '请选料品', icon: 'fail' }); return }
-    if (!draft.quantity || draft.quantity <= 0) { Toast.show({ content: '数量 > 0', icon: 'fail' }); return }
+    // 从 ref 读取三个非受控 input 的最新值 —— 不触发 re-render
+    const inputs = readInputRefs()
+    const qty = Number(inputs.quantity) || 0
+    if (qty <= 0) { Toast.show({ content: '数量 > 0', icon: 'fail' }); return }
     // 退回不能超过原投入
-    if (draft.material_type === '退回' && currentReturnLimit > 0 && draft.quantity > currentReturnLimit) {
+    if (draft.material_type === '退回' && currentReturnLimit > 0 && qty > currentReturnLimit) {
       Toast.show({ content: `退回数量不能超过原投入 ${fmtInt(currentReturnLimit)}`, icon: 'fail', position: 'bottom' })
       return
     }
@@ -226,9 +261,9 @@ export function ProcessMaterialPanel({
       process_id: activeProcessId,
       material_type: draft.material_type || '投入',
       bas_material_id: draft.bas_material_id,
-      material_batch: draft.material_batch || null,
-      package_no: draft.package_no || null,
-      quantity: Number(draft.quantity),
+      material_batch: inputs.material_batch || null,
+      package_no: inputs.package_no || null,
+      quantity: qty,
       label_images: labelImages,
     }
     try {
@@ -313,28 +348,16 @@ export function ProcessMaterialPanel({
           <span style={{ color: 'var(--m-text-3)', fontSize: 12, marginLeft: 4 }}>›</span>
         </Button>
       </div>
-      {draft.material_name && (
-        <div style={{ fontSize: 11, color: 'var(--brand-color)', marginTop: 3, marginBottom: 4 }}>
-          自动带出: {draft.material_name} {draft.specification && `· ${draft.specification}`}
-          {draft.material_type === '退回' && currentReturnLimit > 0 && (
-            <span style={{ color: '#f44336', marginLeft: 6 }}>
-              [退回上限 {fmtInt(currentReturnLimit)}]
-            </span>
-          )}
-        </div>
-      )}
-      {/* 行2：批号 + 包号 + 数量 + 保存/取消 */}
+      {/* 行2：批号 + 包号 + 数量 + 保存/取消
+          三个 input 都是非受控（用 ref 收集）—— 避免每次按键触发 setDraft → re-render → input 重挂载 → 输入法关闭 */}
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
-        <input placeholder="批号" value={draft.material_batch || ''}
-          onChange={(e) => setDraft(d => ({ ...d, material_batch: e.target.value }))}
+        <input ref={batchInputRef} placeholder="批号"
           style={{ ...inputStyle, flex: 2, minWidth: 70 }} />
-        <input placeholder="包号" value={draft.package_no || ''}
-          onChange={(e) => setDraft(d => ({ ...d, package_no: e.target.value }))}
+        <input ref={pkgInputRef} placeholder="包号"
           style={{ ...inputStyle, flex: 2, minWidth: 70 }} />
-        <input type="number" min={0} max={currentReturnLimit > 0 ? currentReturnLimit : undefined}
+        <input ref={qtyInputRef} type="number" min={0}
+          max={currentReturnLimit > 0 ? currentReturnLimit : undefined}
           placeholder={draft.material_type === '退回' ? `≤${fmtInt(currentReturnLimit || 0)}` : '数量'}
-          value={draft.quantity || ''}
-          onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
           style={{ ...inputStyle, width: 60 }} />
         <Button size="mini" color="primary" onClick={handleSave} style={{ flexShrink: 0 }}>保存</Button>
         <Button size="mini" fill="outline" onClick={cancelEdit} style={{ flexShrink: 0 }}>取消</Button>
