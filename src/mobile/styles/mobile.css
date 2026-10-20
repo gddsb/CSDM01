@@ -347,3 +347,8 @@ html[data-theme="dark"] .mobile-app textarea::placeholder {
   color: var(--m-text-3);
 }
 
+
+/* ========== antd-mobile ImageUploader 干掉内置 "+" cell —— 我们用自绘的 ========== */
+.adm-image-uploader .adm-image-uploader-cell-empty {
+  display: none !important;
+}

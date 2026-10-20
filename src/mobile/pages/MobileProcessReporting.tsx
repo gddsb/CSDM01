@@ -143,7 +143,15 @@ export default function MobileProcessReporting() {
           api.get('/basic/materials', { params: { page: 1, pageSize: 1000 } }) as Promise<any>,
         ])
         const dt = (dtr?.data?.items || dtr?.data || []) as DefectType[]
-        const mt = (mtr?.data?.items || mtr?.data || []) as MaterialMaster[]
+        // 后端 Material 模型主键叫 material_id（UUID），但前端 MaterialMaster 接口约定叫 bas_material_id
+        // → 拉取后统一做字段映射，下游 ProcessMaterialPanel 等组件都用 bas_material_id
+        const mt: MaterialMaster[] = (mtr?.data?.rows || mtr?.data?.items || mtr?.data || []).map((m: any) => ({
+          bas_material_id: m.bas_material_id || m.material_id,   // 兼容两种返回
+          material_code: m.material_code,
+          material_name: m.material_name,
+          specification: m.specification,
+          ...m,
+        }))
         // 工序不良类型
         setDefectTypes(dt.filter(t => t.category_name === '制程检验类型' && t.defect_type !== '检验报废'))
         // 报废类型

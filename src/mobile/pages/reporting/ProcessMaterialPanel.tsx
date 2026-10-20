@@ -4,29 +4,26 @@
  *
  * 字段对齐 PC ProcessReporting:
  *   - 物料类型（投入 / 退回）
- *   - 料号（Select 从 /basic/materials 主数据来，带搜索）
+ *   - 料号（Popup 搜索面板选择）
  *   - 料品名称 + 规格（从主数据自动带出）
  *   - 批号（material_batch）
  *   - 包号（package_no）
  *   - 数量
  *   - 标签图片（ProcessImageUploader，存 label_images JSON）
  *
+ * 退回料品规则：
+ *   - 只能从当前工序已保存的 "投入" 记录里选
+ *   - 数量不能超过原投入汇总数量
+ *   - 批次/包号自动带出原投入记录的值（退回用同一批次）
+ *
  * 后端接口：
  *   POST /production/process-materials       (body 含 label_images: string[])
  *   PUT  /production/process-materials/:id
  *   DEL  /production/process-materials/:id
- *
- * ProcessMaterial 模型核心字段：
- *   material_type: CHAR(4) '投入'|'退回'
- *   bas_material_id: VARCHAR(36) → MaterialMaster.bas_material_id
- *   material_batch: VARCHAR(64)
- *   package_no: VARCHAR(64)
- *   quantity: DECIMAL
- *   label_images: TEXT (JSON)
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import React from 'react'
-import { Button, Dialog, Toast } from 'antd-mobile'
+import { Button, Dialog, Input, Popup, Toast } from 'antd-mobile'
 import api from '../../../utils/api'
 import { ProcessImageUploader } from './ProcessImageUploader'
 import { fmtInt } from '../../utils/format'
@@ -45,11 +42,22 @@ interface Props {
 
 function parseImages(raw: unknown): string[] {
   if (!raw) return []
-  if (Array.isArray(raw)) return raw.filter((v: unknown) => typeof v === "string" && v.trim())
+  if (Array.isArray(raw)) return raw.filter((v: unknown) => typeof v === 'string' && v.trim())
   if (typeof raw === 'string') {
-    try { return JSON.parse(raw).filter((v: unknown) => typeof v === "string" && v.trim()) } catch { return [] }
+    try { return JSON.parse(raw).filter((v: unknown) => typeof v === 'string' && v.trim()) } catch { return [] }
   }
   return []
+}
+
+/** 退回料品映射 key → 原投入汇总信息 */
+interface ReturnableInfo {
+  bas_material_id: string
+  totalInputQty: number
+  material_code?: string
+  material_name?: string
+  specification?: string
+  material_batch?: string
+  package_no?: string
 }
 
 export function ProcessMaterialPanel({
@@ -65,11 +73,108 @@ export function ProcessMaterialPanel({
     material_type: '投入',
     quantity: 0,
   })
+  // 料品选择器 Popup
+  const [showPicker, setShowPicker] = useState(false)
+  const [pickerKeyword, setPickerKeyword] = useState('')
 
   useEffect(() => {
     onDirtyChange?.(expandedId !== null)
   }, [expandedId, onDirtyChange])
 
+  // ========== 退回料品候选：当前工序已保存的 "投入" 记录去重汇总 ==========
+  const returnableMap = useMemo(() => {
+    const m = new Map<string, ReturnableInfo>()
+    for (const row of processMaterials) {
+      if (row.material_type !== '投入' || !row.bas_material_id) continue
+      if (String(row.process_id) !== String(activeProcessId)) continue
+      const key = row.bas_material_id
+      const existing = m.get(key)
+      if (existing) {
+        existing.totalInputQty += Number(row.quantity || 0)
+      } else {
+        m.set(key, {
+          bas_material_id: key,
+          totalInputQty: Number(row.quantity || 0),
+          material_code: row.material_code,
+          material_name: row.material_name,
+          specification: row.specification,
+          material_batch: row.material_batch,
+          package_no: row.package_no,
+        })
+      }
+    }
+    return m
+  }, [processMaterials, activeProcessId])
+
+  // ========== 当前候选列表：投入=全量 / 退回=returnable ==========
+  const candidateList = useMemo(() => {
+    if (draft.material_type === '退回') {
+      // 退回：把 returnableMap 转成 MaterialMaster 格式
+      return Array.from(returnableMap.values()).map(r => ({
+        bas_material_id: r.bas_material_id,
+        material_code: r.material_code || '',
+        material_name: r.material_name || '',
+        specification: r.specification,
+      }))
+    }
+    // 投入：全量主数据
+    return materials
+  }, [draft.material_type, returnableMap, materials])
+
+  // ========== 搜索过滤 ==========
+  const filteredList = useMemo(() => {
+    const kw = pickerKeyword.trim().toLowerCase()
+    if (!kw) return candidateList
+    return candidateList.filter(m =>
+      (m.material_code || '').toLowerCase().includes(kw) ||
+      (m.material_name || '').toLowerCase().includes(kw) ||
+      (m.specification || '').toLowerCase().includes(kw),
+    )
+  }, [candidateList, pickerKeyword])
+
+  // ========== 当前选中料品的退回上限 ==========
+  const currentReturnLimit = useMemo(() => {
+    if (draft.material_type !== '退回' || !draft.bas_material_id) return 0
+    return returnableMap.get(draft.bas_material_id)?.totalInputQty || 0
+  }, [draft.material_type, draft.bas_material_id, returnableMap])
+
+  // ========== 选中料品 ==========
+  const handlePickMaterial = (basMaterialId: string) => {
+    setShowPicker(false)
+    setPickerKeyword('')
+    if (!basMaterialId) return
+
+    // 优先从 candidateList 找（退回场景只在这里有），否则从全量 materials 找
+    const m = candidateList.find(x => x.bas_material_id === basMaterialId)
+           || materials.find(x => x.bas_material_id === basMaterialId)
+
+    if (draft.material_type === '退回') {
+      // 退回：自动带出原投入的批次/包号 + 限制数量上限
+      const rinfo = returnableMap.get(basMaterialId)
+      setDraft(d => ({
+        ...d,
+        bas_material_id: basMaterialId,
+        material_code: m?.material_code,
+        material_name: m?.material_name,
+        specification: m?.specification,
+        material_batch: rinfo?.material_batch || d.material_batch || '',
+        package_no: rinfo?.package_no || d.package_no || '',
+        // 数量默认取原投入汇总（用户可手动改，但不能超过）
+        quantity: rinfo?.totalInputQty || d.quantity || 0,
+      }))
+      Toast.show({ content: '已带出原投入批次信息', position: 'bottom' })
+    } else {
+      setDraft(d => ({
+        ...d,
+        bas_material_id: basMaterialId,
+        material_code: m?.material_code,
+        material_name: m?.material_name,
+        specification: m?.specification,
+      }))
+    }
+  }
+
+  // ========== 动作 ==========
   const startAdd = () => {
     setDraft({
       report_order_id: report.report_order_id,
@@ -85,20 +190,35 @@ export function ProcessMaterialPanel({
   }
   const cancelEdit = () => { setExpandedId(null); setDraft({ material_type: '投入', quantity: 0 }) }
 
-  const handleMaterialSelect = (basMaterialId: string) => {
-    const m = materials.find(x => x.bas_material_id === basMaterialId)
+  // 切换物料类型时，清空料品选择（投入/退回候选互斥）
+  const handleTypeChange = (newType: '投入' | '退回') => {
+    if (draft.material_type === newType) return
+    // 切换到退回时，如果没有可退回的投入记录，直接提示
+    if (newType === '退回' && returnableMap.size === 0) {
+      Toast.show({ content: '当前工序暂无投入记录可退回', icon: 'fail', position: 'bottom' })
+      return
+    }
     setDraft(d => ({
       ...d,
-      bas_material_id: basMaterialId || undefined,
-      material_code: m?.material_code || undefined,
-      material_name: m?.material_name || undefined,
-      specification: m?.specification || undefined,
+      material_type: newType,
+      bas_material_id: undefined,   // 清空料品
+      material_code: undefined,
+      material_name: undefined,
+      specification: undefined,
+      material_batch: newType === '投入' ? '' : d.material_batch,
+      package_no: newType === '投入' ? '' : d.package_no,
+      quantity: 0,                  // 清空数量
     }))
   }
 
   const handleSave = useCallback(async () => {
-    if (!draft.bas_material_id) { Toast.show({ content: '请选料号', icon: 'fail' }); return }
+    if (!draft.bas_material_id) { Toast.show({ content: '请选料品', icon: 'fail' }); return }
     if (!draft.quantity || draft.quantity <= 0) { Toast.show({ content: '数量 > 0', icon: 'fail' }); return }
+    // 退回不能超过原投入
+    if (draft.material_type === '退回' && currentReturnLimit > 0 && draft.quantity > currentReturnLimit) {
+      Toast.show({ content: `退回数量不能超过原投入 ${fmtInt(currentReturnLimit)}`, icon: 'fail', position: 'bottom' })
+      return
+    }
 
     const labelImages = Array.isArray(draft.label_images) ? draft.label_images : []
     const payload: any = {
@@ -142,7 +262,7 @@ export function ProcessMaterialPanel({
       cancelEdit()
       onDirtyChange?.(false)
     } catch (e: any) { Toast.show({ content: e?.message || '保存失败', icon: 'fail' }) }
-  }, [draft, expandedId, report.report_order_id, activeProcessId, allMaterials, setAllMaterials])
+  }, [draft, expandedId, report.report_order_id, activeProcessId, allMaterials, setAllMaterials, currentReturnLimit])
 
   const handleDel = useCallback(async (row: MaterialRow) => {
     const ok = await Dialog.confirm({ content: '删除该投料记录？', confirmText: '删除', cancelText: '取消' })
@@ -154,18 +274,89 @@ export function ProcessMaterialPanel({
     } catch (e: any) { Toast.show({ content: e?.message || '删除失败', icon: 'fail' }) }
   }, [setAllMaterials])
 
-  const selStyle: React.CSSProperties = {
-    width: '100%', padding: '10px 12px', borderRadius: 8,
-    border: '1px solid var(--m-border)', fontSize: 14, background: 'var(--m-surface)',
+  // ========== UI 组件 ==========
+  const typeSelectStyle: React.CSSProperties = {
+    width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd',
+    fontSize: 12, background: 'var(--m-surface)', flexShrink: 0,
   }
   const inputStyle: React.CSSProperties = {
-    padding: '10px 12px', borderRadius: 8,
-    border: '1px solid var(--m-border)', fontSize: 14, background: 'var(--m-surface)',
+    padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd',
+    fontSize: 12, background: 'var(--m-surface)',
   }
+  // 料品选择按钮样式（模拟原生 select 外观）
+  const materialBtnStyle: React.CSSProperties = {
+    flex: 1, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd',
+    fontSize: 12, background: 'var(--m-surface)', color: 'var(--m-text)',
+    textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+  }
+
+  /** 编辑/新增表单主体（两处复用） */
+  const MaterialForm = () => (
+    <>
+      {/* 行1：类型 + 料品 */}
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <select value={draft.material_type || '投入'} onChange={(e) => handleTypeChange(e.target.value as any)}
+          style={typeSelectStyle}>
+          <option value="投入">投入</option>
+          <option value="退回">退回</option>
+        </select>
+        <Button size="mini" block style={materialBtnStyle} onClick={() => setShowPicker(true)}>
+          <span style={{
+            color: draft.bas_material_id ? 'var(--m-text)' : 'var(--m-text-3)',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            flex: 1,
+          }}>
+            {draft.bas_material_id
+              ? `${draft.material_code || ''} ${draft.material_name || ''}`.trim()
+              : draft.material_type === '退回' ? '选退回料品（仅当前工序已投入）' : '选料品'}
+          </span>
+          <span style={{ color: 'var(--m-text-3)', fontSize: 12, marginLeft: 4 }}>›</span>
+        </Button>
+      </div>
+      {draft.material_name && (
+        <div style={{ fontSize: 11, color: 'var(--brand-color)', marginTop: 3, marginBottom: 4 }}>
+          自动带出: {draft.material_name} {draft.specification && `· ${draft.specification}`}
+          {draft.material_type === '退回' && currentReturnLimit > 0 && (
+            <span style={{ color: '#f44336', marginLeft: 6 }}>
+              [退回上限 {fmtInt(currentReturnLimit)}]
+            </span>
+          )}
+        </div>
+      )}
+      {/* 行2：批号 + 包号 + 数量 + 保存/取消 */}
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
+        <input placeholder="批号" value={draft.material_batch || ''}
+          onChange={(e) => setDraft(d => ({ ...d, material_batch: e.target.value }))}
+          style={{ ...inputStyle, flex: 2, minWidth: 70 }} />
+        <input placeholder="包号" value={draft.package_no || ''}
+          onChange={(e) => setDraft(d => ({ ...d, package_no: e.target.value }))}
+          style={{ ...inputStyle, flex: 2, minWidth: 70 }} />
+        <input type="number" min={0} max={currentReturnLimit > 0 ? currentReturnLimit : undefined}
+          placeholder={draft.material_type === '退回' ? `≤${fmtInt(currentReturnLimit || 0)}` : '数量'}
+          value={draft.quantity || ''}
+          onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
+          style={{ ...inputStyle, width: 60 }} />
+        <Button size="mini" color="primary" onClick={handleSave} style={{ flexShrink: 0 }}>保存</Button>
+        <Button size="mini" fill="outline" onClick={cancelEdit} style={{ flexShrink: 0 }}>取消</Button>
+        {draft.material_id && (
+          <Button size="mini" fill="outline" onClick={() => handleDel(draft as MaterialRow)} style={{ flexShrink: 0 }}>删除</Button>
+        )}
+      </div>
+      {/* 标签图片 */}
+      <div style={{ marginTop: 8 }}>
+        <ProcessImageUploader
+          reportNo={report.report_no} category="label"
+          value={Array.isArray(draft.label_images) ? draft.label_images : []}
+          onChange={(urls) => setDraft(d => ({ ...d, label_images: urls }))}
+          label="标签图片"
+        />
+      </div>
+    </>
+  )
 
   return (
     <div>
-      {/* 只读列表 */}
+      {/* ========== 只读列表 ========== */}
       {processMaterials.length > 0 && processMaterials.map((row) => {
         const rowKey = row.material_id || row.id
         const isExpanded = expandedId === rowKey
@@ -173,54 +364,7 @@ export function ProcessMaterialPanel({
         if (isExpanded) {
           return (
             <div key={rowKey} style={{ borderTop: '1px solid #e8e8e8', paddingTop: 10, marginTop: 6 }}>
-              {/* 行1：类型 + 料品 同一行 */}
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                <select value={draft.material_type || '投入'} onChange={(e) => setDraft(d => ({ ...d, material_type: e.target.value as any }))}
-                  style={{ width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }}>
-                  <option value="投入">投入</option>
-                  <option value="退回">退回</option>
-                </select>
-                <select value={draft.bas_material_id || ''} onChange={(e) => handleMaterialSelect(e.target.value)}
-                  style={{ flex: 1, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }}>
-                  <option value="">料品</option>
-                  {materials.map(m => (
-                    <option key={m.bas_material_id} value={m.bas_material_id}>
-                      {m.material_code} {m.material_name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {draft.material_name && (
-                <div style={{ fontSize: 11, color: 'var(--brand-color)', marginTop: 3, marginBottom: 4 }}>
-                  自动带出: {draft.material_name} {draft.specification && `· ${draft.specification}`}
-                </div>
-              )}
-              {/* 行2：批号 + 包号 + 数量 + 保存/取消 同一行 */}
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
-                <input placeholder="批号" value={draft.material_batch || ''}
-                  onChange={(e) => setDraft(d => ({ ...d, material_batch: e.target.value }))}
-                  style={{ flex: 2, minWidth: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }} />
-                <input placeholder="包号" value={draft.package_no || ''}
-                  onChange={(e) => setDraft(d => ({ ...d, package_no: e.target.value }))}
-                  style={{ flex: 2, minWidth: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }} />
-                <input type="number" min={0} placeholder="数量" value={draft.quantity || ''}
-                  onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
-                  style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }} />
-                <Button size="mini" color="primary" onClick={handleSave} style={{ flexShrink: 0 }}>保存</Button>
-                <Button size="mini" fill="outline" onClick={cancelEdit} style={{ flexShrink: 0 }}>取消</Button>
-                {draft.material_id && (
-                  <Button size="mini" fill="outline" onClick={() => handleDel(draft as MaterialRow)} style={{ flexShrink: 0 }}>删除</Button>
-                )}
-              </div>
-              {/* 标签图片 */}
-              <div style={{ marginTop: 8 }}>
-                <ProcessImageUploader
-                  reportNo={report.report_no} category="label"
-                  value={Array.isArray(draft.label_images) ? draft.label_images : []}
-                  onChange={(urls) => setDraft(d => ({ ...d, label_images: urls }))}
-                  label="标签图片"
-                />
-              </div>
+              <MaterialForm />
             </div>
           )
         }
@@ -261,57 +405,90 @@ export function ProcessMaterialPanel({
         </Button>
       )}
 
+      {/* ========== 新增投料表单 ========== */}
       {expandedId === '__new__' && (
         <div style={{ borderTop: '1px dashed #ddd', paddingTop: 10, marginTop: 6 }}>
-          {/* 行1：类型 + 料品 同一行 */}
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <select value={draft.material_type} onChange={(e) => setDraft(d => ({ ...d, material_type: e.target.value as any }))}
-              style={{ width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }}>
-              <option value="投入">投入</option>
-              <option value="退回">退回</option>
-            </select>
-            <select value={draft.bas_material_id || ''} onChange={(e) => handleMaterialSelect(e.target.value)}
-              style={{ flex: 1, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }}>
-              <option value="">料品</option>
-              {materials.map(m => (
-                <option key={m.bas_material_id} value={m.bas_material_id}>{m.material_code} {m.material_name}</option>
-              ))}
-            </select>
-          </div>
-          {draft.material_name && (
-            <div style={{ fontSize: 11, color: 'var(--brand-color)', marginTop: 3, marginBottom: 4 }}>
-              自动带出: {draft.material_name} {draft.specification && `· ${draft.specification}`}
-            </div>
-          )}
-          {/* 行2：批号 + 包号 + 数量 + 保存/取消 同一行 */}
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
-            <input placeholder="批号" value={draft.material_batch || ''}
-              onChange={(e) => setDraft(d => ({ ...d, material_batch: e.target.value }))}
-              style={{ flex: 2, minWidth: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }} />
-            <input placeholder="包号" value={draft.package_no || ''}
-              onChange={(e) => setDraft(d => ({ ...d, package_no: e.target.value }))}
-              style={{ flex: 2, minWidth: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }} />
-            <input type="number" min={0} placeholder="数量" value={draft.quantity || ''}
-              onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
-              style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }} />
-            <Button size="mini" color="primary" onClick={handleSave} style={{ flexShrink: 0 }}>保存</Button>
-            <Button size="mini" fill="outline" onClick={cancelEdit} style={{ flexShrink: 0 }}>取消</Button>
-          </div>
-          {/* 标签图片 */}
-          <div style={{ marginTop: 8 }}>
-            <ProcessImageUploader
-              reportNo={report.report_no} category="label"
-              value={Array.isArray(draft.label_images) ? draft.label_images : []}
-              onChange={(urls) => setDraft(d => ({ ...d, label_images: urls }))}
-              label="标签图片"
-            />
-          </div>
+          <MaterialForm />
         </div>
       )}
 
       {!activeProcessId && (
         <div style={{ textAlign: 'center', padding: 20, color: 'var(--m-text-3)', fontSize: 12 }}>请先选择工序</div>
       )}
+
+      {/* ========== 料品选择器 Popup ========== */}
+      <Popup
+        visible={showPicker}
+        onMaskClick={() => { setShowPicker(false); setPickerKeyword('') }}
+        position="bottom"
+        bodyStyle={{ maxHeight: '70vh', borderRadius: '12px 12px 0 0', overflow: 'hidden' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', padding: '10px 12px', borderBottom: '1px solid #eee' }}>
+          <div style={{ flex: 1, fontSize: 15, fontWeight: 600 }}>
+            {draft.material_type === '退回' ? '选退回料品' : '选料品'}
+            <span style={{ color: 'var(--m-text-3)', fontSize: 11, marginLeft: 6, fontWeight: 400 }}>
+              （{filteredList.length}/{candidateList.length}）
+            </span>
+          </div>
+          <div
+            onClick={() => { setShowPicker(false); setPickerKeyword('') }}
+            style={{ fontSize: 20, color: 'var(--m-text-3)', padding: '0 8px', cursor: 'pointer' }}
+          >✕</div>
+        </div>
+        <div style={{ padding: '8px 12px' }}>
+          <Input
+            placeholder="🔍 搜索料号/名称/规格"
+            value={pickerKeyword}
+            onChange={(v) => setPickerKeyword(v)}
+            style={{ '--font-size': '14px' }}
+            clearable
+          />
+        </div>
+        <div style={{ maxHeight: 'calc(70vh - 100px)', overflowY: 'auto', padding: '0 12px 20px' }}>
+          {draft.material_type === '退回' && returnableMap.size === 0 && (
+            <div style={{ textAlign: 'center', padding: 30, color: 'var(--m-text-3)', fontSize: 12 }}>
+              当前工序暂无投入记录可退回
+            </div>
+          )}
+          {draft.material_type === '退回' && returnableMap.size > 0 && filteredList.length === 0 && (
+            <div style={{ textAlign: 'center', padding: 30, color: 'var(--m-text-3)', fontSize: 12 }}>
+              无匹配料品
+            </div>
+          )}
+          {candidateList.length > 0 && filteredList.length === 0 && draft.material_type !== '退回' && (
+            <div style={{ textAlign: 'center', padding: 30, color: 'var(--m-text-3)', fontSize: 12 }}>无匹配料品</div>
+          )}
+          {filteredList.map((m) => {
+            // 退回场景：显示原投入汇总数量
+            const rinfo = draft.material_type === '退回' ? returnableMap.get(m.bas_material_id) : null
+            const isSelected = draft.bas_material_id === m.bas_material_id
+            return (
+              <div key={m.bas_material_id}
+                onClick={() => handlePickMaterial(m.bas_material_id)}
+                style={{
+                  padding: '10px 8px', borderBottom: '1px solid #f5f5f5',
+                  cursor: 'pointer',
+                  background: isSelected ? 'var(--m-surface-2, #f5f5f5)' : 'transparent',
+                }}>
+                <div style={{ fontSize: 13, fontWeight: 500 }}>
+                  {m.material_code && <span style={{ color: 'var(--m-text-3)', fontSize: 11, marginRight: 6 }}>{m.material_code}</span>}
+                  {m.material_name || '—'}
+                  {isSelected && <span style={{ color: 'var(--brand-color)', marginLeft: 6 }}>✓</span>}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>
+                  {m.specification && <span>{m.specification}</span>}
+                  {rinfo && (
+                    <span style={{ marginLeft: m.specification ? 8 : 0, color: '#f44336' }}>
+                      原投入 ×{fmtInt(rinfo.totalInputQty)}
+                      {rinfo.material_batch && <span style={{ marginLeft: 4 }}>批:{rinfo.material_batch}</span>}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </Popup>
     </div>
   )
 }
