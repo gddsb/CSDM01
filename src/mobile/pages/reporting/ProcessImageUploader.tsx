@@ -1,30 +1,32 @@
 /**
- * 报工图片上传组件（通用）—— 原生版 v2
+ * 报工图片上传组件（通用）—— ActionSheet + 双隐藏 input 版
  *
- * 设计：直接用 antd-mobile ImageUploader 原生 upload prop，系统文件选择器自带相机+相册入口，
- *       不再自绘 "+"、不再 ActionSheet、不再隐藏 input —— 极简、稳定、不再转圈。
+ * 核心设计：绕开 antd-mobile ImageUploader 的 upload 状态机，
+ * 自绘 "+" cell + ActionSheet 二选一 + 两个隐藏 <input type="file"> 精确控制相机/相册。
+ *
+ * 为什么不传 upload prop：
+ *   - 传了 antd-mobile 就会渲染内置 "+" + 内部隐藏 input，无法精确区分相机/相册
+ *   - 还会渲染 uploading cell + 等 Promise resolve，hack 永不 resolve 会永远转圈
+ *   - disableUpload 彻底干掉这些副作用，我们完全接管上传链路
  *
  * 后端联动：
  *   - 上传: POST /production/report-images/:reportNo/:category/upload
  *   - 删除单张图: DELETE /production/report-images/by-url?url=xxx (DB+fs 双删)
- *   - 删除不良记录: DELETE /production/process-defects/:id
- *     → ProcessDefectService.remove 内部已自动 cleanupImageFiles()（DB+fs 双删）
  */
-import { useCallback, useEffect, useState } from 'react'
-import { ImageUploader, Toast } from 'antd-mobile'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { ActionSheet, ImageUploader, Toast } from 'antd-mobile'
 import type { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import api from '../../../utils/api'
 import { resolveUploadUrl } from '../../../utils/resolveUploadUrl'
 import { compressImage } from '../../utils/image-compress'
 import { pushLog, flushLogs } from '../../utils/log-queue'
 
-/** 统一日志入口 —— console 真机 Logcat 可见 + 同步 localStorage 队列 */
+/** 统一日志入口 —— 真机 Logcat 可见 + 同步 localStorage 队列 */
 function log(level: 'info' | 'warn' | 'error', stage: string, ctx: any) {
   const tag = `[IMG-UPLOAD] [${stage}]`
   if (level === 'info') console.log(tag, ctx)
   else if (level === 'warn') console.warn(tag, ctx)
   else console.error(tag, ctx)
-
   try {
     pushLog({
       time: new Date().toISOString(),
@@ -41,6 +43,11 @@ function getCurrentUsername(): string {
     if (!raw) return ''
     return JSON.parse(raw)?.username || ''
   } catch { return '' }
+}
+
+/** 重置隐藏 input 的 value —— 让用户选同一个文件也能再次触发 onChange */
+function resetInput(input: HTMLInputElement | null) {
+  if (input) input.value = ''
 }
 
 interface Props {
@@ -78,8 +85,35 @@ export function ProcessImageUploader({
   // flushLogs 挂载时跑一次
   useEffect(() => { flushLogs() }, [])
 
-  // ========== 上传核心 —— 直接给 antd-mobile upload prop ==========
-  // 签名对齐 antd-mobile：(file: File) => Promise<ImageUploadItem>
+  // 两个隐藏 <input type="file"> —— 精确控制入口
+  // cameraInput: capture="environment" → 直接开后置相机，拍完就返回（不弹选择器）
+  // galleryInput: multiple → 只跳相册，支持多选
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
+
+  const remaining = maxCount - items.length
+
+  // ========== "+" 点击 → ActionSheet 二选一 ==========
+  const handleAddClick = useCallback(() => {
+    if (remaining <= 0) {
+      Toast.show({ content: `已达上限（${maxCount} 张）`, position: 'bottom' })
+      return
+    }
+    ActionSheet.show({
+      actions: [
+        { text: '📷 相机拍摄', key: 'camera' },
+        { text: '🖼️ 相册选择', key: 'gallery' },
+      ],
+      cancelText: '取消',
+      onAction: (action) => {
+        log('info', 'ACTION', { target: action.key, remaining })
+        if (action.key === 'camera') cameraInputRef.current?.click()
+        else if (action.key === 'gallery') galleryInputRef.current?.click()
+      },
+    })
+  }, [remaining, maxCount])
+
+  // ========== 上传核心 —— 单文件 ==========
   const upload = useCallback(async (file: File): Promise<ImageUploadItem> => {
     const stageStart = performance.now()
 
@@ -121,7 +155,6 @@ export function ProcessImageUploader({
       }
 
       log('info', 'UPLOAD_OK', { rawUrl, ms: Math.round(performance.now() - stageStart) })
-      // key 存后端相对路径（用来删图时传 by-url 端点）
       return { url: resolveUploadUrl(rawUrl), key: rawUrl }
     } catch (e: any) {
       const isTimeout = e?.code === 'ECONNABORTED' || /timeout/i.test(String(e?.message))
@@ -133,18 +166,43 @@ export function ProcessImageUploader({
     }
   }, [reportNo, category])
 
+  // ========== 文件处理入口 —— 串行上传剩余名额内的文件 ==========
+  const handleFiles = useCallback(async (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return
+    const files = Array.from(fileList).slice(0, remaining)
+    if (files.length === 0) {
+      Toast.show({ content: `最多 ${maxCount} 张`, position: 'bottom' })
+      return
+    }
+    log('info', 'HANDLE_FILES', { count: files.length, remaining })
+    for (const file of files) {
+      try {
+        const result = await upload(file)
+        setItems(prev => {
+          const next = [...prev, result]
+          onChange(toUrls(next))
+          log('info', 'UI_CHANGE', { prev: prev.length, next: next.length })
+          return next
+        })
+      } catch { /* upload 内部已 Toast */ }
+    }
+  }, [upload, remaining, maxCount, onChange])
+
   // ========== 删除图片：乐观更新 + 后端 by-url 端点（DB+fs 双删） ==========
   const handleChange = useCallback(async (newItems: ImageUploadItem[]) => {
-    // 同步父组件（无论新增还是删除，都传当前全集）
-    onChange(toUrls(newItems))
-
-    // 只处理删除：diff 出被删的项，逐条调后端 by-url
+    // 只处理删除（新增走 handleFiles，这里不动）
     if (newItems.length >= items.length) return
 
     const prevKeys = new Set(items.map(getRawUrl))
     const nextKeys = new Set(newItems.map(getRawUrl))
     const removed = items.filter(i => !nextKeys.has(getRawUrl(i)))
 
+    // 乐观更新 UI + 同步父组件
+    setItems(newItems)
+    onChange(toUrls(newItems))
+    log('info', 'UI_DELETE', { removed: removed.map(getRawUrl), remaining: newItems.length })
+
+    // 逐条删后端（失败独立互不影响）
     for (const item of removed) {
       try {
         const encoded = encodeURIComponent(getRawUrl(item))
@@ -156,7 +214,6 @@ export function ProcessImageUploader({
         })
       }
     }
-    setItems(newItems)
   }, [items, onChange])
 
   return (
@@ -169,13 +226,54 @@ export function ProcessImageUploader({
         </div>
       )}
 
-      {/* 原生 antd-mobile ImageUploader —— upload prop 直接接我们的上传函数
-          点 "+" → 系统文件选择器（自带相机+相册）→ upload() → resolve → 缩略图替换 uploading cell */}
+      {/*
+        disableUpload 干掉 antd-mobile 内置 "+" cell 和内部隐藏 input —— 根因修复。
+        我们不传 upload prop，antd-mobile 完全不参与上传状态机：
+          ✓ 没有 uploading cell 永不消失的问题
+          ✓ 没有内部 input 漏触发直接跳系统选择器的问题
+          ✓ 只靠 value={items} 受控渲染已有缩略图
+      */}
       <ImageUploader
         value={items}
         onChange={handleChange}
-        upload={upload}
+        disableUpload
         maxCount={maxCount}
+      />
+
+      {/* 自绘 "+" cell —— 触发 ActionSheet，样式与 antd-mobile 原版一致 */}
+      {remaining > 0 && (
+        <div
+          onClick={handleAddClick}
+          style={{
+            width: 80, height: 80,
+            border: '1px dashed var(--adm-color-border, #cccccc)',
+            borderRadius: 8,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            color: 'var(--adm-color-weak, #999)',
+            fontSize: 36, fontWeight: 300, lineHeight: 1,
+            cursor: 'pointer', userSelect: 'none',
+            marginLeft: 8, marginTop: 8,
+            boxSizing: 'border-box',
+          }}
+        >+</div>
+      )}
+
+      {/* 两个隐藏 <input type="file"> —— 被 ActionSheet 选择后触发 */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        style={{ display: 'none' }}
+        onChange={(e) => { handleFiles(e.target.files); resetInput(e.target) }}
+      />
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        style={{ display: 'none' }}
+        onChange={(e) => { handleFiles(e.target.files); resetInput(e.target) }}
       />
     </div>
   )
