@@ -962,7 +962,7 @@ export default function ProcessReporting() {
     if (record.material_type === '退回') {
       const enteredMaterials = materialList
         .filter(m => m.material_id && m.material_code && m.material_batch && m.package_no)
-        .map(m => String(m.material_id))
+        .map(m => String(m.bas_material_id))
       return materialOptions.filter(m => enteredMaterials.includes(String(m.value)))
     }
     return materialOptions.filter(m =>
