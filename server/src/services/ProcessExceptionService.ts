@@ -69,14 +69,9 @@ export const ProcessExceptionService = {
     if (!body.exception_type) throw new AppError('异常类型不能为空', 10001, 400)
     if (!body.start_time) throw new AppError('开始时间不能为空', 10001, 400)
 
-    // 换型换线不允许重复
+    // 换型换线由"开工"时系统自动生成，不允许用户手动创建
     if (body.exception_type === '换型换线') {
-      const existing = await ProcessException.count({
-        where: { report_order_id: body.report_order_id, exception_type: '换型换线' },
-      })
-      if (existing > 0) {
-        throw new AppError('该报工单已存在换型换线记录，不允许重复创建', 20001, 409)
-      }
+      throw new AppError('换型换线记录由系统在"开工"时自动生成，不允许手动创建', 20001, 409)
     }
 
     const timeCheck = validateTimeRange(body.start_time, body.end_time)
