@@ -22,20 +22,18 @@ export const statusOptions = [
 
 interface BuildColumnsArgs {
   onView: (record: any) => void
-  onEdit: (record: any) => void
   onRelease?: (record: any) => void
   onStart?: (record: any) => void
   onFinish?: (record: any) => void
   onClose?: (record: any) => void
-  canEdit: boolean
   canRelease?: boolean
   canFinish?: boolean
   canClose?: boolean
 }
 
 export function buildOrderColumns({
-  onView, onEdit, onRelease, onStart, onFinish, onClose,
-  canEdit, canRelease, canFinish, canClose,
+  onView, onRelease, onStart, onFinish, onClose,
+  canRelease, canFinish, canClose,
 }: BuildColumnsArgs): ColumnsType<any> {
   const renderActions = (r: any) => {
     if (r.status === '开立') {
@@ -43,9 +41,6 @@ export function buildOrderColumns({
         <Space size={0}>
           {canRelease && onRelease && (
             <Button type="link" size="small" onClick={() => onRelease(r)}>下发</Button>
-          )}
-          {canEdit && (
-            <Button type="link" size="small" onClick={() => onEdit(r)}>编辑</Button>
           )}
           <Button type="link" size="small" onClick={() => onView(r)}>查看</Button>
         </Space>

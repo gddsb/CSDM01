@@ -526,9 +526,6 @@ export default function OrderManagement() {
           {hasPermission('production:order:release') && (
             <Button type="link" size="small" onClick={() => handleRelease(r)}>下发</Button>
           )}
-          {hasPermission('production:order:update') && (
-            <Button type="link" size="small" onClick={() => handleEdit(r)}>编辑</Button>
-          )}
           <Button type="link" size="small" onClick={() => handleView(r)}>查看</Button>
         </Space>
       )
@@ -572,12 +569,10 @@ export default function OrderManagement() {
 
   const columns = buildOrderColumns({
     onView: (r: any) => handleView(r),
-    onEdit: handleEdit,
     onRelease: (r: any) => handleRelease(r),
     onStart: (r: any) => handleStart(r),
     onFinish: (r: any) => handleFinish(r),
     onClose: (r: any) => handleClose(r),
-    canEdit: hasPermission('production:order:update'),
     canRelease: hasPermission('production:order:release'),
     canFinish: hasPermission('production:order:finish'),
     canClose: hasPermission('production:order:close'),
