@@ -100,21 +100,15 @@ export function ProcessMaterialPanel({
     onDirtyChange?.(expandedId !== null)
   }, [expandedId, onDirtyChange])
 
-  /** 关键：切换编辑态后自动把 draft 同步到非受控 input ref
-   *  只依赖 expandedId（不依赖 draft）— 避免 draft 内部字段频繁变化时被多余触发
-   *  queueMicrotask 比 useEffect 更晚执行，确保 DOM 完全挂载 ref.current 一定有值
+  /** 关键：切换编辑态 / draft 变化后自动把 draft 同步到非受控 input ref
+   *  useEffect 在 React commit 后同步执行，此时 DOM 完全挂载 ref.current 一定有值。
+   *  queueMicrotask 反而太早（在 commit 前就跑），ref 还是 null —— 这里不能用。
    *
-   * 覆盖场景：
-   *   startEdit（expandedId 从 null→number，draft 变完整行）
-   *   startAdd（expandedId 从 null→'__new__'，draft 是空 → sync 空值）
-   * 不覆盖但另处理：
-   *   handlePickMaterial 退回自动带出（expandedId 不变仅 draft 变 → 见下方显式 sync）
-   */
+   * 依赖 expandedId → 切换编辑记录触发；依赖 draft → 退回选料后 draft 变触发 */
   useEffect(() => {
     if (expandedId === null) return
-    queueMicrotask(() => syncInputRefs(draft))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expandedId])
+    syncInputRefs(draft)
+  }, [expandedId, draft, syncInputRefs])
 
   // ========== 退回料品候选：当前工序已保存的 "投入" 记录去重汇总 ==========
   const returnableMap = useMemo(() => {
@@ -197,8 +191,8 @@ export function ProcessMaterialPanel({
         quantity: rinfo?.totalInputQty || draft.quantity || 0,
       }
       setDraft(nextDraft)
-      // 退回场景 expandedId 不变（通常是新增态 __new__ 已展开），useEffect 不会触发 —— 手动 queueMicrotask 等 commit 后 sync
-      queueMicrotask(() => syncInputRefs(nextDraft))
+      // useEffect 依赖已含 draft，setDraft 后 commit 完会自动 sync —— 这里也显式调一次双保险
+      syncInputRefs(nextDraft)
       Toast.show({ content: '已带出原投入批次信息', position: 'bottom' })
     } else {
       setDraft(d => ({
