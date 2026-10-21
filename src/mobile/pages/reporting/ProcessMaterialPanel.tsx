@@ -21,7 +21,7 @@
  *   PUT  /production/process-materials/:id
  *   DEL  /production/process-materials/:id
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import React from 'react'
 import { Button, Dialog, Input, Popup, Toast } from 'antd-mobile'
 import api from '../../../utils/api'
@@ -73,24 +73,7 @@ export function ProcessMaterialPanel({
     material_type: '投入',
     quantity: 0,
   })
-  // 批号/包号/数量 改用非受控 input + ref —— 彻底解决受控 re-render 导致的输入法关闭问题
-  const batchInputRef = useRef<HTMLInputElement>(null)
-  const pkgInputRef = useRef<HTMLInputElement>(null)
-  const qtyInputRef = useRef<HTMLInputElement>(null)
-
-  /** 同步 input ref 值 —— draft 变化时（新增/编辑切换/退回自动带出）手动更新 DOM */
-  const syncInputRefs = useCallback((row: MaterialRow) => {
-    if (batchInputRef.current) batchInputRef.current.value = row.material_batch || ''
-    if (pkgInputRef.current) pkgInputRef.current.value = row.package_no || ''
-    if (qtyInputRef.current) qtyInputRef.current.value = String(row.quantity ?? '')
-  }, [])
-
-  /** 从 ref 读取三个 input 的当前值 —— 用于保存时收集用户输入 */
-  const readInputRefs = useCallback((): Partial<MaterialRow> => ({
-    material_batch: batchInputRef.current?.value || '',
-    package_no: pkgInputRef.current?.value || '',
-    quantity: Number(qtyInputRef.current?.value) || 0,
-  }), [])
+  // 批号/包号/数量：受控 input（value={draft.xxx} + onChange → setDraft）— 与 state 直接绑定，无需 ref+useEffect 同步
 
   // 料品选择器 Popup
   const [showPicker, setShowPicker] = useState(false)
@@ -99,16 +82,6 @@ export function ProcessMaterialPanel({
   useEffect(() => {
     onDirtyChange?.(expandedId !== null)
   }, [expandedId, onDirtyChange])
-
-  /** 关键：切换编辑态 / draft 变化后自动把 draft 同步到非受控 input ref
-   *  useEffect 在 React commit 后同步执行，此时 DOM 完全挂载 ref.current 一定有值。
-   *  queueMicrotask 反而太早（在 commit 前就跑），ref 还是 null —— 这里不能用。
-   *
-   * 依赖 expandedId → 切换编辑记录触发；依赖 draft → 退回选料后 draft 变触发 */
-  useEffect(() => {
-    if (expandedId === null) return
-    syncInputRefs(draft)
-  }, [expandedId, draft, syncInputRefs])
 
   // ========== 退回料品候选：当前工序已保存的 "投入" 记录去重汇总 ==========
   const returnableMap = useMemo(() => {
@@ -191,8 +164,6 @@ export function ProcessMaterialPanel({
         quantity: rinfo?.totalInputQty || draft.quantity || 0,
       }
       setDraft(nextDraft)
-      // useEffect 依赖已含 draft，setDraft 后 commit 完会自动 sync —— 这里也显式调一次双保险
-      syncInputRefs(nextDraft)
       Toast.show({ content: '已带出原投入批次信息', position: 'bottom' })
     } else {
       setDraft(d => ({
@@ -250,9 +221,8 @@ export function ProcessMaterialPanel({
 
   const handleSave = useCallback(async () => {
     if (!draft.bas_material_id) { Toast.show({ content: '请选料品', icon: 'fail' }); return }
-    // 从 ref 读取三个非受控 input 的最新值 —— 不触发 re-render
-    const inputs = readInputRefs()
-    const qty = Number(inputs.quantity) || 0
+    // 受控 input：draft 就是最新值，直接读
+    const qty = Number(draft.quantity) || 0
     if (qty <= 0) { Toast.show({ content: '数量 > 0', icon: 'fail' }); return }
     // 退回不能超过原投入
     if (draft.material_type === '退回' && currentReturnLimit > 0 && qty > currentReturnLimit) {
@@ -266,8 +236,8 @@ export function ProcessMaterialPanel({
       process_id: activeProcessId,
       material_type: draft.material_type || '投入',
       bas_material_id: draft.bas_material_id,
-      material_batch: inputs.material_batch || null,
-      package_no: inputs.package_no || null,
+      material_batch: draft.material_batch || null,
+      package_no: draft.package_no || null,
       quantity: qty,
       label_images: labelImages,
     }
@@ -354,16 +324,22 @@ export function ProcessMaterialPanel({
         </Button>
       </div>
       {/* 行2：批号 + 包号 + 数量 + 保存/取消
-          三个 input 都是非受控（用 ref 收集）—— 避免每次按键触发 setDraft → re-render → input 重挂载 → 输入法关闭
+          受控 input：value={draft.xxx} + onChange → 直接跟 state 绑定，避免 ref+useEffect 同步时序问题
           退回场景下批号/包号 disabled（自动带出原投入批次，不允许改）*/}
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
-        <input ref={batchInputRef} placeholder="批号"
+        <input placeholder="批号"
+          value={draft.material_batch ?? ''}
+          onChange={(e) => setDraft(d => ({ ...d, material_batch: e.target.value }))}
           disabled={draft.material_type === '退回'}
           style={{ ...inputStyle, flex: 2, minWidth: 70, cursor: draft.material_type === '退回' ? 'not-allowed' : 'text', opacity: draft.material_type === '退回' ? 0.65 : 1 }} />
-        <input ref={pkgInputRef} placeholder="包号"
+        <input placeholder="包号"
+          value={draft.package_no ?? ''}
+          onChange={(e) => setDraft(d => ({ ...d, package_no: e.target.value }))}
           disabled={draft.material_type === '退回'}
           style={{ ...inputStyle, flex: 2, minWidth: 70, cursor: draft.material_type === '退回' ? 'not-allowed' : 'text', opacity: draft.material_type === '退回' ? 0.65 : 1 }} />
-        <input ref={qtyInputRef} type="number" min={0}
+        <input type="number" min={0}
+          value={draft.quantity ?? ''}
+          onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
           max={currentReturnLimit > 0 ? currentReturnLimit : undefined}
           placeholder={draft.material_type === '退回' ? `≤${fmtInt(currentReturnLimit || 0)}` : '数量'}
           style={{ ...inputStyle, width: 60 }} />
