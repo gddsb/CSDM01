@@ -10,7 +10,7 @@
  *   POST /production/manpower-records
  *   PUT  /production/manpower-records/:id
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import React from 'react'
 import { Button, Toast } from 'antd-mobile'
 import api from '../../../utils/api'
@@ -45,21 +45,16 @@ export function ManpowerPanel({ report, editable, manpower, setManpower, onDirty
     }
   }, [manpower])
 
-  // dirty：当前计数 vs 已保存 manpower 有差异
-  // manpower=null 表示还没保存过任何记录 → 只要用户填了非零人数就是 dirty
-  useEffect(() => {
-    let dirty: boolean
-    if (!manpower) {
-      dirty = (skilled + general + labor + other) > 0
-    } else {
-      dirty =
-        skilled !== Number(manpower.skilled_count || 0) ||
-        general !== Number(manpower.general_count || 0) ||
-        labor !== Number(manpower.labor_count || 0) ||
-        other !== Number(manpower.other_count || 0)
-    }
-    onDirtyChange?.(dirty)
-  }, [skilled, general, labor, other, manpower, onDirtyChange])
+  // dirty 提升到 render 作用域（useMemo），useEffect 只负责 onDirtyChange 回调
+  const dirty = useMemo(() => {
+    if (!manpower) return (skilled + general + labor + other) > 0
+    return skilled !== Number(manpower.skilled_count || 0) ||
+           general !== Number(manpower.general_count || 0) ||
+           labor !== Number(manpower.labor_count || 0) ||
+           other !== Number(manpower.other_count || 0)
+  }, [skilled, general, labor, other, manpower])
+
+  useEffect(() => { onDirtyChange?.(dirty) }, [dirty, onDirtyChange])
 
   const handleSave = useCallback(async () => {
     const total = skilled + general + labor + other
