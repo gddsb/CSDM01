@@ -460,7 +460,7 @@ function Header({ report, onBack, onFinish }: { report: ReportOrder; onBack: () 
       background: 'linear-gradient(135deg,#1890ff,#096dd9)', color: 'var(--m-surface)',
       padding: '12px 14px',
     }}>
-      {/* 行1：编号 + 状态 + 返回/完工按钮 同一行 */}
+      {/* 行1：编号 + 状态 + 完工按钮 同一行（返回按钮已移除，由系统返回手势替代） */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ fontSize: 16, fontWeight: 700 }}>📝 {report.report_no}</span>
         <span style={{
@@ -468,7 +468,6 @@ function Header({ report, onBack, onFinish }: { report: ReportOrder; onBack: () 
           background: isDone ? '#52c41a' : statusText === '生产中' ? '#faad14' : 'rgba(255,255,255,.25)',
         }}>{statusText}</span>
         <div style={{ flex: 1 }} />
-        <Button size="mini" fill="outline" color="white" onClick={onBack}>返回</Button>
         {!isDone && (
           <Button size="mini" color="danger" onClick={onFinish} style={{ background: '#ff4d4f' }}>完工</Button>
         )}

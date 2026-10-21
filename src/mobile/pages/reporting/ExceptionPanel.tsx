@@ -95,6 +95,12 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
   }, [setRows])
 
   const handleDel = useCallback(async (row: ExceptionRow) => {
+    // 系统自动生成的换型换线记录不允许删除（在 ReportOrderService 报工单创建时自动生成）
+    const isAutoChangeover = row.exception_type === '换型换线' && row.description?.includes('自动')
+    if (isAutoChangeover) {
+      Toast.show({ content: '系统自动生成的换型换线记录不允许删除', icon: 'fail', position: 'bottom' })
+      return
+    }
     const ok = await Dialog.confirm({ content: '删除该工时记录？', confirmText: '删除', cancelText: '取消' })
     if (!ok) return
     try {
@@ -134,8 +140,8 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
                 {editable && isUnfinished && (
                   <Button size="mini" color="primary" onClick={() => handleFinish(row)}>结束</Button>
                 )}
-                {/* 已结束的记录不允许删除 */}
-                {editable && isUnfinished && (
+                {/* 未结束的可删，但系统自动生成的换型换线记录禁删 */}
+                {editable && isUnfinished && !(row.exception_type === '换型换线' && row.description?.includes('自动')) && (
                   <Button size="mini" fill="outline" onClick={() => handleDel(row)}>删</Button>
                 )}
               </div>

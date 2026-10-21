@@ -100,6 +100,17 @@ export function ProcessMaterialPanel({
     onDirtyChange?.(expandedId !== null)
   }, [expandedId, onDirtyChange])
 
+  /** 关键：DOM 挂载/数据变化后自动把 draft 同步到非受控 input ref
+   *  修 bug：之前用 setTimeout(fn,0) 不等 React commit，DOM 还没挂 ref 为 null 就空跑了。
+   *  useEffect 在 commit 后同步执行，此时 ref.current 一定有值。
+   *  覆盖：startEdit 已有记录（进入编辑态） + handlePickMaterial 退回自动带出（新增态也需）
+   *  不覆盖：startAdd（初始化为空，保持 input 空即可） */
+  useEffect(() => {
+    if (expandedId === null) return
+    // 新增态 + 编辑态 都同步 —— 退回选料后 useEffect 会被 draft 变化触发
+    syncInputRefs(draft)
+  }, [expandedId, draft, syncInputRefs])
+
   // ========== 退回料品候选：当前工序已保存的 "投入" 记录去重汇总 ==========
   const returnableMap = useMemo(() => {
     const m = new Map<string, ReturnableInfo>()
@@ -181,8 +192,7 @@ export function ProcessMaterialPanel({
         quantity: rinfo?.totalInputQty || draft.quantity || 0,
       }
       setDraft(nextDraft)
-      // 退回自动带出后同步 input ref 值（当前 DOM 已挂载）
-      syncInputRefs(nextDraft)
+      // 退回自动带出 batch/pkg/qty 后，useEffect 监听 draft 变化会自动 syncInputRefs —— 不再手动调
       Toast.show({ content: '已带出原投入批次信息', position: 'bottom' })
     } else {
       setDraft(d => ({
@@ -197,22 +207,17 @@ export function ProcessMaterialPanel({
 
   // ========== 动作 ==========
   const startAdd = () => {
-    const initRow: MaterialRow = {
+    setDraft({
       report_order_id: report.report_order_id,
       process_id: activeProcessId || undefined,
       material_type: '投入',
       quantity: 0,
-    }
-    setDraft(initRow)
+    })
     setExpandedId('__new__')
-    // 延迟一拍等 DOM 挂载后再填值
-    setTimeout(() => syncInputRefs(initRow), 0)
   }
   const startEdit = (row: MaterialRow) => {
-    const initRow = { ...row, label_images: parseImages(row.label_images) }
-    setDraft(initRow)
+    setDraft({ ...row, label_images: parseImages(row.label_images) })
     setExpandedId(row.id || row.material_id! || '__unknown__')
-    setTimeout(() => syncInputRefs(initRow), 0)
   }
   const cancelEdit = () => {
     setExpandedId(null)
@@ -239,8 +244,8 @@ export function ProcessMaterialPanel({
       quantity: 0,
     }
     setDraft(nextDraft)
-    // 同步 ref —— 切换类型后批号/包号/数量要反映新值
-    syncInputRefs(nextDraft)
+    // 注意：expandedId 不是 '__new__'/null 时 useEffect 会自动 sync
+    // 如果当前是新增态（expandedId='__new__'），保持 input 空即可，不需要手动 sync
   }
 
   const handleSave = useCallback(async () => {
@@ -349,12 +354,15 @@ export function ProcessMaterialPanel({
         </Button>
       </div>
       {/* 行2：批号 + 包号 + 数量 + 保存/取消
-          三个 input 都是非受控（用 ref 收集）—— 避免每次按键触发 setDraft → re-render → input 重挂载 → 输入法关闭 */}
+          三个 input 都是非受控（用 ref 收集）—— 避免每次按键触发 setDraft → re-render → input 重挂载 → 输入法关闭
+          退回场景下批号/包号 disabled（自动带出原投入批次，不允许改）*/}
       <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
         <input ref={batchInputRef} placeholder="批号"
-          style={{ ...inputStyle, flex: 2, minWidth: 70 }} />
+          disabled={draft.material_type === '退回'}
+          style={{ ...inputStyle, flex: 2, minWidth: 70, cursor: draft.material_type === '退回' ? 'not-allowed' : 'text', opacity: draft.material_type === '退回' ? 0.65 : 1 }} />
         <input ref={pkgInputRef} placeholder="包号"
-          style={{ ...inputStyle, flex: 2, minWidth: 70 }} />
+          disabled={draft.material_type === '退回'}
+          style={{ ...inputStyle, flex: 2, minWidth: 70, cursor: draft.material_type === '退回' ? 'not-allowed' : 'text', opacity: draft.material_type === '退回' ? 0.65 : 1 }} />
         <input ref={qtyInputRef} type="number" min={0}
           max={currentReturnLimit > 0 ? currentReturnLimit : undefined}
           placeholder={draft.material_type === '退回' ? `≤${fmtInt(currentReturnLimit || 0)}` : '数量'}

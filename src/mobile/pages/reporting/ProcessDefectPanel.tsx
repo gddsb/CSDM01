@@ -271,24 +271,11 @@ export function ProcessDefectPanel({
                 <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>
                   数量 ×{fmtInt(row.quantity)} {row.unit || ''}
                 </div>
-                {/* 不良图片缩略图 —— 只读展示 */}
+                {/* 不良图片数量（与物料记录列表风格一致，不显示缩略图） */}
                 {(() => {
                   const imgs = parseImages(row.defect_images)
                   if (imgs.length === 0) return null
-                  return (
-                    <div style={{ display: 'flex', gap: 4, marginTop: 6, flexWrap: 'wrap' }}>
-                      {imgs.map((u, idx) => (
-                        <AntdImage
-                          key={idx}
-                          src={resolveUploadUrl(u)}
-                          width={44}
-                          height={44}
-                          fit="cover"
-                          style={{ borderRadius: 4, border: '1px solid #eee', objectFit: 'cover' }}
-                        />
-                      ))}
-                    </div>
-                  )
+                  return <span style={{ marginLeft: 6, color: 'var(--m-text-3)' }}>📷 {imgs.length} 张</span>
                 })()}
               </div>
               {editable && <span style={{ color: 'var(--m-text-3)', fontSize: 16 }}>›</span>}
