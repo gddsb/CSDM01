@@ -31,7 +31,6 @@ const ManpowerRecord = sequelize.define('ManpowerRecord', {
   },
   hours: {
     type: DataTypes.DECIMAL(10, 2),
-    defaultValue: 0,
     comment: '工时(MySQL STORED自动计算)',
     set() { /* 只读：DB STORED 自动算 */ },
   },
@@ -62,7 +61,6 @@ const ManpowerRecord = sequelize.define('ManpowerRecord', {
   },
   man_hours: {
     type: DataTypes.DECIMAL(10, 2),
-    defaultValue: 0,
     comment: '人时(hours×人数, MySQL STORED自动计算)',
     set() { /* 只读：DB STORED 自动算 */ },
   },

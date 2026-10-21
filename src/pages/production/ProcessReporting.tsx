@@ -1268,14 +1268,11 @@ export default function ProcessReporting() {
   const selectedOrderInfo = orders.find((o: any) => o.order_id === selectedReport?.order_id)
   const reportStatItems = [
     { label: '计划数量', value: selectedOrderInfo?.planned_qty != null ? Math.round(Number(selectedOrderInfo.planned_qty)) : '-', color: '#1890ff' },
-    { label: '报工数量', value: stats.outputQty || 0, color: '#1890ff' },
-    { label: '投入数量', value: stats.inputQty || 0, color: '#1890ff' },
-    { label: '合格数量', value: stats.expectedOutput > 0 ? stats.expectedOutput : 0, color: '#52c41a' },
     { label: '制程不良', value: stats.defectProcess || 0, color: '#fa8c16' },
     { label: '来料不良', value: stats.defectMaterial || 0, color: '#faad14' },
     { label: '报废数量', value: stats.defectScrap || 0, color: '#f5222d' },
-    { label: '异常工时', value: `${((stats.exceptionHours || 0) / 60).toFixed(2)}H`, color: '#eb2f96' },
-    { label: '总工时', value: `${(stats.manpowerHours || 0).toFixed(1)}h`, color: '#13c2c2' },
+    { label: '异常工时', value: `${(stats.exceptionHours || 0).toFixed(1)}H`, color: '#eb2f96' },
+    { label: '总工时', value: `${(stats.manpowerHours || 0).toFixed(1)}H`, color: '#13c2c2' },
   ]
 
   return (
@@ -1333,12 +1330,20 @@ export default function ProcessReporting() {
           </Col>
           {selectedReport && (
             <Col span={8} style={{ textAlign: 'right' }}>
-              <Tag
-                color={reportOrderStatusMap[selectedReport.status]?.color || 'default'}
-                style={{ fontSize: 14, padding: '2px 10px' }}
-              >
-                {reportOrderStatusMap[selectedReport.status]?.label || '-'}
-              </Tag>
+              <Space size={12} align="center">
+                <span style={{ color: '#1890ff', fontSize: 13 }}>
+                  投入 <b>{stats.inputQty || 0}</b>
+                </span>
+                <span style={{ color: '#52c41a', fontSize: 13 }}>
+                  合格 <b>{stats.expectedOutput > 0 ? stats.expectedOutput : 0}</b>
+                </span>
+                <Tag
+                  color={reportOrderStatusMap[selectedReport.status]?.color || 'default'}
+                  style={{ fontSize: 13, padding: '2px 10px', margin: 0 }}
+                >
+                  {reportOrderStatusMap[selectedReport.status]?.label || '-'}
+                </Tag>
+              </Space>
             </Col>
           )}
         </Row>

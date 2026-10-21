@@ -101,14 +101,14 @@ export function ManpowerPanel({ report, editable, manpower, setManpower, onDirty
         <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0' }}>
           <span style={{ width: 50, fontSize: 13, color: 'var(--m-text-2)' }}>{label}</span>
           <input
-            type="number" min={0} value={v} disabled={!editable}
+            type="number" min={0} value={v === 0 ? '' : v} placeholder="0" disabled={!editable}
             onChange={(e) => setV(Number(e.target.value) || 0)}
             style={{ ...COUNT_STYLE, background: editable ? 'var(--m-surface)' : 'var(--m-surface-2)' }}
           />
         </div>
       ))}
       {editable && (
-        <Button color="primary" size="small" block onClick={handleSave} style={{ marginTop: 12 }}>
+        <Button color="primary" size="small" block onClick={handleSave} disabled={!dirty} style={{ marginTop: 12 }}>
           💾 保存人员配置
         </Button>
       )}

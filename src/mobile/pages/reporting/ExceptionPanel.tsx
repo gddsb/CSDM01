@@ -52,11 +52,14 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
       .catch(() => setDevices([]))
   }, [])
 
-  // dirty：draft 有内容（默认 {}）
-  useEffect(() => {
-    const dirty = Object.values(draft).some(v => v !== undefined && v !== '' && v !== null)
-    onDirtyChange?.(dirty)
-  }, [draft, onDirtyChange])
+  // dirty：新增区有内容 / 已有行被改(__dirty) 任一即为脏
+  const dirty = useMemo(() => {
+    const hasNew = Object.values(draft).some(v => v !== undefined && v !== '' && v !== null)
+    const hasModified = rows.some((r: any) => r.__dirty)
+    return hasNew || hasModified
+  }, [draft, rows])
+
+  useEffect(() => { onDirtyChange?.(dirty) }, [dirty, onDirtyChange])
 
   // 当前是否存在未结束记录 —— 用于禁用「添加工时」
   const unfinishedRow = useMemo(
@@ -307,7 +310,7 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
 
           {/* 保存 */}
           <div style={{ marginTop: 10 }}>
-            <Button size="mini" color="primary" onClick={handleAdd} disabled={hasUnfinished}>💾 保存工时记录</Button>
+            <Button size="mini" color="primary" onClick={handleAdd} disabled={hasUnfinished || !dirty}>💾 保存工时记录</Button>
           </div>
         </div>
       )}

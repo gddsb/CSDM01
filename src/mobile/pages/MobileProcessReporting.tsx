@@ -377,7 +377,7 @@ export default function MobileProcessReporting() {
       </div>
 
       {/* ========== 滚动区：二级 Tab + Panel 内容 ========== */}
-      <div className="mobile-page-scroll-list mobile-scroll" style={{ padding: '8px 10px 20px' }}>
+      <div className="mobile-page-scroll-list mobile-scroll" style={{ padding: '8px 10px 20px', scrollPaddingBottom: 220, paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}>
         {/* === 工序报工 Tab === */}
         {groupTab === 'process' && (
           <div>
@@ -552,7 +552,7 @@ function StatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportSta
     { label: '来料不良', value: fmtInt(stats.defectMaterial), color: '#faad14' },
     { label: '制程不良', value: fmtInt(stats.defectProcess), color: '#fa8c16' },
     { label: '检验报废', value: fmtInt(stats.defectScrap), color: 'var(--brand-color-danger)' },
-    { label: '异常工时/总工时', value: `${(stats.exceptionHours || 0).toFixed(1)}H / ${(stats.manpowerHours || 0).toFixed(1)}H`, color: '#eb2f96' },
+    { label: '异常工时 / 总工时(H)', value: `${(stats.exceptionHours || 0).toFixed(1)} / ${(stats.manpowerHours || 0).toFixed(1)}H`, color: '#eb2f96' },
   ]
   return (
     <div style={{

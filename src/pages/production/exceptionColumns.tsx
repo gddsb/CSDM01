@@ -181,7 +181,9 @@ export function buildExceptionColumns(params: BuildExceptionColumnsParams): Colu
         )
       },
     },
-    { title: '时长(分钟)', dataIndex: 'duration', key: 'duration', width: 100 },
+    { title: '时长(分钟)', dataIndex: 'duration', key: 'duration', width: 100, align: 'right',
+      render: (v: any) => <span style={{ color: '#faad14', fontWeight: 600 }}>{Math.round(Number(v || 0) * 60)}</span>,
+    },
     {
       title: '异常描述', dataIndex: 'description', key: 'description', width: 240,
       render: (val, record) => {
