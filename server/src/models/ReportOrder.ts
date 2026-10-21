@@ -117,6 +117,18 @@ const ReportOrder = sequelize.define('ReportOrder', {
     type: DataTypes.STRING(500),
     comment: '备注',
   },
+  production_batch: {
+    type: DataTypes.STRING(100),
+    comment: '生产批号（完工必填）',
+  },
+  image_first: {
+    type: DataTypes.STRING(500),
+    comment: '首张合格证 URL（同步 production_report_image）',
+  },
+  image_last: {
+    type: DataTypes.STRING(500),
+    comment: '末张合格证 URL（同步 production_report_image）',
+  },
 }, {
   tableName: 'production_report_order',
   timestamps: true,

@@ -20,6 +20,7 @@ import { ProcessDefectTab, GenericRecordTab } from './sections/ProcessTabContent
 import { ReportStatsBar } from './sections/ReportStatsBar'
 import CreateReportModal from './sections/CreateReportModal'
 import ImageDrawer from './sections/ImageDrawer'
+import BatchTagPanel from './sections/BatchTagPanel'
 import { calcReportStats as calcReportOrderStats, calcProcessStats as calcPersonSummary } from './reportStats'
 import { useReportDetailRecords } from './hooks/useReportDetailRecords'
 import type { DefectRecord, ExceptionRecord, ManpowerRecord, MaterialRecord } from './types'
@@ -61,6 +62,7 @@ export default function ProcessReporting() {
     'scrap-defect': 'process',
     'exception': 'report',
     'manpower': 'report',
+    'batch-tag': 'report',
   } as const
   const defaultSubTabOfGroup = { process: 'production-defect', report: 'exception' } as const
   const [prevProcessQualifiedQty, setPrevProcessQualifiedQty] = useState(0)
@@ -1116,6 +1118,7 @@ export default function ProcessReporting() {
     { key: 'scrap-defect', label: '检验报废' },
     { key: 'exception', label: '工时记录' },
     { key: 'manpower', label: '人员记录' },
+    { key: 'batch-tag', label: '批次与标签' },
   ]
 
   // 🔑 一级 Tab 分组：工序记录 / 工单记录
@@ -1232,6 +1235,29 @@ export default function ProcessReporting() {
             onAdd={() => {}}
             hint='工时按报工单时间自动计算，修改人数后点"保存"提交'
             scrollX={1200}
+          />
+        )
+      case 'batch-tag':
+        if (!selectedReport) return null
+        return (
+          <BatchTagPanel
+            reportNo={selectedReport.report_no}
+            reportOrderId={selectedReport.report_order_id}
+            initialBatch={selectedReport.production_batch}
+            initialImageFirst={selectedReport.image_first}
+            initialImageLast={selectedReport.image_last}
+            editable={isEditable}
+            onSaved={(patch) => {
+              // 更新本地 selectedReport 状态，避免后续 Tab 切换看不到
+              setSelectedReport((prev: any) => ({ ...prev, ...patch }))
+              // 同步 allReportOrders 里的对应条（如果有的话）
+              setAllReportOrders((list: any[]) => list.map((r: any) =>
+                r.report_order_id === selectedReport.report_order_id ? { ...r, ...patch } : r
+              ))
+              setReportOrders((list: any[]) => list.map((r: any) =>
+                r.report_order_id === selectedReport.report_order_id ? { ...r, ...patch } : r
+              ))
+            }}
           />
         )
       default:

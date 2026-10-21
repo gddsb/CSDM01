@@ -188,7 +188,7 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
             disabled={hasUnfinished}
           />
           <div style={{ marginTop: 10 }}>
-            <Button size="mini" color="primary" onClick={handleAdd} disabled={hasUnfinished}>添加工时</Button>
+            <Button size="mini" color="primary" onClick={handleAdd} disabled={hasUnfinished}>💾 保存工时记录</Button>
           </div>
         </div>
       )}

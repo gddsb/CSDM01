@@ -320,7 +320,17 @@ export class ReportWorkflowService {
       }
     }
 
-    // 7. 工序数量
+    // 7. 生产批号
+    const roBatch = await ReportOrder.findOne({ where: { report_order_id: reportOrderId }, attributes: ['production_batch'] })
+    const batchVal = roBatch?.getDataValue('production_batch')
+    if (!batchVal || !String(batchVal).trim()) {
+      items.push({ level: 'block', category: '标签', label: '生产批号未填写',
+        detail: '请在「批次与标签」Tab 填写生产批号后再完工' })
+    } else {
+      items.push({ level: 'pass', category: '标签', label: `生产批号: ${batchVal}`, detail: '已填写' })
+    }
+
+    // 8. 工序数量
     const processCount = await ReportProcess.count({ where: { report_order_id: reportOrderId } })
     if (processCount === 0) {
       items.push({ level: 'block', category: '工序', label: '无工序记录', detail: '报工单没有绑定工序' })
@@ -332,6 +342,14 @@ export class ReportWorkflowService {
   static async validateFinish(reportOrderId: number) {
     const processCount = await ReportProcess.count({ where: { report_order_id: reportOrderId } })
     if (processCount === 0) throw new WorkflowError('报工单无工序记录，不允许完工')
+
+    // 生产批号硬阻断
+    const ro = await ReportOrder.findOne({ where: { report_order_id: reportOrderId }, attributes: ['production_batch'] })
+    const batch = ro?.getDataValue('production_batch')
+    if (!batch || !String(batch).trim()) {
+      throw new WorkflowError('生产批号未填写，请在「批次与标签」Tab 填写后再完工')
+    }
+
     const openExceptionCount = await ProcessException.count({ where: { report_order_id: reportOrderId, end_time: null } })
     if (openExceptionCount > 0) throw new WorkflowError(`存在 ${openExceptionCount} 条未关闭的异常记录，请先关闭后再完工`)
 

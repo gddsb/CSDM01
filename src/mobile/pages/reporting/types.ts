@@ -30,6 +30,12 @@ export interface ReportOrder {
   status: number | string
   report_time?: string
   finish_time?: string
+  /** 生产批号（完工必填） */
+  production_batch?: string | null
+  /** 首张合格证 URL */
+  image_first?: string | null
+  /** 末张合格证 URL */
+  image_last?: string | null
 }
 
 /** 生产订单（选择阶段用） */

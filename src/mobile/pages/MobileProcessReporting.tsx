@@ -21,6 +21,7 @@ import { ProcessMaterialPanel } from './reporting/ProcessMaterialPanel'
 import { ScrapPanel } from './reporting/ScrapPanel'
 import { ExceptionPanel } from './reporting/ExceptionPanel'
 import { ManpowerPanel } from './reporting/ManpowerPanel'
+import { BatchTagPanel } from './reporting/BatchTagPanel'
 
 // 共享类型（集中导出）
 import type {
@@ -52,8 +53,8 @@ export default function MobileProcessReporting() {
   const [groupTab, setGroupTab] = useState<'process' | 'report'>('process')
   // 工序报工内部 Tab: defect | material | scrap（检验报废移到这里）
   const [processTab, setProcessTab] = useState<'defect' | 'material' | 'scrap'>('defect')
-  // 工单报工内部 Tab: exception | manpower（报废已移到工序记录）
-  const [reportTab, setReportTab] = useState<'exception' | 'manpower'>('exception')
+  // 工单报工内部 Tab: exception | manpower | batch-tag（报废已移到工序记录）
+  const [reportTab, setReportTab] = useState<'exception' | 'manpower' | 'batch-tag'>('exception')
 
   // ========== 未保存 dirty 收集 ==========
   // 每个 Panel 通过 onDirtyChange(key, dirty) 上报，父组件汇总
@@ -87,7 +88,7 @@ export default function MobileProcessReporting() {
     if (await guardLeave('切换页签')) setProcessTab(k)
   }, [processTab, guardLeave])
 
-  const trySwitchReportTab = useCallback(async (k: 'exception' | 'manpower') => {
+  const trySwitchReportTab = useCallback(async (k: 'exception' | 'manpower' | 'batch-tag') => {
     if (k === reportTab) return
     if (await guardLeave('切换页签')) setReportTab(k)
   }, [reportTab, guardLeave])
@@ -469,6 +470,7 @@ export default function MobileProcessReporting() {
             <PanelSubTabs active={reportTab} onChange={(k) => trySwitchReportTab(k as any)}>
               <Tabs.Tab title="工时记录" key="exception" />
               <Tabs.Tab title="人员记录" key="manpower" />
+              <Tabs.Tab title="批次标签" key="batch-tag" />
             </PanelSubTabs>
             {reportTab === 'exception' && (
               <ReportPanel>
@@ -489,6 +491,15 @@ export default function MobileProcessReporting() {
                   manpower={manpower}
                   setManpower={setManpower}
                   onDirtyChange={(d) => setPanelDirty('manpower', d)}
+                />
+              </ReportPanel>
+            )}
+            {reportTab === 'batch-tag' && current && (
+              <ReportPanel>
+                <BatchTagPanel
+                  report={current}
+                  editable={!!editable}
+                  onSaved={(patch) => setCurrent((prev) => prev ? { ...prev, ...patch } : prev)}
                 />
               </ReportPanel>
             )}
