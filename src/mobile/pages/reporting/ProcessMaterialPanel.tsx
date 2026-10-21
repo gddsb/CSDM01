@@ -300,65 +300,63 @@ export function ProcessMaterialPanel({
     textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
   }
 
-  /** 编辑/新增表单主体（两处复用） */
-  const MaterialForm = () => (
-    <>
-      {/* 行1：类型 + 料品 */}
-      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-        <select value={draft.material_type || '投入'} onChange={(e) => handleTypeChange(e.target.value as any)}
-          style={typeSelectStyle}>
-          <option value="投入">投入</option>
-          <option value="退回">退回</option>
-        </select>
-        <Button size="mini" block style={materialBtnStyle} onClick={() => setShowPicker(true)}>
-          <span style={{
-            color: draft.bas_material_id ? 'var(--m-text)' : 'var(--m-text-3)',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            flex: 1,
-          }}>
-            {draft.bas_material_id
-              ? `${draft.material_code || ''} ${draft.material_name || ''}`.trim()
-              : draft.material_type === '退回' ? '选退回料品（仅当前工序已投入）' : '选料品'}
-          </span>
-          <span style={{ color: 'var(--m-text-3)', fontSize: 12, marginLeft: 4 }}>›</span>
-        </Button>
-      </div>
-      {/* 行2：批号 + 包号 + 数量 + 保存/取消
-          受控 input：value={draft.xxx} + onChange → 直接跟 state 绑定，避免 ref+useEffect 同步时序问题
-          退回场景下批号/包号 disabled（自动带出原投入批次，不允许改）*/}
-      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
-        <input placeholder="批号"
-          value={draft.material_batch ?? ''}
-          onChange={(e) => setDraft(d => ({ ...d, material_batch: e.target.value }))}
-          disabled={draft.material_type === '退回'}
-          style={{ ...inputStyle, flex: 2, minWidth: 70, cursor: draft.material_type === '退回' ? 'not-allowed' : 'text', opacity: draft.material_type === '退回' ? 0.65 : 1 }} />
-        <input placeholder="包号"
-          value={draft.package_no ?? ''}
-          onChange={(e) => setDraft(d => ({ ...d, package_no: e.target.value }))}
-          disabled={draft.material_type === '退回'}
-          style={{ ...inputStyle, flex: 2, minWidth: 70, cursor: draft.material_type === '退回' ? 'not-allowed' : 'text', opacity: draft.material_type === '退回' ? 0.65 : 1 }} />
-        <input type="number" min={0}
-          value={draft.quantity ?? ''}
-          onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
-          max={currentReturnLimit > 0 ? currentReturnLimit : undefined}
-          placeholder={draft.material_type === '退回' ? `≤${fmtInt(currentReturnLimit || 0)}` : '数量'}
-          style={{ ...inputStyle, width: 60 }} />
-        <Button size="mini" color="primary" onClick={handleSave} style={{ flexShrink: 0 }}>保存</Button>
-        <Button size="mini" fill="outline" onClick={cancelEdit} style={{ flexShrink: 0 }}>取消</Button>
-        {draft.material_id && (
-          <Button size="mini" fill="outline" onClick={() => handleDel(draft as MaterialRow)} style={{ flexShrink: 0 }}>删除</Button>
-        )}
-      </div>
-      {/* 标签图片 */}
-      <div style={{ marginTop: 8 }}>
-        <ProcessImageUploader
-          reportNo={report.report_no} category="label"
-          value={Array.isArray(draft.label_images) ? draft.label_images : []}
-          onChange={(urls) => setDraft(d => ({ ...d, label_images: urls }))}
-          label="标签图片"
-        />
-      </div>
-    </>
+  /** 表单 JSX（直接内联，不通过局部函数组件 —— 避免受控 input onChange 触发 re-render 时函数引用变化导致 React remount DOM 丢焦点）
+   * 两个使用点各写一份，没有隐式魔法 */
+  const formRow1 = (
+    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+      <select value={draft.material_type || '投入'} onChange={(e) => handleTypeChange(e.target.value as any)}
+        style={typeSelectStyle}>
+        <option value="投入">投入</option>
+        <option value="退回">退回</option>
+      </select>
+      <Button size="mini" block style={materialBtnStyle} onClick={() => setShowPicker(true)}>
+        <span style={{
+          color: draft.bas_material_id ? 'var(--m-text)' : 'var(--m-text-3)',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          flex: 1,
+        }}>
+          {draft.bas_material_id
+            ? `${draft.material_code || ''} ${draft.material_name || ''}`.trim()
+            : draft.material_type === '退回' ? '选退回料品（仅当前工序已投入）' : '选料品'}
+        </span>
+        <span style={{ color: 'var(--m-text-3)', fontSize: 12, marginLeft: 4 }}>›</span>
+      </Button>
+    </div>
+  )
+  const formRow2 = (
+    <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
+      <input placeholder="批号"
+        value={draft.material_batch ?? ''}
+        onChange={(e) => setDraft(d => ({ ...d, material_batch: e.target.value }))}
+        disabled={draft.material_type === '退回'}
+        style={{ ...inputStyle, flex: 2, minWidth: 70, cursor: draft.material_type === '退回' ? 'not-allowed' : 'text', opacity: draft.material_type === '退回' ? 0.65 : 1 }} />
+      <input placeholder="包号"
+        value={draft.package_no ?? ''}
+        onChange={(e) => setDraft(d => ({ ...d, package_no: e.target.value }))}
+        disabled={draft.material_type === '退回'}
+        style={{ ...inputStyle, flex: 2, minWidth: 70, cursor: draft.material_type === '退回' ? 'not-allowed' : 'text', opacity: draft.material_type === '退回' ? 0.65 : 1 }} />
+      <input type="number" min={0}
+        value={draft.quantity ?? ''}
+        onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
+        max={currentReturnLimit > 0 ? currentReturnLimit : undefined}
+        placeholder={draft.material_type === '退回' ? `≤${fmtInt(currentReturnLimit || 0)}` : '数量'}
+        style={{ ...inputStyle, width: 60 }} />
+      <Button size="mini" color="primary" onClick={handleSave} style={{ flexShrink: 0 }}>保存</Button>
+      <Button size="mini" fill="outline" onClick={cancelEdit} style={{ flexShrink: 0 }}>取消</Button>
+      {draft.material_id && (
+        <Button size="mini" fill="outline" onClick={() => handleDel(draft as MaterialRow)} style={{ flexShrink: 0 }}>删除</Button>
+      )}
+    </div>
+  )
+  const formImage = (
+    <div style={{ marginTop: 8 }}>
+      <ProcessImageUploader
+        reportNo={report.report_no} category="label"
+        value={Array.isArray(draft.label_images) ? draft.label_images : []}
+        onChange={(urls) => setDraft(d => ({ ...d, label_images: urls }))}
+        label="标签图片"
+      />
+    </div>
   )
 
   return (
@@ -371,7 +369,7 @@ export function ProcessMaterialPanel({
         if (isExpanded) {
           return (
             <div key={rowKey} style={{ borderTop: '1px solid #e8e8e8', paddingTop: 10, marginTop: 6 }}>
-              <MaterialForm />
+              {formRow1}{formRow2}{formImage}
             </div>
           )
         }
@@ -415,7 +413,7 @@ export function ProcessMaterialPanel({
       {/* ========== 新增投料表单 ========== */}
       {expandedId === '__new__' && (
         <div style={{ borderTop: '1px dashed #ddd', paddingTop: 10, marginTop: 6 }}>
-          <MaterialForm />
+          {formRow1}{formRow2}{formImage}
         </div>
       )}
 

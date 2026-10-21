@@ -496,7 +496,7 @@ function StatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportSta
   ]
   return (
     <div style={{
-      background: 'var(--m-surface)', margin: '10px 10px 0', borderRadius: 10, padding: '10px 12px',
+      background: 'var(--m-surface)', margin: '10px 0 0', borderRadius: 10, padding: '10px 12px',
       boxShadow: '0 1px 4px rgba(0,0,0,.04)',
     }}>
       {/* 标题行：左标题 + 右合格/投入比值（右对齐） */}
