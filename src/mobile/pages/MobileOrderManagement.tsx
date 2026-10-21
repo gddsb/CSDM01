@@ -22,9 +22,11 @@ import { fmtInt } from '../utils/format'
 
 interface OrderRow {
   order_id: number; order_no: string; status?: string
-  material_code?: string; material_name?: string
+  material_code?: string; material_name?: string; specification?: string
   planned_qty?: number; finished_qty?: number; report_qty?: number
-  line_name?: string; start_date?: string; end_date?: string
+  line_name?: string; line_id?: number | string
+  release_time?: string | null; close_time?: string | null
+  plan_start_time?: string | null; plan_end_time?: string | null
 }
 
 type StatusTab = '开立' | '下发' | '开工' | '完工'
@@ -70,6 +72,23 @@ export default function MobileOrderManagement() {
   const [selected, setSelected] = useState<OrderRow | null>(null)
   const [reports, setReports] = useState<ReportOrderMeta[]>([])
   const [activeReportId, setActiveReportId] = useState<number | null>(null)
+
+  // 预拉产线（仅运行中）
+  const [lines, setLines] = useState<{ line_id: number; line_name: string }[]>([])
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const r: any = await api.get('/basic/lines', { params: { pageSize: 100 } })
+        const list: any[] = r.success ? (r.data?.rows || r.data?.list || r.data || []) : []
+        if (!cancelled) setLines(
+          list.filter(l => String(l.status) === '运行中' || String(l.status) === '1' || l.status === 1)
+            .map(l => ({ line_id: l.line_id, line_name: l.line_name }))
+        )
+      } catch { /* 静默 */ }
+    })()
+    return () => { cancelled = true }
+  }, [])
 
   const load = async (t?: StatusTab, kw?: string) => {
     setLoading(true)
@@ -241,12 +260,83 @@ export default function MobileOrderManagement() {
     } catch (e: any) { Toast.show({ content: e?.message || '失败', position: 'bottom' }) }
   }
 
-  // ====== 订单详情（下属报工单）======
+  // ====== 开工：选产线 → 创建报工单 → 跳转 ======
+  const onStart = async (o: OrderRow) => {
+    if (lines.length === 0) {
+      Toast.show({ content: '暂无可选产线（全部产线均未运行）', icon: 'fail', position: 'bottom' })
+      return
+    }
+    const actions = lines.map(l => ({
+      key: String(l.line_id),
+      text: l.line_name,
+    }))
+    Dialog.show({
+      content: (
+        <div style={{ padding: '10px 8px', minWidth: 260 }}>
+          <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 10 }}>
+            为 {o.order_no} 选择产线
+          </div>
+          <div style={{
+            fontSize: 12, color: 'var(--m-text-3)', marginBottom: 12,
+            background: 'var(--m-surface-2)', padding: '8px 10px', borderRadius: 6, lineHeight: 1.6,
+          }}>
+            {o.material_code} {o.material_name}
+            {o.specification && <div style={{ fontSize: 11, opacity: 0.7 }}>{o.specification}</div>}
+            <div style={{ fontSize: 11, marginTop: 2 }}>计划 {fmtInt(o.planned_qty)} · 已完工 {fmtInt(o.finished_qty)}</div>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginBottom: 8 }}>运行中产线：</div>
+        </div>
+      ),
+      actions: [
+        ...actions.map(a => ({ ...a, style: { fontSize: 13 } })),
+        { key: 'cancel', text: '取消', style: { color: '#999' } },
+      ],
+      closeOnAction: true,
+      onAction: async (action) => {
+        if (action.key === 'cancel') return
+        const lineId = Number(action.key)
+        try {
+          Toast.show({ content: '正在开工...', icon: 'loading' })
+          const r: any = await api.post('/production/report-orders', {
+            order_id: o.order_id,
+            line_id: lineId,
+            report_qty: Number(o.planned_qty || 0),
+          })
+          if (!r?.success) throw new Error(r?.message || '创建报工单失败')
+          Toast.show({ content: '已开工', icon: 'success' })
+          await load()
+          // 带刚创建的 report_order_id 跳转，直接进入对应报工单
+          const rid = r.data?.report_order_id || r.data?.report_order?.report_order_id
+          navigate(`/m/process-reporting?orderId=${o.order_id}`)
+        } catch (e: any) {
+          Toast.show({ content: e?.message || '开工失败', icon: 'fail', position: 'bottom' })
+        }
+      },
+    })
+  }
+
+  // ====== 订单详情（先调 detail 补完整字段 + 下属报工单）======
   const openDetail = async (o: OrderRow) => {
-    setSelected(o); setActiveReportId(null)
+    setSelected({ ...o }); setActiveReportId(null)
     try {
-      const r: any = await api.get('/production/report-orders', { params: { page: 1, pageSize: 50, order_id: o.order_id } })
-      const list: any[] = r.success ? (r.data?.list || r.data || []) : []
+      // 并行：详情接口补完整字段 + 下属报工单列表
+      const [detailRes, reportRes]: any[] = await Promise.all([
+        api.get(`/production/orders/${o.order_id}`).catch(() => null),
+        api.get('/production/report-orders', { params: { page: 1, pageSize: 50, order_id: o.order_id } }).catch(() => null),
+      ])
+      if (detailRes?.success && detailRes.data) {
+        const d = detailRes.data
+        setSelected(prev => prev ? {
+          ...prev,
+          specification: d.specification,
+          release_time: d.release_time,
+          close_time: d.close_time,
+          plan_start_time: d.plan_start_time,
+          plan_end_time: d.plan_end_time,
+          line_name: d.line_name || prev.line_name,
+        } : prev)
+      }
+      const list: any[] = reportRes?.success ? (reportRes.data?.list || reportRes.data || []) : []
       setReports(list.map((x) => ({
         report_order_id: x.report_order_id, report_no: x.report_no,
         order_id: x.order_id, order_no: o.order_no,
@@ -422,7 +512,7 @@ export default function MobileOrderManagement() {
                       {isReleased && (
                         <Button
                           size="mini" color="primary"
-                          onClick={() => navigate(`/m/process-reporting?orderId=${o.order_id}`)}
+                          onClick={() => onStart(o)}
                         >开工</Button>
                       )}
                       {isStarted && (
@@ -447,14 +537,50 @@ export default function MobileOrderManagement() {
       )}
       </div>
 
-      {/* ===== 订单详情（下属报工单）===== */}
+      {/* ===== 订单详情（订单信息 + 下属报工单）===== */}
       {selected && activeReportId === null && (
         <Dialog
           visible
           content={
             <div style={{ maxHeight: '70vh', overflow: 'auto', padding: '10px 6px' }}>
+              {/* 订单基础信息卡片 */}
+              <div style={{
+                padding: 12, background: 'var(--m-surface-2)', borderRadius: 10,
+                marginBottom: 12, border: '1px solid #eee',
+              }}>
+                <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>
+                  {selected.order_no}
+                  <span style={{
+                    marginLeft: 8, padding: '1px 8px', borderRadius: 10,
+                    fontSize: 11, fontWeight: 600,
+                    background: STATUS_COLOR[selected.status || ''] + '15',
+                    color: STATUS_COLOR[selected.status || ''] || '#666',
+                    border: `1px solid ${(STATUS_COLOR[selected.status || ''] || '#666')}44`,
+                  }}>{selected.status}</span>
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--m-text-2)', lineHeight: 1.8 }}>
+                  <div><span style={{ color: 'var(--m-text-3)' }}>料品：</span>
+                    <b>{selected.material_code}</b> · {selected.material_name}
+                  </div>
+                  {selected.specification && (
+                    <div><span style={{ color: 'var(--m-text-3)' }}>规格：</span>{selected.specification}</div>
+                  )}
+                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                    <span><span style={{ color: 'var(--m-text-3)' }}>计划：</span>{fmtInt(selected.planned_qty)}</span>
+                    <span><span style={{ color: 'var(--m-text-3)' }}>已完工：</span>{fmtInt(selected.finished_qty)}</span>
+                  </div>
+                  <div><span style={{ color: 'var(--m-text-3)' }}>产线：</span>{selected.line_name || '—'}</div>
+                  {(selected.release_time || selected.plan_start_time) && (
+                    <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 4 }}>
+                      {selected.release_time && <>下发 {String(selected.release_time).slice(0, 16)} &nbsp; </>}
+                      {selected.plan_start_time && <>计划 {String(selected.plan_start_time).slice(0, 10)}{selected.plan_end_time ? ` ~ ${String(selected.plan_end_time).slice(0, 10)}` : ''}</>}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div style={{ fontWeight: 600, marginBottom: 10, fontSize: 15 }}>
-                {selected.order_no} 下属报工单
+                下属报工单
                 <span style={{ fontSize: 12, color: 'var(--m-text-3)', fontWeight: 400, marginLeft: 8 }}>
                   （{reports.length} 条）
                 </span>

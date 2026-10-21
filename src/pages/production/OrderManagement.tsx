@@ -43,6 +43,29 @@ export default function OrderManagement() {
   const [finishingOrderId, setFinishingOrderId] = useState<number | null>(null)
   const [finishingLoading, setFinishingLoading] = useState(false)
 
+  // 开工弹窗：选产线 + 创建报工单
+  const [startForm] = Form.useForm()
+  const [startModalOpen, setStartModalOpen] = useState(false)
+  const [startingOrder, setStartingOrder] = useState<any>(null)
+  const [creatingReport, setCreatingReport] = useState(false)
+  const [lineOptions, setLineOptions] = useState<{ label: string; value: number }[]>([])
+
+  // 预拉产线（仅运行中）
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const r: any = await api.get('/basic/lines', { params: { pageSize: 100 } })
+        const list: any[] = r.success ? (r.data?.rows || r.data?.list || r.data || []) : []
+        if (!cancelled) setLineOptions(
+          list.filter(l => String(l.status) === '运行中' || String(l.status) === '1' || l.status === 1)
+            .map(l => ({ label: l.line_name, value: l.line_id }))
+        )
+      } catch { /* 静默 */ }
+    })()
+    return () => { cancelled = true }
+  }, [])
+
   const message = useMessage()
   const { hasPermission } = useApp()
 
@@ -202,7 +225,38 @@ export default function OrderManagement() {
   }
 
   const handleStart = (r) => {
-    navigate('/production/reporting')
+    if (lineOptions.length === 0) {
+      message.warning('暂无可选产线（全部产线均未运行）')
+      return
+    }
+    setStartingOrder(r)
+    startForm.setFieldsValue({
+      line_id: undefined,
+      report_qty: Number(r.finished_qty || 0) > 0 ? r.planned_qty : r.planned_qty,
+    })
+    setStartModalOpen(true)
+  }
+  const doStart = async () => {
+    try {
+      const values = await startForm.validateFields()
+      setCreatingReport(true)
+      const res = await api.post('/production/report-orders', {
+        order_id: startingOrder.order_id,
+        line_id: values.line_id,
+        report_qty: values.report_qty,
+      })
+      setStartModalOpen(false)
+      message.success(`订单 ${startingOrder.order_no} 已开工，报工单已创建`)
+      refresh()
+      // 跳转到报工页（带刚创建的 report_order_id）
+      const reportOrderId = res.data?.report_order_id || res.data?.report_order?.report_order_id
+      navigate(reportOrderId ? `/production/reporting?reportOrderId=${reportOrderId}` : '/production/reporting')
+    } catch (err: any) {
+      if (err?.errorFields) return
+      message.error(err.message || '开工失败')
+    } finally {
+      setCreatingReport(false)
+    }
   }
 
   const handleAdd = () => {
@@ -518,7 +572,7 @@ export default function OrderManagement() {
 
   const columns = buildOrderColumns({
     onView: (r: any) => handleView(r),
-    onEdit: (r: any) => { setEditing(r); setEditing(r) },
+    onEdit: handleEdit,
     onRelease: (r: any) => handleRelease(r),
     onStart: (r: any) => handleStart(r),
     onFinish: (r: any) => handleFinish(r),
@@ -1015,6 +1069,47 @@ export default function OrderManagement() {
             </div>
           )
         })()}
+      </Modal>
+
+      {/* 开工弹窗：选产线 + 创建报工单 */}
+      <Modal
+        title={startingOrder ? `开工 · ${startingOrder.order_no}` : '开工'}
+        open={startModalOpen}
+        onCancel={() => setStartModalOpen(false)}
+        onOk={doStart}
+        confirmLoading={creatingReport}
+        okText="确认开工"
+        cancelText="取消"
+        width={440}
+        destroyOnClose
+      >
+        {startingOrder && (
+          <div style={{
+            marginBottom: 14, padding: '8px 12px',
+            background: 'var(--m-info-bg, #e6f4ff)', borderRadius: 6,
+            fontSize: 13, color: '#555', lineHeight: 1.7,
+          }}>
+            <div><b>{startingOrder.material_code}</b> · {startingOrder.material_name}</div>
+            <div style={{ color: '#888', fontSize: 12 }}>
+              计划数量 {Number(startingOrder.planned_qty || 0).toLocaleString()} ·
+              已完工 {Number(startingOrder.finished_qty || 0).toLocaleString()}
+            </div>
+          </div>
+        )}
+        <Form form={startForm} layout="vertical" preserve={false}>
+          <Form.Item name="line_id" label="产线" rules={[{ required: true, message: '请选择产线' }]}>
+            <Select
+              placeholder="请选择运行中产线"
+              options={lineOptions}
+              showSearch
+              optionFilterProp="label"
+              popupClassName="mes-select-dropdown"
+            />
+          </Form.Item>
+          <Form.Item name="report_qty" label="报工数量" rules={[{ required: true, message: '请填写报工数量' }]}>
+            <InputNumber min={1} step={1} precision={0} style={{ width: '100%' }} />
+          </Form.Item>
+        </Form>
       </Modal>
     </>
   )

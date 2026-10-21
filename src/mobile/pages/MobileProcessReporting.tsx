@@ -120,14 +120,14 @@ export default function MobileProcessReporting() {
     if (phase !== 'select') return
     ;(async () => {
       try {
-        const res: any = await api.get('/production/orders', { params: { status: '开工', pageSize: 50 } })
-        const list = (res?.data?.items || res?.data || []) as OrderRow[]
-        const started = list.filter(o => o.status === '开工')
-        setOrders(started)
+        // 同时查"下发 + 开工" — 开工按钮带 orderId 跳转时，订单可能还在"下发"状态
+        const res: any = await api.get('/production/orders', { params: { status: [1, 2], pageSize: 100 } })
+        const list = (res?.data?.items || res?.data?.list || res?.data || []) as OrderRow[]
+        setOrders(list)
 
-        // URL 带 orderId 自动开工
+        // URL 带 orderId：无论是下发还是开工，都走 handleStartNew（内部会查已有报工单）
         if (urlOrderId) {
-          const order = started.find(o => String(o.order_id) === String(urlOrderId))
+          const order = list.find(o => String(o.order_id) === String(urlOrderId))
           if (order) await handleStartNew(order)
         }
       } catch (e) { /* 静默 */ }
