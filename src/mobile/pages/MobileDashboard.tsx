@@ -24,6 +24,7 @@ import {
 import { useApp } from '../../contexts/AppContext'
 import { useOfflineQueue } from '../hooks/useOfflineQueue'
 import api from '../../utils/api'
+import { getAppVersion, formatAppVersion } from '../utils/app-version'
 import {
   DEFAULT_ORDER, STORAGE_KEY, HIGH_PRIORITY_ICONS,
   type QuickEntry, type TodoItem,
@@ -382,6 +383,14 @@ export default function MobileDashboard() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* ============ 底部：版本号 ============ */}
+        <div style={{
+          textAlign: 'center', padding: '18px 0 2px',
+          fontSize: 11, color: 'var(--m-text-3)',
+        }}>
+          {formatAppVersion(getAppVersion())}
         </div>
       </div>
     </PullToRefresh>
