@@ -120,12 +120,14 @@ export default function MobileProcessReporting() {
     if (phase !== 'select') return
     ;(async () => {
       try {
-        // 同时查"下发 + 开工" — 开工按钮带 orderId 跳转时，订单可能还在"下发"状态
-        const res: any = await api.get('/production/orders', { params: { status: [1, 2], pageSize: 100 } })
+        // 只查 status=2（开工）— 报工选择页只应显示已开工订单
+        // MobileOrderManagement 的开工按钮会先 POST 创建报工单（syncOrderStatus 同步推订单到开工），
+        // 然后才 navigate 带 orderId 过来，所以此时订单必然已是 status=2
+        const res: any = await api.get('/production/orders', { params: { status: 2, pageSize: 100 } })
         const list = (res?.data?.items || res?.data?.list || res?.data || []) as OrderRow[]
         setOrders(list)
 
-        // URL 带 orderId：无论是下发还是开工，都走 handleStartNew（内部会查已有报工单）
+        // URL 带 orderId：在已开工列表里匹配（没匹配到说明该订单还没开工，前端不自动创建）
         if (urlOrderId) {
           const order = list.find(o => String(o.order_id) === String(urlOrderId))
           if (order) await handleStartNew(order)
