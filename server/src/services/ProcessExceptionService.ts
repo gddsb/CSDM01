@@ -94,6 +94,9 @@ export const ProcessExceptionService = {
     const safeStartTime = parseDateTime(body.start_time) || nowBeijingDate()
     const safeEndTime = body.end_time ? (parseDateTime(body.end_time) || null) : null
 
+    // duration 不再写入 —— MySQL STORED GENERATED ALWAYS AS 自动算
+    void duration
+
     return await ProcessException.create({
       report_order_id: body.report_order_id,
       exception_type: body.exception_type,
@@ -105,7 +108,6 @@ export const ProcessExceptionService = {
       confirm_user_name: body.confirm_user_name,
       start_time: safeStartTime,
       end_time: safeEndTime,
-      duration,
       description: body.description,
       exception_images: imagesJson,
       record_user: actor?.username || body.record_user || null,
@@ -136,7 +138,7 @@ export const ProcessExceptionService = {
     if (body.stop_type !== undefined) updateData.stop_type = body.stop_type
     if (body.start_time !== undefined) updateData.start_time = parseDateTime(body.start_time)
     if (body.end_time !== undefined) updateData.end_time = body.end_time ? (parseDateTime(body.end_time) || null) : null
-    updateData.duration = timeCheck.duration !== undefined ? timeCheck.duration : (record as any).duration
+    // duration 不再手动重算 —— MySQL STORED GENERATED ALWAYS AS 自动算
     if (body.description !== undefined) updateData.description = body.description
     if (body.exception_images !== undefined) {
       updateData.exception_images = body.exception_images

@@ -74,15 +74,16 @@ export const ManpowerRecordService = {
     const total_people = sk + gn + lb + ot
 
     const roId = report_order_id || existingRecord?.report_order_id
-    let timeInfo = { start_time: existingRecord?.start_time || null, end_time: existingRecord?.end_time || null, hours: existingRecord?.hours || 0 }
+    let { start_time, end_time } = { start_time: existingRecord?.start_time || null, end_time: existingRecord?.end_time || null }
     if (roId) {
       const reportOrder = await ReportOrder.findOne({ where: { report_order_id: roId } })
-      timeInfo = resolveTimeFromReportOrder(reportOrder)
+      const t = resolveTimeFromReportOrder(reportOrder)
+      start_time = t.start_time ?? start_time
+      end_time = t.end_time ?? end_time
     }
-    const { start_time, end_time, hours } = timeInfo
-    const man_hours = Number((hours * total_people).toFixed(2))
+    // hours / man_hours 不再手动算 —— MySQL STORED GENERATED ALWAYS AS 自动算
 
-    return { record_date, shift, start_time, end_time, hours, skilled_count: sk, general_count: gn, labor_count: lb, other_count: ot, total_people, man_hours, remarks }
+    return { record_date, shift, start_time, end_time, skilled_count: sk, general_count: gn, labor_count: lb, other_count: ot, total_people, remarks }
   },
 
   async update(id: number | string, body: any) {

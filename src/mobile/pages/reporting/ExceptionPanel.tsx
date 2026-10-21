@@ -43,6 +43,7 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
   const [draft, setDraft] = useState<ExceptionRow>({})
   const [devices, setDevices] = useState<DeviceOption[]>([])
   const [deviceKw, setDeviceKw] = useState('')
+  const [deviceOpen, setDeviceOpen] = useState(false)
 
   // 预拉设备列表（搜索 + 设备故障必填 共用）
   useEffect(() => {
@@ -228,41 +229,64 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
             {EXCEPTION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
 
-          {/* 设备故障 → 设备选择（搜索 + 下拉） */}
+          {/* 设备故障 → 设备选择（搜索 + 下拉 + 箭头） */}
           {draft.exception_type === '设备故障' && !hasUnfinished && (
             <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>
-                关联设备 <span style={{ color: '#ff4d4f' }}>*</span>
-              </div>
-              <input
-                type="text" placeholder="搜索设备编号/名称" value={deviceKw}
-                onChange={(e) => setDeviceKw(e.target.value)}
-                style={inputStyle}
-              />
-              <div style={{ maxHeight: 160, overflowY: 'auto', border: '1px solid #eee', borderRadius: 6, marginTop: 4 }}>
-                {filteredDevices.map(d => (
-                  <div
-                    key={d.device_id}
-                    onClick={() => setDraft(v => ({ ...v, device_id: d.device_id, device_code: d.device_code, device_name: d.device_name }))}
-                    style={{
-                      padding: '8px 12px', borderBottom: '1px solid #f5f5f5', cursor: 'pointer',
-                      background: draft.device_id === d.device_id ? '#e6f7ff' : 'white',
-                    }}
-                  >
-                    <div style={{ fontSize: 13 }}>{d.device_name}</div>
-                    <div style={{ fontSize: 11, color: '#999' }}>{d.device_code}</div>
-                  </div>
-                ))}
-                {filteredDevices.length === 0 && (
-                  <div style={{ padding: 10, color: '#999', fontSize: 12, textAlign: 'center' }}>
-                    {devices.length === 0 ? '设备列表加载失败' : '无匹配设备'}
-                  </div>
-                )}
-              </div>
-              {draft.device_id && (
-                <div style={{ fontSize: 11, color: '#1890ff', marginTop: 4 }}>
-                  已选：{draft.device_name}（{draft.device_code}）
+              {/* 已选设备展示行（带开关箭头） */}
+              <div
+                onClick={() => setDeviceOpen(v => !v)}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '8px 12px', border: '1px solid #e6e6e6', borderRadius: 8,
+                  background: draft.device_id ? '#e6f7ff' : '#fafafa', cursor: 'pointer', fontSize: 13,
+                }}
+              >
+                <div>
+                  {draft.device_id
+                    ? <span style={{ color: '#1890ff' }}>📡 {draft.device_name}（{draft.device_code}）</span>
+                    : <span style={{ color: '#999' }}>请选择故障设备 *</span>}
                 </div>
+                <span style={{
+                  color: '#999', fontSize: 16,
+                  transition: 'transform .2s',
+                  transform: deviceOpen ? 'rotate(180deg)' : 'none',
+                  display: 'inline-block',
+                }}>▾</span>
+              </div>
+
+              {/* 展开区：搜索 + 下拉列表 */}
+              {deviceOpen && (
+                <>
+                  <input
+                    type="text" placeholder="搜索设备编号/名称" value={deviceKw}
+                    onChange={(e) => setDeviceKw(e.target.value)}
+                    style={{ ...inputStyle, marginTop: 6 }}
+                  />
+                  <div style={{ maxHeight: 160, overflowY: 'auto', border: '1px solid #eee', borderRadius: 6, marginTop: 4 }}>
+                    {filteredDevices.map(d => (
+                      <div
+                        key={d.device_id}
+                        onClick={() => {
+                          setDraft(v => ({ ...v, device_id: d.device_id, device_code: d.device_code, device_name: d.device_name }))
+                          setDeviceOpen(false)   // 选后自动关闭
+                          setDeviceKw('')
+                        }}
+                        style={{
+                          padding: '8px 12px', borderBottom: '1px solid #f5f5f5', cursor: 'pointer',
+                          background: draft.device_id === d.device_id ? '#e6f7ff' : 'white',
+                        }}
+                      >
+                        <div style={{ fontSize: 13 }}>{d.device_name}</div>
+                        <div style={{ fontSize: 11, color: '#999' }}>{d.device_code}</div>
+                      </div>
+                    ))}
+                    {filteredDevices.length === 0 && (
+                      <div style={{ padding: 10, color: '#999', fontSize: 12, textAlign: 'center' }}>
+                        {devices.length === 0 ? '设备列表加载失败' : '无匹配设备'}
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           )}

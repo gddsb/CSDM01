@@ -52,7 +52,9 @@ const ProcessException = sequelize.define('ProcessException', {
   duration: {
     type: DataTypes.DECIMAL(10, 2),
     defaultValue: 0,
-    comment: '持续时长(小时)',
+    comment: '持续时长(小时-MySQL STORED自动计算)',
+    // MySQL GENERATED ALWAYS AS STORED 列，Sequelize 写入时忽略
+    set() { /* 只读：DB STORED 自动算 */ },
   },
   description: {
     type: DataTypes.STRING(500),
