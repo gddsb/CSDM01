@@ -59,9 +59,15 @@ export const close = asyncHandler(async (req: Request, res: Response) => {
   return success(res, result, '报工单已关闭')
 })
 
+/** 完工前预检 —— 返回结构化 check items 给前端弹窗展示 */
+export const preCheck = asyncHandler(async (req: Request, res: Response) => {
+  const result = await ReportOrderService.preCheck(Number(req.params.id))
+  return success(res, result)
+})
+
 /** 兼容导出：报工单与订单状态联动（历史内部调用入口） */
 export async function syncOrderStatus(orderId: number, transaction?: any) {
   return ReportOrderService.syncOrderStatus(orderId, transaction)
 }
 
-export default { list, detail, create, update, remove, finish, close, getProcesses, syncOrderStatus }
+export default { list, detail, create, update, remove, finish, close, preCheck, getProcesses, syncOrderStatus }

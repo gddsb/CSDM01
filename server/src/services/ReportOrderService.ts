@@ -474,6 +474,18 @@ export const ReportOrderService = {
     return full || result
   },
 
+  async preCheck(id: number | string) {
+    const items = await ReportWorkflowService.preCheckFinish(Number(id))
+    const blockers = items.filter((i: any) => i.level === 'block')
+    const warnings = items.filter((i: any) => i.level === 'warn')
+    return {
+      allPass: blockers.length === 0,
+      blockers: blockers.length,
+      warnings: warnings.length,
+      items,
+    }
+  },
+
   /** 导出兼容：内部直接调用 ReportWorkflowService.syncOrderStatus */
   async syncOrderStatus(orderId: number, transaction?: any) {
     return await ReportWorkflowService.syncOrderStatus(orderId, transaction)

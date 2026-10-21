@@ -34,6 +34,8 @@ export default function ProcessReporting() {
   const [lineProcesses, setLineProcesses] = useState([])
   const [loading, setLoading] = useState(false)
   const [finishingReport, setFinishingReport] = useState(false)
+  const [finishCheckOpen, setFinishCheckOpen] = useState(false)
+  const [finishCheckItems, setFinishCheckItems] = useState<any[]>([])
   const [closingReport, setClosingReport] = useState(false)
 
   // 新增报工单 Modal
@@ -724,17 +726,29 @@ export default function ProcessReporting() {
     }
   }
 
-  // 完工报工单（开工 → 完工，单向）
+  // 完工报工单：预检 → 弹窗 → 确认执行
   const handleFinishReport = async () => {
     if (!selectedReport) return
     try {
+      const res: any = await api.get(`/production/report-orders/${selectedReport.report_order_id}/pre-check`)
+      const data = res.data || res
+      setFinishCheckItems(data.items || [])
+      setFinishCheckOpen(true)
+    } catch (err: any) {
+      message.error(err.message || '预检失败')
+    }
+  }
+  const doFinishReport = async () => {
+    if (!selectedReport) return
+    try {
       setFinishingReport(true)
-      const res = await api.post(`/production/report-orders/${selectedReport.report_order_id}/finish`)
+      const res: any = await api.post(`/production/report-orders/${selectedReport.report_order_id}/finish`)
       const updated = res.data || { ...selectedReport, status: '完工', finish_time: new Date() }
       setSelectedReport(updated)
       await fetchReportOrders()
+      setFinishCheckOpen(false)
       message.success(res.message || '已完工')
-    } catch (err) {
+    } catch (err: any) {
       message.error(err.message || '操作失败')
     } finally {
       setFinishingReport(false)
@@ -1439,6 +1453,57 @@ export default function ProcessReporting() {
           }
         }}
       />
+
+      {/* 完工前预检 Modal */}
+      <Modal
+        title="完工前检查"
+        open={finishCheckOpen}
+        width={520}
+        onCancel={() => setFinishCheckOpen(false)}
+        okText="确认完工"
+        cancelText="补录继续"
+        confirmLoading={finishingReport}
+        okButtonProps={{
+          disabled: finishCheckItems.some((i: any) => i.level === 'block'),
+          danger: finishCheckItems.some((i: any) => i.level === 'block'),
+        }}
+        onOk={doFinishReport}
+      >
+        <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
+          {finishCheckItems.map((it: any, i: number) => {
+            const colorMap: Record<string, string> = { pass: '#52c41a', warn: '#faad14', block: '#ff4d4f' }
+            const iconMap: Record<string, string> = { pass: '✅', warn: '⚠️', block: '❌' }
+            return (
+              <div key={i} style={{ marginBottom: 8 }}>
+                <div style={{ fontSize: 13, color: colorMap[it.level] }}>
+                  {iconMap[it.level]} {it.label}
+                </div>
+                {it.detail && (
+                  <div style={{ fontSize: 12, color: '#999', marginTop: 2, lineHeight: 1.4 }}>{it.detail}</div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+        {(() => {
+          const passCount = finishCheckItems.filter((i: any) => i.level === 'pass').length
+          const warnCount = finishCheckItems.filter((i: any) => i.level === 'warn').length
+          const blockCount = finishCheckItems.filter((i: any) => i.level === 'block').length
+          const hasBlock = blockCount > 0
+          return (
+            <div style={{
+              marginTop: 12, padding: '8px 12px',
+              background: hasBlock ? '#fff1f0' : '#f6ffed',
+              borderRadius: 6, fontSize: 13,
+              color: hasBlock ? '#ff4d4f' : '#52c41a',
+            }}>
+              {hasBlock
+                ? `❌ ${passCount} 通过 · ${warnCount} 警告 · ${blockCount} 阻断 — 请补录后再完工`
+                : `✅ ${passCount} 通过 · ${warnCount} 警告 — 可以完工`}
+            </div>
+          )
+        })()}
+      </Modal>
 
       <Drawer
         title={imageDrawerTitle}

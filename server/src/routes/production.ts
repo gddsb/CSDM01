@@ -22,6 +22,7 @@ import {
   remove as roRemove,
   finish as roFinish,
   close as roClose,
+  preCheck as roPreCheck,
   getProcesses as roGetProcesses,
 } from '../controllers/ReportOrderController.js'
 import {
@@ -125,6 +126,7 @@ router.put('/report-orders/:id', asyncHandler(roUpdate))
 router.delete('/report-orders/:id', asyncHandler(roRemove))
 router.post('/report-orders/:id/finish', permissionRequired('production:reporting:finish'), asyncHandler(roFinish))
 router.post('/report-orders/:id/close', permissionRequired('production:reporting:close'), asyncHandler(roClose))
+router.get('/report-orders/:id/pre-check', asyncHandler(roPreCheck))
 router.get('/report-orders/:id/processes', asyncHandler(roGetProcesses))
 
 // 人员记录

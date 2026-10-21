@@ -232,23 +232,70 @@ export default function MobileProcessReporting() {
     } catch { /* 静默 */ }
   }
 
-  // ========== 完工 ==========
+  // ========== 完工：预检 → 弹窗 → 确认 ==========
   const finishReport = useCallback(async () => {
     if (!current) return
-    const ok = await Dialog.confirm({
-      content: `确认完工 ${current.report_no}？完工后不可撤销。`,
-      confirmText: '确认完工', cancelText: '继续报工',
-    })
-    if (!ok) return
+    let pre: any
     try {
-      const r: any = await api.post(`/production/report-orders/${current.report_order_id}/close`)
-      if (!r?.success) throw new Error(r?.message || '完工失败')
-      Toast.show({ content: '✅ 已完工', icon: 'success' })
-      setCurrent(null); setPhase('select')
-      setDefectsRaw([]); setMaterials([]); setExceptions([]); setManpower(null)
+      pre = await api.get(`/production/report-orders/${current.report_order_id}/pre-check`)
     } catch (e: any) {
-      Toast.show({ content: e?.message || '完工失败', icon: 'fail' })
+      Dialog.show({ content: '预检失败：' + (e?.message || e), closeOnAction: true })
+      return
     }
+    const data = pre?.data || pre
+    const items: Array<{ level: 'pass' | 'warn' | 'block'; label: string; detail?: string }> = data.items || []
+    const passCount = items.filter(i => i.level === 'pass').length
+    const warnCount = items.filter(i => i.level === 'warn').length
+    const blockCount = items.filter(i => i.level === 'block').length
+    const hasBlock = blockCount > 0
+    const iconMap: Record<string, string> = { pass: '✅', warn: '⚠️', block: '❌' }
+    const colorMap: Record<string, string> = { pass: '#52c41a', warn: '#faad14', block: '#ff4d4f' }
+
+    Dialog.show({
+      content: (
+        <div style={{ padding: '8px 4px', maxHeight: '60vh', overflowY: 'auto', minWidth: 260 }}>
+          <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 14 }}>完工前检查</div>
+          {items.map((it, i) => (
+            <div key={i} style={{ marginBottom: 6 }}>
+              <div style={{ fontSize: 13, color: colorMap[it.level] }}>
+                {iconMap[it.level]} {it.label}
+              </div>
+              {it.detail && (
+                <div style={{ fontSize: 11, color: '#999', marginTop: 2, lineHeight: 1.4 }}>{it.detail}</div>
+              )}
+            </div>
+          ))}
+          <div style={{
+            marginTop: 10, padding: '6px 8px',
+            background: hasBlock ? '#fff1f0' : '#f6ffed',
+            borderRadius: 6, fontSize: 12,
+            color: hasBlock ? '#ff4d4f' : '#52c41a',
+          }}>
+            {hasBlock
+              ? `❌ ${passCount} 通过 · ${warnCount} 警告 · ${blockCount} 阻断，不能完工`
+              : `✅ ${passCount} 通过 · ${warnCount} 警告，可以完工`}
+          </div>
+        </div>
+      ),
+      actions: [
+        [{ key: 'back', text: '补录继续', style: { color: '#999' } }],
+        [{ key: 'ok', text: '确认完工', disabled: hasBlock, danger: true }],
+      ],
+      closeOnAction: false,
+      onAction: async (action) => {
+        if (action.key !== 'ok') return
+        try {
+          Toast.show({ content: '正在完工...', icon: 'loading' })
+          const r: any = await api.post(`/production/report-orders/${current.report_order_id}/finish`)
+          if (!r?.success) throw new Error(r?.message || '完工失败')
+          Toast.show({ content: '✅ 已完工', icon: 'success' })
+          setCurrent(null); setPhase('select')
+          setDefectsRaw([]); setMaterials([]); setExceptions([]); setManpower(null)
+        } catch (e: any) {
+          Toast.show({ content: e?.message || '完工失败', icon: 'fail' })
+        }
+      },
+    })
   }, [current])
 
   // ========== 报工统计（复用 PC 端纯函数） ==========
