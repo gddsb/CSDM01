@@ -278,12 +278,12 @@ export default function MobileProcessReporting() {
         </div>
       ),
       actions: [
-        [{ key: 'back', text: '补录继续', style: { color: '#999' } }],
-        [{ key: 'ok', text: '确认完工', disabled: hasBlock, danger: true }],
+        { key: 'back', text: '补录继续', style: { color: '#999' } },
+        { key: 'ok', text: '确认完工', disabled: hasBlock, danger: true },
       ],
-      closeOnAction: false,
+      closeOnAction: true,
       onAction: async (action) => {
-        if (action.key !== 'ok') return
+        if (action.key !== 'ok') return  // 补录继续：closeOnAction=true 已自动关闭
         try {
           Toast.show({ content: '正在完工...', icon: 'loading' })
           const r: any = await api.post(`/production/report-orders/${current.report_order_id}/finish`)
