@@ -142,6 +142,7 @@ html.mobile-root textarea {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 20px;
+  scroll-padding-bottom: 260px;    /* 输入法弹起时自动把聚焦input滚进可视区 */
 }
 
 /* 整页滚动（首页/我的等无吸顶需求的页面）
@@ -152,6 +153,12 @@ html.mobile-root textarea {
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  scroll-padding-bottom: 260px;
+}
+
+/* 通用移动端滚动容器 — 统一输入法遮挡修复 */
+.mobile-scroll {
+  scroll-padding-bottom: 260px;
 }
 
 /* TabBar 底部 padding（safe-area） */

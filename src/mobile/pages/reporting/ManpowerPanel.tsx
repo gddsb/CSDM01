@@ -46,13 +46,18 @@ export function ManpowerPanel({ report, editable, manpower, setManpower, onDirty
   }, [manpower])
 
   // dirty：当前计数 vs 已保存 manpower 有差异
+  // manpower=null 表示还没保存过任何记录 → 只要用户填了非零人数就是 dirty
   useEffect(() => {
-    const saved = manpower || { skilled_count: 0, general_count: 0, labor_count: 0, other_count: 0 }
-    const dirty =
-      skilled !== Number(saved.skilled_count || 0) ||
-      general !== Number(saved.general_count || 0) ||
-      labor !== Number(saved.labor_count || 0) ||
-      other !== Number(saved.other_count || 0)
+    let dirty: boolean
+    if (!manpower) {
+      dirty = (skilled + general + labor + other) > 0
+    } else {
+      dirty =
+        skilled !== Number(manpower.skilled_count || 0) ||
+        general !== Number(manpower.general_count || 0) ||
+        labor !== Number(manpower.labor_count || 0) ||
+        other !== Number(manpower.other_count || 0)
+    }
     onDirtyChange?.(dirty)
   }, [skilled, general, labor, other, manpower, onDirtyChange])
 

@@ -9,12 +9,19 @@ export interface ReportStatItem {
 
 interface ReportStatsBarProps {
   items: ReportStatItem[]
+  rightSlot?: React.ReactNode
 }
 
-export function ReportStatsBar({ items }: ReportStatsBarProps) {
+export function ReportStatsBar({ items, rightSlot }: ReportStatsBarProps) {
   return (
     <>
-      <div style={{ marginBottom: 8, fontWeight: 'bold', color: '#333' }}>报工单统计（当前报工单汇总）</div>
+      <div style={{
+        marginBottom: 8, fontWeight: 'bold', color: '#333',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        <span>报工单统计（当前报工单汇总）</span>
+        {rightSlot}
+      </div>
       <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 16, overflowX: 'auto', paddingBottom: 4 }}>
         {items.map((item) => (
           <div key={item.label} style={{ flex: '1 1 0', minWidth: 0, whiteSpace: 'nowrap', display: 'flex', alignItems: 'baseline', gap: 4 }}>

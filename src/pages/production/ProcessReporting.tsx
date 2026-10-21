@@ -1330,20 +1330,12 @@ export default function ProcessReporting() {
           </Col>
           {selectedReport && (
             <Col span={8} style={{ textAlign: 'right' }}>
-              <Space size={12} align="center">
-                <span style={{ color: '#1890ff', fontSize: 13 }}>
-                  投入 <b>{stats.inputQty || 0}</b>
-                </span>
-                <span style={{ color: '#52c41a', fontSize: 13 }}>
-                  合格 <b>{stats.expectedOutput > 0 ? stats.expectedOutput : 0}</b>
-                </span>
-                <Tag
-                  color={reportOrderStatusMap[selectedReport.status]?.color || 'default'}
-                  style={{ fontSize: 13, padding: '2px 10px', margin: 0 }}
-                >
-                  {reportOrderStatusMap[selectedReport.status]?.label || '-'}
-                </Tag>
-              </Space>
+              <Tag
+                color={reportOrderStatusMap[selectedReport.status]?.color || 'default'}
+                style={{ fontSize: 13, padding: '2px 10px', margin: 0 }}
+              >
+                {reportOrderStatusMap[selectedReport.status]?.label || '-'}
+              </Tag>
             </Col>
           )}
         </Row>
@@ -1456,7 +1448,13 @@ export default function ProcessReporting() {
 
       {selectedReport && (
         <Card>
-    <ReportStatsBar items={reportStatItems} />
+    <ReportStatsBar items={reportStatItems} rightSlot={
+      <span style={{ fontSize: 13 }}>
+        <span style={{ color: '#52c41a' }}>合格 <b>{stats.expectedOutput > 0 ? stats.expectedOutput : 0}</b></span>
+        <span style={{ color: '#999', margin: '0 4px' }}>/</span>
+        <span style={{ color: '#1890ff' }}>投入 <b>{stats.inputQty || 0}</b></span>
+      </span>
+    } />
 
           {/* 🔑 一级分组 Tab：工序记录 / 工单记录，内嵌各自子 Tab */}
           <Tabs

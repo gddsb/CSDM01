@@ -203,10 +203,9 @@ export function useReportDetailRecords(opts: Options) {
       msg.warning(`存在未结束的异常工时记录（异常类型：${unfinished.exception_type || '-'}），请先填写结束时间后再新增`)
       return
     }
-    const now = new Date().toISOString()
     const row: ExceptionRecord = {
       id: genId('ex'), exception_type: '设备异常', exception_category: '停机',
-      start_time: now, end_time: now, duration: 0, description: '',
+      start_time: null, end_time: null, duration: 0, description: '',
       _dirty: true, report_order_id: selectedReport.report_order_id,
     }
     setExceptionList(prev => [row, ...prev])
