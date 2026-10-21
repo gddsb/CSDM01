@@ -55,7 +55,7 @@ export default function OrderManagement() {
     let cancelled = false
     ;(async () => {
       try {
-        const r: any = await api.get('/basic/lines', { params: { pageSize: 100 } })
+        const r: any = await api.get('/basic/production-lines', { params: { pageSize: 100 } })
         const list: any[] = r.success ? (r.data?.rows || r.data?.list || r.data || []) : []
         if (!cancelled) setLineOptions(
           list.filter(l => String(l.status) === '运行中' || String(l.status) === '1' || l.status === 1)
