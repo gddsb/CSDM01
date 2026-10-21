@@ -1,4 +1,4 @@
-import { Transaction } from 'sequelize'
+import { Transaction, Op } from 'sequelize'
 import { Order, ReportOrder, ReportProcess, ProcessDefect, ProcessException, ProcessMaterial, ManpowerRecord, DefectType } from '../models/index.js'
 import sequelize from '../config/database.js'
 import { ErrorCode } from '../utils/response.js'
@@ -75,8 +75,8 @@ export class OrderWorkflowService {
     }
 
     // 2. 未完工报工单
-    const totalReports = await ReportOrder.count({ where: { order_id } })
-    const finishedReports = await ReportOrder.count({ where: { order_id, status: 1 } })
+    const totalReports = await ReportOrder.count({ where: { order_id: orderId } })
+    const finishedReports = await ReportOrder.count({ where: { order_id: orderId, status: 1 } })
     const unfinishedReports = totalReports - finishedReports
     if (unfinishedReports === 0 && totalReports > 0) {
       items.push({ level: 'pass', category: '报工单', label: `全部报工单已完工 ${finishedReports}/${totalReports}`,
@@ -116,7 +116,7 @@ export class OrderWorkflowService {
     if (statusVal !== 2) throw new WorkflowError('只有开工状态的订单可以完工')
 
     const unfinishedReports = await ReportOrder.count({
-      where: { order_id: orderId, status: { [sequelize.Op.ne]: 1 } },
+      where: { order_id: orderId, status: { [Op.ne]: 1 } },
     })
     if (unfinishedReports > 0) {
       throw new WorkflowError(`还有 ${unfinishedReports} 张报工单未完工，请先完成报工后再完工订单`)
