@@ -47,9 +47,20 @@ export const close = asyncHandler(async (req: any, res: Response) => {
   return success(res, order, '订单已关闭')
 })
 
+/** 订单完工前预检 */
+export const preCheck = asyncHandler(async (req: any, res: Response) => {
+  const items = await OrderService.preCheckFinish(Number(req.params.id))
+  const hasBlock = items.some((i: any) => i.level === 'block')
+  const hasWarn = items.some((i: any) => i.level === 'warn')
+  const passCount = items.filter((i: any) => i.level === 'pass').length
+  const warnCount = items.filter((i: any) => i.level === 'warn').length
+  const blockCount = items.filter((i: any) => i.level === 'block').length
+  return success(res, { items, hasBlock, hasWarn, passCount, warnCount, blockCount }, '预检完成')
+})
+
 export const finish = asyncHandler(async (req: any, res: Response) => {
   const order = await OrderService.finish(Number(req.params.id), (req as any).user)
   return success(res, order, '订单已完工')
 })
 
-export default { list, detail, create, update, remove, release, close, finish }
+export default { list, detail, create, update, remove, release, close, preCheck, finish }

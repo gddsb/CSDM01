@@ -48,12 +48,86 @@ export class OrderWorkflowService {
     return order
   }
 
-  static async finish(orderId: string | number, actor?: Actor) {
+  /** 订单完工前预检 —— 返回结构化 check items 给前端弹窗 */
+  static async preCheckFinish(orderId: string | number): Promise<FinishCheckItem[]> {
+    const items: FinishCheckItem[] = []
+    const order = await Order.findOne({ where: { order_id: orderId } })
+    if (!order) {
+      items.push({ level: 'block', category: '订单', label: '订单不存在', detail: `order_id=${orderId}` })
+      return items
+    }
+    const statusVal = order.getDataValue('status') as number
+    const plannedQty = Number(order.getDataValue('planned_qty') || 0)
+    const finishedQty = Number(order.getDataValue('finished_qty') || 0)
+    const orderNo = order.getDataValue('order_no')
+
+    // 1. 订单状态
+    const STATUS_LABEL: Record<number, string> = { 0: '开立', 1: '下发', 2: '开工', 3: '完工', 4: '关闭' }
+    if (statusVal === 2) {
+      items.push({ level: 'pass', category: '订单', label: `订单状态：${STATUS_LABEL[statusVal]}`,
+        detail: `${orderNo} 处于开工状态，可以完工` })
+    } else if (statusVal === 3) {
+      items.push({ level: 'pass', category: '订单', label: '订单已完工',
+        detail: `${orderNo} 已是完工状态，幂等返回` })
+    } else {
+      items.push({ level: 'block', category: '订单', label: `订单状态：${STATUS_LABEL[statusVal] ?? statusVal}`,
+        detail: '只有开工状态的订单可以完工' })
+    }
+
+    // 2. 未完工报工单
+    const totalReports = await ReportOrder.count({ where: { order_id } })
+    const finishedReports = await ReportOrder.count({ where: { order_id, status: 1 } })
+    const unfinishedReports = totalReports - finishedReports
+    if (unfinishedReports === 0 && totalReports > 0) {
+      items.push({ level: 'pass', category: '报工单', label: `全部报工单已完工 ${finishedReports}/${totalReports}`,
+        detail: '所有下属报工单状态均为完工' })
+    } else if (totalReports === 0) {
+      items.push({ level: 'warn', category: '报工单', label: '该订单无报工单',
+        detail: '没有下属报工单，确认直接完工订单' })
+    } else {
+      items.push({ level: 'block', category: '报工单', label: `还有 ${unfinishedReports} 张报工单未完工`,
+        detail: `共 ${totalReports} 张，已完工 ${finishedReports} 张，请先在报工页面完成` })
+    }
+
+    // 3. 完工数量 vs 计划数量
+    if (plannedQty > 0) {
+      if (finishedQty >= plannedQty) {
+        items.push({ level: 'pass', category: '数量', label: `完工数量达标 ${finishedQty}/${plannedQty}`,
+          detail: `超出 ${(finishedQty - plannedQty).toLocaleString()} 个` })
+      } else {
+        const shortfall = plannedQty - finishedQty
+        items.push({ level: 'warn', category: '数量', label: `完工数量未达标 ${finishedQty}/${plannedQty}`,
+          detail: `还差 ${shortfall.toLocaleString()} 个，是否强制完工？` })
+      }
+    } else {
+      items.push({ level: 'warn', category: '数量', label: '计划数量为 0',
+        detail: '无法对比完工数量，建议确认订单数据' })
+    }
+
+    return items
+  }
+
+  /** 订单完工强制校验 —— 不同于 preCheck 的 warn/pass，这里严格阻断 */
+  static async validateFinish(orderId: string | number) {
     const order = await Order.findOne({ where: { order_id: orderId } })
     if (!order) throw new WorkflowError('订单不存在', ErrorCode.RECORD_NOT_FOUND, 404)
     const statusVal = order.getDataValue('status') as number
-    if (statusVal === 3) return order
+    if (statusVal === 3) return // 幂等
     if (statusVal !== 2) throw new WorkflowError('只有开工状态的订单可以完工')
+
+    const unfinishedReports = await ReportOrder.count({
+      where: { order_id: orderId, status: { [sequelize.Op.ne]: 1 } },
+    })
+    if (unfinishedReports > 0) {
+      throw new WorkflowError(`还有 ${unfinishedReports} 张报工单未完工，请先完成报工后再完工订单`)
+    }
+  }
+
+  static async finish(orderId: string | number, actor?: Actor) {
+    await this.validateFinish(orderId)
+    const order = await Order.findOne({ where: { order_id: orderId } })!
+    const statusVal = order.getDataValue('status') as number
+    if (statusVal === 3) return order // validate 后再幂等保护
     await order.update({ status: 3, close_time: nowBeijingDate() })
     logger.info('[OrderWorkflowService.finish] 订单完工成功', { order_id: orderId, order_no: order.getDataValue('order_no'), actor: actor?.username })
     return order

@@ -12,6 +12,7 @@ import {
   remove as orderRemove,
   release,
   close,
+  preCheck as orderPreCheck,
   finish as orderFinish,
 } from '../controllers/OrderController.js'
 import {
@@ -116,6 +117,7 @@ router.put('/orders/:id', asyncHandler(orderUpdate))
 router.delete('/orders/:id', asyncHandler(orderRemove))
 router.post('/orders/:id/release', permissionRequired('production:order:release'), asyncHandler(release))
 router.post('/orders/:id/close', permissionRequired('production:order:close'), asyncHandler(close))
+router.get('/orders/:id/pre-check', asyncHandler(orderPreCheck))
 router.post('/orders/:id/finish', permissionRequired('production:order:finish'), asyncHandler(orderFinish))
 
 // 生产报工单（状态：开工/完工；订单下发后直接创建）

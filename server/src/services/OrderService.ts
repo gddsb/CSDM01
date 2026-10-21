@@ -224,6 +224,9 @@ export const OrderService = {
   async close(id: number | string, actor?: any) {
     return await OrderWorkflowService.close(id, actor)
   },
+  async preCheckFinish(id: number | string) {
+    return await OrderWorkflowService.preCheckFinish(id)
+  },
   async finish(id: number | string, actor?: any) {
     return await OrderWorkflowService.finish(id, actor)
   },
