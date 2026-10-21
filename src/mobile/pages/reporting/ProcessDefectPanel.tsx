@@ -270,13 +270,12 @@ export function ProcessDefectPanel({
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>
                   数量 ×{fmtInt(row.quantity)} {row.unit || ''}
+                  {(() => {
+                    const imgs = parseImages(row.defect_images)
+                    if (imgs.length === 0) return null
+                    return <span style={{ marginLeft: 6 }}>📷 {imgs.length} 张</span>
+                  })()}
                 </div>
-                {/* 不良图片数量（与物料记录列表风格一致，不显示缩略图） */}
-                {(() => {
-                  const imgs = parseImages(row.defect_images)
-                  if (imgs.length === 0) return null
-                  return <span style={{ marginLeft: 6, color: 'var(--m-text-3)' }}>📷 {imgs.length} 张</span>
-                })()}
               </div>
               {editable && <span style={{ color: 'var(--m-text-3)', fontSize: 16 }}>›</span>}
             </div>
