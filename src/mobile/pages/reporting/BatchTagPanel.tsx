@@ -57,7 +57,6 @@ export function BatchTagPanel({ report, editable, onSaved }: Props) {
     }
   }, [batch, firstUrl, lastUrl, report.report_order_id, onSaved])
 
-  const labelStyle: React.CSSProperties = { fontSize: 12, color: 'var(--m-text-3)', marginBottom: 4 }
   const boxStyle: React.CSSProperties = {
     padding: 12, marginBottom: 12,
     background: 'var(--m-surface-2)', borderRadius: 10, border: '1px solid #eee',
@@ -65,14 +64,23 @@ export function BatchTagPanel({ report, editable, onSaved }: Props) {
 
   return (
     <div>
-      {/* 生产批号 */}
+      {/* 生产批号（含右上角保存按钮） */}
       <div style={boxStyle}>
-        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
-          🏷️ 生产批号 <span style={{ color: '#ff4d4f', fontSize: 12 }}>*</span>
-          <span style={{ fontSize: 11, color: '#999', fontWeight: 'normal', marginLeft: 6 }}>完工必填</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 600 }}>
+            🏷️ 生产批号 <span style={{ color: '#ff4d4f', fontSize: 12 }}>*</span>
+            <span style={{ fontSize: 11, color: '#999', fontWeight: 'normal', marginLeft: 6 }}>完工必填</span>
+          </div>
+          {editable && (
+            <Button
+              size="mini" color="primary" fill="solid"
+              loading={saving} onClick={handleSave} disabled={!dirty}
+              style={{ borderRadius: 6, fontSize: 12, padding: '4px 12px' }}
+            >保存</Button>
+          )}
         </div>
         <Input
-          placeholder="例如：PB-20261021-001"
+          placeholder="例如：20261021-A"
           value={batch}
           onChange={(v) => setBatch(v)}
           disabled={!editable}
@@ -81,43 +89,34 @@ export function BatchTagPanel({ report, editable, onSaved }: Props) {
         />
       </div>
 
-      {/* 首张合格证 */}
+      {/* 合格证图片（并排） */}
       <div style={boxStyle}>
-        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>📄 首张合格证</div>
-        <div style={labelStyle}>与不良记录规格一致 · 客户端水印 + 压缩 · 后端 MD5 去重</div>
-        <ProcessImageUploader
-          reportNo={report.report_no}
-          category="batch-first"
-          value={firstUrl}
-          onChange={setFirstUrl}
-          maxCount={1}
-          label="首张合格证"
-        />
-      </div>
-
-      {/* 末张合格证 */}
-      <div style={boxStyle}>
-        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>📄 末张合格证</div>
-        <div style={labelStyle}>与不良记录规格一致 · 客户端水印 + 压缩 · 后端 MD5 去重</div>
-        <ProcessImageUploader
-          reportNo={report.report_no}
-          category="batch-last"
-          value={lastUrl}
-          onChange={setLastUrl}
-          maxCount={1}
-          label="末张合格证"
-        />
-      </div>
-
-      {/* 保存按钮 */}
-      {editable && (
-        <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-          <Button color="primary" fill="solid" loading={saving} onClick={handleSave} disabled={!dirty} style={{ borderRadius: 8 }}>
-            💾 保存批次与标签
-          </Button>
-          {dirty && <span style={{ color: '#fa8c16', fontSize: 11, alignSelf: 'center' }}>※ 有未保存的修改</span>}
+        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>📄 合格证图片</div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>首张合格证</div>
+            <ProcessImageUploader
+              reportNo={report.report_no}
+              category="batch-first"
+              value={firstUrl}
+              onChange={setFirstUrl}
+              maxCount={1}
+              label="首张合格证"
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>末张合格证</div>
+            <ProcessImageUploader
+              reportNo={report.report_no}
+              category="batch-last"
+              value={lastUrl}
+              onChange={setLastUrl}
+              maxCount={1}
+              label="末张合格证"
+            />
+          </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }
