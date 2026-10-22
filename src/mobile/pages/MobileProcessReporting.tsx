@@ -116,12 +116,15 @@ export default function MobileProcessReporting() {
   const scraps = useMemo(() => defectsRaw.filter(d => scrapDefectIds.has(Number(d.defect_type_id))), [defectsRaw, scrapDefectIds])
   const [materialsMaster, setMaterialsMaster] = useState<MaterialMaster[]>([])
 
-  // ========== 全局：input/textarea 聚焦时自动滚到可见区域（防输入法遮挡） ==========
+  // ========== 全局：input/textarea 聚焦时自动滚到 sticky Tab 正下方（防输入法遮挡） ==========
+  // 注意：外层滚动区已设 scroll-padding-top:44px，block:'start' 配合这个值
+  // 让输入框精确停在 sticky 一级 Tab 下沿，避免被吸顶区遮住
   useEffect(() => {
     const handler = (e: FocusEvent) => {
       const el = e.target as HTMLElement
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT')) {
-        setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 250)
+        // 400ms 等键盘完全弹起后再滚，iOS 键盘动画 ~250ms，留余量
+        setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 400)
       }
     }
     document.addEventListener('focusin', handler)
@@ -367,29 +370,38 @@ export default function MobileProcessReporting() {
 
   return (
     <div className="mobile-page-fixed-header">
-      {/* ========== 吸顶区：工单信息 + 统计 + 一级 Tab ========== */}
-      <div className="mobile-sticky-header" style={{ padding: '0 10px', background: '#f5f6fa' }}>
-        <Header report={current} onBack={tryBack} onFinish={finishReport} />
-        <StatsBar stats={stats} reportQty={current.report_qty || 0} />
-
-        {/* 报工区域卡片 —— 一级 Tab 固定 */}
-        <div style={{
-          background: 'var(--m-surface)', margin: '8px 0 0', borderRadius: 10,
-          boxShadow: '0 1px 4px rgba(0,0,0,.04)', overflow: 'hidden',
-        }}>
-          <Tabs
-            activeKey={groupTab}
-            onChange={(k) => trySwitchGroupTab(k as any)}
-            style={{ background: '#fafafa' }}
-          >
-            <Tabs.Tab title="🔧 工序记录" key="process" />
-            <Tabs.Tab title="📊 工单记录" key="report" />
-          </Tabs>
+      {/* ========== 滚动区（唯一滚动源） ==========
+       * Header/StatsBar 下沉到滚动区顶部，随列表滚走；
+       * 一级 Tab 在滚动区内 sticky 吸顶，吸顶高度仅 ≈40px，
+       * 横屏剩余可见高度从 61px 提升到 ~240px；
+       * 滚动区 scroll-padding-top:44px 配合 scrollIntoView 让输入框
+       * 精准停在 sticky 一级 Tab 正下方（输入法遮挡也一并解决）。 */}
+      <div className="mobile-page-scroll-list mobile-scroll" style={{ padding: '0 10px 20px', paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}>
+        {/* Header + StatsBar —— 滚动区顶部，随列表滚走 */}
+        <div style={{ marginTop: 10 }}>
+          <Header report={current} onBack={tryBack} onFinish={finishReport} />
+          <StatsBar stats={stats} reportQty={current.report_qty || 0} />
         </div>
-      </div>
 
-      {/* ========== 滚动区：二级 Tab + Panel 内容 ========== */}
-      <div className="mobile-page-scroll-list mobile-scroll" style={{ padding: '8px 10px 20px', scrollPaddingBottom: 220, paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}>
+        {/* 一级 Tab —— 滚动区内 sticky，40px 高 */}
+        <div className="mobile-sticky-sub-header" style={{ paddingTop: 8 }}>
+          <div style={{
+            background: 'var(--m-surface)', borderRadius: 10,
+            boxShadow: '0 1px 4px rgba(0,0,0,.04)', overflow: 'hidden',
+          }}>
+            <Tabs
+              activeKey={groupTab}
+              onChange={(k) => trySwitchGroupTab(k as any)}
+              style={{ background: '#fafafa' }}
+            >
+              <Tabs.Tab title="🔧 工序记录" key="process" />
+              <Tabs.Tab title="📊 工单记录" key="report" />
+            </Tabs>
+          </div>
+        </div>
+
+        {/* ========== 二级 Tab + Panel 内容 ========== */}
+        <div style={{ paddingTop: 8 }}>
         {/* === 工序报工 Tab === */}
         {groupTab === 'process' && (
           <div>
@@ -517,6 +529,7 @@ export default function MobileProcessReporting() {
             )}
           </div>
         )}
+        </div>
       </div>
     </div>
   )

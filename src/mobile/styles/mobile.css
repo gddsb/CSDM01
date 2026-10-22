@@ -142,7 +142,19 @@ html.mobile-root textarea {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 20px;
-  scroll-padding-bottom: 260px;    /* 输入法弹起时自动把聚焦input滚进可视区 */
+  /* 输入法弹起 + 顶部 sticky 子头遮挡：给 sticky 一级 Tab 预留 44px 空间 */
+  scroll-padding-bottom: 260px;
+  scroll-padding-top: 44px;
+}
+
+/* 滚动区内吸顶子头（一级 Tab / 二级 Tab 容器用）
+ * —— 用于把 Header/StatsBar 下沉到滚动区后，保留"滚动到顶部 Tab 吸附"体验 */
+.mobile-sticky-sub-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #f5f6f8;
+  flex-shrink: 0;
 }
 
 /* 整页滚动（首页/我的等无吸顶需求的页面）
