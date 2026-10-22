@@ -81,6 +81,7 @@ export function ProcessMaterialPanel({
 
   useEffect(() => {
     onDirtyChange?.(expandedId !== null)
+    return () => { onDirtyChange?.(false) }
   }, [expandedId, onDirtyChange])
 
   // ========== 退回料品候选：当前工序已保存的 "投入" 记录去重汇总 ==========

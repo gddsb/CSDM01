@@ -54,7 +54,7 @@ export function ManpowerPanel({ report, editable, manpower, setManpower, onDirty
            other !== Number(manpower.other_count || 0)
   }, [skilled, general, labor, other, manpower])
 
-  useEffect(() => { onDirtyChange?.(dirty) }, [dirty, onDirtyChange])
+  useEffect(() => { onDirtyChange?.(dirty); return () => { onDirtyChange?.(false) } }, [dirty, onDirtyChange])
 
   const handleSave = useCallback(async () => {
     const total = skilled + general + labor + other

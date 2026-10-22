@@ -116,6 +116,18 @@ export default function MobileProcessReporting() {
   const scraps = useMemo(() => defectsRaw.filter(d => scrapDefectIds.has(Number(d.defect_type_id))), [defectsRaw, scrapDefectIds])
   const [materialsMaster, setMaterialsMaster] = useState<MaterialMaster[]>([])
 
+  // ========== 全局：input/textarea 聚焦时自动滚到可见区域（防输入法遮挡） ==========
+  useEffect(() => {
+    const handler = (e: FocusEvent) => {
+      const el = e.target as HTMLElement
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT')) {
+        setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 250)
+      }
+    }
+    document.addEventListener('focusin', handler)
+    return () => document.removeEventListener('focusin', handler)
+  }, [])
+
   // ========== 阶段1 加载：生产订单 ==========
   useEffect(() => {
     if (phase !== 'select') return

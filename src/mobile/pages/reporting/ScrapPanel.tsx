@@ -37,6 +37,7 @@ export function ScrapPanel({
   useEffect(() => {
     const dirty = !!(draft.defect_type_id) || (Number(draft.quantity) > 0)
     onDirtyChange?.(dirty)
+    return () => { onDirtyChange?.(false) }
   }, [draft.defect_type_id, draft.quantity, onDirtyChange])
 
   // 工序可选：优先 activeProcessId，否则取第一道，再否则 null

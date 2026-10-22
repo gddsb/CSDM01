@@ -59,7 +59,7 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
     return hasNew || hasModified
   }, [draft, rows])
 
-  useEffect(() => { onDirtyChange?.(dirty) }, [dirty, onDirtyChange])
+  useEffect(() => { onDirtyChange?.(dirty); return () => { onDirtyChange?.(false) } }, [dirty, onDirtyChange])
 
   // 当前是否存在未结束记录 —— 用于禁用「添加工时」
   const unfinishedRow = useMemo(

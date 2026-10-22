@@ -88,9 +88,10 @@ export function ProcessDefectPanel({
   const [expandedId, setExpandedId] = useState<number | string | null>(null) // 哪一行在编辑
   const [draft, setDraft] = useState<DefectRow>({ quantity: 0 })
 
-  // dirty 上报：正在编辑（expandedId 非空）即为 dirty
+  // dirty 上报：正在编辑（expandedId 非空）即为 dirty；unmount 时清掉
   useEffect(() => {
     onDirtyChange?.(expandedId !== null)
+    return () => { onDirtyChange?.(false) }
   }, [expandedId, onDirtyChange])
 
   const startAdd = () => {
