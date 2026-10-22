@@ -417,7 +417,7 @@ function FaultCard({ fault, onOpen }: { fault: FaultRow; onOpen: () => void }) {
       {(fault.repair_person_name || fault.fault_time) && (
         <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 6, display: 'flex', gap: 10 }}>
           {fault.repair_person_name && <span>👷 {fault.repair_person_name}</span>}
-          {fault.fault_time && <span>⏰ {String(fault.fault_time).slice(0, 16)}</span>}
+          {fault.fault_time && <span>⏰ {String(fault.fault_time).slice(0, 16).replace("T", " ")}</span>}
         </div>
       )}
     </div>
@@ -452,7 +452,7 @@ function FaultDetail(p: FaultDetailProps) {
       </div>
       <DetailLine label="设备">{f.device_name} ({f.device_code})</DetailLine>
       <DetailLine label="等级">{f.fault_level}</DetailLine>
-      <DetailLine label="上报时间">{String(f.fault_time || '').slice(0, 16)}</DetailLine>
+      <DetailLine label="上报时间">{String(f.fault_time || '').slice(0, 16).replace("T", " ")}</DetailLine>
       {f.repair_person_name && <DetailLine label="维修人">{f.repair_person_name}</DetailLine>}
       {f.fault_desc && <DetailLine label="故障描述">{f.fault_desc}</DetailLine>}
       {f.impact_desc && <DetailLine label="影响范围">{f.impact_desc}</DetailLine>}

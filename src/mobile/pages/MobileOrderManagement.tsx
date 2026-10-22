@@ -572,7 +572,7 @@ export default function MobileOrderManagement() {
                   <div><span style={{ color: 'var(--m-text-3)' }}>产线：</span>{selected.line_name || '—'}</div>
                   {(selected.release_time || selected.plan_start_time) && (
                     <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 4 }}>
-                      {selected.release_time && <>下发 {String(selected.release_time).slice(0, 16)} &nbsp; </>}
+                      {selected.release_time && <>下发 {String(selected.release_time).slice(0, 16).replace("T", " ")} &nbsp; </>}
                       {selected.plan_start_time && <>计划 {String(selected.plan_start_time).slice(0, 10)}{selected.plan_end_time ? ` ~ ${String(selected.plan_end_time).slice(0, 10)}` : ''}</>}
                     </div>
                   )}
