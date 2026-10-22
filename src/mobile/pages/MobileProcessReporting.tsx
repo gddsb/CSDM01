@@ -13,6 +13,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Dialog, Toast, Button, Tabs, Badge } from 'antd-mobile'
 import api from '../../utils/api'
 import { calcReportStats } from '../../pages/production/reportStats'
+import { useKeyboardInset } from '../hooks/useKeyboardInset'
 import { fmtInt } from '../utils/format'
 
 // SubPanel
@@ -116,15 +117,34 @@ export default function MobileProcessReporting() {
   const scraps = useMemo(() => defectsRaw.filter(d => scrapDefectIds.has(Number(d.defect_type_id))), [defectsRaw, scrapDefectIds])
   const [materialsMaster, setMaterialsMaster] = useState<MaterialMaster[]>([])
 
+  // 软键盘遮挡高度（px）— visualViewport 差值算出，不拍脑袋固定像素
+  // adjustResize 模式下 WebView 变矮，inset=0；adjustPan 下返回键盘实际高度
+  const keyboardInset = useKeyboardInset()
+
   // ========== 全局：input/textarea 聚焦时自动滚到 sticky Tab 正下方（防输入法遮挡） ==========
-  // 注意：外层滚动区已设 scroll-padding-top:44px，block:'start' 配合这个值
-  // 让输入框精确停在 sticky 一级 Tab 下沿，避免被吸顶区遮住
+  // 关键：键盘弹起会改变浏览器可视视口，不先让滚动容器"感知"到新的 scrollTopMax，
+  // scrollIntoView 的 block:'start' 会滚到视口被键盘裁掉的下半区域
   useEffect(() => {
     const handler = (e: FocusEvent) => {
       const el = e.target as HTMLElement
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT')) {
-        // 400ms 等键盘完全弹起后再滚，iOS 键盘动画 ~250ms，留余量
-        setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 400)
+        // 等键盘完全弹起（iOS Safari 键盘动画 ~250ms，留余量）
+        setTimeout(() => {
+          const scrollList = el.closest<HTMLElement>('.mobile-page-scroll-list')
+          // 先把滚动容器滚到底 → 强制浏览器重算 scrollTopMax（adjustPan 模式下的关键一步）
+          if (scrollList) scrollList.scrollTop = scrollList.scrollHeight
+          // 再把输入框滚到 sticky Tab 正下方（scroll-padding-top:44px 预留）
+          setTimeout(() => {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            // 最后一次兜底：确保输入框在可视视口中（对极老浏览器无 adjustResize 时有效）
+            setTimeout(() => {
+              const rect = el.getBoundingClientRect()
+              if (rect.top < 60 /* sticky Tab 下沿 */ || rect.bottom > window.innerHeight - 40 /* 键盘上方 */) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              }
+            }, 120)
+          }, 60)
+        }, 400)
       }
     }
     document.addEventListener('focusin', handler)
@@ -376,7 +396,7 @@ export default function MobileProcessReporting() {
        * 横屏剩余可见高度从 61px 提升到 ~240px；
        * 滚动区 scroll-padding-top:44px 配合 scrollIntoView 让输入框
        * 精准停在 sticky 一级 Tab 正下方（输入法遮挡也一并解决）。 */}
-      <div className="mobile-page-scroll-list mobile-scroll" style={{ padding: '0 10px 20px', paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}>
+      <div className="mobile-page-scroll-list mobile-scroll" style={{ padding: '0 10px 20px', paddingBottom: `calc(env(safe-area-inset-bottom) + 16px + ${keyboardInset}px)` }}>
         {/* Header + StatsBar —— 滚动区顶部，随列表滚走 */}
         <div style={{ marginTop: 10 }}>
           <Header report={current} onBack={tryBack} onFinish={finishReport} />
