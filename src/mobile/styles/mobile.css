@@ -367,21 +367,4 @@ html[data-theme="dark"] .mobile-app textarea::placeholder {
 }
 
 
-/* ========== antd-mobile ImageUploader 干掉内置 "+" cell —— 我们用自绘的 ========== */
-.adm-image-uploader .adm-image-uploader-cell-empty {
-  display: none !important;
-}
-
-/* ========== 修正：antd-mobile 5.42.3 内置 +/input 的真实 class ========== */
-.adm-image-uploader .adm-image-uploader-upload-button,
-.adm-image-uploader .adm-image-uploader-input {
-  display: none !important;
-}
-
-/* ========== 关键：让 .adm-image-uploader 容器透明化 ==========
- * display: contents 让 antd-mobile 的外层 div"消失"，其内部的每个 cell
- * 直接成为父 flex-wrap 容器的子元素，这样自绘 "+" 就能跟所有缩略图
- * 自动同行排列、满行后自然换行。*/
-.adm-image-uploader {
-  display: contents;
-}
+/* antd-mobile ImageUploader 相关 CSS 已废弃 — MobileImageUploader 现在完全自绘缩略图 */

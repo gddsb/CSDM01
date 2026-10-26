@@ -26,7 +26,7 @@
  *   />
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ActionSheet, ImageUploader, Toast } from 'antd-mobile'
+import { ActionSheet, Image, Toast } from 'antd-mobile'
 import type { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import api from '../../utils/api'
 import { resolveUploadUrl } from '../../utils/resolveUploadUrl'
@@ -133,6 +133,7 @@ export function MobileImageUploader({
         { text: '🖼️ 相册选择', key: 'gallery' },
       ],
       cancelText: '取消',
+      closeOnAction: true,
       onAction: (action) => {
         emitLog('info', 'ACTION', { target: action.key, remaining })
         if (action.key === 'camera') cameraInputRef.current?.click()
@@ -229,39 +230,45 @@ export function MobileImageUploader({
     }
   }, [upload, remaining, maxCount, onChange, emitLog])
 
-  // ========== 删除图片：乐观更新 + 后端双删 ==========
-  const handleChange = useCallback(async (newItems: ImageUploadItem[]) => {
-    // 只处理删除（新增走 handleFiles，这里不动）
-    if (newItems.length >= items.length) return
+  // ========== 删除单张：乐观更新 UI + 后端双删 ==========
+  const handleDelete = useCallback(async (rawUrl: string) => {
+    const removedItem = items.find(i => getRawUrl(i) === rawUrl)
+    if (!removedItem) return
 
-    const prevKeys = new Set(items.map(getRawUrl))
-    const nextKeys = new Set(newItems.map(getRawUrl))
-    const removed = items.filter(i => !nextKeys.has(getRawUrl(i)))
-
-    // 乐观更新 UI + 同步父组件
+    const newItems = items.filter(i => getRawUrl(i) !== rawUrl)
     setItems(newItems)
     onChange(toUrls(newItems))
-    emitLog('info', 'UI_DELETE', { removed: removed.map(getRawUrl), remaining: newItems.length })
+    emitLog('info', 'UI_DELETE', { removed: rawUrl, remaining: newItems.length })
 
-    // 没传 deleteUrl 就跳过后端删除（纯前端乐观更新）
-    if (!deleteUrl) return
+    if (!deleteUrl) return  // 纯 blob 模式不传 deleteUrl 时跳过
 
-    // 逐条删后端（失败独立互不影响）
-    for (const item of removed) {
-      try {
-        const rawUrl = getRawUrl(item)
-        const delPath = typeof deleteUrl === 'function' ? deleteUrl(rawUrl) : deleteUrl
-        emitLog('info', 'DELETE_REQUEST', { url: delPath })
-        await api.delete(delPath)
-      } catch (e: any) {
-        emitLog('error', 'DELETE_FAIL', { msg: e?.message, status: e?.response?.status })
-        Toast.show({
-          content: `图片删除失败：${e?.message || '网络问题'}`,
-          icon: 'fail', position: 'bottom',
-        })
-      }
+    try {
+      const delPath = typeof deleteUrl === 'function' ? deleteUrl(rawUrl) : deleteUrl
+      emitLog('info', 'DELETE_REQUEST', { url: delPath })
+      await api.delete(delPath)
+    } catch (e: any) {
+      emitLog('error', 'DELETE_FAIL', { msg: e?.message })
+      Toast.show({ content: '图片已从列表移除，但后端删除失败', icon: 'fail', position: 'bottom' })
     }
   }, [items, onChange, deleteUrl, emitLog])
+
+  // ========== 缩略图点击：ActionSheet 选"预览/删除" ==========
+  const handleThumbClick = useCallback((item: ImageUploadItem) => {
+    const rawUrl = getRawUrl(item)
+    const fullUrl = typeof item.url === 'string' ? item.url : rawUrl
+    ActionSheet.show({
+      actions: [
+        { text: '👁️ 预览', key: 'preview' },
+        ...(deleteUrl ? [{ text: '🗑️ 删除', key: 'delete' }] : []),
+      ],
+      cancelText: '取消',
+      closeOnAction: true,
+      onAction: (action) => {
+        if (action.key === 'preview') window.open(fullUrl, '_blank')
+        else if (action.key === 'delete') handleDelete(rawUrl)
+      },
+    })
+  }, [deleteUrl, handleDelete])
 
   return (
     <div>
@@ -273,29 +280,31 @@ export function MobileImageUploader({
         </div>
       )}
 
-      {/*
-        关键布局：外层用 flex-wrap + gap，让 ImageUploader 内部 cell 和自绘 "+"
-        处于同一个 flex 上下文，"+" 才能紧跟最后一张图片而不掉到下一行。
-        CSS 里 .adm-image-uploader { display: contents } 让 antd-mobile 容器"透明化"。
-      */}
+      {/* 纯自绘 flex-wrap 容器 —— 缩略图 + "+" 直接并列在同一层级，
+          只有当前行满了才自动换行，"+" 永远紧挨最后一张图片。*/}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-        {/*
-          disableUpload 干掉 antd-mobile 内置 "+" cell 和内部隐藏 input —— 根因修复。
-          我们不传 upload prop，antd-mobile 完全不参与上传状态机：
-            ✓ 没有 uploading cell 永不消失的问题
-            ✓ 没有内部 input 漏触发直接跳系统选择器的问题
-            ✓ 只靠 value={items} 受控渲染已有缩略图
-        */}
-        {/* @ts-expect-error antd-mobile 的 upload prop 我们通过 disableUpload 绕开 */}
-        <ImageUploader
-          value={items}
-          onChange={handleChange}
-          disableUpload
-          maxCount={maxCount}
-        />
+        {items.map((item, idx) => (
+          <div key={idx} onClick={() => handleThumbClick(item)}
+            style={{
+              width: 80, height: 80,
+              borderRadius: 8, overflow: 'hidden',
+              border: '1px solid var(--adm-color-border, #eee)',
+              boxSizing: 'border-box',
+              cursor: 'pointer', background: '#f5f5f5',
+              flexShrink: 0, position: 'relative',
+            }}
+          >
+            <Image
+              src={typeof item.url === 'string' ? item.url : getRawUrl(item)}
+              fit="cover"
+              width={80}
+              height={80}
+              alt=""
+              style={{ display: 'block', width: '100%', height: '100%' }}
+            />
+          </div>
+        ))}
 
-        {/* 自绘 "+" cell —— 触发 ActionSheet，样式与 antd-mobile 原版一致。
-            margin 改由外层 gap 统一控制，不再单独写 marginTop/marginLeft */}
         {remaining > 0 && (
           <div
             onClick={handleAddClick}
