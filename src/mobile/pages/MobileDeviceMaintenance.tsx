@@ -367,7 +367,7 @@ export default function MobileDeviceMaintenance() {
         </div>
       </div>
     ) : (
-    <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
+    <div className="mobile-page mobile-page-scrollable" style={{ paddingTop: 12, paddingBottom: 24 }}>
       {/* ============ Step 1: 记录列表 ============ */}
       {step === 1 && selectedDevice && (
         <>

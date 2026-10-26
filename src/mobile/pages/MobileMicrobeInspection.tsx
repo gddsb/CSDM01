@@ -316,7 +316,7 @@ export default function MobileMicrobeInspection() {
         </div>
       </div>
     ) : (
-    <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
+    <div className="mobile-page mobile-page-scrollable" style={{ paddingTop: 12, paddingBottom: 24 }}>
       {step === 1 && (
         <>
           {/* 关联单据信息卡 */}

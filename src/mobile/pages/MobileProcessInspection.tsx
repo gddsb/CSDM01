@@ -249,7 +249,7 @@ export default function MobileProcessInspection() {
         </div>
       </div>
     ) : (
-    <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
+    <div className="mobile-page mobile-page-scrollable" style={{ paddingTop: 12, paddingBottom: 24 }}>
       {step === 1 && selected && (
         <>
           <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginBottom: 14, border: '1px solid var(--m-border)' }}>

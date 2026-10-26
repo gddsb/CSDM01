@@ -278,7 +278,7 @@ export default function MobileExceptionReport() {
         />
       </div>
     ) : (
-    <div className="mobile-page" style={{ paddingTop: 12, paddingBottom: 24 }}>
+    <div className="mobile-page mobile-page-scrollable" style={{ paddingTop: 12, paddingBottom: 24 }}>
       {step === 1 && selected && (
         <>
           <div
