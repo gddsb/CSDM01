@@ -397,11 +397,7 @@ export default function MobileDeviceMaintenance() {
                   return (
                     <List.Item
                       key={r.record_id}
-                      description={
-                        <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>
-                          {r.trigger_mode || ''} · {r.period_key || r.plan_date || '—'}
-                        </div>
-                      }
+    
                       extra={
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span style={{
@@ -554,7 +550,7 @@ export default function MobileDeviceMaintenance() {
               deleteUrl={selectedRecord.status === '已完成' ? undefined : (rawUrl) => `/basic/device-records/${selectedRecord.record_id}/images?path=${encodeURIComponent(rawUrl)}`}
               value={images}
               onChange={setImages}
-              maxCount={6}
+              maxCount={selectedRecord.status === '已完成' ? 0 : 6}
               watermark={{ username: getCurrentUsername(), timestamp: true }}
             />
           </Card>
