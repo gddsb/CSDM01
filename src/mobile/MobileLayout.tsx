@@ -15,6 +15,7 @@ import { useApp } from '../contexts/AppContext'
 import { checkForUpdate, skipUpdate } from '../adapter/update'
 import { refreshAppVersion } from './utils/app-version'
 import { useOfflineQueue } from './hooks/useOfflineQueue'
+import { useKeyboardAvoidance } from './hooks/useKeyboardAvoidance'
 
 interface TabDef {
   key: string
@@ -140,6 +141,9 @@ export function MobileLayout() {
   const isProfile = location.pathname === '/m/profile'
   const canBack = location.pathname.startsWith('/m/') && !isDashboard && !isProfile
   const title = TITLE_MAP[location.pathname] || (location.pathname.startsWith('/m/') ? '奶粉罐MES' : '')
+
+  // ========== 全局：输入框键盘避让（一次挂载覆盖所有子页面） ==========
+  useKeyboardAvoidance()
 
   // ========== 版本检测（冷启动时跑一次） ==========
   useEffect(() => {
