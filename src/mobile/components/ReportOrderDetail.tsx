@@ -15,10 +15,9 @@
  */
 import { useCallback, useEffect, useState } from 'react'
 import { Button, Tabs, Toast, Dialog, Input, TextArea, List } from 'antd-mobile'
-import type { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import api from '../../utils/api'
 import { offlinePost, offlinePut } from '../offline/offlineApi'
-import { MobileDualImageUploader } from './MobileDualImageUploader'
+import { ProcessImageUploader } from '../pages/reporting/ProcessImageUploader'
 
 type TabKey = 'process' | 'defect' | 'scrap' | 'exception' | 'manpower' | 'material' | 'image'
 
@@ -71,7 +70,7 @@ export function ReportOrderDetail({ meta, onClose }: Props) {
   const [exceptionList, setExceptionList] = useState<any[]>([])
   const [manpowerList, setManpowerList] = useState<any[]>([])
   const [materialList, setMaterialList] = useState<any[]>([])
-  const [imageList, setImageList] = useState<ImageUploadItem[]>([])
+  const [imageList, setImageList] = useState<string[]>([])
 
   const refreshAll = useCallback(async () => {
     const r = meta.report_order_id
@@ -142,7 +141,7 @@ export function ReportOrderDetail({ meta, onClose }: Props) {
         list={manpowerList} onChange={refreshAll} disabled={isClosed} />}
       {tab === 'material' && <MaterialPanel reportId={meta.report_order_id} processes={processes}
         list={materialList} onChange={refreshAll} disabled={isClosed} />}
-      {tab === 'image' && <ImagePanel reportNo={meta.report_no!} images={imageList} setImages={setImageList} />}
+      {tab === 'image' && <ImagePanel reportNo={meta.report_no!} images={imageList} onChangeImages={setImageList} />}
 
       <Button block fill="outline" style={{ marginTop: 10 }} onClick={onClose}>返回</Button>
     </div>
@@ -405,31 +404,17 @@ function MaterialPanel({ reportId, processes, list, onChange, disabled }: {
   )
 }
 
-function ImagePanel({ reportNo, images, setImages }: { reportNo: string; images: ImageUploadItem[]; setImages: (v: ImageUploadItem[]) => void }) {
-  /** 真实上传：POST 后端，返回服务器 URL（修复了之前返回 URL.createObjectURL(file) 的 bug） */
-  const upload = async (file: File): Promise<ImageUploadItem> => {
-    const fd = new FormData(); fd.append('files', file)
-    const r: any = await api.post(
-      `/production/report-images/${reportNo}/inspection/upload`, fd, { timeout: 60000 },
-    )
-    if (!r?.success) {
-      Toast.show({ content: r?.message || '上传失败', icon: 'fail', position: 'bottom' })
-      throw new Error(r?.message || 'upload failed')
-    }
-    // 后端返回 { data: { url } } 或 { data: { urls: [...] } } —— 跟 ProcessImageUploader 保持一致
-    const serverUrl: string = r.data?.url
-      || (Array.isArray(r.data?.urls) ? r.data.urls[0] : r.data)
-      || ''
-    if (!serverUrl) throw new Error('服务器未返回图片地址')
-    Toast.show({ content: '图片已上传', icon: 'success', position: 'bottom' })
-    return { url: serverUrl }
-  }
+function ImagePanel({ reportNo, images, onChangeImages }: { reportNo: string; images: string[]; onChangeImages: (v: string[]) => void }) {
+  // 【2026-10-26】统一用 ProcessImageUploader —— MobileImageUploader 的业务薄包装
+  // 自带压缩 + 水印(username+timestamp) + ActionSheet 二选一 + deleteUrl 自动删图
+  // category='inspection' 是 ReportOrderDetail 特有的分类，ProcessImageUploader 接受任意 string
   return (
     <Panel>
-      <MobileDualImageUploader
+      <ProcessImageUploader
+        reportNo={reportNo}
+        category="inspection"
         value={images}
-        onChange={setImages}
-        upload={upload}
+        onChange={onChangeImages}
         maxCount={10}
         label="报工单图片"
       />
