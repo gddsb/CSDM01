@@ -58,9 +58,10 @@ interface RecordRow {
 }
 
 /** 维保类型 Tab → trigger_mode 过滤值 */
-const TRIGGER_MODES: Record<'maintenance' | 'inspection', string> = {
-  maintenance: 'daily,weekly,monthly,runtime',
-  inspection: 'inspection,check',
+const TRIGGER_MODES = {
+  '日点检': 'daily',
+  '周保养': 'weekly',
+  '月保养': 'monthly,runtime',
 }
 
 type Step = 0 | 1 | 2 | 3
@@ -71,7 +72,6 @@ const STATUS_TABS: { key: StatusTab; label: string }[] = [
   { key: '待执行', label: '待执行' },
   { key: '进行中', label: '进行中' },
   { key: '已完成', label: '已完成' },
-  { key: '已跳过', label: '已跳过' },
 ]
 
 // ========== 5-A 主组件 ==========
@@ -83,7 +83,7 @@ export default function MobileDeviceMaintenance() {
   const [step, setStep] = useState<Step>(0)
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [typeTab, setTypeTab] = useState<'maintenance' | 'inspection'>('maintenance')
+  const [typeTab, setTypeTab] = useState<'日点检' | '周保养' | '月保养'>('日点检')
   const [statusTab, setStatusTab] = useState<StatusTab>('待执行')
 
   const [devices, setDevices] = useState<DeviceRow[]>([])
@@ -192,24 +192,7 @@ export default function MobileDeviceMaintenance() {
     }
   }
 
-  // ===== 5-A 新：跳过 =====
-  const handleSkip = async (rec: RecordRow) => {
-    const ok = await Dialog.confirm({
-      content: `确认跳过「${rec.standard_name || rec.record_id}」？跳过后不扣完成率。`,
-      confirmText: '跳过',
-      cancelText: '取消',
-    })
-    if (!ok) return
-    try {
-      await offlinePut(`/basic/device-records/${rec.record_id}/skip`, {}, { source: 'device-maintenance' })
-      Toast.show({ content: '已跳过', icon: 'success', position: 'bottom' })
-      await refreshRecords()
-    } catch (e: any) {
-      Toast.show({ content: e?.message || '操作失败', position: 'bottom' })
-    }
-  }
-
-  // ===== 5-A 新：删除 =====
+  // ===== 5-A 新：删除 ====
   const handleDelete = async (rec: RecordRow) => {
     const ok = await Dialog.confirm({
       content: `确认删除「${rec.standard_name || rec.record_id}」保养记录？`,
@@ -367,14 +350,15 @@ export default function MobileDeviceMaintenance() {
             </div>
           </div>
 
-          {/* 维保类型 Tab：保养项 / 点检项 */}
+          {/* 维保类型 Tab：日点检 / 周保养 / 月保养 */}
           <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: '0 10px', marginBottom: 10 }}>
             <Tabs activeKey={typeTab} onChange={(k) => {
-              setTypeTab(k as 'maintenance' | 'inspection')
+              setTypeTab(k as '日点检' | '周保养' | '月保养')
               loadRecords(selectedDevice, statusTab)
             }}>
-              <Tabs.Tab title="🛠️ 保养项" key="maintenance" />
-              <Tabs.Tab title="🔍 点检项" key="inspection" />
+              <Tabs.Tab title="🔍 日点检" key="日点检" />
+              <Tabs.Tab title="🛠️ 周保养" key="周保养" />
+              <Tabs.Tab title="⚙️ 月保养" key="月保养" />
             </Tabs>
           </div>
 
@@ -407,7 +391,7 @@ export default function MobileDeviceMaintenance() {
                     if (isPending) return { txt: '待执行', c: 'var(--brand-color-warning)' }
                     if (isDoing) return { txt: '进行中', c: 'var(--brand-color)' }
                     if (r.status === '已完成') return { txt: '已完成', c: 'var(--brand-color-success)' }
-                    if (r.status === '已跳过') return { txt: '已跳过', c: '#9E9E9E' }
+                    
                     return { txt: r.status || '', c: 'var(--m-text-2)' }
                   })()
                   return (
@@ -429,7 +413,7 @@ export default function MobileDeviceMaintenance() {
                       onClick={() => { selectRecord(r) }}
                     >
                       <div style={{ fontWeight: 500 }}>
-                        {r.standard?.item_name || r.standard_name || '保养项'}
+                        {r.standard?.maintenance_method || r.standard?.maintenance_content?.slice?.(0, 20) || '保养项'}
                       </div>
                       {/* 5-A 新增：行内动作 */}
                       <div style={{ marginTop: 6, display: 'flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
@@ -439,11 +423,7 @@ export default function MobileDeviceMaintenance() {
                             selectRecord(r)
                           }}>开始/继续</Button>
                         )}
-                        {isPending && (
-                          <Button size="mini" fill="outline" onClick={(e) => {
-                            e.stopPropagation(); handleSkip(r)
-                          }}>跳过</Button>
-                        )}
+
                         {(isPending || isDoing) && (
                           <Button size="mini" fill="outline" onClick={(e) => {
                             e.stopPropagation(); handleDelete(r)
@@ -464,10 +444,24 @@ export default function MobileDeviceMaintenance() {
       {/* ============ Step 2: 保养/点检执行表单 ============ */}
       {step === 2 && selectedRecord && (
         <div style={{ maxHeight: 'calc(100vh - 132px)', overflowY: 'auto', paddingBottom: 24 }}>
+          {(() => {
+            const isReadonly = selectedRecord.status === '已完成'
+            if (isReadonly) {
+              return (
+                <div style={{
+                  background: 'var(--brand-color-success)', color: '#fff',
+                  padding: '10px 14px', borderRadius: 8, marginBottom: 12, fontSize: 13,
+                }}>
+                  ✅ 本保养项已完成，以下为执行记录（只读）
+                </div>
+              )
+            }
+            return null
+          })()}
           {/* 保养项标题 + 设备信息 */}
           <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginBottom: 12, border: '1px solid var(--m-border)' }}>
             <div style={{ fontSize: 15, fontWeight: 600 }}>
-              {selectedRecord.standard?.item_name || selectedRecord.standard_name || '保养项'}
+              {selectedRecord.standard?.maintenance_method || selectedRecord.standard?.maintenance_content?.slice?.(0, 20) || '保养项'}
             </div>
             <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>
               {selectedDevice?.device_name} · {selectedRecord.trigger_mode || ''} · {selectedRecord.period_key || selectedRecord.plan_date || '—'}
@@ -504,42 +498,60 @@ export default function MobileDeviceMaintenance() {
           })()}
 
           <Card title="实测值（可选）">
-            <TextArea value={actualValue} onChange={setActualValue} rows={2}
-              placeholder="如：压力 0.4MPa" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
+            {selectedRecord.status === '已完成'
+              ? <div style={{ fontSize: 13, color: 'var(--m-text-2)' }}>{actualValue || selectedRecord.standard?.actual_value || '—'}</div>
+              : <TextArea value={actualValue} onChange={setActualValue} rows={2}
+                  placeholder="如：压力 0.4MPa" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
+            }
           </Card>
 
           <Card title="保养内容">
-            <TextArea value={content} onChange={setContent} rows={3}
-              placeholder="保养作业内容、更换备件、清洁润滑等"
-              style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
+            {selectedRecord.status === '已完成'
+              ? <div style={{ fontSize: 13, color: 'var(--m-text-2)', whiteSpace: 'pre-wrap' }}>{content || selectedRecord.maintenance_content || '—'}</div>
+              : <TextArea value={content} onChange={setContent} rows={3}
+                  placeholder="保养作业内容、更换备件、清洁润滑等"
+                  style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
+            }
           </Card>
 
           <Card title="执行结果">
-            <div style={{ display: 'flex', gap: 20 }}>
-<Radio.Group value={result} onChange={(v) => setResult(v as any)}>
-
-              <Radio value="正常">正常</Radio>
-              <Radio value="异常">异常</Radio>
-            </Radio.Group>            </div>
-
-            {result === '异常' && (
-              <div style={{ marginTop: 10 }}>
-                <TextArea value={abnormalDesc} onChange={setAbnormalDesc} rows={2}
-                  placeholder="请描述异常情况"
-                  style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
-              </div>
-            )}
+            {selectedRecord.status === '已完成'
+              ? <span style={{
+                  fontSize: 13, padding: '4px 10px', borderRadius: 6,
+                  background: result === '正常' ? 'var(--brand-color-success, #4CAF50)' : 'var(--brand-color-danger, #F44336)',
+                  color: '#fff',
+                }}>{result}</span>
+              : <>
+                  <div style={{ display: 'flex', gap: 20 }}>
+                    <Radio.Group value={result} onChange={(v) => setResult(v as any)}>
+                      <Radio value="正常">正常</Radio>
+                      <Radio value="异常">异常</Radio>
+                    </Radio.Group>
+                  </div>
+                  {result === '异常' && (
+                    <div style={{ marginTop: 10 }}>
+                      <TextArea value={abnormalDesc} onChange={setAbnormalDesc} rows={2}
+                        placeholder="请描述异常情况"
+                        style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
+                    </div>
+                  )}
+                </>
+            }
           </Card>
 
           <Card title="备注（可选）">
-            <TextArea value={remarks} onChange={setRemarks} rows={2}
-              placeholder="备注" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
+            {selectedRecord.status === '已完成'
+              ? <div style={{ fontSize: 13, color: 'var(--m-text-2)', whiteSpace: 'pre-wrap' }}>{remarks || selectedRecord.remarks || '—'}</div>
+              : <TextArea value={remarks} onChange={setRemarks} rows={2}
+                  placeholder="备注" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
+            }
           </Card>
 
           {/* 5-A 新增：图片上传（拍照 + 相册双通道） */}
           <Card title="现场照片（可选）">
             <MobileImageUploader
-              uploadUrl={() => `/basic/device-records/${selectedRecord.record_id}/images`}
+              uploadUrl={selectedRecord.status === '已完成' ? undefined : () => `/basic/device-records/${selectedRecord.record_id}/images`}
+              deleteUrl={selectedRecord.status === '已完成' ? undefined : (rawUrl) => `/basic/device-records/${selectedRecord.record_id}/images?path=${encodeURIComponent(rawUrl)}`}
               value={images}
               onChange={setImages}
               maxCount={6}
@@ -548,8 +560,13 @@ export default function MobileDeviceMaintenance() {
           </Card>
 
           <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
-            <Button block fill="outline" onClick={() => setStep(1)}>上一步</Button>
-            <Button block color="primary" loading={submitting} onClick={onSubmit}>提交保养</Button>
+            {selectedRecord.status === '已完成'
+              ? <Button block color="primary" onClick={() => { setStep(1); setSelectedRecord(null) }}>返回列表</Button>
+              : <>
+                  <Button block fill="outline" onClick={() => setStep(1)}>上一步</Button>
+                  <Button block color="primary" loading={submitting} onClick={onSubmit}>提交保养</Button>
+                </>
+            }
           </div>
         </div>
       )}

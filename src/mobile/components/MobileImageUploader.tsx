@@ -26,7 +26,7 @@
  *   />
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ActionSheet, Image, Toast } from 'antd-mobile'
+import { ActionSheet, Image, Toast, Spin } from 'antd-mobile'
 import type { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import api from '../../utils/api'
 import { resolveUploadUrl } from '../../utils/resolveUploadUrl'
@@ -223,19 +223,30 @@ export function MobileImageUploader({
     emitLog('info', 'HANDLE_FILES', { count: files.length, remaining })
     for (const file of files) {
       try {
-        const result = await upload(file)
+        // 先塞占位 → UI 立即显示 80x80 "上传中..." 遮罩
+        const blobUrl = URL.createObjectURL(file)
+        const placeholder: any = { url: blobUrl, key: '', uploading: true, _tmp: blobUrl }
+        setItems(prev => [...prev, placeholder])
+
+        const result: any = await upload(file)
+
         setItems(prev => {
-          const next = [...prev, result]
+          const next = prev.map((i: any) =>
+            i._tmp === blobUrl ? { ...result, _tmp: blobUrl } : i
+          )
           onChange(toUrls(next))
-          // blob 模式：收集压缩后的 File 对象 emit 给外部
           if (uploadMode === 'blob' && onFilesReady) {
-            const files = next.map((i: any) => i.file).filter((f: any) => f instanceof File) as File[]
-            if (files.length > 0) onFilesReady(files)
+            const files2 = next.map((i: any) => i.file).filter((f: any) => f instanceof File) as File[]
+            if (files2.length > 0) onFilesReady(files2)
           }
           emitLog('info', 'UI_CHANGE', { prev: prev.length, next: next.length })
           return next
         })
-      } catch { /* upload 内部已 Toast */ }
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 3000)
+      } catch {
+        // upload 内部已 Toast，移除占位
+        setItems(prev => prev.filter((i: any) => !i.uploading))
+      }
     }
   }, [upload, remaining, maxCount, onChange, emitLog])
 
@@ -293,24 +304,43 @@ export function MobileImageUploader({
           只有当前行满了才自动换行，"+" 永远紧挨最后一张图片。*/}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
         {items.map((item, idx) => (
-          <div key={idx} onClick={() => handleThumbClick(item)}
+          <div key={idx}
+            onClick={() => !(item as any).uploading && handleThumbClick(item)}
             style={{
               width: 80, height: 80,
               borderRadius: 8, overflow: 'hidden',
               border: '1px solid var(--adm-color-border, #eee)',
               boxSizing: 'border-box',
-              cursor: 'pointer', background: '#f5f5f5',
+              cursor: (item as any).uploading ? 'default' : 'pointer', background: '#f5f5f5',
               flexShrink: 0, position: 'relative',
             }}
           >
-            <Image
-              src={typeof item.url === 'string' ? item.url : getRawUrl(item)}
-              fit="cover"
-              width={80}
-              height={80}
-              alt=""
-              style={{ display: 'block', width: '100%', height: '100%' }}
-            />
+            {(item as any).uploading ? (
+              <div style={{
+                width: '100%', height: '100%',
+                background: '#eee',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  background: 'rgba(0,0,0,0.55)', color: '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexDirection: 'column', fontSize: 10, gap: 4,
+                }}>
+                  <Spin color="white" />
+                  <div>上传中...</div>
+                </div>
+              </div>
+            ) : (
+              <Image
+                src={typeof item.url === 'string' ? item.url : getRawUrl(item)}
+                fit="cover"
+                width={80}
+                height={80}
+                alt=""
+                style={{ display: 'block', width: '100%', height: '100%' }}
+              />
+            )}
           </div>
         ))}
 
