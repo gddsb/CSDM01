@@ -121,31 +121,51 @@ export default function MobileProcessReporting() {
   // adjustResize 模式下 WebView 变矮，inset=0；adjustPan 下返回键盘实际高度
   const keyboardInset = useKeyboardInset()
 
-  // ========== 全局：input/textarea 聚焦时自动滚到 sticky Tab 正下方（防输入法遮挡） ==========
-  // 关键：键盘弹起会改变浏览器可视视口，不先让滚动容器"感知"到新的 scrollTopMax，
-  // scrollIntoView 的 block:'start' 会滚到视口被键盘裁掉的下半区域
+  // ========== 全局：input/textarea 聚焦时用 offsetTop 直接算 scrollTop（防输入法遮挡） ==========
+  // 放弃 scrollIntoView / adjustResize / visualViewport —— 这些在 Android Capacitor WebView 里都有坑。
+  // 用最原始的：(1) el 到滚动容器的相对 Y + (2) 直接设 list.scrollTop。
+  // sticky 一级 Tab 高度 ≈48px（Tab 高 + paddingTop 8px），目标是把输入框推到它正下方。
   useEffect(() => {
+    const STICKY_TAB_H = 48
+    const TOP_PADDING = 12
+    const MIN_BOTTOM_VISIBLE = 40
+
     const handler = (e: FocusEvent) => {
       const el = e.target as HTMLElement
-      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT')) {
-        // 等键盘完全弹起（iOS Safari 键盘动画 ~250ms，留余量）
-        setTimeout(() => {
-          const scrollList = el.closest<HTMLElement>('.mobile-page-scroll-list')
-          // 先把滚动容器滚到底 → 强制浏览器重算 scrollTopMax（adjustPan 模式下的关键一步）
-          if (scrollList) scrollList.scrollTop = scrollList.scrollHeight
-          // 再把输入框滚到 sticky Tab 正下方（scroll-padding-top:44px 预留）
-          setTimeout(() => {
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-            // 最后一次兜底：确保输入框在可视视口中（对极老浏览器无 adjustResize 时有效）
-            setTimeout(() => {
-              const rect = el.getBoundingClientRect()
-              if (rect.top < 60 /* sticky Tab 下沿 */ || rect.bottom > window.innerHeight - 40 /* 键盘上方 */) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-              }
-            }, 120)
-          }, 60)
-        }, 400)
-      }
+      if (!el) return
+      const tag = el.tagName
+      if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') return
+
+      const list = el.closest<HTMLElement>('.mobile-page-scroll-list')
+      if (!list) return
+
+      // 等键盘完全弹起（Android adjustPan 动画 ~150ms，adjustResize 也需要重排）
+      setTimeout(() => {
+        const listRect = list.getBoundingClientRect()
+        const elRect = el.getBoundingClientRect()
+
+        // el 在滚动容器内部的绝对 Y（相对滚动容器 scrollTop=0 时的位置）
+        const relY = elRect.top - listRect.top + list.scrollTop
+
+        // 目标：el 出现在 sticky Tab 下沿 + TOP_PADDING 的位置
+        const targetTop = STICKY_TAB_H + TOP_PADDING
+        let targetScroll = relY - targetTop
+
+        // 但也要检查：el 底部会不会被键盘吃掉
+        const listH = list.clientHeight
+        const elBottomInList = relY + elRect.height - list.scrollTop
+        const bottomGap = listH - elBottomInList  // el 底部到滚动容器底部的距离
+        if (bottomGap < MIN_BOTTOM_VISIBLE) {
+          targetScroll += (MIN_BOTTOM_VISIBLE - bottomGap)
+        }
+
+        // 边界保护：不能超出 [0, scrollTopMax]
+        const maxScroll = list.scrollHeight - list.clientHeight
+        targetScroll = Math.max(0, Math.min(maxScroll, targetScroll))
+
+        // 直接设值（不用 smooth，Android WebView smooth scroll 会被异步处理覆盖 scrollTop）
+        list.scrollTop = targetScroll
+      }, 400)
     }
     document.addEventListener('focusin', handler)
     return () => document.removeEventListener('focusin', handler)
