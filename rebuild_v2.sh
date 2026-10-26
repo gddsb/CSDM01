@@ -17,6 +17,7 @@
 # ============================================================
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${SCRIPT_DIR}"
 
 # ---- 参数解析 ----
@@ -185,7 +186,6 @@ export ANDROID_HOME=/home/ubuntu/android-sdk
 export PATH=$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
 npx cap sync android 2>&1 | tail -3
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${SCRIPT_DIR}"/android
 gradle clean assembleDebug 2>&1 | tail -5
 
@@ -194,7 +194,6 @@ gradle clean assembleDebug 2>&1 | tail -5
 # ============================================================
 echo ""
 echo "=== 6. 拷贝 APK ==="
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${SCRIPT_DIR}"
 APK_SRC="android/app/build/outputs/apk/debug/${APK_NAME}"
 if [[ ! -f "$APK_SRC" ]]; then
@@ -261,7 +260,6 @@ pm2 list milk-can-mes-server 2>&1 | grep -E "milk-can-mes-server.*(online|errore
 # ============================================================
 echo ""
 echo "=== 8. 最终产出 ==="
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${SCRIPT_DIR}"
 ls -lh "download/${APK_NAME}" download/milk-can-mes-latest.apk
 echo "SHA256: $(sha256sum "download/${APK_NAME}" | cut -d' ' -f1)"
