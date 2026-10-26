@@ -18,11 +18,18 @@ import {
   Button, List, SearchBar, Toast, Dialog, TextArea, Radio, Tabs,
   PullToRefresh, Input, Space,
 } from 'antd-mobile'
-import type { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import api from '../../utils/api'
 import { offlinePost, offlinePut } from '../offline/offlineApi'
 import { useBarcode } from '../hooks/useBarcode'
-import { MobileDualImageUploader } from '../components/MobileDualImageUploader'
+import { MobileImageUploader } from '../components/MobileImageUploader'
+
+function getCurrentUsername(): string {
+  try {
+    const raw = localStorage.getItem('mes_user')
+    if (!raw) return ''
+    return JSON.parse(raw)?.username || ''
+  } catch { return '' }
+}
 
 type FaultStatus = '待派工' | '维修中' | '待审批' | '已挂起' | '已关闭'
 type StatusTab = 'all' | FaultStatus
@@ -70,7 +77,8 @@ export default function MobileDeviceFault() {
   const [createLevel, setCreateLevel] = useState<string>('一般')
   const [createDesc, setCreateDesc] = useState('')
   const [createImpact, setCreateImpact] = useState('')
-  const [createImages, setCreateImages] = useState<ImageUploadItem[]>([])
+  const [createImages, setCreateImages] = useState<string[]>([])
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
 
   const [assignUserId, setAssignUserId] = useState<number | null>(null)
   const [assignNote, setAssignNote] = useState('')
@@ -112,21 +120,16 @@ export default function MobileDeviceFault() {
   }
   useEffect(() => { loadFaults(tab) }, [tab])
 
-  // ===== 图片 upload helper =====
-  const uploadImages = async (faultId: number, imgs: ImageUploadItem[]) => {
-    if (imgs.length === 0) return
+  // ===== 图片 upload helper（submit 后 fault_id 已知时拼 multipart）=====
+  const uploadImages = async (faultId: number, files: File[]) => {
+    if (files.length === 0) return 0
     try {
       const fd = new FormData()
-      for (const item of imgs) {
-        const file = (item as any).file
-        if (file instanceof File) fd.append('images', file)
-        else if (typeof file === 'string') {
-          const blob = await (await fetch(file)).blob()
-          fd.append('images', blob, 'image.jpg')
-        }
-      }
-      await api.post(`/basic/device-faults/${faultId}/images`, fd, { timeout: 60000 })
+      files.forEach(f => fd.append('files', f))
+      const r: any = await api.post(`/basic/device-faults/${faultId}/images`, fd, { timeout: 60000 })
+      if (r?.success) return files.length
     } catch { /* 图片失败不阻塞主流程 */ }
+    return 0
   }
 
   // ===== 5-B 新建故障 =====
@@ -144,14 +147,14 @@ export default function MobileDeviceFault() {
         impact_desc: createImpact,
       }, { source: 'device-fault' })
       const faultId = r.data?.fault_id || r.data?.id
-      if (faultId && createImages.length > 0) await uploadImages(faultId, createImages)
+      if (faultId && pendingFiles.length > 0) await uploadImages(faultId, pendingFiles)
 
       Toast.show({
-        content: r.data?.queued ? '已暂存，恢复网络后自动同步' : (r.message || '上报成功'),
+        content: r.message || '上报成功',
         icon: 'success', position: 'bottom',
       })
       // reset
-      setShowCreate(false); setCreateDeviceId(null); setCreateDeviceName('')
+      setShowCreate(false); setCreateDeviceId(null); setCreateDeviceName(''); setPendingFiles([])
       setCreateDesc(''); setCreateImpact(''); setCreateLevel('一般'); setCreateImages([])
       await loadFaults(tab)
     } catch (e: any) { Toast.show({ content: e?.message || '上报失败', position: 'bottom' }) }
@@ -331,11 +334,14 @@ export default function MobileDeviceFault() {
             <TextArea value={createImpact} onChange={setCreateImpact} rows={2}
               placeholder="影响的产线/批次/人员" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
             <div style={{ fontSize: 12, color: 'var(--m-text-2)', margin: '8px 0 4px' }}>故障现场照片（可选）</div>
-            <MobileDualImageUploader
+            <MobileImageUploader
+              uploadMode="blob"
               value={createImages}
               onChange={setCreateImages}
-              upload={async (f) => ({ url: URL.createObjectURL(f) })}
               maxCount={6}
+              compress={true}
+              watermark={{ username: getCurrentUsername(), timestamp: true }}
+              onFilesReady={setPendingFiles}
             />
           </div>
         }

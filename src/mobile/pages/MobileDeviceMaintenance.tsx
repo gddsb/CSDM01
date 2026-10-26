@@ -24,7 +24,15 @@ import type { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import api from '../../utils/api'
 import { offlinePost, offlinePut, offlineDelete } from '../offline/offlineApi'
 import { useBarcode } from '../hooks/useBarcode'
-import { MobileDualImageUploader } from '../components/MobileDualImageUploader'
+import { MobileImageUploader } from '../components/MobileImageUploader'
+
+function getCurrentUsername(): string {
+  try {
+    const raw = localStorage.getItem('mes_user')
+    if (!raw) return ''
+    return JSON.parse(raw)?.username || ''
+  } catch { return '' }
+}
 
 interface DeviceRow { device_id: number; device_code?: string; device_name?: string }
 
@@ -90,7 +98,7 @@ export default function MobileDeviceMaintenance() {
   const [content, setContent] = useState('')
   const [abnormalDesc, setAbnormalDesc] = useState('')
   const [remarks, setRemarks] = useState('')
-  const [images, setImages] = useState<ImageUploadItem[]>([])
+  const [images, setImages] = useState<string[]>([])
 
   // ===== 设备 =====
   const loadDevices = async (kw?: string): Promise<DeviceRow[]> => {
@@ -227,32 +235,6 @@ export default function MobileDeviceMaintenance() {
   }
 
   // ===== 5-A 新：图片上传 =====
-  const uploadImagesForRecord = async (recordId: number) => {
-    if (images.length === 0) return 0
-    try {
-      const fd = new FormData()
-      for (const item of images) {
-        const file = (item as any).file
-        if (file instanceof File) fd.append('images', file)
-        else if (typeof file === 'string') {
-          // Capacitor base64
-          const blob = await (await fetch(file)).blob()
-          fd.append('images', blob, 'image.jpg')
-        }
-      }
-      const r: any = await api.post(`/basic/device-records/${recordId}/images`, fd, {
-        timeout: 60000,
-      })
-      if (r.success) {
-        Toast.show({ content: `已上传 ${fd.getAll('images').length} 张`, icon: 'success', position: 'bottom' })
-        return fd.getAll('images').length
-      }
-      return 0
-    } catch (e: any) {
-      Toast.show({ content: `图片上传失败：${e?.message || ''}`, position: 'bottom' })
-      return 0
-    }
-  }
 
   // ===== 5-A 新：开始/提交 =====
   const onSubmit = async () => {
@@ -285,10 +267,8 @@ export default function MobileDeviceMaintenance() {
       )
       if (!r.success) { Toast.show({ content: r.message || '提交失败', position: 'bottom' }); return }
       // 3) 图片（必须在线直接 upload，不走 offline 队列）
-      await uploadImagesForRecord(selectedRecord.record_id)
-
       Toast.show({
-        content: r.data?.queued ? '已暂存，网络恢复后自动同步' : '提交成功',
+        content: '提交成功',
         icon: 'success', position: 'bottom',
       })
       setStep(3)
@@ -562,11 +542,12 @@ export default function MobileDeviceMaintenance() {
 
           {/* 5-A 新增：图片上传（拍照 + 相册双通道） */}
           <Card title="现场照片（可选）">
-            <MobileDualImageUploader
+            <MobileImageUploader
+              uploadUrl={() => `/basic/device-records/${selectedRecord.record_id}/images`}
               value={images}
               onChange={setImages}
-              upload={async (file) => ({ url: URL.createObjectURL(file) })}
               maxCount={6}
+              watermark={{ username: getCurrentUsername(), timestamp: true }}
             />
           </Card>
 

@@ -287,19 +287,7 @@ export function MobileLayout() {
         </NavBar>
       )}
 
-      {/* 离线/同步状态条：仅在需要提醒时出现 */}
-      {(!online || pending > 0) && (
-        <div style={{
-          background: !online ? 'var(--m-warn-bg, #FFF3E0)' : (syncing ? 'var(--m-info-bg, #E3F2FD)' : 'var(--m-amber-bg, #FFF8E1)'),
-          color: !online ? '#E65100' : (syncing ? '#1565C0' : '#8D6E63'),
-          fontSize: 12, padding: '6px 14px', textAlign: 'center',
-          borderBottom: '1px solid var(--m-shadow)',
-        }}>
-          {!online
-            ? '📶 离线模式：提交将暂存，网络恢复后自动同步'
-            : (syncing ? `🔄 正在同步离线请求…（剩余 ${pending}）` : `📥 ${pending} 条离线请求待同步`)}
-        </div>
-      )}
+      {/* 【2026-10-26】取消离线暂存 — 状态栏隐藏，用户必须联网使用 */}
 
       {/* 内容区 —— TabBar 常驻，底部始终留白 */}
       <div className="mobile-app__content mobile-tabbar-padding">
@@ -319,10 +307,8 @@ export function MobileLayout() {
         }}>
           <TabBar activeKey={activeTabKey} onChange={handleTabClick} safeArea={false}>
             {visibleTabs.map(t => {
-              const showPendingBadge = t.key === '/m/profile' && pending > 0
-              const icon = showPendingBadge
-                ? <Badge content={pending > 99 ? '99+' : String(pending)}>{t.icon}</Badge>
-                : t.icon
+              // 【2026-10-26】取消离线暂存 — Badge 不再显示 pending 数量
+              const icon = t.icon
               return <TabBar.Item key={t.key} icon={icon} title={t.title} />
             })}
           </TabBar>

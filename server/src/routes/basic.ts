@@ -391,7 +391,7 @@ router.put('/device-faults/:id/close', logOperation('关闭故障'), asyncHandle
 router.delete('/device-faults/:id', logOperation('删除故障'), asyncHandler(DeviceFaultController.delete))
 // 故障图片
 router.get('/device-faults/:id/images', asyncHandler(DeviceFaultController.getImages))
-router.post('/device-faults/:id/images', deviceFaultUploadMiddleware.array('images', 10), logOperation('上传故障图片'), asyncHandler(DeviceFaultController.uploadImage))
+router.post('/device-faults/:id/images', deviceFaultUploadMiddleware.array('files', 10), logOperation('上传故障图片'), asyncHandler(DeviceFaultController.uploadImage))
 
 // 设备保养标准（统一版，合并旧点检标准+维护标准）
 router.get('/device-standards', asyncHandler(DeviceMaintenanceController.listStandards))
@@ -414,12 +414,12 @@ router.get('/device-records/matrix', asyncHandler(DeviceMaintenanceController.ge
 router.get('/device-records', asyncHandler(DeviceMaintenanceController.listRecords))
 router.get('/device-records/:id', asyncHandler(DeviceMaintenanceController.detailRecord))
 router.put('/device-records/:id/start', logOperation('开始保养'), asyncHandler(DeviceMaintenanceController.startRecord))
-router.put('/device-records/:id/submit', deviceMaintenanceUploadMiddleware.array('images', 10), logOperation('提交保养'), asyncHandler(DeviceMaintenanceController.submitRecord))
+router.put('/device-records/:id/submit', deviceMaintenanceUploadMiddleware.array('files', 10), logOperation('提交保养'), asyncHandler(DeviceMaintenanceController.submitRecord))
 router.post('/device-records/batch-submit', logOperation('批量提交保养'), asyncHandler(DeviceMaintenanceController.batchSubmit))
 router.put('/device-records/:id/skip', asyncHandler(DeviceMaintenanceController.skipRecord))
 router.delete('/device-records/:id', logOperation('删除保养记录'), asyncHandler(DeviceMaintenanceController.deleteRecord))
 router.get('/device-records/:id/images', asyncHandler(DeviceMaintenanceController.getImages))
-router.post('/device-records/:id/images', deviceMaintenanceUploadMiddleware.array('images', 10), logOperation('上传保养图片'), asyncHandler(DeviceMaintenanceController.uploadImage))
+router.post('/device-records/:id/images', deviceMaintenanceUploadMiddleware.array('files', 10), logOperation('上传保养图片'), asyncHandler(DeviceMaintenanceController.uploadImage))
 
 // 设备运行时长
 router.post('/device-runtime-logs', logOperation('录入运行时长'), asyncHandler(DeviceMaintenanceController.logRuntime))

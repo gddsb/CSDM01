@@ -77,26 +77,14 @@ async function offlineRequest(
   }
 }
 
+// 【2026-10-26】取消离线暂存 — 直接抛网络错误，让调用方 Toast 提示用户检查网络
+// 之前：网络错误时存 IndexedDB，伪装成成功（queued: true），MobileLayout 离线队列定时 drain
+// 现在：用户必须联网使用，断网直接报网络错误，13 个页面零改动（offlinePut 内部透传 api.put 时本来就一样）
 async function enqueueIfOffline(
-  method: QueueMethod,
-  url: string,
-  body: any,
-  opts: OfflineOptions,
+  _method: QueueMethod,
+  _url: string,
+  _body: any,
+  _opts: OfflineOptions,
 ): Promise<ApiResponse> {
-  try {
-    await enqueue({ method, url, body, source: opts.source })
-    return {
-      success: true,
-      code: 0,
-      message: '已加入离线队列，网络恢复后自动同步',
-      data: { queued: true },
-    } as ApiResponse
-  } catch (err: any) {
-    return {
-      success: false,
-      code: 10000,
-      message: err?.message || '离线入队失败',
-      data: null,
-    } as ApiResponse
-  }
+  throw new Error('当前无网络，请检查网络连接后重试')
 }

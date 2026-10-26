@@ -36,7 +36,7 @@ type LogLevel = 'info' | 'warn' | 'error'
 
 interface Props {
   /** 上传接口 URL —— 可传固定 string 或按文件动态生成 */
-  uploadUrl: string | ((file: File) => string)
+  uploadUrl?: string | ((file: File) => string)
   /** 删除接口 URL —— 传相对路径 rawUrl，返回完整 DELETE URL。不传则禁用删图功能 */
   deleteUrl?: string | ((rawUrl: string) => string)
   /** 受控：后端返回的相对路径数组，如 ['/uploads/reports/WOxxx-001.jpg'] */
@@ -55,6 +55,10 @@ interface Props {
   timeout?: number
   /** 上传日志钩子（可选，不传则静默） */
   onLog?: (level: LogLevel, stage: string, ctx: any) => void
+  /** 上传模式：immediate（默认，选完立即 POST 到 uploadUrl）/ blob（压缩+水印后返回 blob URL，外部自己处理上传时机） */
+  uploadMode?: 'immediate' | 'blob'
+  /** blob 模式专用：每次选完图（压缩+水印后）emit 出 File[]，外部 submit 时拼 multipart 用 */
+  onFilesReady?: (files: File[]) => void
 }
 
 /** 重置隐藏 input 的 value —— 让用户选同一个文件也能再次触发 onChange */
@@ -93,6 +97,8 @@ export function MobileImageUploader({
   maxCount = 9, label,
   compress = true, watermark = null,
   timeout = 60000, onLog,
+  uploadMode = 'immediate',
+  onFilesReady,
 }: Props) {
   const [items, setItems] = useState<ImageUploadItem[]>(() => toItems(value))
 
@@ -158,6 +164,13 @@ export function MobileImageUploader({
       }
     }
 
+    // blob 模式：压缩+水印后不上传，返回 blob URL 给 UI，File 对象通过 onFilesReady 给外部
+    if (uploadMode === 'blob') {
+      const blobUrl = URL.createObjectURL(file)
+      emitLog('info', 'BLOB_READY', { bytes: file.size })
+      return { url: blobUrl, key: blobUrl, file } as any
+    }
+
     const fd = new FormData()
     fd.append('files', file)
     const url = typeof uploadUrl === 'function' ? uploadUrl(file) : uploadUrl
@@ -204,6 +217,11 @@ export function MobileImageUploader({
         setItems(prev => {
           const next = [...prev, result]
           onChange(toUrls(next))
+          // blob 模式：收集压缩后的 File 对象 emit 给外部
+          if (uploadMode === 'blob' && onFilesReady) {
+            const files = next.map((i: any) => i.file).filter((f: any) => f instanceof File) as File[]
+            if (files.length > 0) onFilesReady(files)
+          }
           emitLog('info', 'UI_CHANGE', { prev: prev.length, next: next.length })
           return next
         })
@@ -268,6 +286,7 @@ export function MobileImageUploader({
             ✓ 没有内部 input 漏触发直接跳系统选择器的问题
             ✓ 只靠 value={items} 受控渲染已有缩略图
         */}
+        {/* @ts-expect-error antd-mobile 的 upload prop 我们通过 disableUpload 绕开 */}
         <ImageUploader
           value={items}
           onChange={handleChange}
