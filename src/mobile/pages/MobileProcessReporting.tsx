@@ -13,7 +13,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Dialog, Toast, Button, Tabs, Badge } from 'antd-mobile'
 import api from '../../utils/api'
 import { calcReportStats } from '../../pages/production/reportStats'
-import { useKeyboardInset } from '../hooks/useKeyboardInset'
+import { useKeyboardInset, getKeyboardHeight } from '../hooks/useKeyboardInset'
 import { fmtInt } from '../utils/format'
 
 // SubPanel
@@ -121,54 +121,86 @@ export default function MobileProcessReporting() {
   // adjustResize 模式下 WebView 变矮，inset=0；adjustPan 下返回键盘实际高度
   const keyboardInset = useKeyboardInset()
 
-  // ========== 全局：input/textarea 聚焦时用 offsetTop 直接算 scrollTop（防输入法遮挡） ==========
-  // 放弃 scrollIntoView / adjustResize / visualViewport —— 这些在 Android Capacitor WebView 里都有坑。
-  // 用最原始的：(1) el 到滚动容器的相对 Y + (2) 直接设 list.scrollTop。
-  // sticky 一级 Tab 高度 ≈48px（Tab 高 + paddingTop 8px），目标是把输入框推到它正下方。
+  // ========== 全局：input/textarea 聚焦时撑大滚动容器 paddingBottom + scrollTop 定位 ==========
+  // 用户真机反馈：输入框在列表底部时 scrollTopMax 不够，滚到尽头仍被键盘遮挡。
+  // 根因：scrollTopMax = scrollHeight - clientHeight，当输入框靠近底部时 scrollHeight 不够大。
+  // 解法：聚焦时给滚动容器加 keyboardInset + buffer 的 padding-bottom，把 scrollHeight 撑大，
+  // 让最底部的输入框也能滚到键盘上方。失焦时还原 padding。
   useEffect(() => {
-    const STICKY_TAB_H = 48
-    const TOP_PADDING = 12
-    const MIN_BOTTOM_VISIBLE = 40
+    const STICKY_TAB_H = 48          // sticky 一级 Tab + paddingTop 总高
+    const TOP_PADDING = 12           // 输入框到 sticky Tab 的距离
+    const MIN_BOTTOM_VISIBLE = 40    // 输入框底部到可视区域底部的最小距离
+    const KEYBOARD_BUFFER = 20       // 键盘高度上方额外安全区
+    const FALLBACK_PADDING = 320     // 兜底 320px（所有移动键盘都够大）
 
-    const handler = (e: FocusEvent) => {
+    const findScrollList = (el: HTMLElement): HTMLElement | null =>
+      el.closest<HTMLElement>('.mobile-page-scroll-list')
+
+    const basePaddingRef = new WeakMap<HTMLElement, string>() // 记录原始 padding-bottom
+
+    const setKeyboardPadding = (list: HTMLElement, kbH: number) => {
+      if (!basePaddingRef.has(list)) {
+        const cur = list.style.paddingBottom || ''
+        basePaddingRef.set(list, cur)
+      }
+      const extra = Math.max(kbH, FALLBACK_PADDING) + KEYBOARD_BUFFER
+      list.style.paddingBottom = `${extra}px`
+    }
+
+    const restorePadding = (list: HTMLElement) => {
+      const orig = basePaddingRef.get(list)
+      if (orig !== undefined) {
+        list.style.paddingBottom = orig || ''
+        basePaddingRef.delete(list)
+      }
+    }
+
+    const scrollElIntoSafeArea = (el: HTMLElement, list: HTMLElement) => {
+      const listRect = list.getBoundingClientRect()
+      const elRect = el.getBoundingClientRect()
+      // el 在滚动容器内部的绝对 Y
+      const relY = elRect.top - listRect.top + list.scrollTop
+      // 目标：el 在 sticky Tab 下沿 + TOP_PADDING
+      const targetScroll = Math.max(0, relY - (STICKY_TAB_H + TOP_PADDING))
+      // 边界保护：夹紧到 scrollTopMax
+      const maxScroll = Math.max(0, list.scrollHeight - list.clientHeight)
+      list.scrollTop = Math.min(targetScroll, maxScroll)
+    }
+
+    const focusHandler = (e: FocusEvent) => {
       const el = e.target as HTMLElement
       if (!el) return
       const tag = el.tagName
       if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') return
-
-      const list = el.closest<HTMLElement>('.mobile-page-scroll-list')
+      const list = findScrollList(el)
       if (!list) return
 
-      // 等键盘完全弹起（Android adjustPan 动画 ~150ms，adjustResize 也需要重排）
-      setTimeout(() => {
-        const listRect = list.getBoundingClientRect()
-        const elRect = el.getBoundingClientRect()
+      // 1) 先撑大 padding（不管插件能不能拿到高度，先加 320px 兜底）
+      const kbH = getKeyboardHeight()
+      setKeyboardPadding(list, kbH)
 
-        // el 在滚动容器内部的绝对 Y（相对滚动容器 scrollTop=0 时的位置）
-        const relY = elRect.top - listRect.top + list.scrollTop
-
-        // 目标：el 出现在 sticky Tab 下沿 + TOP_PADDING 的位置
-        const targetTop = STICKY_TAB_H + TOP_PADDING
-        let targetScroll = relY - targetTop
-
-        // 但也要检查：el 底部会不会被键盘吃掉
-        const listH = list.clientHeight
-        const elBottomInList = relY + elRect.height - list.scrollTop
-        const bottomGap = listH - elBottomInList  // el 底部到滚动容器底部的距离
-        if (bottomGap < MIN_BOTTOM_VISIBLE) {
-          targetScroll += (MIN_BOTTOM_VISIBLE - bottomGap)
-        }
-
-        // 边界保护：不能超出 [0, scrollTopMax]
-        const maxScroll = list.scrollHeight - list.clientHeight
-        targetScroll = Math.max(0, Math.min(maxScroll, targetScroll))
-
-        // 直接设值（不用 smooth，Android WebView smooth scroll 会被异步处理覆盖 scrollTop）
-        list.scrollTop = targetScroll
-      }, 400)
+      // 2) 等键盘弹起 + padding 生效后再滚
+      setTimeout(() => scrollElIntoSafeArea(el, list), 400)
     }
-    document.addEventListener('focusin', handler)
-    return () => document.removeEventListener('focusin', handler)
+
+    const blurHandler = (e: FocusEvent) => {
+      const el = e.target as HTMLElement
+      if (!el) return
+      const next = (e as FocusEvent).relatedTarget as HTMLElement | null
+      const tag = el.tagName
+      const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
+      if (!isInput) return
+      if (next && findScrollList(next) === findScrollList(el)) return // 同容器内切焦点，不还原
+      const list = findScrollList(el)
+      if (list) restorePadding(list)
+    }
+
+    document.addEventListener('focusin', focusHandler)
+    document.addEventListener('focusout', blurHandler)
+    return () => {
+      document.removeEventListener('focusin', focusHandler)
+      document.removeEventListener('focusout', blurHandler)
+    }
   }, [])
 
   // ========== 阶段1 加载：生产订单 ==========

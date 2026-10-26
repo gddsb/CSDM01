@@ -14,6 +14,10 @@ const config: CapacitorConfig = {
   plugins: {
     SplashScreen: { launchShowDuration: 2000 },
     BarcodeScanner: { saveHistory: false },
+    // 键盘避让：Capacitor Android 原生级键盘高度事件 + WebView 自管缩放
+    // resize:'none' = 让 WebView 自己决定大小（配合 AndroidManifest adjustResize）
+    // 我们用 Keyboard plugin 的 keyboardInset 事件拿精确高度
+    Keyboard: { resize: 'none' },
   },
   android: {
     allowMixedContent: true,
