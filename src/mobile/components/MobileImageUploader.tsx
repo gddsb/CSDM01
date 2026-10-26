@@ -26,7 +26,7 @@
  *   />
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ActionSheet, Image, Toast, Spin } from 'antd-mobile'
+import { ActionSheet, Image, Toast, DotLoading } from 'antd-mobile'
 import type { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import api from '../../utils/api'
 import { resolveUploadUrl } from '../../utils/resolveUploadUrl'
@@ -327,7 +327,7 @@ export function MobileImageUploader({
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexDirection: 'column', fontSize: 10, gap: 4,
                 }}>
-                  <Spin color="white" />
+                  <DotLoading color="white" size={24} />
                   <div>上传中...</div>
                 </div>
               </div>
