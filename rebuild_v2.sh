@@ -16,7 +16,8 @@
 #   ./rebuild_v2.sh --build 18           # 手动指定 buildNumber
 # ============================================================
 set -euo pipefail
-cd /opt/milk-can-mes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "${SCRIPT_DIR}/.."
 
 # ---- 参数解析 ----
 UPDATE_NOTES=""
@@ -184,7 +185,8 @@ export ANDROID_HOME=/home/ubuntu/android-sdk
 export PATH=$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
 npx cap sync android 2>&1 | tail -3
 
-cd /opt/milk-can-mes/android
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "${SCRIPT_DIR}/.."/android
 gradle clean assembleDebug 2>&1 | tail -5
 
 # ============================================================
@@ -192,7 +194,8 @@ gradle clean assembleDebug 2>&1 | tail -5
 # ============================================================
 echo ""
 echo "=== 6. 拷贝 APK ==="
-cd /opt/milk-can-mes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "${SCRIPT_DIR}/.."
 APK_SRC="android/app/build/outputs/apk/debug/${APK_NAME}"
 if [[ ! -f "$APK_SRC" ]]; then
   echo "❌ APK 未找到: ${APK_SRC}"
@@ -258,7 +261,8 @@ pm2 list milk-can-mes-server 2>&1 | grep -E "milk-can-mes-server.*(online|errore
 # ============================================================
 echo ""
 echo "=== 8. 最终产出 ==="
-cd /opt/milk-can-mes
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "${SCRIPT_DIR}/.."
 ls -lh "download/${APK_NAME}" download/milk-can-mes-latest.apk
 echo "SHA256: $(sha256sum "download/${APK_NAME}" | cut -d' ' -f1)"
 echo ""
