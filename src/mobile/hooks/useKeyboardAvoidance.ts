@@ -6,15 +6,13 @@
  *   因为 scrollHeight 不够大。解法是聚焦时给滚动容器加 keyboardInset + buffer 的 paddingBottom，
  *   把 scrollHeight 撑大，让最底部的输入框也能滚到键盘上方。
  *
- *   当前 MobileProcessReporting 已经有一套完整实现，但只挂在自己页面的 useEffect 里。
- *   当用户导航到 MicrobeInspection / SparePart / ExceptionReport 等独立页面时，
- *   MobileProcessReporting unmount → handler 全卸载 → 这些页面的输入框又被键盘遮挡。
+ * 覆盖范围（3 层滚动容器）：
+ *   1) .mobile-page-scroll-list / .mobile-page-scrollable   （普通页面根容器）
+ *   2) .adm-dialog-content / .adm-modal-content / .adm-popup （antd-mobile 弹层根，portal 到 body）
+ *   3) 最近的 overflow:auto / scroll 祖先                     （Dialog 里手动加 maxHeight+overflow）
  *
- *   把这套逻辑抽成 hook，在 MobileLayout 里全局挂一次，所有子页面共享。
- *
- * 覆盖范围（2 类滚动容器都支持）：
- *   - .mobile-page-scroll-list   （fixed-header 模式，有 sticky 子头 → stickyTabH=48）
- *   - .mobile-page-scrollable     （整页滚动模式，无 sticky → stickyTabH=0）
+ *   不覆盖的 → findScrollList 返回 null → focusHandler 直接 return（安全降级）
+ *   例如 NavBar 上的搜索框（absolute/fixed，没有滚动容器），这种场景 adjustResize 本身能处理。
  *
  * 还原链路（OR，任一满足即还原）：
  *   ① focusout          —— 离开 INPUT 且同容器外
@@ -36,9 +34,31 @@ const INPUT_TAG_SET = new Set(['INPUT', 'TEXTAREA', 'SELECT'])
 
 export function useKeyboardAvoidance() {
   useEffect(() => {
-    // —— 支持两种滚动容器 ——
-    const findScrollList = (el: HTMLElement): HTMLElement | null =>
-      el.closest<HTMLElement>('.mobile-page-scroll-list, .mobile-page-scrollable')
+    // —— 3 层滚动容器查找 ——
+    const findScrollList = (el: HTMLElement): HTMLElement | null => {
+      // 1) 普通页面根容器
+      const pageList = el.closest<HTMLElement>(
+        '.mobile-page-scroll-list, .mobile-page-scrollable'
+      )
+      if (pageList) return pageList
+
+      // 2) antd-mobile 弹层（Dialog/Modal/Popup portal 到 body 下，closest 找不到页面祖先）
+      const portalRoot = el.closest<HTMLElement>(
+        '.adm-dialog-content, .adm-modal-content, .adm-popup, .adm-popup-body'
+      )
+      if (portalRoot) return portalRoot
+
+      // 3) 弹层内手动 overflow:auto 的祖先（Dialog 里 maxHeight:70vh + overflow:auto）
+      let node: HTMLElement | null = el.parentElement
+      while (node) {
+        const st = window.getComputedStyle(node)
+        const ov = (st.overflowY || st.overflow || '').toLowerCase()
+        if (ov === 'auto' || ov === 'scroll') return node
+        node = node.parentElement
+      }
+
+      return null
+    }
 
     const stickyTabHeightOf = (list: HTMLElement): number =>
       list.querySelector('.mobile-sticky-sub-header') ? 48 : 0
@@ -75,7 +95,6 @@ export function useKeyboardAvoidance() {
       const stickyTabH = stickyTabHeightOf(list)
       const listRect = list.getBoundingClientRect()
       const elRect = el.getBoundingClientRect()
-      // el 在滚动容器内部的绝对 Y
       const relY = elRect.top - listRect.top + list.scrollTop
       const targetScroll = Math.max(0, relY - (stickyTabH + TOP_PADDING))
       const maxScroll = Math.max(0, list.scrollHeight - list.clientHeight)
@@ -86,7 +105,7 @@ export function useKeyboardAvoidance() {
       const el = e.target as HTMLElement
       if (!el || !INPUT_TAG_SET.has(el.tagName)) return
       const list = findScrollList(el)
-      if (!list) return
+      if (!list) return  // NavBar/TabBar 上的 input（无滚动容器）→ 跳过，adjustResize 兜底
       setKeyboardPadding(list, getKeyboardHeight())
       setTimeout(() => scrollElIntoSafeArea(el, list), FOCUS_DELAY_MS)
     }
