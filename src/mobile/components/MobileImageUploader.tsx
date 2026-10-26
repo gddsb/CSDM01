@@ -81,15 +81,24 @@ function getRawUrl(item: ImageUploadItem): string {
   return typeof item.url === 'string' ? item.url : ''
 }
 
-/** 从 api.post 返回值里提取 rawUrl —— 兼容三种形态：{url}/{urls}/string[] */
+/** 从 api.post 返回值里提取 rawUrl —— 兼容后端多种返回形态 */
 function extractRawUrl(resData: any): string {
   const d = resData
   if (!d) return ''
   if (typeof d === 'string') return d
-  if (Array.isArray(d)) return String(d[0] || '')
+  // 对象数组（如维保 saved: [{file_path,...}]）
+  if (Array.isArray(d)) {
+    const first: any = d[0]
+    if (!first) return ''
+    if (typeof first === 'string') return first
+    return first.file_path || first.path || first.url || first.src || ''
+  }
   if (typeof d.url === 'string') return d.url
-  if (Array.isArray(d.urls)) return String(d.urls[0] || '')
-  return String(d)
+  if (Array.isArray(d.urls)) return extractRawUrl(d.urls)
+  // 单个对象（如 {file_path: '/uploads/...'}）
+  if (typeof d.file_path === 'string') return d.file_path
+  if (typeof d.path === 'string') return d.path
+  return ''
 }
 
 export function MobileImageUploader({

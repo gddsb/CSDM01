@@ -60,15 +60,13 @@ async function processImage(srcPath: string, watermarkText: string): Promise<{
   if (Math.max(w, h) > 2400) {
     out = out.resize({ width: 2400, height: 2400, fit: 'inside', withoutEnlargement: true })
   }
-  const density = 2
-  const svg = buildWatermarkSvg(watermarkText, rw, rh, density)
+  // 前端已统一用 compressImage 打水印，后端 sharp 只做尺寸/质量压缩，不再重复 composite 水印
   const buffer = await out
-    .composite([{ input: Buffer.from(svg), gravity: 'southeast' }])
     .jpeg({ quality: 85, mozjpeg: true })
     .toBuffer()
   const MAX_BYTES = 2 * 1024 * 1024
   const finalBuffer = buffer.length > MAX_BYTES
-    ? await out.clone().composite([{ input: Buffer.from(svg), gravity: 'southeast' }]).jpeg({ quality: 82, mozjpeg: true }).toBuffer()
+    ? await out.clone().jpeg({ quality: 82, mozjpeg: true }).toBuffer()
     : buffer
   const finalMeta = await sharp(finalBuffer).metadata()
   const hash = crypto.createHash('sha256').update(finalBuffer).digest('hex')

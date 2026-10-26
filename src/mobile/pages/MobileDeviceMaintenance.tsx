@@ -426,15 +426,11 @@ export default function MobileDeviceMaintenance() {
                           }}>{badge.txt}</span>
                         </div>
                       }
-                      onClick={() => {
-                        // 已完成/已跳过 → 只查看，不允许进入 Step 2（或允许进入查看）
-                        if (r.status === '已完成' || r.status === '已跳过') {
-                          Toast.show({ content: `该记录已${r.status}`, position: 'bottom' }); return
-                        }
-                        selectRecord(r)
-                      }}
+                      onClick={() => { selectRecord(r) }}
                     >
-                      <div style={{ fontWeight: 500 }}>{r.standard_name || '保养项'}</div>
+                      <div style={{ fontWeight: 500 }}>
+                        {r.standard?.item_name || r.standard_name || '保养项'}
+                      </div>
                       {/* 5-A 新增：行内动作 */}
                       <div style={{ marginTop: 6, display: 'flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
                         {(isPending || isDoing) && (
