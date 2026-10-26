@@ -126,17 +126,23 @@ export default function MobileProcessReporting() {
   // 根因：scrollTopMax = scrollHeight - clientHeight，当输入框靠近底部时 scrollHeight 不够大。
   // 解法：聚焦时给滚动容器加 keyboardInset + buffer 的 padding-bottom，把 scrollHeight 撑大，
   // 让最底部的输入框也能滚到键盘上方。失焦时还原 padding。
+  //
+  // 还原链路（OR，任一满足即还原）：
+  //   ① focusout：离开 INPUT 且同容器外（原始兜底，但 Dialog/Toast 弹起时可能不触发）
+  //   ② keyboardDidHide：Keyboard plugin 原生级（新增，Android 键盘收起必触发）
+  //   ③ visualViewport.height 恢复：纯 Web 兜底（新增，iOS/Safari 键盘收起时触发）
   useEffect(() => {
-    const STICKY_TAB_H = 48          // sticky 一级 Tab + paddingTop 总高
-    const TOP_PADDING = 12           // 输入框到 sticky Tab 的距离
-    const MIN_BOTTOM_VISIBLE = 40    // 输入框底部到可视区域底部的最小距离
-    const KEYBOARD_BUFFER = 20       // 键盘高度上方额外安全区
-    const FALLBACK_PADDING = 320     // 兜底 320px（所有移动键盘都够大）
+    const STICKY_TAB_H = 48
+    const TOP_PADDING = 12
+    const KEYBOARD_BUFFER = 20
+    const FALLBACK_PADDING = 320
+    const VV_RESTORE_THRESHOLD = 60  // visualViewport 恢复基准高度 ±60px 内即视为键盘收起
 
     const findScrollList = (el: HTMLElement): HTMLElement | null =>
       el.closest<HTMLElement>('.mobile-page-scroll-list')
 
-    const basePaddingRef = new WeakMap<HTMLElement, string>() // 记录原始 padding-bottom
+    const basePaddingRef = new WeakMap<HTMLElement, string>() // list → 原始 padding-bottom
+    const modifiedLists: Set<HTMLElement> = new Set()         // 当前被撑大过的所有 list（兜底还原用）
 
     const setKeyboardPadding = (list: HTMLElement, kbH: number) => {
       if (!basePaddingRef.has(list)) {
@@ -145,6 +151,7 @@ export default function MobileProcessReporting() {
       }
       const extra = Math.max(kbH, FALLBACK_PADDING) + KEYBOARD_BUFFER
       list.style.paddingBottom = `${extra}px`
+      modifiedLists.add(list)
     }
 
     const restorePadding = (list: HTMLElement) => {
@@ -153,16 +160,19 @@ export default function MobileProcessReporting() {
         list.style.paddingBottom = orig || ''
         basePaddingRef.delete(list)
       }
+      modifiedLists.delete(list)
+    }
+
+    const restoreAll = () => {
+      modifiedLists.forEach(l => restorePadding(l))
+      modifiedLists.clear()
     }
 
     const scrollElIntoSafeArea = (el: HTMLElement, list: HTMLElement) => {
       const listRect = list.getBoundingClientRect()
       const elRect = el.getBoundingClientRect()
-      // el 在滚动容器内部的绝对 Y
       const relY = elRect.top - listRect.top + list.scrollTop
-      // 目标：el 在 sticky Tab 下沿 + TOP_PADDING
       const targetScroll = Math.max(0, relY - (STICKY_TAB_H + TOP_PADDING))
-      // 边界保护：夹紧到 scrollTopMax
       const maxScroll = Math.max(0, list.scrollHeight - list.clientHeight)
       list.scrollTop = Math.min(targetScroll, maxScroll)
     }
@@ -174,12 +184,8 @@ export default function MobileProcessReporting() {
       if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') return
       const list = findScrollList(el)
       if (!list) return
-
-      // 1) 先撑大 padding（不管插件能不能拿到高度，先加 320px 兜底）
       const kbH = getKeyboardHeight()
       setKeyboardPadding(list, kbH)
-
-      // 2) 等键盘弹起 + padding 生效后再滚
       setTimeout(() => scrollElIntoSafeArea(el, list), 400)
     }
 
@@ -190,16 +196,47 @@ export default function MobileProcessReporting() {
       const tag = el.tagName
       const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
       if (!isInput) return
-      if (next && findScrollList(next) === findScrollList(el)) return // 同容器内切焦点，不还原
+      // 同容器内切换焦点（比如从数量 input 切到 select）→ 不还原
+      if (next && findScrollList(next) === findScrollList(el)) return
       const list = findScrollList(el)
       if (list) restorePadding(list)
     }
 
     document.addEventListener('focusin', focusHandler)
     document.addEventListener('focusout', blurHandler)
+
+    // —— 兜底还原 ①：Capacitor Keyboard plugin keyboardDidHide ——
+    let kbHandle: { remove: () => void } | null = null
+    try {
+      // 必须 require，vite dev server 里 module 不存在会抛
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { Keyboard } = require('@capacitor/keyboard')
+      Keyboard.addListener('keyboardDidHide', () => restoreAll()).then(
+        (h: { remove: () => void }) => { kbHandle = h },
+        () => { /* 旧版 plugin 可能返回 undefined，忽略 */ }
+      )
+    } catch { /* 纯浏览器环境下不加载 plugin */ }
+
+    // —— 兜底还原 ②：visualViewport 高度恢复到基准附近（iOS/Safari）——
+    let origVVH = window.innerHeight
+    const vv = window.visualViewport
+    const vvResizeHandler = () => {
+      if (vv && vv.height >= origVVH - VV_RESTORE_THRESHOLD) restoreAll()
+    }
+    if (vv) vv.addEventListener('resize', vvResizeHandler)
+
+    // 旋转屏幕时重置基准
+    const orientHandler = () => {
+      origVVH = window.innerHeight
+    }
+    window.addEventListener('orientationchange', orientHandler)
+
     return () => {
       document.removeEventListener('focusin', focusHandler)
       document.removeEventListener('focusout', blurHandler)
+      if (kbHandle) { try { kbHandle.remove() } catch { /* noop */ } }
+      if (vv) vv.removeEventListener('resize', vvResizeHandler)
+      window.removeEventListener('orientationchange', orientHandler)
     }
   }, [])
 
