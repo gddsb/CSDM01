@@ -91,6 +91,8 @@ export default function MobileDeviceMaintenance() {
   const [selectedDevice, setSelectedDevice] = useState<DeviceRow | null>(null)
   const [selectedRecord, setSelectedRecord] = useState<RecordRow | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  /** 每个 trigger_mode Tab 的 {total, done} 计数 */
+  const [tabCounts, setTabCounts] = useState<Record<string, { total: number; done: number }>>({})
 
   // 保养表单
   const [actualValue, setActualValue] = useState('')
@@ -131,12 +133,37 @@ export default function MobileDeviceMaintenance() {
       if (s !== 'all') params.status = s
       const r: any = await api.get('/basic/device-records', { params })
       const list: RecordRow[] = r.success ? (r.data?.list || r.data || []) : []
-      setRecords(list); return list
+      setRecords(list)
+      loadTabCounts(device)  // 每次切 device/Tab 顺便刷新计数
+      return list
     } catch { setRecords([]); return [] } finally { setLoading(false) }
   }
 
   const refreshRecords = async () => {
-    if (selectedDevice) await loadRecords(selectedDevice, statusTab)
+    if (selectedDevice) {
+      await loadRecords(selectedDevice, statusTab)
+      loadTabCounts(selectedDevice)
+    }
+  }
+
+  // ===== 每个 Tab 的完成数/总数（额外请求一次全量不加 status 过滤）=====
+  const loadTabCounts = async (device: DeviceRow) => {
+    const MODES: Record<string, string> = { '日点检': 'daily', '周保养': 'weekly', '月保养': 'monthly,runtime' }
+    const result: Record<string, { total: number; done: number }> = {}
+    for (const [label, mode] of Object.entries(MODES)) {
+      try {
+        const r: any = await api.get('/basic/device-records', {
+          params: { page: 1, pageSize: 1000, device_id: device.device_id, trigger_mode: mode },
+        })
+        const list: any[] = r.success ? (r.data?.list || r.data || []) : []
+        const total = list.length
+        const done = list.filter((x) => x.status === '已完成' || x.status === '已跳过').length
+        result[label] = { total, done }
+      } catch {
+        result[label] = { total: 0, done: 0 }
+      }
+    }
+    setTabCounts(result)
   }
 
   // ===== 扫码 =====
@@ -356,9 +383,22 @@ export default function MobileDeviceMaintenance() {
               setTypeTab(k as '日点检' | '周保养' | '月保养')
               loadRecords(selectedDevice, statusTab)
             }}>
-              <Tabs.Tab title="🔍 日点检" key="日点检" />
-              <Tabs.Tab title="🛠️ 周保养" key="周保养" />
-              <Tabs.Tab title="⚙️ 月保养" key="月保养" />
+              {(['日点检', '周保养', '月保养'] as const).map((label) => {
+                const c = tabCounts[label] || { total: 0, done: 0 }
+                return (
+                  <Tabs.Tab
+                    key={label}
+                    title={
+                      <span style={{ display: 'inline-block', textAlign: 'center' }}>
+                        {label === '日点检' ? '🔍' : label === '周保养' ? '🛠️' : '⚙️'} {label}
+                        <div style={{ fontSize: 10, color: 'var(--m-text-3)', lineHeight: 1.2, marginTop: 1 }}>
+                          {c.done}/{c.total}
+                        </div>
+                      </span>
+                    }
+                  />
+                )
+              })}
             </Tabs>
           </div>
 
