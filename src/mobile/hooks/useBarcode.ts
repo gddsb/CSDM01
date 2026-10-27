@@ -2,12 +2,11 @@ import logger from '../../utils/logger.js'
 import { isInNativeShell } from '../../adapter'
 /**
  * useBarcode — 扫码 hook
- * - Capacitor 原生壳内（Android/iOS）：调用 @capacitor-community/barcode-scanner
+ * - Capacitor 原生壳内（Android/iOS）：调用 @capacitor/barcode-scanner（官方插件 v3.x）
+ *   官方插件自动处理相机权限申请，单 API scanBarcode() 拉起相机→扫码→返回
  * - Web 环境（PC 浏览器）：弹出 window.prompt 手动输入
- * - 权限处理：主动请求相机权限，被拒时引导用户到系统设置
  */
-import { useCallback, useRef, useState } from 'react'
-import { Dialog, Toast } from 'antd-mobile'
+import { useCallback, useState } from 'react'
 
 export interface BarcodeResult {
   code: string
@@ -16,72 +15,37 @@ export interface BarcodeResult {
 
 export function useBarcode() {
   const [isScanning, setIsScanning] = useState(false)
-  const lastCancel = useRef<(() => void) | null>(null)
 
   const scan = useCallback(async (): Promise<BarcodeResult | null> => {
     // 1) Capacitor 原生扫码
     if (isInNativeShell()) {
       try {
-        const { BarcodeScanner } = await import('@capacitor-community/barcode-scanner')
+        const { CapacitorBarcodeScanner, CapacitorBarcodeScannerTypeHint } =
+          await import('@capacitor/barcode-scanner')
 
-        // 1a. 主动请求相机权限（force: true 会触发系统弹窗）
-        let permission = await BarcodeScanner.checkPermission({ force: false })
-        if (!permission.granted) {
-          // 主动请求权限
-          permission = await BarcodeScanner.checkPermission({ force: true })
-        }
-
-        if (!permission.granted) {
-          // 用户拒绝了权限，弹窗提示并引导到系统设置
-          const openSettings = await Dialog.confirm({
-            content: '需要相机权限才能扫码，是否去系统设置中开启？',
-            confirmText: '去设置',
-            cancelText: '取消',
-          })
-          if (openSettings) {
-            try {
-              await BarcodeScanner.openAppSettings()
-            } catch {
-              // openAppSettings 在部分平台可能不可用，静默忽略
-            }
-          }
-          Toast.show({ content: '相机权限未授予，无法扫码', position: 'bottom' })
-          return null
-        }
-
-        // 1b. 权限已获取，启动扫码
         setIsScanning(true)
-        lastCancel.current = () => BarcodeScanner.stopScan()
         try {
-          await BarcodeScanner.hideBackground()
-        } catch {
-          // ignore
-        }
+          // 官方插件：单 API 自动处理权限 → 拉起相机 → 返回结果
+          const result = await CapacitorBarcodeScanner.scanBarcode({
+            hint: CapacitorBarcodeScannerTypeHint.ALL,   // 支持所有格式（QR + 一维条码）
+            scanInstructions: '将二维码/条码对准扫描框',
+          })
+          setIsScanning(false)
 
-        let result
-        try {
-          result = await BarcodeScanner.startScan()
+          if (result?.ScanResult && result.ScanResult.trim()) {
+            return { code: result.ScanResult.trim(), source: 'native' }
+          }
+          // result 为空通常是用户点了取消
+          return null
         } catch (scanErr: any) {
           setIsScanning(false)
-          try { await BarcodeScanner.showBackground() } catch {}
-          // 扫码启动失败（可能是权限刚授予还没生效，或摄像头被占用）
-          Toast.show({
-            content: scanErr?.message || '无法启动摄像头，请重试或检查相机权限',
-            position: 'bottom',
-          })
+          // cancel 是正常（插件返回特定错误码），静默
+          logger.warn('CapacitorBarcodeScanner error:', scanErr?.message || scanErr)
           return null
         }
-
-        setIsScanning(false)
-        try { await BarcodeScanner.showBackground() } catch {}
-
-        if (result?.hasContent && result.content) {
-          return { code: result.content.trim(), source: 'native' }
-        }
-        return null
       } catch (err: any) {
         setIsScanning(false)
-        logger.warn('Capacitor barcode scan failed:', err)
+        logger.warn('CapacitorBarcodeScanner import failed:', err)
         // fallback 到手动输入
       }
     }
@@ -94,7 +58,5 @@ export function useBarcode() {
     return { code, source: 'manual' }
   }, [])
 
-  const cancel = useCallback(() => { lastCancel.current?.(); setIsScanning(false) }, [])
-
-  return { scan, cancel, isScanning }
+  return { scan, isScanning }
 }

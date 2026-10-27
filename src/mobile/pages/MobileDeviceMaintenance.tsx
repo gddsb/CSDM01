@@ -214,7 +214,10 @@ export default function MobileDeviceMaintenance() {
   const handleScan = async () => {
     const r = await scan()
     if (!r) return
+    // 扫码结果赋值搜索框 + 清掉 SearchBar onChange 自动搜索的 debounce timer
+    // （扫码会手动 loadDevices，不需要重复查）
     setKeyword(r.code)
+    if (searchTimerRef.current) window.clearTimeout(searchTimerRef.current)
     const list = await loadDevices(r.code)
     const match = list.find((d) => d.device_code === r.code)
     if (!match) {
