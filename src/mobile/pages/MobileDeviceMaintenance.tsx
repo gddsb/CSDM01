@@ -226,7 +226,7 @@ export default function MobileDeviceMaintenance() {
       : `${now.getFullYear()}-${pad(now.getMonth() + 2)}`
 
     // Step 1 → 选月份（纯回调，Dialog.show 不返回 Promise）
-    Dialog.show({
+    Dialog.show({ closeOnAction: true, closeOnMaskClick: true,
       content: '请选择生成月份',
       actions: [
         { key: 'current', text: `本月 ${currentYm}（跳过已过去日期）` },
@@ -252,7 +252,7 @@ export default function MobileDeviceMaintenance() {
     }
     deviceActions.push({ key: 'cancel', text: '取消' })
 
-    Dialog.show({
+    Dialog.show({ closeOnAction: true, closeOnMaskClick: true,
       content: selectedDevice
         ? '为「哪些设备」生成？'
         : '为哪些设备生成？',
@@ -302,8 +302,21 @@ export default function MobileDeviceMaintenance() {
     setContent(rec.maintenance_content || '')
     setAbnormalDesc(rec.abnormal_desc || '')
     setRemarks(rec.remarks || '')
-    setImages(extractImageUrls(rec.maintenance_images))
+    setImages([])  // 先清，loadRecords 不 include 图片表，必须单独拉
     setStep(2)
+    loadRecordImages(rec.record_id)
+  }
+
+  /** 单独拉取保养记录的图片（listRecords 不 include DeviceImage） */
+  const loadRecordImages = async (recordId: number) => {
+    try {
+      const r: any = await api.get(`/basic/device-records/${recordId}/images`)
+      const list: any[] = Array.isArray(r?.data) ? r.data : []
+      const urls = list
+        .map((x: any) => (typeof x === 'string') ? x : (x?.file_path || x?.path || x?.url || ''))
+        .filter(Boolean)
+      setImages(urls)
+    } catch { /* 无图片或接口错 → 保持空数组，不阻断 */ }
   }
 
   // ===== 5-A 新：图片上传 =====
