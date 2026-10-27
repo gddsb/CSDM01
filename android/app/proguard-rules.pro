@@ -1,21 +1,43 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# =============================================
+# ProGuard rules — Capacitor Android
+# Release 构建时必须保留反射调用的类名/方法名
+# 否则 Capacitor bridge 和插件初始化会失败
+# =============================================
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# ---------- Capacitor core ----------
+-keep class com.getcapacitor.** { *; }
+-keep class com.getcapacitor.Plugin { *; }
+-keep class com.getcapacitor.PluginMethod { *; }
+-keep class com.getcapacitor.JSObject { *; }
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# ---------- WebView JS bridge 反射 ----------
+-keepclassmembers class * {
+    @com.getcapacitor.PluginMethod <methods>;
+}
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# ---------- 官方扫码插件 @capacitor/barcode-scanner ----------
+-keep class com.outsystems.** { *; }
+-keep class com.capacitorjs.barcodescanner.** { *; }
+-dontwarn com.outsystems.**
+
+# ---------- ML Kit barcode scanning ----------
+-keep class com.google.mlkit.** { *; }
+-dontwarn com.google.mlkit.**
+
+# ---------- ZXing (可能被插件间接依赖) ----------
+-keep class com.google.zxing.** { *; }
+-dontwarn com.google.zxing.**
+
+# ---------- Kotlin 运行时 (release 不混淆 Kotlin) ----------
+-keep class kotlin.** { *; }
+-keep class kotlinx.** { *; }
+-dontwarn kotlin.**
+-dontwarn kotlinx.**
+
+# ---------- WebView 相关 ----------
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+
+# ---------- 保留行号 (崩溃栈定位用) ----------
+-keepattributes SourceFile,LineNumberTable
