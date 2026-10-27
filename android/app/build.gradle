@@ -39,6 +39,8 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // 签名：用 debug keystore 打 release 包（便于测试安装，正式发布换正式 keystore）
+            signingConfig signingConfigs.debug
         }
     }
 
