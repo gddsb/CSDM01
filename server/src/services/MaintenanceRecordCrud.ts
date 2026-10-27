@@ -80,15 +80,27 @@ const {
 
 /** 设备当日维保汇总：每个设备今日生成的 {total, done}
  *  用于移动端设备列表卡片展示 "当日已完成/总数"
+ *  统计口径：period_key ∈ {今天日点检, 本周周保养, 本月月保养}
  */
 export async function dailySummary(dateStr?: string): Promise<Record<number, { total: number; done: number }>> {
-  const date = dateStr || new Date().toISOString().slice(0, 10)
+  const d = dateStr ? new Date(dateStr) : new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const dateOnly = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  // ISO 周号
+  const tmp = new Date(d)
+  tmp.setDate(tmp.getDate() + 4 - (tmp.getDay() || 7))
+  const yearStart = new Date(tmp.getFullYear(), 0, 1)
+  const weekNum = Math.ceil(((tmp.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
+  const weekKey = `${tmp.getFullYear()}-W${pad(weekNum)}`
+  const monthKey = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`
+  const keys = [dateOnly, weekKey, monthKey]
+
   const rows: any[] = await DeviceMaintenanceRecord.sequelize.query(
     `SELECT device_id, COUNT(*) AS total, SUM(CASE WHEN status IN (3, 4) THEN 1 ELSE 0 END) AS done
      FROM device_record
-     WHERE DATE(COALESCE(created_at, plan_date)) = :date
+     WHERE period_key IN (:keys)
      GROUP BY device_id`,
-    { replacements: { date }, type: QueryTypes.SELECT },
+    { replacements: { keys }, type: QueryTypes.SELECT },
   )
   const map: Record<number, { total: number; done: number }> = {}
   for (const r of rows) {
