@@ -136,7 +136,7 @@ export async function generateRecords(body: any) {
           trigger_mode: s.getDataValue('trigger_mode'),
           period_key: pk,
           status: 0,
-          remarks: '自动生成',
+          remarks: '',
         }, { transaction: t })
         createdList.push(created)
       }

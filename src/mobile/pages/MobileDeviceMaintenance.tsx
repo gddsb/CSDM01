@@ -277,23 +277,6 @@ export default function MobileDeviceMaintenance() {
     })
   }
 
-  // ===== 5-A 新：删除 ====
-  const handleDelete = async (rec: RecordRow) => {
-    const ok = await Dialog.confirm({
-      content: `确认删除「${rec.standard_name || rec.record_id}」保养记录？`,
-      confirmText: '删除',
-      cancelText: '取消',
-    })
-    if (!ok) return
-    try {
-      await offlineDelete(`/basic/device-records/${rec.record_id}`, { source: 'device-maintenance' })
-      Toast.show({ content: '已删除', icon: 'success', position: 'bottom' })
-      await refreshRecords()
-    } catch (e: any) {
-      Toast.show({ content: e?.message || '删除失败', position: 'bottom' })
-    }
-  }
-
   // ===== 选记录进入 Step 2 =====
   const selectRecord = (rec: RecordRow) => {
     setSelectedRecord(rec)
@@ -552,12 +535,6 @@ export default function MobileDeviceMaintenance() {
                             selectRecord(r)
                           }}>开始/继续</Button>
                         )}
-
-                        {(isPending || isDoing) && (
-                          <Button size="mini" fill="outline" onClick={(e) => {
-                            e.stopPropagation(); handleDelete(r)
-                          }}>删除</Button>
-                        )}
                       </div>
                     </List.Item>
                   )
@@ -626,22 +603,16 @@ export default function MobileDeviceMaintenance() {
             )
           })()}
 
-          <Card title="实测值（可选）">
-            {selectedRecord.status === '已完成'
-              ? <div style={{ fontSize: 13, color: 'var(--m-text-2)' }}>{actualValue || selectedRecord.actual_value || '—'}</div>
-              : <TextArea value={actualValue} onChange={setActualValue} rows={2}
-                  placeholder="如：压力 0.4MPa" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
-            }
-          </Card>
-
-          <Card title="保养内容">
-            {selectedRecord.status === '已完成'
-              ? <div style={{ fontSize: 13, color: 'var(--m-text-2)', whiteSpace: 'pre-wrap' }}>{content || selectedRecord.maintenance_content || '—'}</div>
-              : <TextArea value={content} onChange={setContent} rows={3}
-                  placeholder="保养作业内容、更换备件、清洁润滑等"
-                  style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
-            }
-          </Card>
+          {/* 定量型才显示实测值 Card */}
+          {selectedRecord.standard?.judge_type === '定量' && (
+            <Card title={`实测值（标准：${selectedRecord.standard?.standard_value || '—'}${selectedRecord.standard?.unit || ''}）`}>
+              {selectedRecord.status === '已完成'
+                ? <div style={{ fontSize: 13, color: 'var(--m-text-2)' }}>{actualValue || selectedRecord.actual_value || '—'}</div>
+                : <TextArea value={actualValue} onChange={(v) => { setActualValue(v); setResult(autoJudge(v, selectedRecord.standard?.standard_value || '')) }} rows={2}
+                    placeholder="请输入实测数值" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
+              }
+            </Card>
+          )}
 
           <Card title="执行结果">
             {selectedRecord.status === '已完成'
@@ -650,22 +621,29 @@ export default function MobileDeviceMaintenance() {
                   background: result === '正常' ? 'var(--brand-color-success, #4CAF50)' : 'var(--brand-color-danger, #F44336)',
                   color: '#fff',
                 }}>{result}</span>
-              : <>
-                  <div style={{ display: 'flex', gap: 20 }}>
-                    <Radio.Group value={result} onChange={(v) => setResult(v as any)}>
+              : (selectedRecord.standard?.judge_type === '定量'
+                  ? <>
+                      <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 8 }}>系统根据实测值自动判定：</div>
+                      <span style={{
+                        fontSize: 14, padding: '6px 14px', borderRadius: 6, fontWeight: 600,
+                        background: result === '正常' ? 'var(--brand-color-success, #4CAF50)' : 'var(--brand-color-danger, #F44336)',
+                        color: '#fff',
+                      }}>{result}</span>
+                      {actualValue && <div style={{ marginTop: 6, fontSize: 12, color: 'var(--m-text-3)' }}>输入 {actualValue} → 标准 {selectedRecord.standard?.standard_value || '—'}</div>}
+                    </>
+                  : <Radio.Group value={result} onChange={(v) => setResult(v as any)}>
                       <Radio value="正常">正常</Radio>
                       <Radio value="异常">异常</Radio>
                     </Radio.Group>
-                  </div>
-                  {result === '异常' && (
-                    <div style={{ marginTop: 10 }}>
-                      <TextArea value={abnormalDesc} onChange={setAbnormalDesc} rows={2}
-                        placeholder="请描述异常情况"
-                        style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
-                    </div>
-                  )}
-                </>
+                )
             }
+            {result === '异常' && selectedRecord.status !== '已完成' && (
+              <div style={{ marginTop: 10 }}>
+                <TextArea value={abnormalDesc} onChange={setAbnormalDesc} rows={2}
+                  placeholder="请描述异常情况"
+                  style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
+              </div>
+            )}
           </Card>
 
           <Card title="备注（可选）">
@@ -754,4 +732,20 @@ function buildPeriodKey(typeTab: string): string {
     return `${tmp.getFullYear()}-W${pad(weekNum)}`
   }
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}`
+}
+
+/** 定量型：实测值 → 自动判定（区间/上下限/单点±10%） */
+function autoJudge(actual: string, standard: string): '正常' | '异常' {
+  const actualNum = parseFloat(actual)
+  if (!actual || isNaN(actualNum)) return '正常'
+  const std = standard || ''
+  const range = std.match(/([\d.]+)\s*[~～\-—至到]\s*([\d.]+)/)
+  if (range) { const lo = parseFloat(range[1]); const hi = parseFloat(range[2]); return (actualNum < lo || actualNum > hi) ? '异常' : '正常' }
+  const ge = std.match(/[≥>=]\s*([\d.]+)/)
+  if (ge) { const lo = parseFloat(ge[1]); return actualNum < lo ? '异常' : '正常' }
+  const le = std.match(/[≤<=<]\s*([\d.]+)/)
+  if (le) { const hi = parseFloat(le[1]); return actualNum > hi ? '异常' : '正常' }
+  const single = std.match(/([\d.]+)/)
+  if (single) { const target = parseFloat(single[1]); return (actualNum < target * 0.9 || actualNum > target * 1.1) ? '异常' : '正常' }
+  return '正常'
 }

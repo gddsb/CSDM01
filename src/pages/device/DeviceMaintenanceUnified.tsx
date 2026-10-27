@@ -56,6 +56,22 @@ const JUDGE_OPTIONS = [
   { label: '定量（数值范围）', value: '定量' },
 ]
 
+/** 定量型：实测值 → 自动判定 正常/异常（区间/上下限/单点±10%） */
+function autoJudge(actual: string, standard: string): '正常' | '异常' {
+  const actualNum = parseFloat(actual)
+  if (!actual || isNaN(actualNum)) return '正常'
+  const std = standard || ''
+  const range = std.match(/([\d.]+)\s*[~～\-—至到]\s*([\d.]+)/)
+  if (range) { const lo = parseFloat(range[1]); const hi = parseFloat(range[2]); return (actualNum < lo || actualNum > hi) ? '异常' : '正常' }
+  const ge = std.match(/[≥>=]\s*([\d.]+)/)
+  if (ge) { const lo = parseFloat(ge[1]); return actualNum < lo ? '异常' : '正常' }
+  const le = std.match(/[≤<=<]\s*([\d.]+)/)
+  if (le) { const hi = parseFloat(le[1]); return actualNum > hi ? '异常' : '正常' }
+  const single = std.match(/([\d.]+)/)
+  if (single) { const target = parseFloat(single[1]); return (actualNum < target * 0.9 || actualNum > target * 1.1) ? '异常' : '正常' }
+  return '正常'
+}
+
 export default function DeviceMaintenanceUnified() {
   // ============ 执行记录列表 ============
   const [records, setRecords] = useState<any[]>([])
@@ -189,17 +205,6 @@ export default function DeviceMaintenanceUnified() {
     }
   }
 
-  // ===== 跳过 =====
-  const handleSkip = async (id: number) => {
-    try {
-      const res = await api.put(`/basic/device-records/${id}/skip`, {})
-      message.success(res?.message || '已标记为跳过')
-      loadRecords()
-    } catch (err: any) {
-      message.error(err?.message || '操作失败')
-    }
-  }
-
   // ===== 打开完成保养弹窗 =====
   const openComplete = (record: any) => {
     setCompleteRecord(record)
@@ -250,6 +255,10 @@ export default function DeviceMaintenanceUnified() {
   // ===== 完成保养（先上传图片，全部成功后再提交执行结果） =====
   const handleComplete = async () => {
     const values = await form.validateFields()
+    // 定量型：用自动判定覆盖用户手动 result
+    if (completeRecord?.standard?.judge_type === '定量') {
+      values.result = autoJudge(values.actual_value || '', completeRecord?.standard?.standard_value || '')
+    }
     // 收集待上传的本地文件
     const pendingFiles = completeFileList
       .filter(f => f.originFileObj)
@@ -357,9 +366,6 @@ export default function DeviceMaintenanceUnified() {
           )}
           {r.status === '执行中' && (
             <Button size="small" type="link" onClick={() => openComplete(r)}>完成</Button>
-          )}
-          {r.status === '待执行' && (
-            <Button size="small" type="link" onClick={() => handleSkip(r.record_id)}>跳过</Button>
           )}
         </Space>
       ),
@@ -631,31 +637,43 @@ export default function DeviceMaintenanceUnified() {
           </div>
         )}
         <Form form={form} layout="vertical">
-          <Form.Item name="result" label="执行结果" rules={[{ required: true, message: '请选择执行结果' }]}>
-            <Radio.Group onChange={(e) => setResultType(e.target.value)}>
-              <Radio value="正常"><Tag color="success">正常</Tag>（保养完成，无异常）</Radio>
-              <Radio value="异常"><Tag color="error">异常</Tag>（发现问题，需创建故障）</Radio>
-            </Radio.Group>
-          </Form.Item>
+          {/* 定量型：执行结果由系统自动判定（只读） */}
+          {completeRecord?.standard?.judge_type === '定量' ? (
+            <Form.Item name="result" label="执行结果">
+              <span style={{ color: 'var(--color-text-secondary)', fontSize: 13 }}>
+                系统根据实测值自动判定（提交时计算）
+              </span>
+            </Form.Item>
+          ) : (
+            <Form.Item name="result" label="执行结果" rules={[{ required: true, message: '请选择执行结果' }]}>
+              <Radio.Group onChange={(e) => setResultType(e.target.value)}>
+                <Radio value="正常"><Tag color="success">正常</Tag>（保养完成，无异常）</Radio>
+                <Radio value="异常"><Tag color="error">异常</Tag>（发现问题，需创建故障）</Radio>
+              </Radio.Group>
+            </Form.Item>
+          )}
 
-          <Form.Item shouldUpdate={(prev, cur) => prev.result !== cur.result} noStyle>
+          <Form.Item shouldUpdate={(prev, cur) => prev.result !== cur.result || prev.actual_value !== cur.actual_value} noStyle>
             {({ getFieldValue }) => {
               const isAbnormal = getFieldValue('result') === '异常'
+              const isQuant = completeRecord?.standard?.judge_type === '定量'
               return (
                 <>
+                  {/* 定量型才显示实测值 */}
+                  {isQuant && (
+                    <Form.Item name="actual_value" label={`实测值（标准：${completeRecord?.standard?.standard_value || '—'}${completeRecord?.standard?.unit || ''}）`}>
+                      <Input placeholder="请输入实测数值" onChange={(e) => {
+                        const r = autoJudge(e.target.value, completeRecord?.standard?.standard_value || '')
+                        form.setFieldValue('result', r)
+                      }} />
+                    </Form.Item>
+                  )}
+
                   {isAbnormal && (
                     <Form.Item name="abnormal_desc" label="异常描述" rules={[{ required: true, message: '请填写异常描述' }]}>
                       <TextArea rows={3} placeholder="描述发现的异常情况、位置、严重程度等" />
                     </Form.Item>
                   )}
-
-                  <Form.Item name="actual_value" label="实测值（定量型保养填写）">
-                    <Input placeholder={isAbnormal ? '如：温度偏高 75℃' : '如：温度 52℃，压力正常'} />
-                  </Form.Item>
-
-                  <Form.Item name="maintenance_content" label="保养内容记录">
-                    <TextArea rows={2} placeholder="简要记录本次实际执行的保养动作" />
-                  </Form.Item>
 
                   <Form.Item name="duration_min" label="耗时（分钟）">
                     <InputNumber min={0} style={{ width: 160 }} placeholder="自动计算" />
