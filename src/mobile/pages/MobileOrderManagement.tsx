@@ -453,6 +453,7 @@ export default function MobileOrderManagement() {
                   {/* 需求4: 第一行 — 订单号 + 报工数量 + 状态 */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                     <div style={{ fontWeight: 700, fontSize: 15, color: '#222', flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <span title="产线/日期位置" style={{ fontSize: 14, color: 'var(--m-text-3)', marginRight: 4, cursor: 'help' }}>📍</span>
                       {o.order_no}
                       {(o.planned_qty ?? 0) > 0 && (
                         <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--m-text-3)', marginLeft: 8 }}>
@@ -500,7 +501,7 @@ export default function MobileOrderManagement() {
                         )}
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>
-                        📍 {o.line_name || '—'} {o.start_date?.slice(0, 10) || ''}
+                        {o.line_name || '—'} {o.start_date?.slice(0, 10) || ''}
                       </div>
                     </div>
 
