@@ -38,7 +38,9 @@ const {
       if (trigger_mode) where.trigger_mode = trigger_mode.includes(',')
         ? { [Op.in]: trigger_mode.split(',').map((s: string) => s.trim()).filter(Boolean) }
         : trigger_mode
-      if (period_key) where.period_key = period_key
+      if (period_key) where.period_key = period_key.includes(',')
+        ? { [Op.in]: period_key.split(',').map((s: string) => s.trim()).filter(Boolean) }
+        : period_key
 
       const statusArr = parseMultiStatus(status, STATUS_REVERSE)
       if (statusArr) where.status = { [Op.in]: statusArr }

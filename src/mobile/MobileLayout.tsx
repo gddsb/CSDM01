@@ -16,6 +16,7 @@ import { checkForUpdate, skipUpdate } from '../adapter/update'
 import { refreshAppVersion } from './utils/app-version'
 import { useOfflineQueue } from './hooks/useOfflineQueue'
 import { useKeyboardAvoidance } from './hooks/useKeyboardAvoidance'
+import { runBackHandler } from './utils/backInterceptor'
 
 interface TabDef {
   key: string
@@ -276,7 +277,10 @@ export function MobileLayout() {
         <NavBar
           style={{ background: 'var(--m-surface)', borderBottom: '1px solid var(--m-border)', flexShrink: 0 }}
           back={canBack}
-          onBack={() => navigate(-1)}
+          onBack={() => {
+            if (runBackHandler()) return
+            navigate(-1)
+          }}
         >
           {title}
           {currentUser && (

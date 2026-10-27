@@ -117,7 +117,17 @@ export function useKeyboardAvoidance() {
       // 同容器内切换焦点（比如数量 input → 单位 select）→ 保持 padding 撑大状态，避免抖动
       if (next && findScrollList(next) === findScrollList(el)) return
       const list = findScrollList(el)
-      if (list) restorePadding(list)
+      if (list) {
+        restorePadding(list)
+        // Android 兜底：物理键收起键盘时 blur 可能先到但键盘还没完全收，50ms 后再检查
+        setTimeout(() => {
+          const active = document.activeElement as HTMLElement | null
+          if (!active || !INPUT_TAG_SET.has(active.tagName)) {
+            const list2 = findScrollList(el)
+            if (list2) restorePadding(list2)
+          }
+        }, 50)
+      }
     }
 
     document.addEventListener('focusin', focusHandler)
@@ -142,6 +152,18 @@ export function useKeyboardAvoidance() {
     }
     if (vv) vv.addEventListener('resize', vvResizeHandler)
 
+    // —— 兜底还原 ③：window resize（Android 无 visualViewport 时键盘收起会触发 innerHeight 变化）——
+    const windowResizeHandler = () => {
+      if (window.innerHeight >= origVVH - VV_RESTORE_THRESHOLD) restoreAll()
+    }
+    window.addEventListener('resize', windowResizeHandler)
+
+    // —— 兜底还原 ④：pageshow（切后台回来 / PWA 恢复时强制还原）——
+    const pageShowHandler = () => {
+      setTimeout(restoreAll, 0)
+    }
+    window.addEventListener('pageshow', pageShowHandler)
+
     // 旋转屏幕时重置基准高度
     const orientHandler = () => { origVVH = window.innerHeight }
     window.addEventListener('orientationchange', orientHandler)
@@ -151,6 +173,8 @@ export function useKeyboardAvoidance() {
       document.removeEventListener('focusout', blurHandler)
       if (kbHandle) { try { kbHandle.remove() } catch { /* noop */ } }
       if (vv) vv.removeEventListener('resize', vvResizeHandler)
+      window.removeEventListener('resize', windowResizeHandler)
+      window.removeEventListener('pageshow', pageShowHandler)
       window.removeEventListener('orientationchange', orientHandler)
     }
   }, [])

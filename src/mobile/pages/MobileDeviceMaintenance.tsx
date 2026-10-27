@@ -25,6 +25,7 @@ import api from '../../utils/api'
 import { offlinePost, offlinePut, offlineDelete } from '../offline/offlineApi'
 import { useBarcode } from '../hooks/useBarcode'
 import { MobileImageUploader } from '../components/MobileImageUploader'
+import { registerBackHandler } from '../utils/backInterceptor'
 
 function getCurrentUsername(): string {
   try {
@@ -54,6 +55,8 @@ interface RecordRow {
   record_id: number; device_id?: number; device_code?: string; device_name?: string
   status?: string; plan_date?: string; period_key?: string; trigger_mode?: string
   standard_name?: string; standard_id?: number; maintenance_images?: any[]
+  actual_value?: string; result?: string; abnormal_desc?: string
+  maintenance_content?: string; remarks?: string
   standard?: MaintenanceStandard | null  // 后端 JOIN DeviceMaintenanceStandard 返回
 }
 
@@ -116,6 +119,17 @@ export default function MobileDeviceMaintenance() {
 
   useEffect(() => { loadDevices() }, [])
 
+  // ===== NavBar 返回拦截：SPA step 状态机逐级降级 =====
+  useEffect(() => {
+    const unregister = registerBackHandler(() => {
+      if (step === 3) { setStep(1); setSelectedRecord(null); return true }
+      if (step === 2) { setStep(1); setSelectedRecord(null); return true }
+      if (step === 1) { setStep(0); setSelectedDevice(null); return true }
+      return false
+    })
+    return unregister
+  }, [step])
+
   // ===== 保养记录（按设备+状态）=====
   const loadRecords = async (
     device: DeviceRow,
@@ -128,6 +142,7 @@ export default function MobileDeviceMaintenance() {
       const params: Record<string, unknown> = {
         page: 1, pageSize: 50, device_id: device.device_id,
         trigger_mode: TRIGGER_MODES[typeTab],
+        period_key: buildPeriodKey(typeTab),
       }
       const s = (status || statusTab)
       if (s !== 'all') params.status = s
@@ -153,7 +168,11 @@ export default function MobileDeviceMaintenance() {
     for (const [label, mode] of Object.entries(MODES)) {
       try {
         const r: any = await api.get('/basic/device-records', {
-          params: { page: 1, pageSize: 1000, device_id: device.device_id, trigger_mode: mode },
+          params: {
+            page: 1, pageSize: 1000, device_id: device.device_id,
+            trigger_mode: mode,
+            period_key: buildPeriodKey(label),
+          },
         })
         const list: any[] = r.success ? (r.data?.list || r.data || []) : []
         const total = list.length
@@ -239,8 +258,12 @@ export default function MobileDeviceMaintenance() {
   // ===== 选记录进入 Step 2 =====
   const selectRecord = (rec: RecordRow) => {
     setSelectedRecord(rec)
-    setActualValue(''); setResult('正常'); setContent('')
-    setAbnormalDesc(''); setRemarks(''); setImages([])
+    setActualValue(rec.actual_value || '')
+    setResult((rec.result as '正常' | '异常') || '正常')
+    setContent(rec.maintenance_content || '')
+    setAbnormalDesc(rec.abnormal_desc || '')
+    setRemarks(rec.remarks || '')
+    setImages(extractImageUrls(rec.maintenance_images))
     setStep(2)
   }
 
@@ -479,7 +502,7 @@ export default function MobileDeviceMaintenance() {
 
       {/* ============ Step 2: 保养/点检执行表单 ============ */}
       {step === 2 && selectedRecord && (
-        <div style={{ maxHeight: 'calc(100vh - 132px)', overflowY: 'auto', paddingBottom: 24 }}>
+        <div style={{ paddingBottom: 24 }}>
           {(() => {
             const isReadonly = selectedRecord.status === '已完成'
             if (isReadonly) {
@@ -535,7 +558,7 @@ export default function MobileDeviceMaintenance() {
 
           <Card title="实测值（可选）">
             {selectedRecord.status === '已完成'
-              ? <div style={{ fontSize: 13, color: 'var(--m-text-2)' }}>{actualValue || selectedRecord.standard?.actual_value || '—'}</div>
+              ? <div style={{ fontSize: 13, color: 'var(--m-text-2)' }}>{actualValue || selectedRecord.actual_value || '—'}</div>
               : <TextArea value={actualValue} onChange={setActualValue} rows={2}
                   placeholder="如：压力 0.4MPa" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
             }
@@ -631,4 +654,34 @@ function todayStr(): string {
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
+}
+
+/** 后端 maintenance_images → URL 数组（兼容 string[] / {file_path,...}[] 两种形态） */
+function extractImageUrls(raw: any): string[] {
+  if (!raw) return []
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((x: any) => {
+      if (typeof x === 'string') return x
+      return x?.file_path || x?.path || x?.url || x?.src || ''
+    })
+    .filter(Boolean)
+}
+
+/** 维保类型 Tab → 当前时间的 period_key（日=YYYY-MM-DD / 周=YYYY-Www / 月=YYYY-MM） */
+function buildPeriodKey(typeTab: string): string {
+  const now = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  if (typeTab === '日点检') {
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+  }
+  if (typeTab === '周保养') {
+    // ISO 周号：周一为每周第一天
+    const tmp = new Date(now)
+    tmp.setDate(tmp.getDate() + 4 - (tmp.getDay() || 7))
+    const yearStart = new Date(tmp.getFullYear(), 0, 1)
+    const weekNum = Math.ceil(((tmp.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
+    return `${tmp.getFullYear()}-W${pad(weekNum)}`
+  }
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}`
 }
