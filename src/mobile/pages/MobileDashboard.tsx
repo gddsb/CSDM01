@@ -13,7 +13,7 @@
  *   - 长按进入编辑模式（拖拽排序），松手退出
  *   - 所有有权限的入口全展示（不截断）
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PullToRefresh, Toast } from 'antd-mobile'
 import {
@@ -25,7 +25,7 @@ import { useApp } from '../../contexts/AppContext'
 import { useOfflineQueue } from '../hooks/useOfflineQueue'
 import api from '../../utils/api'
 import {
-  DEFAULT_ORDER, STORAGE_KEY, HIGH_PRIORITY_ICONS,
+  DEFAULT_ORDER, STORAGE_KEY,
   type QuickEntry, type TodoItem,
 } from './dashboard/constants.tsx'
 
@@ -73,12 +73,6 @@ export default function MobileDashboard() {
   const [dragOverKey, setDragOverKey] = useState<string | null>(null)
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // === 通知区（从 todos 中筛选高优先级）===
-  const notices = useMemo(
-    () => todos.filter((t) => HIGH_PRIORITY_ICONS.has(t.icon)).slice(0, 3),
-    [todos],
-  )
-
   // ========== 初始化：权限过滤 + 排序持久化 ==========
   useEffect(() => {
     const visible = DEFAULT_ORDER.filter((e) => !e.permCode || hasPermission(e.permCode))
@@ -99,13 +93,29 @@ export default function MobileDashboard() {
       // 待完工订单（原"生产中订单"）
       api.get('/production/orders', { params: { page: 1, pageSize: 1, status: 2 } })
         .then((r: any) => ({ icon: '🏃', text: '待完工订单', count: r.data?.total ?? r.total ?? 0, path: '/m/production-orders?tab=开工', color: 'var(--brand-color-success)' })),
-      // 待维保设备（今日待执行/执行中设备去重计数）
-      api.get('/basic/device-records', { params: { page: 1, pageSize: 100, status: '待执行,执行中' } })
-        .then((r: any) => {
-          const list: any[] = r.data?.list ?? r.data ?? []
-          const deviceCount = new Set(list.map((x: any) => x.device_id).filter(Boolean)).size
-          return { icon: '🧰', text: '待维保设备', count: deviceCount, path: '/m/device-maintenance', color: '#FF9800' }
-        }),
+      // 待维保设备（今日待执行/执行中设备去重计数 — 按 period_key 过滤）
+      api.get('/basic/device-records', {
+        params: (() => {
+          const now = new Date()
+          const todayKey = now.toISOString().slice(0, 10)
+          // ISO week 计算（Zeller 简化版）
+          const t = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
+          t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7))
+          const yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1))
+          const week = Math.ceil((((+t - +yearStart) / 86400000) + 1) / 7)
+          const weekKey = `${t.getUTCFullYear()}-W${String(week).padStart(2, '0')}`
+          const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+          return {
+            page: 1, pageSize: 100,
+            status: '待执行,执行中',
+            period_key: `${todayKey},${weekKey},${monthKey}`,
+          }
+        })(),
+      }).then((r: any) => {
+        const list: any[] = r.data?.list ?? r.data ?? []
+        const deviceCount = new Set(list.map((x: any) => x.device_id).filter(Boolean)).size
+        return { icon: '🧰', text: '待维保设备', count: deviceCount, path: '/m/device-maintenance', color: '#FF9800' }
+      }),
     ]
 
     // 待检验任务（按权限，合并来料+环境）
@@ -237,58 +247,19 @@ export default function MobileDashboard() {
         background: 'var(--m-bg)',
       }}>
 
-        {/* ============ 顶部：欢迎 + 通知 ============ */}
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--m-text)', marginBottom: 4 }}>
-            你好，{currentUser?.real_name || '同事'} 👋
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--m-text-3)' }}>
-            {new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })}
-          </div>
-        </div>
-
-        {/* 🔔 通知区 */}
+        {/* ============ 顶部：欢迎 + 日期（同一行 ============ */}
         <div
           style={{
-            borderRadius: 12,
-            background: notices.length > 0 ? 'var(--m-notice-grad)' : 'var(--m-surface-2)',
-            borderLeft: notices.length > 0 ? '3px solid var(--brand-color-warning)' : '3px solid var(--m-border)',
-            padding: '10px 14px',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             marginBottom: 12,
-            minHeight: 56,
           }}
         >
-          {notices.length > 0 ? (
-            <div
-              style={{ display: 'flex', gap: 14, alignItems: 'center', overflowX: 'auto', whiteSpace: 'nowrap', paddingBottom: 2 }}
-            >
-              {notices.map((n) => (
-                <div
-                  key={n.path}
-                  onClick={() => handleTodoClick(n)}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    flexShrink: 0, fontSize: 13, color: '#BF360C', cursor: 'pointer',
-                  }}
-                >
-                  <span style={{ fontSize: 18 }}>{n.icon}</span>
-                  <span>{n.text}</span>
-                  <span
-                    style={{
-                      background: 'var(--brand-color-danger)', color: 'var(--m-surface)', fontSize: 11,
-                      padding: '0 6px', borderRadius: 10, fontWeight: 600,
-                    }}
-                  >
-                    {n.count}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ fontSize: 12, color: 'var(--m-text-3)', textAlign: 'center', padding: '4px 0' }}>
-              ✨ 当前无紧急通知
-            </div>
-          )}
+          <span style={{ fontSize: 18, fontWeight: 600, color: 'var(--m-text)' }}>
+            你好，{currentUser?.real_name || '同事'} 👋
+          </span>
+          <span style={{ fontSize: 12, color: 'var(--m-text-3)' }}>
+            {new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })}
+          </span>
         </div>
 
         {/* ⚡ 快捷操作（所有权限可见 × 长按排序） */}
@@ -302,11 +273,9 @@ export default function MobileDashboard() {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, 52px)',
+              gridTemplateColumns: 'repeat(auto-fill, 52px)',
               gap: 6, padding: '4px 2px 8px',
-              justifyContent: 'center',
-              maxWidth: 460,
-              margin: '0 auto',
+              justifyContent: 'start',
               background: isEditing ? 'var(--m-surface-2)' : 'transparent',
               borderRadius: 12,
             }}
