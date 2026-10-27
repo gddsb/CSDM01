@@ -92,7 +92,7 @@ export default function EnvironmentInspection() {
   // 加载模板
   const loadTemplates = useCallback(async () => {
     try {
-      const res = await api.get('/basic/env-templates', { params: { page: 1, page_size: 500 } })
+      const res = await api.get('/basic/env-templates', { params: { page: 1, pageSize: 500 } })
       const list = res.data?.list || res.data || []
       setTemplates(Array.isArray(list) ? list : [])
     } catch (e) {
@@ -119,7 +119,7 @@ export default function EnvironmentInspection() {
       setRangeWarn(false)
     }
     try {
-      const params: any = { page: pagination.current, page_size: pagination.pageSize }
+      const params: any = { page: pagination.current, pageSize: pagination.pageSize }
       if (inspectionNo) params.inspection_no = inspectionNo
       if (areaFilter) params.area_id = areaFilter
       if (resultFilter) params.result = resultFilter

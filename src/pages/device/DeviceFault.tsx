@@ -171,7 +171,7 @@ export default function DeviceFault() {
     }
     setLoading(true)
     try {
-      const params: any = { page: pagination.current, page_size: pagination.pageSize }
+      const params: any = { page: pagination.current, pageSize: pagination.pageSize }
       if (faultNo) params.fault_no = faultNo
       if (deviceName) params.device_name = deviceName
       if (levelFilter) params.fault_level = levelFilter
@@ -205,8 +205,8 @@ export default function DeviceFault() {
   const loadSelectData = useCallback(async () => {
     try {
       const [dRes, uRes] = await Promise.all([
-        api.get('/basic/devices', { params: { page: 1, page_size: 500 } }),
-        api.get('/system/users', { params: { page: 1, page_size: 500 } }),
+        api.get('/basic/devices', { params: { page: 1, pageSize: 500 } }),
+        api.get('/system/users', { params: { page: 1, pageSize: 500 } }),
       ])
       if (dRes.success !== false) {
         const list = dRes.data?.list || dRes.data || []

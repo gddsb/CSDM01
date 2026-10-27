@@ -59,7 +59,7 @@ async function getComplaintDetail(id: number) {
 export const ComplaintService = {
   async list(query: any) {
     const where = buildComplaintWhere(query)
-    const limit = Math.min(Number(query.page_size) || 20, MAX_PAGE_SIZE)
+    const limit = Math.min(Number(query.pageSize) || 20, MAX_PAGE_SIZE)
     const offset = ((Number(query.page) || 1) - 1) * limit
     return await QualityComplaint.findAndCountAll({ where, limit, offset, order: [['complaint_time', 'DESC']] })
   },

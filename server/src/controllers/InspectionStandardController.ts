@@ -15,7 +15,7 @@ export const generateNo = asyncHandler(async (req: Request, res: Response) => {
 
 export const list = asyncHandler(async (req: Request, res: Response) => {
   const { count, rows } = await InspectionStandardService.list(req.query)
-  return success(res, { list: rows, total: count, page: parseInt(req.query.page as string, 10) || 1, page_size: parseInt(req.query.page_size as string, 10) || 20 })
+  return success(res, { list: rows, total: count, page: parseInt(req.query.page as string, 10) || 1, pageSize: parseInt(req.query.pageSize as string, 10) || 20 })
 })
 
 export const detail = asyncHandler(async (req: Request, res: Response) => {

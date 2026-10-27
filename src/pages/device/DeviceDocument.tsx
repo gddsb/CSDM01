@@ -221,7 +221,7 @@ export default function DeviceDocumentPage() {
   const fetchAllDocs = useCallback(async () => {
     setDocsLoading(true)
     try {
-      const res = await api.get('/basic/device-documents', { params: { page: 1, page_size: 9999 } })
+      const res = await api.get('/basic/device-documents', { params: { page: 1, pageSize: 9999 } })
       if (res.success !== false) {
         const raw = res.data
         const list = Array.isArray(raw) ? raw : (raw?.list || raw?.rows || [])

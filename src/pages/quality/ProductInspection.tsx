@@ -85,7 +85,7 @@ export default function ProductInspection() {
       setRangeWarn(false)
     }
     try {
-      const params: any = { page: pagination.current, page_size: pagination.pageSize }
+      const params: any = { page: pagination.current, pageSize: pagination.pageSize }
       if (inspectionType) params.inspection_type = inspectionType
       if (reportOrderId) params.report_order_id = reportOrderId
       if (resultFilter) params.result = resultFilter
@@ -126,7 +126,7 @@ export default function ProductInspection() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await api.get('/production/report-orders', { params: { page: 1, page_size: 500 } })
+        const res = await api.get('/production/report-orders', { params: { page: 1, pageSize: 500 } })
         setReportOrders(res.data?.list || res.data || [])
       } catch (e) {
         // ignore
@@ -138,7 +138,7 @@ export default function ProductInspection() {
   useEffect(() => {
     const loadStandards = async () => {
       try {
-        const res = await api.get('/basic/standards', { params: { page: 1, page_size: 500, status: '生效', standard_type: '产品检验' } })
+        const res = await api.get('/basic/standards', { params: { page: 1, pageSize: 500, status: '生效', standard_type: '产品检验' } })
         const list = res.data?.list || res.data || []
         setStandards(list)
       } catch (e) {

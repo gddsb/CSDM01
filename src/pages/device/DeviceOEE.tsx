@@ -39,7 +39,7 @@ export default function DeviceOEE() {
   // 加载设备列表
   const loadDevices = useCallback(async () => {
     try {
-      const res = await api.get('/basic/devices', { params: { page: 1, page_size: 500 } })
+      const res = await api.get('/basic/devices', { params: { page: 1, pageSize: 500 } })
       if (res.success !== false) {
         const list = res.data?.list || res.data || []
         setDeviceList(Array.isArray(list) ? list : [])

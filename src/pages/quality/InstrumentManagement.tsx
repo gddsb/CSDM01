@@ -39,10 +39,10 @@ export default function InstrumentManagement() {
     if (!instrumentId) return
     try {
       const [docsRes, plansRes, recordsRes, faultsRes] = await Promise.all([
-        api.get('/basic/device-documents', { params: { device_id: instrumentId, page: 1, page_size: 200 } }).catch(() => null),
-        api.get('/basic/device-calibration-plans', { params: { asset_id: instrumentId, page: 1, page_size: 200 } }).catch(() => null),
+        api.get('/basic/device-documents', { params: { device_id: instrumentId, page: 1, pageSize: 200 } }).catch(() => null),
+        api.get('/basic/device-calibration-plans', { params: { asset_id: instrumentId, page: 1, pageSize: 200 } }).catch(() => null),
         api.get('/basic/device-calibration-records', { params: { asset_id: instrumentId } }).catch(() => null),
-        api.get('/basic/device-faults', { params: { device_id: instrumentId, page: 1, page_size: 200 } }).catch(() => null),
+        api.get('/basic/device-faults', { params: { device_id: instrumentId, page: 1, pageSize: 200 } }).catch(() => null),
       ])
       // 后端统一返回 { success, data: { list, total, ... } }，api.get 解包到 response.data
       setDocList(Array.isArray(docsRes?.data?.list) ? docsRes.data.list : [])

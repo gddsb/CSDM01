@@ -47,7 +47,7 @@ export const DeviceDocumentService = {
   /** 分页查询文档列表 */
   async list(query: any) {
     const where = buildDocWhere(query)
-    const limit = Math.min(Number(query.page_size) || 20, MAX_PAGE_SIZE)
+    const limit = Math.min(Number(query.pageSize) || 20, MAX_PAGE_SIZE)
     const offset = ((Number(query.page) || 1) - 1) * limit
 
     return await DeviceDocument.findAndCountAll({

@@ -132,7 +132,7 @@ export default function DeviceMaintenanceMatrix() {
   const [data, setData] = useState<MatrixResp | null>(null)
 
   useEffect(() => {
-    api.get('/basic/devices', { params: { page_size: 500 } })
+    api.get('/basic/devices', { params: { pageSize: 500 } })
       .then((res: any) => {
         const raw = res?.data
         const list = Array.isArray(raw) ? raw : (raw?.rows || raw?.list || [])

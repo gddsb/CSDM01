@@ -101,7 +101,7 @@ export default function DeviceMaintenanceStandardDetail() {
 
   // 加载系统角色列表（用于点检角色多选）
   useEffect(() => {
-    api.get('/system/roles', { params: { page_size: 999 } }).then((res: any) => {
+    api.get('/system/roles', { params: { pageSize: 999 } }).then((res: any) => {
       const raw = res?.data
       const list = Array.isArray(raw) ? raw : (raw?.rows || raw?.list || [])
       setRoles(list.map((r: any) => ({ label: r.role_name, value: r.role_name })).filter((r: any) => r.value))

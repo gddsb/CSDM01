@@ -92,7 +92,7 @@ export const ProductInspectionService = {
   async list(query: any) {
     const where = buildProductWhere(query)
     const pageNum = Math.max(1, Number(query.page) || 1)
-    const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(query.page_size) || 20))
+    const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(query.pageSize) || 20))
 
     const { count, rows } = await ProductInspection.findAndCountAll({
       where,
@@ -119,7 +119,7 @@ export const ProductInspectionService = {
       finished: allRows.filter(r => r.inspection_type === '成品').length,
     }
 
-    return { list: rows, total: count, page: pageNum, page_size: pageSize, stats }
+    return { list: rows, total: count, page: pageNum, pageSize, stats }
   },
 
   /** 详情（含检验标准兜底 + 样本量重算） */

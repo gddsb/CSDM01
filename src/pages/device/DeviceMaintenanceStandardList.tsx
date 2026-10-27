@@ -70,7 +70,7 @@ export default function DeviceMaintenanceStandardList() {
   const loadList = useCallback(async () => {
     setLoading(true)
     try {
-      const params: any = { page, page_size: pageSize }
+      const params: any = { page, pageSize: pageSize }
       if (filters.keyword) params.keyword = filters.keyword
       if (filters.status) params.status = filters.status
       const res: any = await api.get('/basic/device-maintenance-profiles', { params })

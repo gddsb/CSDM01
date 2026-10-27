@@ -116,7 +116,7 @@ export const InspectionStandardService = {
   async list(query: any) {
     const where = buildStandardWhere(query)
     const pageNum = parseInt(query.page, 10) || 1
-    const pageSize = Math.min(parseInt(query.page_size, 10) || 20, MAX_PAGE_SIZE)
+    const pageSize = Math.min(parseInt(query.pageSize, 10) || 20, MAX_PAGE_SIZE)
 
     return await InspectionStandard.findAndCountAll({
       where,

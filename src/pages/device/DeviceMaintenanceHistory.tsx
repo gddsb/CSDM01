@@ -79,7 +79,7 @@ export default function DeviceMaintenanceHistory() {
 
   // ===== 加载设备列表 =====
   useEffect(() => {
-    api.get('/basic/devices', { params: { page_size: 999 } }).then((res: any) => {
+    api.get('/basic/devices', { params: { pageSize: 999 } }).then((res: any) => {
       const raw = res?.data
       const list = Array.isArray(raw) ? raw : (raw?.rows || raw?.list || [])
       const opts = list.map((d: any) => ({
@@ -95,7 +95,7 @@ export default function DeviceMaintenanceHistory() {
   const loadRecords = useCallback(async () => {
     setLoading(true)
     try {
-      const params: any = { page, page_size: pageSize, extra: 'history', ...filters }
+      const params: any = { page, pageSize: pageSize, extra: 'history', ...filters }
       if (!params.start_date) delete params.start_date
       if (!params.end_date) delete params.end_date
       if (!params.device_id) delete params.device_id

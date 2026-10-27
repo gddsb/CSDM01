@@ -92,7 +92,12 @@ export default function MobileDashboard() {
     const apis: Promise<TodoResp>[] = [
       // 待完工订单（原"生产中订单"）
       api.get('/production/orders', { params: { page: 1, pageSize: 1, status: 2 } })
-        .then((r: any) => ({ icon: '🏃', text: '待完工订单', count: r.data?.total ?? r.total ?? 0, path: '/m/production-orders?tab=开工', color: 'var(--brand-color-success)' })),
+        .then((r: any) => {
+          // production/orders 返回 total 在顶层（r.total），data 是数组
+          const total = Array.isArray(r.data) ? (r.total ?? 0) : (r.data?.total ?? r.total ?? 0)
+          return { icon: '🏃', text: '待完工订单', count: total, path: '/m/production-orders?tab=开工', color: 'var(--brand-color-success)' }
+        })
+        .catch(() => ({ icon: '🏃', text: '待完工订单', count: 0, path: '/m/production-orders?tab=开工', color: 'var(--brand-color-success)' })),
       // 待维保设备（今日待执行/执行中设备去重计数 — 按 period_key 过滤）
       api.get('/basic/device-records', {
         params: (() => {
@@ -112,10 +117,11 @@ export default function MobileDashboard() {
           }
         })(),
       }).then((r: any) => {
-        const list: any[] = r.data?.list ?? r.data ?? []
+        const list: any[] = Array.isArray(r.data) ? r.data : (r.data?.list ?? [])
         const deviceCount = new Set(list.map((x: any) => x.device_id).filter(Boolean)).size
         return { icon: '🧰', text: '待维保设备', count: deviceCount, path: '/m/device-maintenance', color: '#FF9800' }
-      }),
+      })
+        .catch(() => ({ icon: '🧰', text: '待维保设备', count: 0, path: '/m/device-maintenance', color: '#FF9800' })),
     ]
 
     // 待检验任务（按权限，合并来料+环境）

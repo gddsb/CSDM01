@@ -102,7 +102,7 @@ export default function MicrobeInspection() {
       setRangeWarn(false)
     }
     try {
-      const params: any = { page: pagination.current, page_size: pagination.pageSize }
+      const params: any = { page: pagination.current, pageSize: pagination.pageSize }
       if (inspectionNo) params.inspection_no = inspectionNo
       if (inspectionType) params.inspection_type = inspectionType
       if (objectType) params.object_type = objectType

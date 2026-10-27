@@ -11,7 +11,7 @@ export default {
   // ==== 环境检验 ====
   list: asyncHandler(async (req: Request, res: Response) => {
     const { count, rows } = await EnvInspectionService.inspection.list(req.query)
-    return success(res, { list: rows, total: count, page: Number(req.query.page) || 1, page_size: Number(req.query.page_size) || 20 })
+    return success(res, { list: rows, total: count, page: Number(req.query.page) || 1, pageSize: Number(req.query.pageSize) || 20 })
   }),
 
   detail: asyncHandler(async (req: Request, res: Response) => {

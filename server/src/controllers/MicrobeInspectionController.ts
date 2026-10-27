@@ -7,7 +7,7 @@ import type { Request, Response } from 'express'
 export default {
   list: asyncHandler(async (req: Request, res: Response) => {
     const data = await MicrobeInspectionService.list(req.query)
-    return success(res, { list: data.list, total: data.total, page: data.page, page_size: data.page_size, stats: data.stats })
+    return success(res, { list: data.list, total: data.total, page: data.page, pageSize: data.pageSize, stats: data.stats })
   }),
 
   detail: asyncHandler(async (req: Request, res: Response) => {

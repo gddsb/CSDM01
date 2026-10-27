@@ -114,7 +114,7 @@ export default function DeviceCalibration() {
     }
     setLoading(true)
     try {
-      const params: any = { page: pagination.current, page_size: pagination.pageSize }
+      const params: any = { page: pagination.current, pageSize: pagination.pageSize }
       if (deviceName) params.device_name = deviceName
       if (statusFilter && statusFilter.length > 0) params.status = statusFilter.join(',')
       if (dateRange && dateRange[0]) params.start_date = dateRange[0].format('YYYY-MM-DD')
@@ -147,7 +147,7 @@ export default function DeviceCalibration() {
   const fetchStats = useCallback(async () => {
     try {
       const [pendingRes, expiringRes, overdueRes] = await Promise.all([
-        api.get('/basic/device-calibration-plans', { params: { page: 1, page_size: 1, status: '待校准' } }),
+        api.get('/basic/device-calibration-plans', { params: { page: 1, pageSize: 1, status: '待校准' } }),
         api.get('/basic/device-calibration-plans/expiring/list'),
         api.get('/basic/device-calibration-plans/overdue/list'),
       ])
@@ -164,7 +164,7 @@ export default function DeviceCalibration() {
   // ============ 加载设备下拉 ============
   const loadDevices = useCallback(async () => {
     try {
-      const res = await api.get('/basic/devices', { params: { page: 1, page_size: 500 } })
+      const res = await api.get('/basic/devices', { params: { page: 1, pageSize: 500 } })
       if (res.success !== false) {
         const list = res.data?.list || res.data || []
         setDevices(Array.isArray(list) ? list : [])

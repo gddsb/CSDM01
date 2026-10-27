@@ -72,7 +72,7 @@ export function buildProcessWhere(query: any): any {
  */
 export async function listWip(query: any) {
   const pageNum = Math.max(1, Number(query.page) || 1)
-  const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(query.page_size) || 30))
+  const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(query.pageSize) || 30))
   const where: any = { status: 0 } // 0=开工（ReportOrder 状态：0=开工, 1=完工）
 
   if (query.keyword) {
@@ -104,7 +104,7 @@ export async function listWip(query: any) {
     })),
     total: count,
     page: pageNum,
-    page_size: pageSize,
+    pageSize,
   }
 }
 
@@ -120,7 +120,7 @@ export const ProcessInspectionService = {
   async list(query: any) {
     const where = buildProcessWhere(query)
     const pageNum = Math.max(1, Number(query.page) || 1)
-    const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(query.page_size) || 20))
+    const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(query.pageSize) || 20))
 
     const { count, rows } = await ProcessInspection.findAndCountAll({
       where,
@@ -129,7 +129,7 @@ export const ProcessInspectionService = {
       offset: (pageNum - 1) * pageSize,
     })
 
-    return { list: rows, total: count, page: pageNum, page_size: pageSize }
+    return { list: rows, total: count, page: pageNum, pageSize }
   },
 
   /** 详情 */

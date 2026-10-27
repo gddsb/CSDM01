@@ -137,7 +137,7 @@ export const IncomingInspectionService = {
   async list(query: any) {
     const where = buildIncomingWhere(query)
     const pageNum = Math.max(1, Number(query.page) || 1)
-    const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(query.page_size) || 20))
+    const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(query.pageSize) || 20))
 
     const { count, rows } = await IncomingInspection.findAndCountAll({
       where,
@@ -178,7 +178,7 @@ export const IncomingInspectionService = {
       fail: allRows.filter((r: any) => r.result === '不合格').length,
     }
 
-    return { list, total: count, page: pageNum, page_size: pageSize, stats }
+    return { list, total: count, page: pageNum, pageSize, stats }
   },
 
   /** 详情（含检验标准兜底拉取 + 样本量重算） */

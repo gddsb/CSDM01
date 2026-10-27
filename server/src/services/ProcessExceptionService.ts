@@ -52,7 +52,7 @@ export const ProcessExceptionService = {
   /** 异常工时列表 */
   async list(query: any) {
     const where = buildExceptionWhere(query)
-    const limit = Math.min(Number(query.page_size) || 20, MAX_PAGE_SIZE)
+    const limit = Math.min(Number(query.pageSize) || 20, MAX_PAGE_SIZE)
     const offset = ((Number(query.page) || 1) - 1) * limit
 
     return await ProcessException.findAndCountAll({

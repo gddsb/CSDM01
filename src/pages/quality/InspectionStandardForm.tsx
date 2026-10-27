@@ -116,7 +116,7 @@ export default function InspectionStandardForm() {
 
   const fetchMaterials = useCallback(async () => {
     try {
-      const res = await api.get('/basic/materials', { params: { page_size: 500 } })
+      const res = await api.get('/basic/materials', { params: { pageSize: 500 } })
       const list = res.data?.list || res.data || []
       setMaterials(list.map((m: any) => ({
         label: `${m.material_code} - ${m.material_name}`,

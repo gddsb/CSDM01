@@ -82,7 +82,7 @@ export default function SupplierComplaint() {
 
     setLoading(true)
     try {
-      const params: any = { page: pagination.current, page_size: pagination.pageSize }
+      const params: any = { page: pagination.current, pageSize: pagination.pageSize }
       if (complaintNo) params.complaint_no = complaintNo
       if (supplierFilter) params.supplier_name = supplierFilter
       if (statusFilter) params.status = statusFilter
@@ -115,8 +115,8 @@ export default function SupplierComplaint() {
   const loadSelectOptions = useCallback(async () => {
     try {
       const [sRes, roRes] = await Promise.all([
-        api.get('/basic/suppliers', { params: { page: 1, page_size: 500 } }),
-        api.get('/production/report-orders', { params: { page: 1, page_size: 500 } }).catch(() => null),
+        api.get('/basic/suppliers', { params: { page: 1, pageSize: 500 } }),
+        api.get('/production/report-orders', { params: { page: 1, pageSize: 500 } }).catch(() => null),
       ])
       if (sRes.success !== false) {
         const list = sRes.data?.list || sRes.data || []
@@ -136,7 +136,7 @@ export default function SupplierComplaint() {
     let cancelled = false
     const fetchInspections = async () => {
       try {
-        const params: any = { page: 1, page_size: 500 }
+        const params: any = { page: 1, pageSize: 500 }
         if (supplierId) {
           params.supplier_id = supplierId
         }

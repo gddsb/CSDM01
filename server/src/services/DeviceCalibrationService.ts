@@ -107,7 +107,7 @@ export const DeviceCalibrationService = {
   /** 校准计划列表 */
   async listPlans(query: any) {
     const where = buildCalibPlanWhere(query)
-    const limit = Math.min(Number(query.page_size) || 20, MAX_PAGE_SIZE)
+    const limit = Math.min(Number(query.pageSize) || 20, MAX_PAGE_SIZE)
     const offset = ((Number(query.page) || 1) - 1) * limit
 
     return await DeviceCalibrationPlan.findAndCountAll({

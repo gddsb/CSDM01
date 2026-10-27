@@ -71,7 +71,7 @@ export default function IncomingInspection() {
       setRangeWarn(false)
     }
     try {
-      const params: any = { page: pagination.current, page_size: pagination.pageSize }
+      const params: any = { page: pagination.current, pageSize: pagination.pageSize }
       if (supplierFilter) params.supplier_name = supplierFilter
       if (materialCodeFilter) params.material_code = materialCodeFilter
       if (materialNameFilter) params.material_name = materialNameFilter
@@ -113,7 +113,7 @@ export default function IncomingInspection() {
   useEffect(() => {
     const loadStandards = async () => {
       try {
-        const res = await api.get('/basic/standards', { params: { page: 1, page_size: 500, status: '生效', standard_type: '材料检验' } })
+        const res = await api.get('/basic/standards', { params: { page: 1, pageSize: 500, status: '生效', standard_type: '材料检验' } })
         const list = res.data?.list || res.data || []
         setStandards(list)
       } catch (e) {

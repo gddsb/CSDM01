@@ -70,7 +70,7 @@ export function buildAreaTree(areas: any[]): any[] {
 // ============================================================
 const InspectionService = {
   async list(query: any) {
-    const { page = 1, page_size = 20, inspection_no, area_id, result, status, start_date, end_date } = query
+    const { page = 1, pageSize = 20, inspection_no, area_id, result, status, start_date, end_date } = query
     const where: any = {}
     if (inspection_no) where.inspection_no = { [Op.like]: `%${inspection_no}%` }
     if (area_id) where.area_id = area_id
@@ -83,7 +83,7 @@ const InspectionService = {
       if (end_date) where.inspection_date[Op.lte] = new Date(new Date(String(end_date)).getTime() + 86400000)
     }
     const pageNum = Math.max(1, Number(page) || 1)
-    const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(page_size) || 20))
+    const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(pageSize) || 20))
     return await QualityEnvInspection.findAndCountAll({
       where,
       include: [{ model: QualityEnvArea, as: 'area', attributes: ['area_id', 'area_name'] }],

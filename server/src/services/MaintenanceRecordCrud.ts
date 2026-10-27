@@ -23,7 +23,7 @@ import { rawStatus, getRecordDetail } from './MaintenanceProfileCrud.js'
 
 export async function listRecords(query: any) {
 const {
-        page = 1, page_size = 20,
+        page = 1, pageSize = 20,
         record_no, device_id, device_name, device_code,
         trigger_mode, status, period_key,
         start_date, end_date,
@@ -65,17 +65,17 @@ const {
       }
 
       const pageNum = Math.max(1, Number(page) || 1)
-      const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(page_size) || 20))
+      const finalPageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(pageSize) || 20))
 
       const { count, rows } = await DeviceMaintenanceRecord.findAndCountAll({
         where,
         order: [['created_at', 'DESC'], ['record_id', 'DESC']],
-        limit: pageSize,
-        offset: (pageNum - 1) * pageSize,
+        limit: finalPageSize,
+        offset: (pageNum - 1) * finalPageSize,
         include: [{ model: DeviceMaintenanceStandard, as: 'standard', required: false }],
       })
 
-      return { list: rows, total: count, page: pageNum, page_size: pageSize }
+      return { list: rows, total: count, page: pageNum, pageSize: finalPageSize }
 }
 
 /** 设备当日维保汇总：每个设备今日生成的 {total, done}

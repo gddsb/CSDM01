@@ -51,7 +51,7 @@ async function getDetail(id: number) {
 export const MicrobeInspectionService = {
   async list(query: any) {
     const {
-      page = 1, page_size = 20, inspection_no, inspection_type, object_type, result, status, start_date, end_date,
+      page = 1, pageSize = 20, inspection_no, inspection_type, object_type, result, status, start_date, end_date,
     } = query
 
     const where: any = {}
@@ -68,7 +68,7 @@ export const MicrobeInspectionService = {
     }
 
     const pageNum = Math.max(1, Number(page) || 1)
-    const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(page_size) || 20))
+    const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(pageSize) || 20))
 
     const { count, rows } = await MicrobeInspection.findAndCountAll({
       where, order: [['created_at', 'DESC']], limit: pageSize, offset: (pageNum - 1) * pageSize,
@@ -90,7 +90,7 @@ export const MicrobeInspectionService = {
       finished: allRows.filter(r => r.object_type === '成品检验').length,
       incoming: allRows.filter(r => r.object_type === '来料检验').length,
     }
-    return { list: rows, total: count, page: pageNum, page_size: pageSize, stats }
+    return { list: rows, total: count, page: pageNum, pageSize, stats }
   },
 
   async detail(id: number | string) {

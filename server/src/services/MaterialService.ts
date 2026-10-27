@@ -9,8 +9,7 @@ import { AppError } from '../utils/error.js'
 
 export const MaterialService = {
   async list(query: any) {
-    const { keyword, is_active, category_name, dateStart, dateEnd, page = 1, pageSize = 20, page_size } = query
-    const actualPageSize = page_size || pageSize
+    const { keyword, is_active, category_name, dateStart, dateEnd, page = 1, pageSize = 20 } = query
     const where: any = {}
     if (keyword) {
       where[Op.or] = [
@@ -26,7 +25,7 @@ export const MaterialService = {
       if (dateStart) where.created_at[Op.gte] = new Date(dateStart)
       if (dateEnd) where.created_at[Op.lte] = new Date(dateEnd + ' 23:59:59')
     }
-    const limit = Math.min(Number(actualPageSize), MAX_PAGE_SIZE)
+    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
     const offset = (Number(page) - 1) * limit
     return await Material.findAndCountAll({ where, limit, offset, order: [['created_at', 'DESC']] })
   },

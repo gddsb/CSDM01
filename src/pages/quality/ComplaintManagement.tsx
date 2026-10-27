@@ -100,7 +100,7 @@ export default function ComplaintManagement() {
 
     setLoading(true)
     try {
-      const params: any = { page: pagination.current, page_size: pagination.pageSize }
+      const params: any = { page: pagination.current, pageSize: pagination.pageSize }
       if (complaintNo) params.complaint_no = complaintNo
       if (customerFilter) params.customer_name = customerFilter
       if (statusFilter) params.status = statusFilter
@@ -132,8 +132,8 @@ export default function ComplaintManagement() {
   const loadSelectOptions = useCallback(async () => {
     try {
       const [cRes, mRes] = await Promise.all([
-        api.get('/basic/customers', { params: { page: 1, page_size: 500 } }),
-        api.get('/basic/materials', { params: { page: 1, page_size: 500 } }),
+        api.get('/basic/customers', { params: { page: 1, pageSize: 500 } }),
+        api.get('/basic/materials', { params: { page: 1, pageSize: 500 } }),
       ])
       if (cRes.success !== false) {
         const list = cRes.data?.list || cRes.data || []
