@@ -68,12 +68,12 @@ const TRIGGER_MODES = {
 }
 
 type Step = 0 | 1 | 2 | 3
-type StatusTab = 'all' | '待执行' | '进行中' | '已完成' | '已跳过'
+type StatusTab = 'all' | '待执行' | '执行中' | '已完成' | '已跳过'
 
 const STATUS_TABS: { key: StatusTab; label: string }[] = [
   { key: 'all', label: '全部' },
   { key: '待执行', label: '待执行' },
-  { key: '进行中', label: '进行中' },
+  { key: '执行中', label: '执行中' },
   { key: '已完成', label: '已完成' },
 ]
 
@@ -127,6 +127,12 @@ export default function MobileDeviceMaintenance() {
   }
 
   useEffect(() => { loadDevices() }, [])
+
+  // Q1: 每次回到设备列表页（step=0）刷新统计
+  useEffect(() => {
+    if (step === 0) loadDevices(keyword.trim() || undefined)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step])
 
   // ===== NavBar 返回拦截：SPA step 状态机逐级降级 =====
   useEffect(() => {
@@ -403,16 +409,16 @@ export default function MobileDeviceMaintenance() {
     step === 0 ? (
       <div className="mobile-page-fixed-header">
         <div className="mobile-sticky-header">
-          <SearchBar
-            placeholder="扫设备编号 / 手输"
-            value={keyword}
-            onChange={setKeyword}
-            onSearch={handleSearch}
-
-            style={{ marginBottom: 12 }}
-          />
-          {/* 需求3: 扫码按钮已隐藏 */}
-          {/* <Button size="mini" onClick={handleScan} style={{marginTop:8}}>扫码</Button> */}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+            <SearchBar
+              placeholder="输入设备编号"
+              value={keyword}
+              onChange={setKeyword}
+              onSearch={handleSearch}
+              style={{ flex: 1, marginBottom: 0 }}
+            />
+            <Button size="small" fill="outline" onClick={handleScan} style={{ flexShrink: 0 }}>📷</Button>
+          </div>
         </div>
         <div className="mobile-page-scroll-list">
           {loading ? (
@@ -424,7 +430,8 @@ export default function MobileDeviceMaintenance() {
           ) : (
             <PullToRefresh onRefresh={async () => { await loadDevices(keyword.trim() || undefined) }}>
               <List>
-                {devices.map((d) => {
+                {/* Q2: 过滤掉没有维保项目的设备 */}
+                {devices.filter((d) => deviceDailyStats[d.device_id]).map((d) => {
                   const s = deviceDailyStats[d.device_id] || { total: 0, done: 0 }
                   return (
                   <List.Item
@@ -442,12 +449,10 @@ export default function MobileDeviceMaintenance() {
                     description={<div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>{d.device_code}</div>}
                     extra={<span style={{
                       fontSize: 12, padding: '3px 8px', borderRadius: 10,
-                      background: s.total === 0 ? 'var(--m-surface-2)'
-                        : (s.done === s.total ? 'var(--brand-color-success, #4CAF50)22'
-                        : 'var(--brand-color-warning, #FF9800)22'),
-                      color: s.total === 0 ? 'var(--m-text-3)'
-                        : (s.done === s.total ? 'var(--brand-color-success, #4CAF50)'
-                        : 'var(--brand-color-warning, #FF9800)'),
+                      background: s.done === s.total ? 'var(--brand-color-success, #4CAF50)22'
+                        : 'var(--brand-color-warning, #FF9800)22',
+                      color: s.done === s.total ? 'var(--brand-color-success, #4CAF50)'
+                        : 'var(--brand-color-warning, #FF9800)',
                     }}>当日 {s.done}/{s.total}</span>}
                   >
                     <div style={{ fontWeight: 500 }}>{d.device_name}</div>
@@ -530,10 +535,10 @@ export default function MobileDeviceMaintenance() {
               <List>
                 {records.map((r) => {
                   const isPending = r.status === '待执行'
-                  const isDoing = r.status === '进行中'
+                  const isDoing = r.status === '执行中'
                   const badge = (() => {
                     if (isPending) return { txt: '待执行', c: 'var(--brand-color-warning)' }
-                    if (isDoing) return { txt: '进行中', c: 'var(--brand-color)' }
+                    if (isDoing) return { txt: '执行中', c: 'var(--brand-color)' }
                     if (r.status === '已完成') return { txt: '已完成', c: 'var(--brand-color-success)' }
                     
                     return { txt: r.status || '', c: 'var(--m-text-2)' }
