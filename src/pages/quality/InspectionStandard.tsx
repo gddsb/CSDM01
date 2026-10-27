@@ -70,7 +70,7 @@ export default function InspectionStandard() {
     const fetchId = ++fetchIdRef.current
     setLoading(true)
     try {
-      const params: any = { page: pagination.current, page_size: pagination.pageSize }
+      const params: any = { page: pagination.current, pageSize: pagination.pageSize }
       if (keyword) params.keyword = keyword
       if (standardType) params.standard_type = standardType
       if (Array.isArray(statusFilter) && statusFilter.length) params.status = statusFilter.join(',')
@@ -122,7 +122,7 @@ export default function InspectionStandard() {
       // 获取同标准号的所有版本
       if (detail.standard_no) {
         const verRes = await api.get('/basic/standards', {
-          params: { standard_no: detail.standard_no, page: 1, page_size: 100 }
+          params: { standard_no: detail.standard_no, page: 1, pageSize: 100 }
         })
         const verList = verRes.data?.list || verRes.data || []
         verList.sort((a: any, b: any) => (b.version_no || '').localeCompare(a.version_no || ''))

@@ -113,7 +113,7 @@ export default function DeviceMaintenanceUnified() {
   const loadRecords = useCallback(async () => {
     setLoading(true)
     try {
-      const params: any = { page: 1, page_size: 9999, ...filters }
+      const params: any = { page: 1, pageSize: 9999, ...filters }
       if (!filters.start_date) delete params.start_date
       if (!filters.end_date) delete params.end_date
       if (!filters.device_id) delete params.device_id

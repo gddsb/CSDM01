@@ -175,9 +175,9 @@ export default function DeviceDashboard() {
         devicesRes, faultsRes, maintenanceRes,
         sparePartsRes, calibExpiringRes, calibOverdueRes,
       ] = await Promise.all([
-        api.get('/basic/devices', { params: { page_size: 999 } }),
-        api.get('/basic/device-faults', { params: { status: '待派工,维修中,待审批', page_size: 999 } }),
-        api.get('/basic/device-records', { params: { status: '待执行,执行中', page_size: 999 } }),
+        api.get('/basic/devices', { params: { pageSize: 999 } }),
+        api.get('/basic/device-faults', { params: { status: '待派工,维修中,待审批', pageSize: 999 } }),
+        api.get('/basic/device-records', { params: { status: '待执行,执行中', pageSize: 999 } }),
         api.get('/basic/device-spare-parts/low-stock/list'),
         api.get('/basic/device-calibration-plans/expiring/list'),
         api.get('/basic/device-calibration-plans/overdue/list'),
