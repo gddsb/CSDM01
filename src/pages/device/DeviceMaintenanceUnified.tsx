@@ -29,13 +29,11 @@ const MODE_LABEL: Record<string, string> = {
   daily: '每日',
   weekly: '每周',
   monthly: '每月',
-  runtime: '运行时长',
 }
 const MODE_COLOR: Record<string, string> = {
   daily: 'green',
   weekly: 'blue',
   monthly: 'purple',
-  runtime: 'orange',
 }
 const RESULT_COLOR: Record<string, string> = {
   '正常': 'success',
@@ -52,7 +50,6 @@ const MODE_OPTIONS = [
   { label: '每日点检', value: 'daily' },
   { label: '每周保养', value: 'weekly' },
   { label: '每月保养', value: 'monthly' },
-  { label: '运行时长', value: 'runtime' },
 ]
 const JUDGE_OPTIONS = [
   { label: '定性（正常/异常）', value: '定性' },
@@ -92,9 +89,9 @@ export default function DeviceMaintenanceUnified() {
   // ============ 生成弹窗 ============
   const [genOpen, setGenOpen] = useState(false)
   const [genLoading, setGenLoading] = useState(false)
-  const [genModes, setGenModes] = useState<string[]>(['daily', 'weekly', 'monthly', 'runtime'])
+  const [genMonth, setGenMonth] = useState<string>(dayjs().format('YYYY-MM'))
+  const [genSkipPast, setGenSkipPast] = useState<boolean>(true)
   const [genDeviceId, setGenDeviceId] = useState<number | undefined>(undefined)
-  const [genDate, setGenDate] = useState<string>(dayjs().format('YYYY-MM-DD'))
 
   // ===== 按频率执行记录按设备分组 =====
   const loadRecords = useCallback(async () => {
@@ -125,7 +122,7 @@ export default function DeviceMaintenanceUnified() {
 
   // ===== 按设备分组，含各频率完成度统计 =====
   const deviceGroups = useMemo(() => {
-    const MODE_ORDER: Record<string, number> = { daily: 0, weekly: 1, monthly: 2, runtime: 3 }
+    const MODE_ORDER: Record<string, number> = { daily: 0, weekly: 1, monthly: 2 }
     const map = new Map<number, any>()
     records.forEach(r => {
       if (!map.has(r.device_id)) {
@@ -168,7 +165,7 @@ export default function DeviceMaintenanceUnified() {
   const handleGenerate = async () => {
     setGenLoading(true)
     try {
-      const payload: any = { mode: genModes, target_date: genDate }
+      const payload: any = { target_month: genMonth, skip_past: genSkipPast }
       if (genDeviceId) payload.device_id = genDeviceId
       const res = await api.post('/basic/device-records/generate', payload)
       message.success(res?.message || `成功生成 ${res?.data?.created || 0} 条`)
@@ -453,9 +450,9 @@ export default function DeviceMaintenanceUnified() {
       actions={
         <Space>
           <Button type="primary" icon={<ThunderboltOutlined />} onClick={() => {
-            setGenModes(['daily', 'weekly', 'monthly', 'runtime'])
+            setGenMonth(dayjs().format('YYYY-MM'))
+            setGenSkipPast(true)
             setGenDeviceId(filters.device_id)
-            setGenDate(dayjs().format('YYYY-MM-DD'))
             setGenOpen(true)
           }}>生成执行记录</Button>
           <Button icon={<ReloadOutlined />} onClick={loadRecords}>刷新</Button>
@@ -517,20 +514,18 @@ export default function DeviceMaintenanceUnified() {
         cancelText="取消"
       >
         <div style={{ marginBottom: 12 }}>
-          <Text>触发频率：</Text>
-          <Checkbox.Group
-            value={genModes}
-            onChange={(v) => setGenModes(v as string[])}
-            options={MODE_OPTIONS}
-          />
-        </div>
-        <div style={{ marginBottom: 12 }}>
-          <Text>目标日期：</Text>
+          <Text>生成月份：</Text>
           <DatePicker
-            value={dayjs(genDate)}
-            onChange={(d) => setGenDate(d?.format('YYYY-MM-DD') || dayjs().format('YYYY-MM-DD'))}
-            format="YYYY-MM-DD"
+            picker="month"
+            value={dayjs(genMonth)}
+            onChange={(d) => setGenMonth(d?.format('YYYY-MM') || dayjs().format('YYYY-MM'))}
+            format="YYYY-MM"
           />
+          {genMonth === dayjs().format('YYYY-MM') && (
+            <Checkbox checked={genSkipPast} onChange={(e) => setGenSkipPast(e.target.checked)} style={{ marginLeft: 12 }}>
+              本月跳过已过去的日期
+            </Checkbox>
+          )}
         </div>
         <div>
           <Text>限定设备（可选，不选则为全部设备）：</Text>

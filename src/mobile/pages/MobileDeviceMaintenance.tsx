@@ -15,7 +15,7 @@
  *
  * 离线：所有写操作走 offlineApi；图片先缓存后上传或跳过
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Button, List, SearchBar, Toast, Dialog, TextArea, Radio, PullToRefresh, Tabs, Space,
@@ -64,7 +64,7 @@ interface RecordRow {
 const TRIGGER_MODES = {
   '日点检': 'daily',
   '周保养': 'weekly',
-  '月保养': 'monthly,runtime',
+  '月保养': 'monthly',
 }
 
 type Step = 0 | 1 | 2 | 3
@@ -91,6 +91,8 @@ export default function MobileDeviceMaintenance() {
 
   const [devices, setDevices] = useState<DeviceRow[]>([])
   const [records, setRecords] = useState<RecordRow[]>([])
+  const recordsRef = useRef<RecordRow[]>([])
+  useEffect(() => { recordsRef.current = records }, [records])
   const [selectedDevice, setSelectedDevice] = useState<DeviceRow | null>(null)
   const [selectedRecord, setSelectedRecord] = useState<RecordRow | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -163,7 +165,7 @@ export default function MobileDeviceMaintenance() {
 
   // ===== 每个 Tab 的完成数/总数（额外请求一次全量不加 status 过滤）=====
   const loadTabCounts = async (device: DeviceRow) => {
-    const MODES: Record<string, string> = { '日点检': 'daily', '周保养': 'weekly', '月保养': 'monthly,runtime' }
+    const MODES: Record<string, string> = { '日点检': 'daily', '周保养': 'weekly', '月保养': 'monthly' }
     const result: Record<string, { total: number; done: number }> = {}
     for (const [label, mode] of Object.entries(MODES)) {
       try {
@@ -215,27 +217,64 @@ export default function MobileDeviceMaintenance() {
   }
 
   // ===== 5-A 新：生成保养记录 =====
-  const handleGenerate = async () => {
-    const ok = await Dialog.confirm({
-      content: selectedDevice
-        ? `为「${selectedDevice.device_name}」生成保养执行记录？（周期：日/周/月/运行时长）`
-        : '为全部设备生成保养执行记录？',
-      confirmText: '生成',
-      cancelText: '取消',
+  const handleGenerate = () => {
+    const now = new Date()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const currentYm = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`
+    const nextYm = now.getMonth() === 11
+      ? `${now.getFullYear() + 1}-01`
+      : `${now.getFullYear()}-${pad(now.getMonth() + 2)}`
+
+    // Step 1 → 选月份（纯回调，Dialog.show 不返回 Promise）
+    Dialog.show({
+      content: '请选择生成月份',
+      actions: [
+        { key: 'current', text: `本月 ${currentYm}（跳过已过去日期）` },
+        { key: 'next', text: `下月 ${nextYm}` },
+        { key: 'cancel', text: '取消' },
+      ],
+      onAction: (action) => {
+        if (action.key === 'cancel') return
+        const target_month = action.key === 'current' ? currentYm : nextYm
+        const skip_past = action.key === 'current'
+        showDevicePicker(target_month, skip_past)
+      },
     })
-    if (!ok) return
-    try {
-      const payload: any = { mode: ['daily', 'weekly', 'monthly', 'runtime'], target_date: todayStr() }
-      if (selectedDevice) payload.device_id = selectedDevice.device_id
-      const r: any = await offlinePost('/basic/device-records/generate', payload, { source: 'device-maintenance' })
-      Toast.show({
-        content: r.data?.queued ? '已暂存，恢复网络后自动生成' : (r.message || '生成成功'),
-        icon: 'success', position: 'bottom',
-      })
-      await refreshRecords()
-    } catch (e: any) {
-      Toast.show({ content: e?.message || '生成失败', position: 'bottom' })
+  }
+
+  /** Step 2 → 选设备范围 */
+  const showDevicePicker = (target_month: string, skip_past: boolean) => {
+    const deviceActions = [
+      { key: 'all', text: '所有生效设备' },
+    ]
+    if (selectedDevice) {
+      deviceActions.push({ key: 'single', text: `仅当前设备 (${selectedDevice.device_name})` })
     }
+    deviceActions.push({ key: 'cancel', text: '取消' })
+
+    Dialog.show({
+      content: selectedDevice
+        ? '为「哪些设备」生成？'
+        : '为哪些设备生成？',
+      actions: deviceActions,
+      onAction: async (action) => {
+        if (action.key === 'cancel') return
+        const payload: any = { target_month, skip_past }
+        if (selectedDevice && action.key === 'single') {
+          payload.device_id = selectedDevice.device_id
+        }
+        try {
+          const r: any = await offlinePost('/basic/device-records/generate', payload, { source: 'device-maintenance' })
+          const msg = r.message || (r.data?.created != null
+            ? `成功生成 ${r.data.created} 条${r.data.skipped ? `，跳过 ${r.data.skipped} 条已存在` : ''}`
+            : '生成成功')
+          Toast.show({ content: msg, icon: 'success', position: 'bottom' })
+          await refreshRecords()
+        } catch (e: any) {
+          Toast.show({ content: e?.message || '生成失败', position: 'bottom' })
+        }
+      },
+    })
   }
 
   // ===== 5-A 新：删除 ====
@@ -317,6 +356,23 @@ export default function MobileDeviceMaintenance() {
     loadDevices()
   }
 
+  /** Step3 继续跳下一条待执行 — 保持当前设备 + typeTab */
+  const goNextPending = async () => {
+    if (!selectedDevice) { reset(); return }
+    setLoading(true)
+    try {
+      // 切回 typeTab 对应的待执行状态查下一条
+      setStatusTab('待执行')
+      const list = await loadRecords(selectedDevice, '待执行')
+      if (list && list.length > 0) {
+        selectRecord(list[0])
+      } else {
+        Toast.show({ content: '当前没有更多待执行保养', icon: 'success', position: 'bottom' })
+        setStep(1)
+      }
+    } finally { setLoading(false) }
+  }
+
   // ===== Step 3: 完成 =====
   if (step === 3) {
     return (
@@ -324,8 +380,8 @@ export default function MobileDeviceMaintenance() {
         <div style={{ fontSize: 60 }}>✅</div>
         <div style={{ fontSize: 18, fontWeight: 600, margin: '16px 0 8px' }}>保养完成</div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <Button block fill="outline" onClick={() => navigate(-1)}>返回</Button>
-          <Button block color="primary" onClick={reset}>继续</Button>
+          <Button block fill="outline" onClick={() => { setStep(1); setSelectedRecord(null) }}>返回列表</Button>
+          <Button block color="primary" loading={loading} onClick={goNextPending}>继续下一条</Button>
         </div>
       </div>
     )
@@ -404,7 +460,8 @@ export default function MobileDeviceMaintenance() {
           <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: '0 10px', marginBottom: 10 }}>
             <Tabs activeKey={typeTab} onChange={(k) => {
               setTypeTab(k as '日点检' | '周保养' | '月保养')
-              loadRecords(selectedDevice, statusTab)
+              setStatusTab('all')
+              loadRecords(selectedDevice, 'all')
             }}>
               {(['日点检', '周保养', '月保养'] as const).map((label) => {
                 const c = tabCounts[label] || { total: 0, done: 0 }
