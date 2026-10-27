@@ -184,6 +184,13 @@ export const deleteRecord = asyncHandler(async (req: Request, res: Response) => 
   return success(res, null, '删除成功')
 })
 
+/** 设备当日维保汇总（移动端设备列表卡片用） */
+export const dailySummary = asyncHandler(async (req: Request, res: Response) => {
+  const date = (req.query.date as string) || undefined
+  const map = await DeviceMaintenanceProfileService.dailySummary(date)
+  return success(res, map)
+})
+
 // ============ 图片查询 + 上传（sharp/fs 边界） ============
 
 /** 查保养执行记录的图片 — DB 全走 Service */

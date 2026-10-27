@@ -412,6 +412,7 @@ router.delete('/device-maintenance-profiles/:deviceId', logOperation('维护标�
 router.post('/device-records/generate', logOperation('生成保养执行'), asyncHandler(DeviceMaintenanceController.generateRecords))
 router.get('/device-records/matrix', asyncHandler(DeviceMaintenanceController.getMatrix))
 router.get('/device-records', asyncHandler(DeviceMaintenanceController.listRecords))
+router.get('/device-records/daily-summary', asyncHandler(DeviceMaintenanceController.dailySummary))
 router.get('/device-records/:id', asyncHandler(DeviceMaintenanceController.detailRecord))
 router.put('/device-records/:id/start', logOperation('开始保养'), asyncHandler(DeviceMaintenanceController.startRecord))
 router.put('/device-records/:id/submit', deviceMaintenanceUploadMiddleware.array('files', 10), logOperation('提交保养'), asyncHandler(DeviceMaintenanceController.submitRecord))

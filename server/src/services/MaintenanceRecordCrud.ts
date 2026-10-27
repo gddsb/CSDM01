@@ -78,6 +78,25 @@ const {
       return { list: rows, total: count, page: pageNum, page_size: pageSize }
 }
 
+/** 设备当日维保汇总：每个设备今日生成的 {total, done}
+ *  用于移动端设备列表卡片展示 "当日已完成/总数"
+ */
+export async function dailySummary(dateStr?: string): Promise<Record<number, { total: number; done: number }>> {
+  const date = dateStr || new Date().toISOString().slice(0, 10)
+  const rows: any[] = await sequelize.query(
+    `SELECT device_id, COUNT(*) AS total, SUM(CASE WHEN status IN (3, 4) THEN 1 ELSE 0 END) AS done
+     FROM device_record
+     WHERE DATE(COALESCE(created_at, plan_date)) = :date
+     GROUP BY device_id`,
+    { replacements: { date }, type: QueryTypes.SELECT },
+  )
+  const map: Record<number, { total: number; done: number }> = {}
+  for (const r of rows) {
+    map[Number(r.device_id)] = { total: Number(r.total) || 0, done: Number(r.done) || 0 }
+  }
+  return map
+}
+
 export async function detailRecord(id: number) {
 
       const detail = await getRecordDetail(Number(id))

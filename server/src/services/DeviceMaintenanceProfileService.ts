@@ -37,6 +37,7 @@ export {
   batchSubmit,
   skipRecord,
   deleteRecord,
+  dailySummary,
 } from './MaintenanceRecordCrud.js'
 
 // ---------- MaintenanceRuntime ----------

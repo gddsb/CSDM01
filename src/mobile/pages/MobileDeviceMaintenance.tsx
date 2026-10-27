@@ -90,6 +90,8 @@ export default function MobileDeviceMaintenance() {
   const [statusTab, setStatusTab] = useState<StatusTab>('待执行')
 
   const [devices, setDevices] = useState<DeviceRow[]>([])
+  /** Q1: 每个设备当日维保汇总 {device_id: {total, done}} */
+  const [deviceDailyStats, setDeviceDailyStats] = useState<Record<number, { total: number; done: number }>>({})
   const [records, setRecords] = useState<RecordRow[]>([])
   const recordsRef = useRef<RecordRow[]>([])
   useEffect(() => { recordsRef.current = records }, [records])
@@ -113,9 +115,14 @@ export default function MobileDeviceMaintenance() {
     try {
       const params: Record<string, unknown> = { page: 1, pageSize: 50 }
       if (kw) params.device_code = kw
-      const r: any = await api.get('/basic/devices', { params })
-      const list: DeviceRow[] = r.success ? (r.data?.list || r.data || []) : []
-      setDevices(list); return list
+      const [r1, r2]: any[] = await Promise.all([
+        api.get('/basic/devices', { params }),
+        api.get('/basic/device-records/daily-summary'),
+      ])
+      const list: DeviceRow[] = r1.success ? (r1.data?.list || r1.data || []) : []
+      setDevices(list)
+      if (r2?.success) setDeviceDailyStats(r2.data || {})
+      return list
     } catch { return [] } finally { setLoading(false) }
   }
 
@@ -136,15 +143,17 @@ export default function MobileDeviceMaintenance() {
   const loadRecords = async (
     device: DeviceRow,
     status?: StatusTab,
+    type?: '日点检' | '周保养' | '月保养',
   ): Promise<RecordRow[]> => {
     setSelectedDevice(device)
     setSelectedRecord(null)
     setLoading(true)
+    const typeKey = type || typeTab
     try {
       const params: Record<string, unknown> = {
         page: 1, pageSize: 50, device_id: device.device_id,
-        trigger_mode: TRIGGER_MODES[typeTab],
-        period_key: buildPeriodKey(typeTab),
+        trigger_mode: TRIGGER_MODES[typeKey],
+        period_key: buildPeriodKey(typeKey),
       }
       const s = (status || statusTab)
       if (s !== 'all') params.status = s
@@ -155,6 +164,13 @@ export default function MobileDeviceMaintenance() {
       return list
     } catch { setRecords([]); return [] } finally { setLoading(false) }
   }
+
+  // Q2 修复：typeTab / statusTab 切换后自动 load
+  useEffect(() => {
+    if (step !== 1 || !selectedDevice) return
+    loadRecords(selectedDevice, statusTab)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [typeTab, statusTab, selectedDevice?.device_id, step])
 
   const refreshRecords = async () => {
     if (selectedDevice) {
@@ -408,7 +424,9 @@ export default function MobileDeviceMaintenance() {
           ) : (
             <PullToRefresh onRefresh={async () => { await loadDevices(keyword.trim() || undefined) }}>
               <List>
-                {devices.map((d) => (
+                {devices.map((d) => {
+                  const s = deviceDailyStats[d.device_id] || { total: 0, done: 0 }
+                  return (
                   <List.Item
                     key={d.device_id}
                     onClick={async () => {
@@ -422,10 +440,20 @@ export default function MobileDeviceMaintenance() {
                     }}
                     arrow
                     description={<div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>{d.device_code}</div>}
+                    extra={<span style={{
+                      fontSize: 12, padding: '3px 8px', borderRadius: 10,
+                      background: s.total === 0 ? 'var(--m-surface-2)'
+                        : (s.done === s.total ? 'var(--brand-color-success, #4CAF50)22'
+                        : 'var(--brand-color-warning, #FF9800)22'),
+                      color: s.total === 0 ? 'var(--m-text-3)'
+                        : (s.done === s.total ? 'var(--brand-color-success, #4CAF50)'
+                        : 'var(--brand-color-warning, #FF9800)'),
+                    }}>当日 {s.done}/{s.total}</span>}
                   >
                     <div style={{ fontWeight: 500 }}>{d.device_name}</div>
                   </List.Item>
-                ))}
+                  )
+                })}
               </List>
             </PullToRefresh>
           )}
@@ -457,7 +485,7 @@ export default function MobileDeviceMaintenance() {
             <Tabs activeKey={typeTab} onChange={(k) => {
               setTypeTab(k as '日点检' | '周保养' | '月保养')
               setStatusTab('all')
-              loadRecords(selectedDevice, 'all')
+              // 不调 loadRecords，由下方 useEffect 监听 typeTab 变化自动加载
             }}>
               {(['日点检', '周保养', '月保养'] as const).map((label) => {
                 const c = tabCounts[label] || { total: 0, done: 0 }
@@ -481,8 +509,8 @@ export default function MobileDeviceMaintenance() {
           {/* 5-A 新增：状态 Tab（对齐 PC 端） */}
           <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: '0 10px', marginBottom: 10 }}>
             <Tabs activeKey={statusTab} onChange={(k) => {
-              const sk = k as StatusTab
-              setStatusTab(sk); loadRecords(selectedDevice, sk)
+              setStatusTab(k as StatusTab)
+              // 不调 loadRecords，由 useEffect 监听 statusTab 变化自动加载
             }}>
               {STATUS_TABS.map((t) => (
                 <Tabs.Tab title={t.label} key={t.key} />
