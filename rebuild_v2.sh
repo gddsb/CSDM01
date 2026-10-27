@@ -205,16 +205,14 @@ if [[ -f "$APK_DEBUG" ]]; then
 fi
 
 # Release APK（瘦身版，给用户下载）
-APK_RELEASE_SRC="android/app/build/outputs/apk/release/${APK_NAME%.apk}-release.apk"
-# Gradle 自定义 outputFileName 规则下 release APK 文件名也是 ...-release.apk
-# 但 release 目录里可能叫 milk-can-mes-v1.2.0-buildN-release.apk
-# 所以先 glob 找一下
 APK_RELEASE_SRC=$(ls android/app/build/outputs/apk/release/*.apk 2>/dev/null | head -1)
 if [[ -f "$APK_RELEASE_SRC" ]]; then
   APK_RELEASE_NAME="milk-can-mes-v${VERSION}-build${BUILD}-release.apk"
   cp "$APK_RELEASE_SRC" "download/${APK_RELEASE_NAME}"
   cp "$APK_RELEASE_SRC" download/milk-can-mes-latest.apk   # latest 指向 release（瘦身）
   APK_SIZE=$(stat -c %s "$APK_RELEASE_SRC")
+  # release 存在时 downloadUrl 也指向 release（App 内更新用瘦身版）
+  APK_DOWNLOAD_URL="http://43.138.218.55/download/${APK_RELEASE_NAME}"
   echo "  ✅ release (瘦身): download/${APK_RELEASE_NAME} ($((APK_SIZE/1024/1024))MB)"
   echo "  ✅ milk-can-mes-latest.apk → release"
 else
@@ -223,7 +221,7 @@ else
   cp "$APK_DEBUG" download/milk-can-mes-latest.apk
 fi
 
-# 回填实际 apkSize
+# 回填实际 apkSize + downloadUrl（release 存在时已在上分支更新为 release URL）
 cat > server/data/releases.json << ENDJSON
 {
   "version": "${VERSION}",
