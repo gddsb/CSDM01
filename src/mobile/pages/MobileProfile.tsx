@@ -8,7 +8,6 @@
 import { useNavigate } from 'react-router-dom'
 import { Button, Dialog, Toast, Switch } from 'antd-mobile'
 import { useApp } from '../../contexts/AppContext'
-import { useOfflineQueue } from '../hooks/useOfflineQueue'
 import { useMobileThemeContext } from '../theme'
 import { getAppVersion, formatAppVersion } from '../utils/app-version'
 
@@ -17,37 +16,7 @@ export function MobileProfile() {
   const navigate = useNavigate()
   // 从单一数据源（后端 /api/version 缓存）读版本号，不再用编译时静态值
   const appVer = getAppVersion()
-  const { online, pending, syncing, triggerSync, retryFailed, clearAll } = useOfflineQueue()
   const { isDark, toggleTheme } = useMobileThemeContext()
-
-  const handleSync = async () => {
-    if (!online) {
-      Toast.show({ content: '当前离线，无法同步', position: 'bottom' })
-      return
-    }
-    await triggerSync()
-    Toast.show({ content: '已触发同步', icon: 'success', position: 'bottom' })
-  }
-
-  const handleRetry = async () => {
-    const n = await retryFailed()
-    Toast.show({ content: n > 0 ? `已重置 ${n} 条失败请求` : '暂无失败请求', position: 'bottom' })
-  }
-
-  const handleClear = async () => {
-    if (pending === 0) {
-      Toast.show({ content: '队列为空', position: 'bottom' })
-      return
-    }
-    const ok = await Dialog.confirm({
-      content: `确认清空 ${pending} 条离线请求？清空后这些数据将丢失。`,
-      confirmText: '清空',
-      cancelText: '取消',
-    })
-    if (!ok) return
-    await clearAll()
-    Toast.show({ content: '已清空', icon: 'success', position: 'bottom' })
-  }
 
   const handleLogout = async () => {
     const confirmed = await Dialog.confirm({
@@ -122,48 +91,6 @@ export function MobileProfile() {
           </div>
         </div>
         <Switch checked={isDark} onChange={toggleTheme} />
-      </div>
-
-      {/* 离线队列卡片 */}
-      <div style={{
-        background: 'var(--m-surface)', borderRadius: 14, padding: '16px 18px',
-        border: '1px solid var(--m-border)', marginBottom: 16,
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--m-text)' }}>离线队列</span>
-          <span style={{
-            fontSize: 12, padding: '2px 8px', borderRadius: 10,
-            background: online ? 'var(--m-success-bg, #E8F5E9)' : 'var(--m-warn-bg, #FFF3E0)',
-            color: online ? '#2E7D32' : '#E65100',
-          }}>
-            {online ? (syncing ? '同步中…' : '在线') : '离线'}
-          </span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <div style={{ fontSize: 13, color: 'var(--m-text-2)' }}>
-            待同步请求：<span style={{ color: 'var(--brand-color, #1976D2)', fontWeight: 600 }}>{pending}</span> 条
-          </div>
-          <span
-            onClick={() => navigate('/m/offline-queue')}
-            style={{ fontSize: 12, color: 'var(--brand-color)', cursor: 'pointer', fontWeight: 500 }}
-          >查看详情 →</span>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button
-            size="small" color="primary" fill="outline"
-            disabled={!online || syncing || pending === 0}
-            onClick={handleSync} style={{ flex: 1 }}
-          >立即同步</Button>
-          <Button
-            size="small" fill="outline"
-            onClick={handleRetry} style={{ flex: 1 }}
-          >重试失败</Button>
-          <Button
-            size="small" color="danger" fill="outline"
-            disabled={pending === 0}
-            onClick={handleClear} style={{ flex: 1 }}
-          >清空</Button>
-        </div>
       </div>
 
       {/* 退出按钮 —— color="danger" 自动红底白字，不用硬覆写 background */}

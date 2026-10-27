@@ -110,11 +110,12 @@ export default function MobileDeviceMaintenance() {
   const [images, setImages] = useState<string[]>([])
 
   // ===== 设备 =====
+  const searchTimerRef = useRef<number | null>(null)
   const loadDevices = async (kw?: string): Promise<DeviceRow[]> => {
     setLoading(true)
     try {
       const params: Record<string, unknown> = { page: 1, pageSize: 50 }
-      if (kw) params.device_code = kw
+      if (kw) params.keyword = kw.trim()   // 后端 DeviceService 只认 keyword 做模糊搜索
       const [r1, r2]: any[] = await Promise.all([
         api.get('/basic/devices', { params }),
         api.get('/basic/device-records/daily-summary'),
@@ -413,8 +414,13 @@ export default function MobileDeviceMaintenance() {
             <SearchBar
               placeholder="输入设备编号"
               value={keyword}
-              onChange={setKeyword}
-              onSearch={handleSearch}
+              onChange={(v) => {
+                setKeyword(v)
+                if (searchTimerRef.current) window.clearTimeout(searchTimerRef.current)
+                searchTimerRef.current = window.setTimeout(() => {
+                  loadDevices(v.trim() || undefined)
+                }, 300)
+              }}
               style={{ flex: 1, marginBottom: 0 }}
             />
             <Button size="small" fill="outline" onClick={handleScan} style={{ flexShrink: 0 }}>📷</Button>

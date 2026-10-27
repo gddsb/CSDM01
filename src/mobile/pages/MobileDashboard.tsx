@@ -96,20 +96,30 @@ export default function MobileDashboard() {
     type TodoResp = { icon: string; text: string; count: number; path: string; color: string }
 
     const apis: Promise<TodoResp>[] = [
-      api.get('/production/orders', { params: { page: 1, pageSize: 1, status: 1 } })
-        .then((r: any) => ({ icon: '📋', text: '待开工订单', count: r.data?.total ?? r.total ?? 0, path: '/m/production-orders?tab=下发', color: 'var(--brand-color)' })),
+      // 待完工订单（原"生产中订单"）
       api.get('/production/orders', { params: { page: 1, pageSize: 1, status: 2 } })
-        .then((r: any) => ({ icon: '🏃', text: '生产中订单', count: r.data?.total ?? r.total ?? 0, path: '/m/production-orders?tab=开工', color: 'var(--brand-color-success)' })),
-      api.get('/production/report-orders', { params: { page: 1, pageSize: 1, status: '待报工' } })
-        .then((r: any) => ({ icon: '📝', text: '待报工任务', count: r.data?.total ?? r.total ?? 0, path: '/m/process-reporting', color: 'var(--brand-color-warning)' })),
+        .then((r: any) => ({ icon: '🏃', text: '待完工订单', count: r.data?.total ?? r.total ?? 0, path: '/m/production-orders?tab=开工', color: 'var(--brand-color-success)' })),
+      // 待维保设备（今日待执行/执行中设备去重计数）
+      api.get('/basic/device-records', { params: { page: 1, pageSize: 100, status: '待执行,执行中' } })
+        .then((r: any) => {
+          const list: any[] = r.data?.list ?? r.data ?? []
+          const deviceCount = new Set(list.map((x: any) => x.device_id).filter(Boolean)).size
+          return { icon: '🧰', text: '待维保设备', count: deviceCount, path: '/m/device-maintenance', color: '#FF9800' }
+        }),
     ]
 
-    if (hasPermission('quality:incoming')) {
+    // 待检验任务（按权限，合并来料+环境）
+    if (hasPermission('quality:incoming') || hasPermission('quality:env')) {
       apis.push(
-        api.get('/incoming-inspections', { params: { page: 1, pageSize: 1, status: '待检验' } })
-          .then((r: any) => ({ icon: '🔍', text: '待来料检验', count: r.data?.total ?? r.total ?? 0, path: '/m/incoming-inspection', color: '#9C27B0' })),
+        api.get('/basic/incoming-inspections', { params: { page: 1, pageSize: 1, status: '待检验' } })
+          .then((r: any) => ({ n: 'incoming', c: r.data?.total ?? r.total ?? 0 }))
+          .catch(() => ({ n: 'incoming', c: 0 })),
+        api.get('/basic/env-inspections', { params: { page: 1, pageSize: 1, status: '待检验' } })
+          .then((r: any) => ({ n: 'env', c: r.data?.total ?? r.total ?? 0 }))
+          .catch(() => ({ n: 'env', c: 0 })),
       )
     }
+
     if (hasPermission('device:inspection')) {
       apis.push(
         api.get('/device-inspections', { params: { page: 1, pageSize: 1, status: '待点检' } })
@@ -131,16 +141,27 @@ export default function MobileDashboard() {
 
     try {
       const results = await Promise.allSettled(apis)
+      let incomingTotal = 0
+      let envTotal = 0
       results.forEach((res) => {
-        if (res.status === 'fulfilled') items.push(res.value)
+        if (res.status !== 'fulfilled') return
+        const v: any = res.value
+        if (v && typeof v === 'object' && !v.icon && (v.n === 'incoming' || v.n === 'env')) {
+          // 检验计数累加
+          if (v.n === 'incoming') incomingTotal += v.c || 0
+          if (v.n === 'env') envTotal += v.c || 0
+        } else if (v && v.icon) {
+          items.push(v as TodoResp)
+        }
       })
+      if (incomingTotal > 0 || envTotal > 0) {
+        items.push({ icon: '✅', text: '待检验任务', count: incomingTotal + envTotal, path: '/m/incoming-inspection', color: '#4CAF50' })
+      }
     } catch { /* ignore */ }
 
-    items.push({ icon: '📥', text: '离线暂存待同步', count: pending, path: '/m/offline-queue', color: '#E65100' })
-
-    const filtered = items.filter((i) => i.count > 0 || i.path === '/m/offline-queue')
+    const filtered = items.filter((i) => i.count > 0)
     setTodos(filtered)
-  }, [hasPermission, pending])
+  }, [hasPermission])
 
   useEffect(() => {
     loadTodos()
