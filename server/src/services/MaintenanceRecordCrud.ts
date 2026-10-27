@@ -83,7 +83,7 @@ const {
  */
 export async function dailySummary(dateStr?: string): Promise<Record<number, { total: number; done: number }>> {
   const date = dateStr || new Date().toISOString().slice(0, 10)
-  const rows: any[] = await sequelize.query(
+  const rows: any[] = await DeviceMaintenanceRecord.sequelize.query(
     `SELECT device_id, COUNT(*) AS total, SUM(CASE WHEN status IN (3, 4) THEN 1 ELSE 0 END) AS done
      FROM device_record
      WHERE DATE(COALESCE(created_at, plan_date)) = :date

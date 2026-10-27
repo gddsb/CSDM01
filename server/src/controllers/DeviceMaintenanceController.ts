@@ -302,7 +302,7 @@ export default {
   listStandards, createStandard, updateStandard, deleteStandard,
   listProfiles, listAvailableDevices, createProfile, detailProfile, updateProfileStatus, deleteProfile,
   generateRecords, getMatrix,
-  listRecords, detailRecord, startRecord, submitRecord, batchSubmit, skipRecord, deleteRecord,
+  listRecords, dailySummary, detailRecord, startRecord, submitRecord, batchSubmit, skipRecord, deleteRecord,
   getImages, uploadImage,
   logRuntime, getRuntimeLog,
   initProfiles,
