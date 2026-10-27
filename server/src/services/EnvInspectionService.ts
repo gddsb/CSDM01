@@ -83,12 +83,12 @@ const InspectionService = {
       if (end_date) where.inspection_date[Op.lte] = new Date(new Date(String(end_date)).getTime() + 86400000)
     }
     const pageNum = Math.max(1, Number(page) || 1)
-    const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(pageSize) || 20))
+    const finalPageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(pageSize) || 20))
     return await QualityEnvInspection.findAndCountAll({
       where,
       include: [{ model: QualityEnvArea, as: 'area', attributes: ['area_id', 'area_name'] }],
       order: [['created_at', 'DESC']],
-      limit: pageSize, offset: (pageNum - 1) * pageSize,
+      limit: finalPageSize, offset: (pageNum - 1) * finalPageSize,
     })
   },
 

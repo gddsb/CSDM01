@@ -68,10 +68,10 @@ export const MicrobeInspectionService = {
     }
 
     const pageNum = Math.max(1, Number(page) || 1)
-    const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(pageSize) || 20))
+    const finalPageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(pageSize) || 20))
 
     const { count, rows } = await MicrobeInspection.findAndCountAll({
-      where, order: [['created_at', 'DESC']], limit: pageSize, offset: (pageNum - 1) * pageSize,
+      where, order: [['created_at', 'DESC']], limit: finalPageSize, offset: (pageNum - 1) * finalPageSize,
     })
 
     // 统计（同步查一次全量状态列，避免对 N 个 category 各做一次查询）
