@@ -1,331 +1,257 @@
 /**
- * 日报卡 / 移动端数据看板（Phase 3 · R-A）
+ * MobileDailyCard.tsx — 移动端生产日报卡（汇总指标）
  *
- * 三合一 Tab：生产 / 质量 / 管理
- * 后端：GET /api/auto/dashboard/{production,quality,management}
- *
- * 设计原则：
- *  - 移动端只展示"关键指标"和"近7/30天趋势"，不做大表格
- *  - 全部使用后端 DashboardService 已有接口，不造新 API
+ * 数据源：GET /api/daily-report?date=&line=&shift=
+ * 不做大表格，只展示核心汇总 + 快捷概览
  */
-import { useCallback, useEffect, useState } from 'react'
-import { Tabs, PullToRefresh, Empty } from 'antd-mobile'
+import { useEffect, useState, useCallback } from 'react'
+import { Button, DatePicker } from 'antd-mobile'
 import api from '../../utils/api'
+import dayjs from 'dayjs'
 
-type Tab = 'production' | 'quality' | 'management'
-
-function fmtNum(n: any): string {
-  const v = Number(n)
-  if (isNaN(v)) return '—'
-  if (Math.abs(v) >= 10000) return (v / 10000).toFixed(1) + '万'
-  return v.toLocaleString('zh-CN', { maximumFractionDigits: 2 })
+interface ProductionRow {
+  reportOrderId: number
+  reportOrderNo: string
+  materialName: string
+  specification: string | null
+  inputQty: number
+  outputQty: number
+  processDefect: number
+  inspectionDefect: number
+  edgeWeightKg: number | null
+  skilledCount: number
+  generalCount: number
+  laborCount: number
+  otherCount: number
+  abnormalHours: number
+  totalHours: number
 }
 
-function fmtPct(n: any): string {
-  const v = Number(n)
-  if (isNaN(v)) return '—'
-  return v.toFixed(1) + '%'
+interface DowntimeRow {
+  stopCode: string
+  description: string | null
+  durationHours: number
+}
+
+interface DailyReportData {
+  header: { date: string; line: string; shift: string }
+  productionRows: ProductionRow[]
+  downtime: DowntimeRow[]
+}
+
+const STOP_CODE_LABEL: Record<string, string> = {
+  A: '停机待料', B: '换型换线', C: '制程调整', D: '故障维修', E: '其它异常',
+}
+
+function fmt(n: number | null | undefined, d = 0): string {
+  if (n === null || n === undefined || isNaN(Number(n))) return '—'
+  return Number(n).toFixed(d)
 }
 
 export default function MobileDailyCard() {
-  const [tab, setTab] = useState<Tab>('production')
-  const [data, setData] = useState<any>(null)
+  const [date, setDate] = useState(dayjs().format('YYYY-MM-DD'))
   const [loading, setLoading] = useState(false)
+  const [data, setData] = useState<DailyReportData | null>(null)
 
-  const fetchData = useCallback(async (t: Tab) => {
+  const load = useCallback(async () => {
     setLoading(true)
     try {
-      const r: any = await api.get(`/auto/dashboard/${t}`)
-      if (r.success) setData(r.data)
-      else setData(null)
-    } catch {
-      setData(null)
-    } finally { setLoading(false) }
-  }, [])
+      const r = await api.get('/daily-report', { params: { date } })
+      setData(r.data?.data || r.data || null)
+    } catch { /* 静默 */ }
+    finally { setLoading(false) }
+  }, [date])
 
-  useEffect(() => { fetchData(tab) }, [tab, fetchData])
-
-  const onRefresh = async () => { await fetchData(tab) }
+  useEffect(() => { load() }, [load])
 
   return (
-    <div className="mobile-page-fixed-header">
-      <div className="mobile-sticky-header">
-        <Tabs activeKey={tab} onChange={(k) => setTab(k as Tab)}>
-          <Tabs.Tab title="🏭 生产" key="production" />
-          <Tabs.Tab title="🔬 质量" key="quality" />
-          <Tabs.Tab title="📊 管理" key="management" />
-        </Tabs>
-      </div>
-      <div className="mobile-page-scroll-list">
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: 60, color: 'var(--m-text-3)' }}>加载中...</div>
-        ) : !data ? (
-          <Empty description="暂无数据" />
-        ) : (
-          <PullToRefresh onRefresh={onRefresh}>
-            {tab === 'production' && <ProductionPanel data={data} />}
-            {tab === 'quality' && <QualityPanel data={data} />}
-            {tab === 'management' && <ManagementPanel data={data} />}
-          </PullToRefresh>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// ====================== 生产看板 ======================
-
-function ProductionPanel({ data }: { data: any }) {
-  const dailyTrend: any[] = data.dailyTrend || []
-  const last3 = dailyTrend.slice(-3)
-  const latest = dailyTrend[dailyTrend.length - 1] || {}
-  const defectList: any[] = data.processDefectList || []
-
-  // 今日产出（最新一天所有产线之和）
-  const todayOutput = Object.values(latest).reduce((acc: number, v: any) => {
-    if (typeof v === 'number') return acc + v
-    return acc
-  }, 0)
-
-  const lines: string[] = data.productionLines?.map((l: any) => l.line_name).filter(Boolean) || []
-
-  return (
-    <div>
-      {/* KPI 横卡 */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-        <KpiCard label="今日产出" value={fmtNum(todayOutput)} color="#2196F3" unit="件" />
-        <KpiCard label="活跃产线" value={String(lines.length)} color="#4CAF50" unit="条" />
+    <div style={{ padding: 12 }}>
+      {/* 筛选 */}
+      <div style={{
+        display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12,
+        background: '#fff', padding: 10, borderRadius: 10,
+      }}>
+        <DatePicker
+          value={new Date(date + 'T00:00:00')}
+          min={new Date('2024-01-01')}
+          max={new Date()}
+          onChange={(v) => v && setDate(dayjs(v).format('YYYY-MM-DD'))}
+          children={(items) => <Button size="mini">{items[0]}</Button>}
+        />
+        <Button size="mini" onClick={load} disabled={loading}>🔄</Button>
       </div>
 
-      {/* 近3天产量简表 */}
-      <SectionTitle>近3天产量</SectionTitle>
-      <Card>
-        {last3.length === 0 ? <EmptyHint text="暂无趋势数据" /> : (
-          <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ color: 'var(--m-text-3)', borderBottom: '1px solid var(--m-border)' }}>
-                <th style={{ textAlign: 'left', padding: '6px 0' }}>日期</th>
-                {lines.slice(0, 3).map((ln) => (
-                  <th key={ln} style={{ textAlign: 'right', padding: '6px 0' }}>{ln.slice(0, 6)}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {last3.map((d) => (
-                <tr key={d.date} style={{ borderBottom: '1px dashed #f0f0f0' }}>
-                  <td style={{ padding: '8px 0', color: 'var(--m-text-2)' }}>{String(d.date).slice(5)}</td>
-                  {lines.slice(0, 3).map((ln) => (
-                    <td key={ln} style={{ textAlign: 'right', padding: '8px 0', fontWeight: 500 }}>
-                      {fmtNum(d[ln] || 0)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </Card>
-
-      {/* 工序不良 TOP */}
-      {defectList.length > 0 && (
-        <>
-          <SectionTitle>工序不良 TOP 5</SectionTitle>
-          <Card>
-            {defectList.slice(0, 5).map((p, i) => (
-              <div key={p.name} style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '8px 0', borderBottom: i < defectList.slice(0, 5).length - 1 ? '1px solid #f0f0f0' : 'none',
-              }}>
-                <span style={{ fontSize: 13 }}>{i + 1}. {p.name}</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--brand-color-danger)' }}>{fmtNum(p.total)}</span>
-              </div>
-            ))}
-          </Card>
-        </>
-      )}
-    </div>
-  )
-}
-
-// ====================== 质量看板 ======================
-
-function QualityPanel({ data }: { data: any }) {
-  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
-
-  // 后端没有直接给"今日合格数"的聚合，但有 inspection 数组
-  const incoming: any[] = data.incomingInspections || []
-  const product: any[] = data.productInspections || []
-  const microbe: any[] = data.microbeInspections || []
-
-  const todayFilter = (arr: any[]) => arr.filter((i) => {
-    if (!i.created_at) return false
-    const d = new Date(i.created_at)
-    return d >= todayStart
-  })
-
-  const todayIncoming = todayFilter(incoming)
-  const todayProduct = todayFilter(product)
-  const todayMicrobe = todayFilter(microbe)
-
-  const okRate = (arr: any[]) => {
-    if (arr.length === 0) return null
-    const ok = arr.filter((i) => String(i.result) === '合格').length
-    return { ok, total: arr.length, rate: (ok / arr.length) * 100 }
-  }
-
-  const inRate = okRate(todayIncoming)
-  const prodRate = okRate(todayProduct)
-  const microRate = okRate(todayMicrobe)
-
-  return (
-    <div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
-        <KpiCard label="来料送检" value={String(todayIncoming.length)} color="#4CAF50" unit="单" />
-        <KpiCard label="成品送检" value={String(todayProduct.length)} color="#FF9800" unit="单" />
-      </div>
-
-      <SectionTitle>今日合格率</SectionTitle>
-      <Card>
-        <RateRow label="来料检验" rate={inRate} color="#4CAF50" />
-        <RateRow label="成品/制程" rate={prodRate} color="#FF9800" />
-        <RateRow label="微生物" rate={microRate} color="#9C27B0" />
-      </Card>
-
-      {data.instruments && data.instruments.length > 0 && (
-        <>
-          <SectionTitle>仪器校准状态</SectionTitle>
-          <Card>
-            {data.instruments.slice(0, 8).map((it: any, i: number) => (
-              <div key={it.instrument_id || i} style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '8px 0', borderBottom: i < data.instruments.length - 1 ? '1px solid #f0f0f0' : 'none',
-              }}>
-                <span style={{ fontSize: 13 }}>{it.instrument_name || it.name}</span>
-                <span style={{
-                  fontSize: 11, padding: '1px 8px', borderRadius: 8,
-                  background: it.status === '已校准' ? '#E8F5E9' : '#FFEBEE',
-                  color: it.status === '已校准' ? 'var(--brand-color-success)' : 'var(--brand-color-danger)',
-                }}>{it.status || '—'}</span>
-              </div>
-            ))}
-          </Card>
-        </>
-      )}
-    </div>
-  )
-}
-
-// ====================== 管理看板 ======================
-
-function ManagementPanel({ data }: { data: any }) {
-  // managementDashboard 返回的字段不完全确定，用"存在则展示"方式
-  const cards = [
-    { label: '生产订单', value: data.orders?.length ?? data.orderCount ?? null },
-    { label: '报工单', value: data.workOrders?.length ?? data.reportOrderCount ?? null },
-    { label: '设备数', value: data.devices?.length ?? data.deviceCount ?? null },
-    { label: '工序数', value: data.processes?.length ?? data.processCount ?? null },
-    { label: '在线人员', value: data.activePersonnel ?? null },
-    { label: '待处理异常', value: data.pendingExceptions ?? null },
-  ]
-
-  const valid = cards.filter((c) => c.value !== null && c.value !== undefined)
-
-  return (
-    <div>
-      {valid.length === 0 ? (
-        <EmptyHint text="管理看板数据结构待接入" sub="后端 managementDashboard 返回值字段未完全解析" />
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>加载中…</div>
+      ) : !data ? (
+        <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>暂无日报数据</div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
-          {valid.map((c) => (
-            <KpiCard key={c.label} label={c.label} value={fmtNum(c.value)} color="#3F51B5" />
-          ))}
+        <DailyCardContent data={data} />
+      )}
+    </div>
+  )
+}
+
+function DailyCardContent({ data }: { data: DailyReportData }) {
+  const { header, productionRows, downtime } = data
+
+  // 汇总
+  const totalInput = productionRows.reduce((s, r) => s + r.inputQty, 0)
+  const totalOutput = productionRows.reduce((s, r) => s + r.outputQty, 0)
+  const totalProcessDefect = productionRows.reduce((s, r) => s + r.processDefect, 0)
+  const totalInspectionDefect = productionRows.reduce((s, r) => s + r.inspectionDefect, 0)
+  const totalEdge = productionRows.reduce((s, r) => s + (r.edgeWeightKg || 0), 0)
+  const totalSkilled = productionRows.reduce((s, r) => s + r.skilledCount, 0)
+  const totalGeneral = productionRows.reduce((s, r) => s + r.generalCount, 0)
+  const totalLabor = productionRows.reduce((s, r) => s + r.laborCount, 0)
+  const totalOther = productionRows.reduce((s, r) => s + r.otherCount, 0)
+  const totalAbnormalHours = productionRows.reduce((s, r) => s + r.abnormalHours, 0)
+  const totalHours = productionRows.reduce((s, r) => s + r.totalHours, 0)
+  const totalDowntimeHours = downtime.reduce((s, r) => s + r.durationHours, 0)
+  const longestStop = downtime.length > 0
+    ? downtime.reduce((a, b) => (b.durationHours > a.durationHours ? b : a))
+    : null
+
+  return (
+    <>
+      {/* 产线/班次标识 */}
+      <div style={{
+        background: 'linear-gradient(135deg,#1890ff,#36cfc9)',
+        color: '#fff', borderRadius: 12, padding: 14, marginBottom: 12,
+      }}>
+        <div style={{ fontSize: 12, opacity: 0.85 }}>{header.date}</div>
+        <div style={{ fontSize: 20, fontWeight: 700, marginTop: 2 }}>
+          {header.line || '—'} · {header.shift || '—'}
         </div>
-      )}
+        <div style={{ fontSize: 12, opacity: 0.85, marginTop: 4 }}>
+          共 {productionRows.length} 条完工报工单
+        </div>
+      </div>
 
-      {data.workOrders && data.workOrders.length > 0 && (
-        <>
-          <SectionTitle>最新报工单</SectionTitle>
-          <Card>
-            {data.workOrders.slice(0, 5).map((wo: any, i: number) => (
-              <div key={wo.report_order_id || i} style={{
-                display: 'flex', justifyContent: 'space-between',
-                padding: '8px 0', borderBottom: i < Math.min(data.workOrders.length, 5) - 1 ? '1px solid #f0f0f0' : 'none',
-              }}>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>{wo.report_no || wo.work_order_no || wo.order_no}</div>
-                  <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>{wo.line_name || '—'} · {wo.material_name || ''}</div>
-                </div>
-                <div style={{ textAlign: 'right', fontSize: 12 }}>
-                  <div>{fmtNum(wo.report_qty || wo.planned_qty)} 件</div>
-                  <div style={{ color: 'var(--m-text-3)', marginTop: 2 }}>{wo.status || ''}</div>
-                </div>
+      {/* ① 生产概览 */}
+      <Section title="📦 生产概览">
+        <div style={grid2Style}>
+          <Metric label="投入数量" value={fmt(totalInput, 0)} unit="件" color="#1890ff" />
+          <Metric label="入库数量" value={fmt(totalOutput, 0)} unit="件" color="#52c41a" />
+          <Metric label="合格品" value={fmt(totalOutput - totalProcessDefect - totalInspectionDefect, 0)} unit="件" color="#52c41a" />
+          <Metric label="料边重量" value={fmt(totalEdge, 2)} unit="kg" color="#8c8c8c" />
+        </div>
+      </Section>
+
+      {/* ② 质量概览 */}
+      <Section title="🔍 质量概览">
+        <div style={grid2Style}>
+          <Metric label="制程不良" value={fmt(totalProcessDefect, 0)} unit="件" color="#ff4d4f" />
+          <Metric label="检验废品" value={fmt(totalInspectionDefect, 0)} unit="件" color="#fa8c16" />
+        </div>
+        {productionRows.length > 0 && (
+          <div style={{
+            marginTop: 10, padding: 10, borderRadius: 8, background: '#fafafa',
+            fontSize: 12, color: '#666',
+          }}>
+            不良率：
+            <span style={{ fontWeight: 600, color: totalProcessDefect + totalInspectionDefect > totalOutput * 0.05 ? '#ff4d4f' : '#52c41a' }}>
+              {fmt(totalOutput > 0 ? ((totalProcessDefect + totalInspectionDefect) / totalOutput * 100) : 0, 2)}%
+            </span>
+          </div>
+        )}
+      </Section>
+
+      {/* ③ 人员概览 */}
+      <Section title="👷 人员概览">
+        <div style={grid2Style}>
+          <Metric label="技工" value={fmt(totalSkilled, 0)} unit="人" color="#1890ff" />
+          <Metric label="普工" value={fmt(totalGeneral, 0)} unit="人" color="#13c2c2" />
+          <Metric label="劳务" value={fmt(totalLabor, 0)} unit="人" color="#722ed1" />
+          <Metric label="其它" value={fmt(totalOther, 0)} unit="人" color="#8c8c8c" />
+        </div>
+        <div style={grid2Style}>
+          <Metric label="合计工时" value={fmt(totalHours, 1)} unit="h" color="#1890ff" />
+          <Metric label="异常工时" value={fmt(totalAbnormalHours, 2)} unit="h" color="#fa8c16" />
+        </div>
+      </Section>
+
+      {/* ④ 停机概览 */}
+      <Section title="⏱️ 停机概览">
+        <div style={grid2Style}>
+          <Metric label="停机次数" value={fmt(downtime.length, 0)} unit="次" color="#1890ff" />
+          <Metric label="总停机时" value={fmt(totalDowntimeHours, 2)} unit="h" color="#ff4d4f" />
+        </div>
+        {longestStop && (
+          <div style={{
+            marginTop: 10, padding: 10, borderRadius: 8, background: '#fff1f0',
+            fontSize: 12, color: '#cf1322', borderLeft: '3px solid #ff4d4f',
+          }}>
+            最长停机：<b>{STOP_CODE_LABEL[longestStop.stopCode] || '其它异常'}</b>
+            {longestStop.description ? ` — ${longestStop.description}` : ''}
+            ，{fmt(longestStop.durationHours, 2)}h
+          </div>
+        )}
+      </Section>
+
+      {/* ⑤ 报工单行列表 */}
+      {productionRows.length > 0 && (
+        <Section title="📋 报工明细">
+          {productionRows.map(r => (
+            <div key={r.reportOrderId} style={{
+              background: '#fff', borderRadius: 10, padding: 12, marginBottom: 8,
+              boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <span style={{ fontWeight: 600, fontSize: 14 }}>{r.reportOrderNo}</span>
+                <span style={{ fontSize: 11, color: '#999' }}>
+                  {fmt(r.abnormalHours, 2)}h 异常
+                </span>
               </div>
-            ))}
-          </Card>
-        </>
+              <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>
+                {r.materialName}{r.specification ? `（${r.specification}）` : ''}
+              </div>
+              <div style={{ display: 'flex', gap: 12, fontSize: 12 }}>
+                <span style={{ color: '#1890ff' }}>投入 {fmt(r.inputQty, 0)}</span>
+                <span style={{ color: '#52c41a' }}>入库 {fmt(r.outputQty, 0)}</span>
+                {r.processDefect > 0 && (
+                  <span style={{ color: '#ff4d4f' }}>制程不良 {fmt(r.processDefect, 0)}</span>
+                )}
+                {r.inspectionDefect > 0 && (
+                  <span style={{ color: '#fa8c16' }}>检验废品 {fmt(r.inspectionDefect, 0)}</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </Section>
       )}
+    </>
+  )
+}
+
+/* ========================= 小组件 ========================= */
+
+const grid2Style: React.CSSProperties = {
+  display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8,
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: '#262626' }}>{title}</div>
+      <div style={{ background: '#fff', borderRadius: 10, padding: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+        {children}
+      </div>
     </div>
   )
 }
 
-// ====================== 公共组件 ======================
-
-function KpiCard({ label, value, color, unit }: { label: string; value: string; color: string; unit?: string }) {
+function Metric({ label, value, unit, color }: { label: string; value: string; unit: string; color: string }) {
   return (
     <div style={{
-      flex: 1, background: 'var(--m-surface)', borderRadius: 10, padding: 14,
-      border: '1px solid var(--m-border)',
+      display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '8px 10px',
+      borderRadius: 8, background: '#fafafa',
     }}>
-      <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 700, color }}>
-        {value}
-        {unit && <span style={{ fontSize: 12, color: 'var(--m-text-3)', fontWeight: 400, marginLeft: 4 }}>{unit}</span>}
+      <div style={{ fontSize: 11, color: '#8c8c8c' }}>{label}</div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, marginTop: 2 }}>
+        <span style={{ fontSize: 20, fontWeight: 700, color }}>{value}</span>
+        <span style={{ fontSize: 11, color: '#8c8c8c' }}>{unit}</span>
       </div>
     </div>
   )
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--m-text-2)', marginTop: 16, marginBottom: 8, paddingLeft: 4 }}>
-      {children}
-    </div>
-  )
-}
-
-function Card({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{
-      background: 'var(--m-surface)', borderRadius: 10, padding: '6px 14px',
-      border: '1px solid var(--m-border)',
-    }}>
-      {children}
-    </div>
-  )
-}
-
-function RateRow({ label, rate, color }: { label: string; rate: { ok: number; total: number; rate: number } | null; color: string }) {
-  if (!rate) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', fontSize: 13, borderBottom: '1px dashed #f0f0f0' }}>
-        <span style={{ color: 'var(--m-text-2)' }}>{label}</span>
-        <span style={{ color: 'var(--m-text-3)' }}>今日暂无数据</span>
-      </div>
-    )
-  }
-  return (
-    <div style={{ padding: '10px 0', borderBottom: '1px dashed #f0f0f0' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 6 }}>
-        <span style={{ color: 'var(--m-text-2)' }}>{label}</span>
-        <span style={{ fontWeight: 600, color }}>{fmtPct(rate.rate)} <span style={{ color: 'var(--m-text-3)', fontWeight: 400 }}>({rate.ok}/{rate.total})</span></span>
-      </div>
-      <div style={{ height: 4, background: 'var(--m-border-2)', borderRadius: 2, overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${rate.rate}%`, background: color, transition: 'width .3s' }} />
-      </div>
-    </div>
-  )
-}
-
-function EmptyHint({ text, sub }: { text: string; sub?: string }) {
-  return <div style={{ textAlign: 'center', padding: 40, color: 'var(--m-text-3)' }}>{text}{sub && <div style={{ fontSize: 12, marginTop: 6 }}>{sub}</div>}</div>
 }

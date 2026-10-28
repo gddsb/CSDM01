@@ -10,6 +10,7 @@ import autoRoutes from './auto.js'
 import energyRoutes from './energy.js'
 import versionRoutes from './version.js'
 import sampleValueRoutes from './sample-value.js'
+import dailyReportRoutes from './dailyReport.js'
 import { uploadImage } from '../controllers/UploadController.js'
 import { authRequired } from '../middleware/auth.js'
 import { asyncHandler } from '../middleware/security.js'
@@ -85,5 +86,7 @@ router.use('/auto', autoRoutes)
 router.use('/energy', energyRoutes)
 // 阶段3.1 样品测量值 CRUD：/api/inspection-items/:item_id/sample-values
 router.use('/inspection-items', authRequired, sampleValueRoutes)
+// 制罐车间生产日报聚合
+router.use('/daily-report', authRequired, dailyReportRoutes)
 
 export default router

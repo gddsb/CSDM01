@@ -1,283 +1,362 @@
-import ResizableTable from '../../components/ResizableTable'
-import React, { useState, useMemo, useRef, useEffect } from 'react'
-import { Table, Tag, Button, DatePicker, Select, Space, Row, Col, Progress, Spin, message } from 'antd'
-import {
-  FileTextOutlined, RiseOutlined, CheckCircleOutlined, WarningOutlined,
-  FallOutlined, ExportOutlined, ReloadOutlined, SearchOutlined
-} from '@ant-design/icons'
+/**
+ * DailyReport.tsx — 制罐车间生产日报
+ *
+ * 后端：GET /api/daily-report?date=&line=&shift=
+ * 结构：PDF 表格原样还原（表头 + 生产记录 + 停机记录 + 不良分类交叉表）
+ */
+import React, { useEffect, useState, useCallback } from 'react'
+import { DatePicker, Select, Button, Space, Spin, Card, Row, Col, Divider } from 'antd'
+import { ReloadOutlined, DownloadOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
-import * as echarts from 'echarts'
+import api from '../../utils/api'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
-import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
-import api, { extractList } from '../../utils/api'
-import { processReports as mockProcessReports } from '../../mock/data'
 
-const statusColorMap = {
-  '开立': 'default',
-  '开工': 'processing',
-  '关闭': 'warning',
-  '完工': 'success',
+const { RangePicker } = DatePicker
+
+interface ProductionRow {
+  seq: number
+  reportOrderId: number
+  reportOrderNo: string
+  startTime: string
+  endTime: string
+  productionBatch: string | null
+  materialName: string
+  specification: string | null
+  ironBatchNo: string | null
+  inputQty: number
+  outputQty: number
+  incomingDefectSmall: number
+  incomingDefectCap: number
+  processDefect: number
+  inspectionDefect: number
+  edgeWeightKg: number | null
+  skilledCount: number
+  generalCount: number
+  laborCount: number
+  otherCount: number
+  abnormalHours: number
+  totalHours: number
 }
 
-// 各时段产出趋势 mock 数据（08:00 - 20:00）
-const hours = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00']
-const hourlyOutput = [820, 932, 901, 934, 1290, 1180, 1320, 1100, 980, 850, 760, 680, 520]
-const hourlyDefect = [12, 15, 10, 18, 22, 14, 16, 9, 11, 8, 7, 6, 5]
-
-// ECharts 通用封装
-function Chart({ option, height = 320 }) {
-  const containerRef = useRef(null)
-  const instanceRef = useRef(null)
-  useEffect(() => {
-    if (!containerRef.current) return
-    if (!instanceRef.current) {
-      instanceRef.current = echarts.init(containerRef.current)
-    }
-    instanceRef.current.setOption(option, true)
-  }, [option])
-  useEffect(() => {
-    const handleResize = () => instanceRef.current && instanceRef.current.resize()
-    window.addEventListener('resize', handleResize)
-    return () => {
-      window.removeEventListener('resize', handleResize)
-      if (instanceRef.current) {
-        instanceRef.current.dispose()
-        instanceRef.current = null
-      }
-    }
-  }, [])
-  return <div ref={containerRef} style={{ width: '100%', height }} />
+interface DowntimeRow {
+  reportOrderId: number
+  productionBatch: string | null
+  startTime: string
+  stopCode: string
+  description: string | null
+  endTime: string | null
+  confirmUser: string | null
+  durationHours: number
 }
 
-// 订单状态映射：0=开立, 1=下发, 2=开工, 3=完工, 4=关闭
-const orderStatusNumToText: Record<number, string> = { 0: '开立', 1: '下发', 2: '开工', 3: '完工', 4: '关闭' }
-// 报工单状态映射：0=开工, 1=完工
-const reportStatusNumToText: Record<number, string> = { 0: '开工', 1: '完工' }
+interface DefectCell { defectName: string; defectId: number }
+interface DefectCol { reportOrderId: number; reportOrderNo: string }
+interface DefectMatrix {
+  rows: DefectCell[]
+  cols: DefectCol[]
+  cells: number[][]
+  colSubtotals: number[]
+}
+
+interface DailyReportData {
+  header: { date: string; line: string; shift: string }
+  productionRows: ProductionRow[]
+  downtime: DowntimeRow[]
+  incomingDefectMatrix: DefectMatrix
+  processDefectMatrix: DefectMatrix
+}
+
+const STOP_CODE_LABEL: Record<string, string> = {
+  A: '停机待料', B: '换型换线', C: '制程调整', D: '故障维修', E: '其它异常',
+}
+
+function fmtTime(t: string | null | undefined): string {
+  if (!t) return ''
+  const d = new Date(t)
+  if (isNaN(d.getTime())) return ''
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+function fmtDate(d: string | null | undefined): string {
+  if (!d) return ''
+  const dt = new Date(d)
+  if (isNaN(dt.getTime())) return ''
+  return `${dt.getMonth() + 1}/${dt.getDate()}`
+}
+
+function fmtNum(n: number | null | undefined, digits = 2): string {
+  if (n === null || n === undefined || isNaN(Number(n))) return '—'
+  const v = Number(n)
+  return v.toFixed(digits)
+}
 
 export default function DailyReport() {
-  const [date, setDate] = useState(dayjs())
-  const [lineId, setLineId] = useState(undefined)
   const [loading, setLoading] = useState(false)
-  const [workOrders, setWorkOrders] = useState<any[]>([])
-  const [productionLines, setProductionLines] = useState<any[]>([])
-  const [processDefects, setProcessDefects] = useState<any[]>([])
+  const [data, setData] = useState<DailyReportData | null>(null)
+  const [date, setDate] = useState<string>(dayjs().format('YYYY-MM-DD'))
+  const [line, setLine] = useState<string | undefined>(undefined)
+  const [shift, setShift] = useState<string | undefined>(undefined)
 
-  // 加载数据
-  const loadData = async () => {
+  const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [woRes, lineRes, defectRes] = await Promise.all([
-        api.get('/production/report-orders', { params: { pageSize: 100 } }),
-        api.get('/basic/production-lines'),
-        api.get('/production/process-defects', { params: { pageSize: 500 } }),
-      ])
-      if (woRes.success && woRes.data) {
-        setWorkOrders(extractList(woRes.data).map((item: any) => ({
-          work_order_id: item.report_order_id,
-          work_order_no: item.report_no,
-          order_id: item.order_id,
-          order_no: item.order_no,
-          line_id: item.line_id,
-          line_name: item.line_name,
-          material_id: item.material_id,
-          material_name: item.material_name,
-          target_qty: item.report_qty,
-          start_time: item.report_time,
-          finish_time: item.finish_time,
-          status: item.order?.status ?? reportStatusNumToText[item.status] ?? '开工',
-          created_by: item.report_user_id,
-          created_at: item.report_time,
-        })))
-      }
-      if (lineRes.success && lineRes.data) {
-        setProductionLines(extractList(lineRes.data))
-      }
-      if (defectRes.success && defectRes.data) {
-        setProcessDefects(extractList(defectRes.data))
-      }
-    } catch (err: any) {
-      message.error(err.message || '加载数据失败')
+      const r = await api.get('/daily-report', { params: { date, line, shift } })
+      setData(r.data?.data || r.data || null)
+    } catch (e) {
+      console.error('[DailyReport] load err', e)
     } finally {
       setLoading(false)
     }
-  }
+  }, [date, line, shift])
 
-  useEffect(() => {
-    loadData()
-  }, [])
+  useEffect(() => { load() }, [load])
 
-  // 将工序不良记录转换为报表所需的 processReports 格式
-  const processReports = useMemo(() => {
-    if (processDefects.length === 0) return mockProcessReports
-    const grouped: Record<string, any> = {}
-    processDefects.forEach((d: any) => {
-      const key = `${d.report_order_id}_${d.process_id}`
-      if (!grouped[key]) {
-        grouped[key] = {
-          report_id: `rp_${d.report_order_id}_${d.process_id}`,
-          work_order_id: d.report_order_id,
-          work_order_no: d.report_order_no || '',
-          process_id: d.process_id,
-          process_name: d.process_name || '',
-          input_qty: 0,
-          defect_material: 0,
-          defect_process: 0,
-          defect_scrap: 0,
-          output_qty: 0,
-          device_id: d.device_id,
-          device_name: d.device_name || '-',
-          report_user: d.report_user,
-          report_user_name: d.report_user_name || '',
-          report_time: d.created_at || new Date().toISOString(),
-        }
-      }
-      const defectType = d.defect_type?.defect_type || d.category_name || ''
-      const qty = Number(d.quantity) || 0
-      if (defectType === '来料不良') {
-        grouped[key].defect_material += qty
-      } else if (defectType === '制程不良') {
-        grouped[key].defect_process += qty
-      } else if (defectType === '检验报废') {
-        grouped[key].defect_scrap += qty
-      } else {
-        grouped[key].defect_process += qty
-      }
-    })
-    return Object.values(grouped)
-  }, [processDefects])
-
-  // 按工单汇总生产数据
-  const reportData = useMemo(() => {
-    return workOrders.map(wo => {
-      const reports = processReports.filter((r: any) => r.work_order_id === wo.work_order_id)
-      const totalDefect = reports.reduce((s: number, r: any) => s + r.defect_material + r.defect_process + r.defect_scrap, 0)
-      const totalOutput = Number(wo.target_qty) || 0
-      const totalInput = totalOutput + totalDefect
-      const yieldRate = totalInput > 0 ? ((totalOutput / totalInput) * 100).toFixed(1) : '0.0'
-      return {
-        ...wo,
-        total_input: totalInput,
-        total_output: totalOutput,
-        total_defect: totalDefect,
-        yield_rate: parseFloat(yieldRate),
-      }
-    })
-  }, [workOrders, processReports])
-
-  const filtered = reportData.filter((r: any) => !lineId || r.line_id === lineId)
-
-  // 统计汇总
-  const todayOrders = filtered.length
-  const totalOutput = filtered.reduce((s, r) => s + r.total_output, 0)
-  const totalInput = filtered.reduce((s, r) => s + r.total_input, 0)
-  const totalDefect = filtered.reduce((s, r) => s + r.total_defect, 0)
-  const avgYield = totalInput > 0 ? ((totalOutput / totalInput) * 100).toFixed(1) : '0.0'
-
-  const stats: StatItem[] = [
-    { label: '今日工单数', value: todayOrders, icon: <FileTextOutlined />, color: '#2196F3' },
-    { label: '今日产出总量', value: totalOutput.toLocaleString(), icon: <RiseOutlined />, color: '#4CAF50' },
-    { label: '今日投入总量', value: totalInput.toLocaleString(), icon: <CheckCircleOutlined />, color: '#00BCD4' },
-    { label: '今日不良数', value: totalDefect.toLocaleString(), icon: <WarningOutlined />, color: '#FF9800' },
-    { label: '良率', value: `${avgYield}%`, icon: <FallOutlined />, color: '#9C27B0' },
-  ]
-
-  // 各时段产出趋势 折线图
-  const lineOption = {
-    title: { text: '各时段产出趋势', left: 0, textStyle: { fontSize: 14, fontWeight: 600 } },
-    tooltip: { trigger: 'axis' },
-    legend: { data: ['产出数量', '不良数'], top: 0, right: 0 },
-    grid: { left: 50, right: 50, top: 50, bottom: 30 },
-    xAxis: { type: 'category', data: hours, boundaryGap: false, axisLabel: { fontSize: 11 } },
-    yAxis: [
-      { type: 'value', name: '产出', axisLabel: { fontSize: 11 } },
-      { type: 'value', name: '不良', axisLabel: { fontSize: 11 } },
-    ],
-    series: [
-      {
-        name: '产出数量',
-        type: 'line',
-        smooth: true,
-        data: hourlyOutput,
-        itemStyle: { color: '#2196F3' },
-        areaStyle: { color: 'rgba(33,150,243,0.15)' },
-      },
-      {
-        name: '不良数',
-        type: 'line',
-        smooth: true,
-        yAxisIndex: 1,
-        data: hourlyDefect,
-        itemStyle: { color: '#FF9800' },
-      },
-    ],
-  }
-
-  const columns = [
-    { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 160, fixed: 'left' as const },
-    { title: '料品名称', dataIndex: 'material_name', key: 'material_name', width: 130 },
-    { title: '产线', dataIndex: 'line_name', key: 'line_name', width: 70 },
-    { title: '目标数量', dataIndex: 'target_qty', key: 'target_qty', width: 100, render: v => v.toLocaleString() },
-    { title: '产出数量', dataIndex: 'total_output', key: 'total_output', width: 100, render: v => v.toLocaleString() },
-    { title: '不良数', dataIndex: 'total_defect', key: 'total_defect', width: 90, render: v => v > 0 ? <span style={{ color: '#F44336' }}>{v}</span> : '-' },
-    {
-      title: '良率(%)', dataIndex: 'yield_rate', key: 'yield_rate', width: 140,
-      render: v => <Progress percent={v} size="small" strokeColor={v >= 95 ? '#52c41a' : v >= 90 ? '#faad14' : '#ff4d4f'} format={p => `${p}%`} />
-    },
-    { title: '工单状态', dataIndex: 'status', key: 'status', width: 90, render: v => <Tag color={statusColorMap[v]}>{v}</Tag> },
-  ]
+  const totalInputs = data?.productionRows.reduce((s, r) => s + r.inputQty, 0) || 0
+  const totalOutputs = data?.productionRows.reduce((s, r) => s + r.outputQty, 0) || 0
+  const totalProcessDefect = data?.productionRows.reduce((s, r) => s + r.processDefect, 0) || 0
+  const totalInspectionDefect = data?.productionRows.reduce((s, r) => s + r.inspectionDefect, 0) || 0
+  const totalDowntimeHours = data?.downtime.reduce((s, r) => s + r.durationHours, 0) || 0
 
   return (
     <ThreeSectionPage
-      title="生产日报"
+      title="制罐车间生产日报"
       breadcrumbs="报表中心 / 生产日报"
-      stats={stats}
-      actions={
-        <>
-          <Button icon={<ExportOutlined />}>导出</Button>
-        </>
-      }
-      table={
-        <Spin spinning={loading} tip="加载中...">
-          <div>
-            <Row gutter={[12, 8]} style={{ marginBottom: 12 }}>
-              <Col span={6}>
-                <DatePicker
-                  style={{ width: '100%' }}
-                  value={date}
-                  onChange={v => setDate(v)}
-                  allowClear={false}
-                />
-              </Col>
-              <Col span={6}>
-                <Select
-                  placeholder="产线选择"
-                  allowClear
-                  style={{ width: '100%' }}
-                  options={productionLines.map(l => ({ label: l.line_name, value: l.line_id }))}
-                  value={lineId}
-                  onChange={setLineId}
-                />
-              </Col>
-              <Col>
-                <Space>
-                  <Button type="primary" icon={<SearchOutlined />} onClick={loadData}>查询</Button>
-                  <Button icon={<ReloadOutlined />} onClick={() => { setLineId(undefined); setDate(dayjs()); loadData() }}>重置</Button>
-                </Space>
-              </Col>
-            </Row>
-            <div style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
-              <Chart option={lineOption} height={300} />
+      filters={[
+        { label: '日期', children: (
+          <DatePicker
+            value={dayjs(date)}
+            onChange={(d) => setDate(d ? d.format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD'))}
+            allowClear={false}
+          />
+        )},
+        { label: '产线', children: (
+          <Select
+            value={line}
+            onChange={setLine}
+            style={{ width: 120 }}
+            allowClear
+            placeholder="全部"
+            options={[{ value: 'A线', label: 'A线' }, { value: 'B线', label: 'B线' }]}
+          />
+        )},
+        { label: '班次', children: (
+          <Select
+            value={shift}
+            onChange={setShift}
+            style={{ width: 120 }}
+            allowClear
+            placeholder="全部"
+            options={[{ value: '白班', label: '白班' }, { value: '晚班', label: '晚班' }]}
+          />
+        )},
+      ]}
+      stats={[
+        { label: '报工单', value: data?.productionRows.length || 0 },
+        { label: '投入数量', value: fmtNum(totalInputs, 0) },
+        { label: '入库数量', value: fmtNum(totalOutputs, 0) },
+        { label: '制程不良', value: fmtNum(totalProcessDefect, 0), color: '#ff4d4f' },
+        { label: '检验废品', value: fmtNum(totalInspectionDefect, 0), color: '#fa8c16' },
+        { label: '停机总时', value: `${fmtNum(totalDowntimeHours, 1)}h`, color: '#1890ff' },
+      ]}
+    >
+      <Spin spinning={loading}>
+        {!data ? (
+          <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>暂无数据</div>
+        ) : (
+          <DailyReportView data={data} />
+        )}
+      </Spin>
+    </ThreeSectionPage>
+  )
+}
+
+/** 纯展示组件 — 按 PDF 表格结构渲染 */
+function DailyReportView({ data }: { data: DailyReportData }) {
+  const { header, productionRows, downtime, incomingDefectMatrix, processDefectMatrix } = data
+
+  return (
+    <div style={{ background: '#fff', padding: 24, borderRadius: 8 }}>
+      {/* ============ 表头 ============ */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div style={{ fontSize: 18, fontWeight: 600 }}>制罐车间生产日报表</div>
+        <div style={{ color: '#666', fontSize: 13 }}>
+          日期：{header.date} &nbsp;|&nbsp; 生产线：{header.line || '—'} &nbsp;|&nbsp; 班次：{header.shift || '—'}
+        </div>
+      </div>
+
+      {/* ============ 1. 生产记录 ============ */}
+      <Card size="small" title="① 生产记录" style={{ marginBottom: 16 }} bodyStyle={{ padding: 0 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr style={{ background: '#fafafa', fontWeight: 600 }}>
+              <Th>序号</Th>
+              <Th colSpan={2}>生产时间</Th>
+              <Th colSpan={4}>基本信息</Th>
+              <Th colSpan={2}>投入产出</Th>
+              <Th colSpan={2}>来料不良</Th>
+              <Th colSpan={2}>制程不良(汇总)</Th>
+              <Th>废品合计</Th>
+              <Th>料边(kg)</Th>
+              <Th colSpan={5}>工时汇总</Th>
+            </tr>
+            <tr style={{ background: '#fafafa', fontSize: 12, color: '#666' }}>
+              <Th>号</Th>
+              <Th>开始</Th><Th>结束</Th>
+              <Th>生产批号</Th><Th>产品名称</Th><Th>规格</Th><Th>印铁批号</Th>
+              <Th>投入</Th><Th>入库</Th>
+              <Th>小张</Th><Th>带盖</Th>
+              <Th>制程</Th><Th>检验</Th>
+              <Th>合计</Th>
+              <Th>kg</Th>
+              <Th>技工</Th><Th>普工</Th><Th>劳务</Th><Th>其它</Th>
+              <Th>异常</Th><Th>合计(h)</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {productionRows.length === 0 ? (
+              <tr><td colSpan={22} style={{ textAlign: 'center', padding: 30, color: '#999' }}>无完工报工单</td></tr>
+            ) : productionRows.map(r => (
+              <tr key={r.reportOrderId} style={{ borderTop: '1px solid #eee' }}>
+                <Td>{r.seq}</Td>
+                <Td>{fmtTime(r.startTime)}</Td>
+                <Td>{fmtTime(r.endTime)}</Td>
+                <Td><InputEditable value={r.productionBatch} /></Td>
+                <Td>{r.materialName}</Td>
+                <Td>{r.specification || '—'}</Td>
+                <Td>{r.ironBatchNo || '—'}</Td>
+                <Td>{fmtNum(r.inputQty, 0)}</Td>
+                <Td>{fmtNum(r.outputQty, 0)}</Td>
+                <Td>{fmtNum(r.incomingDefectSmall, 0)}</Td>
+                <Td>{fmtNum(r.incomingDefectCap, 0)}</Td>
+                <Td>{fmtNum(r.processDefect, 0)}</Td>
+                <Td>{fmtNum(r.inspectionDefect, 0)}</Td>
+                <Td style={{ fontWeight: 600 }}>{fmtNum(r.processDefect + r.inspectionDefect + r.incomingDefectSmall + r.incomingDefectCap, 0)}</Td>
+                <Td>{r.edgeWeightKg !== null ? fmtNum(r.edgeWeightKg, 2) : '—'}</Td>
+                <Td>{r.skilledCount}</Td>
+                <Td>{r.generalCount}</Td>
+                <Td>{r.laborCount}</Td>
+                <Td>{r.otherCount}</Td>
+                <Td>{fmtNum(r.abnormalHours, 2)}</Td>
+                <Td style={{ fontWeight: 600 }}>{fmtNum(r.totalHours, 2)}</Td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+
+      {/* ============ 2+3 停机记录 + 不良分类 ============ */}
+      <Row gutter={16}>
+        <Col span={11}>
+          <Card size="small" title="② 停机记录" bodyStyle={{ padding: 0 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: '#fafafa', fontWeight: 600 }}>
+                  <Th>批号</Th><Th>停机时间</Th><Th>代码</Th><Th>故障描述</Th><Th>修复时间</Th><Th>确认人</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {downtime.length === 0 ? (
+                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: 20, color: '#999' }}>无停机记录</td></tr>
+                ) : downtime.map((d, i) => (
+                  <tr key={i} style={{ borderTop: '1px solid #eee' }}>
+                    <Td>{d.productionBatch || '—'}</Td>
+                    <Td>{fmtDate(d.startTime)} {fmtTime(d.startTime)}</Td>
+                    <Td><StopCodeBadge code={d.stopCode} /></Td>
+                    <Td>{d.description || '—'}</Td>
+                    <Td>{fmtTime(d.endTime)}</Td>
+                    <Td>{d.confirmUser || '—'}</Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div style={{ fontSize: 11, color: '#999', padding: '8px 12px', borderTop: '1px solid #f0f0f0' }}>
+              停机代号：A-停机待料 &nbsp; B-换型换线 &nbsp; C-制程调整 &nbsp; D-故障维修 &nbsp; E-其它异常
             </div>
-            <ResizableTable tableKey="pages_report_DailyReport"             columns={columns}
-              dataSource={filtered}
-              rowKey="work_order_id"
-              size="small"
-              scroll={{ x: 1000 }}
-              pagination={{ pageSize: 30, showSizeChanger: true, showTotal: t => `共 ${t} 条` }}
-            />
-          </div>
-        </Spin>
-      }
-    />
+          </Card>
+        </Col>
+
+        <Col span={13}>
+          <Row gutter={16}>
+            <Col span={12}>
+              <DefectMatrixCard title="③-a 来料不良分类记录" matrix={incomingDefectMatrix} />
+            </Col>
+            <Col span={12}>
+              <DefectMatrixCard title="③-b 制程不良分类记录" matrix={processDefectMatrix} />
+            </Col>
+          </Row>
+        </Col>
+      </Row>
+
+      {/* ============ 4. 其它说明 ============ */}
+      <Card size="small" title="④ 其它说明" style={{ marginTop: 16 }} bodyStyle={{ padding: 12 }}>
+        <div style={{ minHeight: 60, color: '#bbb', fontSize: 13 }}>暂不关联</div>
+      </Card>
+    </div>
+  )
+}
+
+/* ========================= 小组件 ========================= */
+
+function Th({ children, colSpan }: { children: React.ReactNode; colSpan?: number }) {
+  return <th colSpan={colSpan} style={{ border: '1px solid #f0f0f0', padding: '6px 8px', textAlign: 'center', whiteSpace: 'nowrap' }}>{children}</th>
+}
+function Td({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return <td style={{ border: '1px solid #f0f0f0', padding: '5px 8px', textAlign: 'center', ...style }}>{children}</td>
+}
+
+function StopCodeBadge({ code }: { code: string }) {
+  const label = STOP_CODE_LABEL[code] || '其它异常'
+  return (
+    <span style={{
+      display: 'inline-block', padding: '2px 8px', borderRadius: 10, fontSize: 11,
+      background: code === 'D' ? '#fff2f0' : code === 'A' ? '#e6f7ff' : '#f5f5f5',
+      color: code === 'D' ? '#ff4d4f' : code === 'A' ? '#1890ff' : '#666',
+      fontWeight: 600,
+    }}>{code} · {label}</span>
+  )
+}
+
+function InputEditable({ value }: { value: string | null }) {
+  // production_batch 允许编辑但先存前端状态（后端字段目前全 NULL，后续可接保存接口）
+  return <span style={{ color: value ? '#262626' : '#bfbfbf', borderBottom: value ? 'none' : '1px dashed #d9d9d9', paddingBottom: 2 }}>{value || '（空）'}</span>
+}
+
+function DefectMatrixCard({ title, matrix }: { title: string; matrix: DefectMatrix }) {
+  const { rows, cols, cells, colSubtotals } = matrix
+  return (
+    <Card size="small" title={title} bodyStyle={{ padding: 0, maxHeight: 280, overflow: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+        <thead style={{ position: 'sticky', top: 0 }}>
+          <tr style={{ background: '#fafafa', fontWeight: 600 }}>
+            <Th style={{ textAlign: 'left' }}>不良描述</Th>
+            <Th>序号</Th>
+            {cols.map((c, i) => (
+              <Th key={c.reportOrderId}>{i + 1}</Th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 ? (
+            <tr><td colSpan={cols.length + 2} style={{ textAlign: 'center', padding: 20, color: '#999' }}>无不良记录</td></tr>
+          ) : rows.map((r, ri) => (
+            <tr key={r.defect_id} style={{ borderTop: '1px solid #f0f0f0' }}>
+              <Td style={{ textAlign: 'left' }}>{r.defectName}</Td>
+              <Td>{ri + 1}</Td>
+              {cols.map((_, ci) => (
+                <Td key={ci}>{cells[ri]?.[ci] > 0 ? cells[ri][ci] : ''}</Td>
+              ))}
+            </tr>
+          ))}
+          {rows.length > 0 && (
+            <tr style={{ background: '#fffbe6', fontWeight: 600 }}>
+              <Td>小计</Td><Td>—</Td>
+              {colSubtotals.map((v, i) => (
+                <Td key={i} style={{ color: '#d48806' }}>{v > 0 ? v : ''}</Td>
+              ))}
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </Card>
   )
 }
