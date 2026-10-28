@@ -453,7 +453,10 @@ export default function MobileOrderManagement() {
                   {/* 需求4: 第一行 — 订单号 + 报工数量 + 状态 */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                     <div style={{ fontWeight: 700, fontSize: 15, color: '#222', flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      <span title="产线/日期位置" style={{ fontSize: 14, color: 'var(--m-text-3)', marginRight: 4, cursor: 'help' }}>📍</span>
+                      <span style={{ fontSize: 14, color: 'var(--m-text-3)', marginRight: 4 }}>📍</span>
+                      {o.line_name && (
+                        <span style={{ fontSize: 13, color: 'var(--m-text-3)', fontWeight: 400, marginRight: 4 }}>（{o.line_name}）</span>
+                      )}
                       {o.order_no}
                       {(o.planned_qty ?? 0) > 0 && (
                         <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--m-text-3)', marginLeft: 8 }}>
@@ -492,16 +495,15 @@ export default function MobileOrderManagement() {
 
                   {/* 需求2: 料品 + 操作按钮 同一行 */}
                   <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {/* 左侧: 料品信息 + 地点日期（flex:1 占满剩余空间） */}
                     <div style={{ flex: 1, minWidth: 0, lineHeight: 1.4 }}>
                       <div style={{ fontSize: 13, color: 'var(--m-text-2)', wordBreak: 'break-all' }}>
                         <span style={{ color: 'var(--m-text-3)' }}>{o.material_code}</span>
                         {o.material_name && (
                           <span style={{ marginLeft: 6 }}>· {o.material_name}</span>
                         )}
-                      </div>
-                      <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>
-                        {o.line_name || '—'} {o.start_date?.slice(0, 10) || ''}
+                        {o.specification && (
+                          <span style={{ marginLeft: 4, color: 'var(--m-text-3)', fontSize: 12 }}>（{o.specification}）</span>
+                        )}
                       </div>
                     </div>
 
