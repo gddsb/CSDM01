@@ -109,18 +109,37 @@ export interface OrderCreateInput {
 export interface OrderUpdateInput extends Partial<OrderCreateInput> {}
 
 export const OrderService = {
-  /** 分页查询工单列表 */
+  /** 分页查询工单列表（含关联报工单的产线/报工信息） */
   async list(query: any) {
     const where = buildOrderWhere(query)
     const limit = Math.min(Number(query.pageSize) || 20, MAX_PAGE_SIZE)
     const offset = ((Number(query.page) || 1) - 1) * limit
 
-    return await Order.findAndCountAll({
+    const result = await Order.findAndCountAll({
       where,
       limit,
       offset,
       order: [['order_no', 'DESC']],
+      include: [{
+        model: ReportOrder,
+        as: 'report_orders',
+        required: false,
+        separate: true,
+        limit: 1,
+        order: [['report_order_id', 'ASC']],
+      }],
     })
+
+    // 把第一条 ReportOrder 的冗余字段 merge 到 Order 顶层，然后剥离嵌套 report_orders
+    result.rows.forEach((order: any) => {
+      const ro = (order.report_orders && order.report_orders[0]) || null
+      order.setDataValue('line_name', ro?.line_name ?? null)
+      order.setDataValue('line_id', ro?.line_id ?? null)
+      order.setDataValue('report_order_id', ro?.report_order_id ?? null)
+      order.setDataValue('report_orders', undefined)
+    })
+
+    return result
   },
 
   /** 工单详情（含关联报工单） */
