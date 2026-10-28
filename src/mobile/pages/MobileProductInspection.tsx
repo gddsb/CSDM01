@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { Button, List, SearchBar, Toast, Dialog, Input, PullToRefresh, Tabs, TextArea } from 'antd-mobile'
 import api from '../../utils/api'
 import { useBarcode } from '../hooks/useBarcode'
+import { useDebounceEffect } from '../hooks/useDebounceEffect'
 import { useInspectionWorkflow } from '../hooks/useInspectionWorkflow'
 import { offlinePut } from '../offline/offlineApi'
 import { ItemRow, Section, Empty } from './MobileIncomingInspection'
@@ -57,6 +58,11 @@ export default function MobileProductInspection() {
     } catch { return [] } finally { setLoading(false) }
   }
   useEffect(() => { load(undefined, tab) }, [tab])
+
+  // 搜索框 debounce：停下 500ms 自动查
+  useDebounceEffect(keyword, (v) => {
+    load(v.trim() || undefined, tab)
+  }, 500)
 
   const onPick = async (row: Row) => {
     setSelected(row); setStep(1)
@@ -235,8 +241,17 @@ export default function MobileProductInspection() {
           >
             ➕ 新建检验
           </Button>
-          <SearchBar placeholder="扫/输检验单号" value={keyword} onChange={setKeyword}
-            onSearch={(v) => load(v, tab)} />
+          {/* 搜索 + 扫码 */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center' }}>
+            <SearchBar
+              placeholder="扫/输检验单号"
+              value={keyword}
+              onChange={setKeyword}
+              onSearch={(v) => load(v.trim() || undefined, tab)}
+              style={{ flex: 1, marginBottom: 0 }}
+            />
+            <Button size="small" fill="outline" onClick={onScan} style={{ flexShrink: 0 }}>📷</Button>
+          </div>
           {/* 状态 Tab */}
           <div style={{
             background: 'var(--m-surface)', borderRadius: 12, padding: '4px 10px', marginTop: 8,

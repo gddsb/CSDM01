@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button, List, SearchBar, Stepper, Toast, Dialog, Checkbox } from 'antd-mobile'
 import api from '../../utils/api'
 import { useBarcode } from '../hooks/useBarcode'
+import { useDebounceEffect } from '../hooks/useDebounceEffect'
 
 interface DeviceRow {
   device_id: number
@@ -59,6 +60,11 @@ export default function MobileDeviceInspection() {
   }
 
   useEffect(() => { loadDevices() }, [])
+
+  // 搜索框 debounce：停下 500ms 自动查
+  useDebounceEffect(keyword, (v) => {
+    loadDevices(v.trim() || undefined)
+  }, 500)
 
   const loadRecords = async (device: DeviceRow) => {
     setSelectedDevice(device)
@@ -129,15 +135,16 @@ export default function MobileDeviceInspection() {
     !selectedDevice ? (
       <div className="mobile-page-fixed-header">
         <div className="mobile-sticky-header">
-          <SearchBar
-            placeholder="扫设备编号 / 手输"
-            value={keyword}
-            onChange={setKeyword}
-            onSearch={loadDevices}
-
-            style={{ marginBottom: 12 }}
-          />
-          <Button size="mini" onClick={handleScan} style={{marginTop:8}}>扫码</Button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+            <SearchBar
+              placeholder="扫设备编号 / 手输"
+              value={keyword}
+              onChange={setKeyword}
+              onSearch={(v) => loadDevices(v.trim() || undefined)}
+              style={{ flex: 1, marginBottom: 0 }}
+            />
+            <Button size="small" fill="outline" onClick={handleScan} style={{ flexShrink: 0 }}>📷</Button>
+          </div>
         </div>
         <div className="mobile-page-scroll-list">
           {loading ? <EmptyHint text="加载中..." /> : devices.length === 0 ? (

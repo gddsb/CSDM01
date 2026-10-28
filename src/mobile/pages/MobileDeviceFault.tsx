@@ -21,6 +21,7 @@ import {
 import api from '../../utils/api'
 import { offlinePost, offlinePut } from '../offline/offlineApi'
 import { useBarcode } from '../hooks/useBarcode'
+import { useDebounceEffect } from '../hooks/useDebounceEffect'
 import { MobileImageUploader } from '../components/MobileImageUploader'
 
 function getCurrentUsername(): string {
@@ -120,6 +121,11 @@ export default function MobileDeviceFault() {
   }
   useEffect(() => { loadFaults(tab) }, [tab])
 
+  // 搜索框 debounce：停下 500ms 自动查
+  useDebounceEffect(keyword, (v) => {
+    loadFaults(tab, v.trim() || undefined)
+  }, 500)
+
   // ===== 图片 upload helper（submit 后 fault_id 已知时拼 multipart）=====
   const uploadImages = async (faultId: number, files: File[]) => {
     if (files.length === 0) return 0
@@ -158,6 +164,14 @@ export default function MobileDeviceFault() {
       setCreateDesc(''); setCreateImpact(''); setCreateLevel('一般'); setCreateImages([])
       await loadFaults(tab)
     } catch (e: any) { Toast.show({ content: e?.message || '上报失败', position: 'bottom' }) }
+  }
+
+  // ===== 5-B 扫码搜索故障 =====
+  const handleScanForSearch = async () => {
+    const r = await scan(); if (!r) return
+    setKeyword(r.code)
+    // 立即执行一次查找（不等待 debounce）
+    loadFaults(tab, r.code)
   }
 
   // ===== 5-B 扫码定位设备 =====
@@ -261,15 +275,17 @@ export default function MobileDeviceFault() {
           <Stat label="紧急" v={stats.urgent} red />
         </div>
 
-        {/* 搜索 + 上报 */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-          <div style={{ flex: 1 }}>
-            <SearchBar placeholder="故障单号 / 设备" value={keyword} onChange={setKeyword}
-              onSearch={() => loadFaults(tab, keyword.trim())} />
-          </div>
-          <Button color="primary" onClick={() => setShowCreate(true)} style={{ height: 40, marginTop: 2 }}>
-            + 上报
-          </Button>
+        {/* 搜索 + 扫码 + 上报 */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center' }}>
+          <SearchBar
+            placeholder="故障单号 / 设备"
+            value={keyword}
+            onChange={setKeyword}
+            onSearch={() => loadFaults(tab, keyword.trim() || undefined)}
+            style={{ flex: 1, marginBottom: 0 }}
+          />
+          <Button size="small" fill="outline" onClick={handleScanForSearch} style={{ flexShrink: 0 }}>📷</Button>
+          <Button color="primary" onClick={() => setShowCreate(true)} style={{ flexShrink: 0 }}>+ 上报</Button>
         </div>
 
         {/* 状态 Tab（对齐 PC） */}

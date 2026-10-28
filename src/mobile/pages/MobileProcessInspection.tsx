@@ -16,6 +16,8 @@ import { useNavigate } from 'react-router-dom'
 import { Button, List, SearchBar, Toast, Radio, Input, PullToRefresh, Tabs } from 'antd-mobile'
 import api from '../../utils/api'
 import { offlinePost } from '../offline/offlineApi'
+import { useBarcode } from '../hooks/useBarcode'
+import { useDebounceEffect } from '../hooks/useDebounceEffect'
 
 interface WipRow {
   report_order_id: number
@@ -40,6 +42,7 @@ export default function MobileProcessInspection() {
   const navigate = useNavigate()
   const [step, setStep] = useState<Step>(0)
   const [list, setList] = useState<any[]>([])
+  const { scan } = useBarcode()
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(false)
   const [selected, setSelected] = useState<any | null>(null)
@@ -84,7 +87,19 @@ export default function MobileProcessInspection() {
     } catch { return [] } finally { setLoading(false) }
   }
 
-  useEffect(() => { load(undefined, keyword) }, [tab, keyword])
+  useEffect(() => { load(tab, keyword) }, [tab])
+
+  // 搜索框 debounce：停下 500ms 自动查
+  useDebounceEffect(keyword, (v) => {
+    load(tab, v.trim() || undefined)
+  }, 500)
+
+  const handleScan = async () => {
+    const r = await scan(); if (!r) return
+    setKeyword(r.code)
+    // 立即执行一次查找
+    load(tab, r.code)
+  }
 
   const onSearch = () => { load(tab, keyword.trim()) }
 
@@ -156,12 +171,17 @@ export default function MobileProcessInspection() {
     step === 0 ? (
       <div className="mobile-page-fixed-header">
         <div className="mobile-sticky-header">
-          <SearchBar
-            placeholder="扫工单号 / 手输"
-            value={keyword}
-            onChange={setKeyword}
-            onSearch={onSearch}
-          />
+          {/* 搜索 + 扫码 */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center' }}>
+            <SearchBar
+              placeholder="扫工单号 / 手输"
+              value={keyword}
+              onChange={setKeyword}
+              onSearch={() => load(tab, keyword.trim() || undefined)}
+              style={{ flex: 1, marginBottom: 0 }}
+            />
+            <Button size="small" fill="outline" onClick={handleScan} style={{ flexShrink: 0 }}>📷</Button>
+          </div>
           {/* 状态 Tab */}
           <div style={{
             background: 'var(--m-surface)', borderRadius: 12, padding: '4px 10px', marginTop: 8,

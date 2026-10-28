@@ -16,6 +16,7 @@ import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh, Input, Rad
 import api from '../../utils/api'
 import { offlinePost, offlineDelete } from '../offline/offlineApi'
 import { useBarcode } from '../hooks/useBarcode'
+import { useDebounceEffect } from '../hooks/useDebounceEffect'
 
 type TabKey = 'all' | 'low' | 'log'
 const TAB_LIST: { key: TabKey; label: string }[] = [
@@ -88,6 +89,11 @@ export default function MobileSparePart() {
   useEffect(() => {
     if (tab === 'log') loadLogs(); else loadAll()
   }, [tab])
+
+  // 搜索框 debounce：停下 500ms 自动查
+  useDebounceEffect(keyword, () => {
+    refresh()
+  }, 500)
 
   const onScan = async () => {
     const r = await scan(); if (!r) return
@@ -165,14 +171,17 @@ export default function MobileSparePart() {
   return (
     <div className="mobile-page-fixed-header">
       <div className="mobile-sticky-header">
-        {/* 搜索 + 新建 */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-          <div style={{ flex: 1 }}>
-            <SearchBar placeholder="扫/输备件编号" value={keyword} onChange={setKeyword}
-              onSearch={() => refresh()} />
-            <Button size="mini" onClick={onScan} style={{marginTop:8}}>扫码</Button>
-          </div>
-          <Button color="primary" onClick={() => setFormType('create')} style={{ height: 40, marginTop: 2 }}>+ 新建</Button>
+        {/* 搜索 + 扫码 + 新建 */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center' }}>
+          <SearchBar
+            placeholder="扫/输备件编号"
+            value={keyword}
+            onChange={setKeyword}
+            onSearch={() => refresh()}
+            style={{ flex: 1, marginBottom: 0 }}
+          />
+          <Button size="small" fill="outline" onClick={onScan} style={{ flexShrink: 0 }}>📷</Button>
+          <Button color="primary" onClick={() => setFormType('create')} style={{ flexShrink: 0 }}>+ 新建</Button>
         </div>
 
         {/* Tab */}

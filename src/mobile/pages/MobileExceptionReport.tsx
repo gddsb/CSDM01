@@ -17,6 +17,7 @@ import { Button, List, SearchBar, Toast, Dialog, TextArea, Picker, Card, PullToR
 import api from '../../utils/api'
 import { offlinePost } from '../offline/offlineApi'
 import { useBarcode } from '../hooks/useBarcode'
+import { useDebounceEffect } from '../hooks/useDebounceEffect'
 import { MobileOrderDetail, MobileOrderData } from '../components/MobileOrderDetail'
 
 interface ReportOrderRow {
@@ -109,6 +110,11 @@ export default function MobileExceptionReport() {
   }
 
   useEffect(() => { loadOrders() }, [])
+
+  // 搜索框 debounce：停下 500ms 自动查
+  useDebounceEffect(keyword, (v) => {
+    loadOrders(v.trim() || undefined)
+  }, 500)
 
   // 加载设备列表
   const loadDevices = async () => {
@@ -218,13 +224,16 @@ export default function MobileExceptionReport() {
     step === 0 ? (
       <div className="mobile-page-fixed-header">
         <div className="mobile-sticky-header">
-          <SearchBar
-            placeholder="扫报工单号 / 手输"
-            value={keyword}
-            onChange={setKeyword}
-            onSearch={onSearch}
-          />
-          <Button size="mini" onClick={handleScan} style={{marginTop:8}}>扫码</Button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+            <SearchBar
+              placeholder="扫报工单号 / 手输"
+              value={keyword}
+              onChange={setKeyword}
+              onSearch={() => loadOrders(keyword.trim() || undefined)}
+              style={{ flex: 1, marginBottom: 0 }}
+            />
+            <Button size="small" fill="outline" onClick={handleScan} style={{ flexShrink: 0 }}>📷</Button>
+          </div>
         </div>
         <div className="mobile-page-scroll-list">
           {loading ? (

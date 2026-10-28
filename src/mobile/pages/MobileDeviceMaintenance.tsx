@@ -24,6 +24,7 @@ import type { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import api from '../../utils/api'
 import { offlinePost, offlinePut, offlineDelete } from '../offline/offlineApi'
 import { useBarcode } from '../hooks/useBarcode'
+import { useDebounceEffect } from '../hooks/useDebounceEffect'
 import { MobileImageUploader } from '../components/MobileImageUploader'
 import { registerBackHandler } from '../utils/backInterceptor'
 
@@ -110,7 +111,6 @@ export default function MobileDeviceMaintenance() {
   const [images, setImages] = useState<string[]>([])
 
   // ===== 设备 =====
-  const searchTimerRef = useRef<number | null>(null)
   const loadDevices = async (kw?: string): Promise<DeviceRow[]> => {
     setLoading(true)
     try {
@@ -134,6 +134,11 @@ export default function MobileDeviceMaintenance() {
     if (step === 0) loadDevices(keyword.trim() || undefined)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step])
+
+  // 搜索框 debounce：停下 500ms 自动查
+  useDebounceEffect(keyword, (v) => {
+    if (step === 0) loadDevices(v.trim() || undefined)
+  }, 500)
 
   // ===== NavBar 返回拦截：SPA step 状态机逐级降级 =====
   useEffect(() => {
@@ -214,22 +219,18 @@ export default function MobileDeviceMaintenance() {
   const handleScan = async () => {
     const r = await scan()
     if (!r) return
-    // 扫码结果赋值搜索框 + 清掉 SearchBar onChange 自动搜索的 debounce timer
-    // （扫码会手动 loadDevices，不需要重复查）
     setKeyword(r.code)
-    if (searchTimerRef.current) window.clearTimeout(searchTimerRef.current)
+    // 立即执行一次查找（不等待 debounce）
     const list = await loadDevices(r.code)
-    const match = list.find((d) => d.device_code === r.code)
-    if (!match) {
-      Toast.show({ content: '未找到该设备', position: 'bottom' }); return
-    }
+    if (list.length === 0) { Toast.show({ content: '未找到该设备', position: 'bottom' }); return }
+    const match = list.find((d) => d.device_code === r.code) || list[0]
     const recs = await loadRecords(match, '待执行')
     if (recs.length === 0) {
       Toast.show({ content: `${match.device_name} 暂无待执行保养`, position: 'bottom' })
       setStep(1); return
     }
     if (recs.length === 1) selectRecord(recs[0])
-    else setStep(1)
+    else { setSelectedDevice(match); setStep(1) }
   }
 
   const handleSearch = async () => {
@@ -417,13 +418,8 @@ export default function MobileDeviceMaintenance() {
             <SearchBar
               placeholder="输入设备编号"
               value={keyword}
-              onChange={(v) => {
-                setKeyword(v)
-                if (searchTimerRef.current) window.clearTimeout(searchTimerRef.current)
-                searchTimerRef.current = window.setTimeout(() => {
-                  loadDevices(v.trim() || undefined)
-                }, 300)
-              }}
+              onChange={setKeyword}
+              onSearch={() => handleSearch()}
               style={{ flex: 1, marginBottom: 0 }}
             />
             <Button size="small" fill="outline" onClick={handleScan} style={{ flexShrink: 0 }}>📷</Button>

@@ -17,6 +17,7 @@ import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh } from 'ant
 import api from '../../utils/api'
 import { offlinePost } from '../offline/offlineApi'
 import { useBarcode } from '../hooks/useBarcode'
+import { useDebounceEffect } from '../hooks/useDebounceEffect'
 import { ReportOrderDetail, type ReportOrderMeta } from '../components/ReportOrderDetail'
 import { fmtInt } from '../utils/format'
 
@@ -144,6 +145,11 @@ export default function MobileOrderManagement() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, cacheLoaded])
+
+  // 搜索框 debounce：停下 500ms 自动查
+  useDebounceEffect(keyword, (v) => {
+    load(tab, v.trim())
+  }, 500)
 
   // ====== 订单同步 —— 完全对齐 PC 端 ======
   const onSync = async () => {
@@ -363,18 +369,18 @@ export default function MobileOrderManagement() {
       {/* 需求1: 搜索+同步+Tab — 顶部固定 */}
       <div className="mobile-sticky-header">
         <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center' }}>
-        <div style={{ flex: 1 }}>
           <SearchBar
             placeholder="输入工单号"
             value={keyword}
             onChange={setKeyword}
             onSearch={() => load(tab, keyword.trim())}
+            style={{ flex: 1, marginBottom: 0 }}
           />
+          <Button size="small" fill="outline" onClick={onScan} style={{ flexShrink: 0 }}>📷</Button>
+          <Button color="primary" fill="solid" loading={syncing} onClick={onSync} style={{ flexShrink: 0, height: 40, borderRadius: 10 }}>
+            <span style={{ marginRight: 4 }}>🔄</span>同步
+          </Button>
         </div>
-        <Button color="primary" fill="solid" loading={syncing} onClick={onSync} style={{ height: 40, borderRadius: 10 }}>
-          <span style={{ marginRight: 4 }}>🔄</span>同步
-        </Button>
-      </div>
 
         {/* 状态 Tab */}
         <div style={{
