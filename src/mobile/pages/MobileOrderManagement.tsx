@@ -16,7 +16,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh } from 'antd-mobile'
 import api from '../../utils/api'
 import { offlinePost } from '../offline/offlineApi'
-import { useBarcode } from '../hooks/useBarcode'
 import { useDebounceEffect } from '../hooks/useDebounceEffect'
 import { ReportOrderDetail, type ReportOrderMeta } from '../components/ReportOrderDetail'
 import { fmtInt } from '../utils/format'
@@ -58,7 +57,6 @@ const STATUS_COLOR: Record<string, string> = {
 export default function MobileOrderManagement() {
   const navigate = useNavigate()
   const [sp] = useSearchParams()
-  const { scan } = useBarcode()
 
   // URL tab 参数 → 初始 tab（Dashboard 待办跳转带来的筛选）
   const urlTab = sp.get('tab') as StatusTab | null
@@ -175,11 +173,6 @@ export default function MobileOrderManagement() {
     } catch (e: any) {
       Toast.show({ content: e?.message || '订单同步失败', position: 'bottom' })
     } finally { setSyncing(false) }
-  }
-
-  const onScan = async () => {
-    const r = await scan(); if (!r) return
-    setKeyword(r.code); await load(tab, r.code)
   }
 
   // ====== 订单操作 ======
@@ -376,7 +369,6 @@ export default function MobileOrderManagement() {
             onSearch={() => load(tab, keyword.trim())}
             style={{ flex: 1, marginBottom: 0 }}
           />
-          <Button size="small" fill="outline" onClick={onScan} style={{ flexShrink: 0 }}>📷</Button>
           <Button color="primary" fill="solid" loading={syncing} onClick={onSync} style={{ flexShrink: 0, height: 40, borderRadius: 10 }}>
             <span style={{ marginRight: 4 }}>🔄</span>同步
           </Button>

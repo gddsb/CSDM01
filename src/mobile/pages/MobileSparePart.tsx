@@ -15,7 +15,6 @@ import { useEffect, useState } from 'react'
 import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh, Input, Radio, Space , TextArea} from 'antd-mobile'
 import api from '../../utils/api'
 import { offlinePost, offlineDelete } from '../offline/offlineApi'
-import { useBarcode } from '../hooks/useBarcode'
 import { useDebounceEffect } from '../hooks/useDebounceEffect'
 
 type TabKey = 'all' | 'low' | 'log'
@@ -41,7 +40,6 @@ interface LogRow {
 // ========== 主组件 ==========
 
 export default function MobileSparePart() {
-  const { scan } = useBarcode()
   const [tab, setTab] = useState<TabKey>('all')
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -94,11 +92,6 @@ export default function MobileSparePart() {
   useDebounceEffect(keyword, () => {
     refresh()
   }, 500)
-
-  const onScan = async () => {
-    const r = await scan(); if (!r) return
-    setKeyword(r.code); await loadAll()
-  }
 
   const refresh = async () => {
     if (tab === 'log') await loadLogs(); else await loadAll()
@@ -171,7 +164,7 @@ export default function MobileSparePart() {
   return (
     <div className="mobile-page-fixed-header">
       <div className="mobile-sticky-header">
-        {/* 搜索 + 扫码 + 新建 */}
+        {/* 搜索 + 新建 */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center' }}>
           <SearchBar
             placeholder="扫/输备件编号"
@@ -180,7 +173,6 @@ export default function MobileSparePart() {
             onSearch={() => refresh()}
             style={{ flex: 1, marginBottom: 0 }}
           />
-          <Button size="small" fill="outline" onClick={onScan} style={{ flexShrink: 0 }}>📷</Button>
           <Button color="primary" onClick={() => setFormType('create')} style={{ flexShrink: 0 }}>+ 新建</Button>
         </div>
 

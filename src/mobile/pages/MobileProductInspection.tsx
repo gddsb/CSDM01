@@ -7,7 +7,6 @@
 import { useEffect, useState } from 'react'
 import { Button, List, SearchBar, Toast, Dialog, Input, PullToRefresh, Tabs, TextArea } from 'antd-mobile'
 import api from '../../utils/api'
-import { useBarcode } from '../hooks/useBarcode'
 import { useDebounceEffect } from '../hooks/useDebounceEffect'
 import { useInspectionWorkflow } from '../hooks/useInspectionWorkflow'
 import { offlinePut } from '../offline/offlineApi'
@@ -31,7 +30,6 @@ const PRODUCT_TABS: { key: StatusTab; label: string; color: string }[] = [
 ]
 
 export default function MobileProductInspection() {
-  const { scan } = useBarcode()
   const [step, setStep] = useState<Step>(0)
   const [list, setList] = useState<Row[]>([])
   const [keyword, setKeyword] = useState('')
@@ -68,15 +66,6 @@ export default function MobileProductInspection() {
     setSelected(row); setStep(1)
     try { await loadDetail(row.inspection_id) }
     catch (e: any) { Toast.show({ content: e?.message || '加载检验项失败', position: 'bottom' }) }
-  }
-
-  const onScan = async () => {
-    const r = await scan(); if (!r) return
-    setKeyword(r.code)
-    const list2 = await load(r.code)
-    if (list2.length === 1) onPick(list2[0])
-    else if (list2.length > 1) Toast.show({ content: `命中 ${list2.length} 条`, position: 'bottom' })
-    else Toast.show({ content: '未找到匹配检验单', position: 'bottom' })
   }
 
   const totalSamples = items.reduce((s, it) => s + it.sample_values.length, 0)
@@ -241,17 +230,12 @@ export default function MobileProductInspection() {
           >
             ➕ 新建检验
           </Button>
-          {/* 搜索 + 扫码 */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center' }}>
-            <SearchBar
-              placeholder="扫/输检验单号"
-              value={keyword}
-              onChange={setKeyword}
-              onSearch={(v) => load(v.trim() || undefined, tab)}
-              style={{ flex: 1, marginBottom: 0 }}
-            />
-            <Button size="small" fill="outline" onClick={onScan} style={{ flexShrink: 0 }}>📷</Button>
-          </div>
+          <SearchBar
+            placeholder="扫/输检验单号"
+            value={keyword}
+            onChange={setKeyword}
+            onSearch={(v) => load(v.trim() || undefined, tab)}
+          />
           {/* 状态 Tab */}
           <div style={{
             background: 'var(--m-surface)', borderRadius: 12, padding: '4px 10px', marginTop: 8,
