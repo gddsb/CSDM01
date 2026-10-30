@@ -16,6 +16,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button, List, SearchBar, Toast, Dialog, TextArea, Picker, Card, PullToRefresh } from 'antd-mobile'
 import api from '../../utils/api'
 import { offlinePost } from '../offline/offlineApi'
+import { fmtLocalDateTime } from '../../utils/localTime'
 import { useBarcode } from '../hooks/useBarcode'
 import { useDebounceEffect } from '../hooks/useDebounceEffect'
 import { MobileOrderDetail, MobileOrderData } from '../components/MobileOrderDetail'
@@ -63,11 +64,11 @@ function nowLocalDateTimeInput(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-function toIso(s: string): string | null {
+function toLocal(s: string): string | null {
   if (!s) return null
   const d = new Date(s)
   if (isNaN(d.getTime())) return null
-  return d.toISOString()
+  return fmtLocalDateTime(d)
 }
 
 export default function MobileExceptionReport() {
@@ -149,7 +150,7 @@ export default function MobileExceptionReport() {
     if (!startTime) {
       Toast.show({ content: '请填写开始时间', position: 'bottom' }); return
     }
-    if (endTime && toIso(endTime) && toIso(endTime)! < toIso(startTime)!) {
+    if (endTime && toLocal(endTime) && toLocal(endTime)! < toLocal(startTime)!) {
       Toast.show({ content: '结束时间不能早于开始时间', position: 'bottom' }); return
     }
 
@@ -167,8 +168,8 @@ export default function MobileExceptionReport() {
         exception_type: exceptionType,
         stop_type: stopType,
         device_id: deviceId || undefined,
-        start_time: toIso(startTime),
-        end_time: endTime ? toIso(endTime) : undefined,
+        start_time: toLocal(startTime),
+        end_time: endTime ? toLocal(endTime) : undefined,
         description,
       }, { source: 'exception-report' })
       if (!r.success) {

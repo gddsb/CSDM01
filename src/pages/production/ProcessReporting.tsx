@@ -1087,7 +1087,7 @@ export default function ProcessReporting() {
       : dayjs()
     const diffMs = end.valueOf() - start.valueOf()
     const hours = diffMs > 0 ? Number((diffMs / 3600000).toFixed(2)) : 0
-    return { start_time: reportStart, end_time: end.toISOString(), hours }
+    return { start_time: reportStart, end_time: end.format('YYYY-MM-DD HH:mm:ss'), hours }
   }, [selectedReport])
 
   const manpowerDisplayList = useMemo(() => {

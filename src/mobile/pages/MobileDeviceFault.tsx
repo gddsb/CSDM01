@@ -21,6 +21,7 @@ import {
 import api from '../../utils/api'
 import { offlinePost, offlinePut } from '../offline/offlineApi'
 import { useBarcode } from '../hooks/useBarcode'
+import { nowLocalStr } from '../../utils/localTime'
 import { useDebounceEffect } from '../hooks/useDebounceEffect'
 import { MobileImageUploader } from '../components/MobileImageUploader'
 
@@ -149,7 +150,7 @@ export default function MobileDeviceFault() {
         device_code: devices.find((d) => d.device_id === createDeviceId)?.device_code,
         fault_level: createLevel,
         fault_desc: createDesc,
-        fault_time: new Date().toISOString(),
+        fault_time: nowLocalStr(),
         impact_desc: createImpact,
       }, { source: 'device-fault' })
       const faultId = r.data?.fault_id || r.data?.id

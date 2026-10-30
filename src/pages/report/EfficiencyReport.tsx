@@ -6,6 +6,7 @@ import {
   ExportOutlined, ReloadOutlined, SearchOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
+import { nowLocalStr } from '../../utils/localTime'
 import * as echarts from 'echarts'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
@@ -144,7 +145,7 @@ export default function EfficiencyReport() {
           device_name: d.device_name || '-',
           report_user: d.report_user,
           report_user_name: d.report_user_name || '',
-          report_time: d.created_at || new Date().toISOString(),
+          report_time: d.created_at || nowLocalStr(),
         }
       }
       const defectType = d.defect_type?.defect_type || d.category_name || ''

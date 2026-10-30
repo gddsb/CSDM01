@@ -14,6 +14,7 @@
 import { useState, useCallback } from 'react'
 import api from '../../utils/api'
 import { offlinePut } from '../offline/offlineApi'
+import { nowLocalStr } from '../../utils/localTime'
 
 export interface InspectionItem {
   item_id?: number
@@ -122,7 +123,7 @@ export function useInspectionWorkflow(type: InspectionType) {
           measure_value_num: s.measure_value_num,
           measure_value_text: s.measure_value_text,
           defect_desc: s.defect_desc,
-          measured_at: s.measured_at || new Date().toISOString(),
+          measured_at: s.measured_at || nowLocalStr(),
         }))
         await api.post(`/inspection-items/${it.item_id}/sample-values`, { sample_values: svs })
         svSaved++

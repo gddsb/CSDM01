@@ -10,6 +10,7 @@
 import { useState } from 'react'
 import {Button, List, Toast, Dialog, Picker, TextArea, Input, Radio } from 'antd-mobile'
 import { offlinePost } from '../offline/offlineApi'
+import { fmtLocalDateTime, nowLocalStr } from '../../utils/localTime'
 
 type Step = 0 | 1 | 2
 
@@ -78,7 +79,7 @@ export default function MobileComplaintReport() {
         batch_no: batchNo,
         complaint_desc: complaintDesc.trim(),
         complaint_method: '移动端上报',
-        complaint_time: complaintTime ? new Date(complaintTime).toISOString() : new Date().toISOString(),
+        complaint_time: complaintTime ? fmtLocalDateTime(complaintTime) : nowLocalStr(),
         require_reply: requireReply === 'yes',
         handle_direction: handleDirection,
         remarks,
