@@ -15,6 +15,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from './queryClient'
 import MainLayout from './layouts/MainLayout'
 import ErrorBoundary from './components/ErrorBoundary'
+import PermissionGate from './components/PermissionGate'
 import { DeviceProvider, useDevice, isRouteAllowed, isInNativeShell } from './adapter'
 import { useAppUpdate } from './adapter/update'
 
@@ -181,7 +182,7 @@ function AppRoutes() {
       <Route path="/tv/energy" element={<DeviceAwareGuard>{lazyPage(<EnergyBigScreen />)}</DeviceAwareGuard>} />
       <Route path="/tv/management" element={<DeviceAwareGuard>{lazyPage(<ManagementBigScreen />)}</DeviceAwareGuard>} />
 
-      {/* 大屏路由（Web / 平板 / 手机 / PDA 仍可访问） —— 需要登录 */}
+      {/* 大屏路由（Web / 平板 / 手机 / PDA 仍可访问） —— 需要登录，无权限守卫 */}
       <Route path="/bigscreen/production" element={<ProtectedRoute>{lazyPage(<ProductionBigScreen />)}</ProtectedRoute>} />
       <Route path="/bigscreen/management" element={<ProtectedRoute>{lazyPage(<ManagementBigScreen />)}</ProtectedRoute>} />
       <Route path="/bigscreen/quality" element={<ProtectedRoute>{lazyPage(<QualityBigScreen />)}</ProtectedRoute>} />
@@ -189,74 +190,82 @@ function AppRoutes() {
       <Route path="/bigscreen/energy" element={<ProtectedRoute>{lazyPage(<EnergyBigScreen />)}</ProtectedRoute>} />
       <Route path="/bigscreen/display" element={<ProtectedRoute>{lazyPage(<DisplayBigScreen />)}</ProtectedRoute>} />
 
-      {/* 打印路由 */}
+      {/* 打印路由 — 直接访问，无需权限守卫 */}
       <Route path="/device/maintenance/print" element={<ProtectedRoute><DeviceMaintenancePrint /></ProtectedRoute>} />
 
-      {/* 主布局 + 所有业务路由 — 统一经 DeviceAwareGuard 做设备路由屏蔽 */}
+      {/* 主布局 + 所有业务路由 — 统一经 DeviceAwareGuard 做设备路由屏蔽 + PermissionGate 做权限守卫 */}
       <Route path="/" element={<DeviceAwareGuard><MainLayout /></DeviceAwareGuard>}>
+        {/* Dashboard — 所有登录用户可访问 */}
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dashboard-bigscreen" element={<Dashboard />} />
-        {/* —— system/* 系统管理 —— DeviceAwareGuard 会在非 Web 端（含 TV）自动屏蔽 —— */}
-        <Route path="/system/users" element={lazyPage(<UserManagement />)} />
-        <Route path="/system/roles" element={lazyPage(<RoleManagement />)} />
-        <Route path="/system/menus" element={lazyPage(<MenuManagement />)} />
-        <Route path="/system/dictionary" element={lazyPage(<DataDictionary />)} />
+
+        {/* —— system/* 系统管理 —— DeviceAwareGuard 在非 Web 端（含 TV）自动屏蔽 —— */}
+        <Route path="/system/users" element={lazyPage(<PermissionGate permCode="system:user"><UserManagement /></PermissionGate>)} />
+        <Route path="/system/roles" element={lazyPage(<PermissionGate permCode="system:role"><RoleManagement /></PermissionGate>)} />
+        <Route path="/system/menus" element={lazyPage(<PermissionGate permCode="system:menu"><MenuManagement /></PermissionGate>)} />
+        <Route path="/system/dictionary" element={lazyPage(<PermissionGate permCode="system:dict"><DataDictionary /></PermissionGate>)} />
         <Route path="/system/config" element={<Navigate to="/system/config/params" replace />} />
-        <Route path="/system/config/params" element={lazyPage(<ConfigParams />)} />
-        <Route path="/system/config/env" element={lazyPage(<ConfigEnv />)} />
-        <Route path="/system/config/db" element={lazyPage(<ConfigDb />)} />
-        <Route path="/system/config/backup" element={lazyPage(<ConfigBackup />)} />
-        <Route path="/system/config/files" element={lazyPage(<ConfigFiles />)} />
-        <Route path="/system/logs" element={lazyPage(<OperationLogs />)} />
-        <Route path="/system/system-logs" element={lazyPage(<SystemLogs />)} />
+        <Route path="/system/config/params" element={lazyPage(<PermissionGate permCode="system:config"><ConfigParams /></PermissionGate>)} />
+        <Route path="/system/config/env" element={lazyPage(<PermissionGate permCode="system:config"><ConfigEnv /></PermissionGate>)} />
+        <Route path="/system/config/db" element={lazyPage(<PermissionGate permCode="system:config"><ConfigDb /></PermissionGate>)} />
+        <Route path="/system/config/backup" element={lazyPage(<PermissionGate permCode="system:config"><ConfigBackup /></PermissionGate>)} />
+        <Route path="/system/config/files" element={lazyPage(<PermissionGate permCode="system:config"><ConfigFiles /></PermissionGate>)} />
+        <Route path="/system/logs" element={lazyPage(<PermissionGate permCode="system:log"><OperationLogs /></PermissionGate>)} />
+        <Route path="/system/system-logs" element={lazyPage(<PermissionGate permCode="system:system-log"><SystemLogs /></PermissionGate>)} />
+
         {/* —— basic —— */}
-        <Route path="/basic/materials" element={lazyPage(<MaterialManagement />)} />
-        <Route path="/basic/lines" element={lazyPage(<ProductionLine />)} />
-        <Route path="/basic/processes" element={lazyPage(<ProcessManagement />)} />
-        <Route path="/basic/devices" element={lazyPage(<DeviceManagement />)} />
-        <Route path="/basic/defects" element={lazyPage(<DefectManagement />)} />
-        <Route path="/basic/customers" element={lazyPage(<CustomerManagement />)} />
-        <Route path="/basic/suppliers" element={lazyPage(<SupplierManagement />)} />
-        <Route path="/basic/number-rules" element={lazyPage(<NumberRuleManagement />)} />
+        <Route path="/basic/materials" element={lazyPage(<PermissionGate permCode="basic:material"><MaterialManagement /></PermissionGate>)} />
+        <Route path="/basic/lines" element={lazyPage(<PermissionGate permCode="basic:line"><ProductionLine /></PermissionGate>)} />
+        <Route path="/basic/processes" element={lazyPage(<PermissionGate permCode="basic:process"><ProcessManagement /></PermissionGate>)} />
+        <Route path="/basic/devices" element={lazyPage(<PermissionGate permCode="device:list"><DeviceManagement /></PermissionGate>)} />
+        <Route path="/basic/defects" element={lazyPage(<PermissionGate permCode="basic:defect"><DefectManagement /></PermissionGate>)} />
+        <Route path="/basic/customers" element={lazyPage(<PermissionGate permCode="basic:customer"><CustomerManagement /></PermissionGate>)} />
+        <Route path="/basic/suppliers" element={lazyPage(<PermissionGate permCode="basic:supplier"><SupplierManagement /></PermissionGate>)} />
+        <Route path="/basic/number-rules" element={lazyPage(<PermissionGate permCode="basic:number-rule"><NumberRuleManagement /></PermissionGate>)} />
+
         {/* —— production —— */}
-        <Route path="/production/orders" element={lazyPage(<OrderManagement />)} />
-        <Route path="/production/reporting" element={lazyPage(<ProcessReporting />)} />
+        <Route path="/production/orders" element={lazyPage(<PermissionGate permCode="production:order"><OrderManagement /></PermissionGate>)} />
+        <Route path="/production/reporting" element={lazyPage(<PermissionGate permCode="production:reporting"><ProcessReporting /></PermissionGate>)} />
+
         {/* —— quality —— */}
-        <Route path="/quality/standards" element={lazyPage(<InspectionStandard />)} />
-        <Route path="/quality/standards/new" element={lazyPage(<InspectionStandardForm />)} />
-        <Route path="/quality/standards/:id/edit" element={lazyPage(<InspectionStandardForm />)} />
-        <Route path="/quality/incoming" element={lazyPage(<IncomingInspection />)} />
-        <Route path="/quality/process" element={lazyPage(<ProcessInspection />)} />
-        <Route path="/quality/product" element={lazyPage(<ProductInspection />)} />
-        <Route path="/quality/microbe" element={lazyPage(<MicrobeInspection />)} />
-        <Route path="/quality/environment" element={lazyPage(<EnvironmentInspection />)} />
-        <Route path="/quality/complaints" element={lazyPage(<ComplaintManagement />)} />
-        <Route path="/quality/supplier" element={lazyPage(<SupplierComplaint />)} />
-        <Route path="/quality/instruments" element={lazyPage(<InstrumentManagement />)} />
+        <Route path="/quality/standards" element={lazyPage(<PermissionGate permCode="quality:standard"><InspectionStandard /></PermissionGate>)} />
+        <Route path="/quality/standards/new" element={lazyPage(<PermissionGate permCode="quality:standard"><InspectionStandardForm /></PermissionGate>)} />
+        <Route path="/quality/standards/:id/edit" element={lazyPage(<PermissionGate permCode="quality:standard"><InspectionStandardForm /></PermissionGate>)} />
+        <Route path="/quality/incoming" element={lazyPage(<PermissionGate permCode="quality:incoming"><IncomingInspection /></PermissionGate>)} />
+        <Route path="/quality/process" element={lazyPage(<PermissionGate permCode="quality:process"><ProcessInspection /></PermissionGate>)} />
+        <Route path="/quality/product" element={lazyPage(<PermissionGate permCode="quality:product"><ProductInspection /></PermissionGate>)} />
+        <Route path="/quality/microbe" element={lazyPage(<PermissionGate permCode="quality:microbe"><MicrobeInspection /></PermissionGate>)} />
+        <Route path="/quality/environment" element={lazyPage(<PermissionGate permCode="quality:environment"><EnvironmentInspection /></PermissionGate>)} />
+        <Route path="/quality/complaints" element={lazyPage(<PermissionGate permCode="quality:complaint"><ComplaintManagement /></PermissionGate>)} />
+        <Route path="/quality/supplier" element={lazyPage(<PermissionGate permCode="quality:complaint:supplier"><SupplierComplaint /></PermissionGate>)} />
+        <Route path="/quality/instruments" element={lazyPage(<PermissionGate permCode="quality:instrument"><InstrumentManagement /></PermissionGate>)} />
+
         {/* —— device —— */}
-        <Route path="/device/list" element={lazyPage(<DeviceArchive />)} />
-        <Route path="/device/oee" element={lazyPage(<DeviceOEE />)} />
-        <Route path="/device/fault" element={lazyPage(<DeviceFault />)} />
-        <Route path="/device/maintenance" element={lazyPage(<DeviceMaintenanceUnified />)} />
-        <Route path="/device/maintenance-history" element={lazyPage(<DeviceMaintenanceHistory />)} />
-        <Route path="/device/maintenance-standard" element={lazyPage(<DeviceMaintenanceStandardList />)} />
-        <Route path="/device/maintenance-standard/:deviceId" element={lazyPage(<DeviceMaintenanceStandardDetail />)} />
-        <Route path="/device/maintenance/matrix" element={lazyPage(<DeviceMaintenanceMatrix />)} />
-        <Route path="/device/spare-parts" element={lazyPage(<DeviceSparePart />)} />
-        <Route path="/device/calibration" element={lazyPage(<DeviceCalibration />)} />
-        <Route path="/device/documents" element={lazyPage(<DeviceDocumentPage />)} />
-        <Route path="/device/dashboard" element={lazyPage(<DeviceDashboard />)} />
+        <Route path="/device/list" element={lazyPage(<PermissionGate permCode="device:list"><DeviceArchive /></PermissionGate>)} />
+        <Route path="/device/oee" element={lazyPage(<PermissionGate permCode="device:oee"><DeviceOEE /></PermissionGate>)} />
+        <Route path="/device/fault" element={lazyPage(<PermissionGate permCode="device:fault"><DeviceFault /></PermissionGate>)} />
+        <Route path="/device/maintenance" element={lazyPage(<PermissionGate permCode="device:maintenance"><DeviceMaintenanceUnified /></PermissionGate>)} />
+        <Route path="/device/maintenance-history" element={lazyPage(<PermissionGate permCode="device:maintenance"><DeviceMaintenanceHistory /></PermissionGate>)} />
+        <Route path="/device/maintenance-standard" element={lazyPage(<PermissionGate permCode="device:maintenance"><DeviceMaintenanceStandardList /></PermissionGate>)} />
+        <Route path="/device/maintenance-standard/:deviceId" element={lazyPage(<PermissionGate permCode="device:maintenance"><DeviceMaintenanceStandardDetail /></PermissionGate>)} />
+        <Route path="/device/maintenance/matrix" element={lazyPage(<PermissionGate permCode="device:maintenance"><DeviceMaintenanceMatrix /></PermissionGate>)} />
+        <Route path="/device/spare-parts" element={lazyPage(<PermissionGate permCode="device:spare-part"><DeviceSparePart /></PermissionGate>)} />
+        <Route path="/device/calibration" element={lazyPage(<PermissionGate permCode="device:calibration"><DeviceCalibration /></PermissionGate>)} />
+        <Route path="/device/documents" element={lazyPage(<PermissionGate permCode="device:document"><DeviceDocumentPage /></PermissionGate>)} />
+        <Route path="/device/dashboard" element={lazyPage(<PermissionGate permCode="device:dashboard"><DeviceDashboard /></PermissionGate>)} />
+
         {/* —— report —— */}
-        <Route path="/report/daily" element={lazyPage(<DailyReport />)} />
-        <Route path="/report/monthly" element={lazyPage(<MonthlyReport />)} />
-        <Route path="/report/efficiency" element={lazyPage(<EfficiencyReport />)} />
-        <Route path="/report/production" element={lazyPage(<ProductionReport />)} />
-        <Route path="/report/quality" element={lazyPage(<QualityReport />)} />
-        <Route path="/report/exception" element={lazyPage(<ExceptionReport />)} />
+        <Route path="/report/daily" element={lazyPage(<PermissionGate permCode="report:daily"><DailyReport /></PermissionGate>)} />
+        <Route path="/report/monthly" element={lazyPage(<PermissionGate permCode="report:monthly"><MonthlyReport /></PermissionGate>)} />
+        <Route path="/report/efficiency" element={lazyPage(<PermissionGate permCode="report:efficiency"><EfficiencyReport /></PermissionGate>)} />
+        <Route path="/report/production" element={lazyPage(<PermissionGate permCode="report:production"><ProductionReport /></PermissionGate>)} />
+        <Route path="/report/quality" element={lazyPage(<PermissionGate permCode="report:quality"><QualityReport /></PermissionGate>)} />
+        <Route path="/report/exception" element={lazyPage(<PermissionGate permCode="report:exception"><ExceptionReport /></PermissionGate>)} />
+
         {/* —— auto/* 自动任务 —— DeviceAwareGuard 在非 Web 端自动屏蔽 —— */}
-        <Route path="/auto/task-settings" element={lazyPage(<TaskSettingsPage />)} />
-        <Route path="/auto/scheduled-tasks" element={lazyPage(<ScheduledTaskPage />)} />
-        <Route path="/auto/task-logs" element={lazyPage(<TaskLogPage />)} />
+        <Route path="/auto/task-settings" element={lazyPage(<PermissionGate permCode="auto:task-setting"><TaskSettingsPage /></PermissionGate>)} />
+        <Route path="/auto/scheduled-tasks" element={lazyPage(<PermissionGate permCode="auto:scheduled-task"><ScheduledTaskPage /></PermissionGate>)} />
+        <Route path="/auto/task-logs" element={lazyPage(<PermissionGate permCode="auto:task-log"><TaskLogPage /></PermissionGate>)} />
       </Route>
 
       {/* —— 移动端路由子树（antd-mobile，独立 ConfigProvider）—— */}

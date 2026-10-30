@@ -84,7 +84,7 @@ import DeviceMaintenanceController from '../controllers/DeviceMaintenanceControl
 import DeviceCalibrationController from '../controllers/DeviceCalibrationController.js'
 import DeviceSparePartController from '../controllers/DeviceSparePartController.js'
 import DeviceDocumentController from '../controllers/DeviceDocumentController.js'
-import { authRequired, logOperation } from '../middleware/auth.js'
+import { authRequired, logOperation, permissionRequired } from '../middleware/auth.js'
 
 const router = Router()
 
@@ -207,256 +207,256 @@ const deviceDocumentUploadMiddleware = multer({
 // 所有基础数据路由都需要登录
 router.use(authRequired)
 
-// 料品档案
-router.get('/materials', asyncHandler(list))
-router.get('/materials/:id', asyncHandler(detail))
-router.post('/materials', asyncHandler(create))
-router.put('/materials/:id', asyncHandler(update))
-router.delete('/materials/:id', asyncHandler(remove))
+// ============ 料品档案 ============
+router.get('/materials', permissionRequired('basic:material'), asyncHandler(list))
+router.get('/materials/:id', permissionRequired('basic:material'), asyncHandler(detail))
+router.post('/materials', permissionRequired('basic:material:create'), asyncHandler(create))
+router.put('/materials/:id', permissionRequired('basic:material:update'), asyncHandler(update))
+router.delete('/materials/:id', permissionRequired('basic:material:delete'), asyncHandler(remove))
 
-// 产线
-router.get('/production-lines', asyncHandler(lineList))
-router.get('/production-lines/:id', asyncHandler(lineDetail))
-router.post('/production-lines', asyncHandler(lineCreate))
-router.put('/production-lines/:id', asyncHandler(lineUpdate))
-router.delete('/production-lines/:id', asyncHandler(lineRemove))
+// ============ 产线 ============
+router.get('/production-lines', permissionRequired('basic:line'), asyncHandler(lineList))
+router.get('/production-lines/:id', permissionRequired('basic:line'), asyncHandler(lineDetail))
+router.post('/production-lines', permissionRequired('basic:line:create'), asyncHandler(lineCreate))
+router.put('/production-lines/:id', permissionRequired('basic:line:update'), asyncHandler(lineUpdate))
+router.delete('/production-lines/:id', permissionRequired('basic:line:delete'), asyncHandler(lineRemove))
 
-// 产线-工序关联
-router.get('/production-lines/:id/processes', asyncHandler(getLineProcesses))
-router.post('/production-lines/:id/processes', asyncHandler(addLineProcess))
-router.delete('/production-lines/:id/processes/:processId', asyncHandler(removeLineProcess))
-router.put('/production-lines/:id/processes/sort', asyncHandler(updateLineProcessSort))
+// ============ 产线-工序关联 ============
+router.get('/production-lines/:id/processes', permissionRequired('basic:line'), asyncHandler(getLineProcesses))
+router.post('/production-lines/:id/processes', permissionRequired('basic:line:update'), asyncHandler(addLineProcess))
+router.delete('/production-lines/:id/processes/:processId', permissionRequired('basic:line:update'), asyncHandler(removeLineProcess))
+router.put('/production-lines/:id/processes/sort', permissionRequired('basic:line:update'), asyncHandler(updateLineProcessSort))
 
-// 产线-设备关联
-router.get('/production-lines/:id/devices', asyncHandler(getLineDevices))
-router.post('/production-lines/:id/devices', asyncHandler(addLineDevice))
-router.delete('/production-lines/:id/devices/:deviceId', asyncHandler(removeLineDevice))
-router.put('/production-lines/:id/devices/sort', asyncHandler(updateLineDeviceSort))
+// ============ 产线-设备关联 ============
+router.get('/production-lines/:id/devices', permissionRequired('basic:line'), asyncHandler(getLineDevices))
+router.post('/production-lines/:id/devices', permissionRequired('basic:line:update'), asyncHandler(addLineDevice))
+router.delete('/production-lines/:id/devices/:deviceId', permissionRequired('basic:line:update'), asyncHandler(removeLineDevice))
+router.put('/production-lines/:id/devices/sort', permissionRequired('basic:line:update'), asyncHandler(updateLineDeviceSort))
 
-// 工序
-router.get('/processes', asyncHandler(processList))
-router.get('/processes/:id', asyncHandler(processDetail))
-router.post('/processes', asyncHandler(processCreate))
-router.put('/processes/:id', asyncHandler(processUpdate))
-router.delete('/processes/:id', asyncHandler(processRemove))
+// ============ 工序 ============
+router.get('/processes', permissionRequired('basic:process'), asyncHandler(processList))
+router.get('/processes/:id', permissionRequired('basic:process'), asyncHandler(processDetail))
+router.post('/processes', permissionRequired('basic:process:create'), asyncHandler(processCreate))
+router.put('/processes/:id', permissionRequired('basic:process:update'), asyncHandler(processUpdate))
+router.delete('/processes/:id', permissionRequired('basic:process:delete'), asyncHandler(processRemove))
 
-// 设备
-router.get('/devices', asyncHandler(deviceList))
-router.get('/devices/:id', asyncHandler(deviceDetail))
-router.post('/devices', asyncHandler(deviceCreate))
-router.put('/devices/:id', asyncHandler(deviceUpdate))
-router.delete('/devices/:id', asyncHandler(deviceRemove))
+// ============ 设备 ============
+router.get('/devices', permissionRequired('device:list'), asyncHandler(deviceList))
+router.get('/devices/:id', permissionRequired('device:list'), asyncHandler(deviceDetail))
+router.post('/devices', permissionRequired('device:list:create'), asyncHandler(deviceCreate))
+router.put('/devices/:id', permissionRequired('device:list:update'), asyncHandler(deviceUpdate))
+router.delete('/devices/:id', permissionRequired('device:list:delete'), asyncHandler(deviceRemove))
 
-// 不良分类
-router.get('/defect-types', asyncHandler(defectList))
-router.get('/defect-types/next-code', asyncHandler(defectNextCode))
-router.get('/defect-types/:id', asyncHandler(defectDetail))
-router.post('/defect-types', asyncHandler(defectCreate))
-router.put('/defect-types/:id', asyncHandler(defectUpdate))
-router.delete('/defect-types/:id', asyncHandler(defectRemove))
+// ============ 不良分类 ============
+router.get('/defect-types', permissionRequired('basic:defect'), asyncHandler(defectList))
+router.get('/defect-types/next-code', permissionRequired('basic:defect'), asyncHandler(defectNextCode))
+router.get('/defect-types/:id', permissionRequired('basic:defect'), asyncHandler(defectDetail))
+router.post('/defect-types', permissionRequired('basic:defect:create'), asyncHandler(defectCreate))
+router.put('/defect-types/:id', permissionRequired('basic:defect:update'), asyncHandler(defectUpdate))
+router.delete('/defect-types/:id', permissionRequired('basic:defect:delete'), asyncHandler(defectRemove))
 
-// 不良图片
-router.get('/defect-types/:id/images', asyncHandler(defectImageList))
-router.post('/defect-types/:id/images', defectUploadMiddleware.array('images', 10), asyncHandler(defectImageUpload))
-router.delete('/defect-types/:id/images/:imageId', asyncHandler(defectImageDelete))
+// ============ 不良图片 ============
+router.get('/defect-types/:id/images', permissionRequired('basic:defect'), asyncHandler(defectImageList))
+router.post('/defect-types/:id/images', permissionRequired('basic:defect:update'), defectUploadMiddleware.array('images', 10), asyncHandler(defectImageUpload))
+router.delete('/defect-types/:id/images/:imageId', permissionRequired('basic:defect:update'), asyncHandler(defectImageDelete))
 
-// 客户档案
-router.get('/customers', asyncHandler(customerList))
-router.get('/customers/:id', asyncHandler(customerDetail))
-router.post('/customers', asyncHandler(customerCreate))
-router.put('/customers/:id', asyncHandler(customerUpdate))
-router.delete('/customers/:id', asyncHandler(customerRemove))
+// ============ 客户档案 ============
+router.get('/customers', permissionRequired('basic:customer'), asyncHandler(customerList))
+router.get('/customers/:id', permissionRequired('basic:customer'), asyncHandler(customerDetail))
+router.post('/customers', permissionRequired('basic:customer:create'), asyncHandler(customerCreate))
+router.put('/customers/:id', permissionRequired('basic:customer:update'), asyncHandler(customerUpdate))
+router.delete('/customers/:id', permissionRequired('basic:customer:delete'), asyncHandler(customerRemove))
 
-// 供应商档案
-router.get('/suppliers', asyncHandler(SupplierController.list))
-router.get('/suppliers/:id', asyncHandler(SupplierController.detail))
-router.post('/suppliers', logOperation('供应商档案'), asyncHandler(SupplierController.create))
-router.put('/suppliers/:id', logOperation('供应商档案'), asyncHandler(SupplierController.update))
-router.delete('/suppliers/:id', logOperation('供应商档案'), asyncHandler(SupplierController.remove))
-router.post('/suppliers/seed', asyncHandler(SupplierController.seed))
+// ============ 供应商档案 ============
+router.get('/suppliers', permissionRequired('basic:supplier'), asyncHandler(SupplierController.list))
+router.get('/suppliers/:id', permissionRequired('basic:supplier'), asyncHandler(SupplierController.detail))
+router.post('/suppliers', permissionRequired('basic:supplier:create'), logOperation('供应商档案'), asyncHandler(SupplierController.create))
+router.put('/suppliers/:id', permissionRequired('basic:supplier:update'), logOperation('供应商档案'), asyncHandler(SupplierController.update))
+router.delete('/suppliers/:id', permissionRequired('basic:supplier:delete'), logOperation('供应商档案'), asyncHandler(SupplierController.remove))
+router.post('/suppliers/seed', permissionRequired('basic:supplier:create'), asyncHandler(SupplierController.seed))
 
-// 编号规则（编码管理）
-router.get('/number-rules', asyncHandler(ruleList))
-router.get('/number-rules/:id', asyncHandler(ruleDetail))
-router.post('/number-rules', logOperation('编码管理'), asyncHandler(ruleCreate))
-router.put('/number-rules/:id', logOperation('编码管理'), asyncHandler(ruleUpdate))
-router.delete('/number-rules/:id', logOperation('编码管理'), asyncHandler(ruleRemove))
-router.post('/number-rules/:id/toggle', logOperation('编码管理'), asyncHandler(ruleToggle))
-router.post('/number-rules/:id/audit', logOperation('编码管理'), asyncHandler(ruleAudit))
-router.get('/number-rules/:id/preview', asyncHandler(rulePreview))
+// ============ 编号规则（编码管理） ============
+router.get('/number-rules', permissionRequired('basic:number-rule'), asyncHandler(ruleList))
+router.get('/number-rules/:id', permissionRequired('basic:number-rule'), asyncHandler(ruleDetail))
+router.post('/number-rules', permissionRequired('basic:number-rule:create'), logOperation('编码管理'), asyncHandler(ruleCreate))
+router.put('/number-rules/:id', permissionRequired('basic:number-rule:update'), logOperation('编码管理'), asyncHandler(ruleUpdate))
+router.delete('/number-rules/:id', permissionRequired('basic:number-rule:delete'), logOperation('编码管理'), asyncHandler(ruleRemove))
+router.post('/number-rules/:id/toggle', permissionRequired('basic:number-rule:update'), logOperation('编码管理'), asyncHandler(ruleToggle))
+router.post('/number-rules/:id/audit', permissionRequired('basic:number-rule:audit'), logOperation('编码管理'), asyncHandler(ruleAudit))
+router.get('/number-rules/:id/preview', permissionRequired('basic:number-rule'), asyncHandler(rulePreview))
 
-// 产品检测
-router.get('/product-inspections', asyncHandler(ProductInspectionController.list))
-router.get('/product-inspections/:id', asyncHandler(ProductInspectionController.detail))
-router.post('/product-inspections', logOperation('产品检测'), asyncHandler(ProductInspectionController.create))
-router.put('/product-inspections/:id', logOperation('产品检测'), asyncHandler(ProductInspectionController.update))
-router.put('/product-inspections/:id/submit', logOperation('产品检测报审'), asyncHandler(ProductInspectionController.submit))
-router.put('/product-inspections/:id/start', logOperation('产品检测开检'), asyncHandler(ProductInspectionController.start))
-router.put('/product-inspections/:id/review', logOperation('产品检测审核'), asyncHandler(ProductInspectionController.review))
-router.delete('/product-inspections/:id', logOperation('产品检测'), asyncHandler(ProductInspectionController.delete))
+// ============ 产品检测 ============
+router.get('/product-inspections', permissionRequired('quality:product'), asyncHandler(ProductInspectionController.list))
+router.get('/product-inspections/:id', permissionRequired('quality:product'), asyncHandler(ProductInspectionController.detail))
+router.post('/product-inspections', permissionRequired('quality:product:create'), logOperation('产品检测'), asyncHandler(ProductInspectionController.create))
+router.put('/product-inspections/:id', permissionRequired('quality:product:update'), logOperation('产品检测'), asyncHandler(ProductInspectionController.update))
+router.put('/product-inspections/:id/submit', permissionRequired('quality:product:update'), logOperation('产品检测报审'), asyncHandler(ProductInspectionController.submit))
+router.put('/product-inspections/:id/start', permissionRequired('quality:product:update'), logOperation('产品检测开检'), asyncHandler(ProductInspectionController.start))
+router.put('/product-inspections/:id/review', permissionRequired('quality:product:update'), logOperation('产品检测审核'), asyncHandler(ProductInspectionController.review))
+router.delete('/product-inspections/:id', permissionRequired('quality:product:delete'), logOperation('产品检测'), asyncHandler(ProductInspectionController.delete))
 
-// 来料检验
-router.get('/incoming-inspections', asyncHandler(IncomingInspectionController.list))
-router.post('/incoming-inspections/sync-purchase-receipts', logOperation('采购入库同步'), asyncHandler(IncomingInspectionController.syncFromPurchaseReceipts))
-router.get('/incoming-inspections/:id', asyncHandler(IncomingInspectionController.detail))
-router.post('/incoming-inspections', logOperation('来料检验'), asyncHandler(IncomingInspectionController.create))
-router.put('/incoming-inspections/:id', logOperation('来料检验'), asyncHandler(IncomingInspectionController.update))
-router.put('/incoming-inspections/:id/submit', logOperation('来料检验报审'), asyncHandler(IncomingInspectionController.submit))
-router.put('/incoming-inspections/:id/start', logOperation('来料检验开检'), asyncHandler(IncomingInspectionController.start))
-router.put('/incoming-inspections/:id/review', logOperation('来料检验审核'), asyncHandler(IncomingInspectionController.review))
-router.delete('/incoming-inspections/:id', logOperation('来料检验'), asyncHandler(IncomingInspectionController.delete))
+// ============ 来料检验 ============
+router.get('/incoming-inspections', permissionRequired('quality:incoming'), asyncHandler(IncomingInspectionController.list))
+router.post('/incoming-inspections/sync-purchase-receipts', permissionRequired('quality:incoming:create'), logOperation('采购入库同步'), asyncHandler(IncomingInspectionController.syncFromPurchaseReceipts))
+router.get('/incoming-inspections/:id', permissionRequired('quality:incoming'), asyncHandler(IncomingInspectionController.detail))
+router.post('/incoming-inspections', permissionRequired('quality:incoming:create'), logOperation('来料检验'), asyncHandler(IncomingInspectionController.create))
+router.put('/incoming-inspections/:id', permissionRequired('quality:incoming:update'), logOperation('来料检验'), asyncHandler(IncomingInspectionController.update))
+router.put('/incoming-inspections/:id/submit', permissionRequired('quality:incoming:update'), logOperation('来料检验报审'), asyncHandler(IncomingInspectionController.submit))
+router.put('/incoming-inspections/:id/start', permissionRequired('quality:incoming:update'), logOperation('来料检验开检'), asyncHandler(IncomingInspectionController.start))
+router.put('/incoming-inspections/:id/review', permissionRequired('quality:incoming:update'), logOperation('来料检验审核'), asyncHandler(IncomingInspectionController.review))
+router.delete('/incoming-inspections/:id', permissionRequired('quality:incoming:delete'), logOperation('来料检验'), asyncHandler(IncomingInspectionController.delete))
 
-// 过程检验（移动端优先，简化版：在制品列表 + 一步提交）
-router.get('/process-inspections/wip', asyncHandler(ProcessInspectionController.listWip))
-router.get('/process-inspections', asyncHandler(ProcessInspectionController.list))
-router.get('/process-inspections/:id', asyncHandler(ProcessInspectionController.detail))
-router.post('/process-inspections', logOperation('过程检验'), asyncHandler(ProcessInspectionController.create))
-router.post('/process-inspections/submit', logOperation('过程检验提交'), asyncHandler(ProcessInspectionController.submit))
-router.put('/process-inspections/:id', logOperation('过程检验'), asyncHandler(ProcessInspectionController.update))
-router.delete('/process-inspections/:id', logOperation('过程检验'), asyncHandler(ProcessInspectionController.delete))
+// ============ 过程检验（移动端优先，简化版：在制品列表 + 一步提交） ============
+router.get('/process-inspections/wip', permissionRequired('quality:process'), asyncHandler(ProcessInspectionController.listWip))
+router.get('/process-inspections', permissionRequired('quality:process'), asyncHandler(ProcessInspectionController.list))
+router.get('/process-inspections/:id', permissionRequired('quality:process'), asyncHandler(ProcessInspectionController.detail))
+router.post('/process-inspections', permissionRequired('quality:process:create'), logOperation('过程检验'), asyncHandler(ProcessInspectionController.create))
+router.post('/process-inspections/submit', permissionRequired('quality:process:update'), logOperation('过程检验提交'), asyncHandler(ProcessInspectionController.submit))
+router.put('/process-inspections/:id', permissionRequired('quality:process:update'), logOperation('过程检验'), asyncHandler(ProcessInspectionController.update))
+router.delete('/process-inspections/:id', permissionRequired('quality:process:delete'), logOperation('过程检验'), asyncHandler(ProcessInspectionController.delete))
 
-// 检验标准
-router.get('/standards', asyncHandler(InspectionStandardController.list))
-router.get('/standards/generate/no', asyncHandler(InspectionStandardController.generateNo))
-router.get('/standards/:id', asyncHandler(InspectionStandardController.detail))
-router.post('/standards', logOperation('检验标准'), asyncHandler(InspectionStandardController.create))
-router.put('/standards/:id', logOperation('检验标准'), asyncHandler(InspectionStandardController.update))
-router.delete('/standards/:id', logOperation('检验标准'), asyncHandler(InspectionStandardController.remove))
-router.post('/standards/:id/copy', logOperation('检验标准'), asyncHandler(InspectionStandardController.copy))
-router.post('/standards/:id/revise', logOperation('检验标准'), asyncHandler(InspectionStandardController.revise))
-router.get('/standards/:standardId/items', asyncHandler(InspectionStandardController.listItems))
+// ============ 检验标准 ============
+router.get('/standards', permissionRequired('quality:standard'), asyncHandler(InspectionStandardController.list))
+router.get('/standards/generate/no', permissionRequired('quality:standard'), asyncHandler(InspectionStandardController.generateNo))
+router.get('/standards/:id', permissionRequired('quality:standard'), asyncHandler(InspectionStandardController.detail))
+router.post('/standards', permissionRequired('quality:standard:create'), logOperation('检验标准'), asyncHandler(InspectionStandardController.create))
+router.put('/standards/:id', permissionRequired('quality:standard:update'), logOperation('检验标准'), asyncHandler(InspectionStandardController.update))
+router.delete('/standards/:id', permissionRequired('quality:standard:delete'), logOperation('检验标准'), asyncHandler(InspectionStandardController.remove))
+router.post('/standards/:id/copy', permissionRequired('quality:standard:copy'), logOperation('检验标准'), asyncHandler(InspectionStandardController.copy))
+router.post('/standards/:id/revise', permissionRequired('quality:standard:revise'), logOperation('检验标准'), asyncHandler(InspectionStandardController.revise))
+router.get('/standards/:standardId/items', permissionRequired('quality:standard'), asyncHandler(InspectionStandardController.listItems))
 
-// 微生物检验
-router.get('/microbe-inspections', asyncHandler(MicrobeInspectionController.list))
-router.get('/microbe-inspections/:id', asyncHandler(MicrobeInspectionController.detail))
-router.post('/microbe-inspections', logOperation('微生物检验'), asyncHandler(MicrobeInspectionController.create))
-router.put('/microbe-inspections/:id', logOperation('微生物检验'), asyncHandler(MicrobeInspectionController.update))
-router.delete('/microbe-inspections/:id', logOperation('微生物检验'), asyncHandler(MicrobeInspectionController.delete))
+// ============ 微生物检验 ============
+router.get('/microbe-inspections', permissionRequired('quality:microbe'), asyncHandler(MicrobeInspectionController.list))
+router.get('/microbe-inspections/:id', permissionRequired('quality:microbe'), asyncHandler(MicrobeInspectionController.detail))
+router.post('/microbe-inspections', permissionRequired('quality:microbe:create'), logOperation('微生物检验'), asyncHandler(MicrobeInspectionController.create))
+router.put('/microbe-inspections/:id', permissionRequired('quality:microbe:update'), logOperation('微生物检验'), asyncHandler(MicrobeInspectionController.update))
+router.delete('/microbe-inspections/:id', permissionRequired('quality:microbe:delete'), logOperation('微生物检验'), asyncHandler(MicrobeInspectionController.delete))
 
-// 环境检验路由
-router.get('/env-inspections', asyncHandler(EnvInspectionController.list))
-router.get('/env-inspections/:id', asyncHandler(EnvInspectionController.detail))
-router.post('/env-inspections', logOperation('环境检验'), asyncHandler(EnvInspectionController.create))
-router.put('/env-inspections/:id', logOperation('环境检验'), asyncHandler(EnvInspectionController.update))
-router.delete('/env-inspections/:id', logOperation('环境检验'), asyncHandler(EnvInspectionController.delete))
-// 环境检验区域
-router.get('/env-areas', asyncHandler(EnvInspectionController.listAreas))
-router.post('/env-areas', logOperation('环境区域'), asyncHandler(EnvInspectionController.createArea))
-router.put('/env-areas/:id', logOperation('环境区域'), asyncHandler(EnvInspectionController.updateArea))
-router.delete('/env-areas/:id', logOperation('环境区域'), asyncHandler(EnvInspectionController.deleteArea))
-// 环境检验模板
-router.get('/env-templates', asyncHandler(EnvInspectionController.listTemplates))
-router.post('/env-templates', logOperation('环境模板'), asyncHandler(EnvInspectionController.createTemplate))
-router.put('/env-templates/:id', logOperation('环境模板'), asyncHandler(EnvInspectionController.updateTemplate))
-router.delete('/env-templates/:id', logOperation('环境模板'), asyncHandler(EnvInspectionController.deleteTemplate))
-// 根据区域获取模板
-router.get('/env-templates/area/:areaId', asyncHandler(EnvInspectionController.getTemplatesByArea))
+// ============ 环境检验 ============
+router.get('/env-inspections', permissionRequired('quality:environment'), asyncHandler(EnvInspectionController.list))
+router.get('/env-inspections/:id', permissionRequired('quality:environment'), asyncHandler(EnvInspectionController.detail))
+router.post('/env-inspections', permissionRequired('quality:environment:create'), logOperation('环境检验'), asyncHandler(EnvInspectionController.create))
+router.put('/env-inspections/:id', permissionRequired('quality:environment:update'), logOperation('环境检验'), asyncHandler(EnvInspectionController.update))
+router.delete('/env-inspections/:id', permissionRequired('quality:environment:delete'), logOperation('环境检验'), asyncHandler(EnvInspectionController.delete))
 
-// 检测仪器
-router.get('/instruments', asyncHandler(instrumentList))
-router.get('/instruments/:id', asyncHandler(instrumentDetail))
-router.post('/instruments', logOperation('检测仪器'), asyncHandler(instrumentCreate))
-router.put('/instruments/:id', logOperation('检测仪器'), asyncHandler(instrumentUpdate))
-router.delete('/instruments/:id', logOperation('检测仪器'), asyncHandler(instrumentRemove))
+// ============ 环境检验区域 ============
+router.get('/env-areas', permissionRequired('quality:environment'), asyncHandler(EnvInspectionController.listAreas))
+router.post('/env-areas', permissionRequired('quality:environment:create'), logOperation('环境区域'), asyncHandler(EnvInspectionController.createArea))
+router.put('/env-areas/:id', permissionRequired('quality:environment:update'), logOperation('环境区域'), asyncHandler(EnvInspectionController.updateArea))
+router.delete('/env-areas/:id', permissionRequired('quality:environment:delete'), logOperation('环境区域'), asyncHandler(EnvInspectionController.deleteArea))
 
-// 客诉管理路由
-router.get('/complaints', asyncHandler(ComplaintController.list))
-router.get('/complaints/:id', asyncHandler(ComplaintController.detail))
-router.post('/complaints', logOperation('客诉管理'), asyncHandler(ComplaintController.create))
-router.put('/complaints/:id', logOperation('客诉管理'), asyncHandler(ComplaintController.update))
-router.delete('/complaints/:id', logOperation('客诉管理'), asyncHandler(ComplaintController.delete))
-router.post('/complaints/:id/records', logOperation('客诉记录'), asyncHandler(ComplaintController.addRecord))
-router.post('/complaints/:id/attachments', complaintAttachmentUploadMiddleware.array('files', 10), logOperation('上传客诉附件'), asyncHandler(ComplaintController.uploadAttachment))
-router.put('/complaints/:id/close', logOperation('关闭客诉'), asyncHandler(ComplaintController.close))
+// ============ 环境检验模板 ============
+router.get('/env-templates', permissionRequired('quality:environment'), asyncHandler(EnvInspectionController.listTemplates))
+router.post('/env-templates', permissionRequired('quality:environment:create'), logOperation('环境模板'), asyncHandler(EnvInspectionController.createTemplate))
+router.put('/env-templates/:id', permissionRequired('quality:environment:update'), logOperation('环境模板'), asyncHandler(EnvInspectionController.updateTemplate))
+router.delete('/env-templates/:id', permissionRequired('quality:environment:delete'), logOperation('环境模板'), asyncHandler(EnvInspectionController.deleteTemplate))
+router.get('/env-templates/area/:areaId', permissionRequired('quality:environment'), asyncHandler(EnvInspectionController.getTemplatesByArea))
 
-// 供应商投诉管理路由
-router.get('/supplier-complaints', asyncHandler(SupplierComplaintController.list))
-router.get('/supplier-complaints/:id', asyncHandler(SupplierComplaintController.detail))
-router.post('/supplier-complaints', logOperation('供应商投诉'), asyncHandler(SupplierComplaintController.create))
-router.put('/supplier-complaints/:id', logOperation('供应商投诉'), asyncHandler(SupplierComplaintController.update))
-router.delete('/supplier-complaints/:id', logOperation('供应商投诉'), asyncHandler(SupplierComplaintController.delete))
-router.put('/supplier-complaints/:id/issue', logOperation('发出投诉'), asyncHandler(SupplierComplaintController.issue))
-router.put('/supplier-complaints/:id/reply', logOperation('供应商回复'), asyncHandler(SupplierComplaintController.reply))
-router.put('/supplier-complaints/:id/close', logOperation('关闭投诉'), asyncHandler(SupplierComplaintController.close))
-router.get('/supplier-complaints/:id/pdf', asyncHandler(SupplierComplaintController.generatePdf))
+// ============ 检测仪器 ============
+router.get('/instruments', permissionRequired('quality:instrument'), asyncHandler(instrumentList))
+router.get('/instruments/:id', permissionRequired('quality:instrument'), asyncHandler(instrumentDetail))
+router.post('/instruments', permissionRequired('quality:instrument:create'), logOperation('检测仪器'), asyncHandler(instrumentCreate))
+router.put('/instruments/:id', permissionRequired('quality:instrument:update'), logOperation('检测仪器'), asyncHandler(instrumentUpdate))
+router.delete('/instruments/:id', permissionRequired('quality:instrument:delete'), logOperation('检测仪器'), asyncHandler(instrumentRemove))
 
-// 设备故障管理
-router.get('/device-faults', asyncHandler(DeviceFaultController.list))
-router.get('/device-faults/:id', asyncHandler(DeviceFaultController.detail))
-router.post('/device-faults', logOperation('设备故障上报'), asyncHandler(DeviceFaultController.create))
-router.put('/device-faults/:id/assign', logOperation('故障派工'), asyncHandler(DeviceFaultController.assign))
-router.put('/device-faults/:id/repair', logOperation('提交维修'), asyncHandler(DeviceFaultController.submitRepair))
-router.put('/device-faults/:id/approve', logOperation('故障审批'), asyncHandler(DeviceFaultController.approve))
-router.put('/device-faults/:id/close', logOperation('关闭故障'), asyncHandler(DeviceFaultController.close))
-router.delete('/device-faults/:id', logOperation('删除故障'), asyncHandler(DeviceFaultController.delete))
-// 故障图片
-router.get('/device-faults/:id/images', asyncHandler(DeviceFaultController.getImages))
-router.post('/device-faults/:id/images', deviceFaultUploadMiddleware.array('files', 10), logOperation('上传故障图片'), asyncHandler(DeviceFaultController.uploadImage))
+// ============ 客诉管理 ============
+router.get('/complaints', permissionRequired('quality:complaint'), asyncHandler(ComplaintController.list))
+router.get('/complaints/:id', permissionRequired('quality:complaint'), asyncHandler(ComplaintController.detail))
+router.post('/complaints', permissionRequired('quality:complaint:create'), logOperation('客诉管理'), asyncHandler(ComplaintController.create))
+router.put('/complaints/:id', permissionRequired('quality:complaint:update'), logOperation('客诉管理'), asyncHandler(ComplaintController.update))
+router.delete('/complaints/:id', permissionRequired('quality:complaint:delete'), logOperation('客诉管理'), asyncHandler(ComplaintController.delete))
+router.post('/complaints/:id/records', permissionRequired('quality:complaint:update'), logOperation('客诉记录'), asyncHandler(ComplaintController.addRecord))
+router.post('/complaints/:id/attachments', permissionRequired('quality:complaint:update'), complaintAttachmentUploadMiddleware.array('files', 10), logOperation('上传客诉附件'), asyncHandler(ComplaintController.uploadAttachment))
+router.put('/complaints/:id/close', permissionRequired('quality:complaint:update'), logOperation('关闭客诉'), asyncHandler(ComplaintController.close))
 
-// 设备保养标准（统一版，合并旧点检标准+维护标准）
-router.get('/device-standards', asyncHandler(DeviceMaintenanceController.listStandards))
-router.post('/device-standards', logOperation('保养标准'), asyncHandler(DeviceMaintenanceController.createStandard))
-router.put('/device-standards/:id', logOperation('保养标准'), asyncHandler(DeviceMaintenanceController.updateStandard))
-router.delete('/device-standards/:id', logOperation('保养标准'), asyncHandler(DeviceMaintenanceController.deleteStandard))
+// ============ 供应商投诉 ============
+router.get('/supplier-complaints', permissionRequired('quality:complaint:supplier'), asyncHandler(SupplierComplaintController.list))
+router.get('/supplier-complaints/:id', permissionRequired('quality:complaint:supplier'), asyncHandler(SupplierComplaintController.detail))
+router.post('/supplier-complaints', permissionRequired('quality:complaint:create'), logOperation('供应商投诉'), asyncHandler(SupplierComplaintController.create))
+router.put('/supplier-complaints/:id', permissionRequired('quality:complaint:update'), logOperation('供应商投诉'), asyncHandler(SupplierComplaintController.update))
+router.delete('/supplier-complaints/:id', permissionRequired('quality:complaint:delete'), logOperation('供应商投诉'), asyncHandler(SupplierComplaintController.delete))
+router.put('/supplier-complaints/:id/issue', permissionRequired('quality:complaint:update'), logOperation('发出投诉'), asyncHandler(SupplierComplaintController.issue))
+router.put('/supplier-complaints/:id/reply', permissionRequired('quality:complaint:update'), logOperation('供应商回复'), asyncHandler(SupplierComplaintController.reply))
+router.put('/supplier-complaints/:id/close', permissionRequired('quality:complaint:update'), logOperation('关闭投诉'), asyncHandler(SupplierComplaintController.close))
+router.get('/supplier-complaints/:id/pdf', permissionRequired('quality:complaint:supplier'), asyncHandler(SupplierComplaintController.generatePdf))
 
-// 设备维护标准档案（设备级，承载编制/生效/停用状态）
+// ============ 设备故障管理 ============
+router.get('/device-faults', permissionRequired('device:fault'), asyncHandler(DeviceFaultController.list))
+router.get('/device-faults/:id', permissionRequired('device:fault'), asyncHandler(DeviceFaultController.detail))
+router.post('/device-faults', permissionRequired('device:fault:create'), logOperation('设备故障上报'), asyncHandler(DeviceFaultController.create))
+router.put('/device-faults/:id/assign', permissionRequired('device:fault:update'), logOperation('故障派工'), asyncHandler(DeviceFaultController.assign))
+router.put('/device-faults/:id/repair', permissionRequired('device:fault:update'), logOperation('提交维修'), asyncHandler(DeviceFaultController.submitRepair))
+router.put('/device-faults/:id/approve', permissionRequired('device:fault:update'), logOperation('故障审批'), asyncHandler(DeviceFaultController.approve))
+router.put('/device-faults/:id/close', permissionRequired('device:fault:update'), logOperation('关闭故障'), asyncHandler(DeviceFaultController.close))
+router.delete('/device-faults/:id', permissionRequired('device:fault:delete'), logOperation('删除故障'), asyncHandler(DeviceFaultController.delete))
+router.get('/device-faults/:id/images', permissionRequired('device:fault'), asyncHandler(DeviceFaultController.getImages))
+router.post('/device-faults/:id/images', permissionRequired('device:fault:update'), deviceFaultUploadMiddleware.array('files', 10), logOperation('上传故障图片'), asyncHandler(DeviceFaultController.uploadImage))
+
+// ============ 设备保养标准 ============
+router.get('/device-standards', permissionRequired('device:maintenance'), asyncHandler(DeviceMaintenanceController.listStandards))
+router.post('/device-standards', permissionRequired('device:maintenance:create'), logOperation('保养标准'), asyncHandler(DeviceMaintenanceController.createStandard))
+router.put('/device-standards/:id', permissionRequired('device:maintenance:update'), logOperation('保养标准'), asyncHandler(DeviceMaintenanceController.updateStandard))
+router.delete('/device-standards/:id', permissionRequired('device:maintenance:delete'), logOperation('保养标准'), asyncHandler(DeviceMaintenanceController.deleteStandard))
+
+// ============ 设备维护标准档案 ============
 // 注意：available-devices 必须在 :deviceId 之前，避免被参数路由匹配
-router.get('/device-maintenance-profiles', asyncHandler(DeviceMaintenanceController.listProfiles))
-router.get('/device-maintenance-profiles/available-devices', asyncHandler(DeviceMaintenanceController.listAvailableDevices))
-router.get('/device-maintenance-profiles/:deviceId', asyncHandler(DeviceMaintenanceController.detailProfile))
-router.post('/device-maintenance-profiles', logOperation('维护标准档案'), asyncHandler(DeviceMaintenanceController.createProfile))
-router.put('/device-maintenance-profiles/:deviceId/status', logOperation('档案状态'), asyncHandler(DeviceMaintenanceController.updateProfileStatus))
-router.delete('/device-maintenance-profiles/:deviceId', logOperation('维护标准档案'), asyncHandler(DeviceMaintenanceController.deleteProfile))
+router.get('/device-maintenance-profiles', permissionRequired('device:maintenance'), asyncHandler(DeviceMaintenanceController.listProfiles))
+router.get('/device-maintenance-profiles/available-devices', permissionRequired('device:maintenance'), asyncHandler(DeviceMaintenanceController.listAvailableDevices))
+router.get('/device-maintenance-profiles/:deviceId', permissionRequired('device:maintenance'), asyncHandler(DeviceMaintenanceController.detailProfile))
+router.post('/device-maintenance-profiles', permissionRequired('device:maintenance:create'), logOperation('维护标准档案'), asyncHandler(DeviceMaintenanceController.createProfile))
+router.put('/device-maintenance-profiles/:deviceId/status', permissionRequired('device:maintenance:update'), logOperation('档案状态'), asyncHandler(DeviceMaintenanceController.updateProfileStatus))
+router.delete('/device-maintenance-profiles/:deviceId', permissionRequired('device:maintenance:delete'), logOperation('维护标准档案'), asyncHandler(DeviceMaintenanceController.deleteProfile))
 
-// 设备保养执行记录（统一版，合并旧点检计划/记录+维护工单）
-router.post('/device-records/generate', logOperation('生成保养执行'), asyncHandler(DeviceMaintenanceController.generateRecords))
-router.get('/device-records/matrix', asyncHandler(DeviceMaintenanceController.getMatrix))
-router.get('/device-records', asyncHandler(DeviceMaintenanceController.listRecords))
-router.get('/device-records/daily-summary', asyncHandler(DeviceMaintenanceController.dailySummary))
-router.get('/device-records/:id', asyncHandler(DeviceMaintenanceController.detailRecord))
-router.put('/device-records/:id/start', logOperation('开始保养'), asyncHandler(DeviceMaintenanceController.startRecord))
-router.put('/device-records/:id/submit', deviceMaintenanceUploadMiddleware.array('files', 10), logOperation('提交保养'), asyncHandler(DeviceMaintenanceController.submitRecord))
-router.post('/device-records/batch-submit', logOperation('批量提交保养'), asyncHandler(DeviceMaintenanceController.batchSubmit))
-router.put('/device-records/:id/skip', asyncHandler(DeviceMaintenanceController.skipRecord))
-router.delete('/device-records/:id', logOperation('删除保养记录'), asyncHandler(DeviceMaintenanceController.deleteRecord))
-router.get('/device-records/:id/images', asyncHandler(DeviceMaintenanceController.getImages))
-router.post('/device-records/:id/images', deviceMaintenanceUploadMiddleware.array('files', 10), logOperation('上传保养图片'), asyncHandler(DeviceMaintenanceController.uploadImage))
+// ============ 设备保养执行记录 ============
+router.post('/device-records/generate', permissionRequired('device:maintenance:create'), logOperation('生成保养执行'), asyncHandler(DeviceMaintenanceController.generateRecords))
+router.get('/device-records/matrix', permissionRequired('device:maintenance'), asyncHandler(DeviceMaintenanceController.getMatrix))
+router.get('/device-records', permissionRequired('device:maintenance'), asyncHandler(DeviceMaintenanceController.listRecords))
+router.get('/device-records/daily-summary', permissionRequired('device:maintenance'), asyncHandler(DeviceMaintenanceController.dailySummary))
+router.get('/device-records/:id', permissionRequired('device:maintenance'), asyncHandler(DeviceMaintenanceController.detailRecord))
+router.put('/device-records/:id/start', permissionRequired('device:maintenance:update'), logOperation('开始保养'), asyncHandler(DeviceMaintenanceController.startRecord))
+router.put('/device-records/:id/submit', permissionRequired('device:maintenance:update'), deviceMaintenanceUploadMiddleware.array('files', 10), logOperation('提交保养'), asyncHandler(DeviceMaintenanceController.submitRecord))
+router.post('/device-records/batch-submit', permissionRequired('device:maintenance:update'), logOperation('批量提交保养'), asyncHandler(DeviceMaintenanceController.batchSubmit))
+router.put('/device-records/:id/skip', permissionRequired('device:maintenance:update'), asyncHandler(DeviceMaintenanceController.skipRecord))
+router.delete('/device-records/:id', permissionRequired('device:maintenance:delete'), logOperation('删除保养记录'), asyncHandler(DeviceMaintenanceController.deleteRecord))
+router.get('/device-records/:id/images', permissionRequired('device:maintenance'), asyncHandler(DeviceMaintenanceController.getImages))
+router.post('/device-records/:id/images', permissionRequired('device:maintenance:update'), deviceMaintenanceUploadMiddleware.array('files', 10), logOperation('上传保养图片'), asyncHandler(DeviceMaintenanceController.uploadImage))
 
-// 设备运行时长
-router.post('/device-runtime-logs', logOperation('录入运行时长'), asyncHandler(DeviceMaintenanceController.logRuntime))
-router.get('/device-runtime-logs', asyncHandler(DeviceMaintenanceController.getRuntimeLog))
+// ============ 设备运行时长 ============
+router.post('/device-runtime-logs', permissionRequired('device:maintenance:update'), logOperation('录入运行时长'), asyncHandler(DeviceMaintenanceController.logRuntime))
+router.get('/device-runtime-logs', permissionRequired('device:maintenance'), asyncHandler(DeviceMaintenanceController.getRuntimeLog))
 
-// 设备备件管理
-router.get('/device-spare-parts', asyncHandler(DeviceSparePartController.list))
-router.get('/device-spare-parts/low-stock/list', asyncHandler(DeviceSparePartController.getLowStock))
-router.get('/device-spare-parts/:id', asyncHandler(DeviceSparePartController.detail))
-router.post('/device-spare-parts', logOperation('备件管理'), asyncHandler(DeviceSparePartController.create))
-router.put('/device-spare-parts/:id', logOperation('备件管理'), asyncHandler(DeviceSparePartController.update))
-router.delete('/device-spare-parts/:id', logOperation('备件管理'), asyncHandler(DeviceSparePartController.delete))
-router.post('/device-spare-parts/:id/stock-in', logOperation('备件入库'), asyncHandler(DeviceSparePartController.stockIn))
-router.post('/device-spare-parts/:id/stock-out', logOperation('备件出库'), asyncHandler(DeviceSparePartController.stockOut))
-router.post('/device-spare-parts/:id/adjust', logOperation('库存调整'), asyncHandler(DeviceSparePartController.stockAdjust))
-router.get('/device-spare-part-logs', asyncHandler(DeviceSparePartController.listLogs))
+// ============ 设备备件管理 ============
+router.get('/device-spare-parts', permissionRequired('device:spare-part'), asyncHandler(DeviceSparePartController.list))
+router.get('/device-spare-parts/low-stock/list', permissionRequired('device:spare-part'), asyncHandler(DeviceSparePartController.getLowStock))
+router.get('/device-spare-parts/:id', permissionRequired('device:spare-part'), asyncHandler(DeviceSparePartController.detail))
+router.post('/device-spare-parts', permissionRequired('device:spare-part:create'), logOperation('备件管理'), asyncHandler(DeviceSparePartController.create))
+router.put('/device-spare-parts/:id', permissionRequired('device:spare-part:update'), logOperation('备件管理'), asyncHandler(DeviceSparePartController.update))
+router.delete('/device-spare-parts/:id', permissionRequired('device:spare-part:delete'), logOperation('备件管理'), asyncHandler(DeviceSparePartController.delete))
+router.post('/device-spare-parts/:id/stock-in', permissionRequired('device:spare-part:update'), logOperation('备件入库'), asyncHandler(DeviceSparePartController.stockIn))
+router.post('/device-spare-parts/:id/stock-out', permissionRequired('device:spare-part:update'), logOperation('备件出库'), asyncHandler(DeviceSparePartController.stockOut))
+router.post('/device-spare-parts/:id/adjust', permissionRequired('device:spare-part:update'), logOperation('库存调整'), asyncHandler(DeviceSparePartController.stockAdjust))
+router.get('/device-spare-part-logs', permissionRequired('device:spare-part'), asyncHandler(DeviceSparePartController.listLogs))
 
-// 设备校准管理
-router.get('/device-calibration-plans', asyncHandler(DeviceCalibrationController.listPlans))
-router.get('/device-calibration-plans/expiring/list', asyncHandler(DeviceCalibrationController.getExpiringSoon))
-router.get('/device-calibration-plans/overdue/list', asyncHandler(DeviceCalibrationController.getOverdue))
-router.get('/device-calibration-plans/:id', asyncHandler(DeviceCalibrationController.detailPlan))
-router.post('/device-calibration-plans', logOperation('校准计划'), asyncHandler(DeviceCalibrationController.createPlan))
-router.put('/device-calibration-plans/:id', logOperation('校准计划'), asyncHandler(DeviceCalibrationController.updatePlan))
-router.delete('/device-calibration-plans/:id', logOperation('校准计划'), asyncHandler(DeviceCalibrationController.deletePlan))
-router.put('/device-calibration-plans/:id/submit', logOperation('提交校准'), asyncHandler(DeviceCalibrationController.submitCalibration))
-router.post('/device-calibration-plans/:id/certificate', calibrationUploadMiddleware.array('images', 10), logOperation('上传证书'), asyncHandler(DeviceCalibrationController.uploadCertificate))
-router.get('/device-calibration-records', asyncHandler(DeviceCalibrationController.listRecords))
+// ============ 设备校准管理 ============
+router.get('/device-calibration-plans', permissionRequired('device:calibration'), asyncHandler(DeviceCalibrationController.listPlans))
+router.get('/device-calibration-plans/expiring/list', permissionRequired('device:calibration'), asyncHandler(DeviceCalibrationController.getExpiringSoon))
+router.get('/device-calibration-plans/overdue/list', permissionRequired('device:calibration'), asyncHandler(DeviceCalibrationController.getOverdue))
+router.get('/device-calibration-plans/:id', permissionRequired('device:calibration'), asyncHandler(DeviceCalibrationController.detailPlan))
+router.post('/device-calibration-plans', permissionRequired('device:calibration:create'), logOperation('校准计划'), asyncHandler(DeviceCalibrationController.createPlan))
+router.put('/device-calibration-plans/:id', permissionRequired('device:calibration:update'), logOperation('校准计划'), asyncHandler(DeviceCalibrationController.updatePlan))
+router.delete('/device-calibration-plans/:id', permissionRequired('device:calibration:delete'), logOperation('校准计划'), asyncHandler(DeviceCalibrationController.deletePlan))
+router.put('/device-calibration-plans/:id/submit', permissionRequired('device:calibration:update'), logOperation('提交校准'), asyncHandler(DeviceCalibrationController.submitCalibration))
+router.post('/device-calibration-plans/:id/certificate', permissionRequired('device:calibration:update'), calibrationUploadMiddleware.array('images', 10), logOperation('上传证书'), asyncHandler(DeviceCalibrationController.uploadCertificate))
+router.get('/device-calibration-records', permissionRequired('device:calibration'), asyncHandler(DeviceCalibrationController.listRecords))
 
-// 设备电子档案管理
-router.get('/device-documents', asyncHandler(DeviceDocumentController.list))
-router.get('/device-documents/by-device/:deviceId', asyncHandler(DeviceDocumentController.listByDevice))
-router.get('/device-documents/:id/download', asyncHandler(DeviceDocumentController.download))
-router.get('/device-documents/:id', asyncHandler(DeviceDocumentController.detail))
-router.post('/device-documents', deviceDocumentUploadMiddleware.array('files', 10), logOperation('上传设备文档'), asyncHandler(DeviceDocumentController.upload))
-router.put('/device-documents/:id', logOperation('更新设备文档'), asyncHandler(DeviceDocumentController.update))
-router.delete('/device-documents/:id', logOperation('删除设备文档'), asyncHandler(DeviceDocumentController.delete))
+// ============ 设备电子档案管理 ============
+router.get('/device-documents', permissionRequired('device:document'), asyncHandler(DeviceDocumentController.list))
+router.get('/device-documents/by-device/:deviceId', permissionRequired('device:document'), asyncHandler(DeviceDocumentController.listByDevice))
+router.get('/device-documents/:id/download', permissionRequired('device:document'), asyncHandler(DeviceDocumentController.download))
+router.get('/device-documents/:id', permissionRequired('device:document'), asyncHandler(DeviceDocumentController.detail))
+router.post('/device-documents', permissionRequired('device:document:create'), deviceDocumentUploadMiddleware.array('files', 10), logOperation('上传设备文档'), asyncHandler(DeviceDocumentController.upload))
+router.put('/device-documents/:id', permissionRequired('device:document:update'), logOperation('更新设备文档'), asyncHandler(DeviceDocumentController.update))
+router.delete('/device-documents/:id', permissionRequired('device:document:delete'), logOperation('删除设备文档'), asyncHandler(DeviceDocumentController.delete))
 
 export default router
