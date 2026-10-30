@@ -4,7 +4,7 @@
  * 后端：GET /api/daily-report?date=&line=&shift=
  * 结构：PDF 表格原样还原（表头 + 生产记录 + 停机记录 + 不良分类交叉表）
  */
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { DatePicker, Select, Button, Space, Spin, Card, Row, Col, Divider, Modal, Tooltip } from 'antd'
 import { ReloadOutlined, PrinterOutlined, FullscreenOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
@@ -139,6 +139,8 @@ export default function DailyReport() {
   const [line, setLine] = useState<string | undefined>(undefined)
   const [shift, setShift] = useState<string | undefined>(undefined)
   const [fullscreenOpen, setFullscreenOpen] = useState(false)
+  /** DatePicker 面板蓝点标记 — 当前月份有完工报工单的日期 */
+  const [markedDates, setMarkedDates] = useState<Set<string>>(new Set())
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -154,12 +156,29 @@ export default function DailyReport() {
 
   useEffect(() => { load() }, [load])
 
+  /** DatePicker 面板月份切换时，拉当月有完工报工单的日期做蓝点标记 */
+  const refreshMarkedMonth = useCallback(async (year: number, month: number) => {
+    try {
+      const r = await api.get('/daily-report/dates', { params: { year, month } })
+      const list: string[] = r.data?.data || r.data || []
+      setMarkedDates(new Set(list))
+    } catch { /* 静默失败 */ }
+  }, [])
+
+  /** 选中日期变化 — 顺带刷新标记（切换到新月份时） */
+  useEffect(() => {
+    const d = dayjs(date)
+    refreshMarkedMonth(d.year(), d.month() + 1)
+  }, [date, refreshMarkedMonth])
+
   const hasData = !!data && data.productionRows.length > 0
-  const totalInputs = data?.productionRows.reduce((s, r) => s + r.inputQty, 0) || 0
-  const totalOutputs = data?.productionRows.reduce((s, r) => s + r.outputQty, 0) || 0
-  const totalProcessDefect = data?.productionRows.reduce((s, r) => s + r.processDefect, 0) || 0
-  const totalInspectionDefect = data?.productionRows.reduce((s, r) => s + r.inspectionDefect, 0) || 0
-  const totalDowntimeHours = data?.downtime.reduce((s, r) => s + r.durationHours, 0) || 0
+
+  /** 一键重置：日期=今天，产线/班次清空 */
+  const resetAll = useCallback(() => {
+    setDate(dayjs().format('YYYY-MM-DD'))
+    setLine(undefined)
+    setShift(undefined)
+  }, [])
 
   /** 打印：未完工拦截 + 新开 window 写 HTML + window.print() */
   const handlePrint = useCallback(() => {
@@ -212,9 +231,29 @@ export default function DailyReport() {
         filters={[
           { label: '日期', children: (
             <DatePicker
-              value={dayjs(date)}
-              onChange={(d) => setDate(d ? d.format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD'))}
+              value={useMemo(() => dayjs(date), [date])}
+              onChange={(d) => d && setDate(d.format('YYYY-MM-DD'))}
+              onPanelChange={(v) => {
+                if (v) refreshMarkedMonth(v.year(), v.month() + 1)
+              }}
+              disabledDate={(d) => d.isAfter(dayjs())}
               allowClear={false}
+              style={{ width: 180 }}
+              cellRender={(current, info) => {
+                const d = current.format('YYYY-MM-DD')
+                if (info.type === 'date' && markedDates.has(d)) {
+                  return (
+                    <span style={{ position: 'relative' }}>
+                      {current.date()}
+                      <span style={{
+                        position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)',
+                        width: 5, height: 5, borderRadius: '50%', background: '#1890ff',
+                      }} />
+                    </span>
+                  )
+                }
+                return current.date()
+              }}
             />
           )},
           { label: '产线', children: (
@@ -238,16 +277,11 @@ export default function DailyReport() {
             />
           )},
           { label: '', children: (
-            <Button icon={<ReloadOutlined />} onClick={() => setDate(dayjs().format('YYYY-MM-DD'))}>今日</Button>
+            <Space size={8}>
+              <Button onClick={resetAll}>重置</Button>
+              <Button icon={<ReloadOutlined />} onClick={() => setDate(dayjs().format('YYYY-MM-DD'))}>今日</Button>
+            </Space>
           )},
-        ]}
-        stats={[
-          { label: '报工单', value: data?.productionRows.length || 0 },
-          { label: '投入数量', value: fmtNum(totalInputs, 0) },
-          { label: '入库数量', value: fmtNum(totalOutputs, 0) },
-          { label: '制程不良', value: fmtNum(totalProcessDefect, 0), color: '#ff4d4f' },
-          { label: '检验废品', value: fmtNum(totalInspectionDefect, 0), color: '#fa8c16' },
-          { label: '停机总时', value: `${fmtNum(totalDowntimeHours, 1)}h`, color: '#1890ff' },
         ]}
         actions={
           <Space size={8}>
