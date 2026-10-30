@@ -1,5 +1,6 @@
 import { DataTypes } from 'sequelize'
 import sequelize from '../config/database.js'
+import DefectType from './DefectType.js'
 
 // 报工不良记录子表（关联生产报工单）
 const ProcessDefect = sequelize.define('ProcessDefect', {
@@ -41,6 +42,11 @@ const ProcessDefect = sequelize.define('ProcessDefect', {
   underscored: true,
   createdAt: 'record_time',
   updatedAt: false,
+})
+
+ProcessDefect.belongsTo(DefectType, {
+  foreignKey: 'defect_type_id',
+  targetKey: 'defect_id',
 })
 
 export default ProcessDefect

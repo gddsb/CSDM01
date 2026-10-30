@@ -53,20 +53,18 @@ function dateRange(dateStr: string): [Date, Date] {
 }
 
 /**
- * 获取当天完工的前 4 条报工单（按 finish_time 排序）
+ * 获取当天开工的所有报工单（不限 status，按开工时间排序）
  */
-async function fetchTop4ReportOrders(dateStr: string, line?: string, shift?: string) {
+async function fetchReportOrdersByDay(dateStr: string, line?: string, shift?: string) {
   const [start, end] = dateRange(dateStr)
   const where: any = {
-    finish_time: { [Op.between]: [start, end] },
-    status: 1, // 完工
+    report_time: { [Op.between]: [start, end] },
   }
   if (line) where.line_name = line
 
   let records = await ReportOrder.findAll({
     where,
-    order: [['finish_time', 'ASC']],
-    limit: 4,
+    order: [['report_time', 'ASC']],
   })
 
   // 如果指定班次，需要结合 manpower_record 的 shift 过滤
@@ -293,17 +291,17 @@ async function buildDefectMatrix(
  * 主入口
  */
 export async function getDailyReport(dateStr: string, line?: string, shift?: string) {
-  // 1. 取前 4 条完工报工单
-  const topOrders = await fetchTop4ReportOrders(dateStr, line, shift)
-  const reportIds = topOrders.map((r: any) => r.report_order_id)
+  // 1. 取当天开工的所有报工单（不限 status）
+  const dayOrders = await fetchReportOrdersByDay(dateStr, line, shift)
+  const reportIds = dayOrders.map((r: any) => r.report_order_id)
 
   // 2. 表头
   let headerLine = line || ''
   let headerShift = shift || ''
-  if (!headerLine && topOrders.length > 0) headerLine = topOrders[0].line_name || ''
-  if (!headerShift && topOrders.length > 0) {
+  if (!headerLine && dayOrders.length > 0) headerLine = dayOrders[0].line_name || ''
+  if (!headerShift && dayOrders.length > 0) {
     const firstManpower = await ManpowerRecord.findOne({
-      where: { report_order_id: topOrders[0].report_order_id },
+      where: { report_order_id: dayOrders[0].report_order_id },
       attributes: ['shift'],
     }) as any
     headerShift = mapShift(firstManpower?.shift)
@@ -311,7 +309,7 @@ export async function getDailyReport(dateStr: string, line?: string, shift?: str
 
   // 3. 并行聚合所有部分
   const [productionRows, downtime, incomingMatrix, processMatrix] = await Promise.all([
-    Promise.all(topOrders.map(ro => buildProductionRow(ro))),
+    Promise.all(dayOrders.map(ro => buildProductionRow(ro))),
     buildDowntimeRows(reportIds),
     buildDefectMatrix(reportIds, '来料不良'),
     buildDefectMatrix(reportIds, '制程不良'),

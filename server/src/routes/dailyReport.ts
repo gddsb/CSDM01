@@ -13,7 +13,7 @@ const router = Router()
 
 router.use(authRequired)
 
-/** 当月有完工报工单的日期 — 用于 DatePicker cellRender 蓝点标记 */
+/** 当月有开工报工单的日期 — 用于 DatePicker cellRender 蓝点标记 */
 router.get('/dates', permissionRequired('report:daily'), asyncHandler(async (req: any, res: any) => {
   try {
     const year = Number(req.query.year)
@@ -23,17 +23,15 @@ router.get('/dates', permissionRequired('report:daily'), asyncHandler(async (req
     const start = new Date(year, month - 1, 1)
     const end = new Date(year, month, 0, 23, 59, 59)
 
+    // 按 report_time（开工时间）查当天开工的报工单，不限 status
     const orders: any[] = await ReportOrder.findAll({
-      where: {
-        finish_time: { [Op.between]: [start, end] },
-        status: 1,
-      },
-      attributes: ['finish_time'],
+      where: { report_time: { [Op.between]: [start, end] } },
+      attributes: ['report_time'],
     })
 
     const dateSet = new Set<string>()
     for (const o of orders) {
-      const t = o.finish_time ? new Date(o.finish_time) : null
+      const t = o.report_time ? new Date(o.report_time) : null
       if (t && !isNaN(t.getTime())) {
         dateSet.add(`${year}-${String(month).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`)
       }
