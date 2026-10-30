@@ -228,8 +228,9 @@ export default function DailyReport() {
       <ThreeSectionPage
         title="制罐车间生产日报"
         breadcrumbs="报表中心 / 生产日报"
-        filters={[
-          { label: '日期', children: (
+        filter={
+          <Space wrap size={[8, 0]} align="start">
+            <span style={{ color: '#888', fontSize: 13, lineHeight: '32px', whiteSpace: 'nowrap' }}>日期：</span>
             <DatePicker
               value={useMemo(() => dayjs(date), [date])}
               onChange={(d) => d && setDate(d.format('YYYY-MM-DD'))}
@@ -255,8 +256,7 @@ export default function DailyReport() {
                 return current.date()
               }}
             />
-          )},
-          { label: '产线', children: (
+            <span style={{ color: '#888', fontSize: 13, lineHeight: '32px', whiteSpace: 'nowrap', marginLeft: 8 }}>产线：</span>
             <Select
               value={line}
               onChange={setLine}
@@ -265,8 +265,7 @@ export default function DailyReport() {
               placeholder="全部"
               options={[{ value: 'A线', label: 'A线' }, { value: 'B线', label: 'B线' }]}
             />
-          )},
-          { label: '班次', children: (
+            <span style={{ color: '#888', fontSize: 13, lineHeight: '32px', whiteSpace: 'nowrap', marginLeft: 8 }}>班次：</span>
             <Select
               value={shift}
               onChange={setShift}
@@ -275,14 +274,12 @@ export default function DailyReport() {
               placeholder="全部"
               options={[{ value: '白班', label: '白班' }, { value: '晚班', label: '晚班' }]}
             />
-          )},
-          { label: '', children: (
-            <Space size={8}>
+            <Space size={8} style={{ marginLeft: 8 }}>
               <Button onClick={resetAll}>重置</Button>
               <Button icon={<ReloadOutlined />} onClick={() => setDate(dayjs().format('YYYY-MM-DD'))}>今日</Button>
             </Space>
-          )},
-        ]}
+          </Space>
+        }
         actions={
           <Space size={8}>
             <Tooltip title="全屏预览">
@@ -291,17 +288,18 @@ export default function DailyReport() {
             <Button type="primary" icon={<PrinterOutlined />} onClick={handlePrint} disabled={!hasData}>打印</Button>
           </Space>
         }
-      >
-        <div className="print-source">
-          <Spin spinning={loading}>
-            {!data ? (
-              <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>暂无数据</div>
-            ) : (
-              <DailyReportView data={data} />
-            )}
-          </Spin>
-        </div>
-      </ThreeSectionPage>
+        table={
+          <div className="print-source">
+            <Spin spinning={loading}>
+              {!data ? (
+                <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>暂无数据</div>
+              ) : (
+                <DailyReportView data={data} />
+              )}
+            </Spin>
+          </div>
+        }
+      />
 
       {/* ============ 全屏预览 Modal ============ */}
       <Modal
