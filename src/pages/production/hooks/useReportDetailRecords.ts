@@ -226,7 +226,10 @@ export function useReportDetailRecords(opts: Options) {
       if (field === 'start_time' || field === 'end_time') {
         const start = new Date((field === 'start_time' ? value : r.start_time) as string | number | Date).getTime()
         const end = new Date((field === 'end_time' ? value : r.end_time) as string | number | Date).getTime()
-        if (!isNaN(start) && !isNaN(end) && end > start) updated.duration = Math.round((end - start) / 60000)
+        if (!isNaN(start) && !isNaN(end) && end > start) {
+          // 前端本地预览按小时 × 100 取整（和 MySQL STORED 口径一致）
+          updated.duration = Math.round(((end - start) / 3600000) * 100) / 100
+        }
       }
       return updated
     }))
@@ -253,51 +256,56 @@ export function useReportDetailRecords(opts: Options) {
     if (ok) msg.success(`已保存 ${ok} 条记录`)
   }, [exceptionList, saveExceptionItem, msg])
 
-  /** 结束一条未完成的异常工时：自动填当前结束时间、算 duration、清空描述（视为已解决） */
+  /** 本地时间格式化工具 — YYYY-MM-DD HH:mm:ss（替代 toISOString 避免时区错位） */
+  const localNowStr = useCallback(() => {
+    const now = new Date()
+    const p = (n: number) => String(n).padStart(2, '0')
+    return `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())} ${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`
+  }, [])
+
+  /** 结束一条未完成的异常工时：自动填当前结束时间（本地时间），duration 由后端 MySQL STORED 自动算 */
   const handleFinishException = useCallback(async (record: ExceptionRecord) => {
-    const nowISO = new Date().toISOString()
-    const start = new Date(record.start_time as string | number | Date).getTime()
-    const end = new Date(nowISO).getTime()
-    const duration = Math.max(0, Math.round((end - start) / 60000))
-    const finished: any = {
-      ...record,
-      end_time: nowISO,
-      duration,
-      description: '',
-      _dirty: true,
-    }
-    // 立即持久化 —— 结束后不可再编辑
+    const endTime = localNowStr()
+    const startMs = new Date(record.start_time as string | number | Date).getTime()
+    const endMs = new Date(endTime).getTime()
+    const durationHours = Math.max(0, Math.round(((endMs - startMs) / 3600000) * 100) / 100)
+
+    // 立即持久化 —— 只传 end_time，duration 由 MySQL STORED 自动算
     try {
       if (String(record.id).startsWith('tmp_')) {
         const res = await api.post('/production/process-exceptions', {
           report_order_id: selectedReport?.report_order_id,
-          exception_type: finished.exception_type,
-          device_id: finished.device_id,
-          stop_type: finished.stop_type,
-          start_time: finished.start_time,
-          end_time: finished.end_time,
-          duration: finished.duration,
-          exception_images: finished.exception_images,
+          exception_type: record.exception_type,
+          device_id: record.device_id,
+          stop_type: record.stop_type,
+          start_time: record.start_time,
+          end_time: endTime,
+          exception_images: record.exception_images,
         })
-        finished.exception_id = res.data?.exception_id ?? res.data?.id
-        finished.id = res.data?.exception_id ?? record.id
-      } else if (finished.exception_id) {
-        await api.put(`/production/process-exceptions/${finished.exception_id}`, {
-          end_time: finished.end_time,
-          duration: finished.duration,
+        const saved = res.data as any
+        setExceptionList(prev => prev.map(r => {
+          if (String(r.id) !== String(record.id) && r.exception_id !== record.exception_id) return r
+          return { ...r, ...saved, _dirty: false } as any
+        }))
+        msg.success(`已结束（${Math.round(Number(saved?.duration ?? durationHours) * 60)} 分钟）`)
+      } else if ((record as any).exception_id) {
+        const res = await api.put(`/production/process-exceptions/${(record as any).exception_id}`, {
+          end_time: endTime,
           description: '',
         })
+        const saved = res.data as any
+        setExceptionList(prev => prev.map(r => {
+          if ((r.exception_id ?? r.id) !== ((record as any).exception_id ?? record.id)) return r
+          return { ...r, ...saved, _dirty: false } as any
+        }))
+        msg.success(`已结束（${Math.round(Number(saved?.duration ?? durationHours) * 60)} 分钟）`)
+      } else {
+        msg.error('记录 ID 异常，无法保存')
       }
-      finished._dirty = false
-      setExceptionList(prev => prev.map(r => (
-        String(r.id) === String(record.id) || (r.exception_id && r.exception_id === record.exception_id)
-          ? finished : r
-      )))
-      msg.success(`已结束（${duration} 分钟）`)
     } catch (e: any) {
       msg.error(e?.message || '结束失败')
     }
-  }, [selectedReport?.report_order_id, msg])
+  }, [selectedReport?.report_order_id, msg, localNowStr])
 
   // ---------- 人员 ----------
   const handleManpowerChange = useCallback((id: string | number, field: string, value: unknown) => {

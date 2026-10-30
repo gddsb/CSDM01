@@ -39,6 +39,13 @@ interface Props {
   onDirtyChange?: (dirty: boolean) => void
 }
 
+/** 本地时间格式化工具 — YYYY-MM-DD HH:mm:ss（替代 toISOString 避免时区错位） */
+function localNowStr(): string {
+  const now = new Date()
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())} ${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`
+}
+
 export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange }: Props) {
   const [draft, setDraft] = useState<ExceptionRow>({})
   const [devices, setDevices] = useState<DeviceOption[]>([])
@@ -95,7 +102,7 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
         device_id: draft.device_id || null,
         device_code: draft.device_code || null,
         device_name: draft.device_name || null,
-        start_time: draft.start_time || new Date().toISOString().slice(0, 19).replace('T', ' '),
+        start_time: draft.start_time || localNowStr(),
         end_time: draft.end_time || null,
         description: draft.description || null,
       }
@@ -113,10 +120,10 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
   }, [draft, hasUnfinished, unfinishedRow?.exception_type, report.report_order_id, setRows, onDirtyChange])
 
   const handleFinish = useCallback(async (row: ExceptionRow) => {
-    const endISO = new Date().toISOString().slice(0, 19).replace('T', ' ')
+    const endTime = localNowStr()
     try {
       // 只发 end_time —— 后端 update 时 validateTimeRange 自动重算 duration（小时）
-      const r: any = await api.put(`/production/process-exceptions/${row.exception_id}`, { end_time: endISO })
+      const r: any = await api.put(`/production/process-exceptions/${row.exception_id}`, { end_time: endTime })
       if (!r.success) throw new Error(r.message || '结束失败')
       const saved = r.data as any
       setRows(prev => prev.map(r =>
