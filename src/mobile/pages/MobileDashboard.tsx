@@ -24,6 +24,7 @@ import {
 import { useApp } from '../../contexts/AppContext'
 import { useOfflineQueue } from '../hooks/useOfflineQueue'
 import api from '../../utils/api'
+import { nowLocalDateStr } from '../../utils/localTime'
 import {
   DEFAULT_ORDER, STORAGE_KEY,
   type QuickEntry, type TodoItem,
@@ -95,20 +96,20 @@ export default function MobileDashboard() {
         .then((r: any) => {
           // production/orders 返回 total 在顶层（r.total），data 是数组
           const total = Array.isArray(r.data) ? (r.total ?? 0) : (r.data?.total ?? r.total ?? 0)
-          return { icon: '🏃', text: '待完工订单', count: total, path: '/m/production-orders?tab=开工', color: 'var(--brand-color-success)' }
+          return { icon: '🏃', text: '待完工订单', count: total, path: '/m/production-orders?tab=开工', color: '#4CAF50' }
         })
-        .catch(() => ({ icon: '🏃', text: '待完工订单', count: 0, path: '/m/production-orders?tab=开工', color: 'var(--brand-color-success)' })),
+        .catch(() => ({ icon: '🏃', text: '待完工订单', count: 0, path: '/m/production-orders?tab=开工', color: '#4CAF50' })),
       // 待维保设备（今日待执行/执行中设备去重计数 — 按 period_key 过滤）
       api.get('/basic/device-records', {
         params: (() => {
           const now = new Date()
-          const todayKey = now.toISOString().slice(0, 10)
-          // ISO week 计算（Zeller 简化版）
-          const t = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
-          t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7))
-          const yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1))
+          const todayKey = nowLocalDateStr(now)
+          // ISO week 计算（本地时区，避免 UTC 偏移 8 小时导致日期错乱）
+          const t = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+          t.setDate(t.getDate() + 4 - (t.getDay() || 7))
+          const yearStart = new Date(t.getFullYear(), 0, 1)
           const week = Math.ceil((((+t - +yearStart) / 86400000) + 1) / 7)
-          const weekKey = `${t.getUTCFullYear()}-W${String(week).padStart(2, '0')}`
+          const weekKey = `${t.getFullYear()}-W${String(week).padStart(2, '0')}`
           const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
           return {
             page: 1, pageSize: 200,
@@ -145,7 +146,7 @@ export default function MobileDashboard() {
     if (hasPermission('device:fault')) {
       apis.push(
         api.get('/basic/device-faults', { params: { page: 1, pageSize: 1, status: '待处理' } })
-          .then((r: any) => ({ icon: '🚨', text: '设备故障待处理', count: r.data?.total ?? r.total ?? 0, path: '/m/device-fault', color: 'var(--brand-color-danger)' })),
+          .then((r: any) => ({ icon: '🚨', text: '设备故障待处理', count: r.data?.total ?? r.total ?? 0, path: '/m/device-fault', color: '#F44336' })),
       )
     }
     if (hasPermission('device:calibration')) {

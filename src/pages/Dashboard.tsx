@@ -3,11 +3,11 @@ import ResizableTable from '../components/ResizableTable'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Row, Col, Tag, Typography, Space } from 'antd'
 import {
-  ToolOutlined, FileTextOutlined, WarningOutlined, BugOutlined,
-  ShopOutlined, ClockCircleOutlined, CheckCircleOutlined, BulbOutlined,
+  ToolOutlined, CheckCircleOutlined, BugOutlined, ClockCircleOutlined, BulbOutlined,
 } from '@ant-design/icons'
 import { useApp } from '../contexts/AppContext'
 import api from '../utils/api'
+import { nowLocalDateStr } from '../utils/localTime'
 
 const { Title, Text } = Typography
 
@@ -25,15 +25,16 @@ function extractList(r: any): any[] {
   return r.data?.list ?? r.data?.records ?? []
 }
 
-/** 构造今日+周+月 period_key（与移动端同口径） */
+/** 构造今日+周+月 period_key（本地时区，避免 UTC 偏移） */
 function buildPeriodKeys() {
   const now = new Date()
-  const todayKey = now.toISOString().slice(0, 10)
-  const t = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
-  t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7))
-  const yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1))
+  const todayKey = nowLocalDateStr(now)
+  // ISO week 计算（本地时区）
+  const t = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  t.setDate(t.getDate() + 4 - (t.getDay() || 7))
+  const yearStart = new Date(t.getFullYear(), 0, 1)
   const week = Math.ceil((((+t - +yearStart) / 86400000) + 1) / 7)
-  const weekKey = `${t.getUTCFullYear()}-W${String(week).padStart(2, '0')}`
+  const weekKey = `${t.getFullYear()}-W${String(week).padStart(2, '0')}`
   const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   return `${todayKey},${weekKey},${monthKey}`
 }
@@ -42,26 +43,23 @@ interface TodoItem { icon: string; label: string; count: number; color: string }
 
 export default function Dashboard() {
   const { currentUser } = useApp()
-  const [orders, setOrders] = useState<any[]>([])
   const [activeReportOrders, setActiveReportOrders] = useState<any[]>([])
   const [doneReportOrders, setDoneReportOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [todos, setTodos] = useState<TodoItem[]>([])
 
-  // ========== 主数据加载（全部 Promise.allSettled 防单点崩溃） ==========
+  // ========== 主数据加载（开工报工单 + 已完成报工） ==========
   useEffect(() => {
     let cancelled = false
     const load = async () => {
       setLoading(true)
       try {
         const results = await Promise.allSettled([
-          api.get('/production/orders', { params: { pageSize: 10 } }),
           api.get('/production/report-orders', { params: { pageSize: 10, status: 0 } }),
           api.get('/production/report-orders', { params: { pageSize: 10, status: 1 } }),
         ])
         if (cancelled) return
-        const [ordersRes, activeRes, doneRes] = results
-        if (ordersRes.status === 'fulfilled') setOrders(extractList(ordersRes.value))
+        const [activeRes, doneRes] = results
         if (activeRes.status === 'fulfilled') setActiveReportOrders(extractList(activeRes.value))
         if (doneRes.status === 'fulfilled') setDoneReportOrders(extractList(doneRes.value))
       } catch (err) {
@@ -74,14 +72,14 @@ export default function Dashboard() {
     return () => { cancelled = true }
   }, [])
 
-  // ========== 待办事项加载（与移动端 loadTodos 完全同口径） ==========
+  // ========== 待办事项加载（与移动端同口径，4 个 API 全真实数据） ==========
   const loadTodos = useCallback(async () => {
     const periodKeys = buildPeriodKeys()
     const apis: Promise<TodoItem>[] = [
       // 待完工订单（production/orders status=2 开工中）
       api.get('/production/orders', { params: { page: 1, pageSize: 1, status: 2 } })
-        .then((r: any) => ({ icon: '🏃', label: '待完工订单', count: extractTotal(r), color: 'var(--brand-color-success)' }))
-        .catch(() => ({ icon: '🏃', label: '待完工订单', count: 0, color: 'var(--brand-color-success)' })),
+        .then((r: any) => ({ icon: '🏃', label: '待完工订单', count: extractTotal(r), color: '#4CAF50' }))
+        .catch(() => ({ icon: '🏃', label: '待完工订单', count: 0, color: '#4CAF50' })),
       // 待维保设备（今日+周+月，按 device_id 去重）
       api.get('/basic/device-records', { params: { page: 1, pageSize: 200, status: '待执行,执行中', period_key: periodKeys } })
         .then((r: any) => {
@@ -106,13 +104,12 @@ export default function Dashboard() {
 
   useEffect(() => { loadTodos() }, [loadTodos])
 
-  // ========== 统计卡片配置 ==========
+  // ========== 统计卡片配置（3 张，span=8 各占 1/3） ==========
   const statConfigs = useMemo(() => [
     { label: '开工报工单', value: activeReportOrders.length, icon: <ToolOutlined />, color: '#2196F3' },
-    { label: '活跃生产订单', value: orders.filter((o: any) => String(o.status) !== '完工' && String(o.status) !== '4').length, icon: <ShopOutlined />, color: '#00BCD4' },
     { label: '已完成报工', value: doneReportOrders.length, icon: <CheckCircleOutlined />, color: '#4CAF50' },
     { label: '待办事项', value: todos.reduce((s, t) => s + t.count, 0), icon: <BugOutlined />, color: '#F44336' },
-  ], [activeReportOrders, orders, doneReportOrders, todos])
+  ], [activeReportOrders, doneReportOrders, todos])
 
   // ========== 表格列定义 ==========
   const reportOrderColumns = [
@@ -129,25 +126,12 @@ export default function Dashboard() {
     },
   ]
 
-  const orderColumns = [
-    { title: '订单编号', dataIndex: 'order_no', key: 'order_no' },
-    { title: '料品名称', dataIndex: 'material_name', key: 'material_name', ellipsis: true },
-    { title: '计划数量', dataIndex: 'planned_qty', key: 'planned_qty', render: (v: any) => Number(v || 0).toLocaleString() },
-    {
-      title: '状态', dataIndex: 'status', key: 'status',
-      render: (v: any) => {
-        const colors: Record<string, string> = { '开立': 'default', '下发': 'processing', '开工': 'processing', '完工': 'success', '关闭': 'default', '0': 'default', '1': 'processing', '2': 'processing', '3': 'success', '4': 'default' }
-        return <Tag color={colors[String(v)] || 'default'}>{v}</Tag>
-      },
-    },
-  ]
-
   return (
     <div>
-      {/* 第一行：统计卡片 */}
+      {/* 第一行：统计卡片（3 张，span=8） */}
       <Row gutter={[12, 12]} style={{ marginBottom: 12 }}>
         {statConfigs.map((s, i) => (
-          <Col key={i} span={6}>
+          <Col key={i} span={8}>
             <div className="dashboard-card" style={{ padding: '16px 20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div
@@ -172,8 +156,8 @@ export default function Dashboard() {
         ))}
       </Row>
 
-      {/* 第二行：开工报工单 + 待办事项（对齐移动端） */}
-      <Row gutter={[12, 12]} style={{ marginBottom: 12 }}>
+      {/* 第二行：开工报工单 + 待办事项 */}
+      <Row gutter={[12, 12]}>
         <Col span={16}>
           <div className="dashboard-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -217,38 +201,6 @@ export default function Dashboard() {
                 ))}
               </Space>
             )}
-          </div>
-        </Col>
-      </Row>
-
-      {/* 第三行：生产订单 + 已完成报工 */}
-      <Row gutter={[12, 12]}>
-        <Col span={12}>
-          <div className="dashboard-card">
-            <Title level={5} style={{ marginBottom: 12 }}>生产订单（最新）</Title>
-            <ResizableTable
-              tableKey="pages_Dashboard_orders"
-              columns={orderColumns}
-              dataSource={orders}
-              rowKey="order_id"
-              size="small"
-              loading={loading}
-              pagination={false}
-            />
-          </div>
-        </Col>
-        <Col span={12}>
-          <div className="dashboard-card">
-            <Title level={5} style={{ marginBottom: 12 }}>最近已完成报工</Title>
-            <ResizableTable
-              tableKey="pages_Dashboard_reports"
-              columns={reportOrderColumns}
-              dataSource={doneReportOrders}
-              rowKey="report_order_id"
-              size="small"
-              loading={loading}
-              pagination={false}
-            />
           </div>
         </Col>
       </Row>
