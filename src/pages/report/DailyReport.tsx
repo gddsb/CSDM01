@@ -136,8 +136,6 @@ export default function DailyReport() {
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<DailyReportData | null>(null)
   const [date, setDate] = useState<string>(dayjs().format('YYYY-MM-DD'))
-  const [line, setLine] = useState<string | undefined>(undefined)
-  const [shift, setShift] = useState<string | undefined>(undefined)
   const [fullscreenOpen, setFullscreenOpen] = useState(false)
   /** DatePicker 面板蓝点标记 — 当前月份有完工报工单的日期 */
   const [markedDates, setMarkedDates] = useState<Set<string>>(new Set())
@@ -145,14 +143,14 @@ export default function DailyReport() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const r = await api.get('/daily-report', { params: { date, line, shift } })
+      const r = await api.get('/daily-report', { params: { date } })
       setData(r.data?.data || r.data || null)
     } catch (e) {
       console.error('[DailyReport] load err', e)
     } finally {
       setLoading(false)
     }
-  }, [date, line, shift])
+  }, [date])
 
   useEffect(() => { load() }, [load])
 
@@ -172,13 +170,6 @@ export default function DailyReport() {
   }, [date, refreshMarkedMonth])
 
   const hasData = !!data && data.productionRows.length > 0
-
-  /** 一键重置：日期=今天，产线/班次清空 */
-  const resetAll = useCallback(() => {
-    setDate(dayjs().format('YYYY-MM-DD'))
-    setLine(undefined)
-    setShift(undefined)
-  }, [])
 
   /** 打印：未完工拦截 + 新开 window 写 HTML + window.print() */
   const handlePrint = useCallback(() => {
@@ -256,28 +247,6 @@ export default function DailyReport() {
                 return current.date()
               }}
             />
-            <span style={{ color: '#888', fontSize: 13, lineHeight: '32px', whiteSpace: 'nowrap', marginLeft: 8 }}>产线：</span>
-            <Select
-              value={line}
-              onChange={setLine}
-              style={{ width: 120 }}
-              allowClear
-              placeholder="全部"
-              options={[{ value: 'A线', label: 'A线' }, { value: 'B线', label: 'B线' }]}
-            />
-            <span style={{ color: '#888', fontSize: 13, lineHeight: '32px', whiteSpace: 'nowrap', marginLeft: 8 }}>班次：</span>
-            <Select
-              value={shift}
-              onChange={setShift}
-              style={{ width: 120 }}
-              allowClear
-              placeholder="全部"
-              options={[{ value: '白班', label: '白班' }, { value: '晚班', label: '晚班' }]}
-            />
-            <Space size={8} style={{ marginLeft: 8 }}>
-              <Button onClick={resetAll}>重置</Button>
-              <Button icon={<ReloadOutlined />} onClick={() => setDate(dayjs().format('YYYY-MM-DD'))}>今日</Button>
-            </Space>
           </Space>
         }
         actions={
