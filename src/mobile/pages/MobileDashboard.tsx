@@ -138,19 +138,19 @@ export default function MobileDashboard() {
 
     if (hasPermission('device:inspection')) {
       apis.push(
-        api.get('/device-inspections', { params: { page: 1, pageSize: 1, status: '待点检' } })
+        api.get('/basic/device-records', { params: { page: 1, pageSize: 1, status: '待点检' } })
           .then((r: any) => ({ icon: '⚙️', text: '待设备点检', count: r.data?.total ?? r.total ?? 0, path: '/m/device-maintenance', color: '#00BCD4' })),
       )
     }
     if (hasPermission('device:fault')) {
       apis.push(
-        api.get('/device-faults', { params: { page: 1, pageSize: 1, status: '待处理' } })
+        api.get('/basic/device-faults', { params: { page: 1, pageSize: 1, status: '待处理' } })
           .then((r: any) => ({ icon: '🚨', text: '设备故障待处理', count: r.data?.total ?? r.total ?? 0, path: '/m/device-fault', color: 'var(--brand-color-danger)' })),
       )
     }
     if (hasPermission('device:calibration')) {
       apis.push(
-        api.get('/device-calibrations', { params: { page: 1, pageSize: 1, status: '待校准' } })
+        api.get('/basic/device-calibration-plans', { params: { page: 1, pageSize: 1, status: '待校准' } })
           .then((r: any) => ({ icon: '⚠️', text: '校准到期提醒', count: r.data?.total ?? r.total ?? 0, path: '/m/calibration-reminder', color: '#FF5722' })),
       )
     }
