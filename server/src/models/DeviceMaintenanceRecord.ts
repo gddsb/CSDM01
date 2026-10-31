@@ -109,6 +109,7 @@ const DeviceMaintenanceRecord = sequelize.define('DeviceMaintenanceRecord', {
   tableName: 'device_record',
   timestamps: true,
   underscored: true,
+  comment: '设备保养执行记录表：记录每次保养的实际执行人、时间、完成情况、发现问题等',
   indexes: [
     { fields: ['record_no'], unique: true },
     { fields: ['device_id'] },

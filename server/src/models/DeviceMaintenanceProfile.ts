@@ -48,6 +48,7 @@ const DeviceMaintenanceProfile = sequelize.define('DeviceMaintenanceProfile', {
   tableName: 'device_maintenance_profile',
   timestamps: true,
   underscored: true,
+  comment: '设备保养档案表：定义每台设备的保养标准和执行周期（多对一关联 Standard）',
   indexes: [
     { unique: true, fields: ['device_id'] },
     { fields: ['status'] },

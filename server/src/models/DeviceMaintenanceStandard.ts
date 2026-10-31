@@ -90,6 +90,7 @@ const DeviceMaintenanceStandard = sequelize.define('DeviceMaintenanceStandard', 
   tableName: 'device_standard',
   timestamps: true,
   underscored: true,
+  comment: '设备保养标准表：定义保养项目明细（如 润滑油更换 / 紧固螺丝 / 清洁过滤网）',
   indexes: [
     { fields: ['device_id'] },
     { fields: ['trigger_mode'] },
