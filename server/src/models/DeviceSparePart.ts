@@ -53,6 +53,7 @@ const DeviceSparePart = sequelize.define('DeviceSparePart', {
 }, {
   tableName: 'device_spare_part',
   timestamps: true, underscored: true,
+  comment: '备件档案表：管理设备可更换的零部件基础信息和库存',
   indexes: [{ fields: ['part_code'] }, { fields: ['part_name'] }, { fields: ['category'] }],
 })
 

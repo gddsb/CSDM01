@@ -36,6 +36,7 @@ const DeviceRuntimeLog = sequelize.define('DeviceRuntimeLog', {
   tableName: 'device_runtime_log',
   timestamps: true,
   underscored: true,
+  comment: '设备运行时长日志表：按日记录每台设备的实际运行小时数',
   indexes: [
     { fields: ['device_id'] },
     { fields: ['created_at'] },

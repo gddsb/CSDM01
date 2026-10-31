@@ -145,6 +145,7 @@ const DeviceFault = sequelize.define('DeviceFault', {
   tableName: 'device_fault',
   timestamps: true,
   underscored: true,
+  comment: '设备故障工单表：记录设备故障上报、派工、维修、审批全流程',
   indexes: [
     { fields: ['fault_no'], unique: true },
     { fields: ['device_id'] },

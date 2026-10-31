@@ -59,6 +59,7 @@ const DeviceDocument = sequelize.define('DeviceDocument', {
 }, {
   tableName: 'device_document',
   timestamps: true, underscored: true,
+  comment: '设备文档表：存储设备/仪器的说明书、合格证、校准证书等附件',
   indexes: [
     { fields: ['device_id'] },
     { fields: ['doc_type'] },

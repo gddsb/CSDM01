@@ -51,6 +51,7 @@ const DeviceImage = sequelize.define('DeviceImage', {
   tableName: 'device_image',
   timestamps: true,
   underscored: true,
+  comment: '设备图片表：存储设备照片、故障现场照片等图片附件',
   indexes: [
     { fields: ['doc_type', 'doc_id'] },
   ],

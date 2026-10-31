@@ -99,6 +99,7 @@ const DeviceFaultRepair = sequelize.define('DeviceFaultRepair', {
   tableName: 'device_fault_repair',
   timestamps: true,
   underscored: true,
+  comment: '设备维修详情表：记录每次故障维修的具体措施、更换备件、工时',
   indexes: [
     { fields: ['fault_id'] },
   ],
