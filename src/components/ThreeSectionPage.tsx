@@ -4,10 +4,21 @@ import {
   SearchOutlined, ReloadOutlined, PlusOutlined, ExportOutlined, SettingOutlined,
   UpOutlined, DownOutlined,
 } from '@ant-design/icons'
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import dayjs from 'dayjs'
 
 const { RangePicker } = DatePicker
+
+/** localStorage key：全局三段式页面顶部收起状态（所有页面共享） */
+const COLLAPSED_STORAGE_KEY = 'mes:three-section:collapsed'
+
+/** 安全读写 localStorage（隐身模式 / 禁用场景不报错） */
+function readStoredCollapsed(): boolean {
+  try { return localStorage.getItem(COLLAPSED_STORAGE_KEY) === '1' } catch { return false }
+}
+function writeStoredCollapsed(v: boolean) {
+  try { localStorage.setItem(COLLAPSED_STORAGE_KEY, v ? '1' : '0') } catch { /* ignore */ }
+}
 
 type RangeValueType = RangePickerProps['value']
 
@@ -62,7 +73,15 @@ export default function ThreeSectionPage({
   onReset,
   onFilterChange,
 }: ThreeSectionPageProps) {
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState<boolean>(readStoredCollapsed)
+
+  const toggleCollapsed = useCallback(() => {
+    setCollapsed(prev => {
+      const next = !prev
+      writeStoredCollapsed(next)
+      return next
+    })
+  }, [])
 
   const renderFilterItem = (f: FilterItem) => {
     if (!f) return null
@@ -154,7 +173,7 @@ export default function ThreeSectionPage({
         {!collapsed && extra}
 
         {(stats?.length > 0 || extra) && (
-          <div className="section-info-toggle" onClick={() => setCollapsed(c => !c)}>
+          <div className="section-info-toggle" onClick={toggleCollapsed} title={collapsed ? '展开' : '收起'}>
             {collapsed ? <DownOutlined /> : <UpOutlined />}
           </div>
         )}

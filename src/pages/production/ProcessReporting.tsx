@@ -7,7 +7,7 @@ import {
 import { useMessage, useApp } from '../../contexts/AppContext'
 import {
   PlusOutlined, DeleteOutlined, UploadOutlined,
-  PictureOutlined, SaveOutlined,
+  PictureOutlined, SaveOutlined, UpOutlined, DownOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import api from '../../utils/api'
@@ -1281,13 +1281,27 @@ export default function ProcessReporting() {
     { label: '总工时', value: `${(stats.manpowerHours || 0).toFixed(1)}H`, color: '#13c2c2' },
   ]
 
+  /** 顶部报工信息卡片收起状态（独立 localStorage key，与三段式页面全局 key 隔离） */
+  const HEADER_COLLAPSED_KEY = 'mes:reporting:header-collapsed'
+  const [headerCollapsed, setHeaderCollapsed] = useState<boolean>(() => {
+    try { return localStorage.getItem(HEADER_COLLAPSED_KEY) === '1' } catch { return false }
+  })
+  const toggleHeader = useCallback(() => {
+    setHeaderCollapsed(prev => {
+      const next = !prev
+      try { localStorage.setItem(HEADER_COLLAPSED_KEY, next ? '1' : '0') } catch { /* ignore */ }
+      return next
+    })
+  }, [])
+
   return (
     <div style={{ padding: 16 }}>
       <Card style={{ marginBottom: 16 }}>
-        <Row gutter={16} align="middle" style={{ marginBottom: 12 }}>
-          <Col span={16}>
+        {/* 第一行：报工单选择 + 状态标签（始终可见） */}
+        <Row gutter={16} align="middle">
+          <Col flex="auto">
             <Space>
-              <span style={{ fontWeight: 'bold' }}>报工单：</span>
+              <span style={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}>报工单：</span>
               <Select
                 value={selectedReport?.report_order_id || undefined}
                 onChange={(val) => {
@@ -1319,23 +1333,10 @@ export default function ProcessReporting() {
                 popupClassName="mes-select-dropdown"
                 loading={loading}
               />
-              {!hasUnfinishedReportOfOrder && hasPermission('production:reporting:create') && (
-                <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal}>新增报工</Button>
-              )}
-              {selectedReport && isEditable && hasPermission('production:reporting:finish') && (
-                <Popconfirm title="确认完工？完工后数据将变为只读" onConfirm={handleFinishReport}>
-                  <Button type="primary" loading={finishingReport}>完工</Button>
-                </Popconfirm>
-              )}
-              {selectedReport && isEditable && hasPermission('production:reporting:close') && (
-                <Popconfirm title="确认关闭？关闭前需无不良记录、无物料使用记录、无检验报废记录" onConfirm={handleCloseReport}>
-                  <Button danger loading={closingReport}>关闭</Button>
-                </Popconfirm>
-              )}
             </Space>
           </Col>
           {selectedReport && (
-            <Col span={8} style={{ textAlign: 'right' }}>
+            <Col flex="none">
               <Tag
                 color={reportOrderStatusMap[selectedReport.status]?.color || 'default'}
                 style={{ fontSize: 13, padding: '2px 10px', margin: 0 }}
@@ -1346,100 +1347,148 @@ export default function ProcessReporting() {
           )}
         </Row>
 
-        {selectedReport && (
-          <Row gutter={16}>
-            <Col span={4}>
-              <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>报工单号</span>
-                <span style={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}>{selectedReport.report_no}</span>
-              </Space>
-            </Col>
-            <Col span={4}>
-              <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>订单编号</span>
-                <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.order_no || '-'}</span>
-              </Space>
-            </Col>
-            <Col span={4}>
-              <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>生产产线</span>
-                <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.line_name || '-'}</span>
-              </Space>
-            </Col>
-            <Col span={4}>
-              <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>菲林版本</span>
-                <span style={{ whiteSpace: 'nowrap' }}>
-                  {formatFilmVersion(selectedReport.order?.film_version, selectedReport.order?.version_no) || '-'}
-                </span>
-              </Space>
-            </Col>
-            <Col span={4}>
-              <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>条形码</span>
-                <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.order?.barcode || '-'}</span>
-              </Space>
-            </Col>
-          </Row>
+        {/* 收起时隐藏的详细信息区域 */}
+        {!headerCollapsed && selectedReport && (
+          <>
+            <Divider style={{ margin: '12px 0' }} />
+
+            {/* 第二行：报工单号 / 订单编号 / 产线 / 菲林版本 / 条形码 */}
+            <Row gutter={16}>
+              <Col span={4}>
+                <Space size={4} align="baseline" wrap={false}>
+                  <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>报工单号</span>
+                  <span style={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}>{selectedReport.report_no}</span>
+                </Space>
+              </Col>
+              <Col span={4}>
+                <Space size={4} align="baseline" wrap={false}>
+                  <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>订单编号</span>
+                  <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.order_no || '-'}</span>
+                </Space>
+              </Col>
+              <Col span={4}>
+                <Space size={4} align="baseline" wrap={false}>
+                  <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>生产产线</span>
+                  <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.line_name || '-'}</span>
+                </Space>
+              </Col>
+              <Col span={4}>
+                <Space size={4} align="baseline" wrap={false}>
+                  <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>菲林版本</span>
+                  <span style={{ whiteSpace: 'nowrap' }}>
+                    {formatFilmVersion(selectedReport.order?.film_version, selectedReport.order?.version_no) || '-'}
+                  </span>
+                </Space>
+              </Col>
+              <Col span={4}>
+                <Space size={4} align="baseline" wrap={false}>
+                  <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>条形码</span>
+                  <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.order?.barcode || '-'}</span>
+                </Space>
+              </Col>
+            </Row>
+
+            {/* 第三行：物料编号 / 规格 / 产品名称 */}
+            <Row gutter={16} style={{ marginTop: 12 }}>
+              <Col span={4}>
+                <Space size={4} align="baseline" wrap={false}>
+                  <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>物料编号</span>
+                  <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.material_code || '-'}</span>
+                </Space>
+              </Col>
+              <Col span={4}>
+                <Space size={4} align="baseline" wrap={false}>
+                  <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>产品规格</span>
+                  <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.specification || '-'}</span>
+                </Space>
+              </Col>
+              <Col span={8}>
+                <Space size={4} align="baseline" wrap={false}>
+                  <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>产品名称</span>
+                  <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.material_name || '-'}</span>
+                </Space>
+              </Col>
+            </Row>
+
+            {/* 第四行：报工时间 / 完工时间 / 报工人 / 完工人 / 关闭人 */}
+            <Row gutter={16} style={{ marginTop: 12 }}>
+              <Col span={4}>
+                <Space size={4} align="baseline" wrap={false}>
+                  <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>报工时间</span>
+                  <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(selectedReport.report_time)}</span>
+                </Space>
+              </Col>
+              <Col span={4}>
+                <Space size={4} align="baseline" wrap={false}>
+                  <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>完工时间</span>
+                  <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(selectedReport.finish_time)}</span>
+                </Space>
+              </Col>
+              <Col span={4}>
+                <Space size={4} align="baseline" wrap={false}>
+                  <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>报工人</span>
+                  <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.report_user_name || '-'}</span>
+                </Space>
+              </Col>
+              <Col span={4}>
+                <Space size={4} align="baseline" wrap={false}>
+                  <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>完工人</span>
+                  <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.finish_user_name || '-'}</span>
+                </Space>
+              </Col>
+              <Col span={4}>
+                <Space size={4} align="baseline" wrap={false}>
+                  <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>关闭人</span>
+                  <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.close_user_name || '-'}</span>
+                </Space>
+              </Col>
+            </Row>
+          </>
         )}
 
-        {selectedReport && (
-          <Row gutter={16} style={{ marginTop: 12 }}>
-            <Col span={4}>
-              <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>物料编号</span>
-                <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.material_code || '-'}</span>
-              </Space>
-            </Col>
-            <Col span={4}>
-              <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>产品规格</span>
-                <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.specification || '-'}</span>
-              </Space>
-            </Col>
-            <Col span={8}>
-              <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>产品名称</span>
-                <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.material_name || '-'}</span>
-              </Space>
-            </Col>
-          </Row>
-        )}
+        {/* 底部按钮行：操作按钮（始终可见）+ 收起/展开 toggle */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          gap: 12, marginTop: selectedReport ? 16 : 0,
+          paddingTop: selectedReport ? 12 : 0,
+          borderTop: selectedReport && !headerCollapsed ? '1px solid #f0f0f0' : 'none',
+        }}>
+          {!hasUnfinishedReportOfOrder && hasPermission('production:reporting:create') && (
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal}>新增报工</Button>
+          )}
+          {selectedReport && isEditable && hasPermission('production:reporting:finish') && (
+            <Popconfirm title="确认完工？完工后数据将变为只读" onConfirm={handleFinishReport}>
+              <Button type="primary" loading={finishingReport}>完工</Button>
+            </Popconfirm>
+          )}
+          {selectedReport && isEditable && hasPermission('production:reporting:close') && (
+            <Popconfirm title="确认关闭？关闭前需无不良记录、无物料使用记录、无检验报废记录" onConfirm={handleCloseReport}>
+              <Button danger loading={closingReport}>关闭</Button>
+            </Popconfirm>
+          )}
 
-        {selectedReport && (
-          <Row gutter={16} style={{ marginTop: 12 }}>
-            <Col span={4}>
-              <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>报工时间</span>
-                <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(selectedReport.report_time)}</span>
-              </Space>
-            </Col>
-            <Col span={4}>
-              <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>完工时间</span>
-                <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(selectedReport.finish_time)}</span>
-              </Space>
-            </Col>
-            <Col span={4}>
-              <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>报工人</span>
-                <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.report_user_name || '-'}</span>
-              </Space>
-            </Col>
-            <Col span={4}>
-              <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>完工人</span>
-                <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.finish_user_name || '-'}</span>
-              </Space>
-            </Col>
-            <Col span={4}>
-              <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>关闭人</span>
-                <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.close_user_name || '-'}</span>
-              </Space>
-            </Col>
-          </Row>
-        )}
+          {/* 收起/展开 toggle：有 selectedReport 时才显示（没选就没必要收） */}
+          {selectedReport && (
+            <span
+              onClick={toggleHeader}
+              title={headerCollapsed ? '展开详情' : '收起详情'}
+              style={{
+                marginLeft: 16,
+                cursor: 'pointer',
+                color: '#1890ff',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                fontSize: 12,
+                userSelect: 'none',
+                padding: '0 4px',
+              }}
+            >
+              {headerCollapsed ? <DownOutlined /> : <UpOutlined />}
+              {headerCollapsed ? '展开' : '收起'}
+            </span>
+          )}
+        </div>
       </Card>
 
       {!selectedReport && (
