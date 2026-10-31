@@ -1,7 +1,7 @@
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useMemo } from 'react'
 import { Table, Tag, Button, Select, DatePicker, Input, Space, Drawer, Descriptions, Tooltip } from 'antd'
-import { BugOutlined, ReloadOutlined, SearchOutlined, EyeOutlined } from '@ant-design/icons'
+import { BugOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
@@ -166,11 +166,11 @@ export default function SystemLogs() {
   /** 所有列强制 width — 每列像素固定，拖动某列只影响那列，其它列不变 */
   const columns = useMemo(() => [
     {
-      title: '时间', dataIndex: 'created_at', key: 'created_at', width: 180, fixed: 'left' as const,
+      title: '时间', dataIndex: 'created_at', key: 'created_at', width: 170, fixed: 'left' as const,
       render: formatDateTime,
     },
     {
-      title: '级别', dataIndex: 'level', key: 'level', width: 80,
+      title: '级别', dataIndex: 'level', key: 'level', width: 70,
       render: v => <Tag color={getLevelColor(v)} style={{ margin: 0 }}>{LEVEL_LABEL_MAP[v] || v || '-'}</Tag>,
     },
     {
@@ -210,9 +210,9 @@ export default function SystemLogs() {
       },
     },
     {
-      title: '操作', key: 'action', width: 100, fixed: 'right' as const,
+      title: '操作', key: 'action', width: 80, fixed: 'right' as const,
       render: (_: any, record: any) => (
-        <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>详情</Button>
+        <Button type="link" size="small" onClick={() => handleViewDetail(record)}>详情</Button>
       ),
     },
   ], [])

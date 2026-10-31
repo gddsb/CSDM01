@@ -3,7 +3,8 @@ import { Table } from 'antd'
 import type { TableProps, ColumnType } from 'antd/es/table'
 import api from '../utils/api'
 
-const STORAGE_PREFIX = 'table_col_width_'
+/** 列宽存储 Key 前缀 + 版本号：升级后旧值自动失效，避免覆盖新定义的默认宽度 */
+const STORAGE_PREFIX = 'table_col_width_v2_'
 
 function useDebouncedSave() {
   const timerRef = useRef<number | null>(null)
