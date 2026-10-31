@@ -252,6 +252,7 @@ export default function MobileDashboard() {
       <div style={{
         padding: '12px 12px 80px',
         background: 'var(--m-bg)',
+        scrollbarGutter: 'stable',
       }}>
 
         {/* ============ 顶部：欢迎 + 日期（同一行 ============ */}
