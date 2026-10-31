@@ -330,9 +330,12 @@ export default function MobileDashboard() {
 
         {/* 📋 代办任务 */}
         <div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--m-text)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-            📋 待办事项
-            <span style={{ fontSize: 11, color: 'var(--m-text-3)', fontWeight: 400 }}>（{todos.length} 项）</span>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--m-text)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'space-between' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              📋 待办事项
+              <span style={{ fontSize: 11, color: 'var(--m-text-3)', fontWeight: 400 }}>（{todos.length} 项）</span>
+            </span>
+            <span style={{ fontSize: 11, color: 'var(--m-text-3)' }}>共 {todos.length} 项</span>
           </div>
 
           {todos.length === 0 ? (

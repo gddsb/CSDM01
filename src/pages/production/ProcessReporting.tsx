@@ -987,8 +987,14 @@ export default function ProcessReporting() {
       message.warning('请选择异常类型')
       return false
     }
-    if (!record.start_time || !record.end_time) {
-      message.warning('请选择开始时间和结束时间')
+    // 有结束时间必须有开始时间
+    if (record.end_time && !record.start_time) {
+      message.warning('有结束时间必须有开始时间')
+      return false
+    }
+    // 结束时间必须晚于开始时间
+    if (record.start_time && record.end_time && new Date(record.end_time) <= new Date(record.start_time)) {
+      message.warning('结束时间必须晚于开始时间')
       return false
     }
     return true

@@ -10,6 +10,8 @@ import {
   DeviceFaultRepair,
   DeviceImage,
   Device,
+  User,
+  Role,
 } from '../models/index.js'
 import { generateDeviceFaultNo } from '../utils/sequence.js'
 import { MAX_PAGE_SIZE } from '../utils/response.js'
@@ -112,11 +114,17 @@ async function getFaultDetail(id: number) {
 // ---------- Service ----------
 
 export const DeviceFaultService = {
-  /** 分页查询故障列表 */
-  async list(query: any) {
+  /** 分页查询故障列表（按角色过滤上报人） */
+  async list(query: any, actor?: any) {
     const where = buildFaultWhere(query)
     const limit = Math.min(Number(query.pageSize) || 20, MAX_PAGE_SIZE)
     const offset = ((Number(query.page) || 1) - 1) * limit
+
+    // 按角色过滤：上报人只看自己上报的；设备维护员/生产管理看全部
+    const roleCode = actor?.roleCode
+    if (actor?.userId && roleCode && roleCode !== 'MAINTENANCE' && roleCode !== 'PROD_MANAGER' && roleCode !== 'SUPER_ADMIN' && roleCode !== 'ADMIN') {
+      where.reporter_id = actor.userId
+    }
 
     return await DeviceFault.findAndCountAll({
       where,
@@ -158,7 +166,7 @@ export const DeviceFaultService = {
     return record
   },
 
-  /** 指派维修人（状态 0→1） */
+  /** 指派维修人（状态 0→1）— 只允许指派给设备维护员 */
   async assign(id: number | string, body: any, actor?: any) {
     const fault = await DeviceFault.findOne({ where: { fault_id: Number(id) } })
     if (!fault) throw new AppError('故障记录不存在', 10002, 404)
@@ -168,6 +176,18 @@ export const DeviceFaultService = {
     }
 
     if (!body.assignee_id) throw new AppError('维修人不能为空', 10001, 400)
+
+    // 校验被指派人必须是设备维护员
+    const assignee = await User.findOne({
+      where: { user_id: body.assignee_id },
+      attributes: ['user_id', 'username'],
+      include: [{ model: Role, as: 'role', attributes: ['role_code', 'role_name'] }],
+    })
+    if (!assignee) throw new AppError('被指派人不存在', 10002, 404)
+    const assigneeRoleCode = (assignee as any).role?.role_code
+    if (assigneeRoleCode !== 'MAINTENANCE') {
+      throw new AppError('只能指派给"设备维护员"角色', 20001, 400)
+    }
 
     await fault.update({
       status: 1,

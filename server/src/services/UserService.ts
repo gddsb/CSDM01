@@ -26,8 +26,9 @@ function stripPwd(obj: any) { const d = typeof obj.toJSON === 'function' ? obj.t
 
 export const UserService = {
   async list(query: any) {
-    const { keyword, status, role_id, page = 1, pageSize = 20 } = query
+    const { keyword, status, role_id, role_code, page = 1, pageSize = 20 } = query
     const where: any = {}
+    const include: any[] = [{ model: Role, as: 'role' }]
     if (keyword) {
       where[Op.or] = [
         { username: { [Op.like]: `%${keyword}%` } },
@@ -40,10 +41,14 @@ export const UserService = {
       where.status = statusMap[status] !== undefined ? statusMap[status] : Number(status)
     }
     if (role_id) where.role_id = Number(role_id)
+    if (role_code) {
+      include[0].where = { role_code: String(role_code) }
+      include[0].required = true
+    }
     const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
     const offset = (Number(page) - 1) * limit
     const { rows, count } = await User.findAndCountAll({
-      where, include: [{ model: Role, as: 'role' }], limit, offset, order: [['user_id', 'DESC']],
+      where, include, limit, offset, order: [['user_id', 'DESC']],
     })
     return { rows: rows.map(stripPwd), count }
   },

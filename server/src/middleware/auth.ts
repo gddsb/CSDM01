@@ -17,20 +17,21 @@ function isSuperRoleCode(code: string | null | undefined): boolean {
   return !!code && SUPER_ROLE_CODES.has(String(code).toUpperCase())
 }
 
-async function loadRolePermissionCodes(roleId: number): Promise<{ codes: Set<string>; roleCode: string | null }> {
+async function loadRolePermissionCodes(roleId: number): Promise<{ codes: Set<string>; roleCode: string | null; roleName: string | null }> {
   const now = Date.now()
   const cached = permCache[roleId]
   if (cached && now - cached.ts < PERM_CACHE_TTL) {
-    return { codes: cached.codes, roleCode: cached.roleCode }
+    return { codes: cached.codes, roleCode: cached.roleCode, roleName: null }
   }
 
   const role = await Role.findOne({
     where: { role_id: roleId },
-    attributes: ['role_id', 'role_code'],
+    attributes: ['role_id', 'role_code', 'role_name'],
     include: [{ model: Permission, as: 'permissions', attributes: ['perm_code'] }],
   })
 
   const roleCode = role ? String((role as any).role_code ?? '') : null
+  const roleName = role ? String((role as any).role_name ?? '') : null
   const codes = new Set<string>()
 
   if (isSuperRoleCode(roleCode)) {
@@ -103,8 +104,10 @@ export function authRequired(req: Request, res: Response, next: NextFunction): a
     const user: any = decoded
     if (user.roleId) {
       try {
-        const { codes, roleCode } = await loadRolePermissionCodes(user.roleId)
+        const { codes, roleCode, roleName } = await loadRolePermissionCodes(user.roleId)
         user.permCodes = codes
+        user.roleCode = roleCode
+        user.roleName = roleName
         if (isSuperRoleCode(roleCode)) user.isSuperAdmin = true
       } catch (err: any) {
         logger.warn('[authRequired] 加载用户权限失败:', err.message)

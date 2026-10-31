@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import React from 'react'
 import { Button, Toast } from 'antd-mobile'
+import { fmtLocalDateTime } from '../../../utils/localTime'
 import api from '../../../utils/api'
 import type { ManpowerRow, ReportOrder } from './types'
 
@@ -93,8 +94,8 @@ export function ManpowerPanel({ report, editable, manpower, setManpower, onDirty
   return (
     <div>
       <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginBottom: 10 }}>
-        🕐 开工时间: <b style={{ color: 'var(--m-text)' }}>{report.report_time?.slice(0, 16).replace("T", " ") || '—'}</b>
-        {report.finish_time && <span style={{ marginLeft: 8 }}>完工: <b style={{ color: 'var(--m-text)' }}>{report.finish_time.slice(0, 16).replace("T", " ")}</b></span>}
+        🕐 开工时间: <b style={{ color: 'var(--m-text)' }}>{report.report_time ? fmtLocalDateTime(report.report_time).slice(0, 16).replace("T", " ") : '—'}</b>
+        {report.finish_time && <span style={{ marginLeft: 8 }}>完工: <b style={{ color: 'var(--m-text)' }}>{fmtLocalDateTime(report.finish_time).slice(0, 16).replace("T", " ")}</b></span>}
         <span style={{ marginLeft: 10, color: 'var(--brand-color)' }}>总人数: <b>{totalPeople}</b></span>
       </div>
       {rows.map(({ label, v, setV }) => (

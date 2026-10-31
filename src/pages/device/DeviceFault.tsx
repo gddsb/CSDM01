@@ -206,7 +206,7 @@ export default function DeviceFault() {
     try {
       const [dRes, uRes] = await Promise.all([
         api.get('/basic/devices', { params: { page: 1, pageSize: 500 } }),
-        api.get('/system/users', { params: { page: 1, pageSize: 500 } }),
+        api.get('/system/users', { params: { page: 1, pageSize: 500, role_code: 'MAINTENANCE' } }),
       ])
       if (dRes.success !== false) {
         const list = dRes.data?.list || dRes.data || []
@@ -381,10 +381,9 @@ export default function DeviceFault() {
       setAssignLoading(true)
       const user = users.find((u: any) => (u.user_id ?? u.id) === values.repair_person_id)
       const payload: any = {
-        repair_person_id: values.repair_person_id,
-        repair_person_name: user?.real_name || user?.username,
-        repair_deadline: values.repair_deadline?.format?.('YYYY-MM-DD HH:mm:ss') || values.repair_deadline,
-        remark: values.remark || '',
+        assignee_id: values.repair_person_id,
+        assignee_name: user?.real_name || user?.username,
+        assignor_remark: values.remark || '',
       }
       const res = await api.put(`/basic/device-faults/${assignTarget.fault_id}/assign`, payload)
       if (res.success !== false) {

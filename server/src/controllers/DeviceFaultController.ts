@@ -17,7 +17,7 @@ function cleanupFiles(files: any[]) {
 
 export default {
   list: asyncHandler(async (req: Request, res: Response) => {
-    const { rows, count } = await DeviceFaultService.list(req.query)
+    const { rows, count } = await DeviceFaultService.list(req.query, (req as any).user)
     return success(res, rows, '查询成功', count)
   }),
   detail: asyncHandler(async (req: Request, res: Response) => {
