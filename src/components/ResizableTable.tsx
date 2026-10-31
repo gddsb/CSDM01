@@ -142,6 +142,17 @@ function ResizableTable<RecordType extends object = any>(props: ResizableTablePr
     })
   }, [rawColumns, colWidths, handleResize, autoWidth])
 
+  /** 动态 scroll.x：所有列 width 之和，确保拖动某列只改那列，其它列不变 */
+  const dynamicScrollX = useMemo(() => {
+    return columns.reduce((sum: number, c: any) => sum + (Number(c.width) || 150), 0)
+  }, [columns])
+
+  const mergedScroll = useMemo(() => {
+    const userScroll = rest.scroll as any
+    if (!userScroll) return { x: dynamicScrollX }
+    return { ...userScroll, x: dynamicScrollX }
+  }, [rest.scroll, dynamicScrollX])
+
   return (
     <div className="resizable-table-wrapper">
       <style>{`
@@ -167,7 +178,7 @@ function ResizableTable<RecordType extends object = any>(props: ResizableTablePr
           ${autoWidth ? 'white-space: nowrap;' : 'overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'}
         }
       `}</style>
-      <Table<RecordType> columns={columns} tableLayout={autoWidth ? 'auto' : 'fixed'} {...rest} />
+      <Table<RecordType> columns={columns} tableLayout={autoWidth ? 'auto' : 'fixed'} {...rest} scroll={mergedScroll} />
     </div>
   )
 }
