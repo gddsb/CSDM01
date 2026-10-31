@@ -111,25 +111,42 @@ interface DbLogEntry {
 let dbBuffer: DbLogEntry[] = []
 let dbFlushTimer: ReturnType<typeof setTimeout> | null = null
 
-/** 把 pino 原始对象转换成 DB entry（失败时不阻塞主流程） */
+/** 把 pino 原始对象转换成 DB entry（失败时不阻塞主流程）
+ *
+ * 重要：pino-http v11 传给 logger 的 fields 只有 { res, responseTime }，没有顶层 req！
+ * req 嵌在 res.req 里（因为 Node.js 原生 ServerResponse 有 res.req 反向引用）。
+ * 这里同时兼容 f.req（未来版本可能恢复）和 f.res?.req（pino-http v11 实际结构）。
+ */
 function extractDbEntry(levelName: string, fields: Record<string, unknown> | null, msg: string): DbLogEntry | null {
   try {
     const f = fields || {}
-    const hasReq = typeof (f.req as any)?.url === 'string'
-    const hasRes = typeof (f.res as any)?.statusCode === 'number'
-    const category = (hasReq ? 'request' : null)
-    const path = typeof (f.req as any)?.url === 'string' ? String((f.req as any).url).slice(0, 255) : null
-    const method = typeof (f.req as any)?.method === 'string' ? String((f.req as any).method) : null
-    const status = typeof (f.res as any)?.statusCode === 'number' ? Number((f.res as any).statusCode) : null
-    const duration_ms = typeof (f.responseTime) === 'number' ? Number(f.responseTime) : null
-    const source = typeof f.source === 'string' ? String(f.source).slice(0, 100) : null
+
+    // 兼容 pino-http v11（req 嵌在 res.req）和其他场景（顶层 req）
+    const reqObj: any = (f as any).req || (f.res as any)?.req || null
+    const resObj: any = (f as any).res || null
+
+    const hasReq = !!reqObj
+    const method: string | null = hasReq && typeof reqObj.method === 'string' ? String(reqObj.method) : null
+    // 优先 originalUrl（完整路径含 /api 前缀），fallback 到 url
+    const rawUrl: string | null = hasReq
+      ? (typeof reqObj.originalUrl === 'string' ? reqObj.originalUrl : typeof reqObj.url === 'string' ? reqObj.url : null)
+      : null
+    const path = rawUrl ? rawUrl.slice(0, 255) : null
+    const status: number | null = resObj && typeof resObj.statusCode === 'number' ? Number(resObj.statusCode) : null
+    const duration_ms: number | null = typeof (f as any).responseTime === 'number' ? Number((f as any).responseTime) : null
+    const source: string | null = typeof (f as any).source === 'string' ? String((f as any).source).slice(0, 100) : null
+
+    const category = hasReq ? 'request' : null
+
+    // details：剔除敏感/大对象，留其他有用上下文
     const cleanFields: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(f)) {
-      if (k === 'req' || k === 'res' || k === 'err') continue // 敏感/大对象不冗余
-      if (typeof v === 'function') continue
+      if (k === 'req' || k === 'res' || k === 'err') continue
+      if (typeof v === 'function' || v == null) continue
       cleanFields[k] = v
     }
     const details = Object.keys(cleanFields).length > 0 ? JSON.stringify(cleanFields).slice(0, 8000) : null
+
     return {
       level: levelName.toUpperCase(),
       category,
