@@ -102,7 +102,8 @@ export default function SystemLogs() {
   const filters: FilterItem[] = [
     {
       type: 'select', placeholder: '日志级别', col: { span: 4 },
-      options: levelOptions, value: levelInput, onChange: (v) => setLevelInput(v as string),
+      options: levelOptions, value: levelInput,
+      onChange: (v) => { setLevelInput(v as string); setTimeout(handleSearch, 0) },
     },
     {
       type: 'rangepicker', col: { span: 6 },
