@@ -128,7 +128,7 @@ export default function ThreeSectionPage({
         <div className="section-info-header">
           <div className="section-info-title">
             {breadcrumbs && <div className="section-breadcrumbs">{breadcrumbs}</div>}
-            <div className="section-title-text">{title}</div>
+            {!collapsed && <div className="section-title-text">{title}</div>}
           </div>
           <Space className="section-info-actions">{actions}</Space>
         </div>
