@@ -481,13 +481,15 @@ export async function runMigrations() {
 }
 
 // 判断约束是否已存在
+// 注意：Sequelize 6 + QueryTypes.SELECT 查不到时 rows=undefined（而非 []），
+// 必须用 Array.isArray 兜底，否则 undefined.length 直接 TypeError
 async function constraintExists(table: string, name: string): Promise<boolean> {
   const [rows] = await sequelize.query(
     `SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table AND CONSTRAINT_NAME = :name LIMIT 1`,
     { replacements: { table, name }, type: QueryTypes.SELECT }
   )
-  return (rows as unknown[]).length > 0
+  return Array.isArray(rows) && (rows as unknown[]).length > 0
 }
 
 async function ensureCoreForeignKeys(): Promise<void> {
@@ -555,11 +557,15 @@ async function ensureCoreForeignKeys(): Promise<void> {
     },
   ]
 
-  // 先统一字段类型与字符集，避免外键因 collation/类型不兼容而失败
+  // bas_material_id 类型对齐：仅当 fk_ppm_bas_material 外键尚未存在时才 MODIFY
+  // （MySQL 不允许修改被外键引用的列，已存在外键时 MODIFY 必定报 "incompatible"）
   try {
-    await sequelize.query(
-      `ALTER TABLE production_process_material MODIFY COLUMN bas_material_id CHAR(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '关联基础料品表ID'`
-    )
+    const fkAlreadyExists = await constraintExists('production_process_material', 'fk_ppm_bas_material')
+    if (!fkAlreadyExists) {
+      await sequelize.query(
+        `ALTER TABLE production_process_material MODIFY COLUMN bas_material_id CHAR(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '关联基础料品表ID'`
+      )
+    }
   } catch (err) {
     logger.warn('  ⚠️ 统一 bas_material_id 类型失败:', err?.message)
   }
