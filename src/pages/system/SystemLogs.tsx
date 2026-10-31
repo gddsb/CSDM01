@@ -11,12 +11,16 @@ import { formatDateTime } from '../../utils'
 
 const { RangePicker } = DatePicker
 
+const LEVEL_LABEL_MAP: Record<string, string> = {
+  DEBUG: '调试', INFO: '信息', WARN: '警告', ERROR: '错误',
+}
+
 const levelOptions = [
   { label: '全部级别', value: '' },
-  { label: 'DEBUG', value: 'DEBUG' },
-  { label: 'INFO', value: 'INFO' },
-  { label: 'WARN', value: 'WARN' },
-  { label: 'ERROR', value: 'ERROR' },
+  { label: '调试 (DEBUG)', value: 'DEBUG' },
+  { label: '信息 (INFO)', value: 'INFO' },
+  { label: '警告 (WARN)', value: 'WARN' },
+  { label: '错误 (ERROR)', value: 'ERROR' },
 ]
 
 function getLevelColor(level: string) {
@@ -113,12 +117,37 @@ export default function SystemLogs() {
 
   const columns = [
     {
-      title: '时间', dataIndex: 'timestamp', key: 'timestamp', width: 170,
+      title: '时间', dataIndex: 'created_at', key: 'created_at', width: 180, fixed: 'left' as const,
       render: formatDateTime,
     },
     {
-      title: '级别', dataIndex: 'level', key: 'level', width: 90,
-      render: v => <Tag color={getLevelColor(v)} style={{ minWidth: 62, textAlign: 'center' }}>{v || '-'}</Tag>,
+      title: '级别', dataIndex: 'level', key: 'level', width: 80,
+      render: v => <Tag color={getLevelColor(v)} style={{ margin: 0 }}>{LEVEL_LABEL_MAP[v] || v || '-'}</Tag>,
+    },
+    {
+      title: '分类', dataIndex: 'category', key: 'category', width: 100,
+      render: v => v || '-',
+    },
+    {
+      title: '请求路径', dataIndex: 'path', key: 'path', width: 280,
+      render: (v: string, record: any) => (
+        <span style={{ fontFamily: 'monospace', fontSize: 12 }}>
+          {v ? (
+            <>
+              {record.method && <Tag color="blue" style={{ marginRight: 4 }}>{record.method}</Tag>}
+              {v}
+              {record.status != null && (
+                <Tag color={record.status >= 400 ? 'red' : 'green'} style={{ marginLeft: 4 }}>{record.status}</Tag>
+              )}
+              {record.duration_ms != null && <span style={{ marginLeft: 6, color: '#889' }}>{record.duration_ms}ms</span>}
+            </>
+          ) : '-'}
+        </span>
+      ),
+    },
+    {
+      title: '耗时(ms)', dataIndex: 'duration_ms', key: 'duration_ms', width: 90, align: 'right' as const,
+      render: v => v != null ? v : '-',
     },
     {
       title: '日志内容', dataIndex: 'message', key: 'message',

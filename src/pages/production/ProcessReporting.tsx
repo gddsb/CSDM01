@@ -1297,55 +1297,66 @@ export default function ProcessReporting() {
   return (
     <div style={{ padding: 16 }}>
       <Card style={{ marginBottom: 16 }}>
-        {/* 第一行：报工单选择 + 状态标签（始终可见） */}
-        <Row gutter={16} align="middle">
-          <Col flex="auto">
-            <Space>
-              <span style={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}>报工单：</span>
-              <Select
-                value={selectedReport?.report_order_id || undefined}
-                onChange={(val) => {
-                  if (hasUnsavedChanges) {
-                    Modal.confirm({
-                      title: '存在未保存的记录',
-                      content: '当前页签有未保存的记录，切换报工单将丢失这些数据。是否确认切换？',
-                      okText: '确认切换',
-                      okType: 'danger',
-                      cancelText: '取消',
-                      onOk: () => {
-                        const r = reportOrders.find(r => r.report_order_id === val)
-                        setSelectedReport(r || null)
-                      },
-                    })
-                    return
-                  }
-                  const r = reportOrders.find(r => r.report_order_id === val)
-                  setSelectedReport(r || null)
-                }}
-                options={reportOrders.map(r => ({
-                  label: `${r.report_no} (${r.order_no || '-'}) ${r.material_name || ''}`,
-                  value: r.report_order_id,
-                }))}
-                style={{ width: 360 }}
-                placeholder="请选择报工单"
-                showSearch
-                optionFilterProp="label"
-                popupClassName="mes-select-dropdown"
-                loading={loading}
-              />
-            </Space>
-          </Col>
+        {/* 第一行：报工单选择 + 状态标签 + 操作按钮（始终可见） */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <span style={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}>报工单：</span>
+          <Select
+            value={selectedReport?.report_order_id || undefined}
+            onChange={(val) => {
+              if (hasUnsavedChanges) {
+                Modal.confirm({
+                  title: '存在未保存的记录',
+                  content: '当前页签有未保存的记录，切换报工单将丢失这些数据。是否确认切换？',
+                  okText: '确认切换',
+                  okType: 'danger',
+                  cancelText: '取消',
+                  onOk: () => {
+                    const r = reportOrders.find(r => r.report_order_id === val)
+                    setSelectedReport(r || null)
+                  },
+                })
+                return
+              }
+              const r = reportOrders.find(r => r.report_order_id === val)
+              setSelectedReport(r || null)
+            }}
+            options={reportOrders.map(r => ({
+              label: `${r.report_no} (${r.order_no || '-'}) ${r.material_name || ''}`,
+              value: r.report_order_id,
+            }))}
+            style={{ minWidth: 320, flex: '0 1 auto' }}
+            placeholder="请选择报工单"
+            showSearch
+            optionFilterProp="label"
+            popupClassName="mes-select-dropdown"
+            loading={loading}
+          />
+
           {selectedReport && (
-            <Col flex="none">
-              <Tag
-                color={reportOrderStatusMap[selectedReport.status]?.color || 'default'}
-                style={{ fontSize: 13, padding: '2px 10px', margin: 0 }}
-              >
-                {reportOrderStatusMap[selectedReport.status]?.label || '-'}
-              </Tag>
-            </Col>
+            <Tag
+              color={reportOrderStatusMap[selectedReport.status]?.color || 'default'}
+              style={{ fontSize: 13, padding: '2px 10px', margin: 0 }}
+            >
+              {reportOrderStatusMap[selectedReport.status]?.label || '-'}
+            </Tag>
           )}
-        </Row>
+
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+            {!hasUnfinishedReportOfOrder && hasPermission('production:reporting:create') && (
+              <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal}>新增报工</Button>
+            )}
+            {selectedReport && isEditable && hasPermission('production:reporting:finish') && (
+              <Popconfirm title="确认完工？完工后数据将变为只读" onConfirm={handleFinishReport}>
+                <Button type="primary" loading={finishingReport}>完工</Button>
+              </Popconfirm>
+            )}
+            {selectedReport && isEditable && hasPermission('production:reporting:close') && (
+              <Popconfirm title="确认关闭？关闭前需无不良记录、无物料使用记录、无检验报废记录" onConfirm={handleCloseReport}>
+                <Button danger loading={closingReport}>关闭</Button>
+              </Popconfirm>
+            )}
+          </div>
+        </div>
 
         {/* 收起时隐藏的详细信息区域 */}
         {!headerCollapsed && selectedReport && (
@@ -1446,49 +1457,29 @@ export default function ProcessReporting() {
           </>
         )}
 
-        {/* 底部按钮行：操作按钮（始终可见）+ 收起/展开 toggle */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          gap: 12, marginTop: selectedReport ? 16 : 0,
-          paddingTop: selectedReport ? 12 : 0,
-          borderTop: selectedReport && !headerCollapsed ? '1px solid #f0f0f0' : 'none',
-        }}>
-          {!hasUnfinishedReportOfOrder && hasPermission('production:reporting:create') && (
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal}>新增报工</Button>
-          )}
-          {selectedReport && isEditable && hasPermission('production:reporting:finish') && (
-            <Popconfirm title="确认完工？完工后数据将变为只读" onConfirm={handleFinishReport}>
-              <Button type="primary" loading={finishingReport}>完工</Button>
-            </Popconfirm>
-          )}
-          {selectedReport && isEditable && hasPermission('production:reporting:close') && (
-            <Popconfirm title="确认关闭？关闭前需无不良记录、无物料使用记录、无检验报废记录" onConfirm={handleCloseReport}>
-              <Button danger loading={closingReport}>关闭</Button>
-            </Popconfirm>
-          )}
-
-          {/* 收起/展开 toggle：有 selectedReport 时才显示（没选就没必要收） */}
-          {selectedReport && (
-            <span
-              onClick={toggleHeader}
-              title={headerCollapsed ? '展开详情' : '收起详情'}
-              style={{
-                marginLeft: 16,
-                cursor: 'pointer',
-                color: '#1890ff',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-                fontSize: 12,
-                userSelect: 'none',
-                padding: '0 4px',
-              }}
-            >
-              {headerCollapsed ? <DownOutlined /> : <UpOutlined />}
-              {headerCollapsed ? '展开' : '收起'}
-            </span>
-          )}
-        </div>
+        {/* 底部：收起/展开 toggle（居中，与三段式页面风格一致） */}
+        {selectedReport && (
+          <div
+            onClick={toggleHeader}
+            title={headerCollapsed ? '展开详情' : '收起详情'}
+            style={{
+              marginTop: 12,
+              paddingTop: 10,
+              borderTop: !headerCollapsed ? '1px solid #f0f0f0' : 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 4,
+              cursor: 'pointer',
+              color: '#1890ff',
+              fontSize: 12,
+              userSelect: 'none',
+            }}
+          >
+            {headerCollapsed ? <DownOutlined /> : <UpOutlined />}
+            {headerCollapsed ? '展开详情' : '收起详情'}
+          </div>
+        )}
       </Card>
 
       {!selectedReport && (

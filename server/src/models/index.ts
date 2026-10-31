@@ -5,6 +5,7 @@ import User from './User.js'
 import Role from './Role.js'
 import Permission from './Permission.js'
 import OperationLog from './OperationLog.js'
+import SystemLog from './SystemLog.js'
 import Material from './Material.js'
 import ProductionLine from './ProductionLine.js'
 import Process from './Process.js'
@@ -307,6 +308,7 @@ const db = {
   Role,
   Permission,
   OperationLog,
+  SystemLog,
   Material,
   ProductionLine,
   Process,
@@ -380,6 +382,7 @@ export {
   Role,
   Permission,
   OperationLog,
+  SystemLog,
   Material,
   ProductionLine,
   Process,

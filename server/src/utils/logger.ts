@@ -18,6 +18,9 @@ import pino from 'pino'
 const level = (process.env.LOG_LEVEL || 'info').toLowerCase()
 const isProd = process.env.NODE_ENV === 'production'
 
+/** 是否启用系统日志 DB 存储（默认 true，可用 DISABLE_DB_LOG=1 关闭） */
+const ENABLE_DB_LOG = process.env.DISABLE_DB_LOG !== '1'
+
 /** 北京时间时间戳（无 T/Z，空格分隔）
  * 服务器已设 Asia/Shanghai (+08:00)，new Date() 直接就是本地时间。
  * 输出格式与 MySQL DATETIME 一致：,"time":"2026-10-31 18:07:04.123"
@@ -85,23 +88,121 @@ function normalizeArgs(args: any[]): [Record<string, unknown> | null, string] {
 /** 原生 pino 实例，供 pino-http 等需要原生 API 的库使用 */
 export const pinoLogger = pinoInstance
 
-export const logger = {
+// ========== 系统日志 DB 批量写入（fire-and-forget，不阻塞主流程） ==========
+// pino 日志同时写入 sys_system_log 表（方案 B：系统日志改从 DB 读）
+// 设计：内存 buffer + debounce flush + 失败静默 catch
+
+const DB_FLUSH_INTERVAL_MS = 500
+const DB_FLUSH_BATCH_SIZE = 50
+const DB_MAX_BUFFER_SIZE = 5000 // 防溢出：超过直接丢弃 oldest
+
+interface DbLogEntry {
+  level: string
+  category: string
+  message: string
+  details: string | null
+  duration_ms: number | null
+  path: string | null
+  method: string | null
+  status: number | null
+  source: string | null
+}
+
+let dbBuffer: DbLogEntry[] = []
+let dbFlushTimer: ReturnType<typeof setTimeout> | null = null
+
+/** 把 pino 原始对象转换成 DB entry（失败时不阻塞主流程） */
+function extractDbEntry(levelName: string, fields: Record<string, unknown> | null, msg: string): DbLogEntry | null {
+  try {
+    const f = fields || {}
+    const category = (f.req ? 'request' : f.auth ? 'auth' : f.sync ? 'sync' : f.migration ? 'migration' : null)
+    const path = typeof (f.req as any)?.url === 'string' ? (f.req as any).url.slice(0, 255) : null
+    const method = typeof (f.req as any)?.method === 'string' ? (f.req as any).method : null
+    const status = typeof (f.res as any)?.statusCode === 'number' ? (f.res as any).statusCode : null
+    const duration_ms = typeof (f.responseTime ?? f.duration) === 'number' ? Number(f.responseTime ?? f.duration) : null
+    const source = typeof f.source === 'string' ? f.source.slice(0, 100) : null
+    const cleanFields: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(f)) {
+      if (k === 'req' || k === 'res' || k === 'err') continue // 敏感/大对象不冗余
+      if (typeof v === 'function') continue
+      cleanFields[k] = v
+    }
+    const details = Object.keys(cleanFields).length > 0 ? JSON.stringify(cleanFields).slice(0, 8000) : null
+    return {
+      level: levelName.toUpperCase(),
+      category,
+      message: (msg || '-').slice(0, 1000),
+      details,
+      duration_ms,
+      path,
+      method,
+      status,
+      source,
+    }
+  } catch {
+    return null
+  }
+}
+
+async function flushDbBuffer(): Promise<void> {
+  dbFlushTimer = null
+  if (!ENABLE_DB_LOG || dbBuffer.length === 0) return
+  const batch = dbBuffer.splice(0, Math.min(dbBuffer.length, DB_FLUSH_BATCH_SIZE))
+  if (batch.length === 0) return
+  try {
+    const { SystemLog } = await import('../models/index.js')
+    await SystemLog.bulkCreate(batch, { validate: false })
+  } catch {
+    // DB 写入失败绝对不能影响主流程
+  }
+}
+
+function scheduleDbFlush(): void {
+  if (dbFlushTimer == null) {
+    dbFlushTimer = setTimeout(flushDbBuffer, DB_FLUSH_INTERVAL_MS)
+  }
+}
+
+function pushToDbBuffer(entry: DbLogEntry | null): void {
+  if (!ENABLE_DB_LOG || !entry) return
+  if (dbBuffer.length >= DB_MAX_BUFFER_SIZE) dbBuffer.shift() // 防内存溢出
+  dbBuffer.push(entry)
+  if (dbBuffer.length >= DB_FLUSH_BATCH_SIZE) {
+    if (dbFlushTimer != null) clearTimeout(dbFlushTimer)
+    flushDbBuffer() // 达到阈值立即刷
+  } else {
+    scheduleDbFlush() // 否则 debounce
+  }
+}
+
+/**
+ * 给 pinoInstance 的各 level 加 DB hook
+ * — 不包装 pinoInstance 本身（保留 pino-http 兼容性）
+ */
+const dbWrappedLogger = {
   debug: (...args: any[]) => {
     const [fields, msg] = normalizeArgs(args)
     fields ? pinoInstance.debug(fields, msg) : pinoInstance.debug(msg)
+    pushToDbBuffer(extractDbEntry('DEBUG', fields, msg))
   },
   info: (...args: any[]) => {
     const [fields, msg] = normalizeArgs(args)
     fields ? pinoInstance.info(fields, msg) : pinoInstance.info(msg)
+    pushToDbBuffer(extractDbEntry('INFO', fields, msg))
   },
   warn: (...args: any[]) => {
     const [fields, msg] = normalizeArgs(args)
     fields ? pinoInstance.warn(fields, msg) : pinoInstance.warn(msg)
+    pushToDbBuffer(extractDbEntry('WARN', fields, msg))
   },
   error: (...args: any[]) => {
     const [fields, msg] = normalizeArgs(args)
     fields ? pinoInstance.error(fields, msg) : pinoInstance.error(msg)
+    pushToDbBuffer(extractDbEntry('ERROR', fields, msg))
   },
 }
+
+/** 对外导出的 logger：既写 pm2 文件，也批量写 sys_system_log 表 */
+export const logger = dbWrappedLogger
 
 export default logger
