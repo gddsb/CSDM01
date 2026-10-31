@@ -188,7 +188,7 @@ const t = await DeviceMaintenanceProfile.sequelize.transaction()
       if (!profile) throw new AppError('档案不存在', ErrorCode.RECORD_NOT_FOUND)
       const patch: any = { status }
       if (status === '生效') {
-        patch.effective_date = new Date().toISOString().slice(0, 10)
+        patch.effective_date = todayStr()
         patch.version = (profile.getDataValue('version') || 1) + 1
       }
       await profile.update(patch, { transaction: t })

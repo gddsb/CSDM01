@@ -18,7 +18,7 @@ import {
 import { MAX_PAGE_SIZE } from '../utils/response.js'
 import { AppError } from '../utils/error.js'
 import { STATUS_REVERSE } from '../models/DeviceCalibrationPlan.js'
-import { nowBeijingDate } from '../utils/date.js'
+import { nowBeijingDate, formatDate, todayStr } from '../utils/date.js'
 import { logger } from '../utils/logger.js'
 
 // ---------- 纯函数 ----------
@@ -37,12 +37,12 @@ export function addMonths(dateStr: string, months: number): string {
 export function addDays(dateStr: string, days: number): string {
   const d = new Date(dateStr)
   d.setDate(d.getDate() + days)
-  return d.toISOString().slice(0, 10)
+  return formatDate(d)
 }
 
 /** 根据上次校准日期 + 校准周期计算下次校准日期 */
 export function calcNextCalibrationDate(lastDate: string | null | undefined, cycleMonths: number): string {
-  const base = lastDate ? String(lastDate).slice(0, 10) : nowBeijingDate().toISOString().slice(0, 10)
+  const base = lastDate ? String(lastDate).slice(0, 10) : todayStr()
   return addMonths(base, cycleMonths)
 }
 
@@ -206,7 +206,7 @@ export const DeviceCalibrationService = {
     const calibrationDate = body.calibration_date
       ? new Date(body.calibration_date)
       : nowBeijingDate()
-    const todayStr = calibrationDate.toISOString().slice(0, 10)
+    const calibDateStr = formatDate(calibrationDate)
 
     const t = await sequelize.transaction()
     try {
@@ -228,9 +228,9 @@ export const DeviceCalibrationService = {
 
       // 更新计划：上次日期 + 重算下次日期 + 状态
       const cycle = Number((plan as any).calibration_cycle) || 12
-      const nextDate = calcNextCalibrationDate(todayStr, cycle)
+      const nextDate = calcNextCalibrationDate(calibDateStr, cycle)
       await plan.update({
-        last_calibration_date: todayStr,
+        last_calibration_date: calibDateStr,
         next_calibration_date: nextDate,
         status: 1, // 已校准
         calibration_result: body.calibration_result || '合格',

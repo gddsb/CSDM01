@@ -7,6 +7,7 @@ import { Op } from 'sequelize'
 import { asyncHandler } from '../middleware/security.js'
 import { authRequired, permissionRequired } from '../middleware/auth.js'
 import { getDailyReport } from '../services/DailyReportService.js'
+import { todayStr } from '../utils/date.js'
 import ReportOrder from '../models/ReportOrder.js'
 
 const router = Router()
@@ -45,7 +46,7 @@ router.get('/dates', permissionRequired('report:daily'), asyncHandler(async (req
 
 router.get('/', permissionRequired('report:daily'), asyncHandler(async (req: any, res: any) => {
   try {
-    const date = (req.query.date as string) || new Date().toISOString().slice(0, 10)
+    const date = (req.query.date as string) || todayStr()
     const line = req.query.line as string | undefined
     const shift = req.query.shift as string | undefined
     const data = await getDailyReport(date, line, shift)

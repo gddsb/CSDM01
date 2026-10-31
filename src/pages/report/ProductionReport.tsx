@@ -9,6 +9,7 @@ import {
 import dayjs, { Dayjs } from 'dayjs'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
+import { nowLocalDateStr } from '../../utils/localTime'
 import { formatDateTime, MONTH_QUICK_OPTIONS, getMonthRange, validateDateRange } from '../../utils'
 import api, { extractList } from '../../utils/api'
 
@@ -299,7 +300,7 @@ export default function ProductionReport() {
     const ws = XLSX.utils.json_to_sheet(exportData)
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, '生产报表')
-    XLSX.writeFile(wb, `生产报表_${new Date().toISOString().slice(0, 10)}.xlsx`)
+    XLSX.writeFile(wb, `生产报表_${nowLocalDateStr()}.xlsx`)
     message.success('导出成功')
   }
 

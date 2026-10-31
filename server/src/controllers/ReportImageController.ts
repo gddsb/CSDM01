@@ -8,6 +8,7 @@ import fs from 'fs'
 import crypto from 'crypto'
 import ReportImageService from '../services/ReportImageService.js'
 import { success, fail, ErrorCode } from '../utils/response.js'
+import { formatDate } from '../utils/date.js'
 import { logger } from '../utils/logger.js'
 import { asyncHandler } from '../middleware/security.js'
 import type { Request, Response } from 'express'
@@ -51,7 +52,7 @@ export const uploadImages = asyncHandler(async (req: Request, res: Response) => 
   logger.info('[ReportImage] UPLOAD.ORDER_FOUND', { reportOrderId: (reportOrder as any)?.report_order_id })
 
   const dir = ensureDir()
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+  const dateStr = formatDate(new Date()).replace(/-/g, '')
   const prefix = report_no + '-' + dateStr + '-'
 
   const dbRecords = await ReportImageService.listByReportOrder(Number((reportOrder as any).report_order_id))

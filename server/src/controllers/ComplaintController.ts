@@ -6,6 +6,7 @@ import fs from 'fs'
 import ComplaintService from '../services/ComplaintService.js'
 import { success, fail, ErrorCode } from '../utils/response.js'
 import { logger } from '../utils/logger.js'
+import { formatDate } from '../utils/date.js'
 import { asyncHandler } from '../middleware/security.js'
 import type { Request, Response } from 'express'
 
@@ -71,7 +72,7 @@ export default {
 
       // 年月目录：用客诉单的 complaint_time 或者 complaint_date 的 YYYYMM
       const baseDate = record.complaint_time || record.complaint_date || new Date()
-      const ym = new Date(baseDate).toISOString().slice(0, 7).replace('-', '')
+      const ym = formatDate(baseDate).slice(0, 7).replace('-', '')
       const uploadsDir = path.resolve(process.cwd(), 'uploads', 'complaints', ym)
       ensureDir(uploadsDir)
 

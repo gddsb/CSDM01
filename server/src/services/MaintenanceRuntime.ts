@@ -94,7 +94,7 @@ const stdRows = await DeviceMaintenanceStandard.findAll({
       raw: true,
     }) as any[]
     const deviceMap = new Map(devices.map(d => [d.device_id, d]))
-    const today = new Date().toISOString().slice(0, 10)
+    const today = todayStr()
     const rows = toCreate.map(id => {
       const d = deviceMap.get(id)
       return {

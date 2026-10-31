@@ -3,6 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import os from 'os'
 import { success, fail, ErrorCode } from '../../utils/response'
+import { nowStr } from '../../utils/date'
 import logger from '../../utils/logger'
 
 export const getEnvironment = async (req: Request, res: Response) => {
@@ -52,9 +53,8 @@ export const getEnvironment = async (req: Request, res: Response) => {
       logger.warn('[SilentCatch] disk stat error', err?.message)
     }
 
-    // 系统时间 (北京时间 ISO 字符串)
-    const now = new Date()
-    const serverTime = now.toISOString()
+    // 系统时间 (本地时间 YYYY-MM-DD HH:mm:ss)
+    const serverTime = nowStr()
 
     // 前端服务器信息 - 从环境变量推导
     const frontendPort = Number(process.env.FRONTEND_PORT) || (process.env.NODE_ENV === 'production' ? 80 : 5173)
