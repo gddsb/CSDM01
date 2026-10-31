@@ -60,6 +60,11 @@ export const getEnvironment = async (req: Request, res: Response) => {
     const frontendPort = Number(process.env.FRONTEND_PORT) || (process.env.NODE_ENV === 'production' ? 80 : 5173)
     const backendPort = Number(process.env.PORT) || 3001
 
+    // 数据库驱动信息
+    const dbDialect = process.env.DB_DIALECT === 'mysql' ? 'mysql' : 'sqlite'
+    const dbDriverKey = dbDialect === 'mysql' ? 'mysql2' : 'sqlite3'
+    const dbDisplayName = dbDialect === 'mysql' ? 'MySQL' : 'SQLite'
+
     return success(res, {
       // 基础信息 - 与前端 EnvInfo 接口对齐（snake_case）
       node_version: process.version,
@@ -103,8 +108,14 @@ export const getEnvironment = async (req: Request, res: Response) => {
             { category: '语言', key: 'TypeScript', version: getDepVersion(frontendPkg, 'typescript') },
             { category: '构建', key: 'Vite', version: getDepVersion(frontendPkg, 'vite') },
             { category: 'UI', key: 'Ant Design', version: getDepVersion(frontendPkg, 'antd') },
+            { category: '移动UI', key: 'Ant Design Mobile', version: getDepVersion(frontendPkg, 'antd-mobile') },
+            { category: '移动端容器', key: 'Capacitor', version: getDepVersion(frontendPkg, '@capacitor/core') },
             { category: '路由', key: 'React Router', version: getDepVersion(frontendPkg, 'react-router-dom') },
+            { category: 'HTTP', key: 'Axios', version: getDepVersion(frontendPkg, 'axios') },
+            { category: '数据获取', key: 'TanStack Query', version: getDepVersion(frontendPkg, '@tanstack/react-query') },
+            { category: '日期', key: 'dayjs', version: getDepVersion(frontendPkg, 'dayjs') },
             { category: '图表', key: 'ECharts', version: getDepVersion(frontendPkg, 'echarts') },
+            { category: 'Excel', key: 'XLSX', version: getDepVersion(frontendPkg, 'xlsx') },
           ],
         },
         backend: {
@@ -114,8 +125,14 @@ export const getEnvironment = async (req: Request, res: Response) => {
             { category: '框架', key: 'Express', version: getDepVersion(backendPkg, 'express') },
             { category: '语言', key: 'TypeScript', version: getDepVersion(backendPkg, 'typescript') },
             { category: 'ORM', key: 'Sequelize', version: getDepVersion(backendPkg, 'sequelize') },
-            { category: '数据库', key: process.env.DB_DIALECT === 'mysql' ? 'MySQL' : 'SQLite', version: '-' },
+            { category: '数据库', key: dbDisplayName, version: getDepVersion(backendPkg, dbDriverKey) },
             { category: '鉴权', key: 'JWT', version: getDepVersion(backendPkg, 'jsonwebtoken') },
+            { category: '加密', key: 'bcryptjs', version: getDepVersion(backendPkg, 'bcryptjs') },
+            { category: '文件上传', key: 'Multer', version: getDepVersion(backendPkg, 'multer') },
+            { category: '参数校验', key: 'Zod', version: getDepVersion(backendPkg, 'zod') },
+            { category: '跨域', key: 'CORS', version: getDepVersion(backendPkg, 'cors') },
+            { category: '环境变量', key: 'dotenv', version: getDepVersion(backendPkg, 'dotenv') },
+            { category: '数据库迁移', key: 'Umzug', version: getDepVersion(backendPkg, 'umzug') },
           ],
         },
       },
