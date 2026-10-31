@@ -115,12 +115,14 @@ let dbFlushTimer: ReturnType<typeof setTimeout> | null = null
 function extractDbEntry(levelName: string, fields: Record<string, unknown> | null, msg: string): DbLogEntry | null {
   try {
     const f = fields || {}
-    const category = (f.req ? 'request' : f.auth ? 'auth' : f.sync ? 'sync' : f.migration ? 'migration' : null)
-    const path = typeof (f.req as any)?.url === 'string' ? (f.req as any).url.slice(0, 255) : null
-    const method = typeof (f.req as any)?.method === 'string' ? (f.req as any).method : null
-    const status = typeof (f.res as any)?.statusCode === 'number' ? (f.res as any).statusCode : null
-    const duration_ms = typeof (f.responseTime ?? f.duration) === 'number' ? Number(f.responseTime ?? f.duration) : null
-    const source = typeof f.source === 'string' ? f.source.slice(0, 100) : null
+    const hasReq = typeof (f.req as any)?.url === 'string'
+    const hasRes = typeof (f.res as any)?.statusCode === 'number'
+    const category = (hasReq ? 'request' : null)
+    const path = typeof (f.req as any)?.url === 'string' ? String((f.req as any).url).slice(0, 255) : null
+    const method = typeof (f.req as any)?.method === 'string' ? String((f.req as any).method) : null
+    const status = typeof (f.res as any)?.statusCode === 'number' ? Number((f.res as any).statusCode) : null
+    const duration_ms = typeof (f.responseTime) === 'number' ? Number(f.responseTime) : null
+    const source = typeof f.source === 'string' ? String(f.source).slice(0, 100) : null
     const cleanFields: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(f)) {
       if (k === 'req' || k === 'res' || k === 'err') continue // 敏感/大对象不冗余
@@ -143,6 +145,38 @@ function extractDbEntry(levelName: string, fields: Record<string, unknown> | nul
     return null
   }
 }
+
+/**
+ * 直接 hook pinoInstance 本身的各 level 方法
+ * — 这样 pino-http 传入的 { req, res, responseTime } 也会进入 DB
+ */
+function hookPinoForDb() {
+  const levels: Array<'info' | 'warn' | 'error' | 'debug'> = ['info', 'warn', 'error', 'debug']
+  for (const lvl of levels) {
+    const orig = pinoInstance[lvl].bind(pinoInstance)
+    ;(pinoInstance as any)[lvl] = function (first: any, ...rest: any[]) {
+      // 原始 pino 调用（输出到 pm2 文件，不阻塞）
+      orig(first, ...rest)
+      // 解析并存 DB（fire-and-forget）
+      let fields: Record<string, unknown> | null = null
+      let msg = ''
+      if (first && typeof first === 'object' && !(first instanceof Error)) {
+        fields = first
+        msg = rest.map(a => String(a)).join(' ')
+      } else if (first instanceof Error) {
+        msg = rest.map(a => String(a)).join(' ')
+        if (!msg) msg = String(first)
+      } else {
+        msg = [first, ...rest].map(a => String(a)).join(' ')
+      }
+      const dbEntry = extractDbEntry(lvl, fields, msg)
+      pushToDbBuffer(dbEntry)
+    }
+  }
+}
+
+// 立即 hook（logger.ts 被 import 时生效）
+if (ENABLE_DB_LOG) hookPinoForDb()
 
 async function flushDbBuffer(): Promise<void> {
   dbFlushTimer = null
@@ -175,34 +209,24 @@ function pushToDbBuffer(entry: DbLogEntry | null): void {
   }
 }
 
-/**
- * 给 pinoInstance 的各 level 加 DB hook
- * — 不包装 pinoInstance 本身（保留 pino-http 兼容性）
- */
-const dbWrappedLogger = {
+/** 对外导出的 logger：走 hook 过的 pinoInstance（已自动写 pm2 + DB） */
+export const logger = {
   debug: (...args: any[]) => {
     const [fields, msg] = normalizeArgs(args)
     fields ? pinoInstance.debug(fields, msg) : pinoInstance.debug(msg)
-    pushToDbBuffer(extractDbEntry('DEBUG', fields, msg))
   },
   info: (...args: any[]) => {
     const [fields, msg] = normalizeArgs(args)
     fields ? pinoInstance.info(fields, msg) : pinoInstance.info(msg)
-    pushToDbBuffer(extractDbEntry('INFO', fields, msg))
   },
   warn: (...args: any[]) => {
     const [fields, msg] = normalizeArgs(args)
     fields ? pinoInstance.warn(fields, msg) : pinoInstance.warn(msg)
-    pushToDbBuffer(extractDbEntry('WARN', fields, msg))
   },
   error: (...args: any[]) => {
     const [fields, msg] = normalizeArgs(args)
     fields ? pinoInstance.error(fields, msg) : pinoInstance.error(msg)
-    pushToDbBuffer(extractDbEntry('ERROR', fields, msg))
   },
 }
-
-/** 对外导出的 logger：既写 pm2 文件，也批量写 sys_system_log 表 */
-export const logger = dbWrappedLogger
 
 export default logger
