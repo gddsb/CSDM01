@@ -133,6 +133,7 @@ const ReportOrder = sequelize.define('ReportOrder', {
   tableName: 'production_report_order',
   timestamps: true,
   underscored: true,
+  comment: '生产报工单主表：记录每笔生产报工的产出数量、报工人员、工序完成情况',
 })
 
 export default ReportOrder
