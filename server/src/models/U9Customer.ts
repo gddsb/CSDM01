@@ -52,6 +52,7 @@ const U9Customer = sequelize.define('U9Customer', {
   underscored: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
+  comment: 'U9 客户同步表：从 U9 ERP 同步的客户基础数据快照',
   indexes: [
     { fields: ['customer_code'], unique: true },
     { fields: ['task_id'] },

@@ -6,6 +6,7 @@ const EnvMonitor = sequelize.define('EnvMonitor', {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
+    comment: '监测记录ID（主键）',
   },
   factor_id: {
     type: DataTypes.STRING(50),
@@ -71,6 +72,7 @@ const EnvMonitor = sequelize.define('EnvMonitor', {
   underscored: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
+  comment: '环境监测点数据表：各监测点（温湿度传感器）的周期采样值',
   indexes: [
     { fields: ['factor_id'] },
     { fields: ['device_addr'] },

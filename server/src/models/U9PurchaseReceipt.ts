@@ -96,6 +96,7 @@ const U9PurchaseReceipt = sequelize.define('U9PurchaseReceipt', {
   underscored: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
+  comment: 'U9 采购收货同步表：从 U9 ERP 同步的采购入库单数据',
   indexes: [
     { fields: ['receipt_no', 'line_no'], unique: true, name: 'uk_task_pr_receipt_line' },
     { fields: ['receipt_no'], name: 'idx_task_pr_receipt_no' },

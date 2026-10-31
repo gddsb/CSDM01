@@ -57,6 +57,7 @@ const EnergyMeterData = sequelize.define('EnergyMeterData', {
   underscored: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
+  comment: '能源抄表数据表：水/电/气等能源仪表的周期性抄表记录',
   indexes: [
     { fields: ['reading_date'] },
     { fields: ['device_addr'] },

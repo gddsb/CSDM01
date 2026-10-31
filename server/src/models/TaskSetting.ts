@@ -6,6 +6,7 @@ const TaskSetting = sequelize.define('TaskSetting', {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
+    comment: '配置ID（主键）',
   },
   task_type: {
     type: DataTypes.STRING(20),
@@ -54,6 +55,7 @@ const TaskSetting = sequelize.define('TaskSetting', {
   underscored: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
+  comment: '任务设置表：系统定时任务/异步任务的配置项（如日报生成时间）',
 })
 
 export default TaskSetting

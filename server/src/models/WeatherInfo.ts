@@ -47,6 +47,7 @@ const WeatherInfo = sequelize.define('WeatherInfo', {
   underscored: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
+  comment: '天气信息采集表：从外部天气 API 同步的工厂所在地温湿度数据',
   indexes: [
     { fields: ['city'] },
     { fields: ['weather_time'] },

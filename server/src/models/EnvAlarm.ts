@@ -6,6 +6,7 @@ const EnvAlarm = sequelize.define('EnvAlarm', {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
+    comment: '报警记录ID（主键）',
   },
   factor_id: {
     type: DataTypes.STRING(50),
@@ -79,6 +80,7 @@ const EnvAlarm = sequelize.define('EnvAlarm', {
   underscored: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
+  comment: '环境报警记录表：环境参数超阈值时自动触发或手动登记的报警',
   indexes: [
     { fields: ['factor_id'] },
     { fields: ['device_addr'] },

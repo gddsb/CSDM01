@@ -98,6 +98,7 @@ const U9ProductionOrder = sequelize.define('U9ProductionOrder', {
   underscored: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
+  comment: 'U9 生产订单同步表：从 U9 ERP 同步的生产订单原始数据快照',
   indexes: [
     { fields: ['order_no'], unique: true, name: 'uk_task_po_order_no' },
     { fields: ['material_code'], name: 'idx_task_po_material_code' },

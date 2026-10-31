@@ -133,6 +133,7 @@ const U9Item = sequelize.define('U9Item', {
   underscored: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',
+  comment: 'U9 料品同步表：从 U9 ERP 同步的料品主数据（比 bas_material 更全）',
   indexes: [
     { fields: ['material_code'], unique: true, name: 'uk_task_item_material_code' },
     { fields: ['task_id'] },
