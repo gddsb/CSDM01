@@ -124,7 +124,7 @@ export default function ThreeSectionPage({
 
   return (
     <div className="three-section-page">
-      <div className="section-info">
+      <div className={`section-info${collapsed ? ' collapsed' : ''}`}>
         <div className="section-info-header">
           <div className="section-info-title">
             {breadcrumbs && <div className="section-breadcrumbs">{breadcrumbs}</div>}
@@ -151,14 +151,15 @@ export default function ThreeSectionPage({
           </Row>
         )}
 
-        {extra}
+        {!collapsed && extra}
 
-        {stats && stats.length > 0 && (
+        {(stats?.length > 0 || extra) && (
           <div className="section-info-toggle" onClick={() => setCollapsed(c => !c)}>
             {collapsed ? <DownOutlined /> : <UpOutlined />}
           </div>
         )}
       </div>
+    
 
       {filters && (
         <div className="section-filter">

@@ -675,6 +675,14 @@ body {
   margin-top: 4px !important;
 }
 
+/* 收起时最小化 section-info 高度 */
+.section-info.collapsed {
+  padding: 8px 16px;
+}
+.section-info.collapsed .section-info-header {
+  margin-bottom: 0;
+}
+
 /* 收起/展开 toggle 按钮 */
 .section-info-toggle {
   display: flex;
