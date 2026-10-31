@@ -8,6 +8,7 @@ const ReportProcess = sequelize.define('ReportProcess', {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
+    comment: '工序列表ID（主键，报工工序快照）',
   },
   report_order_id: {
     type: DataTypes.INTEGER,
@@ -48,6 +49,7 @@ const ReportProcess = sequelize.define('ReportProcess', {
   tableName: 'production_report_process',
   timestamps: true,
   underscored: true,
+  comment: '报工工序列表：创建报工单时从产线工序表继承的工序列表（快照）',
   indexes: [
     { unique: true, fields: ['report_order_id', 'process_id'] },
     { fields: ['report_order_id'] },

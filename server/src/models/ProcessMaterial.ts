@@ -7,6 +7,7 @@ const ProcessMaterial = sequelize.define('ProcessMaterial', {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
+    comment: '物料记录ID（主键）',
   },
   report_order_id: {
     type: DataTypes.INTEGER,
@@ -49,6 +50,7 @@ const ProcessMaterial = sequelize.define('ProcessMaterial', {
   underscored: true,
   createdAt: 'record_time',
   updatedAt: false,
+  comment: '报工物料记录表：记录每次报工的投料物料、批次、包号等',
 })
 
 export default ProcessMaterial

@@ -7,6 +7,7 @@ const ManpowerRecord = sequelize.define('ManpowerRecord', {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
+    comment: '记录ID（主键，报工人员工时记录）',
   },
   report_order_id: {
     type: DataTypes.INTEGER,
@@ -82,6 +83,7 @@ const ManpowerRecord = sequelize.define('ManpowerRecord', {
   underscored: true,
   createdAt: 'created_at',
   updatedAt: false,
+  comment: '生产报工人员工时记录表：记录每个报工单的出勤人员、班次、工时等',
 })
 
 export default ManpowerRecord

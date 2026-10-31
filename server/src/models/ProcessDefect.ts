@@ -8,6 +8,7 @@ const ProcessDefect = sequelize.define('ProcessDefect', {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
+    comment: '不良记录ID（主键）',
   },
   report_order_id: {
     type: DataTypes.INTEGER,
@@ -42,6 +43,7 @@ const ProcessDefect = sequelize.define('ProcessDefect', {
   underscored: true,
   createdAt: 'record_time',
   updatedAt: false,
+  comment: '报工不良记录表：记录每次报工的不良品数量、分类、图片等',
 })
 
 ProcessDefect.belongsTo(DefectType, {

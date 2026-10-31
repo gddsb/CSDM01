@@ -7,6 +7,7 @@ const ProcessException = sequelize.define('ProcessException', {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
+    comment: '异常记录ID（主键）',
   },
   report_order_id: {
     type: DataTypes.INTEGER,
@@ -77,6 +78,7 @@ const ProcessException = sequelize.define('ProcessException', {
   underscored: true,
   createdAt: 'created_at',
   updatedAt: false,
+  comment: '报工异常停机记录表：记录生产过程中的设备异常、停机时间等',
 })
 
 export default ProcessException
