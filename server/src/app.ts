@@ -23,15 +23,22 @@ import { formatDateTime } from './utils/date.js'
 
 dotenv.config()
 
-const app = express()
-// Express 全局 JSON 序列化：Date 对象 → "YYYY-MM-DD HH:mm:ss" 北京时间（无 T/Z 时区标记）
-// 修根因：JSON.stringify(Date) 自动调 toISOString() 变成 UTC "T10:07:04.000Z"
-app.set('json replacer', (_key: string, value: any) => {
-  if (value instanceof Date && !isNaN(value.getTime())) {
-    return formatDateTime(value)
+// ======================================================================
+// 全局 Date.toJSON 重写：让 JSON.stringify(Date) 输出北京时间字符串
+// 原行为：Date.toJSON() → toISOString() → "2026-10-31T10:07:04.000Z" (UTC)
+// 新行为：Date.toJSON() → "2026-10-31 18:07:04" (服务器本地时间)
+// 注：不能只靠 app.set('json replacer') —— JSON.stringify 对 Date 会先调 .toJSON()
+//     再传给 replacer，replacer 拿到的已经是字符串不是 Date 了，绕过 replacer 检查
+// ======================================================================
+const _origToJSON = Date.prototype.toJSON
+Date.prototype.toJSON = function (): string {
+  if (!isNaN(this.getTime())) {
+    return formatDateTime(this)
   }
-  return value
-})
+  return _origToJSON.call(this)
+}
+
+const app = express()
 
 const PORT = process.env.PORT || 3001
 const isProd = process.env.NODE_ENV === 'production'
