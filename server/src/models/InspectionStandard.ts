@@ -75,6 +75,7 @@ const InspectionStandard = sequelize.define('InspectionStandard', {
   tableName: 'quality_inspection_standard',
   timestamps: true,
   underscored: true,
+  comment: '检验方案主表：定义某类检验的总体要求（关联 StandardItem 明细）',
   indexes: [
     { fields: ['standard_no', 'version_no'], unique: true, name: 'uk_standard_no_version' },
     { fields: ['inspection_type'] },

@@ -61,6 +61,7 @@ const QcInspectionSampleValue = sequelize.define('QcInspectionSampleValue', {
   tableName: 'qc_inspection_sample_value',
   timestamps: true,
   underscored: true,
+  comment: '检验样本值记录表：每个样本的实际测量值、判定结果',
   indexes: [
     { fields: ['item_id', 'sample_no', 'dimension_code'], unique: true, name: 'uk_qcisv_item_sample_dim' },
     { fields: ['item_id'], name: 'idx_qcisv_item' },

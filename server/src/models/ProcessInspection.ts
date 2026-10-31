@@ -95,6 +95,7 @@ const ProcessInspection = sequelize.define('ProcessInspection', {
   tableName: 'quality_process_inspection',
   timestamps: true,
   underscored: true,
+  comment: '过程检验单表：记录生产过程中的在制品抽检结果',
   indexes: [
     { fields: ['inspection_no'], unique: true },
     { fields: ['report_order_id'] },

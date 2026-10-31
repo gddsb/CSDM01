@@ -76,6 +76,7 @@ const InspectionStandardItem = sequelize.define('InspectionStandardItem', {
   tableName: 'quality_inspection_standard_item',
   timestamps: true,
   underscored: true,
+  comment: '检验方案明细表：定义每个检验项目的标准值、公差、检测方法',
   indexes: [
     { fields: ['standard_id'] },
   ],

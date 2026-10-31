@@ -120,6 +120,7 @@ const QcInspectionItem = sequelize.define('QcInspectionItem', {
   tableName: 'qc_inspection_item',
   timestamps: true,
   underscored: true,
+  comment: '检验项目模板表：定义 QC 检验的项目库（可被多个方案引用）',
   indexes: [
     { fields: ['source_type', 'inspection_id'], name: 'idx_qcii_source_inspection' },
     { fields: ['item_cfg_id'], name: 'idx_qcii_item_cfg' },

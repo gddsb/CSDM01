@@ -153,6 +153,7 @@ const IncomingInspection = sequelize.define('IncomingInspection', {
   tableName: 'quality_incoming_inspection',
   timestamps: true,
   underscored: true,
+  comment: '来料检验单表：记录对供应商来料的检验结果、合格判定、让步接收等',
   indexes: [
     { fields: ['inspection_no'], unique: true },
     { fields: ['receipt_id'] },

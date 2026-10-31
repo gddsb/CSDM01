@@ -123,6 +123,7 @@ const ProductInspection = sequelize.define('ProductInspection', {
   tableName: 'quality_product_inspection',
   timestamps: true,
   underscored: true,
+  comment: '成品检验单表：记录成品出货前的最终检验结果',
   indexes: [
     { fields: ['inspection_no'], unique: true },
     { fields: ['inspection_type'] },

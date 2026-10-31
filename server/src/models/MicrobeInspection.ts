@@ -140,6 +140,7 @@ const MicrobeInspection = sequelize.define('MicrobeInspection', {
   tableName: 'quality_microbe_inspection',
   timestamps: true,
   underscored: true,
+  comment: '微生物检验单表：记录食品接触材料/产品的微生物检测结果',
   indexes: [
     { fields: ['inspection_no'], unique: true },
     { fields: ['object_type'] },
