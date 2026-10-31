@@ -481,15 +481,19 @@ export async function runMigrations() {
 }
 
 // 判断约束是否已存在
-// 注意：Sequelize 6 + QueryTypes.SELECT 查不到时 rows=undefined（而非 []），
-// 必须用 Array.isArray 兜底，否则 undefined.length 直接 TypeError
+// 注意：Sequelize 6 + QueryTypes.SELECT 的返回值形态不稳定：
+//   LIMIT 1 有结果 → 单个对象 { CONSTRAINT_NAME: 'xxx' }（非数组！）
+//   LIMIT 1 无结果 → undefined
+//   多条结果 → 数组
+// 所以判断 "是否存在" 不能靠 Array.isArray，直接看 rows 是否 truthy
 async function constraintExists(table: string, name: string): Promise<boolean> {
   const [rows] = await sequelize.query(
     `SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS
      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table AND CONSTRAINT_NAME = :name LIMIT 1`,
     { replacements: { table, name }, type: QueryTypes.SELECT }
   )
-  return Array.isArray(rows) && (rows as unknown[]).length > 0
+  // 有结果时 rows 是对象（Sequelize SELECT LIMIT 1 拆包），无结果是 undefined
+  return !!rows
 }
 
 async function ensureCoreForeignKeys(): Promise<void> {
