@@ -130,6 +130,7 @@ fi
 echo ""
 echo "=== 3. 写入 releases.json ==="
 mkdir -p server/data
+BUILD_TIME_BJ="$(date '+%Y-%m-%d %H:%M:%S')"
 cat > server/data/releases.json << ENDJSON
 {
   "version": "${VERSION}",
@@ -142,7 +143,7 @@ cat > server/data/releases.json << ENDJSON
   "appId": "com.daman.milkcanmes",
   "bundleId": "com.daman.milkcanmes",
   "updateNotes": "${UPDATE_NOTES}",
-  "publishedAt": "$(date +%Y-%m-%d\ %H:%M:%S)",
+  "publishedAt": "${BUILD_TIME_BJ}",
   "gitSha": "${SHORT_SHA}"
 }
 ENDJSON
@@ -222,6 +223,7 @@ else
 fi
 
 # 回填实际 apkSize + downloadUrl（release 存在时已在上分支更新为 release URL）
+BUILD_TIME_BJ="$(date '+%Y-%m-%d %H:%M:%S')"
 cat > server/data/releases.json << ENDJSON
 {
   "version": "${VERSION}",
@@ -234,7 +236,7 @@ cat > server/data/releases.json << ENDJSON
   "appId": "com.daman.milkcanmes",
   "bundleId": "com.daman.milkcanmes",
   "updateNotes": "${UPDATE_NOTES}",
-  "publishedAt": "$(date +%Y-%m-%d\ %H:%M:%S)",
+  "publishedAt": "${BUILD_TIME_BJ}",
   "gitSha": "${SHORT_SHA}"
 }
 ENDJSON
