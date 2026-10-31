@@ -19,10 +19,20 @@ import { corsOptions, apiRateLimiter, AppError } from './middleware/security.js'
 import { WorkflowError } from './services/ProductionWorkflowService.js'
 import { performanceMonitor } from './middleware/performance.js'
 import logger, { pinoLogger } from './utils/logger.js'
+import { formatDateTime } from './utils/date.js'
 
 dotenv.config()
 
 const app = express()
+// Express 全局 JSON 序列化：Date 对象 → "YYYY-MM-DD HH:mm:ss" 北京时间（无 T/Z 时区标记）
+// 修根因：JSON.stringify(Date) 自动调 toISOString() 变成 UTC "T10:07:04.000Z"
+app.set('json replacer', (_key: string, value: any) => {
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return formatDateTime(value)
+  }
+  return value
+})
+
 const PORT = process.env.PORT || 3001
 const isProd = process.env.NODE_ENV === 'production'
 
