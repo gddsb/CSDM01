@@ -7,7 +7,7 @@ import { logger } from '../utils/logger.js'
 const SENSITIVE_KEYS = ['password', 'token', 'secret', 'authorization', 'pwd', 'access_token', 'refresh_token']
 
 const PERM_CACHE_TTL = 60_000
-const permCache: Record<number, { codes: Set<string>; roleCode: string | null; ts: number }> = {}
+const permCache: Record<number, { codes: Set<string>; roleCode: string | null; roleName: string | null; ts: number }> = {}
 
 /** 超级管理员角色编码：这些角色直接拥有全部权限，跳过 role_permission 关联 */
 const SUPER_ROLE_CODES = new Set(['SUPER_ADMIN', 'ADMIN'])
@@ -21,7 +21,7 @@ async function loadRolePermissionCodes(roleId: number): Promise<{ codes: Set<str
   const now = Date.now()
   const cached = permCache[roleId]
   if (cached && now - cached.ts < PERM_CACHE_TTL) {
-    return { codes: cached.codes, roleCode: cached.roleCode, roleName: null }
+    return { codes: cached.codes, roleCode: cached.roleCode, roleName: cached.roleName }
   }
 
   const role = await Role.findOne({
@@ -43,8 +43,8 @@ async function loadRolePermissionCodes(roleId: number): Promise<{ codes: Set<str
     }
   }
 
-  permCache[roleId] = { codes, roleCode, ts: now }
-  return { codes, roleCode }
+  permCache[roleId] = { codes, roleCode, roleName, ts: now }
+  return { codes, roleCode, roleName }
 }
 
 export function clearPermissionCache(roleId?: number): void {
