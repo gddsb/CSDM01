@@ -83,6 +83,7 @@ const QualityEnvInspection = sequelize.define('QualityEnvInspection', {
   tableName: 'quality_env_inspection',
   timestamps: true,
   underscored: true,
+  comment: '环境监测巡检记录表：记录周期性的环境温湿度/洁净度实测值',
   indexes: [
     { fields: ['inspection_no'], unique: true },
     { fields: ['area_id'] },

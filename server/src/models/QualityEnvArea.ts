@@ -44,6 +44,7 @@ const QualityEnvArea = sequelize.define('QualityEnvArea', {
   tableName: 'quality_env_area',
   timestamps: true,
   underscored: true,
+  comment: '环境监测区域表：定义工厂内需要环境监测的区域（车间/仓库）',
 })
 
 export default QualityEnvArea

@@ -6,6 +6,7 @@ const DefectImage = sequelize.define('DefectImage', {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
+    comment: '图片ID（主键，不良项配图）',
   },
   defect_id: {
     type: DataTypes.INTEGER,
@@ -36,6 +37,7 @@ const DefectImage = sequelize.define('DefectImage', {
   tableName: 'master_defect_image',
   timestamps: true,
   underscored: true,
+  comment: '不良图片表：存储每个不良分类/不良项的现场照片、标注图',
 })
 
 export default DefectImage

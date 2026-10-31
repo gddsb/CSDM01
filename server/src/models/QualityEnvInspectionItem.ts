@@ -41,6 +41,7 @@ const QualityEnvInspectionItem = sequelize.define('QualityEnvInspectionItem', {
   tableName: 'quality_env_inspection_item',
   timestamps: true,
   underscored: true,
+  comment: '环境监测项表：定义每个区域的具体监测点（传感器位置/仪器编号）',
   indexes: [
     { fields: ['inspection_id'] },
   ],

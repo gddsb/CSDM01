@@ -8,6 +8,7 @@ const ReportImage = sequelize.define('ReportImage', {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
+    comment: '图片ID（主键）',
   },
   report_order_id: {
     type: DataTypes.INTEGER,
@@ -35,6 +36,7 @@ const ReportImage = sequelize.define('ReportImage', {
   underscored: true,
   createdAt: 'created_at',
   updatedAt: false,
+  comment: '报工单图片子表：统一存储报工单的不良/标签/异常图片',
 })
 
 export default ReportImage

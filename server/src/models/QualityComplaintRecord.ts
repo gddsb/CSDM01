@@ -54,6 +54,7 @@ const QualityComplaintRecord = sequelize.define('QualityComplaintRecord', {
   tableName: 'quality_complaint_record',
   timestamps: true,
   underscored: true,
+  comment: '质量客诉处理记录表：记录每次客诉的处理人、处理方式、处理结果',
   indexes: [
     { fields: ['complaint_id'] },
     { fields: ['stage'] },

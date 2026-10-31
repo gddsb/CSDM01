@@ -49,6 +49,7 @@ const QualityEnvTemplate = sequelize.define('QualityEnvTemplate', {
   tableName: 'quality_env_template',
   timestamps: true,
   underscored: true,
+  comment: '环境监测模板表：定义温湿度/洁净度等环境监测的参数标准',
   indexes: [
     { fields: ['area_id'] },
     { fields: ['template_name'] },

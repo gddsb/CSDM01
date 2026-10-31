@@ -125,6 +125,7 @@ const QualityComplaint = sequelize.define('QualityComplaint', {
   tableName: 'quality_complaint',
   timestamps: true,
   underscored: true,
+  comment: '质量客诉主表：记录客户对产品质量的投诉、退货、赔偿全流程',
   indexes: [
     { fields: ['complaint_no'], unique: true },
     { fields: ['customer_id'] },
