@@ -1,9 +1,10 @@
 import { Space, Button, Input, Select, DatePicker, Row, Col, Checkbox, Dropdown } from 'antd'
 import type { RangePickerProps } from 'antd/es/date-picker'
 import {
-  SearchOutlined, ReloadOutlined, PlusOutlined, ExportOutlined, SettingOutlined
+  SearchOutlined, ReloadOutlined, PlusOutlined, ExportOutlined, SettingOutlined,
+  UpOutlined, DownOutlined,
 } from '@ant-design/icons'
-import React from 'react'
+import React, { useState } from 'react'
 import dayjs from 'dayjs'
 
 const { RangePicker } = DatePicker
@@ -61,6 +62,8 @@ export default function ThreeSectionPage({
   onReset,
   onFilterChange,
 }: ThreeSectionPageProps) {
+  const [collapsed, setCollapsed] = useState(false)
+
   const renderFilterItem = (f: FilterItem) => {
     if (!f) return null
     const handleChange = (v: unknown) => {
@@ -130,7 +133,7 @@ export default function ThreeSectionPage({
           <Space className="section-info-actions">{actions}</Space>
         </div>
 
-        {stats && stats.length > 0 && (
+        {!collapsed && stats && stats.length > 0 && (
           <Row gutter={12} className="stats-row">
             {stats.map((s, i) => (
               <Col key={i} span={Math.floor(24 / stats.length)}>
@@ -149,6 +152,12 @@ export default function ThreeSectionPage({
         )}
 
         {extra}
+
+        {stats && stats.length > 0 && (
+          <div className="section-info-toggle" onClick={() => setCollapsed(c => !c)}>
+            {collapsed ? <DownOutlined /> : <UpOutlined />}
+          </div>
+        )}
       </div>
 
       {filters && (

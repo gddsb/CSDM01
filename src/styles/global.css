@@ -675,6 +675,20 @@ body {
   margin-top: 4px !important;
 }
 
+/* 收起/展开 toggle 按钮 */
+.section-info-toggle {
+  display: flex;
+  justify-content: center;
+  padding: 6px 0 2px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 12px;
+  user-select: none;
+}
+.section-info-toggle:hover {
+  color: var(--color-primary);
+}
+
 /* —— 中部：筛选功能区 —— 卡片背景色，小行间距 4-8px —— */
 .section-filter {
   background: var(--bg-card);
