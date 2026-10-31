@@ -142,7 +142,7 @@ cat > server/data/releases.json << ENDJSON
   "appId": "com.daman.milkcanmes",
   "bundleId": "com.daman.milkcanmes",
   "updateNotes": "${UPDATE_NOTES}",
-  "publishedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "publishedAt": "$(date +%Y-%m-%d\ %H:%M:%S)",
   "gitSha": "${SHORT_SHA}"
 }
 ENDJSON
@@ -234,7 +234,7 @@ cat > server/data/releases.json << ENDJSON
   "appId": "com.daman.milkcanmes",
   "bundleId": "com.daman.milkcanmes",
   "updateNotes": "${UPDATE_NOTES}",
-  "publishedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "publishedAt": "$(date +%Y-%m-%d\ %H:%M:%S)",
   "gitSha": "${SHORT_SHA}"
 }
 ENDJSON

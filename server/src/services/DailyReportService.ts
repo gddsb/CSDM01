@@ -45,10 +45,10 @@ function mapShift(shift: string | null | undefined): string {
   return '白班'
 }
 
-/** 日期范围：当天 00:00:00 ~ 23:59:59 */
+/** 日期范围：当天 00:00:00 ~ 23:59:59（无 TZ 标记，依赖服务器本地时区解析） */
 function dateRange(dateStr: string): [Date, Date] {
-  const start = new Date(dateStr + 'T00:00:00')
-  const end = new Date(dateStr + 'T23:59:59')
+  const start = new Date(dateStr + ' 00:00:00')
+  const end = new Date(dateStr + ' 23:59:59')
   return [start, end]
 }
 
