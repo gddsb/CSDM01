@@ -26,7 +26,7 @@
  *   />
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ActionSheet, Image, Toast, DotLoading } from 'antd-mobile'
+import { ActionSheet, Image, ImageViewer, Toast, DotLoading } from 'antd-mobile'
 import type { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import api from '../../utils/api'
 import { resolveUploadUrl } from '../../utils/resolveUploadUrl'
@@ -275,7 +275,6 @@ export function MobileImageUploader({
   // ========== 缩略图点击：ActionSheet 选"预览/删除" ==========
   const handleThumbClick = useCallback((item: ImageUploadItem) => {
     const rawUrl = getRawUrl(item)
-    const fullUrl = typeof item.url === 'string' ? item.url : rawUrl
     ActionSheet.show({
       actions: [
         { text: '👁️ 预览', key: 'preview' },
@@ -284,11 +283,20 @@ export function MobileImageUploader({
       cancelText: '取消',
       closeOnAction: true,
       onAction: (action) => {
-        if (action.key === 'preview') window.open(fullUrl, '_blank')
-        else if (action.key === 'delete') handleDelete(rawUrl)
+        if (action.key === 'preview') {
+          // 收集全部已上传图片的 fullUrl（ImageViewer.Multi 支持左右滑动切换）
+          const validItems = items.filter((i: any) => !(i as any).uploading)
+          const urls = validItems
+            .map((i) => (typeof i.url === 'string' ? i.url : getRawUrl(i)))
+            .filter(Boolean)
+          const curIdx = validItems.findIndex((i) => getRawUrl(i) === rawUrl)
+          ImageViewer.Multi({ images: urls, defaultIndex: curIdx >= 0 ? curIdx : 0 })
+        } else if (action.key === 'delete') {
+          handleDelete(rawUrl)
+        }
       },
     })
-  }, [deleteUrl, handleDelete])
+  }, [items, deleteUrl, handleDelete])
 
   return (
     <div>
