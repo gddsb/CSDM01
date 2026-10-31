@@ -62,9 +62,9 @@ const SystemLog = sequelize.define('SystemLog', {
   timestamps: false,
   underscored: true,
   indexes: [
-    { fields: ['level'], comment: '按级别快速筛选' },
-    { fields: ['created_at'], comment: '按时间排序/筛选（核心索引）' },
-    { fields: ['path'], comment: '按请求路径筛选' },
+    { fields: ['level'] },
+    { fields: ['created_at'] },
+    { fields: ['path'] },
   ],
   comment: '系统日志表：记录服务器运行时的结构化 pino 日志（info/warn/error），用于运维诊断',
 })
