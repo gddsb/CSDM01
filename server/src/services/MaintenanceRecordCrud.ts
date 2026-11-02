@@ -55,10 +55,20 @@ const {
         })
       }
 
-      // month: YYYY-MM，按 period_key 前缀过滤（daily=YYYY-MM-DD, weekly=YYYY-Www, monthly=YYYY-MM）
+      // month: YYYY-MM，按 period_key 过滤：
+      //   daily   = YYYY-MM-DD → LIKE prefix
+      //   monthly = YYYY-MM   → exact
+      //   weekly  = YYYY-Www  → IN(当月所有 ISO 周)
       if (month && /^\d{4}-\d{2}$/.test(String(month))) {
+        const [yr, mo] = String(month).split('-').map(Number)
         where[Op.and] = where[Op.and] || []
-        where[Op.and].push({ period_key: { [Op.like]: `${month}%` } })
+        where[Op.and].push({
+          [Op.or]: [
+            { period_key: { [Op.like]: `${month}%` } },
+            { period_key: month },
+            { period_key: { [Op.in]: weeklyPeriodKeys(yr, mo) } },
+          ],
+        })
       }
 
       const statusArr = parseMultiStatus(status, STATUS_REVERSE)

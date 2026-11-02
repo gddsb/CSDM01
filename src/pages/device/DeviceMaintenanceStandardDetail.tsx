@@ -6,7 +6,6 @@ import {
 import {
   ArrowLeftOutlined, PlusOutlined,
   CheckCircleOutlined, PauseCircleOutlined, PlayCircleOutlined, ReloadOutlined,
-  TeamOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import dayjs from 'dayjs'
@@ -311,14 +310,15 @@ export default function DeviceMaintenanceStandardDetail() {
         <Space style={{ marginBottom: 16 }}>
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/device/maintenance-standard')}>返回列表</Button>
           <Button icon={<ReloadOutlined />} onClick={loadDetail}>刷新</Button>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={openAddDrawer}
-            disabled={isEffective}
-          >新增保养项</Button>
+          {!isEffective && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={openAddDrawer}
+            >新增保养项</Button>
+          )}
           <Tooltip title="将本设备所有同频率保养项统一分配责任人和检查人（任何档案状态都可操作）">
-            <Button icon={<TeamOutlined />} onClick={openDeviceAssignModal} title="按设备+频率批量分配人员">
+            <Button onClick={openDeviceAssignModal} title="按设备+频率批量分配人员">
               📋 批量分配人员
             </Button>
           </Tooltip>
