@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   Card, Table, Tag, Button, Space, Input, Drawer, Form, Radio, InputNumber,
-  Checkbox, Popconfirm, Empty, Spin, Descriptions, Typography, Tooltip, message, Select,
+  Checkbox, Empty, Spin, Descriptions, Typography, Tooltip, message, Select, Modal,
 } from 'antd'
 import {
   ArrowLeftOutlined, PlusOutlined,
   CheckCircleOutlined, PauseCircleOutlined, PlayCircleOutlined, ReloadOutlined,
-  PrinterOutlined,
+  PrinterOutlined, TeamOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import dayjs from 'dayjs'
@@ -47,7 +47,6 @@ interface StdRow {
   location?: string
   maintenance_method?: string
   maintenance_content?: string
-  inspection_roles?: string[] | null
   judge_type: string
   standard_value?: string
   unit?: string
@@ -59,6 +58,16 @@ interface StdRow {
   sort_order: number
   status: number
   remarks?: string
+  // 分配人员字段
+  assigned_user_ids?: number[] | null
+  assigned_user_names?: string | null
+  inspector_user_ids?: number[] | null
+  inspector_user_names?: string | null
+}
+
+interface UserOption {
+  label: string
+  value: number
 }
 
 export default function DeviceMaintenanceStandardDetail() {
@@ -77,8 +86,18 @@ export default function DeviceMaintenanceStandardDetail() {
   // 查看 Drawer（生效态只读）
   const [viewOpen, setViewOpen] = useState(false)
   const [viewRow, setViewRow] = useState<StdRow | null>(null)
-  // 点检角色选项（来自系统角色）
-  const [roles, setRoles] = useState<{ label: string; value: string }[]>([])
+
+  // 系统用户列表（用于分配人员）
+  const [userOptions, setUserOptions] = useState<UserOption[]>([])
+
+  // 分配人员 Modal state
+  const [assignMode, setAssignMode] = useState<'single' | 'device'>('single')
+  const [assignOpen, setAssignOpen] = useState(false)
+  const [assignTargetStandard, setAssignTargetStandard] = useState<StdRow | null>(null)
+  const [assignTriggerMode, setAssignTriggerMode] = useState<string>('daily')
+  const [assignAssigned, setAssignAssigned] = useState<number[]>([])
+  const [assignInspectors, setAssignInspectors] = useState<number[]>([])
+  const [assignSaving, setAssignSaving] = useState(false)
 
   // ===== 加载档案详情（含标准项） =====
   const loadDetail = useCallback(async () => {
@@ -88,7 +107,6 @@ export default function DeviceMaintenanceStandardDetail() {
       const res: any = await api.get(`/basic/device-maintenance-profiles/${deviceId}`)
       const data = res?.data
       setProfile(data)
-      // 标准项在 standards 字段
       setStandards(Array.isArray(data?.standards) ? data.standards : [])
     } catch (err: any) {
       message.error(err?.message || '加载档案详情失败')
@@ -99,12 +117,15 @@ export default function DeviceMaintenanceStandardDetail() {
 
   useEffect(() => { loadDetail() }, [loadDetail])
 
-  // 加载系统角色列表（用于点检角色多选）
+  // 加载系统用户列表（用于分配人员 Modal）
   useEffect(() => {
-    api.get('/system/roles', { params: { pageSize: 999 } }).then((res: any) => {
+    api.get('/system/users', { params: { pageSize: 999 } }).then((res: any) => {
       const raw = res?.data
       const list = Array.isArray(raw) ? raw : (raw?.rows || raw?.list || [])
-      setRoles(list.map((r: any) => ({ label: r.role_name, value: r.role_name })).filter((r: any) => r.value))
+      setUserOptions(list.map((u: any) => ({
+        label: `${u.username || u.real_name || u.name || ''}${u.real_name && u.username && u.real_name !== u.username ? ` (${u.username})` : ''}`,
+        value: Number(u.user_id ?? u.id),
+      })).filter((u: any) => u.value))
     }).catch(() => { /* silent */ })
   }, [])
 
@@ -135,14 +156,12 @@ export default function DeviceMaintenanceStandardDetail() {
 
   const openEditDrawer = (row: StdRow) => {
     setEditing(row)
-    // monthly_plan 后端为 12 位布尔数组，Checkbox.Group 需要被选中索引数组
     const mpRaw = Array.isArray(row.monthly_plan) ? row.monthly_plan : []
     const mpIndices = mpRaw.map((v, i) => v ? i : -1).filter(v => v >= 0)
     form.setFieldsValue({
       ...row,
       monthly_plan: mpIndices,
       runtime_threshold: row.runtime_threshold ?? null,
-      inspection_roles: Array.isArray(row.inspection_roles) ? row.inspection_roles : [],
     })
     setDrawerOpen(true)
   }
@@ -151,7 +170,6 @@ export default function DeviceMaintenanceStandardDetail() {
     const values = await form.validateFields()
     try {
       const payload = { ...values }
-      // monthly_plan: Checkbox.Group 返回被选中索引数组，后端需要 12 位布尔数组
       if (values.trigger_mode === 'monthly') {
         const mp = Array(12).fill(false)
         if (Array.isArray(values.monthly_plan)) {
@@ -169,7 +187,6 @@ export default function DeviceMaintenanceStandardDetail() {
         ? await api.put(`/basic/device-standards/${editing.standard_id}`, payload)
         : await api.post('/basic/device-standards', { ...payload, device_id: Number(deviceId) })
 
-      // 后端返回 { success: false, message } 时 HTTP 仍为 200，需手动检查
       if (res?.success === false) {
         message.error(res?.message || '操作失败')
         return
@@ -182,13 +199,64 @@ export default function DeviceMaintenanceStandardDetail() {
     }
   }
 
-  const handleDelete = async (id: number) => {
+  // ===== 分配人员：打开单条分配 Modal =====
+  const openSingleAssignModal = (row: StdRow) => {
+    setAssignMode('single')
+    setAssignTargetStandard(row)
+    setAssignTriggerMode(row.trigger_mode)
+    setAssignAssigned(Array.isArray(row.assigned_user_ids) ? row.assigned_user_ids : [])
+    setAssignInspectors(Array.isArray(row.inspector_user_ids) ? row.inspector_user_ids : [])
+    setAssignOpen(true)
+  }
+
+  // ===== 分配人员：打开设备级批量分配 Modal =====
+  const openDeviceAssignModal = () => {
+    setAssignMode('device')
+    setAssignTargetStandard(null)
+    setAssignTriggerMode('daily')
+    setAssignAssigned([])
+    setAssignInspectors([])
+    setAssignOpen(true)
+  }
+
+  // ===== 保存分配 =====
+  const handleSaveAssign = async () => {
+    setAssignSaving(true)
     try {
-      await api.delete(`/basic/device-standards/${id}`)
-      message.success('删除成功')
+      const assignedNames = userOptions.filter(u => assignAssigned.includes(u.value)).map(u => u.label).join('、') || null
+      const inspectorNames = userOptions.filter(u => assignInspectors.includes(u.value)).map(u => u.label).join('、') || null
+
+      let res: any
+      if (assignMode === 'single' && assignTargetStandard) {
+        res = await api.put('/basic/device-standards/batch-assign', {
+          standard_ids: [assignTargetStandard.standard_id],
+          assigned_user_ids: assignAssigned,
+          assigned_user_names: assignedNames,
+          inspector_user_ids: assignInspectors,
+          inspector_user_names: inspectorNames,
+        })
+      } else {
+        res = await api.put('/basic/device-standards/assign-daily-by-device', {
+          device_id: Number(deviceId),
+          trigger_mode: assignTriggerMode,
+          assigned_user_ids: assignAssigned,
+          assigned_user_names: assignedNames,
+          inspector_user_ids: assignInspectors,
+          inspector_user_names: inspectorNames,
+        })
+      }
+
+      if (res?.success === false) {
+        message.error(res?.message || '分配失败')
+        return
+      }
+      message.success(`成功分配 ${res?.data?.updated ?? 0} 条标准`)
+      setAssignOpen(false)
       loadDetail()
     } catch (err: any) {
-      message.error(err?.message || '删除失败')
+      message.error(err?.message || '分配失败')
+    } finally {
+      setAssignSaving(false)
     }
   }
 
@@ -199,16 +267,23 @@ export default function DeviceMaintenanceStandardDetail() {
   // ===== 列定义 =====
   const columns: ColumnsType<StdRow> = [
     {
-      title: '频率', width: 100,
+      title: '频率', width: 80,
       render: (_, r) => <Tag color={MODE_COLOR[r.trigger_mode]}>{MODE_LABEL[r.trigger_mode] || r.trigger_mode}</Tag>,
     },
-    { title: '保养/点检内容', dataIndex: 'maintenance_content', width: 200, render: (v) => v || '-' },
-    { title: '点检角色', dataIndex: 'inspection_roles', width: 140, ellipsis: true, render: (v) => (Array.isArray(v) && v.length) ? v.join('、') : '-' },
-    { title: '判定基准', dataIndex: 'standard_value', width: 160, ellipsis: true, render: (v) => v || '-' },
-    { title: '保养方法', dataIndex: 'maintenance_method', width: 120, render: (v) => v || '-' },
-    { title: '判定方式', dataIndex: 'judge_type', width: 90 },
+    { title: '保养/点检内容', dataIndex: 'maintenance_content', width: 180, render: (v) => v || '-' },
     {
-      title: '周期配置', width: 180,
+      title: '责任人', width: 130, ellipsis: true,
+      render: (_, r) => r.assigned_user_names ? <Tag color="blue">{r.assigned_user_names}</Tag> : <Text type="secondary">—</Text>,
+    },
+    {
+      title: '检查人', width: 130, ellipsis: true,
+      render: (_, r) => r.inspector_user_names ? <Tag color="green">{r.inspector_user_names}</Tag> : <Text type="secondary">—</Text>,
+    },
+    { title: '判定基准', dataIndex: 'standard_value', width: 150, ellipsis: true, render: (v) => v || '-' },
+    { title: '保养方法', dataIndex: 'maintenance_method', width: 110, render: (v) => v || '-' },
+    { title: '判定方式', dataIndex: 'judge_type', width: 80 },
+    {
+      title: '周期配置', width: 160,
       render: (_, r) => {
         if (r.trigger_mode === 'monthly') {
           const mp: boolean[] = r.monthly_plan || []
@@ -218,6 +293,14 @@ export default function DeviceMaintenanceStandardDetail() {
         if (r.trigger_mode === 'runtime') return `${r.runtime_threshold}h`
         return r.trigger_mode === 'daily' ? '每天' : r.trigger_mode === 'weekly' ? '每周' : '-'
       },
+    },
+    {
+      title: '操作', width: 100, fixed: 'right',
+      render: (_, r) => (
+        <Space size={4}>
+          <Button size="small" type="link" icon={<TeamOutlined />} onClick={(e) => { e.stopPropagation(); openSingleAssignModal(r) }}>分配人员</Button>
+        </Space>
+      ),
     },
   ]
 
@@ -235,26 +318,34 @@ export default function DeviceMaintenanceStandardDetail() {
             onClick={openAddDrawer}
             disabled={isEffective}
           >新增保养项</Button>
+          <Tooltip title="将本设备所有同频率保养项统一分配责任人和检查人（任何档案状态都可操作）">
+            <Button icon={<TeamOutlined />} onClick={openDeviceAssignModal} title="按设备+频率批量分配人员">
+              📋 批量分配人员
+            </Button>
+          </Tooltip>
           {isEffective && (
-            <Tooltip title="档案已生效，如需修改请先停用">
+            <Tooltip title="档案已生效，如需修改标准内容请先停用">
               <span style={{ display: 'inline-block', width: 0 }} />
             </Tooltip>
           )}
           {/* 状态切换按钮 */}
           {currentStatus === '编制' && (
-            <Popconfirm title="确认生效？生效后将按计划生成维保计划" onConfirm={() => handleSwitchStatus('生效')}>
-              <Button type="primary" icon={<CheckCircleOutlined />} style={{ background: '#52c41a', borderColor: '#52c41a' }}>生效档案</Button>
-            </Popconfirm>
+            <Button type="primary" icon={<CheckCircleOutlined />} style={{ background: '#52c41a', borderColor: '#52c41a' }}
+              onClick={() => Modal.confirm({
+                title: '确认生效？生效后将按计划生成维保计划',
+                onOk: () => handleSwitchStatus('生效'),
+              })}>生效档案</Button>
           )}
           {currentStatus === '生效' && (
-            <Popconfirm title="确认停用？停用后不再生成新维保计划" onConfirm={() => handleSwitchStatus('停用')}>
-              <Button icon={<PauseCircleOutlined />} style={{ background: '#faad14', borderColor: '#faad14', color: '#fff' }}>停用档案</Button>
-            </Popconfirm>
+            <Button icon={<PauseCircleOutlined />} style={{ background: '#faad14', borderColor: '#faad14', color: '#fff' }}
+              onClick={() => Modal.confirm({
+                title: '确认停用？停用后不再生成新维保计划',
+                onOk: () => handleSwitchStatus('停用'),
+              })}>停用档案</Button>
           )}
           {currentStatus === '停用' && (
-            <Popconfirm title="确认重新生效？" onConfirm={() => handleSwitchStatus('生效')}>
-              <Button type="primary" icon={<PlayCircleOutlined />}>重新生效</Button>
-            </Popconfirm>
+            <Button type="primary" icon={<PlayCircleOutlined />}
+              onClick={() => Modal.confirm({ title: '确认重新生效？', onOk: () => handleSwitchStatus('生效') })}>重新生效</Button>
           )}
         </Space>
 
@@ -285,7 +376,7 @@ export default function DeviceMaintenanceStandardDetail() {
             rowKey="standard_id"
             columns={columns}
             dataSource={standards}
-            scroll={{ x: 1200 }}
+            scroll={{ x: 1250 }}
             pagination={false}
             size="small"
             locale={{ emptyText: <Empty description="暂无保养标准项" /> }}
@@ -315,6 +406,8 @@ export default function DeviceMaintenanceStandardDetail() {
           <Descriptions column={1} size="small" bordered>
             <Descriptions.Item label="触发频率">{MODE_LABEL[viewRow.trigger_mode]}</Descriptions.Item>
             <Descriptions.Item label="保养/点检内容">{viewRow.maintenance_content || '-'}</Descriptions.Item>
+            <Descriptions.Item label="责任人">{viewRow.assigned_user_names || '-'}</Descriptions.Item>
+            <Descriptions.Item label="检查人">{viewRow.inspector_user_names || '-'}</Descriptions.Item>
             <Descriptions.Item label="机构">{viewRow.mechanism || '-'}</Descriptions.Item>
             <Descriptions.Item label="部件">{viewRow.component || '-'}</Descriptions.Item>
             <Descriptions.Item label="部位">{viewRow.location || '-'}</Descriptions.Item>
@@ -380,11 +473,6 @@ export default function DeviceMaintenanceStandardDetail() {
             rules={[{ required: true, message: '请填写保养/点检内容' }]}
           >
             <TextArea rows={2} placeholder="描述具体的保养动作或点检项内容" />
-          </Form.Item>
-
-          {/* 点检角色（多选，来自系统角色） */}
-          <Form.Item name="inspection_roles" label="点检角色">
-            <Select mode="multiple" allowClear placeholder="请选择点检角色（可多选）" options={roles} />
           </Form.Item>
 
           {/* 根据触发频率动态显示字段（除保养内容外的条件字段） */}
@@ -467,6 +555,69 @@ export default function DeviceMaintenanceStandardDetail() {
           </Form.Item>
         </Form>
       </Drawer>
+
+      {/* ===== 分配人员 Modal ===== */}
+      <Modal
+        title={assignMode === 'single'
+          ? `分配人员 — ${assignTargetStandard?.maintenance_content?.slice(0, 20) || ''}...`
+          : `批量分配本设备 ${MODE_LABEL[assignTriggerMode as keyof typeof MODE_LABEL] || ''} 保养项人员`}
+        open={assignOpen}
+        width={560}
+        onCancel={() => setAssignOpen(false)}
+        onOk={handleSaveAssign}
+        confirmLoading={assignSaving}
+        okText="保存分配"
+        cancelText="取消"
+      >
+        {assignMode === 'device' && (
+          <div style={{ marginBottom: 12 }}>
+            <Text type="secondary">选择要批量分配的触发频率：</Text>
+            <Radio.Group
+              value={assignTriggerMode}
+              onChange={(e) => setAssignTriggerMode(e.target.value)}
+              style={{ marginLeft: 12 }}
+            >
+              <Radio value="daily">每日点检</Radio>
+              <Radio value="weekly">每周保养</Radio>
+              <Radio value="monthly">每月保养</Radio>
+            </Radio.Group>
+          </div>
+        )}
+
+        <Form layout="vertical">
+          <Form.Item label="责任人（可多选，留空则清除）">
+            <Select
+              mode="multiple"
+              allowClear
+              placeholder="请选择责任人"
+              options={userOptions}
+              value={assignAssigned}
+              onChange={setAssignAssigned}
+              maxTagCount={3}
+              showSearch
+              optionFilterProp="label"
+              notFoundContent="暂无系统用户"
+            />
+          </Form.Item>
+          <Form.Item label="检查人（可多选，留空则清除）">
+            <Select
+              mode="multiple"
+              allowClear
+              placeholder="请选择检查人"
+              options={userOptions}
+              value={assignInspectors}
+              onChange={setAssignInspectors}
+              maxTagCount={3}
+              showSearch
+              optionFilterProp="label"
+              notFoundContent="暂无系统用户"
+            />
+          </Form.Item>
+        </Form>
+        <div style={{ color: '#999', fontSize: 12 }}>
+          提示：分配仅改人员配置字段，不影响档案状态（编制/生效/停用三态均可操作）。
+        </div>
+      </Modal>
 
       {/* 打印样式 */}
       <style>{`

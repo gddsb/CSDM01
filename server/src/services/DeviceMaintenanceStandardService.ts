@@ -183,4 +183,64 @@ export async function deleteStandard(id: number) {
       return { message: '删除成功' }
 }
 
-export default { listStandards, createStandard, updateStandard, deleteStandard }
+/** 批量分配责任人/检查人（按 standard_id 数组）
+ *  只改人员字段，不碰档案状态 —— 任何状态（编制/生效/停用）都允许分配
+ */
+export async function batchAssignStandards(body: any) {
+  const { standard_ids, assigned_user_ids, assigned_user_names, inspector_user_ids, inspector_user_names } = body || {}
+
+  if (!Array.isArray(standard_ids) || standard_ids.length === 0) {
+    throw new AppError('请指定要分配的标准ID列表', ErrorCode.PARAM_INVALID)
+  }
+
+  const updateData: any = {}
+  if (assigned_user_ids !== undefined) {
+    updateData.assigned_user_ids = Array.isArray(assigned_user_ids) ? assigned_user_ids : null
+    updateData.assigned_user_names = assigned_user_names || null
+  }
+  if (inspector_user_ids !== undefined) {
+    updateData.inspector_user_ids = Array.isArray(inspector_user_ids) ? inspector_user_ids : null
+    updateData.inspector_user_names = inspector_user_names || null
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    throw new AppError('请至少指定一个要分配的字段（责任人或检查人）', ErrorCode.PARAM_INVALID)
+  }
+
+  const [affectedRows] = await DeviceMaintenanceStandard.update(updateData, {
+    where: { standard_id: { [Op.in]: standard_ids } },
+  })
+
+  return { updated: affectedRows }
+}
+
+/** 按设备 + 触发频率批量分配（一键分配本设备所有日点检/周保养/月保养项）
+ *  只改人员字段，不碰档案状态
+ */
+export async function batchAssignByDeviceDaily(body: any) {
+  const { device_id, trigger_mode = 'daily', assigned_user_ids, assigned_user_names, inspector_user_ids, inspector_user_names } = body || {}
+
+  if (!device_id) throw new AppError('请指定设备ID', ErrorCode.PARAM_INVALID)
+
+  const updateData: any = {}
+  if (assigned_user_ids !== undefined) {
+    updateData.assigned_user_ids = Array.isArray(assigned_user_ids) ? assigned_user_ids : null
+    updateData.assigned_user_names = assigned_user_names || null
+  }
+  if (inspector_user_ids !== undefined) {
+    updateData.inspector_user_ids = Array.isArray(inspector_user_ids) ? inspector_user_ids : null
+    updateData.inspector_user_names = inspector_user_names || null
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    throw new AppError('请至少指定一个要分配的字段（责任人或检查人）', ErrorCode.PARAM_INVALID)
+  }
+
+  const where: any = { device_id }
+  if (trigger_mode) where.trigger_mode = trigger_mode
+
+  const [affectedRows] = await DeviceMaintenanceStandard.update(updateData, { where })
+  return { updated: affectedRows }
+}
+
+export default { listStandards, createStandard, updateStandard, deleteStandard, batchAssignStandards, batchAssignByDeviceDaily }

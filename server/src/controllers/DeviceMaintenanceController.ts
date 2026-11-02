@@ -103,6 +103,18 @@ export const deleteStandard = asyncHandler(async (req: Request, res: Response) =
   return success(res, null, '删除成功')
 })
 
+// ============ 分配责任人/检查人 ============
+
+export const batchAssignStandards = asyncHandler(async (req: Request, res: Response) => {
+  const r = await DeviceMaintenanceStandardService.batchAssignStandards(req.body)
+  return success(res, r, `成功分配 ${r.updated} 条标准`)
+})
+
+export const batchAssignByDeviceDaily = asyncHandler(async (req: Request, res: Response) => {
+  const r = await DeviceMaintenanceStandardService.batchAssignByDeviceDaily(req.body)
+  return success(res, r, `成功分配 ${r.updated} 条标准`)
+})
+
 // ============ 保养档案 ============
 
 export const listProfiles = asyncHandler(async (req: Request, res: Response) => {
@@ -308,6 +320,7 @@ export const initProfiles = async () => {
 
 export default {
   listStandards, createStandard, updateStandard, deleteStandard,
+  batchAssignStandards, batchAssignByDeviceDaily,
   listProfiles, listAvailableDevices, createProfile, detailProfile, updateProfileStatus, deleteProfile,
   generateRecords, getMatrix,
   listRecords, dailySummary, detailRecord, startRecord, submitRecord, batchSubmit, skipRecord, deleteRecord,

@@ -43,6 +43,28 @@ const DeviceMaintenanceStandard = sequelize.define('DeviceMaintenanceStandard', 
     comment: '点检角色（多选，存角色名称数组）',
   },
 
+  // 责任人/检查人（可在档案任何状态下配置，不限于编制态）
+  assigned_user_ids: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: null,
+    comment: '责任人ID数组',
+  },
+  assigned_user_names: {
+    type: DataTypes.STRING(500),
+    comment: '责任人姓名（冗余展示用）',
+  },
+  inspector_user_ids: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: null,
+    comment: '检查人ID数组',
+  },
+  inspector_user_names: {
+    type: DataTypes.STRING(500),
+    comment: '检查人姓名（冗余展示用）',
+  },
+
   // ===== 参数 =====
   judge_type: {
     type: DataTypes.STRING(20),

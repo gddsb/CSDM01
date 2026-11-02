@@ -93,7 +93,8 @@ const {
         order: [['device_id', 'ASC'], ['trigger_mode', 'ASC'], ['period_key', 'ASC'], ['record_id', 'ASC']],
         limit: finalPageSize,
         offset: (pageNum - 1) * finalPageSize,
-        include: [{ model: DeviceMaintenanceStandard, as: 'standard', required: false }],
+        // 保养计划列表只需要 record 本身字段，不需要 JOIN standard
+        // JOIN 会显著拖慢全量查询（5k+ 条），且前端分组不依赖 standard 嵌套字段
       })
 
       return { list: rows, total: count, page: pageNum, pageSize: finalPageSize }
