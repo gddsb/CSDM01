@@ -394,13 +394,13 @@ router.get('/device-faults/:id/images', permissionRequired('device:fault'), asyn
 router.post('/device-faults/:id/images', permissionRequired('device:fault:update'), deviceFaultUploadMiddleware.array('files', 10), logOperation('上传故障图片'), asyncHandler(DeviceFaultController.uploadImage))
 
 // ============ 设备保养标准 ============
+// ⚠️ batch-assign 必须放在 :id 之前，否则会被 :id 路由吞掉
 router.get('/device-standards', permissionRequired('device:maintenance'), asyncHandler(DeviceMaintenanceController.listStandards))
 router.post('/device-standards', permissionRequired('device:maintenance:create'), logOperation('保养标准'), asyncHandler(DeviceMaintenanceController.createStandard))
-router.put('/device-standards/:id', permissionRequired('device:maintenance:update'), logOperation('保养标准'), asyncHandler(DeviceMaintenanceController.updateStandard))
-router.delete('/device-standards/:id', permissionRequired('device:maintenance:delete'), logOperation('保养标准'), asyncHandler(DeviceMaintenanceController.deleteStandard))
-// 批量分配责任人/检查人 —— 任何状态（编制/生效/停用）都允许
 router.put('/device-standards/batch-assign', permissionRequired('device:maintenance:update'), logOperation('批量分配人员'), asyncHandler(DeviceMaintenanceController.batchAssignStandards))
 router.put('/device-standards/assign-daily-by-device', permissionRequired('device:maintenance:update'), logOperation('批量分配日点检'), asyncHandler(DeviceMaintenanceController.batchAssignByDeviceDaily))
+router.put('/device-standards/:id', permissionRequired('device:maintenance:update'), logOperation('保养标准'), asyncHandler(DeviceMaintenanceController.updateStandard))
+router.delete('/device-standards/:id', permissionRequired('device:maintenance:delete'), logOperation('保养标准'), asyncHandler(DeviceMaintenanceController.deleteStandard))
 
 // ============ 设备维护标准档案 ============
 // 注意：available-devices 必须在 :deviceId 之前，避免被参数路由匹配
