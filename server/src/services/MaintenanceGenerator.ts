@@ -16,6 +16,7 @@ import {
 import { generateDeviceRecordNo } from '../utils/sequence.js'
 import { ErrorCode } from '../utils/response.js'
 import { AppError } from '../utils/error.js'
+import { logger } from '../utils/logger.js'
 import {
   todayStr, dateOnlyStr, getISOWeek, buildPeriodKey,
   dailyPeriodKeys, weeklyPeriodKeys, monthlyStandardActive,
@@ -51,7 +52,7 @@ export async function generateRecords(body: any) {
 
   // DEBUG 日志
   const _dbg = (msg: string, obj?: any) => {
-    console.log(`[GEN_DEBUG][${target_month}] ${msg}`, obj !== undefined ? obj : '')
+    logger.info('[GEN_DEBUG][' + target_month + '] ' + msg + (obj !== undefined ? ' ' + JSON.stringify(obj) : ''))
   }
 
   const t = await DeviceMaintenanceRecord.sequelize.transaction()
