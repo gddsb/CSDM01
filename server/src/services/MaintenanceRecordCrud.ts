@@ -84,11 +84,13 @@ const {
       }
 
       const pageNum = Math.max(1, Number(page) || 1)
-      const finalPageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(pageSize) || 20))
+      // 保养计划列表需要全量返回（前端按设备分组 + 完成度统计）
+      // 去掉 MAX_PAGE_SIZE clamp —— DB 全量才 5k 条，MySQL 毫秒级响应
+      const finalPageSize = Math.max(1, Number(pageSize) || 5000)
 
       const { count, rows } = await DeviceMaintenanceRecord.findAndCountAll({
         where,
-        order: [['created_at', 'DESC'], ['record_id', 'DESC']],
+        order: [['device_id', 'ASC'], ['trigger_mode', 'ASC'], ['period_key', 'ASC'], ['record_id', 'ASC']],
         limit: finalPageSize,
         offset: (pageNum - 1) * finalPageSize,
         include: [{ model: DeviceMaintenanceStandard, as: 'standard', required: false }],
