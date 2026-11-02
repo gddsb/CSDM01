@@ -79,12 +79,8 @@ export default function DeviceMaintenanceUnified() {
   const [total, setTotal] = useState(0)
 
   const [filters, setFilters] = useState({
-    device_id: undefined as number | undefined,
-    trigger_mode: undefined as string | undefined,
-    status: undefined as string | undefined,
-    start_date: dayjs().startOf('month').format('YYYY-MM-DD') as string | undefined,
-    end_date: dayjs().endOf('month').format('YYYY-MM-DD') as string | undefined,
     keyword: '',
+    month: dayjs().format('YYYY-MM') as string | undefined,
   })
 
   // ============ 选中的设备（主表点击 → 子表显示） ============
@@ -113,12 +109,9 @@ export default function DeviceMaintenanceUnified() {
   const loadRecords = useCallback(async () => {
     setLoading(true)
     try {
-      const params: any = { page: 1, pageSize: 9999, ...filters }
-      if (!filters.start_date) delete params.start_date
-      if (!filters.end_date) delete params.end_date
-      if (!filters.device_id) delete params.device_id
-      if (!filters.trigger_mode) delete params.trigger_mode
-      if (!filters.status) delete params.status
+      const params: any = { page: 1, pageSize: 9999 }
+      if (filters.keyword) params.keyword = filters.keyword
+      if (filters.month) params.month = filters.month
       const res = await api.get('/basic/device-records', { params })
       const raw = res?.data
       const list = Array.isArray(raw) ? raw : (raw?.rows || raw?.list || [])
@@ -408,48 +401,20 @@ export default function DeviceMaintenanceUnified() {
       stats={statItems}
       filter={
         <Space wrap>
-          <Select
-            placeholder="全部设备" allowClear
-            style={{ width: 200 }}
-            value={filters.device_id}
-            onChange={(v) => setFilters(f => ({ ...f, device_id: v }))}
-            options={[{ label: '全部设备', value: undefined, disabled: true }, ...deviceGroups.map((g: any) => ({
-              label: `${g.device_code || ''} ${g.device_name || ''}`.trim(),
-              value: g.device_id,
-            }))]}
-          />
-          <Select
-            placeholder="全部频率" allowClear
-            style={{ width: 140 }}
-            value={filters.trigger_mode}
-            onChange={(v) => setFilters(f => ({ ...f, trigger_mode: v }))}
-            options={MODE_OPTIONS}
-          />
-          <Select
-            placeholder="全部状态" allowClear
-            style={{ width: 120 }}
-            value={filters.status}
-            onChange={(v) => setFilters(f => ({ ...f, status: v }))}
-            options={STATUS_OPTIONS}
-          />
-          <RangePicker
-            style={{ width: 240 }}
-            value={filters.start_date && filters.end_date
-              ? [dayjs(filters.start_date), dayjs(filters.end_date)]
-              : undefined}
-            onChange={(ds) => {
-              setFilters(f => ({
-                ...f,
-                start_date: ds?.[0]?.format('YYYY-MM-DD'),
-                end_date: ds?.[1]?.format('YYYY-MM-DD'),
-              }))
-            }}
-          />
           <Input
-            placeholder="编号/设备名搜索" allowClear prefix={<SearchOutlined />}
-            style={{ width: 200 }}
+            placeholder="编号/设备名/记录号搜索" allowClear prefix={<SearchOutlined />}
+            style={{ width: 260 }}
             value={filters.keyword}
             onChange={(e) => setFilters(f => ({ ...f, keyword: e.target.value }))}
+          />
+          <DatePicker
+            picker="month"
+            placeholder="选择月份"
+            style={{ width: 160 }}
+            value={filters.month ? dayjs(filters.month) : undefined}
+            onChange={(d) => setFilters(f => ({ ...f, month: d?.format('YYYY-MM') || undefined }))}
+            format="YYYY年MM月"
+            allowClear
           />
         </Space>
       }
@@ -458,7 +423,7 @@ export default function DeviceMaintenanceUnified() {
           <Button type="primary" icon={<ThunderboltOutlined />} onClick={() => {
             setGenMonth(dayjs().format('YYYY-MM'))
             setGenSkipPast(true)
-            setGenDeviceId(filters.device_id)
+            setGenDeviceId(selectedDeviceId ?? undefined)
             setGenOpen(true)
           }}>生成执行记录</Button>
           <Button icon={<ReloadOutlined />} onClick={loadRecords}>刷新</Button>

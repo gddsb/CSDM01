@@ -1,11 +1,10 @@
 /** MaintenanceGenerator —— 工单生成 + 保养矩阵 */
 /**
- * generateRecords: 按月批量生成日/周/月保养执行记录
- *   - daily: 整月每日一条（本月 + skip_past 时跳过已过去日期）
- *   - weekly: 整月覆盖的 ISO 周各一条
- *   - monthly: 当月一条
- *   - runtime: 已移除（不再自动生成运行时长触发的记录）
- *   - 同一 standard_id + period_key 只生成一条（不管状态，已存在即跳过）
+ * generateRecords: 按月批量生成日/周/月保养执行记录（带 Upsert + Sync DELETE）
+ *   - 并发保护：同 (target_month, device_id) 未完成前丢弃后续请求
+ *   - Upsert：expected 中存在的 → 同步冗余字段（device_code/name）；不存在的 → 新增
+ *   - Sync DELETE：existing 中不在 expected 里的，且为 "待执行" + 未过期 + 非 runtime → 删除
+ *   - skip_past：默认 true，已过期 daily 不参与 Upsert，也不参与 DELETE 边界
  *
  * getMatrix: 查询设备某月保养矩阵视图（不变）
  */
@@ -23,21 +22,36 @@ import {
 } from '../utils/maintenanceMatrix.js'
 import { loadDeviceFields } from './MaintenanceProfileCrud.js'
 
-/** generateRecords —— 按月批量生成日/周/月保养执行记录 */
+// ===== 并发锁（模块级 Map）=====
+// lockKey = `${target_month}|${device_id ?? 'ALL'}`
+// 同 (target_month, device_id) 只允许一个 generateRecords 在执行
+const genLocks = new Map<string, number>()
+
+/** DELETE 安全边界：只允许删 status='待执行' 的记录 */
+const DELETABLE_STATUSES = ['待执行'] as const
+
+/** generateRecords —— 按月批量生成（带并发锁 + Upsert + Sync DELETE） */
 export async function generateRecords(body: any) {
+  const { target_month, device_id, skip_past } = body || {}
+
+  // 1. 参数校验
+  if (!target_month || !/^\d{4}-\d{2}$/.test(String(target_month))) {
+    throw new AppError('target_month 格式错误，应为 YYYY-MM', ErrorCode.PARAM_INVALID)
+  }
+  const [yr, mo] = String(target_month).split('-').map(Number)
+  const isCurrentMonth = target_month === todayStr().slice(0, 7)
+  const skipPast = skip_past !== false  // 默认 true
+  const lockKey = `${target_month}|${device_id ?? 'ALL'}`
+
+  // 2. 并发锁校验 + 占位
+  if (genLocks.has(lockKey)) {
+    throw new AppError('正在生成执行记录中，请稍候再试', ErrorCode.DUPLICATE_REQUEST)
+  }
+  genLocks.set(lockKey, Date.now())
+
   const t = await DeviceMaintenanceRecord.sequelize.transaction()
   try {
-    const { target_month, device_id, skip_past } = body || {}
-
-    // 1. 参数校验
-    if (!target_month || !/^\d{4}-\d{2}$/.test(String(target_month))) {
-      throw new AppError('target_month 格式错误，应为 YYYY-MM', ErrorCode.PARAM_INVALID)
-    }
-    const [yr, mo] = String(target_month).split('-').map(Number)
-    const isCurrentMonth = target_month === todayStr().slice(0, 7)
-    const skipPast = skip_past !== false  // 默认 true
-
-    // 2. 查生效设备档案
+    // 3. 查生效设备档案
     const effectiveProfiles = await DeviceMaintenanceProfile.findAll({
       where: { status: '生效' },
       attributes: ['device_id'],
@@ -47,10 +61,10 @@ export async function generateRecords(body: any) {
     if (device_id) effectiveDeviceIds = effectiveDeviceIds.filter(id => id === Number(device_id))
     if (effectiveDeviceIds.length === 0) {
       await t.commit()
-      return { created: 0, skipped: 0, records: [] }
+      return { created: 0, updated: 0, deleted: 0, skipped: 0, records: [] }
     }
 
-    // 3. 查日/周/月三种模式的保养标准（不含 runtime）
+    // 4. 查日/周/月三种模式的保养标准（不含 runtime）
     const standards = await DeviceMaintenanceStandard.findAll({
       where: {
         trigger_mode: { [Op.in]: ['daily', 'weekly', 'monthly'] },
@@ -69,22 +83,19 @@ export async function generateRecords(body: any) {
 
     if (activeStandards.length === 0) {
       await t.commit()
-      return { created: 0, skipped: 0, records: [] }
+      return { created: 0, updated: 0, deleted: 0, skipped: 0, records: [] }
     }
 
-    // 4. 计算每种模式的 period_keys
+    // 5. 计算每种模式的 period_keys（expected 全集）
     const dailyKeys = dailyPeriodKeys(yr, mo)
     const weekKeys = weeklyPeriodKeys(yr, mo)
-
-    // 本月 + skipPast → daily 只取今天及以后
+    // 本月 + skipPast → daily 只取今天及以后（过期的不参与 Upsert，也参与不了 DELETE 边界）
     const effectiveDailyKeys = (isCurrentMonth && skipPast)
       ? dailyKeys.filter(pk => pk >= todayStr())
       : dailyKeys
 
-    // 5. 构建 (standard_id, period_key) 全集 → 一次性查已有记录去重
-    const periodKeysSet = new Set<string>()
+    // 构建 stdPeriodMap: standard_id → period_key[]
     const stdPeriodMap: Record<number, string[]> = {}
-
     for (const s of activeStandards) {
       const sid = s.getDataValue('standard_id')
       const tm = s.getDataValue('trigger_mode')
@@ -92,65 +103,124 @@ export async function generateRecords(body: any) {
       if (tm === 'daily') keys = effectiveDailyKeys
       else if (tm === 'weekly') keys = weekKeys
       else if (tm === 'monthly') keys = [target_month]
-      keys.forEach(k => periodKeysSet.add(k))
       stdPeriodMap[sid] = keys
     }
 
-    const allPeriodKeys = Array.from(periodKeysSet)
-    const standardIds = activeStandards.map((s: any) => s.getDataValue('standard_id'))
+    // 查 DB 中该 device_id 集合 + 该月 涉及的所有执行记录（含 status 做 DELETE 安全边界）
+    // daily: period_key 落在 dailyKeys 范围内；weekly: weekKeys；monthly: = target_month
+    const allPeriodKeys = new Set<string>()
+    Object.values(stdPeriodMap).forEach(keys => keys.forEach(k => allPeriodKeys.add(k)))
 
-    let existSet: Set<string> = new Set()
-    if (allPeriodKeys.length > 0) {
-      const existing = await DeviceMaintenanceRecord.findAll({
-        where: {
-          standard_id: { [Op.in]: standardIds },
-          period_key: { [Op.in]: allPeriodKeys },
-        },
-        attributes: ['standard_id', 'period_key'],
-        transaction: t,
-      })
-      existSet = new Set(existing.map((r: any) => `${r.getDataValue('standard_id')}|${r.getDataValue('period_key')}`))
-    }
+    const existingRecords: any[] = await DeviceMaintenanceRecord.findAll({
+      where: {
+        device_id: { [Op.in]: effectiveDeviceIds },
+        [Op.or]: [
+          { trigger_mode: 'daily', period_key: { [Op.gte]: dailyKeys[0], [Op.lte]: dailyKeys[dailyKeys.length - 1] } },
+          { trigger_mode: 'weekly', period_key: { [Op.in]: weekKeys } },
+          { trigger_mode: 'monthly', period_key: target_month },
+        ],
+      },
+      attributes: ['record_id', 'standard_id', 'period_key', 'trigger_mode', 'status', 'device_code', 'device_name'],
+      transaction: t,
+    })
 
-    // 6. 批量创建
-    const createdList: any[] = []
-    let skipped = 0
+    // 6. 分类处理：expected ∩ existing / expected - existing / existing - expected
+    const expectedKeys = new Map<string, string>()  // key = "standard_id|period_key" → period_key（用于反查）
+    Object.entries(stdPeriodMap).forEach(([sid, pks]) => {
+      pks.forEach(pk => expectedKeys.set(`${sid}|${pk}`, pk))
+    })
 
-    for (const s of activeStandards) {
-      const sid = s.getDataValue('standard_id')
+    const existingMap = new Map<string, any>()
+    existingRecords.forEach(r => {
+      const key = `${r.getDataValue('standard_id')}|${r.getDataValue('period_key')}`
+      existingMap.set(key, r)
+    })
+
+    const todayKey = todayStr()  // 'YYYY-MM-DD'
+    let created = 0, updated = 0, deleted = 0
+
+    // 6a. expected 与 existing 的交集 → UPSERT（更新 device_code/name 冗余字段）
+    for (const [key, pk] of expectedKeys) {
+      const exist = existingMap.get(key)
+      if (!exist) continue
+      const sid = Number(key.split('|')[0])
+      const std = activeStandards.find((s: any) => s.getDataValue('standard_id') === sid)
+      if (!std) continue
       const { finalDeviceCode, finalDeviceName } = await loadDeviceFields(
-        s.getDataValue('device_id'),
-        s.getDataValue('device_code'),
-        s.getDataValue('device_name'),
+        std.getDataValue('device_id'),
+        std.getDataValue('device_code'),
+        std.getDataValue('device_name'),
         t,
       )
-      for (const pk of stdPeriodMap[sid] || []) {
-        if (existSet.has(`${sid}|${pk}`)) { skipped++; continue }
-        const recordNo = await generateDeviceRecordNo()
-        const created = await DeviceMaintenanceRecord.create({
-          record_no: recordNo,
-          standard_id: sid,
-          device_id: s.getDataValue('device_id'),
-          device_code: finalDeviceCode,
-          device_name: finalDeviceName,
-          trigger_mode: s.getDataValue('trigger_mode'),
-          period_key: pk,
-          status: 0,
-          remarks: '',
-        }, { transaction: t })
-        createdList.push(created)
+      // 只在冗余字段有变化时才 UPDATE，减少写操作
+      const curCode = exist.getDataValue('device_code')
+      const curName = exist.getDataValue('device_name')
+      if (curCode !== finalDeviceCode || curName !== finalDeviceName) {
+        await DeviceMaintenanceRecord.update(
+          { device_code: finalDeviceCode, device_name: finalDeviceName },
+          { where: { record_id: exist.getDataValue('record_id') }, transaction: t },
+        )
+        updated++
       }
+    }
+
+    // 6b. expected - existing → CREATE（新增缺少的）
+    const createdList: any[] = []
+    for (const [key, pk] of expectedKeys) {
+      if (existingMap.has(key)) continue
+      const sid = Number(key.split('|')[0])
+      const std = activeStandards.find((s: any) => s.getDataValue('standard_id') === sid)
+      if (!std) continue
+      const { finalDeviceCode, finalDeviceName } = await loadDeviceFields(
+        std.getDataValue('device_id'),
+        std.getDataValue('device_code'),
+        std.getDataValue('device_name'),
+        t,
+      )
+      const recordNo = await generateDeviceRecordNo()
+      const r = await DeviceMaintenanceRecord.create({
+        record_no: recordNo,
+        standard_id: sid,
+        device_id: std.getDataValue('device_id'),
+        device_code: finalDeviceCode,
+        device_name: finalDeviceName,
+        trigger_mode: std.getDataValue('trigger_mode'),
+        period_key: pk,
+        status: 0,
+        remarks: '',
+      }, { transaction: t })
+      created++
+      createdList.push(r)
+    }
+
+    // 6c. existing - expected → DELETE（清理已失效的）
+    // 三保险：仅删 status='待执行' + 未过期 daily + 非 runtime
+    for (const exist of existingRecords) {
+      const key = `${exist.getDataValue('standard_id')}|${exist.getDataValue('period_key')}`
+      if (expectedKeys.has(key)) continue  // 在 expected 里的不动
+      const tm = exist.getDataValue('trigger_mode')
+      const pk = exist.getDataValue('period_key')
+      // 已过期 daily 不删
+      if (tm === 'daily' && pk < todayKey) continue
+      // runtime 不碰
+      if (tm === 'runtime') continue
+      // 只有"待执行"状态能删，已完成/执行中/跳过的保留历史
+      if (!DELETABLE_STATUSES.includes(exist.getDataValue('status'))) continue
+      await exist.destroy({ transaction: t })
+      deleted++
     }
 
     await t.commit()
     return {
-      created: createdList.length,
-      skipped,
-      records: createdList.map(r => ({ record_id: r.record_id, record_no: r.record_no })),
+      created, updated, deleted,
+      records: createdList.map((r: any) => ({ record_id: r.record_id, record_no: r.record_no })),
     }
   } catch (err: any) {
     if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
     throw new AppError(err.message || '生成失败', ErrorCode.SYSTEM_ERROR)
+  } finally {
+    // 释放并发锁（无论成功/失败）
+    genLocks.delete(lockKey)
   }
 }
 

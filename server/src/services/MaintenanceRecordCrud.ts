@@ -27,6 +27,7 @@ const {
         record_no, device_id, device_name, device_code,
         trigger_mode, status, period_key,
         start_date, end_date,
+        keyword, month,
         extra,
       } = query
 
@@ -41,6 +42,24 @@ const {
       if (period_key) where.period_key = period_key.includes(',')
         ? { [Op.in]: period_key.split(',').map((s: string) => s.trim()).filter(Boolean) }
         : period_key
+
+      // keyword: 同时搜 device_code / device_name / record_no
+      if (keyword) {
+        where[Op.and] = where[Op.and] || []
+        where[Op.and].push({
+          [Op.or]: [
+            { device_code: { [Op.like]: `%${keyword}%` } },
+            { device_name: { [Op.like]: `%${keyword}%` } },
+            { record_no: { [Op.like]: `%${keyword}%` } },
+          ],
+        })
+      }
+
+      // month: YYYY-MM，按 period_key 前缀过滤（daily=YYYY-MM-DD, weekly=YYYY-Www, monthly=YYYY-MM）
+      if (month && /^\d{4}-\d{2}$/.test(String(month))) {
+        where[Op.and] = where[Op.and] || []
+        where[Op.and].push({ period_key: { [Op.like]: `${month}%` } })
+      }
 
       const statusArr = parseMultiStatus(status, STATUS_REVERSE)
       if (statusArr) where.status = { [Op.in]: statusArr }
