@@ -52,7 +52,11 @@ export async function generateRecords(body: any) {
 
   // DEBUG 日志
   const _dbg = (msg: string, obj?: any) => {
+<<<<<<< HEAD
     logger.info('[GEN_DEBUG][' + target_month + '] ' + msg + (obj !== undefined ? ' ' + JSON.stringify(obj) : ''))
+=======
+    console.log(`[GEN_DEBUG][${target_month}] ${msg}`, obj !== undefined ? obj : '')
+>>>>>>> 167be85 (debug: MaintenanceGenerator 加详细 console.log 定位 created=0 根因)
   }
 
   const t = await DeviceMaintenanceRecord.sequelize.transaction()
