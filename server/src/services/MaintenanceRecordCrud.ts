@@ -128,7 +128,7 @@ export async function dailySummary(dateStr?: string): Promise<Record<number, { t
   const keys = [dateOnly, weekKey, monthKey]
 
   const rows: any[] = await DeviceMaintenanceRecord.sequelize.query(
-    `SELECT device_id, COUNT(*) AS total, SUM(CASE WHEN status IN (3, 4) THEN 1 ELSE 0 END) AS done
+    `SELECT device_id, COUNT(*) AS total, SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) AS done
      FROM device_record
      WHERE period_key IN (:keys)
      GROUP BY device_id`,

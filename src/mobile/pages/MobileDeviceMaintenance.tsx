@@ -206,7 +206,7 @@ export default function MobileDeviceMaintenance() {
         })
         const list: any[] = r.success ? (r.data?.list || r.data || []) : []
         const total = list.length
-        const done = list.filter((x) => x.status === '已完成' || x.status === '已跳过').length
+        const done = list.filter((x) => x.status === '已完成').length
         result[label] = { total, done }
       } catch {
         result[label] = { total: 0, done: 0 }
