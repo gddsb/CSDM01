@@ -187,13 +187,13 @@ export default function DeviceMaintenanceStandardList() {
           <Button size="small" type="link"
             onClick={() => navigate(`/device/maintenance-standard/${r.device_id}`)}>查看</Button>
           {r.status === '编制' && (
-            <Popconfirm title="确认生效？生效后将按计划生成执行记录"
+            <Popconfirm title="确认生效？生效后将按计划生成维保计划"
               onConfirm={() => handleSwitchStatus(r, '生效')}>
               <Button size="small" type="link">生效</Button>
             </Popconfirm>
           )}
           {r.status === '生效' && (
-            <Popconfirm title="确认停用？停用后不再生成新执行记录"
+            <Popconfirm title="确认停用？停用后不再生成新维保计划"
               onConfirm={() => handleSwitchStatus(r, '停用')}>
               <Button size="small" type="link">停用</Button>
             </Popconfirm>
@@ -296,7 +296,7 @@ export default function DeviceMaintenanceStandardList() {
           <Input.TextArea rows={2} placeholder="可选" />
         </Form.Item>
         <div style={{ color: '#999', fontSize: 12 }}>
-          创建后档案状态为「编制」，配置保养标准项后可「生效」，生效后按计划生成执行记录。
+          创建后档案状态为「编制」，配置保养标准项后可「生效」，生效后按计划生成维保计划。
         </div>
       </Form>
     </Modal>

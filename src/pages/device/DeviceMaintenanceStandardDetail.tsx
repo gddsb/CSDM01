@@ -242,12 +242,12 @@ export default function DeviceMaintenanceStandardDetail() {
           )}
           {/* 状态切换按钮 */}
           {currentStatus === '编制' && (
-            <Popconfirm title="确认生效？生效后将按计划生成执行记录" onConfirm={() => handleSwitchStatus('生效')}>
+            <Popconfirm title="确认生效？生效后将按计划生成维保计划" onConfirm={() => handleSwitchStatus('生效')}>
               <Button type="primary" icon={<CheckCircleOutlined />} style={{ background: '#52c41a', borderColor: '#52c41a' }}>生效档案</Button>
             </Popconfirm>
           )}
           {currentStatus === '生效' && (
-            <Popconfirm title="确认停用？停用后不再生成新执行记录" onConfirm={() => handleSwitchStatus('停用')}>
+            <Popconfirm title="确认停用？停用后不再生成新维保计划" onConfirm={() => handleSwitchStatus('停用')}>
               <Button icon={<PauseCircleOutlined />} style={{ background: '#faad14', borderColor: '#faad14', color: '#fff' }}>停用档案</Button>
             </Popconfirm>
           )}
@@ -462,7 +462,7 @@ export default function DeviceMaintenanceStandardDetail() {
                   </Form.Item>
                 )
               }
-              return <Text type="secondary">{mode === 'daily' ? '每天自动生成一条执行记录' : '每周一自动生成一条执行记录'}</Text>
+              return <Text type="secondary">{mode === 'daily' ? '每天自动生成一条维保记录' : '每周一自动生成一条维保记录'}</Text>
             }}
           </Form.Item>
         </Form>

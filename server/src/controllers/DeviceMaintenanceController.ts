@@ -139,7 +139,15 @@ export const deleteProfile = asyncHandler(async (req: Request, res: Response) =>
 
 export const generateRecords = asyncHandler(async (req: Request, res: Response) => {
   const result = await DeviceMaintenanceProfileService.generateRecords(req.body)
-  return success(res, result, `生成 ${result.created} 条执行记录`)
+  const { created = 0, updated = 0, deleted = 0 } = result || {}
+  const parts: string[] = []
+  if (created > 0) parts.push(`新增 ${created}`)
+  if (updated > 0) parts.push(`更新 ${updated}`)
+  if (deleted > 0) parts.push(`清理 ${deleted}`)
+  const msg = parts.length > 0
+    ? `完成：${parts.join(' · ')} 条维保计划`
+    : `完成：全部 ${created + updated + deleted === 0 ? '已有计划无变动' : ''}`
+  return success(res, result, msg)
 })
 
 export const getMatrix = asyncHandler(async (req: Request, res: Response) => {

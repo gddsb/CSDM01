@@ -1,6 +1,6 @@
 /** MaintenanceGenerator —— 工单生成 + 保养矩阵 */
 /**
- * generateRecords: 按月批量生成日/周/月保养执行记录（带 Upsert + Sync DELETE）
+ * generateRecords: 按月批量生成日/周/月保养维保计划（带 Upsert + Sync DELETE）
  *   - 并发保护：同 (target_month, device_id) 未完成前丢弃后续请求
  *   - Upsert：expected 中存在的 → 同步冗余字段（device_code/name）；不存在的 → 新增
  *   - Sync DELETE：existing 中不在 expected 里的，且为 "待执行" + 未过期 + 非 runtime → 删除
@@ -16,7 +16,6 @@ import {
 import { generateDeviceRecordNo } from '../utils/sequence.js'
 import { ErrorCode } from '../utils/response.js'
 import { AppError } from '../utils/error.js'
-import { logger } from '../utils/logger.js'
 import {
   todayStr, dateOnlyStr, getISOWeek, buildPeriodKey,
   dailyPeriodKeys, weeklyPeriodKeys, monthlyStandardActive,
@@ -46,18 +45,9 @@ export async function generateRecords(body: any) {
 
   // 2. 并发锁校验 + 占位
   if (genLocks.has(lockKey)) {
-    throw new AppError('正在生成执行记录中，请稍候再试', ErrorCode.DUPLICATE_REQUEST)
+    throw new AppError('正在生成维保计划中，请稍候再试', ErrorCode.DUPLICATE_REQUEST)
   }
   genLocks.set(lockKey, Date.now())
-
-  // DEBUG 日志
-  const _dbg = (msg: string, obj?: any) => {
-<<<<<<< HEAD
-    logger.info('[GEN_DEBUG][' + target_month + '] ' + msg + (obj !== undefined ? ' ' + JSON.stringify(obj) : ''))
-=======
-    console.log(`[GEN_DEBUG][${target_month}] ${msg}`, obj !== undefined ? obj : '')
->>>>>>> 167be85 (debug: MaintenanceGenerator 加详细 console.log 定位 created=0 根因)
-  }
 
   const t = await DeviceMaintenanceRecord.sequelize.transaction()
   try {
@@ -68,13 +58,8 @@ export async function generateRecords(body: any) {
       transaction: t,
     })
     let effectiveDeviceIds = effectiveProfiles.map((p: any) => p.getDataValue('device_id'))
-    _dbg('Step3 effectiveDeviceIds count=', effectiveDeviceIds.length)
-    _dbg('Step3 effectiveDeviceIds sample=', effectiveDeviceIds.slice(0, 5))
-    _dbg('Step3 effectiveDeviceIds types=', effectiveDeviceIds.slice(0, 3).map(id => typeof id))
     if (device_id) effectiveDeviceIds = effectiveDeviceIds.filter(id => id === Number(device_id))
-    _dbg('Step3 after filter device_id=', effectiveDeviceIds.length)
     if (effectiveDeviceIds.length === 0) {
-      _dbg('Step3 → effectiveDeviceIds 为空，直接 return 0')
       await t.commit()
       return { created: 0, updated: 0, deleted: 0, skipped: 0, records: [] }
     }
@@ -88,10 +73,6 @@ export async function generateRecords(body: any) {
       },
       transaction: t,
     })
-    _dbg('Step4 standards total=', standards.length)
-    const modeCnt: Record<string, number> = {}
-    standards.forEach((s: any) => { modeCnt[s.getDataValue('trigger_mode')] = (modeCnt[s.getDataValue('trigger_mode')] || 0) + 1 })
-    _dbg('Step4 standards by trigger_mode=', modeCnt)
 
     // monthly 标准的 monthly_plan 可能只在某些月份生效
     const activeStandards = standards.filter((s: any) => {
@@ -99,13 +80,7 @@ export async function generateRecords(body: any) {
       if (tm === 'monthly') return monthlyStandardActive(s.getDataValue('monthly_plan'), mo)
       return true
     })
-    _dbg('Step4 activeStandards after monthlyPlan filter=', activeStandards.length)
-    const activeModeCnt: Record<string, number> = {}
-    activeStandards.forEach((s: any) => { activeModeCnt[s.getDataValue('trigger_mode')] = (activeModeCnt[s.getDataValue('trigger_mode')] || 0) + 1 })
-    _dbg('Step4 activeStandards by trigger_mode=', activeModeCnt)
-
     if (activeStandards.length === 0) {
-      _dbg('Step4 → activeStandards 为空，直接 return 0')
       await t.commit()
       return { created: 0, updated: 0, deleted: 0, skipped: 0, records: [] }
     }
@@ -117,9 +92,6 @@ export async function generateRecords(body: any) {
     const effectiveDailyKeys = (isCurrentMonth && skipPast)
       ? dailyKeys.filter(pk => pk >= todayStr())
       : dailyKeys
-    _dbg('Step5 dailyKeys count=', dailyKeys.length)
-    _dbg('Step5 weekKeys=', weekKeys)
-    _dbg('Step5 effectiveDailyKeys count=', effectiveDailyKeys.length)
 
     // 构建 stdPeriodMap: standard_id → period_key[]
     const stdPeriodMap: Record<number, string[]> = {}
@@ -132,17 +104,8 @@ export async function generateRecords(body: any) {
       else if (tm === 'monthly') keys = [target_month]
       stdPeriodMap[sid] = keys
     }
-    _dbg('Step5 stdPeriodMap entries=', Object.keys(stdPeriodMap).length)
 
     // 查 DB 中该 device_id 集合 + 该月 涉及的所有执行记录（含 status 做 DELETE 安全边界）
-    // daily: period_key 落在 dailyKeys 范围内；weekly: weekKeys；monthly: = target_month
-    const allPeriodKeys = new Set<string>()
-    Object.values(stdPeriodMap).forEach(keys => keys.forEach(k => allPeriodKeys.add(k)))
-
-    _dbg('Step5 查询 existingRecords: device_id IN count=', effectiveDeviceIds.length)
-    _dbg('Step5 查询 weekly period_key IN=', weekKeys)
-    _dbg('Step5 查询 monthly period_key=', target_month)
-
     const existingRecords: any[] = await DeviceMaintenanceRecord.findAll({
       where: {
         device_id: { [Op.in]: effectiveDeviceIds },
@@ -155,53 +118,26 @@ export async function generateRecords(body: any) {
       attributes: ['record_id', 'standard_id', 'period_key', 'trigger_mode', 'status', 'device_code', 'device_name'],
       transaction: t,
     })
-    _dbg('Step5 existingRecords total=', existingRecords.length)
-    const existModeCnt: Record<string, number> = {}
-    existingRecords.forEach((r: any) => { existModeCnt[r.getDataValue('trigger_mode')] = (existModeCnt[r.getDataValue('trigger_mode')] || 0) + 1 })
-    _dbg('Step5 existingRecords by trigger_mode=', existModeCnt)
-    if (existingRecords.length > 0) {
-        const firstFew = existingRecords.slice(0, 3).map((r: any) => ({
-            tm: r.getDataValue('trigger_mode'),
-            pk: r.getDataValue('period_key'),
-            stdId: r.getDataValue('standard_id'),
-            status: r.getDataValue('status'),
-        }))
-        _dbg('Step5 existingRecords first 3 sample=', firstFew)
-    }
 
     // 6. 分类处理：expected ∩ existing / expected - existing / existing - expected
     const expectedKeys = new Map<string, string>()  // key = "standard_id|period_key" → period_key（用于反查）
     Object.entries(stdPeriodMap).forEach(([sid, pks]) => {
       pks.forEach(pk => expectedKeys.set(`${sid}|${pk}`, pk))
     })
-    _dbg('Step6 expectedKeys total=', expectedKeys.size)
-
-    // 按 trigger_mode 统计 expectedKeys
-    let expDaily = 0, expWeekly = 0, expMonthly = 0
-    for (const s of activeStandards) {
-        const keys = stdPeriodMap[s.getDataValue('standard_id')] || []
-        if (s.getDataValue('trigger_mode') === 'daily') expDaily += keys.length
-        else if (s.getDataValue('trigger_mode') === 'weekly') expWeekly += keys.length
-        else if (s.getDataValue('trigger_mode') === 'monthly') expMonthly += keys.length
-    }
-    _dbg('Step6 expectedKeys by trigger_mode:', { daily: expDaily, weekly: expWeekly, monthly: expMonthly })
 
     const existingMap = new Map<string, any>()
     existingRecords.forEach(r => {
       const key = `${r.getDataValue('standard_id')}|${r.getDataValue('period_key')}`
       existingMap.set(key, r)
     })
-    _dbg('Step6 existingMap size=', existingMap.size)
 
     const todayKey = todayStr()  // 'YYYY-MM-DD'
     let created = 0, updated = 0, deleted = 0
 
     // 6a. expected 与 existing 的交集 → UPSERT（更新 device_code/name 冗余字段）
-    let upsertHit = 0
     for (const [key, pk] of expectedKeys) {
       const exist = existingMap.get(key)
       if (!exist) continue
-      upsertHit++
       const sid = Number(key.split('|')[0])
       const std = activeStandards.find((s: any) => s.getDataValue('standard_id') === sid)
       if (!std) continue
@@ -222,7 +158,6 @@ export async function generateRecords(body: any) {
         updated++
       }
     }
-    _dbg('Step6a upsert hit (expected ∩ existing)=' + upsertHit + ', updated=' + updated)
 
     // 6b. expected - existing → CREATE（新增缺少的）
     const createdList: any[] = []

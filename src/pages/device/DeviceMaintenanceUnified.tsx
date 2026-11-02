@@ -118,7 +118,7 @@ export default function DeviceMaintenanceUnified() {
       setRecords(list)
       setTotal(res?.total || raw?.total || list.length)
     } catch (err: any) {
-      message.error('加载执行记录失败')
+      message.error('加载维保计划失败')
     } finally {
       setLoading(false)
     }
@@ -170,14 +170,14 @@ export default function DeviceMaintenanceUnified() {
     })
   }, [records])
 
-  // ===== 生成执行记录 =====
+  // ===== 生成维保计划 =====
   const handleGenerate = async () => {
     setGenLoading(true)
     try {
       const payload: any = { target_month: genMonth, skip_past: genSkipPast }
       if (genDeviceId) payload.device_id = genDeviceId
       const res = await api.post('/basic/device-records/generate', payload)
-      message.success(res?.message || `成功生成 ${res?.data?.created || 0} 条`)
+      message.success(res?.message || `完成：新增 ${res?.data?.created || 0} · 更新 ${res?.data?.updated || 0} · 清理 ${res?.data?.deleted || 0}`)
       setGenOpen(false)
       loadRecords()
     } catch (err: any) {
@@ -425,7 +425,7 @@ export default function DeviceMaintenanceUnified() {
             setGenSkipPast(true)
             setGenDeviceId(selectedDeviceId ?? undefined)
             setGenOpen(true)
-          }}>生成执行记录</Button>
+          }}>生成维保计划</Button>
           <Button icon={<ReloadOutlined />} onClick={loadRecords}>刷新</Button>
         </Space>
       }
@@ -444,7 +444,7 @@ export default function DeviceMaintenanceUnified() {
                 onClick: () => setSelectedDeviceId(r.device_id),
               })}
               rowClassName={(r) => r.device_id === selectedDeviceId ? 'device-row-selected' : ''}
-              locale={{ emptyText: <Empty description="暂无保养执行记录" /> }}
+              locale={{ emptyText: <Empty description="暂无维保计划" /> }}
             />
           </Spin>
 
@@ -461,7 +461,7 @@ export default function DeviceMaintenanceUnified() {
               />
             ) : (
               <div style={{ padding: '40px 0', textAlign: 'center', color: '#bbb', background: '#fafafa', border: '1px dashed #e8e8e8', borderRadius: 6 }}>
-                👆 请在上方设备列表中点击选择一台设备，查看其保养执行记录
+                👆 请在上方设备列表中点击选择一台设备，查看其维保计划
               </div>
             )}
           </div>
@@ -474,9 +474,9 @@ export default function DeviceMaintenanceUnified() {
       }
     />
 
-    {/* ===== 生成执行记录弹窗 ===== */}
+    {/* ===== 生成维保计划弹窗 ===== */}
       <Modal
-        title="生成保养执行记录"
+        title="生成维保计划"
         open={genOpen}
         confirmLoading={genLoading}
         onOk={handleGenerate}
@@ -515,7 +515,7 @@ export default function DeviceMaintenanceUnified() {
 
       {/* ===== 详情 Drawer ===== */}
       <Drawer
-        title={`执行记录详情 ${detailData?.record_no || ''}`}
+        title={`维保记录详情 ${detailData?.record_no || ''}`}
         open={detailOpen}
         width={640}
         onClose={() => setDetailOpen(false)}

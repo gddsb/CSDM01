@@ -269,7 +269,7 @@ export default function DeviceMaintenanceHistory() {
 
       {/* ===== 详情 Drawer ===== */}
       <Drawer
-        title={`执行记录详情 ${detailData?.record_no || ''}`}
+        title={`维保记录详情 ${detailData?.record_no || ''}`}
         open={detailOpen}
         width={640}
         onClose={() => setDetailOpen(false)}
