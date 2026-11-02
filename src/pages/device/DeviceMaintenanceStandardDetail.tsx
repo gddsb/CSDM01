@@ -6,7 +6,7 @@ import {
 import {
   ArrowLeftOutlined, PlusOutlined,
   CheckCircleOutlined, PauseCircleOutlined, PlayCircleOutlined, ReloadOutlined,
-  PrinterOutlined, TeamOutlined,
+  TeamOutlined,
 } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import dayjs from 'dayjs'
@@ -298,7 +298,7 @@ export default function DeviceMaintenanceStandardDetail() {
       title: '操作', width: 100, fixed: 'right',
       render: (_, r) => (
         <Space size={4}>
-          <Button size="small" type="link" icon={<TeamOutlined />} onClick={(e) => { e.stopPropagation(); openSingleAssignModal(r) }}>分配人员</Button>
+          <Button size="small" type="link" onClick={(e) => { e.stopPropagation(); openSingleAssignModal(r) }}>分配人员</Button>
         </Space>
       ),
     },
@@ -311,7 +311,6 @@ export default function DeviceMaintenanceStandardDetail() {
         <Space style={{ marginBottom: 16 }}>
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/device/maintenance-standard')}>返回列表</Button>
           <Button icon={<ReloadOutlined />} onClick={loadDetail}>刷新</Button>
-          <Button icon={<PrinterOutlined />} onClick={() => window.print()}>打印</Button>
           <Button
             type="primary"
             icon={<PlusOutlined />}
@@ -618,18 +617,6 @@ export default function DeviceMaintenanceStandardDetail() {
           提示：分配仅改人员配置字段，不影响档案状态（编制/生效/停用三态均可操作）。
         </div>
       </Modal>
-
-      {/* 打印样式 */}
-      <style>{`
-        @media print {
-          .ant-layout-sider, .ant-layout-header, .ant-layout-footer { display: none !important; }
-          .ant-layout-content { margin: 0 !important; padding: 0 !important; max-width: 100% !important; }
-          .ant-space { display: none !important; }
-          .ant-drawer, .ant-modal { display: none !important; }
-          .ant-card-head { border-bottom: 1px solid #000 !important; }
-          body { background: #fff !important; }
-        }
-      `}</style>
     </Spin>
   )
 }
