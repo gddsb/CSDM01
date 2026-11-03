@@ -16,7 +16,7 @@
 import { useEffect, useState } from 'react'
 import {
   Button, List, SearchBar, Toast, Dialog, TextArea, Radio, Tabs,
-  PullToRefresh, Input, Space,
+  PullToRefresh, Input, Space, Picker,
 } from 'antd-mobile'
 import api from '../../utils/api'
 import { offlinePost, offlinePut } from '../offline/offlineApi'
@@ -101,7 +101,7 @@ export default function MobileDeviceFault() {
       const list: FaultDevice[] = r.success ? (r.data?.list || r.data || []) : []
       setDevices(list)
     }).catch(() => {})
-    api.get('/system/users', { params: { page: 1, pageSize: 200 } }).then((r: any) => {
+    api.get('/system/users', { params: { page: 1, pageSize: 200, role_code: 'MAINTENANCE' } }).then((r: any) => {
       const list: UserRow[] = r.success ? (r.data?.list || r.data || []) : []
       setUsers(list)
     }).catch(() => {})
@@ -483,14 +483,21 @@ function FaultDetail(p: FaultDetailProps) {
       {/* 派单 */}
       {f.status === '待派工' && (
         <Section title="👷 派工">
-          <select value={p.assignUserId || ''}
-            onChange={(e) => p.setAssignUserId(e.target.value ? Number(e.target.value) : null)}
-            style={{ padding: 6, borderRadius: 6, border: '1px solid #ddd', width: '100%', marginBottom: 8 }}>
-            <option value="">选择维修人员</option>
-            {p.users.map((u) => (
-              <option key={u.user_id} value={u.user_id}>{u.real_name || u.username}</option>
-            ))}
-          </select>
+          <Picker
+            columns={[p.users.map((u) => ({ label: u.real_name || u.username, value: String(u.user_id) }))]}
+            value={p.assignUserId ? [String(p.assignUserId)] : []}
+            onConfirm={(v) => p.setAssignUserId(v[0] ? Number(v[0]) : null)}
+          >
+            {(items, { open }) => (
+              <div onClick={open} style={{
+                padding: '8px 12px', borderRadius: 6, border: '1px solid #ddd',
+                background: '#fff', cursor: 'pointer', marginBottom: 8,
+                color: items[0] ? 'var(--m-text)' : 'var(--m-text-3)',
+              }}>
+                {items[0]?.label || '选择维修人员（设备维护员）'}
+              </div>
+            )}
+          </Picker>
           <TextArea value={p.assignNote} onChange={p.setAssignNote} rows={1} placeholder="派工备注（可选）"
             style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
           <Button color="primary" size="mini" block onClick={p.onAssign} style={{ marginTop: 8 }}>确认派工</Button>

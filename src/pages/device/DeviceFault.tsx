@@ -941,9 +941,6 @@ export default function DeviceFault() {
               options={userOptions}
             />
           </Form.Item>
-          <Form.Item label="维修截止时间" name="repair_deadline" rules={[{ required: true, message: '请选择维修截止时间' }]}>
-            <DatePicker showTime style={{ width: '100%' }} />
-          </Form.Item>
           <Form.Item label="备注" name="remark">
             <TextArea rows={3} placeholder="可填写派工备注" />
           </Form.Item>
