@@ -20,6 +20,10 @@ export default {
     const { rows, count } = await DeviceFaultService.list(req.query, (req as any).user)
     return success(res, rows, '查询成功', count)
   }),
+  stats: asyncHandler(async (req: Request, res: Response) => {
+    const data = await DeviceFaultService.stats((req as any).user)
+    return success(res, data)
+  }),
   detail: asyncHandler(async (req: Request, res: Response) => {
     const record = await DeviceFaultService.detail(Number(req.params.id))
     return success(res, record, '查询成功')

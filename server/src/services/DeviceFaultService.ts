@@ -16,7 +16,7 @@ import {
 import { generateDeviceFaultNo } from '../utils/sequence.js'
 import { MAX_PAGE_SIZE } from '../utils/response.js'
 import { AppError } from '../utils/error.js'
-import { STATUS_REVERSE, LEVEL_REVERSE } from '../models/DeviceFault.js'
+import { STATUS_MAP, STATUS_REVERSE, LEVEL_REVERSE } from '../models/DeviceFault.js'
 import { nowBeijingDate } from '../utils/date.js'
 import { logger } from '../utils/logger.js'
 
@@ -134,6 +134,36 @@ export const DeviceFaultService = {
     })
   },
 
+  /** 全量统计（按角色过滤，返回聚合 count，用于顶部统计卡片，不受 tab 过滤影响） */
+  async stats(actor?: any) {
+    // 复用 list 的角色过滤逻辑
+    const where: any = {}
+    if (actor?.userId) {
+      const roleCode = actor?.roleCode
+      if (roleCode && roleCode !== 'MAINTENANCE' && roleCode !== 'PROD_MANAGER' && roleCode !== 'SUPER_ADMIN' && roleCode !== 'ADMIN') {
+        where.reporter_id = actor.userId
+      }
+    }
+
+    // 一次拉回 status + fault_level，JS 端聚合（数据量不大）
+    const rows = await DeviceFault.findAll({
+      where,
+      attributes: ['status', 'fault_level'],
+      raw: true,
+    })
+
+    const s = { pending: 0, repairing: 0, approving: 0, closed: 0, urgent: 0, total: rows.length }
+    for (const r of rows as any[]) {
+      const st = typeof r.status === 'number' ? STATUS_MAP[r.status] : r.status
+      if (st === '待派工') s.pending++
+      else if (st === '维修中') s.repairing++
+      else if (st === '待审批') s.approving++
+      else if (st === '已关闭') s.closed++
+      if ((r.fault_level === '紧急' || r.fault_level === 3)) s.urgent++
+    }
+    return s
+  },
+
   /** 故障详情（含维修记录+图片） */
   async detail(id: number | string) {
     const record = await getFaultDetail(Number(id))
@@ -237,6 +267,10 @@ export const DeviceFaultService = {
         repair_id: (repairRecord as any).repair_id,
         repair_time: nowBeijingDate(),
         total_cost: cost.total_cost,
+        // 维修人登记（如果派工已设置则确认；若未派工但 actor 是维修人则补充）
+        repairer_id: fault.getDataValue('repairer_id') ?? actor?.userId ?? null,
+        repairer_name: fault.getDataValue('repairer_name') ?? actor?.realName ?? actor?.username ?? null,
+        repair_start_time: nowBeijingDate(),
       } as any, { transaction: t })
 
       await t.commit()

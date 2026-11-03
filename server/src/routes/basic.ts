@@ -383,6 +383,7 @@ router.get('/supplier-complaints/:id/pdf', permissionRequired('quality:complaint
 
 // ============ 设备故障管理 ============
 router.get('/device-faults', permissionRequired('device:fault'), asyncHandler(DeviceFaultController.list))
+router.get('/device-faults/stats', permissionRequired('device:fault'), asyncHandler(DeviceFaultController.stats))
 router.get('/device-faults/:id', permissionRequired('device:fault'), asyncHandler(DeviceFaultController.detail))
 router.post('/device-faults', permissionRequired('device:fault:create'), logOperation('设备故障上报'), asyncHandler(DeviceFaultController.create))
 router.put('/device-faults/:id/assign', permissionRequired('device:fault:update'), logOperation('故障派工'), asyncHandler(DeviceFaultController.assign))

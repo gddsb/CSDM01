@@ -96,6 +96,9 @@ export default function MobileDeviceFault() {
   const [approveOpinion, setApproveOpinion] = useState('')
   const [closeRemark, setCloseRemark] = useState('')
 
+  // 顶部统计（独立于 tab 过滤，全量聚合）
+  const [stats, setStats] = useState({ pending: 0, repairing: 0, approving: 0, closed: 0, urgent: 0, total: 0 })
+
   // ===== 拉取设备/用户（用于新建/派单）=====
   useEffect(() => {
     api.get('/basic/devices', { params: { page: 1, pageSize: 500 } }).then((r: any) => {
@@ -122,6 +125,15 @@ export default function MobileDeviceFault() {
     } catch { setFaults([]) } finally { setLoading(false) }
   }
   useEffect(() => { loadFaults(tab) }, [tab])
+
+  // ===== 顶部统计（全量聚合，不受 tab 影响）=====
+  const loadStats = async () => {
+    try {
+      const r: any = await api.get('/basic/device-faults/stats')
+      if (r.success && r.data) setStats(r.data)
+    } catch { /* 统计失败不阻断列表 */ }
+  }
+  useEffect(() => { loadStats() }, [])
 
   // 搜索框 debounce：停下 500ms 自动查
   useDebounceEffect(keyword, (v) => {
@@ -164,7 +176,7 @@ export default function MobileDeviceFault() {
       // reset
       setShowCreate(false); setCreateDeviceId(null); setCreateDeviceName(''); setPendingFiles([])
       setCreateDesc(''); setCreateImpact(''); setCreateLevel('一般'); setCreateImages([])
-      await loadFaults(tab)
+      await loadFaults(tab); await loadStats()
     } catch (e: any) { Toast.show({ content: e?.message || '上报失败', position: 'bottom' }) }
   }
 
@@ -198,7 +210,7 @@ export default function MobileDeviceFault() {
       }, { source: 'device-fault' })
       Toast.show({ content: r.message || '派单成功', icon: 'success', position: 'bottom' })
       setSelected(null); setAssignUserId(null); setAssignNote('')
-      await loadFaults(tab)
+      await loadFaults(tab); await loadStats()
     } catch (e: any) { Toast.show({ content: e?.message || '派单失败', position: 'bottom' }) }
   }
 
@@ -218,7 +230,7 @@ export default function MobileDeviceFault() {
       Toast.show({ content: r.message || '维修记录已提交', icon: 'success', position: 'bottom' })
       setSelected(null); setRepairCause(''); setRepairSolution('')
       setRepairHours(''); setPartsCost(''); setLaborCost(''); setRepairImages([])
-      await loadFaults(tab)
+      await loadFaults(tab); await loadStats()
     } catch (e: any) { Toast.show({ content: e?.message || '提交失败', position: 'bottom' }) }
   }
 
@@ -234,7 +246,7 @@ export default function MobileDeviceFault() {
       }, { source: 'device-fault' })
       Toast.show({ content: r.message || `已${approveResult === '通过' ? '通过' : '驳回'}`, icon: 'success', position: 'bottom' })
       setSelected(null); setApproveOpinion('')
-      await loadFaults(tab)
+      await loadFaults(tab); await loadStats()
     } catch (e: any) { Toast.show({ content: e?.message || '操作失败', position: 'bottom' }) }
   }
 
@@ -249,16 +261,8 @@ export default function MobileDeviceFault() {
       }, { source: 'device-fault' })
       Toast.show({ content: r.message || '已关闭', icon: 'success', position: 'bottom' })
       setSelected(null); setCloseRemark('')
-      await loadFaults(tab)
+      await loadFaults(tab); await loadStats()
     } catch (e: any) { Toast.show({ content: e?.message || '操作失败', position: 'bottom' }) }
-  }
-
-  // ===== 顶部统计 =====
-  const stats = {
-    pending: faults.filter((f) => f.status === '待派工').length,
-    repairing: faults.filter((f) => f.status === '维修中').length,
-    approving: faults.filter((f) => f.status === '待审批').length,
-    urgent: faults.filter((f) => f.fault_level === '紧急').length,
   }
 
   // ===== 渲染 =====
