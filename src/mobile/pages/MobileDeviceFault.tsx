@@ -479,6 +479,17 @@ function FaultDetail(p: FaultDetailProps) {
       {f.repair_person_name && <DetailLine label="维修人">{f.repair_person_name}</DetailLine>}
       {f.fault_desc && <DetailLine label="故障描述">{f.fault_desc}</DetailLine>}
       {f.impact_desc && <DetailLine label="影响范围">{f.impact_desc}</DetailLine>}
+      {f.fault_cause && <DetailLine label="故障原因">{f.fault_cause}</DetailLine>}
+      {f.repair_solution && <DetailLine label="维修方案">{f.repair_solution}</DetailLine>}
+      {(f.repair_hours != null || (f as any).parts_cost != null || (f as any).labor_cost != null) && (
+        <DetailLine label="维修费用">
+          {(f.repair_hours != null ? `工时${f.repair_hours}h ` : '')}
+          {((f as any).parts_cost != null ? `备件¥${(f as any).parts_cost} ` : '')}
+          {((f as any).labor_cost != null ? `人工¥${(f as any).labor_cost}` : '')}
+        </DetailLine>
+      )}
+      {f.approve_result && <DetailLine label="验收结果">{f.approve_result}{f.approve_opinion ? `（${f.approve_opinion}）` : ''}</DetailLine>}
+      {f.close_remark && <DetailLine label="关闭备注">{f.close_remark}</DetailLine>}
 
       {/* 派单 */}
       {f.status === '待派工' && (
@@ -561,10 +572,10 @@ function FaultDetail(p: FaultDetailProps) {
       )}
 
       {/* 已关闭展示维修结果 */}
-      {f.status === '已关闭' && (f.repair_solution || f.fault_cause) && (
+      {f.status === '已关闭' && (
         <Section title="📝 维修结果">
-          {f.fault_cause && <DetailLine label="原因">{f.fault_cause}</DetailLine>}
-          {f.repair_solution && <DetailLine label="方案">{f.repair_solution}</DetailLine>}
+          {f.fault_cause ? <DetailLine label="原因">{f.fault_cause}</DetailLine> : <DetailLine label="原因">—</DetailLine>}
+          {f.repair_solution ? <DetailLine label="方案">{f.repair_solution}</DetailLine> : <DetailLine label="方案">—</DetailLine>}
         </Section>
       )}
     </div>
@@ -583,9 +594,9 @@ function DetailLine({ label, children }: { label: string; children: any }) {
 function Section({ title, children }: { title: string; children: any }) {
   return (
     <div style={{
-      marginTop: 12, padding: 10, borderRadius: 8, background: 'var(--m-surface-2)', border: '1px solid var(--m-border)',
+      marginTop: 16, padding: '6px 0',
     }}>
-      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8 }}>{title}</div>
+      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 8, color: 'var(--brand-color)' }}>{title}</div>
       {children}
     </div>
   )
