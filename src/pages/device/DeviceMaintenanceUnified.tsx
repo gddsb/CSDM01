@@ -145,8 +145,10 @@ export default function DeviceMaintenanceUnified() {
       map.get(r.device_id)!.records.push(r)
     })
     return Array.from(map.values()).map(g => {
-      // 子表排序：先按频率（日→周→月→其他），同频率内按保养项名称
+      // 子表排序：先按周期(period_key) → 同周期内按频率(日→周→月) → 保养项名称
       g.records.sort((a: any, b: any) => {
+        const pk = (a.period_key || '').localeCompare(b.period_key || '')
+        if (pk !== 0) return pk
         const ma = MODE_ORDER[a.trigger_mode] ?? 99
         const mb = MODE_ORDER[b.trigger_mode] ?? 99
         if (ma !== mb) return ma - mb
@@ -332,6 +334,9 @@ export default function DeviceMaintenanceUnified() {
       title: '频率', width: 80, render: (_: any, r: any) => (
         <Tag color={MODE_COLOR[r.trigger_mode]}>{MODE_LABEL[r.trigger_mode] || r.trigger_mode}</Tag>
       ),
+    },
+    {
+      title: '周期', dataIndex: 'period_key', width: 100, render: (v: string) => v || <Text type="secondary">-</Text>,
     },
     {
       title: '状态', width: 80, render: (_: any, r: any) => (
