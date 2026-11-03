@@ -171,7 +171,7 @@ export const DeviceFaultService = {
     const fault = await DeviceFault.findOne({ where: { fault_id: Number(id) } })
     if (!fault) throw new AppError('故障记录不存在', 10002, 404)
 
-    if ((fault as any).status !== 0) {
+    if (fault.getDataValue('status') !== 0) {
       throw new AppError('当前状态不可指派维修人', 20001, 409)
     }
 
@@ -205,7 +205,7 @@ export const DeviceFaultService = {
     const fault = await DeviceFault.findOne({ where: { fault_id: Number(id) } })
     if (!fault) throw new AppError('故障记录不存在', 10002, 404)
 
-    if ((fault as any).status !== 1) {
+    if (fault.getDataValue('status') !== 1) {
       throw new AppError('当前状态不可提交维修结果', 20001, 409)
     }
 
@@ -246,7 +246,7 @@ export const DeviceFaultService = {
     const fault = await DeviceFault.findOne({ where: { fault_id: Number(id) } })
     if (!fault) throw new AppError('故障记录不存在', 10002, 404)
 
-    if ((fault as any).status !== 2) {
+    if (fault.getDataValue('status') !== 2) {
       throw new AppError('当前状态不可审批', 20001, 409)
     }
 
@@ -290,7 +290,7 @@ export const DeviceFaultService = {
     const fault = await DeviceFault.findOne({ where: { fault_id: Number(id) } })
     if (!fault) throw new AppError('故障记录不存在', 10002, 404)
 
-    if ((fault as any).status !== 0) {
+    if (fault.getDataValue('status') !== 0) {
       throw new AppError('只有新建状态可以删除', 20001, 409)
     }
 
