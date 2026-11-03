@@ -155,10 +155,10 @@ export const DeviceFaultService = {
       device_code: (device as any).device_code,
       device_name: (device as any).device_name,
       fault_level: body.fault_level || 1,
-      fault_type: body.fault_type || '',
-      description: body.description || '',
+      fault_desc: body.fault_desc || '',
+      impact_desc: body.impact_desc || '',
       fault_time: body.fault_time ? new Date(body.fault_time) : nowBeijingDate(),
-      status: 0, // 新建=已报故障
+      status: 0, // 新建=待派工
       reporter_id: actor?.userId || null,
       reporter_name: actor?.realName || actor?.username || null,
       remarks: body.remarks,
@@ -191,11 +191,9 @@ export const DeviceFaultService = {
 
     await fault.update({
       status: 1,
-      assignee_id: body.assignee_id,
-      assignee_name: body.assignee_name || body.assignee_id,
-      assign_time: nowBeijingDate(),
-      assignor_id: actor?.userId || null,
-      assignor_name: actor?.realName || actor?.username || null,
+      repairer_id: body.assignee_id,
+      repairer_name: body.assignee_name || '',
+      assigned_time: nowBeijingDate(),
     } as any)
     return fault
   },
@@ -265,22 +263,22 @@ export const DeviceFaultService = {
     return await getFaultDetail(Number(id))
   },
 
-  /** 关闭故障（状态 3/4 → 5） */
+  /** 关闭故障（任何未关闭状态都可手动关闭） */
   async close(id: number | string, body: any, actor?: any) {
     const fault = await DeviceFault.findOne({ where: { fault_id: Number(id) } })
     if (!fault) throw new AppError('故障记录不存在', 10002, 404)
 
-    const s = (fault as any).status
-    if (s !== 3 && s !== 4) {
-      throw new AppError('只有已解决或已关闭状态可以关闭', 20001, 409)
+    const s = fault.getDataValue('status')
+    if (s === 3) {
+      throw new AppError('故障已关闭，不可重复关闭', 20001, 409)
     }
 
     await fault.update({
-      status: 5, // 已关闭
-      close_time: nowBeijingDate(),
-      close_user_id: actor?.userId || null,
-      close_user_name: actor?.realName || actor?.username || null,
-      close_reason: body.close_reason || '',
+      status: 3, // 已关闭
+      closed_time: nowBeijingDate(),
+      approver_id: actor?.userId || null,
+      approver_name: actor?.realName || actor?.username || null,
+      approve_remark: body.close_reason || body.approve_remark || '',
     } as any)
     return await getFaultDetail(Number(id))
   },

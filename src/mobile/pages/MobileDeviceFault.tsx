@@ -422,7 +422,18 @@ export default function MobileDeviceFault() {
 
       {/* ======= 故障详情抽屉 ======= */}
       {selected && (
-        <Dialog visible content={<FaultDetail
+        <Dialog visible
+          title={<div style={{ position: 'relative', textAlign: 'center', fontWeight: 600, fontSize: 15, paddingRight: 24 }}>
+            故障详情
+            <span
+              onClick={() => setSelected(null)}
+              style={{
+                position: 'absolute', right: -6, top: -2, cursor: 'pointer', fontSize: 22, lineHeight: 1,
+                color: 'var(--m-text-3)', padding: 4, userSelect: 'none',
+              }}
+            >✕</span>
+          </div>}
+          content={<FaultDetail
           fault={selected}
           users={users}
           assignUserId={assignUserId} setAssignUserId={setAssignUserId}
