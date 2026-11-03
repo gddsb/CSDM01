@@ -209,14 +209,22 @@ export const DeviceFaultService = {
 
     const t = await sequelize.transaction()
     try {
+      // 前端字段名 → DeviceFaultRepair Model 字段
+      const partsCost = Number(body.parts_cost ?? body.spare_parts_cost) || 0
+      const laborCost = Number(body.labor_cost) || 0
+      const totalCost = Number(body.total_cost) || partsCost + laborCost + (Number(body.outsource_cost ?? body.external_cost) || 0)
       const repairRecord = await DeviceFaultRepair.create({
         fault_id: Number(id),
-        repair_result: body.repair_result || '',
-        repair_description: body.repair_description || '',
-        labor_hours: Number(body.labor_hours) || 0,
-        labor_rate: Number(body.labor_rate) || 0,
-        external_cost: Number(body.external_cost) || 0,
-        spare_parts_used: body.spare_parts_used || [],
+        fault_cause: body.fault_cause || '',
+        repair_plan: body.repair_solution || '',
+        repair_detail: body.repair_process || body.repair_detail || '',
+        spare_parts_used: body.spare_parts_used || body.spare_parts || [],
+        spare_parts_cost: partsCost,
+        labor_hours: Number(body.repair_hours ?? body.labor_hours) || 0,
+        labor_rate: Number(body.hourly_rate ?? body.labor_rate) || 0,
+        labor_cost: laborCost,
+        external_cost: Number(body.outsource_cost ?? body.external_cost) || 0,
+        total_cost: totalCost,
         repair_time: nowBeijingDate(),
         repair_user_id: actor?.userId || null,
         repair_user_name: actor?.realName || actor?.username || null,
@@ -248,15 +256,22 @@ export const DeviceFaultService = {
       throw new AppError('当前状态不可审批', 20001, 409)
     }
 
-    const { approved, remarks } = body
-    if (approved === undefined) throw new AppError('必须指定 approved 布尔值', 10001, 400)
+    // 前端传 approve_result='通过'/'驳回'，兼容旧的 approved 布尔
+    const result = body.approve_result
+    const approved = typeof result === 'boolean' ? result
+      : (result === '通过' || result === true || body.approved === true)
+    if (approved !== true && approved !== false) {
+      throw new AppError('必须指定审批结果（通过/驳回）', 10001, 400)
+    }
+    const approveRemark = body.approve_opinion !== undefined ? body.approve_opinion : (body.remarks || '')
 
     await fault.update({
       status: approved ? 3 : 1, // 3=已解决，退回=1=维修中
       approver_id: actor?.userId || null,
       approver_name: actor?.realName || actor?.username || null,
       approve_time: nowBeijingDate(),
-      remarks: remarks !== undefined ? remarks : (fault as any).remarks,
+      approve_remark: approveRemark,
+      remarks: approveRemark || (fault as any).remarks,
     } as any)
 
     logger.info(`[DeviceFault] 故障审批: fault_id=${id}, approved=${approved}`)

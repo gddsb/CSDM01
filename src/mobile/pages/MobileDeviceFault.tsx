@@ -90,6 +90,7 @@ export default function MobileDeviceFault() {
   const [repairHours, setRepairHours] = useState('')
   const [partsCost, setPartsCost] = useState('')
   const [laborCost, setLaborCost] = useState('')
+  const [repairImages, setRepairImages] = useState<string[]>([])
 
   const [approveResult, setApproveResult] = useState<'通过' | '驳回'>('通过')
   const [approveOpinion, setApproveOpinion] = useState('')
@@ -216,7 +217,7 @@ export default function MobileDeviceFault() {
       }, { source: 'device-fault' })
       Toast.show({ content: r.message || '维修记录已提交', icon: 'success', position: 'bottom' })
       setSelected(null); setRepairCause(''); setRepairSolution('')
-      setRepairHours(''); setPartsCost(''); setLaborCost('')
+      setRepairHours(''); setPartsCost(''); setLaborCost(''); setRepairImages([])
       await loadFaults(tab)
     } catch (e: any) { Toast.show({ content: e?.message || '提交失败', position: 'bottom' }) }
   }
@@ -443,6 +444,7 @@ export default function MobileDeviceFault() {
           repairHours={repairHours} setRepairHours={setRepairHours}
           partsCost={partsCost} setPartsCost={setPartsCost}
           laborCost={laborCost} setLaborCost={setLaborCost}
+          repairImages={repairImages} setRepairImages={setRepairImages}
           approveResult={approveResult} setApproveResult={setApproveResult}
           approveOpinion={approveOpinion} setApproveOpinion={setApproveOpinion}
           closeRemark={closeRemark} setCloseRemark={setCloseRemark}
@@ -518,6 +520,7 @@ interface FaultDetailProps {
   repairHours: string; setRepairHours: (v: string) => void
   partsCost: string; setPartsCost: (v: string) => void
   laborCost: string; setLaborCost: (v: string) => void
+  repairImages: string[]; setRepairImages: (v: string[]) => void
   approveResult: '通过' | '驳回'; setApproveResult: (v: '通过' | '驳回') => void
   approveOpinion: string; setApproveOpinion: (v: string) => void
   closeRemark: string; setCloseRemark: (v: string) => void
@@ -600,6 +603,16 @@ function FaultDetail(p: FaultDetailProps) {
               <Input value={p.laborCost} onChange={p.setLaborCost} type="number" placeholder="0" />
             </div>
           </div>
+          <div style={{ fontSize: 12, color: 'var(--m-text-2)', margin: '8px 0 4px' }}>维修后照片（可选）</div>
+          <MobileImageUploader
+            uploadUrl={`/basic/device-faults/${f.fault_id}/images`}
+            deleteUrl={(rawUrl) => `/basic/device-faults/${f.fault_id}/images?path=${encodeURIComponent(rawUrl)}`}
+            value={p.repairImages}
+            onChange={p.setRepairImages}
+            maxCount={6}
+            compress={true}
+            watermark={{ username: getCurrentUsername(), timestamp: true }}
+          />
           <Button color="primary" size="mini" block onClick={p.onRepair} style={{ marginTop: 8 }}>提交维修记录</Button>
         </Section>
       )}

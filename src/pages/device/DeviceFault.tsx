@@ -444,7 +444,6 @@ export default function DeviceFault() {
       const payload: any = {
         fault_cause: values.fault_cause,
         repair_solution: values.repair_solution,
-        repair_process: values.repair_process || '',
         repair_hours: Number(values.repair_hours) || 0,
         hourly_rate: Number(values.hourly_rate) || 0,
         outsource_cost: Number(values.outsource_cost) || 0,
@@ -969,15 +968,14 @@ export default function DeviceFault() {
           </Descriptions>
         )}
         <Form form={repairForm} layout="vertical">
-          <Form.Item label="故障原因分析" name="fault_cause" rules={[{ required: true, message: '请输入故障原因分析' }]}>
-            <TextArea rows={3} placeholder="请输入故障原因分析" />
-          </Form.Item>
-          <Form.Item label="维修方案" name="repair_solution" rules={[{ required: true, message: '请输入维修方案' }]}>
-            <TextArea rows={3} placeholder="请输入维修方案" />
-          </Form.Item>
-          <Form.Item label="维修过程记录" name="repair_process">
-            <TextArea rows={3} placeholder="请输入维修过程记录" />
-          </Form.Item>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <Form.Item label="故障原因分析" name="fault_cause" rules={[{ required: true, message: '请输入故障原因分析' }]} style={{ flex: 1, marginBottom: 12 }}>
+              <TextArea rows={3} placeholder="请输入故障原因分析" />
+            </Form.Item>
+            <Form.Item label="维修方案" name="repair_solution" rules={[{ required: true, message: '请输入维修方案' }]} style={{ flex: 1, marginBottom: 12 }}>
+              <TextArea rows={3} placeholder="请输入维修方案" />
+            </Form.Item>
+          </div>
 
           <Divider orientation="left" plain>备件使用</Divider>
           {spareParts.length === 0 && <Text type="secondary">暂无备件，点击下方按钮添加</Text>}
@@ -1080,8 +1078,8 @@ export default function DeviceFault() {
                   ]}
                 />
               </Form.Item>
-              <Form.Item label="审批意见" name="opinion" rules={[{ required: true, message: '请输入审批意见' }]}>
-                <TextArea rows={3} placeholder="请输入审批意见" />
+              <Form.Item label="审批意见" name="opinion">
+                <TextArea rows={3} placeholder="请输入审批意见（可选）" />
               </Form.Item>
             </Form>
           </>
