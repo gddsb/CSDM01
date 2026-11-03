@@ -437,7 +437,7 @@ export default function MobileDeviceFault() {
           closeRemark={closeRemark} setCloseRemark={setCloseRemark}
           onAssign={onAssign} onRepair={onRepair} onApprove={onApprove} onClose={onClose}
         />}
-          actions={[{ key: 'close', text: '关闭详情', onClick: () => setSelected(null) }]}
+          closeOnMaskClick onMaskClick={() => setSelected(null)}
         />
       )}
     </div>
@@ -611,8 +611,8 @@ function FaultDetail(p: FaultDetailProps) {
         </Section>
       )}
 
-      {/* 关闭（任何非已关闭状态都可） */}
-      {f.status !== '已关闭' && f.status !== '待派工' && (
+      {/* 关闭（仅待派工未干活时可手动取消） */}
+      {f.status === '待派工' && (
         <Section title="📌 关闭故障">
           <TextArea value={p.closeRemark} onChange={p.setCloseRemark} rows={1}
             placeholder="关闭备注（可选）" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
