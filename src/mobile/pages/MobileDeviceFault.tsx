@@ -486,7 +486,7 @@ function FaultDetail(p: FaultDetailProps) {
           <Picker
             columns={[p.users.map((u) => ({ label: u.real_name || u.username, value: String(u.user_id) }))]}
             value={p.assignUserId ? [String(p.assignUserId)] : []}
-            onConfirm={(v) => p.setAssignUserId(v[0] ? Number(v[0]) : null)}
+            onChange={(v) => p.setAssignUserId(v[0] ? Number(v[0]) : null)}
           >
             {(items, { open }) => (
               <div onClick={open} style={{
