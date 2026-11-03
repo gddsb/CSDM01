@@ -3,7 +3,7 @@
  *
  * 对齐 PC DeviceFault.tsx 的写动作：
  *   ✅ 新建   POST /basic/device-faults               (fault_level/fault_desc/fault_time/impact_desc)
- *   ✅ 派单   PUT  /basic/device-faults/:id/assign    (repair_person_id/name/assign_note)
+ *   ✅ 派单   PUT  /basic/device-faults/:id/assign    (repairer_id/name/assign_note)
  *   ✅ 维修   PUT  /basic/device-faults/:id/repair    (fault_cause/repair_solution/repair_hours/parts_cost/labor_cost)
  *   ✅ 验收   PUT  /basic/device-faults/:id/approve   (approve_result/approve_opinion)
  *   ✅ 关闭   PUT  /basic/device-faults/:id/close     (close_remark)
@@ -43,7 +43,7 @@ interface FaultRow {
   fault_id: number; fault_no?: string; device_id?: number; device_name?: string
   device_code?: string; fault_level: string; fault_desc?: string
   fault_time?: string; impact_desc?: string; reporter_name?: string
-  repair_person_id?: number; repair_person_name?: string
+  repairer_id?: number; repairer_name?: string
   status: string; fault_cause?: string; repair_solution?: string
   approve_result?: string; approve_opinion?: string; close_remark?: string
   fault_images?: any[]
@@ -204,8 +204,8 @@ export default function MobileDeviceFault() {
     const user = users.find((u) => u.user_id === assignUserId)
     try {
       const r: any = await offlinePut(`/basic/device-faults/${selected.fault_id}/assign`, {
-        repair_person_id: assignUserId,
-        repair_person_name: user?.real_name || user?.username,
+        repairer_id: assignUserId,
+        repairer_name: user?.real_name || user?.username,
         assign_note: assignNote,
       }, { source: 'device-fault' })
       Toast.show({ content: r.message || '派单成功', icon: 'success', position: 'bottom' })
@@ -505,9 +505,9 @@ function FaultCard({ fault, onOpen }: { fault: FaultRow; onOpen: () => void }) {
           {fault.fault_desc}
         </div>
       )}
-      {(fault.repair_person_name || fault.fault_time) && (
+      {(fault.repairer_name || fault.fault_time) && (
         <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 6, display: 'flex', gap: 10 }}>
-          {fault.repair_person_name && <span>👷 {fault.repair_person_name}</span>}
+          {fault.repairer_name && <span>👷 {fault.repairer_name}</span>}
           {fault.fault_time && <span>⏰ {String(fault.fault_time).slice(0, 16).replace("T", " ")}</span>}
         </div>
       )}
@@ -545,7 +545,7 @@ function FaultDetail(p: FaultDetailProps) {
       <DetailLine label="设备">{f.device_name} ({f.device_code})</DetailLine>
       <DetailLine label="等级">{f.fault_level}</DetailLine>
       <DetailLine label="上报时间">{String(f.fault_time || '').slice(0, 16).replace("T", " ")}</DetailLine>
-      {f.repair_person_name && <DetailLine label="维修人">{f.repair_person_name}</DetailLine>}
+      {f.repairer_name && <DetailLine label="维修人">{f.repairer_name}</DetailLine>}
       {f.fault_desc && <DetailLine label="故障描述">{f.fault_desc}</DetailLine>}
       {f.impact_desc && <DetailLine label="影响范围">{f.impact_desc}</DetailLine>}
       {f.fault_cause && <DetailLine label="故障原因">{f.fault_cause}</DetailLine>}

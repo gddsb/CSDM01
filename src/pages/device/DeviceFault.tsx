@@ -79,7 +79,7 @@ interface DeviceFault {
   fault_time: string
   impact_desc?: string
   reporter_name?: string
-  repair_person_name?: string
+  repairer_name?: string
   status: string
   fault_cause?: string
   repair_solution?: string
@@ -379,9 +379,9 @@ export default function DeviceFault() {
     try {
       const values = await assignForm.validateFields()
       setAssignLoading(true)
-      const user = users.find((u: any) => (u.user_id ?? u.id) === values.repair_person_id)
+      const user = users.find((u: any) => (u.user_id ?? u.id) === values.repairer_id)
       const payload: any = {
-        assignee_id: values.repair_person_id,
+        assignee_id: values.repairer_id,
         assignee_name: user?.real_name || user?.username,
         assignor_remark: values.remark || '',
       }
@@ -546,7 +546,7 @@ export default function DeviceFault() {
     },
     { title: '故障现象', dataIndex: 'fault_desc', key: 'fault_desc', width: 200, ellipsis: true },
     { title: '上报人', dataIndex: 'reporter_name', key: 'reporter_name', width: 100 },
-    { title: '维修人', dataIndex: 'repair_person_name', key: 'repair_person_name', width: 100 },
+    { title: '维修人', dataIndex: 'repairer_name', key: 'repairer_name', width: 100 },
     { title: '故障时间', dataIndex: 'fault_time', key: 'fault_time', width: 160, render: formatDateTime },
     {
       title: '状态', dataIndex: 'status', key: 'status', width: 90,
@@ -653,14 +653,14 @@ export default function DeviceFault() {
       items.push({
         color: 'orange',
         label: formatDateTime(current.assign_time),
-        children: <div><Tag color="orange">派工</Tag><Text type="secondary" style={{ marginLeft: 8 }}>维修人：{current.repair_person_name || '-'}</Text></div>,
+        children: <div><Tag color="orange">派工</Tag><Text type="secondary" style={{ marginLeft: 8 }}>维修人：{current.repairer_name || '-'}</Text></div>,
       })
     }
     if (current.repair_time) {
       items.push({
         color: 'processing',
         label: formatDateTime(current.repair_time),
-        children: <div><Tag color="processing">维修</Tag><Text type="secondary" style={{ marginLeft: 8 }}>{current.repair_person_name || '-'}</Text></div>,
+        children: <div><Tag color="processing">维修</Tag><Text type="secondary" style={{ marginLeft: 8 }}>{current.repairer_name || '-'}</Text></div>,
       })
     }
     if (current.approve_time) {
@@ -775,14 +775,14 @@ export default function DeviceFault() {
                 </Descriptions.Item>
                 <Descriptions.Item label="故障时间">{formatDateTime(current.fault_time)}</Descriptions.Item>
                 <Descriptions.Item label="上报人">{current.reporter_name || '-'}</Descriptions.Item>
-                <Descriptions.Item label="维修人">{current.repair_person_name || '-'}</Descriptions.Item>
+                <Descriptions.Item label="维修人">{current.repairer_name || '-'}</Descriptions.Item>
                 <Descriptions.Item label="故障现象" span={2}>{current.fault_desc || '-'}</Descriptions.Item>
                 <Descriptions.Item label="影响描述" span={2}>{current.impact_desc || '-'}</Descriptions.Item>
                 <Descriptions.Item label="故障原因分析" span={2}>{current.fault_cause || '-'}</Descriptions.Item>
                 <Descriptions.Item label="维修方案" span={2}>{current.repair_solution || '-'}</Descriptions.Item>
               </Descriptions>
 
-              {(current.repair_person_name || current.repair_hours != null || current.total_cost != null || current.repair_process) && (
+              {(current.repairer_name || current.repair_hours != null || current.total_cost != null || current.repair_process) && (
                 <>
                   <Title level={5} style={{ marginTop: 16 }}>维修执行</Title>
                   <Descriptions column={2} size="small" bordered>
@@ -933,7 +933,7 @@ export default function DeviceFault() {
           </Descriptions>
         )}
         <Form form={assignForm} layout="vertical">
-          <Form.Item label="维修人员" name="repair_person_id" rules={[{ required: true, message: '请选择维修人员' }]}>
+          <Form.Item label="维修人员" name="repairer_id" rules={[{ required: true, message: '请选择维修人员' }]}>
             <Select
               showSearch
               placeholder="请选择维修人员"
@@ -1057,7 +1057,7 @@ export default function DeviceFault() {
             <Descriptions column={1} size="small" bordered style={{ marginBottom: 16 }}>
               <Descriptions.Item label="故障编号">{approveTarget.fault_no}</Descriptions.Item>
               <Descriptions.Item label="设备名称">{approveTarget.device_name || '-'}</Descriptions.Item>
-              <Descriptions.Item label="维修人">{approveTarget.repair_person_name || '-'}</Descriptions.Item>
+              <Descriptions.Item label="维修人">{approveTarget.repairer_name || '-'}</Descriptions.Item>
             </Descriptions>
             <Title level={5}>维修成本摘要</Title>
             <Descriptions column={2} size="small" bordered style={{ marginBottom: 16 }}>
