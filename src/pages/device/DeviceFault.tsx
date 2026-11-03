@@ -779,16 +779,14 @@ export default function DeviceFault() {
                 <Descriptions.Item label="维修人">{current.repair_person_name || '-'}</Descriptions.Item>
                 <Descriptions.Item label="故障现象" span={2}>{current.fault_desc || '-'}</Descriptions.Item>
                 <Descriptions.Item label="影响描述" span={2}>{current.impact_desc || '-'}</Descriptions.Item>
+                <Descriptions.Item label="故障原因分析" span={2}>{current.fault_cause || '-'}</Descriptions.Item>
+                <Descriptions.Item label="维修方案" span={2}>{current.repair_solution || '-'}</Descriptions.Item>
               </Descriptions>
 
-              {(current.repair_person_name || current.fault_cause) && (
+              {(current.repair_person_name || current.repair_hours != null || current.total_cost != null || current.repair_process) && (
                 <>
-                  <Title level={5} style={{ marginTop: 16 }}>维修信息</Title>
+                  <Title level={5} style={{ marginTop: 16 }}>维修执行</Title>
                   <Descriptions column={2} size="small" bordered>
-                    <Descriptions.Item label="维修人">{current.repair_person_name || '-'}</Descriptions.Item>
-                    <Descriptions.Item label="维修截止">{formatDateTime(current.repair_deadline)}</Descriptions.Item>
-                    <Descriptions.Item label="故障原因" span={2}>{current.fault_cause || '-'}</Descriptions.Item>
-                    <Descriptions.Item label="维修方案" span={2}>{current.repair_solution || '-'}</Descriptions.Item>
                     <Descriptions.Item label="维修过程" span={2}>{current.repair_process || '-'}</Descriptions.Item>
                     <Descriptions.Item label="维修工时">{current.repair_hours != null ? `${current.repair_hours} 小时` : '-'}</Descriptions.Item>
                     <Descriptions.Item label="人工时薪">{current.hourly_rate != null ? `¥${current.hourly_rate}` : '-'}</Descriptions.Item>
@@ -824,11 +822,16 @@ export default function DeviceFault() {
                 </>
               )}
 
-              <Title level={5} style={{ marginTop: 16 }}>故障照片</Title>
-              {renderImageGroup(faultImages, '暂无故障照片')}
-
-              <Title level={5} style={{ marginTop: 16 }}>维修后照片</Title>
-              {renderImageGroup(repairImages, '暂无维修后照片')}
+              <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
+                <div style={{ flex: 1 }}>
+                  <Title level={5}>故障照片</Title>
+                  {renderImageGroup(faultImages, '暂无故障照片')}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <Title level={5}>维修后照片</Title>
+                  {renderImageGroup(repairImages, '暂无维修后照片')}
+                </div>
+              </div>
 
               <Title level={5} style={{ marginTop: 16 }}>处理时间线</Title>
               {renderTimeline()}

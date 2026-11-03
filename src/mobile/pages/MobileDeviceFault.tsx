@@ -50,11 +50,9 @@ interface FaultRow {
 }
 
 const STATUS_TABS: { key: StatusTab; label: string }[] = [
-  { key: 'all', label: '全部' },
   { key: '待派工', label: '待派工' },
   { key: '维修中', label: '维修中' },
   { key: '待审批', label: '待审批' },
-  { key: '已挂起', label: '已挂起' },
   { key: '已关闭', label: '已关闭' },
 ]
 
@@ -81,6 +79,8 @@ export default function MobileDeviceFault() {
   const [createImpact, setCreateImpact] = useState('')
   const [createImages, setCreateImages] = useState<string[]>([])
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  const [showDevicePicker, setShowDevicePicker] = useState(false)
+  const [deviceSearchKw, setDeviceSearchKw] = useState('')
 
   const [assignUserId, setAssignUserId] = useState<number | null>(null)
   const [assignNote, setAssignNote] = useState('')
@@ -317,25 +317,15 @@ export default function MobileDeviceFault() {
           <div style={{ maxHeight: '70vh', overflow: 'auto', padding: '10px 6px' }}>
             <div style={{ fontWeight: 600, marginBottom: 10 }}>上报故障</div>
             <div style={{ marginBottom: 8 }}>
-              {/* 需求3: 扫码按钮已隐藏 */}
-              {/* <Button size="mini" fill="outline" onClick={handleScanForCreate} style={{ marginRight: 8 }}>扫设备</Button> */}
-              <select value={createDeviceId || ''}
-                onChange={(e) => {
-                  const id = e.target.value ? Number(e.target.value) : null
-                  setCreateDeviceId(id)
-                  if (id) {
-                    const d = devices.find((x) => x.device_id === id)
-                    setCreateDeviceName(d?.device_name || '')
-                  }
-                }}
-                style={{ padding: 6, borderRadius: 6, border: '1px solid #ddd', width: '100%' }}>
-                <option value="">选择故障设备</option>
-                {devices.map((d) => (
-                  <option key={d.device_id} value={d.device_id}>
-                    {d.device_name} ({d.device_code})
-                  </option>
-                ))}
-              </select>
+              <div
+                onClick={() => { setDeviceSearchKw(''); setShowDevicePicker(true) }}
+                style={{
+                  padding: '8px 12px', borderRadius: 6, border: '1px solid #ddd',
+                  background: '#fff', cursor: 'pointer', fontSize: 13,
+                  color: createDeviceId ? 'var(--m-text)' : 'var(--m-text-3)',
+                }}>
+                {createDeviceId ? `${createDeviceName}（${devices.find(d => d.device_id === createDeviceId)?.device_code || ''}）` : '选择故障设备（可搜索）'}
+              </div>
             </div>
             <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginBottom: 4 }}>故障等级</div>
             <div style={{ display: 'flex', gap: 16 }}>
@@ -366,6 +356,67 @@ export default function MobileDeviceFault() {
             { key: 'cancel', text: '取消', onClick: () => setShowCreate(false) },
             { key: 'ok', text: '上报', bold: true, onClick: onCreateSubmit },
           ]}
+        />
+      )}
+
+      {/* ======= 设备搜索选择弹层 ======= */}
+      {showDevicePicker && (
+        <Dialog
+          visible
+          content={
+            <div style={{ padding: '6px 4px 0' }}>
+              <SearchBar
+                placeholder="输入设备名称或编号"
+                value={deviceSearchKw}
+                onChange={setDeviceSearchKw}
+                onCancel={() => setDeviceSearchKw('')}
+              />
+              <div style={{ maxHeight: 320, overflow: 'auto', marginTop: 4 }}>
+                {devices
+                  .filter(d => {
+                    if (!deviceSearchKw.trim()) return true
+                    const kw = deviceSearchKw.toLowerCase()
+                    return (
+                      (d.device_name || '').toLowerCase().includes(kw) ||
+                      (d.device_code || '').toLowerCase().includes(kw) ||
+                      String(d.device_id).includes(kw)
+                    )
+                  })
+                  .map(d => (
+                    <div
+                      key={d.device_id}
+                      onClick={() => {
+                        setCreateDeviceId(d.device_id)
+                        setCreateDeviceName(d.device_name || '')
+                        setShowDevicePicker(false)
+                      }}
+                      style={{
+                        padding: '10px 12px', borderBottom: '1px solid #f0f0f0',
+                        cursor: 'pointer', fontSize: 13,
+                      }}>
+                      <div style={{ fontWeight: 500 }}>{d.device_name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>
+                        {d.device_code} {d.line_name ? `· ${d.line_name}` : ''}
+                      </div>
+                    </div>
+                  ))}
+                {devices.filter(d => {
+                  if (!deviceSearchKw.trim()) return true
+                  const kw = deviceSearchKw.toLowerCase()
+                  return (
+                    (d.device_name || '').toLowerCase().includes(kw) ||
+                    (d.device_code || '').toLowerCase().includes(kw) ||
+                    String(d.device_id).includes(kw)
+                  )
+                }).length === 0 && (
+                  <div style={{ textAlign: 'center', padding: 24, color: 'var(--m-text-3)', fontSize: 12 }}>
+                    无匹配设备
+                  </div>
+                )}
+              </div>
+            </div>
+          }
+          actions={[{ key: 'close', text: '取消', onClick: () => setShowDevicePicker(false) }]}
         />
       )}
 
