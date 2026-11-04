@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
-import { Card, Tabs, Form, Input, InputNumber, Select, Button, Row, Col, Space, Tag, message } from 'antd'
+import { Card, Tabs, Form, Input, InputNumber, Select, Button, Space, Tag, message } from 'antd'
 import { PlusOutlined, DeleteOutlined, SaveOutlined, CalendarOutlined, SettingOutlined, ClockCircleOutlined } from '@ant-design/icons'
 import api from '../../utils/api'
 
@@ -83,6 +83,7 @@ function BreakTimeTab() {
         default_break_times: JSON.stringify(patterns),
       })
       M.success(`已保存 ${patterns.length} 条默认休息时间段（新建报工单时自动展开）`)
+      await loadData()
     } catch (e: unknown) {
       if ((e as { errorFields?: unknown[] })?.errorFields) return
       M.error(e instanceof Error ? e.message : '保存失败')
@@ -111,37 +112,30 @@ function BreakTimeTab() {
           {(fields, { add, remove }) => (
             <>
               {fields.map(({ key, name, ...restField }) => (
-                <Row key={key} gutter={12} align="middle" style={{ marginBottom: 8 }}>
-                  <Col span={3}>
-                    <div style={{ textAlign: 'right', color: '#666' }}>休息{name + 1}:</div>
-                  </Col>
-                  <Col span={4}>
-                    <Form.Item {...restField} name={[name, 'start']} rules={[{ required: true, message: '开始时间' }, { validator: timeValidator }]}>
-                      <Input placeholder="12:00" />
-                    </Form.Item>
-                  </Col>
-                  <Col span={2} style={{ textAlign: 'center', color: '#999' }}>—</Col>
-                  <Col span={4}>
-                    <Form.Item {...restField} name={[name, 'end']} rules={[{ required: true, message: '结束时间' }, { validator: timeValidator }]}>
-                      <Input placeholder="13:00" />
-                    </Form.Item>
-                  </Col>
-                  <Col span={11}>
-                    <Button
-                      type="text"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() => remove(name)}
-                      disabled={fields.length <= 1}
-                    >删除</Button>
-                  </Col>
-                </Row>
+                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <span style={{ color: '#666', minWidth: 60, flexShrink: 0 }}>休息{name + 1}:</span>
+                  <Form.Item {...restField} name={[name, 'start']} rules={[{ required: true, message: '开始时间' }, { validator: timeValidator }]} style={{ marginBottom: 0 }}>
+                    <Input placeholder="12:00" style={{ width: 96 }} />
+                  </Form.Item>
+                  <span style={{ color: '#999' }}>—</span>
+                  <Form.Item {...restField} name={[name, 'end']} rules={[{ required: true, message: '结束时间' }, { validator: timeValidator }]} style={{ marginBottom: 0 }}>
+                    <Input placeholder="13:00" style={{ width: 96 }} />
+                  </Form.Item>
+                  <Button
+                    type="text"
+                    danger
+                    size="small"
+                    icon={<DeleteOutlined />}
+                    onClick={() => remove(name)}
+                    disabled={fields.length <= 1}
+                  >删除</Button>
+                </div>
               ))}
               <Button
                 type="dashed"
                 onClick={() => add({ start: '', end: '' })}
                 icon={<PlusOutlined />}
-                style={{ width: 280 }}
+                style={{ width: 260 }}
               >
                 添加休息时间段
               </Button>
@@ -178,6 +172,13 @@ function HolidayTab() {
   const [saving, setSaving] = useState(false)
   const [holidays, setHolidays] = useState<Map<string, HolidayItem>>(new Map())
 
+  /** 解析某日实际状态：优先用显式标记，否则周一~五默认上班、周六日默认休息 */
+  const resolveDayStatus = (date: Date, h?: HolidayItem): { isRest: boolean; source: 'explicit' | 'default' } => {
+    if (h) return { isRest: h.is_workday === 0, source: 'explicit' }
+    const wd = date.getDay() // 0=Sun, 6=Sat
+    return { isRest: wd === 0 || wd === 6, source: 'default' }
+  }
+
   const loadHolidays = useCallback(async () => {
     setLoading(true)
     try {
@@ -199,6 +200,7 @@ function HolidayTab() {
 
   useEffect(() => { loadHolidays() }, [loadHolidays])
 
+  /** 循环切换：默认工作日→休、默认休息日→班、再点恢复默认 */
   const toggleDay = (dateStr: string, date: Date) => {
     const today = new Date(todayStr + 'T00:00:00')
     if (date.getTime() < today.getTime()) {
@@ -207,11 +209,22 @@ function HolidayTab() {
     }
     const newMap = new Map(holidays)
     const existing = newMap.get(dateStr)
+    const { isRest: defaultRest } = resolveDayStatus(date)
+
     if (!existing) {
-      newMap.set(dateStr, { holiday_date: dateStr, holiday_name: '休息日', is_workday: 0 })
+      // 无显式标记：第一次点，反默认
+      if (defaultRest) {
+        // 默认休息日 → 标成"调休上班"
+        newMap.set(dateStr, { holiday_date: dateStr, holiday_name: '调休上班', is_workday: 1 })
+      } else {
+        // 默认工作日 → 标成"休息"
+        newMap.set(dateStr, { holiday_date: dateStr, holiday_name: '休息', is_workday: 0 })
+      }
     } else if (existing.is_workday === 0) {
+      // 已标休息 → 改成调休上班
       newMap.set(dateStr, { ...existing, is_workday: 1, holiday_name: existing.holiday_name || '调休上班' })
     } else {
+      // 已标调休上班 → 恢复默认
       newMap.delete(dateStr)
     }
     setHolidays(newMap)
@@ -249,33 +262,50 @@ function HolidayTab() {
             const isToday = ds === todayStr
             const h = holidays.get(ds)
             const isPast = parseDateStr(ds).getTime() < parseDateStr(todayStr).getTime()
+            const { isRest, source } = resolveDayStatus(d, h)
 
             let bg = inMonth ? '#fff' : '#fafafa'
             let color = inMonth ? 'inherit' : '#ccc'
             let border = '1px solid #f0f0f0'
-            let badge: React.ReactNode = null
+            let badgeText: React.ReactNode = null
+            let badgeColor = ''
             let cursor = 'pointer'
 
             if (isPast) { cursor = 'not-allowed'; color = '#ccc'; bg = '#f9f9f9' }
-            if (h) {
-              if (h.is_workday === 0) {
+            else if (source === 'explicit') {
+              if (h!.is_workday === 0) {
                 bg = '#fff1f0'; border = '1px solid #ffa39e'
-                badge = <span style={{ color: '#cf1322', fontWeight: 600, fontSize: 14 }}>休</span>
+                badgeText = <span style={{ color: '#cf1322', fontWeight: 600 }}>休</span>
               } else {
                 bg = '#e6f4ff'; border = '1px solid #91caff'
-                badge = <span style={{ color: '#0958d9', fontWeight: 600, fontSize: 14 }}>班</span>
+                badgeText = <span style={{ color: '#0958d9', fontWeight: 600 }}>班</span>
+              }
+            } else {
+              // 默认状态（无显式标记）
+              if (isRest) {
+                bg = '#fafafa'
+                badgeText = <span style={{ color: '#bbb', fontWeight: 500 }}>休</span>
+              } else {
+                // 默认上班不显示 badge，保持干净
               }
             }
             if (isToday) border = '2px solid #1677ff'
+
+            const weekDayLabels = ['日', '一', '二', '三', '四', '五', '六']
+            const weekday = weekDayLabels[d.getDay()]
+            const dayTip = isPast ? '过去日期不可修改'
+              : source === 'explicit'
+                ? `${h?.holiday_name || ''}（${h!.is_workday === 0 ? '显式休息' : '调休上班'}）`
+                : isRest ? '默认休息日（周六/周日），点击标记调休上班'
+                : `默认工作日（周${weekday}），点击标记休息`
 
             return (
               <div
                 key={idx}
                 onClick={() => toggleDay(ds, d)}
-                title={isPast ? '过去日期不可修改' : h ? `${h.holiday_name || ''}(${h.is_workday === 0 ? '休息' : '调休上班'})` : '点击标记休息日'}
+                title={dayTip}
                 style={{
-                  padding: '6px 4px',
-                  textAlign: 'center',
+                  padding: '6px 8px',
                   minHeight: 44,
                   border,
                   borderRadius: 4,
@@ -283,15 +313,15 @@ function HolidayTab() {
                   color,
                   cursor,
                   display: 'flex',
-                  flexDirection: 'column',
+                  flexDirection: 'row',
                   alignItems: 'center',
-                  justifyContent: 'center',
+                  justifyContent: 'space-between',
                   transition: 'all 0.15s',
                   userSelect: 'none',
                 }}
               >
-                <div style={{ fontSize: 13 }}>{d.getDate()}</div>
-                {badge && <div style={{ fontSize: 14, marginTop: 2 }}>{badge}</div>}
+                <span style={{ fontSize: 13 }}>{d.getDate()}</span>
+                {badgeText}
               </div>
             )
           })}
@@ -397,23 +427,15 @@ export default function ProductionSettings() {
       children: (
         <Card size="small" title={null}>
           <Form form={form} layout="horizontal" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-            <Row gutter={24}>
-              <Col span={12}>
-                <Form.Item name="default_line" label="默认产线">
-                  <Select placeholder="报工单创建时默认填充的产线" allowClear options={lineOptions} />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item name="standard_hours" label="标准工时(h)" rules={[{ required: true, message: '请输入标准工时' }]}>
-                  <InputNumber min={1} max={24} step={0.5} style={{ width: '100%' }} />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item name="shift_setting" label="启用班次" rules={[{ required: true, message: '请选择班次' }]}>
-                  <Select mode="multiple" placeholder="选择工厂启用的班次" options={shiftOptions} />
-                </Form.Item>
-              </Col>
-            </Row>
+            <Form.Item name="default_line" label="默认产线">
+              <Select placeholder="报工单创建时默认填充的产线" allowClear options={lineOptions} style={{ width: 320 }} />
+            </Form.Item>
+            <Form.Item name="standard_hours" label="标准工时(h)" rules={[{ required: true, message: '请输入标准工时' }]}>
+              <InputNumber min={1} max={24} step={0.5} style={{ width: 160 }} />
+            </Form.Item>
+            <Form.Item name="shift_setting" label="启用班次" rules={[{ required: true, message: '请选择班次' }]}>
+              <Select mode="multiple" placeholder="选择工厂启用的班次" options={shiftOptions} style={{ width: 320 }} />
+            </Form.Item>
             <div style={{ marginTop: 8, textAlign: 'right' }}>
               <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleProdSave}>
                 保存生产参数
@@ -425,7 +447,7 @@ export default function ProductionSettings() {
     },
     {
       key: 'breaktime',
-      label: <span><ClockCircleOutlined /> 休息时间默认值</span>,
+      label: <span><ClockCircleOutlined /> 默认休息时间</span>,
       children: <BreakTimeTab />,
     },
     {
