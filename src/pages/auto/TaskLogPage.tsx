@@ -113,7 +113,7 @@ export default function TaskLogPage() {
         <Row justify="space-between" align="middle">
           <Col>
             <Space>
-              <ClockCircleOutlined style={{ fontSize: 20, color: '#1890ff' }} />
+              <ClockCircleOutlined style={{ fontSize: 20, color: 'var(--color-primary)' }} />
               <span style={{ fontSize: 16, fontWeight: 600 }}>任务日志</span>
             </Space>
           </Col>
@@ -161,14 +161,14 @@ export default function TaskLogPage() {
             <Descriptions.Item label="开始时间">{detail.started_at ? formatDateTime(detail.started_at) : '-'}</Descriptions.Item>
             <Descriptions.Item label="结束时间">{detail.ended_at ? formatDateTime(detail.ended_at) : '-'}</Descriptions.Item>
             {detail.error_msg && (
-              <Descriptions.Item label="错误信息" span={2}><span style={{ color: '#ff4d4f' }}>{detail.error_msg}</span></Descriptions.Item>
+              <Descriptions.Item label="错误信息" span={2}><span style={{ color: 'var(--color-error)' }}>{detail.error_msg}</span></Descriptions.Item>
             )}
             {detail.steps && detail.steps.length > 0 && (
               <Descriptions.Item label="执行步骤" span={2}>
-                <div style={{ maxHeight: 200, overflow: 'auto', background: '#fafafa', padding: 8, borderRadius: 4 }}>
+                <div style={{ maxHeight: 200, overflow: 'auto', background: 'var(--bg-card)', padding: 8, borderRadius: 4 }}>
                   {detail.steps.map((s: any, i: number) => (
                     <div key={i} style={{ marginBottom: 4, fontSize: 12 }}>
-                      <span style={{ color: '#999' }}>[{s.time}]</span> {s.message}
+                      <span style={{ color: 'var(--text-secondary)' }}>[{s.time}]</span> {s.message}
                     </div>
                   ))}
                 </div>

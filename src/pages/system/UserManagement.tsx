@@ -59,10 +59,10 @@ export default function UserManagement() {
   const [query, setQuery] = useState<QueryParams>({ page: 1, pageSize: 30, keyword: '', status: undefined, role_id: undefined })
 
   const stats: StatItem[] = [
-    { label: '总用户数', value: total, icon: <TeamOutlined />, color: '#2196F3' },
-    { label: '启用用户', value: data.filter(u => u.status === '启用').length, icon: <CheckCircleOutlined />, color: '#4CAF50' },
-    { label: '禁用用户', value: data.filter(u => u.status === '禁用').length, icon: <StopOutlined />, color: '#F44336' },
-    { label: '部门数', value: [...new Set(data.map(u => u.department).filter(Boolean))].length, icon: <ApartmentOutlined />, color: '#FF9800' },
+    { label: '总用户数', value: total, icon: <TeamOutlined />, color: 'var(--color-primary)' },
+    { label: '启用用户', value: data.filter(u => u.status === '启用').length, icon: <CheckCircleOutlined />, color: 'var(--color-success)' },
+    { label: '禁用用户', value: data.filter(u => u.status === '禁用').length, icon: <StopOutlined />, color: 'var(--color-error)' },
+    { label: '部门数', value: [...new Set(data.map(u => u.department).filter(Boolean))].length, icon: <ApartmentOutlined />, color: 'var(--color-warning)' },
   ]
 
   const roleOptions = roles.map(r => ({ label: r.role_name, value: r.role_id }))

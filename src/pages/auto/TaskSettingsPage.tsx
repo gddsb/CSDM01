@@ -52,13 +52,13 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
-  items: <DatabaseOutlined style={{ color: '#1677ff', fontSize: 18 }} />,
-  customers: <TeamOutlined style={{ color: '#52c41a', fontSize: 18 }} />,
-  production_orders: <FileTextOutlined style={{ color: '#fa8c16', fontSize: 18 }} />,
+  items: <DatabaseOutlined style={{ color: 'var(--color-primary)', fontSize: 18 }} />,
+  customers: <TeamOutlined style={{ color: 'var(--color-success)', fontSize: 18 }} />,
+  production_orders: <FileTextOutlined style={{ color: 'var(--color-warning)', fontSize: 18 }} />,
   purchase_receipts: <FileTextOutlined style={{ color: '#eb2f96', fontSize: 18 }} />,
   env_monitor: <DashboardOutlined style={{ color: '#722ed1', fontSize: 18 }} />,
   weather: <EnvironmentOutlined style={{ color: '#13c2c2', fontSize: 18 }} />,
-  energy_meter: <ThunderboltOutlined style={{ color: '#faad14', fontSize: 18 }} />,
+  energy_meter: <ThunderboltOutlined style={{ color: 'var(--color-warning)', fontSize: 18 }} />,
 }
 
 const PARAM_FIELDS: Record<string, { key: string; label: string; type: 'text' | 'password' | 'select'; placeholder?: string; dependsOn?: string; noEcho?: boolean; optional?: boolean }[]> = {
@@ -95,9 +95,9 @@ const PARAM_FIELDS: Record<string, { key: string; label: string; type: 'text' | 
 
 const STATUS_COLOR: Record<string, string> = {
   pending: '#d9d9d9',
-  running: '#1677ff',
-  completed: '#52c41a',
-  failed: '#ff4d4f',
+  running: 'var(--color-primary)',
+  completed: 'var(--color-success)',
+  failed: 'var(--color-error)',
 }
 
 const STATUS_TEXT: Record<string, string> = {
@@ -331,13 +331,13 @@ export default function TaskSettingsPage() {
   const getStepIcon = (index: number, steps: TaskStep[]) => {
     const isLast = index === steps.length - 1
     if (testProgress?.status === 'failed' && isLast) {
-      return <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
+      return <CloseCircleOutlined style={{ color: 'var(--color-error)' }} />
     }
     if (testProgress?.status === 'completed' || !isLast) {
-      return <CheckCircleOutlined style={{ color: '#52c41a' }} />
+      return <CheckCircleOutlined style={{ color: 'var(--color-success)' }} />
     }
     if (testProgress?.status === 'running' && isLast) {
-      return <ClockCircleOutlined style={{ color: '#1677ff' }} spin />
+      return <ClockCircleOutlined style={{ color: 'var(--color-primary)' }} spin />
     }
     return <ClockCircleOutlined style={{ color: '#d9d9d9' }} />
   }
@@ -348,7 +348,7 @@ export default function TaskSettingsPage() {
         <Row justify="space-between" align="middle">
           <Col>
             <Space>
-              <SettingOutlined style={{ fontSize: 20, color: '#1890ff' }} />
+              <SettingOutlined style={{ fontSize: 20, color: 'var(--color-primary)' }} />
               <span style={{ fontSize: 16, fontWeight: 600 }}>任务设置</span>
               <Tag color="blue">{data.length} 个任务</Tag>
             </Space>
@@ -372,7 +372,7 @@ export default function TaskSettingsPage() {
           style={{ marginTop: 16 }}
           title={
             <Space>
-              <PlayCircleOutlined style={{ color: '#1677ff' }} />
+              <PlayCircleOutlined style={{ color: 'var(--color-primary)' }} />
               <span>测试进度 - {TYPE_LABELS[testProgress.task_type] || testProgress.task_type}</span>
               <Tag color={STATUS_COLOR[testProgress.status]}>{STATUS_TEXT[testProgress.status]}</Tag>
             </Space>
@@ -395,10 +395,10 @@ export default function TaskSettingsPage() {
                   status={testProgress.status === 'failed' ? 'exception' : testProgress.status === 'completed' ? 'success' : 'active'}
                   strokeColor={{ '0%': '#108ee9', '100%': '#87d068' }}
                 />
-                <div style={{ marginTop: 12, color: '#666' }}>
+                <div style={{ marginTop: 12, color: 'var(--text-secondary)' }}>
                   {testProgress.current_step}
                 </div>
-                <div style={{ marginTop: 4, fontSize: 12, color: '#999' }}>
+                <div style={{ marginTop: 4, fontSize: 12, color: 'var(--text-secondary)' }}>
                   任务ID: {testProgress.task_biz_id}
                 </div>
               </div>
@@ -415,7 +415,7 @@ export default function TaskSettingsPage() {
                         <span style={{ fontWeight: 500 }}>{step.message}</span>
                         <Tag color="blue">{step.percent}%</Tag>
                       </div>
-                      <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
                         {formatDateTime(step.time)}
                       </div>
                     </div>
@@ -426,10 +426,10 @@ export default function TaskSettingsPage() {
                 <div style={{
                   marginTop: 12,
                   padding: '8px 12px',
-                  background: '#fff1f0',
+                  background: 'color-mix(in srgb, var(--color-error) 12%, var(--bg-card))',
                   border: '1px solid #ffa39e',
                   borderRadius: 6,
-                  color: '#cf1322',
+                  color: 'var(--color-error)',
                 }}>
                   <strong>错误信息：</strong>{testProgress.error_msg}
                 </div>
@@ -462,9 +462,9 @@ export default function TaskSettingsPage() {
 
           {paramFields.length > 0 && (
             <>
-              <div style={{ marginTop: 8, marginBottom: 12, padding: '8px 12px', background: '#fafafa', borderRadius: 6 }}>
+              <div style={{ marginTop: 8, marginBottom: 12, padding: '8px 12px', background: 'var(--bg-card)', borderRadius: 6 }}>
                 <span style={{ fontWeight: 600 }}>执行参数</span>
-                <span style={{ color: '#999', marginLeft: 8, fontSize: 12 }}>密码将加密存储，编辑时不回显</span>
+                <span style={{ color: 'var(--text-secondary)', marginLeft: 8, fontSize: 12 }}>密码将加密存储，编辑时不回显</span>
               </div>
 
               {paramFields.map((f) => {

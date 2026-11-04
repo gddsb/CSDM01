@@ -221,7 +221,7 @@ export default function DailyReport() {
         breadcrumbs="报表中心 / 生产日报"
         filter={
           <Space wrap size={[8, 0]} align="start">
-            <span style={{ color: '#888', fontSize: 13, lineHeight: '32px', whiteSpace: 'nowrap' }}>日期：</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: 13, lineHeight: '32px', whiteSpace: 'nowrap' }}>日期：</span>
             <DatePicker
               value={useMemo(() => dayjs(date), [date])}
               onChange={(d) => d && setDate(d.format('YYYY-MM-DD'))}
@@ -239,7 +239,7 @@ export default function DailyReport() {
                       {current.date()}
                       <span style={{
                         position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)',
-                        width: 5, height: 5, borderRadius: '50%', background: '#1890ff',
+                        width: 5, height: 5, borderRadius: '50%', background: 'var(--color-primary)',
                       }} />
                     </span>
                   )
@@ -261,7 +261,7 @@ export default function DailyReport() {
           <div className="print-source">
             <Spin spinning={loading}>
               {!data ? (
-                <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>暂无数据</div>
+                <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-secondary)' }}>暂无数据</div>
               ) : (
                 <DailyReportView data={data} />
               )}
@@ -324,7 +324,7 @@ function DailyReportView({ data }: { data: DailyReportData }) {
         key={p}
         className="report-page"
         style={{
-          background: '#fff', padding: 0, borderRadius: 0,
+          background: 'var(--bg-card)', padding: 0, borderRadius: 0,
           pageBreakAfter: isLastPage ? 'auto' : 'always', breakAfter: isLastPage ? 'auto' : 'page',
           marginBottom: isLastPage ? 0 : 16,
         }}
@@ -334,7 +334,7 @@ function DailyReportView({ data }: { data: DailyReportData }) {
           <div style={{ fontSize: 22, fontWeight: 700, textAlign: 'center', marginBottom: 6, letterSpacing: 2 }}>
             制罐车间生产日报表
           </div>
-          <div className="header-info" style={{ color: '#333', fontSize: 12 }}>
+          <div className="header-info" style={{ color: 'var(--text-primary)', fontSize: 12 }}>
             日期：{header.date} &nbsp;|&nbsp; 生产线：{header.line || '—'} &nbsp;|&nbsp; 班次：{header.shift || '—'}
             {showPageNum && (
               <span className="page-indicator" style={{ position: 'absolute', right: 0, top: 0, fontWeight: 600 }}>
@@ -353,7 +353,7 @@ function DailyReportView({ data }: { data: DailyReportData }) {
         >
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
-              <tr style={{ background: '#fafafa', fontWeight: 600 }}>
+              <tr style={{ background: 'var(--bg-card)', fontWeight: 600 }}>
                 <Th rowSpan={2}>序号</Th>
                 <Th colSpan={2}>生产时间</Th>
                 <Th colSpan={4}>基本信息</Th>
@@ -364,7 +364,7 @@ function DailyReportView({ data }: { data: DailyReportData }) {
                 <Th>料边(kg)</Th>
                 <Th colSpan={6}>工时汇总</Th>
               </tr>
-              <tr style={{ background: '#fafafa', fontSize: 12, color: '#666' }}>
+              <tr style={{ background: 'var(--bg-card)', fontSize: 12, color: 'var(--text-secondary)' }}>
                 <Th>开始</Th><Th>结束</Th>
                 <Th>生产批号</Th><Th className="col-wrap" style={{ textAlign: 'left' }}>产品名称</Th><Th>规格</Th><Th>印铁批号</Th>
                 <Th>投入</Th><Th>入库</Th>
@@ -419,7 +419,7 @@ function DailyReportView({ data }: { data: DailyReportData }) {
               <Card size="small" title="② 停机记录" bodyStyle={{ padding: 0 }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
-                    <tr style={{ background: '#fafafa', fontWeight: 600 }}>
+                    <tr style={{ background: 'var(--bg-card)', fontWeight: 600 }}>
                       <Th>批号</Th><Th>停机时间</Th><Th>代码</Th><Th className="col-wrap" style={{ textAlign: 'left' }}>故障描述</Th><Th>修复时间</Th><Th>确认人</Th><Th>时长(h)</Th>
                     </tr>
                   </thead>
@@ -443,7 +443,7 @@ function DailyReportView({ data }: { data: DailyReportData }) {
                     ))}
                   </tbody>
                 </table>
-                <div style={{ fontSize: 11, color: '#999', padding: '8px 12px', borderTop: '1px solid #f0f0f0' }}>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', padding: '8px 12px', borderTop: '1px solid #f0f0f0' }}>
                   停机代号：A-停机待料 &nbsp; B-换型换线 &nbsp; C-制程调整 &nbsp; D-故障维修 &nbsp; E-其它异常
                 </div>
               </Card>
@@ -464,7 +464,7 @@ function DailyReportView({ data }: { data: DailyReportData }) {
     )
   }
 
-  return <div style={{ background: '#fff', padding: 8, borderRadius: 0 }}>{pages}</div>
+  return <div style={{ background: 'var(--bg-card)', padding: 8, borderRadius: 0 }}>{pages}</div>
 }
 
 /* ========================= 小组件 ========================= */
@@ -482,7 +482,7 @@ function StopCodeBadge({ code }: { code: string }) {
     <span style={{
       display: 'inline-block', padding: '2px 8px', borderRadius: 10, fontSize: 11,
       background: code === 'D' ? '#fff2f0' : code === 'A' ? '#e6f7ff' : '#f5f5f5',
-      color: code === 'D' ? '#ff4d4f' : code === 'A' ? '#1890ff' : '#666',
+      color: code === 'D' ? 'var(--color-error)' : code === 'A' ? 'var(--color-primary)' : '#666',
       fontWeight: 600,
     }}>{code} · {label}</span>
   )
@@ -504,12 +504,12 @@ function DefectMatrixCard({ title, matrix, minRows }: { title: string; matrix: D
     <Card size="small" title={title} bodyStyle={{ padding: 0, maxHeight: 280, overflow: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
         <thead style={{ position: 'sticky', top: 0 }}>
-          <tr style={{ background: '#fafafa', fontWeight: 600 }}>
+          <tr style={{ background: 'var(--bg-card)', fontWeight: 600 }}>
             <Th rowSpan={2} className="col-wrap" style={{ textAlign: 'left', width: '50%' }}>不良描述</Th>
             <Th rowSpan={2} style={{ width: '15%' }}>序号</Th>
             <Th colSpan={cols.length}>报工单序号</Th>
           </tr>
-          <tr style={{ background: '#fafafa', fontWeight: 600 }}>
+          <tr style={{ background: 'var(--bg-card)', fontWeight: 600 }}>
             {cols.map((c, i) => (
               <Th key={c.reportOrderId}>{i + 1}</Th>
             ))}

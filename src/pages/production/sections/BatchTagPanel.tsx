@@ -112,7 +112,7 @@ export default function BatchTagPanel({
   const imgStyle: React.CSSProperties = {
     width: 120, height: 120, objectFit: 'cover',
     border: '1px dashed var(--border-color, #d9d9d9)',
-    borderRadius: 6, background: '#fafafa',
+    borderRadius: 6, background: 'var(--bg-card)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     overflow: 'hidden',
   }
@@ -121,15 +121,15 @@ export default function BatchTagPanel({
     alignItems: 'center', justifyContent: 'center',
     border: '1px dashed var(--brand-color, #1890ff)', borderRadius: 6,
     flexDirection: 'column', gap: 6, cursor: editable ? 'pointer' : 'not-allowed',
-    color: editable ? 'var(--brand-color, #1890ff)' : '#bbb', background: '#fafafa',
+    color: editable ? 'var(--brand-color, #1890ff)' : '#bbb', background: 'var(--bg-card)',
   }
 
   return (
-    <div style={{ padding: 16, background: '#fff', borderRadius: 8, border: '1px solid var(--border-color, #f0f0f0)' }}>
+    <div style={{ padding: 16, background: 'var(--bg-card)', borderRadius: 8, border: '1px solid var(--border-color, #f0f0f0)' }}>
       <div style={{ marginBottom: 20 }}>
         <div style={{ fontWeight: 600, marginBottom: 6 }}>
-          生产批号 <span style={{ color: '#ff4d4f' }}>*</span>
-          <span style={{ fontSize: 12, color: '#999', fontWeight: 'normal', marginLeft: 8 }}>
+          生产批号 <span style={{ color: 'var(--color-error)' }}>*</span>
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 'normal', marginLeft: 8 }}>
             完工时必填
           </span>
         </div>
@@ -169,7 +169,7 @@ export default function BatchTagPanel({
             uploadBtnStyle={uploadBtnStyle}
           />
         </Space>
-        <div style={{ fontSize: 12, color: '#999', marginTop: 8 }}>
+        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8 }}>
           图片规格（与不良记录一致）：{MAX_MB}MB 以内 · {ACCEPT.replace(/image\//g, '').toUpperCase()} · 命名 / MD5 去重 / 落盘目录与不良记录共用
         </div>
       </div>
@@ -179,7 +179,7 @@ export default function BatchTagPanel({
           <Button type="primary" loading={saving} onClick={handleSave} disabled={!dirty}>
             💾 保存批次与标签
           </Button>
-          {dirty && <span style={{ color: '#fa8c16', fontSize: 12 }}>※ 有未保存的修改</span>}
+          {dirty && <span style={{ color: 'var(--color-warning)', fontSize: 12 }}>※ 有未保存的修改</span>}
         </div>
       )}
     </div>
@@ -204,7 +204,7 @@ function ImageUploadSlot({
   const imgUrl = url?.startsWith('http') ? url : (url ? `${import.meta.env.VITE_API_BASE || ''}${url}` : '')
   return (
     <div>
-      <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>{label}</div>
       {url ? (
         <div style={{ position: 'relative', ...imgStyle }}>
           <Image

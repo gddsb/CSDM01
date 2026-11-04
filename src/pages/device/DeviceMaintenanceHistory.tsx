@@ -130,9 +130,9 @@ export default function DeviceMaintenanceHistory() {
 
   // ===== 统计 =====
   const statItems: StatItem[] = [
-    { label: '已完成', value: records.filter(r => r.status === '已完成').length, color: '#52c41a', icon: <CheckCircleOutlined /> },
-    { label: '跳过', value: records.filter(r => r.status === '跳过').length, color: '#faad14', icon: <HistoryOutlined /> },
-    { label: '异常项', value: records.filter(r => r.result === '异常').length, color: '#f5222d', icon: <ThunderboltOutlined /> },
+    { label: '已完成', value: records.filter(r => r.status === '已完成').length, color: 'var(--color-success)', icon: <CheckCircleOutlined /> },
+    { label: '跳过', value: records.filter(r => r.status === '跳过').length, color: 'var(--color-warning)', icon: <HistoryOutlined /> },
+    { label: '异常项', value: records.filter(r => r.result === '异常').length, color: 'var(--color-error)', icon: <ThunderboltOutlined /> },
     { label: '总记录数', value: total, color: '#722ed1', icon: <DashboardOutlined /> },
   ]
 

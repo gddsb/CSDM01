@@ -212,9 +212,9 @@ export default function CustomerManagement() {
   const inactiveCount = data.filter(d => d.status === 0 || d.status === '停用').length
 
   const stats: StatItem[] = [
-    { label: '客户总数', value: total, icon: <TeamOutlined />, color: '#2196F3' },
-    { label: '启用客户', value: activeCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
-    { label: '停用客户', value: inactiveCount, icon: <CloseCircleOutlined />, color: '#F44336' },
+    { label: '客户总数', value: total, icon: <TeamOutlined />, color: 'var(--color-primary)' },
+    { label: '启用客户', value: activeCount, icon: <CheckCircleOutlined />, color: 'var(--color-success)' },
+    { label: '停用客户', value: inactiveCount, icon: <CloseCircleOutlined />, color: 'var(--color-error)' },
   ]
 
   return (

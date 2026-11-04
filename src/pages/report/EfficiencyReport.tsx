@@ -223,9 +223,9 @@ export default function EfficiencyReport() {
 
   const stats: StatItem[] = [
     { label: '平均OEE', value: `${avgOee}%`, icon: <ThunderboltOutlined />, color: '#9C27B0' },
-    { label: '平均生产效率', value: `${avgEfficiency}%`, icon: <DashboardOutlined />, color: '#2196F3' },
-    { label: '设备故障率', value: `${faultRate}%`, icon: <ToolOutlined />, color: '#FF9800' },
-    { label: '人均产出', value: perCapita.toLocaleString(), icon: <TeamOutlined />, color: '#4CAF50' },
+    { label: '平均生产效率', value: `${avgEfficiency}%`, icon: <DashboardOutlined />, color: 'var(--color-primary)' },
+    { label: '设备故障率', value: `${faultRate}%`, icon: <ToolOutlined />, color: 'var(--color-warning)' },
+    { label: '人均产出', value: perCapita.toLocaleString(), icon: <TeamOutlined />, color: 'var(--color-success)' },
   ]
 
   // 柱状图：各产线效率对比（目标效率 vs 实际效率）
@@ -248,7 +248,7 @@ export default function EfficiencyReport() {
         name: '实际效率',
         type: 'bar',
         data: lineData.map(l => l.efficiency),
-        itemStyle: { color: '#2196F3', borderRadius: [4, 4, 0, 0] },
+        itemStyle: { color: 'var(--color-primary)', borderRadius: [4, 4, 0, 0] },
         label: { show: true, position: 'top', formatter: '{c}%', fontSize: 11 },
       },
     ],
@@ -278,8 +278,8 @@ export default function EfficiencyReport() {
         smooth: false,
         symbol: 'none',
         data: targetData,
-        lineStyle: { color: '#F44336', type: 'dashed', width: 2 },
-        itemStyle: { color: '#F44336' },
+        lineStyle: { color: 'var(--color-error)', type: 'dashed', width: 2 },
+        itemStyle: { color: 'var(--color-error)' },
       },
     ],
   }
@@ -293,13 +293,13 @@ export default function EfficiencyReport() {
     {
       title: '生产效率(%)', dataIndex: 'efficiency', key: 'efficiency', width: 160,
       render: v => v > 0
-        ? <Progress percent={v} size="small" strokeColor={v >= 80 ? '#52c41a' : v >= 70 ? '#faad14' : '#ff4d4f'} format={p => `${p}%`} />
+        ? <Progress percent={v} size="small" strokeColor={v >= 80 ? 'var(--color-success)' : v >= 70 ? 'var(--color-warning)' : 'var(--color-error)'} format={p => `${p}%`} />
         : '-'
     },
     {
       title: 'OEE(%)', dataIndex: 'oee', key: 'oee', width: 160,
       render: v => v > 0
-        ? <Progress percent={v} size="small" strokeColor={v >= 80 ? '#52c41a' : v >= 70 ? '#faad14' : '#ff4d4f'} format={p => `${p}%`} />
+        ? <Progress percent={v} size="small" strokeColor={v >= 80 ? 'var(--color-success)' : v >= 70 ? 'var(--color-warning)' : 'var(--color-error)'} format={p => `${p}%`} />
         : '-'
     },
   ]

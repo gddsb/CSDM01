@@ -93,10 +93,10 @@ export default function DeviceOEE() {
   const avgAvailability = oeeData.length > 0 ? +(oeeData.reduce((s, d) => s + d.availability, 0) / oeeData.length).toFixed(1) : 0
 
   const stats: StatItem[] = [
-    { label: '平均OEE', value: `${avgOee}%`, icon: <DashboardOutlined />, color: '#2196F3' },
-    { label: `最高OEE · ${maxDevice.device_name || '-'}`, value: `${maxDevice.oee}%`, icon: <ArrowUpOutlined />, color: '#4CAF50' },
-    { label: `最低OEE · ${minDevice.device_name || '-'}`, value: `${minDevice.oee}%`, icon: <ArrowDownOutlined />, color: '#F44336' },
-    { label: '平均可用率', value: `${avgAvailability}%`, icon: <PercentageOutlined />, color: '#FF9800' },
+    { label: '平均OEE', value: `${avgOee}%`, icon: <DashboardOutlined />, color: 'var(--color-primary)' },
+    { label: `最高OEE · ${maxDevice.device_name || '-'}`, value: `${maxDevice.oee}%`, icon: <ArrowUpOutlined />, color: 'var(--color-success)' },
+    { label: `最低OEE · ${minDevice.device_name || '-'}`, value: `${minDevice.oee}%`, icon: <ArrowDownOutlined />, color: 'var(--color-error)' },
+    { label: '平均可用率', value: `${avgAvailability}%`, icon: <PercentageOutlined />, color: 'var(--color-warning)' },
   ]
 
   const handleReset = () => {
@@ -112,7 +112,7 @@ export default function DeviceOEE() {
   // OEE 颜色
   const oeeColor = (oee) => {
     const st = getStatus(oee)
-    return { '优秀': '#4CAF50', '良好': '#2196F3', '一般': '#FF9800', '预警': '#F44336' }[st]
+    return { '优秀': 'var(--color-success)', '良好': 'var(--color-primary)', '一般': 'var(--color-warning)', '预警': 'var(--color-error)' }[st]
   }
 
   // ECharts 柱状图：各设备 可用率/性能率/质量率 对比
@@ -124,7 +124,7 @@ export default function DeviceOEE() {
     const splitColor = rootStyle.getPropertyValue('--border-color').trim() || '#E0E0E0'
 
     chart.setOption({
-      color: ['#2196F3', '#00BCD4', '#4CAF50'],
+      color: ['var(--color-primary)', '#00BCD4', 'var(--color-success)'],
       tooltip: {
         trigger: 'axis',
         axisPointer: { type: 'shadow' },

@@ -63,9 +63,9 @@ export default function ProcessInspection() {
   const passRate = totalCount > 0 ? ((passCount / totalCount) * 100).toFixed(1) : '0.0'
 
   const stats: StatItem[] = [
-    { label: '检验批次', value: totalCount, icon: <ExperimentOutlined />, color: '#2196F3' },
-    { label: '合格批次', value: passCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
-    { label: '不合格批次', value: failCount, icon: <CloseCircleOutlined />, color: '#F44336' },
+    { label: '检验批次', value: totalCount, icon: <ExperimentOutlined />, color: 'var(--color-primary)' },
+    { label: '合格批次', value: passCount, icon: <CheckCircleOutlined />, color: 'var(--color-success)' },
+    { label: '不合格批次', value: failCount, icon: <CloseCircleOutlined />, color: 'var(--color-error)' },
     { label: '合格率', value: `${passRate}%`, icon: <PercentageOutlined />, color: '#9C27B0' },
   ]
 

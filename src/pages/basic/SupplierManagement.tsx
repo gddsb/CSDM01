@@ -206,9 +206,9 @@ export default function SupplierManagement() {
   const inactiveCount = data.filter(d => d.status === 0 || d.status === '失效').length
 
   const stats = [
-    { label: '供应商总数', value: total, icon: <ShopOutlined />, color: '#2196F3' },
-    { label: '生效', value: activeCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
-    { label: '失效', value: inactiveCount, icon: <CloseCircleOutlined />, color: '#F44336' },
+    { label: '供应商总数', value: total, icon: <ShopOutlined />, color: 'var(--color-primary)' },
+    { label: '生效', value: activeCount, icon: <CheckCircleOutlined />, color: 'var(--color-success)' },
+    { label: '失效', value: inactiveCount, icon: <CloseCircleOutlined />, color: 'var(--color-error)' },
   ]
 
   const categoryOptions = [

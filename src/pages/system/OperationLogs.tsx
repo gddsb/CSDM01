@@ -72,7 +72,7 @@ export default function OperationLogs() {
   }
 
   const stats: StatItem[] = [
-    { label: '日志总条数', value: total, icon: <HistoryOutlined />, color: '#2196F3' },
+    { label: '日志总条数', value: total, icon: <HistoryOutlined />, color: 'var(--color-primary)' },
   ]
 
   const filters: FilterItem[] = [

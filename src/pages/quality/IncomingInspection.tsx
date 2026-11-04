@@ -131,11 +131,11 @@ export default function IncomingInspection() {
   const inspectingCount = summaryStats.inspecting ?? 0
 
   const stats: StatItem[] = [
-    { label: '检验总数', value: totalCount, icon: <ExperimentOutlined />, color: '#2196F3' },
-    { label: '待检', value: pendingCount, icon: <ExperimentOutlined />, color: '#FF9800' },
+    { label: '检验总数', value: totalCount, icon: <ExperimentOutlined />, color: 'var(--color-primary)' },
+    { label: '待检', value: pendingCount, icon: <ExperimentOutlined />, color: 'var(--color-warning)' },
     { label: '检验中', value: inspectingCount, icon: <ExperimentOutlined />, color: '#1890FF' },
-    { label: '合格', value: passCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
-    { label: '不合格', value: failCount, icon: <CloseCircleOutlined />, color: '#F44336' },
+    { label: '合格', value: passCount, icon: <CheckCircleOutlined />, color: 'var(--color-success)' },
+    { label: '不合格', value: failCount, icon: <CloseCircleOutlined />, color: 'var(--color-error)' },
     { label: '合格率', value: `${passRate}%`, icon: <PercentageOutlined />, color: '#9C27B0' },
   ]
 
@@ -379,7 +379,7 @@ export default function IncomingInspection() {
     { title: '检验时间', dataIndex: 'inspection_time', key: 'inspection_time', width: 160, render: formatDateTime },
     {
       title: '收货单状态', dataIndex: 'receipt_status', key: 'receipt_status', width: 100,
-      render: v => v ? <Tag>{v}</Tag> : <span style={{ color: '#999' }}>-</span>
+      render: v => v ? <Tag>{v}</Tag> : <span style={{ color: 'var(--text-secondary)' }}>-</span>
     },
     {
       title: '操作', key: 'action', fixed: 'right' as const, width: 220,
@@ -457,7 +457,7 @@ export default function IncomingInspection() {
               onChange={setResultFilter}
             />
             <div style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'wrap', rowGap: 4, columnGap: 8, minWidth: 0, maxWidth: '100%' }}>
-              <span style={{ color: '#888', fontSize: 13, marginRight: 6, whiteSpace: 'nowrap', flexShrink: 0 }}>状态：</span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: 13, marginRight: 6, whiteSpace: 'nowrap', flexShrink: 0 }}>状态：</span>
               <Checkbox.Group
                 value={statusFilter}
                 onChange={v => setStatusFilter(v as string[])}

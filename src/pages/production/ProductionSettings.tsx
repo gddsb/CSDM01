@@ -102,9 +102,9 @@ function BreakTimeTab() {
 
   return (
     <Card size="small" loading={loading}>
-      <div style={{ marginBottom: 12, color: '#666', fontSize: 13, lineHeight: 1.8 }}>
+      <div style={{ marginBottom: 12, color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.8 }}>
         设置系统默认休息时间段（HH:mm 格式）。<br />
-        <span style={{ color: '#1677ff' }}>新建报工单时将根据报工日期自动展开为具体的休息记录</span>，
+        <span style={{ color: 'var(--color-primary)' }}>新建报工单时将根据报工日期自动展开为具体的休息记录</span>，
         人工工时/停线异常的净时长计算会自动扣除重叠的休息时间。
       </div>
       <Form form={form} layout="vertical">
@@ -113,11 +113,11 @@ function BreakTimeTab() {
             <>
               {fields.map(({ key, name, ...restField }) => (
                 <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <span style={{ color: '#666', minWidth: 60, flexShrink: 0 }}>休息{name + 1}:</span>
+                  <span style={{ color: 'var(--text-secondary)', minWidth: 60, flexShrink: 0 }}>休息{name + 1}:</span>
                   <Form.Item {...restField} name={[name, 'start']} rules={[{ required: true, message: '开始时间' }, { validator: timeValidator }]} style={{ marginBottom: 0 }}>
                     <Input placeholder="12:00" style={{ width: 96 }} />
                   </Form.Item>
-                  <span style={{ color: '#999' }}>—</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>—</span>
                   <Form.Item {...restField} name={[name, 'end']} rules={[{ required: true, message: '结束时间' }, { validator: timeValidator }]} style={{ marginBottom: 0 }}>
                     <Input placeholder="13:00" style={{ width: 96 }} />
                   </Form.Item>
@@ -353,7 +353,7 @@ function HolidayTab() {
         </Space>
       }
     >
-      <div style={{ marginBottom: 12, color: '#666', fontSize: 13, lineHeight: 1.8 }}>
+      <div style={{ marginBottom: 12, color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.8 }}>
         点击日期循环切换：
         <Tag color="red">休</Tag> 跳过维保计划
         &nbsp;

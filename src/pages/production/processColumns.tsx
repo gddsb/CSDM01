@@ -133,12 +133,12 @@ export function buildMaterialColumns(handlers: MaterialColumnHandlers): ColumnsT
       render: (val, record) => val || options.find(m => String(m.value) === String(record.bas_material_id))?.specification || '-',
     },
     {
-      title: <span><span style={{ color: '#ff4d4f' }}>*</span> 批号</span>, dataIndex: 'material_batch', key: 'material_batch', width: 120,
+      title: <span><span style={{ color: 'var(--color-error)' }}>*</span> 批号</span>, dataIndex: 'material_batch', key: 'material_batch', width: 120,
       render: (val, record) => isEditable ? <Input placeholder="批号" value={val} onChange={(e) => onChange(record.id, 'material_batch', (e as React.ChangeEvent<HTMLInputElement>).target.value)} size="small" status={!val || !String(val).trim() ? 'error' : undefined} /> : val || '-',
     },
     { title: '包号', dataIndex: 'package_no', key: 'package_no', width: 120, render: (val, record) => isEditable ? <Input placeholder="包号" value={val} onChange={(e) => onChange(record.id, 'package_no', (e as React.ChangeEvent<HTMLInputElement>).target.value)} size="small" /> : val || '-' },
     {
-      title: <span><span style={{ color: '#ff4d4f' }}>*</span> 数量</span>, dataIndex: 'quantity', key: 'quantity', width: 100,
+      title: <span><span style={{ color: 'var(--color-error)' }}>*</span> 数量</span>, dataIndex: 'quantity', key: 'quantity', width: 100,
       render: (val, record) => isEditable ? <InputNumber min={1} step={1} precision={0} value={val} onChange={(v) => onChange(record.id, 'quantity', v || 0)} style={{ width: '100%' }} size="small" controls={false} status={!val || val <= 0 ? 'error' : undefined} /> : val,
     },
     {

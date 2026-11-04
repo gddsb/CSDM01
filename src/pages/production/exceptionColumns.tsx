@@ -182,7 +182,7 @@ export function buildExceptionColumns(params: BuildExceptionColumnsParams): Colu
       },
     },
     { title: '时长(分钟)', dataIndex: 'duration', key: 'duration', width: 100, align: 'right',
-      render: (v: any) => <span style={{ color: '#faad14', fontWeight: 600 }}>{Math.round(Number(v || 0) * 60)}</span>,
+      render: (v: any) => <span style={{ color: 'var(--color-warning)', fontWeight: 600 }}>{Math.round(Number(v || 0) * 60)}</span>,
     },
     {
       title: '异常描述', dataIndex: 'description', key: 'description', width: 240,
@@ -215,9 +215,9 @@ export function buildExceptionColumns(params: BuildExceptionColumnsParams): Colu
       title: '状态', key: 'status', width: 100,
       render: (_, record) => {
         if (isFinished(record)) {
-          return <span style={{ color: '#52c41a', fontSize: 12 }}><CheckCircleOutlined /> 已结束</span>
+          return <span style={{ color: 'var(--color-success)', fontSize: 12 }}><CheckCircleOutlined /> 已结束</span>
         }
-        return <span style={{ color: '#f5222d', fontSize: 12 }}>进行中</span>
+        return <span style={{ color: 'var(--color-error)', fontSize: 12 }}>进行中</span>
       },
     },
     {

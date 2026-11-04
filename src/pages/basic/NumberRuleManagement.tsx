@@ -235,9 +235,9 @@ export default function NumberRuleManagement() {
         title: '编号预览',
         content: (
           <div style={{ fontSize: 14, padding: '12px 0' }}>
-            <div>下一个编号：<b style={{ fontSize: 18, color: '#2196F3' }}>{res.data.preview_no}</b></div>
-            <div style={{ marginTop: 8, color: '#666' }}>下一个序号值：{res.data.next_seq}</div>
-            <div style={{ marginTop: 4, color: '#666' }}>当前已使用：{record.used_count || 0} 条</div>
+            <div>下一个编号：<b style={{ fontSize: 18, color: 'var(--color-primary)' }}>{res.data.preview_no}</b></div>
+            <div style={{ marginTop: 8, color: 'var(--text-secondary)' }}>下一个序号值：{res.data.next_seq}</div>
+            <div style={{ marginTop: 4, color: 'var(--text-secondary)' }}>当前已使用：{record.used_count || 0} 条</div>
           </div>
         ),
         okText: '知道了',
@@ -317,9 +317,9 @@ export default function NumberRuleManagement() {
   ]
 
   const stats: StatItem[] = [
-    { label: '规则总数', value: total, icon: <KeyOutlined />, color: '#2196F3' },
-    { label: '已审核', value: data.filter(d => d.is_locked === 1).length, icon: <LockOutlined />, color: '#4CAF50' },
-    { label: '启用中', value: data.filter(d => d.status === 1).length, icon: <PlayCircleOutlined />, color: '#FF9800' },
+    { label: '规则总数', value: total, icon: <KeyOutlined />, color: 'var(--color-primary)' },
+    { label: '已审核', value: data.filter(d => d.is_locked === 1).length, icon: <LockOutlined />, color: 'var(--color-success)' },
+    { label: '启用中', value: data.filter(d => d.status === 1).length, icon: <PlayCircleOutlined />, color: 'var(--color-warning)' },
     { label: '累计生成', value: data.reduce((s, d) => s + (d.used_count || 0), 0), icon: <ThunderboltOutlined />, color: '#9C27B0' },
   ]
 
@@ -438,12 +438,12 @@ export default function NumberRuleManagement() {
               <Statistic
                 title="编号预览（按当前时间 + 序号 1 生成）"
                 value={previewNo}
-                valueStyle={{ fontFamily: 'monospace', color: '#2196F3', fontSize: 20 }}
+                valueStyle={{ fontFamily: 'monospace', color: 'var(--color-primary)', fontSize: 20 }}
               />
             </Card>
           )}
           {editing && editing.is_locked === 1 && (
-            <div style={{ color: '#faad14', fontSize: 12 }}>
+            <div style={{ color: 'var(--color-warning)', fontSize: 12 }}>
               <LockOutlined /> 该规则已启用审核，核心配置（前缀、日期格式、分隔符、序号位数、重置周期）不允许修改，
               但可以修改关联表单字段和规则说明，以及停用/启用。
             </div>
@@ -474,7 +474,7 @@ export default function NumberRuleManagement() {
             </Descriptions.Item>
             <Descriptions.Item label="当前最新编号">
               {viewRecord.current_no
-                ? <span style={{ fontFamily: 'monospace', color: '#2196F3' }}>{viewRecord.current_no}</span>
+                ? <span style={{ fontFamily: 'monospace', color: 'var(--color-primary)' }}>{viewRecord.current_no}</span>
                 : '尚未生成'}
             </Descriptions.Item>
             <Descriptions.Item label="已使用记录数">

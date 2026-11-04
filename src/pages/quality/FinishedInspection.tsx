@@ -47,9 +47,9 @@ export default function FinishedInspection() {
   const failCount = filteredData.filter(i => i.result === '不合格').length
 
   const stats: StatItem[] = [
-    { label: '总检验数', value: filteredData.length, icon: <ExperimentOutlined />, color: '#2196F3' },
-    { label: '合格', value: passCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
-    { label: '不合格', value: failCount, icon: <CloseCircleOutlined />, color: '#F44336' },
+    { label: '总检验数', value: filteredData.length, icon: <ExperimentOutlined />, color: 'var(--color-primary)' },
+    { label: '合格', value: passCount, icon: <CheckCircleOutlined />, color: 'var(--color-success)' },
+    { label: '不合格', value: failCount, icon: <CloseCircleOutlined />, color: 'var(--color-error)' },
   ]
 
   const filters: FilterItem[] = [

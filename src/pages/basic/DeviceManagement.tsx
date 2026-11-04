@@ -41,10 +41,10 @@ export default function DeviceManagement() {
   const specialCount = data.filter(d => d.is_special === true || d.is_special === 1).length
 
   const stats: StatItem[] = [
-    { label: '设备总数', value: total, icon: <ToolOutlined />, color: '#2196F3' },
-    { label: '正常', value: runningCount, icon: <PlayCircleOutlined />, color: '#4CAF50' },
-    { label: '维修', value: faultCount, icon: <WarningOutlined />, color: '#FF9800' },
-    { label: '特种设备数', value: specialCount, icon: <SafetyCertificateOutlined />, color: '#F44336' },
+    { label: '设备总数', value: total, icon: <ToolOutlined />, color: 'var(--color-primary)' },
+    { label: '正常', value: runningCount, icon: <PlayCircleOutlined />, color: 'var(--color-success)' },
+    { label: '维修', value: faultCount, icon: <WarningOutlined />, color: 'var(--color-warning)' },
+    { label: '特种设备数', value: specialCount, icon: <SafetyCertificateOutlined />, color: 'var(--color-error)' },
   ]
 
   const typeOptions = [...new Set(data.map(d => d.device_type).filter(Boolean))].map(t => ({ label: t, value: t }))

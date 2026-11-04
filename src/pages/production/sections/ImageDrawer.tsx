@@ -56,7 +56,7 @@ export default function ImageDrawer({
       {recordId && (
         <div style={{ marginBottom: 16 }}>
           <Tag color="blue">{recordType}</Tag>
-          <span style={{ color: '#666' }}>ID: {recordId}</span>
+          <span style={{ color: 'var(--text-secondary)' }}>ID: {recordId}</span>
         </div>
       )}
       {recordId && (
@@ -85,11 +85,11 @@ export default function ImageDrawer({
                     style={{ width: '100%', height: 160, objectFit: 'cover' }}
                     preview={{ src: img.image_url }}
                   />
-                  <div style={{ padding: '4px 8px', background: '#fafafa', fontSize: 12 }}>
+                  <div style={{ padding: '4px 8px', background: 'var(--bg-card)', fontSize: 12 }}>
                     <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {img.image_name || '未命名'}
                     </div>
-                    <div style={{ color: '#999' }}>
+                    <div style={{ color: 'var(--text-secondary)' }}>
                       {img.upload_time ? dayjs(img.upload_time).format('YYYY-MM-DD HH:mm') : ''}
                     </div>
                   </div>

@@ -7,9 +7,9 @@ const { Title, Text } = Typography
 
 const SectionTitle: React.FC<{ icon: React.ReactNode; title: string; desc?: string }> = ({ icon, title, desc }) => (
   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-    <span style={{ color: '#1677ff' }}>{icon}</span>
+    <span style={{ color: 'var(--color-primary)' }}>{icon}</span>
     <span style={{ fontWeight: 600 }}>{title}</span>
-    {desc && <span style={{ color: '#999', fontSize: 12 }}>{desc}</span>}
+    {desc && <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{desc}</span>}
   </div>
 )
 

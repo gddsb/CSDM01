@@ -312,10 +312,10 @@ export default function DeviceMaintenanceUnified() {
 
   // ===== 统计 =====
   const statItems: StatItem[] = [
-    { label: '待执行', value: records.filter(r => r.status === '待执行').length, color: '#faad14', icon: <ClockCircleOutlined /> },
-    { label: '执行中', value: records.filter(r => r.status === '执行中').length, color: '#1890ff', icon: <ToolOutlined /> },
-    { label: '已完成', value: records.filter(r => r.status === '已完成').length, color: '#52c41a', icon: <CheckCircleOutlined /> },
-    { label: '异常项', value: records.filter(r => r.result === '异常').length, color: '#f5222d', icon: <ThunderboltOutlined /> },
+    { label: '待执行', value: records.filter(r => r.status === '待执行').length, color: 'var(--color-warning)', icon: <ClockCircleOutlined /> },
+    { label: '执行中', value: records.filter(r => r.status === '执行中').length, color: 'var(--color-primary)', icon: <ToolOutlined /> },
+    { label: '已完成', value: records.filter(r => r.status === '已完成').length, color: 'var(--color-success)', icon: <CheckCircleOutlined /> },
+    { label: '异常项', value: records.filter(r => r.result === '异常').length, color: 'var(--color-error)', icon: <ThunderboltOutlined /> },
     { label: '总记录数', value: total, color: '#722ed1', icon: <DashboardOutlined /> },
   ]
 
@@ -372,7 +372,7 @@ export default function DeviceMaintenanceUnified() {
 
   // ===== 外层设备分组列定义（按频率显示完成度，如 3/5）=====
   const renderModeStat = (stat: { completed: number; total: number }) => {
-    const color = stat.completed === stat.total && stat.total > 0 ? '#52c41a' : '#1677ff'
+    const color = stat.completed === stat.total && stat.total > 0 ? 'var(--color-success)' : 'var(--color-primary)'
     return (
       <div style={{ fontSize: 15, fontWeight: 600, color, textAlign: 'center' }}>
         {stat.completed}<span style={{ color: '#bbb', fontSize: 12 }}> / </span>{stat.total}
@@ -465,7 +465,7 @@ export default function DeviceMaintenanceUnified() {
                 scroll={{ x: 1030, y: 320 }}
               />
             ) : (
-              <div style={{ padding: '40px 0', textAlign: 'center', color: '#bbb', background: '#fafafa', border: '1px dashed #e8e8e8', borderRadius: 6 }}>
+              <div style={{ padding: '40px 0', textAlign: 'center', color: '#bbb', background: 'var(--bg-card)', border: '1px dashed #e8e8e8', borderRadius: 6 }}>
                 👆 请在上方设备列表中点击选择一台设备，查看其维保计划
               </div>
             )}
@@ -586,7 +586,7 @@ export default function DeviceMaintenanceUnified() {
       <Modal
         title={
           <span>
-            <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 8 }} />
+            <CheckCircleOutlined style={{ color: 'var(--color-success)', marginRight: 8 }} />
             完成保养执行 — {completeRecord?.record_no || ''}
           </span>
         }
@@ -600,7 +600,7 @@ export default function DeviceMaintenanceUnified() {
         destroyOnClose
       >
         {completeRecord && (
-          <div style={{ marginBottom: 12, padding: 12, background: '#fafafa', borderRadius: 6, fontSize: 13 }}>
+          <div style={{ marginBottom: 12, padding: 12, background: 'var(--bg-card)', borderRadius: 6, fontSize: 13 }}>
             <div><Text type="secondary">设备：</Text>{completeRecord.device_name} ({completeRecord.device_code})</div>
             <div><Text type="secondary">保养项：</Text>{completeRecord.standard?.maintenance_content || '-'}</div>
             <div><Text type="secondary">周期：</Text>{completeRecord.period_key} <Tag color={MODE_COLOR[completeRecord.trigger_mode]} style={{ marginLeft: 4 }}>{MODE_LABEL[completeRecord.trigger_mode]}</Tag></div>

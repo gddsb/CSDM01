@@ -159,10 +159,10 @@ export default function SupplierComplaint() {
   const closedCount = data.filter((s: any) => s.status === '已关闭').length
 
   const stats: StatItem[] = [
-    { label: '总投诉数', value: pagination.total, icon: <WarningOutlined />, color: '#2196F3' },
-    { label: '已发出', value: sentCount, icon: <SendOutlined />, color: '#FF9800' },
+    { label: '总投诉数', value: pagination.total, icon: <WarningOutlined />, color: 'var(--color-primary)' },
+    { label: '已发出', value: sentCount, icon: <SendOutlined />, color: 'var(--color-warning)' },
     { label: '已回复', value: repliedCount, icon: <MessageOutlined />, color: '#00BCD4' },
-    { label: '已关闭', value: closedCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
+    { label: '已关闭', value: closedCount, icon: <CheckCircleOutlined />, color: 'var(--color-success)' },
   ]
 
   const handleMonthQuick = (v: string) => {

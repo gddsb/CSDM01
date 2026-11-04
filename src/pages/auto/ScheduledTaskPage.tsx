@@ -204,7 +204,7 @@ export default function ScheduledTaskPage() {
     { title: '名称', dataIndex: 'name', key: 'name', width: 160 },
     { title: '任务类型', dataIndex: 'task_type', key: 'task_type', width: 100, render: (t: string) => <Tag color="blue">{TYPE_LABELS[t] || t}</Tag> },
     { title: '执行方式', dataIndex: 'exec_mode', key: 'exec_mode', width: 110, render: (m: string) => <Tag color={MODE_COLORS[m]}>{MODE_LABELS[m] || m}</Tag> },
-    { title: '配置', key: 'config', width: 240, render: (_: any, r: ScheduledTask) => <span style={{ color: '#666' }}>{formatConfig(r)}</span> },
+    { title: '配置', key: 'config', width: 240, render: (_: any, r: ScheduledTask) => <span style={{ color: 'var(--text-secondary)' }}>{formatConfig(r)}</span> },
     { title: '下次执行', dataIndex: 'next_run_at', key: 'next_run_at', width: 170, render: (v: string, r: ScheduledTask) => {
       if (r.is_enabled !== 1) return <Tag>已停用</Tag>
       return v ? formatDateTime(v) : <Tag>无</Tag>
@@ -214,7 +214,7 @@ export default function ScheduledTaskPage() {
       return (
         <Space direction="vertical" size={0}>
           <span>{formatDateTime(v)}</span>
-          {r.last_run_result && <span style={{ fontSize: 12, color: '#999' }}>{r.last_run_result}</span>}
+          {r.last_run_result && <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{r.last_run_result}</span>}
         </Space>
       )
     }},
@@ -238,7 +238,7 @@ export default function ScheduledTaskPage() {
         <Row justify="space-between" align="middle">
           <Col>
             <Space>
-              <CalendarOutlined style={{ fontSize: 20, color: '#1890ff' }} />
+              <CalendarOutlined style={{ fontSize: 20, color: 'var(--color-primary)' }} />
               <span style={{ fontSize: 16, fontWeight: 600 }}>定时任务</span>
               <Tag color="blue">{data.length} 个计划</Tag>
             </Space>

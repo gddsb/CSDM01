@@ -185,10 +185,10 @@ export default function DeviceCalibration() {
 
   // ============ 统计卡片 ============
   const stats: StatItem[] = useMemo(() => [
-    { label: '总计量器具数', value: pagination.total, icon: <ExperimentOutlined />, color: '#2196F3' },
-    { label: '待校准', value: pendingCount, icon: <CheckCircleOutlined />, color: '#FF9800' },
+    { label: '总计量器具数', value: pagination.total, icon: <ExperimentOutlined />, color: 'var(--color-primary)' },
+    { label: '待校准', value: pendingCount, icon: <CheckCircleOutlined />, color: 'var(--color-warning)' },
     { label: '即将到期(30天内)', value: expiringCount, icon: <SafetyCertificateOutlined />, color: '#00BCD4' },
-    { label: '已超期', value: overdueCount, icon: <WarningOutlined />, color: '#F44336' },
+    { label: '已超期', value: overdueCount, icon: <WarningOutlined />, color: 'var(--color-error)' },
   ], [pagination.total, pendingCount, expiringCount, overdueCount])
 
   // ============ 工具方法 ============
@@ -445,8 +445,8 @@ export default function DeviceCalibration() {
         const overdue = isOverdue(record)
         return (
           <Space size={4}>
-            <span style={{ color: overdue ? '#f5222d' : undefined, fontWeight: overdue ? 600 : undefined }}>{v}</span>
-            {overdue && <WarningOutlined style={{ color: '#f5222d' }} />}
+            <span style={{ color: overdue ? 'var(--color-error)' : undefined, fontWeight: overdue ? 600 : undefined }}>{v}</span>
+            {overdue && <WarningOutlined style={{ color: 'var(--color-error)' }} />}
           </Space>
         )
       },
@@ -490,7 +490,7 @@ export default function DeviceCalibration() {
         onPressEnter={() => { setPagination(p => ({ ...p, current: 1 })); fetchData() }}
       />
       <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-        <span style={{ color: '#888', fontSize: 13, marginRight: 6, whiteSpace: 'nowrap' }}>状态：</span>
+        <span style={{ color: 'var(--text-secondary)', fontSize: 13, marginRight: 6, whiteSpace: 'nowrap' }}>状态：</span>
         <Checkbox.Group
           value={statusFilter}
           onChange={(v) => { setStatusFilter(v as string[]); setPagination(p => ({ ...p, current: 1 })) }}
@@ -667,10 +667,10 @@ export default function DeviceCalibration() {
                 <Descriptions.Item label="上次校准日期">{currentDetail.last_calibration_date || '-'}</Descriptions.Item>
                 <Descriptions.Item label="下次校准日期">
                   <Space size={4}>
-                    <span style={{ color: isOverdue(currentDetail) ? '#f5222d' : undefined, fontWeight: isOverdue(currentDetail) ? 600 : undefined }}>
+                    <span style={{ color: isOverdue(currentDetail) ? 'var(--color-error)' : undefined, fontWeight: isOverdue(currentDetail) ? 600 : undefined }}>
                       {currentDetail.next_calibration_date || '-'}
                     </span>
-                    {isOverdue(currentDetail) && <WarningOutlined style={{ color: '#f5222d' }} />}
+                    {isOverdue(currentDetail) && <WarningOutlined style={{ color: 'var(--color-error)' }} />}
                   </Space>
                 </Descriptions.Item>
                 <Descriptions.Item label="校准机构" span={2}>{currentDetail.calibration_org || '-'}</Descriptions.Item>
@@ -699,7 +699,7 @@ export default function DeviceCalibration() {
                     <div style={{ padding: '4px 0' }}>
                       <Text type="secondary" style={{ marginRight: 8 }}>校准证书：</Text>
                       {renderCertificates(r.calibration_images || [])}
-                      {r.remarks && <div style={{ marginTop: 8, color: '#888' }}>备注：{r.remarks}</div>}
+                      {r.remarks && <div style={{ marginTop: 8, color: 'var(--text-secondary)' }}>备注：{r.remarks}</div>}
                     </div>
                   ),
                   rowExpandable: (r: any) => (r.calibration_images && r.calibration_images.length > 0) || r.remarks,

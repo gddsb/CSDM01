@@ -68,9 +68,9 @@ export default function InstrumentManagement() {
   const stopCount = data.filter(d => d.status === '停用').length
 
   const stats: StatItem[] = [
-    { label: '仪器总数', value: total, icon: <ToolOutlined />, color: '#2196F3' },
-    { label: '在用', value: inUseCount, icon: <PlayCircleOutlined />, color: '#4CAF50' },
-    { label: '停用', value: stopCount, icon: <SafetyCertificateOutlined />, color: '#F44336' },
+    { label: '仪器总数', value: total, icon: <ToolOutlined />, color: 'var(--color-primary)' },
+    { label: '在用', value: inUseCount, icon: <PlayCircleOutlined />, color: 'var(--color-success)' },
+    { label: '停用', value: stopCount, icon: <SafetyCertificateOutlined />, color: 'var(--color-error)' },
   ]
 
   const departmentOptions = [...new Set(data.map(d => d.department).filter(Boolean))].map(d => ({ label: d, value: d }))
@@ -357,7 +357,7 @@ export default function InstrumentManagement() {
           </Form.Item>
         </Form>
         {editing && (
-          <div style={{ marginTop: 8, color: '#faad14', fontSize: 12 }}>
+          <div style={{ marginTop: 8, color: 'var(--color-warning)', fontSize: 12 }}>
             提示：仪器编号一经生成不允许修改。
           </div>
         )}

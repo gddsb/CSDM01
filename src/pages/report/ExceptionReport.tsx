@@ -17,13 +17,13 @@ const reportStatusNumToText: Record<number, string> = { 0: '开工', 1: '完工'
 const { RangePicker } = DatePicker
 
 const exceptionTypeMap: Record<string, { name: string; color: string }> = {
-  '换型换线': { name: '换型换线', color: '#1890ff' },
-  '停机待料': { name: '停机待料', color: '#faad14' },
-  '故障维修': { name: '故障维修', color: '#ff4d4f' },
+  '换型换线': { name: '换型换线', color: 'var(--color-primary)' },
+  '停机待料': { name: '停机待料', color: 'var(--color-warning)' },
+  '故障维修': { name: '故障维修', color: 'var(--color-error)' },
   '其它停机': { name: '其它停机', color: '#8c8c8c' },
-  '物料短缺': { name: '物料短缺', color: '#fa8c16' },
+  '物料短缺': { name: '物料短缺', color: 'var(--color-warning)' },
   '人员短缺': { name: '人员短缺', color: '#722ed1' },
-  '质量异常': { name: '质量异常', color: '#f5222d' },
+  '质量异常': { name: '质量异常', color: 'var(--color-error)' },
   '设备故障': { name: '设备故障', color: '#eb2f96' },
   '工艺问题': { name: '工艺问题', color: '#13c2c2' },
 }
@@ -193,9 +193,9 @@ export default function ExceptionReport() {
   }, [filtered])
 
   const stats: StatItem[] = [
-    { label: '异常总数', value: totalExceptions, icon: <BellOutlined />, color: '#F44336' },
-    { label: '总异常时长', value: `${totalDuration}分钟`, icon: <ClockCircleOutlined />, color: '#FF9800' },
-    { label: '平均异常时长', value: `${avgDuration}分钟`, icon: <FallOutlined />, color: '#2196F3' },
+    { label: '异常总数', value: totalExceptions, icon: <BellOutlined />, color: 'var(--color-error)' },
+    { label: '总异常时长', value: `${totalDuration}分钟`, icon: <ClockCircleOutlined />, color: 'var(--color-warning)' },
+    { label: '平均异常时长', value: `${avgDuration}分钟`, icon: <FallOutlined />, color: 'var(--color-primary)' },
     { label: '异常类型数', value: typeSummary.length, icon: <WarningOutlined />, color: '#9C27B0' },
     { label: '受影响工单', value: workOrderSummary.length, icon: <ToolOutlined />, color: '#00BCD4' },
   ]
@@ -212,7 +212,7 @@ export default function ExceptionReport() {
     {
       title: '持续时长(分钟)', dataIndex: 'duration', key: 'duration', width: 120,
       render: (v: number) => {
-        const color = v >= 60 ? '#F44336' : v >= 30 ? '#FF9800' : '#4CAF50'
+        const color = v >= 60 ? 'var(--color-error)' : v >= 30 ? 'var(--color-warning)' : 'var(--color-success)'
         return <span style={{ color, fontWeight: 600 }}>{Math.floor(v)}</span>
       }
     },
@@ -239,7 +239,7 @@ export default function ExceptionReport() {
     { title: '工单编号', dataIndex: 'work_order_no', key: 'work_order_no', width: 150 },
     { title: '产线', dataIndex: 'line_name', key: 'line_name', width: 70 },
     { title: '产品名称', dataIndex: 'material_name', key: 'material_name', width: 120 },
-    { title: '异常次数', dataIndex: 'exception_count', key: 'exception_count', width: 100, render: (v: number) => <strong style={{ color: v > 2 ? '#F44336' : '#FF9800' }}>{v}</strong> },
+    { title: '异常次数', dataIndex: 'exception_count', key: 'exception_count', width: 100, render: (v: number) => <strong style={{ color: v > 2 ? 'var(--color-error)' : 'var(--color-warning)' }}>{v}</strong> },
     { title: '异常总时长(分钟)', dataIndex: 'total_duration', key: 'total_duration', width: 140 },
     { title: '异常类型', dataIndex: 'exception_types', key: 'exception_types', render: (types: string[]) => types.map((t, i) => <Tag key={i} style={{ marginBottom: 2 }}>{t}</Tag>) },
     { title: '工单状态', dataIndex: 'status', key: 'status', width: 90, render: (v: string) => <Tag>{v}</Tag> },
@@ -247,7 +247,7 @@ export default function ExceptionReport() {
 
   const deviceColumns = [
     { title: '设备名称', dataIndex: 'device_name', key: 'device_name', width: 150 },
-    { title: '异常次数', dataIndex: 'count', key: 'count', width: 100, render: (v: number) => <strong style={{ color: v > 5 ? '#F44336' : v > 2 ? '#FF9800' : '#4CAF50' }}>{v}</strong> },
+    { title: '异常次数', dataIndex: 'count', key: 'count', width: 100, render: (v: number) => <strong style={{ color: v > 5 ? 'var(--color-error)' : v > 2 ? 'var(--color-warning)' : 'var(--color-success)' }}>{v}</strong> },
     { title: '总时长(分钟)', dataIndex: 'total_duration', key: 'total_duration', width: 120 },
     { title: '平均时长(分钟)', dataIndex: 'avg_duration', key: 'avg_duration', width: 120 },
     { title: '异常类型', dataIndex: 'exception_types', key: 'exception_types', render: (types: string[]) => types.map((t, i) => <Tag key={i} style={{ marginBottom: 2 }}>{t}</Tag>) },

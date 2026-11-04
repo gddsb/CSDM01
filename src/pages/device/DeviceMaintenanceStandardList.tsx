@@ -150,9 +150,9 @@ export default function DeviceMaintenanceStandardList() {
   // ===== 统计 =====
   const statItems: StatItem[] = [
     { label: '编制中', value: data.filter(r => r.status === '编制').length, color: '#8c8c8c', icon: <FileTextOutlined /> },
-    { label: '生效中', value: data.filter(r => r.status === '生效').length, color: '#52c41a', icon: <CheckCircleOutlined /> },
-    { label: '已停用', value: data.filter(r => r.status === '停用').length, color: '#faad14', icon: <PauseCircleOutlined /> },
-    { label: '设备总数', value: total, color: '#1890ff', icon: <AppstoreOutlined /> },
+    { label: '生效中', value: data.filter(r => r.status === '生效').length, color: 'var(--color-success)', icon: <CheckCircleOutlined /> },
+    { label: '已停用', value: data.filter(r => r.status === '停用').length, color: 'var(--color-warning)', icon: <PauseCircleOutlined /> },
+    { label: '设备总数', value: total, color: 'var(--color-primary)', icon: <AppstoreOutlined /> },
   ]
 
   // ===== 列定义 =====
@@ -162,7 +162,7 @@ export default function DeviceMaintenanceStandardList() {
     {
       title: '标准项数', width: 220,
       render: (_, r) => {
-        if (r.std_count === 0) return <span style={{ color: '#999' }}>暂无</span>
+        if (r.std_count === 0) return <span style={{ color: 'var(--text-secondary)' }}>暂无</span>
         const parts: React.ReactNode[] = []
         ;(['daily', 'weekly', 'monthly', 'runtime'] as const).forEach(m => {
           const n = r.std_by_mode?.[m] || 0
@@ -295,7 +295,7 @@ export default function DeviceMaintenanceStandardList() {
         <Form.Item name="remarks" label="备注">
           <Input.TextArea rows={2} placeholder="可选" />
         </Form.Item>
-        <div style={{ color: '#999', fontSize: 12 }}>
+        <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
           创建后档案状态为「编制」，配置保养标准项后可「生效」，生效后按计划生成维保计划。
         </div>
       </Form>

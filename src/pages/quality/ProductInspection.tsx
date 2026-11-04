@@ -157,12 +157,12 @@ export default function ProductInspection() {
   const finishedCount = summaryStats.finished ?? 0
 
   const stats: StatItem[] = [
-    { label: '检验总数', value: totalCount, icon: <ExperimentOutlined />, color: '#2196F3' },
+    { label: '检验总数', value: totalCount, icon: <ExperimentOutlined />, color: 'var(--color-primary)' },
     { label: '首件', value: firstPieceCount, icon: <ExperimentOutlined />, color: '#1890FF' },
     { label: '制程', value: processCount, icon: <ExperimentOutlined />, color: '#722ED1' },
     { label: '成品', value: finishedCount, icon: <ExperimentOutlined />, color: '#52C41A' },
-    { label: '合格', value: passCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
-    { label: '不合格', value: failCount, icon: <CloseCircleOutlined />, color: '#F44336' },
+    { label: '合格', value: passCount, icon: <CheckCircleOutlined />, color: 'var(--color-success)' },
+    { label: '不合格', value: failCount, icon: <CloseCircleOutlined />, color: 'var(--color-error)' },
     { label: '合格率', value: `${passRate}%`, icon: <PercentageOutlined />, color: '#9C27B0' },
   ]
 
@@ -526,7 +526,7 @@ export default function ProductInspection() {
                 onChange={setResultFilter}
               />
               <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-                <span style={{ color: '#888', fontSize: 13, marginRight: 6, whiteSpace: 'nowrap' }}>状态：</span>
+                <span style={{ color: 'var(--text-secondary)', fontSize: 13, marginRight: 6, whiteSpace: 'nowrap' }}>状态：</span>
                 <Checkbox.Group
                   value={statusFilter}
                   onChange={v => setStatusFilter(v as string[])}

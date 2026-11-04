@@ -151,9 +151,9 @@ export default function EnvironmentInspection() {
   const passRate = data.length > 0 ? Math.round((passCount / data.length) * 100) : 0
 
   const stats: StatItem[] = [
-    { label: '总检验数', value: data.length, icon: <EnvironmentOutlined />, color: '#2196F3' },
-    { label: '合格', value: passCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
-    { label: '不合格', value: failCount, icon: <CloseCircleOutlined />, color: '#F44336' },
+    { label: '总检验数', value: data.length, icon: <EnvironmentOutlined />, color: 'var(--color-primary)' },
+    { label: '合格', value: passCount, icon: <CheckCircleOutlined />, color: 'var(--color-success)' },
+    { label: '不合格', value: failCount, icon: <CloseCircleOutlined />, color: 'var(--color-error)' },
     { label: '合格率', value: `${passRate}%`, icon: <CheckCircleOutlined />, color: '#00BCD4' },
   ]
 

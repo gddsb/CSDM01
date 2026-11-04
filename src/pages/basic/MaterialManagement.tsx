@@ -60,9 +60,9 @@ const MaterialManagement = () => {
   const inactiveCount = data.filter(m => !m.is_active).length
 
   const stats: StatItem[] = [
-    { label: '料品总数', value: total, icon: <ProfileOutlined />, color: '#2196F3' },
-    { label: '生效', value: activeCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
-    { label: '失效', value: inactiveCount, icon: <CloseCircleOutlined />, color: '#F44336' },
+    { label: '料品总数', value: total, icon: <ProfileOutlined />, color: 'var(--color-primary)' },
+    { label: '生效', value: activeCount, icon: <CheckCircleOutlined />, color: 'var(--color-success)' },
+    { label: '失效', value: inactiveCount, icon: <CloseCircleOutlined />, color: 'var(--color-error)' },
   ]
 
   const categoryOptions = [...new Set(data.map(m => m.category_name).filter(Boolean))].map(c => ({ label: c, value: c }))

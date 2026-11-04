@@ -453,7 +453,7 @@ export default function InspectionStandardForm() {
             {!readOnly && <Button type="primary" icon={<SaveOutlined />} loading={saving || isGeneratingNo} onClick={handleSubmit}>保存</Button>}
             {isEdit && currentStatus === '开立' && (
               <Popconfirm title="确认审核通过？审核后标准状态将变为生效，不可再编辑" onConfirm={handleAudit} okText="确认审核" cancelText="取消">
-                <Button type="primary" icon={<CheckCircleOutlined />} loading={auditing} style={{ background: '#52c41a', borderColor: '#52c41a' }}>审核</Button>
+                <Button type="primary" icon={<CheckCircleOutlined />} loading={auditing} style={{ background: 'var(--color-success)', borderColor: 'var(--color-success)' }}>审核</Button>
               </Popconfirm>
             )}
             {readOnly && <Button onClick={() => navigate('/quality/standards')}>返回</Button>}
@@ -606,7 +606,7 @@ export default function InspectionStandardForm() {
                   optionRender={(opt: any) => (
                     <div style={{ padding: '2px 0' }}>
                       {opt.label}
-                      <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
                         {opt.value === 'quantitative' ? '录入多测量值，按上下限自动判定' : '每件样品判定OK/NG'}
                       </div>
                     </div>

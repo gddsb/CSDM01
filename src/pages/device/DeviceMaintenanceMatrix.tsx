@@ -88,21 +88,21 @@ function CellBadge({ rec }: { rec: MatrixRecord | null }) {
     <div style={{ minWidth: 180, fontSize: 12 }}>
       <div>
         状态：{tag}
-        {rec.result && <> · 结果：<b style={rec.result === '异常' ? { color: '#cf1322' } : {}}>{rec.result}</b></>}
+        {rec.result && <> · 结果：<b style={rec.result === '异常' ? { color: 'var(--color-error)' } : {}}>{rec.result}</b></>}
       </div>
       {rec.actual_value && <div>实测值：{rec.actual_value}</div>}
       {rec.executor && <div>执行人：{rec.executor}</div>}
       {rec.start_time && <div>开始：{dayjs(rec.start_time).format('YYYY-MM-DD HH:mm')}</div>}
       {rec.end_time && <div>结束：{dayjs(rec.end_time).format('YYYY-MM-DD HH:mm')}</div>}
       {rec.duration_min ? <div>耗时：{rec.duration_min} 分钟</div> : null}
-      {rec.abnormal_desc && <div style={{ color: '#cf1322' }}>异常：{rec.abnormal_desc}</div>}
+      {rec.abnormal_desc && <div style={{ color: 'var(--color-error)' }}>异常：{rec.abnormal_desc}</div>}
     </div>
   )
   return (
     <Popover content={content} title={`记录 #${rec.record_id}`}>
       <span style={{ cursor: 'help' }}>
         {rec.result === '异常'
-          ? <Badge status="error" text={<span style={{ color: '#cf1322', fontWeight: 600 }}>异常</span>} />
+          ? <Badge status="error" text={<span style={{ color: 'var(--color-error)', fontWeight: 600 }}>异常</span>} />
           : rec.status === '已完成'
           ? <Badge status="success" text={<span style={{ color: '#19a11f' }}>✓ 完成</span>} />
           : rec.status === '执行中'
@@ -167,10 +167,10 @@ export default function DeviceMaintenanceMatrix() {
     if (!data) return []
     const s: Record<string, any> = data.summary || {}
     return [
-      { label: '日点检完成率', value: `${s.daily_rate ?? 0}% (${s.daily_completed ?? 0}/${s.daily_total ?? 0})`, color: '#1677ff', icon: <CalendarOutlined /> },
-      { label: '周保养完成率', value: `${s.weekly_rate ?? 0}% (${s.weekly_completed ?? 0}/${s.weekly_total ?? 0})`, color: '#52c41a', icon: <FileDoneOutlined /> },
+      { label: '日点检完成率', value: `${s.daily_rate ?? 0}% (${s.daily_completed ?? 0}/${s.daily_total ?? 0})`, color: 'var(--color-primary)', icon: <CalendarOutlined /> },
+      { label: '周保养完成率', value: `${s.weekly_rate ?? 0}% (${s.weekly_completed ?? 0}/${s.weekly_total ?? 0})`, color: 'var(--color-success)', icon: <FileDoneOutlined /> },
       { label: '月保养完成率', value: `${s.monthly_rate ?? 0}% (${s.monthly_completed ?? 0}/${s.monthly_total ?? 0})`, color: '#722ed1', icon: <CheckCircleOutlined /> },
-      { label: '异常项数', value: s.abnormal_count ?? 0, color: '#f5222d', icon: <ExclamationCircleOutlined /> },
+      { label: '异常项数', value: s.abnormal_count ?? 0, color: 'var(--color-error)', icon: <ExclamationCircleOutlined /> },
     ]
   }, [data])
 

@@ -58,22 +58,22 @@ export default function EnvTab(props: EnvTabProps) {
               </Card>
             </Col>
             <Col span={6}>
-              <Card size="small" style={{ borderColor: envInfo.frontend_server?.status === 'running' ? '#52c41a' : '#ff4d4f' }}>
+              <Card size="small" style={{ borderColor: envInfo.frontend_server?.status === 'running' ? 'var(--color-success)' : 'var(--color-error)' }}>
                 <Statistic
                   title={envInfo.frontend_server?.name || '前端服务器'}
                   value={envInfo.frontend_server?.status === 'running' ? '运行中' : envInfo.frontend_server?.status === 'offline' ? '已停止' : '未知'}
-                  valueStyle={{ color: envInfo.frontend_server?.status === 'running' ? '#52c41a' : '#ff4d4f', fontSize: 16 }}
-                  suffix={<span style={{ fontSize: 13, color: '#666' }}>端口: {envInfo.frontend_server?.port}</span>}
+                  valueStyle={{ color: envInfo.frontend_server?.status === 'running' ? 'var(--color-success)' : 'var(--color-error)', fontSize: 16 }}
+                  suffix={<span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>端口: {envInfo.frontend_server?.port}</span>}
                 />
               </Card>
             </Col>
             <Col span={6}>
-              <Card size="small" style={{ borderColor: envInfo.backend_server?.status === 'running' ? '#52c41a' : '#ff4d4f' }}>
+              <Card size="small" style={{ borderColor: envInfo.backend_server?.status === 'running' ? 'var(--color-success)' : 'var(--color-error)' }}>
                 <Statistic
                   title={envInfo.backend_server?.name || '后端服务器'}
                   value={envInfo.backend_server?.status === 'running' ? '运行中' : '已停止'}
-                  valueStyle={{ color: envInfo.backend_server?.status === 'running' ? '#52c41a' : '#ff4d4f', fontSize: 16 }}
-                  suffix={<span style={{ fontSize: 13, color: '#666' }}>端口: {envInfo.backend_server?.port}</span>}
+                  valueStyle={{ color: envInfo.backend_server?.status === 'running' ? 'var(--color-success)' : 'var(--color-error)', fontSize: 16 }}
+                  suffix={<span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>端口: {envInfo.backend_server?.port}</span>}
                 />
               </Card>
             </Col>
@@ -120,7 +120,7 @@ export default function EnvTab(props: EnvTabProps) {
           </Row>
           <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
             <Col span={8}>
-              <Card size="small" title={<span><DatabaseOutlined style={{ color: '#1890ff', marginRight: 6 }} />详细信息</span>}>
+              <Card size="small" title={<span><DatabaseOutlined style={{ color: 'var(--color-primary)', marginRight: 6 }} />详细信息</span>}>
                 <Descriptions column={1} size="small">
                   <Descriptions.Item label="操作系统版本">{envInfo.os_version || envInfo.platform}</Descriptions.Item>
                   <Descriptions.Item label="操作系统类型">{envInfo.os_type || '-'}</Descriptions.Item>
@@ -141,7 +141,7 @@ export default function EnvTab(props: EnvTabProps) {
                 size="small"
                 title={
                   <span>
-                    <SafetyOutlined style={{ color: '#1890ff', marginRight: 6 }} />
+                    <SafetyOutlined style={{ color: 'var(--color-primary)', marginRight: 6 }} />
                     前端技术栈
                     <Tag style={{ marginLeft: 8 }} color="blue">v{envInfo.tech_stack?.frontend?.version}</Tag>
                   </span>
@@ -166,7 +166,7 @@ export default function EnvTab(props: EnvTabProps) {
                 size="small"
                 title={
                   <span>
-                    <CloudServerOutlined style={{ color: '#52c41a', marginRight: 6 }} />
+                    <CloudServerOutlined style={{ color: 'var(--color-success)', marginRight: 6 }} />
                     后端技术栈
                     <Tag style={{ marginLeft: 8 }} color="green">v{envInfo.tech_stack?.backend?.version}</Tag>
                   </span>

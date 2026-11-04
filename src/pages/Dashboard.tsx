@@ -80,24 +80,24 @@ export default function Dashboard() {
     const apis: Promise<TodoItem>[] = [
       // 待完工订单（production/orders status=2 开工中）
       api.get('/production/orders', { params: { page: 1, pageSize: 1, status: 2 } })
-        .then((r: any) => ({ icon: '🏃', label: '待完工订单', count: extractTotal(r), color: '#4CAF50', path: '/production/orders?tab=开工' }))
-        .catch(() => ({ icon: '🏃', label: '待完工订单', count: 0, color: '#4CAF50', path: '/production/orders?tab=开工' })),
+        .then((r: any) => ({ icon: '🏃', label: '待完工订单', count: extractTotal(r), color: 'var(--color-success)', path: '/production/orders?tab=开工' }))
+        .catch(() => ({ icon: '🏃', label: '待完工订单', count: 0, color: 'var(--color-success)', path: '/production/orders?tab=开工' })),
       // 待维保设备（今日+周+月，按 device_id 去重）
       api.get('/basic/device-records', { params: { page: 1, pageSize: 200, status: '待执行,执行中', period_key: periodKeys } })
         .then((r: any) => {
           const list = extractList(r)
           const cnt = new Set(list.map((x: any) => x.device_id).filter(Boolean)).size
-          return { icon: '🧰', label: '待维保设备', count: cnt, color: '#FF9800', path: '/device/maintenance' }
+          return { icon: '🧰', label: '待维保设备', count: cnt, color: 'var(--color-warning)', path: '/device/maintenance' }
         })
-        .catch(() => ({ icon: '🧰', label: '待维保设备', count: 0, color: '#FF9800', path: '/device/maintenance' })),
+        .catch(() => ({ icon: '🧰', label: '待维保设备', count: 0, color: 'var(--color-warning)', path: '/device/maintenance' })),
       // 设备故障待处理（待派工+维修中+待审批=未关闭，与移动端同口径）
       api.get('/device-faults', { params: { page: 1, pageSize: 1, status: '待派工,维修中,待审批' } })
-        .then((r: any) => ({ icon: '🚨', label: '设备故障待处理', count: extractTotal(r), color: '#F44336', path: '/device/fault' }))
-        .catch(() => ({ icon: '🚨', label: '设备故障待处理', count: 0, color: '#F44336', path: '/device/fault' })),
+        .then((r: any) => ({ icon: '🚨', label: '设备故障待处理', count: extractTotal(r), color: 'var(--color-error)', path: '/device/fault' }))
+        .catch(() => ({ icon: '🚨', label: '设备故障待处理', count: 0, color: 'var(--color-error)', path: '/device/fault' })),
       // 待检验来料
       api.get('/basic/incoming-inspections', { params: { page: 1, pageSize: 1, status: '待检验' } })
-        .then((r: any) => ({ icon: '✅', label: '待检验来料', count: extractTotal(r), color: '#4CAF50', path: '/quality/incoming' }))
-        .catch(() => ({ icon: '✅', label: '待检验来料', count: 0, color: '#4CAF50', path: '/quality/incoming' })),
+        .then((r: any) => ({ icon: '✅', label: '待检验来料', count: extractTotal(r), color: 'var(--color-success)', path: '/quality/incoming' }))
+        .catch(() => ({ icon: '✅', label: '待检验来料', count: 0, color: 'var(--color-success)', path: '/quality/incoming' })),
     ]
     const results = await Promise.allSettled(apis)
     const items = results.filter(r => r.status === 'fulfilled').map(r => (r as any).value) as TodoItem[]
@@ -108,9 +108,9 @@ export default function Dashboard() {
 
   // ========== 统计卡片配置（3 张，span=8 各占 1/3） ==========
   const statConfigs = useMemo(() => [
-    { label: '开工报工单', value: activeReportOrders.length, icon: <ToolOutlined />, color: '#2196F3' },
-    { label: '已完成报工', value: doneReportOrders.length, icon: <CheckCircleOutlined />, color: '#4CAF50' },
-    { label: '待办事项', value: todos.reduce((s, t) => s + t.count, 0), icon: <BugOutlined />, color: '#F44336' },
+    { label: '开工报工单', value: activeReportOrders.length, icon: <ToolOutlined />, color: 'var(--color-primary)' },
+    { label: '已完成报工', value: doneReportOrders.length, icon: <CheckCircleOutlined />, color: 'var(--color-success)' },
+    { label: '待办事项', value: todos.reduce((s, t) => s + t.count, 0), icon: <BugOutlined />, color: 'var(--color-error)' },
   ], [activeReportOrders, doneReportOrders, todos])
 
   // ========== 表格列定义 ==========
@@ -184,7 +184,7 @@ export default function Dashboard() {
         <Col span={8}>
           <div className="dashboard-card">
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <BulbOutlined style={{ color: '#F44336' }} />
+              <BulbOutlined style={{ color: 'var(--color-error)' }} />
               <Title level={5} style={{ margin: 0 }}>待办事项</Title>
             </div>
             {todos.length === 0 ? (

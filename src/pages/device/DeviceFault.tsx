@@ -230,11 +230,11 @@ export default function DeviceFault() {
     const approving = data.filter(d => d.status === '待审批').length
     const urgent = data.filter(d => d.fault_level === '紧急').length
     return [
-      { label: '总故障数', value: pagination.total, icon: <ToolOutlined />, color: '#2196F3' },
-      { label: '待派工', value: pending, icon: <ClockCircleOutlined />, color: '#FF9800' },
+      { label: '总故障数', value: pagination.total, icon: <ToolOutlined />, color: 'var(--color-primary)' },
+      { label: '待派工', value: pending, icon: <ClockCircleOutlined />, color: 'var(--color-warning)' },
       { label: '维修中', value: repairing, icon: <ToolOutlined />, color: '#00BCD4' },
       { label: '待审批', value: approving, icon: <FileTextOutlined />, color: '#9C27B0' },
-      { label: '紧急故障', value: urgent, icon: <FireOutlined />, color: '#F44336' },
+      { label: '紧急故障', value: urgent, icon: <FireOutlined />, color: 'var(--color-error)' },
     ]
   }, [data, pagination.total])
 
@@ -873,7 +873,7 @@ export default function DeviceFault() {
               options={LEVEL_OPTIONS}
               placeholder="请选择故障等级"
               optionRender={(option) => (
-                <span style={{ color: option.value === '紧急' ? '#ff4d4f' : undefined, fontWeight: option.value === '紧急' ? 600 : 400 }}>
+                <span style={{ color: option.value === '紧急' ? 'var(--color-error)' : undefined, fontWeight: option.value === '紧急' ? 600 : 400 }}>
                   {option.label}
                 </span>
               )}
@@ -902,7 +902,7 @@ export default function DeviceFault() {
             >
               {createFileList.length >= 9 ? null : uploadButton}
             </Upload>
-            <div style={{ color: '#999', fontSize: 12 }}>支持多图上传，最多 9 张，保存后自动上传至服务器</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>支持多图上传，最多 9 张，保存后自动上传至服务器</div>
           </Form.Item>
         </Form>
       </Drawer>

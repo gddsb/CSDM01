@@ -257,9 +257,9 @@ export default function DataDictionary() {
         title="数据字典"
         breadcrumbs="系统管理 / 数据字典"
         stats={[
-          { label: '数据表', value: total, icon: <TableOutlined />, color: '#2196F3' },
+          { label: '数据表', value: total, icon: <TableOutlined />, color: 'var(--color-primary)' },
           { label: '系统表', value: tableList.filter(t => t.category === '系统表').length || 0, icon: <DatabaseOutlined />, color: '#00BCD4' },
-          { label: '业务表', value: tableList.filter(t => t.category === '业务表').length || 0, icon: <TableOutlined />, color: '#FF9800' },
+          { label: '业务表', value: tableList.filter(t => t.category === '业务表').length || 0, icon: <TableOutlined />, color: 'var(--color-warning)' },
         ]}
         extra={
           refreshProgress && refreshing ? (
@@ -275,7 +275,7 @@ export default function DataDictionary() {
                       status={refreshProgress.status === 'failed' ? 'exception' : (refreshProgress.status === 'success' ? 'success' : 'active')}
                       style={{ flex: 1, minWidth: 360, maxWidth: 640 }}
                     />
-                    <span style={{ color: '#666', fontSize: 12, minWidth: 380, maxWidth: 520, textAlign: 'left' }}>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: 12, minWidth: 380, maxWidth: 520, textAlign: 'left' }}>
                       {refreshProgress.message || '准备中...'}
                     </span>
                   </Space>
@@ -407,7 +407,7 @@ export default function DataDictionary() {
                   title: (
                     <div style={{ lineHeight: 1.4 }}>
                       <div style={{ fontWeight: 600 }}>{fieldName}</div>
-                      {comment && <div style={{ fontSize: 12, color: '#888', whiteSpace: 'normal' }}>{comment}</div>}
+                      {comment && <div style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'normal' }}>{comment}</div>}
                       {f.data_type && !comment && <div style={{ fontSize: 12, color: '#aaa', whiteSpace: 'normal' }}>{f.data_type}</div>}
                     </div>
                   ),

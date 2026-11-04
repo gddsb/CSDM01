@@ -329,14 +329,14 @@ export default function DeviceMaintenanceStandardDetail() {
           )}
           {/* 状态切换按钮 */}
           {currentStatus === '编制' && (
-            <Button type="primary" icon={<CheckCircleOutlined />} style={{ background: '#52c41a', borderColor: '#52c41a' }}
+            <Button type="primary" icon={<CheckCircleOutlined />} style={{ background: 'var(--color-success)', borderColor: 'var(--color-success)' }}
               onClick={() => Modal.confirm({
                 title: '确认生效？生效后将按计划生成维保计划',
                 onOk: () => handleSwitchStatus('生效'),
               })}>生效档案</Button>
           )}
           {currentStatus === '生效' && (
-            <Button icon={<PauseCircleOutlined />} style={{ background: '#faad14', borderColor: '#faad14', color: '#fff' }}
+            <Button icon={<PauseCircleOutlined />} style={{ background: 'var(--color-warning)', borderColor: 'var(--color-warning)', color: '#fff' }}
               onClick={() => Modal.confirm({
                 title: '确认停用？停用后不再生成新维保计划',
                 onOk: () => handleSwitchStatus('停用'),
@@ -363,7 +363,7 @@ export default function DeviceMaintenanceStandardDetail() {
             <Descriptions.Item label="版本/生效日期">v{profile?.version || 1} / {profile?.effective_date || '-'}</Descriptions.Item>
           </Descriptions>
           {standards.length === 0 && (
-            <div style={{ marginTop: 8, color: '#faad14' }}>
+            <div style={{ marginTop: 8, color: 'var(--color-warning)' }}>
               当前档案尚无保养项，请点击「新增保养项」配置点检/维护/保养标准
             </div>
           )}
@@ -613,7 +613,7 @@ export default function DeviceMaintenanceStandardDetail() {
             />
           </Form.Item>
         </Form>
-        <div style={{ color: '#999', fontSize: 12 }}>
+        <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
           提示：分配仅改人员配置字段，不影响档案状态（编制/生效/停用三态均可操作）。
         </div>
       </Modal>

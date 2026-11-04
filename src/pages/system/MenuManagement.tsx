@@ -226,9 +226,9 @@ export default function MenuManagement() {
   const buttonCount = countByType(data, 'button')
 
   const stats: StatItem[] = [
-    { label: '菜单总数', value: total, icon: <AppstoreOutlined />, color: '#2196F3' },
-    { label: '菜单项', value: menuCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
-    { label: '页面/按钮', value: pageCount + buttonCount, icon: <CloseCircleOutlined />, color: '#FF9800' },
+    { label: '菜单总数', value: total, icon: <AppstoreOutlined />, color: 'var(--color-primary)' },
+    { label: '菜单项', value: menuCount, icon: <CheckCircleOutlined />, color: 'var(--color-success)' },
+    { label: '页面/按钮', value: pageCount + buttonCount, icon: <CloseCircleOutlined />, color: 'var(--color-warning)' },
   ]
 
   return (

@@ -40,9 +40,9 @@ export default function ProductionLine() {
   const maintenanceCount = data.filter(l => l.status === '维护中').length
 
   const stats: StatItem[] = [
-    { label: '总产线数', value: total, icon: <DeploymentUnitOutlined />, color: '#2196F3' },
-    { label: '运行中', value: runningCount, icon: <PlayCircleOutlined />, color: '#4CAF50' },
-    { label: '维护中', value: maintenanceCount, icon: <ToolOutlined />, color: '#FF9800' },
+    { label: '总产线数', value: total, icon: <DeploymentUnitOutlined />, color: 'var(--color-primary)' },
+    { label: '运行中', value: runningCount, icon: <PlayCircleOutlined />, color: 'var(--color-success)' },
+    { label: '维护中', value: maintenanceCount, icon: <ToolOutlined />, color: 'var(--color-warning)' },
   ]
 
   const workshopOptions = [...new Set(data.map(l => l.workshop).filter(Boolean))].map(w => ({ label: w, value: w }))
@@ -450,7 +450,7 @@ export default function ProductionLine() {
                   <div key={p.process_id} style={{ backgroundColor: bgColor, padding: 10, borderRadius: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontWeight: 500 }}>
                       {idx + 1}. {p.process_name}
-                      <span style={{ color: '#999', fontWeight: 'normal', marginLeft: 8, fontSize: 12 }}>{p.process_code}</span>
+                      <span style={{ color: 'var(--text-secondary)', fontWeight: 'normal', marginLeft: 8, fontSize: 12 }}>{p.process_code}</span>
                     </span>
                     <Popconfirm title="确认移除该工序？" onConfirm={() => handleRemoveProcess(p.process_id)}>
                       <Button size="small" danger icon={<DeleteOutlined />} />
@@ -459,7 +459,7 @@ export default function ProductionLine() {
                 )
               })}
               {selectedProcesses.length === 0 && (
-                <div style={{ textAlign: 'center', color: '#999', padding: 24 }}>
+                <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: 24 }}>
                   请从上方下拉框选择工序添加到产线
                 </div>
               )}

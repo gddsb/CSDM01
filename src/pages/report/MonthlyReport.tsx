@@ -107,9 +107,9 @@ export default function MonthlyReport() {
     : '0.0'
 
   const stats: StatItem[] = [
-    { label: '本月检验批次', value: totalCount, icon: <AuditOutlined />, color: '#2196F3' },
-    { label: '合格批次', value: passCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
-    { label: '不合格批次', value: failCount, icon: <CloseCircleOutlined />, color: '#F44336' },
+    { label: '本月检验批次', value: totalCount, icon: <AuditOutlined />, color: 'var(--color-primary)' },
+    { label: '合格批次', value: passCount, icon: <CheckCircleOutlined />, color: 'var(--color-success)' },
+    { label: '不合格批次', value: failCount, icon: <CloseCircleOutlined />, color: 'var(--color-error)' },
     { label: '合格率', value: `${passRate}%`, icon: <PercentageOutlined />, color: '#9C27B0' },
   ]
 
@@ -124,12 +124,12 @@ export default function MonthlyReport() {
       radius: ['38%', '68%'],
       center: ['50%', '52%'],
       avoidLabelOverlap: true,
-      itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+      itemStyle: { borderRadius: 6, borderColor: 'var(--bg-card)', borderWidth: 2 },
       label: { show: true, formatter: '{b}\n{d}%', fontSize: 11 },
       data: [
-        { value: passCount, name: '合格', itemStyle: { color: '#4CAF50' } },
-        { value: failCount, name: '不合格', itemStyle: { color: '#F44336' } },
-        { value: concessionCount, name: '让步接收', itemStyle: { color: '#FF9800' } },
+        { value: passCount, name: '合格', itemStyle: { color: 'var(--color-success)' } },
+        { value: failCount, name: '不合格', itemStyle: { color: 'var(--color-error)' } },
+        { value: concessionCount, name: '让步接收', itemStyle: { color: 'var(--color-warning)' } },
       ],
     }],
   }
@@ -155,7 +155,7 @@ export default function MonthlyReport() {
       type: 'bar',
       data: categoryRates,
       barWidth: '45%',
-      itemStyle: { color: '#2196F3', borderRadius: [4, 4, 0, 0] },
+      itemStyle: { color: 'var(--color-primary)', borderRadius: [4, 4, 0, 0] },
       label: { show: true, position: 'top', formatter: '{c}%', fontSize: 11 },
     }],
   }
@@ -173,11 +173,11 @@ export default function MonthlyReport() {
   const columns = [
     { title: '检验类别', dataIndex: 'category', key: 'category', width: 160 },
     { title: '检验批次', dataIndex: 'total', key: 'total', width: 110 },
-    { title: '合格数', dataIndex: 'pass', key: 'pass', width: 110, render: v => <span style={{ color: '#4CAF50' }}>{v}</span> },
-    { title: '不合格数', dataIndex: 'fail', key: 'fail', width: 110, render: v => v > 0 ? <span style={{ color: '#F44336' }}>{v}</span> : '-' },
+    { title: '合格数', dataIndex: 'pass', key: 'pass', width: 110, render: v => <span style={{ color: 'var(--color-success)' }}>{v}</span> },
+    { title: '不合格数', dataIndex: 'fail', key: 'fail', width: 110, render: v => v > 0 ? <span style={{ color: 'var(--color-error)' }}>{v}</span> : '-' },
     {
       title: '合格率(%)', dataIndex: 'rate', key: 'rate', width: 200,
-      render: v => <Progress percent={v} size="small" strokeColor={v >= 95 ? '#52c41a' : v >= 85 ? '#faad14' : '#ff4d4f'} format={p => `${p}%`} />
+      render: v => <Progress percent={v} size="small" strokeColor={v >= 95 ? 'var(--color-success)' : v >= 85 ? 'var(--color-warning)' : 'var(--color-error)'} format={p => `${p}%`} />
     },
   ]
 

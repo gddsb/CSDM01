@@ -158,10 +158,10 @@ export default function QualityReport() {
   const complaintCount = complaints.length
 
   const stats: StatItem[] = [
-    { label: '检验总数', value: totalInspections, icon: <ExperimentOutlined />, color: '#2196F3' },
-    { label: '合格数', value: passCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
-    { label: '不合格数', value: failCount, icon: <CloseCircleOutlined />, color: '#F44336' },
-    { label: '检验中', value: pendingCount, icon: <SafetyCertificateOutlined />, color: '#FF9800' },
+    { label: '检验总数', value: totalInspections, icon: <ExperimentOutlined />, color: 'var(--color-primary)' },
+    { label: '合格数', value: passCount, icon: <CheckCircleOutlined />, color: 'var(--color-success)' },
+    { label: '不合格数', value: failCount, icon: <CloseCircleOutlined />, color: 'var(--color-error)' },
+    { label: '检验中', value: pendingCount, icon: <SafetyCertificateOutlined />, color: 'var(--color-warning)' },
     { label: '合格率', value: `${passRate}%`, icon: <RiseOutlined />, color: '#9C27B0' },
     { label: '客诉数', value: complaintCount, icon: <CloseCircleOutlined />, color: '#E91E63' },
   ]
@@ -215,12 +215,12 @@ export default function QualityReport() {
                       <div style={{ fontSize: 18, fontWeight: 700 }}>{cs.total}</div>
                     </Col>
                     <Col span={6}>
-                      <div style={{ fontSize: 11, color: '#4CAF50' }}>合格</div>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: '#4CAF50' }}>{cs.pass}</div>
+                      <div style={{ fontSize: 11, color: 'var(--color-success)' }}>合格</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-success)' }}>{cs.pass}</div>
                     </Col>
                     <Col span={6}>
-                      <div style={{ fontSize: 11, color: '#F44336' }}>不合格</div>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: '#F44336' }}>{cs.fail}</div>
+                      <div style={{ fontSize: 11, color: 'var(--color-error)' }}>不合格</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-error)' }}>{cs.fail}</div>
                     </Col>
                     <Col span={6}>
                       <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>合格率</div>
@@ -231,7 +231,7 @@ export default function QualityReport() {
                     <Progress
                       percent={parseFloat(cs.pass_rate)}
                       size="small"
-                      strokeColor={parseFloat(cs.pass_rate) >= 95 ? '#52c41a' : parseFloat(cs.pass_rate) >= 85 ? '#faad14' : '#ff4d4f'}
+                      strokeColor={parseFloat(cs.pass_rate) >= 95 ? 'var(--color-success)' : parseFloat(cs.pass_rate) >= 85 ? 'var(--color-warning)' : 'var(--color-error)'}
                       style={{ marginTop: 8, marginBottom: 0 }}
                     />
                   )}

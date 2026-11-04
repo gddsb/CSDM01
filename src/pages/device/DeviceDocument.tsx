@@ -250,9 +250,9 @@ export default function DeviceDocumentPage() {
     const factoryCount = allDocs.filter(d => d.doc_type === 'factory').length
     const repairCount = allDocs.filter(d => d.doc_type === 'internal_repair' || d.doc_type === 'external_repair').length
     return [
-      { label: '设备总数', value: devicesCount, icon: <FileTextTwoTone />, color: '#2196F3' },
-      { label: '档案总数', value: totalDocs, icon: <FileOutlined />, color: '#4CAF50' },
-      { label: '出厂资料', value: factoryCount, icon: <FileTextOutlined />, color: '#FF9800' },
+      { label: '设备总数', value: devicesCount, icon: <FileTextTwoTone />, color: 'var(--color-primary)' },
+      { label: '档案总数', value: totalDocs, icon: <FileOutlined />, color: 'var(--color-success)' },
+      { label: '出厂资料', value: factoryCount, icon: <FileTextOutlined />, color: 'var(--color-warning)' },
       { label: '维修记录', value: repairCount, icon: <FileUnknownOutlined />, color: '#9C27B0' },
     ]
   }, [devicesCount, totalDocs, allDocs])
@@ -640,7 +640,7 @@ export default function DeviceDocumentPage() {
         filter={filterNode}
         actions={actions}
         table={
-          <div style={{ background: '#fff', border: '1px solid #f0f0f0', borderRadius: 6, padding: 12 }}>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid #f0f0f0', borderRadius: 6, padding: 12 }}>
             {renderMasterDetail()}
           </div>
         }

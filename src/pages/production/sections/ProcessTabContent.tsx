@@ -23,7 +23,7 @@ export function TabToolbar({ editable, onSave, onAdd, hint, readOnlyHint = '已�
               <Button type="primary" icon={<SaveOutlined />} onClick={onSave}>保存</Button>
               <Button type="primary" icon={<PlusOutlined />} onClick={onAdd}>添加</Button>
             </>
-          ) : <span style={{ color: '#666' }}>只读数据</span>}
+          ) : <span style={{ color: 'var(--text-secondary)' }}>只读数据</span>}
         </Space>
       </Col>
       <Col span={12} style={{ textAlign: 'right' }}>
@@ -65,11 +65,11 @@ export function ProcessDefectTab({ selectedProcessId, processes, onSelectProcess
         <Col span={12} style={{ textAlign: 'right' }}>
           {selectedProcessId && (
             <Space size="large">
-              <span style={{ color: '#999', fontSize: 12 }}>当前工序统计：</span>
-              <span>投入数量：<b style={{ color: '#1890ff' }}>{stats.inputQty}</b></span>
-              <span>合格数：<b style={{ color: '#52c41a' }}>{stats.qualifiedQty}</b></span>
-              <span>制程不良：<b style={{ color: '#fa8c16' }}>{stats.processDefectQty}</b></span>
-              <span>来料不良：<b style={{ color: '#faad14' }}>{stats.materialDefectQty}</b></span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>当前工序统计：</span>
+              <span>投入数量：<b style={{ color: 'var(--color-primary)' }}>{stats.inputQty}</b></span>
+              <span>合格数：<b style={{ color: 'var(--color-success)' }}>{stats.qualifiedQty}</b></span>
+              <span>制程不良：<b style={{ color: 'var(--color-warning)' }}>{stats.processDefectQty}</b></span>
+              <span>来料不良：<b style={{ color: 'var(--color-warning)' }}>{stats.materialDefectQty}</b></span>
             </Space>
           )}
         </Col>
@@ -110,7 +110,7 @@ export function GenericRecordTab<T extends { id: string | number }>({
           <Space>
             {showProcessSelector && processes && onSelectProcess && (
               <>
-                <span style={{ color: '#666' }}>选择工序：</span>
+                <span style={{ color: 'var(--text-secondary)' }}>选择工序：</span>
                 <Select
                   value={selectedProcessId ?? undefined}
                   onChange={onSelectProcess}
@@ -120,7 +120,7 @@ export function GenericRecordTab<T extends { id: string | number }>({
                 />
               </>
             )}
-            <span style={{ color: '#666' }}>{title}</span>
+            <span style={{ color: 'var(--text-secondary)' }}>{title}</span>
             {editable && (
               <>
                 <Button type="primary" icon={<SaveOutlined />} onClick={onSave}>保存</Button>

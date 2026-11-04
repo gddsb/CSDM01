@@ -76,10 +76,10 @@ export default function DeviceSparePart() {
   const [query, setQuery] = useState({ page: 1, pageSize: 30, keyword: '', category: undefined, status: [1, 0] })
 
   const stats: StatItem[] = [
-    { label: '备件总数', value: total, icon: <ToolOutlined />, color: '#2196F3' },
-    { label: '低库存预警', value: lowStockCount, icon: <WarningOutlined />, color: '#F44336' },
-    { label: '本月入库金额(元)', value: fmtMoney(monthInAmount), icon: <ArrowDownOutlined />, color: '#4CAF50' },
-    { label: '本月出库金额(元)', value: fmtMoney(monthOutAmount), icon: <ArrowUpOutlined />, color: '#FF9800' },
+    { label: '备件总数', value: total, icon: <ToolOutlined />, color: 'var(--color-primary)' },
+    { label: '低库存预警', value: lowStockCount, icon: <WarningOutlined />, color: 'var(--color-error)' },
+    { label: '本月入库金额(元)', value: fmtMoney(monthInAmount), icon: <ArrowDownOutlined />, color: 'var(--color-success)' },
+    { label: '本月出库金额(元)', value: fmtMoney(monthOutAmount), icon: <ArrowUpOutlined />, color: 'var(--color-warning)' },
   ]
 
   const categoryFilterOptions = [...new Set(data.map(d => d.category).filter(Boolean))].map(c => ({ label: c, value: c }))
@@ -364,9 +364,9 @@ export default function DeviceSparePart() {
       render: (v: number, record: any) => {
         const low = isLowStock(record)
         return (
-          <span style={{ color: low ? '#f5222d' : undefined, fontWeight: low ? 600 : 400 }}>
+          <span style={{ color: low ? 'var(--color-error)' : undefined, fontWeight: low ? 600 : 400 }}>
             {v}
-            {low && <Tooltip title={`低于安全下限 ${record.safety_stock_min}`}><WarningOutlined style={{ marginLeft: 4, color: '#f5222d' }} /></Tooltip>}
+            {low && <Tooltip title={`低于安全下限 ${record.safety_stock_min}`}><WarningOutlined style={{ marginLeft: 4, color: 'var(--color-error)' }} /></Tooltip>}
           </span>
         )
       },

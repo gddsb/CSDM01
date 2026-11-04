@@ -1273,10 +1273,10 @@ export default function ProcessReporting() {
 
   const selectedOrderInfo = orders.find((o: any) => o.order_id === selectedReport?.order_id)
   const reportStatItems = [
-    { label: '计划数量', value: selectedOrderInfo?.planned_qty != null ? Math.round(Number(selectedOrderInfo.planned_qty)) : '-', color: '#1890ff' },
-    { label: '制程不良', value: stats.defectProcess || 0, color: '#fa8c16' },
-    { label: '来料不良', value: stats.defectMaterial || 0, color: '#faad14' },
-    { label: '报废数量', value: stats.defectScrap || 0, color: '#f5222d' },
+    { label: '计划数量', value: selectedOrderInfo?.planned_qty != null ? Math.round(Number(selectedOrderInfo.planned_qty)) : '-', color: 'var(--color-primary)' },
+    { label: '制程不良', value: stats.defectProcess || 0, color: 'var(--color-warning)' },
+    { label: '来料不良', value: stats.defectMaterial || 0, color: 'var(--color-warning)' },
+    { label: '报废数量', value: stats.defectScrap || 0, color: 'var(--color-error)' },
     { label: '异常工时', value: `${(stats.exceptionHours || 0).toFixed(1)}H`, color: '#eb2f96' },
     { label: '总工时', value: `${(stats.manpowerHours || 0).toFixed(1)}H`, color: '#13c2c2' },
   ]
@@ -1350,25 +1350,25 @@ export default function ProcessReporting() {
           <Row gutter={16}>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>报工单号</span>
+                <span style={{ color: 'var(--text-secondary)', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>报工单号</span>
                 <span style={{ fontWeight: 'bold', whiteSpace: 'nowrap' }}>{selectedReport.report_no}</span>
               </Space>
             </Col>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>订单编号</span>
+                <span style={{ color: 'var(--text-secondary)', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>订单编号</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.order_no || '-'}</span>
               </Space>
             </Col>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>生产产线</span>
+                <span style={{ color: 'var(--text-secondary)', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>生产产线</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.line_name || '-'}</span>
               </Space>
             </Col>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>菲林版本</span>
+                <span style={{ color: 'var(--text-secondary)', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>菲林版本</span>
                 <span style={{ whiteSpace: 'nowrap' }}>
                   {formatFilmVersion(selectedReport.order?.film_version, selectedReport.order?.version_no) || '-'}
                 </span>
@@ -1376,7 +1376,7 @@ export default function ProcessReporting() {
             </Col>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>条形码</span>
+                <span style={{ color: 'var(--text-secondary)', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>条形码</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.order?.barcode || '-'}</span>
               </Space>
             </Col>
@@ -1387,19 +1387,19 @@ export default function ProcessReporting() {
           <Row gutter={16} style={{ marginTop: 12 }}>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>物料编号</span>
+                <span style={{ color: 'var(--text-secondary)', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>物料编号</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.material_code || '-'}</span>
               </Space>
             </Col>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>产品规格</span>
+                <span style={{ color: 'var(--text-secondary)', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>产品规格</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.specification || '-'}</span>
               </Space>
             </Col>
             <Col span={8}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>产品名称</span>
+                <span style={{ color: 'var(--text-secondary)', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>产品名称</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.material_name || '-'}</span>
               </Space>
             </Col>
@@ -1410,31 +1410,31 @@ export default function ProcessReporting() {
           <Row gutter={16} style={{ marginTop: 12 }}>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>报工时间</span>
+                <span style={{ color: 'var(--text-secondary)', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>报工时间</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(selectedReport.report_time)}</span>
               </Space>
             </Col>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>完工时间</span>
+                <span style={{ color: 'var(--text-secondary)', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>完工时间</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(selectedReport.finish_time)}</span>
               </Space>
             </Col>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>报工人</span>
+                <span style={{ color: 'var(--text-secondary)', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>报工人</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.report_user_name || '-'}</span>
               </Space>
             </Col>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>完工人</span>
+                <span style={{ color: 'var(--text-secondary)', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>完工人</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.finish_user_name || '-'}</span>
               </Space>
             </Col>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
-                <span style={{ color: '#666', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>关闭人</span>
+                <span style={{ color: 'var(--text-secondary)', fontWeight: 'bold', whiteSpace: 'nowrap', flexShrink: 0 }}>关闭人</span>
                 <span style={{ whiteSpace: 'nowrap' }}>{selectedReport.close_user_name || '-'}</span>
               </Space>
             </Col>
@@ -1444,7 +1444,7 @@ export default function ProcessReporting() {
 
       {!selectedReport && (
         <Card style={{ textAlign: 'center', padding: 40, marginBottom: 16 }}>
-          <div style={{ color: '#999', marginBottom: 16 }}>
+          <div style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>
             {reportOrders.length === 0
               ? '暂无开工状态的报工单，请点击"新增报工"创建'
               : '请从上方下拉框选择一个报工单'}
@@ -1456,9 +1456,9 @@ export default function ProcessReporting() {
         <Card>
     <ReportStatsBar items={reportStatItems} rightSlot={
       <span style={{ fontSize: 13 }}>
-        <span style={{ color: '#52c41a' }}>合格 <b>{stats.expectedOutput > 0 ? stats.expectedOutput : 0}</b></span>
-        <span style={{ color: '#999', margin: '0 4px' }}>/</span>
-        <span style={{ color: '#1890ff' }}>投入 <b>{stats.inputQty || 0}</b></span>
+        <span style={{ color: 'var(--color-success)' }}>合格 <b>{stats.expectedOutput > 0 ? stats.expectedOutput : 0}</b></span>
+        <span style={{ color: 'var(--text-secondary)', margin: '0 4px' }}>/</span>
+        <span style={{ color: 'var(--color-primary)' }}>投入 <b>{stats.inputQty || 0}</b></span>
       </span>
     } />
 
@@ -1506,7 +1506,7 @@ export default function ProcessReporting() {
       >
         <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
           {finishCheckItems.map((it: any, i: number) => {
-            const colorMap: Record<string, string> = { pass: '#52c41a', warn: '#faad14', block: '#ff4d4f' }
+            const colorMap: Record<string, string> = { pass: 'var(--color-success)', warn: 'var(--color-warning)', block: 'var(--color-error)' }
             const iconMap: Record<string, string> = { pass: '✅', warn: '⚠️', block: '❌' }
             return (
               <div key={i} style={{ marginBottom: 8 }}>
@@ -1514,7 +1514,7 @@ export default function ProcessReporting() {
                   {iconMap[it.level]} {it.label}
                 </div>
                 {it.detail && (
-                  <div style={{ fontSize: 12, color: '#999', marginTop: 2, lineHeight: 1.4 }}>{it.detail}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, lineHeight: 1.4 }}>{it.detail}</div>
                 )}
               </div>
             )
@@ -1530,7 +1530,7 @@ export default function ProcessReporting() {
               marginTop: 12, padding: '8px 12px',
               background: hasBlock ? '#fff1f0' : '#f6ffed',
               borderRadius: 6, fontSize: 13,
-              color: hasBlock ? '#ff4d4f' : '#52c41a',
+              color: hasBlock ? 'var(--color-error)' : 'var(--color-success)',
             }}>
               {hasBlock
                 ? `❌ ${passCount} 通过 · ${warnCount} 警告 · ${blockCount} 阻断 — 请补录后再完工`
@@ -1591,7 +1591,7 @@ export default function ProcessReporting() {
           ))}
         </Row>
         {currentImageList.length === 0 && (
-          <div style={{ textAlign: 'center', color: '#999', padding: 20 }}>暂无图片</div>
+          <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: 20 }}>暂无图片</div>
         )}
       </Drawer>
     </div>

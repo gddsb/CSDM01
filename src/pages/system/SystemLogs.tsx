@@ -92,7 +92,7 @@ export default function SystemLogs() {
   }
 
   const stats: StatItem[] = [
-    { label: '日志总条数', value: total, icon: <BugOutlined />, color: '#2196F3' },
+    { label: '日志总条数', value: total, icon: <BugOutlined />, color: 'var(--color-primary)' },
   ]
 
   const filters: FilterItem[] = [

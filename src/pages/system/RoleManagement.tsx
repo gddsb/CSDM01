@@ -93,9 +93,9 @@ export default function RoleManagement() {
   const optionalCount = data.filter(r => r.type === '可选').length
 
   const stats: StatItem[] = [
-    { label: '角色总数', value: total, icon: <SafetyCertificateOutlined />, color: '#2196F3' },
-    { label: '系统默认角色', value: defaultCount, icon: <ApartmentOutlined />, color: '#FF9800' },
-    { label: '可选角色', value: optionalCount, icon: <SafetyOutlined />, color: '#4CAF50' },
+    { label: '角色总数', value: total, icon: <SafetyCertificateOutlined />, color: 'var(--color-primary)' },
+    { label: '系统默认角色', value: defaultCount, icon: <ApartmentOutlined />, color: 'var(--color-warning)' },
+    { label: '可选角色', value: optionalCount, icon: <SafetyOutlined />, color: 'var(--color-success)' },
   ]
 
   const treeData = useMemo(() => buildPermissionTree(permissions), [permissions])

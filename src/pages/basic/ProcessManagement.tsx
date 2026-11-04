@@ -33,8 +33,8 @@ export default function ProcessManagement() {
   const enabledCount = data.filter(p => p.status === '启用').length
 
   const stats: StatItem[] = [
-    { label: '总工序数', value: total, icon: <OrderedListOutlined />, color: '#2196F3' },
-    { label: '启用数', value: enabledCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
+    { label: '总工序数', value: total, icon: <OrderedListOutlined />, color: 'var(--color-primary)' },
+    { label: '启用数', value: enabledCount, icon: <CheckCircleOutlined />, color: 'var(--color-success)' },
   ]
 
   // 获取列表

@@ -254,10 +254,10 @@ export default function ProductionReport() {
   const avgYield = filtered.length > 0 ? (filtered.reduce((s, r) => s + r.yield_rate, 0) / filtered.length).toFixed(1) : '0.0'
 
   const stats: StatItem[] = [
-    { label: '工单总数', value: filtered.length, icon: <FileTextOutlined />, color: '#2196F3' },
-    { label: '目标产量', value: totalTarget.toLocaleString(), icon: <RiseOutlined />, color: '#4CAF50' },
+    { label: '工单总数', value: filtered.length, icon: <FileTextOutlined />, color: 'var(--color-primary)' },
+    { label: '目标产量', value: totalTarget.toLocaleString(), icon: <RiseOutlined />, color: 'var(--color-success)' },
     { label: '实际产出', value: totalOutput.toLocaleString(), icon: <CheckCircleOutlined />, color: '#00BCD4' },
-    { label: '不良总数', value: totalDefect.toLocaleString(), icon: <WarningOutlined />, color: '#FF9800' },
+    { label: '不良总数', value: totalDefect.toLocaleString(), icon: <WarningOutlined />, color: 'var(--color-warning)' },
     { label: '平均良率', value: `${avgYield}%`, icon: <FallOutlined />, color: '#9C27B0' },
   ]
 
@@ -312,17 +312,17 @@ export default function ProductionReport() {
     { title: '目标数量', dataIndex: 'target_qty', key: 'target_qty', width: 100, render: v => v.toLocaleString() },
     { title: '投入数量', dataIndex: 'total_input', key: 'total_input', width: 100, render: v => v.toLocaleString() },
     { title: '产出数量', dataIndex: 'total_output', key: 'total_output', width: 100, render: v => v.toLocaleString() },
-    { title: '来料不良', dataIndex: 'defect_material', key: 'defect_material', width: 90, render: v => v > 0 ? <span style={{ color: '#FF9800' }}>{v}</span> : '-' },
-    { title: '制程不良', dataIndex: 'defect_process', key: 'defect_process', width: 90, render: v => v > 0 ? <span style={{ color: '#F44336' }}>{v}</span> : '-' },
+    { title: '来料不良', dataIndex: 'defect_material', key: 'defect_material', width: 90, render: v => v > 0 ? <span style={{ color: 'var(--color-warning)' }}>{v}</span> : '-' },
+    { title: '制程不良', dataIndex: 'defect_process', key: 'defect_process', width: 90, render: v => v > 0 ? <span style={{ color: 'var(--color-error)' }}>{v}</span> : '-' },
     { title: '报废数', dataIndex: 'defect_scrap', key: 'defect_scrap', width: 80, render: v => v > 0 ? <span style={{ color: '#9E9E9E' }}>{v}</span> : '-' },
-    { title: '不良合计', dataIndex: 'total_defect', key: 'total_defect', width: 90, render: v => <strong style={{ color: v > 0 ? '#F44336' : 'var(--text-secondary)' }}>{v}</strong> },
+    { title: '不良合计', dataIndex: 'total_defect', key: 'total_defect', width: 90, render: v => <strong style={{ color: v > 0 ? 'var(--color-error)' : 'var(--text-secondary)' }}>{v}</strong> },
     {
       title: '良率', dataIndex: 'yield_rate', key: 'yield_rate', width: 120,
-      render: v => <Progress percent={v} size="small" strokeColor={v >= 95 ? '#52c41a' : v >= 90 ? '#faad14' : '#ff4d4f'} format={p => `${p}%`} />
+      render: v => <Progress percent={v} size="small" strokeColor={v >= 95 ? 'var(--color-success)' : v >= 90 ? 'var(--color-warning)' : 'var(--color-error)'} format={p => `${p}%`} />
     },
     {
       title: '完成率', dataIndex: 'completion_rate', key: 'completion_rate', width: 120,
-      render: v => <Progress percent={v} size="small" strokeColor={v >= 100 ? '#52c41a' : v >= 50 ? '#2196F3' : '#faad14'} format={p => `${p}%`} />
+      render: v => <Progress percent={v} size="small" strokeColor={v >= 100 ? 'var(--color-success)' : v >= 50 ? 'var(--color-primary)' : 'var(--color-warning)'} format={p => `${p}%`} />
     },
     { title: '报工工序数', dataIndex: 'process_count', key: 'process_count', width: 90 },
     { title: '工单状态', dataIndex: 'status', key: 'status', width: 90, render: v => <Tag color={statusColorMap[v]}>{v}</Tag> },
@@ -429,7 +429,7 @@ export default function ProductionReport() {
                   { title: '普工', dataIndex: 'general_count', width: 60, align: 'right', render: (v: any) => v || 0 },
                   { title: '劳务', dataIndex: 'labor_count', width: 60, align: 'right', render: (v: any) => v || 0 },
                   { title: '总人数', dataIndex: 'total_people', width: 70, align: 'right', render: (v: any) => <strong>{v || 0}</strong> },
-                  { title: '人时', dataIndex: 'man_hours', width: 80, align: 'right', render: (v: any) => <span style={{ color: '#1890ff', fontWeight: 600 }}>{Number(v || 0).toFixed(2)}h</span> },
+                  { title: '人时', dataIndex: 'man_hours', width: 80, align: 'right', render: (v: any) => <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>{Number(v || 0).toFixed(2)}h</span> },
                 ]}
               />
             ),
@@ -450,7 +450,7 @@ export default function ProductionReport() {
                   { title: '设备', dataIndex: 'device_name', width: 100, render: v => v || '-' },
                   { title: '开始时间', dataIndex: 'start_time', width: 150, render: formatDateTime },
                   { title: '恢复时间', dataIndex: 'end_time', width: 150, render: (v: any) => v ? formatDateTime(v) : '-' },
-                  { title: '持续时长', dataIndex: 'duration', width: 90, align: 'right', render: (v: any) => <span style={{ color: '#faad14', fontWeight: 600 }}>{Number(v || 0).toFixed(2)}h</span> },
+                  { title: '持续时长', dataIndex: 'duration', width: 90, align: 'right', render: (v: any) => <span style={{ color: 'var(--color-warning)', fontWeight: 600 }}>{Number(v || 0).toFixed(2)}h</span> },
                   { title: '确认人', dataIndex: 'confirm_user_name', width: 80, render: v => v || '-' },
                   { title: '异常描述', dataIndex: 'description', width: 250, render: v => v || '-' },
                 ]}
@@ -572,7 +572,7 @@ export default function ProductionReport() {
                   </Table.Summary>
                 )}
               />
-              <div style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
+              <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
                 提示：双击任意行可查看工单详细数据
               </div>
             </div>

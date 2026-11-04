@@ -16,8 +16,8 @@ const { Title, Text } = Typography
 
 // ============ 颜色方案 ============
 const deviceStatusColor: Record<string, string> = {
-  '正常': '#52c41a',
-  '维修': '#faad14',
+  '正常': 'var(--color-success)',
+  '维修': 'var(--color-warning)',
   '停用': '#d9d9d9',
 }
 const faultLevelColor: Record<string, string> = {
@@ -268,7 +268,7 @@ export default function DeviceDashboard() {
               <Statistic
                 title={<Space><HddOutlined />设备总数</Space>}
                 value={deviceTotal}
-                valueStyle={{ color: '#2196F3', fontWeight: 700 }}
+                valueStyle={{ color: 'var(--color-primary)', fontWeight: 700 }}
               />
               <div style={{ marginTop: 8, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <span>
@@ -293,7 +293,7 @@ export default function DeviceDashboard() {
               <Statistic
                 title={<Space><ExperimentOutlined />今日待点检</Space>}
                 value={todayInspectionCount}
-                valueStyle={{ color: '#FF9800', fontWeight: 700 }}
+                valueStyle={{ color: 'var(--color-warning)', fontWeight: 700 }}
                 suffix="项"
               />
               <div style={{ marginTop: 8 }}>
@@ -310,7 +310,7 @@ export default function DeviceDashboard() {
               <Statistic
                 title={<Space><WarningOutlined />当前故障</Space>}
                 value={faults.length}
-                valueStyle={{ color: faults.length > 0 ? '#F44336' : '#52c41a', fontWeight: 700 }}
+                valueStyle={{ color: faults.length > 0 ? 'var(--color-error)' : 'var(--color-success)', fontWeight: 700 }}
                 suffix="个"
               />
               <div style={{ marginTop: 8, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -426,7 +426,7 @@ export default function DeviceDashboard() {
                   return (
                     <List.Item style={{ padding: '6px 4px' }}>
                       <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Text strong style={{ fontSize: 13, color: isUrgent ? '#ff4d4f' : undefined, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        <Text strong style={{ fontSize: 13, color: isUrgent ? 'var(--color-error)' : undefined, whiteSpace: 'nowrap', flexShrink: 0 }}>
                           {item.fault_no || '-'}
                         </Text>
                         <Tag color={faultLevelColor[item.fault_level] || 'default'} style={{ margin: 0, flexShrink: 0 }}>{item.fault_level}</Tag>
@@ -481,7 +481,7 @@ export default function DeviceDashboard() {
                         </Tag>
                         <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap', flexShrink: 0 }}>
                           建议采购
-                          <Text strong style={{ color: suggest > 0 ? '#FF9800' : undefined, marginLeft: 2 }}>
+                          <Text strong style={{ color: suggest > 0 ? 'var(--color-warning)' : undefined, marginLeft: 2 }}>
                             {suggest}
                           </Text>
                           {item.unit ? ` ${item.unit}` : ''}
@@ -510,7 +510,7 @@ export default function DeviceDashboard() {
                   return (
                     <List.Item style={{ padding: '6px 4px' }}>
                       <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Text strong style={{ fontSize: 13, color: isOverdue ? '#ff4d4f' : undefined, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, flexShrink: 1 }}>
+                        <Text strong style={{ fontSize: 13, color: isOverdue ? 'var(--color-error)' : undefined, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, flexShrink: 1 }}>
                           {item.device_name || item.device_code || '-'}
                         </Text>
                         <Text type="secondary" style={{ fontSize: 12, whiteSpace: 'nowrap', flexShrink: 0 }}>

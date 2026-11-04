@@ -157,9 +157,9 @@ export default function ComplaintManagement() {
   const replyCount = data.filter((c: any) => c.require_reply === 1 || c.require_reply === '1').length
 
   const stats: StatItem[] = [
-    { label: '总客诉数', value: pagination.total, icon: <MessageOutlined />, color: '#2196F3' },
-    { label: '处理中', value: processingCount, icon: <ClockCircleOutlined />, color: '#FF9800' },
-    { label: '已关闭', value: closedCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
+    { label: '总客诉数', value: pagination.total, icon: <MessageOutlined />, color: 'var(--color-primary)' },
+    { label: '处理中', value: processingCount, icon: <ClockCircleOutlined />, color: 'var(--color-warning)' },
+    { label: '已关闭', value: closedCount, icon: <CheckCircleOutlined />, color: 'var(--color-success)' },
     { label: '要求回复数', value: replyCount, icon: <MailOutlined />, color: '#00BCD4' },
   ]
 
@@ -452,7 +452,7 @@ export default function ComplaintManagement() {
                 if (!attachments.length) return null
                 return (
                   <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    <PaperClipOutlined style={{ color: '#888', marginTop: 4 }} />
+                    <PaperClipOutlined style={{ color: 'var(--text-secondary)', marginTop: 4 }} />
                     {attachments.map((a, i) => (
                       <a key={i} href={a.url} target="_blank" rel="noopener noreferrer"
                         style={{ fontSize: 12, marginRight: 8 }}>

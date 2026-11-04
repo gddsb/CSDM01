@@ -487,7 +487,7 @@ export default function DefectManagement() {
         onPressEnter={handleSearch}
       />
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-        <span style={{ color: '#666', fontSize: 14, whiteSpace: 'nowrap' }}>是否默认</span>
+        <span style={{ color: 'var(--text-secondary)', fontSize: 14, whiteSpace: 'nowrap' }}>是否默认</span>
         <Checkbox.Group
           options={[{ label: '是', value: 1 }, { label: '否', value: 0 }]}
           value={filterDisplay}
@@ -513,10 +513,10 @@ export default function DefectManagement() {
   const scrapCount = data.filter(d => d.defect_type === '检验报废').length
 
   const stats: StatItem[] = [
-    { label: '来料不良数', value: incomingCount, icon: <ImportOutlined />, color: '#2196F3' },
-    { label: '制程不良数', value: processCount, icon: <ToolOutlined />, color: '#FF9800' },
-    { label: '检验报废数', value: scrapCount, icon: <DeleteOutlined />, color: '#F44336' },
-    { label: '总数', value: total, icon: <PlusOutlined />, color: '#4CAF50' },
+    { label: '来料不良数', value: incomingCount, icon: <ImportOutlined />, color: 'var(--color-primary)' },
+    { label: '制程不良数', value: processCount, icon: <ToolOutlined />, color: 'var(--color-warning)' },
+    { label: '检验报废数', value: scrapCount, icon: <DeleteOutlined />, color: 'var(--color-error)' },
+    { label: '总数', value: total, icon: <PlusOutlined />, color: 'var(--color-success)' },
   ]
 
   return (
@@ -687,13 +687,13 @@ export default function DefectManagement() {
                     <div style={{ marginTop: 2 }}>上传图片</div>
                   </div>
                 </Upload>
-                <div style={{ marginTop: 8, color: '#999', fontSize: 12 }}>
+                <div style={{ marginTop: 8, color: 'var(--text-secondary)', fontSize: 12 }}>
                   每种不良最多上传10张图片，图片自动命名为"不良编码+两位流水码"
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-                  {imageLoading && <div style={{ color: '#999' }}>加载中...</div>}
+                  {imageLoading && <div style={{ color: 'var(--text-secondary)' }}>加载中...</div>}
                   {!imageLoading && defectImages.length === 0 && (
-                    <div style={{ color: '#999' }}>暂无图片</div>
+                    <div style={{ color: 'var(--text-secondary)' }}>暂无图片</div>
                   )}
                   {defectImages.map(img => (
                     <div key={img.image_id} style={{ position: 'relative', width: 104, height: 104, border: '1px solid #d9d9d9', borderRadius: 6, overflow: 'hidden' }}>
@@ -718,7 +718,7 @@ export default function DefectManagement() {
                 </div>
               </div>
             ) : (
-              <div style={{ color: '#999', padding: '12px 0' }}>
+              <div style={{ color: 'var(--text-secondary)', padding: '12px 0' }}>
                 <PictureOutlined /> 保存后可上传不良图片
               </div>
             )}

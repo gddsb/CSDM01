@@ -16,7 +16,7 @@ export function ReportStatsBar({ items, rightSlot }: ReportStatsBarProps) {
   return (
     <>
       <div style={{
-        marginBottom: 8, fontWeight: 'bold', color: '#333',
+        marginBottom: 8, fontWeight: 'bold', color: 'var(--text-primary)',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <span>报工单统计（当前报工单汇总）</span>
@@ -25,7 +25,7 @@ export function ReportStatsBar({ items, rightSlot }: ReportStatsBarProps) {
       <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 16, overflowX: 'auto', paddingBottom: 4 }}>
         {items.map((item) => (
           <div key={item.label} style={{ flex: '1 1 0', minWidth: 0, whiteSpace: 'nowrap', display: 'flex', alignItems: 'baseline', gap: 4 }}>
-            <span style={{ color: '#666', fontSize: 13 }}>{item.dynamicLabel ?? item.label}</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{item.dynamicLabel ?? item.label}</span>
             <span style={{ fontSize: 18, fontWeight: 'bold', color: item.color }}>{item.value}</span>
           </div>
         ))}

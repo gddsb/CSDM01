@@ -133,9 +133,9 @@ export default function MicrobeInspection() {
 
   const stats = useMemo(() => {
     return [
-      { label: '总检验数', value: data.length, icon: <ExperimentOutlined />, color: '#2196F3' },
-      { label: '成品检验', value: data.filter(i => i.object_type === '成品检验').length, icon: <SafetyCertificateOutlined />, color: '#4CAF50' },
-      { label: '来料检验', value: data.filter(i => i.object_type === '来料检验').length, icon: <WarningOutlined />, color: '#FF9800' },
+      { label: '总检验数', value: data.length, icon: <ExperimentOutlined />, color: 'var(--color-primary)' },
+      { label: '成品检验', value: data.filter(i => i.object_type === '成品检验').length, icon: <SafetyCertificateOutlined />, color: 'var(--color-success)' },
+      { label: '来料检验', value: data.filter(i => i.object_type === '来料检验').length, icon: <WarningOutlined />, color: 'var(--color-warning)' },
       { label: '合格率', value: data.length > 0 ? `${Math.round((data.filter(i => i.result === '合格').length / data.length) * 100)}%` : '0%', icon: <CheckCircleOutlined />, color: '#00BCD4' },
     ]
   }, [data])
@@ -434,7 +434,7 @@ export default function MicrobeInspection() {
             {status === '审核中' && (
               <>
                 <Popconfirm title="确认审核通过？" onConfirm={() => handleApprove(record)} okText="确认" cancelText="取消">
-                  <Button type="link" size="small" style={{ color: '#52c41a' }}>审核通过</Button>
+                  <Button type="link" size="small" style={{ color: 'var(--color-success)' }}>审核通过</Button>
                 </Popconfirm>
                 <Popconfirm title="确认驳回？驳回后将转为加严检验" onConfirm={() => handleReject(record)} okText="确认" cancelText="取消">
                   <Button type="link" size="small" danger>驳回</Button>
@@ -485,7 +485,7 @@ export default function MicrobeInspection() {
         onChange={setResultFilter}
       />
       <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-        <span style={{ color: '#888', fontSize: 13, marginRight: 6, whiteSpace: 'nowrap' }}>状态：</span>
+        <span style={{ color: 'var(--text-secondary)', fontSize: 13, marginRight: 6, whiteSpace: 'nowrap' }}>状态：</span>
         <Checkbox.Group
           value={statusFilter}
           onChange={v => setStatusFilter(v as string[])}

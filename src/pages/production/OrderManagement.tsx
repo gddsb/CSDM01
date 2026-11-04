@@ -154,10 +154,10 @@ export default function OrderManagement() {
   const closedCount = data.filter(o => o.status === '完工').length
 
   const stats = [
-    { label: '总订单数', value: total, icon: <FileTextOutlined />, color: '#2196F3' },
+    { label: '总订单数', value: total, icon: <FileTextOutlined />, color: 'var(--color-primary)' },
     { label: '开立', value: pendingCount, icon: <ClockCircleOutlined />, color: '#9E9E9E' },
-    { label: '开工', value: startedCount, icon: <SendOutlined />, color: '#FF9800' },
-    { label: '完工', value: closedCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
+    { label: '开工', value: startedCount, icon: <SendOutlined />, color: 'var(--color-warning)' },
+    { label: '完工', value: closedCount, icon: <CheckCircleOutlined />, color: 'var(--color-success)' },
   ]
 
   const handleRelease = (r) => {
@@ -797,19 +797,19 @@ export default function OrderManagement() {
               <Descriptions.Item label="产品名称" span={3}>{currentOrder.material_name}</Descriptions.Item>
               <Descriptions.Item label="计划数量">{(currentOrder.planned_qty || 0).toLocaleString()}</Descriptions.Item>
               <Descriptions.Item label="完工数量">
-                <span style={{ color: '#52c41a' }}>
+                <span style={{ color: 'var(--color-success)' }}>
                   {(orderSummary ? orderSummary.totalFinished : (currentOrder.finished_qty || 0)).toLocaleString()}
                 </span>
               </Descriptions.Item>
               <Descriptions.Item label="不良总数">
-                <span style={{ color: '#ff4d4f' }}>
+                <span style={{ color: 'var(--color-error)' }}>
                   {orderSummary
                     ? orderSummary.totalDefect.toLocaleString()
                     : Math.max(0, (currentOrder.planned_qty || 0) - (currentOrder.finished_qty || 0)).toLocaleString()}
                 </span>
               </Descriptions.Item>
               <Descriptions.Item label="合格率">
-                <span style={{ color: '#52c41a' }}>
+                <span style={{ color: 'var(--color-success)' }}>
                   {orderSummary
                     ? (orderSummary.totalInput > 0
                         ? Math.min(100, ((orderSummary.totalFinished / orderSummary.totalInput) * 100)).toFixed(2)
@@ -840,8 +840,8 @@ export default function OrderManagement() {
                 expandedRowRender: (record) => {
                   const detail = reportOrderDetails[record.report_order_id]
                   const isLoading = loadingDetails[record.report_order_id]
-                  if (isLoading) return <div style={{ padding: 16, textAlign: 'center', color: '#999' }}>加载中...</div>
-                  if (!detail) return <div style={{ padding: 16, textAlign: 'center', color: '#999' }}>暂无数据</div>
+                  if (isLoading) return <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-secondary)' }}>加载中...</div>
+                  if (!detail) return <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-secondary)' }}>暂无数据</div>
 
                   const stats = calcReportOrderStats(detail)
                   const {
@@ -867,56 +867,56 @@ export default function OrderManagement() {
                   return (
                     <div style={{ padding: '8px 12px' }}>
                       <Row style={{ marginBottom: 8, display: 'flex', flexWrap: 'nowrap', gap: 4 }}>
-                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: '#fafafa', borderRadius: 4 }}>
-                          <span style={{ fontSize: 11, color: '#999', marginRight: 4 }}>总投入</span>
+                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: 'var(--bg-card)', borderRadius: 4 }}>
+                          <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginRight: 4 }}>总投入</span>
                           <span style={{ fontSize: 13, fontWeight: 600 }}>{allInputQty.toLocaleString()}</span>
                         </div>
-                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: '#fafafa', borderRadius: 4 }}>
-                          <span style={{ fontSize: 11, color: '#999', marginRight: 4 }}>总产出</span>
-                          <span style={{ fontSize: 13, fontWeight: 600, color: '#52c41a' }}>{allOutputQty.toLocaleString()}</span>
+                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: 'var(--bg-card)', borderRadius: 4 }}>
+                          <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginRight: 4 }}>总产出</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-success)' }}>{allOutputQty.toLocaleString()}</span>
                         </div>
-                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: '#fafafa', borderRadius: 4 }}>
-                          <span style={{ fontSize: 11, color: '#999', marginRight: 4 }}>总不良</span>
-                          <span style={{ fontSize: 13, fontWeight: 600, color: '#ff4d4f' }}>{allDefectQty.toLocaleString()}</span>
+                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: 'var(--bg-card)', borderRadius: 4 }}>
+                          <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginRight: 4 }}>总不良</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-error)' }}>{allDefectQty.toLocaleString()}</span>
                         </div>
-                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: '#fafafa', borderRadius: 4 }}>
-                          <span style={{ fontSize: 11, color: '#999', marginRight: 4 }}>不良率</span>
-                          <span style={{ fontSize: 13, fontWeight: 600, color: allDefectQty > 0 ? '#ff4d4f' : 'inherit' }}>{allDefectRate}%</span>
+                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: 'var(--bg-card)', borderRadius: 4 }}>
+                          <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginRight: 4 }}>不良率</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: allDefectQty > 0 ? 'var(--color-error)' : 'inherit' }}>{allDefectRate}%</span>
                         </div>
-                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: '#fafafa', borderRadius: 4 }}>
-                          <span style={{ fontSize: 11, color: '#999', marginRight: 4 }}>来料不良</span>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: allIncomingQty > 0 ? '#ff4d4f' : 'inherit' }}>
-                            {allIncomingQty.toLocaleString()}<span style={{ fontSize: 10, color: '#999' }}>({allIncomingRate}%)</span>
+                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: 'var(--bg-card)', borderRadius: 4 }}>
+                          <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginRight: 4 }}>来料不良</span>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: allIncomingQty > 0 ? 'var(--color-error)' : 'inherit' }}>
+                            {allIncomingQty.toLocaleString()}<span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>({allIncomingRate}%)</span>
                           </span>
                         </div>
-                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: '#fafafa', borderRadius: 4 }}>
-                          <span style={{ fontSize: 11, color: '#999', marginRight: 4 }}>制程不良</span>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: allProcessQty > 0 ? '#ff4d4f' : 'inherit' }}>
-                            {allProcessQty.toLocaleString()}<span style={{ fontSize: 10, color: '#999' }}>({allProcessRate}%)</span>
+                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: 'var(--bg-card)', borderRadius: 4 }}>
+                          <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginRight: 4 }}>制程不良</span>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: allProcessQty > 0 ? 'var(--color-error)' : 'inherit' }}>
+                            {allProcessQty.toLocaleString()}<span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>({allProcessRate}%)</span>
                           </span>
                         </div>
-                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: '#fafafa', borderRadius: 4 }}>
-                          <span style={{ fontSize: 11, color: '#999', marginRight: 4 }}>检验报废</span>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: allScrapQty > 0 ? '#ff4d4f' : 'inherit' }}>
-                            {allScrapQty.toLocaleString()}<span style={{ fontSize: 10, color: '#999' }}>({allScrapRate}%)</span>
+                        <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: 'var(--bg-card)', borderRadius: 4 }}>
+                          <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginRight: 4 }}>检验报废</span>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: allScrapQty > 0 ? 'var(--color-error)' : 'inherit' }}>
+                            {allScrapQty.toLocaleString()}<span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>({allScrapRate}%)</span>
                           </span>
                         </div>
                       </Row>
                       <Row style={{ marginBottom: 8, display: 'flex', flexWrap: 'nowrap', gap: 4 }}>
                         <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: '#f0f5ff', borderRadius: 4 }}>
-                          <span style={{ fontSize: 11, color: '#999', marginRight: 4 }}>异常工时</span>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: totalExceptionHours > 0 ? '#faad14' : 'inherit' }}>
-                            {totalExceptionHours.toFixed(2)}<span style={{ fontSize: 10, color: '#999' }}>h</span>
+                          <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginRight: 4 }}>异常工时</span>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: totalExceptionHours > 0 ? 'var(--color-warning)' : 'inherit' }}>
+                            {totalExceptionHours.toFixed(2)}<span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>h</span>
                           </span>
                         </div>
                         <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: '#f0f5ff', borderRadius: 4 }}>
-                          <span style={{ fontSize: 11, color: '#999', marginRight: 4 }}>总人时</span>
+                          <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginRight: 4 }}>总人时</span>
                           <span style={{ fontSize: 12, fontWeight: 600 }}>
-                            {totalManHours.toFixed(2)}<span style={{ fontSize: 10, color: '#999' }}>h</span>
+                            {totalManHours.toFixed(2)}<span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>h</span>
                           </span>
                         </div>
                         <div style={{ flex: 1, minWidth: 0, padding: '4px 6px', background: '#f0f5ff', borderRadius: 4 }}>
-                          <span style={{ fontSize: 11, color: '#999', marginRight: 4 }}>投入人次</span>
+                          <span style={{ fontSize: 11, color: 'var(--text-secondary)', marginRight: 4 }}>投入人次</span>
                           <span style={{ fontSize: 12, fontWeight: 600 }}>{totalPeople}</span>
                         </div>
                       </Row>
@@ -931,17 +931,17 @@ export default function OrderManagement() {
                           { title: '工序名称', dataIndex: 'process_name', key: 'process_name', width: 70, fixed: 'left' as const },
                           { title: '投入数量', dataIndex: 'inputQty', key: 'inputQty', width: 50, align: 'right', render: (v: any) => (v || 0).toLocaleString() },
                           { title: '产出数量', dataIndex: 'outputQty', key: 'outputQty', width: 50, align: 'right', render: (v: any) => (v || 0).toLocaleString() },
-                          { title: '来料不良', dataIndex: 'incomingQty', key: 'incomingQty', width: 55, align: 'right', render: (v: any) => <span style={{ color: v > 0 ? '#ff4d4f' : 'inherit' }}>{(v || 0).toLocaleString()}</span> },
+                          { title: '来料不良', dataIndex: 'incomingQty', key: 'incomingQty', width: 55, align: 'right', render: (v: any) => <span style={{ color: v > 0 ? 'var(--color-error)' : 'inherit' }}>{(v || 0).toLocaleString()}</span> },
                           { title: '来料不良率', dataIndex: 'incomingRate', key: 'incomingRate', width: 60, align: 'right', render: (v: any) => <span>{v}%</span> },
-                          { title: '制程不良', dataIndex: 'processQty', key: 'processQty', width: 55, align: 'right', render: (v: any) => <span style={{ color: v > 0 ? '#ff4d4f' : 'inherit' }}>{(v || 0).toLocaleString()}</span> },
+                          { title: '制程不良', dataIndex: 'processQty', key: 'processQty', width: 55, align: 'right', render: (v: any) => <span style={{ color: v > 0 ? 'var(--color-error)' : 'inherit' }}>{(v || 0).toLocaleString()}</span> },
                           { title: '制程不良率', dataIndex: 'processRate', key: 'processRate', width: 60, align: 'right', render: (v: any) => <span>{v}%</span> },
-                          { title: '工序不良', dataIndex: 'totalDefectQty', key: 'totalDefectQty', width: 55, align: 'right', render: (v: any) => <span style={{ color: v > 0 ? '#ff4d4f' : 'inherit' }}>{(v || 0).toLocaleString()}</span> },
+                          { title: '工序不良', dataIndex: 'totalDefectQty', key: 'totalDefectQty', width: 55, align: 'right', render: (v: any) => <span style={{ color: v > 0 ? 'var(--color-error)' : 'inherit' }}>{(v || 0).toLocaleString()}</span> },
                           { title: '不良率', dataIndex: 'defectRate', key: 'defectRate', width: 55, align: 'right', render: (v: any) => <span>{v}%</span> },
                         ]}
                       />
                       {exceptions.length > 0 && (
                         <>
-                          <div style={{ fontSize: 12, fontWeight: 600, margin: '12px 0 6px', color: '#666' }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, margin: '12px 0 6px', color: 'var(--text-secondary)' }}>
                             异常工时记录 ({exceptions.length})
                           </div>
                           <Table
@@ -956,7 +956,7 @@ export default function OrderManagement() {
                               { title: '设备', dataIndex: 'device_name', key: 'device_name', width: 100, render: v => v || '-' },
                               { title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 150, render: formatDateTime },
                               { title: '恢复时间', dataIndex: 'end_time', key: 'end_time', width: 150, render: v => v ? formatDateTime(v) : '-' },
-                              { title: '持续时长', dataIndex: 'duration', key: 'duration', width: 80, align: 'right', render: (v: any) => <span style={{ color: '#faad14', fontWeight: 600 }}>{Number(v || 0).toFixed(2)}h</span> },
+                              { title: '持续时长', dataIndex: 'duration', key: 'duration', width: 80, align: 'right', render: (v: any) => <span style={{ color: 'var(--color-warning)', fontWeight: 600 }}>{Number(v || 0).toFixed(2)}h</span> },
                               { title: '确认人', dataIndex: 'confirm_user_name', key: 'confirm_user_name', width: 80, render: v => v || '-' },
                               { title: '异常描述', dataIndex: 'description', key: 'description', render: v => v || '-' },
                             ]}
@@ -965,7 +965,7 @@ export default function OrderManagement() {
                       )}
                       {manpowerRecords.length > 0 && (
                         <>
-                          <div style={{ fontSize: 12, fontWeight: 600, margin: '12px 0 6px', color: '#666' }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, margin: '12px 0 6px', color: 'var(--text-secondary)' }}>
                             人员工时记录 ({manpowerRecords.length})
                           </div>
                           <Table
@@ -984,7 +984,7 @@ export default function OrderManagement() {
                               { title: '普工', dataIndex: 'general_count', key: 'general_count', width: 60, align: 'right', render: (v: any) => v || 0 },
                               { title: '劳务', dataIndex: 'labor_count', key: 'labor_count', width: 60, align: 'right', render: (v: any) => v || 0 },
                               { title: '总人数', dataIndex: 'total_people', key: 'total_people', width: 70, align: 'right', render: (v: any) => <strong>{v || 0}</strong> },
-                              { title: '人时', dataIndex: 'man_hours', key: 'man_hours', width: 80, align: 'right', render: (v: any) => <span style={{ color: '#1890ff', fontWeight: 600 }}>{Number(v || 0).toFixed(2)}h</span> },
+                              { title: '人时', dataIndex: 'man_hours', key: 'man_hours', width: 80, align: 'right', render: (v: any) => <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>{Number(v || 0).toFixed(2)}h</span> },
                               { title: '记录人', dataIndex: 'record_user_name', key: 'record_user_name', width: 80, render: v => v || '-' },
                               { title: '备注', dataIndex: 'remarks', key: 'remarks', render: v => v || '-' },
                             ]}
@@ -1032,7 +1032,7 @@ export default function OrderManagement() {
       >
         <div style={{ maxHeight: '50vh', overflowY: 'auto' }}>
           {finishCheckItems.map((it: any, i: number) => {
-            const colorMap: Record<string, string> = { pass: '#52c41a', warn: '#faad14', block: '#ff4d4f' }
+            const colorMap: Record<string, string> = { pass: 'var(--color-success)', warn: 'var(--color-warning)', block: 'var(--color-error)' }
             const iconMap: Record<string, string> = { pass: '✅', warn: '⚠️', block: '❌' }
             return (
               <div key={i} style={{ marginBottom: 8 }}>
@@ -1040,7 +1040,7 @@ export default function OrderManagement() {
                   {iconMap[it.level]} {it.label}
                 </div>
                 {it.detail && (
-                  <div style={{ fontSize: 12, color: '#999', marginTop: 2, lineHeight: 1.4 }}>{it.detail}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, lineHeight: 1.4 }}>{it.detail}</div>
                 )}
               </div>
             )
@@ -1056,7 +1056,7 @@ export default function OrderManagement() {
               marginTop: 12, padding: '8px 12px',
               background: hasBlock ? '#fff1f0' : '#f6ffed',
               borderRadius: 6, fontSize: 13,
-              color: hasBlock ? '#ff4d4f' : '#52c41a',
+              color: hasBlock ? 'var(--color-error)' : 'var(--color-success)',
             }}>
               {hasBlock
                 ? `❌ ${passCount} 通过 · ${warnCount} 警告 · ${blockCount} 阻断，不能完工`
@@ -1085,7 +1085,7 @@ export default function OrderManagement() {
             fontSize: 13, color: '#555', lineHeight: 1.7,
           }}>
             <div><b>{startingOrder.material_code}</b> · {startingOrder.material_name}</div>
-            <div style={{ color: '#888', fontSize: 12 }}>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
               计划数量 {Number(startingOrder.planned_qty || 0).toLocaleString()} ·
               已完工 {Number(startingOrder.finished_qty || 0).toLocaleString()}
             </div>

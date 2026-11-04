@@ -101,11 +101,11 @@ export default function InspectionStandard() {
   const effectiveCount = data.filter(s => s.status === '生效').length
 
   const stats: StatItem[] = [
-    { label: '标准总数', value: pagination.total, icon: <FileProtectOutlined />, color: '#2196F3' },
+    { label: '标准总数', value: pagination.total, icon: <FileProtectOutlined />, color: 'var(--color-primary)' },
     { label: '材料检验', value: materialCount, icon: <AppstoreOutlined />, color: '#00BCD4' },
-    { label: '产品检验', value: productCount, icon: <SolutionOutlined />, color: '#FF9800' },
+    { label: '产品检验', value: productCount, icon: <SolutionOutlined />, color: 'var(--color-warning)' },
     { label: '微生物检验', value: microbeCount, icon: <SolutionOutlined />, color: '#9C27B0' },
-    { label: '生效中', value: effectiveCount, icon: <CheckCircleOutlined />, color: '#4CAF50' },
+    { label: '生效中', value: effectiveCount, icon: <CheckCircleOutlined />, color: 'var(--color-success)' },
   ]
 
   const handleAdd = () => navigate('/quality/standards/new')
@@ -350,7 +350,7 @@ export default function InspectionStandard() {
               </Col>
               <Col>
                 <Space size="middle">
-                  <span style={{ whiteSpace: 'nowrap', color: '#666' }}>状态：</span>
+                  <span style={{ whiteSpace: 'nowrap', color: 'var(--text-secondary)' }}>状态：</span>
                   <Checkbox.Group
                     value={statusFilter}
                     onChange={(v: any) => setStatusFilter(v as string[])}
@@ -411,9 +411,9 @@ export default function InspectionStandard() {
         {current && (
           <>
             {versions.length > 1 && (
-              <div style={{ marginBottom: 16, padding: '8px 12px', background: '#fafafa', borderRadius: 4 }}>
+              <div style={{ marginBottom: 16, padding: '8px 12px', background: 'var(--bg-card)', borderRadius: 4 }}>
                 <Space wrap>
-                  <span style={{ color: '#666', fontSize: 13 }}>版本切换：</span>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>版本切换：</span>
                   {versions.map((v) => {
                     const isActive = v.standard_id === current?.standard_id
                     return (
