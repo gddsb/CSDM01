@@ -59,6 +59,8 @@ interface Props {
   uploadMode?: 'immediate' | 'blob'
   /** blob 模式专用：每次选完图（压缩+水印后）emit 出 File[]，外部 submit 时拼 multipart 用 */
   onFilesReady?: (files: File[]) => void
+  /** 只读模式：隐藏 "+" 上传按钮 + 隐藏删除选项，点击缩略图仍可全屏预览 */
+  readOnly?: boolean
 }
 
 /** 重置隐藏 input 的 value —— 让用户选同一个文件也能再次触发 onChange */
@@ -108,6 +110,7 @@ export function MobileImageUploader({
   timeout = 60000, onLog,
   uploadMode = 'immediate',
   onFilesReady,
+  readOnly = false,
 }: Props) {
   const [items, setItems] = useState<ImageUploadItem[]>(() => toItems(value))
 
@@ -275,11 +278,12 @@ export function MobileImageUploader({
   // ========== 缩略图点击：ActionSheet 选"预览/删除" ==========
   const handleThumbClick = useCallback((item: ImageUploadItem) => {
     const rawUrl = getRawUrl(item)
+    const actions: { text: string; key: string }[] = [
+      { text: '👁️ 预览', key: 'preview' },
+    ]
+    if (!readOnly && deleteUrl) actions.push({ text: '🗑️ 删除', key: 'delete' })
     ActionSheet.show({
-      actions: [
-        { text: '👁️ 预览', key: 'preview' },
-        ...(deleteUrl ? [{ text: '🗑️ 删除', key: 'delete' }] : []),
-      ],
+      actions,
       cancelText: '取消',
       closeOnAction: true,
       onAction: (action) => {
@@ -296,7 +300,7 @@ export function MobileImageUploader({
         }
       },
     })
-  }, [items, deleteUrl, handleDelete])
+  }, [items, deleteUrl, handleDelete, readOnly])
 
   return (
     <div>
@@ -352,7 +356,7 @@ export function MobileImageUploader({
           </div>
         ))}
 
-        {remaining > 0 && (
+        {!readOnly && remaining > 0 && (
           <div
             onClick={handleAddClick}
             style={{

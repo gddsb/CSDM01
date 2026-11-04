@@ -96,6 +96,10 @@ export default function MobileDeviceFault() {
   const [approveOpinion, setApproveOpinion] = useState('')
   const [closeRemark, setCloseRemark] = useState('')
 
+  // 详情照片（从服务器拉取，区别于维修表单的 repairImages 临时编辑）
+  const [detailFaultImgs, setDetailFaultImgs] = useState<string[]>([])
+  const [detailRepairImgs, setDetailRepairImgs] = useState<string[]>([])
+
   // 顶部统计（独立于 tab 过滤，全量聚合）
   const [stats, setStats] = useState({ pending: 0, repairing: 0, approving: 0, closed: 0, urgent: 0, total: 0 })
 
@@ -134,6 +138,22 @@ export default function MobileDeviceFault() {
     } catch { /* 统计失败不阻断列表 */ }
   }
   useEffect(() => { loadStats() }, [])
+
+  // ===== 详情照片加载 =====
+  const loadDetailImages = async (faultId: number) => {
+    try {
+      const r: any = await api.get(`/basic/device-faults/${faultId}/images`)
+      if (r.success !== false) {
+        const list: any[] = r.data?.list || r.data || []
+        setDetailFaultImgs(list.filter(i => i.image_type !== 'repair').map(i => i.image_url))
+        setDetailRepairImgs(list.filter(i => i.image_type === 'repair').map(i => i.image_url))
+      }
+    } catch { /* 图片加载失败不阻断详情 */ }
+  }
+  useEffect(() => {
+    if (selected) loadDetailImages(selected.fault_id)
+    else { setDetailFaultImgs([]); setDetailRepairImgs([]) }
+  }, [selected?.fault_id])
 
   // 搜索框 debounce：停下 500ms 自动查
   useDebounceEffect(keyword, (v) => {
@@ -452,6 +472,8 @@ export default function MobileDeviceFault() {
           approveResult={approveResult} setApproveResult={setApproveResult}
           approveOpinion={approveOpinion} setApproveOpinion={setApproveOpinion}
           closeRemark={closeRemark} setCloseRemark={setCloseRemark}
+          detailFaultImgs={detailFaultImgs} setDetailFaultImgs={setDetailFaultImgs}
+          detailRepairImgs={detailRepairImgs} setDetailRepairImgs={setDetailRepairImgs}
           onAssign={onAssign} onRepair={onRepair} onApprove={onApprove} onClose={onClose}
         />}
           closeOnMaskClick onMaskClick={() => setSelected(null)}
@@ -529,6 +551,8 @@ interface FaultDetailProps {
   approveOpinion: string; setApproveOpinion: (v: string) => void
   closeRemark: string; setCloseRemark: (v: string) => void
   onAssign: () => void; onRepair: () => void; onApprove: () => void; onClose: () => void
+  detailFaultImgs: string[]; setDetailFaultImgs: (v: string[]) => void
+  detailRepairImgs: string[]; setDetailRepairImgs: (v: string[]) => void
 }
 
 function FaultDetail(p: FaultDetailProps) {
@@ -655,6 +679,35 @@ function FaultDetail(p: FaultDetailProps) {
         <Section title="📝 维修结果">
           {f.fault_cause ? <DetailLine label="原因">{f.fault_cause}</DetailLine> : <DetailLine label="原因">—</DetailLine>}
           {f.repair_solution ? <DetailLine label="方案">{f.repair_solution}</DetailLine> : <DetailLine label="方案">—</DetailLine>}
+        </Section>
+      )}
+
+      {/* ===== 照片区 ===== */}
+      {/* 故障照片：待派工可编辑，其他状态只读 */}
+      {(p.detailFaultImgs.length > 0 || f.status === '待派工') && (
+        <Section title="📷 故障现场照片">
+          <MobileImageUploader
+            value={p.detailFaultImgs}
+            onChange={p.setDetailFaultImgs}
+            uploadUrl={`/basic/device-faults/${f.fault_id}/images`}
+            deleteUrl={(rawUrl: string) => `/basic/device-faults/${f.fault_id}/images?path=${encodeURIComponent(rawUrl)}`}
+            maxCount={6}
+            readOnly={f.status !== '待派工'}
+          />
+        </Section>
+      )}
+
+      {/* 维修后照片：维修中可编辑，其他状态只读 */}
+      {(p.detailRepairImgs.length > 0 || f.status === '维修中') && (
+        <Section title="🔧 维修后照片">
+          <MobileImageUploader
+            value={p.detailRepairImgs}
+            onChange={p.setDetailRepairImgs}
+            uploadUrl={`/basic/device-faults/${f.fault_id}/images`}
+            deleteUrl={(rawUrl: string) => `/basic/device-faults/${f.fault_id}/images?path=${encodeURIComponent(rawUrl)}`}
+            maxCount={6}
+            readOnly={f.status !== '维修中'}
+          />
         </Section>
       )}
     </div>

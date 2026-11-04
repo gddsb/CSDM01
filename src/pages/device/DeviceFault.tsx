@@ -117,7 +117,7 @@ export default function DeviceFault() {
   const [faultNo, setFaultNo] = useState<string | undefined>(undefined)
   const [deviceName, setDeviceName] = useState<string | undefined>(undefined)
   const [levelFilter, setLevelFilter] = useState<string | undefined>(undefined)
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
+  const [statusFilters, setStatusFilters] = useState<string[]>([])
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(null)
   const [monthQuick, setMonthQuick] = useState<string | undefined>(undefined)
   const [rangeWarn, setRangeWarn] = useState(false)
@@ -175,7 +175,7 @@ export default function DeviceFault() {
       if (faultNo) params.fault_no = faultNo
       if (deviceName) params.device_name = deviceName
       if (levelFilter) params.fault_level = levelFilter
-      if (statusFilter) params.status = statusFilter
+      if (statusFilters.length) params.status = statusFilters.join(',')
       if (dateRange && dateRange[0]) params.start_date = dateRange[0].format('YYYY-MM-DD')
       if (dateRange && dateRange[1]) params.end_date = dateRange[1].format('YYYY-MM-DD')
       const res = await api.get('/basic/device-faults', { params })
@@ -197,7 +197,7 @@ export default function DeviceFault() {
     } finally {
       setLoading(false)
     }
-  }, [pagination.current, pagination.pageSize, faultNo, deviceName, levelFilter, statusFilter, dateRange, message])
+  }, [pagination.current, pagination.pageSize, faultNo, deviceName, levelFilter, statusFilters, dateRange, message])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -251,7 +251,7 @@ export default function DeviceFault() {
     setFaultNo(undefined)
     setDeviceName(undefined)
     setLevelFilter(undefined)
-    setStatusFilter(undefined)
+    setStatusFilters([])
     setMonthQuick(undefined)
     setDateRange(null)
     setPagination(p => ({ ...p, current: 1 }))
@@ -584,21 +584,11 @@ export default function DeviceFault() {
   const filterNode = (
     <Space wrap style={{ width: '100%' }} size={[8, 8]} align="center">
       <Input
-        placeholder="故障编号"
-        allowClear
-        prefix={<SearchOutlined />}
-        style={{ width: 160 }}
-        value={faultNo}
-        onChange={(e) => setFaultNo(e.target.value || undefined)}
-        onPressEnter={() => { setPagination(p => ({ ...p, current: 1 })); fetchData() }}
-      />
-      <Input
         placeholder="设备名称"
         allowClear
         style={{ width: 150 }}
         value={deviceName}
-        onChange={(e) => setDeviceName(e.target.value || undefined)}
-        onPressEnter={() => { setPagination(p => ({ ...p, current: 1 })); fetchData() }}
+        onChange={(e) => { setDeviceName(e.target.value || undefined); setPagination(p => ({ ...p, current: 1 })) }}
       />
       <Select
         placeholder="故障等级"
@@ -606,15 +596,17 @@ export default function DeviceFault() {
         style={{ width: 120 }}
         options={LEVEL_OPTIONS}
         value={levelFilter}
-        onChange={setLevelFilter}
+        onChange={(v) => { setLevelFilter(v); setPagination(p => ({ ...p, current: 1 })) }}
       />
       <Select
-        placeholder="状态"
+        mode="multiple"
+        placeholder="状态（可多选）"
         allowClear
-        style={{ width: 120 }}
+        maxTagCount="responsive"
+        style={{ minWidth: 180 }}
         options={STATUS_OPTIONS}
-        value={statusFilter}
-        onChange={setStatusFilter}
+        value={statusFilters}
+        onChange={(v) => { setStatusFilters(v as string[]); setPagination(p => ({ ...p, current: 1 })) }}
       />
       <Select
         placeholder="快速时间"
@@ -624,8 +616,6 @@ export default function DeviceFault() {
         onChange={handleMonthQuick}
         options={MONTH_QUICK_OPTIONS}
       />
-      <RangePicker style={{ width: 240 }} value={dateRange} onChange={handleRangeChange} />
-      <Button type="primary" icon={<SearchOutlined />} onClick={() => { setPagination(p => ({ ...p, current: 1 })); fetchData() }}>查询</Button>
       <Button icon={<ReloadOutlined />} onClick={handleReset}>重置</Button>
     </Space>
   )
