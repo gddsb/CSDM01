@@ -10,14 +10,14 @@ async function main() {
   console.log('=== 存量补算 net_hours / net_duration 开始 ===')
 
   const all = await ReportOrder.findAll({
-    attributes: ['report_order_id', 'report_order_no', 'status'],
+    attributes: ['report_order_id', 'report_no', 'status'],
   })
   console.log(`共 ${all.length} 条报工单待处理`)
 
   let ok = 0, skip = 0, fail = 0
   for (const ro of all as any[]) {
     const id = ro.getDataValue('report_order_id')
-    const no = ro.getDataValue('report_order_no')
+    const no = ro.getDataValue('report_no')
     try {
       await recalcNetForReport(id)
       ok++
