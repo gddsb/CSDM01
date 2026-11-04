@@ -65,6 +65,11 @@ const ManpowerRecord = sequelize.define('ManpowerRecord', {
     comment: '人时(hours×人数, MySQL STORED自动计算)',
     set() { /* 只读：DB STORED 自动算 */ },
   },
+  net_hours: {
+    type: DataTypes.DECIMAL(10, 2),
+    defaultValue: 0,
+    comment: '净工时（小时，扣除休息时间后由后端 Service 写入）',
+  },
   remarks: {
     type: DataTypes.STRING(500),
     comment: '备注',

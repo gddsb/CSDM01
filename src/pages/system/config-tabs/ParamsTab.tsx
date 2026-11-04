@@ -55,32 +55,6 @@ export default function ParamsTab({ form, loading, saving, lineOptions, handleSa
         </Row>
         <div style={{ borderTop: '1px dashed var(--border-color)', margin: '8px 0 20px' }} />
 
-        <SectionTitle icon={<ToolOutlined />} title="生产配置" desc="生产相关默认参数" />
-        <Row gutter={24}>
-          <Col span={12}>
-            <Form.Item name="default_line" label="默认产线">
-              <Select
-                placeholder="请选择默认产线"
-                options={lineOptions}
-                allowClear
-                showSearch
-                optionFilterProp="label"
-              />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item name="standard_hours" label="标准工时" rules={[{ required: true, message: '请输入标准工时' }]}>
-              <InputNumber min={1} max={24} addonAfter="h" style={{ width: '100%' }} placeholder="请输入标准工时" />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item name="shift_setting" label="班次设置" rules={[{ required: true, message: '请选择班次' }]}>
-              <Select mode="multiple" placeholder="请选择班次（默认白班）" options={shiftOptions} />
-            </Form.Item>
-          </Col>
-        </Row>
-        <div style={{ borderTop: '1px dashed var(--border-color)', margin: '8px 0 20px' }} />
-
         <SectionTitle icon={<SafetyOutlined />} title="质量配置" desc="质量检验默认参数" />
         <Row gutter={24}>
           <Col span={12}>

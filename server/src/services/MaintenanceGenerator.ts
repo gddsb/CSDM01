@@ -88,10 +88,31 @@ export async function generateRecords(body: any) {
     // 5. 计算每种模式的 period_keys（expected 全集）
     const dailyKeys = dailyPeriodKeys(yr, mo)
     const weekKeys = weeklyPeriodKeys(yr, mo)
+
+    // 5a. 查 dic_holiday 过滤掉休息日（daily 模式）
+    // 只有 daily 模式按具体日期跳过；weekly/monthly 不受影响
+    const holidaySet = new Set<string>()  // 被跳过的日期字符串 (YYYY-MM-DD)
+    try {
+      const DicHoliday = (await import('../models/DicHoliday.js')).default
+      const holidays = await DicHoliday.findAll({
+        where: sequelize.where(
+          sequelize.fn('DATE_FORMAT', sequelize.col('holiday_date'), '%Y-%m'),
+          `${String(yr).padStart(4, '0')}-${String(mo).padStart(2, '0')}`,
+        ),
+        attributes: ['holiday_date', 'is_workday'],
+      })
+      for (const h of holidays) {
+        if (h.getDataValue('is_workday')) continue  // 调休上班日，不跳过
+        const d = h.getDataValue('holiday_date')
+        holidaySet.add(dateOnlyStr(new Date(d)))
+      }
+    } catch { /* dic_holiday 表不存在时静默 */ }
+    const filteredDailyKeys = dailyKeys.filter(pk => !holidaySet.has(pk))
+
     // 本月 + skipPast → daily 只取今天及以后（过期的不参与 Upsert，也参与不了 DELETE 边界）
     const effectiveDailyKeys = (isCurrentMonth && skipPast)
-      ? dailyKeys.filter(pk => pk >= todayStr())
-      : dailyKeys
+      ? filteredDailyKeys.filter(pk => pk >= todayStr())
+      : filteredDailyKeys
 
     // 构建 stdPeriodMap: standard_id → period_key[]
     const stdPeriodMap: Record<number, string[]> = {}

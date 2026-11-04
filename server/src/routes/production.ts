@@ -62,6 +62,18 @@ import {
   remove as reportImageRemove,
   removeByUrl as reportImageRemoveByUrl,
 } from '../controllers/ReportImageController.js'
+import {
+  list as breakTimeList,
+  batchSave as breakTimeBatchSave,
+  create as breakTimeCreate,
+  remove as breakTimeRemove,
+} from '../controllers/BreakTimeController.js'
+import {
+  list as holidayList,
+  batchSave as holidayBatchSave,
+  create as holidayCreate,
+  remove as holidayRemove,
+} from '../controllers/HolidayController.js'
 import { authRequired, permissionRequired } from '../middleware/auth.js'
 
 const router = Router()
@@ -175,5 +187,17 @@ router.post(
   multerErrorHandler,
   asyncHandler(uploadReportImages),
 )
+
+// ============ 休息时间段 ============
+router.get('/break-times', permissionRequired('production:reporting'), asyncHandler(breakTimeList))
+router.post('/break-times/batch', permissionRequired('production:reporting:update'), asyncHandler(breakTimeBatchSave))
+router.post('/break-times', permissionRequired('production:reporting:update'), asyncHandler(breakTimeCreate))
+router.delete('/break-times/:id', permissionRequired('production:reporting:update'), asyncHandler(breakTimeRemove))
+
+// ============ 休息日/节假日字典（维保跳过用） ============
+router.get('/holidays', permissionRequired('production:settings'), asyncHandler(holidayList))
+router.post('/holidays/batch', permissionRequired('production:settings'), asyncHandler(holidayBatchSave))
+router.post('/holidays', permissionRequired('production:settings'), asyncHandler(holidayCreate))
+router.delete('/holidays/:date', permissionRequired('production:settings'), asyncHandler(holidayRemove))
 
 export default router

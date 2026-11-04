@@ -13,6 +13,8 @@ import { ManpowerRecord, ReportOrder } from '../models/index.js'
 import { MAX_PAGE_SIZE } from '../utils/response.js'
 import { AppError } from '../utils/error.js'
 import { nowBeijingDate, parseDateTime } from '../utils/date.js'
+import ProductionBreakTime from '../models/ProductionBreakTime.js'
+import { calcOverlapMinutes } from '../utils/breakTime.js'
 
 export const calcHours = (start: any, end: any): number => {
   if (!start || !end) return 0
@@ -83,7 +85,29 @@ export const ManpowerRecordService = {
     }
     // hours / man_hours 不再手动算 —— MySQL STORED GENERATED ALWAYS AS 自动算
 
-    return { record_date, shift, start_time, end_time, skilled_count: sk, general_count: gn, labor_count: lb, other_count: ot, total_people, remarks }
+    // net_hours: 扣除休息时间后的净工时
+    let net_hours: number | undefined = undefined
+    if (roId && start_time && end_time) {
+      try {
+        const breaks = await ProductionBreakTime.findAll({
+          where: { report_order_id: roId },
+          attributes: ['start_time', 'end_time'],
+        })
+        const overlapMin = calcOverlapMinutes(
+          new Date(start_time as unknown as string),
+          new Date(end_time as unknown as string),
+          breaks.map(b => ({
+            start_time: new Date(b.start_time as unknown as string),
+            end_time: new Date(b.end_time as unknown as string),
+          })),
+        )
+        const gross = calcHours(start_time, end_time)
+        net_hours = Number((gross - overlapMin / 60).toFixed(2))
+        if (net_hours < 0) net_hours = 0
+      } catch { /* 表不存在时静默，net_hours 留 undefined */ }
+    }
+
+    return { record_date, shift, start_time, end_time, skilled_count: sk, general_count: gn, labor_count: lb, other_count: ot, total_people, net_hours, remarks }
   },
 
   async update(id: number | string, body: any) {

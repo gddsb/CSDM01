@@ -18,9 +18,11 @@ import {
   ProcessException,
   ProcessMaterial,
   ReportImage,
+  ProductionBreakTime,
 } from '../models/index.js'
 import { generateReportOrderNo } from '../utils/sequence.js'
 import { nowBeijingDateStr, nowBeijingDate } from '../utils/date.js'
+import { expandDefaultForReport } from '../utils/breakTime.js'
 import { ReportWorkflowService } from './ProductionWorkflowService.js'
 import { AppError } from '../utils/error.js'
 import { MAX_PAGE_SIZE } from '../utils/response.js'
@@ -308,6 +310,18 @@ export const ReportOrderService = {
         report_user_name: actor?.username || null,
         remarks: input.remarks,
       } as any, { transaction: t })
+
+      // 自动展开系统默认休息时间段为该报工单的休息记录
+      const breakRecords = await expandDefaultForReport(reportOrder.getDataValue('report_time') as Date)
+      for (const br of breakRecords) {
+        await ProductionBreakTime.create({
+          break_time_id: crypto.randomUUID(),
+          report_order_id: reportOrder.report_order_id,
+          start_time: br.start_time,
+          end_time: br.end_time,
+          remark: '系统默认休息',
+        } as any, { transaction: t })
+      }
 
       await syncReportProcesses(reportOrder.report_order_id, (line as any).line_id, t)
 

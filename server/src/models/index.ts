@@ -71,6 +71,8 @@ import DeviceCalibrationRecord from './DeviceCalibrationRecord.js'
 import DeviceSparePart from './DeviceSparePart.js'
 import DeviceSparePartLog from './DeviceSparePartLog.js'
 import DeviceDocument from './DeviceDocument.js'
+import ProductionBreakTime from './ProductionBreakTime.js'
+import DicHoliday from './DicHoliday.js'
 
 // 建立模型关联关系
 // 用户 - 角色
@@ -110,6 +112,10 @@ ProcessMaterial.belongsTo(Material, { foreignKey: 'bas_material_id', as: 'bas_ma
 // 报工单 - 报工图片记录（一对多）
 ReportOrder.hasMany(ReportImage, { foreignKey: 'report_order_id', as: 'report_images' })
 ReportImage.belongsTo(ReportOrder, { foreignKey: 'report_order_id', as: 'report_order' })
+
+// 报工单 - 休息时间段（一对多，支持多条）
+ReportOrder.hasMany(ProductionBreakTime, { foreignKey: 'report_order_id', as: 'break_times' })
+ProductionBreakTime.belongsTo(ReportOrder, { foreignKey: 'report_order_id', as: 'report_order' })
 
 // 角色 - 权限 (多对多)
 Role.belongsToMany(Permission, { through: RolePermission, foreignKey: 'role_id', otherKey: 'perm_id', as: 'permissions' })
@@ -372,6 +378,8 @@ const db = {
   DeviceSparePart,
   DeviceSparePartLog,
   DeviceDocument,
+  ProductionBreakTime,
+  DicHoliday,
 }
 
 // 具名导出，便于按需导入
@@ -445,6 +453,8 @@ export {
   DeviceSparePart,
   DeviceSparePartLog,
   DeviceDocument,
+  ProductionBreakTime,
+  DicHoliday,
 }
 
 // 别名：统一以模型业务名对外暴露，兼容控制器与测试中的既有引用

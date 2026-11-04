@@ -56,6 +56,11 @@ const ProcessException = sequelize.define('ProcessException', {
     // MySQL GENERATED ALWAYS AS STORED 列，Sequelize 写入时忽略
     set() { /* 只读：DB STORED 自动算 */ },
   },
+  net_duration: {
+    type: DataTypes.DECIMAL(10, 2),
+    defaultValue: 0,
+    comment: '净停机时长（小时，扣除休息时间后由后端 Service 写入）',
+  },
   description: {
     type: DataTypes.STRING(500),
     comment: '异常描述',

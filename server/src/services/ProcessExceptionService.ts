@@ -12,6 +12,8 @@ import { ProcessException, Device } from '../models/index.js'
 import { parseDateTime, nowBeijingDate } from '../utils/date.js'
 import { MAX_PAGE_SIZE } from '../utils/response.js'
 import { AppError } from '../utils/error.js'
+import ProductionBreakTime from '../models/ProductionBreakTime.js'
+import { calcOverlapMinutes } from '../utils/breakTime.js'
 
 // ---------- 纯函数 ----------
 
@@ -97,7 +99,30 @@ export const ProcessExceptionService = {
     // duration 不再写入 —— MySQL STORED GENERATED ALWAYS AS 自动算
     void duration
 
-    return await ProcessException.create({
+    // net_duration: 扣除休息时间后的净停机时长
+    let net_duration: number | undefined = undefined
+    if (body.report_order_id && safeStartTime) {
+      try {
+        const breaks = await ProductionBreakTime.findAll({
+          where: { report_order_id: body.report_order_id },
+          attributes: ['start_time', 'end_time'],
+        })
+        const endForCalc = safeEndTime || nowBeijingDate()
+        const overlapMin = calcOverlapMinutes(
+          safeStartTime,
+          endForCalc,
+          breaks.map(b => ({
+            start_time: new Date(b.start_time as unknown as string),
+            end_time: new Date(b.end_time as unknown as string),
+          })),
+        )
+        const gross = validateTimeRange(safeStartTime, endForCalc).duration ?? 0
+        net_duration = Number((gross - overlapMin / 60).toFixed(2))
+        if (net_duration < 0) net_duration = 0
+      } catch { /* 表不存在时静默 */ }
+    }
+
+    const created = await ProcessException.create({
       report_order_id: body.report_order_id,
       exception_type: body.exception_type,
       device_id: body.device_id || null,
@@ -108,11 +133,34 @@ export const ProcessExceptionService = {
       confirm_user_name: body.confirm_user_name,
       start_time: safeStartTime,
       end_time: safeEndTime,
+      net_duration: net_duration ?? 0,
       description: body.description,
       exception_images: imagesJson,
       record_user: actor?.username || body.record_user || null,
       record_user_name: actor?.realName || actor?.username || body.record_user_name || null,
     } as any)
+
+    // 已完工后（有 end_time），重算 net_duration
+    if (safeStartTime && safeEndTime && body.report_order_id) {
+      try {
+        const breaks = await ProductionBreakTime.findAll({
+          where: { report_order_id: body.report_order_id },
+          attributes: ['start_time', 'end_time'],
+        })
+        const overlapMin = calcOverlapMinutes(
+          safeStartTime, safeEndTime,
+          breaks.map(b => ({
+            start_time: new Date(b.start_time as unknown as string),
+            end_time: new Date(b.end_time as unknown as string),
+          })),
+        )
+        const gross = validateTimeRange(safeStartTime, safeEndTime).duration ?? 0
+        const nd = Number((gross - overlapMin / 60).toFixed(2))
+        await created.update({ net_duration: nd < 0 ? 0 : nd })
+      } catch { /* ignore */ }
+    }
+
+    return created
   },
 
   /** 修改异常工时（自动重算 duration） */

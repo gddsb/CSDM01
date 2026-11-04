@@ -129,6 +129,11 @@ const ReportOrder = sequelize.define('ReportOrder', {
     type: DataTypes.STRING(500),
     comment: '末张合格证 URL（同步 production_report_image）',
   },
+  break_minutes: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    comment: '休息总分钟数（后端从 production_break_time 汇总写入）',
+  },
 }, {
   tableName: 'production_report_order',
   timestamps: true,

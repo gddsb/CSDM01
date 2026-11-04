@@ -45,6 +45,7 @@ const SupplierManagement = lazy(() => import('./pages/basic/SupplierManagement')
 const NumberRuleManagement = lazy(() => import('./pages/basic/NumberRuleManagement'))
 const OrderManagement = lazy(() => import('./pages/production/OrderManagement'))
 const ProcessReporting = lazy(() => import('./pages/production/ProcessReporting'))
+const ProductionSettings = lazy(() => import('./pages/production/ProductionSettings'))
 const InspectionStandard = lazy(() => import('./pages/quality/InspectionStandard'))
 const InspectionStandardForm = lazy(() => import('./pages/quality/InspectionStandardForm'))
 const IncomingInspection = lazy(() => import('./pages/quality/IncomingInspection'))
@@ -226,6 +227,7 @@ function AppRoutes() {
         {/* —— production —— */}
         <Route path="/production/orders" element={lazyPage(<PermissionGate permCode="production:order"><OrderManagement /></PermissionGate>)} />
         <Route path="/production/reporting" element={lazyPage(<PermissionGate permCode="production:reporting"><ProcessReporting /></PermissionGate>)} />
+        <Route path="/production/settings" element={lazyPage(<PermissionGate permCode="production:settings"><ProductionSettings /></PermissionGate>)} />
 
         {/* —— quality —— */}
         <Route path="/quality/standards" element={lazyPage(<PermissionGate permCode="quality:standard"><InspectionStandard /></PermissionGate>)} />
