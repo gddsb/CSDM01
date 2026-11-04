@@ -27,6 +27,8 @@ export const defaultPermissions = [
   { parent_id: 0, parent_code: 'production', perm_name: '生产订单', perm_code: 'production:order', type: 'menu', icon: 'FileTextOutlined', path: '/production/orders', sort_order: 1 },
   { parent_id: 0, parent_code: 'production', perm_name: '生产报工', perm_code: 'production:reporting', type: 'menu', icon: 'ProfileOutlined', path: '/production/reporting', sort_order: 2 },
   { parent_id: 0, parent_code: 'production', perm_name: '生产设置', perm_code: 'production:settings', type: 'menu', icon: 'SettingOutlined', path: '/production/settings', sort_order: 3 },
+  { parent_id: 0, parent_code: 'production', perm_name: '生产日报', perm_code: 'report:daily', type: 'menu', icon: 'CalendarOutlined', path: '/report/daily', sort_order: 4 },
+  { parent_id: 0, parent_code: 'production', perm_name: '生产报表', perm_code: 'report:production', type: 'menu', icon: 'FileTextOutlined', path: '/report/production', sort_order: 5 },
   // 质量管理
   { parent_id: 0, perm_name: '质量管理', perm_code: 'quality', type: 'menu', icon: 'ExperimentOutlined', path: 'quality', sort_order: 2 },
   { parent_id: 0, parent_code: 'quality', perm_name: '检验标准', perm_code: 'quality:standard', type: 'menu', icon: 'SafetyCertificateOutlined', path: '/quality/standards', sort_order: 8 },
@@ -53,12 +55,10 @@ export const defaultPermissions = [
   { parent_id: 0, parent_code: 'device', perm_name: '历史保养记录', perm_code: 'device:maintenance-history', type: 'menu', icon: 'HistoryOutlined', path: '/device/maintenance-history', sort_order: 11 },
   // 报表中心
   { parent_id: 0, perm_name: '报表中心', perm_code: 'report', type: 'menu', icon: 'PieChartOutlined', path: 'report', sort_order: 5 },
-  { parent_id: 0, parent_code: 'report', perm_name: '生产日报', perm_code: 'report:daily', type: 'menu', icon: 'CalendarOutlined', path: '/report/daily', sort_order: 1 },
-  { parent_id: 0, parent_code: 'report', perm_name: '质量月报', perm_code: 'report:monthly', type: 'menu', icon: 'FileTextOutlined', path: '/report/monthly', sort_order: 2 },
-  { parent_id: 0, parent_code: 'report', perm_name: '效率分析', perm_code: 'report:efficiency', type: 'menu', icon: 'RiseOutlined', path: '/report/efficiency', sort_order: 3 },
-  { parent_id: 0, parent_code: 'report', perm_name: '生产报表', perm_code: 'report:production', type: 'menu', icon: 'FileTextOutlined', path: '/report/production', sort_order: 4 },
-  { parent_id: 0, parent_code: 'report', perm_name: '质量报表', perm_code: 'report:quality', type: 'menu', icon: 'ExperimentOutlined', path: '/report/quality', sort_order: 5 },
-  { parent_id: 0, parent_code: 'report', perm_name: '异常分析', perm_code: 'report:exception', type: 'menu', icon: 'BellOutlined', path: '/report/exception', sort_order: 6 },
+  { parent_id: 0, parent_code: 'report', perm_name: '质量月报', perm_code: 'report:monthly', type: 'menu', icon: 'FileTextOutlined', path: '/report/monthly', sort_order: 1 },
+  { parent_id: 0, parent_code: 'report', perm_name: '效率分析', perm_code: 'report:efficiency', type: 'menu', icon: 'RiseOutlined', path: '/report/efficiency', sort_order: 2 },
+  { parent_id: 0, parent_code: 'report', perm_name: '质量报表', perm_code: 'report:quality', type: 'menu', icon: 'ExperimentOutlined', path: '/report/quality', sort_order: 3 },
+  { parent_id: 0, parent_code: 'report', perm_name: '异常分析', perm_code: 'report:exception', type: 'menu', icon: 'BellOutlined', path: '/report/exception', sort_order: 4 },
   // 自动任务
   { parent_id: 0, perm_name: '自动任务', perm_code: 'auto', type: 'menu', icon: 'ControlOutlined', path: 'auto', sort_order: 6 },
   { parent_id: 0, parent_code: 'auto', perm_name: '任务设置', perm_code: 'auto:task-setting', type: 'menu', icon: 'SettingOutlined', path: '/auto/task-settings', sort_order: 1 },
@@ -73,12 +73,10 @@ export const defaultPermissions = [
   { parent_id: 0, parent_code: 'bigscreen', perm_name: '能源管理看板', perm_code: 'bigscreen:energy', type: 'menu', icon: 'ThunderboltOutlined', path: '/bigscreen/energy', sort_order: 5 },
   // 报表中心
   { parent_id: 0, perm_name: '报表中心', perm_code: 'report', type: 'menu', icon: 'PieChartOutlined', path: 'report', sort_order: 5 },
-  { parent_id: 0, parent_code: 'report', perm_name: '生产日报', perm_code: 'report:daily', type: 'menu', icon: 'CalendarOutlined', path: '/report/daily', sort_order: 1 },
-  { parent_id: 0, parent_code: 'report', perm_name: '质量月报', perm_code: 'report:monthly', type: 'menu', icon: 'FileTextOutlined', path: '/report/monthly', sort_order: 2 },
-  { parent_id: 0, parent_code: 'report', perm_name: '效率分析', perm_code: 'report:efficiency', type: 'menu', icon: 'RiseOutlined', path: '/report/efficiency', sort_order: 3 },
-  { parent_id: 0, parent_code: 'report', perm_name: '生产报表', perm_code: 'report:production', type: 'menu', icon: 'FileTextOutlined', path: '/report/production', sort_order: 4 },
-  { parent_id: 0, parent_code: 'report', perm_name: '质量报表', perm_code: 'report:quality', type: 'menu', icon: 'ExperimentOutlined', path: '/report/quality', sort_order: 5 },
-  { parent_id: 0, parent_code: 'report', perm_name: '异常分析', perm_code: 'report:exception', type: 'menu', icon: 'BellOutlined', path: '/report/exception', sort_order: 6 },
+  { parent_id: 0, parent_code: 'report', perm_name: '质量月报', perm_code: 'report:monthly', type: 'menu', icon: 'FileTextOutlined', path: '/report/monthly', sort_order: 1 },
+  { parent_id: 0, parent_code: 'report', perm_name: '效率分析', perm_code: 'report:efficiency', type: 'menu', icon: 'RiseOutlined', path: '/report/efficiency', sort_order: 2 },
+  { parent_id: 0, parent_code: 'report', perm_name: '质量报表', perm_code: 'report:quality', type: 'menu', icon: 'ExperimentOutlined', path: '/report/quality', sort_order: 3 },
+  { parent_id: 0, parent_code: 'report', perm_name: '异常分析', perm_code: 'report:exception', type: 'menu', icon: 'BellOutlined', path: '/report/exception', sort_order: 4 },
   // ===== 按钮级权限（type: button）=====
   // 系统管理 - 角色权限
   { parent_id: 0, parent_code: 'system:role', perm_name: '分配权限', perm_code: 'system:role:assign', type: 'button', sort_order: 1 },
