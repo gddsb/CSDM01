@@ -1,7 +1,8 @@
 import logger from '../utils/logger.js'
 import ResizableTable from '../components/ResizableTable'
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { Row, Col, Tag, Typography, Space } from 'antd'
+import { Row, Col, Tag, Typography, Space, Button } from 'antd'
+import { useNavigate } from 'react-router-dom'
 import {
   ToolOutlined, CheckCircleOutlined, BugOutlined, ClockCircleOutlined, BulbOutlined,
 } from '@ant-design/icons'
@@ -39,9 +40,10 @@ function buildPeriodKeys() {
   return `${todayKey},${weekKey},${monthKey}`
 }
 
-interface TodoItem { icon: string; label: string; count: number; color: string }
+interface TodoItem { icon: string; label: string; count: number; color: string; path: string }
 
 export default function Dashboard() {
+  const navigate = useNavigate()
   const { currentUser } = useApp()
   const [activeReportOrders, setActiveReportOrders] = useState<any[]>([])
   const [doneReportOrders, setDoneReportOrders] = useState<any[]>([])
@@ -78,24 +80,24 @@ export default function Dashboard() {
     const apis: Promise<TodoItem>[] = [
       // 待完工订单（production/orders status=2 开工中）
       api.get('/production/orders', { params: { page: 1, pageSize: 1, status: 2 } })
-        .then((r: any) => ({ icon: '🏃', label: '待完工订单', count: extractTotal(r), color: '#4CAF50' }))
-        .catch(() => ({ icon: '🏃', label: '待完工订单', count: 0, color: '#4CAF50' })),
+        .then((r: any) => ({ icon: '🏃', label: '待完工订单', count: extractTotal(r), color: '#4CAF50', path: '/production/orders?tab=开工' }))
+        .catch(() => ({ icon: '🏃', label: '待完工订单', count: 0, color: '#4CAF50', path: '/production/orders?tab=开工' })),
       // 待维保设备（今日+周+月，按 device_id 去重）
       api.get('/basic/device-records', { params: { page: 1, pageSize: 200, status: '待执行,执行中', period_key: periodKeys } })
         .then((r: any) => {
           const list = extractList(r)
           const cnt = new Set(list.map((x: any) => x.device_id).filter(Boolean)).size
-          return { icon: '🧰', label: '待维保设备', count: cnt, color: '#FF9800' }
+          return { icon: '🧰', label: '待维保设备', count: cnt, color: '#FF9800', path: '/device/maintenance' }
         })
-        .catch(() => ({ icon: '🧰', label: '待维保设备', count: 0, color: '#FF9800' })),
-      // 设备故障待处理
-      api.get('/device-faults', { params: { page: 1, pageSize: 1, status: '待处理' } })
-        .then((r: any) => ({ icon: '🚨', label: '设备故障待处理', count: extractTotal(r), color: '#F44336' }))
-        .catch(() => ({ icon: '🚨', label: '设备故障待处理', count: 0, color: '#F44336' })),
+        .catch(() => ({ icon: '🧰', label: '待维保设备', count: 0, color: '#FF9800', path: '/device/maintenance' })),
+      // 设备故障待处理（待派工+维修中+待审批=未关闭，与移动端同口径）
+      api.get('/device-faults', { params: { page: 1, pageSize: 1, status: '待派工,维修中,待审批' } })
+        .then((r: any) => ({ icon: '🚨', label: '设备故障待处理', count: extractTotal(r), color: '#F44336', path: '/device/fault' }))
+        .catch(() => ({ icon: '🚨', label: '设备故障待处理', count: 0, color: '#F44336', path: '/device/fault' })),
       // 待检验来料
       api.get('/basic/incoming-inspections', { params: { page: 1, pageSize: 1, status: '待检验' } })
-        .then((r: any) => ({ icon: '✅', label: '待检验来料', count: extractTotal(r), color: '#4CAF50' }))
-        .catch(() => ({ icon: '✅', label: '待检验来料', count: 0, color: '#4CAF50' })),
+        .then((r: any) => ({ icon: '✅', label: '待检验来料', count: extractTotal(r), color: '#4CAF50', path: '/quality/incoming' }))
+        .catch(() => ({ icon: '✅', label: '待检验来料', count: 0, color: '#4CAF50', path: '/quality/incoming' })),
     ]
     const results = await Promise.allSettled(apis)
     const items = results.filter(r => r.status === 'fulfilled').map(r => (r as any).value) as TodoItem[]
@@ -123,6 +125,10 @@ export default function Dashboard() {
         const labels: Record<string, string> = { 0: '开工中', 1: '已完工', 2: '已关闭' }
         return <Tag color={colors[String(v)] || 'default'}>{labels[String(v)] || v}</Tag>
       },
+    },
+    {
+      title: '操作', key: 'action', width: 80,
+      render: () => <Button type="link" size="small" onClick={() => navigate('/production/reporting')}>报工</Button>,
     },
   ]
 
@@ -186,11 +192,19 @@ export default function Dashboard() {
             ) : (
               <Space direction="vertical" style={{ width: '100%' }} size={10}>
                 {todos.map((t) => (
-                  <div key={t.label} style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '8px 12px', borderRadius: 8,
-                    background: `${t.color}12`, borderLeft: `3px solid ${t.color}`,
-                  }}>
+                  <div
+                    key={t.label}
+                    onClick={() => navigate(t.path)}
+                    style={{
+                      cursor: 'pointer',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '8px 12px', borderRadius: 8,
+                      background: `${t.color}12`, borderLeft: `3px solid ${t.color}`,
+                      transition: 'transform .15s',
+                    }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.transform = 'translateX(2px)' }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.transform = 'translateX(0)' }}
+                  >
                     <span style={{ fontSize: 14, color: 'var(--text-primary)' }}>
                       {t.icon} {t.label}
                     </span>

@@ -145,7 +145,7 @@ export default function MobileDashboard() {
     }
     if (hasPermission('device:fault')) {
       apis.push(
-        api.get('/basic/device-faults', { params: { page: 1, pageSize: 1, status: '待处理' } })
+        api.get('/basic/device-faults', { params: { page: 1, pageSize: 1, status: '待派工,维修中,待审批' } })
           .then((r: any) => ({ icon: '🚨', text: '设备故障待处理', count: r.data?.total ?? r.total ?? 0, path: '/m/device-fault', color: '#F44336' })),
       )
     }
