@@ -187,15 +187,12 @@ export default function DeviceMaintenanceHistory() {
         stats={statItems}
         filter={
           <Space wrap>
-            <Select
-              placeholder="全部设备" allowClear
+            <Input
+              placeholder="编号/设备名搜索" allowClear prefix={<SearchOutlined />}
               style={{ width: 200 }}
-              value={filters.device_id}
-              onChange={(v) => { setFilters(f => ({ ...f, device_id: v })); setPage(1) }}
-              options={[{ label: '全部设备', value: undefined, disabled: true }, ...devices.map(d => ({
-                label: `${d.device_code} ${d.device_name}`,
-                value: d.device_id,
-              }))]}
+              value={filters.keyword}
+              onChange={(e) => setFilters(f => ({ ...f, keyword: e.target.value }))}
+              onPressEnter={() => { setPage(1); loadRecords() }}
             />
             <Select
               placeholder="全部频率" allowClear
@@ -223,19 +220,7 @@ export default function DeviceMaintenanceHistory() {
                 setPage(1)
               }}
             />
-            <Input
-              placeholder="编号/设备名搜索" allowClear prefix={<SearchOutlined />}
-              style={{ width: 200 }}
-              value={filters.keyword}
-              onChange={(e) => setFilters(f => ({ ...f, keyword: e.target.value }))}
-              onPressEnter={() => { setPage(1); loadRecords() }}
-            />
-          </Space>
-        }
-        actions={
-          <Space>
-            <Button icon={<SearchOutlined />} type="primary" onClick={() => { setPage(1); loadRecords() }}>查询</Button>
-            <Button icon={<ReloadOutlined />} onClick={() => {
+            <Button onClick={() => {
               setFilters({
                 device_id: undefined,
                 trigger_mode: undefined,
@@ -246,9 +231,10 @@ export default function DeviceMaintenanceHistory() {
               })
               setPage(1)
             }}>重置</Button>
-            <Button icon={<ReloadOutlined />} onClick={() => loadRecords()}>刷新</Button>
+            <Button onClick={() => loadRecords()}>刷新</Button>
           </Space>
         }
+        actions={null}
         table={
           <Spin spinning={loading}>
             <Table
