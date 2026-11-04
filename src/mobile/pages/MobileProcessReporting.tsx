@@ -385,8 +385,8 @@ export default function MobileProcessReporting() {
               onChange={(k) => trySwitchGroupTab(k as any)}
               style={{ background: '#fafafa' }}
             >
-              <Tabs.Tab title="🔧 工序记录" key="process" />
-              <Tabs.Tab title="📊 工单记录" key="report" />
+              <Tabs.Tab title="🔧 工序报工" key="process" />
+              <Tabs.Tab title="📊 工单报工" key="report" />
             </Tabs>
           </div>
         </div>
@@ -397,9 +397,9 @@ export default function MobileProcessReporting() {
         {groupTab === 'process' && (
           <div>
             <PanelSubTabs active={processTab} onChange={(k) => trySwitchProcessTab(k as any)}>
-              <Tabs.Tab title="不良记录" key="defect" />
-              <Tabs.Tab title="物料记录" key="material" />
-              <Tabs.Tab title="检验报废" key="scrap" />
+              <Tabs.Tab title="报废记录" key="defect" />
+              <Tabs.Tab title="物料使用" key="material" />
+              <Tabs.Tab title="质量检验" key="scrap" />
             </PanelSubTabs>
             {processTab === 'defect' && (
               <ReportPanel>
@@ -483,8 +483,8 @@ export default function MobileProcessReporting() {
         {groupTab === 'report' && (
           <div>
             <PanelSubTabs active={reportTab} onChange={(k) => trySwitchReportTab(k as any)}>
-              <Tabs.Tab title="工时记录" key="exception" />
-              <Tabs.Tab title="人员记录" key="manpower" />
+              <Tabs.Tab title="停机停线" key="exception" />
+              <Tabs.Tab title="人员工时" key="manpower" />
               <Tabs.Tab title="批次标签" key="batch-tag" />
             </PanelSubTabs>
             {reportTab === 'exception' && (

@@ -1119,19 +1119,19 @@ export default function ProcessReporting() {
 
   // 所有子 Tab（平级定义，分组在下面 groupTabItems 里完成）
   const tabItems = [
-    { key: 'production-defect', label: '不良记录' },
-    { key: 'production-material', label: '物料记录' },
-    { key: 'scrap-defect', label: '检验报废' },
-    { key: 'exception', label: '工时记录' },
-    { key: 'manpower', label: '人员记录' },
-    { key: 'batch-tag', label: '批次与标签' },
+    { key: 'production-defect', label: '报废记录' },
+    { key: 'production-material', label: '物料使用' },
+    { key: 'scrap-defect', label: '质量检验' },
+    { key: 'exception', label: '停机停线' },
+    { key: 'manpower', label: '人员工时' },
+    { key: 'batch-tag', label: '批次标签' },
   ]
 
-  // 🔑 一级 Tab 分组：工序记录 / 工单记录
+  // 🔑 一级 Tab 分组：工序报工 / 工单报工
   const groupTabItems = [
     {
       key: 'process',
-      label: '🔧 工序记录',
+      label: '🔧 工序报工',
       children: (
         <>
           <Tabs
@@ -1147,7 +1147,7 @@ export default function ProcessReporting() {
     },
     {
       key: 'report',
-      label: '📊 工单记录',
+      label: '📊 工单报工',
       children: (
         <>
           <Tabs
@@ -1183,7 +1183,7 @@ export default function ProcessReporting() {
         return (
           <GenericRecordTab
             tableKey="pages_production_ProcessReporting_material"
-            title="物料记录"
+            title="物料使用"
             editable={isEditable}
             columns={materialColumns as any}
             data={materialDisplayList}
@@ -1201,7 +1201,7 @@ export default function ProcessReporting() {
         return (
           <GenericRecordTab
             tableKey="pages_production_ProcessReporting_scrap"
-            title="检验报废记录"
+            title="质量检验"
             editable={isEditable}
             columns={scrapDefectColumns as any}
             data={scrapDefectDisplayList}
@@ -1219,7 +1219,7 @@ export default function ProcessReporting() {
         return (
           <GenericRecordTab
             tableKey="pages_production_ProcessReporting_exception"
-            title="异常工时记录"
+            title="停机停线"
             editable={isEditable}
             columns={exceptionColumns as any}
             data={exceptionDisplayList}
