@@ -243,6 +243,14 @@ export default function DeviceMaintenanceHistory() {
               columns={columns}
               dataSource={records}
               scroll={{ x: 1400 }}
+              rowClassName={(r: any) => {
+                // daily 记录 period_key 是 YYYY-MM-DD，检查是否周末/休息日
+                if (r.trigger_mode !== 'daily' || !r.period_key) return ''
+                const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(r.period_key)
+                if (!m) return ''
+                const dow = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).getDay()
+                return (dow === 0 || dow === 6) ? 'row-rest-day' : ''
+              }}
               pagination={{
                 current: page,
                 pageSize,
@@ -321,6 +329,10 @@ export default function DeviceMaintenanceHistory() {
           </>
         )}
       </Drawer>
+      <style>{`
+        .row-rest-day td { opacity: 0.45 !important; color: var(--text-secondary, #999) !important; }
+        .row-rest-day td.ant-table-cell-row-hover { background: #fafafa !important; }
+      `}</style>
     </>
   )
 }

@@ -55,6 +55,7 @@ interface MatrixResp {
   month: number
   days_in_month: number
   week_keys: string[]
+  rest_days: string[]
   daily: { items: MatrixItem[] }
   weekly: { items: MatrixItem[] }
   monthly: { items: MatrixItem[] }
@@ -81,7 +82,10 @@ const STATUS_COLOR: Record<string, string> = {
   已挂起: 'warning',
 }
 
-function CellBadge({ rec }: { rec: MatrixRecord | null }) {
+function CellBadge({ rec, isRestDay }: { rec: MatrixRecord | null; isRestDay?: boolean }) {
+  if (isRestDay && !rec) {
+    return <span style={{ color: 'var(--color-error)', fontSize: 11, fontWeight: 500 }}>休</span>
+  }
   if (!rec) return <span style={{ color: '#ccc' }}>—</span>
   const tag = <Tag color={STATUS_COLOR[rec.status] || 'default'}>{rec.status}</Tag>
   const content = (
@@ -175,21 +179,30 @@ export default function DeviceMaintenanceMatrix() {
   }, [data])
 
   // ==== 每日点检列 ====
+  const restDaySet = useMemo(() => new Set(data?.rest_days || []), [data])
   const dailyColumns = useMemo(() => {
     const base = [
       { title: '序号', dataIndex: '__idx', width: 60, fixed: 'left' as const, render: (_: any, __: any, i: number) => i + 1 },
       { title: '保养项目', dataIndex: 'maintenance_content', width: 220, fixed: 'left' as const, ellipsis: true, render: (v: string, r: any) =>
         <Tooltip title={`标准ID:${r.standard_id} · ${v || ''}`}>{v || '-'}</Tooltip> },
     ]
-    const dateCols = dailyDates.map(d => ({
-      title: Number(d.slice(8, 10)),
-      dataIndex: `__d_${d}`,
-      width: 72,
-      align: 'center' as const,
-      render: (_: any, r: any) => <CellBadge rec={r.records?.[d] || null} />,
-    }))
+    const dateCols = dailyDates.map(d => {
+      const isRest = restDaySet.has(d)
+      return {
+        title: (
+          <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.2 }}>
+            <span>{Number(d.slice(8, 10))}</span>
+            {isRest && <span style={{ color: 'var(--color-error)', fontSize: 9, marginTop: 1 }}>休</span>}
+          </span>
+        ),
+        dataIndex: `__d_${d}`,
+        width: 72,
+        align: 'center' as const,
+        render: (_: any, r: any) => <CellBadge rec={r.records?.[d] || null} isRestDay={isRest} />,
+      }
+    })
     return [...base, ...dateCols]
-  }, [dailyDates])
+  }, [dailyDates, restDaySet])
 
   const weeklyColumns = useMemo(() => {
     const base = [

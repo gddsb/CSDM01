@@ -65,18 +65,21 @@ export const ProcessExceptionService = {
     })
   },
 
-  /** 创建异常工时 */
+  /** 创建异常工时（前端点击"▶ 开始异常"按钮触发，start_time 强制 now） */
   async create(body: any, actor?: any) {
     if (!body.report_order_id) throw new AppError('报工单 ID 不能为空', 10001, 400)
     if (!body.exception_type) throw new AppError('异常类型不能为空', 10001, 400)
-    if (!body.start_time) throw new AppError('开始时间不能为空', 10001, 400)
 
     // 换型换线由"开工"时系统自动生成，不允许用户手动创建
     if (body.exception_type === '换型换线') {
       throw new AppError('换型换线记录由系统在"开工"时自动生成，不允许手动创建', 20001, 409)
     }
 
-    const timeCheck = validateTimeRange(body.start_time, body.end_time)
+    // start_time 强制 now —— 前端按钮触发，不允许用户手动传
+    const safeStartTime = nowBeijingDate()
+    const safeEndTime = body.end_time ? (parseDateTime(body.end_time) || null) : null
+
+    const timeCheck = validateTimeRange(safeStartTime, safeEndTime)
     if (!timeCheck.valid) throw new AppError(timeCheck.message || '时间校验失败', 10001, 400)
 
     let deviceCode: string | null = null
@@ -93,8 +96,7 @@ export const ProcessExceptionService = {
     const imagesJson = body.exception_images
       ? (Array.isArray(body.exception_images) ? JSON.stringify(body.exception_images) : body.exception_images)
       : null
-    const safeStartTime = parseDateTime(body.start_time) || nowBeijingDate()
-    const safeEndTime = body.end_time ? (parseDateTime(body.end_time) || null) : null
+    // safeStartTime / safeEndTime 已在上方声明（start_time 强制 now）
 
     // duration 不再写入 —— MySQL STORED GENERATED ALWAYS AS 自动算
     void duration
@@ -195,6 +197,29 @@ export const ProcessExceptionService = {
     }
 
     await record.update(updateData)
+
+    // 修改后重算 net_duration
+    try {
+      const recalcStart = new Date((record as any).start_time)
+      const recalcEnd = (record as any).end_time ? new Date((record as any).end_time) : nowBeijingDate()
+      const breaks = await ProductionBreakTime.findAll({
+        where: { report_order_id: (record as any).report_order_id },
+        attributes: ['start_time', 'end_time'],
+      })
+      const overlapMin = calcOverlapMinutes(
+        recalcStart, recalcEnd,
+        breaks.map(b => ({
+          start_time: new Date(b.start_time as unknown as string),
+          end_time: new Date(b.end_time as unknown as string),
+        })),
+      )
+      const gross = ((record as any).end_time && (record as any).start_time)
+        ? validateTimeRange(recalcStart, recalcEnd).duration ?? 0
+        : validateTimeRange(recalcStart, recalcEnd).duration ?? 0
+      const nd = Number((gross - overlapMin / 60).toFixed(2))
+      await record.update({ net_duration: nd < 0 ? 0 : nd })
+    } catch { /* ignore */ }
+
     return record
   },
 

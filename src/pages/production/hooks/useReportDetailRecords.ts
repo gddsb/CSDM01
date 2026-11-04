@@ -237,8 +237,7 @@ export function useReportDetailRecords(opts: Options) {
 
   const saveExceptionItem = useCallback(async (item: ExceptionRecord) => {
     const { _deleting, _dirty, id, exception_id, ...payload } = item as any
-    if (!payload.start_time) { msg.error('请选择开始时间'); throw new Error('start') }
-    if (!payload.end_time) { msg.error('请选择结束时间'); throw new Error('end') }
+    // start_time 后端强制 now —— 前端无需校验；end_time 允许空（未结束）
     if (String(id).startsWith('tmp_')) {
       const res = await api.post('/production/process-exceptions', payload)
       setExceptionList(prev => prev.map(r => r.id === id ? { ...res.data, _dirty: false } : r))
@@ -255,6 +254,35 @@ export function useReportDetailRecords(opts: Options) {
     for (const r of toSave) { try { await saveExceptionItem(r); ok++ } catch {} }
     if (ok) msg.success(`已保存 ${ok} 条记录`)
   }, [exceptionList, saveExceptionItem, msg])
+
+  /** 开始一条未开始的异常工时：自动写 start_time = now，后端 create 强制覆盖 */
+  const handleStartException = useCallback(async (record: ExceptionRecord) => {
+    if (!selectedReport) { msg.warning('请先选择报工单'); return }
+    try {
+      const isTmp = String(record.id).startsWith('tmp_')
+      const res = await api.post('/production/process-exceptions', {
+        report_order_id: selectedReport.report_order_id,
+        exception_type: record.exception_type || '设备异常',
+        device_id: record.device_id,
+        stop_type: record.stop_type,
+        description: record.description,
+        exception_images: record.exception_images,
+      })
+      const saved = res.data as any
+      setExceptionList(prev => prev.map(r => {
+        if (isTmp) {
+          if (String(r.id) !== String(record.id)) return r
+          return { ...r, ...saved, _dirty: false } as any
+        }
+        // 已保存的记录没有 start_time 的 edge case
+        if ((r.exception_id ?? r.id) !== (record as any).exception_id) return r
+        return { ...r, ...saved, _dirty: false } as any
+      }))
+      msg.success(`异常已开始 (${saved.start_time})`)
+    } catch (e: any) {
+      msg.error(e?.message || '开始失败')
+    }
+  }, [selectedReport, msg])
 
   /** 本地时间格式化工具 — YYYY-MM-DD HH:mm:ss（替代 toISOString 避免时区错位） */
   const localNowStr = useCallback(() => {
@@ -372,7 +400,7 @@ export function useReportDetailRecords(opts: Options) {
     // material
     handleAddMaterialRow, handleDeleteMaterial, handleMaterialChange, handleSaveAllMaterials,
     // exception
-    handleAddExceptionRow, handleDeleteException, handleExceptionChange, handleSaveAllExceptions, handleFinishException,
+    handleAddExceptionRow, handleDeleteException, handleExceptionChange, handleSaveAllExceptions, handleStartException, handleFinishException,
     // manpower
     handleManpowerChange, handleSaveAllManpowers,
   }

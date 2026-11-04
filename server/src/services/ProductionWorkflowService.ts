@@ -5,6 +5,7 @@ import { ErrorCode } from '../utils/response.js'
 import { nowBeijingDate } from '../utils/date.js'
 import { AppError } from '../utils/error.js'
 import { logger } from '../utils/logger.js'
+import { recalcNetForReport } from '../utils/breakTime.js'
 
 interface Actor {
   userId?: number | string
@@ -454,6 +455,8 @@ export class ReportWorkflowService {
       await this.syncOrderStatus((reportOrder as any).order_id, t)
       return reportOrder
     })
+    // 完工后重算净工时/净停机（finish_time 已落库）
+    try { await recalcNetForReport(reportOrderId) } catch (e) { logger.warn('[ReportWorkflowService.finish] 重算净额失败', { reportOrderId, err: (e as Error).message }) }
     logger.info('[ReportWorkflowService.finish] 报工单完工成功', { report_order_id: reportOrderId, order_id: (result as any).order_id, report_order_no: (result as any).report_order_no, actor: actor?.username })
     return result
   }

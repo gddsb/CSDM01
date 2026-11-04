@@ -38,6 +38,8 @@ export default function ProcessReporting() {
   const [finishCheckOpen, setFinishCheckOpen] = useState(false)
   const [finishCheckItems, setFinishCheckItems] = useState<any[]>([])
   const [closingReport, setClosingReport] = useState(false)
+  const [breakTimes, setBreakTimes] = useState<any[]>([])
+  const [breakTimesLoading, setBreakTimesLoading] = useState(false)
 
   // 新增报工单 Modal
   const [createModalOpen, setCreateModalOpen] = useState(false)
@@ -380,8 +382,12 @@ export default function ProcessReporting() {
       } else {
         fetches.push(Promise.resolve({ data: [] }))
       }
+      // 休息时间
+      fetches.push(api.get('/production/break-times', {
+        params: { report_order_id: reportOrderId, page: 1, pageSize: 100 },
+      }).catch(() => ({ data: [] })))
 
-      const [defectRes, scrapRes, exceptionRes, manpowerRes, materialRes] = await Promise.all(fetches)
+      const [defectRes, scrapRes, exceptionRes, manpowerRes, materialRes, breakRes] = await Promise.all(fetches)
 
       setProdDefectList((defectRes.data || []).map(d => {
         let enriched: any = { ...d, id: d.defect_id, defect_images: parseImages(d.defect_images) }
@@ -422,6 +428,7 @@ export default function ProcessReporting() {
         }
         return enriched
       }))
+      setBreakTimes(breakRes.data || [])
     } catch (err: any) {
       message.error(err.message || '获取数据失败')
     }
@@ -587,7 +594,7 @@ export default function ProcessReporting() {
     handleAddProdDefectRow, handleDeleteProdDefect, handleProdDefectChange, handleSaveAllProdDefects,
     handleAddScrapDefectRow, handleDeleteScrapDefect, handleScrapDefectChange, handleSaveAllScrapDefects,
     handleAddMaterialRow, handleDeleteMaterial, handleMaterialChange, handleSaveAllMaterials,
-    handleAddExceptionRow, handleDeleteException, handleExceptionChange, handleSaveAllExceptions, handleFinishException,
+    handleAddExceptionRow, handleDeleteException, handleExceptionChange, handleSaveAllExceptions, handleStartException, handleFinishException,
     handleManpowerChange, handleSaveAllManpowers,
   } = useReportDetailRecords({
     selectedReport: selectedReport as any,
@@ -1017,6 +1024,7 @@ export default function ProcessReporting() {
     reportTime: selectedReport?.report_time,
     onChange: handleExceptionChange,
     onDelete: ((record: any) => handleDeleteException(record.id)),
+    onStart: (record: any) => handleStartException(record),
     onFinish: (record: any) => handleFinishException(record),
     openImageDrawer,
   })
@@ -1229,20 +1237,98 @@ export default function ProcessReporting() {
             scrollX={900}
           />
         )
-      case 'manpower':
+      case 'manpower': {
+        // 过滤只显示与报工时段重叠的休息时间
+        const reportStart = selectedReport ? dayjs(selectedReport.report_time) : null
+        const reportEnd = selectedReport
+          ? (selectedReport.finish_time ? dayjs(selectedReport.finish_time) : dayjs())
+          : null
+        const overlappingBreaks = breakTimes.filter((b: any) => {
+          if (!reportStart || !reportEnd) return false
+          const bs = dayjs(b.start_time)
+          const be = dayjs(b.end_time)
+          const s = Math.max(reportStart.valueOf(), bs.valueOf())
+          const e = Math.min(reportEnd.valueOf(), be.valueOf())
+          return e - s > 0
+        })
+
         return (
-          <GenericRecordTab
-            tableKey="pages_production_ProcessReporting_manpower"
-            title="人员工时记录"
-            editable={isEditable}
-            columns={manpowerColumns as any}
-            data={manpowerDisplayList}
-            onSave={handleSaveAllManpowers}
-            onAdd={() => {}}
-            hint='工时按报工单时间自动计算，修改人数后点"保存"提交'
-            scrollX={1200}
-          />
+          <div>
+            {/* 休息时间区块 */}
+            <Card
+              size="small"
+              title={<span style={{ fontSize: 13, color: 'var(--text-primary)' }}>🛑 默认休息时间（点击开始异常时自动扣除）</span>}
+              style={{ marginBottom: 12 }}
+              extra={
+                <Button
+                  size="small"
+                  type="primary"
+                  onClick={async () => {
+                    if (!selectedReport) return
+                    try {
+                      const res = await api.get('/production/config', { params: { page: 1, pageSize: 50 } })
+                      const cfgList = res.data || []
+                      const breakCfg = cfgList.find(c => c.config_key === 'default_break_times')
+                      let patterns = breakCfg?.config_value
+                      if (typeof patterns === 'string') patterns = JSON.parse(patterns || '[]')
+                      const reportDate = dayjs(selectedReport.report_time)
+                      const newBreaks = patterns.map((p: any) => {
+                        const [sh, sm] = p.start.split(':').map(Number)
+                        const [eh, em] = p.end.split(':').map(Number)
+                        const start = reportDate.hour(sh).minute(sm).second(0)
+                        const endDayOffset = (eh * 60 + em) < (sh * 60 + sm) ? 1 : 0
+                        const end = reportDate.add(endDayOffset, 'day').hour(eh).minute(em).second(0)
+                        return { start_time: start.format('YYYY-MM-DD HH:mm:ss'), end_time: end.format('YYYY-MM-DD HH:mm:ss'), remark: '前端手动刷新' }
+                      })
+                      await api.post('/production/break-times/batch', {
+                        report_order_id: selectedReport.report_order_id,
+                        break_times: newBreaks,
+                      })
+                      setBreakTimes(newBreaks)
+                      message.success('休息时间已刷新')
+                    } catch (e: any) {
+                      message.error(e?.message || '刷新失败')
+                    }
+                  }}
+                >🔄 刷新默认休息时间</Button>
+              }
+            >
+              {overlappingBreaks.length === 0 ? (
+                <div style={{ color: 'var(--text-secondary)', fontSize: 12, textAlign: 'center', padding: '12px 0' }}>
+                  本报工时段内无重叠休息时间
+                </div>
+              ) : (
+                <Table
+                  size="small"
+                  pagination={false}
+                  rowKey="break_time_id"
+                  dataSource={overlappingBreaks}
+                  columns={[
+                    { title: '#', key: 'idx', width: 40, render: (_, __, i) => i + 1 },
+                    { title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 180,
+                      render: (v) => <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{formatDateTime(v)}</span> },
+                    { title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 180,
+                      render: (v) => <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{formatDateTime(v)}</span> },
+                    { title: '备注', dataIndex: 'remark', key: 'remark', render: (v) => v || '-' },
+                  ]}
+                />
+              )}
+            </Card>
+            {/* 人员工时 */}
+            <GenericRecordTab
+              tableKey="pages_production_ProcessReporting_manpower"
+              title="人员工时记录"
+              editable={isEditable}
+              columns={manpowerColumns as any}
+              data={manpowerDisplayList}
+              onSave={handleSaveAllManpowers}
+              onAdd={() => {}}
+              hint='工时按报工单时间自动计算，修改人数后点"保存"提交；净额已扣除休息时间'
+              scrollX={1200}
+            />
+          </div>
         )
+      }
       case 'batch-tag':
         if (!selectedReport) return null
         return (

@@ -1,7 +1,7 @@
 import React from 'react'
 import dayjs from 'dayjs'
-import { Button, Input, Select, TimePicker, Popconfirm, message } from 'antd'
-import { DeleteOutlined, PictureOutlined, CheckCircleOutlined } from '@ant-design/icons'
+import { Button, Input, Select, Popconfirm, message } from 'antd'
+import { DeleteOutlined, PictureOutlined, CheckCircleOutlined, PlayCircleOutlined } from '@ant-design/icons'
 import { ColumnsType } from 'antd/es/table'
 import { formatDateTime } from '../../utils'
 import { ExceptionRecord } from './types'
@@ -14,12 +14,13 @@ interface BuildExceptionColumnsParams {
   reportTime?: string | Date | null
   onChange: (id: number | string, field: string, value: unknown) => void
   onDelete: (record: ExceptionRecord) => void
+  onStart: (record: ExceptionRecord) => void
   onFinish: (record: ExceptionRecord) => void
   openImageDrawer: (title: string, images: unknown[], context: Record<string, unknown>) => void
 }
 
 export function buildExceptionColumns(params: BuildExceptionColumnsParams): ColumnsType<ExceptionRecord> {
-  const { isEditable, deviceOptions, exceptionCategories, exceptionList, reportTime, onChange, onDelete, onFinish, openImageDrawer } = params
+  const { isEditable, deviceOptions, exceptionCategories, onChange, onDelete, onStart, onFinish, openImageDrawer } = params
 
   // 规则：已结束（end_time 非空）→ 不可编辑、不可删除
   //       已保存未结束 → 可编辑、可删除
@@ -28,25 +29,6 @@ export function buildExceptionColumns(params: BuildExceptionColumnsParams): Colu
   const canDelete = (record: any): boolean => !isFinished(record)
   const isAutoCreated = (record: any): boolean =>
     record.exception_type === '换型换线' || (record.description && String(record.description).includes('自动生成'))
-
-  const disabledTime = () => {
-    const baseDate = reportTime ? dayjs(reportTime).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')
-    const today = dayjs().format('YYYY-MM-DD')
-    if (baseDate !== today) return {}
-    const current = dayjs()
-    return {
-      disabledHours: () => Array.from({ length: 24 }, (_, i) => i).filter(h => h > current.hour()),
-      disabledMinutes: (selHour: number) => {
-        if (selHour < current.hour()) return []
-        return Array.from({ length: 60 }, (_, i) => i).filter(m => m > current.minute())
-      },
-    }
-  }
-
-  const buildTime = (d: dayjs.Dayjs): string => {
-    const baseDate = reportTime ? dayjs(reportTime).format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD')
-    return `${baseDate}T${d.format('HH:mm:ss')}`
-  }
 
   return [
     {
@@ -87,98 +69,35 @@ export function buildExceptionColumns(params: BuildExceptionColumnsParams): Colu
       },
     },
     {
-      title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 150,
+      title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 180,
       render: (val, record) => {
+        // 不可编辑或已结束 → 只读显示
         if (!isEditable || !canEdit(record)) return formatDateTime(val)
-        return (
-          <TimePicker
-            value={val ? dayjs(val) : null}
-            onChange={(d) => {
-              if (d) {
-                const newTime = buildTime(d)
-                if (reportTime && dayjs(newTime).isBefore(dayjs(reportTime))) {
-                  message.warning('开始时间不能早于报工时间')
-                  return
-                }
-                if (dayjs(newTime).isAfter(dayjs())) {
-                  message.warning('开始时间不能晚于当前时间')
-                  return
-                }
-                const overlap = exceptionList.some(e => {
-                  if (String(e.id) === String(record.id)) return false
-                  if (!e.start_time) return false
-                  const eStart = dayjs(e.start_time as string | number | Date)
-                  const eEnd = e.end_time ? dayjs(e.end_time as string | number | Date) : null
-                  const newStart = dayjs(newTime)
-                  const newEnd = record.end_time ? dayjs(record.end_time as string | number | Date) : newStart
-                  if (eEnd) return newStart.isBefore(eEnd) && newEnd.isAfter(eStart)
-                  return newEnd.isAfter(eStart) || newStart.isSame(eStart)
-                })
-                if (overlap) {
-                  message.warning('开始时间与已有异常记录的时间区间重叠')
-                  return
-                }
-                onChange(record.id, 'start_time', newTime)
-              } else {
-                onChange(record.id, 'start_time', null)
-              }
-            }}
-            format="HH:mm"
-            style={{ width: '100%' }}
-            size="small"
-            minuteStep={5}
-            disabledTime={disabledTime}
-          />
-        )
+        // 可编辑 + 未结束 + 还没有 start_time → 显示"▶ 开始异常"按钮
+        if (!val) {
+          return (
+            <Button type="primary" size="small" ghost icon={<PlayCircleOutlined />}
+              onClick={() => onStart(record)}>▶ 开始异常</Button>
+          )
+        }
+        // 有 start_time → 只读显示完整日期时间
+        return <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{formatDateTime(val)}</span>
       },
     },
     {
-      title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 150,
+      title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 180,
       render: (val, record) => {
+        // 不可编辑或已结束 → 只读显示
         if (!isEditable || !canEdit(record)) return formatDateTime(val)
-        return (
-          <TimePicker
-            value={val ? dayjs(val) : null}
-            placeholder="未结束"
-            onChange={(d) => {
-              if (d) {
-                const newTime = buildTime(d)
-                if (record.start_time && dayjs(newTime).isBefore(dayjs(record.start_time as string | number | Date))) {
-                  message.warning('结束时间不能小于开始时间')
-                  return
-                }
-                if (dayjs(newTime).isAfter(dayjs())) {
-                  message.warning('结束时间不能晚于当前时间')
-                  return
-                }
-                if (record.start_time) {
-                  const overlap = exceptionList.some(e => {
-                    if (String(e.id) === String(record.id)) return false
-                    if (!e.start_time) return false
-                    const eStart = dayjs(e.start_time as string | number | Date)
-                    const eEnd = e.end_time ? dayjs(e.end_time as string | number | Date) : null
-                    const newStart = dayjs(record.start_time as string | number | Date)
-                    const newEnd = dayjs(newTime)
-                    if (eEnd) return newStart.isBefore(eEnd) && newEnd.isAfter(eStart)
-                    return newEnd.isAfter(eStart)
-                  })
-                  if (overlap) {
-                    message.warning('结束时间与已有异常记录的时间区间重叠')
-                    return
-                  }
-                }
-                onChange(record.id, 'end_time', newTime)
-              } else {
-                onChange(record.id, 'end_time', null)
-              }
-            }}
-            format="HH:mm"
-            style={{ width: '100%' }}
-            size="small"
-            minuteStep={5}
-            disabledTime={disabledTime}
-          />
-        )
+        // 可编辑 + 未结束 + 还没有 end_time → 显示"✓ 结束"按钮
+        if (!val) {
+          return (
+            <Button type="primary" size="small" icon={<CheckCircleOutlined />}
+              onClick={() => onFinish(record)}>✓ 结束</Button>
+          )
+        }
+        // 有 end_time → 只读显示完整日期时间
+        return <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{formatDateTime(val)}</span>
       },
     },
     { title: '时长(分钟)', dataIndex: 'duration', key: 'duration', width: 100, align: 'right',

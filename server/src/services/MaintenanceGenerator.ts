@@ -30,6 +30,37 @@ const genLocks = new Map<string, number>()
 /** DELETE 安全边界：只允许删 status='待执行' 的记录 */
 const DELETABLE_STATUSES = ['待执行'] as const
 
+/** 休息日判断：显式 dic_holiday 优先 → 否则周六周日默认休息 */
+function isRestDate(dateStr: string, holidayMap: Map<string, number>): boolean {
+  const explicit = holidayMap.get(dateStr)
+  if (explicit !== undefined) return explicit === 0  // 0=休息日, 1=调休上班(不是休息日)
+  // 默认：周六周日休息
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  const dow = dt.getDay()
+  return dow === 0 || dow === 6
+}
+
+/** 构建某月 holidayMap（日期字符串 → is_workday: 0=休息/1=上班） */
+async function buildHolidayMap(yr: number, mo: number): Promise<Map<string, number>> {
+  const map = new Map<string, number>()
+  try {
+    const DicHoliday = (await import('../models/DicHoliday.js')).default
+    const holidays = await DicHoliday.findAll({
+      where: sequelize.where(
+        sequelize.fn('DATE_FORMAT', sequelize.col('holiday_date'), '%Y-%m'),
+        `${String(yr).padStart(4, '0')}-${String(mo).padStart(2, '0')}`,
+      ),
+      attributes: ['holiday_date', 'is_workday'],
+    })
+    for (const h of holidays) {
+      const d = h.getDataValue('holiday_date')
+      map.set(dateOnlyStr(new Date(d)), Number(h.getDataValue('is_workday') || 0))
+    }
+  } catch { /* dic_holiday 表不存在时静默 */ }
+  return map
+}
+
 /** generateRecords —— 按月批量生成（带并发锁 + Upsert + Sync DELETE） */
 export async function generateRecords(body: any) {
   const { target_month, device_id, skip_past } = body || {}
@@ -89,25 +120,10 @@ export async function generateRecords(body: any) {
     const dailyKeys = dailyPeriodKeys(yr, mo)
     const weekKeys = weeklyPeriodKeys(yr, mo)
 
-    // 5a. 查 dic_holiday 过滤掉休息日（daily 模式）
+    // 5a. 查 dic_holiday + 默认周六周日 → 过滤掉休息日（daily 模式）
     // 只有 daily 模式按具体日期跳过；weekly/monthly 不受影响
-    const holidaySet = new Set<string>()  // 被跳过的日期字符串 (YYYY-MM-DD)
-    try {
-      const DicHoliday = (await import('../models/DicHoliday.js')).default
-      const holidays = await DicHoliday.findAll({
-        where: sequelize.where(
-          sequelize.fn('DATE_FORMAT', sequelize.col('holiday_date'), '%Y-%m'),
-          `${String(yr).padStart(4, '0')}-${String(mo).padStart(2, '0')}`,
-        ),
-        attributes: ['holiday_date', 'is_workday'],
-      })
-      for (const h of holidays) {
-        if (h.getDataValue('is_workday')) continue  // 调休上班日，不跳过
-        const d = h.getDataValue('holiday_date')
-        holidaySet.add(dateOnlyStr(new Date(d)))
-      }
-    } catch { /* dic_holiday 表不存在时静默 */ }
-    const filteredDailyKeys = dailyKeys.filter(pk => !holidaySet.has(pk))
+    const holidayMap = await buildHolidayMap(yr, mo)
+    const filteredDailyKeys = dailyKeys.filter(pk => !isRestDate(pk, holidayMap))
 
     // 本月 + skipPast → daily 只取今天及以后（过期的不参与 Upsert，也参与不了 DELETE 边界）
     const effectiveDailyKeys = (isCurrentMonth && skipPast)
@@ -255,6 +271,10 @@ export async function getMatrix(query: any) {
   const dailyKeys = dailyPeriodKeys(yr, mo)
   const weekKeys = weeklyPeriodKeys(yr, mo)
 
+  // 休息日计算（显式 dic_holiday + 默认周六周日）
+  const holidayMap = await buildHolidayMap(yr, mo)
+  const restDays = dailyKeys.filter(pk => isRestDate(pk, holidayMap))
+
   // 1. 查该设备全部启用标准
   const standards = await DeviceMaintenanceStandard.findAll({
     where: { device_id, status: 1 },
@@ -385,7 +405,7 @@ export async function getMatrix(query: any) {
     return acc + Object.values(it.records).filter((v: any) => v && v.result === '异常').length
   }, 0)
 
-  const dailyTotal = resultDaily.length * daysInMonth
+  const dailyTotal = resultDaily.length * (daysInMonth - restDays.length)
   const dailyCompleted = completedCount(resultDaily)
   const weeklyTotal = resultWeekly.length * weekKeys.length
   const weeklyCompleted = completedCount(resultWeekly)
@@ -405,6 +425,7 @@ export async function getMatrix(query: any) {
     month: mo,
     days_in_month: daysInMonth,
     week_keys: weekKeys,
+    rest_days: restDays,
     daily: { items: resultDaily },
     weekly: { items: resultWeekly },
     monthly: { items: resultMonthly },

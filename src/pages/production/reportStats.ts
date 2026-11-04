@@ -17,6 +17,12 @@ export interface ManpowerRecord {
 /** 计算人工工时：开工状态取当前时间，完工状态取 finish_time */
 export function calcManpowerHours(manpowerRecords: ManpowerRecord[], reportInfo: ReportInfo | null | undefined): number {
   if (!reportInfo || !reportInfo.report_time || !manpowerRecords || manpowerRecords.length === 0) return 0
+  // 优先使用后端已计算好的 net_hours（已扣除休息时间）
+  const hasNetHours = manpowerRecords.some(m => m.net_hours != null && Number(m.net_hours) > 0)
+  if (hasNetHours) {
+    return Number(manpowerRecords.reduce((sum, m) => sum + (Number(m.net_hours ?? m.man_hours) || 0), 0).toFixed(2))
+  }
+  // Fallback：旧逻辑，按报工时段动态算（未扣除休息时间）
   const start = dayjs(reportInfo.report_time)
   const end = reportInfo.status === '完工' && reportInfo.finish_time ? dayjs(reportInfo.finish_time) : dayjs()
   const diffMs = end.valueOf() - start.valueOf()
@@ -62,7 +68,7 @@ export function calcProcessStats(input: ProcessStatsInput) {
   const defectMaterial = processDefects.filter(d => d.defect_type === '来料不良').reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
   const defectProcess = processDefects.filter(d => d.defect_type === '制程不良').reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
   const defectScrap = scraps.filter(s => s.process_id === pid && s.defect_type === '检验报废').reduce((sum, s) => sum + (Number(s.quantity) || 0), 0)
-  const exceptionHours = exceptions.filter(e => e.process_id === pid).reduce((sum, e) => sum + (Number(e.duration) || 0), 0)
+  const exceptionHours = exceptions.filter(e => e.process_id === pid).reduce((sum, e) => sum + (Number(e.net_duration ?? e.duration) || 0), 0)
 
   // 人工工时为整单维度
   const manpowerHours = calcManpowerHours(manpowers, selectedReport)
@@ -87,7 +93,7 @@ export function calcReportStats(input: Omit<ProcessStatsInput, 'selectedProcessI
   const defectMaterial = defects.filter(d => d.defect_type === '来料不良').reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
   const defectProcess = defects.filter(d => d.defect_type === '制程不良').reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
   const defectScrapTotal = scraps.filter(d => d.defect_type === '检验报废').reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
-  const exceptionHours = exceptions.reduce((sum, e) => sum + (Number(e.duration) || 0), 0)
+  const exceptionHours = exceptions.reduce((sum, e) => sum + (Number(e.net_duration ?? e.duration) || 0), 0)
   const manpowerHours = calcManpowerHours(manpowers, selectedReport)
 
   let inputQty = 0

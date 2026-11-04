@@ -44,6 +44,7 @@ interface MatrixResp {
   month: number
   days_in_month: number
   week_keys: string[]
+  rest_days: string[]
   daily: { items: MatrixItem[] }
   weekly: { items: MatrixItem[] }
   monthly: { items: MatrixItem[] }
@@ -116,6 +117,8 @@ export default function DeviceMaintenancePrint() {
     return { dailyDates, weekKeys: data.week_keys }
   }, [data])
 
+  const restDaySet = useMemo(() => new Set(data?.rest_days || []), [data])
+
   return (
     <div className="print-page-root">
       {/* ===== 操作栏（不打印） ===== */}
@@ -177,7 +180,9 @@ export default function DeviceMaintenancePrint() {
                         <th className="col-seq">序号</th>
                         <th className="col-item">保养项目</th>
                         {allPeriods.dailyDates.map(d => (
-                          <th key={d} className="col-day">{Number(d.slice(8, 10))}</th>
+                          <th key={d} className={`col-day ${restDaySet.has(d) ? 'col-rest-day' : ''}`}>
+                            {Number(d.slice(8, 10))}{restDaySet.has(d) && <span className="col-rest-badge">休</span>}
+                          </th>
                         ))}
                         <th className="col-executor">执行人员</th>
                       </tr>
@@ -188,12 +193,17 @@ export default function DeviceMaintenancePrint() {
                           <td className="text-center">{idx + 1}</td>
                           <td>{it.maintenance_content || '-'}</td>
                           {allPeriods.dailyDates.map(d => {
-                            const cell = cellValue(it.records?.[d] || null)
+                            const rec = it.records?.[d] || null
+                            const isRest = restDaySet.has(d)
+                            if (isRest && !rec) {
+                              return <td key={d} className="cell-result cell-rest"><span className="mark">休</span></td>
+                            }
+                            const cell = cellValue(rec)
                             return (
                               <td key={d} className={`cell-result ${cell.cls}`}>
                                 <span className="mark">{cell.text}</span>
-                                {it.records?.[d]?.executor && (
-                                  <span className="mini-executor">{it.records[d]!.executor}</span>
+                                {rec?.executor && (
+                                  <span className="mini-executor">{rec.executor}</span>
                                 )}
                               </td>
                             )
@@ -412,6 +422,10 @@ export default function DeviceMaintenancePrint() {
         .cell-done .mark { color: #19a11f; }
         .cell-skip { background: #fafafa !important; color: #888; }
         .cell-abnormal { background: #ffecec !important; color: #cf1322; font-weight: 600; }
+        .cell-rest { background: #f5f5f5 !important; color: #999 !important; text-align: center !important; }
+        .cell-rest .mark { color: #999; font-weight: 500; }
+        .col-rest-day { background: #fafafa !important; color: #cf1322 !important; }
+        .col-rest-badge { display: block; font-size: 8px; font-weight: 500; margin-top: 1px; color: #cf1322; }
         .mini-executor, .mini-note {
           display: block;
           font-size: 10px; color: #666;

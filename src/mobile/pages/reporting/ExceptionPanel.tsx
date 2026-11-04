@@ -295,10 +295,9 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
             </div>
           )}
 
-          {/* 时间输入 */}
+          {/* 时间（只读显示 —— 后端自动写 start_time=now） */}
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <input type="datetime-local" value={draft.start_time || ''} onChange={(e) => setDraft(d => ({ ...d, start_time: e.target.value }))} style={inputStyle} placeholder="开始时间" disabled={hasUnfinished} />
-            <input type="datetime-local" value={draft.end_time || ''} onChange={(e) => setDraft(d => ({ ...d, end_time: e.target.value }))} style={inputStyle} placeholder="结束时间（可选）" disabled={hasUnfinished} />
+            <div style={inputStyle}>开始时间：保存时自动取当前时间</div>
           </div>
 
           {/* 停机描述 */}
