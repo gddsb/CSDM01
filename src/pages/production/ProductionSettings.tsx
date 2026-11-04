@@ -249,12 +249,12 @@ function HolidayTab() {
     const weekdayLabels = ['日', '一', '二', '三', '四', '五', '六']
     return (
       <div style={{ flex: 1, minWidth: 340 }}>
-        <div style={{ textAlign: 'center', fontWeight: 600, marginBottom: 8, fontSize: 15 }}>
+        <div style={{ textAlign: 'center', fontWeight: 600, marginBottom: 8, fontSize: 15, color: 'var(--text-primary)' }}>
           {year} 年 {month} 月
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
           {weekdayLabels.map(w => (
-            <div key={w} style={{ textAlign: 'center', padding: '4px 0', color: '#999', fontSize: 12 }}>{w}</div>
+            <div key={w} style={{ textAlign: 'center', padding: '4px 0', color: 'var(--text-secondary)', fontSize: 12 }}>{w}</div>
           ))}
           {grid.map((d, idx) => {
             const ds = toDateStr(d)
@@ -264,35 +264,42 @@ function HolidayTab() {
             const isPast = parseDateStr(ds).getTime() < parseDateStr(todayStr).getTime()
             const { isRest, source } = resolveDayStatus(d, h)
 
-            let bg = inMonth ? '#fff' : '#fafafa'
-            let color = inMonth ? 'inherit' : '#ccc'
-            let border = '1px solid #f0f0f0'
-            let badgeText: React.ReactNode = null
-            let badgeColor = ''
+            // 主题友好的颜色（全部走 CSS 变量，暗夜/亮色自动切换）
+            let bg = 'var(--bg-card)'
+            let color = inMonth ? 'var(--text-primary)' : 'var(--text-secondary)'
+            let border = '1px solid var(--border-color)'
             let cursor = 'pointer'
+            let badgeNode: React.ReactNode = null
 
-            if (isPast) { cursor = 'not-allowed'; color = '#ccc'; bg = '#f9f9f9' }
-            else if (source === 'explicit') {
+            if (isPast) {
+              cursor = 'not-allowed'
+              color = 'var(--text-secondary)'
+              bg = 'color-mix(in srgb, var(--text-secondary) 15%, var(--bg-card))'
+            } else if (source === 'explicit') {
+              // 显式标记 — 用主题 error/primary 色混背景（高对比）
               if (h!.is_workday === 0) {
-                bg = '#fff1f0'; border = '1px solid #ffa39e'
-                badgeText = <span style={{ color: '#cf1322', fontWeight: 600 }}>休</span>
+                bg = 'color-mix(in srgb, var(--color-error) 18%, var(--bg-card))'
+                border = '1px solid var(--color-error)'
+                badgeNode = <span style={{ color: 'var(--color-error)', fontWeight: 600 }}>休</span>
               } else {
-                bg = '#e6f4ff'; border = '1px solid #91caff'
-                badgeText = <span style={{ color: '#0958d9', fontWeight: 600 }}>班</span>
+                bg = 'color-mix(in srgb, var(--color-primary) 18%, var(--bg-card))'
+                border = '1px solid var(--color-primary)'
+                badgeNode = <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>班</span>
               }
             } else {
-              // 默认状态（无显式标记）
+              // 默认状态（无显式标记）— 用次级文字色降权，也显示 badge
               if (isRest) {
-                bg = '#fafafa'
-                badgeText = <span style={{ color: '#bbb', fontWeight: 500 }}>休</span>
+                bg = 'color-mix(in srgb, var(--text-secondary) 10%, var(--bg-card))'
+                badgeNode = <span style={{ color: 'var(--text-secondary)', opacity: 0.75, fontWeight: 500 }}>休</span>
               } else {
-                // 默认上班不显示 badge，保持干净
+                // 默认工作日：浅色混合 + 灰 badge（让用户一眼看出是"正常上班"）
+                bg = 'var(--bg-card)'
+                badgeNode = <span style={{ color: 'var(--text-secondary)', opacity: 0.65, fontWeight: 500 }}>班</span>
               }
             }
-            if (isToday) border = '2px solid #1677ff'
+            if (isToday) border = '2px solid var(--color-primary)'
 
-            const weekDayLabels = ['日', '一', '二', '三', '四', '五', '六']
-            const weekday = weekDayLabels[d.getDay()]
+            const weekday = weekdayLabels[d.getDay()]
             const dayTip = isPast ? '过去日期不可修改'
               : source === 'explicit'
                 ? `${h?.holiday_name || ''}（${h!.is_workday === 0 ? '显式休息' : '调休上班'}）`
@@ -321,7 +328,7 @@ function HolidayTab() {
                 }}
               >
                 <span style={{ fontSize: 13 }}>{d.getDate()}</span>
-                {badgeText}
+                {badgeNode}
               </div>
             )
           })}
