@@ -34,6 +34,7 @@ export const defaultConfigs = [
   { config_key: 'default_line', config_value: 'A线', config_desc: '默认产线' },
   { config_key: 'standard_hours', config_value: '8', config_desc: '标准工时' },
   { config_key: 'shift_setting', config_value: '白班', config_desc: '班次设置（默认白班）' },
+  { config_key: 'default_break_times', config_value: '', config_desc: '默认休息时间段(JSON)' },
   { config_key: 'default_standard', config_value: '', config_desc: '默认检验标准' },
   { config_key: 'defect_warning_threshold', config_value: '3', config_desc: '不良率预警阈值(%)' },
   { config_key: 'microbe_cycle', config_value: '7', config_desc: '微生物检测周期(天)' },
