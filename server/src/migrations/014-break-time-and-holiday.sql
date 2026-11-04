@@ -11,7 +11,7 @@ SET @has := (SELECT COUNT(*) FROM information_schema.TABLES
 SET @sql := IF(@has = 0,
   "CREATE TABLE production_break_time (
     break_time_id    CHAR(36) PRIMARY KEY COMMENT '休息记录ID',
-    report_order_id  CHAR(36) NOT NULL COMMENT '关联报工单',
+    report_order_id  INT NOT NULL COMMENT '关联报工单',
     start_time       DATETIME NOT NULL COMMENT '休息开始时间',
     end_time         DATETIME NOT NULL COMMENT '休息结束时间',
     duration_minutes INT GENERATED ALWAYS AS (

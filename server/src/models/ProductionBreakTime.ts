@@ -9,7 +9,7 @@ const ProductionBreakTime = sequelize.define('ProductionBreakTime', {
     comment: '休息记录ID（UUID）',
   },
   report_order_id: {
-    type: DataTypes.CHAR(36),
+    type: DataTypes.INTEGER,
     allowNull: false,
     index: true,
     comment: '关联报工单ID',
