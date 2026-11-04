@@ -140,12 +140,18 @@ export default function DeviceMaintenanceHistory() {
     { title: '设备编号', dataIndex: 'device_code', width: 130, render: (v: string) => v || '-' },
     { title: '设备名称', dataIndex: 'device_name', width: 150, render: (v: string) => v || '-' },
     {
-      title: '保养项', width: 200, render: (_: any, r: any) => (
-        <div>
+      title: '保养项', width: 260, render: (_: any, r: any) => (
+        <div style={{ whiteSpace: 'normal', wordBreak: 'break-all', lineHeight: 1.5 }}>
           <div style={{ fontWeight: 500 }}>{r.standard?.maintenance_content || '-'}</div>
-          {r.standard?.mechanism && <Text type="secondary" style={{ fontSize: 12 }}>{r.standard.mechanism}</Text>}
+          {r.standard?.mechanism && <div style={{ fontSize: 12, color: 'var(--m-text-3)' }}>{r.standard.mechanism}</div>}
         </div>
       ),
+    },
+    {
+      title: '执行日期', width: 130, render: (_: any, r: any) => {
+        const d = r.end_time || r.start_time
+        return d ? dayjs(d).format('YYYY-MM-DD') : <Text type="secondary">-</Text>
+      },
     },
     {
       title: '频率', width: 90, render: (_: any, r: any) => (
@@ -164,13 +170,10 @@ export default function DeviceMaintenanceHistory() {
     },
     { title: '执行人', dataIndex: 'executor_name', width: 100, render: (v: string) => v || '-' },
     {
-      title: '执行日期', width: 130, render: (_: any, r: any) => {
-        const d = r.end_time || r.start_time
-        return d ? dayjs(d).format('YYYY-MM-DD') : <Text type="secondary">-</Text>
-      },
+      title: '周期', width: 110, dataIndex: 'period_key', render: (v: string) => v || '-',
     },
     {
-      title: '操作', width: 100, fixed: 'right' as const, render: (_: any, r: any) => (
+      title: '操作', width: 80, fixed: 'right' as const, render: (_: any, r: any) => (
         <Button size="small" type="link" onClick={() => handleDetail(r.record_id)}>详情</Button>
       ),
     },
@@ -210,6 +213,7 @@ export default function DeviceMaintenanceHistory() {
             />
             <RangePicker
               style={{ width: 240 }}
+              disabledDate={(current: dayjs.Dayjs) => current && current.isAfter(dayjs().endOf('day'))}
               onChange={(ds) => {
                 setFilters(f => ({
                   ...f,

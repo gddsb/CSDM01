@@ -80,7 +80,7 @@ const {
         if (end_date) where.created_at[Op.lte] = new Date(`${end_date} 23:59:59`)
       }
 
-      // 历史记录模式：只看本月以外的已完成/跳过记录
+      // 历史记录模式：只看本月以外的已完成/跳过记录（已到期）
       if (extra === 'history') {
         where.status = { [Op.in]: (statusArr && statusArr.length) ? statusArr : [2, 3] }
         if (!start_date && !end_date) {
@@ -89,6 +89,14 @@ const {
           const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
           where.created_at = {
             [Op.or]: [{ [Op.lt]: monthStart }, { [Op.gt]: monthEnd }],
+          }
+        } else {
+          // 用户选了日期范围 → 也要限制 end_date ≤ 今天
+          if (!end_date) {
+            const today = new Date()
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+            where.created_at = where.created_at || {}
+            where.created_at[Op.lte] = new Date(`${todayStr} 23:59:59`)
           }
         }
       }
@@ -103,8 +111,14 @@ const {
         order: [['device_id', 'ASC'], ['trigger_mode', 'ASC'], ['period_key', 'ASC'], ['record_id', 'ASC']],
         limit: finalPageSize,
         offset: (pageNum - 1) * finalPageSize,
-        // 保养计划列表只需要 record 本身字段，不需要 JOIN standard
-        // JOIN 会显著拖慢全量查询（5k+ 条），且前端分组不依赖 standard 嵌套字段
+        include: [
+          {
+            model: DeviceMaintenanceStandard,
+            as: 'standard',
+            attributes: ['standard_id', 'maintenance_content', 'mechanism', 'component', 'location'],
+            required: false,
+          },
+        ],
       })
 
       return { list: rows, total: count, page: pageNum, pageSize: finalPageSize }

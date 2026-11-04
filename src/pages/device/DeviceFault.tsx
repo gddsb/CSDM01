@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import {
   Tag, Button, Select, DatePicker, Space, Input, Drawer, Form, Descriptions,
   Typography, Alert, Modal, Popconfirm, Upload, Image, Timeline,
-  InputNumber, Divider, Empty, Spin, message,
+  InputNumber, Divider, Empty, Spin, message, Checkbox,
 } from 'antd'
 import type { UploadFile } from 'antd'
 import {
@@ -544,7 +544,13 @@ export default function DeviceFault() {
       title: '故障等级', dataIndex: 'fault_level', key: 'fault_level', width: 90,
       render: (v: string) => <Tag color={levelColor[v] || 'default'}>{v || '-'}</Tag>,
     },
-    { title: '故障现象', dataIndex: 'fault_desc', key: 'fault_desc', width: 200, ellipsis: true },
+    {
+      title: '故障现象', dataIndex: 'fault_desc', key: 'fault_desc',
+      width: 260,
+      render: (v: string) => (
+        <div style={{ whiteSpace: 'normal', wordBreak: 'break-all', lineHeight: 1.5 }}>{v || '-'}</div>
+      ),
+    },
     { title: '上报人', dataIndex: 'reporter_name', key: 'reporter_name', width: 100 },
     { title: '维修人', dataIndex: 'repairer_name', key: 'repairer_name', width: 100 },
     { title: '故障时间', dataIndex: 'fault_time', key: 'fault_time', width: 160, render: formatDateTime },
@@ -553,12 +559,12 @@ export default function DeviceFault() {
       render: (v: string) => <Tag color={statusColor[v] || 'default'}>{v}</Tag>,
     },
     {
-      title: '操作', key: 'action', fixed: 'right' as const, width: 220,
+      title: '操作', key: 'action', fixed: 'right' as const,
       render: (_: any, record: DeviceFault) => {
         const status = record.status
         return (
           <Space size="small" wrap>
-            <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => showDetail(record)}>查看详情</Button>
+            <Button type="link" size="small" onClick={() => showDetail(record)}>详情</Button>
             {status === '待派工' && (
               <>
                 <Button type="link" size="small" onClick={() => openAssign(record)}>派工</Button>
@@ -566,7 +572,7 @@ export default function DeviceFault() {
               </>
             )}
             {status === '维修中' && (
-              <Button type="link" size="small" onClick={() => openRepair(record)}>提交维修</Button>
+              <Button type="link" size="small" onClick={() => openRepair(record)}>维修</Button>
             )}
             {status === '待审批' && (
               <Button type="link" size="small" onClick={() => openApprove(record)}>审批</Button>
@@ -598,16 +604,15 @@ export default function DeviceFault() {
         value={levelFilter}
         onChange={(v) => { setLevelFilter(v); setPagination(p => ({ ...p, current: 1 })) }}
       />
-      <Select
-        mode="multiple"
-        placeholder="状态（可多选）"
-        allowClear
-        maxTagCount="responsive"
-        style={{ minWidth: 180 }}
-        options={STATUS_OPTIONS}
+      <Checkbox.Group
         value={statusFilters}
         onChange={(v) => { setStatusFilters(v as string[]); setPagination(p => ({ ...p, current: 1 })) }}
-      />
+        style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}
+      >
+        {STATUS_OPTIONS.map((o: any) => (
+          <Checkbox key={o.value} value={o.value}>{o.label}</Checkbox>
+        ))}
+      </Checkbox.Group>
       <Select
         placeholder="快速时间"
         allowClear
