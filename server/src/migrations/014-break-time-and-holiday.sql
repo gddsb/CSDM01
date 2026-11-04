@@ -68,19 +68,19 @@ SET @sql := IF(@has = 0,
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- ===== 6. sys_permission 插入"生产设置"菜单 =====
-SET @prod_id := (SELECT permission_id FROM sys_permission WHERE perm_code = 'production' LIMIT 1);
+SET @prod_id := (SELECT perm_id FROM sys_permission WHERE perm_code = 'production' LIMIT 1);
 SET @menu_exists := (SELECT COUNT(*) FROM sys_permission WHERE perm_code = 'production:settings');
 SET @sql := IF(@prod_id IS NOT NULL AND @menu_exists = 0,
-  CONCAT("INSERT INTO sys_permission (parent_id, perm_name, perm_code, type, icon, path, sort_order, created_at, updated_at)
-          VALUES (", @prod_id, ", '生产设置', 'production:settings', 'menu', 'SettingOutlined', '/production/settings', 3, NOW(), NOW())"),
+  CONCAT("INSERT INTO sys_permission (parent_id, perm_name, perm_code, type, icon, path, sort_order, visible, status, created_at)
+          VALUES (", @prod_id, ", '生产设置', 'production:settings', 'menu', 'SettingOutlined', '/production/settings', 3, 1, 1, NOW())"),
   "SELECT 'skip: production:settings menu exists or production missing' AS info");
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
--- ===== 7. 给 admin/sysadmin/pm/planner 角色授权 production:settings =====
-SET @perm_id := (SELECT permission_id FROM sys_permission WHERE perm_code = 'production:settings' LIMIT 1);
-SET @roles_csv := "'admin','sysadmin','pm','planner'";
+-- ===== 7. 给超级管理员/系统管理员/生产管理员/计划员 角色授权 production:settings =====
+SET @perm_id := (SELECT perm_id FROM sys_permission WHERE perm_code = 'production:settings' LIMIT 1);
+SET @roles_csv := "'SUPER_ADMIN','ADMIN','PROD_MANAGER','PLANNER'";
 SET @sql := IF(@perm_id IS NOT NULL,
-  CONCAT("INSERT IGNORE INTO sys_role_permission (role_id, permission_id)
+  CONCAT("INSERT IGNORE INTO sys_role_permission (role_id, perm_id)
           SELECT r.role_id, ", @perm_id, "
           FROM sys_role r WHERE r.role_code IN (", @roles_csv, ")"),
   "SELECT 'skip: role_permission auth' AS info");
