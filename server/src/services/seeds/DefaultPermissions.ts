@@ -26,6 +26,7 @@ export const defaultPermissions = [
   { parent_id: 0, perm_name: '生产管理', perm_code: 'production', type: 'menu', icon: 'ToolOutlined', path: 'production', sort_order: 1 },
   { parent_id: 0, parent_code: 'production', perm_name: '生产订单', perm_code: 'production:order', type: 'menu', icon: 'FileTextOutlined', path: '/production/orders', sort_order: 1 },
   { parent_id: 0, parent_code: 'production', perm_name: '生产报工', perm_code: 'production:reporting', type: 'menu', icon: 'ProfileOutlined', path: '/production/reporting', sort_order: 2 },
+  { parent_id: 0, parent_code: 'production', perm_name: '生产设置', perm_code: 'production:settings', type: 'menu', icon: 'SettingOutlined', path: '/production/settings', sort_order: 3 },
   // 质量管理
   { parent_id: 0, perm_name: '质量管理', perm_code: 'quality', type: 'menu', icon: 'ExperimentOutlined', path: 'quality', sort_order: 2 },
   { parent_id: 0, parent_code: 'quality', perm_name: '检验标准', perm_code: 'quality:standard', type: 'menu', icon: 'SafetyCertificateOutlined', path: '/quality/standards', sort_order: 8 },
