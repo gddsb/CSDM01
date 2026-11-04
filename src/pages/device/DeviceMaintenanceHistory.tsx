@@ -39,8 +39,10 @@ const RESULT_COLOR: Record<string, string> = {
   '异常': 'error',
 }
 
-// 历史记录仅展示已完成/跳过
+// 历史记录展示所有状态（计划的都包含）
 const HISTORY_STATUS_OPTIONS = [
+  { label: '待执行', value: '待执行' },
+  { label: '执行中', value: '执行中' },
   { label: '已完成', value: '已完成' },
   { label: '跳过', value: '跳过' },
 ]
@@ -65,8 +67,8 @@ export default function DeviceMaintenanceHistory() {
     device_id: undefined as number | undefined,
     trigger_mode: undefined as string | undefined,
     status: undefined as string | undefined,
-    start_date: undefined as string | undefined,
-    end_date: undefined as string | undefined,
+    start_date: dayjs().startOf('month').format('YYYY-MM-DD'),
+    end_date: dayjs().format('YYYY-MM-DD'),
     keyword: '',
   })
 
@@ -147,12 +149,7 @@ export default function DeviceMaintenanceHistory() {
         </div>
       ),
     },
-    {
-      title: '执行日期', width: 130, render: (_: any, r: any) => {
-        const d = r.end_time || r.start_time
-        return d ? dayjs(d).format('YYYY-MM-DD') : <Text type="secondary">-</Text>
-      },
-    },
+    { title: '周期', width: 110, dataIndex: 'period_key', render: (v: string) => v || '-' },
     {
       title: '频率', width: 90, render: (_: any, r: any) => (
         <Tag color={MODE_COLOR[r.trigger_mode]}>{MODE_LABEL[r.trigger_mode] || r.trigger_mode}</Tag>
@@ -170,7 +167,10 @@ export default function DeviceMaintenanceHistory() {
     },
     { title: '执行人', dataIndex: 'executor_name', width: 100, render: (v: string) => v || '-' },
     {
-      title: '周期', width: 110, dataIndex: 'period_key', render: (v: string) => v || '-',
+      title: '执行日期', width: 130, render: (_: any, r: any) => {
+        const d = r.end_time || r.start_time
+        return d ? dayjs(d).format('YYYY-MM-DD') : <Text type="secondary">-</Text>
+      },
     },
     {
       title: '操作', width: 80, fixed: 'right' as const, render: (_: any, r: any) => (
@@ -210,6 +210,7 @@ export default function DeviceMaintenanceHistory() {
             />
             <RangePicker
               style={{ width: 240 }}
+              value={[dayjs(filters.start_date), dayjs(filters.end_date)]}
               disabledDate={(current: dayjs.Dayjs) => current && current.isAfter(dayjs().endOf('day'))}
               onChange={(ds) => {
                 setFilters(f => ({
@@ -225,8 +226,8 @@ export default function DeviceMaintenanceHistory() {
                 device_id: undefined,
                 trigger_mode: undefined,
                 status: undefined,
-                start_date: undefined,
-                end_date: undefined,
+                start_date: dayjs().startOf('month').format('YYYY-MM-DD'),
+                end_date: dayjs().format('YYYY-MM-DD'),
                 keyword: '',
               })
               setPage(1)

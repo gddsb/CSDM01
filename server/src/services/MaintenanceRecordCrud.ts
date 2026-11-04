@@ -80,24 +80,13 @@ const {
         if (end_date) where.created_at[Op.lte] = new Date(`${end_date} 23:59:59`)
       }
 
-      // 历史记录模式：只看本月以外的已完成/跳过记录（已到期）
+      // 历史记录模式：不再强制过滤状态和日期范围
+      // 用户选什么范围/状态就查什么范围/状态；不选就全部返回
       if (extra === 'history') {
-        where.status = { [Op.in]: (statusArr && statusArr.length) ? statusArr : [2, 3] }
-        if (!start_date && !end_date) {
-          const now = new Date()
-          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-          const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
-          where.created_at = {
-            [Op.or]: [{ [Op.lt]: monthStart }, { [Op.gt]: monthEnd }],
-          }
-        } else {
-          // 用户选了日期范围 → 也要限制 end_date ≤ 今天
-          if (!end_date) {
-            const today = new Date()
-            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-            where.created_at = where.created_at || {}
-            where.created_at[Op.lte] = new Date(`${todayStr} 23:59:59`)
-          }
+        // 已到期/未到期/已完成/未完成 全部包含
+        // 让前端 filters.status 自己决定；statusArr 没传就是全部
+        if (statusArr && statusArr.length) {
+          where.status = { [Op.in]: statusArr }
         }
       }
 
