@@ -24,7 +24,6 @@ import {
 import { useApp } from '../../contexts/AppContext'
 import { useOfflineQueue } from '../hooks/useOfflineQueue'
 import api from '../../utils/api'
-import { nowLocalDateStr } from '../../utils/localTime'
 import {
   DEFAULT_ORDER, STORAGE_KEY,
   type QuickEntry, type TodoItem,
@@ -87,98 +86,36 @@ export default function MobileDashboard() {
 
   // ========== 加载代办 ==========
   const loadTodos = useCallback(async () => {
-    const items: TodoItem[] = []
-    type TodoResp = { icon: string; text: string; count: number; path: string; color: string }
-
-    const apis: Promise<TodoResp>[] = [
-      // 待完工订单（原"生产中订单"）
-      api.get('/production/orders', { params: { page: 1, pageSize: 1, status: 2 } })
-        .then((r: any) => {
-          // production/orders 返回 total 在顶层（r.total），data 是数组
-          const total = Array.isArray(r.data) ? (r.total ?? 0) : (r.data?.total ?? r.total ?? 0)
-          return { icon: '🏃', text: '待完工订单', count: total, path: '/m/production-orders?tab=开工', color: '#4CAF50' }
-        })
-        .catch(() => ({ icon: '🏃', text: '待完工订单', count: 0, path: '/m/production-orders?tab=开工', color: '#4CAF50' })),
-      // 待维保设备（今日待执行/执行中设备去重计数 — 按 period_key 过滤）
-      api.get('/basic/device-records', {
-        params: (() => {
-          const now = new Date()
-          const todayKey = nowLocalDateStr(now)
-          // ISO week 计算（本地时区，避免 UTC 偏移 8 小时导致日期错乱）
-          const t = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-          t.setDate(t.getDate() + 4 - (t.getDay() || 7))
-          const yearStart = new Date(t.getFullYear(), 0, 1)
-          const week = Math.ceil((((+t - +yearStart) / 86400000) + 1) / 7)
-          const weekKey = `${t.getFullYear()}-W${String(week).padStart(2, '0')}`
-          const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-          return {
-            page: 1, pageSize: 200,
-            status: '待执行,执行中',
-            period_key: `${todayKey},${weekKey},${monthKey}`,
-            mine: 'true',
-          }
-        })(),
-      }).then((r: any) => {
-        const list: any[] = Array.isArray(r.data) ? r.data : (r.data?.list ?? [])
-        const deviceCount = new Set(list.map((x: any) => x.device_id).filter(Boolean)).size
-        return { icon: '🧰', text: '待维保设备', count: deviceCount, path: '/m/device-maintenance', color: '#FF9800' }
-      })
-        .catch(() => ({ icon: '🧰', text: '待维保设备', count: 0, path: '/m/device-maintenance', color: '#FF9800' })),
-    ]
-
-    // 待检验任务（按权限，合并来料+环境）
-    if (hasPermission('quality:incoming') || hasPermission('quality:env')) {
-      apis.push(
-        api.get('/basic/incoming-inspections', { params: { page: 1, pageSize: 1, status: '待检验' } })
-          .then((r: any) => ({ n: 'incoming', c: r.data?.total ?? r.total ?? 0 }))
-          .catch(() => ({ n: 'incoming', c: 0 })),
-        api.get('/basic/env-inspections', { params: { page: 1, pageSize: 1, status: '待检验' } })
-          .then((r: any) => ({ n: 'env', c: r.data?.total ?? r.total ?? 0 }))
-          .catch(() => ({ n: 'env', c: 0 })),
-      )
-    }
-
-    if (hasPermission('device:inspection')) {
-      apis.push(
-        api.get('/basic/device-records', { params: { page: 1, pageSize: 1, status: '待点检' } })
-          .then((r: any) => ({ icon: '⚙️', text: '待设备点检', count: r.data?.total ?? r.total ?? 0, path: '/m/device-maintenance', color: '#00BCD4' })),
-      )
-    }
-    if (hasPermission('device:fault')) {
-      apis.push(
-        api.get('/basic/device-faults', { params: { page: 1, pageSize: 1, status: '待派工,维修中,待审批' } })
-          .then((r: any) => ({ icon: '🚨', text: '设备故障待处理', count: r.data?.total ?? r.total ?? 0, path: '/m/device-fault', color: '#F44336' })),
-      )
-    }
-    if (hasPermission('device:calibration')) {
-      apis.push(
-        api.get('/basic/device-calibration-plans', { params: { page: 1, pageSize: 1, status: '待校准' } })
-          .then((r: any) => ({ icon: '⚠️', text: '校准到期提醒', count: r.data?.total ?? r.total ?? 0, path: '/m/calibration-reminder', color: '#FF5722' })),
-      )
-    }
-
     try {
-      const results = await Promise.allSettled(apis)
-      let incomingTotal = 0
-      let envTotal = 0
-      results.forEach((res) => {
-        if (res.status !== 'fulfilled') return
-        const v: any = res.value
-        if (v && typeof v === 'object' && !v.icon && (v.n === 'incoming' || v.n === 'env')) {
-          // 检验计数累加
-          if (v.n === 'incoming') incomingTotal += v.c || 0
-          if (v.n === 'env') envTotal += v.c || 0
-        } else if (v && v.icon) {
-          items.push(v as TodoResp)
-        }
-      })
-      if (incomingTotal > 0 || envTotal > 0) {
-        items.push({ icon: '✅', text: '待检验任务', count: incomingTotal + envTotal, path: '/m/incoming-inspection', color: '#4CAF50' })
-      }
-    } catch { /* ignore */ }
+      // 统一待办接口：口径与 PC 端完全一致（本人负责/检查 + 日期周期在后端计算）
+      const r: any = await api.get('/auto/dashboard/todos')
+      const d = r.data || {}
+      const items: TodoItem[] = [
+        { icon: '🏃', text: '待完工订单', count: d.pendingOrders ?? 0, path: '/m/production-orders?tab=开工', color: '#4CAF50' },
+        { icon: '🧰', text: '待维保设备', count: d.pendingMaintenanceDevices ?? 0, path: '/m/device-maintenance', color: '#FF9800' },
+      ]
 
-    const filtered = items.filter((i) => i.count > 0)
-    setTodos(filtered)
+      if (hasPermission('device:inspection')) {
+        items.push(
+          { icon: '⚙️', text: '每日待点检', count: d.dailyInspection ?? 0, path: '/m/device-maintenance', color: '#00BCD4' },
+          { icon: '📅', text: '定期待保养项', count: d.periodicMaintenance ?? 0, path: '/m/device-maintenance', color: '#FF9800' },
+        )
+      }
+      if (hasPermission('device:fault')) {
+        items.push({ icon: '🚨', text: '设备故障待处理', count: d.pendingFaults ?? 0, path: '/m/device-fault', color: '#F44336' })
+      }
+      if (hasPermission('device:calibration')) {
+        items.push({ icon: '⚠️', text: '校准到期提醒', count: d.pendingCalibration ?? 0, path: '/m/calibration-reminder', color: '#FF5722' })
+      }
+      if (hasPermission('quality:incoming') || hasPermission('quality:env')) {
+        const inspectionTotal = (d.pendingIncoming ?? 0) + (d.pendingEnv ?? 0)
+        if (inspectionTotal > 0) {
+          items.push({ icon: '✅', text: '待检验任务', count: inspectionTotal, path: '/m/incoming-inspection', color: '#4CAF50' })
+        }
+      }
+
+      setTodos(items.filter((i) => i.count > 0))
+    } catch { /* 待办加载失败不阻塞首页 */ }
   }, [hasPermission])
 
   useEffect(() => {

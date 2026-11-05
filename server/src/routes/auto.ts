@@ -5,6 +5,7 @@ import { syncToMasterData, syncProductionOrdersFull } from '../modules/auto/Sync
 import {
   dashboardOverview, dashboardTrend,
   productionDashboard, qualityDashboard, managementDashboard,
+  dashboardTodos,
 } from '../modules/auto/DashboardController.js'
 import { oeeHandler } from '../modules/auto/OeeController.js'
 
@@ -19,6 +20,9 @@ router.get('/dashboard/management', managementDashboard)
 router.get('/dashboard/oee', oeeHandler)
 
 router.use(authRequired)
+
+// 待办事项（PC / 移动端统一口径，按当前登录用户统计）
+router.get('/dashboard/todos', dashboardTodos)
 
 // 任务设置
 router.get('/task-settings', autoController.listTaskSettings)

@@ -8,36 +8,14 @@ import {
 } from '@ant-design/icons'
 import { useApp } from '../contexts/AppContext'
 import api from '../utils/api'
-import { nowLocalDateStr } from '../utils/localTime'
 
 const { Title, Text } = Typography
-
-/** 统一解析列表接口的 total（兼容 data 是数组 vs 嵌套对象） */
-function extractTotal(r: any): number {
-  if (!r) return 0
-  if (Array.isArray(r.data)) return r.total ?? 0
-  return r.data?.total ?? r.total ?? 0
-}
 
 /** 统一解析列表接口的 list */
 function extractList(r: any): any[] {
   if (!r) return []
   if (Array.isArray(r.data)) return r.data
   return r.data?.list ?? r.data?.records ?? []
-}
-
-/** 构造今日+周+月 period_key（本地时区，避免 UTC 偏移） */
-function buildPeriodKeys() {
-  const now = new Date()
-  const todayKey = nowLocalDateStr(now)
-  // ISO week 计算（本地时区）
-  const t = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  t.setDate(t.getDate() + 4 - (t.getDay() || 7))
-  const yearStart = new Date(t.getFullYear(), 0, 1)
-  const week = Math.ceil((((+t - +yearStart) / 86400000) + 1) / 7)
-  const weekKey = `${t.getFullYear()}-W${String(week).padStart(2, '0')}`
-  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  return `${todayKey},${weekKey},${monthKey}`
 }
 
 interface TodoItem { icon: string; label: string; count: number; color: string; path: string }
@@ -74,34 +52,23 @@ export default function Dashboard() {
     return () => { cancelled = true }
   }, [])
 
-  // ========== 待办事项加载（与移动端同口径，4 个 API 全真实数据） ==========
+  // ========== 待办事项加载（统一接口 /auto/dashboard/todos，口径与移动端一致） ==========
   const loadTodos = useCallback(async () => {
-    const periodKeys = buildPeriodKeys()
-    const apis: Promise<TodoItem>[] = [
-      // 待完工订单（production/orders status=2 开工中）
-      api.get('/production/orders', { params: { page: 1, pageSize: 1, status: 2 } })
-        .then((r: any) => ({ icon: '🏃', label: '待完工订单', count: extractTotal(r), color: 'var(--color-success)', path: '/production/orders?tab=开工' }))
-        .catch(() => ({ icon: '🏃', label: '待完工订单', count: 0, color: 'var(--color-success)', path: '/production/orders?tab=开工' })),
-      // 待维保设备（今日+周+月，按 device_id 去重）
-      api.get('/basic/device-records', { params: { page: 1, pageSize: 200, status: '待执行,执行中', period_key: periodKeys } })
-        .then((r: any) => {
-          const list = extractList(r)
-          const cnt = new Set(list.map((x: any) => x.device_id).filter(Boolean)).size
-          return { icon: '🧰', label: '待维保设备', count: cnt, color: 'var(--color-warning)', path: '/device/maintenance' }
-        })
-        .catch(() => ({ icon: '🧰', label: '待维保设备', count: 0, color: 'var(--color-warning)', path: '/device/maintenance' })),
-      // 设备故障待处理（待派工+维修中+待审批=未关闭，与移动端同口径）
-      api.get('/device-faults', { params: { page: 1, pageSize: 1, status: '待派工,维修中,待审批' } })
-        .then((r: any) => ({ icon: '🚨', label: '设备故障待处理', count: extractTotal(r), color: 'var(--color-error)', path: '/device/fault' }))
-        .catch(() => ({ icon: '🚨', label: '设备故障待处理', count: 0, color: 'var(--color-error)', path: '/device/fault' })),
-      // 待检验来料
-      api.get('/basic/incoming-inspections', { params: { page: 1, pageSize: 1, status: '待检验' } })
-        .then((r: any) => ({ icon: '✅', label: '待检验来料', count: extractTotal(r), color: 'var(--color-success)', path: '/quality/incoming' }))
-        .catch(() => ({ icon: '✅', label: '待检验来料', count: 0, color: 'var(--color-success)', path: '/quality/incoming' })),
-    ]
-    const results = await Promise.allSettled(apis)
-    const items = results.filter(r => r.status === 'fulfilled').map(r => (r as any).value) as TodoItem[]
-    setTodos(items.filter(i => i.count > 0))
+    try {
+      const r: any = await api.get('/auto/dashboard/todos')
+      const d = r.data || {}
+      const items: TodoItem[] = [
+        { icon: '🏃', label: '待完工订单', count: d.pendingOrders ?? 0, color: 'var(--color-success)', path: '/production/orders?tab=开工' },
+        { icon: '🧰', label: '待维保设备', count: d.pendingMaintenanceDevices ?? 0, color: 'var(--color-warning)', path: '/device/maintenance' },
+        { icon: '⚙️', label: '每日待点检', count: d.dailyInspection ?? 0, color: 'var(--color-primary)', path: '/device/maintenance' },
+        { icon: '📅', label: '定期待保养项', count: d.periodicMaintenance ?? 0, color: 'var(--color-warning)', path: '/device/maintenance' },
+        { icon: '🚨', label: '设备故障待处理', count: d.pendingFaults ?? 0, color: 'var(--color-error)', path: '/device/fault' },
+        { icon: '✅', label: '待检验来料', count: d.pendingIncoming ?? 0, color: 'var(--color-success)', path: '/quality/incoming' },
+      ]
+      setTodos(items.filter(i => i.count > 0))
+    } catch (err: any) {
+      logger.error('加载待办事项失败:', err?.message || err)
+    }
   }, [])
 
   useEffect(() => { loadTodos() }, [loadTodos])
