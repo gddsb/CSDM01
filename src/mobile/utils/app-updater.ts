@@ -147,6 +147,9 @@ async function fetchRelease(forceRefresh = false): Promise<ServerRelease | null>
   return null
 }
 
+/** APK 下载到应用私有临时目录 cache/apk/ 下，仅该子目录由 FileProvider 暴露 */
+const APK_PATH = 'apk/update.apk'
+
 /** SHA256 校验（crypto.subtle 仅在安全上下文可用；不可用时跳过并告警） */
 async function verifyChecksum(plugins: any, expected: string): Promise<void> {
   const { Filesystem, Directory } = plugins
@@ -155,7 +158,7 @@ async function verifyChecksum(plugins: any, expected: string): Promise<void> {
     console.warn('[app-updater] 当前环境无 crypto.subtle，跳过安装包校验')
     return
   }
-  const res: any = await Filesystem.readFile({ path: 'update.apk', directory: Directory.Cache })
+  const res: any = await Filesystem.readFile({ path: APK_PATH, directory: Directory.Cache })
   const b64 = typeof res?.data === 'string' ? res.data : ''
   if (!b64) {
     console.warn('[app-updater] 无法读取安装包，跳过校验')
@@ -181,7 +184,7 @@ async function downloadAndInstallNative(release: ServerRelease): Promise<boolean
 
   try {
     // 清理上次残留
-    try { await Filesystem.deleteFile({ path: 'update.apk', directory: Directory.Cache }) } catch { /* 不存在时忽略 */ }
+    try { await Filesystem.deleteFile({ path: APK_PATH, directory: Directory.Cache }) } catch { /* 不存在时忽略 */ }
 
     Toast.show({ content: '开始下载更新…', position: 'bottom', duration: 1500 })
 
@@ -198,12 +201,21 @@ async function downloadAndInstallNative(release: ServerRelease): Promise<boolean
       })
     } catch { /* 低版本插件不支持 progress 事件时忽略 */ }
 
-    const result: any = await Filesystem.downloadFile({
+    await Filesystem.downloadFile({
       url,
-      path: 'update.apk',
+      path: APK_PATH,
       directory: Directory.Cache,
+      recursive: true,
     })
     try { listener?.remove?.() } catch { /* 忽略 */ }
+
+    // 文件完整性：存在且大小与服务端一致
+    const stat: any = await Filesystem.stat({ path: APK_PATH, directory: Directory.Cache })
+    const actualSize = Number(stat?.size || 0)
+    if (actualSize <= 0) throw new Error('安装包下载失败（文件为空）')
+    if (release.apkSize > 0 && actualSize !== release.apkSize) {
+      throw new Error(`安装包大小不一致（${actualSize} ≠ ${release.apkSize}）`)
+    }
 
     if (release.checksum) {
       try {
@@ -215,17 +227,22 @@ async function downloadAndInstallNative(release: ServerRelease): Promise<boolean
       }
     }
 
-    Toast.show({ content: '下载完成 ✅ 即将开始安装', position: 'bottom', duration: 1500 })
-
-    if (InstallApkPlugin) {
-      await InstallApkPlugin.install({ path: 'update.apk', directory: Directory.Cache })
-    } else {
-      const fileUri = result?.path || ''
-      window.location.href = `intent://#Intent;action=android.intent.action.VIEW;type=application/vnd.android.package-archive;S.path=${encodeURIComponent(fileUri)};end`
+    if (!InstallApkPlugin) {
+      throw new Error('原生安装插件不可用，请重新安装最新 APK')
     }
+
+    Toast.show({ content: '下载完成 ✅ 即将打开系统安装器', position: 'bottom', duration: 1500 })
+    await InstallApkPlugin.install({ path: APK_PATH, directory: Directory.Cache })
     return true
-  } catch (e) {
-    console.warn('[app-updater] APP 内下载失败，回退到系统浏览器:', e)
+  } catch (e: any) {
+    const msg = String(e?.message || e || '')
+    // 未授权“安装未知来源应用”：已跳转系统设置页，视为流程已处理，不再降级浏览器
+    if (/UNKNOWN_SOURCE|未知来源/.test(msg)) {
+      Toast.show({ content: '请允许本应用安装未知来源应用后重试', position: 'bottom', duration: 3000 })
+      return true
+    }
+    console.warn('[app-updater] APP 内下载/安装失败，回退到系统浏览器:', e)
+    Toast.show({ content: `APP 内安装失败：${msg || '未知错误'}`, position: 'bottom', duration: 2500 })
     return false
   }
 }

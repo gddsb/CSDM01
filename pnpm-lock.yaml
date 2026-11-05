@@ -27,8 +27,8 @@ importers:
         specifier: ^8.0.0
         version: 8.0.3(@capacitor/core@8.5.0)
       '@capacitor/filesystem':
-        specifier: ^6.0.0
-        version: 6.0.4(@capacitor/core@8.5.0)
+        specifier: ^8.0.0
+        version: 8.1.5(@capacitor/core@8.5.0)
       '@capacitor/keyboard':
         specifier: ^8.0.6
         version: 8.0.6(@capacitor/core@8.5.0)
@@ -732,10 +732,10 @@ packages:
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
-  '@capacitor/filesystem@6.0.4':
-    resolution: {integrity: sha512-eFlg/ZrwYA4Y6ClLRRikudVu2XvuZxfX/XC0ky9MgfbC9dyqTnVkkEoWM6vr1xR89YNY4mB0EeVTet1m1Jcumw==}
+  '@capacitor/filesystem@8.1.5':
+    resolution: {integrity: sha512-m1RkI8L83NJeppEKyRWioK3MDp2vjlA+QfUQcF8/xRlcXNC2HYxqoyYJ+K4M0EcVovy+g+4F24S05+bhK4Vgdg==}
     peerDependencies:
-      '@capacitor/core': ^6.0.0
+      '@capacitor/core': '>=8.0.0'
 
   '@capacitor/ios@8.5.0':
     resolution: {integrity: sha512-7k1TfohJu5BzRXc1F3g04Q8QQ0fyQgms6h1AvhnHb04VaNr9EdHOx03hL8O+OigEKMQnyJd1ZOjTPPNHCqL5Yw==}
@@ -751,6 +751,9 @@ packages:
     resolution: {integrity: sha512-ZMzBUyHBzwDUxcHadEhvOvmoPmMQGMZgaMRJu8ohELeI6IaxoVH9ZhdF/OHnY3/yykv3Glev8Tnbh4aZY/0B0w==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
+
+  '@capacitor/synapse@1.0.4':
+    resolution: {integrity: sha512-/C1FUo8/OkKuAT4nCIu/34ny9siNHr9qtFezu4kxm6GY1wNFxrCFWjfYx5C1tUhVGz3fxBABegupkpjXvjCHrw==}
 
   '@dnd-kit/accessibility@3.1.1':
     resolution: {integrity: sha512-2P+YgaXF+gRsIihwwY1gCsQSYnu9Zyj2py8kY5fFvUM1qm2WA2u639R6YNVfU4GWr+ZM5mqEsfHZZLoRONbemw==}
@@ -4371,9 +4374,10 @@ snapshots:
     dependencies:
       '@capacitor/core': 8.5.0
 
-  '@capacitor/filesystem@6.0.4(@capacitor/core@8.5.0)':
+  '@capacitor/filesystem@8.1.5(@capacitor/core@8.5.0)':
     dependencies:
       '@capacitor/core': 8.5.0
+      '@capacitor/synapse': 1.0.4
 
   '@capacitor/ios@8.5.0(@capacitor/core@8.5.0)':
     dependencies:
@@ -4386,6 +4390,8 @@ snapshots:
   '@capacitor/status-bar@8.0.4(@capacitor/core@8.5.0)':
     dependencies:
       '@capacitor/core': 8.5.0
+
+  '@capacitor/synapse@1.0.4': {}
 
   '@dnd-kit/accessibility@3.1.1(react@18.3.1)':
     dependencies:
