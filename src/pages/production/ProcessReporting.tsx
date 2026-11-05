@@ -7,7 +7,7 @@ import {
 import { useMessage, useApp } from '../../contexts/AppContext'
 import {
   PlusOutlined, DeleteOutlined, UploadOutlined,
-  PictureOutlined, SaveOutlined, ReloadOutlined,
+  PictureOutlined, SaveOutlined, ReloadOutlined, UpOutlined, DownOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import api from '../../utils/api'
@@ -42,6 +42,7 @@ export default function ProcessReporting() {
   const [breakTimesLoading, setBreakTimesLoading] = useState(false)
   const [breakTimesDirty, setBreakTimesDirty] = useState(false)
   const [breakTimesSaving, setBreakTimesSaving] = useState(false)
+  const [headerCollapsed, setHeaderCollapsed] = useState(false)
 
   // 新增报工单 Modal
   const [createModalOpen, setCreateModalOpen] = useState(false)
@@ -1493,7 +1494,7 @@ export default function ProcessReporting() {
           )}
         </Row>
 
-        {selectedReport && (
+        {!headerCollapsed && selectedReport && (
           <Row gutter={16}>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
@@ -1530,7 +1531,7 @@ export default function ProcessReporting() {
           </Row>
         )}
 
-        {selectedReport && (
+        {!headerCollapsed && selectedReport && (
           <Row gutter={16} style={{ marginTop: 12 }}>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
@@ -1553,7 +1554,7 @@ export default function ProcessReporting() {
           </Row>
         )}
 
-        {selectedReport && (
+        {!headerCollapsed && selectedReport && (
           <Row gutter={16} style={{ marginTop: 12 }}>
             <Col span={4}>
               <Space size={4} align="baseline" wrap={false}>
@@ -1586,6 +1587,18 @@ export default function ProcessReporting() {
               </Space>
             </Col>
           </Row>
+        )}
+
+        {selectedReport && (
+          <div
+            className="section-info-toggle"
+            onClick={() => setHeaderCollapsed(c => !c)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setHeaderCollapsed(c => !c) }}
+          >
+            {headerCollapsed ? <DownOutlined /> : <UpOutlined />}
+          </div>
         )}
       </Card>
 
