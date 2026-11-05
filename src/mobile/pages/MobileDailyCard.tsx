@@ -7,7 +7,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Button, DatePicker } from 'antd-mobile'
 import api from '../../utils/api'
-import dayjs, { Dayjs } from 'dayjs'
+import dayjs from 'dayjs'
 
 interface ProductionRow {
   reportOrderId: number
@@ -50,7 +50,8 @@ function fmt(n: number | null | undefined, d = 0): string {
 
 export default function MobileDailyCard() {
   const [date, setDate] = useState(dayjs().format('YYYY-MM-DD'))
-  const [pickerValue, setPickerValue] = useState<Dayjs>(dayjs())
+  // antd-mobile 的 DatePicker 使用原生 Date（PickerDate），不是 Dayjs
+  const [pickerValue, setPickerValue] = useState<Date>(new Date())
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<DailyReportData | null>(null)
   const loadingRef = useRef(false) // 防止并发
@@ -81,20 +82,20 @@ export default function MobileDailyCard() {
       }}>
         <DatePicker
           value={pickerValue}
-          min={dayjs('2024-01-01')}
-          max={dayjs()}
+          min={new Date(2024, 0, 1)}
+          max={new Date()}
           onConfirm={(v) => {
             setPickerValue(v)
-            const formatted = v.format('YYYY-MM-DD')
+            const formatted = dayjs(v).format('YYYY-MM-DD')
             setDate(formatted) // 触发 useEffect → load()
           }}
         >
-          {(_, __, { open }) => (
+          {(_, actions) => (
             <Button
               size="mini"
               onClick={(e) => {
                 e.stopPropagation()
-                open()
+                actions.open()
               }}
               style={{ padding: '0 10px' }}
             >
