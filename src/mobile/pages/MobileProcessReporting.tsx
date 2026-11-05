@@ -397,9 +397,9 @@ export default function MobileProcessReporting() {
         {groupTab === 'process' && (
           <div>
             <PanelSubTabs active={processTab} onChange={(k) => trySwitchProcessTab(k as any)}>
-              <Tabs.Tab title="报废记录" key="defect" />
+              <Tabs.Tab title="工序不良" key="defect" />
               <Tabs.Tab title="物料使用" key="material" />
-              <Tabs.Tab title="质量检验" key="scrap" />
+              <Tabs.Tab title="检验报废" key="scrap" />
             </PanelSubTabs>
             {processTab === 'defect' && (
               <ReportPanel>
