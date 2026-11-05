@@ -4,7 +4,7 @@
 # 服务器: 43.138.218.55, SSH: ubuntu, Proxy: 本地connect
 # 代码源: origin-backup (gh-proxy.com 代理)
 # ============================================================
-SSH_PASS='ASD!@#asd'
+SSH_PASS="${PROD_SSH_PASS:?请先 export PROD_SSH_PASS（生产机 SSH 密码）}"
 SSH_HOST='43.138.218.55'
 SSH_USER='ubuntu'
 REMOTE_DIR='/opt/milk-can-mes'

@@ -52,7 +52,7 @@ cd "$PROJECT_DIR"
 
 PROD_HOST="43.138.218.55"
 PROD_USER="ubuntu"
-PROD_PASS="ASD!@#asd"
+PROD_PASS="${PROD_SSH_PASS:?请先 export PROD_SSH_PASS（生产机 SSH 密码）}"
 PROD_PATH="/opt/milk-can-mes"
 PROXY_CMD="-o ProxyCommand='connect -H 127.0.0.1:18080 %h %p'"
 

@@ -12,6 +12,7 @@ SERVER="ubuntu@43.138.218.55"
 PROJECT_DIR="/opt/milk-can-mes"
 CORKSCREW_PROXY="corkscrew 127.0.0.1 18080 %h %p"
 COMMIT_COUNT=${1:-3}
+PROD_SSH_PASS="${PROD_SSH_PASS:?请先 export PROD_SSH_PASS（生产机 SSH 密码）}"
 
 # 临时 SSH config（避免密码泄露到进程列表）
 SSH_CONFIG="/tmp/deploy_ssh_config"
@@ -66,8 +67,8 @@ echo ""
 echo "[Step 2] SCP 上传变更文件"
 for f in $UPLOAD_FILES; do
     REMOTE_DIR="${PROJECT_DIR}/$(dirname "$f")"
-    sshpass -p 'ASD!@#asd' ssh -F "${SSH_CONFIG}" "${SERVER}" "mkdir -p '${REMOTE_DIR}'" 2>/dev/null
-    sshpass -p 'ASD!@#asd' scp -F "${SSH_CONFIG}" "$f" "${SERVER}:${PROJECT_DIR}/${f}" 2>/dev/null
+    sshpass -p "${PROD_SSH_PASS}" ssh -F "${SSH_CONFIG}" "${SERVER}" "mkdir -p '${REMOTE_DIR}'" 2>/dev/null
+    sshpass -p "${PROD_SSH_PASS}" scp -F "${SSH_CONFIG}" "$f" "${SERVER}:${PROJECT_DIR}/${f}" 2>/dev/null
     echo "  上传: $f"
 done
 
@@ -108,7 +109,7 @@ curl -s -o /dev/null -w '%{http_code}' http://localhost:80/
 echo ''
 "
 
-sshpass -p 'ASD!@#asd' ssh -F "${SSH_CONFIG}" "${SERVER}" "${REMOTE_SCRIPT}"
+sshpass -p "${PROD_SSH_PASS}" ssh -F "${SSH_CONFIG}" "${SERVER}" "${REMOTE_SCRIPT}"
 
 END=$(date +%s)
 ELAPSED=$((END - START))

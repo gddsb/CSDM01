@@ -2,7 +2,7 @@
 set -e
 
 PROD_IP="43.138.218.55"
-PROD_SSH_PASS="ASD!@#asd"
+PROD_SSH_PASS="${PROD_SSH_PASS:?请先 export PROD_SSH_PASS（生产机 SSH 密码）}"
 PROXY_CMD="connect -H 127.0.0.1:18080 %h %p"
 SSH_BASE="sshpass -p '${PROD_SSH_PASS}' ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ProxyCommand='${PROXY_CMD}'"
 
