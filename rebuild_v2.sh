@@ -101,7 +101,7 @@ AUDIT_LOG="/opt/milk-can-mes/server/data/deploy-audit.log"
 {
   echo "=== $(date '+%F %T') ==="
   echo "HEAD=${SHORT_SHA} origin/main=${REMOTE_SHA}"
-  echo "tracked 改动: $(git status --porcelain --untracked-files=no | wc -l) 个"
+  echo "tracked 改动（不含 cap sync 生成文件）: $(git status --porcelain --untracked-files=no | grep -vE 'android/(app/capacitor\.build\.gradle|capacitor\.settings\.gradle)' | wc -l) 个"
 } >> "$AUDIT_LOG" 2>/dev/null || true
 
 # ============================================================
