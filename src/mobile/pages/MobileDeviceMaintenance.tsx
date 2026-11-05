@@ -102,6 +102,24 @@ export default function MobileDeviceMaintenance() {
   /** 每个 trigger_mode Tab 的 {total, done} 计数 */
   const [tabCounts, setTabCounts] = useState<Record<string, { total: number; done: number }>>({})
 
+  // ===== 日点检批量内联执行 =====
+  type InlineItem = { result: '正常' | '异常'; actual_value: string; abnormal_desc: string }
+  /** 批量行内编辑状态 map：record_id → InlineItem */
+  const [inlineBatchMap, setInlineBatchMap] = useState<Record<number, InlineItem>>({})
+  /** 是否开启批量执行视图（仅日点检 + 待执行 ≥ 1） */
+  const [inlineBatchOpen, setInlineBatchOpen] = useState(false)
+  /** 批量视图中可用的今日日点检待执行记录 */
+  const inlineBatchRecords = records.filter(
+    (r) => r.trigger_mode === 'daily' && r.status === '待执行'
+  )
+  /** 批量提交中 */
+  const [batchSubmitting, setBatchSubmitting] = useState(false)
+
+  // 当 records/typeTab/statusTab 切换时，重置 inline 视图
+  useEffect(() => {
+    setInlineBatchMap({})
+  }, [typeTab, statusTab, selectedDevice?.device_id])
+
   // 保养表单
   const [actualValue, setActualValue] = useState('')
   const [result, setResult] = useState<'正常' | '异常'>('正常')
@@ -242,6 +260,110 @@ export default function MobileDeviceMaintenance() {
       if (recs.length === 1) selectRecord(recs[0]); else setStep(1)
     }
   }
+
+  // ===== 日点检批量：初始化 inline 状态 =====
+  const openInlineBatch = () => {
+    const init: Record<number, InlineItem> = {}
+    inlineBatchRecords.forEach((r) => {
+      init[r.record_id] = {
+        result: '正常',
+        actual_value: r.actual_value || '',
+        abnormal_desc: r.abnormal_desc || '',
+      }
+    })
+    setInlineBatchMap(init)
+    setInlineBatchOpen(true)
+  }
+
+  // ===== 日点检批量：行内修改 =====
+  const handleInlineChange = (
+    recordId: number,
+    field: keyof InlineItem,
+    value: any,
+  ) => {
+    setInlineBatchMap((prev) => ({
+      ...prev,
+      [recordId]: { ...prev[recordId], [field]: value } as InlineItem,
+    }))
+  }
+
+  // ===== 日点检批量：提交 =====
+  const handleBatchSubmit = async () => {
+    // 校验：所有异常项必须填 abnormal_desc
+    const missing: number[] = []
+    const payloadList: any[] = []
+    for (const r of inlineBatchRecords) {
+      const item = inlineBatchMap[r.record_id]
+      if (!item) continue
+      if (item.result === '异常' && !item.abnormal_desc.trim()) {
+        missing.push(r.record_id)
+        continue
+      }
+      payloadList.push({
+        record_id: r.record_id,
+        result: item.result,
+        actual_value: item.actual_value || null,
+        abnormal_desc: item.result === '异常' ? item.abnormal_desc : '',
+        status: 2, // 已完成
+      })
+    }
+    if (missing.length > 0) {
+      Toast.show({
+        content: `有 ${missing.length} 项标记异常但未填异常描述`,
+        position: 'bottom',
+      })
+      return
+    }
+    if (payloadList.length === 0) {
+      Toast.show({ content: '没有可提交的项目', position: 'bottom' })
+      return
+    }
+
+    const ok = await Dialog.confirm({
+      content: `确认批量提交 ${payloadList.length} 项日点检？`,
+      confirmText: '提交',
+      cancelText: '取消',
+    })
+    if (!ok) return
+
+    setBatchSubmitting(true)
+    try {
+      const r: any = await offlinePost(
+        '/basic/device-records/batch-submit',
+        { records: payloadList },
+        { source: 'device-maintenance' },
+      )
+      if (!r.success) {
+        Toast.show({ content: r.message || '批量提交失败', position: 'bottom' })
+        return
+      }
+      const total = r.data?.updated ?? payloadList.length
+      const abn = r.data?.abnormal_count ?? 0
+      Toast.show({
+        content: `批量提交 ✅ 共 ${total} 项${abn ? ` · ${abn} 异常已转故障单` : ''}`,
+        icon: 'success',
+        position: 'bottom',
+      })
+      setInlineBatchOpen(false)
+      setInlineBatchMap({})
+      await refreshRecords()
+    } catch (e: any) {
+      Toast.show({ content: e?.message || '批量提交失败', position: 'bottom' })
+    } finally {
+      setBatchSubmitting(false)
+    }
+  }
+
+  // ===== 日点检批量：进度统计 =====
+  const inlineProgress = (() => {
+    let normal = 0, abnormal = 0
+    for (const r of inlineBatchRecords) {
+      const v = inlineBatchMap[r.record_id]?.result || '正常'
+      if (v === '异常') abnormal++
+      else normal++
+    }
+    return { normal, abnormal, total: inlineBatchRecords.length }
+  })()
 
   // ===== 5-A 新：生成保养记录 =====
   const handleGenerate = () => {
@@ -528,6 +650,158 @@ export default function MobileDeviceMaintenance() {
             </Tabs>
           </div>
 
+          {/* 日点检批量执行入口：日点检 Tab + 有待执行 */}
+          {typeTab === '日点检' && !inlineBatchOpen && inlineBatchRecords.length >= 1 && (
+            <div style={{ marginBottom: 10 }}>
+              <Button
+                block
+                color="primary"
+                fill="outline"
+                size="small"
+                onClick={openInlineBatch}
+              >
+                📋 批量执行 {inlineBatchRecords.length} 项日点检
+              </Button>
+            </div>
+          )}
+
+          {/* 日点检批量执行内联视图 */}
+          {inlineBatchOpen && inlineBatchRecords.length > 0 && (() => {
+            const progress = inlineProgress
+            const hasAbnormalNoDesc = inlineBatchRecords.some(
+              (r) => inlineBatchMap[r.record_id]?.result === '异常' &&
+                     !inlineBatchMap[r.record_id]?.abnormal_desc?.trim()
+            )
+            return (
+              <div style={{ marginBottom: 12 }}>
+                {/* 进度条 */}
+                <div style={{
+                  background: 'var(--m-surface)', borderRadius: 10, padding: '10px 12px', marginBottom: 10,
+                  border: '1px solid var(--m-border)',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  fontSize: 13,
+                }}>
+                  <span>
+                    批量日点检 · {selectedDevice?.device_name}
+                  </span>
+                  <span style={{ display: 'flex', gap: 10, fontSize: 12 }}>
+                    <span style={{ color: 'var(--brand-color-success, #4CAF50)' }}>✅{progress.normal}</span>
+                    <span style={{ color: hasAbnormalNoDesc ? 'var(--brand-color-danger, #F44336)' : 'var(--brand-color-warning, #FF9800)' }}>
+                      ⚠️{progress.abnormal}
+                    </span>
+                  </span>
+                </div>
+
+                {/* 每项内联卡片 */}
+                {inlineBatchRecords.map((r, idx) => {
+                  const item = inlineBatchMap[r.record_id] || { result: '正常', actual_value: '', abnormal_desc: '' }
+                  const standard = r.standard
+                  const isQuantitative = standard?.judge_type === '定量'
+                  const auto = isQuantitative ? autoJudge(item.actual_value, standard?.standard_value || '') : item.result
+                  const judgedResult = isQuantitative ? auto : item.result
+                  const titleText = standard?.maintenance_content || standard?.maintenance_method || `保养项#${r.record_id}`
+                  return (
+                    <div key={r.record_id} style={{
+                      background: 'var(--m-surface)', borderRadius: 10, padding: 12, marginBottom: 10,
+                      border: '1px solid var(--m-border)',
+                    }}>
+                      {/* 项标题 */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <div style={{ fontWeight: 500, fontSize: 14 }}>
+                          {`${['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'][idx] ?? (idx + 1) + '.'} ${titleText}`}
+                        </div>
+                        <span style={{
+                          fontSize: 11, padding: '2px 8px', borderRadius: 8,
+                          background: judgedResult === '正常'
+                            ? 'var(--brand-color-success, #4CAF50)22'
+                            : 'var(--brand-color-danger, #F44336)22',
+                          color: judgedResult === '正常'
+                            ? 'var(--brand-color-success, #4CAF50)'
+                            : 'var(--brand-color-danger, #F44336)',
+                        }}>{judgedResult}</span>
+                      </div>
+
+                      {/* 保养标准（可选） */}
+                      {standard?.standard_value && (
+                        <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginBottom: 6 }}>
+                          标准：{standard.standard_value}{standard.unit || ''}
+                          {isQuantitative ? '（定量判定）' : '（定性判断）'}
+                        </div>
+                      )}
+
+                      {/* 定量：实测值输入 + 自动判定 */}
+                      {isQuantitative ? (
+                        <>
+                          <TextArea
+                            value={item.actual_value}
+                            onChange={(v) => handleInlineChange(r.record_id, 'actual_value', v)}
+                            rows={1}
+                            placeholder="输入实测值（留空=默认正常）"
+                            style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }}
+                          />
+                          {item.actual_value && (
+                            <div style={{
+                              marginTop: 6, fontSize: 12,
+                              color: judgedResult === '正常' ? 'var(--brand-color-success, #4CAF50)' : 'var(--brand-color-danger, #F44336)',
+                            }}>
+                              系统自动判定：{judgedResult}
+                            </div>
+                          )}
+                          {/* 定量也允许 override 为异常（如用户认为判定不准） */}
+                          <div style={{ marginTop: 6 }}>
+                            <span style={{ fontSize: 12, color: 'var(--m-text-3)', marginRight: 8 }}>覆盖判定：</span>
+                            <Radio.Group
+                              value={item.result}
+                              onChange={(v) => handleInlineChange(r.record_id, 'result', v as any)}
+                            >
+                              <Radio value="正常">正常</Radio>
+                              <Radio value="异常">异常</Radio>
+                            </Radio.Group>
+                          </div>
+                        </>
+                      ) : (
+                        /* 定性：Radio.Group */
+                        <Radio.Group
+                          value={item.result}
+                          onChange={(v) => handleInlineChange(r.record_id, 'result', v as any)}
+                        >
+                          <Radio value="正常">正常</Radio>
+                          <Radio value="异常">异常</Radio>
+                        </Radio.Group>
+                      )}
+
+                      {/* 异常时的描述 */}
+                      {item.result === '异常' && (
+                        <TextArea
+                          value={item.abnormal_desc}
+                          onChange={(v) => handleInlineChange(r.record_id, 'abnormal_desc', v)}
+                          rows={2}
+                          placeholder="⚠️ 异常时必填：请描述异常情况"
+                          style={{
+                            marginTop: 8,
+                            background: 'var(--m-surface-2)', borderRadius: 8, padding: 8,
+                            borderColor: 'var(--brand-color-danger, #F44336)',
+                          }}
+                        />
+                      )}
+                    </div>
+                  )
+                })}
+
+                {/* 底部操作 */}
+                <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                  <Button block fill="outline" onClick={() => { setInlineBatchOpen(false); setInlineBatchMap({}) }}>取消</Button>
+                  <Button block color="primary" loading={batchSubmitting} onClick={handleBatchSubmit}>
+                    批量提交 {inlineBatchRecords.length} 项
+                  </Button>
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* 原记录列表（非批量模式） */}
+          {!inlineBatchOpen && (
+          <>
           {loading ? (
             <div style={{ textAlign: 'center', padding: 40, color: 'var(--m-text-3)' }}>加载中...</div>
           ) : records.length === 0 ? (
@@ -582,6 +856,7 @@ export default function MobileDeviceMaintenance() {
           )}
 
           <Button block fill="outline" onClick={() => setStep(0)} style={{ marginTop: 12 }}>上一步</Button>
+          </>)}
         </>
       )}
 
