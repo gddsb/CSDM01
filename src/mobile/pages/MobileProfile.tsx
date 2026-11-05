@@ -1,22 +1,23 @@
 /**
  * 移动端 —— 我的（个人中心）
- * - 用户信息
- * - 离线队列状态（待同步条数、立即同步 / 重试失败 / 清空）
- * - 退出登录
- * - 版本号
  */
 import { useNavigate } from 'react-router-dom'
 import { Button, Dialog, Toast, Switch } from 'antd-mobile'
 import { useApp } from '../../contexts/AppContext'
 import { useMobileThemeContext } from '../theme'
-import { getAppVersion, formatAppVersion } from '../utils/app-version'
+import { getAppVersion, formatAppVersion, refreshAppVersion } from '../utils/app-version'
+import { checkAndPromptUpdate, getNativeBuildNumber } from '../utils/app-updater'
 
 export function MobileProfile() {
   const { currentUser, logout } = useApp()
   const navigate = useNavigate()
-  // 从单一数据源（后端 /api/version 缓存）读版本号，不再用编译时静态值
   const appVer = getAppVersion()
   const { isDark, toggleTheme } = useMobileThemeContext()
+
+  const handleCheckUpdate = async () => {
+    await refreshAppVersion()
+    await checkAndPromptUpdate(true) // ignoreDateLock：用户主动检查不受当天限流
+  }
 
   const handleLogout = async () => {
     const confirmed = await Dialog.confirm({
@@ -40,6 +41,8 @@ export function MobileProfile() {
       </div>
     )
   }
+
+  const versionLabel = `V${appVer.version} build${getNativeBuildNumber()}`
 
   return (
     <div className="mobile-page mobile-page-scrollable" style={{ paddingTop: 20 }}>
@@ -78,7 +81,7 @@ export function MobileProfile() {
         <InfoRow label="手机" value={currentUser.phone || '—'} last />
       </div>
 
-      {/* 深色模式切换（P3.5） */}
+      {/* 深色模式切换 */}
       <div style={{
         background: 'var(--m-surface)', borderRadius: 14, padding: '14px 16px',
         border: '1px solid var(--m-border)', marginBottom: 16,
@@ -93,7 +96,29 @@ export function MobileProfile() {
         <Switch checked={isDark} onChange={toggleTheme} />
       </div>
 
-      {/* 退出按钮 —— color="danger" 自动红底白字，不用硬覆写 background */}
+      {/* 检查更新 —— 主动点击绕过当天限流 */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={handleCheckUpdate}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCheckUpdate() }}
+        style={{
+          background: 'var(--m-surface)', borderRadius: 14, padding: '14px 16px',
+          border: '1px solid var(--m-border)', marginBottom: 16,
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          cursor: 'pointer',
+        }}
+      >
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--m-text)' }}>📦 检查更新</div>
+          <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 2 }}>
+            {versionLabel} · 点击检查新版本
+          </div>
+        </div>
+        <span style={{ color: 'var(--m-text-3)', fontSize: 18 }}>›</span>
+      </div>
+
+      {/* 退出按钮 */}
       <Button
         block
         color="danger"
@@ -104,7 +129,7 @@ export function MobileProfile() {
         退出登录
       </Button>
 
-      {/* 版本号 —— 与后端 /api/version 保持同步（启动时 refresh 缓存） */}
+      {/* 版本号 */}
       <div style={{
         textAlign: 'center', fontSize: 11, color: 'var(--m-text-3)',
         marginTop: 28, paddingTop: 16,

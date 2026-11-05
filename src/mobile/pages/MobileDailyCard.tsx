@@ -1,13 +1,13 @@
 /**
  * MobileDailyCard.tsx — 移动端生产日报卡（汇总指标）
  *
- * 数据源：GET /api/daily-report?date=&line=&shift=
- * 不做大表格，只展示核心汇总 + 快捷概览
+ * 数据源：GET /api/daily-report?date=
+ * 日期选择 onConfirm → 自动触发重新加载，无刷新按钮
  */
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Button, DatePicker } from 'antd-mobile'
 import api from '../../utils/api'
-import dayjs from 'dayjs'
+import dayjs, { Dayjs } from 'dayjs'
 
 interface ProductionRow {
   reportOrderId: number
@@ -50,35 +50,59 @@ function fmt(n: number | null | undefined, d = 0): string {
 
 export default function MobileDailyCard() {
   const [date, setDate] = useState(dayjs().format('YYYY-MM-DD'))
+  const [pickerValue, setPickerValue] = useState<Dayjs>(dayjs())
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<DailyReportData | null>(null)
+  const loadingRef = useRef(false) // 防止并发
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (targetDate: string) => {
+    if (loadingRef.current) return
+    loadingRef.current = true
     setLoading(true)
     try {
-      const r = await api.get('/daily-report', { params: { date } })
+      const r = await api.get('/daily-report', { params: { date: targetDate } })
       setData(r.data?.data || r.data || null)
     } catch { /* 静默 */ }
-    finally { setLoading(false) }
-  }, [date])
+    finally {
+      setLoading(false)
+      loadingRef.current = false
+    }
+  }, [])
 
-  useEffect(() => { load() }, [load])
+  // date 变化 → 自动加载（onConfirm 后 setDate 触发）
+  useEffect(() => { load(date) }, [date, load])
 
   return (
     <div style={{ padding: 12 }}>
-      {/* 筛选 */}
+      {/* 筛选 —— 日期选择 onConfirm 后自动重新加载；无刷新按钮 */}
       <div style={{
         display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12,
         background: '#fff', padding: 10, borderRadius: 10,
       }}>
         <DatePicker
-          value={new Date(date + 'T00:00:00')}
-          min={new Date('2024-01-01')}
-          max={new Date()}
-          onChange={(v) => v && setDate(dayjs(v).format('YYYY-MM-DD'))}
-          children={(items) => <Button size="mini">{items[0]}</Button>}
-        />
-        <Button size="mini" onClick={load} disabled={loading}>🔄</Button>
+          value={pickerValue}
+          min={dayjs('2024-01-01')}
+          max={dayjs()}
+          onConfirm={(v) => {
+            setPickerValue(v)
+            const formatted = v.format('YYYY-MM-DD')
+            setDate(formatted) // 触发 useEffect → load()
+          }}
+        >
+          {(_, __, { open }) => (
+            <Button
+              size="mini"
+              onClick={(e) => {
+                e.stopPropagation()
+                open()
+              }}
+              style={{ padding: '0 10px' }}
+            >
+              📅 {date}
+            </Button>
+          )}
+        </DatePicker>
+        {loading && <span style={{ fontSize: 11, color: '#1890ff', marginLeft: 4 }}>加载中…</span>}
       </div>
 
       {loading ? (
@@ -95,7 +119,6 @@ export default function MobileDailyCard() {
 function DailyCardContent({ data }: { data: DailyReportData }) {
   const { header, productionRows, downtime } = data
 
-  // 汇总
   const totalInput = productionRows.reduce((s, r) => s + r.inputQty, 0)
   const totalOutput = productionRows.reduce((s, r) => s + r.outputQty, 0)
   const totalProcessDefect = productionRows.reduce((s, r) => s + r.processDefect, 0)
@@ -223,8 +246,6 @@ function DailyCardContent({ data }: { data: DailyReportData }) {
     </>
   )
 }
-
-/* ========================= 小组件 ========================= */
 
 const grid2Style: React.CSSProperties = {
   display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8,
