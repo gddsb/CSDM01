@@ -18,6 +18,9 @@ function resolveBuildNumber(): string {
 
 const APP_BUILD = resolveBuildNumber()
 
+/** 编译期 git 短哈希（rebuild_v2.sh 用 APP_GIT_SHA 注入；本地开发为空） */
+const APP_GIT_SHA = process.env.APP_GIT_SHA || ''
+
 const apiProxy: ProxyOptions = {
   target: 'http://localhost:3001',
   changeOrigin: true,
@@ -46,6 +49,7 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __APP_BUILD__: JSON.stringify(APP_BUILD),
+    __APP_GIT_SHA__: JSON.stringify(APP_GIT_SHA),
   },
   plugins: [
     react(),

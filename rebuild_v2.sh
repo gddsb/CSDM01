@@ -82,13 +82,27 @@ if ! $PULL_OK; then
   fi
 fi
 
-# 两次都失败 → 仍继续（上次构建已拉到代码时不阻塞），仅 WARN
+# 两次都失败 → 终止部署，禁止用旧代码构建（这正是"修好的 bug 又回来"的通道）
 if ! $PULL_OK; then
-  echo "  ⚠ 两个远程都拉取失败，继续用当前本地代码构建"
+  echo "  ✗ 两个远程都拉取失败，终止部署（禁止用旧代码构建）"
+  exit 1
 fi
 
 SHORT_SHA=$(git rev-parse --short HEAD)
-echo "  HEAD = ${SHORT_SHA}"
+REMOTE_SHA=$(git rev-parse --short FETCH_HEAD 2>/dev/null || echo "")
+echo "  HEAD = ${SHORT_SHA}  origin/main = ${REMOTE_SHA}"
+# 三方一致性：生产 HEAD 必须等于刚拉取的远程 main（ff-only 已保证，这里显式断言）
+if [ -z "$REMOTE_SHA" ] || [ "$SHORT_SHA" != "$REMOTE_SHA" ]; then
+  echo "  ✗ 生产 HEAD(${SHORT_SHA}) != origin/main(${REMOTE_SHA})，终止部署"
+  exit 1
+fi
+# 部署审计日志：记录每次部署的三方 git 信息与工作区状态
+AUDIT_LOG="/opt/milk-can-mes/server/data/deploy-audit.log"
+{
+  echo "=== $(date '+%F %T') ==="
+  echo "HEAD=${SHORT_SHA} origin/main=${REMOTE_SHA}"
+  echo "tracked 改动: $(git status --porcelain --untracked-files=no | wc -l) 个"
+} >> "$AUDIT_LOG" 2>/dev/null || true
 
 # ============================================================
 # Step 2: 动态计算版本号和构建号（核心固化逻辑）
@@ -190,7 +204,9 @@ export VITE_API_BASE_URL="http://43.138.218.55/api"
 # 否则 Vite 回退到 git rev-list --count HEAD（提交总数），与 buildNumber 不一致
 # → APK 内“检查更新”永远无法正确比较版本
 export APP_BUILD="${BUILD}"
-echo "  VITE_API_BASE_URL=$VITE_API_BASE_URL  APP_BUILD=$APP_BUILD"
+# 注入 git 短哈希，供移动端"检查更新"显示安装版本来源
+export APP_GIT_SHA="${SHORT_SHA}"
+echo "  VITE_API_BASE_URL=$VITE_API_BASE_URL  APP_BUILD=$APP_BUILD  APP_GIT_SHA=$APP_GIT_SHA"
 npx vite build 2>&1 | tail -4
 
 # Step 4.5: 后端 TypeScript 编译（之前漏了！导致 src/ 改了但 dist/ 不更新）

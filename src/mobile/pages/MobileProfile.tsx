@@ -52,7 +52,7 @@ export function MobileProfile() {
     )
   }
 
-  const versionLabel = `V${appVer.version} build${getNativeBuildNumber()}`
+  const versionLabel = `V${appVer.version} build${getNativeBuildNumber()}${__APP_GIT_SHA__ ? ` · ${__APP_GIT_SHA__}` : ''}`
 
   return (
     <div className="mobile-page mobile-page-scrollable" style={{ paddingTop: 20 }}>

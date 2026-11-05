@@ -61,7 +61,7 @@ milk-can-mes/
 │   ├── package.json / pnpm-lock.yaml
 │   └── tsconfig.json
 ├── public/                       # Vite 静态资源
-├── scripts/deploy.sh             # 生产服务器一键部署
+├── scripts/archive/              # 已归档的旧部署脚本（统一入口为 rebuild_v2.sh）
 ├── vite.config.ts
 ├── capacitor.config.json         # Capacitor 移动端配置
 ├── package.json / pnpm-lock.yaml
@@ -258,7 +258,8 @@ server {
 
 | 路径                  | 说明                        |
 | ------------------- | ------------------------- |
-| `scripts/deploy.sh` | 生产服务器一键部署（通过代理 SCP 传变更文件） |
+| `rebuild_v2.sh` | 生产机唯一部署入口（拉取 + 构建 + APK + PM2） |
+| `scripts/archive/` | 已归档旧脚本（`deploy.sh`、`oneclick_deploy.sh`、`deploy.sh`、`mobile-release.sh`） |
 
 ***
 

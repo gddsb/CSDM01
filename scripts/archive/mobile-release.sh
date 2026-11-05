@@ -47,7 +47,7 @@ warn() { echo -e "${YELLOW}  ⚠️${NC} $*"; }
 err()  { echo -e "${RED}  ❌${NC} $*"; exit 1; }
 
 # ---------- 默认配置 ----------
-PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+PROJECT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$PROJECT_DIR"
 
 PROD_HOST="43.138.218.55"

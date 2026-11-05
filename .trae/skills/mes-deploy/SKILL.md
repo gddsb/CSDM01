@@ -194,6 +194,7 @@ echo "=== 部署完成 ==="
 
 | 项 | 值 |
 |----|-----|
+| **部署入口** | **只用 `rebuild_v2.sh`**；`deploy.sh` / `deploy-scp.sh` / `oneclick_deploy.sh` / `mobile-release.sh` 已归档到 `scripts/archive/`，不得作为部署路径 |
 | 前端 | Vite + React + TS，**只允许 `npx vite build`**（跳过 tsc 历史错误） |
 | 后端 | Node.js + tsx，入口 `server/src/app.ts`，PM2 进 `milk-can-mes-server` |
 | Android | Capacitor + Gradle，`rebuild_v2.sh` 自动读 `server/data/releases.json` |
