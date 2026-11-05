@@ -24,6 +24,7 @@ import { useBarcode } from '../hooks/useBarcode'
 import { nowLocalStr } from '../../utils/localTime'
 import { useDebounceEffect } from '../hooks/useDebounceEffect'
 import { MobileImageUploader } from '../components/MobileImageUploader'
+import type { UploadImageValue } from '../components/MobileImageUploader'
 import DeviceFaultDetail from '../components/DeviceFaultDetail'
 import type { FaultRow, UserRow } from '../components/DeviceFaultDetail'
 import { registerBackHandler } from '../utils/backInterceptor'
@@ -97,8 +98,8 @@ export default function MobileDeviceFault() {
   const [closeRemark, setCloseRemark] = useState('')
 
   // 详情照片（从服务器拉取；维修中时可编辑）
-  const [detailFaultImgs, setDetailFaultImgs] = useState<string[]>([])
-  const [detailRepairImgs, setDetailRepairImgs] = useState<string[]>([])
+  const [detailFaultImgs, setDetailFaultImgs] = useState<UploadImageValue[]>([])
+  const [detailRepairImgs, setDetailRepairImgs] = useState<UploadImageValue[]>([])
 
   // 顶部统计（独立于 tab 过滤，全量聚合）
   const [stats, setStats] = useState({ pending: 0, repairing: 0, approving: 0, closed: 0, urgent: 0, total: 0 })
@@ -145,11 +146,11 @@ export default function MobileDeviceFault() {
       const r: any = await api.get(`/basic/device-faults/${faultId}/images`)
       if (r.success !== false) {
         const d = r.data || {}
-        const toUrls = (list: any[]) => (list || [])
-          .map((i) => i.file_path || i.url || '')
-          .filter(Boolean)
-        setDetailFaultImgs(toUrls(d.fault_images))
-        setDetailRepairImgs(toUrls(d.repair_images))
+        const toValues = (list: any[]): UploadImageValue[] => (list || [])
+          .map((i) => ({ url: i.file_path || i.url || '', imageId: Number(i.image_id) || undefined }))
+          .filter((v) => v.url)
+        setDetailFaultImgs(toValues(d.fault_images))
+        setDetailRepairImgs(toValues(d.repair_images))
       }
     } catch { /* 图片加载失败不阻断详情 */ }
   }

@@ -379,6 +379,29 @@ export const DeviceFaultService = {
   async createFaultImage(data: any, transaction?: any) {
     return await DeviceImage.create(data, { transaction })
   },
+
+  /**
+   * 按 image_id 删除单张图片（校验归属后删 DB 行）
+   * 返回相对路径，供 Controller 删除物理文件
+   */
+  async deleteImage(faultId: number | string, imageId: number | string) {
+    const idNum = Number(imageId)
+    if (!Number.isFinite(idNum) || idNum <= 0) {
+      throw new AppError('图片ID无效', 10002, 400)
+    }
+    const img = await DeviceImage.findOne({
+      where: {
+        image_id: idNum,
+        doc_id: Number(faultId),
+        doc_type: { [Op.in]: ['fault', 'repair'] },
+      },
+    })
+    if (!img) throw new AppError('图片不存在或不属于该故障单', 10002, 404)
+
+    const relPath = String(img.getDataValue('file_path') || '')
+    await img.destroy()
+    return relPath
+  },
 }
 
 export default DeviceFaultService

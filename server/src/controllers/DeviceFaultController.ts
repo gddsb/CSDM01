@@ -57,6 +57,26 @@ export default {
     return success(res, images)
   }),
 
+  /** 删除单张图片（按 image_id，校验 doc_id 归属） */
+  deleteImage: asyncHandler(async (req: Request, res: Response) => {
+    const relPath = await DeviceFaultService.deleteImage(Number(req.params.id), Number(req.params.imageId))
+    // DB 记录已删除；物理文件删除失败只告警，不回滚请求
+    if (relPath) {
+      try {
+        const root = path.resolve(process.cwd(), 'uploads')
+        const abs = path.resolve(process.cwd(), relPath.replace(/^\/+/, ''))
+        if (abs.startsWith(root + path.sep)) {
+          fs.unlinkSync(abs)
+        } else {
+          logger.warn('[DeviceFault] deleteImage 路径越界，已忽略:', relPath)
+        }
+      } catch (e: any) {
+        if (e?.code !== 'ENOENT') logger.warn('[DeviceFault] deleteImage 文件删除失败:', e?.message || e)
+      }
+    }
+    return success(res, null, '删除成功')
+  }),
+
   // ---- fs 边界：uploadImage 保留文件操作；DB 全部走 Service ----
 
   async uploadImage(req: any, res: any) {

@@ -7,6 +7,7 @@
  */
 import { Button, TextArea, Radio, Input, Picker } from 'antd-mobile'
 import { MobileImageUploader } from './MobileImageUploader'
+import type { UploadImageValue } from './MobileImageUploader'
 
 function getCurrentUsername(): string {
   try {
@@ -74,10 +75,10 @@ export interface DeviceFaultDetailProps {
   onRepair: () => void
   onApprove: () => void
   onClose: () => void
-  detailFaultImgs: string[]
-  setDetailFaultImgs: (v: string[]) => void
-  detailRepairImgs: string[]
-  setDetailRepairImgs: (v: string[]) => void
+  detailFaultImgs: UploadImageValue[]
+  setDetailFaultImgs: (v: UploadImageValue[]) => void
+  detailRepairImgs: UploadImageValue[]
+  setDetailRepairImgs: (v: UploadImageValue[]) => void
 }
 
 export default function DeviceFaultDetail(p: DeviceFaultDetailProps) {
@@ -153,9 +154,9 @@ export default function DeviceFaultDetail(p: DeviceFaultDetailProps) {
           <MobileImageUploader
             uploadUrl={`/basic/device-faults/${f.fault_id}/images`}
             uploadData={{ image_type: 'repair' }}
-            deleteUrl={(rawUrl) => `/basic/device-faults/${f.fault_id}/images?path=${encodeURIComponent(rawUrl)}`}
+            deleteUrl={(_rawUrl, imageId) => imageId ? `/basic/device-faults/${f.fault_id}/images/${imageId}` : ''}
             value={p.detailRepairImgs}
-            onChange={p.setDetailRepairImgs}
+            onChange={(_urls, items) => p.setDetailRepairImgs(items)}
             maxCount={6}
             compress={true}
             watermark={{ username: getCurrentUsername(), timestamp: true }}
@@ -207,9 +208,9 @@ export default function DeviceFaultDetail(p: DeviceFaultDetailProps) {
         <Section title="📷 故障现场照片">
           <MobileImageUploader
             value={p.detailFaultImgs}
-            onChange={p.setDetailFaultImgs}
+            onChange={(_urls, items) => p.setDetailFaultImgs(items)}
             uploadUrl={`/basic/device-faults/${f.fault_id}/images`}
-            deleteUrl={(rawUrl: string) => `/basic/device-faults/${f.fault_id}/images?path=${encodeURIComponent(rawUrl)}`}
+            deleteUrl={(_rawUrl, imageId) => imageId ? `/basic/device-faults/${f.fault_id}/images/${imageId}` : ''}
             maxCount={6}
             readOnly={f.status !== '待派工'}
           />
@@ -221,9 +222,9 @@ export default function DeviceFaultDetail(p: DeviceFaultDetailProps) {
         <Section title="🔧 维修后照片">
           <MobileImageUploader
             value={p.detailRepairImgs}
-            onChange={p.setDetailRepairImgs}
+            onChange={(_urls, items) => p.setDetailRepairImgs(items)}
             uploadUrl={`/basic/device-faults/${f.fault_id}/images`}
-            deleteUrl={(rawUrl: string) => `/basic/device-faults/${f.fault_id}/images?path=${encodeURIComponent(rawUrl)}`}
+            deleteUrl={(_rawUrl, imageId) => imageId ? `/basic/device-faults/${f.fault_id}/images/${imageId}` : ''}
             maxCount={6}
             readOnly={true}
           />

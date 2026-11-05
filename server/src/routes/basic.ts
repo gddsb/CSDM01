@@ -393,6 +393,7 @@ router.put('/device-faults/:id/close', permissionRequired('device:fault:update')
 router.delete('/device-faults/:id', permissionRequired('device:fault:delete'), logOperation('删除故障'), asyncHandler(DeviceFaultController.delete))
 router.get('/device-faults/:id/images', permissionRequired('device:fault'), asyncHandler(DeviceFaultController.getImages))
 router.post('/device-faults/:id/images', permissionRequired('device:fault:update'), deviceFaultUploadMiddleware.array('files', 10), logOperation('上传故障图片'), asyncHandler(DeviceFaultController.uploadImage))
+router.delete('/device-faults/:id/images/:imageId', permissionRequired('device:fault:update'), logOperation('删除故障图片'), asyncHandler(DeviceFaultController.deleteImage))
 
 // ============ 设备保养标准 ============
 // ⚠️ batch-assign 必须放在 :id 之前，否则会被 :id 路由吞掉

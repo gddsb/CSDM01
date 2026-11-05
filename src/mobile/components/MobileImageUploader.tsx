@@ -34,17 +34,23 @@ import { compressImage } from '../utils/image-compress'
 
 type LogLevel = 'info' | 'warn' | 'error'
 
+/** 受控图片值：纯路径字符串，或带 image_id 的对象（支持按 ID 删除） */
+export interface UploadImageValue {
+  url: string
+  imageId?: number
+}
+
 interface Props {
   /** 上传接口 URL —— 可传固定 string 或按文件动态生成 */
   uploadUrl?: string | ((file: File) => string)
   /** 上传时附加的文本字段（如 { image_type: 'repair' }） */
   uploadData?: Record<string, string>
-  /** 删除接口 URL —— 传相对路径 rawUrl，返回完整 DELETE URL。不传则禁用删图功能 */
-  deleteUrl?: string | ((rawUrl: string) => string)
-  /** 受控：后端返回的相对路径数组，如 ['/uploads/reports/WOxxx-001.jpg'] */
-  value: string[]
-  /** 受控回调 */
-  onChange: (urls: string[]) => void
+  /** 删除接口 URL —— 传相对路径 rawUrl + imageId，返回完整 DELETE URL；返回空串则不发起请求。不传则禁用删图功能 */
+  deleteUrl?: string | ((rawUrl: string, imageId?: number) => string)
+  /** 受控：后端返回的相对路径数组，或带 imageId 的对象数组 */
+  value: Array<string | UploadImageValue>
+  /** 受控回调：urls 为路径数组，items 含 imageId（父组件需持久化 ID 时使用第二个参数） */
+  onChange: (urls: string[], items: UploadImageValue[]) => void
   /** 最大数量，默认 9 */
   maxCount?: number
   /** 标签（可选） */
@@ -70,10 +76,26 @@ function resetInput(input: HTMLInputElement | null) {
   if (input) input.value = ''
 }
 
-/** 后端相对路径 ↔ ImageUploadItem[] */
-function toItems(urls: string[] | undefined | null): ImageUploadItem[] {
+/** 后端相对路径 / {url,imageId} ↔ ImageUploadItem[] */
+function toItems(urls: Array<string | UploadImageValue> | undefined | null): ImageUploadItem[] {
   if (!urls || urls.length === 0) return []
-  return urls.filter(Boolean).map((u) => ({ url: resolveUploadUrl(u), key: u }))
+  return urls
+    .map((u) => {
+      const raw = typeof u === 'string' ? u : (u?.url || '')
+      if (!raw) return null
+      const imageId = typeof u === 'string' ? undefined : u?.imageId
+      const item: any = { url: resolveUploadUrl(raw), key: raw }
+      if (imageId) item.imageId = imageId
+      return item as ImageUploadItem
+    })
+    .filter(Boolean) as ImageUploadItem[]
+}
+
+/** 内部 items → 受控值（保留 imageId，供父组件按 ID 删除） */
+function toValueItems(items: ImageUploadItem[]): UploadImageValue[] {
+  return items
+    .filter((i: any) => !i.uploading && typeof i.key === 'string' && i.key)
+    .map((i: any) => (i.imageId ? { url: i.key, imageId: i.imageId } : { url: i.key }))
 }
 function toUrls(items: ImageUploadItem[]): string[] {
   return items
@@ -103,6 +125,17 @@ function extractRawUrl(resData: any): string {
   if (typeof d.file_path === 'string') return d.file_path
   if (typeof d.path === 'string') return d.path
   return ''
+}
+
+/** 从上传返回值里提取 image_id（后端各接口均返回完整记录） */
+function extractImageId(resData: any): number | undefined {
+  const d = resData
+  if (!d) return undefined
+  const obj = Array.isArray(d) ? d[0] : d
+  if (!obj || typeof obj !== 'object') return undefined
+  const id = obj.image_id ?? obj.imageId ?? obj.id
+  const n = Number(id)
+  return Number.isFinite(n) && n > 0 ? n : undefined
 }
 
 export function MobileImageUploader({
@@ -208,8 +241,11 @@ export function MobileImageUploader({
       }
 
       emitLog('info', 'UPLOAD_OK', { rawUrl, ms: Math.round(performance.now() - stageStart) })
-      // key 存后端相对路径（用来删图时传 deleteUrl）
-      return { url: resolveUploadUrl(rawUrl), key: rawUrl }
+      // key 存后端相对路径；imageId 用于按主键删除
+      const imageId = extractImageId(res.data)
+      const item: any = { url: resolveUploadUrl(rawUrl), key: rawUrl }
+      if (imageId) item.imageId = imageId
+      return item
     } catch (e: any) {
       const isTimeout = e?.code === 'ECONNABORTED' || /timeout/i.test(String(e?.message))
       Toast.show({
@@ -242,7 +278,7 @@ export function MobileImageUploader({
           const next = prev.map((i: any) =>
             i._tmp === blobUrl ? { ...result, _tmp: blobUrl } : i
           )
-          onChange(toUrls(next))
+          onChange(toUrls(next), toValueItems(next))
           if (uploadMode === 'blob' && onFilesReady) {
             const files2 = next.map((i: any) => i.file).filter((f: any) => f instanceof File) as File[]
             if (files2.length > 0) onFilesReady(files2)
@@ -259,19 +295,20 @@ export function MobileImageUploader({
   }, [upload, remaining, maxCount, onChange, emitLog])
 
   // ========== 删除单张：乐观更新 UI + 后端双删 ==========
-  const handleDelete = useCallback(async (rawUrl: string) => {
+  const handleDelete = useCallback(async (rawUrl: string, imageId?: number) => {
     const removedItem = items.find(i => getRawUrl(i) === rawUrl)
     if (!removedItem) return
 
     const newItems = items.filter(i => getRawUrl(i) !== rawUrl)
     setItems(newItems)
-    onChange(toUrls(newItems))
-    emitLog('info', 'UI_DELETE', { removed: rawUrl, remaining: newItems.length })
+    onChange(toUrls(newItems), toValueItems(newItems))
+    emitLog('info', 'UI_DELETE', { removed: rawUrl, imageId, remaining: newItems.length })
 
     if (!deleteUrl) return  // 纯 blob 模式不传 deleteUrl 时跳过
 
     try {
-      const delPath = typeof deleteUrl === 'function' ? deleteUrl(rawUrl) : deleteUrl
+      const delPath = typeof deleteUrl === 'function' ? deleteUrl(rawUrl, imageId) : deleteUrl
+      if (!delPath) return  // 回调返回空串 → 无可用删除地址，仅本地移除
       emitLog('info', 'DELETE_REQUEST', { url: delPath })
       await api.delete(delPath)
     } catch (e: any) {
@@ -322,7 +359,7 @@ export function MobileImageUploader({
               <div
                 onClick={(e) => {
                   e.stopPropagation()  // 防止冒泡触发预览
-                  handleDelete(getRawUrl(item))
+                  handleDelete(getRawUrl(item), (item as any).imageId)
                 }}
                 style={{
                   position: 'absolute', top: -6, right: -6,
