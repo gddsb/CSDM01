@@ -257,6 +257,7 @@ if [[ -f "$APK_RELEASE_SRC" ]]; then
   cp "$APK_RELEASE_SRC" "download/${APK_RELEASE_NAME}"
   cp "$APK_RELEASE_SRC" download/milk-can-mes-latest.apk   # latest 指向 release（瘦身）
   APK_SIZE=$(stat -c %s "$APK_RELEASE_SRC")
+  APK_SHA256=$(sha256sum "$APK_RELEASE_SRC" | cut -d' ' -f1)
   # release 存在时 downloadUrl 也指向 release（App 内更新用瘦身版）
   APK_DOWNLOAD_URL="http://43.138.218.55/download/${APK_RELEASE_NAME}"
   echo "  ✅ release (瘦身): download/${APK_RELEASE_NAME} ($((APK_SIZE/1024/1024))MB)"
@@ -264,6 +265,7 @@ if [[ -f "$APK_RELEASE_SRC" ]]; then
 else
   echo "  ⚠️ release APK 未找到，回退用 debug"
   APK_SIZE=$(stat -c %s "$APK_DEBUG")
+  APK_SHA256=$(sha256sum "$APK_DEBUG" | cut -d' ' -f1)
   cp "$APK_DEBUG" download/milk-can-mes-latest.apk
 fi
 
@@ -276,6 +278,7 @@ cat > server/data/releases.json << ENDJSON
   "downloadUrl": "${APK_DOWNLOAD_URL}",
   "downloadUrlIos": "",
   "apkSize": ${APK_SIZE},
+  "checksum": "${APK_SHA256}",
   "ipaSize": 0,
   "appId": "com.daman.milkcanmes",
   "bundleId": "com.daman.milkcanmes",
@@ -322,7 +325,7 @@ echo ""
 echo "=== 8. 最终产出 ==="
 cd "${SCRIPT_DIR}"
 ls -lh "download/${APK_NAME}" download/milk-can-mes-latest.apk
-echo "SHA256: $(sha256sum "download/${APK_NAME}" | cut -d' ' -f1)"
+echo "SHA256: $(sha256sum download/milk-can-mes-latest.apk | cut -d' ' -f1)"
 echo ""
 echo "📦 v${VERSION} build${BUILD} · ${SHORT_SHA} · $(date -u +%Y-%m-%dT%H:%M:%SZ) ✅"
 echo "🔗 ${APK_DOWNLOAD_URL}"

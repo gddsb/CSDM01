@@ -8,8 +8,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Input, Toast, Checkbox, Dialog } from 'antd-mobile'
 import { useApp } from '../../contexts/AppContext'
-import { formatAppVersion, getAppVersion, refreshAppVersion } from '../utils/app-version'
-import { checkAndPromptUpdate, getNativeBuildNumber } from '../utils/app-updater'
+import { formatAppVersion, refreshAppVersion } from '../utils/app-version'
 
 export default function MobileLogin() {
   const { login } = useApp()
@@ -26,13 +25,9 @@ export default function MobileLogin() {
   useEffect(() => {
     refreshAppVersion().then((info) => {
       if (info) setVerLabel(formatAppVersion(info))
-      // 版本号刷新后立即检查更新
-      checkAndPromptUpdate()
     })
-    // 单次 fire-and-forget，不依赖取消（页面很少 unmount）
+    // 更新检查由全局 AppUpdateLoader 统一触发，这里只刷新版本号展示
   }, [])
-  void getAppVersion
-  void getNativeBuildNumber
 
   const onSubmit = async () => {
     if (!username.trim()) {

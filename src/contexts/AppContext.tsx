@@ -62,11 +62,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const savedToken = localStorage.getItem('mes_token')
     if (savedUser && savedToken) {
       setCurrentUser(JSON.parse(savedUser))
-      // 已登录用户也需要检查 APP 自更新（登录页 useEffect 可能被跳过）
-      // 动态 import 避免 PC 端打包移动端无用代码
-      import('../mobile/utils/app-updater').then(({ checkAndPromptUpdate }) => {
-        checkAndPromptUpdate()
-      }).catch(() => { /* PC 端无此文件，静默忽略 */ })
     }
     const savedTheme = localStorage.getItem('mes_theme') || 'pureMilk'
     setThemeKey(savedTheme)

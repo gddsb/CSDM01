@@ -17,7 +17,6 @@ import MainLayout from './layouts/MainLayout'
 import ErrorBoundary from './components/ErrorBoundary'
 import PermissionGate from './components/PermissionGate'
 import { DeviceProvider, useDevice, isRouteAllowed, isInNativeShell } from './adapter'
-import { useAppUpdate } from './adapter/update'
 
 // 首屏关键页面同步加载（避免白屏）
 import Login from './pages/Login'
@@ -323,16 +322,25 @@ function AppInner({ setMessageApi, setModalApi, setNotificationApi }: {
 }
 
 /**
- * 版本检测独立组件：冷启动时 checkForUpdate()
+ * 版本检测独立组件：冷启动时检查一次（唯一入口 app-updater）
  *
- * 规则（与路由重定向一致，只看 Capacitor shell，不依赖 useDevice）：
+ * 规则：
  *  - Capacitor 原生壳内（Android/iOS）→ 启用版本检测，有新版本时弹窗
- *  - PC Web 浏览器 → 不启用（避免 PC 登录时弹出"移动端版本更新"提示）
- *    Web 端的 PWA 热更新由 Service Worker 自行处理，无需此弹窗
- *  - TV 大屏 → 不启用（电视用户一般不知道怎么点下载 APK）
+ *  - PC Web 浏览器 → 不启用（PWA 热更新由 Service Worker 处理）
+ *  - TV 大屏 → 不启用
  */
 function AppUpdateLoader() {
-  return useAppUpdate(/* enabled */ isInNativeShell())
+  useEffect(() => {
+    if (!isInNativeShell()) return
+    let cancelled = false
+    import('./mobile/utils/app-updater')
+      .then(({ checkAndPromptUpdate }) => {
+        if (!cancelled) void checkAndPromptUpdate()
+      })
+      .catch(() => { /* 移动端模块加载失败时静默 */ })
+    return () => { cancelled = true }
+  }, [])
+  return null
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

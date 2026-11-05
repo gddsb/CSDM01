@@ -5,15 +5,13 @@
  * - 底部 TabBar：仅在 Dashboard / Profile 两个 Tab 页常驻显示
  *   "生产 / 检验 / 设备" 三个 Tab 点击弹出 ActionSheet 选择子功能
  *   子功能页面跳转后 TabBar 自动收起（显示 NavBar 返回按钮）
- * - 冷启动调 checkForUpdate()：有新版本时弹 antd-mobile Dialog
+ * - 更新检测统一由 main.tsx 的 AppUpdateLoader 触发（app-updater 单一入口）
  */
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
-import { TabBar, NavBar, ActionSheet, Dialog, Badge } from 'antd-mobile'
+import { TabBar, NavBar, ActionSheet, Badge } from 'antd-mobile'
 import { AppOutline, BillOutline, CheckOutline, TeamOutline, UserOutline } from 'antd-mobile-icons'
 import { useApp } from '../contexts/AppContext'
-import { checkForUpdate, skipUpdate } from '../adapter/update'
-import { refreshAppVersion } from './utils/app-version'
 import { useOfflineQueue } from './hooks/useOfflineQueue'
 import { useKeyboardAvoidance } from './hooks/useKeyboardAvoidance'
 import { runBackHandler } from './utils/backInterceptor'
@@ -145,68 +143,6 @@ export function MobileLayout() {
 
   // ========== 全局：输入框键盘避让（一次挂载覆盖所有子页面） ==========
   useKeyboardAvoidance()
-
-  // ========== 版本检测（冷启动时跑一次） ==========
-  useEffect(() => {
-    let cancelled = false
-    const run = async () => {
-      // 先刷新版本号缓存（/api/version 公开端点，无 auth 也能调）
-      void refreshAppVersion()
-      try {
-        const result = await checkForUpdate()
-        if (cancelled || !result.hasUpdate || !result.release) return
-        const rel = result.release
-        const apkUrl = rel.downloadUrl
-        const iosUrl = rel.downloadUrlIos
-        const isIos = result.local.platform === 'ios'
-        const targetUrl = isIos && iosUrl ? iosUrl : apkUrl
-
-        const content = (
-          <div>
-            <div style={{ fontSize: 14, color: 'var(--m-text)', marginBottom: 8, fontWeight: 500 }}>
-              新版本 v{rel.version}（build {rel.buildNumber}）
-            </div>
-            {rel.updateNotes && (
-              <div style={{ fontSize: 12, color: 'var(--m-text-2)', background: '#f5f7fa', padding: 10, borderRadius: 6, marginBottom: 8 }}>
-                {rel.updateNotes}
-              </div>
-            )}
-            {rel.apkSize && (
-              <div style={{ fontSize: 11, color: 'var(--m-text-3)' }}>
-                📦 {(rel.apkSize / 1024 / 1024).toFixed(1)}MB · Android
-              </div>
-            )}
-          </div>
-        )
-
-        const openDownload = () => {
-          if (targetUrl) window.open(targetUrl, '_blank')
-        }
-
-        if (result.forceUpdate) {
-          Dialog.alert({
-            title: '🔔 发现新版本（强制更新）',
-            content,
-            confirmText: '立即更新',
-            onConfirm: openDownload,
-          })
-        } else {
-          Dialog.confirm({
-            title: '🔔 发现新版本',
-            content,
-            confirmText: '立即更新',
-            cancelText: '稍后再说',
-            onConfirm: openDownload,
-            onCancel: () => skipUpdate(rel),
-          })
-        }
-      } catch {
-        /* 静默降级 */
-      }
-    }
-    run()
-    return () => { cancelled = true }
-  }, [])
 
   // ========== TabBar 交互 ==========
   const handleTabClick = (key: string) => {
