@@ -189,6 +189,42 @@ export default function DeviceMaintenanceUnified() {
     }
   }
 
+  // ===== 清理并重建维保计划（破坏性操作，含级联清理）=====
+  const handleCleanupRegenerate = async () => {
+    Modal.confirm({
+      title: `确认清理并重建 ${genMonth} 维保计划？`,
+      content: (
+        <div>
+          <p style={{ color: '#ff4d4f', marginBottom: 8 }}>⚠️ 此操作将：</p>
+          <ul style={{ color: '#ff4d4f', paddingLeft: 20 }}>
+            <li>删除 {genMonth} 所有维保执行记录（含已完成的历史）</li>
+            <li>级联清理关联的保养图片和故障单</li>
+            <li>按当前生效保养标准重新生成</li>
+          </ul>
+          <p style={{ color: '#999', fontSize: 12, marginTop: 8 }}>已执行中的记录也会被清理，请确认后再操作</p>
+        </div>
+      ),
+      okText: '确认清理并重建',
+      okButtonProps: { danger: true },
+      cancelText: '取消',
+      onOk: async () => {
+        setGenLoading(true)
+        try {
+          const payload: any = { target_month: genMonth, skip_past: genSkipPast }
+          if (genDeviceId) payload.device_id = genDeviceId
+          const res = await api.post('/basic/device-records/cleanup-and-regenerate', payload)
+          message.success(res?.message || '清理并重建完成')
+          setGenOpen(false)
+          loadRecords()
+        } catch (err: any) {
+          message.error(err?.message || '清理重建失败')
+        } finally {
+          setGenLoading(false)
+        }
+      },
+    })
+  }
+
   // ===== 开始执行 =====
   const handleStart = async (id: number) => {
     try {
@@ -483,11 +519,23 @@ export default function DeviceMaintenanceUnified() {
       <Modal
         title="生成维保计划"
         open={genOpen}
-        confirmLoading={genLoading}
-        onOk={handleGenerate}
         onCancel={() => setGenOpen(false)}
-        okText="生成"
-        cancelText="取消"
+        footer={[
+          <Button key="cancel" onClick={() => setGenOpen(false)}>取消</Button>,
+          <Button
+            key="cleanup"
+            danger
+            icon={<ReloadOutlined />}
+            loading={genLoading}
+            onClick={handleCleanupRegenerate}
+            style={{ marginLeft: 'auto' }}
+          >
+            清理并重建
+          </Button>,
+          <Button key="ok" type="primary" icon={<ThunderboltOutlined />} loading={genLoading} onClick={handleGenerate}>
+            正常生成
+          </Button>,
+        ]}
       >
         <div style={{ marginBottom: 12 }}>
           <Text>生成月份：</Text>

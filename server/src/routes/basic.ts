@@ -414,6 +414,7 @@ router.delete('/device-maintenance-profiles/:deviceId', permissionRequired('devi
 
 // ============ 设备保养执行记录 ============
 router.post('/device-records/generate', permissionRequired('device:maintenance:create'), logOperation('生成保养执行'), asyncHandler(DeviceMaintenanceController.generateRecords))
+router.post('/device-records/cleanup-and-regenerate', permissionRequired('device:maintenance:create'), logOperation('清理并重建保养计划'), asyncHandler(DeviceMaintenanceController.cleanupAndRegenerate))
 router.get('/device-records/matrix', permissionRequired('device:maintenance'), asyncHandler(DeviceMaintenanceController.getMatrix))
 router.get('/device-records', permissionRequired('device:maintenance'), asyncHandler(DeviceMaintenanceController.listRecords))
 router.get('/device-records/daily-summary', permissionRequired('device:maintenance'), asyncHandler(DeviceMaintenanceController.dailySummary))

@@ -162,6 +162,20 @@ export const generateRecords = asyncHandler(async (req: Request, res: Response) 
   return success(res, result, msg)
 })
 
+/** 清空本月维保记录（含级联清理故障单+图片）后重新生成 */
+export const cleanupAndRegenerate = asyncHandler(async (req: Request, res: Response) => {
+  const result: any = await DeviceMaintenanceProfileService.cleanupAndRegenerate(req.body)
+  const cleaned = (result?.cleaned as { records?: number; faults?: number; images?: number }) || {}
+  const parts: string[] = []
+  if (cleaned.records) parts.push(`清理记录 ${cleaned.records} 条`)
+  if (cleaned.faults) parts.push(`清理故障单 ${cleaned.faults} 条`)
+  if (cleaned.images) parts.push(`清理图片 ${cleaned.images} 张`)
+  const msg = parts.length > 0
+    ? `清理：${parts.join(' · ')}；重建：新增 ${result.created || 0} 条`
+    : `本月无历史记录，直接生成：新增 ${result.created || 0} 条`
+  return success(res, result, msg)
+})
+
 export const getMatrix = asyncHandler(async (req: Request, res: Response) => {
   const matrix = await DeviceMaintenanceProfileService.getMatrix(req.query)
   return success(res, matrix)
@@ -325,7 +339,7 @@ export default {
   listStandards, createStandard, updateStandard, deleteStandard,
   batchAssignStandards, batchAssignByDeviceDaily,
   listProfiles, listAvailableDevices, createProfile, detailProfile, updateProfileStatus, deleteProfile,
-  generateRecords, getMatrix,
+  generateRecords, getMatrix, cleanupAndRegenerate,
   listRecords, dailySummary, detailRecord, startRecord, submitRecord, batchSubmit, skipRecord, deleteRecord,
   getImages, uploadImage,
   logRuntime, getRuntimeLog,

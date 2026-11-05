@@ -12,6 +12,7 @@ import { Op } from 'sequelize'
 import sequelize from 'sequelize'
 import {
   DeviceMaintenanceProfile, DeviceMaintenanceRecord, DeviceMaintenanceStandard,
+  DeviceImage, DeviceFault,
 } from '../models/index.js'
 import { generateDeviceRecordNo } from '../utils/sequence.js'
 import { ErrorCode } from '../utils/response.js'
@@ -27,8 +28,8 @@ import { loadDeviceFields } from './MaintenanceProfileCrud.js'
 // 同 (target_month, device_id) 只允许一个 generateRecords 在执行
 const genLocks = new Map<string, number>()
 
-/** DELETE 安全边界：只允许删 status='待执行' 的记录 */
-const DELETABLE_STATUSES = ['待执行'] as const
+/** DELETE 安全边界：只允许删 status=0 待执行的记录（用数字，与 getDataValue 返回值一致） */
+const DELETABLE_STATUS_VALUES = [0]
 
 /** 休息日判断：显式 dic_holiday 优先 → 否则周六周日默认休息 */
 function isRestDate(dateStr: string, holidayMap: Map<string, number>): boolean {
@@ -250,7 +251,7 @@ export async function generateRecords(body: any) {
       // runtime 不碰
       if (tm === 'runtime') continue
       // 只有"待执行"状态能删，已完成/执行中/跳过的保留历史
-      if (!DELETABLE_STATUSES.includes(exist.getDataValue('status'))) continue
+      if (!DELETABLE_STATUS_VALUES.includes(Number(exist.getDataValue('status')))) continue
       await exist.destroy({ transaction: t })
       deleted++
     }
@@ -454,5 +455,85 @@ export async function getMatrix(query: any) {
       monthly_rate: monthlyTotal > 0 ? Math.round((monthlyCompleted / monthlyTotal) * 100) : 0,
       abnormal_count: abnormalCount([...resultDaily, ...resultWeekly, ...resultMonthly]),
     },
+  }
+}
+
+/** cleanupAndRegenerate —— 清空指定月份所有维保记录（含级联）后重建
+ *
+ *  清理范围（同一事务内原子执行）：
+ *    1. DeviceFault  (related_inspection_id IN 本月 record_ids) — 保养异常自动生成的故障单
+ *    2. DeviceImage  (doc_type='maintenance', doc_id IN 本月 record_ids) — 保养图片
+ *    3. DeviceMaintenanceRecord (本月全部 period_key) — 维保执行记录（不论状态，含已完成）
+ *
+ *  重建：调用 generateRecords 按当前生效标准重新生成
+ *
+ *  安全机制：先查出 record_id 列表，再用 IN 查询级联清理，避免逐条 N+1
+ */
+export async function cleanupAndRegenerate(body: any) {
+  const { target_month, device_id } = body || {}
+
+  if (!target_month || !/^\d{4}-\d{2}$/.test(String(target_month))) {
+    throw new AppError('target_month 格式错误，应为 YYYY-MM', ErrorCode.PARAM_INVALID)
+  }
+
+  const [yr, mo] = String(target_month).split('-').map(Number)
+  const dailyKeys = dailyPeriodKeys(yr, mo)
+  const weekKeys = weeklyPeriodKeys(yr, mo)
+  const dailyStart = dailyKeys[0]
+  const dailyEnd = dailyKeys[dailyKeys.length - 1]
+
+  // 1. 查出本月所有 record_id
+  const monthRecordCond: any = [
+    { trigger_mode: 'daily', period_key: { [Op.gte]: dailyStart, [Op.lte]: dailyEnd } },
+    { trigger_mode: 'weekly', period_key: { [Op.in]: weekKeys } },
+    { trigger_mode: 'monthly', period_key: target_month },
+  ]
+  if (device_id) {
+    monthRecordCond.forEach(c => { (c as any).device_id = device_id })
+  }
+
+  const existingIds: any[] = await DeviceMaintenanceRecord.findAll({
+    where: { [Op.or]: monthRecordCond },
+    attributes: ['record_id'],
+  })
+  const recordIds = existingIds.map(r => Number(r.getDataValue('record_id')))
+
+  if (recordIds.length === 0) {
+    // 本月没有记录，直接走生成
+    const gen = await generateRecords(body)
+    return { ...gen, cleaned: { records: 0, faults: 0, images: 0 }, regenerated: true }
+  }
+
+  // 2. 级联清理（同一事务）
+  const t = await DeviceMaintenanceRecord.sequelize.transaction()
+  try {
+    const faultResult = await DeviceFault.destroy({
+      where: { related_inspection_id: { [Op.in]: recordIds } },
+      transaction: t,
+    })
+
+    const imageResult = await DeviceImage.destroy({
+      where: { doc_type: 'maintenance', doc_id: { [Op.in]: recordIds } },
+      transaction: t,
+    })
+
+    const recordResult = await DeviceMaintenanceRecord.destroy({
+      where: { [Op.or]: monthRecordCond },
+      transaction: t,
+    })
+
+    await t.commit()
+
+    // 3. 重新生成（新事务，由 generateRecords 自行管理）
+    const gen = await generateRecords(body)
+
+    return {
+      cleaned: { records: recordResult, faults: faultResult, images: imageResult },
+      regenerated: true,
+      ...gen,
+    }
+  } catch (err: any) {
+    if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
+    throw new AppError(err.message || '清理重建失败', ErrorCode.SYSTEM_ERROR)
   }
 }

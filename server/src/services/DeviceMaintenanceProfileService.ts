@@ -26,7 +26,7 @@ export {
 } from './MaintenanceProfileCrud.js'
 
 // ---------- MaintenanceGenerator ----------
-export { generateRecords, getMatrix } from './MaintenanceGenerator.js'
+export { generateRecords, getMatrix, cleanupAndRegenerate } from './MaintenanceGenerator.js'
 
 // ---------- MaintenanceRecordCrud ----------
 export {
