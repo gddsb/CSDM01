@@ -12,6 +12,16 @@ description: "Push code to GitHub and deploy MES production server. Invoke when 
 
 ---
 
+## 铁律（2026-11 版本丢失事故后固化，违反会导致已修复 bug 回滚）
+
+1. **禁止在生产机直接改代码或脚本**。`/opt/milk-can-mes` 只允许 `git pull` 和构建；任何修改必须回到 `/workspace` 提交并 `git push origin HEAD:main`。
+2. **禁止 `git reset --hard` / `git checkout -f` / `git clean -fdx`**。部署拉取只允许 `git fetch` + `git merge --ff-only`，失败立即中止，不得继续用旧代码构建。
+3. **禁止静默 `git stash`**。历史上生产机攒了 14 个 stash（`agent-local-fixes`、`remote-manual-patch-before-rebuild`、`wip before rebuild`），全是就地补丁被藏起来后无人恢复，是"bug 又回来"的主因。
+4. **部署前工作区必须干净**（仅允许 `android/app/capacitor.build.gradle`、`android/capacitor.settings.gradle` 这两个 `cap sync` 生成文件）。`rebuild_v2.sh` 已内置该守卫。
+5. **每次修复完成立即 commit + push 到 `main`**；会话结束前核对 `git rev-parse HEAD` 与 `origin/main` 一致。平台自动提交 `feat: update workspace` 只是本地快照，不 push 等于没保存（沙箱是一次性浅克隆）。
+
+---
+
 ## Phase 0：安全前置检查（经验 965734）
 
 **不要直接 `git status` 就下结论 —— 先 fetch 再双向对比，避免远程领先被漏判。**

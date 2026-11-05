@@ -26,7 +26,7 @@ log "MES 生产部署开始 - $(date '+%Y-%m-%d %H:%M:%S')"
 
 # ===== Step 1: 拉代码 =====
 log "[1/5] Git pull (via origin-backup proxy)"
-ssh_exec "cd $REMOTE_DIR && git fetch origin-backup && git reset --hard origin-backup/main && git log --oneline -3"
+ssh_exec "cd $REMOTE_DIR && dirty=\$(git status --porcelain --untracked-files=no | grep -vE 'android/(app/capacitor\.build\.gradle|capacitor\.settings\.gradle)' || true) && if [ -n \"\$dirty\" ]; then echo '✗ 生产工作区有未提交修改，终止部署'; echo \"\$dirty\"; exit 1; fi && git fetch origin-backup main && git merge --ff-only FETCH_HEAD && git log --oneline -3"
 
 # ===== Step 2: 全新安装依赖 =====
 log "[2/5] pnpm install (全新)"

@@ -40,20 +40,45 @@ done
 echo "=== 1. git pull ==="
 PULL_OK=false
 
-# 先试主源 origin
-if git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 fetch origin main 2>&1 | tail -5; then
-  git merge --no-edit FETCH_HEAD 2>&1 | tail -3
-  PULL_OK=true
-  echo "  ✓ 来自 origin (github.com)"
+# 1a. 部署前守卫：生产工作区不允许存在未提交的代码修改。
+#     android/app/capacitor.build.gradle 与 android/capacitor.settings.gradle 是
+#     `npx cap sync` 每次构建都会重写的生成文件，允许其处于修改状态；
+#     其余任何 tracked 文件改动都必须先提交回仓库，否则拒绝部署。
+DIRTY=$(git status --porcelain --untracked-files=no \
+  | grep -vE 'android/(app/capacitor\.build\.gradle|capacitor\.settings\.gradle)' || true)
+if [[ -n "$DIRTY" ]]; then
+  echo "  ✗ 生产工作区存在未提交修改，终止部署："
+  echo "$DIRTY"
+  echo "  → 请把修改提交并 push 到 main 后重新部署；禁止在生产机直接改代码"
+  exit 1
 fi
 
-# 主源失败 → 备源 origin-backup
+# 1b. 只允许 fast-forward：出现分叉/冲突立即中止，禁止 reset --hard 覆盖本地改动
+if git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 fetch origin main 2>&1 | tail -5; then
+  if git merge --ff-only --no-edit FETCH_HEAD > /tmp/_mes_merge.log 2>&1; then
+    tail -3 /tmp/_mes_merge.log
+    PULL_OK=true
+    echo "  ✓ 来自 origin (github.com)"
+  else
+    tail -10 /tmp/_mes_merge.log
+    echo "  ✗ merge 失败（本地分叉或工作区冲突），终止部署"
+    exit 1
+  fi
+fi
+
+# 主源失败 → 备源 origin-backup（同样只允许 fast-forward）
 if ! $PULL_OK; then
   echo "  ⚠ origin 失败，切 origin-backup (gh-proxy)..."
   if git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 fetch origin-backup main 2>&1 | tail -5; then
-    git merge --no-edit FETCH_HEAD 2>&1 | tail -3
-    PULL_OK=true
-    echo "  ✓ 来自 origin-backup (gh-proxy)"
+    if git merge --ff-only --no-edit FETCH_HEAD > /tmp/_mes_merge.log 2>&1; then
+      tail -3 /tmp/_mes_merge.log
+      PULL_OK=true
+      echo "  ✓ 来自 origin-backup (gh-proxy)"
+    else
+      tail -10 /tmp/_mes_merge.log
+      echo "  ✗ merge 失败，终止部署"
+      exit 1
+    fi
   fi
 fi
 
@@ -63,6 +88,7 @@ if ! $PULL_OK; then
 fi
 
 SHORT_SHA=$(git rev-parse --short HEAD)
+echo "  HEAD = ${SHORT_SHA}"
 
 # ============================================================
 # Step 2: 动态计算版本号和构建号（核心固化逻辑）

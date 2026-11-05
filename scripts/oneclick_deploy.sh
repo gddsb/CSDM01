@@ -36,8 +36,10 @@ echo ""
 echo "=== A. 同步代码 + vite build ==="
 ssh_exec "
   cd /opt/milk-can-mes &&
+  dirty=\$(git status --porcelain --untracked-files=no | grep -vE 'android/(app/capacitor\.build\.gradle|capacitor\.settings\.gradle)' || true) &&
+  if [ -n \"\$dirty\" ]; then echo '✗ 生产工作区有未提交修改，终止部署'; echo \"\$dirty\"; exit 1; fi &&
   git fetch origin main &&
-  git reset --hard origin/main &&
+  git merge --ff-only origin/main &&
   echo 'HEAD:' && git log --oneline -1 &&
   echo '--- 内存 ---' && free -m &&
   echo '--- vite build ---' &&

@@ -252,12 +252,13 @@ if [ "$SKIP_UPLOAD" != "true" ]; then
         ok "IPA 上传: /download/${IPA_NAME}"
     fi
 
-    # 上传 releases.json — 放在 git pull 之后，避免被 reset --hard 覆盖
+    # 上传 releases.json — 放在 git pull 之后（releases.json 不进 git，pull 不会覆盖）
     ok "APK/IPA 上传完成，准备拉代码 + 写 releases.json"
 
-    # 先拉代码 + vite build（此时 releases.json 是仓库里的旧版本）
+    # 先拉代码 + vite build
+    # ⚠️ 禁止 git stash / git reset --hard：历史上因此丢失了多次生产机就地补丁
     log "  生产服务器拉代码 + build ..."
-    eval "$SSH 'cd ${PROD_PATH} && git stash 2>/dev/null; git fetch origin-backup main && git reset --hard FETCH_HEAD >/dev/null 2>&1 && npx vite build 2>&1 | tail -3'" 2>&1 | tail -5
+    eval "$SSH 'cd ${PROD_PATH} && git fetch origin-backup main && git merge --ff-only FETCH_HEAD && npx vite build 2>&1 | tail -3'" 2>&1 | tail -5
     ok "代码拉取 + vite build 完成"
 
     # 再上传 releases.json（写入覆盖掉仓库里的旧版本号）
