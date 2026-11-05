@@ -87,12 +87,14 @@ interface GenericTabProps<T> {
   onAdd: () => void
   disableAdd?: boolean
   hideAdd?: boolean
+  hideDefaultActions?: boolean
   title?: string
   hint?: string
   readOnlyHint?: string
   scrollX?: number
   tableKey: string
   extraAction?: React.ReactNode
+  rightExtra?: React.ReactNode
   // 可选：工序选择器（物料/报废 Tab 各独立绑定自己的工序）
   showProcessSelector?: boolean
   selectedProcessId?: number | null
@@ -101,10 +103,11 @@ interface GenericTabProps<T> {
 }
 
 export function GenericRecordTab<T extends { id: string | number }>({
-  editable, columns, data, onSave, onAdd, disableAdd, hideAdd, title, hint = '点"添加"前会自动保存未提交记录；录入数据后请点"保存"提交',
-  readOnlyHint = '已完工，数据只读', scrollX = 900, tableKey, extraAction,
+  editable, columns, data, onSave, onAdd, disableAdd, hideAdd, hideDefaultActions, title, hint = '点"添加"前会自动保存未提交记录；录入数据后请点"保存"提交',
+  readOnlyHint = '已完工，数据只读', scrollX = 900, tableKey, extraAction, rightExtra,
   showProcessSelector, selectedProcessId, processes, onSelectProcess,
 }: GenericTabProps<T>) {
+  const showDefaultActions = editable && !hideDefaultActions
   return (
     <div>
       <Row style={{ marginBottom: 16 }} align="middle">
@@ -123,7 +126,7 @@ export function GenericRecordTab<T extends { id: string | number }>({
               </>
             )}
             <span style={{ color: 'var(--text-secondary)' }}>{title}</span>
-            {editable && (
+            {showDefaultActions && (
               <>
                 <Button type="primary" icon={<SaveOutlined />} onClick={onSave}>保存</Button>
                 {!hideAdd && <Button type="primary" icon={<PlusOutlined />} onClick={onAdd} disabled={disableAdd}>添加</Button>}
@@ -133,7 +136,10 @@ export function GenericRecordTab<T extends { id: string | number }>({
           </Space>
         </Col>
         <Col span={12} style={{ textAlign: 'right' }}>
-          {editable ? <Tag color="blue">{disableAdd ? '⚠️ 存在未结束工时，先点"结束"再新增' : hint}</Tag> : <Tag color="default">{readOnlyHint}</Tag>}
+          <Space>
+            {editable && !hint && !rightExtra ? null : (editable ? <Tag color="blue">{disableAdd ? '⚠️ 存在未结束工时，先点"结束"再新增' : hint}</Tag> : <Tag color="default">{readOnlyHint}</Tag>)}
+            {rightExtra}
+          </Space>
         </Col>
       </Row>
       <ResizableTable tableKey={tableKey} columns={columns} dataSource={data} rowKey="id" size="small" pagination={false} scroll={{ x: scrollX }} tableLayout="fixed" />

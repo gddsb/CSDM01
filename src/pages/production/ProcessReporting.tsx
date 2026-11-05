@@ -1160,10 +1160,9 @@ export default function ProcessReporting() {
   const handleBreakTimeRefresh = useCallback(async () => {
     if (!selectedReport) return
     try {
-      const res = await api.get('/system/config', { params: { page: 1, pageSize: 50 } })
-      const cfgList = res.data || []
-      const breakCfg = cfgList.find((c: any) => c.config_key === 'default_break_times')
-      let patterns = breakCfg?.config_value
+      const res = await api.get('/system/config')
+      const cfgMap: Record<string, any> = res.data || {}
+      let patterns = cfgMap.default_break_times
       if (typeof patterns === 'string') patterns = JSON.parse(patterns || '[]')
       const reportDate = dayjs(selectedReport.report_time)
       const newBreaks = patterns.map((p: any) => {
@@ -1376,16 +1375,15 @@ export default function ProcessReporting() {
               onSave={handleCombinedSave}
               onAdd={() => {}}
               hideAdd
+              hideDefaultActions
               hint=""
-              scrollX={1200}
-              extraAction={
+              scrollX={800}
+              rightExtra={
                 isEditable ? (
-                  <Button
-                    size="small"
-                    icon={<ReloadOutlined />}
-                    onClick={handleBreakTimeRefresh}
-                    loading={breakTimesSaving}
-                  >刷新默认休息时间</Button>
+                  <Space>
+                    <Button type="primary" icon={<SaveOutlined />} onClick={handleCombinedSave}>保存</Button>
+                    <Button size="small" icon={<ReloadOutlined />} onClick={handleBreakTimeRefresh} loading={breakTimesSaving}>刷新默认休息时间</Button>
+                  </Space>
                 ) : null
               }
             />
