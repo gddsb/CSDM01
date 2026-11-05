@@ -163,11 +163,13 @@ async function openApkFallback(): Promise<boolean> {
   return false
 }
 
-/** ===== 主入口 ===== */
-export async function checkAndPromptUpdate(ignoreDateLock = false): Promise<void> {
+/** ===== 主入口 =====
+ * @returns true = 触发了更新流程（弹窗/下载/降级），false = 已是最新/跳过
+ */
+export async function checkAndPromptUpdate(ignoreDateLock = false): Promise<boolean> {
   const isAndroid = /android/i.test(navigator.userAgent) ||
                     (window as any).Capacitor?.getPlatform?.() === 'android'
-  if (!isAndroid) return
+  if (!isAndroid) return false
 
   const cached = getAppVersion()
   let serverBuild = Number(cached.build) || 0
@@ -179,19 +181,16 @@ export async function checkAndPromptUpdate(ignoreDateLock = false): Promise<void
     serverBuild = fresh.build
     serverVersion = fresh.version
   }
-  if (serverBuild === 0 || nativeBuild === 0) return
+  if (serverBuild === 0 || nativeBuild === 0) return false
   if (serverBuild <= nativeBuild) {
-    // 已是最新 —— 调用方可能主动点检查更新（"我的"页面），给个 Toast
-    if (ignoreDateLock) {
-      Toast.show({ content: `已是最新版本 build${nativeBuild} ✅`, position: 'bottom', duration: 1500 })
-    }
-    return
+    // 已是最新
+    return false
   }
 
   if (!ignoreDateLock) {
     const lastSuccess = localStorage.getItem('mes_update_prompted_date')
     const today = new Date().toISOString().slice(0, 10)
-    if (lastSuccess === today) return
+    if (lastSuccess === today) return false
   }
 
   const confirmed = await Dialog.confirm({
@@ -200,7 +199,7 @@ export async function checkAndPromptUpdate(ignoreDateLock = false): Promise<void
     confirmText: '立即更新',
     cancelText: '稍后',
   })
-  if (!confirmed) return
+  if (!confirmed) return false  // 用户点"稍后"也算未触发
 
   // 优先尝试 APP 内下载 + 原生安装，失败则回退
   let opened = await downloadAndInstallNative()
@@ -212,4 +211,5 @@ export async function checkAndPromptUpdate(ignoreDateLock = false): Promise<void
     localStorage.setItem('mes_update_prompted_date', new Date().toISOString().slice(0, 10))
   }
   void serverVersion
+  return opened
 }

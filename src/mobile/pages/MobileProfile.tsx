@@ -16,7 +16,10 @@ export function MobileProfile() {
 
   const handleCheckUpdate = async () => {
     await refreshAppVersion()
-    await checkAndPromptUpdate(true) // ignoreDateLock：用户主动检查不受当天限流
+    const triggered = await checkAndPromptUpdate(true) // ignoreDateLock：用户主动检查不受当天限流
+    if (!triggered) {
+      Toast.show({ content: `已是最新版本 build${getNativeBuildNumber()} ✅`, position: 'bottom', duration: 1500 })
+    }
   }
 
   const handleLogout = async () => {

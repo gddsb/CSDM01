@@ -275,32 +275,17 @@ export function MobileImageUploader({
     }
   }, [items, onChange, deleteUrl, emitLog])
 
-  // ========== 缩略图点击：ActionSheet 选"预览/删除" ==========
+  // ========== 缩略图点击：直接预览（删除走右上角 ✕ 角标） ==========
   const handleThumbClick = useCallback((item: ImageUploadItem) => {
     const rawUrl = getRawUrl(item)
-    const actions: { text: string; key: string }[] = [
-      { text: '👁️ 预览', key: 'preview' },
-    ]
-    if (!readOnly && deleteUrl) actions.push({ text: '🗑️ 删除', key: 'delete' })
-    ActionSheet.show({
-      actions,
-      cancelText: '取消',
-      closeOnAction: true,
-      onAction: (action) => {
-        if (action.key === 'preview') {
-          // 收集全部已上传图片的 fullUrl（ImageViewer.Multi 支持左右滑动切换）
-          const validItems = items.filter((i: any) => !(i as any).uploading)
-          const urls = validItems
-            .map((i) => (typeof i.url === 'string' ? i.url : getRawUrl(i)))
-            .filter(Boolean)
-          const curIdx = validItems.findIndex((i) => getRawUrl(i) === rawUrl)
-          ImageViewer.Multi.show({ images: urls, defaultIndex: curIdx >= 0 ? curIdx : 0 })
-        } else if (action.key === 'delete') {
-          handleDelete(rawUrl)
-        }
-      },
-    })
-  }, [items, deleteUrl, handleDelete, readOnly])
+    const validItems = items.filter((i: any) => !(i as any).uploading)
+    const urls = validItems
+      .map((i) => (typeof i.url === 'string' ? i.url : getRawUrl(i)))
+      .filter(Boolean)
+    if (urls.length === 0) return
+    const curIdx = validItems.findIndex((i) => getRawUrl(i) === rawUrl)
+    ImageViewer.Multi.show({ images: urls, defaultIndex: curIdx >= 0 ? curIdx : 0 })
+  }, [items])
 
   return (
     <div>
