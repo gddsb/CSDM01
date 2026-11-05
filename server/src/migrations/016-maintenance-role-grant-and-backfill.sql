@@ -13,12 +13,32 @@
 -- ============================================
 -- Part 1: device_record 表补字段（如果不存在）
 -- ============================================
--- MySQL 8.0+ 支持 ADD COLUMN IF NOT EXISTS
-ALTER TABLE `device_record`
-  ADD COLUMN IF NOT EXISTS `responsible_user_id` INT NULL COMMENT '责任人ID（冗余自 device_standard.assigned_user_ids[0]）',
-  ADD COLUMN IF NOT EXISTS `responsible_user_name` VARCHAR(50) NULL COMMENT '责任人姓名（冗余）',
-  ADD COLUMN IF NOT EXISTS `inspector_user_id` INT NULL COMMENT '检查人ID（冗余自 device_standard.inspector_user_ids[0]）',
-  ADD COLUMN IF NOT EXISTS `inspector_user_name` VARCHAR(50) NULL COMMENT '检查人姓名（冗余）';
+-- MySQL 8.0 不支持 ADD COLUMN IF NOT EXISTS，用 information_schema 幂等处理
+DROP PROCEDURE IF EXISTS _ensure_device_record_cols;
+DELIMITER //
+CREATE PROCEDURE _ensure_device_record_cols()
+BEGIN
+  SET @db := DATABASE();
+
+  IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'device_record' AND COLUMN_NAME = 'responsible_user_id') THEN
+    ALTER TABLE `device_record` ADD COLUMN `responsible_user_id` INT NULL COMMENT '责任人ID（冗余自 device_standard.assigned_user_ids[0]）';
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'device_record' AND COLUMN_NAME = 'responsible_user_name') THEN
+    ALTER TABLE `device_record` ADD COLUMN `responsible_user_name` VARCHAR(50) NULL COMMENT '责任人姓名（冗余）';
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'device_record' AND COLUMN_NAME = 'inspector_user_id') THEN
+    ALTER TABLE `device_record` ADD COLUMN `inspector_user_id` INT NULL COMMENT '检查人ID（冗余自 device_standard.inspector_user_ids[0]）';
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'device_record' AND COLUMN_NAME = 'inspector_user_name') THEN
+    ALTER TABLE `device_record` ADD COLUMN `inspector_user_name` VARCHAR(50) NULL COMMENT '检查人姓名（冗余）';
+  END IF;
+END //
+DELIMITER ;
+CALL _ensure_device_record_cols();
+DROP PROCEDURE IF EXISTS _ensure_device_record_cols;
 
 -- 字段加索引（如果不存在）
 SET @sql = (SELECT IF(
