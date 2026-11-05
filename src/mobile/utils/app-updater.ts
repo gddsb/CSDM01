@@ -148,7 +148,8 @@ async function fetchRelease(forceRefresh = false): Promise<ServerRelease | null>
 }
 
 /** APK 下载到应用私有临时目录 cache/apk/ 下，仅该子目录由 FileProvider 暴露 */
-const APK_PATH = 'apk/update.apk'
+const APK_DIR = 'apk'
+const APK_PATH = `${APK_DIR}/update.apk`
 
 /** SHA256 校验（crypto.subtle 仅在安全上下文可用；不可用时跳过并告警） */
 async function verifyChecksum(plugins: any, expected: string): Promise<void> {
@@ -186,9 +187,18 @@ async function downloadAndInstallNative(release: ServerRelease): Promise<boolean
     // 清理上次残留
     try { await Filesystem.deleteFile({ path: APK_PATH, directory: Directory.Cache }) } catch { /* 不存在时忽略 */ }
 
+    // downloadFile 的原生实现只创建基础目录（cache/），不会创建子目录；
+    // 不先建 apk/ 会抛 ENOENT，直接退化到浏览器下载
+    try {
+      await Filesystem.mkdir({ path: APK_DIR, directory: Directory.Cache, recursive: true })
+    } catch (e: any) {
+      const m = String(e?.message || e || '')
+      if (!/exist/i.test(m)) throw new Error(`创建下载目录失败：${m}`)
+    }
+
     Toast.show({ content: '开始下载更新…', position: 'bottom', duration: 1500 })
 
-    // Capacitor 的进度通过 addListener('progress') 派发，返回对象上没有 progress 方法
+    // Capacitor 的进度通过 addListener('progress') 派发，且需 downloadFile 传 progress:true 才会触发
     let listener: any = null
     try {
       listener = await Filesystem.addListener('progress', (p: any) => {
@@ -201,16 +211,26 @@ async function downloadAndInstallNative(release: ServerRelease): Promise<boolean
       })
     } catch { /* 低版本插件不支持 progress 事件时忽略 */ }
 
-    await Filesystem.downloadFile({
-      url,
-      path: APK_PATH,
-      directory: Directory.Cache,
-      recursive: true,
-    })
-    try { listener?.remove?.() } catch { /* 忽略 */ }
+    try {
+      await Filesystem.downloadFile({
+        url,
+        path: APK_PATH,
+        directory: Directory.Cache,
+        progress: true,
+      })
+    } catch (e: any) {
+      throw new Error(`下载失败：${String(e?.message || e || '未知错误')}`)
+    } finally {
+      try { listener?.remove?.() } catch { /* 忽略 */ }
+    }
 
     // 文件完整性：存在且大小与服务端一致
-    const stat: any = await Filesystem.stat({ path: APK_PATH, directory: Directory.Cache })
+    let stat: any
+    try {
+      stat = await Filesystem.stat({ path: APK_PATH, directory: Directory.Cache })
+    } catch (e: any) {
+      throw new Error(`下载校验失败：${String(e?.message || e || '无法读取安装包')}`)
+    }
     const actualSize = Number(stat?.size || 0)
     if (actualSize <= 0) throw new Error('安装包下载失败（文件为空）')
     if (release.apkSize > 0 && actualSize !== release.apkSize) {
@@ -232,7 +252,11 @@ async function downloadAndInstallNative(release: ServerRelease): Promise<boolean
     }
 
     Toast.show({ content: '下载完成 ✅ 即将打开系统安装器', position: 'bottom', duration: 1500 })
-    await InstallApkPlugin.install({ path: APK_PATH, directory: Directory.Cache })
+    try {
+      await InstallApkPlugin.install({ path: APK_PATH, directory: Directory.Cache })
+    } catch (e: any) {
+      throw new Error(`安装失败：${String(e?.message || e || '未知错误')}`)
+    }
     return true
   } catch (e: any) {
     const msg = String(e?.message || e || '')
