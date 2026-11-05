@@ -6,25 +6,33 @@
  */
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Input, Toast } from 'antd-mobile'
+import { Button, Input, Toast, Checkbox, Dialog } from 'antd-mobile'
 import { useApp } from '../../contexts/AppContext'
 import { formatAppVersion, getAppVersion, refreshAppVersion } from '../utils/app-version'
+import { checkAndPromptUpdate, getNativeBuildNumber } from '../utils/app-updater'
 
 export default function MobileLogin() {
   const { login } = useApp()
   const navigate = useNavigate()
-  const [username, setUsername] = useState(() => localStorage.getItem('mes_last_username') || '')
-  const [password, setPassword] = useState('')
+  // 记住我 —— 勾选时持久化账号密码，退出后自动填充
+  const rememberedUser = localStorage.getItem('mes_remember_username') || ''
+  const rememberedPwd = localStorage.getItem('mes_remember_password') || ''
+  const [remember, setRemember] = useState(() => localStorage.getItem('mes_remember') === 'true' && !!rememberedUser)
+  const [username, setUsername] = useState(rememberedUser || localStorage.getItem('mes_last_username') || '')
+  const [password, setPassword] = useState(rememberedPwd)
   const [loading, setLoading] = useState(false)
   // 启动时刷新版本号缓存（/api/version 公开端点，无需 auth）
   const [verLabel, setVerLabel] = useState(() => formatAppVersion())
   useEffect(() => {
     refreshAppVersion().then((info) => {
       if (info) setVerLabel(formatAppVersion(info))
+      // 版本号刷新后立即检查更新
+      checkAndPromptUpdate()
     })
     // 单次 fire-and-forget，不依赖取消（页面很少 unmount）
   }, [])
-  void getAppVersion // lint: 预留扩展
+  void getAppVersion
+  void getNativeBuildNumber
 
   const onSubmit = async () => {
     if (!username.trim()) {
@@ -40,6 +48,16 @@ export default function MobileLogin() {
       const result = await login(username.trim(), password)
       if (result.success) {
         localStorage.setItem('mes_last_username', username.trim())
+        // 记住我：勾选则存密码；不勾选则清掉
+        if (remember) {
+          localStorage.setItem('mes_remember', 'true')
+          localStorage.setItem('mes_remember_username', username.trim())
+          localStorage.setItem('mes_remember_password', password)
+        } else {
+          localStorage.setItem('mes_remember', 'false')
+          localStorage.removeItem('mes_remember_username')
+          localStorage.removeItem('mes_remember_password')
+        }
         Toast.show({ content: '登录成功', icon: 'success', position: 'bottom' })
         // 稍等 Toast 显示再跳转
         setTimeout(() => navigate('/m/dashboard', { replace: true }), 400)
@@ -104,6 +122,17 @@ export default function MobileLogin() {
             onEnterPress={onSubmit}
             style={{ fontSize: 16, padding: '14px 12px', border: '1px solid #e5e6eb', borderRadius: 10 }}
           />
+        </div>
+
+        {/* 记住我：勾选后退出 App 再次打开自动填入账号密码 */}
+        <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center' }}>
+          <Checkbox
+            checked={remember}
+            onChange={(v) => setRemember(v)}
+            style={{ fontSize: 13 }}
+          >
+            记住我（下次自动填充账号密码）
+          </Checkbox>
         </div>
 
         <Button

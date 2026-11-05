@@ -91,6 +91,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setCurrentUser(null)
     localStorage.removeItem('mes_token')
     localStorage.removeItem('mes_user')
+    // 登录时勾选了"记住我"则保留账号密码，否则也清掉
+    const rememberMe = localStorage.getItem('mes_remember') === 'true'
+    if (!rememberMe) {
+      localStorage.removeItem('mes_remember_username')
+      localStorage.removeItem('mes_remember_password')
+    }
   }
 
   const updateUser = (updates: Partial<User>) => {
