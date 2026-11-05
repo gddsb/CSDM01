@@ -16,9 +16,11 @@ export function MobileProfile() {
 
   const handleCheckUpdate = async () => {
     await refreshAppVersion()
-    const triggered = await checkAndPromptUpdate(true) // ignoreDateLock：用户主动检查不受当天限流
-    if (!triggered) {
-      const nativeBuild = getNativeBuildNumber()
+    const result = await checkAndPromptUpdate(true) // ignoreDateLock：用户主动检查不受当天限流
+    const nativeBuild = getNativeBuildNumber()
+    if (result === 'cancelled') {
+      Toast.show({ content: '已取消更新', position: 'bottom', duration: 1200 })
+    } else if (result === 'up-to-date') {
       Toast.show({
         content: nativeBuild > 0
           ? `已是最新版本 build${nativeBuild} ✅`
@@ -26,6 +28,8 @@ export function MobileProfile() {
         position: 'bottom',
         duration: 1500,
       })
+    } else if (result === 'failed') {
+      Toast.show({ content: '检查更新失败，请稍后重试', position: 'bottom', duration: 1500 })
     }
   }
 

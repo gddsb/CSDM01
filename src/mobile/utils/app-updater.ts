@@ -265,24 +265,30 @@ async function openApkFallback(url: string): Promise<boolean> {
   return false
 }
 
+export type UpdateCheckResult =
+  | 'updated'      // 已触发更新流程（下载/安装）
+  | 'up-to-date'   // 确实已是最新版本
+  | 'cancelled'    // 用户点击“稍后”/取消
+  | 'failed'       // 版本信息拉取或安装失败
+  | 'unsupported'  // 非 Android 环境
+
 /**
  * 检查并提示更新（唯一入口）
  * @param userInitiated 用户主动点击"检查更新"：忽略当天限流与"稍后"记忆，强制刷新服务端数据
- * @returns true = 触发了更新流程（弹窗/下载/降级），false = 已是最新、非 Android 或跳过
  */
-export async function checkAndPromptUpdate(userInitiated = false): Promise<boolean> {
+export async function checkAndPromptUpdate(userInitiated = false): Promise<UpdateCheckResult> {
   const isAndroid = /android/i.test(navigator.userAgent) ||
     (window as any).Capacitor?.getPlatform?.() === 'android'
-  if (!isAndroid) return false
+  if (!isAndroid) return 'unsupported'
 
   const release = await fetchRelease(userInitiated)
-  if (!release) return false
-  if (!shouldUpdate(release)) return false
+  if (!release) return 'failed'
+  if (!shouldUpdate(release)) return 'up-to-date'
 
   const skipKey = `${release.version}|${release.build}`
   if (!userInitiated) {
-    if (!release.forceUpdate && localStorage.getItem(SKIP_KEY) === skipKey) return false
-    if (localStorage.getItem(PROMPT_DATE_KEY) === beijingDate()) return false
+    if (!release.forceUpdate && localStorage.getItem(SKIP_KEY) === skipKey) return 'up-to-date'
+    if (localStorage.getItem(PROMPT_DATE_KEY) === beijingDate()) return 'up-to-date'
   }
   localStorage.setItem(PROMPT_DATE_KEY, beijingDate())
 
@@ -301,11 +307,11 @@ export async function checkAndPromptUpdate(userInitiated = false): Promise<boole
     })
     if (!go) {
       localStorage.setItem(SKIP_KEY, skipKey)
-      return false
+      return 'cancelled'
     }
   }
 
   let opened = await downloadAndInstallNative(release)
   if (!opened) opened = await openApkFallback(release.downloadUrl)
-  return opened
+  return opened ? 'updated' : 'failed'
 }
