@@ -1146,7 +1146,7 @@ export default function ProcessReporting() {
     try {
       await api.post('/production/break-times/batch', {
         report_order_id: selectedReport.report_order_id,
-        break_times: breakTimes,
+        records: breakTimes,
       })
       setBreakTimesDirty(false)
       return true
@@ -1176,7 +1176,7 @@ export default function ProcessReporting() {
       })
       await api.post('/production/break-times/batch', {
         report_order_id: selectedReport.report_order_id,
-        break_times: newBreaks,
+        records: newBreaks,
       })
       setBreakTimes(newBreaks)
       setBreakTimesDirty(false)
