@@ -53,7 +53,10 @@ if [[ -n "$DIRTY" ]]; then
   exit 1
 fi
 
-# 1b. 只允许 fast-forward：出现分叉/冲突立即中止，禁止 reset --hard 覆盖本地改动
+# 1b. cap sync 生成文件在仓库里同样会被更新：合并前丢弃服务器本地副本（构建时会按插件版本重新生成）
+git checkout -- android/app/capacitor.build.gradle android/capacitor.settings.gradle 2>/dev/null || true
+
+# 1c. 只允许 fast-forward：出现分叉/冲突立即中止，禁止 reset --hard 覆盖本地改动
 if git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 fetch origin main 2>&1 | tail -5; then
   if git merge --ff-only --no-edit FETCH_HEAD > /tmp/_mes_merge.log 2>&1; then
     tail -3 /tmp/_mes_merge.log
