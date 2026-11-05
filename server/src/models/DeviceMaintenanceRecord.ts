@@ -45,6 +45,30 @@ const DeviceMaintenanceRecord = sequelize.define('DeviceMaintenanceRecord', {
   device_code: { type: DataTypes.STRING(50), comment: '设备编号（冗余）' },
   device_name: { type: DataTypes.STRING(100), comment: '设备名称（冗余）' },
 
+  // ===== 责任人/检查人（从 device_standard 展开） =====
+  responsible_user_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    index: true,
+    comment: '责任人ID（冗余自 device_standard.assigned_user_ids[0]）',
+  },
+  responsible_user_name: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    comment: '责任人姓名（冗余）',
+  },
+  inspector_user_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    index: true,
+    comment: '检查人ID（冗余自 device_standard.inspector_user_ids[0]）',
+  },
+  inspector_user_name: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    comment: '检查人姓名（冗余）',
+  },
+
   // ===== 执行定位 =====
   trigger_mode: {
     type: DataTypes.STRING(20),

@@ -115,6 +115,7 @@ export default function MobileDashboard() {
             page: 1, pageSize: 200,
             status: '待执行,执行中',
             period_key: `${todayKey},${weekKey},${monthKey}`,
+            mine: 'true',
           }
         })(),
       }).then((r: any) => {

@@ -210,6 +210,15 @@ export async function generateRecords(body: any) {
         t,
       )
       const recordNo = await generateDeviceRecordNo()
+
+      // 从 standard 展开责任人/检查人
+      const assignedUserIds: number[] = (std.getDataValue('assigned_user_ids') as any[]) || []
+      const inspectorUserIds: number[] = (std.getDataValue('inspector_user_ids') as any[]) || []
+      const respId = assignedUserIds[0] ?? null
+      const inspId = inspectorUserIds[0] ?? null
+      const respName = std.getDataValue('assigned_user_name') || null
+      const inspName = std.getDataValue('inspector_user_name') || null
+
       const r = await DeviceMaintenanceRecord.create({
         record_no: recordNo,
         standard_id: sid,
@@ -219,6 +228,10 @@ export async function generateRecords(body: any) {
         trigger_mode: std.getDataValue('trigger_mode'),
         period_key: pk,
         status: 0,
+        responsible_user_id: respId,
+        responsible_user_name: respName,
+        inspector_user_id: inspId,
+        inspector_user_name: inspName,
         remarks: '',
       }, { transaction: t })
       created++

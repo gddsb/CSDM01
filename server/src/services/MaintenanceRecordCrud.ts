@@ -28,7 +28,7 @@ const {
         trigger_mode, status, period_key,
         start_date, end_date,
         keyword, month,
-        extra,
+        extra, mine, currentUser,
       } = query
 
       const where: any = {}
@@ -88,6 +88,11 @@ const {
         if (statusArr && statusArr.length) {
           where.status = { [Op.in]: statusArr }
         }
+      }
+
+      // mine=true → 只看当前登录人负责的（非超级管理员）
+      if (mine === 'true' && currentUser && currentUser.role_code !== 'SUPER_ADMIN') {
+        where.responsible_user_id = currentUser.user_id
       }
 
       const pageNum = Math.max(1, Number(page) || 1)
