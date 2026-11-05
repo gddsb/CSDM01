@@ -43,6 +43,7 @@ export {
 // ---------- MaintenanceRuntime ----------
 export {
   getImages,
+  deleteImage,
   logRuntime,
   getRuntimeLog,
   initProfiles,

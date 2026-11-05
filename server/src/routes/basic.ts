@@ -427,6 +427,7 @@ router.put('/device-records/:id/skip', permissionRequired('device:maintenance:up
 router.delete('/device-records/:id', permissionRequired('device:maintenance:delete'), logOperation('删除保养记录'), asyncHandler(DeviceMaintenanceController.deleteRecord))
 router.get('/device-records/:id/images', permissionRequired('device:maintenance'), asyncHandler(DeviceMaintenanceController.getImages))
 router.post('/device-records/:id/images', permissionRequired('device:maintenance:update'), deviceMaintenanceUploadMiddleware.array('files', 10), logOperation('上传保养图片'), asyncHandler(DeviceMaintenanceController.uploadImage))
+router.delete('/device-records/:id/images/:imageId', permissionRequired('device:maintenance:update'), logOperation('删除保养图片'), asyncHandler(DeviceMaintenanceController.deleteImage))
 
 // ============ 设备运行时长 ============
 router.post('/device-runtime-logs', permissionRequired('device:maintenance:update'), logOperation('录入运行时长'), asyncHandler(DeviceMaintenanceController.logRuntime))

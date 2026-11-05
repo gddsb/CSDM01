@@ -26,6 +26,7 @@ import { offlinePost, offlinePut, offlineDelete } from '../offline/offlineApi'
 import { useBarcode } from '../hooks/useBarcode'
 import { useDebounceEffect } from '../hooks/useDebounceEffect'
 import { MobileImageUploader } from '../components/MobileImageUploader'
+import type { UploadImageValue } from '../components/MobileImageUploader'
 import { registerBackHandler } from '../utils/backInterceptor'
 
 function getCurrentUsername(): string {
@@ -126,7 +127,7 @@ export default function MobileDeviceMaintenance() {
   const [content, setContent] = useState('')
   const [abnormalDesc, setAbnormalDesc] = useState('')
   const [remarks, setRemarks] = useState('')
-  const [images, setImages] = useState<string[]>([])
+  const [images, setImages] = useState<UploadImageValue[]>([])
 
   // ===== 设备 =====
   const loadDevices = async (kw?: string): Promise<DeviceRow[]> => {
@@ -444,10 +445,13 @@ export default function MobileDeviceMaintenance() {
     try {
       const r: any = await api.get(`/basic/device-records/${recordId}/images`)
       const list: any[] = Array.isArray(r?.data) ? r.data : []
-      const urls = list
-        .map((x: any) => (typeof x === 'string') ? x : (x?.file_path || x?.path || x?.url || ''))
-        .filter(Boolean)
-      setImages(urls)
+      const vals: UploadImageValue[] = list
+        .map((x: any) => {
+          if (typeof x === 'string') return { url: x }
+          return { url: x?.file_path || x?.path || x?.url || '', imageId: Number(x?.image_id) || undefined }
+        })
+        .filter((v) => v.url)
+      setImages(vals)
     } catch { /* 无图片或接口错 → 保持空数组，不阻断 */ }
   }
 
@@ -971,9 +975,9 @@ export default function MobileDeviceMaintenance() {
           <Card title="现场照片（可选）">
             <MobileImageUploader
               uploadUrl={selectedRecord.status === '已完成' ? undefined : () => `/basic/device-records/${selectedRecord.record_id}/images`}
-              deleteUrl={selectedRecord.status === '已完成' ? undefined : (rawUrl) => `/basic/device-records/${selectedRecord.record_id}/images?path=${encodeURIComponent(rawUrl)}`}
+              deleteUrl={selectedRecord.status === '已完成' ? undefined : (_rawUrl, imageId) => imageId ? `/basic/device-records/${selectedRecord.record_id}/images/${imageId}` : ''}
               value={images}
-              onChange={setImages}
+              onChange={(_urls, items) => setImages(items)}
               maxCount={selectedRecord.status === '已完成' ? 0 : 6}
               watermark={{ username: getCurrentUsername(), timestamp: true }}
             />

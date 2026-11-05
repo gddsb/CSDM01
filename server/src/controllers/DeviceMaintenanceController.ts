@@ -12,6 +12,7 @@ import DeviceMaintenanceStandardService from '../services/DeviceMaintenanceStand
 import DeviceMaintenanceProfileService, {
   assertRecordExists, countImagesByRecord, findExistingImagesByRecord, createMaintenanceImage,
   getImages as _svcGetImages,
+  deleteImage as _svcDeleteImage,
 } from '../services/DeviceMaintenanceProfileService.js'
 import { success, fail, ErrorCode } from '../utils/response.js'
 import { logger } from '../utils/logger.js'
@@ -238,6 +239,25 @@ export const getImages = asyncHandler(async (req: Request, res: Response) => {
   return success(res, images, '查询成功')
 })
 
+/** 删除单张保养图片（按 image_id，校验 doc_id 归属） */
+export const deleteImage = asyncHandler(async (req: Request, res: Response) => {
+  const relPath = await _svcDeleteImage(Number(req.params.id), Number(req.params.imageId))
+  if (relPath) {
+    try {
+      const root = path.resolve(process.cwd(), 'uploads')
+      const abs = path.resolve(process.cwd(), relPath.replace(/^\/+/, ''))
+      if (abs.startsWith(root + path.sep)) {
+        fs.unlinkSync(abs)
+      } else {
+        logger.warn('[DeviceMaintenance] deleteImage 路径越界，已忽略:', relPath)
+      }
+    } catch (e: any) {
+      if (e?.code !== 'ENOENT') logger.warn('[DeviceMaintenance] deleteImage 文件删除失败:', e?.message || e)
+    }
+  }
+  return success(res, null, '删除成功')
+})
+
 /** sharp 压缩水印 + fs 落盘 + Service 写 DB */
 export const uploadImage = async (req: Request, res: Response) => {
   const t = await sequelize.transaction()
@@ -341,7 +361,6 @@ export default {
   listProfiles, listAvailableDevices, createProfile, detailProfile, updateProfileStatus, deleteProfile,
   generateRecords, getMatrix, cleanupAndRegenerate,
   listRecords, dailySummary, detailRecord, startRecord, submitRecord, batchSubmit, skipRecord, deleteRecord,
-  getImages, uploadImage,
-  logRuntime, getRuntimeLog,
+  getImages, uploadImage, deleteImage, logRuntime, getRuntimeLog,
   initProfiles,
 }
