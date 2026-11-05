@@ -43,7 +43,7 @@ function isRestDate(dateStr: string, holidayMap: Map<string, number>): boolean {
 }
 
 /** 构建某月 holidayMap（日期字符串 → is_workday: 0=休息/1=上班） */
-async function buildHolidayMap(yr: number, mo: number): Promise<Map<string, number>> {
+async function buildHolidayMap(yr: number, mo: number, t?: any): Promise<Map<string, number>> {
   const map = new Map<string, number>()
   try {
     const DicHoliday = (await import('../models/DicHoliday.js')).default
@@ -53,6 +53,7 @@ async function buildHolidayMap(yr: number, mo: number): Promise<Map<string, numb
         `${String(yr).padStart(4, '0')}-${String(mo).padStart(2, '0')}`,
       ),
       attributes: ['holiday_date', 'is_workday'],
+      transaction: t,
     })
     for (const h of holidays) {
       const d = h.getDataValue('holiday_date')
@@ -123,7 +124,7 @@ export async function generateRecords(body: any) {
 
     // 5a. 查 dic_holiday + 默认周六周日 → 过滤掉休息日（daily 模式）
     // 只有 daily 模式按具体日期跳过；weekly/monthly 不受影响
-    const holidayMap = await buildHolidayMap(yr, mo)
+    const holidayMap = await buildHolidayMap(yr, mo, t)
     const filteredDailyKeys = dailyKeys.filter(pk => !isRestDate(pk, holidayMap))
 
     // 本月 + skipPast → daily 只取今天及以后（过期的不参与 Upsert，也参与不了 DELETE 边界）
