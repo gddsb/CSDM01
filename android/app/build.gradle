@@ -10,8 +10,12 @@ try {
     logger.warn("releases.json 读取失败，使用默认版本: ${e.message}")
     releases = [version: "1.0.0", buildNumber: 1]
 }
-def VERSION_NAME = releases.version ?: "1.0.0"
-def VERSION_CODE = (releases.buildNumber ?: 1).toInteger() + 1000 // buildNumber 从 1 开始，versionCode 从 1001 起
+def BASE_VERSION = releases.version ?: "1.0.0"
+def BUILD_NUMBER = (releases.buildNumber ?: 1).toInteger()
+def VERSION_NAME = BASE_VERSION   // 用于 APK 文件名，必须与 rebuild_v2.sh 的 APK_NAME 一致
+// 安装器只显示 versionName，纯 version 会导致每次升级都显示「1.2.0 -> 1.2.0」，故追加 build 号
+def DISPLAY_VERSION = "${BASE_VERSION}-b${BUILD_NUMBER}"
+def VERSION_CODE = BUILD_NUMBER + 1000 // buildNumber 从 1 开始，versionCode 从 1001 起
 def APP_NAME = "milk-can-mes"
 // ============================================
 
@@ -23,7 +27,7 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode VERSION_CODE
-        versionName VERSION_NAME
+        versionName DISPLAY_VERSION
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         // 瘦身：只打 ARM 架构（覆盖 ~99.7% Android 市场，省去 x86/x86_64 原生 so）
         ndk { abiFilters "armeabi-v7a", "arm64-v8a" }
@@ -48,7 +52,7 @@ android {
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
             def buildType = variant.buildType.name  // debug / release
-            outputFileName = "${APP_NAME}-v${VERSION_NAME}-build${releases.buildNumber}-${buildType}.apk"
+            outputFileName = "${APP_NAME}-v${VERSION_NAME}-build${BUILD_NUMBER}-${buildType}.apk"
         }
     }
 }
