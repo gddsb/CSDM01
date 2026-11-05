@@ -7,7 +7,7 @@ import {
 import { useMessage, useApp } from '../../contexts/AppContext'
 import {
   PlusOutlined, DeleteOutlined, UploadOutlined,
-  PictureOutlined, SaveOutlined,
+  PictureOutlined, SaveOutlined, ReloadOutlined,
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import api from '../../utils/api'
@@ -40,6 +40,8 @@ export default function ProcessReporting() {
   const [closingReport, setClosingReport] = useState(false)
   const [breakTimes, setBreakTimes] = useState<any[]>([])
   const [breakTimesLoading, setBreakTimesLoading] = useState(false)
+  const [breakTimesDirty, setBreakTimesDirty] = useState(false)
+  const [breakTimesSaving, setBreakTimesSaving] = useState(false)
 
   // 新增报工单 Modal
   const [createModalOpen, setCreateModalOpen] = useState(false)
@@ -1125,6 +1127,72 @@ export default function ProcessReporting() {
     onChange: handleManpowerChange,
   })
 
+  // ─── 休息时间编辑 / 保存 / 刷新 ───
+  const handleBreakTimeEdit = useCallback((breakTimeId: number | string, field: 'start_time' | 'end_time', value: dayjs.Dayjs | null) => {
+    if (!value) return
+    setBreakTimes(prev => prev.map(b => {
+      if (String(b.break_time_id) !== String(breakTimeId)) return b
+      const existing = dayjs(b[field])
+      const next = existing.hour(value.hour()).minute(value.minute()).second(0)
+      return { ...b, [field]: next.format('YYYY-MM-DD HH:mm:ss') }
+    }))
+    setBreakTimesDirty(true)
+  }, [])
+
+  const saveBreakTimes = useCallback(async () => {
+    if (!selectedReport || !breakTimesDirty) return true
+    setBreakTimesSaving(true)
+    try {
+      await api.post('/production/break-times/batch', {
+        report_order_id: selectedReport.report_order_id,
+        break_times: breakTimes,
+      })
+      setBreakTimesDirty(false)
+      return true
+    } catch (e: any) {
+      message.error(e?.message || '休息时间保存失败')
+      return false
+    } finally {
+      setBreakTimesSaving(false)
+    }
+  }, [selectedReport, breakTimes, breakTimesDirty, message])
+
+  const handleBreakTimeRefresh = useCallback(async () => {
+    if (!selectedReport) return
+    try {
+      const res = await api.get('/system/config', { params: { page: 1, pageSize: 50 } })
+      const cfgList = res.data || []
+      const breakCfg = cfgList.find((c: any) => c.config_key === 'default_break_times')
+      let patterns = breakCfg?.config_value
+      if (typeof patterns === 'string') patterns = JSON.parse(patterns || '[]')
+      const reportDate = dayjs(selectedReport.report_time)
+      const newBreaks = patterns.map((p: any) => {
+        const [sh, sm] = p.start.split(':').map(Number)
+        const [eh, em] = p.end.split(':').map(Number)
+        const start = reportDate.hour(sh).minute(sm).second(0)
+        const endDayOffset = (eh * 60 + em) < (sh * 60 + sm) ? 1 : 0
+        const end = reportDate.add(endDayOffset, 'day').hour(eh).minute(em).second(0)
+        return { start_time: start.format('YYYY-MM-DD HH:mm:ss'), end_time: end.format('YYYY-MM-DD HH:mm:ss') }
+      })
+      await api.post('/production/break-times/batch', {
+        report_order_id: selectedReport.report_order_id,
+        break_times: newBreaks,
+      })
+      setBreakTimes(newBreaks)
+      setBreakTimesDirty(false)
+      message.success('默认休息时间已刷新')
+    } catch (e: any) {
+      message.error(e?.message || '刷新失败')
+    }
+  }, [selectedReport, message])
+
+  // 合并保存：休息时间 + 人员工时
+  const handleCombinedSave = useCallback(async () => {
+    const breakOk = await saveBreakTimes()
+    if (!breakOk) return
+    await handleSaveAllManpowers()
+  }, [saveBreakTimes, handleSaveAllManpowers])
+
   // 所有子 Tab（平级定义，分组在下面 groupTabItems 里完成）
   const tabItems = [
     { key: 'production-defect', label: '报废记录' },
@@ -1252,46 +1320,37 @@ export default function ProcessReporting() {
           return e - s > 0
         })
 
+        const breakTableCols = [
+          { title: '#', key: 'idx', width: 40, render: (_: any, __: any, i: number) => i + 1 },
+          {
+            title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 180,
+            render: (v: string, rec: any) => isEditable ? (
+              <TimePicker
+                size="small" format="HH:mm"
+                value={dayjs(v)}
+                onChange={(t) => handleBreakTimeEdit(rec.break_time_id, 'start_time', t)}
+              />
+            ) : <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{formatDateTime(v)}</span>,
+          },
+          {
+            title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 180,
+            render: (v: string, rec: any) => isEditable ? (
+              <TimePicker
+                size="small" format="HH:mm"
+                value={dayjs(v)}
+                onChange={(t) => handleBreakTimeEdit(rec.break_time_id, 'end_time', t)}
+              />
+            ) : <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{formatDateTime(v)}</span>,
+          },
+        ]
+
         return (
           <div>
             {/* 休息时间区块 */}
             <Card
               size="small"
-              title={<span style={{ fontSize: 13, color: 'var(--text-primary)' }}>🛑 默认休息时间（点击开始异常时自动扣除）</span>}
+              title={<span style={{ fontSize: 13, color: 'var(--text-primary)' }}>🛑 默认休息时间</span>}
               style={{ marginBottom: 12 }}
-              extra={
-                <Button
-                  size="small"
-                  type="primary"
-                  onClick={async () => {
-                    if (!selectedReport) return
-                    try {
-                      const res = await api.get('/production/config', { params: { page: 1, pageSize: 50 } })
-                      const cfgList = res.data || []
-                      const breakCfg = cfgList.find(c => c.config_key === 'default_break_times')
-                      let patterns = breakCfg?.config_value
-                      if (typeof patterns === 'string') patterns = JSON.parse(patterns || '[]')
-                      const reportDate = dayjs(selectedReport.report_time)
-                      const newBreaks = patterns.map((p: any) => {
-                        const [sh, sm] = p.start.split(':').map(Number)
-                        const [eh, em] = p.end.split(':').map(Number)
-                        const start = reportDate.hour(sh).minute(sm).second(0)
-                        const endDayOffset = (eh * 60 + em) < (sh * 60 + sm) ? 1 : 0
-                        const end = reportDate.add(endDayOffset, 'day').hour(eh).minute(em).second(0)
-                        return { start_time: start.format('YYYY-MM-DD HH:mm:ss'), end_time: end.format('YYYY-MM-DD HH:mm:ss'), remark: '前端手动刷新' }
-                      })
-                      await api.post('/production/break-times/batch', {
-                        report_order_id: selectedReport.report_order_id,
-                        break_times: newBreaks,
-                      })
-                      setBreakTimes(newBreaks)
-                      message.success('休息时间已刷新')
-                    } catch (e: any) {
-                      message.error(e?.message || '刷新失败')
-                    }
-                  }}
-                >🔄 刷新默认休息时间</Button>
-              }
             >
               {overlappingBreaks.length === 0 ? (
                 <div style={{ color: 'var(--text-secondary)', fontSize: 12, textAlign: 'center', padding: '12px 0' }}>
@@ -1303,28 +1362,32 @@ export default function ProcessReporting() {
                   pagination={false}
                   rowKey="break_time_id"
                   dataSource={overlappingBreaks}
-                  columns={[
-                    { title: '#', key: 'idx', width: 40, render: (_, __, i) => i + 1 },
-                    { title: '开始时间', dataIndex: 'start_time', key: 'start_time', width: 180,
-                      render: (v) => <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{formatDateTime(v)}</span> },
-                    { title: '结束时间', dataIndex: 'end_time', key: 'end_time', width: 180,
-                      render: (v) => <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{formatDateTime(v)}</span> },
-                    { title: '备注', dataIndex: 'remark', key: 'remark', render: (v) => v || '-' },
-                  ]}
+                  columns={breakTableCols}
                 />
               )}
             </Card>
-            {/* 人员工时 */}
+            {/* 班次时间（原人员工时） */}
             <GenericRecordTab
               tableKey="pages_production_ProcessReporting_manpower"
-              title="人员工时记录"
+              title="班次时间"
               editable={isEditable}
               columns={manpowerColumns as any}
               data={manpowerDisplayList}
-              onSave={handleSaveAllManpowers}
+              onSave={handleCombinedSave}
               onAdd={() => {}}
-              hint='工时按报工单时间自动计算，修改人数后点"保存"提交；净额已扣除休息时间'
+              hideAdd
+              hint=""
               scrollX={1200}
+              extraAction={
+                isEditable ? (
+                  <Button
+                    size="small"
+                    icon={<ReloadOutlined />}
+                    onClick={handleBreakTimeRefresh}
+                    loading={breakTimesSaving}
+                  >刷新默认休息时间</Button>
+                ) : null
+              }
             />
           </div>
         )
