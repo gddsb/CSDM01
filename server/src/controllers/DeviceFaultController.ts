@@ -77,17 +77,19 @@ export default {
       const uploadsDir = path.resolve(process.cwd(), 'uploads', 'device', 'fault')
       if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true })
 
-      const existingCount = await DeviceFaultService.countFaultImages(Number(id), t)
+      // 图片类别：repair=维修后照片，其他一律按故障现场照片
+      const docType = String((req as any).body?.image_type || '').toLowerCase() === 'repair' ? 'repair' : 'fault'
+      const existingCount = await DeviceFaultService.countFaultImages(Number(id), docType, t)
       const created: any[] = []
       const ts = Date.now()
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
         const seqNum = existingCount + i + 1
         const ext = path.extname(file.originalname) || '.jpg'
-        const newName = `fault_${id}_${seqNum}_${ts}${ext}`
+        const newName = `${docType}_${id}_${seqNum}_${ts}${ext}`
         fs.renameSync(file.path, path.join(uploadsDir, newName))
         const rel = await DeviceFaultService.createFaultImage({
-          doc_type: 'fault', doc_id: Number(id),
+          doc_type: docType, doc_id: Number(id),
           file_path: `/uploads/device/fault/${newName}`, file_name: file.originalname || newName,
           file_size: file.size || null, sort_order: seqNum,
           uploaded_by: userInfo.userId || null, uploaded_by_name: userInfo.username || '',

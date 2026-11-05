@@ -348,16 +348,16 @@ export const DeviceFaultService = {
     return true
   },
 
-  /** 获取故障图片（故障图 + 维修图） */
+  /** 获取故障图片（故障图 + 维修图，均以 fault_id 为 doc_id） */
   async getImages(id: number | string) {
     const faultImages = await DeviceImage.findAll({
-      where: { ref_type: 'fault', ref_id: Number(id) },
+      where: { doc_type: 'fault', doc_id: Number(id) },
       order: [['sort_order', 'ASC']],
     })
-    const repair = await DeviceFaultRepair.findOne({ where: { fault_id: Number(id) } })
-    const repairImages = repair
-      ? await DeviceImage.findAll({ where: { ref_type: 'repair', ref_id: (repair as any).repair_id }, order: [['sort_order', 'ASC']] })
-      : []
+    const repairImages = await DeviceImage.findAll({
+      where: { doc_type: 'repair', doc_id: Number(id) },
+      order: [['sort_order', 'ASC']],
+    })
     return { fault_images: faultImages, repair_images: repairImages }
   },
 
@@ -370,9 +370,9 @@ export const DeviceFaultService = {
     return fault
   },
 
-  /** 统计故障已有图片数 */
-  async countFaultImages(faultId: number, transaction?: any) {
-    return await DeviceImage.count({ where: { doc_type: 'fault', doc_id: faultId }, transaction })
+  /** 统计某类图片已有数量（doc_type: fault / repair） */
+  async countFaultImages(faultId: number, docType = 'fault', transaction?: any) {
+    return await DeviceImage.count({ where: { doc_type: docType, doc_id: faultId }, transaction })
   },
 
   /** 创建故障图片记录 */

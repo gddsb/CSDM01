@@ -64,8 +64,6 @@ export interface DeviceFaultDetailProps {
   setPartsCost: (v: string) => void
   laborCost: string
   setLaborCost: (v: string) => void
-  repairImages: string[]
-  setRepairImages: (v: string[]) => void
   approveResult: '通过' | '驳回'
   setApproveResult: (v: '通过' | '驳回') => void
   approveOpinion: string
@@ -154,9 +152,10 @@ export default function DeviceFaultDetail(p: DeviceFaultDetailProps) {
           <div style={{ fontSize: 12, color: 'var(--m-text-2)', margin: '8px 0 4px' }}>维修后照片（可选）</div>
           <MobileImageUploader
             uploadUrl={`/basic/device-faults/${f.fault_id}/images`}
+            uploadData={{ image_type: 'repair' }}
             deleteUrl={(rawUrl) => `/basic/device-faults/${f.fault_id}/images?path=${encodeURIComponent(rawUrl)}`}
-            value={p.repairImages}
-            onChange={p.setRepairImages}
+            value={p.detailRepairImgs}
+            onChange={p.setDetailRepairImgs}
             maxCount={6}
             compress={true}
             watermark={{ username: getCurrentUsername(), timestamp: true }}
@@ -217,8 +216,8 @@ export default function DeviceFaultDetail(p: DeviceFaultDetailProps) {
         </Section>
       )}
 
-      {/* 维修后照片：维修中可编辑，其他状态只读 */}
-      {(p.detailRepairImgs.length > 0 || f.status === '维修中') && (
+      {/* 维修后照片：维修中已在维修记录内上传，此处仅在其他状态只读展示 */}
+      {(p.detailRepairImgs.length > 0 && f.status !== '维修中') && (
         <Section title="🔧 维修后照片">
           <MobileImageUploader
             value={p.detailRepairImgs}
@@ -226,7 +225,7 @@ export default function DeviceFaultDetail(p: DeviceFaultDetailProps) {
             uploadUrl={`/basic/device-faults/${f.fault_id}/images`}
             deleteUrl={(rawUrl: string) => `/basic/device-faults/${f.fault_id}/images?path=${encodeURIComponent(rawUrl)}`}
             maxCount={6}
-            readOnly={f.status !== '维修中'}
+            readOnly={true}
           />
         </Section>
       )}

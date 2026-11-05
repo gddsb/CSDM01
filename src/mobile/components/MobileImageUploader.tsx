@@ -37,6 +37,8 @@ type LogLevel = 'info' | 'warn' | 'error'
 interface Props {
   /** 上传接口 URL —— 可传固定 string 或按文件动态生成 */
   uploadUrl?: string | ((file: File) => string)
+  /** 上传时附加的文本字段（如 { image_type: 'repair' }） */
+  uploadData?: Record<string, string>
   /** 删除接口 URL —— 传相对路径 rawUrl，返回完整 DELETE URL。不传则禁用删图功能 */
   deleteUrl?: string | ((rawUrl: string) => string)
   /** 受控：后端返回的相对路径数组，如 ['/uploads/reports/WOxxx-001.jpg'] */
@@ -104,7 +106,7 @@ function extractRawUrl(resData: any): string {
 }
 
 export function MobileImageUploader({
-  uploadUrl, deleteUrl, value, onChange,
+  uploadUrl, deleteUrl, value, onChange, uploadData,
   maxCount = 9, label,
   compress = true, watermark = null,
   timeout = 60000, onLog,
@@ -186,6 +188,9 @@ export function MobileImageUploader({
 
     const fd = new FormData()
     fd.append('files', file)
+    if (uploadData) {
+      Object.entries(uploadData).forEach(([k, v]) => fd.append(k, v))
+    }
     const url = typeof uploadUrl === 'function' ? uploadUrl(file) : uploadUrl
     emitLog('info', 'REQUEST', { method: 'POST', url, bytes: file.size })
 
@@ -213,7 +218,7 @@ export function MobileImageUploader({
       })
       throw e
     }
-  }, [uploadUrl, compress, watermark, timeout, emitLog])
+  }, [uploadUrl, uploadData, compress, watermark, timeout, emitLog])
 
   // ========== 文件处理入口 —— 串行上传剩余名额内的文件 ==========
   const handleFiles = useCallback(async (fileList: FileList | null) => {

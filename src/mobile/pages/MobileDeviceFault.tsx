@@ -91,13 +91,12 @@ export default function MobileDeviceFault() {
   const [repairHours, setRepairHours] = useState('')
   const [partsCost, setPartsCost] = useState('')
   const [laborCost, setLaborCost] = useState('')
-  const [repairImages, setRepairImages] = useState<string[]>([])
 
   const [approveResult, setApproveResult] = useState<'通过' | '驳回'>('通过')
   const [approveOpinion, setApproveOpinion] = useState('')
   const [closeRemark, setCloseRemark] = useState('')
 
-  // 详情照片（从服务器拉取，区别于维修表单的 repairImages 临时编辑）
+  // 详情照片（从服务器拉取；维修中时可编辑）
   const [detailFaultImgs, setDetailFaultImgs] = useState<string[]>([])
   const [detailRepairImgs, setDetailRepairImgs] = useState<string[]>([])
 
@@ -145,9 +144,12 @@ export default function MobileDeviceFault() {
     try {
       const r: any = await api.get(`/basic/device-faults/${faultId}/images`)
       if (r.success !== false) {
-        const list: any[] = r.data?.list || r.data || []
-        setDetailFaultImgs(list.filter(i => i.image_type !== 'repair').map(i => i.image_url))
-        setDetailRepairImgs(list.filter(i => i.image_type === 'repair').map(i => i.image_url))
+        const d = r.data || {}
+        const toUrls = (list: any[]) => (list || [])
+          .map((i) => i.file_path || i.url || '')
+          .filter(Boolean)
+        setDetailFaultImgs(toUrls(d.fault_images))
+        setDetailRepairImgs(toUrls(d.repair_images))
       }
     } catch { /* 图片加载失败不阻断详情 */ }
   }
@@ -259,7 +261,7 @@ export default function MobileDeviceFault() {
       }, { source: 'device-fault' })
       Toast.show({ content: r.message || '维修记录已提交', icon: 'success', position: 'bottom' })
       setSelected(null); setRepairCause(''); setRepairSolution('')
-      setRepairHours(''); setPartsCost(''); setLaborCost(''); setRepairImages([])
+      setRepairHours(''); setPartsCost(''); setLaborCost('')
       await loadFaults(tab); await loadStats()
     } catch (e: any) { Toast.show({ content: e?.message || '提交失败', position: 'bottom' }) }
   }
@@ -323,7 +325,6 @@ export default function MobileDeviceFault() {
             repairHours={repairHours} setRepairHours={setRepairHours}
             partsCost={partsCost} setPartsCost={setPartsCost}
             laborCost={laborCost} setLaborCost={setLaborCost}
-            repairImages={repairImages} setRepairImages={setRepairImages}
             approveResult={approveResult} setApproveResult={setApproveResult}
             approveOpinion={approveOpinion} setApproveOpinion={setApproveOpinion}
             closeRemark={closeRemark} setCloseRemark={setCloseRemark}
