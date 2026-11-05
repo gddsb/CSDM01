@@ -90,9 +90,15 @@ const {
         }
       }
 
-      // mine=true → 只看当前登录人负责的（非超级管理员）
-      if (mine === 'true' && currentUser && currentUser.role_code !== 'SUPER_ADMIN') {
-        where.responsible_user_id = currentUser.user_id
+      // mine=true → 只看当前登录人负责/检查的设备（非超级管理员）
+      // req.user 使用 camelCase（userId/roleCode），兼容 snake_case 内部调用
+      const mineUid = Number((currentUser as any)?.userId ?? (currentUser as any)?.user_id ?? 0)
+      const mineRoleCode = (currentUser as any)?.roleCode ?? (currentUser as any)?.role_code
+      if (mine === 'true' && mineUid > 0 && mineRoleCode !== 'SUPER_ADMIN') {
+        where[Op.or] = [
+          { responsible_user_id: mineUid },
+          { inspector_user_id: mineUid },
+        ]
       }
 
       const pageNum = Math.max(1, Number(page) || 1)
