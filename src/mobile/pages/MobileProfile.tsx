@@ -18,7 +18,14 @@ export function MobileProfile() {
     await refreshAppVersion()
     const triggered = await checkAndPromptUpdate(true) // ignoreDateLock：用户主动检查不受当天限流
     if (!triggered) {
-      Toast.show({ content: `已是最新版本 build${getNativeBuildNumber()} ✅`, position: 'bottom', duration: 1500 })
+      const nativeBuild = getNativeBuildNumber()
+      Toast.show({
+        content: nativeBuild > 0
+          ? `已是最新版本 build${nativeBuild} ✅`
+          : '无法获取当前安装版本号，请重新下载安装 APK',
+        position: 'bottom',
+        duration: 1500,
+      })
     }
   }
 

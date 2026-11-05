@@ -20,9 +20,9 @@ const API_BASE: string =
 const APK_URL = `${API_BASE}/download/milk-can-mes-latest.apk`
 const VERSION_URL = API_BASE ? `${API_BASE}/version` : '/api/version'
 
-const NATIVE_BUILD: number = Number(
-  ((import.meta as any).env?.__APP_BUILD__ as string) || '0'
-)
+/** 编译期注入的 buildNumber（rebuild_v2.sh 用 APP_BUILD=${BUILD} 注入，与 releases.json 一致）
+ *  注意：必须用裸标识符 __APP_BUILD__，Vite define 不会替换 import.meta.env 上的属性 */
+const NATIVE_BUILD: number = Number((__APP_BUILD__ as string) || '0')
 
 const MAX_FETCH_RETRIES = 3
 

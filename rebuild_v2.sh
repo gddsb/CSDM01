@@ -160,7 +160,11 @@ rm -rf dist
 # （注意：必须带 /api 前缀！api.ts 的 axiosInstance 直接用这个作 baseURL，
 #   业务代码里写 api.post('/auth/login', ...)，拼接后就是 /api/auth/login 正确路径）
 export VITE_API_BASE_URL="http://43.138.218.55/api"
-echo "  VITE_API_BASE_URL=$VITE_API_BASE_URL"
+# 关键：把 releases.json 的 buildNumber 注入前端 __APP_BUILD__，
+# 否则 Vite 回退到 git rev-list --count HEAD（提交总数），与 buildNumber 不一致
+# → APK 内“检查更新”永远无法正确比较版本
+export APP_BUILD="${BUILD}"
+echo "  VITE_API_BASE_URL=$VITE_API_BASE_URL  APP_BUILD=$APP_BUILD"
 npx vite build 2>&1 | tail -4
 
 # Step 4.5: 后端 TypeScript 编译（之前漏了！导致 src/ 改了但 dist/ 不更新）
