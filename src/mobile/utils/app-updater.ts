@@ -1,84 +1,170 @@
 /**
- * 移动端 APK 自动更新
+ * 移动端 APK 自动更新（带失败重试）
  *
- * 工作流（简化版，零原生插件）：
- *   1. getNativeBuildNumber()   —— 读 Vite 编译时注入的 __APP_BUILD__（来自 rebuild_v2.sh）
- *   2. checkAndPromptUpdate()   —— 对比 localStorage 缓存的 server buildNumber
- *   3. Dialog.confirm 弹框     —— 用户点"立即更新" → window.open(APK_URL)
- *   4. Android 系统下载管理器  —— 完成后通知栏点击 → 系统安装界面
- *   5. 用户安装完成后 App 自动重启
+ * 两阶段重试：
+ *   Phase A — 版本号 fetch 重试（最多 3 次，指数退避 1s/2s/4s）
+ *   Phase B — APK URL 打开重试（最多 3 次，三种降级方式 + 手动复制兜底）
  *
- * 为什么不用 Capacitor Filesystem 下载到 cache + Intent 安装？
- *   - 需要原生桥接 Capacitor Android Intent API（无现成插件）
- *   - Android 13+ 未知来源 APK 权限流程更复杂
- *   - 当前 window.open 已覆盖 99% 场景（系统浏览器接管下载）
- *
- * 依赖：
- *   - /api/version 公开端点（后端已实现）
- *   - /download/milk-can-mes-latest.apk（rebuild_v2.sh 部署到生产 nginx）
- *   - Vite define __APP_BUILD__ 注入（rebuild_v2.sh Step 4 已传）
+ * 关键设计：
+ *   1. 只有**成功触发下载**才写 mes_update_prompted_date（当天不再弹）
+ *   2. 用户点"稍后"→ 不写 prompted_date，下次启动继续弹
+ *   3. 所有重试耗尽后 → Toast 显示 APK URL 让用户手动复制
+ *   4. PC 浏览器自动跳过（只在 Android Capacitor 环境工作）
  */
 
 import { Dialog, Toast } from 'antd-mobile'
 import { getAppVersion } from './app-version'
 
-/** vite build 时注入的 API 绝对地址（rebuild_v2.sh 注入 http://43.138.218.55/api） */
+/** vite build 时注入的 API 绝对地址 */
 const API_BASE: string =
   ((import.meta as any).env?.VITE_API_BASE_URL as string) || ''
 
 const APK_URL = `${API_BASE}/download/milk-can-mes-latest.apk`
+const VERSION_URL = API_BASE ? `${API_BASE}/version` : '/api/version'
 
-/** 编译时原生 buildNumber（Vite define 注入，来自 AndroidManifest android:versionCode） */
+/** 编译时原生 buildNumber（Vite define 注入） */
 const NATIVE_BUILD: number = Number(
   ((import.meta as any).env?.__APP_BUILD__ as string) || '0'
 )
 
-/** 获取原生 buildNumber */
+const MAX_FETCH_RETRIES = 3
+const MAX_OPEN_RETRIES = 3
+
 export function getNativeBuildNumber(): number {
   return NATIVE_BUILD
 }
 
-/** 对比 server 和 native buildNumber，有更新则弹窗提示
- *
- *  - 仅在 MobileLogin 启动时检查一次（不打扰用户正常使用）
- *  - server buildNumber 来自 localStorage 缓存（由 refreshAppVersion 提前 fetch）
- *  - 如果缓存没有（网络差首次启动）则静默跳过
- */
+/** ===== Phase A: 版本号 fetch（带重试） ===== */
+async function fetchServerVersionWithRetry(): Promise<{ version: string; build: number } | null> {
+  let lastError: unknown = null
+  for (let attempt = 0; attempt <= MAX_FETCH_RETRIES; attempt++) {
+    try {
+      if (attempt > 0) {
+        // 指数退避：1s / 2s / 4s
+        await new Promise((r) => setTimeout(r, Math.pow(2, attempt - 1) * 1000))
+      }
+      const resp = await fetch(VERSION_URL, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
+        signal: AbortSignal.timeout?.(8000), // 8s 超时（现代浏览器支持）
+      })
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+      const json = await resp.json()
+      const data = json?.data
+      if (!data?.version || !data?.buildNumber) throw new Error('invalid payload')
+
+      const info = { version: String(data.version), build: Number(data.buildNumber) }
+      // 同步写入 localStorage 缓存（让 app-version.ts 的 getAppVersion() 下次也能读到）
+      try {
+        localStorage.setItem('mes_app_version', JSON.stringify({
+          version: info.version,
+          build: String(info.build),
+          gitSha: data.gitSha,
+          cachedAt: Date.now(),
+        }))
+      } catch { /* ignore */ }
+      return info
+    } catch (e) {
+      lastError = e
+    }
+  }
+  // 重试耗尽：静默失败，不打扰用户（用户在移动网络差时不想被弹"检查更新失败"）
+  console.warn('[app-updater] 版本号 fetch 失败（重试 3 次耗尽）:', lastError)
+  return null
+}
+
+/** ===== Phase B: APK URL 打开（带重试 + 降级） ===== */
+async function openApkWithRetry(): Promise<boolean> {
+  const openStrategies: Array<() => boolean> = [
+    // 策略 1：Capacitor/Android 系统浏览器
+    () => { try { window.open(APK_URL, '_system'); return true } catch { return false } },
+    // 策略 2：浏览器新标签
+    () => { try { window.open(APK_URL, '_blank'); return true } catch { return false } },
+    // 策略 3：location.href 直接跳转（兜底）
+    () => { try { window.location.href = APK_URL; return true } catch { return false } },
+  ]
+
+  for (let attempt = 0; attempt < openStrategies.length && attempt < MAX_OPEN_RETRIES; attempt++) {
+    const ok = openStrategies[attempt]()
+    if (ok) return true
+    // 短暂等待后试下一种策略
+    if (attempt < openStrategies.length - 1) {
+      await new Promise((r) => setTimeout(r, 300))
+    }
+  }
+
+  // 全部失败 → 手动兜底
+  Toast.show({
+    content: '自动打开下载失败，请手动复制下载链接',
+    position: 'bottom',
+    duration: 2000,
+  })
+  try {
+    await Dialog.alert({
+      title: '📦 手动下载',
+      content: `自动打开下载链接失败，请复制以下 URL 到浏览器访问：\n\n${APK_URL}`,
+      confirmText: '复制链接',
+      onConfirm: () => {
+        navigator.clipboard?.writeText(APK_URL).then(() => {
+          Toast.show({ content: '已复制到剪贴板', position: 'bottom' })
+        }).catch(() => {
+          // clipboard 不可用时也只能提醒
+          Toast.show({ content: '复制失败，请手动长按选择', position: 'bottom' })
+        })
+      },
+    })
+  } catch { /* Dialog 被取消或不支持 */ }
+  return false
+}
+
+/** ===== 主入口 ===== */
 export async function checkAndPromptUpdate(): Promise<void> {
-  // 只有 Android APK（Capacitor）才提示；PC 浏览器跳过
+  // 1. 非 Android / 非 Capacitor 跳过
   const isAndroid = /android/i.test(navigator.userAgent) ||
                     (window as any).Capacitor?.getPlatform?.() === 'android'
   if (!isAndroid) return
 
-  const serverInfo = getAppVersion()
-  const serverBuild = Number(serverInfo.build) || 0
+  // 2. 先从缓存读一次（快速路径，避免 fetch 阻塞）
+  const cached = getAppVersion()
+  let serverBuild = Number(cached.build) || 0
+  let serverVersion = cached.version
   const nativeBuild = getNativeBuildNumber()
 
-  if (serverBuild === 0 || nativeBuild === 0) return // 信息不足，跳过
-  if (serverBuild <= nativeBuild) return // 已是最新
+  // 3. 有缓存但服务器端可能已更新 —— 异步 fetch 重试覆盖
+  const fresh = await fetchServerVersionWithRetry()
+  if (fresh) {
+    serverBuild = fresh.build
+    serverVersion = fresh.version
+  }
+  // 缓存和 fresh 都拿不到 → build=0 → 跳过
+  if (serverBuild === 0 || nativeBuild === 0) return
+  if (serverBuild <= nativeBuild) return
 
-  // 同一天只弹一次（用户可能多次启动 App 还没装完）
-  const lastPrompt = localStorage.getItem('mes_update_prompted_date')
+  // 4. 防打扰：同一天已成功触发过下载 → 不再弹
+  const lastSuccess = localStorage.getItem('mes_update_prompted_date')
   const today = new Date().toISOString().slice(0, 10)
-  if (lastPrompt === today) return
+  if (lastSuccess === today) return
 
-  localStorage.setItem('mes_update_prompted_date', today)
-
+  // 5. 弹窗
   const confirmed = await Dialog.confirm({
     title: '📦 发现新版本',
     content: `当前 build${nativeBuild} → 最新 build${serverBuild}\n点击「立即更新」将下载最新版 APK，完成后安装即可。`,
     confirmText: '立即更新',
     cancelText: '稍后',
   })
-
-  if (!confirmed) return
-
-  // 打开 APK 下载 URL（Android 系统浏览器/下载管理器接管）
-  try {
-    window.open(APK_URL, '_system')
-    Toast.show({ content: '已开始下载，完成后请点击安装', position: 'bottom', duration: 2500 })
-  } catch {
-    // Capacitor 环境 window.open 可能被拦截，降级用 location.href
-    window.location.href = APK_URL
+  if (!confirmed) {
+    // 用户点"稍后" —— 不写 prompted_date，下次启动继续弹
+    return
   }
+
+  // 6. 打开下载（带重试）
+  const opened = await openApkWithRetry()
+  if (opened) {
+    // 只有成功触发下载才写日期（防打扰）
+    localStorage.setItem('mes_update_prompted_date', today)
+    Toast.show({ content: '已开始下载，完成后请点击安装', position: 'bottom', duration: 2500 })
+  }
+  // 未成功 → 不写日期，下次启动继续弹（用户可能是在信号差的地方）
+  void serverVersion
 }
