@@ -294,7 +294,7 @@ export function MobileImageUploader({
             .map((i) => (typeof i.url === 'string' ? i.url : getRawUrl(i)))
             .filter(Boolean)
           const curIdx = validItems.findIndex((i) => getRawUrl(i) === rawUrl)
-          ImageViewer.Multi({ images: urls, defaultIndex: curIdx >= 0 ? curIdx : 0 })
+          ImageViewer.Multi.show({ images: urls, defaultIndex: curIdx >= 0 ? curIdx : 0 })
         } else if (action.key === 'delete') {
           handleDelete(rawUrl)
         }
@@ -327,6 +327,25 @@ export function MobileImageUploader({
               flexShrink: 0, position: 'relative',
             }}
           >
+            {/* 右上角删除角标 —— 直接点就删，不再依赖 ActionSheet */}
+            {!readOnly && !item.uploading && deleteUrl && (
+              <div
+                onClick={(e) => {
+                  e.stopPropagation()  // 防止冒泡触发预览
+                  handleDelete(getRawUrl(item))
+                }}
+                style={{
+                  position: 'absolute', top: -6, right: -6,
+                  width: 20, height: 20, borderRadius: '50%',
+                  background: 'rgba(0,0,0,0.65)', color: '#fff',
+                  fontSize: 12, lineHeight: '20px', textAlign: 'center',
+                  cursor: 'pointer', zIndex: 3,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                  border: '1.5px solid #fff',
+                }}
+                aria-label="删除"
+              >✕</div>
+            )}
             {(item as any).uploading ? (
               <div style={{
                 width: '100%', height: '100%',
