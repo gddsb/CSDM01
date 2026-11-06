@@ -78,7 +78,7 @@ export default function MobileDailyCard() {
       {/* 筛选 —— 日期选择 onConfirm 后自动重新加载；无刷新按钮 */}
       <div style={{
         display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12,
-        background: '#fff', padding: 10, borderRadius: 10,
+        background: 'var(--m-surface)', padding: 10, borderRadius: 10,
       }}>
         <DatePicker
           value={pickerValue}
@@ -203,8 +203,8 @@ function DailyCardContent({ data }: { data: DailyReportData }) {
         </div>
         {longestStop && (
           <div style={{
-            marginTop: 10, padding: 10, borderRadius: 8, background: '#fff1f0',
-            fontSize: 12, color: '#cf1322', borderLeft: '3px solid #ff4d4f',
+            marginTop: 10, padding: 10, borderRadius: 8, background: 'var(--m-status-urgent-bg)',
+            fontSize: 12, color: 'var(--m-status-urgent)', borderLeft: '3px solid #ff4d4f',
           }}>
             最长停机：<b>{STOP_CODE_LABEL[longestStop.stopCode] || '其它异常'}</b>
             {longestStop.description ? ` — ${longestStop.description}` : ''}
@@ -218,7 +218,7 @@ function DailyCardContent({ data }: { data: DailyReportData }) {
         <Section title="📋 报工明细">
           {productionRows.map(r => (
             <div key={r.reportOrderId} style={{
-              background: '#fff', borderRadius: 10, padding: 12, marginBottom: 8,
+              background: 'var(--m-surface)', borderRadius: 10, padding: 12, marginBottom: 8,
               boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -255,8 +255,8 @@ const grid2Style: React.CSSProperties = {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 12 }}>
-      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: '#262626' }}>{title}</div>
-      <div style={{ background: '#fff', borderRadius: 10, padding: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8, color: 'var(--m-text)' }}>{title}</div>
+      <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
         {children}
       </div>
     </div>

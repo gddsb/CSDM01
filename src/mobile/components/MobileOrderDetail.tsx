@@ -133,7 +133,7 @@ export function MobileOrderDetail({ order, orderId, visible, onClose }: Props) {
         borderTopLeftRadius: 16,
         borderTopRightRadius: 16,
         overflow: 'hidden',
-        background: 'var(--m-surface, #fff)',
+        background: 'var(--m-surface)',
       }}
     >
       {/* 拖拽手柄 */}

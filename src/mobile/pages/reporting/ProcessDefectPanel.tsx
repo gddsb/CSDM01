@@ -218,7 +218,7 @@ export function ProcessDefectPanel({
                     const defaultUnit = (t?.available_units && t.available_units[0]) || t?.defect_unit || ''
                     setDraft(d => ({ ...d, defect_type_id: id, unit: d.unit || defaultUnit }))
                   }}
-                  style={{ flex: 2, minWidth: 110, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }}
+                  style={{ flex: 2, minWidth: 110, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
                 >
                   <option value="">不良类型</option>
                   {filteredTypes.map(t => (
@@ -228,7 +228,7 @@ export function ProcessDefectPanel({
                 <select
                   value={draft.unit || ''}
                   onChange={(e) => setDraft(d => ({ ...d, unit: e.target.value }))}
-                  style={{ flex: 1, minWidth: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }}
+                  style={{ flex: 1, minWidth: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
                 >
                   <option value="">单位</option>
                   {getUnitOptions(draft.defect_type_id).map(u => <option key={u} value={u}>{u}</option>)}
@@ -237,7 +237,7 @@ export function ProcessDefectPanel({
                   type="number" min={0} value={draft.quantity || ''}
                   onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
                   placeholder="数量"
-                  style={{ width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }}
+                  style={{ width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
                 />
                 <Button size="mini" color="primary" onClick={handleSave} style={{ flexShrink: 0 }}>保存</Button>
                 <Button size="mini" fill="outline" onClick={cancelEdit} style={{ flexShrink: 0 }}>取消</Button>
@@ -297,7 +297,7 @@ export function ProcessDefectPanel({
       )}
       {/* 新增展开表单 */}
       {expandedId === '__new__' && (
-        <div style={{ borderTop: '1px dashed #ddd', paddingTop: 10, marginTop: 6 }}>
+        <div style={{ borderTop: '1px dashed var(--m-border)', paddingTop: 10, marginTop: 6 }}>
           {/* 紧凑一行：类型 + 单位 + 数量 + 保存/取消 */}
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
             <select
@@ -308,7 +308,7 @@ export function ProcessDefectPanel({
                 const defaultUnit = (t?.available_units && t.available_units[0]) || t?.defect_unit || ''
                 setDraft(d => ({ ...d, defect_type_id: id, unit: defaultUnit }))
               }}
-              style={{ flex: 2, minWidth: 110, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }}
+              style={{ flex: 2, minWidth: 110, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
             >
               <option value="">不良类型</option>
               {filteredTypes.map(t => (
@@ -318,7 +318,7 @@ export function ProcessDefectPanel({
             <select
               value={draft.unit || ''}
               onChange={(e) => setDraft(d => ({ ...d, unit: e.target.value }))}
-              style={{ flex: 1, minWidth: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }}
+              style={{ flex: 1, minWidth: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
             >
               <option value="">单位</option>
               {getUnitOptions(draft.defect_type_id).map(u => <option key={u} value={u}>{u}</option>)}
@@ -327,7 +327,7 @@ export function ProcessDefectPanel({
               type="number" min={0} value={draft.quantity || ''}
               onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
               placeholder="数量"
-              style={{ width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }}
+              style={{ width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
             />
             <Button size="mini" color="primary" onClick={handleSave} style={{ flexShrink: 0 }}>保存</Button>
             <Button size="mini" fill="outline" onClick={cancelEdit} style={{ flexShrink: 0 }}>取消</Button>

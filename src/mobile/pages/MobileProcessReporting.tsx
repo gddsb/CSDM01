@@ -650,7 +650,7 @@ function ProcessSelector({
         onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
         style={{
           flex: 1, padding: '7px 10px', borderRadius: 6,
-          border: '1px solid #ddd', fontSize: 13, background: 'var(--m-surface)',
+          border: '1px solid var(--m-border)', fontSize: 13, background: 'var(--m-surface)',
         }}
       >
         {processes.map(p => (

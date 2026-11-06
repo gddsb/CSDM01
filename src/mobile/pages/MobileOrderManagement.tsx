@@ -547,7 +547,7 @@ export default function MobileOrderManagement() {
               {/* 订单基础信息卡片 */}
               <div style={{
                 padding: 12, background: 'var(--m-surface-2)', borderRadius: 10,
-                marginBottom: 12, border: '1px solid #eee',
+                marginBottom: 12, border: '1px solid var(--m-border)',
               }}>
                 <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>
                   {selected.order_no}

@@ -173,7 +173,7 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
                 {row.exception_type || '—'}
                 {isUnfinished && <span style={{ fontSize: 11, color: 'var(--brand-color-danger)' }}>进行中</span>}
                 {row.exception_type === '设备故障' && row.device_name && (
-                  <span style={{ fontSize: 11, color: '#1890ff', background: '#e6f7ff', padding: '1px 6px', borderRadius: 4 }}>
+                  <span style={{ fontSize: 11, color: '#1890ff', background: 'var(--m-repairing-bg)', padding: '1px 6px', borderRadius: 4 }}>
                     📡 {row.device_name}
                   </span>
                 )}
@@ -209,7 +209,7 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
 
       {/* 新增 */}
       {editable && (
-        <div style={{ borderTop: '1px dashed #ddd', paddingTop: 10, marginTop: 6 }}>
+        <div style={{ borderTop: '1px dashed var(--m-border)', paddingTop: 10, marginTop: 6 }}>
           <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginBottom: 6 }}>➕ 新加工时</div>
           {hasUnfinished && (
             <div style={{ color: 'var(--brand-color-danger)', fontSize: 11, marginBottom: 6 }}>
@@ -266,7 +266,7 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
                     onChange={(e) => setDeviceKw(e.target.value)}
                     style={{ ...inputStyle, marginTop: 6 }}
                   />
-                  <div style={{ maxHeight: 160, overflowY: 'auto', border: '1px solid #eee', borderRadius: 6, marginTop: 4 }}>
+                  <div style={{ maxHeight: 160, overflowY: 'auto', border: '1px solid var(--m-border)', borderRadius: 6, marginTop: 4 }}>
                     {filteredDevices.map(d => (
                       <div
                         key={d.device_id}

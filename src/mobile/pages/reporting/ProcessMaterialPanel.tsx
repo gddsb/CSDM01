@@ -287,16 +287,16 @@ export function ProcessMaterialPanel({
 
   // ========== UI 组件 ==========
   const typeSelectStyle: React.CSSProperties = {
-    width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd',
+    width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)',
     fontSize: 12, background: 'var(--m-surface)', flexShrink: 0,
   }
   const inputStyle: React.CSSProperties = {
-    padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd',
+    padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)',
     fontSize: 12, background: 'var(--m-surface)',
   }
   // 料品选择按钮样式（模拟原生 select 外观）
   const materialBtnStyle: React.CSSProperties = {
-    flex: 1, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd',
+    flex: 1, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)',
     fontSize: 12, background: 'var(--m-surface)', color: 'var(--m-text)',
     textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
   }
@@ -413,7 +413,7 @@ export function ProcessMaterialPanel({
 
       {/* ========== 新增投料表单 ========== */}
       {expandedId === '__new__' && (
-        <div style={{ borderTop: '1px dashed #ddd', paddingTop: 10, marginTop: 6 }}>
+        <div style={{ borderTop: '1px dashed var(--m-border)', paddingTop: 10, marginTop: 6 }}>
           {formRow1}{formRow2}{formImage}
         </div>
       )}

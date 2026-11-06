@@ -114,7 +114,7 @@ export default function DeviceFaultDetail(p: DeviceFaultDetailProps) {
             {(items, { open }) => (
               <div onClick={open} style={{
                 padding: '8px 12px', borderRadius: 6, border: '1px solid #ddd',
-                background: '#fff', cursor: 'pointer', marginBottom: 8,
+                background: 'var(--m-surface)', cursor: 'pointer', marginBottom: 8,
                 color: items[0] ? 'var(--m-text)' : 'var(--m-text-3)',
               }}>
                 {items[0]?.label || '选择维修人员（设备维护员）'}

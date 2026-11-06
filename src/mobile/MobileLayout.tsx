@@ -239,12 +239,8 @@ export function MobileLayout() {
         position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
         paddingBottom: 'var(--sab)',
       }}>
-        <div style={{
-          background: 'linear-gradient(180deg, #ffffff 0%, #f8faff 100%)',
-          borderTop: '1px solid rgba(0,0,0,0.06)',
-          boxShadow: '0 -4px 20px rgba(33,150,243,0.08)',
-          padding: '6px 0 2px',
-        }}>
+        {/* 【UI 重构】TabBar 渐变移到 CSS class（mobile-tabbar-shell），深浅模式切换不再被内联 style 阻断 */}
+        <div className="mobile-tabbar-shell">
           <TabBar activeKey={activeTabKey} onChange={handleTabClick} safeArea={false}>
             {visibleTabs.map(t => {
               // 【2026-10-26】取消离线暂存 — Badge 不再显示 pending 数量

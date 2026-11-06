@@ -422,4 +422,4 @@ function Empty({ text, sub }: { text: string; sub?: string }) {
   )
 }
 
-const selStyle: React.CSSProperties = { padding: 6, borderRadius: 6, border: '1px solid #ddd', width: '100%', background: 'var(--m-surface)' }
+const selStyle: React.CSSProperties = { padding: 6, borderRadius: 6, border: '1px solid var(--m-border)', width: '100%', background: 'var(--m-surface)' }

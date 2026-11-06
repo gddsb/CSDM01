@@ -59,7 +59,7 @@ export function BatchTagPanel({ report, editable, onSaved }: Props) {
 
   const boxStyle: React.CSSProperties = {
     padding: 12, marginBottom: 12,
-    background: 'var(--m-surface-2)', borderRadius: 10, border: '1px solid #eee',
+    background: 'var(--m-surface-2)', borderRadius: 10, border: '1px solid var(--m-border)',
   }
 
   return (

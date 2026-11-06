@@ -96,11 +96,11 @@ export function ScrapPanel({
 
   const selStyle: React.CSSProperties = {
     flex: 2, minWidth: 110, padding: '7px 8px', borderRadius: 6,
-    border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)',
+    border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)',
   }
   const inputStyle: React.CSSProperties = {
     flex: 1, minWidth: 60, padding: '7px 8px', borderRadius: 6,
-    border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)',
+    border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)',
   }
 
   return (
@@ -140,7 +140,7 @@ export function ScrapPanel({
 
       {/* 新增（单行布局） */}
       {editable && (
-        <div style={{ borderTop: '1px dashed #ddd', paddingTop: 10, marginTop: 6 }}>
+        <div style={{ borderTop: '1px dashed var(--m-border)', paddingTop: 10, marginTop: 6 }}>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
             <select
               value={draft.defect_type_id || ''}
@@ -156,13 +156,13 @@ export function ScrapPanel({
               type="number" min={0} value={draft.quantity || ''}
               onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
               placeholder="数量"
-              style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }}
+              style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
             />
             <input
               value={draft.unit || ''}
               onChange={(e) => setDraft(d => ({ ...d, unit: e.target.value }))}
               placeholder="单位"
-              style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid #ddd', fontSize: 12, background: 'var(--m-surface)' }}
+              style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
             />
             <Button size="mini" color="primary" onClick={handleAdd} style={{ flexShrink: 0 }}>添加</Button>
           </div>
