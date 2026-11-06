@@ -9,9 +9,10 @@
  *   GET /api/basic/device-calibration-plans/overdue/list
  */
 import { useEffect, useState } from 'react'
-import { Tabs, List, PullToRefresh, Toast, Empty } from 'antd-mobile'
+import { Tabs, List, PullToRefresh, Toast, Empty, Button } from 'antd-mobile'
 import api from '../../utils/api'
 import { useApp } from '../../contexts/AppContext'
+import { useBarcode } from '../hooks/useBarcode'
 
 interface PlanRow {
   plan_id: number
@@ -54,12 +55,34 @@ function statusTag(s?: string | number) {
 
 export default function MobileCalibrationReminder() {
   const { hasPermission } = useApp()
+  const { scan } = useBarcode()
   const [tab, setTab] = useState<Tab>('expiring')
   const [list, setList] = useState<PlanRow[]>([])
   const [loading, setLoading] = useState(false)
   const [daysFilter, setDaysFilter] = useState(15)
   const [expiringCount, setExpiringCount] = useState(0)
   const [overdueCount, setOverdueCount] = useState(0)
+  const [scannedHighlight, setScannedHighlight] = useState<string | null>(null)
+
+  // 【UI 重构】扫码查校准：前端在 list 里按 asset_code 匹配
+  const handleScanForCalibration = async () => {
+    const r = await scan(); if (!r) return
+    setScannedHighlight(r.code)
+    const match = list.find((p) => p.asset_code === r.code)
+    if (match) {
+      Toast.show({
+        content: `已定位：${match.asset_name || match.asset_code}（${match.status === '已逾期' ? '已逾期' : '即将到期'}）`,
+        position: 'bottom',
+        duration: 2000,
+      })
+    } else {
+      Toast.show({
+        content: `设备 ${r.code} 不在当前列表，切换 Tab 试试`,
+        position: 'bottom',
+        duration: 1800,
+      })
+    }
+  }
 
   const fetchList = async () => {
     setLoading(true)
@@ -104,6 +127,25 @@ export default function MobileCalibrationReminder() {
 
   return (
     <div className="mobile-page mobile-page-scrollable" style={{ paddingTop: 12 }}>
+      {/* 【UI 重构】扫码查校准入口 */}
+      {hasPermission('device:calibration:view') && (
+        <Button
+          block
+          size="large"
+          fill="outline"
+          onClick={handleScanForCalibration}
+          style={{
+            marginBottom: 10,
+            height: 40,
+            fontSize: 14,
+            borderColor: 'var(--brand-color)',
+            color: 'var(--brand-color)',
+          }}
+        >
+          📷 扫码查设备校准
+        </Button>
+      )}
+
       <Tabs activeKey={tab} onChange={(k) => setTab(k as Tab)} style={{ marginBottom: 8 }}>
         <Tabs.Tab title={`⏰ 即将到期(${expiringCount})`} key="expiring" />
         <Tabs.Tab title={`🚨 已逾期(${overdueCount})`} key="overdue" />

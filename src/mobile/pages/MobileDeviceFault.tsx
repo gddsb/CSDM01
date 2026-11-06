@@ -224,13 +224,20 @@ export default function MobileDeviceFault() {
     loadFaults(tab, r.code)
   }
 
-  // ===== 5-B 扫码定位设备 =====
+  // ===== 5-B 扫码定位设备并直接开上报弹窗（【UI 重构】快速上报入口）=====
   const handleScanForCreate = async () => {
     const r = await scan(); if (!r) return
     const match = devices.find((d) => d.device_code === r.code)
-    if (!match) { Toast.show({ content: '未找到设备', position: 'bottom' }); return }
+    if (!match) {
+      Toast.show({ content: '未找到设备，请手动选择', position: 'bottom', duration: 1500 })
+      // fallback：直接打开上报弹窗，设备为空让用户手动选
+      setCreateDeviceId(null); setCreateDeviceName('')
+      setShowCreate(true)
+      return
+    }
     setCreateDeviceId(match.device_id)
-    setCreateDeviceName(match.device_name || '')
+    setCreateDeviceName(match.device_name || match.device_code || '')
+    setShowCreate(true) // 【UI 重构】自动打开上报弹窗，操作员跳过手动选设备
   }
 
   // ===== 5-B 派单 =====
@@ -371,6 +378,26 @@ export default function MobileDeviceFault() {
           )}
         </div>
 
+        {/* 【UI 重构】快速上报大按钮 — 扫码→自动找设备→开弹窗 */}
+        {hasPermission('mobile:device:fault:create') && (
+          <Button
+            block
+            size="large"
+            color="primary"
+            onClick={handleScanForCreate}
+            style={{
+              marginBottom: 10,
+              height: 44,
+              fontSize: 15,
+              background: 'linear-gradient(135deg, var(--brand-color) 0%, var(--brand-color-hover) 100%)',
+              border: 'none',
+              boxShadow: '0 4px 12px rgba(33,150,243,0.25)',
+            }}
+          >
+            📷 扫码快速上报
+          </Button>
+        )}
+
         {/* 状态 Tab（对齐 PC） */}
         <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: '0 8px', marginBottom: 10 }}>
           <Tabs activeKey={tab} onChange={(k) => setTab(k as StatusTab)}>
@@ -398,30 +425,33 @@ export default function MobileDeviceFault() {
         <Dialog visible content={
           <div style={{ maxHeight: '70vh', overflow: 'auto', padding: '10px 6px' }}>
             <div style={{ fontWeight: 600, marginBottom: 10 }}>上报故障</div>
+            {/* 设备选择：扫码快速上报时已自动填充，无需手动选 */}
             <div style={{ marginBottom: 8 }}>
               <div
                 onClick={() => { setDeviceSearchKw(''); setShowDevicePicker(true) }}
                 style={{
-                  padding: '8px 12px', borderRadius: 6, border: '1px solid #ddd',
-                  background: '#fff', cursor: 'pointer', fontSize: 13,
+                  padding: '8px 12px', borderRadius: 6, border: '1px solid var(--m-border)',
+                  background: 'var(--m-surface-2)', cursor: 'pointer', fontSize: 13,
                   color: createDeviceId ? 'var(--m-text)' : 'var(--m-text-3)',
                 }}>
                 {createDeviceId ? `${createDeviceName}（${devices.find(d => d.device_id === createDeviceId)?.device_code || ''}）` : '选择故障设备（可搜索）'}
               </div>
             </div>
-            <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginBottom: 4 }}>故障等级</div>
+            {/* 【UI 重构】等级前置 — 操作员第一眼看到主管最关心的字段 */}
+            <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginBottom: 4 }}>故障等级 <span style={{ color: 'var(--m-status-urgent)', marginLeft: 4 }}>{LEVELS.includes(createLevel) ? `已选: ${createLevel}` : ''}</span></div>
             <div style={{ display: 'flex', gap: 16 }}>
 <Radio.Group value={createLevel} onChange={(v) => setCreateLevel(v as string)}>
 
               {LEVELS.map((l) => <Radio key={l} value={l}>{l}</Radio>)}
             </Radio.Group>            </div>
 
+            {/* 【UI 重构】TextArea 默认 2 行，减少首屏占用 */}
             <div style={{ fontSize: 12, color: 'var(--m-text-2)', margin: '8px 0 4px' }}>故障描述 *</div>
-            <TextArea value={createDesc} onChange={setCreateDesc} rows={3}
+            <TextArea value={createDesc} onChange={setCreateDesc} rows={2}
               placeholder="详细描述故障现象" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
             <div style={{ fontSize: 12, color: 'var(--m-text-2)', margin: '8px 0 4px' }}>影响范围（可选）</div>
-            <TextArea value={createImpact} onChange={setCreateImpact} rows={2}
-              placeholder="影响的产线/批次/人员" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
+            <TextArea value={createImpact} onChange={setCreateImpact} rows={1}
+              placeholder="影响的产线/批次/人员（可空）" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
             <div style={{ fontSize: 12, color: 'var(--m-text-2)', margin: '8px 0 4px' }}>故障现场照片（可选）</div>
             <MobileImageUploader
               uploadMode="blob"
