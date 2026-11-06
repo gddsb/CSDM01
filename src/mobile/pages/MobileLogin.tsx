@@ -1,12 +1,12 @@
 /**
- * 移动端登录页
- * - antd-mobile Form + Input + Button
- * - 大字简洁，适配软键盘弹起（adjustPan）
- * - 登录成功后跳 /m/dashboard
+ * 移动端登录页 —— 独立视觉体系
+ * - 不消费全局 --m-surface / --m-text token
+ * - 登录页有渐变背景，需要独立的 --login-* 变量 + 毛玻璃卡片
+ * - 所有颜色定义在 mobile.css 的 .mobile-login-root 选择器下
  */
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, Input, Toast, Checkbox, Dialog } from 'antd-mobile'
+import { Button, Input, Toast, Checkbox } from 'antd-mobile'
 import { useApp } from '../../contexts/AppContext'
 import { formatAppVersion, refreshAppVersion } from '../utils/app-version'
 
@@ -26,7 +26,6 @@ export default function MobileLogin() {
     refreshAppVersion().then((info) => {
       if (info) setVerLabel(formatAppVersion(info))
     })
-    // 更新检查由全局 AppUpdateLoader 统一触发，这里只刷新版本号展示
   }, [])
 
   const onSubmit = async () => {
@@ -43,7 +42,6 @@ export default function MobileLogin() {
       const result = await login(username.trim(), password)
       if (result.success) {
         localStorage.setItem('mes_last_username', username.trim())
-        // 记住我：勾选则存密码；不勾选则清掉
         if (remember) {
           localStorage.setItem('mes_remember', 'true')
           localStorage.setItem('mes_remember_username', username.trim())
@@ -54,7 +52,6 @@ export default function MobileLogin() {
           localStorage.removeItem('mes_remember_password')
         }
         Toast.show({ content: '登录成功', icon: 'success', position: 'bottom' })
-        // 稍等 Toast 显示再跳转
         setTimeout(() => navigate('/m/dashboard', { replace: true }), 400)
       } else {
         Toast.show({ content: result.message || '登录失败', position: 'bottom' })
@@ -72,32 +69,61 @@ export default function MobileLogin() {
       flexDirection: 'column',
       alignItems: 'center',
       minHeight: '100dvh',
-      padding: '60px 28px 28px',
+      padding: '64px 28px 28px',
     }}>
-      {/* Logo + 标题 */}
-      <div style={{ textAlign: 'center', color: 'var(--m-surface)', marginBottom: 40 }}>
-        <div style={{
-          width: 72, height: 72, borderRadius: 18, background: 'var(--m-surface)',
+      {/* ============ Logo + 标题（在渐变背景上，必须用 --login-*）============ */}
+      <div style={{ textAlign: 'center', marginBottom: 36 }}>
+        {/* Logo 方块 —— 毛玻璃 + 独立 token */}
+        <div className="login-logo" style={{
+          width: 76, height: 76, borderRadius: 20,
+          background: 'var(--login-logo-bg)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 16px', fontSize: 28, fontWeight: 800, color: 'var(--brand-color)',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+          margin: '0 auto 18px',
+          fontSize: 30, fontWeight: 800,
+          color: 'var(--login-logo-text)',
+          boxShadow: 'var(--login-logo-shadow)',
+          letterSpacing: '-0.5px',
         }}>
           DM
         </div>
-        <div style={{ fontSize: 22, fontWeight: 600, marginBottom: 6 }}>奶粉罐MES</div>
-        <div style={{ fontSize: 13, opacity: 0.85 }}>移动工作台</div>
+        {/* 品牌标题 —— 白色在蓝渐变上天然好看 */}
+        <div style={{
+          fontSize: 22, fontWeight: 700, marginBottom: 4,
+          color: 'var(--login-title-text)',
+          letterSpacing: '0.5px',
+          textShadow: '0 2px 8px rgba(0,0,0,0.18)',
+        }}>
+          奶粉罐MES
+        </div>
+        <div style={{
+          fontSize: 13,
+          color: 'var(--login-subtitle-text)',
+          letterSpacing: '1.5px',
+        }}>
+          移动工作台
+        </div>
       </div>
 
-      {/* 登录卡片 */}
-      <div style={{
-        width: '100%', background: 'var(--m-surface)', borderRadius: 16, padding: '28px 22px',
-        boxShadow: '0 12px 32px rgba(0,0,0,0.12)',
+      {/* ============ 登录卡片 —— 毛玻璃 ============ */}
+      <div className="login-card" style={{
+        width: '100%',
+        background: 'var(--login-card-bg)',
+        border: '1px solid var(--login-card-border)',
+        borderRadius: 20,
+        padding: '28px 24px 24px',
+        boxShadow: 'var(--login-card-shadow)',
       }}>
-        <div style={{ fontSize: 17, fontWeight: 600, marginBottom: 20, color: 'var(--m-text)' }}>
+        {/* 卡片标题 */}
+        <div style={{
+          fontSize: 17, fontWeight: 600, marginBottom: 22,
+          color: 'var(--login-card-title-text)',
+          letterSpacing: '0.3px',
+        }}>
           账号登录
         </div>
 
-        <div style={{ marginBottom: 14 }}>
+        {/* 用户名输入框 —— 样式由 mobile.css 的 .mobile-login-root .adm-input 统一接管 */}
+        <div className="login-input" style={{ marginBottom: 12 }}>
           <Input
             type="text"
             placeholder="用户名"
@@ -105,15 +131,17 @@ export default function MobileLogin() {
             onChange={(v) => setUsername(v)}
             style={{
               fontSize: 16,
-              padding: '14px 12px',
-              border: '1px solid var(--m-border)',
+              padding: '14px 14px',
+              border: '1px solid var(--login-input-border)',
               borderRadius: 10,
-              background: 'var(--m-surface-2)',
-              color: 'var(--m-text)',
+              background: 'var(--login-input-bg)',
+              color: 'var(--login-input-text)',
             }}
           />
         </div>
-        <div style={{ marginBottom: 22 }}>
+
+        {/* 密码输入框 */}
+        <div className="login-input" style={{ marginBottom: 20 }}>
           <Input
             type="password"
             placeholder="密码"
@@ -123,26 +151,31 @@ export default function MobileLogin() {
             onEnterPress={onSubmit}
             style={{
               fontSize: 16,
-              padding: '14px 12px',
-              border: '1px solid var(--m-border)',
+              padding: '14px 14px',
+              border: '1px solid var(--login-input-border)',
               borderRadius: 10,
-              background: 'var(--m-surface-2)',
-              color: 'var(--m-text)',
+              background: 'var(--login-input-bg)',
+              color: 'var(--login-input-text)',
             }}
           />
         </div>
 
-        {/* 记住我：勾选后退出 App 再次打开自动填入账号密码 */}
-        <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center' }}>
+        {/* 记住我 */}
+        <div style={{
+          marginBottom: 20, display: 'flex', alignItems: 'center',
+          color: 'var(--login-checkbox-text)',
+          fontSize: 13,
+        }}>
           <Checkbox
             checked={remember}
             onChange={(v) => setRemember(v)}
-            style={{ fontSize: 13 }}
+            style={{ fontSize: 13, '--border-color': 'var(--login-input-border)' } as React.CSSProperties}
           >
             记住我（下次自动填充账号密码）
           </Checkbox>
         </div>
 
+        {/* 登录按钮 —— 渐变背景 */}
         <Button
           block
           color="primary"
@@ -150,20 +183,35 @@ export default function MobileLogin() {
           loading={loading}
           onClick={onSubmit}
           style={{
-            background: 'var(--brand-color)',
-            borderRadius: 10,
-            height: 48,
-            fontSize: 17,
-            fontWeight: 500,
+            background: 'var(--login-btn-bg)',
+            color: 'var(--login-btn-text)',
+            borderRadius: 12,
+            height: 50,
+            fontSize: 16,
+            fontWeight: 600,
+            boxShadow: 'var(--login-btn-shadow)',
+            border: 'none',
+            letterSpacing: '1px',
           }}
         >
           登录
         </Button>
 
-        <div style={{ marginTop: 14, fontSize: 12, color: 'var(--m-text-3)', textAlign: 'center' }}>
+        {/* 底部公司名 */}
+        <div style={{
+          marginTop: 18, fontSize: 12,
+          color: 'var(--login-card-muted-text)',
+          textAlign: 'center',
+        }}>
           东莞大满包装 · 长沙分公司
         </div>
-        <div style={{ marginTop: 4, fontSize: 11, color: 'var(--m-text-4)', textAlign: 'center', letterSpacing: 0.5 }}>
+        <div style={{
+          marginTop: 4, fontSize: 11,
+          color: 'var(--login-card-muted-text)',
+          textAlign: 'center',
+          letterSpacing: 0.5,
+          opacity: 0.8,
+        }}>
           {verLabel}
         </div>
       </div>

@@ -394,13 +394,110 @@ html[data-theme="dark"].mobile-root .mobile-app {
 
 /* ============ UI 重构新增：深色氛围光层 + TabBar 深色渐变 ============ */
 
-/* 登录页主题渐变（浅/深两套，Login.tsx 的外层 div 加此类即可跟随主题） */
+/* ============================================================
+ * 登录页 —— 独立 token 体系（与全局 surface 彻底解耦）
+ * 登录页有渐变背景，卡片/输入框/Logo 必须有独立变量才能正确分层
+ * backdrop-blur 毛玻璃让卡片在任何渐变背景上都有自然的悬浮感
+ * ============================================================ */
+
+/* 登录页主题渐变（浅色：晴朗蓝渐变） */
 .mobile-login-root {
   background: linear-gradient(160deg, #1976D2 0%, #42A5F5 45%, #64B5F6 100%);
+
+  /* ===== 登录页专用 token —— 浅色 ===== */
+  /* 卡片 */
+  --login-card-bg: rgba(255, 255, 255, 0.92);
+  --login-card-border: rgba(255, 255, 255, 0.55);
+  --login-card-shadow: 0 16px 48px rgba(10, 50, 100, 0.22);
+
+  /* 标题 / 副标题 / 底部公司名 */
+  --login-title-text: #ffffff;
+  --login-subtitle-text: rgba(255, 255, 255, 0.78);
+  --login-card-title-text: #0f1f3a;
+  --login-card-muted-text: rgba(15, 31, 58, 0.55);
+
+  /* 输入框 */
+  --login-input-bg: rgba(255, 255, 255, 0.95);
+  --login-input-border: rgba(25, 118, 210, 0.18);
+  --login-input-text: #0f1f3a;
+  --login-input-placeholder: rgba(15, 31, 58, 0.38);
+
+  /* Logo 方块 */
+  --login-logo-bg: rgba(255, 255, 255, 0.95);
+  --login-logo-text: #1565C0;
+  --login-logo-shadow: 0 12px 32px rgba(21, 101, 192, 0.3);
+
+  /* 登录按钮 */
+  --login-btn-bg: linear-gradient(135deg, #0d47A1 0%, #1565C0 100%);
+  --login-btn-text: #ffffff;
+  --login-btn-shadow: 0 8px 28px rgba(21, 101, 192, 0.4);
+
+  /* Checkbox */
+  --login-checkbox-text: rgba(15, 31, 58, 0.72);
+
+  /* 毛玻璃 —— 登录卡片 + Logo 都用 */
 }
+
+/* 登录页主题渐变（深色：深邃靛蓝渐变） */
 html[data-theme="dark"] .mobile-login-root,
 html[data-theme="dark"].mobile-root .mobile-login-root {
-  background: linear-gradient(160deg, #0f1f3a 0%, #1a2d52 45%, #264180 100%);
+  background: linear-gradient(160deg, #081628 0%, #0f1f3a 45%, #1a2d52 100%);
+
+  /* ===== 登录页专用 token —— 深色 ===== */
+  --login-card-bg: rgba(12, 24, 48, 0.72);
+  --login-card-border: rgba(100, 181, 246, 0.22);
+  --login-card-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+
+  --login-title-text: #ffffff;
+  --login-subtitle-text: rgba(255, 255, 255, 0.65);
+  --login-card-title-text: #e8f0ff;
+  --login-card-muted-text: rgba(232, 240, 255, 0.48);
+
+  --login-input-bg: rgba(20, 40, 75, 0.55);
+  --login-input-border: rgba(100, 181, 246, 0.22);
+  --login-input-text: #eaf2ff;
+  --login-input-placeholder: rgba(232, 240, 255, 0.32);
+
+  --login-logo-bg: linear-gradient(135deg, rgba(100, 181, 246, 0.85) 0%, rgba(66, 165, 245, 0.85) 100%);
+  --login-logo-text: #ffffff;
+  --login-logo-shadow: 0 12px 36px rgba(100, 181, 246, 0.4);
+
+  --login-btn-bg: linear-gradient(135deg, #42A5F5 0%, #64B5F6 100%);
+  --login-btn-text: #0a1628;
+  --login-btn-shadow: 0 8px 28px rgba(66, 165, 245, 0.45);
+
+  --login-checkbox-text: rgba(232, 240, 255, 0.7);
+}
+
+/* ===== 毛玻璃效果（两个主题共用 backdrop-blur，只控制 opacity）===== */
+.mobile-login-root .login-card {
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+.mobile-login-root .login-input,
+.mobile-login-root .login-logo {
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+}
+
+/* antd-mobile Input 在登录页的 placeholder 覆盖（之前放 dark 全局规则没精确命中） */
+.mobile-login-root .adm-input::placeholder,
+.mobile-login-root .adm-input-element::placeholder {
+  color: var(--login-input-placeholder) !important;
+  -webkit-text-fill-color: var(--login-input-placeholder) !important;
+}
+.mobile-login-root .adm-input,
+.mobile-login-root .adm-input-element {
+  background: var(--login-input-bg) !important;
+  color: var(--login-input-text) !important;
+  border-color: var(--login-input-border) !important;
+  -webkit-text-fill-color: var(--login-input-text);
+}
+
+/* 登录页 autofill 背景防穿 */
+.mobile-login-root input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px var(--login-input-bg) inset !important;
+  -webkit-text-fill-color: var(--login-input-text) !important;
 }
 
 /* 深色模式下 .mobile-app 叠加氛围光（纯 CSS，零性能开销） */
