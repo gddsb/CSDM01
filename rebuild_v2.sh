@@ -16,14 +16,6 @@
 #   ./rebuild_v2.sh --build 18           # 手动指定 buildNumber
 # ============================================================
 set -euo pipefail
-
-# ---- 代理环境变量（git fetch / curl 等网络命令需要） ----
-# 生产机云环境裸连 github.com 偶发超时，代理走本地 squid（经 connect -H 桥接）
-# 即使 origin-backup gh-proxy 镜像生效，显式 export 也能兜底覆盖 git/curl 默认
-export HTTP_PROXY="${HTTP_PROXY:-http://127.0.0.1:18080}"
-export HTTPS_PROXY="${HTTPS_PROXY:-http://127.0.0.1:18080}"
-export NO_PROXY="${NO_PROXY:-localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}"
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${SCRIPT_DIR}"
 
