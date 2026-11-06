@@ -13,7 +13,7 @@
  *   - 长按进入编辑模式（拖拽排序），松手退出
  *   - 所有有权限的入口全展示（不截断）
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PullToRefresh, Toast } from 'antd-mobile'
 import {
@@ -29,13 +29,18 @@ import {
   type QuickEntry, type TodoItem,
 } from './dashboard/constants.tsx'
 
-/** 将 #RRGGBB 转为 rgba()，用于生成品牌色的半透明背景 */
-function hexToRgba(hex: string, alpha: number): string {
-  const m = hex.replace('#', '')
-  if (m.length !== 6) return hex
+/** 将 #RRGGBB 转为 rgba()，用于生成品牌色的半透明背景
+ *  非 hex 输入（如 CSS 变量 var(--xxx)）直接返回原值，让浏览器解析 */
+function hexToRgba(input: string, alpha: number): string {
+  const trimmed = input.trim()
+  // CSS 变量或其他非 hex 值 → 直接返回（可能是合法的 CSS 值）
+  if (trimmed.startsWith('var(') || !trimmed.startsWith('#')) return input
+  const m = trimmed.slice(1)
+  if (m.length !== 6) return input
   const r = parseInt(m.slice(0, 2), 16)
   const g = parseInt(m.slice(2, 4), 16)
   const b = parseInt(m.slice(4, 6), 16)
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return input
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
 }
 
@@ -258,7 +263,8 @@ export default function MobileDashboard() {
                       color: entry.color,
                     }}
                   >
-                    {entry.icon}
+                  {/* 显式传 color prop 给 antd-mobile-icons，避免依赖 Capacitor WebView currentColor 继承 */}
+                    {React.cloneElement(entry.icon as React.ReactElement, { color: entry.color })}
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--m-text-3)' }}>{entry.title}</div>
                 </div>
