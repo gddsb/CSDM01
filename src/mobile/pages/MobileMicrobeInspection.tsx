@@ -339,7 +339,7 @@ export default function MobileMicrobeInspection() {
           <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, border: '1px solid var(--m-border)', marginBottom: 12 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--m-text-2)', marginBottom: 10 }}>微生物检验项目</div>
             {items.map((it, idx) => (
-              <div key={idx} style={{ padding: '10px 0', borderBottom: idx < items.length - 1 ? '1px dashed #f0f0f0' : 'none' }}>
+              <div key={idx} style={{ padding: '10px 0', borderBottom: idx < items.length - 1 ? '1px dashed var(--m-border)' : 'none' }}>
                 <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 6 }}>{it.name}</div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
                   <Input

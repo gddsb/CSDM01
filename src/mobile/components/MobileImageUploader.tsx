@@ -348,9 +348,9 @@ export function MobileImageUploader({
             style={{
               width: 80, height: 80,
               borderRadius: 8, overflow: 'hidden',
-              border: '1px solid var(--adm-color-border, #eee)',
+              border: '1px solid var(--m-border)',
               boxSizing: 'border-box',
-              cursor: (item as any).uploading ? 'default' : 'pointer', background: '#f5f5f5',
+              cursor: (item as any).uploading ? 'default' : 'pointer', background: 'var(--m-surface-2)',
               flexShrink: 0, position: 'relative',
             }}
           >

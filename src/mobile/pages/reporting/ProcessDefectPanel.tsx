@@ -207,7 +207,7 @@ export function ProcessDefectPanel({
         const isExpanded = expandedId === rowKey
         if (isExpanded) {
           return (
-            <div key={rowKey} style={{ borderTop: '1px solid #e8e8e8', paddingTop: 10, marginTop: 6 }}>
+            <div key={rowKey} style={{ borderTop: '1px solid var(--m-border)', paddingTop: 10, marginTop: 6 }}>
               {/* 紧凑一行：类型 + 单位 + 数量 + 保存/取消 */}
               <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                 <select
@@ -260,7 +260,7 @@ export function ProcessDefectPanel({
         // 只读展示
         return (
           <div key={rowKey} onClick={() => editable && startEdit(row)} style={{
-            padding: '10px 0', borderTop: '1px solid #f0f0f0', cursor: editable ? 'pointer' : 'default',
+            padding: '10px 0', borderTop: '1px solid var(--m-border)', cursor: editable ? 'pointer' : 'default',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ flex: 1, minWidth: 0 }}>

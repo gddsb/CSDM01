@@ -293,8 +293,8 @@ export function ItemRow({
   return (
     <div style={{
       marginBottom: 10, padding: 10, borderRadius: 8,
-      background: ok ? '#f1f8e9' : fail ? '#ffebee' : '#fafafa',
-      border: '1px solid ' + (ok ? '#c5e1a5' : fail ? '#ef9a9a' : 'var(--m-border)'),
+      background: ok ? 'var(--m-status-done-bg)' : fail ? 'var(--m-status-urgent-bg)' : 'var(--m-surface-2)',
+      border: '1px solid var(--m-border)',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
         <div>

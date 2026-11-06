@@ -272,7 +272,7 @@ export default function MobileOeeDashboard() {
                   </div>
                   <ProgressBar
                     percent={Math.round(d.oee)}
-                    style={{ height: 4, '--border-radius': 2, '--fill-color': st.color, '--track-color': '#f0f0f0' } as any}
+                    style={{ height: 4, '--border-radius': 2, '--fill-color': st.color, '--track-color': 'var(--m-surface-2)' } as any}
                   />
                   <div style={{ display: 'flex', gap: 8, marginTop: 6, fontSize: 11, color: 'var(--m-text-3)' }}>
                     <span>A {d.availability}%</span>

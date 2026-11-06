@@ -214,15 +214,15 @@ export default function MobileOrderManagement() {
                 {iconMap[it.level]} {it.label}
               </div>
               {it.detail && (
-                <div style={{ fontSize: 11, color: '#999', marginTop: 2, lineHeight: 1.4 }}>{it.detail}</div>
+                <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2, lineHeight: 1.4 }}>{it.detail}</div>
               )}
             </div>
           ))}
           <div style={{
             marginTop: 10, padding: '6px 8px',
-            background: hasBlock ? '#fff1f0' : '#f6ffed',
+            background: hasBlock ? 'var(--m-status-urgent-bg)' : 'var(--m-status-done-bg)',
             borderRadius: 6, fontSize: 12,
-            color: hasBlock ? '#ff4d4f' : '#52c41a',
+            color: hasBlock ? 'var(--m-status-urgent)' : 'var(--m-status-done)',
           }}>
             {hasBlock
               ? `❌ ${passCount} 通过 · ${warnCount} 警告 · ${blockCount} 阻断，不能完工`
@@ -231,7 +231,7 @@ export default function MobileOrderManagement() {
         </div>
       ),
       actions: [
-        { key: 'back', text: '取消', style: { color: '#999' } },
+        { key: 'back', text: '取消', style: { color: 'var(--m-text-3)' } },
         { key: 'ok', text: '确认完工', disabled: hasBlock, danger: true },
       ],
       closeOnAction: true,
@@ -288,7 +288,7 @@ export default function MobileOrderManagement() {
       ),
       actions: [
         ...actions.map(a => ({ ...a, style: { fontSize: 13 } })),
-        { key: 'cancel', text: '取消', style: { color: '#999' } },
+        { key: 'cancel', text: '取消', style: { color: 'var(--m-text-3)' } },
       ],
       closeOnAction: true,
       onAction: async (action) => {
@@ -477,7 +477,7 @@ export default function MobileOrderManagement() {
                   {(o.planned_qty ?? 0) > 0 && (o.finished_qty ?? 0) > 0 && (
                     <div style={{ marginTop: 8, marginBottom: 2 }}>
                       <div style={{
-                        background: '#f0f2f5', borderRadius: 6, height: 5, overflow: 'hidden',
+                        background: 'var(--m-surface-2)', borderRadius: 6, height: 5, overflow: 'hidden',
                         boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.06)',
                       }}>
                         <div style={{

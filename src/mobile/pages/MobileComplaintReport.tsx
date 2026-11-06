@@ -141,7 +141,7 @@ export default function MobileComplaintReport() {
               extra={source}
               arrow
             >投诉来源</List.Item>
-            <div style={{ padding: '10px 16px', borderTop: '1px solid #f0f0f0' }}>
+            <div style={{ padding: '10px 16px', borderTop: '1px solid var(--m-border)' }}>
               <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginBottom: 4 }}>发生时间</div>
               <input
                 type="datetime-local"
@@ -199,7 +199,7 @@ export default function MobileComplaintReport() {
               extra={handleDirection || <span style={{ color: 'var(--m-text-3)' }}>请选择</span>}
               arrow
             >建议处理方向</List.Item>
-            <div style={{ padding: '10px 16px', borderTop: '1px solid #f0f0f0' }}>
+            <div style={{ padding: '10px 16px', borderTop: '1px solid var(--m-border)' }}>
               <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginBottom: 6 }}>是否需要回复客户</div>
               <div style={{ display: 'flex', gap: 24 }}>
 <Radio.Group value={requireReply} onChange={(v) => setRequireReply(v as any)}>
@@ -262,7 +262,7 @@ function InputField({ label, value, onChange, placeholder, type = 'text' }: {
   label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string
 }) {
   return (
-    <div style={{ padding: '10px 16px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: 12 }}>
+    <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--m-border)', display: 'flex', alignItems: 'center', gap: 12 }}>
       <div style={{ width: 70, fontSize: 13, color: 'var(--m-text-2)' }}>{label}</div>
       <Input
         type={type}

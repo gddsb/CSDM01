@@ -270,15 +270,15 @@ export default function MobileProcessReporting() {
                 {iconMap[it.level]} {it.label}
               </div>
               {it.detail && (
-                <div style={{ fontSize: 11, color: '#999', marginTop: 2, lineHeight: 1.4 }}>{it.detail}</div>
+                <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2, lineHeight: 1.4 }}>{it.detail}</div>
               )}
             </div>
           ))}
           <div style={{
             marginTop: 10, padding: '6px 8px',
-            background: hasBlock ? '#fff1f0' : '#f6ffed',
+            background: hasBlock ? 'var(--m-status-urgent-bg)' : 'var(--m-status-done-bg)',
             borderRadius: 6, fontSize: 12,
-            color: hasBlock ? '#ff4d4f' : '#52c41a',
+            color: hasBlock ? 'var(--m-status-urgent)' : 'var(--m-status-done)',
           }}>
             {hasBlock
               ? `❌ ${passCount} 通过 · ${warnCount} 警告 · ${blockCount} 阻断，不能完工`
@@ -287,7 +287,7 @@ export default function MobileProcessReporting() {
         </div>
       ),
       actions: [
-        { key: 'back', text: '补录继续', style: { color: '#999' } },
+        { key: 'back', text: '补录继续', style: { color: 'var(--m-text-3)' } },
         { key: 'ok', text: '确认完工', disabled: hasBlock, danger: true },
       ],
       closeOnAction: true,
@@ -383,7 +383,7 @@ export default function MobileProcessReporting() {
             <Tabs
               activeKey={groupTab}
               onChange={(k) => trySwitchGroupTab(k as any)}
-              style={{ background: '#fafafa' }}
+              style={{ background: 'var(--m-surface-2)' }}
             >
               <Tabs.Tab title="🔧 工序报工" key="process" />
               <Tabs.Tab title="📊 工单报工" key="report" />
@@ -541,7 +541,7 @@ function Header({ report, onBack, onFinish }: { report: ReportOrder; onBack: () 
         <span style={{ fontSize: 16, fontWeight: 700 }}>📝 {report.report_no}</span>
         <span style={{
           fontSize: 11, padding: '2px 8px', borderRadius: 10, flexShrink: 0,
-          background: isDone ? '#52c41a' : statusText === '生产中' ? '#faad14' : 'rgba(255,255,255,.25)',
+          background: isDone ? 'var(--m-status-done)' : statusText === '生产中' ? 'var(--m-status-pending)' : 'rgba(255,255,255,.25)',
         }}>{statusText}</span>
         <div style={{ flex: 1 }} />
         {!isDone && (
@@ -641,7 +641,7 @@ function ProcessSelector({
   const current = processes.find(p => p.process_id === activeProcId)
   return (
     <div style={{
-      padding: '8px 12px', borderBottom: '1px solid #f0f0f0', background: '#fafafa',
+      padding: '8px 12px', borderBottom: '1px solid var(--m-border)', background: 'var(--m-surface-2)',
       display: 'flex', alignItems: 'center', gap: 8,
     }}>
       <span style={{ fontSize: 12, color: 'var(--m-text-3)', flexShrink: 0 }}>工序</span>

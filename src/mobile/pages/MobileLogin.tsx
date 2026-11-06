@@ -103,7 +103,14 @@ export default function MobileLogin() {
             placeholder="用户名"
             value={username}
             onChange={(v) => setUsername(v)}
-            style={{ fontSize: 16, padding: '14px 12px', border: '1px solid #e5e6eb', borderRadius: 10 }}
+            style={{
+              fontSize: 16,
+              padding: '14px 12px',
+              border: '1px solid var(--m-border)',
+              borderRadius: 10,
+              background: 'var(--m-surface-2)',
+              color: 'var(--m-text)',
+            }}
           />
         </div>
         <div style={{ marginBottom: 22 }}>
@@ -114,7 +121,14 @@ export default function MobileLogin() {
             onChange={(v) => setPassword(v)}
             enterKeyHint="go"
             onEnterPress={onSubmit}
-            style={{ fontSize: 16, padding: '14px 12px', border: '1px solid #e5e6eb', borderRadius: 10 }}
+            style={{
+              fontSize: 16,
+              padding: '14px 12px',
+              border: '1px solid var(--m-border)',
+              borderRadius: 10,
+              background: 'var(--m-surface-2)',
+              color: 'var(--m-text)',
+            }}
           />
         </div>
 

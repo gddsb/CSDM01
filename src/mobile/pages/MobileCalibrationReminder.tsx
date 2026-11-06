@@ -160,7 +160,7 @@ export default function MobileCalibrationReminder() {
               onClick={() => setDaysFilter(d)}
               style={{
                 padding: '5px 12px', borderRadius: 14, fontSize: 12,
-                background: daysFilter === d ? 'var(--brand-color-warning)' : '#f4f5f7',
+                background: daysFilter === d ? 'var(--brand-color-warning)' : 'var(--m-surface-2)',
                 color: daysFilter === d ? 'var(--m-surface)' : 'var(--m-text-2)',
                 cursor: 'pointer', whiteSpace: 'nowrap',
               }}

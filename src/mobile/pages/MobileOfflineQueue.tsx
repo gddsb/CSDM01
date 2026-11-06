@@ -278,7 +278,7 @@ export default function MobileOfflineQueue() {
                     {/* 展开：详情 + 操作 */}
                     {isOpen && (
                       <div style={{
-                        background: 'var(--m-surface-2)', borderLeft: '3px solid #e0e0e0',
+                        background: 'var(--m-surface-2)', borderLeft: '3px solid var(--m-border)',
                         padding: '10px 14px', margin: '0 0 2px 0', fontSize: 12,
                       }}>
                         {/* 错误信息 */}
@@ -336,7 +336,7 @@ function Stat({ label, value, color = 'var(--m-text)', active, onClick }: {
         background: active ? color : 'var(--m-surface)',
         color: active ? 'var(--m-surface)' : color,
         borderRadius: 8, padding: '8px 4px', textAlign: 'center',
-        border: `1px solid ${active ? color : '#eef0f3'}`,
+        border: `1px solid ${active ? color : 'var(--m-border)'}`,
         cursor: onClick ? 'pointer' : 'default',
         transition: 'all .2s',
       }}

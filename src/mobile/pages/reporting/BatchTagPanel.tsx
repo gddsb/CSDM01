@@ -69,7 +69,7 @@ export function BatchTagPanel({ report, editable, onSaved }: Props) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
           <div style={{ fontSize: 13, fontWeight: 600 }}>
             🏷️ 生产批号 <span style={{ color: '#ff4d4f', fontSize: 12 }}>*</span>
-            <span style={{ fontSize: 11, color: '#999', fontWeight: 'normal', marginLeft: 6 }}>完工必填</span>
+            <span style={{ fontSize: 11, color: 'var(--m-text-3)', fontWeight: 'normal', marginLeft: 6 }}>完工必填</span>
           </div>
           {editable && (
             <Button
@@ -94,7 +94,7 @@ export function BatchTagPanel({ report, editable, onSaved }: Props) {
         <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>📄 合格证图片</div>
         <div style={{ display: 'flex', gap: 10 }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>首张合格证</div>
+            <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginBottom: 6 }}>首张合格证</div>
             <ProcessImageUploader
               reportNo={report.report_no}
               category="batch-first"
@@ -105,7 +105,7 @@ export function BatchTagPanel({ report, editable, onSaved }: Props) {
             />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>末张合格证</div>
+            <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginBottom: 6 }}>末张合格证</div>
             <ProcessImageUploader
               reportNo={report.report_no}
               category="batch-last"

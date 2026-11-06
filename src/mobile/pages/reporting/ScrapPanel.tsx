@@ -116,7 +116,7 @@ export function ScrapPanel({
       {/* 列表 */}
       {rows.length > 0 && rows.map((row) => (
         <div key={String(row.scrap_id ?? row.id)} style={{
-          padding: '10px 0', borderTop: '1px solid #f0f0f0',
+          padding: '10px 0', borderTop: '1px solid var(--m-border)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>

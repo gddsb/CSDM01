@@ -107,9 +107,9 @@ export default function MobileDailyCard() {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>加载中…</div>
+        <div style={{ textAlign: 'center', padding: 60, color: 'var(--m-text-3)' }}>加载中…</div>
       ) : !data ? (
-        <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>暂无日报数据</div>
+        <div style={{ textAlign: 'center', padding: 60, color: 'var(--m-text-3)' }}>暂无日报数据</div>
       ) : (
         <DailyCardContent data={data} />
       )}
@@ -170,8 +170,8 @@ function DailyCardContent({ data }: { data: DailyReportData }) {
         </div>
         {productionRows.length > 0 && (
           <div style={{
-            marginTop: 10, padding: 10, borderRadius: 8, background: '#fafafa',
-            fontSize: 12, color: '#666',
+            marginTop: 10, padding: 10, borderRadius: 8, background: 'var(--m-surface-2)',
+            fontSize: 12, color: 'var(--m-text-2)',
           }}>
             不良率：
             <span style={{ fontWeight: 600, color: totalProcessDefect + totalInspectionDefect > totalOutput * 0.05 ? '#ff4d4f' : '#52c41a' }}>
@@ -223,11 +223,11 @@ function DailyCardContent({ data }: { data: DailyReportData }) {
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                 <span style={{ fontWeight: 600, fontSize: 14 }}>{r.reportOrderNo}</span>
-                <span style={{ fontSize: 11, color: '#999' }}>
+                <span style={{ fontSize: 11, color: 'var(--m-text-3)' }}>
                   {fmt(r.abnormalHours, 2)}h 异常
                 </span>
               </div>
-              <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>
+              <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginBottom: 6 }}>
                 {r.materialName}{r.specification ? `（${r.specification}）` : ''}
               </div>
               <div style={{ display: 'flex', gap: 12, fontSize: 12 }}>
@@ -267,12 +267,12 @@ function Metric({ label, value, unit, color }: { label: string; value: string; u
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '8px 10px',
-      borderRadius: 8, background: '#fafafa',
+      borderRadius: 8, background: 'var(--m-surface-2)',
     }}>
-      <div style={{ fontSize: 11, color: '#8c8c8c' }}>{label}</div>
+      <div style={{ fontSize: 11, color: 'var(--m-text-3)' }}>{label}</div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, marginTop: 2 }}>
         <span style={{ fontSize: 20, fontWeight: 700, color }}>{value}</span>
-        <span style={{ fontSize: 11, color: '#8c8c8c' }}>{unit}</span>
+        <span style={{ fontSize: 11, color: 'var(--m-text-3)' }}>{unit}</span>
       </div>
     </div>
   )

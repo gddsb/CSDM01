@@ -166,7 +166,7 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
         const isUnfinished = !row.end_time
         const durationMins = Math.round(Number(row.duration ?? 0) * 60)
         return (
-          <div key={String(row.id)} style={{ padding: '10px 0', borderTop: '1px solid #f0f0f0' }}>
+          <div key={String(row.id)} style={{ padding: '10px 0', borderTop: '1px solid var(--m-border)' }}>
             {/* 第一行：异常类型 + 设备 chip + 时长 + 操作按钮 */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 500, color: isUnfinished ? '#f5222d' : 'var(--m-text)' }}>
@@ -241,17 +241,17 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
                 onClick={() => setDeviceOpen(v => !v)}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '8px 12px', border: '1px solid #e6e6e6', borderRadius: 8,
-                  background: draft.device_id ? '#e6f7ff' : '#fafafa', cursor: 'pointer', fontSize: 13,
+                  padding: '8px 12px', border: '1px solid var(--m-border)', borderRadius: 8,
+                  background: draft.device_id ? 'var(--m-status-repairing-bg)' : 'var(--m-surface-2)', cursor: 'pointer', fontSize: 13,
                 }}
               >
                 <div>
                   {draft.device_id
-                    ? <span style={{ color: '#1890ff' }}>📡 {draft.device_name}（{draft.device_code}）</span>
-                    : <span style={{ color: '#999' }}>请选择故障设备 *</span>}
+                    ? <span style={{ color: 'var(--brand-color)' }}>📡 {draft.device_name}（{draft.device_code}）</span>
+                    : <span style={{ color: 'var(--m-text-3)' }}>请选择故障设备 *</span>}
                 </div>
                 <span style={{
-                  color: '#999', fontSize: 16,
+                  color: 'var(--m-text-3)', fontSize: 16,
                   transition: 'transform .2s',
                   transform: deviceOpen ? 'rotate(180deg)' : 'none',
                   display: 'inline-block',
@@ -276,16 +276,16 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
                           setDeviceKw('')
                         }}
                         style={{
-                          padding: '8px 12px', borderBottom: '1px solid #f5f5f5', cursor: 'pointer',
-                          background: draft.device_id === d.device_id ? '#e6f7ff' : 'white',
+                          padding: '8px 12px', borderBottom: '1px solid var(--m-border)', cursor: 'pointer',
+                          background: draft.device_id === d.device_id ? 'var(--m-status-repairing-bg)' : 'var(--m-surface)',
                         }}
                       >
-                        <div style={{ fontSize: 13 }}>{d.device_name}</div>
-                        <div style={{ fontSize: 11, color: '#999' }}>{d.device_code}</div>
+                        <div style={{ fontSize: 13, color: 'var(--m-text)' }}>{d.device_name}</div>
+                        <div style={{ fontSize: 11, color: 'var(--m-text-3)' }}>{d.device_code}</div>
                       </div>
                     ))}
                     {filteredDevices.length === 0 && (
-                      <div style={{ padding: 10, color: '#999', fontSize: 12, textAlign: 'center' }}>
+                      <div style={{ padding: 10, color: 'var(--m-text-3)', fontSize: 12, textAlign: 'center' }}>
                         {devices.length === 0 ? '设备列表加载失败' : '无匹配设备'}
                       </div>
                     )}

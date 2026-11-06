@@ -60,7 +60,7 @@
 html.mobile-root,
 html.mobile-root body {
   height: 100%;
-  background: #f5f6f8;
+  background: var(--m-bg);
   overflow: hidden;                 /* 外层 body 禁滚，双保险 */
 }
 
@@ -96,7 +96,7 @@ html.mobile-root textarea {
   box-sizing: border-box;
   padding-top: var(--sat);         /* 统一顶部 safe-area，所有页面从此开始 */
   padding-bottom: var(--sab);
-  background: #f5f6f8;
+  background: var(--m-bg);
   overflow: hidden;                /* 外层绝对禁滚，不可逾越的边界 */
 }
 
@@ -133,7 +133,7 @@ html.mobile-root textarea {
   flex-shrink: 0;
   padding-top: 12px;
   padding-bottom: 8px;
-  background: #f5f6f8;
+  background: var(--m-bg);
   z-index: 10;
 }
 .mobile-page-fixed-header .mobile-page-scroll-list {
@@ -153,7 +153,7 @@ html.mobile-root textarea {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: #f5f6f8;
+  background: var(--m-bg);
   flex-shrink: 0;
 }
 
@@ -195,8 +195,9 @@ html.mobile-root textarea {
 
 /* 禁用 Chrome 自动填充样式 */
 html.mobile-root input:-webkit-autofill {
-  -webkit-box-shadow: 0 0 0 1000px white inset;
-  -webkit-text-fill-color: #333;
+  -webkit-box-shadow: 0 0 0 1000px var(--m-surface) inset;
+  -webkit-text-fill-color: var(--m-text);
+  caret-color: var(--m-text);
 }
 
 /* ============================================================
@@ -442,8 +443,8 @@ html[data-theme="dark"] .mobile-app .adm-tab-bar-item-active {
 /* 深色模式：根容器 */
 html[data-theme="dark"].mobile-root,
 html[data-theme="dark"].mobile-root body {
-  background: #0f1115;
-  color: #e8eaed;
+  background: var(--m-bg);
+  color: var(--m-text);
 }
 
 /* 深色模式：滚动条 */
@@ -520,8 +521,12 @@ html[data-theme="dark"] .mobile-app textarea {
   border-color: var(--m-border);
 }
 html[data-theme="dark"] .mobile-app input::placeholder,
-html[data-theme="dark"] .mobile-app textarea::placeholder {
+html[data-theme="dark"] .mobile-app textarea::placeholder,
+html[data-theme="dark"] .mobile-app .adm-input::placeholder,
+html[data-theme="dark"] .mobile-app .adm-input-element::placeholder,
+html[data-theme="dark"] .mobile-app .adm-text-area::placeholder {
   color: var(--m-text-3);
+  -webkit-text-fill-color: var(--m-text-3);
 }
 
 

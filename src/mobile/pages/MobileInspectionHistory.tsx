@@ -83,7 +83,7 @@ function resultTag(r?: string) {
   return (
     <span style={{
       fontSize: 11, padding: '1px 8px', borderRadius: 8,
-      background: isOk ? '#E8F5E9' : '#FFEBEE',
+      background: isOk ? 'var(--m-status-done-bg)' : 'var(--m-status-urgent-bg)',
       color: isOk ? 'var(--brand-color-success)' : 'var(--brand-color-danger)',
       marginLeft: 6,
     }}>{r}</span>
@@ -182,7 +182,7 @@ export default function MobileInspectionHistory() {
               onClick={() => setDateRange(o.k as any)}
               style={{
                 padding: '5px 12px', borderRadius: 14, fontSize: 12,
-                background: dateRange === o.k ? 'var(--brand-color)' : '#f4f5f7',
+                background: dateRange === o.k ? 'var(--brand-color)' : 'var(--m-surface-2)',
                 color: dateRange === o.k ? 'var(--m-surface)' : 'var(--m-text-2)',
                 cursor: 'pointer', whiteSpace: 'nowrap',
               }}

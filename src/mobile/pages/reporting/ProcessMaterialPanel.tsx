@@ -369,7 +369,7 @@ export function ProcessMaterialPanel({
 
         if (isExpanded) {
           return (
-            <div key={rowKey} style={{ borderTop: '1px solid #e8e8e8', paddingTop: 10, marginTop: 6 }}>
+            <div key={rowKey} style={{ borderTop: '1px solid var(--m-border)', paddingTop: 10, marginTop: 6 }}>
               {formRow1}{formRow2}{formImage}
             </div>
           )
@@ -377,7 +377,7 @@ export function ProcessMaterialPanel({
 
         return (
           <div key={rowKey} onClick={() => editable && startEdit(row)} style={{
-            padding: '10px 0', borderTop: '1px solid #f0f0f0', cursor: editable ? 'pointer' : 'default',
+            padding: '10px 0', borderTop: '1px solid var(--m-border)', cursor: editable ? 'pointer' : 'default',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ flex: 1, minWidth: 0 }}>

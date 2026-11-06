@@ -503,7 +503,7 @@ export default function MobileDeviceFault() {
                         setShowDevicePicker(false)
                       }}
                       style={{
-                        padding: '10px 12px', borderBottom: '1px solid #f0f0f0',
+                        padding: '10px 12px', borderBottom: '1px solid var(--m-border)',
                         cursor: 'pointer', fontSize: 13,
                       }}>
                       <div style={{ fontWeight: 500 }}>{d.device_name}</div>
