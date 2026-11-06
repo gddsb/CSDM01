@@ -5,6 +5,7 @@
  */
 import { Op } from 'sequelize'
 import sequelize from '../config/database.js'
+import { WILDCARD_PERM } from '../middleware/auth.js'
 import {
   DeviceFault,
   DeviceFaultRepair,
@@ -120,9 +121,10 @@ export const DeviceFaultService = {
     const limit = Math.min(Number(query.pageSize) || 20, MAX_PAGE_SIZE)
     const offset = ((Number(query.page) || 1) - 1) * limit
 
-    // 按角色过滤：上报人只看自己上报的；设备维护员/生产管理看全部
-    const roleCode = actor?.roleCode
-    if (actor?.userId && roleCode && roleCode !== 'MAINTENANCE' && roleCode !== 'PROD_MANAGER' && roleCode !== 'SUPER_ADMIN' && roleCode !== 'ADMIN') {
+    // 按权限过滤：有 device:fault:view_all 权限的角色看全部；否则只看自己上报的
+    const permCodes: Set<string> = actor?.permCodes ?? new Set()
+    const hasViewAll = permCodes.has(WILDCARD_PERM) || permCodes.has('device:fault:view_all')
+    if (actor?.userId && !hasViewAll) {
       where.reporter_id = actor.userId
     }
 
@@ -134,15 +136,13 @@ export const DeviceFaultService = {
     })
   },
 
-  /** 全量统计（按角色过滤，返回聚合 count，用于顶部统计卡片，不受 tab 过滤影响） */
+  /** 全量统计（按权限过滤，返回聚合 count） */
   async stats(actor?: any) {
-    // 复用 list 的角色过滤逻辑
     const where: any = {}
-    if (actor?.userId) {
-      const roleCode = actor?.roleCode
-      if (roleCode && roleCode !== 'MAINTENANCE' && roleCode !== 'PROD_MANAGER' && roleCode !== 'SUPER_ADMIN' && roleCode !== 'ADMIN') {
-        where.reporter_id = actor.userId
-      }
+    const permCodes: Set<string> = actor?.permCodes ?? new Set()
+    const hasViewAll = permCodes.has(WILDCARD_PERM) || permCodes.has('device:fault:view_all')
+    if (actor?.userId && !hasViewAll) {
+      where.reporter_id = actor.userId
     }
 
     // 一次拉回 status + fault_level，JS 端聚合（数据量不大）

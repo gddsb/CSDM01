@@ -6,6 +6,7 @@
  */
 import { Op, QueryTypes } from 'sequelize'
 import sequelize from 'sequelize'
+import { WILDCARD_PERM } from '../middleware/auth.js'
 import {
   DeviceMaintenanceProfile, DeviceMaintenanceRecord, DeviceMaintenanceStandard,
   DeviceRuntimeLog, Device, DeviceFault, DeviceImage,
@@ -90,11 +91,11 @@ const {
         }
       }
 
-      // mine=true → 只看当前登录人负责/检查的设备（非超级管理员）
-      // req.user 使用 camelCase（userId/roleCode），兼容 snake_case 内部调用
+      // mine=true → 只看当前登录人负责/检查的设备（有 device:maintenance:view_all 权限的角色看全部）
       const mineUid = Number((currentUser as any)?.userId ?? (currentUser as any)?.user_id ?? 0)
-      const mineRoleCode = (currentUser as any)?.roleCode ?? (currentUser as any)?.role_code
-      if (mine === 'true' && mineUid > 0 && mineRoleCode !== 'SUPER_ADMIN') {
+      const permCodes: Set<string> = (currentUser as any)?.permCodes ?? new Set()
+      const hasViewAll = permCodes.has(WILDCARD_PERM) || permCodes.has('device:maintenance:view_all')
+      if (mine === 'true' && mineUid > 0 && !hasViewAll) {
         where[Op.or] = [
           { responsible_user_id: mineUid },
           { inspector_user_id: mineUid },

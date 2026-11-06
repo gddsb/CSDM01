@@ -78,7 +78,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('mes_token', token)
         localStorage.setItem('mes_user', JSON.stringify(user))
         setCurrentUser(user)
-        const isViewer = user.role?.role_name === '看板查看者' || user.role?.role_code === 'viewer'
+        // 看板查看者判定：无 device/production/quality/basic/auto/system 六大模块入口权限
+        const codes: string[] = user.perm_codes || []
+        const hasAnyModule = ['device', 'production', 'quality', 'basic', 'auto', 'system'].some((m: string) => codes.includes(m))
+        const isViewer = !hasAnyModule
         return { success: true, isViewer }
       }
       return { success: false, message: res.message || '登录失败' }
@@ -142,17 +145,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const setModalApi = (api: Omit<ModalStaticFunctions, 'warn'>) => { setModalApiState(api) }
   const setNotificationApi = (api: NotificationInstance) => { setNotificationApiState(api) }
 
-  const hasPermission = (permCode: string): boolean => {
+  const hasPermission = (permCode: string, platform?: 'pc' | 'mobile' | 'all'): boolean => {
     if (!currentUser) return false
-    const roleCode = currentUser.role?.role_code
-    if (roleCode === 'SUPER_ADMIN') return true
-    const permCodes = currentUser.perm_codes || []
-    if (permCodes.includes(permCode)) return true
-    const parts = permCode.split(':')
-    for (let i = parts.length - 1; i >= 1; i--) {
-      const parentCode = parts.slice(0, i).join(':')
-      if (permCodes.includes(parentCode)) return true
+    const permCodes: string[] = currentUser.perm_codes || []
+    if (permCodes.includes('*')) return true
+
+    // 候选码：按优先级 platform:permCode → all:permCode → 纯 permCode
+    const candidates: string[] = []
+    if (platform && platform !== 'all') {
+      candidates.push(`${platform}:${permCode}`)
+      candidates.push(`all:${permCode}`)
+    } else if (platform === 'all') {
+      candidates.push(`all:${permCode}`)
     }
+    candidates.push(permCode)
+
+    // 精确匹配
+    for (const c of candidates) if (permCodes.includes(c)) return true
+
+    // 子→父继承：codes 里的某个码如果比 required 更细，自动通过（例：有 device:fault:create → 有 device:fault 入口）
+    for (const code of permCodes) {
+      for (const c of candidates) {
+        if (code.startsWith(c + ':')) return true
+      }
+    }
+
     return false
   }
 

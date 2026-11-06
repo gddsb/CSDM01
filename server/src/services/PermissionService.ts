@@ -7,17 +7,16 @@
  *   - 子节点保护（remove 前 count）、自身不可为父级、perm_code 唯一性
  */
 import { Op } from 'sequelize'
-import { Permission, Role, User } from '../models/index.js'
+import { Permission, Role, User, RolePermission } from '../models/index.js'
 import { MAX_PAGE_SIZE } from '../utils/response.js'
 import { AppError } from '../utils/error.js'
+import { WILDCARD_PERM } from '../middleware/auth.js'
 
 // ---------- 菜单 LRU 缓存（下沉到 Service，与 buildMenuTree 同文件） ----------
 interface MenuCacheEntry { tree: any[]; expireAt: number }
 const MENU_CACHE_TTL = 30 * 1000
 const menuCache = new Map<string, MenuCacheEntry>()
 export function clearMenuCache() { menuCache.clear() }
-
-export const SUPER_ROLE_CODES = new Set(['SUPER_ADMIN', 'ADMIN'])
 
 /** O(n) 建树（替代原递归 O(n²)） */
 export function buildMenuTree(permList: any[]): any[] {
@@ -154,7 +153,15 @@ export const PermissionService = {
     }
 
     let perms: any[] = []
-    if (roleCode && SUPER_ROLE_CODES.has(String(roleCode).toUpperCase())) {
+    // 超级管理员判定：角色在 role_permission 里配了 '*' 通配 → 直通全部菜单（不再靠 role_code 硬编码）
+    const isSuperRole = role
+      ? await RolePermission.findOne({
+          where: { role_id: role.role_id },
+          include: [{ model: Permission, as: 'permission', attributes: ['perm_code'] }],
+        }).then((rp: any) => rp?.permission?.perm_code === WILDCARD_PERM).catch(() => false)
+      : false
+
+    if (isSuperRole) {
       perms = await Permission.findAll({
         where: { status: 1, type: 'menu' },
         attributes: { exclude: ['created_at', 'updated_at'] },

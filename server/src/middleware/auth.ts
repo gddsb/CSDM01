@@ -9,12 +9,28 @@ const SENSITIVE_KEYS = ['password', 'token', 'secret', 'authorization', 'pwd', '
 const PERM_CACHE_TTL = 60_000
 const permCache: Record<number, { codes: Set<string>; roleCode: string | null; roleName: string | null; ts: number }> = {}
 
-/** 超级管理员角色编码：这些角色直接拥有全部权限，跳过 role_permission 关联 */
-const SUPER_ROLE_CODES = new Set(['SUPER_ADMIN', 'ADMIN'])
-const WILDCARD_PERM = '*'
+/** 超级管理员通配符：角色在 role_permission 里手动配了 '*' 就拥有全部权限 */
+export const WILDCARD_PERM = '*'
 
-function isSuperRoleCode(code: string | null | undefined): boolean {
-  return !!code && SUPER_ROLE_CODES.has(String(code).toUpperCase())
+/** 权限码语义后缀分类（用于分层联动：view 类联动、action 类不联动） */
+const VIEW_SUFFIXES = new Set([
+  'view', 'list', 'dashboard', 'oee', 'inspection', 'check-record',
+  'statistics', 'stats', 'document', 'history', 'plan', 'matrix',
+])
+const ACTION_SUFFIXES = new Set([
+  'create', 'update', 'delete', 'assign', 'approve', 'submit',
+  'start', 'skip', 'batch_submit', 'generate', 'cleanup',
+  'stock_in', 'stock_out', 'stock_adjust', 'upload', 'close',
+])
+
+function isViewLike(permCode: string): boolean {
+  const last = permCode.split(':').pop() ?? ''
+  return VIEW_SUFFIXES.has(last)
+}
+
+function isActionLike(permCode: string): boolean {
+  const last = permCode.split(':').pop() ?? ''
+  return ACTION_SUFFIXES.has(last)
 }
 
 async function loadRolePermissionCodes(roleId: number): Promise<{ codes: Set<string>; roleCode: string | null; roleName: string | null }> {
@@ -34,10 +50,8 @@ async function loadRolePermissionCodes(roleId: number): Promise<{ codes: Set<str
   const roleName = role ? String((role as any).role_name ?? '') : null
   const codes = new Set<string>()
 
-  if (isSuperRoleCode(roleCode)) {
-    // 超级管理员：写入通配符，permissionRequired 直接放行
-    codes.add(WILDCARD_PERM)
-  } else if (role && Array.isArray((role as any).permissions)) {
+  // 统一从 role_permission 关联表读取所有权限码（包括 '*' 通配）
+  if (role && Array.isArray((role as any).permissions)) {
     for (const p of (role as any).permissions) {
       if (p?.perm_code) codes.add(p.perm_code)
     }
@@ -80,9 +94,67 @@ const methodActionMap: Record<string, string> = {
 }
 
 /**
+ * 核心权限判定：通配反转 + 子→父继承
+ * - 配了子权限 → 自动拥有父级入口权限（例：device:fault:create → 自动有 device:fault 菜单）
+ * - 配了父权限 **不自动放权** 给子级（从根本上解决"父级=全 CRUD"的粗糙问题）
+ * - '*' 通配优先匹配（超级管理员显式配置）
+ */
+export function checkPermission(
+  permCodes: Set<string>,
+  required: string,
+  opts: { platform?: 'pc' | 'mobile' | 'all'; allowLegacy?: boolean } = {},
+): boolean {
+  if (permCodes.has(WILDCARD_PERM)) return true
+
+  const { platform, allowLegacy = true } = opts
+
+  // 候选码列表：按优先级从高到低匹配
+  const candidates: string[] = []
+  if (platform && platform !== 'all') {
+    candidates.push(`${platform}:${required}`)
+    // 分层联动：view 类（device:fault:view）查 all:，action 类（device:fault:create）不查 all:
+    if (isViewLike(required)) {
+      candidates.push(`all:${required}`)
+    }
+  } else if (platform === 'all') {
+    candidates.push(`all:${required}`)
+  }
+  // 向后兼容：老权限码不带 platform 前缀，直接用模块码
+  if (allowLegacy) candidates.push(required)
+
+  // 精确匹配
+  for (const c of candidates) {
+    if (permCodes.has(c)) return true
+  }
+
+  // 子→父继承：codes 里的某个码如果比 required 更细（以 required 为前缀），自动通过
+  // 例：codes 有 pc:device:fault:view → 自动通过 pc:device:fault（菜单入口）
+  //     codes 有 device:fault:create → 自动通过 device:fault（菜单入口）
+  for (const code of permCodes) {
+    for (const c of candidates) {
+      if (code.startsWith(c + ':') || code.startsWith(c + '.')) return true
+    }
+  }
+
+  return false
+}
+
+/**
+ * 检测请求平台（用于 platformAwarePermissionRequired）
+ * 优先级：Header X-Client-Platform > ?platform= > User-Agent(Capacitor) > query.mobile=1
+ */
+function detectRequestPlatform(req: Request): 'pc' | 'mobile' | 'web' {
+  const hdr = (req.headers['x-client-platform'] as string)?.toLowerCase()
+  if (hdr === 'mobile' || hdr === 'pc' || hdr === 'web') return hdr as any
+  const ua = (req.headers['user-agent'] || '').toLowerCase()
+  if (/capacitor|android|ios|mobiledevice/i.test(ua)) return 'mobile'
+  const url = (req as any).url ?? ''
+  if (url.includes('mobile=1')) return 'mobile'
+  return 'pc'
+}
+
+/**
  * JWT 认证中间件
- * 从请求头 Authorization: Bearer xxx 中读取并验证 token
- * 验证通过后将解码后的 user 信息挂载到 req.user
  */
 export function authRequired(req: Request, res: Response, next: NextFunction): any {
   const authHeader = req.headers.authorization
@@ -108,7 +180,7 @@ export function authRequired(req: Request, res: Response, next: NextFunction): a
         user.permCodes = codes
         user.roleCode = roleCode
         user.roleName = roleName
-        if (isSuperRoleCode(roleCode)) user.isSuperAdmin = true
+        user.isSuperAdmin = codes.has(WILDCARD_PERM)
       } catch (err: any) {
         logger.warn('[authRequired] 加载用户权限失败:', err.message)
         user.permCodes = new Set()
@@ -116,49 +188,45 @@ export function authRequired(req: Request, res: Response, next: NextFunction): a
     } else {
       user.permCodes = new Set()
     }
+    // 平台检测结果挂到 req 上，后续 permissionRequired 可以读
+    ;(req as any).platform = detectRequestPlatform(req)
     ;(req as any).user = user
     next()
   })()
 }
 
 /**
- * 权限校验中间件
- * @param permCode - 权限编码
+ * 基础权限校验：向后兼容旧调用（不带 platform，纯模块码匹配）
  */
 export function permissionRequired(permCode: string) {
   return (req: Request, res: Response, next: NextFunction): any => {
     const user = (req as any).user
-    if (!user) {
-      return fail(res, '用户未登录', ErrorCode.UNAUTHORIZED)
-    }
-    const permCodes: Set<string> = user.permCodes || new Set()
-    // 超级管理员直接放行
-    if (user.isSuperAdmin || permCodes.has(WILDCARD_PERM)) {
-      return next()
-    }
-    let hasPermission = permCodes.has(permCode)
-    if (!hasPermission) {
-      const parts = permCode.split(':')
-      for (let i = parts.length - 1; i >= 1; i--) {
-        const parentCode = parts.slice(0, i).join(':')
-        if (permCodes.has(parentCode)) {
-          hasPermission = true
-          break
-        }
-      }
-    }
-    if (!hasPermission) {
-      logger.warn('[permissionRequired] 权限不足', { userId: user.userId, username: user.username, requiredPerm: permCode, url: req.originalUrl })
-      return fail(res, `权限不足，缺少权限: ${permCode}`, ErrorCode.PERMISSION_DENIED)
-    }
-    next()
+    if (!user) return fail(res, '用户未登录', ErrorCode.UNAUTHORIZED)
+    if (checkPermission(user.permCodes || new Set(), permCode)) return next()
+    logger.warn('[permissionRequired] 权限不足', { userId: user.userId, username: user.username, requiredPerm: permCode, url: req.originalUrl })
+    return fail(res, `权限不足，缺少权限: ${permCode}`, ErrorCode.PERMISSION_DENIED)
+  }
+}
+
+/**
+ * 平台感知权限校验：自动根据请求来源（Capacitor / ?mobile=1 / 默认 PC）决定查 pc: / mobile: / all:
+ * 分层联动规则：view 类自动回退 all:（两端联动），action 类不回退（PC 配了不自动传移动端）
+ */
+export function platformAwarePermissionRequired(permCode: string) {
+  return (req: Request, res: Response, next: NextFunction): any => {
+    const user = (req as any).user
+    if (!user) return fail(res, '用户未登录', ErrorCode.UNAUTHORIZED)
+    const platform: 'pc' | 'mobile' | 'web' = (req as any).platform ?? 'pc'
+    // web 视为 pc 处理（WebView 里的浏览器端 = PC）
+    const effective: 'pc' | 'mobile' = platform === 'mobile' ? 'mobile' : 'pc'
+    if (checkPermission(user.permCodes || new Set(), permCode, { platform: effective })) return next()
+    logger.warn('[platformAwarePermissionRequired] 权限不足', { userId: user.userId, requiredPerm: permCode, platform: effective, url: req.originalUrl })
+    return fail(res, `权限不足（${effective}端），缺少权限: ${permCode}`, ErrorCode.PERMISSION_DENIED)
   }
 }
 
 /**
  * 操作日志记录中间件
- * 在响应结束后异步记录用户操作到 OperationLog 表
- * @param module - 业务模块名称
  */
 export function logOperation(module: string) {
   return (req: Request, res: Response, next: NextFunction): void => {
@@ -199,5 +267,11 @@ export function logOperation(module: string) {
   }
 }
 
-export { isSuperRoleCode, SUPER_ROLE_CODES, WILDCARD_PERM }
-export default { authRequired, permissionRequired, logOperation }
+export default {
+  authRequired,
+  permissionRequired,
+  platformAwarePermissionRequired,
+  logOperation,
+  checkPermission,
+  WILDCARD_PERM,
+}
