@@ -212,6 +212,38 @@ export APP_GIT_SHA="${SHORT_SHA}"
 echo "  VITE_API_BASE_URL=$VITE_API_BASE_URL  APP_BUILD=$APP_BUILD  APP_GIT_SHA=$APP_GIT_SHA"
 npx vite build 2>&1 | tail -4
 
+# Step 4.1: APP_BUILD 注入断言 —— 防止 vite define 回退到 git rev-list（造成版本号分裂）
+# ============================================================
+echo ""
+echo "=== 4.1 APP_BUILD 注入断言 ==="
+# vite define 把 __APP_BUILD__ 替换为 JSON.stringify(值) → "BUILD" 字符串
+# app-version.ts 的 FALLBACK 对象编译后形态：{version:"1.2.0",build:"322",cachedAt:0}
+# 搜所有 chunk 里 build:"${BUILD}" 模式 —— 必须有且仅有这一处匹配
+ACTUAL_BUILD_IN_JS=$(node -e "
+const fs=require('fs');
+const files=fs.readdirSync('dist/assets').filter(f=>f.endsWith('.js'));
+const expected='build:\"${BUILD}\"';
+let found=0, hit='';
+for (const f of files) {
+  const c=fs.readFileSync('dist/assets/'+f,'utf8');
+  const count=(c.match(/build:\"[0-9]+\"/g)||[]).length;
+  if (count>0) {
+    // 提取第一个命中的实际值
+    const m=c.match(/build:\"([0-9]+)\"/);
+    if (m) { hit=m[1]; found+=count; }
+  }
+}
+console.log(found>0?hit:'');
+" 2>/dev/null || echo "")
+echo "  预期 APP_BUILD = ${BUILD}   dist JS 中实测 = ${ACTUAL_BUILD_IN_JS:-空}"
+if [[ "$ACTUAL_BUILD_IN_JS" != "$BUILD" ]]; then
+  echo "  ✗ APP_BUILD 注入失败！"
+  echo "    预期 ${BUILD}，实际 dist 里是 '${ACTUAL_BUILD_IN_JS}'"
+  echo "    → 请检查 Step 4 的 export APP_BUILD 是否生效；脚本已中止构建"
+  exit 1
+fi
+echo "  ✓ APP_BUILD 注入一致"
+
 # Step 4.5: 后端 TypeScript 编译（之前漏了！导致 src/ 改了但 dist/ 不更新）
 # ============================================================
 echo ""
