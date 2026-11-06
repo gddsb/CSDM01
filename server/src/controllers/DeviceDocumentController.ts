@@ -25,8 +25,8 @@ function cleanupFiles(files: any[]) {
 }
 
 export default {
-  list: asyncHandler(async (req: Request, res: Response) => {
-    const { rows, count } = await DeviceDocumentService.list(req.query)
+  list: asyncHandler(async (req: any, res: any) => {
+    const { rows, count } = await DeviceDocumentService.list(req.query, req.user)
     return success(res, rows, '查询成功', count)
   }),
 
@@ -35,8 +35,8 @@ export default {
     return success(res, doc, '查询成功')
   }),
 
-  listByDevice: asyncHandler(async (req: Request, res: Response) => {
-    const docs = await DeviceDocumentService.listByDevice(Number((req.params as any).deviceId))
+  listByDevice: asyncHandler(async (req: any, res: any) => {
+    const docs = await DeviceDocumentService.listByDevice(Number(req.params.deviceId), req.user)
     return success(res, docs)
   }),
 

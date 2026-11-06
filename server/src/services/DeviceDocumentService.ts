@@ -1,7 +1,7 @@
 /**
  * 设备文档 Service（DeviceDocumentController 下沉）
  *
- * 只处理 DB CRUD + 业务校验（类型白名单、设备关联校验）；
+ * 只处理 DB CRUD + 业务校验（类型白名单、设备关联校验、数据权限 scope）；
  * 文件系统 IO（upload/download/delete 清理文件）保留在 Controller。
  */
 import { Op } from 'sequelize'
@@ -9,6 +9,7 @@ import { DeviceDocument, Device } from '../models/index.js'
 import { DOC_TYPE_MAP } from '../models/DeviceDocument.js'
 import { MAX_PAGE_SIZE } from '../utils/response.js'
 import { AppError } from '../utils/error.js'
+import { WILDCARD_PERM } from '../middleware/auth.js'
 
 export const ALLOWED_DOC_TYPES = new Set(Object.keys(DOC_TYPE_MAP))
 
@@ -44,11 +45,18 @@ export function buildDocWhere(query: any): any {
 // ---------- Service ----------
 
 export const DeviceDocumentService = {
-  /** 分页查询文档列表 */
-  async list(query: any) {
+  /** 分页查询文档列表（按角色过滤：无 view_all 权限只看自己上传的） */
+  async list(query: any, actor?: any) {
     const where = buildDocWhere(query)
     const limit = Math.min(Number(query.pageSize) || 20, MAX_PAGE_SIZE)
     const offset = ((Number(query.page) || 1) - 1) * limit
+
+    // 数据权限 scope：有 view_all 或 '*' 通配看全部，否则只看 uploaded_by = 当前 userId
+    const permCodes: Set<string> = actor?.permCodes ?? new Set()
+    const hasViewAll = permCodes.has(WILDCARD_PERM) || permCodes.has('all:device:document:view_all')
+    if (actor?.userId && !hasViewAll) {
+      where.uploaded_by = actor.userId
+    }
 
     return await DeviceDocument.findAndCountAll({
       where,
@@ -109,10 +117,19 @@ export const DeviceDocumentService = {
     return doc
   },
 
-  /** 查某设备下的所有文档 */
-  async listByDevice(deviceId: number | string) {
+  /** 查某设备下的所有文档（按角色过滤 view_all scope） */
+  async listByDevice(deviceId: number | string, actor?: any) {
+    const where: any = { device_id: Number(deviceId) }
+
+    // 同 list() 的数据权限 scope
+    const permCodes: Set<string> = actor?.permCodes ?? new Set()
+    const hasViewAll = permCodes.has(WILDCARD_PERM) || permCodes.has('all:device:document:view_all')
+    if (actor?.userId && !hasViewAll) {
+      where.uploaded_by = actor.userId
+    }
+
     return await DeviceDocument.findAll({
-      where: { device_id: Number(deviceId) },
+      where,
       order: [['created_at', 'DESC']],
     })
   },
