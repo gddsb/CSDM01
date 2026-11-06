@@ -9,6 +9,22 @@ import { verifyPassword, hashPassword } from '../utils/password'
 import { AppError } from '../middleware/security'
 
 
+/** 把扁平权限码数组按 prefix:module:submodule 聚合分组 */
+export function buildPermGroups(codes: string[]): Record<string, string[]> {
+  const groups: Record<string, string[]> = {}
+  for (const code of codes) {
+    if (!code || code === '*') continue
+    const parts = code.split(':')
+    // 取前 3 段作为 group key（pc:device:fault），只有两段时用 pc:module
+    const key = parts.length >= 3 ? parts.slice(0, 3).join(':') : parts.join(':')
+    if (!groups[key]) groups[key] = []
+    groups[key].push(code)
+  }
+  // 排序让 key 和每个 group 内的 codes 稳定
+  for (const k of Object.keys(groups)) groups[k].sort()
+  return groups
+}
+
 export async function getUserPermissionCodes(roleId: number): Promise<string[]> {
   const perms = await Permission.findAll({
     include: [
@@ -82,6 +98,7 @@ export class AuthService {
     delete userWithRole.user_pwd
     const permCodes = await getUserPermissionCodes((user as any).role_id || userWithRole.role_id)
     userWithRole.perm_codes = permCodes
+    userWithRole.perm_groups = buildPermGroups(permCodes)
 
     const pwdResetRequired = Number(userWithRole.pwd_reset_required) === 1 || WEAK_PASSWORDS.has(String(password))
     const securityHint = pwdResetRequired ? '当前密码为初始/弱密码，建议尽快修改密码' : undefined
@@ -131,7 +148,7 @@ export class AuthService {
   }
 
   /**
-   * 获取当前登录用户信息（含角色、权限码）
+   * 获取当前登录用户信息（含角色、权限码、权限分组）
    */
   static async getCurrentUser(userId: number): Promise<Record<string, unknown>> {
     const user = await User.findOne({
@@ -141,7 +158,9 @@ export class AuthService {
     if (!user) throw new AppError('用户不存在', 10002, 404)
     const userData: Record<string, any> = (user as any).toJSON()
     delete userData.user_pwd
-    userData.perm_codes = await getUserPermissionCodes(userData.role_id)
+    const codes = await getUserPermissionCodes(userData.role_id)
+    userData.perm_codes = codes
+    userData.perm_groups = buildPermGroups(codes)
     return userData
   }
 
