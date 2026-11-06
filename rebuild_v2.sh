@@ -292,24 +292,14 @@ cat > server/data/releases.json << ENDJSON
 ENDJSON
 
 # ============================================================
-# Step 6.5: DB Migration（幂等，列存在就跳过）
-#   source server/.env 拿 DB 凭据 → mysql 执行 migration SQL
+# Step 6.5: DB Migration（由 app.ts 启动时通过 Umzug 自动执行 src/migrations/*.sql）
+#   这里只做提示，不再手动跑任何 SQL 文件
+#   Umzug state 文件在 server/data/migration-state.json，已执行的 SQL 不会重复跑
 # ============================================================
 echo ""
 echo "=== 6.5 DB Migration ==="
-set -a; source server/.env; set +a
-MIGRATION_SQL="server/scripts/migration_20261021_report_order_batch.sql"
-if [[ -f "$MIGRATION_SQL" ]]; then
-  DB_PASS_ARG=""
-  [[ -n "${DB_PASSWORD:-}" ]] && DB_PASS_ARG="-p${DB_PASSWORD}"
-  if mysql -h"${DB_HOST:-localhost}" -u"${DB_USER:-root}" $DB_PASS_ARG "${DB_NAME:-milk_can_mes}" < "$MIGRATION_SQL" 2>&1 | tail -5; then
-    echo "  ✅ migration OK"
-  else
-    echo "  ⚠ migration failed (non-fatal, column may already exist)"
-  fi
-else
-  echo "  ⚠ migration file not found: $MIGRATION_SQL"
-fi
+echo "  ℹ Umzug 管理 server/src/migrations/*.sql，PM2 重启后 app.ts 会自动执行"
+echo "  ℹ 如需立即手动执行：cd server && npx tsx src/migrate.ts"
 
 # ============================================================
 # Step 7: 后端重启

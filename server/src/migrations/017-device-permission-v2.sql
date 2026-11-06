@@ -124,19 +124,19 @@ CROSS JOIN sys_permission p
 WHERE r.role_code = 'SUPER_ADMIN'
   AND (p.perm_code = '*' OR p.perm_code LIKE '%:device:%' OR p.perm_code LIKE 'device%');
 
--- SYSTEM_ADMIN: 全模块权限（与 SUPER_ADMIN 同级，不含 '*' 通配符以避免系统保护绕过）
+-- ADMIN(旧 SYSTEM_ADMIN): 全模块权限（与 SUPER_ADMIN 同级，不含 '*' 通配符以避免系统保护绕过）
 INSERT IGNORE INTO sys_role_permission (role_id, perm_id)
 SELECT r.role_id, p.perm_id
 FROM sys_role r
 CROSS JOIN sys_permission p
-WHERE r.role_code = 'SYSTEM_ADMIN'
+WHERE r.role_code = 'ADMIN'
   AND (p.perm_code LIKE '%:device:%' OR p.perm_code LIKE 'device%');
 
--- 生产主管 PM: 设备档案 view, 故障 view+assign+view_all, 保养 view, 点检 view, 校准 view
+-- 生产管理员 PROD_MANAGER(旧 PM): 设备档案 view, 故障 view+assign+view_all, 保养 view, 点检 view, 校准 view
 -- 移动端: 故障 view/create, 保养 view/start/submit, 点检 view/submit
 INSERT IGNORE INTO sys_role_permission (role_id, perm_id)
 SELECT r.role_id, p.perm_id FROM sys_role r JOIN sys_permission p ON TRUE
-WHERE r.role_code = 'PM' AND p.perm_code IN (
+WHERE r.role_code = 'PROD_MANAGER' AND p.perm_code IN (
   -- 档案
   'all:device', 'pc:device',
   'all:device:list:view',
@@ -153,11 +153,11 @@ WHERE r.role_code = 'PM' AND p.perm_code IN (
   'mobile:device:inspection:view', 'mobile:device:inspection:submit'
 );
 
--- 设备维护员 MAINT: 档案 view+update, 故障 view+create+submit_repair+close+view_all, 保养全, 点检全, 备件 in/out
+-- 设备管理员 MAINTENANCE(旧 MAINT): 档案 view+update, 故障 view+create+submit_repair+close+view_all, 保养全, 点检全, 备件 in/out
 -- 移动端: 故障 view+create+submit+close, 保养 view+start+submit+skip, 点检全, 备件 in/out
 INSERT IGNORE INTO sys_role_permission (role_id, perm_id)
 SELECT r.role_id, p.perm_id FROM sys_role r JOIN sys_permission p ON TRUE
-WHERE r.role_code = 'MAINT' AND p.perm_code IN (
+WHERE r.role_code = 'MAINTENANCE' AND p.perm_code IN (
   'all:device', 'pc:device', 'pc:device:list:create', 'pc:device:list:update', 'pc:device:list:delete',
   'all:device:list:view',
   'pc:device:list:column:status', 'pc:device:list:column:responsible',
@@ -185,10 +185,10 @@ WHERE r.role_code = 'MAINT' AND p.perm_code IN (
   'mobile:device:spare-part:view', 'mobile:device:spare-part:stock_in', 'mobile:device:spare-part:stock_out'
 );
 
--- 质量管理员 QM: 校准全 + 故障 view
+-- 质量管理员 QC_MANAGER(旧 QM): 校准全 + 故障 view + 审批
 INSERT IGNORE INTO sys_role_permission (role_id, perm_id)
 SELECT r.role_id, p.perm_id FROM sys_role r JOIN sys_permission p ON TRUE
-WHERE r.role_code = 'QM' AND p.perm_code IN (
+WHERE r.role_code = 'QC_MANAGER' AND p.perm_code IN (
   'all:device', 'pc:device',
   'all:device:fault:view',
   'all:device:calibration:view', 'pc:device:calibration:create_plan', 'pc:device:calibration:update_plan',
@@ -199,20 +199,20 @@ WHERE r.role_code = 'QM' AND p.perm_code IN (
   'mobile:device:calibration:view', 'mobile:device:calibration:submit', 'mobile:device:calibration:upload_certificate'
 );
 
--- 质量检验员 QC: 校准 view+submit
+-- 质量检验员 QC_INSPECTOR(旧 QC): 校准 view+submit
 INSERT IGNORE INTO sys_role_permission (role_id, perm_id)
 SELECT r.role_id, p.perm_id FROM sys_role r JOIN sys_permission p ON TRUE
-WHERE r.role_code = 'QC' AND p.perm_code IN (
+WHERE r.role_code = 'QC_INSPECTOR' AND p.perm_code IN (
   'all:device', 'all:device:calibration:view', 'pc:device:calibration:submit',
   -- 移动端
   'mobile:device', 'mobile:device:calibration:view', 'mobile:device:calibration:submit'
 );
 
--- 工序操作人 OP: 故障 view+create, 保养 view+start, 点检 view+submit
+-- 工序操作人 OPERATOR(旧 OP): 故障 view+create, 保养 view+start, 点检 view+submit
 -- 移动端同
 INSERT IGNORE INTO sys_role_permission (role_id, perm_id)
 SELECT r.role_id, p.perm_id FROM sys_role r JOIN sys_permission p ON TRUE
-WHERE r.role_code = 'OP' AND p.perm_code IN (
+WHERE r.role_code = 'OPERATOR' AND p.perm_code IN (
   'all:device',
   'all:device:fault:view', 'pc:device:fault:create',
   'all:device:maintenance:view', 'pc:device:maintenance:start',
@@ -225,10 +225,10 @@ WHERE r.role_code = 'OP' AND p.perm_code IN (
   'mobile:device:inspection:view', 'mobile:device:inspection:submit'
 );
 
--- 看板查看者 VIEWER: 只看 OEE / Dashboard（不进入 device 模块）
+-- 看板查看者 DASHBOARD_VIEWER(旧 VIEWER): 只看 OEE / Dashboard（不进入 device 模块）
 INSERT IGNORE INTO sys_role_permission (role_id, perm_id)
 SELECT r.role_id, p.perm_id FROM sys_role r JOIN sys_permission p ON TRUE
-WHERE r.role_code = 'VIEWER' AND p.perm_code IN (
+WHERE r.role_code = 'DASHBOARD_VIEWER' AND p.perm_code IN (
   'all:device:dashboard:view', 'pc:device:dashboard:view',
   'all:device:oee:view', 'pc:device:oee:view'
 );

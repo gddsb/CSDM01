@@ -119,8 +119,18 @@ export function checkPermission(
   } else if (platform === 'all') {
     candidates.push(`all:${required}`)
   }
-  // 向后兼容：老权限码不带 platform 前缀，直接用模块码
-  if (allowLegacy) candidates.push(required)
+  // 向后兼容：老权限码不带 platform 前缀
+  if (allowLegacy) {
+    candidates.push(required)
+    // 去掉 platform 前缀：pc:device:fault:view → device:fault:view
+    const stripped = required.replace(/^(all|pc|mobile):/, '')
+    if (stripped !== required) {
+      candidates.push(stripped)
+      // 更旧父级码：device:fault:view → device:fault
+      const parts = stripped.split(':')
+      if (parts.length >= 3) candidates.push(parts.slice(0, 2).join(':'))
+    }
+  }
 
   // 精确匹配
   for (const c of candidates) {
