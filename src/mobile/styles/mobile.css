@@ -98,6 +98,7 @@ html.mobile-root textarea {
   padding-bottom: var(--sab);
   background: var(--m-bg);
   overflow: hidden;                /* 外层绝对禁滚，不可逾越的边界 */
+  touch-action: pan-y;             /* 让浏览器处理纵向滚动，JS 处理横向边缘滑动返回 */
 }
 
 .mobile-app__content {

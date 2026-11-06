@@ -341,6 +341,8 @@ function PartCard({ part, low, onIn, onOut, onAdjust, onDelete }: {
   part: SpareRow; low: boolean
   onIn: () => void; onOut: () => void; onAdjust: () => void; onDelete: () => void
 }) {
+  // 子组件独立调用 hook — 之前直接引用父组件的 hasPermission（运行时未定义导致白屏）
+  const { hasPermission } = useApp()
   return (
     <div style={{
       background: low ? 'var(--m-danger-bg)' : 'var(--m-surface)', borderRadius: 10, padding: 12, marginBottom: 10,

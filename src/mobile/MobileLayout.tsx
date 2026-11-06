@@ -7,13 +7,14 @@
  *   子功能页面跳转后 TabBar 自动收起（显示 NavBar 返回按钮）
  * - 更新检测统一由 main.tsx 的 AppUpdateLoader 触发（app-updater 单一入口）
  */
-import { useMemo } from 'react'
+import { useMemo, useCallback } from 'react'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
 import { TabBar, NavBar, ActionSheet, Badge } from 'antd-mobile'
 import { AppOutline, BillOutline, CheckOutline, TeamOutline, UserOutline } from 'antd-mobile-icons'
 import { useApp } from '../contexts/AppContext'
 import { useOfflineQueue } from './hooks/useOfflineQueue'
 import { useKeyboardAvoidance } from './hooks/useKeyboardAvoidance'
+import { useEdgeSwipeBack } from './hooks/useEdgeSwipeBack'
 import { runBackHandler } from './utils/backInterceptor'
 
 interface TabDef {
@@ -140,6 +141,13 @@ export function MobileLayout() {
   const isProfile = location.pathname === '/m/profile'
   const canBack = location.pathname.startsWith('/m/') && !isDashboard && !isProfile
   const title = TITLE_MAP[location.pathname] || (location.pathname.startsWith('/m/') ? '奶粉罐MES' : '')
+
+  // ========== 边缘右滑返回手势（仅 canBack 时启用）==========
+  const doBack = useCallback(() => {
+    if (runBackHandler()) return
+    navigate(-1)
+  }, [navigate])
+  useEdgeSwipeBack({ enable: canBack, onBack: doBack })
 
   // ========== 全局：输入框键盘避让（一次挂载覆盖所有子页面） ==========
   useKeyboardAvoidance()
