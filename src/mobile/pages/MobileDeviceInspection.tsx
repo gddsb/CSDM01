@@ -10,6 +10,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, List, SearchBar, Stepper, Toast, Dialog, Checkbox } from 'antd-mobile'
 import api from '../../utils/api'
+import { useApp } from '../../contexts/AppContext'
 import { useBarcode } from '../hooks/useBarcode'
 import { useDebounceEffect } from '../hooks/useDebounceEffect'
 
@@ -30,6 +31,7 @@ interface RecordRow {
 }
 
 export default function MobileDeviceInspection() {
+  const { hasPermission } = useApp()
   const navigate = useNavigate()
   const { scan } = useBarcode()
   const [devices, setDevices] = useState<DeviceRow[]>([])
@@ -212,11 +214,12 @@ export default function MobileDeviceInspection() {
                 </Checkbox.Group>
               </div>
 
-              <Button
-                block color="primary" loading={submitting} onClick={onSubmit}
-                style={{ marginTop: 20, height: 46, fontSize: 15, borderRadius: 10 }}
-              >
-                提交点检结果
+              {hasPermission('mobile:device:inspection:submit') && (
+                <Button
+                  block color="primary" loading={submitting} onClick={onSubmit}
+                  style={{ marginTop: 20, height: 46, fontSize: 15, borderRadius: 10 }}
+                >
+                  提交点检结果
               </Button>
             </>
           )}

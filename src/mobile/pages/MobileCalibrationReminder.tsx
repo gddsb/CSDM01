@@ -11,6 +11,7 @@
 import { useEffect, useState } from 'react'
 import { Tabs, List, PullToRefresh, Toast, Empty } from 'antd-mobile'
 import api from '../../utils/api'
+import { useApp } from '../../contexts/AppContext'
 
 interface PlanRow {
   plan_id: number
@@ -51,6 +52,7 @@ function statusTag(s?: string | number) {
 }
 
 export default function MobileCalibrationReminder() {
+  const { hasPermission } = useApp()
   const [tab, setTab] = useState<Tab>('expiring')
   const [list, setList] = useState<PlanRow[]>([])
   const [loading, setLoading] = useState(false)

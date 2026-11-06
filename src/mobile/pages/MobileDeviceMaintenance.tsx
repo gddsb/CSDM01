@@ -22,6 +22,7 @@ import {
 } from 'antd-mobile'
 import type { ImageUploadItem } from 'antd-mobile/es/components/image-uploader'
 import api from '../../utils/api'
+import { useApp } from '../../contexts/AppContext'
 import { offlinePost, offlinePut, offlineDelete } from '../offline/offlineApi'
 import { useBarcode } from '../hooks/useBarcode'
 import { useDebounceEffect } from '../hooks/useDebounceEffect'
@@ -82,6 +83,7 @@ const STATUS_TABS: { key: StatusTab; label: string }[] = [
 // ========== 5-A 主组件 ==========
 
 export default function MobileDeviceMaintenance() {
+  const { hasPermission } = useApp()
   const navigate = useNavigate()
   const { scan } = useBarcode()
 
@@ -845,7 +847,7 @@ export default function MobileDeviceMaintenance() {
                       </div>
                       {/* 5-A 新增：行内动作 */}
                       <div style={{ marginTop: 6, display: 'flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
-                        {(isPending || isDoing) && (
+                        {(isPending || isDoing) && hasPermission('mobile:device:maintenance:start') && (
                           <Button size="mini" color="primary" onClick={(e) => {
                             e.stopPropagation()
                             selectRecord(r)
@@ -988,7 +990,9 @@ export default function MobileDeviceMaintenance() {
               ? <Button block color="primary" onClick={() => { setStep(1); setSelectedRecord(null) }}>返回列表</Button>
               : <>
                   <Button block fill="outline" onClick={() => setStep(1)}>上一步</Button>
-                  <Button block color="primary" loading={submitting} onClick={onSubmit}>提交保养</Button>
+                  {hasPermission('mobile:device:maintenance:submit') && (
+                    <Button block color="primary" loading={submitting} onClick={onSubmit}>提交保养</Button>
+                  )}
                 </>
             }
           </div>

@@ -14,6 +14,7 @@
 import { useEffect, useState } from 'react'
 import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh, Input, Radio, Space , TextArea} from 'antd-mobile'
 import api from '../../utils/api'
+import { useApp } from '../../contexts/AppContext'
 import { offlinePost, offlineDelete } from '../offline/offlineApi'
 import { useDebounceEffect } from '../hooks/useDebounceEffect'
 
@@ -40,6 +41,7 @@ interface LogRow {
 // ========== 主组件 ==========
 
 export default function MobileSparePart() {
+  const { hasPermission } = useApp()
   const [tab, setTab] = useState<TabKey>('all')
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -364,7 +366,9 @@ function PartCard({ part, low, onIn, onOut, onAdjust, onDelete }: {
         <Button size="mini" color="primary" onClick={onIn}>📥 入库</Button>
         <Button size="mini" fill="outline" onClick={onOut}>📤 出库</Button>
         <Button size="mini" fill="outline" onClick={onAdjust}>📝 调整</Button>
-        <Button size="mini" fill="outline" onClick={onDelete}>🗑️</Button>
+        {hasPermission('mobile:device:spare-part:delete') && (
+  <Button size="mini" fill="outline" onClick={onDelete}>🗑️</Button>
+)}
       </div>
     </div>
   )

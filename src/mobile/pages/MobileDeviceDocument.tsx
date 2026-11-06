@@ -12,6 +12,7 @@
 import { useEffect, useState } from 'react'
 import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh, Input } from 'antd-mobile'
 import api from '../../utils/api'
+import { useApp } from '../../contexts/AppContext'
 import { useBarcode } from '../hooks/useBarcode'
 
 const API_PREFIX = '/api'
@@ -33,6 +34,7 @@ interface DocRow {
 }
 
 export default function MobileDeviceDocument() {
+  const { hasPermission } = useApp()
   const { scan } = useBarcode()
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -351,7 +353,9 @@ function DocCard({ doc, onDownload, onDelete }: {
       </div>
       <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
         <Button size="mini" color="primary" onClick={onDownload}>⬇️ 下载</Button>
-        <Button size="mini" fill="outline" onClick={onDelete}>🗑️ 删除</Button>
+        {hasPermission('mobile:device:document:delete') && (
+          <Button size="mini" fill="outline" onClick={onDelete}>🗑️ 删除</Button>
+        )}
       </div>
     </div>
   )

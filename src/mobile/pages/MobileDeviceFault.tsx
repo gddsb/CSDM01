@@ -19,6 +19,7 @@ import {
   PullToRefresh, Space,
 } from 'antd-mobile'
 import api from '../../utils/api'
+import { useApp } from '../../contexts/AppContext'
 import { offlinePost, offlinePut } from '../offline/offlineApi'
 import { useBarcode } from '../hooks/useBarcode'
 import { nowLocalStr } from '../../utils/localTime'
@@ -63,6 +64,7 @@ const LEVELS = ['一般', '严重', '紧急'] as const
 // ========== 5-B 主组件 ==========
 
 export default function MobileDeviceFault() {
+  const { hasPermission } = useApp()
   const { scan } = useBarcode()
   const [tab, setTab] = useState<StatusTab>('待派工')
   const [keyword, setKeyword] = useState('')
@@ -363,7 +365,9 @@ export default function MobileDeviceFault() {
             style={{ flex: 1, marginBottom: 0 }}
           />
           <Button size="small" fill="outline" onClick={handleScanForSearch} style={{ flexShrink: 0 }}>📷</Button>
-          <Button color="primary" onClick={() => setShowCreate(true)} style={{ flexShrink: 0 }}>+ 上报</Button>
+          {hasPermission('mobile:device:fault:create') && (
+            <Button color="primary" onClick={() => setShowCreate(true)} style={{ flexShrink: 0 }}>+ 上报</Button>
+          )}
         </div>
 
         {/* 状态 Tab（对齐 PC） */}
