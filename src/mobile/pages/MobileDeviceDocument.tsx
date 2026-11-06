@@ -324,6 +324,7 @@ export default function MobileDeviceDocument() {
 function DocCard({ doc, onDownload, onDelete }: {
   doc: DocRow; onDownload: () => void; onDelete: () => void
 }) {
+  const { hasPermission } = useApp()
   const icon = doc.file_format?.match(/pdf/i) ? '📕'
     : doc.file_format?.match(/doc|docx/i) ? '📘'
     : doc.file_format?.match(/xls|xlsx/i) ? '📗'

@@ -220,7 +220,8 @@ export default function MobileDeviceInspection() {
                   style={{ marginTop: 20, height: 46, fontSize: 15, borderRadius: 10 }}
                 >
                   提交点检结果
-              </Button>
+                </Button>
+              )}
             </>
           )}
         </>
