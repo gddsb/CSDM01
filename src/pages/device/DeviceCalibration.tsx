@@ -17,6 +17,7 @@ import { MONTH_QUICK_OPTIONS, getMonthRange, validateRange } from '../../utils/m
 import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
 import api from '../../utils/api'
+import { useApp } from '../../contexts/AppContext'
 
 const { RangePicker } = DatePicker
 const { Title, Text } = Typography
@@ -60,6 +61,8 @@ interface CalibItemRow {
 type DrawerMode = 'create' | 'edit' | null
 
 export default function DeviceCalibration() {
+  const { hasPermission } = useApp()
+
   // ============ 列表数据 ============
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -463,14 +466,22 @@ export default function DeviceCalibration() {
         return (
           <Space size="small" wrap>
             <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => showDetail(record)}>查看</Button>
-            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
-            <Button type="link" size="small" onClick={() => openSubmit(record)} disabled={locked}>提交校准</Button>
-            <Button type="link" size="small" icon={locked ? <UnlockOutlined /> : <LockOutlined />} onClick={() => handleToggleLock(record)}>
-              {locked ? '解锁' : '锁定'}
-            </Button>
-            <Popconfirm title="确认删除该校准计划？关联的校准记录将一并删除。" onConfirm={() => handleDelete(record)} okText="删除" cancelText="取消">
-              <Button type="link" size="small" danger icon={<DeleteOutlined />} />
-            </Popconfirm>
+            {hasPermission('pc:device:calibration:update_plan') && (
+              <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
+            )}
+            {hasPermission('pc:device:calibration:submit') && (
+              <Button type="link" size="small" onClick={() => openSubmit(record)} disabled={locked}>提交校准</Button>
+            )}
+            {hasPermission('pc:device:calibration:update_plan') && (
+              <Button type="link" size="small" icon={locked ? <UnlockOutlined /> : <LockOutlined />} onClick={() => handleToggleLock(record)}>
+                {locked ? '解锁' : '锁定'}
+              </Button>
+            )}
+            {hasPermission('pc:device:calibration:delete_plan') && (
+              <Popconfirm title="确认删除该校准计划？关联的校准记录将一并删除。" onConfirm={() => handleDelete(record)} okText="删除" cancelText="取消">
+                <Button type="link" size="small" danger icon={<DeleteOutlined />} />
+              </Popconfirm>
+            )}
           </Space>
         )
       },
@@ -514,7 +525,9 @@ export default function DeviceCalibration() {
 
   const actions = (
     <Space>
-      <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>新建校准计划</Button>
+      {hasPermission('pc:device:calibration:create_plan') && (
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>新建校准计划</Button>
+      )}
       <Button icon={<ReloadOutlined />} onClick={() => { fetchData(); fetchStats() }}>刷新</Button>
     </Space>
   )

@@ -195,8 +195,11 @@ export default function DeviceManagement() {
       render: (_, record) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleDetail(record)}>查看</Button>
-          {hasPermission('device:list:update') && (
+          {hasPermission('pc:device:list:update') && (
             <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
+          )}
+          {hasPermission('pc:device:list:delete') && (
+            <Button type="link" size="small" danger onClick={() => handleDelete(record)}>删除</Button>
           )}
         </Space>
       ),
@@ -228,7 +231,9 @@ export default function DeviceManagement() {
             hasAdd={false}
             hasExport={false}
             extra={[
-              <Button key="add" type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增设备</Button>,
+              hasPermission('pc:device:list:create') && (
+                <Button key="add" type="primary" icon={<PlusOutlined />} onClick={handleAdd}>新增设备</Button>
+              ),
             ]}
           />
         }

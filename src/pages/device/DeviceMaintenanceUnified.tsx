@@ -13,6 +13,7 @@ import ThreeSectionPage from '../../components/ThreeSectionPage'
 import type { StatItem } from '../../components/ThreeSectionPage'
 import dayjs from 'dayjs'
 import api from '../../utils/api'
+import { useApp } from '../../contexts/AppContext'
 
 const { RangePicker } = DatePicker
 const { TextArea } = Input
@@ -73,6 +74,8 @@ function autoJudge(actual: string, standard: string): '正常' | '异常' {
 }
 
 export default function DeviceMaintenanceUnified() {
+  const { hasPermission } = useApp()
+
   // ============ 执行记录列表 ============
   const [records, setRecords] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -395,10 +398,10 @@ export default function DeviceMaintenanceUnified() {
       title: '操作', width: 150, fixed: 'right' as const, render: (_: any, r: any) => (
         <Space size={4}>
           <Button size="small" type="link" onClick={() => handleDetail(r.record_id)}>详情</Button>
-          {r.status === '待执行' && (
+          {r.status === '待执行' && hasPermission('pc:device:maintenance:start') && (
             <Button size="small" type="link" onClick={() => handleStart(r.record_id)}>开始</Button>
           )}
-          {r.status === '执行中' && (
+          {r.status === '执行中' && hasPermission('pc:device:maintenance:submit') && (
             <Button size="small" type="link" onClick={() => openComplete(r)}>完成</Button>
           )}
         </Space>
@@ -461,12 +464,14 @@ export default function DeviceMaintenanceUnified() {
       }
       actions={
         <Space>
-          <Button type="primary" icon={<ThunderboltOutlined />} onClick={() => {
-            setGenMonth(dayjs().format('YYYY-MM'))
-            setGenSkipPast(true)
-            setGenDeviceId(selectedDeviceId ?? undefined)
-            setGenOpen(true)
-          }}>生成维保计划</Button>
+          {hasPermission('pc:device:maintenance:generate') && (
+            <Button type="primary" icon={<ThunderboltOutlined />} onClick={() => {
+              setGenMonth(dayjs().format('YYYY-MM'))
+              setGenSkipPast(true)
+              setGenDeviceId(selectedDeviceId ?? undefined)
+              setGenOpen(true)
+            }}>生成维保计划</Button>
+          )}
           <Button icon={<ReloadOutlined />} onClick={loadRecords}>刷新</Button>
         </Space>
       }
@@ -522,19 +527,23 @@ export default function DeviceMaintenanceUnified() {
         onCancel={() => setGenOpen(false)}
         footer={[
           <Button key="cancel" onClick={() => setGenOpen(false)}>取消</Button>,
-          <Button
-            key="cleanup"
-            danger
-            icon={<ReloadOutlined />}
-            loading={genLoading}
-            onClick={handleCleanupRegenerate}
-            style={{ marginLeft: 'auto' }}
-          >
-            清理并重建
-          </Button>,
-          <Button key="ok" type="primary" icon={<ThunderboltOutlined />} loading={genLoading} onClick={handleGenerate}>
-            正常生成
-          </Button>,
+          hasPermission('pc:device:maintenance:cleanup') && (
+            <Button
+              key="cleanup"
+              danger
+              icon={<ReloadOutlined />}
+              loading={genLoading}
+              onClick={handleCleanupRegenerate}
+              style={{ marginLeft: 'auto' }}
+            >
+              清理并重建
+            </Button>
+          ),
+          hasPermission('pc:device:maintenance:generate') && (
+            <Button key="ok" type="primary" icon={<ThunderboltOutlined />} loading={genLoading} onClick={handleGenerate}>
+              正常生成
+            </Button>
+          ),
         ]}
       >
         <div style={{ marginBottom: 12 }}>

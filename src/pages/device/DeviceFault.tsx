@@ -18,7 +18,7 @@ import { MONTH_QUICK_OPTIONS, getMonthRange, validateRange } from '../../utils/m
 import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
 import api from '../../utils/api'
-import { useMessage } from '../../contexts/AppContext'
+import { useMessage, useApp } from '../../contexts/AppContext'
 
 const { RangePicker } = DatePicker
 const { TextArea } = Input
@@ -107,6 +107,7 @@ const uid = () => Math.random().toString(36).slice(2, 10)
 
 export default function DeviceFault() {
   const message = useMessage()
+  const { hasPermission } = useApp()
 
   // ============ 列表数据 ============
   const [data, setData] = useState<DeviceFault[]>([])
@@ -567,17 +568,21 @@ export default function DeviceFault() {
             <Button type="link" size="small" onClick={() => showDetail(record)}>详情</Button>
             {status === '待派工' && (
               <>
-                <Button type="link" size="small" onClick={() => openAssign(record)}>派工</Button>
-                <Button type="link" size="small" danger onClick={() => handleClose(record)}>关闭</Button>
+                {hasPermission('pc:device:fault:assign') && (
+                  <Button type="link" size="small" onClick={() => openAssign(record)}>派工</Button>
+                )}
+                {hasPermission('pc:device:fault:close') && (
+                  <Button type="link" size="small" danger onClick={() => handleClose(record)}>关闭</Button>
+                )}
               </>
             )}
-            {status === '维修中' && (
+            {status === '维修中' && hasPermission('pc:device:fault:submit_repair') && (
               <Button type="link" size="small" onClick={() => openRepair(record)}>维修</Button>
             )}
-            {status === '待审批' && (
+            {status === '待审批' && hasPermission('pc:device:fault:approve') && (
               <Button type="link" size="small" onClick={() => openApprove(record)}>审批</Button>
             )}
-            {status === '已挂起' && (
+            {status === '已挂起' && hasPermission('pc:device:fault:assign') && (
               <Button type="link" size="small" onClick={() => openAssign(record)}>重新派工</Button>
             )}
           </Space>
@@ -710,7 +715,9 @@ export default function DeviceFault() {
             hasAdd={false}
             hasExport={false}
             extra={[
-              <Button key="add" type="primary" icon={<PlusOutlined />} onClick={openCreate}>故障上报</Button>,
+              hasPermission('pc:device:fault:create') && (
+                <Button key="add" type="primary" icon={<PlusOutlined />} onClick={openCreate}>故障上报</Button>
+              ),
               <Button key="refresh" icon={<ReloadOutlined />} onClick={fetchData}>刷新</Button>,
             ]}
           />
