@@ -1,6 +1,6 @@
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useMemo } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, Select, Space, Tree, InputNumber, Popconfirm, Row, Col, Typography, Spin, Switch } from 'antd'
+import { Table, Tag, Button, Modal, Form, Input, Select, Space, Tree, InputNumber, Popconfirm, Row, Col, Typography, Spin, Switch, Tabs } from 'antd'
 import {
   SafetyCertificateOutlined, ApartmentOutlined,
   PlusOutlined, ReloadOutlined, SafetyOutlined,
@@ -26,19 +26,53 @@ function flattenTree(nodes, result = []) {
   return result
 }
 
-// 根据扁平权限列表构建树形结构
-function buildPermissionTree(permissions) {
+// 根据权限码前缀返回 platform tag 样式
+function platformTagStyle(code: string): { color: string; label: string } | null {
+  if (!code) return null
+  if (code.startsWith('pc:'))       return { color: 'blue',   label: 'PC' }
+  if (code.startsWith('mobile:'))   return { color: 'green',  label: '移动' }
+  if (code.startsWith('all:'))      return { color: 'default', label: 'All' }
+  return null // 旧格式无前缀码
+}
+
+// 根据 perm_code 判断所属 platform
+function codePlatform(code: string): 'pc' | 'mobile' | 'allp' | 'legacy' {
+  if (code.startsWith('pc:'))     return 'pc'
+  if (code.startsWith('mobile:')) return 'mobile'
+  if (code.startsWith('all:'))    return 'allp'
+  return 'legacy' // 旧码 device:fault:view 等 → 归入 "全部" Tab
+}
+
+// 根据扁平权限列表构建树形结构（支持 platform 过滤 + 节点彩色前缀 tag）
+function buildPermissionTree(permissions, platformFilter?: string) {
   // 如果后端返回的已经是树形结构，先扁平化
   const hasChildren = permissions.some(p => p.children && p.children.length > 0)
-  const flatPerms = hasChildren ? flattenTree(permissions) : permissions
+  let flatPerms = hasChildren ? flattenTree(permissions) : permissions
+
+  // platform 过滤：只保留符合当前 Tab 范围的节点
+  //   'all'     → 全部不过滤
+  //   'pc'      → pc 前缀 + 旧码（legacy 归入 pc 兼容旧前端）
+  //   'mobile'  → mobile 前缀
+  //   'allp'    → all 前缀
+  if (platformFilter && platformFilter !== 'all') {
+    flatPerms = flatPerms.filter(p => {
+      const plat = codePlatform(p.perm_code)
+      if (platformFilter === 'pc')      return plat === 'pc' || plat === 'legacy'
+      if (platformFilter === 'mobile')  return plat === 'mobile'
+      if (platformFilter === 'allp')    return plat === 'allp'
+      return true
+    })
+  }
 
   const map = new Map()
   const roots = []
   flatPerms.forEach(p => {
     const isButton = p.type === 'button'
+    const tagInfo = platformTagStyle(p.perm_code)
     const titleNode = (
       <span>
-        {isButton && <Tag color="purple" style={{ marginRight: 6, fontSize: 11, padding: '0 4px', lineHeight: '18px' }}>按钮</Tag>}
+        {tagInfo && <Tag color={tagInfo.color} style={{ marginRight: 6, fontSize: 11, padding: '0 4px', lineHeight: '18px' }}>{tagInfo.label}</Tag>}
+        {isButton && !tagInfo && <Tag color="purple" style={{ marginRight: 6, fontSize: 11, padding: '0 4px', lineHeight: '18px' }}>按钮</Tag>}
         <span>{p.perm_name}</span>
         <Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>{p.perm_code}</Text>
       </span>
@@ -88,6 +122,7 @@ export default function RoleManagement() {
   const [checkedKeys, setCheckedKeys] = useState<React.Key[] | { checked: React.Key[]; halfChecked: React.Key[] }>([])
   const [permLoading, setPermLoading] = useState(false)
   const [permSaving, setPermSaving] = useState(false)
+  const [permPlatformTab, setPermPlatformTab] = useState<string>('all')
 
   const defaultCount = data.filter(r => r.type === '系统默认').length
   const optionalCount = data.filter(r => r.type === '可选').length
@@ -98,7 +133,7 @@ export default function RoleManagement() {
     { label: '可选角色', value: optionalCount, icon: <SafetyOutlined />, color: 'var(--color-success)' },
   ]
 
-  const treeData = useMemo(() => buildPermissionTree(permissions), [permissions])
+  const treeData = useMemo(() => buildPermissionTree(permissions, permPlatformTab), [permissions, permPlatformTab])
 
   // 获取角色列表
   useEffect(() => {
@@ -221,6 +256,7 @@ export default function RoleManagement() {
     setPermRole(record)
     setPermModalVisible(true)
     setCheckedKeys([])
+    setPermPlatformTab('all')  // 打开时重置到 "全部"
     setPermLoading(true)
     try {
       // 并行加载所有权限和当前角色已有权限
@@ -431,13 +467,25 @@ export default function RoleManagement() {
           <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
             勾选该角色拥有的权限，保存后立即生效。
           </Text>
+          <Tabs
+            activeKey={permPlatformTab}
+            onChange={setPermPlatformTab}
+            size="small"
+            style={{ marginBottom: 8 }}
+            items={[
+              { key: 'all',   label: '全部' },
+              { key: 'pc',    label: <span><Tag color="blue" style={{ marginRight: 4, fontSize: 11, padding: '0 4px', lineHeight: '16px' }}>PC</Tag> PC端</span> },
+              { key: 'mobile',label: <span><Tag color="green" style={{ marginRight: 4, fontSize: 11, padding: '0 4px', lineHeight: '16px' }}>移动</Tag> 移动端</span> },
+              { key: 'allp',  label: <span><Tag color="default" style={{ marginRight: 4, fontSize: 11, padding: '0 4px', lineHeight: '16px' }}>All</Tag> 通用</span> },
+            ]}
+          />
           <Tree
             checkable
             defaultExpandAll
             treeData={treeData}
             checkedKeys={checkedKeys}
             onCheck={(keys) => setCheckedKeys(keys)}
-            style={{ maxHeight: 480, overflow: 'auto' }}
+            style={{ maxHeight: 440, overflow: 'auto' }}
           />
         </Spin>
       </Modal>
