@@ -90,27 +90,28 @@ export default function MobileDashboard() {
       // 统一待办接口：口径与 PC 端完全一致（本人负责/检查 + 日期周期在后端计算）
       const r: any = await api.get('/auto/dashboard/todos')
       const d = r.data || {}
+      // 【UI 重构 2026-11-07】统一使用 mobile.css --m-status-* 语义变量
       const items: TodoItem[] = [
-        { icon: '🏃', text: '待完工订单', count: d.pendingOrders ?? 0, path: '/m/production-orders?tab=开工', color: '#4CAF50' },
-        { icon: '🧰', text: '待维保设备', count: d.pendingMaintenanceDevices ?? 0, path: '/m/device-maintenance', color: '#FF9800' },
+        { icon: '🏃', text: '待完工订单', count: d.pendingOrders ?? 0, path: '/m/production-orders?tab=开工', color: 'var(--m-status-done)' },
+        { icon: '🧰', text: '待维保设备', count: d.pendingMaintenanceDevices ?? 0, path: '/m/device-maintenance', color: 'var(--m-status-pending)' },
       ]
 
       if (hasPermission('device:inspection')) {
         items.push(
-          { icon: '⚙️', text: '每日待点检', count: d.dailyInspection ?? 0, path: '/m/device-maintenance', color: '#00BCD4' },
-          { icon: '📅', text: '定期待保养项', count: d.periodicMaintenance ?? 0, path: '/m/device-maintenance', color: '#FF9800' },
+          { icon: '⚙️', text: '每日待点检', count: d.dailyInspection ?? 0, path: '/m/device-maintenance', color: 'var(--m-status-repairing)' },
+          { icon: '📅', text: '定期待保养项', count: d.periodicMaintenance ?? 0, path: '/m/device-maintenance', color: 'var(--m-status-pending)' },
         )
       }
       if (hasPermission('device:fault')) {
-        items.push({ icon: '🚨', text: '设备故障待处理', count: d.pendingFaults ?? 0, path: '/m/device-fault', color: '#F44336' })
+        items.push({ icon: '🚨', text: '设备故障待处理', count: d.pendingFaults ?? 0, path: '/m/device-fault', color: 'var(--m-status-urgent)' })
       }
       if (hasPermission('device:calibration')) {
-        items.push({ icon: '⚠️', text: '校准到期提醒', count: d.pendingCalibration ?? 0, path: '/m/calibration-reminder', color: '#FF5722' })
+        items.push({ icon: '⚠️', text: '校准到期提醒', count: d.pendingCalibration ?? 0, path: '/m/calibration-reminder', color: 'var(--m-status-urgent)' })
       }
       if (hasPermission('quality:incoming') || hasPermission('quality:env')) {
         const inspectionTotal = (d.pendingIncoming ?? 0) + (d.pendingEnv ?? 0)
         if (inspectionTotal > 0) {
-          items.push({ icon: '✅', text: '待检验任务', count: inspectionTotal, path: '/m/incoming-inspection', color: '#4CAF50' })
+          items.push({ icon: '✅', text: '待检验任务', count: inspectionTotal, path: '/m/incoming-inspection', color: 'var(--m-status-done)' })
         }
       }
 
@@ -187,9 +188,10 @@ export default function MobileDashboard() {
   // ========== 渲染 ==========
   return (
     <PullToRefresh onRefresh={onRefresh} className="mobile-page-scrollable">
+      {/* 【UI 重构 2026-11-07】顶部淡蓝渐变（浅/深由 CSS 变量驱动） */}
       <div style={{
         padding: '12px 12px 80px',
-        background: 'var(--m-bg)',
+        background: 'var(--m-dashboard-header-grad)',
         scrollbarGutter: 'stable',
       }}>
 

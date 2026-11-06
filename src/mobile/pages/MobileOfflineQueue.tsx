@@ -56,11 +56,12 @@ function fmtBody(body?: string | null): string {
 }
 
 function statusTag(s: QueuedRequest['status']) {
+  // 【UI 重构 2026-11-07】统一使用 mobile.css --m-status-* 语义变量
   const map: Record<QueuedRequest['status'], { text: string; bg: string; color: string }> = {
-    pending: { text: '待同步', bg: '#E3F2FD', color: 'var(--brand-color)' },
-    syncing: { text: '同步中', bg: '#FFF3E0', color: 'var(--brand-color-warning)' },
-    failed: { text: '失败', bg: '#FFEBEE', color: 'var(--brand-color-danger)' },
-    done: { text: '已完成', bg: '#E8F5E9', color: 'var(--brand-color-success)' },
+    pending: { text: '待同步', bg: 'var(--m-status-repairing-bg)', color: 'var(--m-status-repairing)' },
+    syncing: { text: '同步中', bg: 'var(--m-status-pending-bg)', color: 'var(--m-status-pending)' },
+    failed: { text: '失败', bg: 'var(--m-status-urgent-bg)', color: 'var(--m-status-urgent)' },
+    done: { text: '已完成', bg: 'var(--m-status-done-bg)', color: 'var(--m-status-done)' },
   }
   const m = map[s]
   return (
@@ -179,7 +180,8 @@ export default function MobileOfflineQueue() {
       <div className="mobile-sticky-header">
         {/* 顶部状态栏 */}
         <div style={{
-          background: online ? '#E8F5E9' : '#FFEBEE',
+          // 【UI 重构 2026-11-07】在线/离线状态背景用 CSS 变量
+          background: online ? 'var(--m-status-done-bg)' : 'var(--m-status-urgent-bg)',
           borderRadius: 10, padding: '10px 14px', marginBottom: 10,
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           border: `1px solid ${online ? '#A5D6A7' : '#EF9A9A'}`,
@@ -207,10 +209,11 @@ export default function MobileOfflineQueue() {
           marginBottom: 10,
         }}>
           <Stat label="全部" value={counts.all} active={filter === 'all'} onClick={() => setFilter('all')} />
-          <Stat label="待同步" value={counts.pending} color="#2196F3" active={filter === 'pending'} onClick={() => setFilter('pending')} />
-          <Stat label="同步中" value={counts.syncing} color="#FF9800" active={filter === 'syncing'} onClick={() => setFilter('syncing')} />
-          <Stat label="失败" value={counts.failed} color="#F44336" active={filter === 'failed'} onClick={() => setFilter('failed')} />
-          <Stat label="已完成" value={counts.done} color="#4CAF50" active={filter === 'done'} onClick={() => setFilter('done')} />
+          {/* 【UI 重构 2026-11-07】Stat 颜色用 --m-status-* CSS 变量 */}
+          <Stat label="待同步" value={counts.pending} color="var(--brand-color)" active={filter === 'pending'} onClick={() => setFilter('pending')} />
+          <Stat label="同步中" value={counts.syncing} color="var(--m-status-pending)" active={filter === 'syncing'} onClick={() => setFilter('syncing')} />
+          <Stat label="失败" value={counts.failed} color="var(--m-status-urgent)" active={filter === 'failed'} onClick={() => setFilter('failed')} />
+          <Stat label="已完成" value={counts.done} color="var(--m-status-done)" active={filter === 'done'} onClick={() => setFilter('done')} />
         </div>
 
         {/* 批量操作 */}

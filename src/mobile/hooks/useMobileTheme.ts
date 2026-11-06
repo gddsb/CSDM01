@@ -15,8 +15,9 @@ export type MobileThemeKey = 'light' | 'dark'
 const STORAGE_KEY = 'mes_mobile_theme'
 
 function detectSystemTheme(): MobileThemeKey {
-  // 移动端 APP 安装后默认浅色，不跟随系统 prefers-color-scheme（避免用户手机系统深色导致 APP 默认深色）
-  return 'light'
+  // 【UI 重构 2026-11-07】默认深色主打（车间夜间作业 + 长时间使用不刺眼）
+  // 用户可在"我的"里手动切浅色，切换后持久化 localStorage 覆盖此默认
+  return 'dark'
 }
 
 function readStoredTheme(): MobileThemeKey | null {

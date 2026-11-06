@@ -205,80 +205,231 @@ html.mobile-root input:-webkit-autofill {
  * 仅作用于 .mobile-app 容器，避免污染 PC 端
  * ============================================================ */
 
-/* 移动端语义色变量 —— 浅色（默认） */
+/* 移动端语义色变量 —— 浅色（默认）
+ * 【UI 重构 2026-11-07】合并两套 token：--brand-* 正式在此定义，
+ * theme.tsx 改为从这里读取（不再硬编码 JS 对象） */
 .mobile-app {
+  /* ===== 品牌色（一套唯一来源）===== */
+  --brand-color: #2196F3;
+  --brand-color-fill: #E3F2FD;
+  --brand-color-hover: #1976D2;
+  --brand-color-active: #1565C0;
+  --brand-color-warning: #FF9800;
+  --brand-color-success: #4CAF50;
+  --brand-color-danger: #F44336;
+
+  /* ===== antd-mobile v5 组件主题映射 ===== */
+  /* antd-mobile v5 通过 CSS 变量 --adm-color-primary 主题化（ConfigProvider 不支持 theme prop） */
+  --adm-color-primary: var(--brand-color);
+  --adm-color-primary-text: #ffffff;
+  --adm-color-background: var(--m-surface);
+  --adm-color-text: var(--m-text);
+  --adm-color-text-secondary: var(--m-text-2);
+  --adm-color-text-tertiary: var(--m-text-3);
+  --adm-color-border: var(--m-border);
+  --adm-color-fill-content: var(--m-surface-2);
+
+  /* ===== 状态语义色（统一替换硬编码 hex）===== */
+  --m-status-pending: var(--brand-color-warning);     /* 待派工/即将到期 */
+  --m-status-pending-bg: #FFF3E0;
+  --m-status-repairing: var(--brand-color);           /* 维修中/进行中 */
+  --m-status-repairing-bg: var(--brand-color-fill);
+  --m-status-urgent: #F44336;                         /* 紧急/已逾期 */
+  --m-status-urgent-bg: #FFEBEE;
+  --m-status-done: var(--brand-color-success);        /* 已完成/已校准 */
+  --m-status-done-bg: #E8F5E9;
+  --m-status-skipped: #9E9E9E;                         /* 已跳过/已挂起/锁定 */
+  --m-status-skipped-bg: #EEEEEE;
+  --m-status-approving: #9C27B0;                      /* 待审批 */
+  --m-status-approving-bg: #F3E5F5;
+
+  /* ===== 背景 / 表面 ===== */
   --m-bg: #f5f6f8;
   --m-surface: #ffffff;
   --m-surface-2: #f7f8fa;
+  /* Dashboard 顶部淡蓝渐变（P1 视觉优化） */
+  --m-dashboard-header-grad: linear-gradient(180deg, #eaf3ff 0%, #f5f6f8 60%);
+  /* 深色氛围光（深色模式下叠在 .mobile-app::before） */
+  --m-ambient-overlay: none;
+
+  /* ===== 文字 ===== */
   --m-text: #222222;
   --m-text-2: #666666;
   --m-text-3: #999999;
+
+  /* ===== 边框 / 阴影 ===== */
   --m-border: #eef0f3;
   --m-border-2: #f0f1f4;
   --m-shadow: rgba(0, 0, 0, 0.04);
   --m-shadow-card: 0 1px 4px rgba(0, 0, 0, 0.06);
   --m-shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.10);
+
+  /* ===== 通知条渐变 ===== */
   --m-notice-grad: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+
+  /* ===== 圆角 ===== */
   --m-radius-xs: 4px;
   --m-radius-sm: 6px;
   --m-radius-md: 10px;
   --m-radius-lg: 12px;
   --m-radius-pill: 20px;
+
+  /* ===== 间距 ===== */
   --m-spacing-xs: 4px;
   --m-spacing-sm: 8px;
   --m-spacing-md: 12px;
   --m-spacing-lg: 16px;
   --m-spacing-xl: 20px;
+
+  /* ===== 字号 ===== */
   --m-font-xs: 11px;   /* 移动端不建议用 10px，最低 11 */
   --m-font-sm: 12px;
   --m-font-md: 14px;
   --m-font-lg: 16px;
   --m-font-xl: 18px;
+
+  /* ===== 语义背景色 ===== */
   --m-info-bg: #E3F2FD;
   --m-success-bg: #E8F5E9;
   --m-warn-bg: #FFF3E0;
   --m-amber-bg: #FFF8E1;
   --m-danger-bg: #FFEBEE;
+
   background: var(--m-bg);
 }
 
-/* 移动端语义色变量 —— 深色 */
+/* 移动端语义色变量 —— 深色（P0 立改：补全 --brand-* + 状态色 + 氛围光 + TabBar 渐变） */
 html[data-theme="dark"] .mobile-app,
 html[data-theme="dark"].mobile-root .mobile-app {
+  /* ===== 品牌色（深色调亮，提升夜间辨识度）===== */
+  --brand-color: #64B5F6;
+  --brand-color-fill: #1E3A5F;
+  --brand-color-hover: #90CAF9;
+  --brand-color-active: #BBDEFB;
+  --brand-color-warning: #FFB74D;
+  --brand-color-success: #81C784;
+  --brand-color-danger: #E57373;
+
+  /* ===== antd-mobile v5 深色主题映射 ===== */
+  --adm-color-primary: var(--brand-color);
+  --adm-color-primary-text: #0f1115;
+  --adm-color-background: var(--m-surface);
+  --adm-color-text: var(--m-text);
+  --adm-color-text-secondary: var(--m-text-2);
+  --adm-color-text-tertiary: var(--m-text-3);
+  --adm-color-border: var(--m-border);
+  --adm-color-fill-content: var(--m-surface-2);
+
+  /* ===== 状态语义色（深色模式下背景更暗，文字更亮）===== */
+  --m-status-pending: var(--brand-color-warning);
+  --m-status-pending-bg: #3D2E14;
+  --m-status-repairing: var(--brand-color);
+  --m-status-repairing-bg: #1E3A5F;
+  --m-status-urgent: #FF7043;
+  --m-status-urgent-bg: #3D1418;
+  --m-status-done: var(--brand-color-success);
+  --m-status-done-bg: #1B3A2A;
+  --m-status-skipped: #8a8f99;
+  --m-status-skipped-bg: #2a2e36;
+  --m-status-approving: #CE93D8;
+  --m-status-approving-bg: #2E1F3A;
+
+  /* ===== 背景 / 表面 ===== */
   --m-bg: #0f1115;
   --m-surface: #1a1d23;
   --m-surface-2: #232730;
+  --m-dashboard-header-grad: linear-gradient(180deg, #142235 0%, #0f1115 60%);
+  /* 深色氛围光：品牌色从左上渗透 6% 透明度，不刺眼但有存在感 */
+  --m-ambient-overlay:
+    radial-gradient(ellipse 80% 40% at 15% -10%, rgba(100, 181, 246, 0.10) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 30% at 85% 100%, rgba(100, 181, 246, 0.06) 0%, transparent 60%);
+
+  /* ===== 文字 ===== */
   --m-text: #e8eaed;
   --m-text-2: #a8acb3;
   --m-text-3: #6b7078;
+
+  /* ===== 边框 / 阴影 ===== */
   --m-border: #2a2e36;
   --m-border-2: #2a2e36;
   --m-shadow: rgba(0, 0, 0, 0.4);
   --m-shadow-card: 0 1px 4px rgba(0, 0, 0, 0.5);
   --m-shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.65);
+
+  /* ===== 通知条渐变 ===== */
   --m-notice-grad: linear-gradient(135deg, #3D2E14 0%, #2A2614 100%);
+
+  /* ===== 圆角 ===== */
   --m-radius-xs: 4px;
   --m-radius-sm: 6px;
   --m-radius-md: 10px;
   --m-radius-lg: 12px;
   --m-radius-pill: 20px;
+
+  /* ===== 间距 ===== */
   --m-spacing-xs: 4px;
   --m-spacing-sm: 8px;
   --m-spacing-md: 12px;
   --m-spacing-lg: 16px;
   --m-spacing-xl: 20px;
+
+  /* ===== 字号 ===== */
   --m-font-xs: 11px;
   --m-font-sm: 12px;
   --m-font-md: 14px;
   --m-font-lg: 16px;
   --m-font-xl: 18px;
+
+  /* ===== 语义背景色 ===== */
   --m-info-bg: #1E3A5F;
   --m-success-bg: #1B3A2A;
   --m-warn-bg: #3D2E14;
   --m-amber-bg: #2A2614;
   --m-danger-bg: #3D1418;
+
   background: var(--m-bg);
   color: var(--m-text);
+}
+
+/* ============ UI 重构新增：深色氛围光层 + TabBar 深色渐变 ============ */
+
+/* 登录页主题渐变（浅/深两套，Login.tsx 的外层 div 加此类即可跟随主题） */
+.mobile-login-root {
+  background: linear-gradient(160deg, #1976D2 0%, #42A5F5 45%, #64B5F6 100%);
+}
+html[data-theme="dark"] .mobile-login-root,
+html[data-theme="dark"].mobile-root .mobile-login-root {
+  background: linear-gradient(160deg, #0f1f3a 0%, #1a2d52 45%, #264180 100%);
+}
+
+/* 深色模式下 .mobile-app 叠加氛围光（纯 CSS，零性能开销） */
+html[data-theme="dark"] .mobile-app {
+  position: relative;
+}
+html[data-theme="dark"] .mobile-app::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: var(--m-ambient-overlay);
+  z-index: 0;
+}
+html[data-theme="dark"] .mobile-app > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* TabBar：深色模式渐变覆写（修复 build310 遗留的"白渐变条"） */
+.mobile-tabbar-shell { /* 占位，MobileLayout 里的 inline style 会被下面的选择器覆盖 */ }
+html[data-theme="dark"] .mobile-app .adm-tab-bar {
+  background: linear-gradient(180deg, #1a1d23 0%, #151820 100%) !important;
+  border-top: 1px solid #2a2e36 !important;
+}
+html[data-theme="dark"] .mobile-app .adm-tab-bar-item {
+  color: #6b7078;
+}
+html[data-theme="dark"] .mobile-app .adm-tab-bar-item-active {
+  color: var(--brand-color);
 }
 
 /* 深色模式：根容器 */

@@ -1,44 +1,16 @@
 /**
- * 移动端主题（P3.5：浅色 / 深色动态切换）
+ * 移动端主题
  *
- * 在 .mobile-app 容器上挂 data-theme 属性 + CSS 变量供 mobile.css 覆盖背景/文字色。
+ * 【UI 重构 2026-11-07】合并两套 token 体系 + antd-mobile v5 适配：
+ *   - --brand-* / --m-* 变量唯一定义在 mobile.css 的 .mobile-app 上
+ *   - antd-mobile v5 通过 --adm-color-primary CSS 变量主题化（mobile.css 里已映射）
+ *   - ConfigProvider 不接受 theme prop（仅 locale + 组件 icon 自定义），删除旧的 theme={{ token }}
+ *   - 默认深色主打（detectSystemTheme 返回 dark）
  */
 import { createContext, useContext } from 'react'
 import type { ReactNode } from 'react'
 import { useMobileTheme, MobileThemeKey } from './hooks/useMobileTheme'
 import { ConfigProvider as MobileConfigProvider } from 'antd-mobile'
-
-/** 浅色主题 token（与 PC 端品牌色 #2196F3 一致） */
-const lightTheme = {
-  '--brand-color': '#2196F3',
-  '--brand-color-fill': '#E3F2FD',
-  '--brand-color-hover': '#1976D2',
-  '--brand-color-active': '#1565C0',
-  '--brand-color-warning': '#FF9800',
-  '--brand-color-success': '#4CAF50',
-  '--brand-color-danger': '#F44336',
-  '--font-size': '16px',
-  '--border-radius': '10px',
-  '--border-radius-sm': '6px',
-  '--safe-area-top': 'env(safe-area-inset-top, 0px)',
-  '--safe-area-bottom': 'env(safe-area-inset-bottom, 0px)',
-} as const
-
-/** 深色主题 token：品牌色稍亮，配深色背景更和谐 */
-const darkTheme = {
-  '--brand-color': '#64B5F6',
-  '--brand-color-fill': '#1E3A5F',
-  '--brand-color-hover': '#90CAF9',
-  '--brand-color-active': '#BBDEFB',
-  '--brand-color-warning': '#FFB74D',
-  '--brand-color-success': '#81C784',
-  '--brand-color-danger': '#E57373',
-  '--font-size': '16px',
-  '--border-radius': '10px',
-  '--border-radius-sm': '6px',
-  '--safe-area-top': 'env(safe-area-inset-top, 0px)',
-  '--safe-area-bottom': 'env(safe-area-inset-bottom, 0px)',
-} as const
 
 interface MobileThemeContextValue {
   theme: MobileThemeKey
@@ -51,10 +23,12 @@ const MobileThemeContext = createContext<MobileThemeContextValue | null>(null)
 
 export function MobileThemeProvider({ children }: { children: ReactNode }) {
   const { theme, isDark, changeTheme, toggleTheme } = useMobileTheme()
-  const brandColor = isDark ? darkTheme['--brand-color'] : lightTheme['--brand-color']
+  // antd-mobile v5 组件通过 --adm-color-primary 自动读 mobile.css 里的 CSS 变量
+  // ConfigProvider 仅保留基础上下文（无 theme prop —— v5 不支持）
+  void isDark // 主题切换时 MobileThemeProvider 重渲染，保证消费者拿到最新值
   return (
     <MobileThemeContext.Provider value={{ theme, isDark, changeTheme, toggleTheme }}>
-      <MobileConfigProvider theme={{ token: { colorPrimary: brandColor } }}>
+      <MobileConfigProvider>
         {children}
       </MobileConfigProvider>
     </MobileThemeContext.Provider>
@@ -65,15 +39,12 @@ export function MobileThemeProvider({ children }: { children: ReactNode }) {
 export function useMobileThemeContext(): MobileThemeContextValue {
   const ctx = useContext(MobileThemeContext)
   if (!ctx) {
-    // 静默降级：未挂载 Provider 时默认浅色，不崩
     return {
-      theme: 'light',
-      isDark: false,
+      theme: 'dark', /* 静默降级也用深色（默认主打） */
+      isDark: true,
       changeTheme: () => {},
       toggleTheme: () => {},
     }
   }
   return ctx
 }
-
-export { lightTheme as mobileTheme, lightTheme, darkTheme }

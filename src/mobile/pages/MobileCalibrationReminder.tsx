@@ -42,8 +42,9 @@ function statusTag(s?: string | number) {
   const text = String(s)
   const isOk = text.includes('已校准')
   const isLocked = text.includes('锁定')
-  const bg = isOk ? '#E8F5E9' : isLocked ? '#EEE' : '#FFF3E0'
-  const color = isOk ? 'var(--brand-color-success)' : isLocked ? 'var(--m-text-3)' : 'var(--brand-color-warning)'
+  // 【UI 重构 2026-11-07】统一使用 mobile.css --m-status-* 变量
+  const bg = isOk ? 'var(--m-status-done-bg)' : isLocked ? 'var(--m-status-skipped-bg)' : 'var(--m-status-pending-bg)'
+  const color = isOk ? 'var(--m-status-done)' : isLocked ? 'var(--m-text-3)' : 'var(--m-status-pending)'
   return (
     <span style={{
       fontSize: 11, padding: '1px 8px', borderRadius: 8, background: bg, color,

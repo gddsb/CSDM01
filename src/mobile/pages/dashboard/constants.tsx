@@ -29,7 +29,8 @@ export interface TodoItem {
 
 /** 快捷操作全集（按权限过滤 + localStorage 排序持久化） */
 export const DEFAULT_ORDER: QuickEntry[] = [
-  { key: 'reporting', title: '移动报工', icon: <BillOutline fontSize={28} />, color: '#2196F3', path: '/m/process-reporting', permCode: 'production:reporting' },
+  // 【UI 重构 2026-11-07】主品牌色统一用 CSS 变量；业务分类色保持不变（各模块标识色）
+  { key: 'reporting', title: '移动报工', icon: <BillOutline fontSize={28} />, color: 'var(--brand-color)', path: '/m/process-reporting', permCode: 'production:reporting' },
   { key: 'device-maintenance', title: '设备维保', icon: <SetOutline fontSize={28} />, color: '#00BCD4', path: '/m/device-maintenance', permCode: 'device:maintenance' },
   { key: 'device-fault', title: '故障上报', icon: <FlagOutline fontSize={28} />, color: '#E91E63', path: '/m/device-fault', permCode: 'device:fault' },
   { key: 'process', title: '过程检验', icon: <CheckOutline fontSize={28} />, color: '#3F51B5', path: '/m/process-inspection', permCode: 'quality:process' },

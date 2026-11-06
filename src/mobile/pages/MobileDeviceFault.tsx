@@ -43,13 +43,14 @@ type StatusTab = 'all' | FaultStatus
 
 interface FaultDevice { device_id: number; device_code?: string; device_name?: string; line_name?: string }
 
-/** 状态色（列表卡片 + 详情页头共用） */
+/** 状态色（列表卡片 + 详情页头共用）
+ * 【UI 重构 2026-11-07】统一使用 mobile.css 里的 --m-status-* 语义变量 */
 function statusColorOf(status: string): string {
-  return status === '待派工' ? 'var(--brand-color-warning)'
-    : status === '维修中' ? 'var(--brand-color)'
-    : status === '待审批' ? '#9C27B0'
-    : status === '已挂起' ? '#FF5722'
-    : '#9E9E9E'
+  return status === '待派工' ? 'var(--m-status-pending)'
+    : status === '维修中' ? 'var(--m-status-repairing)'
+    : status === '待审批' ? 'var(--m-status-approving)'
+    : status === '已挂起' ? 'var(--m-status-skipped)'
+    : 'var(--m-status-skipped)' /* 已关闭 */
 }
 
 const STATUS_TABS: { key: StatusTab; label: string }[] = [

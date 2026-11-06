@@ -67,20 +67,19 @@ export default function MobileLogin() {
   }
 
   return (
-    <div style={{
+    <div className="mobile-login-root" style={{
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       minHeight: '100dvh',
       padding: '60px 28px 28px',
-      background: 'linear-gradient(160deg, #1976D2 0%, #42A5F5 45%, #64B5F6 100%)',
     }}>
       {/* Logo + 标题 */}
       <div style={{ textAlign: 'center', color: 'var(--m-surface)', marginBottom: 40 }}>
         <div style={{
           width: 72, height: 72, borderRadius: 18, background: 'var(--m-surface)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 16px', fontSize: 28, fontWeight: 800, color: '#1976D2',
+          margin: '0 auto 16px', fontSize: 28, fontWeight: 800, color: 'var(--brand-color)',
           boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
         }}>
           DM
