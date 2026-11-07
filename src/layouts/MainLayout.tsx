@@ -241,8 +241,9 @@ export default function MainLayout() {
 
   // useMemo: 菜单项仅在 dynamicMenu 变化时重算
   const builtMenuItems = useMemo<MenuProps['items']>(() => {
-    // 需要过滤掉的菜单名称关键字
+    // 需要过滤掉的菜单名称关键字 + perm_code（虚拟权限分组容器，不应进侧边栏）
     const EXCLUDED_LABELS = ['移动端模拟器']
+    const EXCLUDED_CODES = ['linked-system', 'pc', 'all', 'mobile', '*']
     // 图标默认映射（菜单名 → 图标组件名）
     const DEFAULT_ICON_MAP: Record<string, string> = {
       '系统日志': 'FileTextOutlined',
@@ -252,6 +253,7 @@ export default function MainLayout() {
       return nodes
         .filter(n => n.type === 'menu' || n.type === 'page')
         .filter(n => !EXCLUDED_LABELS.some(keyword => n.perm_name?.includes(keyword)))
+        .filter(n => !EXCLUDED_CODES.includes(n.perm_code || ''))
         .map(n => {
           // 优先使用后端配置的图标，没有则检查是否有默认图标映射
           let iconName = n.icon

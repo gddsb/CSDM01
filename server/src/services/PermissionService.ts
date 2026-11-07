@@ -163,7 +163,7 @@ export const PermissionService = {
 
     if (isSuperRole) {
       perms = await Permission.findAll({
-        where: { status: 1, type: 'menu' },
+        where: { status: 1, type: 'menu', visible: 1 },
         attributes: { exclude: ['created_at', 'updated_at'] },
       })
     } else if (role) {
@@ -172,7 +172,7 @@ export const PermissionService = {
         attributes: [],
         include: [{
           model: Permission, as: 'permissions',
-          where: { status: 1, type: 'menu' },
+          where: { status: 1, type: 'menu', visible: 1 },
           required: false,
           attributes: { exclude: ['created_at', 'updated_at'] },
           through: { attributes: [] },
