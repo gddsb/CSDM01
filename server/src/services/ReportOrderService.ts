@@ -201,14 +201,19 @@ export interface ReportOrderUpdateInput {
 }
 
 export const ReportOrderService = {
-  /** 分页查询报工单列表 */
-  async list(query: any) {
+  /** 分页查询报工单列表
+   *  @param scopeWhere 数据权限引擎注入的 Sequelize where 片段
+   */
+  async list(query: any, scopeWhere?: Record<string, any>) {
     const where = buildReportOrderWhere(query)
+    const finalWhere = scopeWhere && Object.keys(scopeWhere).length > 0
+      ? { [Op.and]: [where, scopeWhere] }
+      : where
     const limit = Math.min(Number(query.pageSize) || 20, MAX_PAGE_SIZE)
     const offset = ((Number(query.page) || 1) - 1) * limit
 
     return await ReportOrder.findAndCountAll({
-      where,
+      where: finalWhere,
       include: [
         {
           model: Order.sequelize ? Order : (Order as any),

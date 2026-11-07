@@ -45,21 +45,26 @@ export function buildDocWhere(query: any): any {
 // ---------- Service ----------
 
 export const DeviceDocumentService = {
-  /** 分页查询文档列表（按角色过滤：无 view_all 权限只看自己上传的） */
-  async list(query: any, actor?: any) {
+  /** 分页查询文档列表（数据权限由 dataScope 中间件注入 scopeWhere）
+   *  actor 参数保留向后兼容，scopeWhere 为新接入方式（优先）
+   */
+  async list(query: any, actor?: any, scopeWhere?: Record<string, any>) {
     const where = buildDocWhere(query)
     const limit = Math.min(Number(query.pageSize) || 20, MAX_PAGE_SIZE)
     const offset = ((Number(query.page) || 1) - 1) * limit
 
-    // 数据权限 scope：有 view_all 或 '*' 通配看全部，否则只看 uploaded_by = 当前 userId
+    // 数据权限合并：scopeWhere（V2 标准路径）优先；不传时 fallback actor 硬编码（待后续清除）
     const permCodes: Set<string> = actor?.permCodes ?? new Set()
     const hasViewAll = permCodes.has(WILDCARD_PERM) || permCodes.has('all:device:document:view_all')
-    if (actor?.userId && !hasViewAll) {
-      where.uploaded_by = actor.userId
+    let finalWhere = { ...where }
+    if (scopeWhere && Object.keys(scopeWhere).length > 0) {
+      finalWhere = { [Op.and]: [where, scopeWhere] }
+    } else if (actor?.userId && !hasViewAll) {
+      finalWhere.uploaded_by = actor.userId
     }
 
     return await DeviceDocument.findAndCountAll({
-      where,
+      where: finalWhere,
       limit,
       offset,
       order: [['created_at', 'DESC'], ['doc_id', 'DESC']],

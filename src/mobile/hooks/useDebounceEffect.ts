@@ -15,7 +15,7 @@ export function useDebounceEffect<T>(
   effect: (v: T) => void,
   delay = 500,
 ) {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | number | null>(null)
 
   useEffect(() => {
     if (timerRef.current) window.clearTimeout(timerRef.current)

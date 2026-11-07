@@ -5,7 +5,7 @@
  * 流程与 PC ProductInspection.tsx 完全对齐：start → items → 样品值 → submit
  */
 import { useEffect, useState } from 'react'
-import { Button, List, SearchBar, Toast, Dialog, Input, PullToRefresh, Tabs, TextArea } from 'antd-mobile'
+import { Button, List, SearchBar, Toast, Dialog, Input, PullToRefresh, Tabs, TextArea, Radio } from 'antd-mobile'
 import api from '../../utils/api'
 import { useDebounceEffect } from '../hooks/useDebounceEffect'
 import { useInspectionWorkflow } from '../hooks/useInspectionWorkflow'
@@ -126,15 +126,16 @@ export default function MobileProductInspection() {
       return (
         <div style={{ padding: '0 0 8px' }}>
           <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 10 }}>检验类型</div>
-          <Radio.Group
-            value={type}
-            onChange={(v) => setType(v as string)}
-            style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}
-          >
-            {['首件检验', '巡检', '终检', '抽检'].map((t) => (
-              <Radio key={t} value={t}>{t}</Radio>
-            ))}
-          </Radio.Group>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+            <Radio.Group
+              value={type}
+              onChange={(v) => setType(v as string)}
+            >
+              {['首件检验', '巡检', '终检', '抽检'].map((t) => (
+                <Radio key={t} value={t}>{t}</Radio>
+              ))}
+            </Radio.Group>
+          </div>
           <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 10 }}>选择报工单（开工中）</div>
           <div style={{ maxHeight: 260, overflowY: 'auto', border: '1px solid var(--m-border)', borderRadius: 10 }}>
             {wipList.map((o: any) => {

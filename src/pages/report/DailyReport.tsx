@@ -232,11 +232,11 @@ export default function DailyReport() {
               allowClear={false}
               style={{ width: 180 }}
               cellRender={(current, info) => {
-                const d = current.format('YYYY-MM-DD')
+                const d = dayjs.isDayjs(current) ? current.format('YYYY-MM-DD') : String(current)
                 if (info.type === 'date' && markedDates.has(d)) {
                   return (
                     <span style={{ position: 'relative' }}>
-                      {current.date()}
+                      {dayjs.isDayjs(current) ? current.date() : current}
                       <span style={{
                         position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)',
                         width: 5, height: 5, borderRadius: '50%', background: 'var(--color-primary)',
@@ -244,7 +244,7 @@ export default function DailyReport() {
                     </span>
                   )
                 }
-                return current.date()
+                return dayjs.isDayjs(current) ? current.date() : current
               }}
             />
           </Space>
@@ -308,7 +308,7 @@ function DailyReportView({ data }: { data: DailyReportData }) {
   // 分页：每页 4 条生产记录
   const pageCount = Math.max(1, Math.ceil(productionRows.length / PROD_ROWS_PER_PAGE))
   const showPageNum = pageCount > 1
-  const pages: JSX.Element[] = []
+  const pages: React.ReactElement[] = []
 
   for (let p = 0; p < pageCount; p++) {
     const start = p * PROD_ROWS_PER_PAGE
@@ -469,8 +469,8 @@ function DailyReportView({ data }: { data: DailyReportData }) {
 
 /* ========================= 小组件 ========================= */
 
-function Th({ children, colSpan, rowSpan, style }: { children: React.ReactNode; colSpan?: number; rowSpan?: number; style?: React.CSSProperties }) {
-  return <th colSpan={colSpan} rowSpan={rowSpan} style={{ border: '1px solid #f0f0f0', padding: '6px 8px', textAlign: 'center', whiteSpace: 'nowrap', ...style }}>{children}</th>
+function Th({ children, colSpan, rowSpan, style, className }: { children: React.ReactNode; colSpan?: number; rowSpan?: number; style?: React.CSSProperties; className?: string }) {
+  return <th colSpan={colSpan} rowSpan={rowSpan} className={className} style={{ border: '1px solid #f0f0f0', padding: '6px 8px', textAlign: 'center', whiteSpace: 'nowrap', ...style }}>{children}</th>
 }
 function Td({ children, style, className }: { children: React.ReactNode; style?: React.CSSProperties; className?: string }) {
   return <td className={className} style={{ border: '1px solid #f0f0f0', padding: '5px 8px', textAlign: 'center', ...style }}>{children}</td>

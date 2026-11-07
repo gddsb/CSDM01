@@ -22,7 +22,7 @@ import {
 } from '../utils/maintenanceMatrix.js'
 import { rawStatus, getRecordDetail } from './MaintenanceProfileCrud.js'
 
-export async function listRecords(query: any) {
+export async function listRecords(query: any, scopeWhere?: Record<string, any>) {
 const {
         page = 1, pageSize = 20,
         record_no, device_id, device_name, device_code,
@@ -102,13 +102,19 @@ const {
         ]
       }
 
+      // 数据权限合并：scopeWhere（dataScope 中间件注入）优先；不传时保留 mine 兜底
+      let finalWhere = where
+      if (scopeWhere && Object.keys(scopeWhere).length > 0) {
+        finalWhere = { [Op.and]: [where, scopeWhere] }
+      }
+
       const pageNum = Math.max(1, Number(page) || 1)
       // 保养计划列表需要全量返回（前端按设备分组 + 完成度统计）
       // 去掉 MAX_PAGE_SIZE clamp —— DB 全量才 5k 条，MySQL 毫秒级响应
       const finalPageSize = Math.max(1, Number(pageSize) || 5000)
 
       const { count, rows } = await DeviceMaintenanceRecord.findAndCountAll({
-        where,
+        where: finalWhere,
         order: [['device_id', 'ASC'], ['trigger_mode', 'ASC'], ['period_key', 'ASC'], ['record_id', 'ASC']],
         limit: finalPageSize,
         offset: (pageNum - 1) * finalPageSize,
