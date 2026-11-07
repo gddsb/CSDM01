@@ -73,6 +73,10 @@ import DeviceSparePartLog from './DeviceSparePartLog.js'
 import DeviceDocument from './DeviceDocument.js'
 import ProductionBreakTime from './ProductionBreakTime.js'
 import DicHoliday from './DicHoliday.js'
+import { BusinessObject } from './BusinessObject.js'
+import { DataDimension } from './DataDimension.js'
+import { DataScope } from './DataScope.js'
+import { BizStatusRule } from './BizStatusRule.js'
 
 // 建立模型关联关系
 // 用户 - 角色
@@ -380,6 +384,10 @@ const db = {
   DeviceDocument,
   ProductionBreakTime,
   DicHoliday,
+  BusinessObject,
+  DataDimension,
+  DataScope,
+  BizStatusRule,
 }
 
 // 具名导出，便于按需导入
@@ -455,6 +463,10 @@ export {
   DeviceDocument,
   ProductionBreakTime,
   DicHoliday,
+  BusinessObject,
+  DataDimension,
+  DataScope,
+  BizStatusRule,
 }
 
 // 别名：统一以模型业务名对外暴露，兼容控制器与测试中的既有引用
