@@ -226,19 +226,22 @@ export const RoleService = {
     const adminRole = await Role.findOne({ where: { role_code: 'SUPER_ADMIN' } })
     if (adminRole) {
       const allPermsAfter = await Permission.findAll()
-      // Phase 2: 用 raw query 替代 role.setPermissions()，避免清掉其他终端的记录
       const roleId = (adminRole as any).role_id
-      const terminal = 1 // 默认只分配 PC 端（APP 端默认不给超级管理员）
-      await RolePermission.destroy({ where: { role_id: roleId, terminal } })
-      await RolePermission.bulkCreate(
-        allPermsAfter.map((p: any) => ({
-          role_id: roleId,
-          perm_id: p.perm_id,
-          terminal,
-          create_time: new Date(),
-        }))
-      )
-      logger.info(`👑 超级管理员初始化: ${allPermsAfter.length} 条权限 (terminal=${terminal})`)
+      // Phase 3: 超级管理员 PC + APP 两端都显式分配全量权限
+      //           即使 PermissionEngine.isSuperAdmin 短路，也保证 role_permission 表里有数据
+      //           → 排查问题时直接 SQL 能看到，不依赖短路逻辑
+      for (const terminal of [1, 2]) {
+        await RolePermission.destroy({ where: { role_id: roleId, terminal } })
+        await RolePermission.bulkCreate(
+          allPermsAfter.map((p: any) => ({
+            role_id: roleId,
+            perm_id: p.perm_id,
+            terminal,
+            create_time: new Date(),
+          }))
+        )
+      }
+      logger.info(`👑 超级管理员初始化: ${allPermsAfter.length} 条权限 × 2 终端 (terminal=1+PC / terminal=2+APP)`)
     }
     logger.info('✅ 默认权限初始化完成')
   },
