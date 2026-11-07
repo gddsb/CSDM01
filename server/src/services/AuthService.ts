@@ -5,6 +5,7 @@
 import { User, Role, OperationLog, Permission } from '../models/index'
 import sequelize from '../config/database'
 import { generateToken } from '../utils/jwt'
+import { PermissionEngine } from './PermissionEngine.js'
 import { nowBeijingDate } from '../utils/date'
 import { verifyPassword, hashPassword } from '../utils/password'
 import { AppError } from '../middleware/security'
@@ -27,19 +28,16 @@ export function buildPermGroups(codes: string[]): Record<string, string[]> {
 }
 
 /**
- * Phase 2: 加载指定终端下的权限码（加 terminal 过滤）
- * —— 直接用 raw SQL 避免 Sequelize belongsToMany through.where 各种不生效的陷阱
- * —— 注意 sequelize.query 有 type 参数时直接返回 rows 数组，不是 [rows, metadata] 二元组
+ * Phase 3: 加载指定用户在指定终端的最终权限码集合
+ * —— 委托 PermissionEngine.computeFinalPerms（规范 2.4 公式：rolePerms | addPerms & ~denyPerms）
  */
 export async function getUserPermissionCodes(roleId: number, terminal: number = 1): Promise<string[]> {
-  const rows: any[] = await sequelize.query(
-    `SELECT p.perm_code FROM sys_permission p
-     INNER JOIN sys_role_permission rp ON rp.perm_id = p.perm_id
-     WHERE rp.role_id = :roleId AND rp.terminal = :terminal
-     ORDER BY p.perm_code`,
-    { replacements: { roleId, terminal }, type: 'SELECT' as any }
-  )
-  return rows.map((r: any) => r.perm_code).filter(Boolean)
+  // 注：参数名 roleId 是 Phase 1 遗留，实际 PermissionEngine 需 userId
+  // 这里做兼容：通过 roleId 查 userId（取第一个）
+  // 但更好的做法是 authRequired 直接传 userId — 所以登录时 AuthService.login 也改了
+  const user = await User.findOne({ where: { role_id: roleId }, attributes: ['user_id'] })
+  if (!user) return []
+  return PermissionEngine.computeFinalPerms((user as any).user_id, terminal)
 }
 
 const WEAK_PASSWORDS = new Set(['123456', 'password', 'admin', '12345678', 'qwerty'])

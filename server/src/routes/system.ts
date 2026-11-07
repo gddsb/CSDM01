@@ -32,6 +32,7 @@ import {
 } from '../controllers/DictController.js'
 import { listDirectory, removeItem } from '../controllers/FileManagerController.js'
 import { getUserSettings, saveUserSetting, batchSaveUserSettings } from '../controllers/UserSettingController.js'
+import userExtPermissionRouter from '../controllers/UserExtPermissionController.js'
 
 const router = Router()
 
@@ -62,6 +63,9 @@ router.post('/users', permissionRequired('system:user:create'), logOperation('�
 router.put('/users/:id', permissionRequired('system:user:update'), logOperation('用户管理'), asyncHandler(update))
 router.delete('/users/:id', permissionRequired('system:user:delete'), logOperation('用户管理'), asyncHandler(remove))
 router.post('/users/:id/toggle', permissionRequired('system:user:toggle'), logOperation('用户管理'), asyncHandler(toggle))
+
+// 用户附加权限（规范 3.7 / 8.7）— 单用户 add/deny 双轨配置
+router.use('/user-ext-permission', permissionRequired('system:user:extConfig'), userExtPermissionRouter)
 
 // 角色管理
 router.get('/roles', permissionRequired('system:role'), logOperation('角色管理'), asyncHandler(roleList))

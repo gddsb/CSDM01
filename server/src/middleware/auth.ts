@@ -3,6 +3,7 @@ import { verifyToken } from '../utils/jwt.js'
 import { fail, ErrorCode } from '../utils/response.js'
 import { OperationLog, Role, Permission } from '../models/index.js'
 import sequelize from '../config/database.js'
+import { PermissionEngine } from '../services/PermissionEngine.js'
 import { logger } from '../utils/logger.js'
 
 const SENSITIVE_KEYS = ['password', 'token', 'secret', 'authorization', 'pwd', 'access_token', 'refresh_token']
@@ -218,11 +219,15 @@ export function authRequired(req: Request, res: Response, next: NextFunction): a
 
     if (user.roleId) {
       try {
-        const { codes, roleCode, roleName } = await loadRolePermissionCodes(user.roleId, terminal)
-        user.permCodes = codes
-        user.roleCode = roleCode
-        user.roleName = roleName
-        user.isSuperAdmin = codes.has(WILDCARD_PERM)
+        // Phase 3: 用 PermissionEngine 计算最终权限（rolePerms | addPerms & ~denyPerms）
+        const [finalCodes, roleInfo] = await Promise.all([
+          PermissionEngine.computeFinalPerms(user.userId, terminal),
+          Role.findOne({ where: { role_id: user.roleId }, attributes: ['role_code', 'role_name'] }),
+        ])
+        user.permCodes = new Set(finalCodes)
+        user.roleCode = String((roleInfo as any)?.role_code ?? '')
+        user.roleName = String((roleInfo as any)?.role_name ?? '')
+        user.isSuperAdmin = finalCodes.includes(WILDCARD_PERM) || PermissionEngine.isSuperAdmin(user.userId)
       } catch (err: any) {
         logger.warn('[authRequired] 加载用户权限失败:', err.message)
         user.permCodes = new Set()

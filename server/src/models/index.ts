@@ -20,6 +20,7 @@ import ProcessMaterial from './ProcessMaterial.js'
 import ReportImage from './ReportImage.js'
 import SystemConfig from './SystemConfig.js'
 import RolePermission from './RolePermission.js'
+import UserExtPermission from './UserExtPermission.js'
 import Sequence from './Sequence.js'
 import Customer from './Customer.js'
 import Supplier from './Supplier.js'
@@ -332,6 +333,7 @@ const db = {
   ReportImage,
   SystemConfig,
   RolePermission,
+  UserExtPermission,
   Sequence,
   Customer,
   Supplier,
@@ -411,6 +413,7 @@ export {
   ReportImage,
   SystemConfig,
   RolePermission,
+  UserExtPermission,
   Sequence,
   Customer,
   Supplier,

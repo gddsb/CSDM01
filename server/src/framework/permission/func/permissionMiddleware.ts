@@ -16,7 +16,7 @@ import type { Request, Response, NextFunction } from 'express'
 import { fail, ErrorCode } from '../../../utils/response.js'
 import { getCache, setCache, TTL } from '../cache/permissionCache.js'
 import { Permission, Role, User } from '../../../models/index.js'
-import sequelize from '../../../config/database.js'
+import { PermissionEngine } from '../../../services/PermissionEngine.js'
 import { logger } from '../../../utils/logger.js'
 import type { RequirePermOptions } from '../types.js'
 
@@ -57,19 +57,11 @@ async function loadUserPermCodes(userId: number, terminal: number = 1): Promise<
     }
   }
 
-  // Phase 2: 用 raw SQL 直接 JOIN sys_role_permission 按 terminal 过滤
-  const permCodes = new Set<string>()
+  // Phase 3: 用 PermissionEngine 计算最终权限（rolePerms | addPerms & ~denyPerms）
+  let permCodes = new Set<string>()
   if (roleId) {
-    const [rows]: any = await sequelize.query(
-      `SELECT p.perm_code FROM sys_permission p
-       INNER JOIN sys_role_permission rp ON rp.perm_id = p.perm_id
-       WHERE rp.role_id = :roleId AND rp.terminal = :terminal
-       ORDER BY p.perm_code`,
-      { replacements: { roleId, terminal } }
-    )
-    for (const row of rows) {
-      if (row?.perm_code) permCodes.add(row.perm_code)
-    }
+    const finalCodes = await PermissionEngine.computeFinalPerms(userId, terminal)
+    permCodes = new Set(finalCodes)
   }
 
   const result = { permCodes, roleId, roleCode, roleName, username }
