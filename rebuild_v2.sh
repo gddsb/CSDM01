@@ -57,7 +57,10 @@ fi
 git checkout -- android/app/capacitor.build.gradle android/capacitor.settings.gradle 2>/dev/null || true
 
 # 1c. 只允许 fast-forward：出现分叉/冲突立即中止，禁止 reset --hard 覆盖本地改动
-if git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 fetch origin main 2>&1 | tail -5; then
+# 重要：所有构建长耗时命令禁止用 | tail 管道——daemon 进程退出时 pipe fd 未正确关闭会导致 tail 永远阻塞
+# 统一模式：CMD > /tmp/_mes_step_N.log 2>&1; EXIT=$?; tail -N /tmp/_mes_step_N.log; [ $EXIT -eq 0 ]
+if git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 fetch origin main > /tmp/_mes_fetch.log 2>&1; then
+  tail -5 /tmp/_mes_fetch.log
   if git merge --ff-only --no-edit FETCH_HEAD > /tmp/_mes_merge.log 2>&1; then
     tail -3 /tmp/_mes_merge.log
     PULL_OK=true
@@ -67,12 +70,15 @@ if git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 fetch origin main 2>&1
     echo "  ✗ merge 失败（本地分叉或工作区冲突），终止部署"
     exit 1
   fi
+else
+  tail -5 /tmp/_mes_fetch.log
 fi
 
 # 主源失败 → 备源 origin-backup（同样只允许 fast-forward）
 if ! $PULL_OK; then
   echo "  ⚠ origin 失败，切 origin-backup (gh-proxy)..."
-  if git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 fetch origin-backup main 2>&1 | tail -5; then
+  if git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 fetch origin-backup main > /tmp/_mes_fetch.log 2>&1; then
+    tail -5 /tmp/_mes_fetch.log
     if git merge --ff-only --no-edit FETCH_HEAD > /tmp/_mes_merge.log 2>&1; then
       tail -3 /tmp/_mes_merge.log
       PULL_OK=true
@@ -82,6 +88,8 @@ if ! $PULL_OK; then
       echo "  ✗ merge 失败，终止部署"
       exit 1
     fi
+  else
+    tail -5 /tmp/_mes_fetch.log
   fi
 fi
 
@@ -210,7 +218,7 @@ export APP_BUILD="${BUILD}"
 # 注入 git 短哈希，供移动端"检查更新"显示安装版本来源
 export APP_GIT_SHA="${SHORT_SHA}"
 echo "  VITE_API_BASE_URL=$VITE_API_BASE_URL  APP_BUILD=$APP_BUILD  APP_GIT_SHA=$APP_GIT_SHA"
-npx vite build 2>&1 | tail -4
+npx vite build > /tmp/_mes_vite.log 2>&1; tail -4 /tmp/_mes_vite.log
 
 # Step 4.1: APP_BUILD 注入断言 —— 防止 vite define 回退到 git rev-list（造成版本号分裂）
 # ============================================================
@@ -248,7 +256,7 @@ echo "  ✓ APP_BUILD 注入一致"
 # ============================================================
 echo ""
 echo "=== 4.5 后端 TypeScript 编译 ==="
-cd server && rm -rf dist && npx tsc 2>&1 | tail -3
+cd server && rm -rf dist && npx tsc > /tmp/_mes_tsc.log 2>&1; tail -3 /tmp/_mes_tsc.log
 BACKEND_TSC_RC=$?
 cd ..
 if [ $BACKEND_TSC_RC -ne 0 ]; then
@@ -264,10 +272,17 @@ echo ""
 echo "=== 5. Capacitor sync + Gradle assemble ==="
 export ANDROID_HOME=/home/ubuntu/android-sdk
 export PATH=$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH
-npx cap sync android 2>&1 | tail -3
+npx cap sync android > /tmp/_mes_cap.log 2>&1; tail -3 /tmp/_mes_cap.log
 
 cd "${SCRIPT_DIR}"/android
-gradle clean assembleDebug assembleRelease 2>&1 | tail -5
+# 禁止 | tail 管道：Gradle daemon 退出时 pipe fd 未关闭会导致 tail 永远阻塞
+gradle clean assembleDebug assembleRelease > /tmp/_mes_gradle.log 2>&1
+GRADLE_RC=$?
+tail -5 /tmp/_mes_gradle.log
+if [ $GRADLE_RC -ne 0 ]; then
+  echo "  ✗ Gradle APK 编译失败（见 /tmp/_mes_gradle.log 完整日志）"
+  exit 1
+fi
 
 # ============================================================
 # Step 6: 拷贝 APK + 回填 apkSize
@@ -339,7 +354,7 @@ echo "  ℹ 如需立即手动执行：cd server && npx tsx src/migrate.ts"
 echo ""
 echo "=== 7. PM2 重启 ==="
 cd server
-pm2 restart milk-can-mes-server 2>&1 | tail -2
+pm2 restart milk-can-mes-server > /tmp/_mes_pm2.log 2>&1; tail -2 /tmp/_mes_pm2.log
 sleep 3
 pm2 list milk-can-mes-server 2>&1 | grep -E "milk-can-mes-server.*(online|errored)"
 
