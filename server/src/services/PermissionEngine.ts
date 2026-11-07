@@ -81,7 +81,7 @@ export class PermissionEngine {
        FROM sys_permission p
        INNER JOIN sys_role_permission rp ON rp.perm_id = p.perm_id AND rp.terminal = :terminal
        INNER JOIN sys_user u ON u.role_id = rp.role_id
-       WHERE u.user_id = :userId AND u.status = '启用' AND p.status = 1`,
+       WHERE u.user_id = :userId AND u.status = 1 AND p.status = 1`,
       { replacements: { userId, terminal } }
     )
     return rows.map((r: any) => r.perm_code).filter(Boolean)

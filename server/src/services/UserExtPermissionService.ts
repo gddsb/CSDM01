@@ -80,7 +80,7 @@ export const UserExtPermissionService = {
     const denySet = new Set(denyCodes)
 
     // 组装三种状态 — 遍历全部权限池
-    const [allPerms]: any = await sequelize.query(
+    const allPerms: any[] = await sequelize.query(
       'SELECT perm_id, perm_code, perm_name FROM sys_permission WHERE status = 1 ORDER BY sort_order ASC, perm_id ASC',
       { type: 'SELECT' as any }
     )
