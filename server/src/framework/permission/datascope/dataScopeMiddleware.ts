@@ -28,35 +28,38 @@ export function dataScope(options: DataScopeOptions): RequestHandler {
   const { businessObj } = options
 
   return async (req: Request, res: Response, next: NextFunction) => {
-    const ctx = req.permV2
-    if (!ctx) {
-      // 还没经过 auth 层 — 跳过
-      logger.debug('[DataScope] req.permV2 不存在，跳过')
+    // 从 req.user 读 auth 中间件注入的用户信息
+    const user = (req as any).user
+    const permV2: any = (req as any).permV2 ?? {}
+    logger.info(`[DataScope] CALLED path=${req.path} user=${!!user} username=${user?.username}`)
+
+    if (!user) {
+      logger.warn('[DataScope] req.user 不存在')
       return next()
     }
 
     try {
       // 有 '*' 通配符 → 不过滤
-      if (ctx.permCodes.has('*')) {
-        ctx.scopeWhere = {}
+      if (user.permCodes?.has('*')) {
+        permV2.scopeWhere = {}
+        ;(req as any).permV2 = permV2
         return next()
       }
 
-      const permCode = (req as any)._permCodeForScope || undefined
       const where = await buildDataScopeWhere(
-        ctx.userId,
-        ctx.roleId,
+        user.userId,
+        user.roleId ?? null,
         businessObj,
-        ctx.username,
-        permCode
+        user.username ?? ''
       )
 
-      ctx.scopeWhere = where
-      logger.debug(`[DataScope] obj=${businessObj} user=${ctx.userId} where=${JSON.stringify(where).slice(0, 200)}`)
+      permV2.scopeWhere = where
+      ;(req as any).permV2 = permV2
+      logger.info(`[DataScope] obj=${businessObj} where=${JSON.stringify(where).slice(0, 200)}`)
       next()
     } catch (err) {
-      logger.error('[DataScope] 执行异常:', err)
-      next() // 数据权限异常不阻断业务
+      logger.error('[DataScope] error:', err)
+      next()
     }
   }
 }

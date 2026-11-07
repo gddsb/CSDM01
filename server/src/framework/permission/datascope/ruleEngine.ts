@@ -119,28 +119,41 @@ export async function buildDataScopeWhere(
   username: string,
   requestPermCode?: string
 ): Promise<Record<string, any>> {
+  console.log(`[DataScope DEBUG] buildDataScopeWhere userId=${userId} roleId=${roleId} obj=${businessObj} username=${username}`)
+
   // 4a. 超级管理员短路
-  if (await isSuperAdminRole(roleId)) {
-    logger.debug(`[DataScope] role_code short-circuit → empty where`)
+  const roleCode = await (async () => {
+    if (!roleId) return null
+    const { Role } = await import('../../../models/index.js')
+    const role = await Role.findByPk(roleId, { attributes: ['role_code'] })
+    return role ? (role as any).role_code : null
+  })()
+  console.log(`[DataScope DEBUG] roleCode=${roleCode}`)
+  if (roleCode && SHORT_CIRCUIT_ROLES.includes(roleCode)) {
+    console.log(`[DataScope DEBUG] SHORT CIRCUIT for role_code=${roleCode}`)
     return {}
   }
 
   // 4b. 加载规则 + 维度字典
   const [rules, dimDict] = await Promise.all([loadUserScopeRules(userId, roleId), loadDimDict()])
+  console.log(`[DataScope DEBUG] rules loaded=${rules.length}, dimDict keys=${Array.from(dimDict.keys())}`)
 
   // 4c. user_id 独立规则覆盖 role_id（同一 obj_code）
   const userRules = rules.filter(r => r.user_id === userId && r.obj_code === businessObj)
   const roleRules  = rules.filter(r => r.role_id === roleId && r.user_id === null && r.obj_code === businessObj)
+  console.log(`[DataScope DEBUG] obj=${businessObj}: userRules=${userRules.length}, roleRules=${roleRules.length}`)
 
   let objRules = userRules.length > 0 ? userRules : roleRules
 
   if (objRules.length === 0) {
     // 没有任何规则 — 不做过滤（默认全看）
+    console.log(`[DataScope DEBUG] NO RULES → empty where (default all)`)
     return {}
   }
 
   // 4d. 按 scope_type=all 直接跳过（全量）
   if (objRules.some(r => r.scope_type === 'all')) {
+    console.log(`[DataScope DEBUG] scope_type=all → empty where`)
     return {}
   }
 
@@ -154,6 +167,7 @@ export async function buildDataScopeWhere(
   const whereFragments: Record<string, any>[] = []
   for (const rule of objRules) {
     const frag = translateRule(rule, dimDict, businessObj, username)
+    console.log(`[DataScope DEBUG] rule=${JSON.stringify(rule).slice(0,100)} → frag=${JSON.stringify(frag)}`)
     if (frag) whereFragments.push(frag)
   }
 
