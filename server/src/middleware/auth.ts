@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express'
 import { verifyToken } from '../utils/jwt.js'
 import { fail, ErrorCode } from '../utils/response.js'
 import { OperationLog, Role, Permission } from '../models/index.js'
+import sequelize from '../config/database.js'
 import { logger } from '../utils/logger.js'
 
 const SENSITIVE_KEYS = ['password', 'token', 'secret', 'authorization', 'pwd', 'access_token', 'refresh_token']
@@ -37,6 +38,7 @@ function isActionLike(permCode: string): boolean {
 /**
  * 加载某角色在指定终端下的权限码集合（带 60s LRU 缓存）
  * Phase 2: 加 terminal 终端维度，cache key = roleId_terminal
+ * —— 用 raw SQL 避开 Sequelize belongsToMany through.where 不生效的陷阱
  */
 async function loadRolePermissionCodes(roleId: number, terminal: number = 1): Promise<{ codes: Set<string>; roleCode: string | null; roleName: string | null }> {
   const now = Date.now()
@@ -46,28 +48,25 @@ async function loadRolePermissionCodes(roleId: number, terminal: number = 1): Pr
     return { codes: cached.codes, roleCode: cached.roleCode, roleName: cached.roleName }
   }
 
+  // Phase 2: 先拿 role 基础信息
   const role = await Role.findOne({
     where: { role_id: roleId },
     attributes: ['role_id', 'role_code', 'role_name'],
-    include: [
-      {
-        model: Permission,
-        as: 'permissions',
-        attributes: ['perm_code'],
-        through: { where: { terminal } },
-      },
-    ],
   })
-
   const roleCode = role ? String((role as any).role_code ?? '') : null
   const roleName = role ? String((role as any).role_name ?? '') : null
-  const codes = new Set<string>()
 
-  // 统一从 role_permission 关联表读取所有权限码（包括 '*' 通配）
-  if (role && Array.isArray((role as any).permissions)) {
-    for (const p of (role as any).permissions) {
-      if (p?.perm_code) codes.add(p.perm_code)
-    }
+  // Phase 2: 用 raw SQL 直接 JOIN sys_role_permission 按 terminal 过滤
+  const [rows]: any = await sequelize.query(
+    `SELECT p.perm_code FROM sys_permission p
+     INNER JOIN sys_role_permission rp ON rp.perm_id = p.perm_id
+     WHERE rp.role_id = :roleId AND rp.terminal = :terminal
+     ORDER BY p.perm_code`,
+    { replacements: { roleId, terminal } }
+  )
+  const codes = new Set<string>()
+  for (const row of rows) {
+    if (row?.perm_code) codes.add(row.perm_code)
   }
 
   permCache[cacheKey] = { codes, roleCode, roleName, ts: now }

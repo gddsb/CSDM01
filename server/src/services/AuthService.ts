@@ -3,6 +3,7 @@
  * 负责密码校验、密码修改、个人资料更新等可复用业务逻辑
  */
 import { User, Role, OperationLog, Permission } from '../models/index'
+import sequelize from '../config/database'
 import { generateToken } from '../utils/jwt'
 import { nowBeijingDate } from '../utils/date'
 import { verifyPassword, hashPassword } from '../utils/password'
@@ -25,21 +26,20 @@ export function buildPermGroups(codes: string[]): Record<string, string[]> {
   return groups
 }
 
-/** Phase 2: 加载指定终端下的权限码（加 terminal 过滤） */
+/**
+ * Phase 2: 加载指定终端下的权限码（加 terminal 过滤）
+ * —— 直接用 raw SQL 避免 Sequelize belongsToMany through.where 各种不生效的陷阱
+ * —— 注意 sequelize.query 有 type 参数时直接返回 rows 数组，不是 [rows, metadata] 二元组
+ */
 export async function getUserPermissionCodes(roleId: number, terminal: number = 1): Promise<string[]> {
-  const perms = await Permission.findAll({
-    include: [
-      {
-        model: Role,
-        as: 'roles',
-        where: { role_id: roleId },
-        required: true,
-        through: { attributes: [], where: { terminal } },
-      },
-    ],
-    raw: true,
-  })
-  return perms.map((p: any) => p.perm_code).filter(Boolean)
+  const rows: any[] = await sequelize.query(
+    `SELECT p.perm_code FROM sys_permission p
+     INNER JOIN sys_role_permission rp ON rp.perm_id = p.perm_id
+     WHERE rp.role_id = :roleId AND rp.terminal = :terminal
+     ORDER BY p.perm_code`,
+    { replacements: { roleId, terminal }, type: 'SELECT' as any }
+  )
+  return rows.map((r: any) => r.perm_code).filter(Boolean)
 }
 
 const WEAK_PASSWORDS = new Set(['123456', 'password', 'admin', '12345678', 'qwerty'])
@@ -97,7 +97,8 @@ export class AuthService {
     await (user as any).update({ last_login_time: nowBeijingDate() })
     // Phase 2: 把 terminal 写入 JWT payload，authRequired 中间件可直接读取
     const numericTerminal = Number(terminal) || 1
-    const token = generateToken({ ...(user as any), terminal: numericTerminal })
+    // 注意：Sequelize instance 直接 spread 是空对象，必须 .toJSON()
+    const token = generateToken({ ...(user as any).toJSON(), terminal: numericTerminal })
     const userWithRole: Record<string, any> = (user as any).toJSON()
     delete userWithRole.user_pwd
     // Phase 2: 权限码按终端过滤（只返回该终端下的权限）

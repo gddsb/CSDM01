@@ -16,6 +16,7 @@ import type { Request, Response, NextFunction } from 'express'
 import { fail, ErrorCode } from '../../../utils/response.js'
 import { getCache, setCache, TTL } from '../cache/permissionCache.js'
 import { Permission, Role, User } from '../../../models/index.js'
+import sequelize from '../../../config/database.js'
 import { logger } from '../../../utils/logger.js'
 import type { RequirePermOptions } from '../types.js'
 
@@ -37,27 +38,8 @@ async function loadUserPermCodes(userId: number, terminal: number = 1): Promise<
   const cached = getCache<{ permCodes: Set<string>; roleId: number | null; roleCode: string | null; roleName: string | null; username: string }>(CACHE_KEY)
   if (cached) return cached
 
-  const user = await User.findByPk(userId, {
-    attributes: ['user_id', 'username', 'role_id'],
-    include: [
-      {
-        model: Role,
-        as: 'role',
-        attributes: ['role_id', 'role_code', 'role_name'],
-        include: [
-          {
-            model: Permission,
-            as: 'permissions',
-            attributes: ['perm_code'],
-            // Phase 2: 只加载该终端的权限（through 中间表加 terminal 过滤）
-            through: { where: { terminal } },
-          },
-        ],
-      },
-    ],
-  })
-
-  const permCodes = new Set<string>()
+  // 先查 user + role 基础信息
+  const user = await User.findByPk(userId, { attributes: ['user_id', 'username', 'role_id'] })
   let roleId: number | null = null
   let roleCode: string | null = null
   let roleName: string | null = null
@@ -66,13 +48,27 @@ async function loadUserPermCodes(userId: number, terminal: number = 1): Promise<
   if (user) {
     username = user.username
     roleId = user.role_id
-    if ((user as any).role) {
-      roleCode = (user as any).role.role_code ?? null
-      roleName = (user as any).role.role_name ?? null
-      const perms = (user as any).role.permissions ?? []
-      for (const p of perms) {
-        if (p?.perm_code) permCodes.add(p.perm_code)
+    if (user.role_id) {
+      const role = await Role.findByPk(user.role_id, { attributes: ['role_id', 'role_code', 'role_name'] })
+      if (role) {
+        roleCode = (role as any).role_code ?? null
+        roleName = (role as any).role_name ?? null
       }
+    }
+  }
+
+  // Phase 2: 用 raw SQL 直接 JOIN sys_role_permission 按 terminal 过滤
+  const permCodes = new Set<string>()
+  if (roleId) {
+    const [rows]: any = await sequelize.query(
+      `SELECT p.perm_code FROM sys_permission p
+       INNER JOIN sys_role_permission rp ON rp.perm_id = p.perm_id
+       WHERE rp.role_id = :roleId AND rp.terminal = :terminal
+       ORDER BY p.perm_code`,
+      { replacements: { roleId, terminal } }
+    )
+    for (const row of rows) {
+      if (row?.perm_code) permCodes.add(row.perm_code)
     }
   }
 
