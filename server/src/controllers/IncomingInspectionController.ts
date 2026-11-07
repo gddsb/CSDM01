@@ -9,7 +9,8 @@ import type { Request, Response } from 'express'
 
 export default {
   list: asyncHandler(async (req: Request, res: Response) => {
-    const result = await IncomingInspectionService.list(req.query)
+    const scopeWhere = (req as any).permV2?.scopeWhere
+    const result = await IncomingInspectionService.list(req.query, scopeWhere)
     return success(res, result)
   }),
 

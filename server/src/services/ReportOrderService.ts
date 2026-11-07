@@ -202,8 +202,12 @@ export interface ReportOrderUpdateInput {
 
 export const ReportOrderService = {
   /** 分页查询报工单列表 */
-  async list(query: any) {
-    const where = buildReportOrderWhere(query)
+  async list(query: any, scopeWhere?: Record<string, any>) {
+    let where = buildReportOrderWhere(query)
+    if (scopeWhere && Object.keys(scopeWhere).length > 0) {
+      const { Op } = await import('sequelize')
+      where = { [Op.and]: [where, scopeWhere] }
+    }
     const limit = Math.min(Number(query.pageSize) || 20, MAX_PAGE_SIZE)
     const offset = ((Number(query.page) || 1) - 1) * limit
 

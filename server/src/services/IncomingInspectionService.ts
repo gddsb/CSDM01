@@ -134,8 +134,12 @@ async function getIncomingDetail(id: number) {
 
 export const IncomingInspectionService = {
   /** 列表 + 统计（带供应商短名二次查询 + 全量统计聚合） */
-  async list(query: any) {
-    const where = buildIncomingWhere(query)
+  async list(query: any, scopeWhere?: Record<string, any>) {
+    let where = buildIncomingWhere(query)
+    if (scopeWhere && Object.keys(scopeWhere).length > 0) {
+      const { Op } = await import('sequelize')
+      where = { [Op.and]: [where, scopeWhere] }
+    }
     const pageNum = Math.max(1, Number(query.page) || 1)
     const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, Number(query.pageSize) || 20))
 

@@ -1,25 +1,17 @@
 /**
  * 权限引擎 V2 — 数据权限规则引擎
  *
- * 职责：
- *   1. 根据用户（user_id 或 role_id）查询 sys_data_scope 表
- *   2. 按 scope_type + dim_code + operator + dim_value 三元组合并多条规则
- *   3. 输出 Sequelize where 条件（Op 结构），供拦截器拼到查询里
- *
- * 数据模型：
- *   - 简单类型：scope_type=all/self/dept/workshop → 直接映射成 WHERE
- *   - 自定义类型：scope_type=custom → 按 dimension_code 找 target_column，生成 IN/NOT IN/EQ 等条件
- *   - 多规则组合：同一 obj_code 多条 scope 默认 AND；同一 dim_code 多值 IN 用 OR 组
- *
- * 关键设计：
- *   - 不直接拼 SQL 字符串，输出 Sequelize where 对象
- *   - 支持 IN 值 JSON 数组安全解析
- *   - 超级管理员 / 有 '*' 通配符的用户直接返回空 where（不过滤）
+ * Phase 4 增强：
+ *   - role_code=SUPER_ADMIN / ADMIN 直接返回空 where（全量）
+ *   - scope_type=self 按业务对象拼不同列（column_map JSON）
+ *   - scope_type=custom 按业务对象覆盖列名（self_column_map JSON）
+ *   - user_id 独立规则覆盖 role_id 规则（同一 obj_code）
+ *   - 多角色/多规则 AND 组合（scope_type=all 跳过）
  */
 
 import type { ScopeType, DataScopeRule, DataDimension, BusinessObjCode } from '../types.js'
 import { getCache, setCache, TTL } from '../cache/permissionCache.js'
-import { DataScope, DataDimension as DataDimModel, Role, User } from '../../../models/index.js'
+import { DataScope, DataDimension as DataDimModel, Role } from '../../../models/index.js'
 import { Op } from 'sequelize'
 import logger from '../../../utils/logger.js'
 
@@ -29,12 +21,17 @@ import logger from '../../../utils/logger.js'
 
 const CACHE_KEY_DIMS = 'dimDict'
 
+function parseJSONMap(raw: string | null | undefined): Record<string, string> | null {
+  if (!raw) return null
+  try { return JSON.parse(raw) } catch { return null }
+}
+
 async function loadDimDict(): Promise<Map<string, DataDimension>> {
   const cached = getCache<Map<string, DataDimension>>(CACHE_KEY_DIMS)
   if (cached) return cached
 
   const rows = await DataDimModel.findAll({
-    attributes: ['dim_id', 'dim_code', 'dim_name', 'target_table', 'target_column', 'data_type', 'description'],
+    attributes: ['dim_id', 'dim_code', 'dim_name', 'target_table', 'target_column', 'column_map', 'self_column_map', 'data_type', 'description'],
     where: { status: 1 },
   })
 
@@ -47,6 +44,8 @@ async function loadDimDict(): Promise<Map<string, DataDimension>> {
       dim_name: r.dim_name,
       target_table: r.target_table,
       target_column: r.target_column,
+      column_map: parseJSONMap(r.column_map),
+      self_column_map: parseJSONMap(r.self_column_map),
       data_type: r.data_type,
       description: r.description,
     })
@@ -58,7 +57,7 @@ async function loadDimDict(): Promise<Map<string, DataDimension>> {
 
 // ============================================================================
 // 2. 加载用户 scope 规则（带缓存）
-//    规则优先级：user_id 规则 > role_id 规则
+//    user_id 规则覆盖 role_id 规则（同一 obj_code）
 // ============================================================================
 
 async function loadUserScopeRules(userId: number, roleId: number | null): Promise<DataScopeRule[]> {
@@ -97,27 +96,22 @@ async function loadUserScopeRules(userId: number, roleId: number | null): Promis
 }
 
 // ============================================================================
-// 3. 把 scope_type 翻译成 Sequelize where 对象（不含具体 target_column）
-//    —— 只是描述"按什么逻辑过滤"，拼 WHERE 时还需要知道 column
+// 3. 超级管理员短路：role_code IN ('SUPER_ADMIN', 'ADMIN') 直接返回空 where
 // ============================================================================
 
-interface ScopeWherePart {
-  /** Sequelize where 片段，如 { [Op.in]: [1,2,3] } */
-  whereFragment: Record<string, any>
-  /** 该片段要用到的 target_column（DataDimension.target_column） */
-  targetColumn: string
+const SHORT_CIRCUIT_ROLES = ['SUPER_ADMIN', 'ADMIN']
+
+async function isSuperAdminRole(roleId: number | null): Promise<boolean> {
+  if (!roleId) return false
+  const role = await Role.findByPk(roleId, { attributes: ['role_code'] })
+  if (!role) return false
+  return SHORT_CIRCUIT_ROLES.includes((role as any).role_code)
 }
 
-/**
- * 构建业务对象的 Sequelize where 条件
- *
- * @param userId      当前用户
- * @param roleId      当前角色
- * @param businessObj 业务对象编码
- * @param username    当前登录用户名（self scope 用 created_by 过滤）
- * @param requestPermCode 可选：如果知道当前请求需要什么权限码，可以做更细粒度的规则匹配
- * @returns Sequelize where 对象（可能为空对象 = 不做过滤）
- */
+// ============================================================================
+// 4. 主入口：构建业务对象的 Sequelize where 条件
+// ============================================================================
+
 export async function buildDataScopeWhere(
   userId: number,
   roleId: number | null,
@@ -125,74 +119,94 @@ export async function buildDataScopeWhere(
   username: string,
   requestPermCode?: string
 ): Promise<Record<string, any>> {
+  // 4a. 超级管理员短路
+  if (await isSuperAdminRole(roleId)) {
+    logger.debug(`[DataScope] role_code short-circuit → empty where`)
+    return {}
+  }
+
+  // 4b. 加载规则 + 维度字典
   const [rules, dimDict] = await Promise.all([loadUserScopeRules(userId, roleId), loadDimDict()])
 
-  // 1. 过滤到该业务对象 + 匹配 perm_code 的规则
-  let objRules = rules.filter(r => r.obj_code === businessObj)
+  // 4c. user_id 独立规则覆盖 role_id（同一 obj_code）
+  const userRules = rules.filter(r => r.user_id === userId && r.obj_code === businessObj)
+  const roleRules  = rules.filter(r => r.role_id === roleId && r.user_id === null && r.obj_code === businessObj)
 
-  // 如果有 perm_code，优先选精确匹配；没有精确匹配则用 obj_code 级别规则
-  if (requestPermCode) {
-    const precise = objRules.filter(r => r.perm_code === requestPermCode)
-    if (precise.length > 0) objRules = precise
-  }
+  let objRules = userRules.length > 0 ? userRules : roleRules
 
   if (objRules.length === 0) {
     // 没有任何规则 — 不做过滤（默认全看）
     return {}
   }
 
-  // 2. 把规则翻译成 Sequelize where 片段数组
-  const whereFragments: Record<string, any>[] = []
+  // 4d. 按 scope_type=all 直接跳过（全量）
+  if (objRules.some(r => r.scope_type === 'all')) {
+    return {}
+  }
 
+  // 4e. 如果有 perm_code 精确匹配，优先用
+  if (requestPermCode) {
+    const precise = objRules.filter(r => r.perm_code === requestPermCode)
+    if (precise.length > 0) objRules = precise
+  }
+
+  // 4f. 翻译每条规则 → Sequelize where 片段
+  const whereFragments: Record<string, any>[] = []
   for (const rule of objRules) {
-    const frag = translateRule(rule, dimDict, username)
+    const frag = translateRule(rule, dimDict, businessObj, username)
     if (frag) whereFragments.push(frag)
   }
 
   if (whereFragments.length === 0) return {}
   if (whereFragments.length === 1) return whereFragments[0]
 
-  // 多条规则 AND 组合（来自不同 scope 三元组）
+  // 多规则 AND 组合
   return { [Op.and]: whereFragments }
 }
 
 // ============================================================================
-// 单条规则翻译
+// 5. 单条规则翻译（Phase 4 增强）
 // ============================================================================
 
 function translateRule(
   rule: DataScopeRule,
   dimDict: Map<string, DataDimension>,
+  businessObj: BusinessObjCode,
   username: string
 ): Record<string, any> | null {
   switch (rule.scope_type) {
     case 'all':
       return null // 全部数据 = 不加条件
 
-    case 'self':
-      // 仅本人 → created_by = 当前用户名（通用语义）
-      return { created_by: username }
+    case 'self': {
+      // scope_type=self → 查 self_column_map 里的列名，回退 created_by
+      // 注：这里用的是 "employee" 维度的 self_column_map — 由后端配置
+      const dim = rule.dim_code ? dimDict.get(rule.dim_code) : null
+      let col = 'created_by'
+      if (dim?.self_column_map) {
+        col = dim.self_column_map[businessObj] || dim.target_column
+      } else if (dim) {
+        col = dim.target_column
+      }
+      return { [col]: username }
+    }
 
     case 'dept':
-      // 本部门 → 这里假设 sys_user.department 字段，但业务表里没有 dept 列
-      // 简化实现：暂无，留给项目扩展（需要 join sys_user 表或业务表有 dept 字段）
-      logger.debug(`[DataScope] dept scope 暂未实现，跳过 (rule=${rule.scope_id})`)
-      return null
-
     case 'workshop':
-      // 本车间 → 假设 sys_user 有 workshop 字段（目前没有）
-      logger.debug(`[DataScope] workshop scope 暂未实现，跳过 (rule=${rule.scope_id})`)
+      // TODO: 需要 sys_user 有 dept/workshop 字段 + 自动拉取当前用户所属值
+      logger.debug(`[DataScope] ${rule.scope_type} scope 暂未实现，跳过`)
       return null
 
     case 'custom': {
-      // 自定义 → 按 dim_code 找维度定义
       if (!rule.dim_code) return null
       const dim = dimDict.get(rule.dim_code)
       if (!dim) {
         logger.warn(`[DataScope] 维度字典未找到 dim_code=${rule.dim_code}`)
         return null
       }
-      return buildCustomCondition(dim.target_column, rule.operator, rule.dim_value)
+      // 先查 column_map 里 businessObj 覆盖的列名，回退 target_column
+      const col = dim.column_map?.[businessObj] || dim.target_column
+      return buildCustomCondition(col, rule.operator, rule.dim_value)
     }
 
     default:
@@ -201,23 +215,20 @@ function translateRule(
 }
 
 // ============================================================================
-// 自定义条件组装（Sequelize Op 形式）
+// 6. 自定义条件组装（Sequelize Op 形式）
 // ============================================================================
 
 function buildCustomCondition(targetColumn: string, operator: string, dimValue: string | null): Record<string, any> | null {
   if (!targetColumn || !dimValue) return null
 
-  // 解析 dim_value 里的 JSON 数组
   let values: any[]
   try {
     values = JSON.parse(dimValue)
     if (!Array.isArray(values)) values = [values]
   } catch {
-    // 不是 JSON — 当单值字符串处理
     values = [dimValue]
   }
 
-  // 尝试转为数字（兼容 number 类型列）
   const numericValues = values.map(v => {
     const n = Number(v)
     return Number.isFinite(n) && String(n) === String(v) ? n : v
@@ -248,5 +259,5 @@ function buildCustomCondition(targetColumn: string, operator: string, dimValue: 
   }
 }
 
-// 方便：把规则导出给 datascope 中间件用
+// 导出（给 datascope 中间件用）
 export { loadDimDict, loadUserScopeRules }

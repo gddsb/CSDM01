@@ -85,6 +85,7 @@ import DeviceCalibrationController from '../controllers/DeviceCalibrationControl
 import DeviceSparePartController from '../controllers/DeviceSparePartController.js'
 import DeviceDocumentController from '../controllers/DeviceDocumentController.js'
 import { authRequired, logOperation, permissionRequired } from '../middleware/auth.js'
+import { dataScope } from '../framework/permission/datascope/dataScopeMiddleware.js'
 
 const router = Router()
 
@@ -296,7 +297,7 @@ router.put('/product-inspections/:id/review', permissionRequired('quality:produc
 router.delete('/product-inspections/:id', permissionRequired('quality:product:delete'), logOperation('产品检测'), asyncHandler(ProductInspectionController.delete))
 
 // ============ 来料检验 ============
-router.get('/incoming-inspections', permissionRequired('quality:incoming'), asyncHandler(IncomingInspectionController.list))
+router.get('/incoming-inspections', permissionRequired('quality:incoming'), dataScope({ businessObj: 'quality_incoming_inspection' }), asyncHandler(IncomingInspectionController.list))
 router.post('/incoming-inspections/sync-purchase-receipts', permissionRequired('quality:incoming:create'), logOperation('采购入库同步'), asyncHandler(IncomingInspectionController.syncFromPurchaseReceipts))
 router.get('/incoming-inspections/:id', permissionRequired('quality:incoming'), asyncHandler(IncomingInspectionController.detail))
 router.post('/incoming-inspections', permissionRequired('quality:incoming:create'), logOperation('来料检验'), asyncHandler(IncomingInspectionController.create))

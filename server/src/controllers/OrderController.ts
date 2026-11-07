@@ -10,7 +10,8 @@ import { asyncHandler } from '../middleware/security.js'
 import type { Request, Response } from 'express'
 
 export const list = asyncHandler(async (req: any, res: Response) => {
-  const result = await OrderService.list(req.query)
+  const scopeWhere = req.permV2?.scopeWhere
+  const result = await OrderService.list(req.query, scopeWhere)
   return success(res, result.rows, '查询成功', result.count)
 })
 

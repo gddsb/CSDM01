@@ -75,6 +75,7 @@ import {
   remove as holidayRemove,
 } from '../controllers/HolidayController.js'
 import { authRequired, permissionRequired } from '../middleware/auth.js'
+import { dataScope } from '../framework/permission/datascope/dataScopeMiddleware.js'
 
 const router = Router()
 
@@ -122,7 +123,7 @@ const reportImageUpload = multer({
 router.use(authRequired)
 
 // 生产订单（状态：开立/下发/开工/完工/关闭）
-router.get('/orders', permissionRequired('production:order'), asyncHandler(orderList))
+router.get('/orders', permissionRequired('production:order'), dataScope({ businessObj: 'production_order' }), asyncHandler(orderList))
 router.get('/orders/:id', permissionRequired('production:order'), asyncHandler(orderDetail))
 router.post('/orders', permissionRequired('production:order:create'), asyncHandler(orderCreate))
 router.put('/orders/:id', permissionRequired('production:order:update'), asyncHandler(orderUpdate))
@@ -133,7 +134,7 @@ router.get('/orders/:id/pre-check', permissionRequired('production:order'), asyn
 router.post('/orders/:id/finish', permissionRequired('production:order:finish'), asyncHandler(orderFinish))
 
 // 生产报工单（状态：开工/完工；订单下发后直接创建）
-router.get('/report-orders', permissionRequired('production:reporting'), asyncHandler(roList))
+router.get('/report-orders', permissionRequired('production:reporting'), dataScope({ businessObj: 'production_report_order' }), asyncHandler(roList))
 router.get('/report-orders/:id', permissionRequired('production:reporting'), asyncHandler(roDetail))
 router.post('/report-orders', permissionRequired('production:reporting:create'), asyncHandler(roCreate))
 router.put('/report-orders/:id', permissionRequired('production:reporting:update'), asyncHandler(roUpdate))

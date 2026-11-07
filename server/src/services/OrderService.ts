@@ -110,8 +110,17 @@ export interface OrderUpdateInput extends Partial<OrderCreateInput> {}
 
 export const OrderService = {
   /** 分页查询工单列表（含关联报工单的产线/报工信息） */
-  async list(query: any) {
+  async list(query: any, scopeWhere?: Record<string, any>) {
     const where = buildOrderWhere(query)
+    // Phase 4: 数据权限 scopeWhere 合并（AND）
+    if (scopeWhere && Object.keys(scopeWhere).length > 0) {
+      const { Op } = await import('sequelize')
+      return this.listWithWhere(query, { [Op.and]: [where, scopeWhere] })
+    }
+    return this.listWithWhere(query, where)
+  },
+
+  async listWithWhere(query: any, where: any) {
     const limit = Math.min(Number(query.pageSize) || 20, MAX_PAGE_SIZE)
     const offset = ((Number(query.page) || 1) - 1) * limit
 

@@ -74,8 +74,12 @@ export interface DataDimension {
   dim_name: string
   /** 目标表名（逗号分隔） */
   target_table: string
-  /** SQL WHERE 里实际用来过滤的列名 */
+  /** 默认列名 */
   target_column: string
+  /** 按业务对象覆盖列名 JSON（可选） */
+  column_map: Record<string, string> | null
+  /** scope_type=self 时按业务对象的列名 JSON（可选） */
+  self_column_map: Record<string, string> | null
   data_type: 'string' | 'number' | 'date' | 'enum'
   description: string | null
 }
