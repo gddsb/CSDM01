@@ -133,6 +133,14 @@ const migrations = [
       ['remark', 'VARCHAR(255)'],
     ],
   },
+  // Phase 2: terminal 终端维度（规范 3.6 对齐）
+  {
+    table: 'sys_role_permission',
+    columns: [
+      ['terminal', 'TINYINT NOT NULL DEFAULT 1'],
+      ['create_time', 'DATETIME'],
+    ],
+  },
   {
     table: 'sys_operation_log',
     columns: [

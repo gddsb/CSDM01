@@ -1,47 +1,39 @@
 /**
  * 权限引擎 V2 — 功能权限中间件
  *
- * 替代原 auth.ts 里的 permissionRequired() 函数，用法变为 Express 中间件：
+ * Phase 2 关键改造：所有权限码加载都带 terminal 终端维度
  *
- *   // 旧写法（直接函数调用）:
- *   router.get('/orders', authRequired, permissionRequired('production:order:view'), controller.list)
- *
- *   // 新写法（Express 中间件链）:
+ * 用法：
  *   router.get('/orders', authRequired, requirePerm({ permCode: 'production:order:view' }), controller.list)
- *   router.post('/orders', authRequired, requirePerm({ permCode: ['production:order:create', 'production:order:update'], logic: 'ANY' }), controller.save)
  *
- * 核心逻辑：
- *   1. 从 req.permCodes 取当前用户权限码全集（由 authRequired 中间件注入）
- *   2. 检查目标 permCode 是否在集合中
- *   3. '*' 通配符自动放行
- *
- * 和旧 authRequired 的关系：
- *   - authRequired 只做 JWT 校验 + 注入用户基本信息到 req.user
- *   - requirePerm 只做功能权限校验（读取 req.user.role_id → 查 role_permission → 读缓存）
- *   - 两个中间件串行使用
+ * 终端来源优先级：
+ *   1. req.user.terminal（JWT payload 中写入）
+ *   2. req.platform（authRequired 中间件检测推断）
+ *   3. 默认 terminal=1（PC 端）
  */
 
 import type { Request, Response, NextFunction } from 'express'
 import { fail, ErrorCode } from '../../../utils/response.js'
 import { getCache, setCache, TTL } from '../cache/permissionCache.js'
-import { Permission, Role, User, RolePermission } from '../../../models/index.js'
+import { Permission, Role, User } from '../../../models/index.js'
 import { logger } from '../../../utils/logger.js'
 import type { RequirePermOptions } from '../types.js'
 
 const WILDCARD = '*'
 
 // ============================================================================
-// 工具函数：加载用户权限码全集（带缓存）
+// 工具函数：加载用户权限码全集（带缓存 + terminal 终端维度）
 // ============================================================================
 
-async function loadUserPermCodes(userId: number): Promise<{
+async function loadUserPermCodes(userId: number, terminal: number = 1): Promise<{
   permCodes: Set<string>
   roleId: number | null
   roleCode: string | null
   roleName: string | null
   username: string
 }> {
-  const CACHE_KEY = `permCodes:${userId}`
+  // Phase 2: cache key 加 terminal 维度，避免不同终端权限串缓存
+  const CACHE_KEY = `permCodes:${userId}:${terminal}`
   const cached = getCache<{ permCodes: Set<string>; roleId: number | null; roleCode: string | null; roleName: string | null; username: string }>(CACHE_KEY)
   if (cached) return cached
 
@@ -52,7 +44,15 @@ async function loadUserPermCodes(userId: number): Promise<{
         model: Role,
         as: 'role',
         attributes: ['role_id', 'role_code', 'role_name'],
-        include: [{ model: Permission, as: 'permissions', attributes: ['perm_code'] }],
+        include: [
+          {
+            model: Permission,
+            as: 'permissions',
+            attributes: ['perm_code'],
+            // Phase 2: 只加载该终端的权限（through 中间表加 terminal 过滤）
+            through: { where: { terminal } },
+          },
+        ],
       },
     ],
   })
@@ -103,8 +103,12 @@ export function requirePerm(options: RequirePermOptions | string): RequestHandle
       return
     }
 
+    // Phase 2: 从 req.user.terminal 取终端值（authRequired 已注入）
+    // 优先 JWT payload 中的 terminal，其次 req.terminal（authRequired 注入），最后默认 1
+    const terminal = (req as any).user?.terminal ?? (req as any).terminal ?? 1
+
     try {
-      const { permCodes, roleId, roleCode, roleName, username } = await loadUserPermCodes(userId)
+      const { permCodes, roleId, roleCode, roleName, username } = await loadUserPermCodes(userId, terminal)
 
       // '*' 通配符直接放行
       if (permCodes.has(WILDCARD)) {

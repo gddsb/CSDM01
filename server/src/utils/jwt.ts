@@ -24,11 +24,13 @@ const expiresIn: string = process.env.JWT_EXPIRES_IN || '2h'
 const refreshExpiresIn: string = process.env.JWT_REFRESH_EXPIRES_IN || '7d'
 
 // 生成 access token
-export function generateToken(user: { user_id?: number; username?: string; role_id?: number; userId?: number; roleId?: number; [k: string]: unknown }): string {
+// Phase 2: payload 加 terminal 终端标识（1=PC端, 2=移动端APP）
+export function generateToken(user: { user_id?: number; username?: string; role_id?: number; userId?: number; roleId?: number; terminal?: number; [k: string]: unknown }): string {
   const userId = user.user_id ?? user.userId;
   const roleId = user.role_id ?? user.roleId;
+  const terminal = user.terminal ?? 1;
   return jwt.sign(
-    { userId, username: user.username, roleId },
+    { userId, username: user.username, roleId, terminal },
     secret,
     { expiresIn } as SignOptions
   )

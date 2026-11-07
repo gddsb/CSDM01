@@ -19,12 +19,31 @@ function userIdFrom(req: Request): number | undefined {
   return id != null ? Number(id) : undefined
 }
 
+/** Phase 2: 从请求推断 terminal 终端标识（1=PC端, 2=移动端APP） */
+function extractTerminal(req: Request): number {
+  // 1. body 显式指定
+  const bodyTerminal = (req.body as any)?.terminal
+  if (bodyTerminal !== undefined && bodyTerminal !== null) {
+    const n = Number(bodyTerminal)
+    if (n === 1 || n === 2) return n
+  }
+  // 2. header X-Client-Platform 推断
+  const hdr = (req.headers['x-client-platform'] as string)?.toLowerCase()
+  if (hdr === 'mobile') return 2
+  // 3. User-Agent 推断
+  const ua = (req.headers['user-agent'] || '').toLowerCase()
+  if (/capacitor|android|ios|mobiledevice/i.test(ua)) return 2
+  return 1 // 默认 PC 端
+}
+
 export const login = async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body || {}
     const forwarded = req.headers['x-forwarded-for']
     const ip = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(',')[0].trim() || req.ip || req.socket?.remoteAddress || ''
-    const result = await AuthService.login({ username, password, ip })
+    // Phase 2: 提取 terminal 并传入 AuthService
+    const terminal = extractTerminal(req)
+    const result = await AuthService.login({ username, password, ip, terminal })
     return success(res, result, '登录成功')
   } catch (err) { return handleErr(res, err, '登录失败') }
 }

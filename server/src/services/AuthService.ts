@@ -25,7 +25,8 @@ export function buildPermGroups(codes: string[]): Record<string, string[]> {
   return groups
 }
 
-export async function getUserPermissionCodes(roleId: number): Promise<string[]> {
+/** Phase 2: 加载指定终端下的权限码（加 terminal 过滤） */
+export async function getUserPermissionCodes(roleId: number, terminal: number = 1): Promise<string[]> {
   const perms = await Permission.findAll({
     include: [
       {
@@ -33,7 +34,7 @@ export async function getUserPermissionCodes(roleId: number): Promise<string[]> 
         as: 'roles',
         where: { role_id: roleId },
         required: true,
-        through: { attributes: [] },
+        through: { attributes: [], where: { terminal } },
       },
     ],
     raw: true,
@@ -47,9 +48,10 @@ export class AuthService {
 
   /**
    * 用户登录：认证、登录日志、Token 与权限码组装
+   * Phase 2: 加 terminal 终端标识，写入 JWT payload
    */
-  static async login(input: { username?: string; password?: string; ip?: string }): Promise<Record<string, unknown>> {
-    const { username, password, ip = '' } = input
+  static async login(input: { username?: string; password?: string; ip?: string; terminal?: number | string }): Promise<Record<string, unknown>> {
+    const { username, password, ip = '', terminal = 1 } = input
     if (!username || !password) {
       throw new AppError('用户名和密码不能为空', 10001, 400)
     }
@@ -93,10 +95,13 @@ export class AuthService {
     }
 
     await (user as any).update({ last_login_time: nowBeijingDate() })
-    const token = generateToken(user as any)
+    // Phase 2: 把 terminal 写入 JWT payload，authRequired 中间件可直接读取
+    const numericTerminal = Number(terminal) || 1
+    const token = generateToken({ ...(user as any), terminal: numericTerminal })
     const userWithRole: Record<string, any> = (user as any).toJSON()
     delete userWithRole.user_pwd
-    const permCodes = await getUserPermissionCodes((user as any).role_id || userWithRole.role_id)
+    // Phase 2: 权限码按终端过滤（只返回该终端下的权限）
+    const permCodes = await getUserPermissionCodes((user as any).role_id || userWithRole.role_id, numericTerminal)
     userWithRole.perm_codes = permCodes
     userWithRole.perm_groups = buildPermGroups(permCodes)
 

@@ -7,7 +7,8 @@ import { logger } from '../utils/logger.js'
 const SENSITIVE_KEYS = ['password', 'token', 'secret', 'authorization', 'pwd', 'access_token', 'refresh_token']
 
 const PERM_CACHE_TTL = 60_000
-const permCache: Record<number, { codes: Set<string>; roleCode: string | null; roleName: string | null; ts: number }> = {}
+// Phase 2: cache key 从 roleId 升级为 roleId_terminal（不同终端权限独立缓存）
+const permCache: Record<string, { codes: Set<string>; roleCode: string | null; roleName: string | null; ts: number }> = {}
 
 /** 超级管理员通配符：角色在 role_permission 里手动配了 '*' 就拥有全部权限 */
 export const WILDCARD_PERM = '*'
@@ -33,9 +34,14 @@ function isActionLike(permCode: string): boolean {
   return ACTION_SUFFIXES.has(last)
 }
 
-async function loadRolePermissionCodes(roleId: number): Promise<{ codes: Set<string>; roleCode: string | null; roleName: string | null }> {
+/**
+ * 加载某角色在指定终端下的权限码集合（带 60s LRU 缓存）
+ * Phase 2: 加 terminal 终端维度，cache key = roleId_terminal
+ */
+async function loadRolePermissionCodes(roleId: number, terminal: number = 1): Promise<{ codes: Set<string>; roleCode: string | null; roleName: string | null }> {
   const now = Date.now()
-  const cached = permCache[roleId]
+  const cacheKey = `${roleId}_${terminal}`
+  const cached = permCache[cacheKey]
   if (cached && now - cached.ts < PERM_CACHE_TTL) {
     return { codes: cached.codes, roleCode: cached.roleCode, roleName: cached.roleName }
   }
@@ -43,7 +49,14 @@ async function loadRolePermissionCodes(roleId: number): Promise<{ codes: Set<str
   const role = await Role.findOne({
     where: { role_id: roleId },
     attributes: ['role_id', 'role_code', 'role_name'],
-    include: [{ model: Permission, as: 'permissions', attributes: ['perm_code'] }],
+    include: [
+      {
+        model: Permission,
+        as: 'permissions',
+        attributes: ['perm_code'],
+        through: { where: { terminal } },
+      },
+    ],
   })
 
   const roleCode = role ? String((role as any).role_code ?? '') : null
@@ -57,15 +70,28 @@ async function loadRolePermissionCodes(roleId: number): Promise<{ codes: Set<str
     }
   }
 
-  permCache[roleId] = { codes, roleCode, roleName, ts: now }
+  permCache[cacheKey] = { codes, roleCode, roleName, ts: now }
   return { codes, roleCode, roleName }
 }
 
-export function clearPermissionCache(roleId?: number): void {
-  if (roleId !== undefined) {
-    delete permCache[roleId]
+/**
+ * 清除权限缓存
+ * Phase 2: 加 terminal 参数
+ *   - 只传 roleId: 清除该角色所有终端的缓存
+ *   - 传 roleId + terminal: 只清除该角色该终端的缓存（推荐，范围最小）
+ *   - 不传参数: 清除全部缓存
+ */
+export function clearPermissionCache(roleId?: number, terminal?: number): void {
+  if (roleId !== undefined && terminal !== undefined) {
+    const key = `${roleId}_${terminal}`
+    delete permCache[key]
+  } else if (roleId !== undefined) {
+    // 清除该角色所有终端的缓存
+    for (const key of Object.keys(permCache)) {
+      if (key.startsWith(`${roleId}_`)) delete permCache[key]
+    }
   } else {
-    for (const key of Object.keys(permCache)) delete permCache[Number(key)]
+    for (const key of Object.keys(permCache)) delete permCache[key]
   }
 }
 
@@ -184,9 +210,16 @@ export function authRequired(req: Request, res: Response, next: NextFunction): a
 
   ;(async () => {
     const user: any = decoded
+    // Phase 2: 提取 terminal 终端标识
+    // 1. 优先从 JWT payload 读（登录时写入）
+    // 2. 没有则从 platform 推断（pc→1, mobile→2, web→1）
+    // 3. 最终 fallback 1（PC 端）
+    const platform = detectRequestPlatform(req)
+    const terminal = user.terminal ?? (platform === 'mobile' ? 2 : 1)
+
     if (user.roleId) {
       try {
-        const { codes, roleCode, roleName } = await loadRolePermissionCodes(user.roleId)
+        const { codes, roleCode, roleName } = await loadRolePermissionCodes(user.roleId, terminal)
         user.permCodes = codes
         user.roleCode = roleCode
         user.roleName = roleName
@@ -198,8 +231,11 @@ export function authRequired(req: Request, res: Response, next: NextFunction): a
     } else {
       user.permCodes = new Set()
     }
+    // Phase 2: terminal 注入 req.user，供后续中间件（requirePerm / datascope）使用
+    user.terminal = terminal
     // 平台检测结果挂到 req 上，后续 permissionRequired 可以读
-    ;(req as any).platform = detectRequestPlatform(req)
+    ;(req as any).platform = platform
+    ;(req as any).terminal = terminal
     ;(req as any).user = user
     next()
   })()

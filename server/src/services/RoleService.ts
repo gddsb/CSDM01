@@ -2,12 +2,17 @@
  * 角色 Service（RoleController 下沉）
  *
  * 业务：Role CRUD + listPermissions(flat) + getRolePermissions + assignPermissions
+ * Phase 2 关键改造：所有权限读写都带 terminal 终端维度（规范 3.6）
+ *   terminal=1 PC端 (默认)
+ *   terminal=2 移动端APP
+ *
  * 核心：initDefaultPermissions 初始化（被 app.ts / init-db.ts 直接调用）
  * 默认权限种子数据已抽离到 services/seeds/DefaultPermissions.ts
  * clearPermissionCache 来自 middleware/auth.js（登录态缓存清理）
  */
 import { Op } from 'sequelize'
-import { Role, User, Permission } from '../models/index.js'
+import { Role, User, Permission, RolePermission } from '../models/index.js'
+import sequelize from '../config/database.js'
 import { MAX_PAGE_SIZE } from '../utils/response.js'
 import { AppError } from '../utils/error.js'
 import { clearPermissionCache } from '../middleware/auth.js'
@@ -96,16 +101,33 @@ export const RoleService = {
     return await Permission.findAll({ order: [['sort_order', 'ASC'], ['perm_id', 'ASC']] })
   },
 
-  async getRolePermissions(id: number | string) {
+  /**
+   * 读取某角色在指定终端下的权限 ID 列表
+   * Phase 2: 加 terminal 终端维度（默认 1=PC 端）
+   */
+  async getRolePermissions(id: number | string, terminal: number = 1): Promise<number[]> {
     const role = await Role.findOne({
       where: { role_id: Number(id) },
-      include: [{ model: Permission, as: 'permissions' }],
+      include: [
+        {
+          model: Permission,
+          as: 'permissions',
+          through: { where: { terminal } },
+        },
+      ],
     })
     if (!role) throw new AppError('角色不存在', 10002, 404)
-    return role.permissions?.map((p: any) => p.perm_id) || []
+    return (role as any).permissions?.map((p: any) => p.perm_id) || []
   },
 
-  async assignPermissions(id: number | string, permIdsRaw: any) {
+  /**
+   * 为某角色在指定终端下整体覆盖权限
+   * Phase 2 关键改造：不再用 role.setPermissions()，改用 raw query
+   * 原因：setPermissions() 会 DELETE 整个中间表再 INSERT，会清掉另一个终端的记录
+   * 现在的模式：DELETE WHERE role_id=? AND terminal=? + INSERT ... ON DUPLICATE KEY
+   * 同一角色两个终端（PC / APP）的权限完全独立维护
+   */
+  async assignPermissions(id: number | string, permIdsRaw: any, terminal: number = 1): Promise<boolean> {
     const role = await Role.findOne({ where: { role_id: Number(id) } })
     if (!role) throw new AppError('角色不存在', 10002, 404)
     if ((role as any).role_code === 'SUPER_ADMIN' || (role as any).is_system_default === 1) {
@@ -113,20 +135,41 @@ export const RoleService = {
     }
     const ids = permIdsRaw || []
     if (!Array.isArray(ids)) throw new AppError('perm_ids 必须是数组', 10001, 400)
+    const roleId = Number(id)
+    const now = new Date()
 
-    if (ids.length > 0) {
-      const validIds = ids.map((x: any) => Number(x)).filter((x: number) => !isNaN(x))
+    // 校验所有 perm_id 存在
+    const validIds = ids.map((x: any) => Number(x)).filter((x: number) => !isNaN(x))
+    if (validIds.length > 0) {
       const permissions = await Permission.findAll({ where: { perm_id: { [Op.in]: validIds } } })
       if (permissions.length !== validIds.length) {
         const foundIds = new Set(permissions.map((p: any) => p.perm_id))
         const missingIds = validIds.filter((x: number) => !foundIds.has(x))
         throw new AppError(`以下权限ID不存在: ${missingIds.join(', ')}`, 10001, 400)
       }
-      await role.setPermissions(permissions)
-    } else {
-      await role.setPermissions([])
     }
-    clearPermissionCache(Number(id))
+
+    // 事务内先清再建
+    await sequelize.transaction(async (t) => {
+      // 清掉该角色该终端的旧记录（不动另一个终端的记录）
+      await RolePermission.destroy({
+        where: { role_id: roleId, terminal },
+        transaction: t,
+      })
+
+      if (validIds.length > 0) {
+        const bulk = validIds.map((perm_id) => ({
+          role_id: roleId,
+          perm_id,
+          terminal,
+          create_time: now,
+        }))
+        await RolePermission.bulkCreate(bulk, { transaction: t })
+      }
+    })
+
+    // 清缓存 — 新的 cache key 带 terminal 前缀
+    clearPermissionCache(roleId, terminal)
     return true
   },
 
@@ -183,7 +226,19 @@ export const RoleService = {
     const adminRole = await Role.findOne({ where: { role_code: 'SUPER_ADMIN' } })
     if (adminRole) {
       const allPermsAfter = await Permission.findAll()
-      await adminRole.setPermissions(allPermsAfter)
+      // Phase 2: 用 raw query 替代 role.setPermissions()，避免清掉其他终端的记录
+      const roleId = (adminRole as any).role_id
+      const terminal = 1 // 默认只分配 PC 端（APP 端默认不给超级管理员）
+      await RolePermission.destroy({ where: { role_id: roleId, terminal } })
+      await RolePermission.bulkCreate(
+        allPermsAfter.map((p: any) => ({
+          role_id: roleId,
+          perm_id: p.perm_id,
+          terminal,
+          create_time: new Date(),
+        }))
+      )
+      logger.info(`👑 超级管理员初始化: ${allPermsAfter.length} 条权限 (terminal=${terminal})`)
     }
     logger.info('✅ 默认权限初始化完成')
   },
