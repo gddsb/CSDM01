@@ -121,6 +121,16 @@ const migrations = [
     table: 'sys_permission',
     columns: [
       ['visible', 'TINYINT DEFAULT 1'],
+      // Phase 1: 规范 3.5 对齐字段
+      ['perm_type', 'TINYINT NOT NULL DEFAULT 1'],
+      ['group_name', 'VARCHAR(64)'],
+      ['group_sort', 'INT DEFAULT 0'],
+      ['route_path', 'VARCHAR(255)'],
+      ['sort', 'INT DEFAULT 0'],
+      ['is_abandon', 'TINYINT NOT NULL DEFAULT 0'],
+      ['last_sync_time', 'DATETIME'],
+      ['last_scan_time', 'DATETIME'],
+      ['remark', 'VARCHAR(255)'],
     ],
   },
   {
