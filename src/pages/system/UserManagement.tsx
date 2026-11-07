@@ -8,6 +8,7 @@ import {
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
+import UserScopeConfigModal from '../iam/components/UserScopeConfigModal'
 import { useMessage, useApp } from '../../contexts/AppContext'
 
 interface User {
@@ -55,6 +56,13 @@ export default function UserManagement() {
   const [keywordInput, setKeywordInput] = useState('')
   const [statusInput, setStatusInput] = useState<string | undefined>(undefined)
   const [roleInput, setRoleInput] = useState<number | undefined>(undefined)
+
+  // IAM V2: 用户独立数据权限配置 Modal
+  const [scopeModalOpen, setScopeModalOpen] = useState(false)
+  const [scopeUserId, setScopeUserId] = useState<number | null>(null)
+  const [scopeUserName, setScopeUserName] = useState('')
+  const [scopeRoleId, setScopeRoleId] = useState<number | null>(null)
+  const [scopeRoleName, setScopeRoleName] = useState('')
 
   const [query, setQuery] = useState<QueryParams>({ page: 1, pageSize: 30, keyword: '', status: undefined, role_id: undefined })
 
@@ -276,6 +284,18 @@ export default function UserManagement() {
                 <Button type="link" size="small" danger disabled={isProtected}>删除</Button>
               </Popconfirm>
             )}
+            {/* IAM V2: 用户独立数据权限配置入口 */}
+            {hasPermission('iam:user:data_scope') && (
+              <Button type="link" size="small"
+                onClick={() => {
+                  setScopeUserId(record.user_id)
+                  setScopeUserName(record.username)
+                  setScopeRoleId(record.role_id ?? null)
+                  setScopeRoleName(roles.find(r => r.role_id === record.role_id)?.role_name ?? '')
+                  setScopeModalOpen(true)
+                }}
+              >数据权限</Button>
+            )}
           </Space>
         )
       },
@@ -422,6 +442,16 @@ export default function UserManagement() {
           </Row>
         </Form>
       </Modal>
+
+      {/* IAM V2: 用户独立数据权限配置 Modal */}
+      <UserScopeConfigModal
+        open={scopeModalOpen}
+        onClose={() => setScopeModalOpen(false)}
+        userId={scopeUserId}
+        userName={scopeUserName}
+        roleId={scopeRoleId}
+        roleName={scopeRoleName}
+      />
     </>
   )
 }

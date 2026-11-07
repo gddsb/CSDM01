@@ -15,7 +15,7 @@
  *   PUT    /:id                             修改
  *   DELETE /:id                             删除
  */
-import { useState, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { Button, Table, Modal, Form, Input, InputNumber, Select, Switch, Space, message, Popconfirm, Tag } from 'antd'
 import { PlusOutlined, ReloadOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import api from '../../utils/api'
@@ -70,7 +70,7 @@ export default function SimpleCrudPage(props: SimpleCrudPageProps) {
     }
   }
 
-  useMemo(() => { load() }, [page, pageSize, searchParams])
+  useEffect(() => { load() }, [page, pageSize, searchParams])
 
   const handleAdd = () => {
     setEditing(null)
