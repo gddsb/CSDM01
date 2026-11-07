@@ -355,7 +355,7 @@ export function MobileImageUploader({
             }}
           >
             {/* 右上角删除角标 —— 直接点就删，不再依赖 ActionSheet */}
-            {!readOnly && !(item as any).uploading && deleteUrl && (
+            {!readOnly && !item.uploading && deleteUrl && (
               <div
                 onClick={(e) => {
                   e.stopPropagation()  // 防止冒泡触发预览
@@ -385,7 +385,7 @@ export function MobileImageUploader({
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexDirection: 'column', fontSize: 10, gap: 4,
                 }}>
-                  <DotLoading color="default" />
+                  <DotLoading color="white" size={24} />
                   <div>上传中...</div>
                 </div>
               </div>

@@ -16,8 +16,7 @@ import { list as systemLogList } from '../controllers/SystemLogController.js'
 import { getConfig, saveConfig, migrateDatabase, getMigrationTargets, listDataDictionary, refreshDataDictionary, getRefreshProgress } from '../controllers/SystemConfigController.js'
 import { getEnvironment, restartServer } from '../modules/system-config/EnvironmentController.js'
 import { getDatabaseInfo, listBackups, createBackup, restoreBackup, deleteBackup, listTableRecords } from '../modules/system-config/DatabaseController.js'
-import { authRequired, logOperation } from '../middleware/auth.js'
-import { requirePerm } from '../framework/permission/func/permissionMiddleware.js'
+import { authRequired, logOperation, permissionRequired } from '../middleware/auth.js'
 import {
   listType as dictTypeList,
   getType as dictTypeGet,
@@ -57,75 +56,75 @@ router.put('/users/me/avatar', asyncHandler(setMyAvatar))
 router.put('/users/me/profile', asyncHandler(updateMyProfile))
 
 // 用户管理
-router.get('/users', requirePerm({ permCode: 'system:user' }), logOperation('用户管理'), asyncHandler(list))
-router.get('/users/:id', requirePerm({ permCode: 'system:user' }), logOperation('用户管理'), asyncHandler(detail))
-router.post('/users', requirePerm({ permCode: 'system:user:create' }), logOperation('用户管理'), asyncHandler(create))
-router.put('/users/:id', requirePerm({ permCode: 'system:user:update' }), logOperation('用户管理'), asyncHandler(update))
-router.delete('/users/:id', requirePerm({ permCode: 'system:user:delete' }), logOperation('用户管理'), asyncHandler(remove))
-router.post('/users/:id/toggle', requirePerm({ permCode: 'system:user:toggle' }), logOperation('用户管理'), asyncHandler(toggle))
+router.get('/users', permissionRequired('system:user'), logOperation('用户管理'), asyncHandler(list))
+router.get('/users/:id', permissionRequired('system:user'), logOperation('用户管理'), asyncHandler(detail))
+router.post('/users', permissionRequired('system:user:create'), logOperation('用户管理'), asyncHandler(create))
+router.put('/users/:id', permissionRequired('system:user:update'), logOperation('用户管理'), asyncHandler(update))
+router.delete('/users/:id', permissionRequired('system:user:delete'), logOperation('用户管理'), asyncHandler(remove))
+router.post('/users/:id/toggle', permissionRequired('system:user:toggle'), logOperation('用户管理'), asyncHandler(toggle))
 
 // 角色管理
-router.get('/roles', requirePerm({ permCode: 'system:role' }), logOperation('角色管理'), asyncHandler(roleList))
-router.post('/roles', requirePerm({ permCode: 'system:role:create' }), logOperation('角色管理'), asyncHandler(roleCreate))
-router.put('/roles/:id', requirePerm({ permCode: 'system:role:update' }), logOperation('角色管理'), asyncHandler(roleUpdate))
-router.delete('/roles/:id', requirePerm({ permCode: 'system:role:delete' }), logOperation('角色管理'), asyncHandler(roleRemove))
+router.get('/roles', permissionRequired('system:role'), logOperation('角色管理'), asyncHandler(roleList))
+router.post('/roles', permissionRequired('system:role:create'), logOperation('角色管理'), asyncHandler(roleCreate))
+router.put('/roles/:id', permissionRequired('system:role:update'), logOperation('角色管理'), asyncHandler(roleUpdate))
+router.delete('/roles/:id', permissionRequired('system:role:delete'), logOperation('角色管理'), asyncHandler(roleRemove))
 
 // 权限/菜单管理
-router.get('/permissions', requirePerm({ permCode: 'system:menu' }), asyncHandler(permList))
-router.get('/permissions/tree', requirePerm({ permCode: 'system:menu' }), asyncHandler(permList))
+router.get('/permissions', permissionRequired('system:menu'), asyncHandler(permList))
+router.get('/permissions/tree', permissionRequired('system:menu'), asyncHandler(permList))
 router.get('/permissions/menu', asyncHandler(userMenu))  // 菜单按角色过滤返回，用 authRequired 即可
-router.get('/permissions/:id', requirePerm({ permCode: 'system:menu' }), asyncHandler(permDetail))
-router.post('/permissions', requirePerm({ permCode: 'system:menu:create' }), logOperation('菜单管理'), asyncHandler(permCreate))
-router.put('/permissions/:id', requirePerm({ permCode: 'system:menu:update' }), logOperation('菜单管理'), asyncHandler(permUpdate))
-router.delete('/permissions/:id', requirePerm({ permCode: 'system:menu:delete' }), logOperation('菜单管理'), asyncHandler(permRemove))
-router.get('/roles/:id/permissions', requirePerm({ permCode: 'system:role' }), asyncHandler(getRolePermissions))
-router.put('/roles/:id/permissions', requirePerm({ permCode: 'system:role:assign' }), logOperation('角色权限分配'), asyncHandler(assignPermissions))
+router.get('/permissions/:id', permissionRequired('system:menu'), asyncHandler(permDetail))
+router.post('/permissions', permissionRequired('system:menu:create'), logOperation('菜单管理'), asyncHandler(permCreate))
+router.put('/permissions/:id', permissionRequired('system:menu:update'), logOperation('菜单管理'), asyncHandler(permUpdate))
+router.delete('/permissions/:id', permissionRequired('system:menu:delete'), logOperation('菜单管理'), asyncHandler(permRemove))
+router.get('/roles/:id/permissions', permissionRequired('system:role'), asyncHandler(getRolePermissions))
+router.put('/roles/:id/permissions', permissionRequired('system:role:assign'), logOperation('角色权限分配'), asyncHandler(assignPermissions))
 
 // 操作日志
-router.get('/logs', requirePerm({ permCode: 'system:log' }), asyncHandler(logList))
+router.get('/logs', permissionRequired('system:log'), asyncHandler(logList))
 
 // 系统日志（结构化日志）
-router.get('/system-logs', requirePerm({ permCode: 'system:system-log' }), asyncHandler(systemLogList))
+router.get('/system-logs', permissionRequired('system:system-log'), asyncHandler(systemLogList))
 
 // 数据字典 - 字典类型
-router.get('/dict/types', requirePerm({ permCode: 'system:dict' }), asyncHandler(dictTypeList))
-router.get('/dict/types/:id', requirePerm({ permCode: 'system:dict' }), asyncHandler(dictTypeGet))
-router.post('/dict/types', requirePerm({ permCode: 'system:dict:create' }), logOperation('数据字典'), asyncHandler(dictTypeCreate))
-router.put('/dict/types/:id', requirePerm({ permCode: 'system:dict:update' }), logOperation('数据字典'), asyncHandler(dictTypeUpdate))
-router.delete('/dict/types/:id', requirePerm({ permCode: 'system:dict:delete' }), logOperation('数据字典'), asyncHandler(dictTypeRemove))
+router.get('/dict/types', permissionRequired('system:dict'), asyncHandler(dictTypeList))
+router.get('/dict/types/:id', permissionRequired('system:dict'), asyncHandler(dictTypeGet))
+router.post('/dict/types', permissionRequired('system:dict:create'), logOperation('数据字典'), asyncHandler(dictTypeCreate))
+router.put('/dict/types/:id', permissionRequired('system:dict:update'), logOperation('数据字典'), asyncHandler(dictTypeUpdate))
+router.delete('/dict/types/:id', permissionRequired('system:dict:delete'), logOperation('数据字典'), asyncHandler(dictTypeRemove))
 
 // 数据字典 - 字典数据
-router.get('/dict/datas', requirePerm({ permCode: 'system:dict' }), asyncHandler(dictDataList))
-router.get('/dict/datas/type/:type', requirePerm({ permCode: 'system:dict' }), asyncHandler(listDataByType))
-router.get('/dict/datas/:code', requirePerm({ permCode: 'system:dict' }), asyncHandler(dictDataGet))
-router.post('/dict/datas', requirePerm({ permCode: 'system:dict:create' }), logOperation('数据字典'), asyncHandler(dictDataCreate))
-router.put('/dict/datas/:code', requirePerm({ permCode: 'system:dict:update' }), logOperation('数据字典'), asyncHandler(dictDataUpdate))
-router.delete('/dict/datas/:code', requirePerm({ permCode: 'system:dict:delete' }), logOperation('数据字典'), asyncHandler(dictDataRemove))
+router.get('/dict/datas', permissionRequired('system:dict'), asyncHandler(dictDataList))
+router.get('/dict/datas/type/:type', permissionRequired('system:dict'), asyncHandler(listDataByType))
+router.get('/dict/datas/:code', permissionRequired('system:dict'), asyncHandler(dictDataGet))
+router.post('/dict/datas', permissionRequired('system:dict:create'), logOperation('数据字典'), asyncHandler(dictDataCreate))
+router.put('/dict/datas/:code', permissionRequired('system:dict:update'), logOperation('数据字典'), asyncHandler(dictDataUpdate))
+router.delete('/dict/datas/:code', permissionRequired('system:dict:delete'), logOperation('数据字典'), asyncHandler(dictDataRemove))
 
 // 系统配置
-router.get('/config', requirePerm({ permCode: 'system:config' }), asyncHandler(getConfig))
-router.put('/config', requirePerm({ permCode: 'system:config:update' }), logOperation('系统配置'), asyncHandler(saveConfig))
+router.get('/config', permissionRequired('system:config'), asyncHandler(getConfig))
+router.put('/config', permissionRequired('system:config:update'), logOperation('系统配置'), asyncHandler(saveConfig))
 // 项目环境
-router.get('/config/environment', requirePerm({ permCode: 'system:config' }), asyncHandler(getEnvironment))
-router.post('/config/restart', requirePerm({ permCode: 'system:config:update' }), logOperation('系统配置'), asyncHandler(restartServer))
+router.get('/config/environment', permissionRequired('system:config'), asyncHandler(getEnvironment))
+router.post('/config/restart', permissionRequired('system:config:update'), logOperation('系统配置'), asyncHandler(restartServer))
 // 数据库配置
-router.get('/config/database', requirePerm({ permCode: 'system:config' }), asyncHandler(getDatabaseInfo))
-router.get('/config/database/migration-targets', requirePerm({ permCode: 'system:config' }), asyncHandler(getMigrationTargets))
-router.post('/config/database/migrate', requirePerm({ permCode: 'system:config:update' }), logOperation('系统配置'), asyncHandler(migrateDatabase))
+router.get('/config/database', permissionRequired('system:config'), asyncHandler(getDatabaseInfo))
+router.get('/config/database/migration-targets', permissionRequired('system:config'), asyncHandler(getMigrationTargets))
+router.post('/config/database/migrate', permissionRequired('system:config:update'), logOperation('系统配置'), asyncHandler(migrateDatabase))
 // 数据字典
-router.get('/config/data-dictionary', requirePerm({ permCode: 'system:config' }), asyncHandler(listDataDictionary))
-router.post('/config/data-dictionary/refresh', requirePerm({ permCode: 'system:config:update' }), logOperation('系统配置'), asyncHandler(refreshDataDictionary))
-router.get('/config/data-dictionary/refresh/:taskId', requirePerm({ permCode: 'system:config' }), asyncHandler(getRefreshProgress))
-router.get('/config/data-dictionary/:table_name/records', requirePerm({ permCode: 'system:config' }), asyncHandler(listTableRecords))
+router.get('/config/data-dictionary', permissionRequired('system:config'), asyncHandler(listDataDictionary))
+router.post('/config/data-dictionary/refresh', permissionRequired('system:config:update'), logOperation('系统配置'), asyncHandler(refreshDataDictionary))
+router.get('/config/data-dictionary/refresh/:taskId', permissionRequired('system:config'), asyncHandler(getRefreshProgress))
+router.get('/config/data-dictionary/:table_name/records', permissionRequired('system:config'), asyncHandler(listTableRecords))
 // 备份还原
-router.get('/config/backups', requirePerm({ permCode: 'system:config' }), asyncHandler(listBackups))
-router.post('/config/backups', requirePerm({ permCode: 'system:config:update' }), logOperation('系统配置'), asyncHandler(createBackup))
-router.post('/config/backups/restore', requirePerm({ permCode: 'system:config:update' }), logOperation('系统配置'), asyncHandler(restoreBackup))
-router.delete('/config/backups/:filename', requirePerm({ permCode: 'system:config:update' }), logOperation('系统配置'), asyncHandler(deleteBackup))
+router.get('/config/backups', permissionRequired('system:config'), asyncHandler(listBackups))
+router.post('/config/backups', permissionRequired('system:config:update'), logOperation('系统配置'), asyncHandler(createBackup))
+router.post('/config/backups/restore', permissionRequired('system:config:update'), logOperation('系统配置'), asyncHandler(restoreBackup))
+router.delete('/config/backups/:filename', permissionRequired('system:config:update'), logOperation('系统配置'), asyncHandler(deleteBackup))
 
 // 文件管理
-router.get('/files', requirePerm({ permCode: 'system:config' }), asyncHandler(listDirectory))
-router.delete('/files/:path', requirePerm({ permCode: 'system:config:update' }), logOperation('文件管理'), asyncHandler(removeItem))
+router.get('/files', permissionRequired('system:config'), asyncHandler(listDirectory))
+router.delete('/files/:path', permissionRequired('system:config:update'), logOperation('文件管理'), asyncHandler(removeItem))
 
 // 用户个性化设置
 router.get('/user-settings', asyncHandler(getUserSettings))

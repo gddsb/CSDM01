@@ -206,6 +206,36 @@ export function authRequired(req: Request, res: Response, next: NextFunction): a
 }
 
 /**
+ * 基础权限校验：向后兼容旧调用（不带 platform，纯模块码匹配）
+ */
+export function permissionRequired(permCode: string) {
+  return (req: Request, res: Response, next: NextFunction): any => {
+    const user = (req as any).user
+    if (!user) return fail(res, '用户未登录', ErrorCode.UNAUTHORIZED)
+    if (checkPermission(user.permCodes || new Set(), permCode)) return next()
+    logger.warn('[permissionRequired] 权限不足', { userId: user.userId, username: user.username, requiredPerm: permCode, url: req.originalUrl })
+    return fail(res, `权限不足，缺少权限: ${permCode}`, ErrorCode.PERMISSION_DENIED)
+  }
+}
+
+/**
+ * 平台感知权限校验：自动根据请求来源（Capacitor / ?mobile=1 / 默认 PC）决定查 pc: / mobile: / all:
+ * 分层联动规则：view 类自动回退 all:（两端联动），action 类不回退（PC 配了不自动传移动端）
+ */
+export function platformAwarePermissionRequired(permCode: string) {
+  return (req: Request, res: Response, next: NextFunction): any => {
+    const user = (req as any).user
+    if (!user) return fail(res, '用户未登录', ErrorCode.UNAUTHORIZED)
+    const platform: 'pc' | 'mobile' | 'web' = (req as any).platform ?? 'pc'
+    // web 视为 pc 处理（WebView 里的浏览器端 = PC）
+    const effective: 'pc' | 'mobile' = platform === 'mobile' ? 'mobile' : 'pc'
+    if (checkPermission(user.permCodes || new Set(), permCode, { platform: effective })) return next()
+    logger.warn('[platformAwarePermissionRequired] 权限不足', { userId: user.userId, requiredPerm: permCode, platform: effective, url: req.originalUrl })
+    return fail(res, `权限不足（${effective}端），缺少权限: ${permCode}`, ErrorCode.PERMISSION_DENIED)
+  }
+}
+
+/**
  * 操作日志记录中间件
  */
 export function logOperation(module: string) {
@@ -249,6 +279,8 @@ export function logOperation(module: string) {
 
 export default {
   authRequired,
+  permissionRequired,
+  platformAwarePermissionRequired,
   logOperation,
   checkPermission,
   WILDCARD_PERM,

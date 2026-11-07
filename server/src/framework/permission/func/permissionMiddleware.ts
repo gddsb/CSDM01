@@ -10,25 +10,28 @@
  *   router.get('/orders', authRequired, requirePerm({ permCode: 'production:order:view' }), controller.list)
  *   router.post('/orders', authRequired, requirePerm({ permCode: ['production:order:create', 'production:order:update'], logic: 'ANY' }), controller.save)
  *
- * 核心逻辑（V2 — 复用 auth.ts 已注入的权限码，不重复查 DB）：
- *   1. authRequired 中间件已完成 JWT 校验 → 注入 req.user.permCodes(Set)、roleId、username
- *   2. requirePerm 直接从 req.user 读取，零 DB 查询、零额外缓存
+ * 核心逻辑：
+ *   1. 从 req.permCodes 取当前用户权限码全集（由 authRequired 中间件注入）
+ *   2. 检查目标 permCode 是否在集合中
  *   3. '*' 通配符自动放行
- *   4. 仅当 req.user.permCodes 为空/不存在时，才 fallback 到 loadUserPermCodes()（兜底）
+ *
+ * 和旧 authRequired 的关系：
+ *   - authRequired 只做 JWT 校验 + 注入用户基本信息到 req.user
+ *   - requirePerm 只做功能权限校验（读取 req.user.role_id → 查 role_permission → 读缓存）
+ *   - 两个中间件串行使用
  */
 
 import type { Request, Response, NextFunction } from 'express'
 import { fail, ErrorCode } from '../../../utils/response.js'
 import { getCache, setCache, TTL } from '../cache/permissionCache.js'
-import { Permission, Role, User } from '../../../models/index.js'
+import { Permission, Role, User, RolePermission } from '../../../models/index.js'
 import { logger } from '../../../utils/logger.js'
 import type { RequirePermOptions } from '../types.js'
 
 const WILDCARD = '*'
 
 // ============================================================================
-// 兜底：首次加载用户权限码全集（带缓存）
-// 仅当 authRequired 未注入 req.user.permCodes 时才调用
+// 工具函数：加载用户权限码全集（带缓存）
 // ============================================================================
 
 async function loadUserPermCodes(userId: number): Promise<{
@@ -63,11 +66,10 @@ async function loadUserPermCodes(userId: number): Promise<{
   if (user) {
     username = user.username
     roleId = user.role_id
-    const u: any = user
-    if (u.role) {
-      roleCode = u.role.role_code ?? null
-      roleName = u.role.role_name ?? null
-      const perms = u.role.permissions ?? []
+    if ((user as any).role) {
+      roleCode = (user as any).role.role_code ?? null
+      roleName = (user as any).role.role_name ?? null
+      const perms = (user as any).role.permissions ?? []
       for (const p of perms) {
         if (p?.perm_code) permCodes.add(p.perm_code)
       }
@@ -80,7 +82,7 @@ async function loadUserPermCodes(userId: number): Promise<{
 }
 
 // ============================================================================
-// Express 中间件工厂 — V2 复用 req.user.permCodes
+// Express 中间件工厂
 // ============================================================================
 
 export function requirePerm(options: RequirePermOptions | string): RequestHandler {
@@ -89,35 +91,20 @@ export function requirePerm(options: RequirePermOptions | string): RequestHandle
   const logic = opts.logic ?? 'ALL'
 
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const user: any = (req as any).user
-    if (!user) {
+    // 必须先经过 authRequired — req.user 应该存在
+    if (!(req as any).user) {
       fail(res, '未登录', ErrorCode.UNAUTHORIZED)
       return
     }
 
-    const userId: number | undefined = user.userId ?? user.user_id ?? user.id
+    const userId = (req as any).user.user_id ?? (req as any).user.id
     if (!userId) {
       fail(res, '用户信息缺失', ErrorCode.UNAUTHORIZED)
       return
     }
 
     try {
-      // ==== V2 核心：优先复用 authRequired 已注入的 req.user.permCodes ====
-      let permCodes: Set<string> | undefined = user.permCodes
-      let roleId: number | null = user.roleId ?? null
-      let roleCode: string | null = user.roleCode ?? null
-      let roleName: string | null = user.roleName ?? null
-      const username: string = user.username ?? ''
-
-      if (!permCodes || !(permCodes instanceof Set)) {
-        // authRequired 没注入或注入异常 — fallback 兜底加载一次
-        logger.debug(`[V2Auth] req.user.permCodes 缺失，fallback loadUserPermCodes userId=${userId}`)
-        const loaded = await loadUserPermCodes(userId)
-        permCodes = loaded.permCodes
-        roleId = loaded.roleId
-        roleCode = loaded.roleCode
-        roleName = loaded.roleName
-      }
+      const { permCodes, roleId, roleCode, roleName, username } = await loadUserPermCodes(userId)
 
       // '*' 通配符直接放行
       if (permCodes.has(WILDCARD)) {
@@ -127,11 +114,11 @@ export function requirePerm(options: RequirePermOptions | string): RequestHandle
       }
 
       const check = logic === 'ALL'
-        ? required.every(pc => permCodes!.has(pc))
-        : required.some(pc => permCodes!.has(pc))
+        ? required.every(pc => permCodes.has(pc))
+        : required.some(pc => permCodes.has(pc))
 
       if (!check) {
-        logger.warn(`[V2Auth] ${username}(${userId}) 无权限 ${logic}: ${required.join(',')} url=${req.originalUrl}`)
+        logger.warn(`[V2Auth] ${username}(${userId}) 无权限 ${logic}: ${required.join(',')}`)
         fail(res, `权限不足，需要: ${required.join(',')}`, ErrorCode.PERMISSION_DENIED)
         return
       }

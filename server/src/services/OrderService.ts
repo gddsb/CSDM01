@@ -109,20 +109,14 @@ export interface OrderCreateInput {
 export interface OrderUpdateInput extends Partial<OrderCreateInput> {}
 
 export const OrderService = {
-  /** 分页查询工单列表（含关联报工单的产线/报工信息）
-   *  @param scopeWhere 数据权限引擎注入的 Sequelize where 片段 — 由 Controller 透传 req.permV2?.scopeWhere
-   */
-  async list(query: any, scopeWhere?: Record<string, any>) {
+  /** 分页查询工单列表（含关联报工单的产线/报工信息） */
+  async list(query: any) {
     const where = buildOrderWhere(query)
-    // 数据权限合并：scopeWhere 非空时 AND 组合
-    const finalWhere = scopeWhere && Object.keys(scopeWhere).length > 0
-      ? { [Op.and]: [where, scopeWhere] }
-      : where
     const limit = Math.min(Number(query.pageSize) || 20, MAX_PAGE_SIZE)
     const offset = ((Number(query.page) || 1) - 1) * limit
 
     const result = await Order.findAndCountAll({
-      where: finalWhere,
+      where,
       limit,
       offset,
       order: [['order_no', 'DESC']],

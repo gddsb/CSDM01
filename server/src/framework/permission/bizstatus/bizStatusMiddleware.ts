@@ -34,7 +34,7 @@ import type { BizStatusCheckOptions } from '../types.js'
 /** obj_code → Sequelize Model 映射 */
 const OBJ_MODEL_MAP: Record<string, any> = {
   production_order: Models.U9ProductionOrder ?? Models.Order,
-  process_report: Models.ReportOrder,
+  // process_report 暂无独立 Model — 后续接入时补
   device_fault: Models.DeviceFault,
   device_maintenance: Models.DeviceMaintenanceProfile,
   device_inspection: null,

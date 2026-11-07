@@ -26,7 +26,7 @@ function cleanupFiles(files: any[]) {
 
 export default {
   list: asyncHandler(async (req: any, res: any) => {
-    const { rows, count } = await DeviceDocumentService.list(req.query, req.user, (req as any).permV2?.scopeWhere)
+    const { rows, count } = await DeviceDocumentService.list(req.query, req.user)
     return success(res, rows, '查询成功', count)
   }),
 

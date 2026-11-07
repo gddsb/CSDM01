@@ -185,10 +185,10 @@ export const getMatrix = asyncHandler(async (req: Request, res: Response) => {
 // ============ 保养执行记录 CRUD ============
 
 export const listRecords = asyncHandler(async (req: Request, res: Response) => {
-  const result = await DeviceMaintenanceProfileService.listRecords(
-    { ...req.query, currentUser: (req as any).user },
-    (req as any).permV2?.scopeWhere,
-  )
+  const result = await DeviceMaintenanceProfileService.listRecords({
+    ...req.query,
+    currentUser: (req as any).user,
+  })
   return success(res, result.list, '查询成功', result.total)
 })
 

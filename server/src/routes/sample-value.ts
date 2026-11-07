@@ -26,8 +26,7 @@ import MicrobeInspection from '../models/MicrobeInspection.js'
 import { success, fail, ErrorCode } from '../utils/response.js'
 import { logger } from '../utils/logger.js'
 import { asyncHandler } from '../middleware/security.js'
-import { authRequired } from '../middleware/auth.js'
-import { requirePerm } from '../framework/permission/func/permissionMiddleware.js'
+import { authRequired, permissionRequired } from '../middleware/auth.js'
 import { recalcItemAndSamples, recalcInspection } from '../services/SampleJudgeService.js'
 
 const router = Router()
@@ -45,7 +44,7 @@ function getMainModel(sourceType: string): any {
 }
 
 // GET /api/quality/inspection-items/:item_id/sample-values
-router.get('/:item_id/sample-values', requirePerm({ permCode: 'quality:incoming' }), asyncHandler(async (req, res) => {
+router.get('/:item_id/sample-values', permissionRequired('quality:incoming'), asyncHandler(async (req, res) => {
   try {
     const itemId = Number(req.params.item_id)
     const item = await QcInspectionItem.findByPk(itemId, { raw: true })
@@ -66,7 +65,7 @@ router.get('/:item_id/sample-values', requirePerm({ permCode: 'quality:incoming'
 // POST /api/quality/inspection-items/:item_id/sample-values
 // body: { sample_values: [{ sample_no, dimension_code, dimension_name, measure_value_num, measure_value_text, defect_desc, measured_at }] }
 // 替换式：先删旧值再创建新值，整体在同一事务
-router.post('/:item_id/sample-values', requirePerm({ permCode: 'quality:incoming:update' }), asyncHandler(async (req, res) => {
+router.post('/:item_id/sample-values', permissionRequired('quality:incoming:update'), asyncHandler(async (req, res) => {
   const t = await QcInspectionSampleValue.sequelize.transaction()
   try {
     const itemId = Number(req.params.item_id)
@@ -134,7 +133,7 @@ router.post('/:item_id/sample-values', requirePerm({ permCode: 'quality:incoming
 }))
 
 // DELETE /api/quality/inspection-items/:item_id/sample-values/:value_id
-router.delete('/:item_id/sample-values/:value_id', requirePerm({ permCode: 'quality:incoming:update' }), asyncHandler(async (req, res) => {
+router.delete('/:item_id/sample-values/:value_id', permissionRequired('quality:incoming:update'), asyncHandler(async (req, res) => {
   const t = await QcInspectionSampleValue.sequelize.transaction()
   try {
     const itemId = Number(req.params.item_id)

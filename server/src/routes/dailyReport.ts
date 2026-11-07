@@ -5,8 +5,7 @@
 import { Router } from 'express'
 import { Op } from 'sequelize'
 import { asyncHandler } from '../middleware/security.js'
-import { authRequired } from '../middleware/auth.js'
-import { requirePerm } from '../framework/permission/func/permissionMiddleware.js'
+import { authRequired, permissionRequired } from '../middleware/auth.js'
 import { getDailyReport } from '../services/DailyReportService.js'
 import { todayStr } from '../utils/date.js'
 import ReportOrder from '../models/ReportOrder.js'
@@ -16,7 +15,7 @@ const router = Router()
 router.use(authRequired)
 
 /** 当月有开工报工单的日期 — 用于 DatePicker cellRender 蓝点标记 */
-router.get('/dates', requirePerm({ permCode: 'report:daily' }), asyncHandler(async (req: any, res: any) => {
+router.get('/dates', permissionRequired('report:daily'), asyncHandler(async (req: any, res: any) => {
   try {
     const year = Number(req.query.year)
     const month = Number(req.query.month)
@@ -45,7 +44,7 @@ router.get('/dates', requirePerm({ permCode: 'report:daily' }), asyncHandler(asy
   }
 }))
 
-router.get('/', requirePerm({ permCode: 'report:daily' }), asyncHandler(async (req: any, res: any) => {
+router.get('/', permissionRequired('report:daily'), asyncHandler(async (req: any, res: any) => {
   try {
     const date = (req.query.date as string) || todayStr()
     const line = req.query.line as string | undefined

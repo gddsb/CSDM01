@@ -438,7 +438,7 @@ export default function MobileDeviceFault() {
               </div>
             </div>
             {/* 【UI 重构】等级前置 — 操作员第一眼看到主管最关心的字段 */}
-            <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginBottom: 4 }}>故障等级 <span style={{ color: 'var(--m-status-urgent)', marginLeft: 4 }}>{(LEVELS as unknown as string[]).includes(createLevel) ? `已选: ${createLevel}` : ''}</span></div>
+            <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginBottom: 4 }}>故障等级 <span style={{ color: 'var(--m-status-urgent)', marginLeft: 4 }}>{(LEVELS as string[]).includes(createLevel) ? `已选: ${createLevel}` : ''}</span></div>
             <div style={{ display: 'flex', gap: 16 }}>
 <Radio.Group value={createLevel} onChange={(v) => setCreateLevel(v as string)}>
 

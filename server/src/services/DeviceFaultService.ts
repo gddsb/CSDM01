@@ -115,37 +115,28 @@ async function getFaultDetail(id: number) {
 // ---------- Service ----------
 
 export const DeviceFaultService = {
-  /** 分页查询故障列表（数据权限由 dataScope 中间件注入 scopeWhere）
-   *  actor 参数保留向后兼容，scopeWhere 为新接入方式（优先）
-   */
-  async list(query: any, actor?: any, scopeWhere?: Record<string, any>) {
+  /** 分页查询故障列表（按角色过滤上报人） */
+  async list(query: any, actor?: any) {
     const where = buildFaultWhere(query)
     const limit = Math.min(Number(query.pageSize) || 20, MAX_PAGE_SIZE)
     const offset = ((Number(query.page) || 1) - 1) * limit
 
-    // 数据权限合并：scopeWhere（新接入方式）优先；不传时 fallback actor 硬编码（待后续 Service 全量迁移后删除）
+    // 按权限过滤：有 device:fault:view_all 权限的角色看全部；否则只看自己上报的
     const permCodes: Set<string> = actor?.permCodes ?? new Set()
     const hasViewAll = permCodes.has(WILDCARD_PERM) || permCodes.has('device:fault:view_all')
-    let finalWhere = { ...where }
-    if (scopeWhere && Object.keys(scopeWhere).length > 0) {
-      // 中间件注入了 scopeWhere — 优先使用（V2 标准路径）
-      finalWhere = { [Op.and]: [where, scopeWhere] }
-    } else if (actor?.userId && !hasViewAll) {
-      // 兜底：无中间件时保留旧逻辑（待全量迁移后清除）
-      finalWhere.reporter_id = actor.userId
+    if (actor?.userId && !hasViewAll) {
+      where.reporter_id = actor.userId
     }
 
     return await DeviceFault.findAndCountAll({
-      where: finalWhere,
+      where,
       limit,
       offset,
       order: [['fault_time', 'DESC'], ['fault_id', 'DESC']],
     })
   },
 
-  /** 全量统计（按权限过滤，返回聚合 count）
-   *  @deprecated — 后续迁移为 dataScope 中间件 + scopeWhere 合并
-   */
+  /** 全量统计（按权限过滤，返回聚合 count） */
   async stats(actor?: any) {
     const where: any = {}
     const permCodes: Set<string> = actor?.permCodes ?? new Set()

@@ -11,7 +11,7 @@ import { asyncHandler } from '../middleware/security.js'
 import type { Request, Response } from 'express'
 
 export const list = asyncHandler(async (req: Request, res: Response) => {
-  const result = await ReportOrderService.list(req.query, (req as any).permV2?.scopeWhere)
+  const result = await ReportOrderService.list(req.query)
   return success(res, result.rows, '查询成功', result.count)
 })
 
