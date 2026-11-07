@@ -11,6 +11,7 @@ import energyRoutes from './energy.js'
 import versionRoutes from './version.js'
 import sampleValueRoutes from './sample-value.js'
 import dailyReportRoutes from './dailyReport.js'
+import iamRoutes from './iam.js'
 import { uploadImage } from '../controllers/UploadController.js'
 import { authRequired } from '../middleware/auth.js'
 import { asyncHandler } from '../middleware/security.js'
@@ -39,6 +40,7 @@ router.use('/auth', authRoutes) // login 公开，profile/change-password 在 au
 
 // 核心业务路由 — 全局鉴权兜底（所有基础数据/生产/系统管理操作都需要登录）
 router.use('/system', authRequired, systemRoutes)
+router.use('/iam', iamRoutes)
 router.use('/basic', authRequired, basicRoutes)
 // ============ 公开路由（不需要 authRequired）============
 // upload-logs — APP 端日志上报（纯日志写，无敏感操作；新 APP / token 过期也能上报）
