@@ -97,7 +97,7 @@ export function requirePerm(options: RequirePermOptions | string): RequestHandle
       return
     }
 
-    const userId = (req as any).user.user_id ?? (req as any).user.id
+    const userId = (req as any).user.userId ?? (req as any).user.user_id ?? (req as any).user.id
     if (!userId) {
       fail(res, '用户信息缺失', ErrorCode.UNAUTHORIZED)
       return
