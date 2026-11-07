@@ -225,12 +225,15 @@ function AppRoutes() {
 
         {/* —— IAM 权限引擎 V2 —— 用户与权限 —— */}
         {/* 注意：用户/角色/权限资源池暂时还在 system/* 路径下（旧页面复用），后续 Phase 4 再搬 */}
+        <Route path="/iam/users" element={lazyPage(<PermissionGate permCode="iam:user"><UserManagement /></PermissionGate>)} />
+        <Route path="/iam/roles" element={lazyPage(<PermissionGate permCode="iam:role"><RoleManagement /></PermissionGate>)} />
         <Route path="/iam/business-objects" element={lazyPage(<PermissionGate permCode="iam:business-object:view"><BusinessObjectPage /></PermissionGate>)} />
         <Route path="/iam/data-dimensions" element={lazyPage(<PermissionGate permCode="iam:data-dimension:view"><DataDimensionPage /></PermissionGate>)} />
         <Route path="/iam/data-scopes" element={lazyPage(<PermissionGate permCode="iam:data-scope:view"><DataScopePage /></PermissionGate>)} />
         <Route path="/iam/biz-status-rules" element={lazyPage(<PermissionGate permCode="iam:biz-status:view"><BizStatusRulePage /></PermissionGate>)} />
         <Route path="/iam/permission" element={lazyPage(<PermissionGate permCode="iam:permission:view"><MenuManagement /></PermissionGate>)} />
         <Route path="/iam/cache" element={lazyPage(<PermissionGate permCode="iam:permission:update"><CacheManagementPage /></PermissionGate>)} />
+        <Route path="/iam/audit" element={<Navigate to="/iam/audit/permission" replace />} />
         <Route path="/iam/audit/permission" element={lazyPage(<PermissionGate permCode="iam:audit:permission:run"><PermissionAuditPage /></PermissionGate>)} />
         <Route path="/iam/audit/business-objects" element={lazyPage(<PermissionGate permCode="iam:audit:business-obj:run"><BusinessObjScanPage /></PermissionGate>)} />
         <Route path="/iam/audit/data-dimensions" element={lazyPage(<PermissionGate permCode="iam:audit:data-dimension:run"><DataDimScanPage /></PermissionGate>)} />
