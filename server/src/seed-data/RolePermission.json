@@ -35,11 +35,6 @@
     "perm_id": 7
   },
   {
-    "id": 49,
-    "role_id": 1,
-    "perm_id": 8
-  },
-  {
     "id": 50,
     "role_id": 1,
     "perm_id": 9
@@ -336,10 +331,6 @@
   },
   {
     "role_id": 1,
-    "perm_id": 64
-  },
-  {
-    "role_id": 1,
     "perm_id": 300
   },
   {
@@ -381,5 +372,735 @@
   {
     "role_id": 1,
     "perm_id": 400
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 304
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 305
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 55
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 56
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 57
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 58
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 59
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 61
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 65
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 77
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 680
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 690
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 401
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 402
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 403
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 410
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 411
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 412
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 420
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 421
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 422
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 430
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 440
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 441
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 442
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 450
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 451
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 452
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 460
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 461
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 462
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 470
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 471
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 472
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 480
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 481
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 482
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 483
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 500
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 501
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 502
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 510
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 511
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 512
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 520
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 521
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 522
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 530
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 531
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 532
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 540
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 541
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 542
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 550
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 551
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 552
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 560
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 561
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 562
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 570
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 571
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 572
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 580
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 581
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 582
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 590
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 591
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 592
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 600
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 601
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 602
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 610
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 611
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 612
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 620
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 630
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 631
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 632
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 633
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 691
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 692
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 693
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 694
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 695
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 696
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 697
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 698
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 699
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 700
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 701
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 702
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 703
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 704
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 705
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 706
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 707
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 708
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 709
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 710
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 711
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 712
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 713
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 714
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 715
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 716
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 717
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 718
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 719
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 720
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 721
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 722
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 723
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 724
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 725
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 726
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 727
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 728
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 729
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 730
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 731
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 732
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 733
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 734
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 735
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 736
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 737
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 738
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 739
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 740
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 741
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 742
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 743
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 744
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 745
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 746
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 747
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 748
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 749
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 750
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 751
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 752
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 753
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 754
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 755
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 756
+  },
+  {
+    "id": null,
+    "role_id": 1,
+    "perm_id": 757
   }
 ]
