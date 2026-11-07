@@ -9,6 +9,7 @@ import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPa
 import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import api from '../../utils/api'
 import UserScopeConfigModal from '../iam/components/UserScopeConfigModal'
+import UserExtPermissionModal from './UserExtPermissionModal'
 import { useMessage, useApp } from '../../contexts/AppContext'
 
 interface User {
@@ -63,6 +64,10 @@ export default function UserManagement() {
   const [scopeUserName, setScopeUserName] = useState('')
   const [scopeRoleId, setScopeRoleId] = useState<number | null>(null)
   const [scopeRoleName, setScopeRoleName] = useState('')
+
+  // Phase 3: 用户附加权限配置 Modal
+  const [extPermOpen, setExtPermOpen] = useState(false)
+  const [extPermUser, setExtPermUser] = useState<{ user_id: number; username: string } | null>(null)
 
   const [query, setQuery] = useState<QueryParams>({ page: 1, pageSize: 30, keyword: '', status: undefined, role_id: undefined })
 
@@ -296,6 +301,15 @@ export default function UserManagement() {
                 }}
               >数据权限</Button>
             )}
+            {/* Phase 3: 用户附加权限配置入口 */}
+            {hasPermission('system:user:extConfig') && (
+              <Button type="link" size="small"
+                onClick={() => {
+                  setExtPermUser({ user_id: record.user_id, username: record.username })
+                  setExtPermOpen(true)
+                }}
+              >附加权限</Button>
+            )}
           </Space>
         )
       },
@@ -451,6 +465,14 @@ export default function UserManagement() {
         userName={scopeUserName}
         roleId={scopeRoleId}
         roleName={scopeRoleName}
+      />
+
+      {/* Phase 3: 用户附加权限配置 Modal */}
+      <UserExtPermissionModal
+        open={extPermOpen}
+        user={extPermUser}
+        onClose={() => setExtPermOpen(false)}
+        onSaved={() => { message?.success('权限配置保存成功') }}
       />
     </>
   )
