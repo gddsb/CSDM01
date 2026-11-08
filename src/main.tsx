@@ -210,8 +210,9 @@ function AppRoutes() {
         <Route path="/dashboard-bigscreen" element={<Dashboard />} />
 
         {/* —— system/* 系统管理 —— DeviceAwareGuard 在非 Web 端（含 TV）自动屏蔽 —— */}
-        <Route path="/system/users" element={lazyPage(<PermissionGate permCode="system:user"><UserManagement /></PermissionGate>)} />
-        <Route path="/system/roles" element={lazyPage(<PermissionGate permCode="system:role"><RoleManagement /></PermissionGate>)} />
+        {/* 注：system:user / system:role 已停用（方案 A 硬切迁移到 iam 一级菜单），旧路由 redirect */}
+        <Route path="/system/users" element={<Navigate to="/iam/users" replace />} />
+        <Route path="/system/roles" element={<Navigate to="/iam/roles" replace />} />
         <Route path="/system/menus" element={lazyPage(<PermissionGate permCode="system:menu"><MenuManagement /></PermissionGate>)} />
         <Route path="/system/dictionary" element={lazyPage(<PermissionGate permCode="system:dict"><DataDictionary /></PermissionGate>)} />
         <Route path="/system/config" element={<Navigate to="/system/config/params" replace />} />
