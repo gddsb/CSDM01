@@ -192,7 +192,8 @@ export default function MobileDashboard() {
 
   // ========== 渲染 ==========
   return (
-    <PullToRefresh onRefresh={onRefresh} className="mobile-page-scrollable">
+    <div className="mobile-page-scrollable">
+    <PullToRefresh onRefresh={onRefresh}>
       {/* 【UI 重构 2026-11-07】顶部淡蓝渐变（浅/深由 CSS 变量驱动） */}
       <div style={{
         padding: '12px 12px 80px',
@@ -264,7 +265,7 @@ export default function MobileDashboard() {
                     }}
                   >
                   {/* 显式传 color prop 给 antd-mobile-icons，避免依赖 Capacitor WebView currentColor 继承 */}
-                    {React.cloneElement(entry.icon as React.ReactElement, { color: entry.color })}
+                    {React.cloneElement(entry.icon as React.ReactElement, { color: entry.color } as any)}
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--m-text-3)' }}>{entry.title}</div>
                 </div>
@@ -331,5 +332,6 @@ export default function MobileDashboard() {
         </div>
       </div>
     </PullToRefresh>
+    </div>
   )
 }

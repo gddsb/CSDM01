@@ -12,6 +12,8 @@ export interface ManpowerRecord {
   general_count?: number | string
   labor_count?: number | string
   other_count?: number | string
+  net_hours?: number | string | null
+  man_hours?: number | string | null
 }
 
 /** 计算人工工时：开工状态取当前时间，完工状态取 finish_time */
@@ -40,7 +42,7 @@ export function calcManpowerHours(manpowerRecords: ManpowerRecord[], reportInfo:
 export interface ProcessStatsInput {
   defects: Array<{ defect_type?: string; quantity?: number | string; process_id?: number | string }>
   scraps: Array<{ defect_type?: string; quantity?: number | string; process_id?: number | string }>
-  exceptions: Array<{ duration?: number | string; process_id?: number | string }>
+  exceptions: Array<{ duration?: number | string; net_duration?: number | string; process_id?: number | string }>
   materials: Array<{ material_type?: string; quantity?: number | string; process_id?: number | string }>
   manpowers: ManpowerRecord[]
   lineProcesses: Array<{ process_id: number | string }>

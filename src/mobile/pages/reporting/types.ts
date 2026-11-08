@@ -121,6 +121,7 @@ export interface ScrapRow {
   defect_name?: string
   defect_type?: string
   quantity: number
+  unit?: string
   _isNew?: boolean
 }
 
@@ -134,6 +135,10 @@ export interface ExceptionRow {
   end_time?: string | null
   duration?: number | null
   remark?: string | null
+  device_id?: number | string | null
+  device_code?: string | null
+  device_name?: string | null
+  description?: string | null
   _isNew?: boolean
 }
 

@@ -19,7 +19,7 @@ export function useDebounceEffect<T>(
 
   useEffect(() => {
     if (timerRef.current) window.clearTimeout(timerRef.current)
-    timerRef.current = window.setTimeout(() => effect(value), delay)
+    timerRef.current = window.setTimeout(() => effect(value), delay) as unknown as ReturnType<typeof setTimeout>
     return () => {
       if (timerRef.current) window.clearTimeout(timerRef.current)
     }
