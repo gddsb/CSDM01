@@ -101,12 +101,6 @@ export default function MobileDashboard() {
         { icon: '🧰', text: '待维保设备', count: d.pendingMaintenanceDevices ?? 0, path: '/m/device-maintenance', color: 'var(--m-status-pending)' },
       ]
 
-      if (hasPermission('device:inspection')) {
-        items.push(
-          { icon: '⚙️', text: '每日待点检', count: d.dailyInspection ?? 0, path: '/m/device-maintenance', color: 'var(--m-status-repairing)' },
-          { icon: '📅', text: '定期待保养项', count: d.periodicMaintenance ?? 0, path: '/m/device-maintenance', color: 'var(--m-status-pending)' },
-        )
-      }
       if (hasPermission('device:fault')) {
         items.push({ icon: '🚨', text: '设备故障待处理', count: d.pendingFaults ?? 0, path: '/m/device-fault', color: 'var(--m-status-urgent)' })
       }

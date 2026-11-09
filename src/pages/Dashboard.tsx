@@ -60,10 +60,9 @@ export default function Dashboard() {
       const items: TodoItem[] = [
         { icon: '🏃', label: '待完工订单', count: d.pendingOrders ?? 0, color: 'var(--color-success)', path: '/production/orders?tab=开工' },
         { icon: '🧰', label: '待维保设备', count: d.pendingMaintenanceDevices ?? 0, color: 'var(--color-warning)', path: '/device/maintenance' },
-        { icon: '⚙️', label: '每日待点检', count: d.dailyInspection ?? 0, color: 'var(--color-primary)', path: '/device/maintenance' },
-        { icon: '📅', label: '定期待保养项', count: d.periodicMaintenance ?? 0, color: 'var(--color-warning)', path: '/device/maintenance' },
         { icon: '🚨', label: '设备故障待处理', count: d.pendingFaults ?? 0, color: 'var(--color-error)', path: '/device/fault' },
-        { icon: '✅', label: '待检验来料', count: d.pendingIncoming ?? 0, color: 'var(--color-success)', path: '/quality/incoming' },
+        { icon: '⚠️', label: '校准到期提醒', count: d.pendingCalibration ?? 0, color: 'var(--color-warning)', path: '/device/calibration' },
+        { icon: '✅', label: '待检验任务', count: (d.pendingIncoming ?? 0) + (d.pendingEnv ?? 0), color: 'var(--color-success)', path: '/quality/incoming' },
       ]
       setTodos(items.filter(i => i.count > 0))
     } catch (err: any) {
