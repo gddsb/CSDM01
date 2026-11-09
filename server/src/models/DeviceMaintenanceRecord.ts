@@ -69,6 +69,24 @@ const DeviceMaintenanceRecord = sequelize.define('DeviceMaintenanceRecord', {
     comment: '检查人姓名（冗余）',
   },
 
+  // ===== 实际检查人（自动记录：检查人首次打开已完成记录） =====
+  inspector_executor_id: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    index: true,
+    comment: '实际检查人user_id（首个打开已完成记录的人，严格幂等不覆盖）',
+  },
+  inspector_executor_name: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    comment: '实际检查人姓名（冗余）',
+  },
+  inspected_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    comment: '实际检查时间（检查人首次打开/执行人自完成时写入）',
+  },
+
   // ===== 执行定位 =====
   trigger_mode: {
     type: DataTypes.STRING(20),

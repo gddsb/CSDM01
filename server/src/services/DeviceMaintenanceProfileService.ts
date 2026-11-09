@@ -38,6 +38,7 @@ export {
   skipRecord,
   deleteRecord,
   dailySummary,
+  confirmInspect,
 } from './MaintenanceRecordCrud.js'
 
 // ---------- MaintenanceRuntime ----------

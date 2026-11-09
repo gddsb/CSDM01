@@ -425,6 +425,7 @@ router.put('/device-records/:id/start', permissionRequired('pc:device:maintenanc
 router.put('/device-records/:id/submit', permissionRequired('pc:device:maintenance:submit'), deviceMaintenanceUploadMiddleware.array('files', 10), logOperation('提交保养'), asyncHandler(DeviceMaintenanceController.submitRecord))
 router.post('/device-records/batch-submit', permissionRequired('pc:device:maintenance:batch_submit'), logOperation('批量提交保养'), asyncHandler(DeviceMaintenanceController.batchSubmit))
 router.put('/device-records/:id/skip', permissionRequired('pc:device:maintenance:skip'), asyncHandler(DeviceMaintenanceController.skipRecord))
+router.post('/device-records/:id/confirm-inspect', permissionRequired('all:device:maintenance:view'), asyncHandler(DeviceMaintenanceController.confirmInspect))
 router.delete('/device-records/:id', permissionRequired('pc:device:maintenance:delete'), logOperation('删除保养记录'), asyncHandler(DeviceMaintenanceController.deleteRecord))
 router.get('/device-records/:id/images', permissionRequired('all:device:maintenance:view'), asyncHandler(DeviceMaintenanceController.getImages))
 router.post('/device-records/:id/images', permissionRequired('pc:device:maintenance:upload_image'), deviceMaintenanceUploadMiddleware.array('files', 10), logOperation('上传保养图片'), asyncHandler(DeviceMaintenanceController.uploadImage))

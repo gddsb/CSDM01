@@ -243,6 +243,25 @@ const t = await DeviceMaintenanceRecord.sequelize.transaction()
 
       await record.update(recordUpdate, { transaction: t })
 
+      // 自检查：执行人提交 = status=2 时，若 executor_id === inspector_user_id（或 inspector_user_id 为空兜底），
+      // 自动写入 inspector_executor_id / _name / inspected_at
+      // 严格幂等：inspector_executor_id 已有值就不覆盖（后面检查人不能抢首个记录）
+      const currInspectorExecutor = record.getDataValue('inspector_executor_id')
+      if (!currInspectorExecutor) {
+        const execId = recordUpdate.executor_id ?? record.getDataValue('executor_id')
+        const execName = recordUpdate.executor_name ?? record.getDataValue('executor_name')
+        const inspId = record.getDataValue('inspector_user_id')
+        // 自检查触发条件：执行人 = 计划检查人 或 计划检查人为空（无人指定就默认为执行人自检查）
+        const isSelfInspect = inspId === null || inspId === undefined || execId === inspId
+        if (isSelfInspect && execId) {
+          await record.update({
+            inspector_executor_id: execId,
+            inspector_executor_name: execName || null,
+            inspected_at: now,
+          }, { transaction: t })
+        }
+      }
+
       // 异常自动创建故障工单
       let faultId: number | null = null
       if (result === '异常') {
@@ -352,6 +371,58 @@ const t = await DeviceMaintenanceRecord.sequelize.transaction()
       if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
       throw new AppError(err.message || '批量提交失败', ErrorCode.SYSTEM_ERROR)
     }
+}
+
+/** confirmInspect — 检查人首次打开已完成记录 = 自动标记检查
+ *  严格幂等：inspector_executor_id 已有值 → 不覆盖（后面的人不能抢首个记录）
+ */
+export async function confirmInspect(id: number, user?: any) {
+  const userInfo: any = user || {}
+  const uid = Number(userInfo.userId ?? userInfo.user_id ?? 0)
+  const username = userInfo.username || userInfo.real_name || ''
+  const permCodes: Set<string> = userInfo.permCodes ?? new Set()
+  const hasViewAll = permCodes.has('*') || permCodes.has('device:maintenance:view_all')
+
+  const record = await DeviceMaintenanceRecord.findOne({ where: { record_id: id } })
+  if (!record) throw new AppError('执行记录不存在', ErrorCode.RECORD_NOT_FOUND)
+
+  // 权限：有 view_all 或 inspector_user_id 包含当前用户
+  const inspId = Number(record.getDataValue('inspector_user_id'))
+  const assigned = record.getDataValue('responsible_user_ids')  // JSON array
+  const isInspector = inspId === uid || (Array.isArray(assigned) && assigned.includes(uid))
+  if (!hasViewAll && !isInspector) {
+    throw new AppError('权限不足：仅计划检查人或设备管理员可标记检查', ErrorCode.PERMISSION_DENIED)
+  }
+
+  // 必须已完成
+  if (Number(record.getDataValue('status')) !== 2) {
+    throw new AppError('只有已完成(status=2)的记录才允许标记检查', ErrorCode.PARAM_INVALID)
+  }
+
+  const existingExecutor = record.getDataValue('inspector_executor_id')
+  if (existingExecutor) {
+    // 严格幂等：已存在就返回，不覆盖
+    return { already: true, record_id: id, inspector_executor_id: existingExecutor }
+  }
+
+  // 检查人可以是执行人本人（自检查兜底）或计划检查人
+  const executorId = Number(record.getDataValue('executor_id'))
+  const finalExecutorId = uid > 0 ? uid : (executorId || null)
+  const finalExecutorName = uid > 0 ? username : (record.getDataValue('executor_name') || null)
+
+  await record.update({
+    inspector_executor_id: finalExecutorId,
+    inspector_executor_name: finalExecutorName,
+    inspected_at: new Date(),
+  })
+
+  return {
+    already: false,
+    record_id: id,
+    inspector_executor_id: finalExecutorId,
+    inspector_executor_name: finalExecutorName,
+    inspected_at: record.getDataValue('inspected_at'),
+  }
 }
 
 export async function skipRecord(id: number, body: any, user?: any) {

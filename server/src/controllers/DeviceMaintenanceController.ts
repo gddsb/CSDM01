@@ -229,6 +229,12 @@ export const dailySummary = asyncHandler(async (req: Request, res: Response) => 
   return success(res, map)
 })
 
+/** 检查人首次打开已完成记录 = 自动标记检查（严格幂等，不覆盖） */
+export const confirmInspect = asyncHandler(async (req: Request, res: Response) => {
+  const r = await DeviceMaintenanceProfileService.confirmInspect(Number(req.params.id), (req as any).user)
+  return success(res, r, r.already ? '已标记检查（重复点击忽略）' : '标记检查成功')
+})
+
 // ============ 图片查询 + 上传（sharp/fs 边界） ============
 
 /** 查保养执行记录的图片 — DB 全走 Service */
