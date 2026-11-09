@@ -28,9 +28,11 @@ export class PermissionEngine {
    * 5. final = rolePerms ∪ addPerms − denyPerms
    */
   static async computeFinalPerms(userId: number, terminal: number = 1): Promise<string[]> {
-    // 1. 超级管理员短路
+    // 1. 超级管理员短路：返回全量权限池 + 注入通配符 '*'
+    //    通配符是 has('*') / includes('*') 等业务代码的核心判断标志
     if (await PermissionEngine.isSuperAdmin(userId)) {
-      return await PermissionEngine.getAllPermCodes()
+      const allCodes = await PermissionEngine.getAllPermCodes()
+      return ['*', ...allCodes]
     }
 
     // 2. 并行查 rolePerms + addPerms + denyPerms

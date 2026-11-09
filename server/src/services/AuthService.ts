@@ -99,6 +99,13 @@ export class AuthService {
     const token = generateToken({ ...(user as any).toJSON(), terminal: numericTerminal })
     const userWithRole: Record<string, any> = (user as any).toJSON()
     delete userWithRole.user_pwd
+    // 扁平提升 role_code / role_name 到顶层（Sequelize include 挂在 user.role.role_code，前端读顶层 user.role_code）
+    const roleRaw = (userWithRole as any).role || {}
+    userWithRole.role_code = String(roleRaw.role_code ?? '').toLowerCase()
+    userWithRole.role_name = String(roleRaw.role_name ?? '')
+    // 前端 camelCase 兼容
+    userWithRole.roleCode = userWithRole.role_code
+    userWithRole.roleName = userWithRole.role_name
     // Phase 2: 权限码按终端过滤（只返回该终端下的权限）
     const permCodes = await getUserPermissionCodes((user as any).role_id || userWithRole.role_id, numericTerminal)
     userWithRole.perm_codes = permCodes

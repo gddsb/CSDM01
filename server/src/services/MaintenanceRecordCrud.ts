@@ -381,7 +381,8 @@ export async function confirmInspect(id: number, user?: any) {
   const uid = Number(userInfo.userId ?? userInfo.user_id ?? 0)
   const username = userInfo.username || userInfo.real_name || ''
   const permCodes: Set<string> = userInfo.permCodes ?? new Set()
-  const hasViewAll = permCodes.has('*') || permCodes.has('device:maintenance:view_all')
+  const isSuperAdmin = permCodes.has('*') || Boolean(userInfo.isSuperAdmin)
+  const hasViewAll = isSuperAdmin || permCodes.has('device:maintenance:view_all')
 
   const record = await DeviceMaintenanceRecord.findOne({ where: { record_id: id } })
   if (!record) throw new AppError('执行记录不存在', ErrorCode.RECORD_NOT_FOUND)

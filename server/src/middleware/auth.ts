@@ -225,9 +225,13 @@ export function authRequired(req: Request, res: Response, next: NextFunction): a
           Role.findOne({ where: { role_id: user.roleId }, attributes: ['role_code', 'role_name'] }),
         ])
         user.permCodes = new Set(finalCodes)
+        // 防御性：PermissionEngine 短路时 '*' 已在 finalCodes 里；
+        // 若未来短路逻辑变了，这里确保 super_admin 仍有通配符
+        const isSA = finalCodes.includes(WILDCARD_PERM) || PermissionEngine.isSuperAdmin(user.userId)
+        if (isSA) user.permCodes.add(WILDCARD_PERM)
         user.roleCode = String((roleInfo as any)?.role_code ?? '')
         user.roleName = String((roleInfo as any)?.role_name ?? '')
-        user.isSuperAdmin = finalCodes.includes(WILDCARD_PERM) || PermissionEngine.isSuperAdmin(user.userId)
+        user.isSuperAdmin = isSA
       } catch (err: any) {
         logger.warn('[authRequired] 加载用户权限失败:', err.message)
         user.permCodes = new Set()
