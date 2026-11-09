@@ -240,21 +240,22 @@ export async function generateRecords(body: any) {
       createdList.push(r)
     }
 
-    // 6c. existing - expected → DELETE（清理已失效的）
-    // 三保险：仅删 status='待执行' + 未过期 daily + 非 runtime
+    // 6c. existing - expected → UPDATE status=3 '跳过'（休息日/已失效）
+    // 三保险：仅改 status='待执行' + 未过期 daily + 非 runtime
+    // 改为"跳过"比物理删除更友好：保留历史追溯 + 不破坏已关联数据
     for (const exist of existingRecords) {
       const key = `${exist.getDataValue('standard_id')}|${exist.getDataValue('period_key')}`
       if (expectedKeys.has(key)) continue  // 在 expected 里的不动
       const tm = exist.getDataValue('trigger_mode')
       const pk = exist.getDataValue('period_key')
-      // 已过期 daily 不删
+      // 已过期 daily 不改（历史已生成的不动）
       if (tm === 'daily' && pk < todayKey) continue
       // runtime 不碰
       if (tm === 'runtime') continue
-      // 只有"待执行"状态能删，已完成/执行中/跳过的保留历史
+      // 只有"待执行"状态能改跳过，已完成/执行中/跳过的保留历史
       if (!DELETABLE_STATUS_VALUES.includes(Number(exist.getDataValue('status')))) continue
-      await exist.destroy({ transaction: t })
-      deleted++
+      await exist.update({ status: 3 }, { transaction: t })  // 3 = '跳过'
+      deleted++  // 变量名沿用，语义：被移出 expected 的数量
     }
 
     await t.commit()
