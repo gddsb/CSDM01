@@ -1,207 +1,164 @@
 /**
  * 移动端主布局
- * - 顶部 NavBar（可返回 / 可自定义标题）
- * - 中部 Outlet（子页面）
- * - 底部 TabBar：仅在 Dashboard / Profile 两个 Tab 页常驻显示
- *   "生产 / 检验 / 设备" 三个 Tab 点击弹出 ActionSheet 选择子功能
- *   子功能页面跳转后 TabBar 自动收起（显示 NavBar 返回按钮）
- * - 更新检测统一由 main.tsx 的 AppUpdateLoader 触发（app-updater 单一入口）
+ *
+ * Migration 035 改造：业务菜单从"前端硬编码"改为"后端动态下发"
+ *   —— sys_permission 加 mobile_* 字段统一双端菜单
+ *   —— 后端 /system/permissions/mobile-menu 返回 { tabs: [...] }
+ *   —— 前端按 tabGroup 分组 + mobile_sort_order 排序，渲染 TabBar + ActionSheet
+ *
+ * 固定 Tab（首页/我的）仍硬编码 — APP 框架层入口，不属于 type=menu
+ * 业务 Tab（生产/检验/设备）由后端 tabs 数组驱动
  */
-import { useMemo, useCallback } from 'react'
+import { useMemo, useCallback, useEffect, useState } from 'react'
 import { useNavigate, useLocation, Outlet } from 'react-router-dom'
-import { TabBar, NavBar, ActionSheet, Badge } from 'antd-mobile'
+import { TabBar, NavBar, ActionSheet } from 'antd-mobile'
 import { AppOutline, BillOutline, CheckOutline, TeamOutline, UserOutline } from 'antd-mobile-icons'
 import { useApp } from '../contexts/AppContext'
 import { useOfflineQueue } from './hooks/useOfflineQueue'
 import { useKeyboardAvoidance } from './hooks/useKeyboardAvoidance'
 import { useEdgeSwipeBack } from './hooks/useEdgeSwipeBack'
 import { runBackHandler } from './utils/backInterceptor'
+import api from '../utils/api'
 
 interface TabDef {
   key: string
   title: string
   icon: React.ReactNode
-  /** 权限码：未配置时对所有登录用户可见；配置后用户需具备该权限码（或其任意父级） */
-  permCode?: string
 }
 
-const TABS: TabDef[] = [
-  { key: '/m/dashboard', title: '首页', icon: <AppOutline /> },
-  { key: '__production__', title: '生产', icon: <BillOutline /> },
-  { key: '__inspection__', title: '检验', icon: <CheckOutline /> },
-  { key: '__device__', title: '设备', icon: <TeamOutline /> },
-  { key: '/m/profile', title: '我的', icon: <UserOutline /> },
-]
-
-/** 底部 TabBar 常驻显示 —— 现在**所有页面**都显示 TabBar（用户希望始终可见） */
-
-/** 根据当前路由计算 TabBar 应该高亮哪个 Tab */
-function computeActiveKey(pathname: string): string {
-  // 先检查直接的 Tab 路由
-  if (pathname === '/m/dashboard') return '/m/dashboard'
-  if (pathname === '/m/profile') return '/m/profile'
-  // 生产子路由
-  const prodRoutes = PRODUCTION_ITEMS.map(i => i.route)
-  if (prodRoutes.includes(pathname)) return '__production__'
-  // 检验子路由
-  const inspRoutes = INSPECTION_ITEMS.map(i => i.route)
-  if (inspRoutes.includes(pathname)) return '__inspection__'
-  // 设备子路由
-  const devRoutes = DEVICE_ITEMS.map(i => i.route)
-  if (devRoutes.includes(pathname)) return '__device__'
-  // 未知子页面，不高亮任何 Tab
-  return ''
+/** 后端返回的移动端菜单项 */
+interface MobileMenuItem {
+  text: string        // perm_name
+  route: string       // mobile_route_path
+  permCode: string    // perm_code（前端二次鉴权）
+  icon?: string
+  sortOrder?: number
 }
 
-/** "生产" ActionSheet 子项 —— 订单管理 + 移动报工 */
-const PRODUCTION_ITEMS = [
-  { text: '📋 生产订单', key: 'orders', route: '/m/production-orders', permCode: 'production:reporting' },
-  { text: '📝 移动报工', key: 'reporting', route: '/m/process-reporting', permCode: 'production:reporting' },
-]
+/** 后端返回的移动端 Tab 分组 */
+interface MobileTabGroup {
+  key: string          // '__production__' / '__inspection__' / '__device__'
+  title: string        // '生产' / '检验' / '设备'
+  tabGroup: string     // 'production' / 'inspection' / 'device'
+  items: MobileMenuItem[]
+}
 
-/** "检验" ActionSheet 子项（每项独立鉴权，全部不可见时隐藏检验 Tab） */
-const INSPECTION_ITEMS = [
-  { text: '📦 来料检验', key: 'incoming', route: '/m/incoming-inspection', permCode: 'quality:incoming' },
-  { text: '🏷️ 成品检验', key: 'product', route: '/m/product-inspection', permCode: 'quality:product' },
-  { text: '⚙️ 过程检验', key: 'process', route: '/m/process-inspection', permCode: 'quality:process' },
-  { text: '🔬 微生物检验', key: 'microbe', route: '/m/microbe-inspection', permCode: 'quality:incoming' },
-  { text: '📋 检验历史', key: 'history', route: '/m/inspection-history', permCode: 'quality:incoming' },
-  { text: '📢 投诉上报', key: 'complaint', route: '/m/complaint-report', permCode: 'quality:incoming' },
-]
+/** 固定 Tab — 首页 / 我的（APP 框架层入口，不属于 sys_permission type=menu） */
+const FIXED_HOME: TabDef = { key: '/m/dashboard', title: '首页', icon: <AppOutline /> }
+const FIXED_PROFILE: TabDef = { key: '/m/profile', title: '我的', icon: <UserOutline /> }
 
-/** "设备" ActionSheet 子项（每项独立鉴权，全部不可见时隐藏设备 Tab） */
-const DEVICE_ITEMS = [
-  { text: '🛠️ 设备维保', key: 'maintenance', route: '/m/device-maintenance', permCode: 'device:maintenance' },
-  { text: '⚠️ 设备故障', key: 'fault', route: '/m/device-fault', permCode: 'device:fault' },
-  { text: '⏰ 校准提醒', key: 'calibration', route: '/m/calibration-reminder', permCode: 'device:calibration' },
-  { text: '📊 设备OEE', key: 'oee', route: '/m/device-oee', permCode: 'device:oee' },
-  { text: '📦 备件管理', key: 'spare-parts', route: '/m/spare-parts', permCode: 'device:spare-part' },
-  { text: '📁 电子档案', key: 'device-documents', route: '/m/device-documents', permCode: 'device:document' },
-]
+const GROUP_ICON_MAP: Record<string, React.ReactNode> = {
+  production: <BillOutline />,
+  inspection: <CheckOutline />,
+  device: <TeamOutline />,
+}
 
-/** 标题映射 */
 const TITLE_MAP: Record<string, string> = {
   '/m/dashboard': '奶粉罐MES',
   '/m/process-reporting': '移动报工',
   '/m/incoming-inspection': '来料检验',
   '/m/product-inspection': '成品检验',
   '/m/process-inspection': '过程检验',
-  '/m/device-inspection': '设备维保',
   '/m/device-maintenance': '设备维保',
   '/m/device-fault': '设备故障上报',
   '/m/calibration-reminder': '校准提醒',
   '/m/inspection-history': '检验历史',
-  '/m/daily-card': '日报卡',
   '/m/microbe-inspection': '微生物检验',
   '/m/complaint-report': '投诉上报',
-  '/m/offline-queue': '离线暂存队列',
   '/m/device-oee': '设备OEE看板',
   '/m/production-orders': '生产订单',
   '/m/spare-parts': '备件管理',
   '/m/device-documents': '电子档案',
-  '/m/exception-report': '异常上报',
   '/m/profile': '我的',
+}
+
+function computeActiveKey(pathname: string, dynamicTabs: MobileTabGroup[]): string {
+  if (pathname === '/m/dashboard') return '/m/dashboard'
+  if (pathname === '/m/profile') return '/m/profile'
+  for (const tab of dynamicTabs) {
+    if (tab.items.some(it => it.route === pathname)) return tab.key
+  }
+  return ''
 }
 
 export function MobileLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { currentUser, hasPermission } = useApp()
-  const { online, pending, syncing } = useOfflineQueue()
+  const { online } = useOfflineQueue()
 
-  // 权限过滤：检验/设备/生产 Tab 的可见性取决于其子项中是否至少有一项可见
-  const visibleInspectionItems = useMemo(
-    () => INSPECTION_ITEMS.filter(it => !it.permCode || hasPermission(it.permCode)),
-    [hasPermission],
-  )
-  const visibleDeviceItems = useMemo(
-    () => DEVICE_ITEMS.filter(it => !it.permCode || hasPermission(it.permCode)),
-    [hasPermission],
-  )
-  const visibleProductionItems = useMemo(
-    () => PRODUCTION_ITEMS.filter(it => !it.permCode || hasPermission(it.permCode)),
-    [hasPermission],
-  )
+  // —— Migration 035: 动态菜单 state ——
+  const [dynamicTabs, setDynamicTabs] = useState<MobileTabGroup[]>([])
+  const [menuLoading, setMenuLoading] = useState(true)
 
-  // 计算 Tab 可见性
-  const visibleTabs = useMemo(() => {
-    return TABS.filter((t) => {
-      if (t.key === '__production__') return visibleProductionItems.length > 0
-      if (t.key === '__inspection__') return visibleInspectionItems.length > 0
-      if (t.key === '__device__') return visibleDeviceItems.length > 0
-      if (!t.permCode) return true
-      return hasPermission(t.permCode)
-    })
-  }, [hasPermission, visibleProductionItems.length, visibleInspectionItems.length, visibleDeviceItems.length])
+  useEffect(() => {
+    let cancelled = false
+    const fetchMobileMenu = async () => {
+      try {
+        const res = await api.get('/system/permissions/mobile-menu')
+        const data = res?.data || { tabs: [] }
+        if (cancelled) return
+        setDynamicTabs((data.tabs || []) as MobileTabGroup[])
+      } catch (err) {
+        console.warn('[MobileLayout] 拉取移动端菜单失败:', err)
+        setDynamicTabs([])
+      } finally {
+        if (!cancelled) setMenuLoading(false)
+      }
+    }
+    fetchMobileMenu()
+    return () => { cancelled = true }
+    // 用户/角色变化时重拉
+  }, [currentUser?.user_id, currentUser?.role?.role_code])
 
-  // TabBar 常驻显示（所有页面）—— 根据当前路由计算高亮哪个 Tab
-  const activeTabKey = computeActiveKey(location.pathname)
-  // canBack 仅对"有返回历史的子页面"显示 NavBar 返回按钮
+  // —— 前端二次鉴权过滤（后端已按 role_permission 过滤，前端再兜底）——
+  const filteredTabs = useMemo(() => {
+    return dynamicTabs
+      .map(tab => ({ ...tab, items: tab.items.filter(it => !it.permCode || hasPermission(it.permCode)) }))
+      .filter(tab => tab.items.length > 0)
+  }, [dynamicTabs, hasPermission])
+
+  // —— 合成 visibleTabs（固定首页 + 动态业务 Tab + 固定我的）——
+  const visibleTabs = useMemo<TabDef[]>(() => {
+    const result: TabDef[] = [FIXED_HOME]
+    for (const tab of filteredTabs) {
+      result.push({ key: tab.key, title: tab.title, icon: GROUP_ICON_MAP[tab.tabGroup] })
+    }
+    result.push(FIXED_PROFILE)
+    return result
+  }, [filteredTabs])
+
+  const activeTabKey = computeActiveKey(location.pathname, filteredTabs)
+
   const isDashboard = location.pathname === '/m/dashboard'
   const isProfile = location.pathname === '/m/profile'
   const canBack = location.pathname.startsWith('/m/') && !isDashboard && !isProfile
   const title = TITLE_MAP[location.pathname] || (location.pathname.startsWith('/m/') ? '奶粉罐MES' : '')
 
-  // ========== 边缘右滑返回手势（仅 canBack 时启用）==========
   const doBack = useCallback(() => {
     if (runBackHandler()) return
     navigate(-1)
   }, [navigate])
   useEdgeSwipeBack({ enable: canBack, onBack: doBack })
-
-  // ========== 全局：输入框键盘避让（一次挂载覆盖所有子页面） ==========
   useKeyboardAvoidance()
 
-  // ========== TabBar 交互 ==========
+  // —— 动态 Tab → items 映射 ——
+  const tabItemsMap = useMemo(() => {
+    const m: Record<string, MobileMenuItem[]> = {}
+    for (const tab of filteredTabs) m[tab.key] = tab.items
+    return m
+  }, [filteredTabs])
+
   const handleTabClick = (key: string) => {
-    if (key === '__production__') {
-      const items = visibleProductionItems
+    const items = tabItemsMap[key]
+    if (items) {
       if (items.length === 0) return
-      if (items.length === 1) {
-        navigate(items[0].route)
-        return
-      }
+      if (items.length === 1) { navigate(items[0].route); return }
       const sheet = ActionSheet.show({
-        actions: items.map(it => ({ text: it.text, key: it.key })),
+        actions: items.map(it => ({ text: it.text, key: it.route })),
         cancelText: '取消',
         onAction: (action) => {
-          const target = items.find(it => it.key === action.key)
-          sheet.close()
-          if (target) setTimeout(() => navigate(target.route), 120)
-        },
-      })
-      return
-    }
-    if (key === '__inspection__') {
-      const items = visibleInspectionItems
-      if (items.length === 0) return
-      if (items.length === 1) {
-        navigate(items[0].route)
-        return
-      }
-      const sheet = ActionSheet.show({
-        actions: items.map(it => ({ text: it.text, key: it.key })),
-        cancelText: '取消',
-        onAction: (action) => {
-          const target = items.find(it => it.key === action.key)
-          sheet.close()
-          if (target) setTimeout(() => navigate(target.route), 120)
-        },
-      })
-      return
-    }
-    if (key === '__device__') {
-      const items = visibleDeviceItems
-      if (items.length === 0) return
-      if (items.length === 1) {
-        navigate(items[0].route)
-        return
-      }
-      const sheet = ActionSheet.show({
-        actions: items.map(it => ({ text: it.text, key: it.key })),
-        cancelText: '取消',
-        onAction: (action) => {
-          const target = items.find(it => it.key === action.key)
+          const target = items.find(it => it.route === action.key)
           sheet.close()
           if (target) setTimeout(() => navigate(target.route), 120)
         },
@@ -211,20 +168,15 @@ export function MobileLayout() {
     navigate(key)
   }
 
-  // 仅子功能页面渲染 NavBar；首页/我的自绘顶部，避免标题重复
   const showNavBar = canBack
 
   return (
     <div className="mobile-app">
-      {/* NavBar —— 仅子功能页面显示，外层 .mobile-app 已统一吃 safe-area */}
       {showNavBar && (
         <NavBar
           style={{ background: 'var(--m-surface)', borderBottom: '1px solid var(--m-border)', flexShrink: 0 }}
           back={canBack}
-          onBack={() => {
-            if (runBackHandler()) return
-            navigate(-1)
-          }}
+          onBack={() => { if (runBackHandler()) return; navigate(-1) }}
         >
           {title}
           {currentUser && (
@@ -235,26 +187,14 @@ export function MobileLayout() {
         </NavBar>
       )}
 
-      {/* 【2026-10-26】取消离线暂存 — 状态栏隐藏，用户必须联网使用 */}
-
-      {/* 内容区 —— TabBar 常驻，底部始终留白 */}
       <div className="mobile-app__content mobile-tabbar-padding">
         <Outlet />
       </div>
 
-      {/* TabBar —— 始终显示（5 个菜单常驻，ActionSheet 二级菜单选择后自动收起） */}
-      <div style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
-        paddingBottom: 'var(--sab)',
-      }}>
-        {/* 【UI 重构】TabBar 渐变移到 CSS class（mobile-tabbar-shell），深浅模式切换不再被内联 style 阻断 */}
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, paddingBottom: 'var(--sab)' }}>
         <div className="mobile-tabbar-shell">
           <TabBar activeKey={activeTabKey} onChange={handleTabClick} safeArea={false}>
-            {visibleTabs.map(t => {
-              // 【2026-10-26】取消离线暂存 — Badge 不再显示 pending 数量
-              const icon = t.icon
-              return <TabBar.Item key={t.key} icon={icon} title={t.title} />
-            })}
+            {visibleTabs.map(t => <TabBar.Item key={t.key} icon={t.icon} title={t.title} />)}
           </TabBar>
         </div>
       </div>

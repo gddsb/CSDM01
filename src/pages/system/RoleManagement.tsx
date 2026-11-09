@@ -259,13 +259,27 @@ export default function RoleManagement() {
     setPermPlatformTab('all')  // 打开时重置到 "全部"
     setPermLoading(true)
     try {
-      // 并行加载所有权限和当前角色已有权限
-      const [allRes, roleRes] = await Promise.all([
-        api.get('/system/permissions'),
-        api.get(`/system/roles/${record.role_id}/permissions`),
-      ])
+      // Migration 035: permPlatformTab → terminal 映射
+      //   'all'  → 并集 terminal=1 + terminal=2
+      //   'pc'/'allp' → terminal=1
+      //   'mobile' → terminal=2
+      const currentTerminal = permPlatformTab === 'mobile' ? 2 : 1
+      const loadProms: Promise<any>[] = [api.get('/system/permissions')]
+      if (permPlatformTab === 'all') {
+        loadProms.push(api.get(`/system/roles/${record.role_id}/permissions?terminal=1`))
+        loadProms.push(api.get(`/system/roles/${record.role_id}/permissions?terminal=2`))
+      } else {
+        loadProms.push(api.get(`/system/roles/${record.role_id}/permissions?terminal=${currentTerminal}`))
+      }
+      const [allRes, ...roleResList] = await Promise.all(loadProms)
       setPermissions(allRes.data || [])
-      setCheckedKeys(roleRes.data || [])
+      if (permPlatformTab === 'all') {
+        const pcIds: number[] = roleResList[0].data || []
+        const appIds: number[] = roleResList[1].data || []
+        setCheckedKeys(Array.from(new Set([...pcIds, ...appIds])))
+      } else {
+        setCheckedKeys(roleResList[0].data || [])
+      }
     } catch (err) {
       message.error(err.message || '加载权限数据失败')
     } finally {
@@ -278,9 +292,13 @@ export default function RoleManagement() {
     setPermSaving(true)
     try {
       const keys = Array.isArray(checkedKeys) ? checkedKeys : checkedKeys.checked
-      const res = await api.put(`/system/roles/${permRole.role_id}/permissions`, { perm_ids: keys })
+      // Migration 035: permPlatformTab → terminal（'mobile'=2, 其他=1）
+      // RoleService 内部 expandAncestors + expandTerminal 自动补父级 + 同步另一端
+      const terminal = permPlatformTab === 'mobile' ? 2 : 1
+      const res = await api.put(`/system/roles/${permRole.role_id}/permissions`, { perm_ids: keys, terminal })
       message.success(res.message || '权限分配成功')
       setPermModalVisible(false)
+      try { localStorage.removeItem('daman_mes_menu_cache_v1') } catch {}
     } catch (err) {
       message.error(err.message || '权限保存失败')
     } finally {

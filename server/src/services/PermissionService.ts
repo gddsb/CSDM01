@@ -126,21 +126,26 @@ export const PermissionService = {
     return true
   },
 
-  /** 查询用户菜单（含 LRU 缓存） */
-  async userMenu(user: any) {
+  /**
+   * 查询用户菜单（含 LRU 缓存 + terminal 终端维度过滤）
+   *
+   * Migration 035 改造：加 terminal 参数（1=PC, 2=APP）
+   *   JOIN role_permission 时加 terminal 过滤
+   *   超级管理员直通全部菜单（不受 terminal 限制）
+   *   cacheKey 加 terminal 前缀避免跨终端污染
+   */
+  async userMenu(user: any, terminal: number = 1) {
     const tmpRoleId = user?.roleId ?? user?.role_id ?? 'guest'
-    const cacheKey = String(tmpRoleId)
+    const cacheKey = `${terminal}:${String(tmpRoleId)}`
     const hit = menuCache.get(cacheKey)
     if (hit && hit.expireAt > Date.now()) return hit.tree
 
     const roleId = user?.roleId ?? user?.role_id
     const userId = user?.userId ?? user?.user_id
     let role: any = null
-    let roleCode: string | null = null
 
     if (roleId) {
       role = await Role.findOne({ where: { role_id: roleId }, attributes: ['role_id', 'role_code'] })
-      roleCode = role?.role_code ?? null
     }
     if (!role && userId) {
       const u = await User.findOne({
@@ -149,11 +154,9 @@ export const PermissionService = {
         attributes: ['user_id'],
       })
       role = (u as any)?.role ?? null
-      roleCode = role?.role_code ?? null
     }
 
     let perms: any[] = []
-    // 超级管理员判定：角色在 role_permission 里配了 '*' 通配 → 直通全部菜单（不再靠 role_code 硬编码）
     const isSuperRole = role
       ? await RolePermission.findOne({
           where: { role_id: role.role_id },
@@ -162,11 +165,13 @@ export const PermissionService = {
       : false
 
     if (isSuperRole) {
+      // SA 直通全量 type=menu（不受 terminal 限制）
       perms = await Permission.findAll({
         where: { status: 1, type: 'menu', visible: 1 },
         attributes: { exclude: ['created_at', 'updated_at'] },
       })
     } else if (role) {
+      // 普通角色：按 terminal 过滤 role_permission
       const roleWithPerms = await Role.findOne({
         where: { role_id: role.role_id },
         attributes: [],
@@ -175,7 +180,7 @@ export const PermissionService = {
           where: { status: 1, type: 'menu', visible: 1 },
           required: false,
           attributes: { exclude: ['created_at', 'updated_at'] },
-          through: { attributes: [] },
+          through: { where: { terminal }, attributes: [] },
         }],
       })
       perms = (roleWithPerms as any)?.permissions ?? []
@@ -189,6 +194,83 @@ export const PermissionService = {
     }
     return tree
   },
+
+  /**
+   * 查询用户的移动端菜单
+   * Migration 035 新增：先调 userMenu(terminal=2) 再按 mobile_tab_group 分组
+   *   组装 TabBar + ActionSheet 结构返回前端
+   */
+  async userMobileMenu(user: any) {
+    const pcTree = await this.userMenu(user, 2)
+    return buildMobileMenuTree(pcTree)
+  },
+}
+
+/**
+ * 从 userMenu 返回的 PC 侧菜单树 → 组装移动端 TabBar + ActionSheet 结构
+ *
+ * 分组规则：按 mobile_tab_group 字段值分组
+ * 同一分组内按 mobile_sort_order 排序
+ * mobile_route_path 为空则 fallback 到 route_path（加 /m 前缀）
+ *
+ * 输入：userMenu 返回的菜单树（任何层级）
+ * 输出：{
+ *   tabs: [
+ *     { key: '__production__', title: '生产', tabGroup: 'production', items: [...] },
+ *     ...
+ *   ]
+ * }
+ */
+export function buildMobileMenuTree(permList: any[]): { tabs: any[] } {
+  // 扁平化（无论输入是树还是扁平）
+  const flat: any[] = []
+  const flatten = (arr: any[]) => {
+    for (const item of arr) {
+      flat.push(item)
+      if (item.children && item.children.length > 0) flatten(item.children)
+    }
+  }
+  flatten(permList)
+
+  const TAB_GROUPS = ['production', 'inspection', 'device']
+  const TAB_META: Record<string, { key: string; title: string }> = {
+    production: { key: '__production__', title: '生产' },
+    inspection: { key: '__inspection__', title: '检验' },
+    device:     { key: '__device__', title: '设备' },
+  }
+
+  const groupMap = new Map<string, any[]>()
+  for (const perm of flat) {
+    const g = perm.mobile_tab_group
+    if (!g || !TAB_GROUPS.includes(g)) continue
+    const list = groupMap.get(g) || []
+    list.push(perm)
+    groupMap.set(g, list)
+  }
+
+  const tabs: any[] = TAB_GROUPS
+    .filter(g => groupMap.has(g))
+    .map(g => {
+      const items = groupMap.get(g)!
+        .filter((p: any) => (p.mobile_visible ?? p.visible) === 1)
+        .sort((a: any, b: any) => {
+          const sa = Number(a.mobile_sort_order ?? a.sort_order) || 0
+          const sb = Number(b.mobile_sort_order ?? b.sort_order) || 0
+          if (sa !== sb) return sa - sb
+          return Number(a.perm_id) - Number(b.perm_id)
+        })
+        .map((p: any) => ({
+          text: p.perm_name,
+          route: p.mobile_route_path || (p.route_path ? `/m${p.route_path}` : ''),
+          permCode: p.perm_code,
+          icon: p.mobile_icon || p.icon,
+          sortOrder: p.mobile_sort_order ?? p.sort_order,
+        }))
+      const meta = TAB_META[g]
+      return { key: meta.key, title: meta.title, tabGroup: g, items }
+    })
+
+  return { tabs }
 }
 
 export default PermissionService

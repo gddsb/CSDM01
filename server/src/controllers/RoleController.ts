@@ -33,12 +33,15 @@ export const listPermissions = asyncHandler(async (_req: Request, res: Response)
 })
 
 export const getRolePermissions = asyncHandler(async (req: Request, res: Response) => {
-  const ids = await RoleService.getRolePermissions(Number(req.params.id))
+  const terminal = Number((req.query as any)?.terminal) || 1
+  const ids = await RoleService.getRolePermissions(Number(req.params.id), terminal)
   return success(res, ids, '查询成功')
 })
 
 export const assignPermissions = asyncHandler(async (req: Request, res: Response) => {
-  await RoleService.assignPermissions(Number(req.params.id), req.body.perm_ids)
+  // terminal: 'pc'/'allp' → 1, 'mobile' → 2, 'all' → 1 (UI 并集视图保存默认给 PC 端，Service 内部 expandTerminal 自动同步另一端)
+  const terminal = Number((req.body as any)?.terminal) || 1
+  await RoleService.assignPermissions(Number(req.params.id), req.body.perm_ids, terminal)
   return success(res, null, '权限分配成功')
 })
 

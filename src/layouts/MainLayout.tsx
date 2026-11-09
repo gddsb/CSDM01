@@ -174,7 +174,7 @@ export default function MainLayout() {
     if (forceLoading) setMenuLoading(true)
     setMenuError(null)
     try {
-      const res = await api.get('/system/permissions/menu')
+      const res = await api.get('/system/permissions/menu?terminal=1')
       const tree = res.data || []
       if (Array.isArray(tree)) {
         setDynamicMenu(tree)
