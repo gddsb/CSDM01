@@ -156,7 +156,8 @@ export const DeviceService = {
       const isSA = await PermissionEngine.isSuperAdmin(owner.userId)
       if (!isSA) {
         const uid = owner.userId
-        const [rows]: any = await Device.sequelize.query(
+        // 注意：type: QueryTypes.SELECT 直接返回 rows 数组本身（不是 [rows, metadata] 元组）
+        const rows: any[] = await Device.sequelize.query(
           `SELECT DISTINCT device_id FROM (
              SELECT device_id FROM device_standard
              WHERE JSON_CONTAINS(assigned_user_ids, CAST(:uid AS JSON))
