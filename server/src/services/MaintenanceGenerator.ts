@@ -348,7 +348,9 @@ export async function getMatrix(query: any) {
     },
     attributes: ['record_id', 'standard_id', 'trigger_mode', 'period_key',
       'status', 'result', 'actual_value', 'executor_name', 'executor_id',
-      'start_time', 'end_time', 'duration_min', 'abnormal_desc'],
+      'start_time', 'end_time', 'duration_min', 'abnormal_desc',
+      'inspector_user_id', 'inspector_user_name',
+      'inspector_executor_id', 'inspector_executor_name', 'inspected_at'],
   })
 
   // 构建 recordsMap: (trigger_mode, period_key, standard_id) → record
@@ -370,10 +372,17 @@ export async function getMatrix(query: any) {
         result: rec.result,
         actual_value: rec.actual_value,
         executor: rec.executor_name,
+        executor_id: rec.executor_id,
         start_time: rec.start_time,
         end_time: rec.end_time,
         duration_min: rec.duration_min,
         abnormal_desc: rec.abnormal_desc,
+        // 检查人信息
+        inspector_user_id: rec.inspector_user_id,
+        inspector_user_name: rec.inspector_user_name,
+        inspector_executor_id: rec.inspector_executor_id,
+        inspector_executor_name: rec.inspector_executor_name,
+        inspected_at: rec.inspected_at,
       } : null
     })
     return out

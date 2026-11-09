@@ -20,14 +20,22 @@ type TriggerMode = 'daily' | 'weekly' | 'monthly'
 
 interface MatrixRecord {
   record_id: number
+  record_no?: string
   status: string
   result: string
   actual_value: string
   executor: string
+  executor_id?: number
   start_time: string
   end_time: string
   duration_min: number
   abnormal_desc: string
+  // 检查人信息
+  inspector_user_id?: number | null
+  inspector_user_name?: string | null
+  inspector_executor_id?: number | null
+  inspector_executor_name?: string | null
+  inspected_at?: string | null
 }
 
 interface MatrixItem {
@@ -82,33 +90,71 @@ const STATUS_COLOR: Record<string, string> = {
   已挂起: 'warning',
 }
 
-function CellBadge({ rec, isRestDay }: { rec: MatrixRecord | null; isRestDay?: boolean }) {
+function CellBadge({ rec, isRestDay, onInspect }: { rec: MatrixRecord | null; isRestDay?: boolean; onInspect?: (recordId: number) => void }) {
   if (isRestDay && !rec) {
     return <span style={{ color: 'var(--color-error)', fontSize: 11, fontWeight: 500 }}>休</span>
   }
   if (!rec) return <span style={{ color: '#ccc' }}>—</span>
   const tag = <Tag color={STATUS_COLOR[rec.status] || 'default'}>{rec.status}</Tag>
+  const isCompleted = rec.status === '已完成'
+  const needInspect = isCompleted && !rec.inspector_executor_id
+  const inspected = isCompleted && rec.inspector_executor_id
   const content = (
-    <div style={{ minWidth: 180, fontSize: 12 }}>
+    <div style={{ minWidth: 200, fontSize: 12, maxWidth: 320 }}>
+      <div style={{ fontWeight: 600, marginBottom: 6 }}>
+        {rec.record_no || `记录 #${rec.record_id}`}
+        {inspected && <Tag color="green" style={{ marginLeft: 6 }}>✓ 已检查</Tag>}
+        {needInspect && <Tag color="orange" style={{ marginLeft: 6 }}>待检查</Tag>}
+      </div>
       <div>
         状态：{tag}
         {rec.result && <> · 结果：<b style={rec.result === '异常' ? { color: 'var(--color-error)' } : {}}>{rec.result}</b></>}
       </div>
       {rec.actual_value && <div>实测值：{rec.actual_value}</div>}
-      {rec.executor && <div>执行人：{rec.executor}</div>}
+      {rec.executor && <div>执行人：{rec.executor}{rec.executor_id ? <span style={{ color: '#999' }}> (ID:{rec.executor_id})</span> : null}</div>}
       {rec.start_time && <div>开始：{dayjs(rec.start_time).format('YYYY-MM-DD HH:mm')}</div>}
       {rec.end_time && <div>结束：{dayjs(rec.end_time).format('YYYY-MM-DD HH:mm')}</div>}
       {rec.duration_min ? <div>耗时：{rec.duration_min} 分钟</div> : null}
       {rec.abnormal_desc && <div style={{ color: 'var(--color-error)' }}>异常：{rec.abnormal_desc}</div>}
+      {/* 检查人信息区 */}
+      {(rec.inspector_user_name || inspected) && (
+        <Divider style={{ margin: '8px 0' }} />
+      )}
+      {rec.inspector_user_name && (
+        <div style={{ color: '#666' }}>计划检查人：{rec.inspector_user_name}</div>
+      )}
+      {inspected && (
+        <div>
+          实际检查人：<b>{rec.inspector_executor_name}</b>
+          {rec.inspected_at && <span style={{ color: '#999', marginLeft: 6 }}>
+            ({dayjs(rec.inspected_at).format('YYYY-MM-DD HH:mm')})
+          </span>}
+        </div>
+      )}
+      {needInspect && (
+        <div style={{ color: 'var(--color-warning)', fontStyle: 'italic', marginTop: 4 }}>
+          打开此记录将自动标记为已检查
+        </div>
+      )}
     </div>
   )
   return (
-    <Popover content={content} title={`记录 #${rec.record_id}`}>
-      <span style={{ cursor: 'help' }}>
+    <Popover
+      content={content}
+      trigger="click"
+      onOpenChange={(visible) => {
+        if (visible && needInspect && onInspect) onInspect(rec.record_id)
+      }}
+    >
+      <span style={{ cursor: 'pointer' }}>
         {rec.result === '异常'
           ? <Badge status="error" text={<span style={{ color: 'var(--color-error)', fontWeight: 600 }}>异常</span>} />
           : rec.status === '已完成'
-          ? <Badge status="success" text={<span style={{ color: '#19a11f' }}>✓ 完成</span>} />
+          ? <Badge status="success" text={
+              <span style={{ color: '#19a11f' }}>
+                ✓ 完成{inspected ? '' : <span style={{ color: '#fa8c16', marginLeft: 4, fontSize: 11 }}>待检</span>}
+              </span>
+            } />
           : rec.status === '执行中'
           ? <Badge status="processing" text="执行中" />
           : rec.status === '已挂起'
@@ -134,6 +180,25 @@ export default function DeviceMaintenanceMatrix() {
   const [tab, setTab] = useState<TriggerMode>('daily')
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<MatrixResp | null>(null)
+  const [confirmingIds, setConfirmingIds] = useState<Set<number>>(new Set())
+
+  // 检查人自动标记：打开已完成但未检查的记录时触发
+  const handleInspect = async (recordId: number) => {
+    if (confirmingIds.has(recordId)) return
+    setConfirmingIds(prev => new Set(prev).add(recordId))
+    try {
+      await api.post(`/basic/device-records/${recordId}/confirm-inspect`)
+      message.success('已自动标记为已检查')
+      load()
+    } catch (err: any) {
+      // 幂等/权限不足等情况静默忽略
+      console.warn('confirm-inspect failed', recordId, err?.message || err)
+    } finally {
+      setConfirmingIds(prev => {
+        const n = new Set(prev); n.delete(recordId); return n
+      })
+    }
+  }
 
   useEffect(() => {
     api.get('/basic/devices', { params: { pageSize: 500 } })
@@ -198,11 +263,11 @@ export default function DeviceMaintenanceMatrix() {
         dataIndex: `__d_${d}`,
         width: 72,
         align: 'center' as const,
-        render: (_: any, r: any) => <CellBadge rec={r.records?.[d] || null} isRestDay={isRest} />,
+        render: (_: any, r: any) => <CellBadge rec={r.records?.[d] || null} isRestDay={isRest} onInspect={handleInspect} />,
       }
     })
     return [...base, ...dateCols]
-  }, [dailyDates, restDaySet])
+  }, [dailyDates, restDaySet, handleInspect])
 
   const weeklyColumns = useMemo(() => {
     const base = [
@@ -218,10 +283,10 @@ export default function DeviceMaintenanceMatrix() {
       dataIndex: `__w_${wk}`,
       width: 110,
       align: 'center' as const,
-      render: (_: any, r: any) => <CellBadge rec={r.records?.[wk] || null} />,
+      render: (_: any, r: any) => <CellBadge rec={r.records?.[wk] || null} onInspect={handleInspect} />,
     }))
     return [...base, ...weekCols]
-  }, [weekKeys])
+  }, [weekKeys, handleInspect])
 
   const monthlyColumns = [
     { title: '序号', dataIndex: '__idx', width: 60, render: (_: any, __: any, i: number) => i + 1 },
@@ -232,7 +297,7 @@ export default function DeviceMaintenanceMatrix() {
     { title: '本月执行结果', width: 280, render: (_: any, r: any) => {
       const rec = (r.records as Record<string, MatrixRecord | null>)?.[data?.year_month ?? '']
       if (!rec) return <Tag>未生成</Tag>
-      return <CellBadge rec={rec} />
+      return <CellBadge rec={rec} onInspect={handleInspect} />
     }},
     { title: '执行人', width: 100, render: (_: any, r: any) => {
       const rec = (r.records as Record<string, MatrixRecord | null>)?.[data?.year_month ?? '']
