@@ -8,10 +8,14 @@
  *
  * 不依赖 Express（无 req/res），可直接写单元测试。
  */
-import { Op } from 'sequelize'
+import { Op, QueryTypes } from 'sequelize'
 import { Device, LineDevice, ProcessException } from '../models/index.js'
 import { AppError } from '../utils/error.js'
 import { MAX_PAGE_SIZE } from '../utils/response.js'
+import { PermissionEngine } from './PermissionEngine.js'
+
+/** 超级管理员通配符 */
+const WILDCARD_PERM = '*'
 
 const ALLOWED_DEVICE_TYPES = new Set(['生产设备', '检测设备', '辅助设备', '其他设备'])
 
@@ -28,6 +32,14 @@ export interface DeviceListQuery {
   sortBy?: string
   sortOrder?: string
   entity_type?: string
+  /** mine='true' → 只返回当前用户负责/检查的设备（用于移动端维保） */
+  mine?: string
+}
+
+/** DeviceService.list 的 ownerFilter 入参（可选，由 Controller 从 req.user 构造） */
+export interface OwnerFilter {
+  userId: number
+  permCodes: Set<string>
 }
 
 export interface DeviceCreateInput {
@@ -125,12 +137,41 @@ export function validateDeviceType(device_type?: string): void {
 }
 
 export const DeviceService = {
-  /** 分页查询设备列表 */
-  async list(query: DeviceListQuery) {
+  /** 分页查询设备列表
+   * @param query 查询参数
+   * @param owner 当前登录人信息（可选，用于 mine=true 时的 owner 过滤）
+   */
+  async list(query: DeviceListQuery, owner?: OwnerFilter) {
     const where = buildDeviceWhere(query)
     const order = buildDeviceOrder(query.sortBy, query.sortOrder)
     const limit = Math.min(Number(query.pageSize) || 20, MAX_PAGE_SIZE)
     const offset = ((Number(query.page) || 1) - 1) * limit
+
+    // mine='true' → 只看当前用户负责/检查的设备
+    // 来源：device_standard（保养标准的 assigned_user_ids/inspector_user_ids）
+    //   + device_record（已生成的保养记录的 responsible/inspector，兜底还没生成标准的情况）
+    if (query.mine === 'true' && owner && owner.userId > 0) {
+      const isSA = owner.permCodes.has(WILDCARD_PERM) || PermissionEngine.isSuperAdmin(owner.userId)
+      if (!isSA) {
+        const uid = owner.userId
+        const [rows]: any = await Device.sequelize.query(
+          `SELECT DISTINCT device_id FROM (
+             SELECT device_id FROM device_standard
+             WHERE JSON_CONTAINS(assigned_user_ids, CAST(:uid AS JSON))
+                OR JSON_CONTAINS(inspector_user_ids, CAST(:uid AS JSON))
+             UNION
+             SELECT device_id FROM device_record
+             WHERE responsible_user_id = :uid OR inspector_user_id = :uid
+           ) AS _mine_devices`,
+          { replacements: { uid }, type: QueryTypes.SELECT }
+        )
+        const deviceIds = rows.map((r: any) => Number(r.device_id)).filter(Boolean)
+        if (deviceIds.length === 0) {
+          return { rows: [], count: 0 }  // 没找到任何关联设备，直接返回空
+        }
+        where.device_id = { [Op.in]: deviceIds }
+      }
+    }
 
     const { rows, count } = await Device.findAndCountAll({ where, limit, offset, order })
     return { rows, count }
