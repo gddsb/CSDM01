@@ -12,7 +12,7 @@ import { Op } from 'sequelize'
 import sequelize from 'sequelize'
 import {
   DeviceMaintenanceProfile, DeviceMaintenanceRecord, DeviceMaintenanceStandard,
-  DeviceImage, DeviceFault,
+  DeviceImage, DeviceFault, User,
 } from '../models/index.js'
 import { generateDeviceRecordNo } from '../utils/sequence.js'
 import { ErrorCode } from '../utils/response.js'
@@ -118,6 +118,24 @@ export async function generateRecords(body: any) {
       return { created: 0, updated: 0, deleted: 0, skipped: 0, records: [] }
     }
 
+    // 4a. 一次性查 sys_user 建 userMap（user_id → real_name），
+    //     避免 device_standard.assigned_user_name / inspector_user_name 为 NULL 时冗余字段也是 NULL
+    const allUserIds = new Set<number>()
+    for (const s of activeStandards) {
+      const aids = (s.getDataValue('assigned_user_ids') as any[]) || []
+      const iids = (s.getDataValue('inspector_user_ids') as any[]) || []
+      aids.forEach((id: number) => id && allUserIds.add(Number(id)))
+      iids.forEach((id: number) => id && allUserIds.add(Number(id)))
+    }
+    const userMap = new Map<number, string>()
+    if (allUserIds.size > 0) {
+      const users = await User.findAll({
+        where: { user_id: { [Op.in]: Array.from(allUserIds) } },
+        attributes: ['user_id', 'real_name'],
+      })
+      users.forEach((u: any) => userMap.set(u.user_id, u.real_name))
+    }
+
     // 5. 计算每种模式的 period_keys（expected 全集）
     const dailyKeys = dailyPeriodKeys(yr, mo)
     const weekKeys = weeklyPeriodKeys(yr, mo)
@@ -218,8 +236,8 @@ export async function generateRecords(body: any) {
       const inspectorUserIds: number[] = (std.getDataValue('inspector_user_ids') as any[]) || []
       const respId = assignedUserIds[0] ?? null
       const inspId = inspectorUserIds[0] ?? null
-      const respName = std.getDataValue('assigned_user_name') || null
-      const inspName = std.getDataValue('inspector_user_name') || null
+      const respName = std.getDataValue('assigned_user_name') || (respId ? userMap.get(respId) ?? null : null)
+      const inspName = std.getDataValue('inspector_user_name') || (inspId ? userMap.get(inspId) ?? null : null)
 
       const r = await DeviceMaintenanceRecord.create({
         record_no: recordNo,

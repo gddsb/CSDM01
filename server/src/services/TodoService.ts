@@ -35,6 +35,10 @@ export async function getDashboardTodos(user: any): Promise<DashboardTodos> {
   const weekKey = getISOWeek(now)
   const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 
+  const permCodes: Set<string> = user?.permCodes ?? new Set()
+  const hasWildcard = permCodes.has('*')
+  const hasMaintView = hasWildcard || permCodes.has('device:maintenance') || permCodes.has('device:maintenance:view')
+
   const ownerFilter: any = uid > 0
     ? { [Op.or]: [{ responsible_user_id: uid }, { inspector_user_id: uid }] }
     : {}
@@ -46,7 +50,7 @@ export async function getDashboardTodos(user: any): Promise<DashboardTodos> {
     pendingFaults, pendingCalibration, pendingIncoming, pendingEnv,
   ] = await Promise.all([
     Order.count({ where: { status: 2 } }),
-    DeviceMaintenanceRecord.count({
+    hasMaintView ? DeviceMaintenanceRecord.count({
       where: {
         ...unfinished,
         ...ownerFilter,
@@ -55,7 +59,7 @@ export async function getDashboardTodos(user: any): Promise<DashboardTodos> {
       },
       distinct: true,
       col: 'device_id',
-    }),
+    }) : Promise.resolve(0),
     DeviceFault.count({ where: { status: { [Op.in]: [0, 1, 2] } } }),
     DeviceCalibrationPlan.count({ where: { status: 0 } }),
     IncomingInspection.count({ where: { status: 0 } }),
