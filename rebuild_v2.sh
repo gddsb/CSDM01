@@ -59,7 +59,7 @@ git checkout -- android/app/capacitor.build.gradle android/capacitor.settings.gr
 # 1c. 只允许 fast-forward：出现分叉/冲突立即中止，禁止 reset --hard 覆盖本地改动
 # 重要：所有构建长耗时命令禁止用 | tail 管道——daemon 进程退出时 pipe fd 未正确关闭会导致 tail 永远阻塞
 # 统一模式：CMD > /tmp/_mes_step_N.log 2>&1; EXIT=$?; tail -N /tmp/_mes_step_N.log; [ $EXIT -eq 0 ]
-if git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 fetch origin main > /tmp/_mes_fetch.log 2>&1; then
+if git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 fetch origin feat/permission_v2_engine > /tmp/_mes_fetch.log 2>&1; then
   tail -5 /tmp/_mes_fetch.log
   if git merge --ff-only --no-edit FETCH_HEAD > /tmp/_mes_merge.log 2>&1; then
     tail -3 /tmp/_mes_merge.log
@@ -77,7 +77,7 @@ fi
 # 主源失败 → 备源 origin-backup（同样只允许 fast-forward）
 if ! $PULL_OK; then
   echo "  ⚠ origin 失败，切 origin-backup (gh-proxy)..."
-  if git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 fetch origin-backup main > /tmp/_mes_fetch.log 2>&1; then
+  if git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 fetch origin-backup feat/permission_v2_engine > /tmp/_mes_fetch.log 2>&1; then
     tail -5 /tmp/_mes_fetch.log
     if git merge --ff-only --no-edit FETCH_HEAD > /tmp/_mes_merge.log 2>&1; then
       tail -3 /tmp/_mes_merge.log
