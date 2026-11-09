@@ -256,8 +256,9 @@ echo "  ✓ APP_BUILD 注入一致"
 # ============================================================
 echo ""
 echo "=== 4.5 后端 TypeScript 编译 ==="
-cd server && rm -rf dist && npx tsc > /tmp/_mes_tsc.log 2>&1; tail -3 /tmp/_mes_tsc.log
-BACKEND_TSC_RC=$?
+cd server && rm -rf dist
+npx tsc > /tmp/_mes_tsc.log 2>&1; BACKEND_TSC_RC=$?
+tail -3 /tmp/_mes_tsc.log
 cd ..
 if [ $BACKEND_TSC_RC -ne 0 ]; then
   echo "⚠️ 后端 tsc build 有警告或错误，先继续（旧 dist 还在）"

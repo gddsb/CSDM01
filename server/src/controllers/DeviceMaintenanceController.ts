@@ -367,6 +367,7 @@ export default {
   listProfiles, listAvailableDevices, createProfile, detailProfile, updateProfileStatus, deleteProfile,
   generateRecords, getMatrix, cleanupAndRegenerate,
   listRecords, dailySummary, detailRecord, startRecord, submitRecord, batchSubmit, skipRecord, deleteRecord,
+  confirmInspect,
   getImages, uploadImage, deleteImage, logRuntime, getRuntimeLog,
   initProfiles,
 }
