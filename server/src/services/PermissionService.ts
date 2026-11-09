@@ -7,6 +7,7 @@
  *   - 子节点保护（remove 前 count）、自身不可为父级、perm_code 唯一性
  */
 import { Op } from 'sequelize'
+import sequelize from '../config/database.js'
 import { Permission, Role, User, RolePermission } from '../models/index.js'
 import { MAX_PAGE_SIZE } from '../utils/response.js'
 import { AppError } from '../utils/error.js'
@@ -157,12 +158,22 @@ export const PermissionService = {
     }
 
     let perms: any[] = []
-    const isSuperRole = role
-      ? await RolePermission.findOne({
-          where: { role_id: role.role_id },
-          include: [{ model: Permission, as: 'permission', attributes: ['perm_code'] }],
-        }).then((rp: any) => rp?.permission?.perm_code === WILDCARD_PERM).catch(() => false)
-      : false
+    // Phase 2 修复：不用 RolePermission→Permission include（没定义这个关联），
+    // 直接用 raw query 查 role_permission JOIN sys_permission WHERE perm_code='*'
+    let isSuperRole = false
+    if (role) {
+      try {
+        const [rows]: any[] = await sequelize.query(
+          `SELECT 1 FROM sys_role_permission rp
+           JOIN sys_permission p ON rp.perm_id = p.perm_id
+           WHERE rp.role_id = :roleId AND p.perm_code = :wc LIMIT 1`,
+          { replacements: { roleId: role.role_id, wc: WILDCARD_PERM }, type: 'SELECT' as const },
+        )
+        isSuperRole = Array.isArray(rows) && rows.length > 0
+      } catch {
+        isSuperRole = false
+      }
+    }
 
     if (isSuperRole) {
       // SA 直通全量 type=menu（不受 terminal 限制）
@@ -183,7 +194,33 @@ export const PermissionService = {
           through: { where: { terminal }, attributes: [] },
         }],
       })
-      perms = (roleWithPerms as any)?.permissions ?? []
+      const rawPerms: any[] = (roleWithPerms as any)?.permissions ?? []
+
+      // Phase 2 修复：expandAncestors — 递归补 parent_id 祖先链
+      // role_permission 里的 menu 可能缺父级节点（SA seed 数据、或历史手动配置），
+      // buildMenuTree 会把父级不存在的叶子节点丢掉 → terminal=2 返回 0 菜单
+      const existingIds = new Set<number>(rawPerms.map((p: any) => Number(p.perm_id)))
+      let expandBatch = rawPerms.map((p: any) => Number(p.parent_id) || 0).filter((pid: number) => pid > 0 && !existingIds.has(pid))
+      let safety = 0
+      while (expandBatch.length > 0 && safety < 20) {
+        safety++
+        const parents: any[] = await Permission.findAll({
+          where: { perm_id: { [Op.in]: expandBatch }, status: 1, type: 'menu', visible: 1 },
+        })
+        const nextBatch: number[] = []
+        for (const p of parents) {
+          const pid = Number(p.perm_id)
+          if (!existingIds.has(pid)) {
+            existingIds.add(pid)
+            const po = typeof p.toJSON === 'function' ? p.toJSON() : p
+            rawPerms.push(po)
+            const gp = Number(p.parent_id) || 0
+            if (gp > 0 && !existingIds.has(gp)) nextBatch.push(gp)
+          }
+        }
+        expandBatch = nextBatch
+      }
+      perms = rawPerms
     }
 
     const tree = buildMenuTree(perms)
