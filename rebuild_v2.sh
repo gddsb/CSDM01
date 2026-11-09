@@ -357,7 +357,15 @@ echo "=== 7. PM2 重启 ==="
 cd server
 pm2 restart milk-can-mes-server > /tmp/_mes_pm2.log 2>&1; tail -2 /tmp/_mes_pm2.log
 sleep 3
-pm2 list milk-can-mes-server 2>&1 | grep -E "milk-can-mes-server.*(online|errored)"
+# 显式 if-check 代替管道 grep —— pipefail 下 grep 无匹配会 exit 1 触发 set -e 杀脚本
+if pm2 list milk-can-mes-server 2>&1 | grep -qE "milk-can-mes-server.*online"; then
+  echo "  ✓ 后端 online"
+elif pm2 list milk-can-mes-server 2>&1 | grep -qE "milk-can-mes-server.*errored"; then
+  echo "  ✗ 后端 errored，请检查 ~/.pm2/logs/"
+else
+  echo "  ⚠ 后端状态未知，请手动 pm2 list 确认"
+fi
+pm2 save > /dev/null 2>&1 || true
 
 # ============================================================
 # Step 8: 最终产出
