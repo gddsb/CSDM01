@@ -11,13 +11,6 @@ import type { Request, Response } from 'express'
 
 export const list = asyncHandler(async (req: Request, res: Response) => {
   const user = (req as any).user || {}
-  console.log('[DeviceService.list DEBUG]', {
-    userId: user.userId,
-    roleId: user.roleId,
-    permCodesSize: user.permCodes?.size,
-    permCodesHasStar: user.permCodes?.has?.('*'),
-    mine: (req.query as any).mine,
-  })
   const owner = user.userId
     ? { userId: Number(user.userId), permCodes: user.permCodes || new Set() }
     : undefined

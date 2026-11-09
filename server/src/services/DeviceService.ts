@@ -151,7 +151,9 @@ export const DeviceService = {
     // 来源：device_standard（保养标准的 assigned_user_ids/inspector_user_ids）
     //   + device_record（已生成的保养记录的 responsible/inspector，兜底还没生成标准的情况）
     if (query.mine === 'true' && owner && owner.userId > 0) {
-      const isSA = owner.permCodes.has(WILDCARD_PERM) || PermissionEngine.isSuperAdmin(owner.userId)
+      // 超级管理员判定：只信 PermissionEngine.isSuperAdmin（查 DB role_code）
+      // 不信 owner.permCodes.has('*') —— 因为 auth middleware 可能给非 SA 用户也注入了 '*'（已知 bug）
+      const isSA = await PermissionEngine.isSuperAdmin(owner.userId)
       if (!isSA) {
         const uid = owner.userId
         const [rows]: any = await Device.sequelize.query(
