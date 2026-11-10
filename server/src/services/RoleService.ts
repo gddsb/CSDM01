@@ -97,6 +97,12 @@ export const RoleService = {
     return true
   },
 
+  async detail(id: number | string) {
+    const role = await Role.findByPk(Number(id))
+    if (!role) throw new AppError('角色不存在', 10002, 404)
+    return role
+  },
+
   async listPermissions() {
     return await Permission.findAll({ order: [['sort_order', 'ASC'], ['perm_id', 'ASC']] })
   },
@@ -122,10 +128,17 @@ export const RoleService = {
 
   /**
    * 为某角色在指定终端下整体覆盖权限
-   * Phase 2 关键改造：不再用 role.setPermissions()，改用 raw query
-   * 原因：setPermissions() 会 DELETE 整个中间表再 INSERT，会清掉另一个终端的记录
-   * 现在的模式：DELETE WHERE role_id=? AND terminal=? + INSERT ... ON DUPLICATE KEY
-   * 同一角色两个终端（PC / APP）的权限完全独立维护
+   *
+   * Migration 035 改造：实现三条权限规则 + 双端自动同步
+   * ---------------------------------------------------------
+   * 规则①  给控件/操作权限 → 自动授予页面查看权限（expandAncestors 父级祖先链补齐）
+   * 规则②  多层级子页面控件权限 → 自动授予上级所有页面查看权限（expandAncestors 递归 parent_id）
+   * 规则③  一端授权 → 自动同步到另一端（expandTerminal：perm_id 在两端共享时双写）
+   *
+   * expandTerminal 判定：SUPER_ADMIN(role_id=1) 的 role_permission 两端都有该 perm_id
+   *   → 说明此 perm_id 双端都支持，自动同步
+   *
+   * 事务模式：清当前终端 + 写当前终端(含祖先链) + 清另一端 + 写另一端(仅共享码)
    */
   async assignPermissions(id: number | string, permIdsRaw: any, terminal: number = 1): Promise<boolean> {
     const role = await Role.findOne({ where: { role_id: Number(id) } })
@@ -133,13 +146,14 @@ export const RoleService = {
     if ((role as any).role_code === 'SUPER_ADMIN' || (role as any).is_system_default === 1) {
       throw new AppError('系统默认角色禁止修改权限', 30001, 403)
     }
-    const ids = permIdsRaw || []
-    if (!Array.isArray(ids)) throw new AppError('perm_ids 必须是数组', 10001, 400)
+    const rawIds = permIdsRaw || []
+    if (!Array.isArray(rawIds)) throw new AppError('perm_ids 必须是数组', 10001, 400)
     const roleId = Number(id)
     const now = new Date()
 
-    // 校验所有 perm_id 存在
-    const validIds = ids.map((x: any) => Number(x)).filter((x: number) => !isNaN(x))
+    const validIds = rawIds.map((x: any) => Number(x)).filter((x: number) => !isNaN(x))
+
+    // —— Step 1: 校验 ——
     if (validIds.length > 0) {
       const permissions = await Permission.findAll({ where: { perm_id: { [Op.in]: validIds } } })
       if (permissions.length !== validIds.length) {
@@ -149,27 +163,66 @@ export const RoleService = {
       }
     }
 
-    // 事务内先清再建
-    await sequelize.transaction(async (t) => {
-      // 清掉该角色该终端的旧记录（不动另一个终端的记录）
-      await RolePermission.destroy({
-        where: { role_id: roleId, terminal },
-        transaction: t,
+    // —— Step 2: expandAncestors（规则①②）——
+    // 递归查 parent_id 祖先链，补齐所有父级 perm_id
+    const allIds = new Set<number>(validIds)
+    let expandBatch = validIds.slice()
+    let safetyCounter = 0
+    while (expandBatch.length > 0 && safetyCounter < 20) {
+      safetyCounter++
+      const batchPerms = await Permission.findAll({
+        where: { perm_id: { [Op.in]: expandBatch } },
+        attributes: ['perm_id', 'parent_id'],
       })
+      const nextBatch: number[] = []
+      for (const p of batchPerms) {
+        const pid = Number((p as any).parent_id) || 0
+        if (pid > 0 && !allIds.has(pid)) {
+          allIds.add(pid)
+          nextBatch.push(pid)
+        }
+      }
+      expandBatch = nextBatch
+    }
+    const finalIds = Array.from(allIds)
 
-      if (validIds.length > 0) {
-        const bulk = validIds.map((perm_id) => ({
-          role_id: roleId,
-          perm_id,
-          terminal,
-          create_time: now,
-        }))
-        await RolePermission.bulkCreate(bulk, { transaction: t })
+    // —— Step 3: expandTerminal（规则③）——
+    // 查哪些 perm_id 在 SUPER_ADMIN 角色两端都存在（判定为双端共享）
+    const otherTerminal = terminal === 1 ? 2 : 1
+    let sharedIds: number[] = []
+    if (finalIds.length > 0) {
+      const superPcIds = await RolePermission.findAll({
+        where: { role_id: 1, terminal: 1, perm_id: { [Op.in]: finalIds } },
+        attributes: ['perm_id'],
+      }).then(rs => rs.map((r: any) => r.perm_id))
+      const superAppIds = await RolePermission.findAll({
+        where: { role_id: 1, terminal: 2, perm_id: { [Op.in]: finalIds } },
+        attributes: ['perm_id'],
+      }).then(rs => rs.map((r: any) => r.perm_id))
+      const pcSet = new Set(superPcIds), appSet = new Set(superAppIds)
+      sharedIds = finalIds.filter(id => pcSet.has(id) && appSet.has(id))
+    }
+
+    // —— Step 4: 事务内双端写 ——
+    await sequelize.transaction(async (t) => {
+      await RolePermission.destroy({ where: { role_id: roleId, terminal }, transaction: t })
+      if (finalIds.length > 0) {
+        await RolePermission.bulkCreate(
+          finalIds.map(pid => ({ role_id: roleId, perm_id: pid, terminal, create_time: now })),
+          { transaction: t }
+        )
+      }
+      await RolePermission.destroy({ where: { role_id: roleId, terminal: otherTerminal }, transaction: t })
+      if (sharedIds.length > 0) {
+        await RolePermission.bulkCreate(
+          sharedIds.map(pid => ({ role_id: roleId, perm_id: pid, terminal: otherTerminal, create_time: now })),
+          { transaction: t }
+        )
       }
     })
 
-    // 清缓存 — 新的 cache key 带 terminal 前缀
     clearPermissionCache(roleId, terminal)
+    clearPermissionCache(roleId, otherTerminal)
     return true
   },
 

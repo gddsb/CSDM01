@@ -30,8 +30,16 @@ export const remove = asyncHandler(async (req: Request, res: Response) => {
 })
 
 export const userMenu = asyncHandler(async (req: Request, res: Response) => {
-  const tree = await PermissionService.userMenu((req as any).user)
+  // terminal: 1=PC端, 2=移动端APP。PC 端 MainLayout 传 ?terminal=1，APP 端传 ?terminal=2
+  const terminal = Number((req.query as any)?.terminal) || 1
+  const tree = await PermissionService.userMenu((req as any).user, terminal)
   return success(res, tree, '查询成功')
+})
+
+/** 移动端专用菜单 — 先 userMenu(terminal=2) 再按 mobile_tab_group 组装 TabBar + ActionSheet */
+export const userMobileMenu = asyncHandler(async (req: Request, res: Response) => {
+  const menu = await PermissionService.userMobileMenu((req as any).user)
+  return success(res, menu, '查询成功')
 })
 
 export default { list, detail, create, update, remove, userMenu }

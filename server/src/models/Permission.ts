@@ -126,6 +126,40 @@ const Permission = sequelize.define('Permission', {
     type: DataTypes.STRING(255),
     comment: '备注（规范 3.5）',
   },
+
+  // —— Migration 035 新增：移动端菜单双端统一 ——
+  // sys_permission 一张表承载 PC + APP 双端菜单。perm_code 体系两端共享，
+  // 但菜单树层级、路由、分组在两端不同。mobile_* 字段独立表达移动端侧，
+  // PC 端继续读 route_path / parent_id / icon / sort_order / visible，
+  // 完全向后兼容 — APP 端读 mobile_*，空值 fallback 到 PC 字段。
+  mobile_parent_id: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    comment: '移动端菜单树父级ID（0=TabBar根级）',
+  },
+  mobile_route_path: {
+    type: DataTypes.STRING(255),
+    comment: '移动端路由（如 /m/device-maintenance）',
+  },
+  mobile_tab_group: {
+    type: DataTypes.STRING(20),
+    comment: '移动端归属Tab分组：production/inspection/device/NULL',
+  },
+  mobile_icon: {
+    type: DataTypes.STRING(64),
+    comment: '移动端图标（可空，空则复用 icon）',
+  },
+  mobile_sort_order: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    comment: '移动端同级排序（可空，空则复用 sort_order）',
+  },
+  mobile_visible: {
+    type: DataTypes.TINYINT,
+    allowNull: false,
+    defaultValue: 1,
+    comment: '移动端是否可见（1=显示）',
+  },
 }, {
   tableName: 'sys_permission',
   timestamps: true,

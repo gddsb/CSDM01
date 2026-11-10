@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { asyncHandler } from '../middleware/security.js'
 import multer from 'multer'
 import { list, detail, create, update, remove, toggle, uploadMyAvatar, setMyAvatar, updateMyProfile } from '../controllers/UserController.js'
-import { list as roleList, create as roleCreate, update as roleUpdate, remove as roleRemove, getRolePermissions, assignPermissions } from '../controllers/RoleController.js'
+import { list as roleList, create as roleCreate, update as roleUpdate, remove as roleRemove, detail as roleDetail, getRolePermissions, assignPermissions } from '../controllers/RoleController.js'
 import {
   list as permList,
   detail as permDetail,
@@ -10,6 +10,7 @@ import {
   update as permUpdate,
   remove as permRemove,
   userMenu,
+  userMobileMenu,
 } from '../controllers/PermissionController.js'
 import { list as logList } from '../controllers/OperationLogController.js'
 import { list as systemLogList } from '../controllers/SystemLogController.js'
@@ -69,6 +70,7 @@ router.use('/user-ext-permission', permissionRequired('system:user:extConfig'), 
 
 // 角色管理
 router.get('/roles', permissionRequired('system:role'), logOperation('角色管理'), asyncHandler(roleList))
+router.get('/roles/:id', permissionRequired('system:role'), asyncHandler(roleDetail))
 router.post('/roles', permissionRequired('system:role:create'), logOperation('角色管理'), asyncHandler(roleCreate))
 router.put('/roles/:id', permissionRequired('system:role:update'), logOperation('角色管理'), asyncHandler(roleUpdate))
 router.delete('/roles/:id', permissionRequired('system:role:delete'), logOperation('角色管理'), asyncHandler(roleRemove))
@@ -77,6 +79,7 @@ router.delete('/roles/:id', permissionRequired('system:role:delete'), logOperati
 router.get('/permissions', permissionRequired('system:menu'), asyncHandler(permList))
 router.get('/permissions/tree', permissionRequired('system:menu'), asyncHandler(permList))
 router.get('/permissions/menu', asyncHandler(userMenu))  // 菜单按角色过滤返回，用 authRequired 即可
+router.get('/permissions/mobile-menu', asyncHandler(userMobileMenu))  // 移动端 TabBar + ActionSheet 结构（Migration 035 新增）
 router.get('/permissions/:id', permissionRequired('system:menu'), asyncHandler(permDetail))
 router.post('/permissions', permissionRequired('system:menu:create'), logOperation('菜单管理'), asyncHandler(permCreate))
 router.put('/permissions/:id', permissionRequired('system:menu:update'), logOperation('菜单管理'), asyncHandler(permUpdate))
