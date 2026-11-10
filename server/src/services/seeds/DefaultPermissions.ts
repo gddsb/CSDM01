@@ -70,7 +70,9 @@ export const defaultPermissions = [
   { parent_id: 0, parent_code: 'device', perm_name: '保养标准', perm_code: 'device:maintenance-standard', type: 'menu', icon: 'ProfileOutlined', path: '/device/maintenance-standard', sort_order: 2 },
   { parent_id: 0, parent_code: 'device', perm_name: '保养管理', perm_code: 'device:maintenance', type: 'menu', icon: 'ToolOutlined', path: '/device/maintenance', sort_order: 3 },
   { parent_id: 0, parent_code: 'device', perm_name: '保养矩阵', perm_code: 'device:maintenance-matrix', type: 'menu', icon: 'AppstoreOutlined', path: '/device/maintenance/matrix', sort_order: 4 },
-  { parent_id: 0, parent_code: 'device', perm_name: '设备点检', perm_code: 'device:inspection', type: 'menu', icon: 'CheckOutlined', path: '/device/inspection', sort_order: 5 },
+  // device:inspection 已废弃（2026-11-10）：DeviceMaintenanceUnified 合并点检+保养，
+  //   PC 端 daily 模式=点检，weekly/monthly=保养；移动端 routes.tsx 已重定向到 maintenance
+  // { parent_id: 0, parent_code: 'device', perm_name: '设备点检', perm_code: 'device:inspection', type: 'menu', icon: 'CheckOutlined', path: '/device/inspection', sort_order: 5 },
   { parent_id: 0, parent_code: 'device', perm_name: '设备OEE', perm_code: 'device:oee', type: 'menu', icon: 'LineChartOutlined', path: '/device/oee', sort_order: 6 },
   { parent_id: 0, parent_code: 'device', perm_name: '设备看板', perm_code: 'device:dashboard', type: 'menu', icon: 'DashboardOutlined', path: '/device/dashboard', sort_order: 6 },
   { parent_id: 0, parent_code: 'device', perm_name: '故障管理', perm_code: 'device:fault', type: 'menu', icon: 'WarningOutlined', path: '/device/fault', sort_order: 7 },

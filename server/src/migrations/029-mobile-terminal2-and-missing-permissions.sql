@@ -23,9 +23,12 @@ SELECT 30, '制程检验', 'quality:process', 'menu', 1, 'quality', 3, 1, 1, 0, 
 WHERE NOT EXISTS (SELECT 1 FROM sys_permission WHERE perm_code = 'quality:process');
 
 -- device:inspection 菜单（parent_id=50 device）
-INSERT INTO sys_permission (parent_id, perm_name, perm_code, type, perm_type, group_name, sort, visible, status, is_abandon, created_at)
-SELECT 50, '设备点检', 'device:inspection', 'menu', 1, 'device', 4, 1, 1, 0, NOW()
-WHERE NOT EXISTS (SELECT 1 FROM sys_permission WHERE perm_code = 'device:inspection');
+-- ⚠️ 2026-11-10 注释掉：后端 DeviceMaintenanceUnified 已合并点检（daily）和保养（weekly/monthly）
+--   PC 端无 /device/inspection 路由，移动端 routes.tsx 也已重定向到 maintenance
+--   Migration 040 反向删除这个节点（如果 029 已执行过）
+-- INSERT INTO sys_permission (parent_id, perm_name, perm_code, type, perm_type, group_name, sort, visible, status, is_abandon, created_at)
+-- SELECT 50, '设备点检', 'device:inspection', 'menu', 1, 'device', 4, 1, 1, 0, NOW()
+-- WHERE NOT EXISTS (SELECT 1 FROM sys_permission WHERE perm_code = 'device:inspection');
 
 -- 6 个 mobile:* 按钮级（parent 菜单节点已存在）
 INSERT INTO sys_permission (parent_id, perm_name, perm_code, type, perm_type, group_name, sort, visible, status, is_abandon, created_at)
@@ -43,10 +46,11 @@ SELECT p.perm_id, '移动端-提交维保', 'mobile:device:maintenance:submit', 
 FROM sys_permission p WHERE p.perm_code = 'device:maintenance'
 AND NOT EXISTS (SELECT 1 FROM sys_permission WHERE perm_code = 'mobile:device:maintenance:submit');
 
-INSERT INTO sys_permission (parent_id, perm_name, perm_code, type, perm_type, group_name, sort, visible, status, is_abandon, created_at)
-SELECT p.perm_id, '移动端-提交点检', 'mobile:device:inspection:submit', 'button', 2, 'pc', 5, 1, 1, 0, NOW()
-FROM sys_permission p WHERE p.perm_code = 'device:inspection'
-AND NOT EXISTS (SELECT 1 FROM sys_permission WHERE perm_code = 'mobile:device:inspection:submit');
+-- ⚠️ 2026-11-10 注释掉：父节点 device:inspection 已废弃（见上方注释）
+-- INSERT INTO sys_permission (parent_id, perm_name, perm_code, type, perm_type, group_name, sort, visible, status, is_abandon, created_at)
+-- SELECT p.perm_id, '移动端-提交点检', 'mobile:device:inspection:submit', 'button', 2, 'pc', 5, 1, 1, 0, NOW()
+-- FROM sys_permission p WHERE p.perm_code = 'device:inspection'
+-- AND NOT EXISTS (SELECT 1 FROM sys_permission WHERE perm_code = 'mobile:device:inspection:submit');
 
 INSERT INTO sys_permission (parent_id, perm_name, perm_code, type, perm_type, group_name, sort, visible, status, is_abandon, created_at)
 SELECT p.perm_id, '移动端-删除备件', 'mobile:device:spare-part:delete', 'button', 2, 'pc', 5, 1, 1, 0, NOW()
@@ -77,9 +81,11 @@ INSERT IGNORE INTO sys_role_permission (role_id, perm_id, terminal, create_time)
 SELECT 8, p.perm_id, 2, NOW() FROM sys_permission p
 WHERE p.status=1 AND p.is_abandon=0 AND p.perm_code IN (
   'device','device:list','device:maintenance','device:fault','device:calibration',
-  'device:inspection','device:spare-part','device:document','device:oee','device:dashboard',
+  -- 'device:inspection', -- 2026-11-10 废弃节点（见 Migration 040）
+  'device:spare-part','device:document','device:oee','device:dashboard',
   'mobile:device:fault:create','mobile:device:maintenance:start','mobile:device:maintenance:submit',
-  'mobile:device:inspection:submit','mobile:device:spare-part:delete','mobile:device:document:delete',
+  -- 'mobile:device:inspection:submit', -- 2026-11-10 父节点废弃
+  'mobile:device:spare-part:delete','mobile:device:document:delete',
   'production','production:order','bigscreen','bigscreen:production'
 );
 
