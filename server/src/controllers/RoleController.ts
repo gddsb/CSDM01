@@ -27,6 +27,11 @@ export const remove = asyncHandler(async (req: Request, res: Response) => {
   return success(res, null, '删除成功')
 })
 
+export const detail = asyncHandler(async (req: Request, res: Response) => {
+  const record = await RoleService.detail(Number(req.params.id))
+  return success(res, record, '查询成功')
+})
+
 export const listPermissions = asyncHandler(async (_req: Request, res: Response) => {
   const perms = await RoleService.listPermissions()
   return success(res, perms, '查询成功')
@@ -50,4 +55,4 @@ export async function initDefaultPermissions() {
   await RoleService.initDefaultPermissions()
 }
 
-export default { list, create, update, remove, listPermissions, getRolePermissions, assignPermissions, initDefaultPermissions }
+export default { list, create, update, remove, detail, listPermissions, getRolePermissions, assignPermissions, initDefaultPermissions }

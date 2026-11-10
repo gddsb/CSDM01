@@ -97,6 +97,12 @@ export const RoleService = {
     return true
   },
 
+  async detail(id: number | string) {
+    const role = await Role.findByPk(Number(id))
+    if (!role) throw new AppError('角色不存在', 10002, 404)
+    return role
+  },
+
   async listPermissions() {
     return await Permission.findAll({ order: [['sort_order', 'ASC'], ['perm_id', 'ASC']] })
   },
