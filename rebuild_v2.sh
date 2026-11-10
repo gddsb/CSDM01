@@ -23,24 +23,32 @@ cd "${SCRIPT_DIR}"
 UPDATE_NOTES=""
 FORCE_VERSION=""
 FORCE_BUILD=""
+FORCE_BRANCH=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --notes)   UPDATE_NOTES="$2"; shift 2 ;;
     --version) FORCE_VERSION="$2"; shift 2 ;;
     --build)   FORCE_BUILD="$2"; shift 2 ;;
+    --branch)  FORCE_BRANCH="$2"; shift 2 ;;
     *) shift ;;
   esac
 done
 
 # ============================================================
-# Step 1: Git pull（双源 fallback）
+# Step 1: Git pull（双源 fallback + 自动分支检测）
+#   默认拉取当前本地同名分支（适合 feature 分支测试部署），
+#   生产发布用 --branch main 拉回主干，也可显式指定任意分支。
 #   先试 origin（github.com 直连），超时/失败自动切 origin-backup（gh-proxy 镜像）
-#   服务器裸连 github.com:443 经常超时（国内云环境），gh-proxy 是可靠镜像
 # ============================================================
 echo "=== 1. git pull ==="
-PULL_OK=false
 
-# 1a. 部署前守卫：生产工作区不允许存在未提交的代码修改。
+# 1a. 确定目标分支：--branch 参数 > 当前本地分支 > main
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
+TARGET_BRANCH="${FORCE_BRANCH:-$CURRENT_BRANCH}"
+echo "  当前本地分支: ${CURRENT_BRANCH}"
+echo "  本次拉取目标: ${TARGET_BRANCH}${FORCE_BRANCH:+ (--branch 手动指定)}"
+
+# 1b. 部署前守卫：生产工作区不允许存在未提交的代码修改。
 #     android/app/capacitor.build.gradle 与 android/capacitor.settings.gradle 是
 #     `npx cap sync` 每次构建都会重写的生成文件，允许其处于修改状态；
 #     其余任何 tracked 文件改动都必须先提交回仓库，否则拒绝部署。
@@ -49,69 +57,55 @@ DIRTY=$(git status --porcelain --untracked-files=no \
 if [[ -n "$DIRTY" ]]; then
   echo "  ✗ 生产工作区存在未提交修改，终止部署："
   echo "$DIRTY"
-  echo "  → 请把修改提交并 push 到 main 后重新部署；禁止在生产机直接改代码"
+  echo "  → 请把修改提交并 push 后重新部署；禁止在生产机直接改代码"
   exit 1
 fi
 
-# 1b. cap sync 生成文件在仓库里同样会被更新：合并前丢弃服务器本地副本（构建时会按插件版本重新生成）
+# 1c. cap sync 生成文件在仓库里同样会被更新：合并前丢弃服务器本地副本（构建时会按插件版本重新生成）
 git checkout -- android/app/capacitor.build.gradle android/capacitor.settings.gradle 2>/dev/null || true
 
-# 1c. 只允许 fast-forward：出现分叉/冲突立即中止，禁止 reset --hard 覆盖本地改动
+# 1d. 只允许 fast-forward：出现分叉/冲突立即中止，禁止 reset --hard 覆盖本地改动
 # 重要：所有构建长耗时命令禁止用 | tail 管道——daemon 进程退出时 pipe fd 未正确关闭会导致 tail 永远阻塞
 # 统一模式：CMD > /tmp/_mes_step_N.log 2>&1; EXIT=$?; tail -N /tmp/_mes_step_N.log; [ $EXIT -eq 0 ]
-if git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 fetch origin main > /tmp/_mes_fetch.log 2>&1; then
-  tail -5 /tmp/_mes_fetch.log
-  if git merge --ff-only --no-edit FETCH_HEAD > /tmp/_mes_merge.log 2>&1; then
-    tail -3 /tmp/_mes_merge.log
-    PULL_OK=true
-    echo "  ✓ 来自 origin (github.com)"
-  else
-    tail -10 /tmp/_mes_merge.log
-    echo "  ✗ merge 失败（本地分叉或工作区冲突），终止部署"
-    exit 1
-  fi
-else
-  tail -5 /tmp/_mes_fetch.log
-fi
-
-# 主源失败 → 备源 origin-backup（同样只允许 fast-forward）
-if ! $PULL_OK; then
-  echo "  ⚠ origin 失败，切 origin-backup (gh-proxy)..."
-  if git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 fetch origin-backup main > /tmp/_mes_fetch.log 2>&1; then
-    tail -5 /tmp/_mes_fetch.log
+PULL_OK=false
+for REMOTE in origin origin-backup; do
+  if $PULL_OK; then break; fi
+  echo "  尝试 ${REMOTE}..."
+  if git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=15 fetch "$REMOTE" "$TARGET_BRANCH" > /tmp/_mes_fetch.log 2>&1; then
+    tail -3 /tmp/_mes_fetch.log
     if git merge --ff-only --no-edit FETCH_HEAD > /tmp/_mes_merge.log 2>&1; then
       tail -3 /tmp/_mes_merge.log
       PULL_OK=true
-      echo "  ✓ 来自 origin-backup (gh-proxy)"
+      echo "  ✓ 来自 ${REMOTE}"
     else
       tail -10 /tmp/_mes_merge.log
-      echo "  ✗ merge 失败，终止部署"
+      echo "  ✗ merge 失败（本地分叉或工作区冲突），终止部署"
       exit 1
     fi
   else
-    tail -5 /tmp/_mes_fetch.log
+    tail -3 /tmp/_mes_fetch.log
   fi
-fi
+done
 
 # 两次都失败 → 终止部署，禁止用旧代码构建（这正是"修好的 bug 又回来"的通道）
 if ! $PULL_OK; then
-  echo "  ✗ 两个远程都拉取失败，终止部署（禁止用旧代码构建）"
+  echo "  ✗ origin + origin-backup 都拉取 ${TARGET_BRANCH} 失败，终止部署"
   exit 1
 fi
 
 SHORT_SHA=$(git rev-parse --short HEAD)
 REMOTE_SHA=$(git rev-parse --short FETCH_HEAD 2>/dev/null || echo "")
-echo "  HEAD = ${SHORT_SHA}  origin/main = ${REMOTE_SHA}"
-# 三方一致性：生产 HEAD 必须等于刚拉取的远程 main（ff-only 已保证，这里显式断言）
+echo "  HEAD = ${SHORT_SHA}  ${REMOTE}/${TARGET_BRANCH} = ${REMOTE_SHA}"
+# 三方一致性：生产 HEAD 必须等于刚拉取的远程分支（ff-only 已保证，这里显式断言）
 if [ -z "$REMOTE_SHA" ] || [ "$SHORT_SHA" != "$REMOTE_SHA" ]; then
-  echo "  ✗ 生产 HEAD(${SHORT_SHA}) != origin/main(${REMOTE_SHA})，终止部署"
+  echo "  ✗ 生产 HEAD(${SHORT_SHA}) != ${REMOTE}/${TARGET_BRANCH}(${REMOTE_SHA})，终止部署"
   exit 1
 fi
 # 部署审计日志：记录每次部署的三方 git 信息与工作区状态
 AUDIT_LOG="/opt/milk-can-mes/server/data/deploy-audit.log"
 {
   echo "=== $(date '+%F %T') ==="
-  echo "HEAD=${SHORT_SHA} origin/main=${REMOTE_SHA}"
+  echo "branch=${TARGET_BRANCH} HEAD=${SHORT_SHA} remote=${REMOTE_SHA}"
   echo "tracked 改动（不含 cap sync 生成文件）: $(git status --porcelain --untracked-files=no | grep -vE 'android/(app/capacitor\.build\.gradle|capacitor\.settings\.gradle)' | wc -l) 个"
 } >> "$AUDIT_LOG" 2>/dev/null || true
 
