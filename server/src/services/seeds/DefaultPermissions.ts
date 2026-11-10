@@ -3,14 +3,17 @@ export const defaultPermissions = [
   { parent_id: 0, perm_name: '用户与权限', perm_code: 'iam', type: 'menu', icon: 'SafetyOutlined', path: 'iam', sort_order: 10 },
   { parent_id: 0, parent_code: 'iam', perm_name: '用户管理', perm_code: 'iam:user', type: 'menu', icon: 'TeamOutlined', path: '/iam/users', sort_order: 1 },
   { parent_id: 0, parent_code: 'iam', perm_name: '角色管理', perm_code: 'iam:role', type: 'menu', icon: 'SafetyCertificateOutlined', path: '/iam/roles', sort_order: 2 },
-  { parent_id: 0, parent_code: 'iam', perm_name: '权限资源池', perm_code: 'iam:permission', type: 'menu', icon: 'KeyOutlined', path: '/iam/permission', sort_order: 3 },
-  { parent_id: 0, parent_code: 'iam', perm_name: '数据范围规则', perm_code: 'iam:data-scope', type: 'menu', icon: 'FilterOutlined', path: '/iam/data-scopes', sort_order: 4 },
-  { parent_id: 0, parent_code: 'iam', perm_name: '业务状态规则', perm_code: 'iam:biz-status', type: 'menu', icon: 'SwitcherOutlined', path: '/iam/biz-status-rules', sort_order: 5 },
-  { parent_id: 0, parent_code: 'iam', perm_name: '业务对象字典', perm_code: 'iam:business-object', type: 'menu', icon: 'AppstoreOutlined', path: '/iam/business-objects', sort_order: 6 },
-  { parent_id: 0, parent_code: 'iam', perm_name: '数据维度字典', perm_code: 'iam:data-dimension', type: 'menu', icon: 'FundOutlined', path: '/iam/data-dimensions', sort_order: 7 },
+  // M036: 权限资源池 → 菜单管理
+  { parent_id: 0, parent_code: 'iam', perm_name: '菜单管理', perm_code: 'iam:permission', type: 'menu', icon: 'KeyOutlined', path: '/iam/permission', sort_order: 3 },
+  // M036: 5 个脚手架菜单默认隐藏
+  { parent_id: 0, parent_code: 'iam', perm_name: '数据范围规则', perm_code: 'iam:data-scope', type: 'menu', icon: 'FilterOutlined', path: '/iam/data-scopes', sort_order: 4, visible: 0 },
+  { parent_id: 0, parent_code: 'iam', perm_name: '业务状态规则', perm_code: 'iam:biz-status', type: 'menu', icon: 'SwitcherOutlined', path: '/iam/biz-status-rules', sort_order: 5, visible: 0 },
+  { parent_id: 0, parent_code: 'iam', perm_name: '业务对象字典', perm_code: 'iam:business-object', type: 'menu', icon: 'AppstoreOutlined', path: '/iam/business-objects', sort_order: 6, visible: 0 },
+  { parent_id: 0, parent_code: 'iam', perm_name: '数据维度字典', perm_code: 'iam:data-dimension', type: 'menu', icon: 'FundOutlined', path: '/iam/data-dimensions', sort_order: 7, visible: 0 },
   { parent_id: 0, parent_code: 'iam', perm_name: '权限审查报告', perm_code: 'iam:audit', type: 'menu', icon: 'SearchOutlined', path: '/iam/audit/permission', sort_order: 8 },
-  { parent_id: 0, parent_code: 'iam', perm_name: '审计日志查询', perm_code: 'iam:audit-log', type: 'menu', icon: 'FileSearchOutlined', path: '/iam/audit-log', sort_order: 9 },
-  { parent_id: 0, parent_code: 'iam', perm_name: '在线用户与缓存', perm_code: 'iam:cache', type: 'menu', icon: 'ClusterOutlined', path: '/iam/cache', sort_order: 10 },
+  { parent_id: 0, parent_code: 'iam', perm_name: '审计日志查询', perm_code: 'iam:audit-log', type: 'menu', icon: 'FileSearchOutlined', path: '/iam/audit-log', sort_order: 9, visible: 0 },
+  // M036: iam:cache 移到系统管理下
+  { parent_id: 0, parent_code: 'system', perm_name: '在线用户与缓存', perm_code: 'iam:cache', type: 'menu', icon: 'ClusterOutlined', path: '/iam/cache', sort_order: 10 },
 
   // ===== 系统管理（旧 system:user / system:role 已停用，全部移至 iam）=====
   { parent_id: 0, perm_name: '系统管理', perm_code: 'system', type: 'menu', icon: 'SettingOutlined', path: 'system', sort_order: 8 },
