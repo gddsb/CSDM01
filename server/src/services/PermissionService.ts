@@ -233,13 +233,46 @@ export const PermissionService = {
   },
 
   /**
-   * 查询用户的移动端菜单
-   * Migration 035 新增：先调 userMenu(terminal=2) 再按 mobile_tab_group 分组
-   *   组装 TabBar + ActionSheet 结构返回前端
+   * 查询用户的移动端菜单（完整返回结构）
+   *
+   * 返回：{ home, tabs, profile }
+   *   home    — 固定首页 Tab（sys_permission perm_code='home'）
+   *   tabs    — 动态业务 Tab 组（production/quality/device + 子项）
+   *   profile — 固定"我的" Tab（sys_permission perm_code='profile'，不存在则兜底）
+   *
+   * home/profile 直接查 Permission.findOne，绕过 terminal 过滤
+   * — 它们是 APP 框架层入口，所有角色必见
    */
   async userMobileMenu(user: any) {
     const pcTree = await this.userMenu(user, 2)
-    return buildMobileMenuTree(pcTree)
+    const tabsOnly = buildMobileMenuTree(pcTree)
+
+    // —— 查 home 记录（perm_code='home'，Migration 039 新增）——
+    const stripLeadingM = (s: string | null | undefined): string =>
+      s && s.charAt(0) === 'M' ? s.slice(1) : (s ?? '')
+
+    const homePerm = await Permission.findOne({ where: { perm_code: 'home' } })
+    const home = homePerm
+      ? {
+          key: homePerm.mobile_route_path || homePerm.path || '/m/dashboard',
+          title: stripLeadingM(homePerm.mobile_perm_name || homePerm.perm_name) || '首页',
+          route: homePerm.mobile_route_path || '/m/dashboard',
+          icon: homePerm.mobile_icon || homePerm.icon || 'AppOutline',
+        }
+      : { key: '/m/dashboard', title: '首页', route: '/m/dashboard', icon: 'AppOutline' }
+
+    // —— profile 记录（prod DB 可能还没有，兜底硬编码）——
+    const profilePerm = await Permission.findOne({ where: { perm_code: 'profile' } })
+    const profile = profilePerm
+      ? {
+          key: profilePerm.mobile_route_path || profilePerm.path || '/m/profile',
+          title: stripLeadingM(profilePerm.mobile_perm_name || profilePerm.perm_name) || '我的',
+          route: profilePerm.mobile_route_path || '/m/profile',
+          icon: profilePerm.mobile_icon || profilePerm.icon || 'UserOutline',
+        }
+      : { key: '/m/profile', title: '我的', route: '/m/profile', icon: 'UserOutline' }
+
+    return { home, ...tabsOnly, profile }
   },
 }
 

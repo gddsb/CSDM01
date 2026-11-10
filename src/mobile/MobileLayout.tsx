@@ -43,9 +43,30 @@ interface MobileTabGroup {
   items: MobileMenuItem[]
 }
 
-/** 固定 Tab — 首页 / 我的（APP 框架层入口，不属于 sys_permission type=menu） */
-const FIXED_HOME: TabDef = { key: '/m/dashboard', title: '首页', icon: <AppOutline /> }
-const FIXED_PROFILE: TabDef = { key: '/m/profile', title: '我的', icon: <UserOutline /> }
+/** icon 字符串 → React.ReactNode 映射（后端 mobile_icon/icon 返回字符串） */
+const ICON_MAP: Record<string, React.ReactNode> = {
+  AppOutline: <AppOutline />,
+  UserOutline: <UserOutline />,
+  BillOutline: <BillOutline />,
+  CheckOutline: <CheckOutline />,
+  TeamOutline: <TeamOutline />,
+}
+function resolveIcon(name?: string): React.ReactNode {
+  if (!name) return <AppOutline />
+  return ICON_MAP[name] ?? <AppOutline />
+}
+
+/** 后端返回的固定 Tab 结构（home/profile，Migration 039+ 后端驱动） */
+interface MobileFixedTab {
+  key: string
+  title: string
+  route: string
+  icon?: string
+}
+
+/** 前端兜底硬编码（后端 API 异常时使用） */
+const FALLBACK_HOME: MobileFixedTab = { key: '/m/dashboard', title: '首页', route: '/m/dashboard', icon: 'AppOutline' }
+const FALLBACK_PROFILE: MobileFixedTab = { key: '/m/profile', title: '我的', route: '/m/profile', icon: 'UserOutline' }
 
 // 需求 1: tabGroup 值已从 inspection 改为 quality（对齐 PC 一级菜单 perm_code）
 const GROUP_ICON_MAP: Record<string, React.ReactNode> = {
@@ -88,8 +109,10 @@ export function MobileLayout() {
   const { currentUser, hasPermission } = useApp()
   const { online } = useOfflineQueue()
 
-  // —— Migration 035: 动态菜单 state ——
+  // —— Migration 035+039: 动态菜单 state（后端 /mobile-menu 统一下发 home + tabs + profile）——
   const [dynamicTabs, setDynamicTabs] = useState<MobileTabGroup[]>([])
+  const [fixedHome, setFixedHome] = useState<MobileFixedTab>(FALLBACK_HOME)
+  const [fixedProfile, setFixedProfile] = useState<MobileFixedTab>(FALLBACK_PROFILE)
   const [menuLoading, setMenuLoading] = useState(true)
 
   useEffect(() => {
@@ -97,12 +120,16 @@ export function MobileLayout() {
     const fetchMobileMenu = async () => {
       try {
         const res = await api.get('/system/permissions/mobile-menu')
-        const data = res?.data || { tabs: [] }
+        const data = res?.data || {}
         if (cancelled) return
         setDynamicTabs((data.tabs || []) as MobileTabGroup[])
+        // Migration 039: home/profile 从后端拉（API 异常时用 FALLBACK 兜底）
+        if (data.home) setFixedHome(data.home as MobileFixedTab)
+        if (data.profile) setFixedProfile(data.profile as MobileFixedTab)
       } catch (err) {
         console.warn('[MobileLayout] 拉取移动端菜单失败:', err)
         setDynamicTabs([])
+        // home/profile 保持 FALLBACK 默认值
       } finally {
         if (!cancelled) setMenuLoading(false)
       }
@@ -119,15 +146,21 @@ export function MobileLayout() {
       .filter(tab => tab.items.length > 0)
   }, [dynamicTabs, hasPermission])
 
-  // —— 合成 visibleTabs（固定首页 + 动态业务 Tab + 固定我的）——
+  // —— 合成 visibleTabs（固定首页 + 动态业务 Tab + 固定我的，后端驱动，兜底 FALLBACK）——
   const visibleTabs = useMemo<TabDef[]>(() => {
-    const result: TabDef[] = [FIXED_HOME]
+    const result: TabDef[] = [{
+      key: fixedHome.key, title: fixedHome.title,
+      icon: resolveIcon(fixedHome.icon),
+    }]
     for (const tab of filteredTabs) {
       result.push({ key: tab.key, title: tab.title, icon: GROUP_ICON_MAP[tab.tabGroup] })
     }
-    result.push(FIXED_PROFILE)
+    result.push({
+      key: fixedProfile.key, title: fixedProfile.title,
+      icon: resolveIcon(fixedProfile.icon),
+    })
     return result
-  }, [filteredTabs])
+  }, [filteredTabs, fixedHome, fixedProfile])
 
   const activeTabKey = computeActiveKey(location.pathname, filteredTabs)
 
