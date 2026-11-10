@@ -160,6 +160,12 @@ const Permission = sequelize.define('Permission', {
     defaultValue: 1,
     comment: '移动端是否可见（1=显示）',
   },
+
+  // —— Migration 038 新增：移动端独立显示名 + M 前缀 ——
+  mobile_perm_name: {
+    type: DataTypes.STRING(64),
+    comment: '移动端显示名称（以 M 开头，显示时剥离 M；空则 fallback 到 perm_name）',
+  },
 }, {
   tableName: 'sys_permission',
   timestamps: true,

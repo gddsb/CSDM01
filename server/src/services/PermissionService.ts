@@ -246,20 +246,27 @@ export const PermissionService = {
 /**
  * 从 userMenu 返回的 PC 侧菜单树 → 组装移动端 TabBar + ActionSheet 结构
  *
- * 分组规则：按 mobile_tab_group 字段值分组
- * 同一分组内按 mobile_sort_order 排序
- * mobile_route_path 为空则 fallback 到 route_path（加 /m 前缀）
+ * 三个需求的落地：
+ *   需求 1（TabBar title 对齐 PC 一级菜单）：
+ *     TAB_GROUPS 值等于 PC 一级菜单的 perm_code，title 从 PC 一级菜单的 perm_name 反查
+ *     之前是 production/inspection/device，037 migration 把 inspection→quality
+ *   需求 2（移动端独立名称）：
+ *     text 优先取 mobile_perm_name，空值 fallback perm_name
+ *   需求 3（M 前缀剥离）：
+ *     mobile_perm_name 存储层以 M 开头（如 "M生产管理"），渲染层自动 strip 第一个 M
+ *     stripLeadingM 只剥离首字符 M（严格按规格：一个字），不影响正常开头的 "M" 文本
  *
- * 输入：userMenu 返回的菜单树（任何层级）
+ * 输入：userMenu 返回的菜单树（任何层级，expandAncestors 已保证父级节点在 flat 里）
  * 输出：{
  *   tabs: [
- *     { key: '__production__', title: '生产', tabGroup: 'production', items: [...] },
- *     ...
+ *     { key: '__production__', title: '生产管理', tabGroup: 'production', items: [...] },
+ *     { key: '__inspection__',  title: '质量管理', tabGroup: 'quality',    items: [...] },
+ *     { key: '__device__',      title: '设备管理', tabGroup: 'device',      items: [...] },
  *   ]
  * }
  */
 export function buildMobileMenuTree(permList: any[]): { tabs: any[] } {
-  // 扁平化（无论输入是树还是扁平）
+  // 扁平化（无论输入是树还是扁平；expandAncestors 已把父级节点加入）
   const flat: any[] = []
   const flatten = (arr: any[]) => {
     for (const item of arr) {
@@ -269,11 +276,31 @@ export function buildMobileMenuTree(permList: any[]): { tabs: any[] } {
   }
   flatten(permList)
 
-  const TAB_GROUPS = ['production', 'inspection', 'device']
-  const TAB_META: Record<string, { key: string; title: string }> = {
-    production: { key: '__production__', title: '生产' },
-    inspection: { key: '__inspection__', title: '检验' },
-    device:     { key: '__device__', title: '设备' },
+  // —— 需求 1: TAB_GROUPS = PC 一级菜单 perm_code（M037 把 inspection→quality） ——
+  const TAB_GROUPS = ['production', 'quality', 'device']
+  // 前端内部 Tab key 保持旧命名不变（MobileLayout GROUP_ICON_MAP 后续同步改）
+  const TAB_KEY: Record<string, string> = {
+    production: '__production__',
+    quality:    '__inspection__',
+    device:     '__device__',
+  }
+
+  // —— 需求 1: TabBar title 从 PC 一级菜单 perm_name 反查 ——
+  // userMenu 已 expandAncestors，PC 一级菜单（parent_id=0）必然在 flat 里
+  const pcTopNames: Record<string, string> = {}
+  for (const p of flat) {
+    if (Number(p.parent_id) === 0 && p.type === 'menu' && p.visible === 1) {
+      if (TAB_GROUPS.includes(p.perm_code)) {
+        pcTopNames[p.perm_code] = p.perm_name
+      }
+    }
+  }
+
+  // —— 需求 3: M 前缀剥离工具 ——
+  // 只剥离第一个字符恰好为 M（大写）的情况，避免误伤 "M品牌" 等正常 M 开头的文本
+  const stripLeadingM = (s: string | null | undefined): string => {
+    if (!s) return ''
+    return s.charAt(0) === 'M' ? s.slice(1) : s
   }
 
   const groupMap = new Map<string, any[]>()
@@ -297,14 +324,16 @@ export function buildMobileMenuTree(permList: any[]): { tabs: any[] } {
           return Number(a.perm_id) - Number(b.perm_id)
         })
         .map((p: any) => ({
-          text: p.perm_name,
+          // 需求 2+3: mobile_perm_name 优先 + strip M；空值 fallback perm_name（也 strip M 以防万一）
+          text: stripLeadingM(p.mobile_perm_name || p.perm_name),
           route: p.mobile_route_path || (p.route_path ? `/m${p.route_path}` : ''),
           permCode: p.perm_code,
           icon: p.mobile_icon || p.icon,
           sortOrder: p.mobile_sort_order ?? p.sort_order,
         }))
-      const meta = TAB_META[g]
-      return { key: meta.key, title: meta.title, tabGroup: g, items }
+      // 需求 1: title = PC 一级菜单 perm_name；极端兜底 fallback 到 group key
+      const title = pcTopNames[g] || g
+      return { key: TAB_KEY[g], title, tabGroup: g, items }
     })
 
   return { tabs }

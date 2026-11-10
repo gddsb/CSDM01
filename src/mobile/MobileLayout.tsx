@@ -28,7 +28,7 @@ interface TabDef {
 
 /** 后端返回的移动端菜单项 */
 interface MobileMenuItem {
-  text: string        // perm_name
+  text: string        // mobile_perm_name（M 前缀已在后端剥离）
   route: string       // mobile_route_path
   permCode: string    // perm_code（前端二次鉴权）
   icon?: string
@@ -38,8 +38,8 @@ interface MobileMenuItem {
 /** 后端返回的移动端 Tab 分组 */
 interface MobileTabGroup {
   key: string          // '__production__' / '__inspection__' / '__device__'
-  title: string        // '生产' / '检验' / '设备'
-  tabGroup: string     // 'production' / 'inspection' / 'device'
+  title: string        // PC 一级菜单 perm_name（如 "生产管理" / "质量管理" / "设备管理"）
+  tabGroup: string     // PC 一级菜单 perm_code: 'production' / 'quality' / 'device'
   items: MobileMenuItem[]
 }
 
@@ -47,10 +47,11 @@ interface MobileTabGroup {
 const FIXED_HOME: TabDef = { key: '/m/dashboard', title: '首页', icon: <AppOutline /> }
 const FIXED_PROFILE: TabDef = { key: '/m/profile', title: '我的', icon: <UserOutline /> }
 
+// 需求 1: tabGroup 值已从 inspection 改为 quality（对齐 PC 一级菜单 perm_code）
 const GROUP_ICON_MAP: Record<string, React.ReactNode> = {
   production: <BillOutline />,
-  inspection: <CheckOutline />,
-  device: <TeamOutline />,
+  quality:    <CheckOutline />,
+  device:     <TeamOutline />,
 }
 
 const TITLE_MAP: Record<string, string> = {

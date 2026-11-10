@@ -58,10 +58,12 @@ const APP_ICON_OPTIONS = [
 ]
 
 // —— APP 端 TabBar 分组选项 ——
+// 需求 1: value 改为 PC 一级菜单 perm_code（production/quality/device）
+//   inspection 已由 M037 migration 改为 quality
 const TAB_GROUP_OPTIONS = [
-  { label: '生产', value: 'production' },
-  { label: '检验', value: 'inspection' },
-  { label: '设备', value: 'device' },
+  { label: '生产管理', value: 'production' },
+  { label: '质量管理', value: 'quality' },
+  { label: '设备管理', value: 'device' },
 ]
 
 // —— APP 端可见状态 ——
@@ -190,6 +192,8 @@ export default function MenuManagement() {
         mobile_tab_group: editing.mobile_tab_group ?? null,
         mobile_visible: editing.mobile_visible ?? 1,
         mobile_sort_order: editing.mobile_sort_order ?? null,
+        // 需求 2+3: 移动端独立显示名（以 M 开头，显示时自动剥离）
+        mobile_perm_name: editing.mobile_perm_name || null,
       })
     } else {
       form.resetFields()
@@ -222,6 +226,7 @@ export default function MenuManagement() {
         mobile_tab_group: values.mobile_tab_group || null,
         mobile_visible: values.mobile_visible !== undefined ? Number(values.mobile_visible) : null,
         mobile_sort_order: values.mobile_sort_order !== undefined ? Number(values.mobile_sort_order) : null,
+        mobile_perm_name: values.mobile_perm_name || null,
       }
       if (editing && editing.perm_id) {
         const res = await api.put(`/system/permissions/${editing.perm_id}`, payload)
@@ -260,7 +265,7 @@ export default function MenuManagement() {
         const group = record.mobile_tab_group
         const route = record.mobile_route_path
         if (!group && !route) return <span style={{ color: '#bbb' }}>—</span>
-        const groupMap: Record<string, string> = { production: '生产', inspection: '检验', device: '设备' }
+        const groupMap: Record<string, string> = { production: '生产管理', quality: '质量管理', device: '设备管理' }
         const label = group && groupMap[group] ? groupMap[group] : (record.perm_name || '')
         return <span style={{ color: '#389e0d' }}>{label}</span>
       },
@@ -479,6 +484,11 @@ export default function MenuManagement() {
               {/* 行 3 — 菜单名称（只读，跟随 PC） */}
               <Form.Item label="菜单名称" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
                 <Input disabled value={pcName || '—'} />
+              </Form.Item>
+
+              {/* 行 3.5 — 移动端独立显示名（需求 2+3：以 M 开头，显示时自动剥离） */}
+              <Form.Item name="mobile_perm_name" label="移动端名称" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
+                <Input placeholder="以 M 开头，如 M生产订单（留空跟随 PC 端）" />
               </Form.Item>
 
               {/* 行 4 — 权限编码（只读，跟随 PC） */}
