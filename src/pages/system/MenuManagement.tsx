@@ -16,7 +16,7 @@ import {
   TeamOutline, SettingsOutline, ShopOutline, CarOutline, LocationOutline,
   StarOutline, LikeOutline, MessageOutline, GiftOutline, FlagOutline,
   SearchOutline, RefreshOutline, EllipsisOutline, CloseOutline, AddOutline,
-  CloudOutline as MCloudOutline, ProfileOutline, TaskOutline,
+  CloudOutline as MCloudOutline, ProfileOutline,
 } from 'antd-mobile-icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
@@ -82,7 +82,6 @@ const APP_ICON_PRESETS: { value: string; label: React.ReactNode }[] = [
   { value: 'AddOutline', label: <span><AddOutline /> 新增 (AddOutline)</span> },
   { value: 'CloudOutline', label: <span><MCloudOutline /> 云 (CloudOutline)</span> },
   { value: 'ProfileOutline', label: <span><ProfileOutline /> 个人 (ProfileOutline)</span> },
-  { value: 'TaskOutline', label: <span><TaskOutline /> 任务 (TaskOutline)</span> },
 ]
 
 /** 图标字符串 → React 组件（用于表格列渲染） */
@@ -101,7 +100,7 @@ const APP_ICON_MAP: Record<string, React.ComponentType<any>> = {
   TeamOutline, SettingsOutline, ShopOutline, CarOutline, LocationOutline,
   StarOutline, LikeOutline, MessageOutline, GiftOutline, FlagOutline,
   SearchOutline, RefreshOutline, EllipsisOutline, CloseOutline, AddOutline,
-  CloudOutline: MCloudOutline, ProfileOutline, TaskOutline,
+  CloudOutline: MCloudOutline, ProfileOutline,
 }
 
 function renderIcon(iconName: string | null | undefined, side: 'pc' | 'app'): React.ReactNode {
@@ -324,7 +323,7 @@ export default function MenuManagement() {
       value: keywordInput, onChange: (e: any) => setKeywordInput(e.target.value) },
     { type: 'select', placeholder: '状态', col: { span: 6 },
       options: [{ label: '启用', value: 1 }, { label: '停用', value: 0 }],
-      value: statusInput, onChange: v => setStatusInput(v) },
+      value: statusInput, onChange: v => setStatusInput((v as number | undefined)) },
   ]
 
   const stats: StatItem[] = [
