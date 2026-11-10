@@ -253,36 +253,39 @@ export default function MenuManagement() {
   }
 
   const columns: ColumnsType<any> = [
-    { title: '菜单名称', dataIndex: 'perm_name', key: 'perm_name', width: 180 },
-    { title: '权限编码', dataIndex: 'perm_code', key: 'perm_code', width: 160 },
+    { title: '菜单名称', dataIndex: 'perm_name', key: 'perm_name', width: 160 },
     {
-      title: '类型', dataIndex: 'type', key: 'type', width: 70,
-      render: v => v ? <Tag color={typeColorMap[v] || 'default'}>{typeOptions.find(t => t.value === v)?.label || v}</Tag> : '-',
-    },
-    { title: '图标', dataIndex: 'icon', key: 'icon', width: 120 },
-    { title: 'PC 路由', dataIndex: 'path', key: 'path', width: 160, render: v => v || '-' },
-    {
-      title: '📱 移动端', key: 'mobile', width: 140,
+      title: '移动端名称', key: 'mobile_name', width: 140,
       render: (_, record) => {
         const group = record.mobile_tab_group
         const route = record.mobile_route_path
         if (!group && !route) return <span style={{ color: '#bbb' }}>—</span>
         const groupMap: Record<string, string> = { production: '生产', inspection: '检验', device: '设备' }
-        return (
-          <span>
-            {group && <Tag color="cyan">{groupMap[group] || group}</Tag>}
-            {route && <code style={{ fontSize: 11, color: '#666' }}>{route}</code>}
-          </span>
-        )
+        const label = group && groupMap[group] ? groupMap[group] : (record.perm_name || '')
+        return <span style={{ color: '#389e0d' }}>{label}</span>
       },
     },
-    { title: '排序', dataIndex: 'sort_order', key: 'sort_order', width: 60 },
     {
-      title: '状态', dataIndex: 'status', key: 'status', width: 70,
+      title: '类型', dataIndex: 'type', key: 'type', width: 70,
+      render: v => v ? <Tag color={typeColorMap[v] || 'default'}>{typeOptions.find(t => t.value === v)?.label || v}</Tag> : '-',
+    },
+    { title: '排序号', dataIndex: 'sort_order', key: 'sort_order', width: 70, align: 'center' },
+    { title: '移动端排序', dataIndex: 'mobile_sort_order', key: 'mobile_sort_order', width: 90, align: 'center',
+      render: v => v != null ? v : <span style={{ color: '#bbb' }}>—</span>,
+    },
+    {
+      title: 'PC 端状态', dataIndex: 'status', key: 'status_pc', width: 80,
       render: v => <Tag color={v === 1 ? 'green' : 'red'}>{v === 1 ? '启用' : '停用'}</Tag>,
     },
     {
-      title: '操作', key: 'action', fixed: 'right',
+      title: '移动端状态', dataIndex: 'mobile_visible', key: 'status_mobile', width: 80,
+      render: (v, record) => {
+        if (!record.mobile_tab_group && !record.mobile_route_path) return <span style={{ color: '#bbb' }}>—</span>
+        return <Tag color={v === 1 ? 'green' : 'red'}>{v === 1 ? '可见' : '隐藏'}</Tag>
+      },
+    },
+    {
+      title: '操作', key: 'action', fixed: 'right', width: 200,
       render: (_, record) => (
         <Space size="small">
           <Button type="link" size="small" onClick={() => handleAddChild(record)}>新增子项</Button>
@@ -361,15 +364,23 @@ export default function MenuManagement() {
         afterOpenChange={handleAfterOpenChange}
         okText="保存"
         cancelText="取消"
-        width={960}
+        width={1080}
         destroyOnHidden
       >
-        <Form form={form} layout="vertical" preserve={false} style={{ margin: 0 }}>
-          <Row gutter={20}>
+        <Form
+          form={form}
+          layout="horizontal"
+          preserve={false}
+          style={{ margin: 0 }}
+          labelCol={{ span: 9 }}
+          wrapperCol={{ span: 14 }}
+          labelAlign="right"
+        >
+          <Row gutter={16}>
             {/* ========== 左列：PC 端配置 ========== */}
-            <Col span={12}>
+            <Col span={11}>
               <div style={{
-                marginBottom: 16, padding: '6px 12px', background: '#e6f4ff',
+                marginBottom: 12, padding: '4px 10px', background: '#e6f4ff',
                 borderRadius: 4, fontSize: 13, fontWeight: 500, color: '#1677ff',
                 display: 'flex', alignItems: 'center', gap: 6,
               }}>
@@ -377,7 +388,7 @@ export default function MenuManagement() {
               </div>
 
               {/* 行 1 — 父级菜单 */}
-              <Form.Item name="parent_id" label="父级菜单">
+              <Form.Item name="parent_id" label="父级菜单" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
                 <TreeSelect
                   placeholder="请选择父级菜单"
                   treeData={parentOptions}
@@ -387,22 +398,22 @@ export default function MenuManagement() {
               </Form.Item>
 
               {/* 行 2 — 类型 */}
-              <Form.Item name="type" label="类型" rules={[{ required: true, message: '请选择类型' }]}>
+              <Form.Item name="type" label="类型" rules={[{ required: true, message: '请选择类型' }]} labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
                 <Select placeholder="请选择类型" options={typeOptions} />
               </Form.Item>
 
               {/* 行 3 — 菜单名称 */}
-              <Form.Item name="perm_name" label="菜单名称" rules={[{ required: true, message: '请输入菜单名称' }]}>
+              <Form.Item name="perm_name" label="菜单名称" rules={[{ required: true, message: '请输入菜单名称' }]} labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
                 <Input placeholder="请输入菜单名称" />
               </Form.Item>
 
               {/* 行 4 — 权限编码 */}
-              <Form.Item name="perm_code" label="权限编码" rules={[{ required: true, message: '请输入权限编码' }]}>
+              <Form.Item name="perm_code" label="权限编码" rules={[{ required: true, message: '请输入权限编码' }]} labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
                 <Input placeholder="如 system:user" disabled={!!(editing && editing.perm_id)} />
               </Form.Item>
 
               {/* 行 5 — 图标（PC 端下拉） */}
-              <Form.Item name="icon" label="图标">
+              <Form.Item name="icon" label="图标" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
                 <Select
                   placeholder="选择 PC 端图标"
                   allowClear
@@ -413,22 +424,22 @@ export default function MenuManagement() {
               </Form.Item>
 
               {/* 行 6 — 路由路径 */}
-              <Form.Item name="path" label="路由路径">
+              <Form.Item name="path" label="路由路径" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
                 <Input placeholder="如 /system/users" />
               </Form.Item>
 
               {/* 行 7 — 组件路径 */}
-              <Form.Item name="component" label="组件路径">
+              <Form.Item name="component" label="组件路径" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
                 <Input placeholder="如 pages/system/UserManagement" />
               </Form.Item>
 
               {/* 行 8 — 状态 */}
-              <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
+              <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]} labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
                 <Select placeholder="请选择状态" options={PC_STATUS_OPTIONS} />
               </Form.Item>
 
               {/* 行 9 — 排序号 */}
-              <Form.Item name="sort_order" label="排序号">
+              <Form.Item name="sort_order" label="排序号" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
                 <InputNumber placeholder="数字" style={{ width: '100%' }} />
               </Form.Item>
             </Col>
@@ -437,9 +448,9 @@ export default function MenuManagement() {
             <Divider type="vertical" style={{ height: 'auto', margin: 0 }} />
 
             {/* ========== 右列：APP 端配置 ========== */}
-            <Col span={12}>
+            <Col span={11}>
               <div style={{
-                marginBottom: 16, padding: '6px 12px', background: '#f6ffed',
+                marginBottom: 12, padding: '4px 10px', background: '#f6ffed',
                 borderRadius: 4, fontSize: 13, fontWeight: 500, color: '#389e0d',
                 display: 'flex', alignItems: 'center', gap: 6,
               }}>
@@ -448,7 +459,7 @@ export default function MenuManagement() {
               </div>
 
               {/* 行 1 — 移动端独立父级（独立字段） */}
-              <Form.Item name="mobile_parent_id" label="移动端独立父级">
+              <Form.Item name="mobile_parent_id" label="独立父级" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
                 <TreeSelect
                   placeholder="留空=与 PC 端同层级"
                   treeData={[
@@ -461,22 +472,22 @@ export default function MenuManagement() {
               </Form.Item>
 
               {/* 行 2 — 类型（只读，跟随 PC） */}
-              <Form.Item label="类型">
+              <Form.Item label="类型" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
                 <Input disabled value={pcType ? (typeOptions.find(t => t.value === pcType)?.label || pcType) : '—'} />
               </Form.Item>
 
               {/* 行 3 — 菜单名称（只读，跟随 PC） */}
-              <Form.Item label="菜单名称">
+              <Form.Item label="菜单名称" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
                 <Input disabled value={pcName || '—'} />
               </Form.Item>
 
               {/* 行 4 — 权限编码（只读，跟随 PC） */}
-              <Form.Item label="权限编码">
+              <Form.Item label="权限编码" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
                 <Input disabled value={pcCode || '—'} />
               </Form.Item>
 
               {/* 行 5 — 图标（APP 端下拉，独立） */}
-              <Form.Item name="mobile_icon" label="图标">
+              <Form.Item name="mobile_icon" label="图标" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
                 <Select
                   placeholder="选择 APP 端图标（留空继承 PC）"
                   allowClear
@@ -487,12 +498,12 @@ export default function MenuManagement() {
               </Form.Item>
 
               {/* 行 6 — 移动端路由（独立） */}
-              <Form.Item name="mobile_route_path" label="路由路径">
+              <Form.Item name="mobile_route_path" label="路由路径" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
                 <Input placeholder="如 /m/device-maintenance" />
               </Form.Item>
 
-              {/* 行 7 — TabBar 分组（独有，对应 PC 端 component 行） */}
-              <Form.Item name="mobile_tab_group" label="TabBar 分组">
+              {/* 行 7 — TabBar 分组（独有） */}
+              <Form.Item name="mobile_tab_group" label="TabBar 分组" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
                 <Select
                   placeholder="留空=不在移动端显示"
                   allowClear
@@ -501,12 +512,12 @@ export default function MenuManagement() {
               </Form.Item>
 
               {/* 行 8 — 移动端可见（独立） */}
-              <Form.Item name="mobile_visible" label="移动端可见">
+              <Form.Item name="mobile_visible" label="移动端可见" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
                 <Select placeholder="是否在移动端显示" options={MOBILE_VISIBLE_OPTIONS} />
               </Form.Item>
 
               {/* 行 9 — 移动端排序（独立） */}
-              <Form.Item name="mobile_sort_order" label="排序号">
+              <Form.Item name="mobile_sort_order" label="排序号" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
                 <InputNumber placeholder="数字（留空继承 PC）" style={{ width: '100%' }} />
               </Form.Item>
             </Col>
