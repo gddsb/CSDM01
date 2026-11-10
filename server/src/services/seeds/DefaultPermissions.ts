@@ -1,5 +1,13 @@
 export const defaultPermissions = [
-  // ===== 用户与权限（方案 A 新一级菜单，所有 IAM 权限配置入口）=====
+  // ===== home — 工作台/首页（两端同一菜单）=====
+  // PC 端: visible=0, path=/dashboard（登录默认跳转页，不出现在左侧菜单树）
+  // APP 端: mobile_visible=1, mobile_route_path=/m/dashboard（固定首页 Tab）
+  { parent_id: 0, perm_name: '工作台', perm_code: 'home', type: 'menu', icon: 'DashboardOutlined',
+    path: '/dashboard', sort_order: 0, visible: 0, status: 1,
+    mobile_route_path: '/m/dashboard', mobile_parent_id: 0, mobile_tab_group: null,
+    mobile_sort_order: 0, mobile_visible: 1, mobile_perm_name: 'M首页' },
+
+  // ===== 用户与权限 =====
   { parent_id: 0, perm_name: '用户与权限', perm_code: 'iam', type: 'menu', icon: 'SafetyOutlined', path: 'iam', sort_order: 10 },
   { parent_id: 0, parent_code: 'iam', perm_name: '用户管理', perm_code: 'iam:user', type: 'menu', icon: 'TeamOutlined', path: '/iam/users', sort_order: 1 },
   { parent_id: 0, parent_code: 'iam', perm_name: '角色管理', perm_code: 'iam:role', type: 'menu', icon: 'SafetyCertificateOutlined', path: '/iam/roles', sort_order: 2 },
