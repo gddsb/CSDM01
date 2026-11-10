@@ -13,10 +13,10 @@ import {
 } from '@ant-design/icons'
 import {
   AppOutline, HomeOutline, BillOutline, CheckOutline, UserOutline,
-  TeamOutline, SettingsOutline, ShopOutline, CarOutline, LocationOutline,
+  TeamOutline, SetOutline, ShopbagOutline, LocationOutline,
   StarOutline, LikeOutline, MessageOutline, GiftOutline, FlagOutline,
-  SearchOutline, RefreshOutline, EllipsisOutline, CloseOutline, AddOutline,
-  CloudOutline as MCloudOutline, ProfileOutline,
+  SearchOutline, RedoOutline, MoreOutline, CloseOutline, AddOutline,
+  GlobalOutline as MGlobalOutline, UserCircleOutline,
 } from 'antd-mobile-icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
@@ -66,9 +66,8 @@ const APP_ICON_PRESETS: { value: string; label: React.ReactNode }[] = [
   { value: 'CheckOutline', label: <span><CheckOutline /> 勾选 (CheckOutline)</span> },
   { value: 'UserOutline', label: <span><UserOutline /> 用户 (UserOutline)</span> },
   { value: 'TeamOutline', label: <span><TeamOutline /> 团队 (TeamOutline)</span> },
-  { value: 'SettingsOutline', label: <span><SettingsOutline /> 设置 (SettingsOutline)</span> },
-  { value: 'ShopOutline', label: <span><ShopOutline /> 门店 (ShopOutline)</span> },
-  { value: 'CarOutline', label: <span><CarOutline /> 车辆 (CarOutline)</span> },
+  { value: 'SetOutline', label: <span><SetOutline /> 设置 (SetOutline)</span> },
+  { value: 'ShopbagOutline', label: <span><ShopbagOutline /> 购物袋 (ShopbagOutline)</span> },
   { value: 'LocationOutline', label: <span><LocationOutline /> 定位 (LocationOutline)</span> },
   { value: 'StarOutline', label: <span><StarOutline /> 星标 (StarOutline)</span> },
   { value: 'LikeOutline', label: <span><LikeOutline /> 喜欢 (LikeOutline)</span> },
@@ -76,12 +75,12 @@ const APP_ICON_PRESETS: { value: string; label: React.ReactNode }[] = [
   { value: 'GiftOutline', label: <span><GiftOutline /> 礼物 (GiftOutline)</span> },
   { value: 'FlagOutline', label: <span><FlagOutline /> 标记 (FlagOutline)</span> },
   { value: 'SearchOutline', label: <span><SearchOutline /> 搜索 (SearchOutline)</span> },
-  { value: 'RefreshOutline', label: <span><RefreshOutline /> 刷新 (RefreshOutline)</span> },
-  { value: 'EllipsisOutline', label: <span><EllipsisOutline /> 更多 (EllipsisOutline)</span> },
+  { value: 'RedoOutline', label: <span><RedoOutline /> 刷新 (RedoOutline)</span> },
+  { value: 'MoreOutline', label: <span><MoreOutline /> 更多 (MoreOutline)</span> },
   { value: 'CloseOutline', label: <span><CloseOutline /> 关闭 (CloseOutline)</span> },
   { value: 'AddOutline', label: <span><AddOutline /> 新增 (AddOutline)</span> },
-  { value: 'CloudOutline', label: <span><MCloudOutline /> 云 (CloudOutline)</span> },
-  { value: 'ProfileOutline', label: <span><ProfileOutline /> 个人 (ProfileOutline)</span> },
+  { value: 'GlobalOutline', label: <span><MGlobalOutline /> 云 (GlobalOutline)</span> },
+  { value: 'UserCircleOutline', label: <span><UserCircleOutline /> 个人 (UserCircleOutline)</span> },
 ]
 
 /** 图标字符串 → React 组件（用于表格列渲染） */
@@ -97,10 +96,10 @@ const PC_ICON_MAP: Record<string, React.ComponentType<any>> = {
 }
 const APP_ICON_MAP: Record<string, React.ComponentType<any>> = {
   AppOutline, HomeOutline, BillOutline, CheckOutline, UserOutline,
-  TeamOutline, SettingsOutline, ShopOutline, CarOutline, LocationOutline,
+  TeamOutline, SetOutline, ShopbagOutline, LocationOutline,
   StarOutline, LikeOutline, MessageOutline, GiftOutline, FlagOutline,
-  SearchOutline, RefreshOutline, EllipsisOutline, CloseOutline, AddOutline,
-  CloudOutline: MCloudOutline, ProfileOutline,
+  SearchOutline, RedoOutline, MoreOutline, CloseOutline, AddOutline,
+  GlobalOutline: MGlobalOutline, UserCircleOutline,
 }
 
 function renderIcon(iconName: string | null | undefined, side: 'pc' | 'app'): React.ReactNode {
