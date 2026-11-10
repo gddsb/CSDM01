@@ -11,8 +11,8 @@
 --
 -- 幂等策略：按 perm_code 删除 + 级联 role_permission 清理
 
--- 先清 role_permission 残留引用（安全，当前为 0 条）
-DELETE FROM role_permission WHERE perm_id IN (
+-- 先清 sys_role_permission 残留引用（安全，当前为 0 条）
+DELETE FROM sys_role_permission WHERE perm_id IN (
   SELECT perm_id FROM sys_permission WHERE perm_code IN (
     'device:inspection',
     'device:inspection:view',
