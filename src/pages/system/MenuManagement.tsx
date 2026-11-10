@@ -12,7 +12,7 @@ import {
   PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined,
 } from '@ant-design/icons'
 import {
-  AppOutline, HomeOutline, BillOutline, CheckOutline, UserOutline,
+  AppOutline, BillOutline, CheckOutline, UserOutline,
   TeamOutline, SetOutline, ShopbagOutline, LocationOutline,
   StarOutline, LikeOutline, MessageOutline, GiftOutline, FlagOutline,
   SearchOutline, RedoOutline, MoreOutline, CloseOutline, AddOutline,
@@ -60,8 +60,7 @@ const PC_ICON_PRESETS: { value: string; label: React.ReactNode }[] = [
 
 // —— APP 端常用图标预设（antd-mobile-icons）——
 const APP_ICON_PRESETS: { value: string; label: React.ReactNode }[] = [
-  { value: 'AppOutline', label: <span><AppOutline /> 应用 (AppOutline)</span> },
-  { value: 'HomeOutline', label: <span><HomeOutline /> 首页 (HomeOutline)</span> },
+  { value: 'AppOutline', label: <span><AppOutline /> 应用/首页 (AppOutline)</span> },
   { value: 'BillOutline', label: <span><BillOutline /> 单据 (BillOutline)</span> },
   { value: 'CheckOutline', label: <span><CheckOutline /> 勾选 (CheckOutline)</span> },
   { value: 'UserOutline', label: <span><UserOutline /> 用户 (UserOutline)</span> },
@@ -95,7 +94,7 @@ const PC_ICON_MAP: Record<string, React.ComponentType<any>> = {
   EyeOutlined, PlusOutlined, EditOutlined, DeleteOutlined,
 }
 const APP_ICON_MAP: Record<string, React.ComponentType<any>> = {
-  AppOutline, HomeOutline, BillOutline, CheckOutline, UserOutline,
+  AppOutline, BillOutline, CheckOutline, UserOutline,
   TeamOutline, SetOutline, ShopbagOutline, LocationOutline,
   StarOutline, LikeOutline, MessageOutline, GiftOutline, FlagOutline,
   SearchOutline, RedoOutline, MoreOutline, CloseOutline, AddOutline,
