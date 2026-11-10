@@ -121,6 +121,13 @@ export default function MenuManagement() {
         component: editing.component,
         sort_order: editing.sort_order,
         status: editing.status,
+        // —— 移动端专用字段 ——
+        mobile_tab_group: editing.mobile_tab_group ?? null,
+        mobile_route_path: editing.mobile_route_path ?? '',
+        mobile_icon: editing.mobile_icon ?? '',
+        mobile_sort_order: editing.mobile_sort_order ?? editing.sort_order ?? 0,
+        mobile_visible: editing.mobile_visible ?? 1,
+        mobile_parent_id: editing.mobile_parent_id ?? null,
       })
     } else {
       form.resetFields()
@@ -129,6 +136,9 @@ export default function MenuManagement() {
         type: 'menu',
         sort_order: 0,
         status: 1,
+        // —— 移动端专用字段默认值 ——
+        mobile_visible: 1,
+        mobile_tab_group: null,
       })
     }
   }
@@ -141,6 +151,13 @@ export default function MenuManagement() {
         ...values,
         parent_id: values.parent_id || 0,
         status: values.status !== undefined ? Number(values.status) : 1,
+        // —— 移动端字段：没填时传 null 让后端保留数据库原值 ——
+        mobile_tab_group: values.mobile_tab_group || null,
+        mobile_route_path: values.mobile_route_path || null,
+        mobile_icon: values.mobile_icon || null,
+        mobile_sort_order: values.mobile_sort_order !== undefined ? Number(values.mobile_sort_order) : null,
+        mobile_visible: values.mobile_visible !== undefined ? Number(values.mobile_visible) : null,
+        mobile_parent_id: values.mobile_parent_id || null,
       }
       if (editing && editing.perm_id) {
         const res = await api.put(`/system/permissions/${editing.perm_id}`, payload)
@@ -174,18 +191,32 @@ export default function MenuManagement() {
   }
 
   const columns: ColumnsType<any> = [
-    { title: '菜单名称', dataIndex: 'perm_name', key: 'perm_name', width: 200 },
-    { title: '权限编码', dataIndex: 'perm_code', key: 'perm_code', width: 180 },
+    { title: '菜单名称', dataIndex: 'perm_name', key: 'perm_name', width: 180 },
+    { title: '权限编码', dataIndex: 'perm_code', key: 'perm_code', width: 160 },
     {
-      title: '类型', dataIndex: 'type', key: 'type', width: 80,
+      title: '类型', dataIndex: 'type', key: 'type', width: 70,
       render: v => v ? <Tag color={typeColorMap[v] || 'default'}>{typeOptions.find(t => t.value === v)?.label || v}</Tag> : '-',
     },
-    { title: '图标', dataIndex: 'icon', key: 'icon', width: 160 },
-    { title: '路由路径', dataIndex: 'path', key: 'path', width: 200 },
-    { title: '组件', dataIndex: 'component', key: 'component', width: 200, render: v => v || '-' },
-    { title: '排序', dataIndex: 'sort_order', key: 'sort_order', width: 70 },
+    { title: '图标', dataIndex: 'icon', key: 'icon', width: 120 },
+    { title: 'PC 路由', dataIndex: 'path', key: 'path', width: 160, render: v => v || '-' },
     {
-      title: '状态', dataIndex: 'status', key: 'status', width: 80,
+      title: '📱 移动端', key: 'mobile', width: 140,
+      render: (_, record) => {
+        const group = record.mobile_tab_group
+        const route = record.mobile_route_path
+        if (!group && !route) return <span style={{ color: '#bbb' }}>—</span>
+        const groupMap: Record<string, string> = { production: '生产', inspection: '检验', device: '设备' }
+        return (
+          <span>
+            {group && <Tag color="cyan">{groupMap[group] || group}</Tag>}
+            {route && <code style={{ fontSize: 11, color: '#666' }}>{route}</code>}
+          </span>
+        )
+      },
+    },
+    { title: '排序', dataIndex: 'sort_order', key: 'sort_order', width: 60 },
+    {
+      title: '状态', dataIndex: 'status', key: 'status', width: 70,
       render: v => <Tag color={v === 1 ? 'green' : 'red'}>{v === 1 ? '启用' : '停用'}</Tag>,
     },
     {
@@ -269,7 +300,7 @@ export default function MenuManagement() {
         afterOpenChange={handleAfterOpenChange}
         okText="保存"
         cancelText="取消"
-        width={780}
+        width={820}
         destroyOnHidden
       >
         <Form form={form} layout="vertical" className="compact-form" preserve={false}>
@@ -327,6 +358,60 @@ export default function MenuManagement() {
           <Form.Item name="component" label="组件路径">
             <Input placeholder="如 pages/system/UserManagement（可选）" />
           </Form.Item>
+          {/* —— 移动端专用字段 —— */}
+          <div style={{ margin: '16px 0 8px', padding: '8px 12px', background: 'var(--color-bg-secondary,#f5f5f5)', borderRadius: 4, fontSize: 13, fontWeight: 500, borderLeft: '3px solid var(--color-primary,#1677ff)' }}>
+            📱 移动端配置（留空表示不在移动端显示，或继承 PC 端值）
+          </div>
+          <Row gutter={12}>
+            <Col span={8}>
+              <Form.Item name="mobile_tab_group" label="移动端 Tab 分组">
+                <Select
+                  placeholder="选择后显示在移动端 TabBar"
+                  allowClear
+                  options={[
+                    { label: '生产', value: 'production' },
+                    { label: '检验', value: 'inspection' },
+                    { label: '设备', value: 'device' },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="mobile_route_path" label="移动端路由路径">
+                <Input placeholder="如 /m/device-maintenance" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="mobile_icon" label="移动端图标">
+                <Input placeholder="如 settings-o（留空继承 PC 端）" />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={12}>
+            <Col span={6}>
+              <Form.Item name="mobile_sort_order" label="移动端排序">
+                <InputNumber placeholder="数字" style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="mobile_visible" label="移动端可见">
+                <Select placeholder="移动端可见" options={[{ label: '可见', value: 1 }, { label: '隐藏', value: 0 }]} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="mobile_parent_id" label="移动端独立父级" extra="选填，用于移动端层级与 PC 端不同的场景">
+                <TreeSelect
+                  placeholder="留空表示与 PC 端同层级"
+                  treeData={[
+                    { value: 0, title: '顶级菜单' },
+                    ...parentOptions.filter(o => o.value !== 0),
+                  ]}
+                  treeDefaultExpandAll
+                  allowClear
+                />
+              </Form.Item>
+            </Col>
+          </Row>
         </Form>
       </Modal>
     </>
