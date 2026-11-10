@@ -1,210 +1,199 @@
 import ResizableTable from '../../components/ResizableTable'
-import React, { useState, useEffect, useCallback } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, InputNumber, Select, TreeSelect, Row, Col, Space, Popconfirm, Typography, Divider } from 'antd'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { Table, Tag, Button, Modal, Form, Input, InputNumber, Select, TreeSelect, Row, Col, Space, Popconfirm } from 'antd'
 import {
-  AppstoreOutlined, CheckCircleOutlined, CloseCircleOutlined,
-  PlusOutlined, MonitorOutlined, MobileOutlined,
+  AppstoreOutlined, DashboardOutlined, HomeOutlined, MenuOutlined,
+  UserOutlined, TeamOutlined, SettingOutlined, ToolOutlined,
+  ShoppingOutlined, ShoppingCartOutlined, FileOutlined, FileTextOutlined,
+  DatabaseOutlined, CloudOutlined, EnvironmentOutlined, SafetyOutlined,
+  ThunderboltOutlined, BellOutlined, NotificationOutlined, ExperimentOutlined,
+  InboxOutlined, ReadOutlined, SearchOutlined, SolutionOutlined,
+  ControlOutlined, FundOutlined, LineChartOutlined, DotChartOutlined,
+  PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined,
 } from '@ant-design/icons'
+import {
+  AppOutline, HomeOutline, BillOutline, CheckOutline, UserOutline,
+  TeamOutline, SettingsOutline, ShopOutline, CarOutline, LocationOutline,
+  StarOutline, LikeOutline, MessageOutline, GiftOutline, FlagOutline,
+  SearchOutline, RefreshOutline, EllipsisOutline, CloseOutline, AddOutline,
+  CloudOutline as MCloudOutline, ProfileOutline, TaskOutline,
+} from 'antd-mobile-icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import type { ColumnsType } from 'antd/es/table'
 import api from '../../utils/api'
 import { useMessage } from '../../contexts/AppContext'
 
-const { Text } = Typography
-
-const typeOptions = [
-  { label: '菜单', value: 'menu' },
-  { label: '页面', value: 'page' },
-  { label: '按钮', value: 'button' },
-  { label: '接口', value: 'api' },
+// —— PC 端常用图标预设（Ant Design Icons）——
+const PC_ICON_PRESETS: { value: string; label: React.ReactNode }[] = [
+  { value: 'AppstoreOutlined', label: <span><AppstoreOutlined /> 应用 (AppstoreOutlined)</span> },
+  { value: 'DashboardOutlined', label: <span><DashboardOutlined /> 工作台 (DashboardOutlined)</span> },
+  { value: 'HomeOutlined', label: <span><HomeOutlined /> 首页 (HomeOutlined)</span> },
+  { value: 'MenuOutlined', label: <span><MenuOutlined /> 菜单 (MenuOutlined)</span> },
+  { value: 'UserOutlined', label: <span><UserOutlined /> 用户 (UserOutlined)</span> },
+  { value: 'TeamOutlined', label: <span><TeamOutlined /> 团队 (TeamOutlined)</span> },
+  { value: 'SettingOutlined', label: <span><SettingOutlined /> 设置 (SettingOutlined)</span> },
+  { value: 'ToolOutlined', label: <span><ToolOutlined /> 工具 (ToolOutlined)</span> },
+  { value: 'ShoppingOutlined', label: <span><ShoppingOutlined /> 购物 (ShoppingOutlined)</span> },
+  { value: 'ShoppingCartOutlined', label: <span><ShoppingCartOutlined /> 购物车 (ShoppingCartOutlined)</span> },
+  { value: 'FileOutlined', label: <span><FileOutlined /> 文件 (FileOutlined)</span> },
+  { value: 'FileTextOutlined', label: <span><FileTextOutlined /> 文档 (FileTextOutlined)</span> },
+  { value: 'DatabaseOutlined', label: <span><DatabaseOutlined /> 数据库 (DatabaseOutlined)</span> },
+  { value: 'CloudOutlined', label: <span><CloudOutlined /> 云 (CloudOutlined)</span> },
+  { value: 'EnvironmentOutlined', label: <span><EnvironmentOutlined /> 环境 (EnvironmentOutlined)</span> },
+  { value: 'SafetyOutlined', label: <span><SafetyOutlined /> 安全 (SafetyOutlined)</span> },
+  { value: 'ThunderboltOutlined', label: <span><ThunderboltOutlined /> 闪电 (ThunderboltOutlined)</span> },
+  { value: 'BellOutlined', label: <span><BellOutlined /> 铃铛 (BellOutlined)</span> },
+  { value: 'NotificationOutlined', label: <span><NotificationOutlined /> 通知 (NotificationOutlined)</span> },
+  { value: 'ExperimentOutlined', label: <span><ExperimentOutlined /> 实验 (ExperimentOutlined)</span> },
+  { value: 'InboxOutlined', label: <span><InboxOutlined /> 收件箱 (InboxOutlined)</span> },
+  { value: 'ReadOutlined', label: <span><ReadOutlined /> 阅读 (ReadOutlined)</span> },
+  { value: 'SearchOutlined', label: <span><SearchOutlined /> 搜索 (SearchOutlined)</span> },
+  { value: 'SolutionOutlined', label: <span><SolutionOutlined /> 解决方案 (SolutionOutlined)</span> },
+  { value: 'ControlOutlined', label: <span><ControlOutlined /> 控制 (ControlOutlined)</span> },
+  { value: 'FundOutlined', label: <span><FundOutlined /> 趋势 (FundOutlined)</span> },
+  { value: 'LineChartOutlined', label: <span><LineChartOutlined /> 折线图 (LineChartOutlined)</span> },
+  { value: 'DotChartOutlined', label: <span><DotChartOutlined /> 点图 (DotChartOutlined)</span> },
+  { value: 'EyeOutlined', label: <span><EyeOutlined /> 查看 (EyeOutlined)</span> },
+  { value: 'PlusOutlined', label: <span><PlusOutlined /> 新增 (PlusOutlined)</span> },
 ]
 
-const typeColorMap = { menu: 'blue', page: 'cyan', button: 'orange', api: 'purple' }
-
-// —— PC 端图标库（@ant-design/icons 名称）——
-const PC_ICON_OPTIONS = [
-  { label: '菜单 MenuOutlined',                 value: 'MenuOutlined' },
-  { label: '首页 HomeOutlined',                 value: 'HomeOutlined' },
-  { label: '设置 SettingOutlined',              value: 'SettingOutlined' },
-  { label: '用户 UserOutlined',                 value: 'UserOutlined' },
-  { label: '团队 TeamOutlined',                 value: 'TeamOutlined' },
-  { label: '生产 AppstoreOutlined',             value: 'AppstoreOutlined' },
-  { label: '质检 SafetyOutlined',               value: 'SafetyOutlined' },
-  { label: '设备 ToolOutlined',                 value: 'ToolOutlined' },
-  { label: '报表 BarChartOutlined',             value: 'BarChartOutlined' },
-  { label: '数据大屏 DashboardOutlined',        value: 'DashboardOutlined' },
-  { label: '数据库 DatabaseOutlined',           value: 'DatabaseOutlined' },
-  { label: '自动化 ThunderboltOutlined',        value: 'ThunderboltOutlined' },
-  { label: '时钟 ClockCircleOutlined',          value: 'ClockCircleOutlined' },
-  { label: '告警 WarningOutlined',              value: 'WarningOutlined' },
-  { label: '文件 FileOutlined',                 value: 'FileOutlined' },
+// —— APP 端常用图标预设（antd-mobile-icons）——
+const APP_ICON_PRESETS: { value: string; label: React.ReactNode }[] = [
+  { value: 'AppOutline', label: <span><AppOutline /> 应用 (AppOutline)</span> },
+  { value: 'HomeOutline', label: <span><HomeOutline /> 首页 (HomeOutline)</span> },
+  { value: 'BillOutline', label: <span><BillOutline /> 单据 (BillOutline)</span> },
+  { value: 'CheckOutline', label: <span><CheckOutline /> 勾选 (CheckOutline)</span> },
+  { value: 'UserOutline', label: <span><UserOutline /> 用户 (UserOutline)</span> },
+  { value: 'TeamOutline', label: <span><TeamOutline /> 团队 (TeamOutline)</span> },
+  { value: 'SettingsOutline', label: <span><SettingsOutline /> 设置 (SettingsOutline)</span> },
+  { value: 'ShopOutline', label: <span><ShopOutline /> 门店 (ShopOutline)</span> },
+  { value: 'CarOutline', label: <span><CarOutline /> 车辆 (CarOutline)</span> },
+  { value: 'LocationOutline', label: <span><LocationOutline /> 定位 (LocationOutline)</span> },
+  { value: 'StarOutline', label: <span><StarOutline /> 星标 (StarOutline)</span> },
+  { value: 'LikeOutline', label: <span><LikeOutline /> 喜欢 (LikeOutline)</span> },
+  { value: 'MessageOutline', label: <span><MessageOutline /> 消息 (MessageOutline)</span> },
+  { value: 'GiftOutline', label: <span><GiftOutline /> 礼物 (GiftOutline)</span> },
+  { value: 'FlagOutline', label: <span><FlagOutline /> 标记 (FlagOutline)</span> },
+  { value: 'SearchOutline', label: <span><SearchOutline /> 搜索 (SearchOutline)</span> },
+  { value: 'RefreshOutline', label: <span><RefreshOutline /> 刷新 (RefreshOutline)</span> },
+  { value: 'EllipsisOutline', label: <span><EllipsisOutline /> 更多 (EllipsisOutline)</span> },
+  { value: 'CloseOutline', label: <span><CloseOutline /> 关闭 (CloseOutline)</span> },
+  { value: 'AddOutline', label: <span><AddOutline /> 新增 (AddOutline)</span> },
+  { value: 'CloudOutline', label: <span><MCloudOutline /> 云 (CloudOutline)</span> },
+  { value: 'ProfileOutline', label: <span><ProfileOutline /> 个人 (ProfileOutline)</span> },
+  { value: 'TaskOutline', label: <span><TaskOutline /> 任务 (TaskOutline)</span> },
 ]
 
-// —— APP 端图标库（antd-mobile-icons 名称）——
-const APP_ICON_OPTIONS = [
-  { label: '应用 AppOutline',         value: 'AppOutline' },
-  { label: '设置 SettingsOutline',    value: 'SettingsOutline' },
-  { label: '用户 UserOutline',         value: 'UserOutline' },
-  { label: '设备 ToolOutline',         value: 'ToolOutline' },
-  { label: '质检 CheckShieldOutline',  value: 'CheckShieldOutline' },
-  { label: '生产 RocketOutline',       value: 'RocketOutline' },
-  { label: '报表 BarChartOutline',     value: 'BarChartOutline' },
-  { label: '文件 FileOutline',         value: 'FileOutline' },
-  { label: '日历 CalendarOutline',     value: 'CalendarOutline' },
-  { label: '搜索 SearchOutline',       value: 'SearchOutline' },
-  { label: '通知 BellOutline',         value: 'BellOutline' },
-  { label: '返回 LeftOutline',         value: 'LeftOutline' },
-]
+/** 图标字符串 → React 组件（用于表格列渲染） */
+const PC_ICON_MAP: Record<string, React.ComponentType<any>> = {
+  AppstoreOutlined, DashboardOutlined, HomeOutlined, MenuOutlined,
+  UserOutlined, TeamOutlined, SettingOutlined, ToolOutlined,
+  ShoppingOutlined, ShoppingCartOutlined, FileOutlined, FileTextOutlined,
+  DatabaseOutlined, CloudOutlined, EnvironmentOutlined, SafetyOutlined,
+  ThunderboltOutlined, BellOutlined, NotificationOutlined, ExperimentOutlined,
+  InboxOutlined, ReadOutlined, SearchOutlined, SolutionOutlined,
+  ControlOutlined, FundOutlined, LineChartOutlined, DotChartOutlined,
+  EyeOutlined, PlusOutlined, EditOutlined, DeleteOutlined,
+}
+const APP_ICON_MAP: Record<string, React.ComponentType<any>> = {
+  AppOutline, HomeOutline, BillOutline, CheckOutline, UserOutline,
+  TeamOutline, SettingsOutline, ShopOutline, CarOutline, LocationOutline,
+  StarOutline, LikeOutline, MessageOutline, GiftOutline, FlagOutline,
+  SearchOutline, RefreshOutline, EllipsisOutline, CloseOutline, AddOutline,
+  CloudOutline: MCloudOutline, ProfileOutline, TaskOutline,
+}
 
-// —— APP 端 TabBar 分组选项 ——
-// 需求 1: value 改为 PC 一级菜单 perm_code（production/quality/device）
-//   inspection 已由 M037 migration 改为 quality
-const TAB_GROUP_OPTIONS = [
-  { label: '生产管理', value: 'production' },
-  { label: '质量管理', value: 'quality' },
-  { label: '设备管理', value: 'device' },
-]
+function renderIcon(iconName: string | null | undefined, side: 'pc' | 'app'): React.ReactNode {
+  if (!iconName) return <span style={{ color: '#ccc' }}>—</span>
+  const map = side === 'pc' ? PC_ICON_MAP : APP_ICON_MAP
+  const Comp = map[iconName]
+  if (Comp) return <Comp />
+  return <span style={{ color: '#faad14', fontSize: 12 }}>{iconName}</span>
+}
 
-// —— APP 端可见状态 ——
-const MOBILE_VISIBLE_OPTIONS = [
-  { label: '可见', value: 1 },
-  { label: '隐藏', value: 0 },
-]
-
-// —— PC 端状态 ——
-const PC_STATUS_OPTIONS = [
-  { label: '启用', value: 1 },
-  { label: '停用', value: 0 },
-]
+/** 合并预设选项 + 自定义已选项（DB 里已有但不在预设清单的） */
+function mergeIconOptions(
+  presets: { value: string; label: React.ReactNode }[],
+  currentValue: string | undefined,
+  side: 'pc' | 'app',
+): { value: string; label: React.ReactNode }[] {
+  const set = new Set(presets.map(o => o.value))
+  const merged = [...presets]
+  if (currentValue && !set.has(currentValue)) {
+    const CustomComp = (side === 'pc' ? PC_ICON_MAP : APP_ICON_MAP)[currentValue]
+    merged.unshift({
+      value: currentValue,
+      label: CustomComp
+        ? <span style={{ color: '#1890ff' }}><CustomComp /> {currentValue} (自定义)</span>
+        : <span style={{ color: '#faad14' }}>{currentValue} (自定义)</span>,
+    })
+  }
+  return merged
+}
 
 export default function MenuManagement() {
   const message = useMessage()
-  const [data, setData] = useState([])
-  const [total, setTotal] = useState(0)
+  const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
-  const [editing, setEditing] = useState(null)
+  const [editing, setEditing] = useState<any>(null)
   const [modalVisible, setModalVisible] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
 
-  // —— 监听 PC 端三个字段，APP 端只读展示自动同步 ——
-  const pcType = Form.useWatch('type', form)
-  const pcName = Form.useWatch('perm_name', form)
-  const pcCode = Form.useWatch('perm_code', form)
-
-  // 父菜单下拉数据
-  const [parentOptions, setParentOptions] = useState([])
-
-  // 筛选输入态
   const [keywordInput, setKeywordInput] = useState('')
-  const [statusInput, setStatusInput] = useState(undefined)
-  const [typeInput, setTypeInput] = useState(undefined)
-  // 已应用的查询条件
-  const [query, setQuery] = useState({ keyword: '', status: undefined, type: undefined })
+  const [statusInput, setStatusInput] = useState<number | undefined>(undefined)
+  const [query, setQuery] = useState({ keyword: '', status: undefined as number | undefined })
 
-  // 拉取列表
-  const refresh = useCallback(() => {
+  // 拉取菜单列表（只查 type=menu）
+  const refresh = useCallback(async () => {
     setLoading(true)
-    const params: Record<string, unknown> = {}
+    const params: Record<string, unknown> = { type: 'menu' }  // 硬编码只查菜单
     if (query.keyword) params.keyword = query.keyword
     if (query.status !== undefined && query.status !== null) params.status = query.status
-    if (query.type) params.type = query.type
-    api.get('/system/permissions', { params })
-      .then(res => {
-        const list = res.data || []
-        setData(list)
-        setTotal(res.total || list.length)
-        // 构建父菜单下拉（仅 type=menu，且排除当前编辑节点的子树）
-        const buildSelectTree = (nodes, depth = 0) => {
-          const result = []
-          nodes.forEach(n => {
-            if (n.type !== 'menu') return
-            result.push({
-              value: n.perm_id,
-              title: `${'— '.repeat(depth)}${n.perm_name} (${n.perm_code})`,
-            })
-            if (n.children && n.children.length > 0) {
-              result.push(...buildSelectTree(n.children, depth + 1))
-            }
-          })
-          return result
-        }
-        setParentOptions([
-          { value: 0, title: '顶级菜单' },
-          ...buildSelectTree(list),
-        ])
-      })
-      .catch(err => {
-        message.error(err.message || '获取菜单列表失败')
-        setData([])
-        setTotal(0)
-      })
-      .finally(() => setLoading(false))
-  }, [query])
+    try {
+      const res = await api.get('/system/permissions', { params })
+      const list: any[] = res.data || []
+      setData(list)
+    } catch (err: any) {
+      message.error(err?.message || '获取菜单列表失败')
+      setData([])
+    } finally {
+      setLoading(false)
+    }
+  }, [query, message])
 
   useEffect(() => { refresh() }, [refresh])
 
-  const handleSearch = () => {
-    setQuery({ keyword: keywordInput, status: statusInput, type: typeInput })
-  }
-
+  const handleSearch = () => setQuery({ keyword: keywordInput, status: statusInput })
   const handleReset = () => {
     setKeywordInput('')
     setStatusInput(undefined)
-    setTypeInput(undefined)
-    setQuery({ keyword: '', status: undefined, type: undefined })
+    setQuery({ keyword: '', status: undefined })
   }
 
-  const handleAdd = () => {
-    setEditing(null)
-    setModalVisible(true)
-  }
+  const handleAdd = () => { setEditing(null); setModalVisible(true) }
+  const handleAddChild = (record: any) => { setEditing({ parent_id: record.perm_id }); setModalVisible(true) }
+  const handleEdit = (record: any) => { setEditing(record); setModalVisible(true) }
 
-  const handleEdit = (record) => {
-    setEditing(record)
-    setModalVisible(true)
-  }
-
-  const handleAddChild = (record) => {
-    setEditing({ parent_id: record.perm_id })
-    setModalVisible(true)
-  }
-
-  const handleAfterOpenChange = (open) => {
+  const handleAfterOpenChange = (open: boolean) => {
     if (!open) return
     if (editing && editing.perm_id) {
       form.setFieldsValue({
-        // PC 端 9 个字段
         parent_id: editing.parent_id || 0,
-        type: editing.type,
         perm_name: editing.perm_name,
-        perm_code: editing.perm_code,
-        icon: editing.icon,
-        path: editing.path,
-        component: editing.component,
-        status: editing.status,
-        sort_order: editing.sort_order,
-        // APP 端 5 个独立字段（type/perm_name/perm_code 只读，不进 Form）
-        mobile_parent_id: editing.mobile_parent_id ?? null,
-        mobile_icon: editing.mobile_icon || null,
-        mobile_route_path: editing.mobile_route_path || null,
-        mobile_tab_group: editing.mobile_tab_group ?? null,
-        mobile_visible: editing.mobile_visible ?? 1,
-        mobile_sort_order: editing.mobile_sort_order ?? null,
-        // 需求 2+3: 移动端独立显示名（以 M 开头，显示时自动剥离）
-        mobile_perm_name: editing.mobile_perm_name || null,
+        mobile_perm_name: editing.mobile_perm_name || '',
+        icon: editing.icon || undefined,
+        mobile_icon: editing.mobile_icon || undefined,
+        sort_order: editing.sort_order ?? 0,
+        status: editing.status !== undefined ? Number(editing.status) : 1,
       })
     } else {
       form.resetFields()
       form.setFieldsValue({
-        // PC 端默认值
         parent_id: editing?.parent_id || 0,
-        type: 'menu',
-        status: 1,
         sort_order: 0,
-        // APP 端默认值
-        mobile_visible: 1,
+        status: 1,
       })
     }
   }
@@ -214,94 +203,116 @@ export default function MenuManagement() {
       const values = await form.validateFields()
       setSubmitting(true)
       const payload = {
-        // PC 端字段
         ...values,
         parent_id: values.parent_id || 0,
         status: values.status !== undefined ? Number(values.status) : 1,
-        sort_order: values.sort_order !== undefined ? Number(values.sort_order) : 0,
-        // APP 端字段：null 让后端保留原值 / 继承 PC 端
-        mobile_parent_id: values.mobile_parent_id || null,
-        mobile_icon: values.mobile_icon || null,
-        mobile_route_path: values.mobile_route_path || null,
-        mobile_tab_group: values.mobile_tab_group || null,
-        mobile_visible: values.mobile_visible !== undefined ? Number(values.mobile_visible) : null,
-        mobile_sort_order: values.mobile_sort_order !== undefined ? Number(values.mobile_sort_order) : null,
-        mobile_perm_name: values.mobile_perm_name || null,
+        // mobile_perm_name 为空时用 perm_name 自动加 M 前缀兜底
+        mobile_perm_name: values.mobile_perm_name
+          ? (values.mobile_perm_name.startsWith('M') ? values.mobile_perm_name : 'M' + values.mobile_perm_name)
+          : ('M' + (values.perm_name || '')),
       }
       if (editing && editing.perm_id) {
         const res = await api.put(`/system/permissions/${editing.perm_id}`, payload)
         message.success(res.message || '菜单修改成功')
       } else {
-        const res = await api.post('/system/permissions', payload)
+        const res = await api.post('/system/permissions', { ...payload, type: 'menu' })
         message.success(res.message || '菜单新增成功')
       }
       setModalVisible(false)
       refresh()
       window.dispatchEvent(new Event('menu-updated'))
-    } catch (e) {
+    } catch (e: any) {
       if (e?.errorFields) return
-      message.error(e.message || '操作失败')
+      message.error(e?.message || '操作失败')
     } finally {
       setSubmitting(false)
     }
   }
 
-  const handleDelete = async (record) => {
+  const handleDelete = async (record: any) => {
     try {
       const res = await api.delete(`/system/permissions/${record.perm_id}`)
       message.success(res.message || '删除成功')
       refresh()
       window.dispatchEvent(new Event('menu-updated'))
-    } catch (err) {
-      message.error(err.message || '删除失败')
+    } catch (err: any) {
+      message.error(err?.message || '删除失败')
     }
   }
 
+  // —— 父菜单下拉树（仅 type=menu）——
+  const parentOptions = useMemo(() => {
+    const buildTree = (nodes: any[], depth = 0, excludeId?: number): any[] => {
+      const result: any[] = []
+      for (const n of nodes) {
+        if (excludeId && n.perm_id === excludeId) continue
+        result.push({
+          value: n.perm_id,
+          title: `${'— '.repeat(depth)}${renderIcon(n.icon, 'pc')} ${n.perm_name}`,
+        })
+        if (n.children?.length) {
+          result.push(...buildTree(n.children, depth + 1, excludeId))
+        }
+      }
+      return result
+    }
+    return [
+      { value: 0, title: '顶级菜单' },
+      ...buildTree(data, 0, editing?.perm_id),
+    ]
+  }, [data, editing])
+
+  // —— 统计面板 ——
+  const menuStats = useMemo(() => {
+    const count = (nodes: any[]): { total: number; enabled: number; disabled: number } => {
+      let total = 0, enabled = 0, disabled = 0
+      for (const n of nodes) {
+        if (n.type === 'menu') {
+          total++
+          if (Number(n.status) === 1) enabled++; else disabled++
+        }
+        if (n.children?.length) {
+          const sub = count(n.children)
+          total += sub.total; enabled += sub.enabled; disabled += sub.disabled
+        }
+      }
+      return { total, enabled, disabled }
+    }
+    return count(data)
+  }, [data])
+
+  // —— 列表列（精简版）——
   const columns: ColumnsType<any> = [
-    { title: '菜单名称', dataIndex: 'perm_name', key: 'perm_name', width: 160 },
+    { title: '菜单名称', dataIndex: 'perm_name', key: 'perm_name', width: 200 },
     {
-      title: '移动端名称', key: 'mobile_name', width: 140,
-      render: (_, record) => {
-        const group = record.mobile_tab_group
-        const route = record.mobile_route_path
-        if (!group && !route) return <span style={{ color: '#bbb' }}>—</span>
-        const groupMap: Record<string, string> = { production: '生产管理', quality: '质量管理', device: '设备管理' }
-        const label = group && groupMap[group] ? groupMap[group] : (record.perm_name || '')
-        return <span style={{ color: '#389e0d' }}>{label}</span>
-      },
+      title: '图标 (PC)', key: 'icon', width: 80,
+      render: (_, r) => <span style={{ fontSize: 18 }}>{renderIcon(r.icon, 'pc')}</span>,
     },
     {
-      title: '类型', dataIndex: 'type', key: 'type', width: 70,
-      render: v => v ? <Tag color={typeColorMap[v] || 'default'}>{typeOptions.find(t => t.value === v)?.label || v}</Tag> : '-',
-    },
-    { title: '排序号', dataIndex: 'sort_order', key: 'sort_order', width: 70, align: 'center' },
-    { title: '移动端排序', dataIndex: 'mobile_sort_order', key: 'mobile_sort_order', width: 90, align: 'center',
-      render: v => v != null ? v : <span style={{ color: '#bbb' }}>—</span>,
+      title: '图标 (APP)', key: 'mobile_icon', width: 80,
+      render: (_, r) => <span style={{ fontSize: 18 }}>{renderIcon(r.mobile_icon, 'app')}</span>,
     },
     {
-      title: 'PC 端状态', dataIndex: 'status', key: 'status_pc', width: 80,
-      render: v => <Tag color={v === 1 ? 'green' : 'red'}>{v === 1 ? '启用' : '停用'}</Tag>,
+      title: 'APP 菜单名', dataIndex: 'mobile_perm_name', key: 'mobile_perm_name', width: 180,
+      render: (v) => v || <span style={{ color: '#999' }}>—</span>,
+    },
+    { title: '排序', dataIndex: 'sort_order', key: 'sort_order', width: 70 },
+    {
+      title: '状态', dataIndex: 'status', key: 'status', width: 80,
+      render: v => <Tag color={Number(v) === 1 ? 'green' : 'red'}>{Number(v) === 1 ? '启用' : '停用'}</Tag>,
     },
     {
-      title: '移动端状态', dataIndex: 'mobile_visible', key: 'status_mobile', width: 80,
-      render: (v, record) => {
-        if (!record.mobile_tab_group && !record.mobile_route_path) return <span style={{ color: '#bbb' }}>—</span>
-        return <Tag color={v === 1 ? 'green' : 'red'}>{v === 1 ? '可见' : '隐藏'}</Tag>
-      },
-    },
-    {
-      title: '操作', key: 'action', fixed: 'right', width: 200,
+      title: '操作', key: 'action', fixed: 'right', width: 220,
       render: (_, record) => (
         <Space size="small">
-          <Button type="link" size="small" onClick={() => handleAddChild(record)}>新增子项</Button>
-          <Button type="link" size="small" onClick={() => handleEdit(record)}>编辑</Button>
+          <Button type="link" size="small" icon={<PlusOutlined />} onClick={() => handleAddChild(record)}>子菜单</Button>
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)}>编辑</Button>
           <Popconfirm
-            title="确认删除该菜单？"
+            title="确认删除该菜单？删除后下属子菜单会一起删除。"
             onConfirm={() => handleDelete(record)}
-            okText="确认"
-            cancelText="取消"
+            okText="确认" cancelText="取消"
           >
-            <Button type="link" size="small" danger>删除</Button>
+            <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
           </Popconfirm>
         </Space>
       ),
@@ -309,27 +320,22 @@ export default function MenuManagement() {
   ]
 
   const filters: FilterItem[] = [
-    { type: 'input', placeholder: '搜索菜单名称/编码/路径', col: { span: 8 }, value: keywordInput, onChange: (e) => setKeywordInput((e as React.ChangeEvent<HTMLInputElement>).target.value) },
-    {
-      type: 'select', placeholder: '类型', col: { span: 6 },
-      options: typeOptions, value: typeInput, onChange: v => setTypeInput(v),
-    },
-    {
-      type: 'select', placeholder: '状态', col: { span: 6 },
-      options: PC_STATUS_OPTIONS, value: statusInput, onChange: v => setStatusInput(v),
-    },
+    { type: 'input', placeholder: '搜索菜单名称/编码', col: { span: 12 },
+      value: keywordInput, onChange: (e: any) => setKeywordInput(e.target.value) },
+    { type: 'select', placeholder: '状态', col: { span: 6 },
+      options: [{ label: '启用', value: 1 }, { label: '停用', value: 0 }],
+      value: statusInput, onChange: v => setStatusInput(v) },
   ]
-
-  // 统计数据
-  const menuCount = countByType(data, 'menu')
-  const pageCount = countByType(data, 'page')
-  const buttonCount = countByType(data, 'button')
 
   const stats: StatItem[] = [
-    { label: '菜单总数', value: total, icon: <AppstoreOutlined />, color: 'var(--color-primary)' },
-    { label: '菜单项', value: menuCount, icon: <CheckCircleOutlined />, color: 'var(--color-success)' },
-    { label: '页面/按钮', value: pageCount + buttonCount, icon: <CloseCircleOutlined />, color: 'var(--color-warning)' },
+    { label: '菜单总数', value: menuStats.total, icon: <AppstoreOutlined />, color: 'var(--color-primary)' },
+    { label: '启用中', value: menuStats.enabled, icon: <CheckOutline />, color: 'var(--color-success)' },
+    { label: '已停用', value: menuStats.disabled, icon: <CloseOutline />, color: 'var(--color-warning)' },
   ]
+
+  // —— Modal 里当前选中的图标（用于合并预设 + 自定义）——
+  const pcIconValue = Form.useWatch('icon', form)
+  const appIconValue = Form.useWatch('mobile_icon', form)
 
   return (
     <>
@@ -350,12 +356,14 @@ export default function MenuManagement() {
           />
         }
         table={
-          <ResizableTable tableKey="pages_system_MenuManagement" columns={columns}
+          <ResizableTable
+            tableKey="pages_system_MenuManagement"
+            columns={columns}
             dataSource={data}
             rowKey="perm_id"
             size="small"
             loading={loading}
-            scroll={{ x: 1400 }}
+            scroll={{ x: 1100 }}
             pagination={false}
           />
         }
@@ -369,166 +377,100 @@ export default function MenuManagement() {
         afterOpenChange={handleAfterOpenChange}
         okText="保存"
         cancelText="取消"
-        width={1080}
+        width={880}
         destroyOnHidden
       >
-        <Form
-          form={form}
-          layout="horizontal"
-          preserve={false}
-          style={{ margin: 0 }}
-          labelCol={{ span: 9 }}
-          wrapperCol={{ span: 14 }}
-          labelAlign="right"
-        >
+        <Form form={form} layout="vertical" className="compact-form" preserve={false}>
+          {/* ── 第一栏：菜单配置（可编辑）── */}
+          <h4 style={{ margin: '0 0 12px', borderBottom: '1px solid #f0f0f0', paddingBottom: 8 }}>
+            菜单配置（可编辑）
+          </h4>
           <Row gutter={16}>
-            {/* ========== 左列：PC 端配置 ========== */}
-            <Col span={11}>
-              <div style={{
-                marginBottom: 12, padding: '4px 10px', background: '#e6f4ff',
-                borderRadius: 4, fontSize: 13, fontWeight: 500, color: '#1677ff',
-                display: 'flex', alignItems: 'center', gap: 6,
-              }}>
-                <MonitorOutlined /> PC 端配置
-              </div>
-
-              {/* 行 1 — 父级菜单 */}
-              <Form.Item name="parent_id" label="父级菜单" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
+            <Col span={12}>
+              <Form.Item name="parent_id" label="父级菜单" rules={[{ required: true, message: '请选择父级菜单' }]}>
                 <TreeSelect
-                  placeholder="请选择父级菜单"
+                  placeholder="顶级菜单为 0"
                   treeData={parentOptions}
                   treeDefaultExpandAll
                   allowClear
                 />
               </Form.Item>
-
-              {/* 行 2 — 类型 */}
-              <Form.Item name="type" label="类型" rules={[{ required: true, message: '请选择类型' }]} labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
-                <Select placeholder="请选择类型" options={typeOptions} />
+            </Col>
+            <Col span={6}>
+              <Form.Item name="sort_order" label="排序号">
+                <InputNumber min={0} style={{ width: '100%' }} placeholder="数字越小越靠前" />
               </Form.Item>
-
-              {/* 行 3 — 菜单名称 */}
-              <Form.Item name="perm_name" label="菜单名称" rules={[{ required: true, message: '请输入菜单名称' }]} labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
-                <Input placeholder="请输入菜单名称" />
+            </Col>
+            <Col span={6}>
+              <Form.Item name="status" label="状态" rules={[{ required: true }]}>
+                <Select options={[{ label: '启用', value: 1 }, { label: '停用', value: 0 }]} />
               </Form.Item>
+            </Col>
+          </Row>
 
-              {/* 行 4 — 权限编码 */}
-              <Form.Item name="perm_code" label="权限编码" rules={[{ required: true, message: '请输入权限编码' }]} labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
-                <Input placeholder="如 system:user" disabled={!!(editing && editing.perm_id)} />
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="perm_name" label="PC 端菜单名称" rules={[{ required: true, message: '请输入 PC 端菜单名称' }]}>
+                <Input placeholder="如：生产管理" />
               </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="mobile_perm_name" label="APP 端菜单名称">
+                <Input placeholder="留空则用 PC 名自动加 M 前缀" />
+              </Form.Item>
+            </Col>
+          </Row>
 
-              {/* 行 5 — 图标（PC 端下拉） */}
-              <Form.Item name="icon" label="图标" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="icon" label="PC 端图标">
                 <Select
                   placeholder="选择 PC 端图标"
                   allowClear
                   showSearch
                   optionFilterProp="label"
-                  options={PC_ICON_OPTIONS}
+                  options={mergeIconOptions(PC_ICON_PRESETS, pcIconValue, 'pc')}
                 />
-              </Form.Item>
-
-              {/* 行 6 — 路由路径 */}
-              <Form.Item name="path" label="路由路径" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
-                <Input placeholder="如 /system/users" />
-              </Form.Item>
-
-              {/* 行 7 — 组件路径 */}
-              <Form.Item name="component" label="组件路径" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
-                <Input placeholder="如 pages/system/UserManagement" />
-              </Form.Item>
-
-              {/* 行 8 — 状态 */}
-              <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]} labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
-                <Select placeholder="请选择状态" options={PC_STATUS_OPTIONS} />
-              </Form.Item>
-
-              {/* 行 9 — 排序号 */}
-              <Form.Item name="sort_order" label="排序号" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
-                <InputNumber placeholder="数字" style={{ width: '100%' }} />
               </Form.Item>
             </Col>
-
-            {/* ========== 分隔竖线 ========== */}
-            <Divider type="vertical" style={{ height: 'auto', margin: 0 }} />
-
-            {/* ========== 右列：APP 端配置 ========== */}
-            <Col span={11}>
-              <div style={{
-                marginBottom: 12, padding: '4px 10px', background: '#f6ffed',
-                borderRadius: 4, fontSize: 13, fontWeight: 500, color: '#389e0d',
-                display: 'flex', alignItems: 'center', gap: 6,
-              }}>
-                <MobileOutlined /> APP 端配置
-                <Text type="secondary" style={{ fontSize: 11, fontWeight: 400 }}>（灰色=跟随 PC 端自动同步）</Text>
-              </div>
-
-              {/* 行 1 — 移动端独立父级（独立字段） */}
-              <Form.Item name="mobile_parent_id" label="独立父级" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
-                <TreeSelect
-                  placeholder="留空=与 PC 端同层级"
-                  treeData={[
-                    { value: 0, title: '顶级菜单' },
-                    ...parentOptions.filter(o => o.value !== 0),
-                  ]}
-                  treeDefaultExpandAll
-                  allowClear
-                />
-              </Form.Item>
-
-              {/* 行 2 — 类型（只读，跟随 PC） */}
-              <Form.Item label="类型" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
-                <Input disabled value={pcType ? (typeOptions.find(t => t.value === pcType)?.label || pcType) : '—'} />
-              </Form.Item>
-
-              {/* 行 3 — 菜单名称（只读，跟随 PC） */}
-              <Form.Item label="菜单名称" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
-                <Input disabled value={pcName || '—'} />
-              </Form.Item>
-
-              {/* 行 3.5 — 移动端独立显示名（需求 2+3：以 M 开头，显示时自动剥离） */}
-              <Form.Item name="mobile_perm_name" label="移动端名称" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
-                <Input placeholder="以 M 开头，如 M生产订单（留空跟随 PC 端）" />
-              </Form.Item>
-
-              {/* 行 4 — 权限编码（只读，跟随 PC） */}
-              <Form.Item label="权限编码" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
-                <Input disabled value={pcCode || '—'} />
-              </Form.Item>
-
-              {/* 行 5 — 图标（APP 端下拉，独立） */}
-              <Form.Item name="mobile_icon" label="图标" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
+            <Col span={12}>
+              <Form.Item name="mobile_icon" label="APP 端图标">
                 <Select
-                  placeholder="选择 APP 端图标（留空继承 PC）"
+                  placeholder="选择 APP 端图标"
                   allowClear
                   showSearch
                   optionFilterProp="label"
-                  options={APP_ICON_OPTIONS}
+                  options={mergeIconOptions(APP_ICON_PRESETS, appIconValue, 'app')}
                 />
               </Form.Item>
+            </Col>
+          </Row>
 
-              {/* 行 6 — 移动端路由（独立） */}
-              <Form.Item name="mobile_route_path" label="路由路径" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
-                <Input placeholder="如 /m/device-maintenance" />
+          {/* ── 第二栏：系统元数据（只读展示）── */}
+          <h4 style={{ margin: '16px 0 12px', borderBottom: '1px solid #f0f0f0', paddingBottom: 8, color: '#999' }}>
+            系统元数据（只读）
+          </h4>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item label="权限编码">
+                <Input value={editing?.perm_code} disabled placeholder="系统内部唯一标识" />
               </Form.Item>
-
-              {/* 行 7 — TabBar 分组（独有） */}
-              <Form.Item name="mobile_tab_group" label="TabBar 分组" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
-                <Select
-                  placeholder="留空=不在移动端显示"
-                  allowClear
-                  options={TAB_GROUP_OPTIONS}
-                />
+            </Col>
+            <Col span={12}>
+              <Form.Item label="路由路径 (PC)">
+                <Input value={editing?.path} disabled placeholder="如 /system/users" />
               </Form.Item>
-
-              {/* 行 8 — 移动端可见（独立） */}
-              <Form.Item name="mobile_visible" label="移动端可见" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
-                <Select placeholder="是否在移动端显示" options={MOBILE_VISIBLE_OPTIONS} />
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item label="组件路径">
+                <Input value={editing?.component} disabled placeholder="如 pages/system/UserManagement" />
               </Form.Item>
-
-              {/* 行 9 — 移动端排序（独立） */}
-              <Form.Item name="mobile_sort_order" label="排序号" labelCol={{ span: 8 }} wrapperCol={{ span: 15 }}>
-                <InputNumber placeholder="数字（留空继承 PC）" style={{ width: '100%' }} />
+            </Col>
+            <Col span={12}>
+              <Form.Item label="路由路径 (APP)">
+                <Input value={editing?.mobile_route_path} disabled placeholder="如 /m/dashboard" />
               </Form.Item>
             </Col>
           </Row>
@@ -536,14 +478,4 @@ export default function MenuManagement() {
       </Modal>
     </>
   )
-}
-
-// 递归统计指定类型数量
-function countByType(nodes, type) {
-  let count = 0
-  nodes.forEach(n => {
-    if (n.type === type) count++
-    if (n.children && n.children.length > 0) count += countByType(n.children, type)
-  })
-  return count
 }
