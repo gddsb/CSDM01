@@ -1,15 +1,17 @@
 import ResizableTable from '../../components/ResizableTable'
 import React, { useState, useEffect, useCallback } from 'react'
-import { Table, Tag, Button, Modal, Form, Input, InputNumber, Select, TreeSelect, Row, Col, Space, Popconfirm } from 'antd'
+import { Table, Tag, Button, Modal, Form, Input, InputNumber, Select, TreeSelect, Row, Col, Space, Popconfirm, Typography, Divider } from 'antd'
 import {
   AppstoreOutlined, CheckCircleOutlined, CloseCircleOutlined,
-  PlusOutlined, EyeOutlined,
+  PlusOutlined, MonitorOutlined, MobileOutlined,
 } from '@ant-design/icons'
 import ThreeSectionPage, { ActionButtons } from '../../components/ThreeSectionPage'
 import type { FilterItem, StatItem } from '../../components/ThreeSectionPage'
 import type { ColumnsType } from 'antd/es/table'
 import api from '../../utils/api'
 import { useMessage } from '../../contexts/AppContext'
+
+const { Text } = Typography
 
 const typeOptions = [
   { label: '菜单', value: 'menu' },
@@ -20,6 +22,60 @@ const typeOptions = [
 
 const typeColorMap = { menu: 'blue', page: 'cyan', button: 'orange', api: 'purple' }
 
+// —— PC 端图标库（@ant-design/icons 名称）——
+const PC_ICON_OPTIONS = [
+  { label: '菜单 MenuOutlined',                 value: 'MenuOutlined' },
+  { label: '首页 HomeOutlined',                 value: 'HomeOutlined' },
+  { label: '设置 SettingOutlined',              value: 'SettingOutlined' },
+  { label: '用户 UserOutlined',                 value: 'UserOutlined' },
+  { label: '团队 TeamOutlined',                 value: 'TeamOutlined' },
+  { label: '生产 AppstoreOutlined',             value: 'AppstoreOutlined' },
+  { label: '质检 SafetyOutlined',               value: 'SafetyOutlined' },
+  { label: '设备 ToolOutlined',                 value: 'ToolOutlined' },
+  { label: '报表 BarChartOutlined',             value: 'BarChartOutlined' },
+  { label: '数据大屏 DashboardOutlined',        value: 'DashboardOutlined' },
+  { label: '数据库 DatabaseOutlined',           value: 'DatabaseOutlined' },
+  { label: '自动化 ThunderboltOutlined',        value: 'ThunderboltOutlined' },
+  { label: '时钟 ClockCircleOutlined',          value: 'ClockCircleOutlined' },
+  { label: '告警 WarningOutlined',              value: 'WarningOutlined' },
+  { label: '文件 FileOutlined',                 value: 'FileOutlined' },
+]
+
+// —— APP 端图标库（antd-mobile-icons 名称）——
+const APP_ICON_OPTIONS = [
+  { label: '应用 AppOutline',         value: 'AppOutline' },
+  { label: '设置 SettingsOutline',    value: 'SettingsOutline' },
+  { label: '用户 UserOutline',         value: 'UserOutline' },
+  { label: '设备 ToolOutline',         value: 'ToolOutline' },
+  { label: '质检 CheckShieldOutline',  value: 'CheckShieldOutline' },
+  { label: '生产 RocketOutline',       value: 'RocketOutline' },
+  { label: '报表 BarChartOutline',     value: 'BarChartOutline' },
+  { label: '文件 FileOutline',         value: 'FileOutline' },
+  { label: '日历 CalendarOutline',     value: 'CalendarOutline' },
+  { label: '搜索 SearchOutline',       value: 'SearchOutline' },
+  { label: '通知 BellOutline',         value: 'BellOutline' },
+  { label: '返回 LeftOutline',         value: 'LeftOutline' },
+]
+
+// —— APP 端 TabBar 分组选项 ——
+const TAB_GROUP_OPTIONS = [
+  { label: '生产', value: 'production' },
+  { label: '检验', value: 'inspection' },
+  { label: '设备', value: 'device' },
+]
+
+// —— APP 端可见状态 ——
+const MOBILE_VISIBLE_OPTIONS = [
+  { label: '可见', value: 1 },
+  { label: '隐藏', value: 0 },
+]
+
+// —— PC 端状态 ——
+const PC_STATUS_OPTIONS = [
+  { label: '启用', value: 1 },
+  { label: '停用', value: 0 },
+]
+
 export default function MenuManagement() {
   const message = useMessage()
   const [data, setData] = useState([])
@@ -29,6 +85,11 @@ export default function MenuManagement() {
   const [modalVisible, setModalVisible] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
+
+  // —— 监听 PC 端三个字段，APP 端只读展示自动同步 ——
+  const pcType = Form.useWatch('type', form)
+  const pcName = Form.useWatch('perm_name', form)
+  const pcCode = Form.useWatch('perm_code', form)
 
   // 父菜单下拉数据
   const [parentOptions, setParentOptions] = useState([])
@@ -112,33 +173,34 @@ export default function MenuManagement() {
     if (!open) return
     if (editing && editing.perm_id) {
       form.setFieldsValue({
+        // PC 端 9 个字段
         parent_id: editing.parent_id || 0,
+        type: editing.type,
         perm_name: editing.perm_name,
         perm_code: editing.perm_code,
-        type: editing.type,
         icon: editing.icon,
         path: editing.path,
         component: editing.component,
-        sort_order: editing.sort_order,
         status: editing.status,
-        // —— 移动端专用字段 ——
-        mobile_tab_group: editing.mobile_tab_group ?? null,
-        mobile_route_path: editing.mobile_route_path ?? '',
-        mobile_icon: editing.mobile_icon ?? '',
-        mobile_sort_order: editing.mobile_sort_order ?? editing.sort_order ?? 0,
-        mobile_visible: editing.mobile_visible ?? 1,
+        sort_order: editing.sort_order,
+        // APP 端 5 个独立字段（type/perm_name/perm_code 只读，不进 Form）
         mobile_parent_id: editing.mobile_parent_id ?? null,
+        mobile_icon: editing.mobile_icon || null,
+        mobile_route_path: editing.mobile_route_path || null,
+        mobile_tab_group: editing.mobile_tab_group ?? null,
+        mobile_visible: editing.mobile_visible ?? 1,
+        mobile_sort_order: editing.mobile_sort_order ?? null,
       })
     } else {
       form.resetFields()
       form.setFieldsValue({
+        // PC 端默认值
         parent_id: editing?.parent_id || 0,
         type: 'menu',
-        sort_order: 0,
         status: 1,
-        // —— 移动端专用字段默认值 ——
+        sort_order: 0,
+        // APP 端默认值
         mobile_visible: 1,
-        mobile_tab_group: null,
       })
     }
   }
@@ -148,16 +210,18 @@ export default function MenuManagement() {
       const values = await form.validateFields()
       setSubmitting(true)
       const payload = {
+        // PC 端字段
         ...values,
         parent_id: values.parent_id || 0,
         status: values.status !== undefined ? Number(values.status) : 1,
-        // —— 移动端字段：没填时传 null 让后端保留数据库原值 ——
-        mobile_tab_group: values.mobile_tab_group || null,
-        mobile_route_path: values.mobile_route_path || null,
-        mobile_icon: values.mobile_icon || null,
-        mobile_sort_order: values.mobile_sort_order !== undefined ? Number(values.mobile_sort_order) : null,
-        mobile_visible: values.mobile_visible !== undefined ? Number(values.mobile_visible) : null,
+        sort_order: values.sort_order !== undefined ? Number(values.sort_order) : 0,
+        // APP 端字段：null 让后端保留原值 / 继承 PC 端
         mobile_parent_id: values.mobile_parent_id || null,
+        mobile_icon: values.mobile_icon || null,
+        mobile_route_path: values.mobile_route_path || null,
+        mobile_tab_group: values.mobile_tab_group || null,
+        mobile_visible: values.mobile_visible !== undefined ? Number(values.mobile_visible) : null,
+        mobile_sort_order: values.mobile_sort_order !== undefined ? Number(values.mobile_sort_order) : null,
       }
       if (editing && editing.perm_id) {
         const res = await api.put(`/system/permissions/${editing.perm_id}`, payload)
@@ -168,7 +232,6 @@ export default function MenuManagement() {
       }
       setModalVisible(false)
       refresh()
-      // 通知侧边栏刷新菜单
       window.dispatchEvent(new Event('menu-updated'))
     } catch (e) {
       if (e?.errorFields) return
@@ -183,7 +246,6 @@ export default function MenuManagement() {
       const res = await api.delete(`/system/permissions/${record.perm_id}`)
       message.success(res.message || '删除成功')
       refresh()
-      // 通知侧边栏刷新菜单
       window.dispatchEvent(new Event('menu-updated'))
     } catch (err) {
       message.error(err.message || '删除失败')
@@ -246,8 +308,7 @@ export default function MenuManagement() {
     },
     {
       type: 'select', placeholder: '状态', col: { span: 6 },
-      options: [{ label: '启用', value: 1 }, { label: '停用', value: 0 }],
-      value: statusInput, onChange: v => setStatusInput(v),
+      options: PC_STATUS_OPTIONS, value: statusInput, onChange: v => setStatusInput(v),
     },
   ]
 
@@ -281,7 +342,7 @@ export default function MenuManagement() {
           />
         }
         table={
-          <ResizableTable tableKey="pages_system_MenuManagement"             columns={columns}
+          <ResizableTable tableKey="pages_system_MenuManagement" columns={columns}
             dataSource={data}
             rowKey="perm_id"
             size="small"
@@ -300,13 +361,23 @@ export default function MenuManagement() {
         afterOpenChange={handleAfterOpenChange}
         okText="保存"
         cancelText="取消"
-        width={820}
+        width={960}
         destroyOnHidden
       >
-        <Form form={form} layout="vertical" className="compact-form" preserve={false}>
-          <Row gutter={12}>
+        <Form form={form} layout="vertical" preserve={false} style={{ margin: 0 }}>
+          <Row gutter={20}>
+            {/* ========== 左列：PC 端配置 ========== */}
             <Col span={12}>
-              <Form.Item name="parent_id" label="父级菜单" rules={[{ required: true, message: '请选择父级菜单' }]}>
+              <div style={{
+                marginBottom: 16, padding: '6px 12px', background: '#e6f4ff',
+                borderRadius: 4, fontSize: 13, fontWeight: 500, color: '#1677ff',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}>
+                <MonitorOutlined /> PC 端配置
+              </div>
+
+              {/* 行 1 — 父级菜单 */}
+              <Form.Item name="parent_id" label="父级菜单">
                 <TreeSelect
                   placeholder="请选择父级菜单"
                   treeData={parentOptions}
@@ -314,94 +385,72 @@ export default function MenuManagement() {
                   allowClear
                 />
               </Form.Item>
-            </Col>
-            <Col span={6}>
+
+              {/* 行 2 — 类型 */}
               <Form.Item name="type" label="类型" rules={[{ required: true, message: '请选择类型' }]}>
                 <Select placeholder="请选择类型" options={typeOptions} />
               </Form.Item>
-            </Col>
-            <Col span={6}>
+
+              {/* 行 3 — 菜单名称 */}
+              <Form.Item name="perm_name" label="菜单名称" rules={[{ required: true, message: '请输入菜单名称' }]}>
+                <Input placeholder="请输入菜单名称" />
+              </Form.Item>
+
+              {/* 行 4 — 权限编码 */}
+              <Form.Item name="perm_code" label="权限编码" rules={[{ required: true, message: '请输入权限编码' }]}>
+                <Input placeholder="如 system:user" disabled={!!(editing && editing.perm_id)} />
+              </Form.Item>
+
+              {/* 行 5 — 图标（PC 端下拉） */}
+              <Form.Item name="icon" label="图标">
+                <Select
+                  placeholder="选择 PC 端图标"
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  options={PC_ICON_OPTIONS}
+                />
+              </Form.Item>
+
+              {/* 行 6 — 路由路径 */}
+              <Form.Item name="path" label="路由路径">
+                <Input placeholder="如 /system/users" />
+              </Form.Item>
+
+              {/* 行 7 — 组件路径 */}
+              <Form.Item name="component" label="组件路径">
+                <Input placeholder="如 pages/system/UserManagement" />
+              </Form.Item>
+
+              {/* 行 8 — 状态 */}
+              <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
+                <Select placeholder="请选择状态" options={PC_STATUS_OPTIONS} />
+              </Form.Item>
+
+              {/* 行 9 — 排序号 */}
               <Form.Item name="sort_order" label="排序号">
                 <InputNumber placeholder="数字" style={{ width: '100%' }} />
               </Form.Item>
             </Col>
-          </Row>
-          <Row gutter={12}>
+
+            {/* ========== 分隔竖线 ========== */}
+            <Divider type="vertical" style={{ height: 'auto', margin: 0 }} />
+
+            {/* ========== 右列：APP 端配置 ========== */}
             <Col span={12}>
-              <Form.Item name="perm_name" label="菜单名称" rules={[{ required: true, message: '请输入菜单名称' }]}>
-                <Input placeholder="请输入菜单名称" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="perm_code" label="权限编码" rules={[{ required: true, message: '请输入权限编码' }]}>
-                <Input placeholder="如 system:user" disabled={!!(editing && editing.perm_id)} />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={8}>
-              <Form.Item name="icon" label="图标">
-                <Input placeholder="如 TeamOutlined" />
-              </Form.Item>
-            </Col>
-            <Col span={10}>
-              <Form.Item name="path" label="路由路径">
-                <Input placeholder="如 /system/users" />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item name="status" label="状态" rules={[{ required: true, message: '请选择状态' }]}>
-                <Select placeholder="状态" options={[{ label: '启用', value: 1 }, { label: '停用', value: 0 }]} />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Form.Item name="component" label="组件路径">
-            <Input placeholder="如 pages/system/UserManagement（可选）" />
-          </Form.Item>
-          {/* —— 移动端专用字段 —— */}
-          <div style={{ margin: '16px 0 8px', padding: '8px 12px', background: 'var(--color-bg-secondary,#f5f5f5)', borderRadius: 4, fontSize: 13, fontWeight: 500, borderLeft: '3px solid var(--color-primary,#1677ff)' }}>
-            📱 移动端配置（留空表示不在移动端显示，或继承 PC 端值）
-          </div>
-          <Row gutter={12}>
-            <Col span={8}>
-              <Form.Item name="mobile_tab_group" label="移动端 Tab 分组">
-                <Select
-                  placeholder="选择后显示在移动端 TabBar"
-                  allowClear
-                  options={[
-                    { label: '生产', value: 'production' },
-                    { label: '检验', value: 'inspection' },
-                    { label: '设备', value: 'device' },
-                  ]}
-                />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="mobile_route_path" label="移动端路由路径">
-                <Input placeholder="如 /m/device-maintenance" />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="mobile_icon" label="移动端图标">
-                <Input placeholder="如 settings-o（留空继承 PC 端）" />
-              </Form.Item>
-            </Col>
-          </Row>
-          <Row gutter={12}>
-            <Col span={6}>
-              <Form.Item name="mobile_sort_order" label="移动端排序">
-                <InputNumber placeholder="数字" style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-            <Col span={6}>
-              <Form.Item name="mobile_visible" label="移动端可见">
-                <Select placeholder="移动端可见" options={[{ label: '可见', value: 1 }, { label: '隐藏', value: 0 }]} />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="mobile_parent_id" label="移动端独立父级" extra="选填，用于移动端层级与 PC 端不同的场景">
+              <div style={{
+                marginBottom: 16, padding: '6px 12px', background: '#f6ffed',
+                borderRadius: 4, fontSize: 13, fontWeight: 500, color: '#389e0d',
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}>
+                <MobileOutlined /> APP 端配置
+                <Text type="secondary" style={{ fontSize: 11, fontWeight: 400 }}>（灰色=跟随 PC 端自动同步）</Text>
+              </div>
+
+              {/* 行 1 — 移动端独立父级（独立字段） */}
+              <Form.Item name="mobile_parent_id" label="移动端独立父级">
                 <TreeSelect
-                  placeholder="留空表示与 PC 端同层级"
+                  placeholder="留空=与 PC 端同层级"
                   treeData={[
                     { value: 0, title: '顶级菜单' },
                     ...parentOptions.filter(o => o.value !== 0),
@@ -409,6 +458,56 @@ export default function MenuManagement() {
                   treeDefaultExpandAll
                   allowClear
                 />
+              </Form.Item>
+
+              {/* 行 2 — 类型（只读，跟随 PC） */}
+              <Form.Item label="类型">
+                <Input disabled value={pcType ? (typeOptions.find(t => t.value === pcType)?.label || pcType) : '—'} />
+              </Form.Item>
+
+              {/* 行 3 — 菜单名称（只读，跟随 PC） */}
+              <Form.Item label="菜单名称">
+                <Input disabled value={pcName || '—'} />
+              </Form.Item>
+
+              {/* 行 4 — 权限编码（只读，跟随 PC） */}
+              <Form.Item label="权限编码">
+                <Input disabled value={pcCode || '—'} />
+              </Form.Item>
+
+              {/* 行 5 — 图标（APP 端下拉，独立） */}
+              <Form.Item name="mobile_icon" label="图标">
+                <Select
+                  placeholder="选择 APP 端图标（留空继承 PC）"
+                  allowClear
+                  showSearch
+                  optionFilterProp="label"
+                  options={APP_ICON_OPTIONS}
+                />
+              </Form.Item>
+
+              {/* 行 6 — 移动端路由（独立） */}
+              <Form.Item name="mobile_route_path" label="路由路径">
+                <Input placeholder="如 /m/device-maintenance" />
+              </Form.Item>
+
+              {/* 行 7 — TabBar 分组（独有，对应 PC 端 component 行） */}
+              <Form.Item name="mobile_tab_group" label="TabBar 分组">
+                <Select
+                  placeholder="留空=不在移动端显示"
+                  allowClear
+                  options={TAB_GROUP_OPTIONS}
+                />
+              </Form.Item>
+
+              {/* 行 8 — 移动端可见（独立） */}
+              <Form.Item name="mobile_visible" label="移动端可见">
+                <Select placeholder="是否在移动端显示" options={MOBILE_VISIBLE_OPTIONS} />
+              </Form.Item>
+
+              {/* 行 9 — 移动端排序（独立） */}
+              <Form.Item name="mobile_sort_order" label="排序号">
+                <InputNumber placeholder="数字（留空继承 PC）" style={{ width: '100%' }} />
               </Form.Item>
             </Col>
           </Row>
