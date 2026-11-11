@@ -58,7 +58,7 @@ export const defaultPermissions = [
   { parent_id: 0, parent_code: 'quality', perm_name: '来料检验', perm_code: 'quality:incoming', type: 'menu', icon: 'ExperimentOutlined', path: '/quality/incoming', sort_order: 1 },
   { parent_id: 0, parent_code: 'quality', perm_name: '产品检测', perm_code: 'quality:product', type: 'menu', icon: 'ExperimentOutlined', path: '/quality/product', sort_order: 2 },
   { parent_id: 0, parent_code: 'quality', perm_name: '微生物检验', perm_code: 'quality:microbe', type: 'menu', icon: 'ExperimentOutlined', path: '/quality/microbe', sort_order: 3 },
-  { parent_id: 0, parent_code: 'quality', perm_name: '制程检验', perm_code: 'quality:process', type: 'menu', icon: 'ExperimentOutlined', path: '/quality/process-inspections', sort_order: 3 },
+  { parent_id: 0, parent_code: 'quality', perm_name: '制程检验', perm_code: 'quality:process', type: 'menu', icon: 'ExperimentOutlined', path: '/quality/process', sort_order: 3 },
   { parent_id: 0, parent_code: 'quality', perm_name: '环境检验', perm_code: 'quality:environment', type: 'menu', icon: 'ExperimentOutlined', path: '/quality/environment', sort_order: 4 },
   { parent_id: 0, parent_code: 'quality', perm_name: '投诉管理', perm_code: 'quality:complaint', type: 'menu', icon: 'BellOutlined', path: '/quality/complaints', sort_order: 5 },
   { parent_id: 0, parent_code: 'quality:complaint', perm_name: '客诉管理', perm_code: 'quality:complaint:customer', type: 'menu', icon: 'BellOutlined', path: '/quality/complaints', sort_order: 1 },
