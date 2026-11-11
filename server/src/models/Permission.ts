@@ -126,6 +126,39 @@ const Permission = sequelize.define('Permission', {
     type: DataTypes.STRING(255),
     comment: '备注（规范 3.5）',
   },
+
+  // —— 移动端菜单字段（Migration 035 已加列） ——
+  mobile_perm_name: {
+    type: DataTypes.STRING(64),
+    comment: '移动端显示名称（存储时以 M 开头，前端渲染自动剥离首字符 M）',
+  },
+  mobile_icon: {
+    type: DataTypes.STRING(64),
+    comment: '移动端图标（antd-mobile-icons 图标名）',
+  },
+  mobile_route_path: {
+    type: DataTypes.STRING(255),
+    comment: '移动端路由路径（如 /m/process-reporting）',
+  },
+  mobile_parent_id: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    comment: '移动端父级菜单 ID',
+  },
+  mobile_sort_order: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    comment: '移动端排序',
+  },
+  mobile_visible: {
+    type: DataTypes.TINYINT,
+    defaultValue: 1,
+    comment: '移动端是否可见',
+  },
+  mobile_tab_group: {
+    type: DataTypes.STRING(32),
+    comment: '移动端 TabBar 分组（production/quality/device）',
+  },
 }, {
   tableName: 'sys_permission',
   timestamps: true,

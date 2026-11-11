@@ -10,6 +10,7 @@ import {
   update as permUpdate,
   remove as permRemove,
   userMenu,
+  mobileMenu,
 } from '../controllers/PermissionController.js'
 import { list as logList } from '../controllers/OperationLogController.js'
 import { list as systemLogList } from '../controllers/SystemLogController.js'
@@ -77,6 +78,7 @@ router.delete('/roles/:id', permissionRequired('system:role:delete'), logOperati
 router.get('/permissions', permissionRequired('system:menu'), asyncHandler(permList))
 router.get('/permissions/tree', permissionRequired('system:menu'), asyncHandler(permList))
 router.get('/permissions/menu', asyncHandler(userMenu))  // 菜单按角色过滤返回，用 authRequired 即可
+router.get('/permissions/mobile-menu', asyncHandler(mobileMenu))  // 移动端菜单（home + tabs + profile）
 router.get('/permissions/:id', permissionRequired('system:menu'), asyncHandler(permDetail))
 router.post('/permissions', permissionRequired('system:menu:create'), logOperation('菜单管理'), asyncHandler(permCreate))
 router.put('/permissions/:id', permissionRequired('system:menu:update'), logOperation('菜单管理'), asyncHandler(permUpdate))

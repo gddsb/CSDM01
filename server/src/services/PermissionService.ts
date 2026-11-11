@@ -189,6 +189,106 @@ export const PermissionService = {
     }
     return tree
   },
+
+  /** 移动端菜单：从 PC 端菜单树按 mobile_tab_group 组装 TabBar + ActionSheet */
+  async userMobileMenu(user: any) {
+    const pcTree = await this.userMenu(user)
+    const { tabs } = buildMobileMenuTree(pcTree)
+
+    const stripLeadingM = (s: string | null | undefined): string =>
+      s && s.charAt(0) === 'M' ? s.slice(1) : (s ?? '')
+
+    // home（APP 框架入口，所有角色必见，直接查 DB 绕过权限过滤）
+    const homePerm = await Permission.findOne({ where: { perm_code: 'home' } })
+    const home = homePerm
+      ? {
+          key: homePerm.mobile_route_path || homePerm.path || '/m/dashboard',
+          title: stripLeadingM(homePerm.mobile_perm_name || homePerm.perm_name) || '首页',
+          route: homePerm.mobile_route_path || '/m/dashboard',
+          icon: homePerm.mobile_icon || homePerm.icon || 'AppOutline',
+        }
+      : { key: '/m/dashboard', title: '首页', route: '/m/dashboard', icon: 'AppOutline' }
+
+    // profile
+    const profilePerm = await Permission.findOne({ where: { perm_code: 'profile' } })
+    const profile = profilePerm
+      ? {
+          key: profilePerm.mobile_route_path || profilePerm.path || '/m/profile',
+          title: stripLeadingM(profilePerm.mobile_perm_name || profilePerm.perm_name) || '我的',
+          route: profilePerm.mobile_route_path || '/m/profile',
+          icon: profilePerm.mobile_icon || profilePerm.icon || 'UserOutline',
+        }
+      : { key: '/m/profile', title: '我的', route: '/m/profile', icon: 'UserOutline' }
+
+    return { home, tabs, profile }
+  },
+}
+
+/**
+ * 从 PC 端菜单树 → 移动端 TabBar + ActionSheet 结构
+ * - TAB_GROUPS = PC 一级菜单 perm_code（production/quality/device）
+ * - TabBar title = PC 一级菜单 perm_name
+ * - text 优先取 mobile_perm_name，空值 fallback perm_name；首字符 M 自动剥离
+ */
+export function buildMobileMenuTree(permList: any[]): { tabs: any[] } {
+  const flat: any[] = []
+  const flatten = (arr: any[]) => {
+    for (const item of arr) {
+      flat.push(item)
+      if (item.children && item.children.length > 0) flatten(item.children)
+    }
+  }
+  flatten(permList)
+
+  const TAB_GROUPS = ['production', 'quality', 'device']
+  const TAB_KEY: Record<string, string> = {
+    production: '__production__',
+    quality: '__inspection__',
+    device: '__device__',
+  }
+
+  // TabBar title 从 PC 一级菜单 perm_name 反查
+  const pcTopNames: Record<string, string> = {}
+  for (const p of flat) {
+    if (Number(p.parent_id) === 0 && p.type === 'menu' && p.visible === 1) {
+      if (TAB_GROUPS.includes(p.perm_code)) pcTopNames[p.perm_code] = p.perm_name
+    }
+  }
+
+  const stripLeadingM = (s: string | null | undefined): string =>
+    !s ? '' : s.charAt(0) === 'M' ? s.slice(1) : s
+
+  const groupMap = new Map<string, any[]>()
+  for (const perm of flat) {
+    const g = perm.mobile_tab_group
+    if (!g || !TAB_GROUPS.includes(g)) continue
+    const list = groupMap.get(g) || []
+    list.push(perm)
+    groupMap.set(g, list)
+  }
+
+  const tabs = TAB_GROUPS
+    .filter(g => groupMap.has(g))
+    .map(g => {
+      const items = (groupMap.get(g) || [])
+        .filter((p: any) => (p.mobile_visible ?? p.visible) === 1)
+        .sort((a: any, b: any) => {
+          const sa = Number(a.mobile_sort_order ?? a.sort_order) || 0
+          const sb = Number(b.mobile_sort_order ?? b.sort_order) || 0
+          if (sa !== sb) return sa - sb
+          return Number(a.perm_id) - Number(b.perm_id)
+        })
+        .map((p: any) => ({
+          text: stripLeadingM(p.mobile_perm_name || p.perm_name),
+          route: p.mobile_route_path || (p.route_path ? `/m${p.route_path}` : ''),
+          permCode: p.perm_code,
+          icon: p.mobile_icon || p.icon,
+          sortOrder: p.mobile_sort_order ?? p.sort_order,
+        }))
+      return { key: TAB_KEY[g], title: pcTopNames[g] || g, tabGroup: g, items }
+    })
+
+  return { tabs }
 }
 
 export default PermissionService

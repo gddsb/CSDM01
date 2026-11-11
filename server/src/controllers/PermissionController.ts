@@ -34,4 +34,9 @@ export const userMenu = asyncHandler(async (req: Request, res: Response) => {
   return success(res, tree, '查询成功')
 })
 
-export default { list, detail, create, update, remove, userMenu }
+export const mobileMenu = asyncHandler(async (req: Request, res: Response) => {
+  const data = await PermissionService.userMobileMenu((req as any).user)
+  return success(res, data, '查询成功')
+})
+
+export default { list, detail, create, update, remove, userMenu, mobileMenu }
