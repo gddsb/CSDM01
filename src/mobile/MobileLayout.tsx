@@ -74,7 +74,7 @@ export function MobileLayout() {
   useEffect(() => {
     let active = true
     api.get<MobileMenuResp>('/system/permissions/mobile-menu')
-      .then(res => { if (active) setMenu(res); })
+      .then(res => { if (active) setMenu(res.data); })
       .catch(() => { if (active) setMenu(null); })
       .finally(() => { if (active) setLoading(false); })
     return () => { active = false }
