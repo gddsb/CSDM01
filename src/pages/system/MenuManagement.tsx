@@ -121,6 +121,7 @@ export default function MenuManagement() {
         component: editing.component,
         sort_order: editing.sort_order,
         status: editing.status,
+        mobile_perm_name: editing.mobile_perm_name,
       })
     } else {
       form.resetFields()
@@ -296,12 +297,17 @@ export default function MenuManagement() {
             </Col>
           </Row>
           <Row gutter={12}>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item name="perm_name" label="菜单名称" rules={[{ required: true, message: '请输入菜单名称' }]}>
                 <Input placeholder="请输入菜单名称" />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col span={8}>
+              <Form.Item name="mobile_perm_name" label="APP 菜单名" extra="留空则使用菜单名称；以 M 开头时移动端自动剥离 M">
+                <Input placeholder="如 M生产订单" />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
               <Form.Item name="perm_code" label="权限编码" rules={[{ required: true, message: '请输入权限编码' }]}>
                 <Input placeholder="如 system:user" disabled={!!(editing && editing.perm_id)} />
               </Form.Item>
