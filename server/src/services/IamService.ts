@@ -12,8 +12,6 @@ import {
   onBizStatusRuleChange,
   cacheStats as cacheStatsFn,
 } from '../framework/permission/cache/permissionCache.js'
-import { runBusinessObjectAudit } from '../framework/permission/scanner/businessObjScanner.js'
-import { runDataDimensionAudit } from '../framework/permission/scanner/dataDimScanner.js'
 import logger from '../utils/logger.js'
 import type { Request, Response } from 'express'
 
@@ -176,20 +174,6 @@ export async function deleteBizStatusRule(req: Request, res: Response) {
   await BizStatusRule.destroy({ where: { rule_id: id } })
   if (rule) onBizStatusRuleChange((rule as any).obj_code, (rule as any).operate_key)
   return success(res, null, '删除成功')
-}
-
-// ============================================================================
-// 扫描器 API
-// ============================================================================
-
-export async function auditBusinessObjects(_req: Request, res: Response) {
-  const report = await runBusinessObjectAudit()
-  return success(res, report, '业务对象扫描完成')
-}
-
-export async function auditDataDimensions(_req: Request, res: Response) {
-  const report = await runDataDimensionAudit()
-  return success(res, report, '数据维度扫描完成')
 }
 
 // ============================================================================

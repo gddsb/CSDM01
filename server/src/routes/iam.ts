@@ -36,10 +36,6 @@ router.post('/biz-status-rules', authRequired, requirePerm({ permCode: 'iam:biz-
 router.put('/biz-status-rules/:id', authRequired, requirePerm({ permCode: 'iam:biz-status:update' }), asyncHandler(iam.updateBizStatusRule))
 router.delete('/biz-status-rules/:id', authRequired, requirePerm({ permCode: 'iam:biz-status:delete' }), asyncHandler(iam.deleteBizStatusRule))
 
-// ========== 扫描器 ==========
-router.get('/audit/business-objects', authRequired, requirePerm({ permCode: 'iam:audit:business-obj:run' }), asyncHandler(iam.auditBusinessObjects))
-router.get('/audit/data-dimensions', authRequired, requirePerm({ permCode: 'iam:audit:data-dimension:run' }), asyncHandler(iam.auditDataDimensions))
-
 // ========== 缓存管理 ==========
 router.post('/cache/clear', authRequired, requirePerm({ permCode: 'iam:permission:update' }), asyncHandler(iam.clearPermCache))
 router.get('/cache/stats', authRequired, asyncHandler(iam.getCacheStats))
