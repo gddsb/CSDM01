@@ -25,7 +25,6 @@ import Dashboard from './pages/Dashboard'
 // 业务页面按模块懒加载，自动代码分割
 const UserManagement = lazy(() => import('./pages/system/UserManagement'))
 const RoleManagement = lazy(() => import('./pages/system/RoleManagement'))
-const RolePermissionConfig = lazy(() => import('./pages/system/RolePermissionConfig'))
 const DataDictionary = lazy(() => import('./pages/system/DataDictionary'))
 const OperationLogs = lazy(() => import('./pages/system/OperationLogs'))
 const SystemLogs = lazy(() => import('./pages/system/SystemLogs'))
@@ -229,7 +228,6 @@ function AppRoutes() {
         {/* 注意：用户/角色/权限资源池暂时还在 system/* 路径下（旧页面复用），后续 Phase 4 再搬 */}
         <Route path="/iam/users" element={lazyPage(<PermissionGate permCode="iam:user"><UserManagement /></PermissionGate>)} />
         <Route path="/iam/roles" element={lazyPage(<PermissionGate permCode="iam:role"><RoleManagement /></PermissionGate>)} />
-        <Route path="/iam/roles/:roleId/permissions" element={lazyPage(<PermissionGate permCode="iam:role"><RolePermissionConfig /></PermissionGate>)} />
         <Route path="/iam/business-objects" element={lazyPage(<PermissionGate permCode="iam:business-object:view"><BusinessObjectPage /></PermissionGate>)} />
         <Route path="/iam/data-dimensions" element={lazyPage(<PermissionGate permCode="iam:data-dimension:view"><DataDimensionPage /></PermissionGate>)} />
         <Route path="/iam/data-scopes" element={lazyPage(<PermissionGate permCode="iam:data-scope:view"><DataScopePage /></PermissionGate>)} />

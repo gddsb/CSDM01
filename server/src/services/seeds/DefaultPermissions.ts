@@ -1,27 +1,16 @@
 export const defaultPermissions = [
-  // ===== home — 工作台/首页（两端同一菜单）=====
-  // PC 端: visible=0, path=/dashboard（登录默认跳转页，不出现在左侧菜单树）
-  // APP 端: mobile_visible=1, mobile_route_path=/m/dashboard（固定首页 Tab）
-  { parent_id: 0, perm_name: '工作台', perm_code: 'home', type: 'menu', icon: 'DashboardOutlined',
-    path: '/dashboard', sort_order: 0, visible: 0, status: 1,
-    mobile_route_path: '/m/dashboard', mobile_parent_id: 0, mobile_tab_group: null,
-    mobile_sort_order: 0, mobile_visible: 1, mobile_perm_name: 'M首页' },
-
-  // ===== 用户与权限 =====
+  // ===== 用户与权限（方案 A 新一级菜单，所有 IAM 权限配置入口）=====
   { parent_id: 0, perm_name: '用户与权限', perm_code: 'iam', type: 'menu', icon: 'SafetyOutlined', path: 'iam', sort_order: 10 },
   { parent_id: 0, parent_code: 'iam', perm_name: '用户管理', perm_code: 'iam:user', type: 'menu', icon: 'TeamOutlined', path: '/iam/users', sort_order: 1 },
   { parent_id: 0, parent_code: 'iam', perm_name: '角色管理', perm_code: 'iam:role', type: 'menu', icon: 'SafetyCertificateOutlined', path: '/iam/roles', sort_order: 2 },
-  // M036: 权限资源池 → 菜单管理
-  { parent_id: 0, parent_code: 'iam', perm_name: '菜单管理', perm_code: 'iam:permission', type: 'menu', icon: 'KeyOutlined', path: '/iam/permission', sort_order: 3 },
-  // M036: 5 个脚手架菜单默认隐藏
-  { parent_id: 0, parent_code: 'iam', perm_name: '数据范围规则', perm_code: 'iam:data-scope', type: 'menu', icon: 'FilterOutlined', path: '/iam/data-scopes', sort_order: 4, visible: 0 },
-  { parent_id: 0, parent_code: 'iam', perm_name: '业务状态规则', perm_code: 'iam:biz-status', type: 'menu', icon: 'SwitcherOutlined', path: '/iam/biz-status-rules', sort_order: 5, visible: 0 },
-  { parent_id: 0, parent_code: 'iam', perm_name: '业务对象字典', perm_code: 'iam:business-object', type: 'menu', icon: 'AppstoreOutlined', path: '/iam/business-objects', sort_order: 6, visible: 0 },
-  { parent_id: 0, parent_code: 'iam', perm_name: '数据维度字典', perm_code: 'iam:data-dimension', type: 'menu', icon: 'FundOutlined', path: '/iam/data-dimensions', sort_order: 7, visible: 0 },
+  { parent_id: 0, parent_code: 'iam', perm_name: '权限资源池', perm_code: 'iam:permission', type: 'menu', icon: 'KeyOutlined', path: '/iam/permission', sort_order: 3 },
+  { parent_id: 0, parent_code: 'iam', perm_name: '数据范围规则', perm_code: 'iam:data-scope', type: 'menu', icon: 'FilterOutlined', path: '/iam/data-scopes', sort_order: 4 },
+  { parent_id: 0, parent_code: 'iam', perm_name: '业务状态规则', perm_code: 'iam:biz-status', type: 'menu', icon: 'SwitcherOutlined', path: '/iam/biz-status-rules', sort_order: 5 },
+  { parent_id: 0, parent_code: 'iam', perm_name: '业务对象字典', perm_code: 'iam:business-object', type: 'menu', icon: 'AppstoreOutlined', path: '/iam/business-objects', sort_order: 6 },
+  { parent_id: 0, parent_code: 'iam', perm_name: '数据维度字典', perm_code: 'iam:data-dimension', type: 'menu', icon: 'FundOutlined', path: '/iam/data-dimensions', sort_order: 7 },
   { parent_id: 0, parent_code: 'iam', perm_name: '权限审查报告', perm_code: 'iam:audit', type: 'menu', icon: 'SearchOutlined', path: '/iam/audit/permission', sort_order: 8 },
-  { parent_id: 0, parent_code: 'iam', perm_name: '审计日志查询', perm_code: 'iam:audit-log', type: 'menu', icon: 'FileSearchOutlined', path: '/iam/audit-log', sort_order: 9, visible: 0 },
-  // M036: iam:cache 移到系统管理下
-  { parent_id: 0, parent_code: 'system', perm_name: '在线用户与缓存', perm_code: 'iam:cache', type: 'menu', icon: 'ClusterOutlined', path: '/iam/cache', sort_order: 10 },
+  { parent_id: 0, parent_code: 'iam', perm_name: '审计日志查询', perm_code: 'iam:audit-log', type: 'menu', icon: 'FileSearchOutlined', path: '/iam/audit-log', sort_order: 9 },
+  { parent_id: 0, parent_code: 'iam', perm_name: '在线用户与缓存', perm_code: 'iam:cache', type: 'menu', icon: 'ClusterOutlined', path: '/iam/cache', sort_order: 10 },
 
   // ===== 系统管理（旧 system:user / system:role 已停用，全部移至 iam）=====
   { parent_id: 0, perm_name: '系统管理', perm_code: 'system', type: 'menu', icon: 'SettingOutlined', path: 'system', sort_order: 8 },
@@ -58,7 +47,7 @@ export const defaultPermissions = [
   { parent_id: 0, parent_code: 'quality', perm_name: '来料检验', perm_code: 'quality:incoming', type: 'menu', icon: 'ExperimentOutlined', path: '/quality/incoming', sort_order: 1 },
   { parent_id: 0, parent_code: 'quality', perm_name: '产品检测', perm_code: 'quality:product', type: 'menu', icon: 'ExperimentOutlined', path: '/quality/product', sort_order: 2 },
   { parent_id: 0, parent_code: 'quality', perm_name: '微生物检验', perm_code: 'quality:microbe', type: 'menu', icon: 'ExperimentOutlined', path: '/quality/microbe', sort_order: 3 },
-  { parent_id: 0, parent_code: 'quality', perm_name: '制程检验', perm_code: 'quality:process', type: 'menu', icon: 'ExperimentOutlined', path: '/quality/process', sort_order: 3 },
+  { parent_id: 0, parent_code: 'quality', perm_name: '制程检验', perm_code: 'quality:process', type: 'menu', icon: 'ExperimentOutlined', path: '/quality/process-inspections', sort_order: 3 },
   { parent_id: 0, parent_code: 'quality', perm_name: '环境检验', perm_code: 'quality:environment', type: 'menu', icon: 'ExperimentOutlined', path: '/quality/environment', sort_order: 4 },
   { parent_id: 0, parent_code: 'quality', perm_name: '投诉管理', perm_code: 'quality:complaint', type: 'menu', icon: 'BellOutlined', path: '/quality/complaints', sort_order: 5 },
   { parent_id: 0, parent_code: 'quality:complaint', perm_name: '客诉管理', perm_code: 'quality:complaint:customer', type: 'menu', icon: 'BellOutlined', path: '/quality/complaints', sort_order: 1 },
@@ -70,9 +59,7 @@ export const defaultPermissions = [
   { parent_id: 0, parent_code: 'device', perm_name: '保养标准', perm_code: 'device:maintenance-standard', type: 'menu', icon: 'ProfileOutlined', path: '/device/maintenance-standard', sort_order: 2 },
   { parent_id: 0, parent_code: 'device', perm_name: '保养管理', perm_code: 'device:maintenance', type: 'menu', icon: 'ToolOutlined', path: '/device/maintenance', sort_order: 3 },
   { parent_id: 0, parent_code: 'device', perm_name: '保养矩阵', perm_code: 'device:maintenance-matrix', type: 'menu', icon: 'AppstoreOutlined', path: '/device/maintenance/matrix', sort_order: 4 },
-  // device:inspection 已废弃（2026-11-10）：DeviceMaintenanceUnified 合并点检+保养，
-  //   PC 端 daily 模式=点检，weekly/monthly=保养；移动端 routes.tsx 已重定向到 maintenance
-  // { parent_id: 0, parent_code: 'device', perm_name: '设备点检', perm_code: 'device:inspection', type: 'menu', icon: 'CheckOutlined', path: '/device/inspection', sort_order: 5 },
+  { parent_id: 0, parent_code: 'device', perm_name: '设备点检', perm_code: 'device:inspection', type: 'menu', icon: 'CheckOutlined', path: '/device/inspection', sort_order: 5 },
   { parent_id: 0, parent_code: 'device', perm_name: '设备OEE', perm_code: 'device:oee', type: 'menu', icon: 'LineChartOutlined', path: '/device/oee', sort_order: 6 },
   { parent_id: 0, parent_code: 'device', perm_name: '设备看板', perm_code: 'device:dashboard', type: 'menu', icon: 'DashboardOutlined', path: '/device/dashboard', sort_order: 6 },
   { parent_id: 0, parent_code: 'device', perm_name: '故障管理', perm_code: 'device:fault', type: 'menu', icon: 'WarningOutlined', path: '/device/fault', sort_order: 7 },

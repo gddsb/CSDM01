@@ -10,11 +10,7 @@ import { asyncHandler } from '../middleware/security.js'
 import type { Request, Response } from 'express'
 
 export const list = asyncHandler(async (req: Request, res: Response) => {
-  const user = (req as any).user || {}
-  const owner = user.userId
-    ? { userId: Number(user.userId), permCodes: user.permCodes || new Set() }
-    : undefined
-  const result = await DeviceService.list(req.query as DeviceListQuery, owner)
+  const result = await DeviceService.list(req.query as DeviceListQuery)
   return success(res, result.rows, '查询成功', result.count)
 })
 

@@ -135,9 +135,7 @@ export default function MobileDeviceMaintenance() {
   const loadDevices = async (kw?: string): Promise<DeviceRow[]> => {
     setLoading(true)
     try {
-      // mine=true: 移动端维保只显示当前用户负责/检查的设备
-      // 后端通过 device_standard(assigned_user_ids/inspector_user_ids) + device_record 双重匹配
-      const params: Record<string, unknown> = { page: 1, pageSize: 50, mine: 'true' }
+      const params: Record<string, unknown> = { page: 1, pageSize: 50 }
       if (kw) params.keyword = kw.trim()   // 后端 DeviceService 只认 keyword 做模糊搜索
       const [r1, r2]: any[] = await Promise.all([
         api.get('/basic/devices', { params }),
@@ -565,8 +563,8 @@ export default function MobileDeviceMaintenance() {
           ) : (
             <PullToRefresh onRefresh={async () => { await loadDevices(keyword.trim() || undefined) }}>
               <List>
-                {/* 设备列表已由后端 mine=true 按责任人过滤，不再依赖 dailySummary 二次筛选 */}
-                {devices.map((d) => {
+                {/* Q2: 过滤掉没有维保项目的设备 */}
+                {devices.filter((d) => deviceDailyStats[d.device_id]).map((d) => {
                   const s = deviceDailyStats[d.device_id] || { total: 0, done: 0 }
                   return (
                   <List.Item

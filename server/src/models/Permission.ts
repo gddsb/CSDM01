@@ -126,41 +126,6 @@ const Permission = sequelize.define('Permission', {
     type: DataTypes.STRING(255),
     comment: '备注（规范 3.5）',
   },
-
-  // —— Migration 035 新增：移动端专属字段（双端菜单独立配置） ——
-  mobile_perm_name: {
-    type: DataTypes.STRING(64),
-    comment: '移动端菜单名称（独立于 perm_name，支持 M 前缀区分）',
-  },
-  mobile_icon: {
-    type: DataTypes.STRING(64),
-    comment: '移动端图标（antd-mobile-icons 图标名）',
-  },
-  mobile_route_path: {
-    type: DataTypes.STRING(255),
-    comment: '移动端路由路径（如 /m/dashboard）',
-  },
-  mobile_parent_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    defaultValue: 0,
-    comment: '移动端父级菜单 ID（自关联，0=顶级）',
-  },
-  mobile_sort_order: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0,
-    comment: '移动端排序号',
-  },
-  mobile_visible: {
-    type: DataTypes.TINYINT,
-    allowNull: false,
-    defaultValue: 1,
-    comment: '移动端是否显示：1=显示, 0=隐藏',
-  },
-  mobile_tab_group: {
-    type: DataTypes.STRING(20),
-    comment: '移动端 TabBar 分组（production/quality/device 等）',
-  },
 }, {
   tableName: 'sys_permission',
   timestamps: true,

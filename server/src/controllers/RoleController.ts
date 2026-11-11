@@ -27,26 +27,18 @@ export const remove = asyncHandler(async (req: Request, res: Response) => {
   return success(res, null, '删除成功')
 })
 
-export const detail = asyncHandler(async (req: Request, res: Response) => {
-  const record = await RoleService.detail(Number(req.params.id))
-  return success(res, record, '查询成功')
-})
-
 export const listPermissions = asyncHandler(async (_req: Request, res: Response) => {
   const perms = await RoleService.listPermissions()
   return success(res, perms, '查询成功')
 })
 
 export const getRolePermissions = asyncHandler(async (req: Request, res: Response) => {
-  const terminal = Number((req.query as any)?.terminal) || 1
-  const ids = await RoleService.getRolePermissions(Number(req.params.id), terminal)
+  const ids = await RoleService.getRolePermissions(Number(req.params.id))
   return success(res, ids, '查询成功')
 })
 
 export const assignPermissions = asyncHandler(async (req: Request, res: Response) => {
-  // terminal: 'pc'/'allp' → 1, 'mobile' → 2, 'all' → 1 (UI 并集视图保存默认给 PC 端，Service 内部 expandTerminal 自动同步另一端)
-  const terminal = Number((req.body as any)?.terminal) || 1
-  await RoleService.assignPermissions(Number(req.params.id), req.body.perm_ids, terminal)
+  await RoleService.assignPermissions(Number(req.params.id), req.body.perm_ids)
   return success(res, null, '权限分配成功')
 })
 
@@ -55,4 +47,4 @@ export async function initDefaultPermissions() {
   await RoleService.initDefaultPermissions()
 }
 
-export default { list, create, update, remove, detail, listPermissions, getRolePermissions, assignPermissions, initDefaultPermissions }
+export default { list, create, update, remove, listPermissions, getRolePermissions, assignPermissions, initDefaultPermissions }
