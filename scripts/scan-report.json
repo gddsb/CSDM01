@@ -1,60 +1,32 @@
 {
-  "scannedAt": "2026-11-11T15:32:06.730Z",
+  "scannedAt": "2026-11-11T16:37:50.925Z",
   "summary": {
-    "files": 80,
-    "buttons": 354,
-    "forms": 57,
+    "files": 79,
+    "buttons": 353,
+    "forms": 56,
     "uploads": 7,
-    "suggestedPermissions": 181
+    "suggestedPermissions": 178
   },
   "items": [
     {
       "file": "src/pages/Dashboard.tsx",
-      "module": "Dashboard.tsx",
+      "module": "bigscreen",
       "page": "dashboard",
       "buttonCount": 1,
       "formCount": 0,
       "uploadCount": 0,
       "suggestedPermissions": [
         {
-          "perm_code": "dashboard.tsx:dashboard:view",
+          "perm_code": "bigscreen:dashboard:view",
           "perm_name": "dashboard 查看",
           "perm_type": 1,
           "perm_type_desc": "页面查看"
         },
         {
-          "perm_code": "dashboard.tsx:dashboard:button",
+          "perm_code": "bigscreen:dashboard:button",
           "perm_name": "dashboard 按钮",
           "perm_type": 2,
           "perm_type_desc": "页面按钮"
-        }
-      ]
-    },
-    {
-      "file": "src/pages/Login.tsx",
-      "module": "Login.tsx",
-      "page": "login",
-      "buttonCount": 1,
-      "formCount": 1,
-      "uploadCount": 0,
-      "suggestedPermissions": [
-        {
-          "perm_code": "login.tsx:login:view",
-          "perm_name": "login 查看",
-          "perm_type": 1,
-          "perm_type_desc": "页面查看"
-        },
-        {
-          "perm_code": "login.tsx:login:button",
-          "perm_name": "login 按钮",
-          "perm_type": 2,
-          "perm_type_desc": "页面按钮"
-        },
-        {
-          "perm_code": "login.tsx:login:form",
-          "perm_name": "login 表单",
-          "perm_type": 3,
-          "perm_type_desc": "表单控件"
         }
       ]
     },
