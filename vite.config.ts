@@ -128,6 +128,17 @@ export default defineConfig({
     host: '0.0.0.0',
     port: Number(process.env.DEPLOY_RUN_PORT) || 5173,
     strictPort: true,
+    watch: {
+      ignored: [
+        '**/.pnpm-store/**',
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/server/uploads/**',
+        '**/server/data/**',
+        '**/scripts/scan-report.json',
+        '**/milk_can_mes_prod.sql',
+      ],
+    },
     proxy: {
       '/api': apiProxy,
       '/uploads': apiProxy,
