@@ -20,6 +20,15 @@ const typeOptions = [
 
 const typeColorMap = { menu: 'blue', page: 'cyan', button: 'orange', api: 'purple' }
 
+const permTypeOptions = [
+  { label: '页面查看', value: 1 },
+  { label: '页面按钮', value: 2 },
+  { label: '表单控件', value: 3 },
+  { label: '上传控件', value: 4 },
+]
+
+const permTypeColorMap: Record<number, string> = { 1: 'blue', 2: 'orange', 3: 'cyan', 4: 'purple' }
+
 export default function MenuManagement() {
   const message = useMessage()
   const [data, setData] = useState([])
@@ -122,6 +131,7 @@ export default function MenuManagement() {
         sort_order: editing.sort_order,
         status: editing.status,
         mobile_perm_name: editing.mobile_perm_name,
+        perm_type: editing.perm_type,
       })
     } else {
       form.resetFields()
@@ -180,6 +190,10 @@ export default function MenuManagement() {
     {
       title: '类型', dataIndex: 'type', key: 'type', width: 80,
       render: v => v ? <Tag color={typeColorMap[v] || 'default'}>{typeOptions.find(t => t.value === v)?.label || v}</Tag> : '-',
+    },
+    {
+      title: '控件类型', dataIndex: 'perm_type', key: 'perm_type', width: 100,
+      render: v => v ? <Tag color={permTypeColorMap[v] || 'default'}>{permTypeOptions.find(p => p.value === v)?.label || v}</Tag> : '-',
     },
     { title: '图标', dataIndex: 'icon', key: 'icon', width: 160 },
     { title: '路由路径', dataIndex: 'path', key: 'path', width: 200 },
@@ -275,7 +289,7 @@ export default function MenuManagement() {
       >
         <Form form={form} layout="vertical" className="compact-form" preserve={false}>
           <Row gutter={12}>
-            <Col span={12}>
+            <Col span={8}>
               <Form.Item name="parent_id" label="父级菜单" rules={[{ required: true, message: '请选择父级菜单' }]}>
                 <TreeSelect
                   placeholder="请选择父级菜单"
@@ -291,6 +305,11 @@ export default function MenuManagement() {
               </Form.Item>
             </Col>
             <Col span={6}>
+              <Form.Item name="perm_type" label="控件类型">
+                <Select placeholder="请选择控件类型" options={permTypeOptions} allowClear />
+              </Form.Item>
+            </Col>
+            <Col span={4}>
               <Form.Item name="sort_order" label="排序号">
                 <InputNumber placeholder="数字" style={{ width: '100%' }} />
               </Form.Item>
