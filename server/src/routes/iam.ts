@@ -37,8 +37,6 @@ router.put('/biz-status-rules/:id', authRequired, requirePerm({ permCode: 'iam:b
 router.delete('/biz-status-rules/:id', authRequired, requirePerm({ permCode: 'iam:biz-status:delete' }), asyncHandler(iam.deleteBizStatusRule))
 
 // ========== 扫描器 ==========
-router.get('/audit/permission', authRequired, requirePerm({ permCode: 'iam:audit:permission:run' }), asyncHandler(iam.auditPermission))
-router.post('/audit/permission/sync', authRequired, requirePerm({ permCode: 'iam:audit:permission:sync' }), asyncHandler(iam.syncPermissionMeta))
 router.get('/audit/business-objects', authRequired, requirePerm({ permCode: 'iam:audit:business-obj:run' }), asyncHandler(iam.auditBusinessObjects))
 router.get('/audit/data-dimensions', authRequired, requirePerm({ permCode: 'iam:audit:data-dimension:run' }), asyncHandler(iam.auditDataDimensions))
 

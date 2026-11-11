@@ -39,7 +39,6 @@ const BusinessObjectPage = lazy(() => import('./pages/iam/BusinessObjectPage'))
 const DataDimensionPage = lazy(() => import('./pages/iam/DataDimensionPage'))
 const DataScopePage = lazy(() => import('./pages/iam/DataScopePage'))
 const BizStatusRulePage = lazy(() => import('./pages/iam/BizStatusRulePage'))
-const PermissionAuditPage = lazy(() => import('./pages/iam/PermissionAuditPage'))
 const BusinessObjScanPage = lazy(() => import('./pages/iam/BusinessObjScanPage'))
 const DataDimScanPage = lazy(() => import('./pages/iam/DataDimScanPage'))
 const CacheManagementPage = lazy(() => import('./pages/iam/CacheManagementPage'))
@@ -234,8 +233,7 @@ function AppRoutes() {
         <Route path="/iam/biz-status-rules" element={lazyPage(<PermissionGate permCode="iam:biz-status:view"><BizStatusRulePage /></PermissionGate>)} />
         <Route path="/iam/permission" element={lazyPage(<PermissionGate permCode="iam:permission:view"><MenuManagement /></PermissionGate>)} />
         <Route path="/iam/cache" element={lazyPage(<PermissionGate permCode="iam:permission:update"><CacheManagementPage /></PermissionGate>)} />
-        <Route path="/iam/audit" element={<Navigate to="/iam/audit/permission" replace />} />
-        <Route path="/iam/audit/permission" element={lazyPage(<PermissionGate permCode="iam:audit:permission:run"><PermissionAuditPage /></PermissionGate>)} />
+        <Route path="/iam/audit" element={<Navigate to="/iam/audit/business-objects" replace />} />
         <Route path="/iam/audit/business-objects" element={lazyPage(<PermissionGate permCode="iam:audit:business-obj:run"><BusinessObjScanPage /></PermissionGate>)} />
         <Route path="/iam/audit/data-dimensions" element={lazyPage(<PermissionGate permCode="iam:audit:data-dimension:run"><DataDimScanPage /></PermissionGate>)} />
 

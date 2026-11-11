@@ -12,7 +12,6 @@ import {
   onBizStatusRuleChange,
   cacheStats as cacheStatsFn,
 } from '../framework/permission/cache/permissionCache.js'
-import { runPermissionAudit } from '../framework/permission/scanner/permissionScanner.js'
 import { runBusinessObjectAudit } from '../framework/permission/scanner/businessObjScanner.js'
 import { runDataDimensionAudit } from '../framework/permission/scanner/dataDimScanner.js'
 import logger from '../utils/logger.js'
@@ -183,17 +182,6 @@ export async function deleteBizStatusRule(req: Request, res: Response) {
 // 扫描器 API
 // ============================================================================
 
-export async function auditPermission(_req: Request, res: Response) {
-  const report = await runPermissionAudit('report')
-  return success(res, report, '功能权限审查完成')
-}
-
-export async function syncPermissionMeta(_req: Request, res: Response) {
-  const report = await runPermissionAudit('sync')
-  onPermissionClear()
-  return success(res, report, '前端 meta 自动同步完成')
-}
-
 export async function auditBusinessObjects(_req: Request, res: Response) {
   const report = await runBusinessObjectAudit()
   return success(res, report, '业务对象扫描完成')
@@ -216,9 +204,4 @@ export async function clearPermCache(req: Request, res: Response) {
 
 export async function getCacheStats(req: Request, res: Response) {
   return success(res, cacheStatsFn(), '缓存状态')
-}
-
-// 兼容：syncPermissionMeta 内部要调的 — 只是转发
-function onPermissionClear() {
-  clearAllCache()
 }
