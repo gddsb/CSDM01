@@ -1,0 +1,1898 @@
+{
+  "scannedAt": "2026-11-11T15:32:06.730Z",
+  "summary": {
+    "files": 80,
+    "buttons": 354,
+    "forms": 57,
+    "uploads": 7,
+    "suggestedPermissions": 181
+  },
+  "items": [
+    {
+      "file": "src/pages/Dashboard.tsx",
+      "module": "Dashboard.tsx",
+      "page": "dashboard",
+      "buttonCount": 1,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "dashboard.tsx:dashboard:view",
+          "perm_name": "dashboard 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "dashboard.tsx:dashboard:button",
+          "perm_name": "dashboard 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/Login.tsx",
+      "module": "Login.tsx",
+      "page": "login",
+      "buttonCount": 1,
+      "formCount": 1,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "login.tsx:login:view",
+          "perm_name": "login 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "login.tsx:login:button",
+          "perm_name": "login 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "login.tsx:login:form",
+          "perm_name": "login 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/auto/ScheduledTaskPage.tsx",
+      "module": "auto",
+      "page": "scheduled-task-page",
+      "buttonCount": 5,
+      "formCount": 1,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "auto:scheduled-task:view",
+          "perm_name": "scheduled-task-page 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "auto:scheduled-task:button",
+          "perm_name": "scheduled-task-page 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "auto:scheduled-task:form",
+          "perm_name": "scheduled-task-page 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/auto/TaskLogPage.tsx",
+      "module": "auto",
+      "page": "task-log-page",
+      "buttonCount": 3,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "auto:task-log:view",
+          "perm_name": "task-log-page 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "auto:task-log:button",
+          "perm_name": "task-log-page 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/auto/TaskSettingsPage.tsx",
+      "module": "auto",
+      "page": "task-settings-page",
+      "buttonCount": 5,
+      "formCount": 1,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "auto:task-settings:view",
+          "perm_name": "task-settings-page 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "auto:task-settings:button",
+          "perm_name": "task-settings-page 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "auto:task-settings:form",
+          "perm_name": "task-settings-page 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/basic/CustomerManagement.tsx",
+      "module": "basic",
+      "page": "customer-management",
+      "buttonCount": 3,
+      "formCount": 1,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "basic:customer:view",
+          "perm_name": "customer-management 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "basic:customer:button",
+          "perm_name": "customer-management 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "basic:customer:form",
+          "perm_name": "customer-management 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/basic/DefectManagement.tsx",
+      "module": "basic",
+      "page": "defect-management",
+      "buttonCount": 6,
+      "formCount": 1,
+      "uploadCount": 1,
+      "suggestedPermissions": [
+        {
+          "perm_code": "basic:defect:view",
+          "perm_name": "defect-management 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "basic:defect:button",
+          "perm_name": "defect-management 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "basic:defect:form",
+          "perm_name": "defect-management 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        },
+        {
+          "perm_code": "basic:defect:upload",
+          "perm_name": "defect-management 上传",
+          "perm_type": 4,
+          "perm_type_desc": "上传控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/basic/DeviceManagement.tsx",
+      "module": "basic",
+      "page": "device-management",
+      "buttonCount": 4,
+      "formCount": 1,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "basic:device:view",
+          "perm_name": "device-management 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "basic:device:button",
+          "perm_name": "device-management 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "basic:device:form",
+          "perm_name": "device-management 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/basic/MaterialManagement.tsx",
+      "module": "basic",
+      "page": "material-management",
+      "buttonCount": 3,
+      "formCount": 1,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "basic:material:view",
+          "perm_name": "material-management 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "basic:material:button",
+          "perm_name": "material-management 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "basic:material:form",
+          "perm_name": "material-management 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/basic/NumberRuleManagement.tsx",
+      "module": "basic",
+      "page": "number-rule-management",
+      "buttonCount": 6,
+      "formCount": 1,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "basic:number-rule:view",
+          "perm_name": "number-rule-management 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "basic:number-rule:button",
+          "perm_name": "number-rule-management 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "basic:number-rule:form",
+          "perm_name": "number-rule-management 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/basic/ProcessManagement.tsx",
+      "module": "basic",
+      "page": "process-management",
+      "buttonCount": 4,
+      "formCount": 1,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "basic:process:view",
+          "perm_name": "process-management 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "basic:process:button",
+          "perm_name": "process-management 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "basic:process:form",
+          "perm_name": "process-management 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/basic/ProductionLine.tsx",
+      "module": "basic",
+      "page": "production-line",
+      "buttonCount": 4,
+      "formCount": 1,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "basic:production-line:view",
+          "perm_name": "production-line 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "basic:production-line:button",
+          "perm_name": "production-line 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "basic:production-line:form",
+          "perm_name": "production-line 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/basic/SupplierManagement.tsx",
+      "module": "basic",
+      "page": "supplier-management",
+      "buttonCount": 7,
+      "formCount": 1,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "basic:supplier:view",
+          "perm_name": "supplier-management 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "basic:supplier:button",
+          "perm_name": "supplier-management 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "basic:supplier:form",
+          "perm_name": "supplier-management 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/bigscreen/DisplayBigScreen.tsx",
+      "module": "bigscreen",
+      "page": "display-big-screen",
+      "buttonCount": 0,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "bigscreen:display-big-screen:view",
+          "perm_name": "display-big-screen 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/bigscreen/EnergyBigScreen.tsx",
+      "module": "bigscreen",
+      "page": "energy-big-screen",
+      "buttonCount": 0,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "bigscreen:energy-big-screen:view",
+          "perm_name": "energy-big-screen 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/bigscreen/EnvironmentBigScreen.tsx",
+      "module": "bigscreen",
+      "page": "environment-big-screen",
+      "buttonCount": 0,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "bigscreen:environment-big-screen:view",
+          "perm_name": "environment-big-screen 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/bigscreen/ManagementBigScreen.tsx",
+      "module": "bigscreen",
+      "page": "management-big-screen",
+      "buttonCount": 0,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "bigscreen:management-big-screen:view",
+          "perm_name": "management-big-screen 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/bigscreen/ProductionBigScreen.tsx",
+      "module": "bigscreen",
+      "page": "production-big-screen",
+      "buttonCount": 0,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "bigscreen:production-big-screen:view",
+          "perm_name": "production-big-screen 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/bigscreen/QualityBigScreen.tsx",
+      "module": "bigscreen",
+      "page": "quality-big-screen",
+      "buttonCount": 0,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "bigscreen:quality-big-screen:view",
+          "perm_name": "quality-big-screen 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/bigscreen/shared/constants.ts",
+      "module": "bigscreen",
+      "page": "constants",
+      "buttonCount": 0,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "bigscreen:constants:view",
+          "perm_name": "constants 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/bigscreen/shared/index.ts",
+      "module": "bigscreen",
+      "page": "index",
+      "buttonCount": 0,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "bigscreen:index:view",
+          "perm_name": "index 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/bigscreen/shared/useECharts.ts",
+      "module": "bigscreen",
+      "page": "use-echarts",
+      "buttonCount": 0,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "bigscreen:use-echarts:view",
+          "perm_name": "use-echarts 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/device/DeviceCalibration.tsx",
+      "module": "device",
+      "page": "device-calibration",
+      "buttonCount": 16,
+      "formCount": 2,
+      "uploadCount": 1,
+      "suggestedPermissions": [
+        {
+          "perm_code": "device:device-calibration:view",
+          "perm_name": "device-calibration 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "device:device-calibration:button",
+          "perm_name": "device-calibration 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "device:device-calibration:form",
+          "perm_name": "device-calibration 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        },
+        {
+          "perm_code": "device:device-calibration:upload",
+          "perm_name": "device-calibration 上传",
+          "perm_type": 4,
+          "perm_type_desc": "上传控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/device/DeviceDashboard.tsx",
+      "module": "device",
+      "page": "device-dashboard",
+      "buttonCount": 1,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "device:device-dashboard:view",
+          "perm_name": "device-dashboard 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "device:device-dashboard:button",
+          "perm_name": "device-dashboard 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/device/DeviceDocument.tsx",
+      "module": "device",
+      "page": "device-document",
+      "buttonCount": 12,
+      "formCount": 2,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "device:device-document:view",
+          "perm_name": "device-document 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "device:device-document:button",
+          "perm_name": "device-document 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "device:device-document:form",
+          "perm_name": "device-document 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/device/DeviceFault.tsx",
+      "module": "device",
+      "page": "device-fault",
+      "buttonCount": 13,
+      "formCount": 4,
+      "uploadCount": 2,
+      "suggestedPermissions": [
+        {
+          "perm_code": "device:device-fault:view",
+          "perm_name": "device-fault 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "device:device-fault:button",
+          "perm_name": "device-fault 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "device:device-fault:form",
+          "perm_name": "device-fault 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        },
+        {
+          "perm_code": "device:device-fault:upload",
+          "perm_name": "device-fault 上传",
+          "perm_type": 4,
+          "perm_type_desc": "上传控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/device/DeviceMaintenanceHistory.tsx",
+      "module": "device",
+      "page": "device-maintenance-history",
+      "buttonCount": 3,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "device:device-maintenance-history:view",
+          "perm_name": "device-maintenance-history 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "device:device-maintenance-history:button",
+          "perm_name": "device-maintenance-history 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/device/DeviceMaintenanceMatrix.tsx",
+      "module": "device",
+      "page": "device-maintenance-matrix",
+      "buttonCount": 3,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "device:device-maintenance-matrix:view",
+          "perm_name": "device-maintenance-matrix 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "device:device-maintenance-matrix:button",
+          "perm_name": "device-maintenance-matrix 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/device/DeviceMaintenancePrint.tsx",
+      "module": "device",
+      "page": "device-maintenance-print",
+      "buttonCount": 3,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "device:device-maintenance-print:view",
+          "perm_name": "device-maintenance-print 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "device:device-maintenance-print:button",
+          "perm_name": "device-maintenance-print 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/device/DeviceMaintenanceStandardDetail.tsx",
+      "module": "device",
+      "page": "device-maintenance-standard-detail",
+      "buttonCount": 11,
+      "formCount": 2,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "device:device-maintenance-standard:view",
+          "perm_name": "device-maintenance-standard-detail 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "device:device-maintenance-standard:button",
+          "perm_name": "device-maintenance-standard-detail 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "device:device-maintenance-standard:form",
+          "perm_name": "device-maintenance-standard-detail 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/device/DeviceMaintenanceStandardList.tsx",
+      "module": "device",
+      "page": "device-maintenance-standard-list",
+      "buttonCount": 8,
+      "formCount": 1,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "device:device-maintenance-standard:view",
+          "perm_name": "device-maintenance-standard-list 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "device:device-maintenance-standard:button",
+          "perm_name": "device-maintenance-standard-list 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "device:device-maintenance-standard:form",
+          "perm_name": "device-maintenance-standard-list 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/device/DeviceMaintenanceUnified.tsx",
+      "module": "device",
+      "page": "device-maintenance-unified",
+      "buttonCount": 8,
+      "formCount": 1,
+      "uploadCount": 1,
+      "suggestedPermissions": [
+        {
+          "perm_code": "device:device-maintenance-unified:view",
+          "perm_name": "device-maintenance-unified 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "device:device-maintenance-unified:button",
+          "perm_name": "device-maintenance-unified 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "device:device-maintenance-unified:form",
+          "perm_name": "device-maintenance-unified 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        },
+        {
+          "perm_code": "device:device-maintenance-unified:upload",
+          "perm_name": "device-maintenance-unified 上传",
+          "perm_type": 4,
+          "perm_type_desc": "上传控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/device/DeviceManagement.tsx",
+      "module": "device",
+      "page": "device-management",
+      "buttonCount": 0,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "device:device:view",
+          "perm_name": "device-management 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/device/DeviceOEE.tsx",
+      "module": "device",
+      "page": "device-oee",
+      "buttonCount": 0,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "device:device-oee:view",
+          "perm_name": "device-oee 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/device/DeviceSparePart.tsx",
+      "module": "device",
+      "page": "device-spare-part",
+      "buttonCount": 8,
+      "formCount": 4,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "device:device-spare-part:view",
+          "perm_name": "device-spare-part 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "device:device-spare-part:button",
+          "perm_name": "device-spare-part 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "device:device-spare-part:form",
+          "perm_name": "device-spare-part 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/iam/BizStatusRulePage.tsx",
+      "module": "iam",
+      "page": "biz-status-rule-page",
+      "buttonCount": 4,
+      "formCount": 1,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "iam:biz-status-rule:view",
+          "perm_name": "biz-status-rule-page 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "iam:biz-status-rule:button",
+          "perm_name": "biz-status-rule-page 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "iam:biz-status-rule:form",
+          "perm_name": "biz-status-rule-page 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/iam/BusinessObjScanPage.tsx",
+      "module": "iam",
+      "page": "business-obj-scan-page",
+      "buttonCount": 2,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "iam:business-obj-scan:view",
+          "perm_name": "business-obj-scan-page 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "iam:business-obj-scan:button",
+          "perm_name": "business-obj-scan-page 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/iam/BusinessObjectPage.tsx",
+      "module": "iam",
+      "page": "business-object-page",
+      "buttonCount": 0,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "iam:business-object:view",
+          "perm_name": "business-object-page 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/iam/CacheManagementPage.tsx",
+      "module": "iam",
+      "page": "cache-management-page",
+      "buttonCount": 2,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "iam:cache-management:view",
+          "perm_name": "cache-management-page 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "iam:cache-management:button",
+          "perm_name": "cache-management-page 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/iam/DataDimScanPage.tsx",
+      "module": "iam",
+      "page": "data-dim-scan-page",
+      "buttonCount": 2,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "iam:data-dim-scan:view",
+          "perm_name": "data-dim-scan-page 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "iam:data-dim-scan:button",
+          "perm_name": "data-dim-scan-page 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/iam/DataDimensionPage.tsx",
+      "module": "iam",
+      "page": "data-dimension-page",
+      "buttonCount": 0,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "iam:data-dimension:view",
+          "perm_name": "data-dimension-page 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/iam/DataScopePage.tsx",
+      "module": "iam",
+      "page": "data-scope-page",
+      "buttonCount": 4,
+      "formCount": 1,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "iam:data-scope:view",
+          "perm_name": "data-scope-page 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "iam:data-scope:button",
+          "perm_name": "data-scope-page 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "iam:data-scope:form",
+          "perm_name": "data-scope-page 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/iam/PermissionAuditPage.tsx",
+      "module": "iam",
+      "page": "permission-audit-page",
+      "buttonCount": 3,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "iam:permission-audit:view",
+          "perm_name": "permission-audit-page 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "iam:permission-audit:button",
+          "perm_name": "permission-audit-page 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/iam/SimpleCrudPage.tsx",
+      "module": "iam",
+      "page": "simple-crud-page",
+      "buttonCount": 6,
+      "formCount": 2,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "iam:simple-crud:view",
+          "perm_name": "simple-crud-page 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "iam:simple-crud:button",
+          "perm_name": "simple-crud-page 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "iam:simple-crud:form",
+          "perm_name": "simple-crud-page 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/production/OrderManagement.tsx",
+      "module": "production",
+      "page": "order-management",
+      "buttonCount": 14,
+      "formCount": 2,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "production:order:view",
+          "perm_name": "order-management 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "production:order:button",
+          "perm_name": "order-management 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "production:order:form",
+          "perm_name": "order-management 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/production/ProcessReporting.tsx",
+      "module": "production",
+      "page": "process-reporting",
+      "buttonCount": 6,
+      "formCount": 0,
+      "uploadCount": 1,
+      "suggestedPermissions": [
+        {
+          "perm_code": "production:process-reporting:view",
+          "perm_name": "process-reporting 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "production:process-reporting:button",
+          "perm_name": "process-reporting 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "production:process-reporting:upload",
+          "perm_name": "process-reporting 上传",
+          "perm_type": 4,
+          "perm_type_desc": "上传控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/production/ProductionSettings.tsx",
+      "module": "production",
+      "page": "production-settings",
+      "buttonCount": 6,
+      "formCount": 2,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "production:production-settings:view",
+          "perm_name": "production-settings 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "production:production-settings:button",
+          "perm_name": "production-settings 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "production:production-settings:form",
+          "perm_name": "production-settings 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/production/constants.ts",
+      "module": "production",
+      "page": "constants",
+      "buttonCount": 0,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "production:constants:view",
+          "perm_name": "constants 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/production/exceptionColumns.tsx",
+      "module": "production",
+      "page": "exception-columns",
+      "buttonCount": 5,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "production:exception-columns:view",
+          "perm_name": "exception-columns 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "production:exception-columns:button",
+          "perm_name": "exception-columns 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/production/hooks/useReportDetailRecords.ts",
+      "module": "production",
+      "page": "use-report-detail-records",
+      "buttonCount": 0,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "production:use-report-detail-records:view",
+          "perm_name": "use-report-detail-records 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/production/manpowerColumns.tsx",
+      "module": "production",
+      "page": "manpower-columns",
+      "buttonCount": 0,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "production:manpower-columns:view",
+          "perm_name": "manpower-columns 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/production/processColumns.tsx",
+      "module": "production",
+      "page": "process-columns",
+      "buttonCount": 4,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "production:process-columns:view",
+          "perm_name": "process-columns 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "production:process-columns:button",
+          "perm_name": "process-columns 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/production/reportStats.ts",
+      "module": "production",
+      "page": "report-stats",
+      "buttonCount": 0,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "production:report-stats:view",
+          "perm_name": "report-stats 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/production/types.ts",
+      "module": "production",
+      "page": "types",
+      "buttonCount": 0,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "production:types:view",
+          "perm_name": "types 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/quality/ComplaintManagement.tsx",
+      "module": "quality",
+      "page": "complaint-management",
+      "buttonCount": 6,
+      "formCount": 2,
+      "uploadCount": 1,
+      "suggestedPermissions": [
+        {
+          "perm_code": "quality:complaint:view",
+          "perm_name": "complaint-management 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "quality:complaint:button",
+          "perm_name": "complaint-management 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "quality:complaint:form",
+          "perm_name": "complaint-management 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        },
+        {
+          "perm_code": "quality:complaint:upload",
+          "perm_name": "complaint-management 上传",
+          "perm_type": 4,
+          "perm_type_desc": "上传控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/quality/EnvironmentInspection.tsx",
+      "module": "quality",
+      "page": "environment-inspection",
+      "buttonCount": 21,
+      "formCount": 4,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "quality:environment-inspection:view",
+          "perm_name": "environment-inspection 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "quality:environment-inspection:button",
+          "perm_name": "environment-inspection 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "quality:environment-inspection:form",
+          "perm_name": "environment-inspection 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/quality/FinishedInspection.tsx",
+      "module": "quality",
+      "page": "finished-inspection",
+      "buttonCount": 1,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "quality:finished-inspection:view",
+          "perm_name": "finished-inspection 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "quality:finished-inspection:button",
+          "perm_name": "finished-inspection 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/quality/IncomingInspection.tsx",
+      "module": "quality",
+      "page": "incoming-inspection",
+      "buttonCount": 13,
+      "formCount": 1,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "quality:incoming-inspection:view",
+          "perm_name": "incoming-inspection 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "quality:incoming-inspection:button",
+          "perm_name": "incoming-inspection 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "quality:incoming-inspection:form",
+          "perm_name": "incoming-inspection 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/quality/InspectionStandard.tsx",
+      "module": "quality",
+      "page": "inspection-standard",
+      "buttonCount": 7,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "quality:inspection-standard:view",
+          "perm_name": "inspection-standard 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "quality:inspection-standard:button",
+          "perm_name": "inspection-standard 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/quality/InspectionStandardForm.tsx",
+      "module": "quality",
+      "page": "inspection-standard-form",
+      "buttonCount": 10,
+      "formCount": 2,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "quality:inspection-standard:view",
+          "perm_name": "inspection-standard-form 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "quality:inspection-standard:button",
+          "perm_name": "inspection-standard-form 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "quality:inspection-standard:form",
+          "perm_name": "inspection-standard-form 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/quality/InstrumentManagement.tsx",
+      "module": "quality",
+      "page": "instrument-management",
+      "buttonCount": 10,
+      "formCount": 2,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "quality:instrument:view",
+          "perm_name": "instrument-management 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "quality:instrument:button",
+          "perm_name": "instrument-management 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "quality:instrument:form",
+          "perm_name": "instrument-management 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/quality/MicrobeInspection.tsx",
+      "module": "quality",
+      "page": "microbe-inspection",
+      "buttonCount": 13,
+      "formCount": 2,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "quality:microbe-inspection:view",
+          "perm_name": "microbe-inspection 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "quality:microbe-inspection:button",
+          "perm_name": "microbe-inspection 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "quality:microbe-inspection:form",
+          "perm_name": "microbe-inspection 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/quality/ProcessInspection.tsx",
+      "module": "quality",
+      "page": "process-inspection",
+      "buttonCount": 4,
+      "formCount": 1,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "quality:process-inspection:view",
+          "perm_name": "process-inspection 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "quality:process-inspection:button",
+          "perm_name": "process-inspection 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "quality:process-inspection:form",
+          "perm_name": "process-inspection 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/quality/ProductInspection.tsx",
+      "module": "quality",
+      "page": "product-inspection",
+      "buttonCount": 14,
+      "formCount": 2,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "quality:product-inspection:view",
+          "perm_name": "product-inspection 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "quality:product-inspection:button",
+          "perm_name": "product-inspection 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "quality:product-inspection:form",
+          "perm_name": "product-inspection 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/quality/SupplierComplaint.tsx",
+      "module": "quality",
+      "page": "supplier-complaint",
+      "buttonCount": 10,
+      "formCount": 3,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "quality:supplier-complaint:view",
+          "perm_name": "supplier-complaint 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "quality:supplier-complaint:button",
+          "perm_name": "supplier-complaint 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "quality:supplier-complaint:form",
+          "perm_name": "supplier-complaint 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/report/DailyReport.tsx",
+      "module": "report",
+      "page": "daily-report",
+      "buttonCount": 4,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "report:daily-report:view",
+          "perm_name": "daily-report 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "report:daily-report:button",
+          "perm_name": "daily-report 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/report/EfficiencyReport.tsx",
+      "module": "report",
+      "page": "efficiency-report",
+      "buttonCount": 3,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "report:efficiency-report:view",
+          "perm_name": "efficiency-report 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "report:efficiency-report:button",
+          "perm_name": "efficiency-report 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/report/ExceptionReport.tsx",
+      "module": "report",
+      "page": "exception-report",
+      "buttonCount": 3,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "report:exception-report:view",
+          "perm_name": "exception-report 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "report:exception-report:button",
+          "perm_name": "exception-report 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/report/MonthlyReport.tsx",
+      "module": "report",
+      "page": "monthly-report",
+      "buttonCount": 3,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "report:monthly-report:view",
+          "perm_name": "monthly-report 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "report:monthly-report:button",
+          "perm_name": "monthly-report 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/report/ProductionReport.tsx",
+      "module": "report",
+      "page": "production-report",
+      "buttonCount": 4,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "report:production-report:view",
+          "perm_name": "production-report 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "report:production-report:button",
+          "perm_name": "production-report 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/report/QualityReport.tsx",
+      "module": "report",
+      "page": "quality-report",
+      "buttonCount": 3,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "report:quality-report:view",
+          "perm_name": "quality-report 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "report:quality-report:button",
+          "perm_name": "quality-report 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/system/DataDictionary.tsx",
+      "module": "system",
+      "page": "data-dictionary",
+      "buttonCount": 5,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "system:data-dictionary:view",
+          "perm_name": "data-dictionary 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "system:data-dictionary:button",
+          "perm_name": "data-dictionary 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/system/MenuManagement.tsx",
+      "module": "system",
+      "page": "menu-management",
+      "buttonCount": 4,
+      "formCount": 1,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "system:menu:view",
+          "perm_name": "menu-management 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "system:menu:button",
+          "perm_name": "menu-management 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "system:menu:form",
+          "perm_name": "menu-management 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/system/OperationLogs.tsx",
+      "module": "system",
+      "page": "operation-logs",
+      "buttonCount": 0,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "system:operation-logs:view",
+          "perm_name": "operation-logs 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/system/RoleManagement.tsx",
+      "module": "system",
+      "page": "role-management",
+      "buttonCount": 4,
+      "formCount": 1,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "system:role:view",
+          "perm_name": "role-management 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "system:role:button",
+          "perm_name": "role-management 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "system:role:form",
+          "perm_name": "role-management 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/system/RolePermissionConfig.tsx",
+      "module": "system",
+      "page": "role-permission-config",
+      "buttonCount": 3,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "system:role-permission:view",
+          "perm_name": "role-permission-config 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "system:role-permission:button",
+          "perm_name": "role-permission-config 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/system/SystemConfig.tsx",
+      "module": "system",
+      "page": "system-config",
+      "buttonCount": 0,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "system:system:view",
+          "perm_name": "system-config 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/system/SystemLogs.tsx",
+      "module": "system",
+      "page": "system-logs",
+      "buttonCount": 1,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "system:system-logs:view",
+          "perm_name": "system-logs 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "system:system-logs:button",
+          "perm_name": "system-logs 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/system/UserExtPermissionModal.tsx",
+      "module": "system",
+      "page": "user-ext-permission-modal",
+      "buttonCount": 6,
+      "formCount": 0,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "system:user-ext-permission-modal:view",
+          "perm_name": "user-ext-permission-modal 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "system:user-ext-permission-modal:button",
+          "perm_name": "user-ext-permission-modal 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        }
+      ]
+    },
+    {
+      "file": "src/pages/system/UserManagement.tsx",
+      "module": "system",
+      "page": "user-management",
+      "buttonCount": 6,
+      "formCount": 1,
+      "uploadCount": 0,
+      "suggestedPermissions": [
+        {
+          "perm_code": "system:user:view",
+          "perm_name": "user-management 查看",
+          "perm_type": 1,
+          "perm_type_desc": "页面查看"
+        },
+        {
+          "perm_code": "system:user:button",
+          "perm_name": "user-management 按钮",
+          "perm_type": 2,
+          "perm_type_desc": "页面按钮"
+        },
+        {
+          "perm_code": "system:user:form",
+          "perm_name": "user-management 表单",
+          "perm_type": 3,
+          "perm_type_desc": "表单控件"
+        }
+      ]
+    }
+  ]
+}
