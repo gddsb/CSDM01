@@ -1,0 +1,4 @@
+[
+  "002-add-material-fk.sql",
+  "003-add-performance-indexes.sql"
+]
