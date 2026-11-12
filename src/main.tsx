@@ -93,6 +93,39 @@ const ScheduledTaskPage = lazy(() => import('./pages/auto/ScheduledTaskPage'))
 
 dayjs.locale('zh-cn')
 
+// —— Service Worker 版本守卫 ——
+// vite-plugin-pwa 会自动注册 SW，但 Android WebView 对 SW 更新不敏感：
+// 新 SW 部署后，旧 precache 里的旧 JS 仍会被 serve，用户看不到 H5 更新。
+// 这里在启动时比对 localStorage 里记录的 APP_BUILD 和编译期注入的 __APP_BUILD__，
+// 不一致就 unregister 所有 SW + 硬刷新，让浏览器拉全新 dist。
+void (function swVersionGuard() {
+  try {
+    const APP_BUILD = Number((globalThis as any).__APP_BUILD__ || '0')
+    const KEY = 'mes_build_version'
+    const LAST = Number(localStorage.getItem(KEY) || '0')
+    if (LAST > 0 && APP_BUILD > 0 && APP_BUILD !== LAST) {
+      // 版本变了 → 强制清 SW + 刷新
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((regs) => {
+          regs.forEach(r => r.unregister())
+          // 清除所有 caches（workbox 可能用不同 cacheName）
+          caches.keys().then((names) => names.forEach(n => caches.delete(n)))
+        }).finally(() => {
+          localStorage.setItem(KEY, String(APP_BUILD))
+          // 延迟 1s 让 unregister 先生效
+          setTimeout(() => window.location.replace(window.location.pathname + window.location.search), 500)
+        })
+      } else {
+        localStorage.setItem(KEY, String(APP_BUILD))
+        window.location.reload()
+      }
+    } else if (APP_BUILD > 0) {
+      // 首次启动或版本没变，只记当前版本
+      localStorage.setItem(KEY, String(APP_BUILD))
+    }
+  } catch { /* 静默：localStorage 不可用等边缘情况 */ }
+})()
+
 // 启动时探测状态栏高度：原生插件 → env() 估测 → 24px 兜底
 // 在 React 渲染前调用，让 CSS --sat 变量在首屏 paint 就有正确值
 void initStatusBarHeight()
