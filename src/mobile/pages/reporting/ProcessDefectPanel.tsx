@@ -52,9 +52,19 @@ function parseImages(raw: unknown): string[] {
 export function ProcessDefectPanel({
   report, activeProcessId, editable, defectTypes, allDefects, setAllDefects, onDirtyChange,
 }: Props) {
-  // 1. 按当前工序过滤记录
+  // 1. 按当前工序过滤记录 + 按时间倒序（最新在前）
   const processDefects = useMemo(
-    () => allDefects.filter(d => String(d.process_id) === String(activeProcessId)),
+    () => allDefects
+      .filter(d => String(d.process_id) === String(activeProcessId))
+      .sort((a, b) => {
+        // 优先 createdAt 倒序，无 createdAt 时用 defect_id 倒序
+        const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0
+        const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0
+        if (ta !== tb) return tb - ta
+        const idA = Number(a.defect_id ?? a.id ?? 0)
+        const idB = Number(b.defect_id ?? b.id ?? 0)
+        return idB - idA
+      }),
     [allDefects, activeProcessId],
   )
 
@@ -201,7 +211,64 @@ export function ProcessDefectPanel({
 
   return (
     <div>
-      {/* 只读列表 */}
+      {/* ===== 顶部：新增按钮 + 新增表单 ===== */}
+      {editable && activeProcessId && expandedId !== '__new__' && (
+        <Button size="mini" color="primary" block onClick={startAdd}>
+          ➕ 新增不良
+        </Button>
+      )}
+      {expandedId === '__new__' && (
+        <div style={{ borderTop: '1px dashed var(--m-border)', paddingTop: 10, marginTop: 6 }}>
+          {/* 紧凑一行：类型 + 单位 + 数量 + 保存/取消 */}
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <select
+              value={draft.defect_type_id || ''}
+              onChange={(e) => {
+                const id = e.target.value ? Number(e.target.value) : null
+                const t = filteredTypes.find(x => x.defect_id === id)
+                const defaultUnit = (t?.available_units && t.available_units[0]) || t?.defect_unit || ''
+                setDraft(d => ({ ...d, defect_type_id: id, unit: defaultUnit }))
+              }}
+              style={{ flex: 2, minWidth: 110, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
+            >
+              <option value="">不良类型</option>
+              {filteredTypes.map(t => (
+                <option key={t.defect_id} value={t.defect_id}>{t.defect_code} {t.defect_name}</option>
+              ))}
+            </select>
+            <select
+              value={draft.unit || ''}
+              onChange={(e) => setDraft(d => ({ ...d, unit: e.target.value }))}
+              style={{ flex: 1, minWidth: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
+            >
+              <option value="">单位</option>
+              {getUnitOptions(draft.defect_type_id).map(u => <option key={u} value={u}>{u}</option>)}
+            </select>
+            <input
+              type="number" min={0} value={draft.quantity || ''}
+              onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
+              placeholder="数量"
+              style={{ width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
+            />
+            <Button size="mini" color="primary" onClick={handleSave} style={{ flexShrink: 0 }}>保存</Button>
+            <Button size="mini" fill="outline" onClick={cancelEdit} style={{ flexShrink: 0 }}>取消</Button>
+          </div>
+          {/* 不良图片 */}
+          <div style={{ marginTop: 8 }}>
+            <ProcessImageUploader
+              reportNo={report.report_no} category="defect"
+              value={Array.isArray(draft.defect_images) ? draft.defect_images : []}
+              onChange={(urls) => setDraft(d => ({ ...d, defect_images: urls }))}
+              label="不良图片"
+            />
+          </div>
+        </div>
+      )}
+      {expandedId === '__new__' && processDefects.length > 0 && (
+        <div style={{ borderTop: '1px solid var(--m-border)', marginTop: 6 }} />
+      )}
+
+      {/* ===== 记录列表（时间倒序，最新在前）===== */}
       {processDefects.length > 0 && processDefects.map((row) => {
         const rowKey = row.defect_id || row.id
         const isExpanded = expandedId === rowKey
@@ -289,60 +356,6 @@ export function ProcessDefectPanel({
         <div style={{ textAlign: 'center', padding: 20, color: 'var(--m-text-3)', fontSize: 12 }}>— 该工序暂无不良记录 —</div>
       )}
 
-      {/* 新增按钮 */}
-      {editable && activeProcessId && expandedId !== '__new__' && (
-        <Button size="mini" color="primary" block onClick={startAdd} style={{ marginTop: 6 }}>
-          ➕ 新增不良
-        </Button>
-      )}
-      {/* 新增展开表单 */}
-      {expandedId === '__new__' && (
-        <div style={{ borderTop: '1px dashed var(--m-border)', paddingTop: 10, marginTop: 6 }}>
-          {/* 紧凑一行：类型 + 单位 + 数量 + 保存/取消 */}
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-            <select
-              value={draft.defect_type_id || ''}
-              onChange={(e) => {
-                const id = e.target.value ? Number(e.target.value) : null
-                const t = filteredTypes.find(x => x.defect_id === id)
-                const defaultUnit = (t?.available_units && t.available_units[0]) || t?.defect_unit || ''
-                setDraft(d => ({ ...d, defect_type_id: id, unit: defaultUnit }))
-              }}
-              style={{ flex: 2, minWidth: 110, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
-            >
-              <option value="">不良类型</option>
-              {filteredTypes.map(t => (
-                <option key={t.defect_id} value={t.defect_id}>{t.defect_code} {t.defect_name}</option>
-              ))}
-            </select>
-            <select
-              value={draft.unit || ''}
-              onChange={(e) => setDraft(d => ({ ...d, unit: e.target.value }))}
-              style={{ flex: 1, minWidth: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
-            >
-              <option value="">单位</option>
-              {getUnitOptions(draft.defect_type_id).map(u => <option key={u} value={u}>{u}</option>)}
-            </select>
-            <input
-              type="number" min={0} value={draft.quantity || ''}
-              onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
-              placeholder="数量"
-              style={{ width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
-            />
-            <Button size="mini" color="primary" onClick={handleSave} style={{ flexShrink: 0 }}>保存</Button>
-            <Button size="mini" fill="outline" onClick={cancelEdit} style={{ flexShrink: 0 }}>取消</Button>
-          </div>
-          {/* 不良图片 */}
-          <div style={{ marginTop: 8 }}>
-            <ProcessImageUploader
-              reportNo={report.report_no} category="defect"
-              value={Array.isArray(draft.defect_images) ? draft.defect_images : []}
-              onChange={(urls) => setDraft(d => ({ ...d, defect_images: urls }))}
-              label="不良图片"
-            />
-          </div>
-        </div>
-      )}
       {!activeProcessId && (
         <div style={{ textAlign: 'center', padding: 20, color: 'var(--m-text-3)', fontSize: 12 }}>请先选择工序</div>
       )}

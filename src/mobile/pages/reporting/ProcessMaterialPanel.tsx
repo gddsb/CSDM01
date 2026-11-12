@@ -64,7 +64,17 @@ export function ProcessMaterialPanel({
   report, activeProcessId, editable, materials, allMaterials, setAllMaterials, onDirtyChange,
 }: Props) {
   const processMaterials = useMemo(
-    () => allMaterials.filter(m => String(m.process_id) === String(activeProcessId)),
+    () => allMaterials
+      .filter(m => String(m.process_id) === String(activeProcessId))
+      .sort((a, b) => {
+        // 优先 createdAt 倒序，无 createdAt 时用 material_id 倒序
+        const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0
+        const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0
+        if (ta !== tb) return tb - ta
+        const idA = Number(a.material_id ?? a.id ?? 0)
+        const idB = Number(b.material_id ?? b.id ?? 0)
+        return idB - idA
+      }),
     [allMaterials, activeProcessId],
   )
 
@@ -362,7 +372,22 @@ export function ProcessMaterialPanel({
 
   return (
     <div>
-      {/* ========== 只读列表 ========== */}
+      {/* ===== 顶部：新增按钮 + 新增表单 ===== */}
+      {editable && activeProcessId && expandedId !== '__new__' && (
+        <Button size="mini" color="primary" block onClick={startAdd}>
+          ➕ 新增投料
+        </Button>
+      )}
+      {expandedId === '__new__' && (
+        <div style={{ borderTop: '1px dashed var(--m-border)', paddingTop: 10, marginTop: 6 }}>
+          {formRow1}{formRow2}{formImage}
+        </div>
+      )}
+      {expandedId === '__new__' && processMaterials.length > 0 && (
+        <div style={{ borderTop: '1px solid var(--m-border)', marginTop: 6 }} />
+      )}
+
+      {/* ===== 记录列表（时间倒序，最新在前）===== */}
       {processMaterials.length > 0 && processMaterials.map((row) => {
         const rowKey = row.material_id || row.id
         const isExpanded = expandedId === rowKey
@@ -403,19 +428,6 @@ export function ProcessMaterialPanel({
 
       {processMaterials.length === 0 && (
         <div style={{ textAlign: 'center', padding: 20, color: 'var(--m-text-3)', fontSize: 12 }}>— 该工序暂无投料记录 —</div>
-      )}
-
-      {editable && activeProcessId && expandedId !== '__new__' && (
-        <Button size="mini" color="primary" block onClick={startAdd} style={{ marginTop: 6 }}>
-          ➕ 新增投料
-        </Button>
-      )}
-
-      {/* ========== 新增投料表单 ========== */}
-      {expandedId === '__new__' && (
-        <div style={{ borderTop: '1px dashed var(--m-border)', paddingTop: 10, marginTop: 6 }}>
-          {formRow1}{formRow2}{formImage}
-        </div>
       )}
 
       {!activeProcessId && (

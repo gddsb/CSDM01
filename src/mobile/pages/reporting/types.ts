@@ -90,6 +90,7 @@ export interface DefectRow {
   quantity: number
   unit?: string
   defect_images?: string | string[]   // JSON 字段，存图片 URL 数组
+  createdAt?: string                  // 后端 record_time（Sequelize createdAt 映射）
   _isNew?: boolean
 }
 
@@ -108,6 +109,7 @@ export interface MaterialRow {
   package_no?: string
   quantity: number
   label_images?: string | string[]
+  createdAt?: string                  // 后端 record_time（Sequelize createdAt 映射）
   _isNew?: boolean
 }
 
