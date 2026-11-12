@@ -17,6 +17,7 @@ import { useOfflineQueue } from './hooks/useOfflineQueue'
 import { useKeyboardAvoidance } from './hooks/useKeyboardAvoidance'
 import { useEdgeSwipeBack } from './hooks/useEdgeSwipeBack'
 import { runBackHandler } from './utils/backInterceptor'
+import { checkAndPromptUpdate } from './utils/app-updater'
 import api from '../utils/api'
 
 /** 后端 icon 字符串 → antd-mobile-icons 组件 */
@@ -78,6 +79,14 @@ export function MobileLayout() {
       .catch(() => { if (active) setMenu(null); })
       .finally(() => { if (active) setLoading(false); })
     return () => { active = false }
+  }, [])
+
+  // 冷启动自动检查 APP 更新（每日限流，不骚扰）
+  useEffect(() => {
+    const isAndroid = /android/i.test(navigator.userAgent) ||
+      (window as any).Capacitor?.getPlatform?.() === 'android'
+    if (!isAndroid) return
+    checkAndPromptUpdate(false).catch(() => { /* 静默失败 */ })
   }, [])
 
   // 权限过滤每个 Tab 的子项
