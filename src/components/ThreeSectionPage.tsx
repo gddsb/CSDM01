@@ -47,6 +47,8 @@ interface ThreeSectionPageProps {
   onSearch?: () => void
   onReset?: () => void
   onFilterChange?: (field: string, value: unknown) => void
+  /** 信息区折叠状态持久化 key；不传则不持久化（默认展开） */
+  storageKey?: string
 }
 
 export default function ThreeSectionPage({
@@ -61,8 +63,13 @@ export default function ThreeSectionPage({
   onSearch,
   onReset,
   onFilterChange,
+  storageKey,
 }: ThreeSectionPageProps) {
-  const [collapsed, setCollapsed] = useState(false)
+  const collapsedStorageKey = storageKey ? `daman_mes_section_collapsed_${storageKey}` : null
+  const [collapsed, setCollapsed] = useState(() => {
+    if (!collapsedStorageKey) return false
+    return localStorage.getItem(collapsedStorageKey) === '1'
+  })
 
   const renderFilterItem = (f: FilterItem) => {
     if (!f) return null
@@ -154,7 +161,11 @@ export default function ThreeSectionPage({
         {!collapsed && extra}
 
         {(stats?.length > 0 || extra) && (
-          <div className="section-info-toggle" onClick={() => setCollapsed(c => !c)}>
+          <div className="section-info-toggle" onClick={() => setCollapsed(c => {
+            const next = !c
+            if (collapsedStorageKey) localStorage.setItem(collapsedStorageKey, next ? '1' : '0')
+            return next
+          })}>
             {collapsed ? <DownOutlined /> : <UpOutlined />}
           </div>
         )}

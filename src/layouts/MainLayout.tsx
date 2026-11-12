@@ -56,7 +56,12 @@ export default function MainLayout() {
   const { currentUser, logout, updateUser, themeKey, cycleTheme, systemConfig, loadSystemConfig } = useApp()
   const navigate = useNavigate()
   const location = useLocation()
-  const [collapsed, setCollapsed] = useState(false)
+  // 左侧菜单收起/展开：按用户维度持久化
+  const collapsedStorageKey = currentUser?.user_id ? `daman_mes_sider_collapsed_${currentUser.user_id}` : null
+  const [collapsed, setCollapsed] = useState(() => {
+    if (!collapsedStorageKey) return false
+    return localStorage.getItem(collapsedStorageKey) === '1'
+  })
   const [profileOpen, setProfileOpen] = useState(false)
   const [pwdOpen, setPwdOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
@@ -524,7 +529,13 @@ export default function MainLayout() {
           <Space>
             <Button
               type="text"
-              onClick={() => setCollapsed(!collapsed)}
+              onClick={() => {
+                setCollapsed(v => {
+                  const next = !v
+                  if (collapsedStorageKey) localStorage.setItem(collapsedStorageKey, next ? '1' : '0')
+                  return next
+                })
+              }}
               icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             />
             {companyName && <Text strong style={{ color: 'var(--color-primary)' }}>{companyName}</Text>}
