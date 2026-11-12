@@ -370,7 +370,7 @@ export default function MobileOrderManagement() {
             style={{ flex: 1, marginBottom: 0 }}
           />
           <Button color="primary" fill="solid" loading={syncing} onClick={onSync} style={{ flexShrink: 0, height: 40, borderRadius: 10 }}>
-            <span style={{ marginRight: 4 }}>🔄</span>同步
+            订单同步
           </Button>
         </div>
 
@@ -451,7 +451,6 @@ export default function MobileOrderManagement() {
                   {/* 需求4: 第一行 — 订单号 + 报工数量 + 状态 */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                     <div style={{ fontWeight: 700, fontSize: 15, color: '#222', flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      <span style={{ fontSize: 14, color: 'var(--m-text-3)', marginRight: 4 }}>📍</span>
                       {o.line_name && (
                         <span style={{ fontSize: 13, color: 'var(--m-text-3)', fontWeight: 400, marginRight: 4 }}>（{o.line_name}）</span>
                       )}
@@ -491,44 +490,42 @@ export default function MobileOrderManagement() {
                     </div>
                   )}
 
-                  {/* 需求2: 料品 + 操作按钮 同一行 */}
-                  <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ flex: 1, minWidth: 0, lineHeight: 1.4 }}>
-                      <div style={{ fontSize: 13, color: 'var(--m-text-2)', wordBreak: 'break-all' }}>
-                        <span style={{ color: 'var(--m-text-3)' }}>{o.material_code}</span>
-                        {o.material_name && (
-                          <span style={{ marginLeft: 6 }}>· {o.material_name}</span>
-                        )}
-                        {o.specification && (
-                          <span style={{ marginLeft: 4, color: 'var(--m-text-3)', fontSize: 12 }}>（{o.specification}）</span>
-                        )}
-                      </div>
+                  {/* 料品信息（独立一行） */}
+                  <div style={{ marginTop: 10, lineHeight: 1.4 }}>
+                    <div style={{ fontSize: 13, color: 'var(--m-text-2)', wordBreak: 'break-all' }}>
+                      <span style={{ color: 'var(--m-text-3)' }}>{o.material_code}</span>
+                      {o.material_name && (
+                        <span style={{ marginLeft: 6 }}>· {o.material_name}</span>
+                      )}
+                      {o.specification && (
+                        <span style={{ marginLeft: 4, color: 'var(--m-text-3)', fontSize: 12 }}>（{o.specification}）</span>
+                      )}
                     </div>
+                  </div>
 
-                    {/* 右侧: 操作按钮（右对齐，不换行） */}
-                    <div style={{ flexShrink: 0, display: 'flex', gap: 6 }} onClick={(e) => e.stopPropagation()}>
-                      {isCreated && (
-                        <Button size="mini" color="primary" onClick={() => onRelease(o)}>下发</Button>
-                      )}
-                      {isReleased && (
+                  {/* 操作按钮：整行右对齐，按钮间距 12px 防误触 */}
+                  <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end', gap: 12 }} onClick={(e) => e.stopPropagation()}>
+                    {isCreated && (
+                      <Button size="mini" color="primary" onClick={() => onRelease(o)}>下发</Button>
+                    )}
+                    {isReleased && (
+                      <Button
+                        size="mini" color="primary"
+                        onClick={() => onStart(o)}
+                      >开工</Button>
+                    )}
+                    {isStarted && (
+                      <>
                         <Button
-                          size="mini" color="primary"
-                          onClick={() => onStart(o)}
-                        >开工</Button>
-                      )}
-                      {isStarted && (
-                        <>
-                          <Button
-                            size="mini" color="primary" fill="solid"
-                            onClick={() => navigate(`/m/process-reporting?orderId=${o.order_id}`)}
-                          >继续报工</Button>
-                          <Button size="mini" color="warning" onClick={() => onFinish(o)}>完工</Button>
-                        </>
-                      )}
-                      {isDone && (
-                        <Button size="mini" fill="outline" onClick={() => onClose(o)}>关闭</Button>
-                      )}
-                    </div>
+                          size="mini" color="primary" fill="solid"
+                          onClick={() => navigate(`/m/process-reporting?orderId=${o.order_id}`)}
+                        >继续报工</Button>
+                        <Button size="mini" color="warning" onClick={() => onFinish(o)}>完工</Button>
+                      </>
+                    )}
+                    {isDone && (
+                      <Button size="mini" fill="outline" onClick={() => onClose(o)}>关闭</Button>
+                    )}
                   </div>
                 </div>
               )
