@@ -38,6 +38,10 @@ export interface ServerRelease {
   apkSize: number
   checksum: string
   updateNotes: string
+  /** 服务端发布版本的 git 短哈希（7 位） */
+  gitSha?: string
+  /** 发布时间（ISO 字符串，UTC） */
+  publishedAt?: string
 }
 
 let releaseCache: { at: number; data: ServerRelease } | null = null
@@ -126,6 +130,8 @@ async function fetchRelease(forceRefresh = false): Promise<ServerRelease | null>
         apkSize: Number(data.apkSize) || 0,
         checksum: String(data.checksum || ''),
         updateNotes: String(data.updateNotes || ''),
+        gitSha: data.gitSha ? String(data.gitSha) : undefined,
+        publishedAt: data.publishedAt ? String(data.publishedAt) : undefined,
       }
       releaseCache = { at: Date.now(), data: release }
 
@@ -313,6 +319,65 @@ export type UpdateCheckResult =
   | 'failed'       // 版本信息拉取或安装失败
   | 'unsupported'  // 非 Android 环境
 
+/** 格式化发布时间（UTC ISO → 北京时间 YYYY-MM-DD HH:mm） */
+function formatPublishedDate(iso?: string): string {
+  if (!iso) return ''
+  try {
+    const d = new Date(iso)
+    if (isNaN(d.getTime())) return ''
+    // 转北京时间
+    return new Date(d.getTime() + 8 * 3600 * 1000)
+      .toISOString()
+      .replace('T', ' ')
+      .slice(0, 16)
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * 格式化弹窗内容：
+ *   - 版本对比
+ *   - 发布时间（如有）
+ *   - 更新说明（按行拆，每行前加 •）
+ *   - git 短哈希（如有）
+ */
+function buildDialogContent(release: ServerRelease): string {
+  const lines: string[] = []
+
+  // 版本对比
+  lines.push(
+    `当前版本: v${LOCAL_VERSION} · build${LOCAL_BUILD}`,
+    `最新版本: v${release.version} · build${release.build}`,
+  )
+
+  // 发布时间
+  const pubDate = formatPublishedDate(release.publishedAt)
+  if (pubDate) lines.push(`发布时间: ${pubDate}`)
+
+  // 更新说明（按行拆，每行前加 •）
+  if (release.updateNotes) {
+    lines.push('', '📋 更新说明')
+    // 支持 \n 换行，也支持 \r\n
+    const noteLines = release.updateNotes
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean)
+    if (noteLines.length > 0) {
+      for (const nl of noteLines) {
+        lines.push(`• ${nl}`)
+      }
+    }
+  }
+
+  // git 短哈希
+  if (release.gitSha) {
+    lines.push('', `Commit: ${release.gitSha}`)
+  }
+
+  return lines.join('\n')
+}
+
 /**
  * 检查并提示更新（唯一入口）
  * @param userInitiated 用户主动点击"检查更新"：忽略当天限流与"稍后"记忆，强制刷新服务端数据
@@ -333,8 +398,7 @@ export async function checkAndPromptUpdate(userInitiated = false): Promise<Updat
   }
   localStorage.setItem(PROMPT_DATE_KEY, beijingDate())
 
-  const notes = release.updateNotes ? `\n\n${release.updateNotes}` : ''
-  const content = `当前 v${LOCAL_VERSION} · build${LOCAL_BUILD}\n最新 v${release.version} · build${release.build}${notes}`
+  const content = buildDialogContent(release)
 
   if (release.forceUpdate) {
     // 强制更新：只有"立即更新"一个按钮，不可取消

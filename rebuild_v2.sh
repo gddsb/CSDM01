@@ -32,6 +32,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# 把 --notes 中的 \n 转义序列转成真实换行（方便用户传多行）
+if [[ -n "$UPDATE_NOTES" ]] && [[ "$UPDATE_NOTES" == *\\n* ]]; then
+  UPDATE_NOTES=$(printf '%b' "$UPDATE_NOTES")
+fi
+
 # ============================================================
 # Step 1: Git pull（双源 fallback）
 #   先试 origin（github.com 直连），超时/失败自动切 origin-backup（gh-proxy 镜像）
@@ -125,6 +130,7 @@ echo "=== 2. 版本号动态计算 ==="
 RELEASES_FILE="server/data/releases.json"
 EXISTING_VERSION=""
 EXISTING_BUILD=""
+EXISTING_GITSHA=""
 if [[ -f "$RELEASES_FILE" ]]; then
   EXISTING_VERSION=$(python3 -c "
 import json, sys
@@ -138,6 +144,13 @@ import json, sys
 try:
   d = json.load(open('$RELEASES_FILE'))
   print(d.get('buildNumber',''))
+except: print('')
+" 2>/dev/null)
+  EXISTING_GITSHA=$(python3 -c "
+import json, sys
+try:
+  d = json.load(open('$RELEASES_FILE'))
+  print(d.get('gitSha',''))
 except: print('')
 " 2>/dev/null)
 fi
@@ -165,14 +178,37 @@ fi
 echo "  version  = ${VERSION}   (package.json=${PKG_VERSION}  releases=${EXISTING_VERSION:-无})"
 echo "  buildNum = ${BUILD}   (releases 旧值=${EXISTING_BUILD:-无} → +1)"
 echo "  gitSha   = ${SHORT_SHA}"
+[[ -n "$EXISTING_GITSHA" ]] && echo "  上版 git = ${EXISTING_GITSHA}"
 
 # 2d. APK 文件名（和 android/app/build.gradle 规则对齐）
 APK_NAME="milk-can-mes-v${VERSION}-build${BUILD}-debug.apk"
 APK_DOWNLOAD_URL="http://43.138.218.55/download/${APK_NAME}"
 
-# 2e. 更新说明（用户传的优先，否则自动生成）
+# 2e. 更新说明：用户传的优先，否则自动从 git log 归纳
 if [[ -z "$UPDATE_NOTES" ]]; then
-  UPDATE_NOTES="v${VERSION} build${BUILD} - 常规重建 · ${SHORT_SHA}"
+  # 自动归纳：从上一版 release 的 gitSha 到 HEAD 的 commit message
+  START_SHA=""
+  if [[ -n "$EXISTING_GITSHA" ]] && git cat-file -t "$EXISTING_GITSHA" >/dev/null 2>&1; then
+    START_SHA="$EXISTING_GITSHA"
+  fi
+  if [[ -n "$START_SHA" ]]; then
+    # 从上次发布到 HEAD 的 commit，取 oneline 去掉 hash，最多 15 条
+    UPDATE_NOTES=$(git log --oneline "${START_SHA}..HEAD" 2>/dev/null \
+      | sed 's/^[a-f0-9]* //' \
+      | head -15 \
+      | sed '/^$/d')
+  fi
+  # 兜底：没有有效的 START_SHA 时，用最近 5 条 commit
+  if [[ -z "$UPDATE_NOTES" ]]; then
+    UPDATE_NOTES=$(git log --oneline -5 2>/dev/null | sed 's/^[a-f0-9]* //')
+  fi
+  # 真的啥都没有就给个占位
+  if [[ -z "$UPDATE_NOTES" ]]; then
+    UPDATE_NOTES="v${VERSION} build${BUILD} - 常规重建"
+  fi
+  echo "  更新说明  = [自动归纳 ${EXISTING_GITSHA:+from }${START_SHA:-git log -5}] "
+else
+  echo "  更新说明  = [用户指定] "
 fi
 
 # ============================================================
@@ -181,23 +217,31 @@ fi
 echo ""
 echo "=== 3. 写入 releases.json ==="
 mkdir -p server/data
-cat > server/data/releases.json << ENDJSON
-{
-  "version": "${VERSION}",
-  "buildNumber": ${BUILD},
-  "forceUpdate": false,
-  "downloadUrl": "${APK_DOWNLOAD_URL}",
-  "downloadUrlIos": "",
-  "apkSize": 0,
-  "ipaSize": 0,
-  "appId": "com.daman.milkcanmes",
-  "bundleId": "com.daman.milkcanmes",
-  "updateNotes": "${UPDATE_NOTES}",
-  "publishedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "gitSha": "${SHORT_SHA}"
+# 把 UPDATE_NOTES 写入临时文件（避免 bash/python 引号嵌套地狱）
+_NOTES_TMP=$(mktemp)
+printf '%s' "$UPDATE_NOTES" > "$_NOTES_TMP"
+python3 -c "
+import json
+with open('$_NOTES_TMP','r',encoding='utf-8') as f: _notes = f.read().strip()
+d = {
+  'version': '${VERSION}',
+  'buildNumber': ${BUILD},
+  'forceUpdate': False,
+  'downloadUrl': '${APK_DOWNLOAD_URL}',
+  'downloadUrlIos': '',
+  'apkSize': 0,
+  'ipaSize': 0,
+  'appId': 'com.daman.milkcanmes',
+  'bundleId': 'com.daman.milkcanmes',
+  'updateNotes': _notes,
+  'publishedAt': '$(date -u +%Y-%m-%dT%H:%M:%SZ)',
+  'gitSha': '${SHORT_SHA}'
 }
-ENDJSON
-echo "  $(cat server/data/releases.json | head -3)"
+with open('server/data/releases.json', 'w', encoding='utf-8') as f:
+  json.dump(d, f, ensure_ascii=False, indent=2)
+"
+rm -f "$_NOTES_TMP"
+echo "  $(head -3 server/data/releases.json)"
 
 # ============================================================
 # Step 4: Vite 构建（用 npx vite build 跳过 tsc 历史遗留错误）
@@ -320,24 +364,35 @@ else
   cp "$APK_DEBUG" download/milk-can-mes-latest.apk
 fi
 
-# 回填实际 apkSize + downloadUrl（release 存在时已在上分支更新为 release URL）
-cat > server/data/releases.json << ENDJSON
-{
-  "version": "${VERSION}",
-  "buildNumber": ${BUILD},
-  "forceUpdate": false,
-  "downloadUrl": "${APK_DOWNLOAD_URL}",
-  "downloadUrlIos": "",
-  "apkSize": ${APK_SIZE},
-  "checksum": "${APK_SHA256}",
-  "ipaSize": 0,
-  "appId": "com.daman.milkcanmes",
-  "bundleId": "com.daman.milkcanmes",
-  "updateNotes": "${UPDATE_NOTES}",
-  "publishedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "gitSha": "${SHORT_SHA}"
-}
-ENDJSON
+# 回填实际 apkSize + downloadUrl + checksum（release 存在时已在上分支更新为 release URL）
+_NOTES_TMP=$(mktemp)
+printf '%s' "$UPDATE_NOTES" > "$_NOTES_TMP"
+python3 -c "
+import json
+with open('$_NOTES_TMP','r',encoding='utf-8') as f: _notes = f.read().strip()
+try:
+  with open('server/data/releases.json','r',encoding='utf-8') as f:
+    d = json.load(f)
+except: d = {}
+d.update({
+  'version': '${VERSION}',
+  'buildNumber': ${BUILD},
+  'forceUpdate': False,
+  'downloadUrl': '${APK_DOWNLOAD_URL}',
+  'downloadUrlIos': '',
+  'apkSize': ${APK_SIZE},
+  'checksum': '${APK_SHA256}',
+  'ipaSize': 0,
+  'appId': 'com.daman.milkcanmes',
+  'bundleId': 'com.daman.milkcanmes',
+  'updateNotes': _notes,
+  'publishedAt': '$(date -u +%Y-%m-%dT%H:%M:%SZ)',
+  'gitSha': '${SHORT_SHA}'
+})
+with open('server/data/releases.json','w',encoding='utf-8') as f:
+  json.dump(d, f, ensure_ascii=False, indent=2)
+"
+rm -f "$_NOTES_TMP"
 
 # ============================================================
 # Step 6.5: DB Migration（由 app.ts 启动时通过 Umzug 自动执行 src/migrations/*.sql）
