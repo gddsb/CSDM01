@@ -4,8 +4,9 @@
  * 数据源：GET /api/daily-report?date=
  * 日期选择 onConfirm → 自动触发重新加载，无刷新按钮
  */
-import { useEffect, useState, useCallback, useRef } from 'react'
-import { Button, DatePicker } from 'antd-mobile'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
+import { Button, CalendarPicker } from 'antd-mobile'
+import type { ReactNode } from 'react'
 import api from '../../utils/api'
 import dayjs from 'dayjs'
 
@@ -50,11 +51,14 @@ function fmt(n: number | null | undefined, d = 0): string {
 
 export default function MobileDailyCard() {
   const [date, setDate] = useState(dayjs().format('YYYY-MM-DD'))
-  // antd-mobile 的 DatePicker 使用原生 Date（PickerDate），不是 Dayjs
   const [pickerValue, setPickerValue] = useState<Date>(new Date())
+  const [pickerVisible, setPickerVisible] = useState(false)
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<DailyReportData | null>(null)
-  const loadingRef = useRef(false) // 防止并发
+  const loadingRef = useRef(false)
+
+  // 日期标记缓存: Map<"2026-11", Set<"YYYY-MM-DD">>
+  const [dateMarkers, setDateMarkers] = useState<Record<string, Set<string>>>({})
 
   const load = useCallback(async (targetDate: string) => {
     if (loadingRef.current) return
@@ -70,41 +74,104 @@ export default function MobileDailyCard() {
     }
   }, [])
 
-  // date 变化 → 自动加载（onConfirm 后 setDate 触发）
   useEffect(() => { load(date) }, [date, load])
+
+  // 加载某月的开工日期标记
+  const loadDateMarkers = useCallback(async (year: number, month: number) => {
+    const cacheKey = `${year}-${String(month).padStart(2, '0')}`
+    if (dateMarkers[cacheKey]) return
+    try {
+      const r = await api.get('/daily-report/dates', { params: { year, month } })
+      const arr: string[] = r.data?.data || r.data || []
+      setDateMarkers(prev => ({ ...prev, [cacheKey]: new Set(arr) }))
+    } catch { /* 静默 */ }
+  }, [dateMarkers])
+
+  // 初始化：加载当前月 + 上一个月 + 下一个月的标记
+  useEffect(() => {
+    const now = new Date()
+    const y = now.getFullYear(), m = now.getMonth() + 1
+    loadDateMarkers(y, m)
+    const prev = new Date(y, m - 2, 1)
+    loadDateMarkers(prev.getFullYear(), prev.getMonth() + 1)
+    const next = new Date(y, m, 1)
+    loadDateMarkers(next.getFullYear(), next.getMonth() + 1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // 合并所有标记为一个 Set
+  const allMarkerDates = useMemo(() => {
+    const s = new Set<string>()
+    for (const set of Object.values(dateMarkers)) {
+      for (const d of set) s.add(d)
+    }
+    return s
+  }, [dateMarkers])
+
+  // 月份切换时懒加载对应标记（CalendarPicker 没有 onPageChange prop，在 renderDate 里按需触发）
+  const handlePageChange = useCallback((year: number, month: number) => {
+    loadDateMarkers(year, month)
+  }, [loadDateMarkers])
+
+  // 自定义日期渲染：如果是标记日期，底部加小圆点
+  // 同时按需触发未缓存月份的标记加载
+  const renderDate = (date: Date) => {
+    const y = date.getFullYear(), m = date.getMonth() + 1
+    const cacheKey = `${y}-${String(m).padStart(2, '0')}`
+    if (!dateMarkers[cacheKey]) {
+      // 异步加载，不阻塞渲染
+      setTimeout(() => handlePageChange(y, m), 0)
+    }
+    const key = `${y}-${String(m).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    const hasMark = allMarkerDates.has(key)
+    return (
+      <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {date.getDate()}
+        {hasMark && (
+          <span style={{
+            position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)',
+            width: 5, height: 5, borderRadius: '50%',
+            background: 'var(--brand-color)',
+          }} />
+        )}
+      </div>
+    )
+  }
 
   return (
     <div style={{ padding: 12 }}>
-      {/* 筛选 —— 日期选择 onConfirm 后自动重新加载；无刷新按钮 */}
+      {/* 筛选 —— 点击日期按钮弹出 CalendarPicker */}
       <div style={{
         display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12,
         background: 'var(--m-surface)', padding: 10, borderRadius: 10,
       }}>
-        <DatePicker
-          value={pickerValue}
-          min={new Date(2024, 0, 1)}
-          max={new Date()}
-          onConfirm={(v) => {
-            setPickerValue(v)
-            const formatted = dayjs(v).format('YYYY-MM-DD')
-            setDate(formatted) // 触发 useEffect → load()
-          }}
+        <Button
+          size="mini"
+          onClick={() => setPickerVisible(true)}
+          style={{ padding: '0 10px' }}
         >
-          {(_, actions) => (
-            <Button
-              size="mini"
-              onClick={(e) => {
-                e.stopPropagation()
-                actions.open()
-              }}
-              style={{ padding: '0 10px' }}
-            >
-              📅 {date}
-            </Button>
-          )}
-        </DatePicker>
+          📅 {date}
+        </Button>
         {loading && <span style={{ fontSize: 11, color: '#1890ff', marginLeft: 4 }}>加载中…</span>}
       </div>
+
+      {/* 日历弹窗 */}
+      <CalendarPicker
+        visible={pickerVisible}
+        selectionMode="single"
+        value={pickerValue}
+        min={new Date(2024, 0, 1)}
+        max={new Date()}
+        renderDate={renderDate}
+        onClose={() => setPickerVisible(false)}
+        onConfirm={(val) => {
+          if (!val) return
+          setPickerValue(val)
+          const formatted = dayjs(val).format('YYYY-MM-DD')
+          setDate(formatted)
+          setPickerVisible(false)
+        }}
+      />
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: 60, color: 'var(--m-text-3)' }}>加载中…</div>
