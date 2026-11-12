@@ -163,6 +163,7 @@ except: old = {}
 d = {
   'version': '${VERSION}',
   'buildNumber': ${BUILD},
+  'apkBuild': old.get('apkBuild', old.get('buildNumber', 0)),  # APK 实际编译版本（build-apk.sh 才会更新）
   'forceUpdate': False,
   'downloadUrl': old.get('downloadUrl', '${APK_DOWNLOAD_URL}'),
   'downloadUrlIos': '',

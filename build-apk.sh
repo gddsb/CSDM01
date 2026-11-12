@@ -130,6 +130,7 @@ with open('$RELEASES_FILE','r',encoding='utf-8') as f:
 d['downloadUrl'] = '${APK_DOWNLOAD_URL}'
 d['apkSize'] = ${APK_SIZE}
 d['checksum'] = '${APK_SHA256}'
+d['apkBuild'] = d.get('buildNumber', ${BUILD})  # 标记 APK 实际编译的 buildNumber
 d['publishedAt'] = '$(date -u +%Y-%m-%dT%H:%M:%SZ)'
 with open('$RELEASES_FILE','w',encoding='utf-8') as f:
   json.dump(d, f, ensure_ascii=False, indent=2)

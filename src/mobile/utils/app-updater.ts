@@ -32,6 +32,8 @@ const PROMPT_DATE_KEY = 'mes_update_prompted_date'
 export interface ServerRelease {
   version: string
   build: number
+  /** APK 实际编译的 buildNumber（deploy.sh 只 +1 buildNumber 不动 apkBuild，build-apk.sh 才回填） */
+  apkBuild?: number
   forceUpdate: boolean
   downloadUrl: string
   downloadUrlIos: string
@@ -75,12 +77,15 @@ function compareVersion(a: string, b: string): number {
   return 0
 }
 
-/** 是否需要更新：先比 version，相等再比 buildNumber */
+/** 是否需要更新：先比 version，相等再比 apkBuild（APK 实际编译版本），再 fallback 到 buildNumber */
 function shouldUpdate(server: ServerRelease): boolean {
   const cmp = compareVersion(server.version, LOCAL_VERSION)
   if (cmp > 0) return true
   if (cmp < 0) return false
-  return server.build > LOCAL_BUILD
+  // apkBuild 是 APK 实际编译的 buildNumber。deploy.sh 只 +1 buildNumber 不动 apkBuild，
+  // 所以 apkBuild ≤ buildNumber。用 apkBuild 判断才能避免 H5 更新了但 APK 没编的情况下误弹窗。
+  const effectiveBuild = server.apkBuild ?? server.build
+  return effectiveBuild > LOCAL_BUILD
 }
 
 /** Capacitor Android Filesystem + InstallApk 原生插件动态加载 */
@@ -124,6 +129,7 @@ async function fetchRelease(forceRefresh = false): Promise<ServerRelease | null>
       const release: ServerRelease = {
         version: String(data.version),
         build: Number(data.buildNumber),
+        apkBuild: data.apkBuild ? Number(data.apkBuild) : undefined,
         forceUpdate: Boolean(data.forceUpdate),
         downloadUrl: String(data.downloadUrl || DEFAULT_APK_URL),
         downloadUrlIos: String(data.downloadUrlIos || ''),

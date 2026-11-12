@@ -18,6 +18,8 @@ const router = Router()
 interface ReleaseInfo {
   version: string
   buildNumber: number
+  /** APK 实际编译的 buildNumber（deploy.sh 只 +1 buildNumber 不动 apkBuild，build-apk.sh 才回填） */
+  apkBuild?: number
   forceUpdate: boolean
   downloadUrl: string
   updateNotes: string
