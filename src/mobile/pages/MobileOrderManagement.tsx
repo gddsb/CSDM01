@@ -424,11 +424,28 @@ export default function MobileOrderManagement() {
             {orders.map((o) => {
               const statusColor = STATUS_COLOR[o.status || ''] || 'var(--brand-color-warning)'
               const statusText = o.status || ''
-              /* 需求5: 状态操作 — 严格对齐 PC 端 */
               const isCreated = o.status === '开立'
               const isReleased = o.status === '下发'
               const isStarted = o.status === '开工'
               const isDone = o.status === '完工'
+
+              // 进度条数值
+              const planned = o.planned_qty ?? 0
+              const finished = o.finished_qty ?? 0
+              const pct = planned > 0 ? Math.min(100, (finished / planned) * 100) : 0
+              const pctLabel = planned > 0 ? `${Math.round(pct)}%` : '—'
+
+              // 状态徽章 + 按钮的共用样式
+              const statusBadge = (
+                <span style={{
+                  fontSize: 11, padding: '3px 10px', borderRadius: 12, flexShrink: 0,
+                  background: statusColor + '15', color: statusColor,
+                  fontWeight: 600, border: `1px solid ${statusColor}44`,
+                  letterSpacing: 0.5,
+                }}>
+                  {statusText}
+                </span>
+              )
 
               return (
                 <div
@@ -448,49 +465,20 @@ export default function MobileOrderManagement() {
                     (e.currentTarget as HTMLElement).style.transform = 'scale(1)'
                   }}
                 >
-                  {/* 需求4: 第一行 — 订单号 + 报工数量 + 状态 */}
+                  {/* ===== Line 1: 开立状态 → 订单号+徽章+下发按钮同一行；其它状态 → 订单号+徽章 ===== */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                     <div style={{ fontWeight: 700, fontSize: 15, color: '#222', flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {o.line_name && (
-                        <span style={{ fontSize: 13, color: 'var(--m-text-3)', fontWeight: 400, marginRight: 4 }}>（{o.line_name}）</span>
-                      )}
                       {o.order_no}
-                      {(o.planned_qty ?? 0) > 0 && (
-                        <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--m-text-3)', marginLeft: 8 }}>
-                          报工 <b style={{ color: statusColor, fontSize: 14 }}>{fmtInt(o.finished_qty)}</b>
-                          <span style={{ color: 'var(--m-text-3)' }}> / {fmtInt(o.planned_qty)}</span>
-                        </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                      {statusBadge}
+                      {isCreated && (
+                        <Button size="mini" color="primary" onClick={() => onRelease(o)}>下发</Button>
                       )}
                     </div>
-                    <span style={{
-                      fontSize: 11, padding: '3px 10px', borderRadius: 12, flexShrink: 0,
-                      background: statusColor + '15', color: statusColor,
-                      fontWeight: 600, border: `1px solid ${statusColor}44`,
-                      letterSpacing: 0.5,
-                    }}>
-                      {statusText}
-                    </span>
                   </div>
 
-                  {/* 进度条（保持在顶部两行之间） */}
-                  {(o.planned_qty ?? 0) > 0 && (o.finished_qty ?? 0) > 0 && (
-                    <div style={{ marginTop: 8, marginBottom: 2 }}>
-                      <div style={{
-                        background: 'var(--m-surface-2)', borderRadius: 6, height: 5, overflow: 'hidden',
-                        boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.06)',
-                      }}>
-                        <div style={{
-                          background: `linear-gradient(90deg, ${statusColor}, ${statusColor}cc)`,
-                          height: '100%',
-                          width: `${Math.min(100, ((o.finished_qty ?? 0) / Math.max(1, o.planned_qty ?? 1)) * 100)}%`,
-                          transition: 'width 0.3s',
-                          borderRadius: 6,
-                        }} />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 料品信息（独立一行） */}
+                  {/* ===== Line 2: 料品信息（所有状态都显示）===== */}
                   <div style={{ marginTop: 10, lineHeight: 1.4 }}>
                     <div style={{ fontSize: 13, color: 'var(--m-text-2)', wordBreak: 'break-all' }}>
                       <span style={{ color: 'var(--m-text-3)' }}>{o.material_code}</span>
@@ -503,30 +491,58 @@ export default function MobileOrderManagement() {
                     </div>
                   </div>
 
-                  {/* 操作按钮：整行右对齐，按钮间距 12px 防误触 */}
-                  <div style={{ marginTop: 10, display: 'flex', justifyContent: 'flex-end', gap: 12 }} onClick={(e) => e.stopPropagation()}>
-                    {isCreated && (
-                      <Button size="mini" color="primary" onClick={() => onRelease(o)}>下发</Button>
-                    )}
-                    {isReleased && (
-                      <Button
-                        size="mini" color="primary"
-                        onClick={() => onStart(o)}
-                      >开工</Button>
-                    )}
-                    {isStarted && (
-                      <>
-                        <Button
-                          size="mini" color="primary" fill="solid"
-                          onClick={() => navigate(`/m/process-reporting?orderId=${o.order_id}`)}
-                        >继续报工</Button>
-                        <Button size="mini" color="warning" onClick={() => onFinish(o)}>完工</Button>
-                      </>
-                    )}
-                    {isDone && (
-                      <Button size="mini" fill="outline" onClick={() => onClose(o)}>关闭</Button>
-                    )}
-                  </div>
+                  {/* ===== Line 3: 进度条 + 彩色标签 + 操作按钮（仅非开立状态）===== */}
+                  {!isCreated && (
+                    <div
+                      style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* 进度条 */}
+                      <div style={{
+                        flex: 1, minWidth: 0,
+                        background: 'var(--m-surface-2)', borderRadius: 6, height: 6, overflow: 'hidden',
+                        boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.06)',
+                      }}>
+                        <div style={{
+                          background: pct > 0
+                            ? `linear-gradient(90deg, ${statusColor}, ${statusColor}cc)`
+                            : 'var(--m-border)',
+                          height: '100%',
+                          width: `${pct}%`,
+                          transition: 'width 0.3s',
+                          borderRadius: 6,
+                        }} />
+                      </div>
+
+                      {/* 数值 + 百分比（彩色） */}
+                      <span style={{
+                        fontSize: 12, fontWeight: 700, color: statusColor, whiteSpace: 'nowrap', flexShrink: 0,
+                      }}>
+                        {planned > 0 ? `${fmtInt(finished)}/${fmtInt(planned)}` : '—'}
+                      </span>
+                      <span style={{
+                        fontSize: 12, fontWeight: 700, color: statusColor, whiteSpace: 'nowrap', flexShrink: 0, width: 36, textAlign: 'right',
+                      }}>
+                        {pctLabel}
+                      </span>
+
+                      {/* 操作按钮组 */}
+                      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                        {isReleased && (
+                          <Button size="mini" color="primary" onClick={() => onStart(o)}>开工</Button>
+                        )}
+                        {isStarted && (
+                          <>
+                            <Button size="mini" color="primary" fill="solid" onClick={() => navigate(`/m/process-reporting?orderId=${o.order_id}`)}>继续报工</Button>
+                            <Button size="mini" color="warning" onClick={() => onFinish(o)}>完工</Button>
+                          </>
+                        )}
+                        {isDone && (
+                          <Button size="mini" fill="outline" onClick={() => onClose(o)}>关闭</Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )
             })}
