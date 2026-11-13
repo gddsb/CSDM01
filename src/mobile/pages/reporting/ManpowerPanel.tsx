@@ -31,9 +31,10 @@ interface Props {
 }
 
 const COUNT_STYLE: React.CSSProperties = {
-  flex: 1, padding: '10px 12px', borderRadius: 8,
+  padding: '4px 0', borderRadius: 6,
   border: '1px solid var(--m-border)', fontSize: 15,
   background: 'var(--m-surface)',
+  boxSizing: 'border-box', width: '100%',
 }
 
 // ========== 时间工具（无 dayjs 依赖，纯字符串处理） ==========
@@ -291,21 +292,23 @@ export function ManpowerPanel({
   const totalPeople = skilled + general + labor + other
 
   return (
-    <div>
+    <div style={{ boxSizing: 'border-box', overflow: 'hidden' }}>
       {/* ===== 顶部：开工时间 + 人员配置 ===== */}
       <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginBottom: 10 }}>
         🕐 开工时间: <b style={{ color: 'var(--m-text)' }}>{report.report_time ? fmtLocalDateTime(report.report_time).slice(0, 16).replace("T", " ") : '—'}</b>
         {report.finish_time && <span style={{ marginLeft: 8 }}>完工: <b style={{ color: 'var(--m-text)' }}>{fmtLocalDateTime(report.finish_time).slice(0, 16).replace("T", " ")}</b></span>}
         <span style={{ marginLeft: 10, color: 'var(--brand-color)' }}>总人数: <b>{totalPeople}</b></span>
       </div>
-      {/* 固定 4 列单行显示（label 在上，input 在下，紧凑排列） */}
+      {/* 固定 4 列单行 —— box-sizing:border-box 确保 padding+border 不撑破 1fr */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
+        gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
         gap: 6,
+        width: '100%',
+        boxSizing: 'border-box',
       }}>
         {rows.map(({ label, v, setV }) => (
-          <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
             <span style={{ fontSize: 11, color: 'var(--m-text-2)', textAlign: 'center', lineHeight: '16px' }}>{label}</span>
             <input
               type="number" min={0} maxLength={2}
@@ -317,7 +320,7 @@ export function ManpowerPanel({
               }}
               style={{
                 ...COUNT_STYLE,
-                padding: '5px 2px', fontSize: 15, textAlign: 'center',
+                textAlign: 'center',
                 background: editable ? 'var(--m-surface)' : 'var(--m-surface-2)',
               }}
             />
