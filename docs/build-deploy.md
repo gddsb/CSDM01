@@ -46,15 +46,36 @@ pnpm run typecheck
 
 ## 生产部署（prod: 43.138.218.55）
 
+### 流程红线（AGENTS.md E2/E3）
+
+| 步骤 | 自动/手动 | 说明 |
+|------|----------|------|
+| 改完代码 → deploy H5 | **自动** | 正常流程，每次改完都跑。deploy.sh 只动 H5 + buildNumber，不动 APK。 |
+| 编译 APK | **仅显式触发** | 用户明确说"编译 APK"/"构建 APK"/"打包 APP"才执行。**不要 deploy 完自动跑**（~4min 耗时）。 |
+
+### 命令
+
 ```bash
 # 日常 H5 部署（拉代码 + vite build + PM2 restart）
 bash deploy.sh
 # deploy.sh 只 +1 buildNumber，不动 apkBuild
 
 # APK 编译（需 ~4min，cap sync + gradle assembleRelease）
+# ⚠️ 仅用户明确要求时才执行
 bash build-apk.sh
 # build-apk.sh 回填 apkBuild + apkSize + checksum，不 +1 buildNumber
 ```
+
+### 部署完成后验证（deploy.sh 后自动做）
+- 生产服务器拉代码到最新
+- vite build 产物拷贝到 dist/
+- PM2 restart 后端
+- 手机浏览器/APK 打开，确认 JS bundle 已更新
+
+### APK 编译后验证（build-apk.sh 后自动做）
+- APK 产物上传到 prod download/ 目录
+- HTTP HEAD 验证 200 OK
+- 下载 APK 本地校验 SHA256 与生产机回填 checksum 一致
 
 > **生产服务器裸连 github.com:443 经常超时**。deploy.sh 已做双源 fallback（origin → origin-backup/gh-proxy），build-apk.sh 建议用 origin-backup。
 
