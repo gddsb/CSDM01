@@ -26,6 +26,18 @@ import type { ExceptionRow, ReportOrder } from './types'
 /** 用户可选异常类型（换型换线不在此，由开工自动生成） */
 const EXCEPTION_TYPES = ['设备故障', '质量异常', '待料', '工装调整', '其他']
 
+/** 排序：未结束永远第一条；已结束按 start_time 倒序（最新在上） */
+function sortExceptions(rows: ExceptionRow[]): ExceptionRow[] {
+  return [...rows].sort((a, b) => {
+    const aU = !a.end_time ? 0 : 1
+    const bU = !b.end_time ? 0 : 1
+    if (aU !== bU) return aU - bU
+    const aT = new Date((a.start_time || (a as any).createdAt || (a as any).record_time || 0) as any).getTime()
+    const bT = new Date((b.start_time || (b as any).createdAt || (b as any).record_time || 0) as any).getTime()
+    return bT - aT
+  })
+}
+
 interface DeviceOption {
   device_id: number
   device_code: string
@@ -70,16 +82,7 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
   const hasUnfinished = !!unfinishedRow
 
   // 排序：未结束的永远第一条；已结束的按 start_time 倒序（最新在上）
-  const sortedRows = useMemo(() => {
-    return [...rows].sort((a, b) => {
-      const aU = !a.end_time ? 0 : 1
-      const bU = !b.end_time ? 0 : 1
-      if (aU !== bU) return aU - bU
-      const aT = new Date((a.start_time || (a as any).createdAt || (a as any).record_time || 0) as any).getTime()
-      const bT = new Date((b.start_time || (b as any).createdAt || (b as any).record_time || 0) as any).getTime()
-      return bT - aT
-    })
-  }, [rows])
+  const sortedRows = useMemo(() => sortExceptions(rows), [rows])
 
   // 设备搜索（按 device_code / device_name）
   const filteredDevices = useMemo(() => {
@@ -115,7 +118,7 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
       // 前端不算 duration —— 后端 create 时 validateTimeRange 自动算（小时）
       const r: any = await api.post('/production/process-exceptions', payload)
       if (!r.success) throw new Error(r.message || '保存失败')
-      setRows(prev => [...prev, r.data])
+      setRows(prev => sortExceptions([...prev, r.data]))
       Toast.show({ content: '已添加', icon: 'success' })
       setDraft({})
       setDeviceKw('')
@@ -132,11 +135,11 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
       const r: any = await api.put(`/production/process-exceptions/${row.exception_id}`, { end_time: endTime })
       if (!r.success) throw new Error(r.message || '结束失败')
       const saved = r.data as any
-      setRows(prev => prev.map(r =>
+      setRows(prev => sortExceptions(prev.map(r =>
         (r.exception_id ?? r.id) === (row.exception_id ?? row.id)
           ? { ...r, ...saved }   // 完全信任后端返回
           : r,
-      ))
+      )))
       const mins = Math.round(Number(saved?.duration ?? 0) * 60)
       Toast.show({ content: `已结束（${mins} 分钟）`, icon: 'success' })
     } catch (e: any) {
