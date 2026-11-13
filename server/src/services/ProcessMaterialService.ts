@@ -6,7 +6,7 @@
  * 净投入校验：投入总额 - 退回总额 ≥ 0（按 report_order_id + process_id + bas_material_id 分组）
  *   每条记录 create/update 前后必须保证净投入不为负，防止"退回数量超过投入"。
  */
-import { Op, sequelize } from 'sequelize'
+import { Op } from 'sequelize'
 import { ProcessMaterial, Material } from '../models/index.js'
 import { MAX_PAGE_SIZE } from '../utils/response.js'
 import { AppError } from '../utils/error.js'
