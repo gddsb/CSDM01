@@ -6,6 +6,7 @@ import {
 } from '@ant-design/icons'
 import React, { useState } from 'react'
 import dayjs from 'dayjs'
+import { useApp } from '../contexts/AppContext'
 
 const { RangePicker } = DatePicker
 
@@ -65,7 +66,9 @@ export default function ThreeSectionPage({
   onFilterChange,
   storageKey,
 }: ThreeSectionPageProps) {
-  const collapsedStorageKey = storageKey ? `daman_mes_section_collapsed_${storageKey}` : null
+  const { currentUser } = useApp()
+  const userId = currentUser?.user_id
+  const collapsedStorageKey = storageKey ? `daman_mes_section_collapsed_${userId ?? 'anon'}_${storageKey}` : null
   const [collapsed, setCollapsed] = useState(() => {
     if (!collapsedStorageKey) return false
     return localStorage.getItem(collapsedStorageKey) === '1'

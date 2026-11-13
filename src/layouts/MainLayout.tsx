@@ -316,26 +316,57 @@ export default function MainLayout() {
     return result
   }, [builtMenuItems])
 
-  // useMemo: openKeys 只随 location.pathname + menuItems 变化
-  const openKeys = useMemo<string[]>(() => {
+  // —— 子菜单 openKeys 持久化（按用户隔离）——
+  const openKeysStorageKey = currentUser?.user_id ? `daman_mes_menu_openkeys_${currentUser.user_id}` : null
+  const [openKeys, setOpenKeys] = useState<string[]>(() => {
+    if (openKeysStorageKey) {
+      try {
+        const raw = localStorage.getItem(openKeysStorageKey)
+        if (raw) return JSON.parse(raw)
+      } catch { /* ignore */ }
+    }
+    return []
+  })
+
+  // location.pathname 变化时：确保当前路由所在的菜单组始终展开
+  useEffect(() => {
     const path = location.pathname
+    const activeKeys: string[] = []
     for (const item of menuItems) {
       if ('children' in item && item.children) {
         for (const child of item.children) {
-          if (!('key' in child)) continue
-          if (child.key === path) return [item.key as string]
+          if ('key' in child && child.key === path) { activeKeys.push(item.key as string); break }
           if ('children' in child && child.children) {
             for (const grandchild of child.children) {
-              if (!('key' in grandchild)) continue
-              if (path.startsWith(grandchild.key as string)) return [item.key as string, child.key as string]
+              if ('key' in grandchild && path.startsWith(grandchild.key as string)) {
+                activeKeys.push(item.key as string, child.key as string)
+              }
             }
           }
-          if (typeof child.key === 'string' && child.key.startsWith('/') && path.startsWith(child.key)) return [item.key as string]
+          if (typeof child.key === 'string' && child.key.startsWith('/') && path.startsWith(child.key)) {
+            activeKeys.push(item.key as string)
+          }
         }
       }
     }
-    return []
+    if (activeKeys.length > 0) {
+      setOpenKeys(prev => {
+        const merged = Array.from(new Set([...prev, ...activeKeys]))
+        return merged.length === prev.length && merged.every((k, i) => k === prev[i]) ? prev : merged
+      })
+    }
   }, [location.pathname, menuItems])
+
+  // openKeys 变化 → 写 localStorage（防抖）
+  const openKeysTimerRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (!openKeysStorageKey) return
+    if (openKeysTimerRef.current) window.clearTimeout(openKeysTimerRef.current)
+    openKeysTimerRef.current = window.setTimeout(() => {
+      localStorage.setItem(openKeysStorageKey, JSON.stringify(openKeys))
+    }, 200)
+    return () => { if (openKeysTimerRef.current) window.clearTimeout(openKeysTimerRef.current) }
+  }, [openKeys, openKeysStorageKey])
 
   // useMemo: selectedKeys 只随 location.pathname + menuItems 变化
   const selectedKeys = useMemo<string[]>(() => {
