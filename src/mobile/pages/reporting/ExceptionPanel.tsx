@@ -69,6 +69,18 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
   )
   const hasUnfinished = !!unfinishedRow
 
+  // 排序：未结束的永远第一条；已结束的按 start_time 倒序（最新在上）
+  const sortedRows = useMemo(() => {
+    return [...rows].sort((a, b) => {
+      const aU = !a.end_time ? 0 : 1
+      const bU = !b.end_time ? 0 : 1
+      if (aU !== bU) return aU - bU
+      const aT = new Date((a.start_time || (a as any).createdAt || (a as any).record_time || 0) as any).getTime()
+      const bT = new Date((b.start_time || (b as any).createdAt || (b as any).record_time || 0) as any).getTime()
+      return bT - aT
+    })
+  }, [rows])
+
   // 设备搜索（按 device_code / device_name）
   const filteredDevices = useMemo(() => {
     const kw = deviceKw.trim().toLowerCase()
@@ -275,7 +287,7 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
       )}
 
       {/* ===== 3. 列表 ===== */}
-      {rows.length > 0 && rows.map((row) => {
+      {sortedRows.length > 0 && sortedRows.map((row) => {
         const isUnfinished = !row.end_time
         const durationMins = Math.round(Number(row.duration ?? 0) * 60)
         return (
