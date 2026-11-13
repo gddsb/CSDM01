@@ -36,7 +36,6 @@ export function BatchTagPanel({ report, editable, onSaved }: Props) {
 
   const handleSave = useCallback(async () => {
     const trimmed = batch.trim()
-    if (!trimmed) { Toast.show({ content: '请填写生产批号', icon: 'fail', position: 'bottom' }); return }
     setSaving(true)
     try {
       await api.put(`/production/report-orders/${report.report_order_id}`, {
@@ -68,8 +67,8 @@ export function BatchTagPanel({ report, editable, onSaved }: Props) {
       <div style={boxStyle}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
           <div style={{ fontSize: 13, fontWeight: 600 }}>
-            🏷️ 生产批号 <span style={{ color: '#ff4d4f', fontSize: 12 }}>*</span>
-            <span style={{ fontSize: 11, color: 'var(--m-text-3)', fontWeight: 'normal', marginLeft: 6 }}>完工必填</span>
+            🏷️ 生产批号
+            <span style={{ fontSize: 11, color: 'var(--m-text-3)', fontWeight: 'normal', marginLeft: 6 }}>工单完工时必填</span>
           </div>
           {editable && (
             <Button

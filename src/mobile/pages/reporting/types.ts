@@ -124,6 +124,7 @@ export interface ScrapRow {
   defect_type?: string
   quantity: number
   unit?: string
+  createdAt?: string
   _isNew?: boolean
 }
 
