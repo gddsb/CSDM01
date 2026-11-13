@@ -39,7 +39,8 @@ export async function getDashboardTodos(user: any): Promise<DashboardTodos> {
   const hasWildcard = permCodes.has('*')
   const hasMaintView = hasWildcard || permCodes.has('device:maintenance') || permCodes.has('device:maintenance:view')
 
-  const ownerFilter: any = uid > 0
+  // 超级管理员（有 * 权限码）跳过负责人过滤，看全部；普通维护员只看自己负责/检查的
+  const ownerFilter: any = (!hasWildcard && uid > 0)
     ? { [Op.or]: [{ responsible_user_id: uid }, { inspector_user_id: uid }] }
     : {}
 
