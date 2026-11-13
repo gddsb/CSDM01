@@ -98,15 +98,29 @@ export function ManpowerPanel({ report, editable, manpower, setManpower, onDirty
         {report.finish_time && <span style={{ marginLeft: 8 }}>完工: <b style={{ color: 'var(--m-text)' }}>{fmtLocalDateTime(report.finish_time).slice(0, 16).replace("T", " ")}</b></span>}
         <span style={{ marginLeft: 10, color: 'var(--brand-color)' }}>总人数: <b>{totalPeople}</b></span>
       </div>
-      {/* 2×2 网格 */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+      {/* 自适应网格：宽屏一行 4 列，窄屏自动 2×2 */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(85px, 1fr))',
+        gap: 8,
+      }}>
         {rows.map(({ label, v, setV }) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, width: 'calc(50% - 4px)' }}>
-            <span style={{ fontSize: 12, color: 'var(--m-text-2)', flexShrink: 0, minWidth: 28 }}>{label}</span>
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ fontSize: 12, color: 'var(--m-text-2)', flexShrink: 0 }}>{label}</span>
             <input
-              type="number" min={0} value={v === 0 ? '' : v} placeholder="0" disabled={!editable}
-              onChange={(e) => setV(Number(e.target.value) || 0)}
-              style={{ ...COUNT_STYLE, flex: 1, padding: '8px 10px', fontSize: 14, background: editable ? 'var(--m-surface)' : 'var(--m-surface-2)' }}
+              type="number" min={0} maxLength={2}
+              value={v === 0 ? '' : v} placeholder="0" disabled={!editable}
+              onChange={(e) => {
+                // maxLength={2} 只拦截字符输入，onChange 还得兜底
+                const raw = e.target.value
+                if (raw.length > 2) return
+                setV(Number(raw) || 0)
+              }}
+              style={{
+                ...COUNT_STYLE, flex: 1, minWidth: 0,
+                padding: '6px 6px', fontSize: 14,
+                background: editable ? 'var(--m-surface)' : 'var(--m-surface-2)',
+              }}
             />
           </div>
         ))}
