@@ -98,16 +98,19 @@ export function ManpowerPanel({ report, editable, manpower, setManpower, onDirty
         {report.finish_time && <span style={{ marginLeft: 8 }}>完工: <b style={{ color: 'var(--m-text)' }}>{fmtLocalDateTime(report.finish_time).slice(0, 16).replace("T", " ")}</b></span>}
         <span style={{ marginLeft: 10, color: 'var(--brand-color)' }}>总人数: <b>{totalPeople}</b></span>
       </div>
-      {rows.map(({ label, v, setV }) => (
-        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0' }}>
-          <span style={{ width: 50, fontSize: 13, color: 'var(--m-text-2)' }}>{label}</span>
-          <input
-            type="number" min={0} value={v === 0 ? '' : v} placeholder="0" disabled={!editable}
-            onChange={(e) => setV(Number(e.target.value) || 0)}
-            style={{ ...COUNT_STYLE, background: editable ? 'var(--m-surface)' : 'var(--m-surface-2)' }}
-          />
-        </div>
-      ))}
+      {/* 2×2 网格 */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        {rows.map(({ label, v, setV }) => (
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, width: 'calc(50% - 4px)' }}>
+            <span style={{ fontSize: 12, color: 'var(--m-text-2)', flexShrink: 0, minWidth: 28 }}>{label}</span>
+            <input
+              type="number" min={0} value={v === 0 ? '' : v} placeholder="0" disabled={!editable}
+              onChange={(e) => setV(Number(e.target.value) || 0)}
+              style={{ ...COUNT_STYLE, flex: 1, padding: '8px 10px', fontSize: 14, background: editable ? 'var(--m-surface)' : 'var(--m-surface-2)' }}
+            />
+          </div>
+        ))}
+      </div>
       {editable && (
         <Button color="primary" size="small" block onClick={handleSave} disabled={!dirty} style={{ marginTop: 12 }}>
           💾 保存人员配置

@@ -161,61 +161,10 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
 
   return (
     <div>
-      {/* 列表 */}
-      {rows.length > 0 && rows.map((row) => {
-        const isUnfinished = !row.end_time
-        const durationMins = Math.round(Number(row.duration ?? 0) * 60)
-        return (
-          <div key={String(row.id)} style={{ padding: '10px 0', borderTop: '1px solid var(--m-border)' }}>
-            {/* 第一行：异常类型 + 设备 chip + 时长 + 操作按钮 */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 500, color: isUnfinished ? '#f5222d' : 'var(--m-text)' }}>
-                {row.exception_type || '—'}
-                {isUnfinished && <span style={{ fontSize: 11, color: 'var(--brand-color-danger)' }}>进行中</span>}
-                {row.exception_type === '设备故障' && row.device_name && (
-                  <span style={{ fontSize: 11, color: '#1890ff', background: 'var(--m-repairing-bg)', padding: '1px 6px', borderRadius: 4 }}>
-                    📡 {row.device_name}
-                  </span>
-                )}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                <span style={{ color: 'var(--brand-color-warning)', fontWeight: 600, fontSize: 13 }}>
-                  {isUnfinished ? '—' : `${durationMins}分钟`}
-                </span>
-                {editable && isUnfinished && (
-                  <Button size="mini" color="primary" onClick={() => handleFinish(row)}>结束</Button>
-                )}
-                {editable && isUnfinished && !(row.exception_type === '换型换线' && row.description?.includes('自动')) && (
-                  <Button size="mini" fill="outline" onClick={() => handleDel(row)}>删</Button>
-                )}
-              </div>
-            </div>
-            {/* 第二行：时间范围 */}
-            <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 3 }}>
-              {row.start_time ? fmtLocalDateTime(row.start_time).slice(5, 16) : '—'}
-              <span style={{ margin: '0 4px', opacity: 0.5 }}>→</span>
-              {row.end_time ? fmtLocalDateTime(row.end_time).slice(5, 16) : '至今'}
-            </div>
-            {/* 第三行：停机描述 */}
-            {row.description && (
-              <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>📝 {row.description}</div>
-            )}
-          </div>
-        )
-      })}
-      {rows.length === 0 && (
-        <div style={{ textAlign: 'center', padding: 20, color: 'var(--m-text-3)', fontSize: 12 }}>— 暂无工时记录 —</div>
-      )}
-
-      {/* 新增 */}
-      {editable && (
-        <div style={{ borderTop: '1px dashed var(--m-border)', paddingTop: 10, marginTop: 6 }}>
-          <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginBottom: 6 }}>➕ 新加工时</div>
-          {hasUnfinished && (
-            <div style={{ color: 'var(--brand-color-danger)', fontSize: 11, marginBottom: 6 }}>
-              ⚠️ 存在未结束的工时记录，请先点「结束」
-            </div>
-          )}
+      {/* ===== 1. 新增区（移到最前，有未结束时完全隐藏）===== */}
+      {editable && !hasUnfinished && (
+        <div style={{ borderTop: '1px dashed var(--m-border)', paddingTop: 10, marginTop: 2, marginBottom: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--m-text)', marginBottom: 8 }}>添加停机停线记录</div>
 
           {/* 异常类型 */}
           <select
@@ -227,14 +176,13 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
               if (val !== '设备故障') setDraft(d => ({ ...d, device_id: undefined, device_code: undefined, device_name: undefined }))
             }}
             style={selStyle}
-            disabled={hasUnfinished}
           >
             <option value="">请选择异常类型</option>
             {EXCEPTION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
 
           {/* 设备故障 → 设备选择（搜索 + 下拉 + 箭头） */}
-          {draft.exception_type === '设备故障' && !hasUnfinished && (
+          {draft.exception_type === '设备故障' && (
             <div style={{ marginTop: 8 }}>
               {/* 已选设备展示行（带开关箭头） */}
               <div
@@ -305,14 +253,71 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
             type="text" placeholder="停机描述（可选）" value={draft.description || ''}
             onChange={(e) => setDraft(d => ({ ...d, description: e.target.value }))}
             style={{ ...inputStyle, width: '100%', marginTop: 8 }}
-            disabled={hasUnfinished}
           />
 
           {/* 保存 */}
           <div style={{ marginTop: 10 }}>
-            <Button size="mini" color="primary" onClick={handleAdd} disabled={hasUnfinished || !dirty}>💾 保存工时记录</Button>
+            <Button size="mini" color="primary" onClick={handleAdd} disabled={!dirty}>💾 保存停机停线记录</Button>
           </div>
         </div>
+      )}
+
+      {/* ===== 2. 未结束提示（有未结束记录时显示，列表顶部）===== */}
+      {editable && hasUnfinished && (
+        <div style={{
+          border: '1px solid var(--brand-color-danger)', borderRadius: 6,
+          padding: '8px 10px', marginTop: 2, marginBottom: 8,
+          fontSize: 12, color: 'var(--brand-color-danger)',
+          background: 'var(--brand-color-danger-bg, #fff1f0)',
+        }}>
+          ⚠️ 存在未结束的停机停线记录（{unfinishedRow?.exception_type || '—'}），请先点「结束」后才能新增
+        </div>
+      )}
+
+      {/* ===== 3. 列表 ===== */}
+      {rows.length > 0 && rows.map((row) => {
+        const isUnfinished = !row.end_time
+        const durationMins = Math.round(Number(row.duration ?? 0) * 60)
+        return (
+          <div key={String(row.id)} style={{ padding: '10px 0', borderTop: '1px solid var(--m-border)' }}>
+            {/* 第一行：异常类型 + 设备 chip + 时长 + 操作按钮 */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, fontWeight: 500, color: isUnfinished ? '#f5222d' : 'var(--m-text)' }}>
+                {row.exception_type || '—'}
+                {isUnfinished && <span style={{ fontSize: 11, color: 'var(--brand-color-danger)' }}>进行中</span>}
+                {row.exception_type === '设备故障' && row.device_name && (
+                  <span style={{ fontSize: 11, color: '#1890ff', background: 'var(--m-repairing-bg)', padding: '1px 6px', borderRadius: 4 }}>
+                    📡 {row.device_name}
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                <span style={{ color: 'var(--brand-color-warning)', fontWeight: 600, fontSize: 13 }}>
+                  {isUnfinished ? '—' : `${durationMins}分钟`}
+                </span>
+                {editable && isUnfinished && (
+                  <Button size="mini" color="primary" onClick={() => handleFinish(row)}>结束</Button>
+                )}
+                {editable && isUnfinished && !(row.exception_type === '换型换线' && row.description?.includes('自动')) && (
+                  <Button size="mini" fill="outline" onClick={() => handleDel(row)}>删</Button>
+                )}
+              </div>
+            </div>
+            {/* 第二行：时间范围 */}
+            <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 3 }}>
+              {row.start_time ? fmtLocalDateTime(row.start_time).slice(5, 16) : '—'}
+              <span style={{ margin: '0 4px', opacity: 0.5 }}>→</span>
+              {row.end_time ? fmtLocalDateTime(row.end_time).slice(5, 16) : '至今'}
+            </div>
+            {/* 第三行：停机描述 */}
+            {row.description && (
+              <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>📝 {row.description}</div>
+            )}
+          </div>
+        )
+      })}
+      {rows.length === 0 && (
+        <div style={{ textAlign: 'center', padding: 20, color: 'var(--m-text-3)', fontSize: 12 }}>— 暂无工时记录 —</div>
       )}
     </div>
   )
