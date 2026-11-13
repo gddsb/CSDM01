@@ -219,7 +219,7 @@ export function ProcessDefectPanel({
       )}
       {expandedId === '__new__' && (
         <div style={{ borderTop: '1px dashed var(--m-border)', paddingTop: 10, marginTop: 6 }}>
-          {/* 紧凑一行：类型 + 单位 + 数量 + 保存/取消 */}
+          {/* 紧凑一行：类型 + 单位 + 数量 ... 保存/取消（按钮组右对齐）*/}
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
             <select
               value={draft.defect_type_id || ''}
@@ -250,8 +250,11 @@ export function ProcessDefectPanel({
               placeholder="数量"
               style={{ width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
             />
-            <Button size="mini" color="primary" onClick={handleSave} style={{ flexShrink: 0 }}>保存</Button>
-            <Button size="mini" fill="outline" onClick={cancelEdit} style={{ flexShrink: 0 }}>取消</Button>
+            <div style={{ flex: 1 }} />
+            <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+              <Button size="mini" color="primary" onClick={handleSave}>保存</Button>
+              <Button size="mini" fill="outline" onClick={cancelEdit}>取消</Button>
+            </div>
           </div>
           {/* 不良图片 */}
           <div style={{ marginTop: 8 }}>
@@ -275,7 +278,7 @@ export function ProcessDefectPanel({
         if (isExpanded) {
           return (
             <div key={rowKey} style={{ borderTop: '1px solid var(--m-border)', paddingTop: 10, marginTop: 6 }}>
-              {/* 紧凑一行：类型 + 单位 + 数量 + 保存/取消 */}
+              {/* 紧凑一行：类型 + 单位 + 数量 ... 保存/取消/删除（按钮组右对齐）*/}
               <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                 <select
                   value={draft.defect_type_id || ''}
@@ -306,11 +309,14 @@ export function ProcessDefectPanel({
                   placeholder="数量"
                   style={{ width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
                 />
-                <Button size="mini" color="primary" onClick={handleSave} style={{ flexShrink: 0 }}>保存</Button>
-                <Button size="mini" fill="outline" onClick={cancelEdit} style={{ flexShrink: 0 }}>取消</Button>
-                {draft.defect_id && (
-                  <Button size="mini" fill="outline" onClick={() => handleDel(draft as DefectRow)} style={{ flexShrink: 0 }}>删除</Button>
-                )}
+                <div style={{ flex: 1 }} />
+                <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                  <Button size="mini" color="primary" onClick={handleSave}>保存</Button>
+                  <Button size="mini" fill="outline" onClick={cancelEdit}>取消</Button>
+                  {draft.defect_id && (
+                    <Button size="mini" fill="outline" onClick={() => handleDel(draft as DefectRow)}>删除</Button>
+                  )}
+                </div>
               </div>
               {/* 不良图片 */}
               <div style={{ marginTop: 8 }}>

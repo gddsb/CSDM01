@@ -49,10 +49,12 @@ function parseImages(raw: unknown): string[] {
   return []
 }
 
-/** 退回料品映射 key → 原投入汇总信息 */
+/** 退回料品映射 key → 原投入汇总信息（含净投入 = 投入 - 退回） */
 interface ReturnableInfo {
   bas_material_id: string
   totalInputQty: number
+  totalReturnQty: number  // 已退回总额（不含当前编辑中的）
+  netAvailableQty: number // totalInputQty - totalReturnQty
   material_code?: string
   material_name?: string
   specification?: string
@@ -94,20 +96,26 @@ export function ProcessMaterialPanel({
     return () => { onDirtyChange?.(false) }
   }, [expandedId, onDirtyChange])
 
-  // ========== 退回料品候选：当前工序已保存的 "投入" 记录去重汇总 ==========
+  // ========== 净投入汇总：当前工序所有记录按 bas_material_id 分组，算投入总额和退回总额 ==========
+  // netAvailableQty 才是真正能退回的上限（不是纯 totalInputQty）
+  // 同时用于校验：任何保存/修改后净投入不能 < 0
   const returnableMap = useMemo(() => {
     const m = new Map<string, ReturnableInfo>()
     for (const row of processMaterials) {
-      if (row.material_type !== '投入' || !row.bas_material_id) continue
+      if (!row.bas_material_id) continue
       if (String(row.process_id) !== String(activeProcessId)) continue
       const key = row.bas_material_id
       const existing = m.get(key)
+      const qty = Number(row.quantity || 0)
       if (existing) {
-        existing.totalInputQty += Number(row.quantity || 0)
+        if (row.material_type === '投入') existing.totalInputQty += qty
+        else if (row.material_type === '退回') existing.totalReturnQty += qty
       } else {
         m.set(key, {
           bas_material_id: key,
-          totalInputQty: Number(row.quantity || 0),
+          totalInputQty: row.material_type === '投入' ? qty : 0,
+          totalReturnQty: row.material_type === '退回' ? qty : 0,
+          netAvailableQty: 0, // 下面统一算
           material_code: row.material_code,
           material_name: row.material_name,
           specification: row.specification,
@@ -115,6 +123,10 @@ export function ProcessMaterialPanel({
           package_no: row.package_no,
         })
       }
+    }
+    // 统一算 netAvailableQty
+    for (const v of m.values()) {
+      v.netAvailableQty = Math.max(0, v.totalInputQty - v.totalReturnQty)
     }
     return m
   }, [processMaterials, activeProcessId])
@@ -145,11 +157,41 @@ export function ProcessMaterialPanel({
     )
   }, [candidateList, pickerKeyword])
 
-  // ========== 当前选中料品的退回上限 ==========
+  // ========== 当前选中料品的退回上限（净投入 = 投入 - 已退回）==========
   const currentReturnLimit = useMemo(() => {
     if (draft.material_type !== '退回' || !draft.bas_material_id) return 0
-    return returnableMap.get(draft.bas_material_id)?.totalInputQty || 0
+    return returnableMap.get(draft.bas_material_id)?.netAvailableQty || 0
   }, [draft.material_type, draft.bas_material_id, returnableMap])
+
+  // ========== 净投入校验（保存前预检）==========
+  /** 保存后净投入是否 ≥ 0（按 bas_material_id 分组） */
+  const checkNetInputBeforeSave = (): { ok: boolean; limitInfo?: string } => {
+    const qty = Number(draft.quantity) || 0
+    if (qty <= 0) return { ok: false, limitInfo: '数量 > 0' }
+    if (!draft.bas_material_id) return { ok: true }
+
+    // 汇总当前工序除"正在编辑的这条"外的所有投入/退回
+    let invest = 0
+    let returns = 0
+    for (const row of processMaterials) {
+      // 排除当前正在编辑的这条（新增态没有 material_id，自动跳过）
+      if (row.material_id && draft.material_id && String(row.material_id) === String(draft.material_id)) continue
+      if (row.bas_material_id !== draft.bas_material_id) continue
+      if (row.material_type === '投入') invest += Number(row.quantity || 0)
+      else if (row.material_type === '退回') returns += Number(row.quantity || 0)
+    }
+    // 加上当前编辑的新值
+    const newInvest = invest + (draft.material_type === '投入' ? qty : 0)
+    const newReturns = returns + (draft.material_type === '退回' ? qty : 0)
+    const net = newInvest - newReturns
+    if (net < 0) {
+      return {
+        ok: false,
+        limitInfo: `${draft.material_type === '投入' ? '投入总额不能小于已退回' : '退回数量超出可退回净额'}（净剩 ${fmtInt(Math.max(0, invest - returns))}）`,
+      }
+    }
+    return { ok: true }
+  }
 
   // ========== 选中料品 ==========
   const handlePickMaterial = (basMaterialId: string) => {
@@ -162,7 +204,7 @@ export function ProcessMaterialPanel({
            || materials.find(x => x.bas_material_id === basMaterialId)
 
     if (draft.material_type === '退回') {
-      // 退回：自动带出原投入的批次/包号 + 限制数量上限
+      // 退回：自动带出原投入的批次/包号 + 限制数量上限（净投入）
       const rinfo = returnableMap.get(basMaterialId)
       const nextDraft: MaterialRow = {
         ...draft,
@@ -172,7 +214,7 @@ export function ProcessMaterialPanel({
         specification: m?.specification,
         material_batch: rinfo?.material_batch || draft.material_batch || '',
         package_no: rinfo?.package_no || draft.package_no || '',
-        quantity: rinfo?.totalInputQty || draft.quantity || 0,
+        quantity: rinfo?.netAvailableQty || draft.quantity || 0,
       }
       setDraft(nextDraft)
       Toast.show({ content: '已带出原投入批次信息', position: 'bottom' })
@@ -198,6 +240,12 @@ export function ProcessMaterialPanel({
     setExpandedId('__new__')
   }
   const startEdit = (row: MaterialRow) => {
+    // 只能编辑最第一条（最新）记录，历史流水不可直接修改
+    const rowKey = String(row.material_id || row.id)
+    if (processMaterials.length > 0 && String(processMaterials[0].material_id || processMaterials[0].id) !== rowKey) {
+      Toast.show({ content: '历史流水不可直接修改，请先删除后面的记录', icon: 'fail', position: 'bottom' })
+      return
+    }
     setDraft({ ...row, label_images: parseImages(row.label_images) })
     setExpandedId(row.id || row.material_id! || '__unknown__')
   }
@@ -232,15 +280,14 @@ export function ProcessMaterialPanel({
 
   const handleSave = useCallback(async () => {
     if (!draft.bas_material_id) { Toast.show({ content: '请选料品', icon: 'fail' }); return }
-    // 受控 input：draft 就是最新值，直接读
-    const qty = Number(draft.quantity) || 0
-    if (qty <= 0) { Toast.show({ content: '数量 > 0', icon: 'fail' }); return }
-    // 退回不能超过原投入
-    if (draft.material_type === '退回' && currentReturnLimit > 0 && qty > currentReturnLimit) {
-      Toast.show({ content: `退回数量不能超过原投入 ${fmtInt(currentReturnLimit)}`, icon: 'fail', position: 'bottom' })
+    // 净投入校验：任何类型（投入/退回）保存后净投入不能 < 0
+    const netCheck = checkNetInputBeforeSave()
+    if (!netCheck.ok) {
+      Toast.show({ content: netCheck.limitInfo || '净投入校验失败', icon: 'fail', position: 'bottom' })
       return
     }
 
+    const qty = Number(draft.quantity) || 0
     const labelImages = Array.isArray(draft.label_images) ? draft.label_images : []
     const payload: any = {
       report_order_id: report.report_order_id,
@@ -312,7 +359,7 @@ export function ProcessMaterialPanel({
   }
 
   /** 表单 JSX（直接内联，不通过局部函数组件 —— 避免受控 input onChange 触发 re-render 时函数引用变化导致 React remount DOM 丢焦点）
-   * 两个使用点各写一份，没有隐式魔法 */
+   * 按钮移到 formRow1 右对齐，formRow2 只留输入框 */
   const formRow1 = (
     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
       <select value={draft.material_type || '投入'} onChange={(e) => handleTypeChange(e.target.value as any)}
@@ -332,6 +379,13 @@ export function ProcessMaterialPanel({
         </span>
         <span style={{ color: 'var(--m-text-3)', fontSize: 12, marginLeft: 4 }}>›</span>
       </Button>
+      <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+        <Button size="mini" color="primary" onClick={handleSave}>保存</Button>
+        <Button size="mini" fill="outline" onClick={cancelEdit}>取消</Button>
+        {draft.material_id && (
+          <Button size="mini" fill="outline" onClick={() => handleDel(draft as MaterialRow)}>删除</Button>
+        )}
+      </div>
     </div>
   )
   const formRow2 = (
@@ -352,11 +406,6 @@ export function ProcessMaterialPanel({
         max={currentReturnLimit > 0 ? currentReturnLimit : undefined}
         placeholder={draft.material_type === '退回' ? `≤${fmtInt(currentReturnLimit || 0)}` : '数量'}
         style={{ ...inputStyle, width: 60 }} />
-      <Button size="mini" color="primary" onClick={handleSave} style={{ flexShrink: 0 }}>保存</Button>
-      <Button size="mini" fill="outline" onClick={cancelEdit} style={{ flexShrink: 0 }}>取消</Button>
-      {draft.material_id && (
-        <Button size="mini" fill="outline" onClick={() => handleDel(draft as MaterialRow)} style={{ flexShrink: 0 }}>删除</Button>
-      )}
     </div>
   )
   const formImage = (
@@ -388,9 +437,11 @@ export function ProcessMaterialPanel({
       )}
 
       {/* ===== 记录列表（时间倒序，最新在前）===== */}
-      {processMaterials.length > 0 && processMaterials.map((row) => {
+      {processMaterials.length > 0 && processMaterials.map((row, idx) => {
         const rowKey = row.material_id || row.id
         const isExpanded = expandedId === rowKey
+        // 方案 A：只有第一条（idx=0，最新）可编辑，历史流水只读
+        const isLatest = idx === 0 && editable
 
         if (isExpanded) {
           return (
@@ -402,7 +453,9 @@ export function ProcessMaterialPanel({
 
         return (
           <div key={rowKey} onClick={() => editable && startEdit(row)} style={{
-            padding: '10px 0', borderTop: '1px solid var(--m-border)', cursor: editable ? 'pointer' : 'default',
+            padding: '10px 0', borderTop: '1px solid var(--m-border)',
+            cursor: isLatest ? 'pointer' : 'default',
+            opacity: isLatest ? 1 : 0.85,
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -420,7 +473,8 @@ export function ProcessMaterialPanel({
                   )}
                 </div>
               </div>
-              {editable && <span style={{ color: 'var(--m-text-3)', fontSize: 16 }}>›</span>}
+              {isLatest && <span style={{ color: 'var(--m-text-3)', fontSize: 16 }}>›</span>}
+              {!isLatest && editable && <span style={{ color: 'var(--m-text-4, #bbb)', fontSize: 11, marginLeft: 4 }}>🔒</span>}
             </div>
           </div>
         )
