@@ -39,13 +39,20 @@ const COUNT_STYLE: React.CSSProperties = {
 
 // ========== 时间工具（无 dayjs 依赖，纯字符串处理） ==========
 
-/** 从完整时间字符串提取 HH:mm，失败返回 '00:00' */
+/**
+ * 从完整时间字符串（可能是 UTC ISO 带 Z）提取本地 HH:mm
+ * —— 不能用正则抠字符串！因为 Sequelize timezone 会把 DATETIME 墙时间转成 UTC
+ *    返回 JSON 形如 "2026-09-16T04:00:00.000Z"（04 UTC = 12 CST）
+ *    必须 new Date() 解析 → 自动按浏览器本地时区转换 → getHours() 才是墙时间
+ * 失败返回 '00:00'
+ */
 function extractHHmm(fullTime: string | undefined): string {
   if (!fullTime) return '00:00'
-  const m = fullTime.match(/(\d{1,2}):(\d{2})/)
-  if (!m) return '00:00'
-  const h = m[1].padStart(2, '0')
-  return `${h}:${m[2]}`
+  const d = new Date(fullTime)
+  if (isNaN(d.getTime())) return '00:00'
+  const h = String(d.getHours()).padStart(2, '0')
+  const m = String(d.getMinutes()).padStart(2, '0')
+  return `${h}:${m}`
 }
 
 /** 把 HH:mm 拼到基准日期上，返回完整 'YYYY-MM-DD HH:mm:ss'
