@@ -139,6 +139,47 @@ export function ScrapPanel({
           : <span style={{ color: 'var(--brand-color-danger)' }}>未选（请到工序报工选择）</span>}
       </div>
 
+      {/* 添加按钮（独立 block 全宽，未展开时显示——移到最顶部） */}
+      {editable && !expanded && (
+        <div style={{ marginBottom: 8 }}>
+          <Button size="mini" color="primary" block onClick={startAdd}>
+            ➕ 添加检验报废
+          </Button>
+        </div>
+      )}
+
+      {/* 新增表单（展开态——紧跟添加按钮下方） */}
+      {expanded && (
+        <div style={{ borderTop: '1px dashed var(--m-border)', paddingTop: 10, marginBottom: 8 }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <select
+              value={draft.defect_type_id || ''}
+              onChange={(e) => setDraft(d => ({ ...d, defect_type_id: e.target.value ? Number(e.target.value) : null }))}
+              style={selStyle}
+            >
+              <option value="">报废项目</option>
+              {scrapTypes.map(t => (
+                <option key={t.defect_id} value={t.defect_id}>{t.defect_code} {t.defect_name}</option>
+              ))}
+            </select>
+            <input
+              type="number" min={0} value={draft.quantity || ''}
+              onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
+              placeholder="数量"
+              style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
+            />
+            <input
+              value={draft.unit || ''}
+              onChange={(e) => setDraft(d => ({ ...d, unit: e.target.value }))}
+              placeholder="单位"
+              style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
+            />
+            <Button size="mini" color="primary" onClick={handleAdd} style={{ flexShrink: 0 }}>保存</Button>
+            <Button size="mini" fill="outline" onClick={cancelAdd} style={{ flexShrink: 0 }}>取消</Button>
+          </div>
+        </div>
+      )}
+
       {/* 列表（纯展示，保存后不可修改/删除） */}
       {sortedRows.length > 0 && sortedRows.map((row) => (
         <div key={String(row.scrap_id ?? row.id)} style={{
@@ -173,47 +214,6 @@ export function ScrapPanel({
       {/* 空状态 */}
       {sortedRows.length === 0 && !expanded && (
         <div style={{ textAlign: 'center', padding: 20, color: 'var(--m-text-3)', fontSize: 12 }}>— 暂无报废记录 —</div>
-      )}
-
-      {/* 新增表单（展开态） */}
-      {expanded && (
-        <div style={{ borderTop: '1px dashed var(--m-border)', paddingTop: 10, marginTop: 6 }}>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-            <select
-              value={draft.defect_type_id || ''}
-              onChange={(e) => setDraft(d => ({ ...d, defect_type_id: e.target.value ? Number(e.target.value) : null }))}
-              style={selStyle}
-            >
-              <option value="">报废项目</option>
-              {scrapTypes.map(t => (
-                <option key={t.defect_id} value={t.defect_id}>{t.defect_code} {t.defect_name}</option>
-              ))}
-            </select>
-            <input
-              type="number" min={0} value={draft.quantity || ''}
-              onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
-              placeholder="数量"
-              style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
-            />
-            <input
-              value={draft.unit || ''}
-              onChange={(e) => setDraft(d => ({ ...d, unit: e.target.value }))}
-              placeholder="单位"
-              style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
-            />
-            <Button size="mini" color="primary" onClick={handleAdd} style={{ flexShrink: 0 }}>保存</Button>
-            <Button size="mini" fill="outline" onClick={cancelAdd} style={{ flexShrink: 0 }}>取消</Button>
-          </div>
-        </div>
-      )}
-
-      {/* 添加按钮（独立 block 全宽，未展开时显示） */}
-      {editable && !expanded && (
-        <div style={{ marginTop: 8 }}>
-          <Button size="mini" color="primary" block onClick={startAdd}>
-            ➕ 添加检验报废
-          </Button>
-        </div>
       )}
     </div>
   )
