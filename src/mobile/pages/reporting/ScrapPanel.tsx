@@ -1,14 +1,14 @@
 /**
- * 工单报废记录面板
- * —— Tab: 报废
+ * 工序检验报废记录面板（工序报工 → 检验报废 Tab）
  *
- * 🔑 与 PC 端完全对齐：
- *   - 报废数据存 ProcessDefect 表（production_process_defect）
- *   - process_id 改为可选（报废场景允许无工序）
- *   - 查询时按工单维度聚合显示（前端过滤 defect_type === '检验报废'）
- *   - 新增/编辑/删除统一调 /production/process-defects 接口
+ * 业务规则：
+ *   - 只能新增，保存后的记录不可修改、不可删除（append-only）
+ *   - 报废数据存 ProcessDefect 表，前端按 defect_type='检验报废' 过滤
+ *
+ * 后端接口：
+ *   POST /production/process-defects   (新增)
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import React from 'react'
 import { Button, Dialog, Toast } from 'antd-mobile'
 import api from '../../../utils/api'
@@ -17,31 +17,70 @@ import type { DefectType, ReportOrder, ScrapRow, ProcessRow } from './types'
 
 interface Props {
   report: ReportOrder
-  /** 当前工序（可选，不传则报废不绑工序） */
   activeProcessId: number | null
   processes: ProcessRow[]
   editable: boolean
-  /** 报废类型下拉（category_name='报废类型' 或 defect_type='检验报废'） */
   scrapTypes: DefectType[]
   rows: ScrapRow[]
   setRows: (updater: (prev: ScrapRow[]) => ScrapRow[]) => void
   onDirtyChange?: (dirty: boolean) => void
 }
 
+/** 按 createdAt 倒序（无则用 scrap_id/id） */
+function sortDesc(list: ScrapRow[]): ScrapRow[] {
+  return [...list].sort((a, b) => {
+    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0
+    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0
+    if (ta !== tb) return tb - ta
+    const ia = Number(a.scrap_id ?? a.id ?? 0)
+    const ib = Number(b.scrap_id ?? b.id ?? 0)
+    return ib - ia
+  })
+}
+
+/** 格式化时间：同一天 HH:mm，跨天 MM/DD HH:mm */
+function fmtTime(iso?: string): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  const now = new Date()
+  const sameDay = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  if (sameDay) return `${hh}:${mm}`
+  const mo = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${mo}/${dd} ${hh}:${mm}`
+}
+
 export function ScrapPanel({
   report, activeProcessId, processes, editable, scrapTypes, rows, setRows, onDirtyChange,
 }: Props) {
+  const [expanded, setExpanded] = useState(false)   // 是否正在添加（空表单展开）
   const [draft, setDraft] = useState<ScrapRow>({ quantity: 0 })
 
-  // dirty：选了报废项目 或 数量 > 0
+  // dirty 上报：展开状态 + 有填写内容
+  const dirty = useMemo(() => {
+    if (!expanded) return false
+    return !!(draft.defect_type_id) || Number(draft.quantity) > 0
+  }, [expanded, draft.defect_type_id, draft.quantity])
+
   useEffect(() => {
-    const dirty = !!(draft.defect_type_id) || (Number(draft.quantity) > 0)
     onDirtyChange?.(dirty)
     return () => { onDirtyChange?.(false) }
-  }, [draft.defect_type_id, draft.quantity, onDirtyChange])
+  }, [dirty, onDirtyChange])
 
-  // 工序可选：优先 activeProcessId，否则取第一道，再否则 null
   const resolvedProcessId = activeProcessId ?? processes[0]?.process_id ?? null
+  const sortedRows = useMemo(() => sortDesc(rows), [rows])
+
+  const startAdd = () => {
+    setDraft({ quantity: 0 })
+    setExpanded(true)
+  }
+  const cancelAdd = () => {
+    setExpanded(false)
+    setDraft({ quantity: 0 })
+  }
 
   const handleAdd = useCallback(async () => {
     if (!draft.defect_type_id) { Toast.show({ content: '请选报废项目', icon: 'fail' }); return }
@@ -54,7 +93,6 @@ export function ScrapPanel({
         quantity: Number(draft.quantity),
         unit: draft.unit || '',
       }
-      // 工序可选：有就传，没有就不传
       if (resolvedProcessId) payload.process_id = resolvedProcessId
 
       const r: any = await api.post('/production/process-defects', payload)
@@ -70,42 +108,25 @@ export function ScrapPanel({
         defect_name: t?.defect_name,
         defect_type: '检验报废',
         quantity: Number(saved.quantity),
-        _isNew: false,
+        unit: saved.unit || draft.unit || '',
+        createdAt: saved.createdAt || new Date().toISOString(),
       }
-      setRows(prev => [...prev, newRow])
+      setRows(prev => sortDesc([...prev, newRow]))
       Toast.show({ content: '已添加', icon: 'success' })
-      setDraft({ quantity: 0 })
-      onDirtyChange?.(false)
+      cancelAdd()
     } catch (e: any) {
       Toast.show({ content: e?.message || '保存失败', icon: 'fail' })
     }
   }, [draft, report.report_order_id, resolvedProcessId, scrapTypes, setRows])
 
-  const handleDel = useCallback(async (row: ScrapRow) => {
-    const ok = await Dialog.confirm({ content: '删除该报废记录？', confirmText: '删除', cancelText: '取消' })
-    if (!ok) return
-    try {
-      const id = row.scrap_id ?? row.id
-      if (id) await api.delete(`/production/process-defects/${id}`)
-      setRows(prev => prev.filter(r => (r.scrap_id ?? r.id) !== id))
-      Toast.show({ content: '已删除', icon: 'success' })
-    } catch (e: any) {
-      Toast.show({ content: e?.message || '删除失败', icon: 'fail' })
-    }
-  }, [setRows])
-
   const selStyle: React.CSSProperties = {
     flex: 2, minWidth: 110, padding: '7px 8px', borderRadius: 6,
-    border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)',
-  }
-  const inputStyle: React.CSSProperties = {
-    flex: 1, minWidth: 60, padding: '7px 8px', borderRadius: 6,
     border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)',
   }
 
   return (
     <div>
-      {/* 工序提示（复用工序报工的当前工序，只读展示） */}
+      {/* 工序提示 */}
       <div style={{ fontSize: 11, color: 'var(--m-text-3)', padding: '4px 0 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
         📌 存储工序:
         {resolvedProcessId
@@ -113,33 +134,44 @@ export function ScrapPanel({
           : <span style={{ color: 'var(--brand-color-danger)' }}>未选（请到工序报工选择）</span>}
       </div>
 
-      {/* 列表 */}
-      {rows.length > 0 && rows.map((row) => (
+      {/* 列表（纯展示，保存后不可修改/删除） */}
+      {sortedRows.length > 0 && sortedRows.map((row) => (
         <div key={String(row.scrap_id ?? row.id)} style={{
           padding: '10px 0', borderTop: '1px solid var(--m-border)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--m-text)' }}>
-              {row.defect_code && <span style={{ color: 'var(--m-text-3)', fontSize: 11, marginRight: 6 }}>{row.defect_code}</span>}
-              {row.defect_name || '—'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--m-text)' }}>
+                {row.defect_code && <span style={{ color: 'var(--m-text-3)', fontSize: 11, marginRight: 4 }}>{row.defect_code}</span>}
+                {row.defect_name || '—'}
+              </span>
+              {row.createdAt && (
+                <span style={{ fontSize: 11, color: 'var(--m-text-3)', marginLeft: 'auto' }}>
+                  {fmtTime(row.createdAt)}
+                </span>
+              )}
             </div>
-            {row.defect_type && <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>{row.defect_type}</div>}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-            <span style={{ color: 'var(--brand-color-danger)', fontWeight: 700, fontSize: 16 }}>×{fmtInt(row.quantity)}</span>
-            {editable && (
-              <Button size="mini" fill="outline" onClick={() => handleDel(row)}>删</Button>
+            {row.defect_type && (
+              <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>
+                {row.defect_type}
+                {row.unit && <span style={{ marginLeft: 6 }}>单位: {row.unit}</span>}
+              </div>
             )}
+          </div>
+          <div style={{ color: 'var(--brand-color-danger)', fontWeight: 700, fontSize: 16, flexShrink: 0, marginLeft: 10 }}>
+            ×{fmtInt(row.quantity)}
           </div>
         </div>
       ))}
-      {rows.length === 0 && (
+
+      {/* 空状态 */}
+      {sortedRows.length === 0 && !expanded && (
         <div style={{ textAlign: 'center', padding: 20, color: 'var(--m-text-3)', fontSize: 12 }}>— 暂无报废记录 —</div>
       )}
 
-      {/* 新增（单行布局） */}
-      {editable && (
+      {/* 新增表单（展开态） */}
+      {expanded && (
         <div style={{ borderTop: '1px dashed var(--m-border)', paddingTop: 10, marginTop: 6 }}>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
             <select
@@ -164,8 +196,18 @@ export function ScrapPanel({
               placeholder="单位"
               style={{ width: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
             />
-            <Button size="mini" color="primary" onClick={handleAdd} style={{ flexShrink: 0 }}>添加</Button>
+            <Button size="mini" color="primary" onClick={handleAdd} style={{ flexShrink: 0 }}>保存</Button>
+            <Button size="mini" fill="outline" onClick={cancelAdd} style={{ flexShrink: 0 }}>取消</Button>
           </div>
+        </div>
+      )}
+
+      {/* 添加按钮（独立 block 全宽，未展开时显示） */}
+      {editable && !expanded && (
+        <div style={{ marginTop: 8 }}>
+          <Button size="mini" color="primary" block onClick={startAdd}>
+            ➕ 添加检验报废
+          </Button>
         </div>
       )}
     </div>
