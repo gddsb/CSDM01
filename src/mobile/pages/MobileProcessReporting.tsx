@@ -27,7 +27,7 @@ import { BatchTagPanel } from './reporting/BatchTagPanel'
 // 共享类型（集中导出）
 import type {
   ProcessRow, ReportOrder, OrderRow, DefectType, MaterialMaster,
-  DefectRow, MaterialRow, ScrapRow, ExceptionRow, ManpowerRow,
+  DefectRow, MaterialRow, ScrapRow, ExceptionRow, ManpowerRow, BreakTimeRow,
 } from './reporting/types'
 
 // ============ 主组件 ============
@@ -106,6 +106,7 @@ export default function MobileProcessReporting() {
   const [materials, setMaterials] = useState<MaterialRow[]>([])
   const [exceptions, setExceptions] = useState<ExceptionRow[]>([])
   const [manpower, setManpower] = useState<ManpowerRow | null>(null)
+  const [breakTimes, setBreakTimes] = useState<BreakTimeRow[]>([])
 
   // 字典预加载
   const [defectTypes, setDefectTypes] = useState<DefectType[]>([])
@@ -212,11 +213,12 @@ export default function MobileProcessReporting() {
       }
 
       // 全量记录（报废也走 process-defects，前端按 scrapTypes 字典分类）
-      const [dr, mr, er, pr]: any[] = await Promise.all([
+      const [dr, mr, er, pr, btr]: any[] = await Promise.all([
         api.get('/production/process-defects', { params: { report_order_id: report.report_order_id, pageSize: 500 } }),
         api.get('/production/process-materials', { params: { report_order_id: report.report_order_id, pageSize: 500 } }),
         api.get('/production/process-exceptions', { params: { report_order_id: report.report_order_id, pageSize: 200 } }),
         api.get('/production/manpower-records', { params: { report_order_id: report.report_order_id, pageSize: 1 } }),
+        api.get('/production/break-times', { params: { report_order_id: report.report_order_id, pageSize: 100 } }),
       ])
       const _arr = (r: any) => (r?.data?.items || r?.data || []) as any[]
       // 🔑 后端 include DefectType 后，defect_type 是对象不是字符串，前端渲染会崩溃（React #31）
@@ -238,6 +240,7 @@ export default function MobileProcessReporting() {
       setMaterials(_arr(mr) as MaterialRow[])
       setExceptions(_arr(er) as ExceptionRow[])
       setManpower((_arr(pr)[0] || null) as ManpowerRow | null)
+      setBreakTimes(_arr(btr) as BreakTimeRow[])
     } catch { /* 静默 */ }
   }
 
@@ -299,7 +302,7 @@ export default function MobileProcessReporting() {
           if (!r?.success) throw new Error(r?.message || '工单完结失败')
           Toast.show({ content: '✅ 工单已完结', icon: 'success' })
           setCurrent(null); setPhase('select')
-          setDefectsRaw([]); setMaterials([]); setExceptions([]); setManpower(null)
+          setDefectsRaw([]); setMaterials([]); setExceptions([]); setManpower(null); setBreakTimes([])
         } catch (e: any) {
           Toast.show({ content: e?.message || '工单完结失败', icon: 'fail' })
         }
@@ -505,6 +508,8 @@ export default function MobileProcessReporting() {
                   editable={!!editable}
                   manpower={manpower}
                   setManpower={setManpower}
+                  breakTimes={breakTimes}
+                  setBreakTimes={setBreakTimes}
                   onDirtyChange={(d) => setPanelDirty('manpower', d)}
                 />
               </ReportPanel>

@@ -155,6 +155,17 @@ export interface ManpowerRow {
   other_count: number
 }
 
+/** 休息时间段（工单级，后端 production_break_time） */
+export interface BreakTimeRow {
+  break_time_id?: string              // UUID，保存后返回
+  report_order_id?: number | string
+  start_time: string                  // 'YYYY-MM-DD HH:mm:ss'（含日期，移动端只调 HH:mm）
+  end_time: string
+  duration_minutes?: number            // DB STORED 只读
+  remark?: string
+  created_at?: string
+}
+
 // ========== 面板 Props 共用类型 ==========
 
 /** 工序级面板 Props（不良/投料） */
