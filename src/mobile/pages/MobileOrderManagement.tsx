@@ -232,18 +232,18 @@ export default function MobileOrderManagement() {
       ),
       actions: [
         { key: 'back', text: '取消', style: { color: 'var(--m-text-3)' } },
-        { key: 'ok', text: '确认完工', disabled: hasBlock, danger: true },
+        { key: 'ok', text: '确认订单完工', disabled: hasBlock, danger: true },
       ],
       closeOnAction: true,
       onAction: async (action) => {
         if (action.key !== 'ok') return
         try {
-          Toast.show({ content: '正在完工...', icon: 'loading' })
+          Toast.show({ content: '正在订单完工...', icon: 'loading' })
           const r: any = await offlinePost(`/production/orders/${o.order_id}/finish`, {}, { source: 'production-order' })
-          Toast.show({ content: r.message || '✅ 已完工', icon: 'success' })
+          Toast.show({ content: r.message || '✅ 订单已完工', icon: 'success' })
           await load()
         } catch (e: any) {
-          Toast.show({ content: e?.message || '完工失败', position: 'bottom' })
+          Toast.show({ content: e?.message || '订单完工失败', position: 'bottom' })
         }
       },
     })
@@ -534,7 +534,7 @@ export default function MobileOrderManagement() {
                         {isStarted && (
                           <>
                             <Button size="mini" color="primary" fill="solid" onClick={() => navigate(`/m/process-reporting?orderId=${o.order_id}`)}>继续报工</Button>
-                            <Button size="mini" color="warning" onClick={() => onFinish(o)}>完工</Button>
+                            <Button size="mini" color="warning" onClick={() => onFinish(o)}>订单完工</Button>
                           </>
                         )}
                         {isDone && (

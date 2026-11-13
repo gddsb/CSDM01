@@ -263,7 +263,7 @@ export default function MobileProcessReporting() {
     Dialog.show({
       content: (
         <div style={{ padding: '8px 4px', maxHeight: '60vh', overflowY: 'auto', minWidth: 260 }}>
-          <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 14 }}>完工前检查</div>
+          <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 14 }}>工单完结前检查</div>
           {items.map((it, i) => (
             <div key={i} style={{ marginBottom: 6 }}>
               <div style={{ fontSize: 13, color: colorMap[it.level] }}>
@@ -281,27 +281,27 @@ export default function MobileProcessReporting() {
             color: hasBlock ? 'var(--m-status-urgent)' : 'var(--m-status-done)',
           }}>
             {hasBlock
-              ? `❌ ${passCount} 通过 · ${warnCount} 警告 · ${blockCount} 阻断，不能完工`
-              : `✅ ${passCount} 通过 · ${warnCount} 警告，可以完工`}
+              ? `❌ ${passCount} 通过 · ${warnCount} 警告 · ${blockCount} 阻断，不能完结`
+              : `✅ ${passCount} 通过 · ${warnCount} 警告，可以完结`}
           </div>
         </div>
       ),
       actions: [
         { key: 'back', text: '补录继续', style: { color: 'var(--m-text-3)' } },
-        { key: 'ok', text: '确认完工', disabled: hasBlock, danger: true },
+        { key: 'ok', text: '确认工单完结', disabled: hasBlock, danger: true },
       ],
       closeOnAction: true,
       onAction: async (action) => {
         if (action.key !== 'ok') return  // 补录继续：closeOnAction=true 已自动关闭
         try {
-          Toast.show({ content: '正在完工...', icon: 'loading' })
+          Toast.show({ content: '正在完结...', icon: 'loading' })
           const r: any = await api.post(`/production/report-orders/${current.report_order_id}/finish`)
-          if (!r?.success) throw new Error(r?.message || '完工失败')
-          Toast.show({ content: '✅ 已完工', icon: 'success' })
+          if (!r?.success) throw new Error(r?.message || '工单完结失败')
+          Toast.show({ content: '✅ 工单已完结', icon: 'success' })
           setCurrent(null); setPhase('select')
           setDefectsRaw([]); setMaterials([]); setExceptions([]); setManpower(null)
         } catch (e: any) {
-          Toast.show({ content: e?.message || '完工失败', icon: 'fail' })
+          Toast.show({ content: e?.message || '工单完结失败', icon: 'fail' })
         }
       },
     })
@@ -545,7 +545,7 @@ function Header({ report, onBack, onFinish }: { report: ReportOrder; onBack: () 
         }}>{statusText}</span>
         <div style={{ flex: 1 }} />
         {!isDone && (
-          <Button size="mini" color="danger" onClick={onFinish} style={{ background: '#ff4d4f' }}>完工</Button>
+          <Button size="mini" color="danger" onClick={onFinish} style={{ background: '#ff4d4f' }}>工单完结</Button>
         )}
       </div>
       {/* 行2：订单 + 产线 */}
