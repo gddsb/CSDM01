@@ -298,15 +298,15 @@ export function ManpowerPanel({
         {report.finish_time && <span style={{ marginLeft: 8 }}>完工: <b style={{ color: 'var(--m-text)' }}>{fmtLocalDateTime(report.finish_time).slice(0, 16).replace("T", " ")}</b></span>}
         <span style={{ marginLeft: 10, color: 'var(--brand-color)' }}>总人数: <b>{totalPeople}</b></span>
       </div>
-      {/* 自适应网格：宽屏一行 4 列，窄屏自动 2×2 */}
+      {/* 固定 4 列单行显示（label 在上，input 在下，紧凑排列） */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(85px, 1fr))',
-        gap: 8,
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: 6,
       }}>
         {rows.map(({ label, v, setV }) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <span style={{ fontSize: 12, color: 'var(--m-text-2)', flexShrink: 0 }}>{label}</span>
+          <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{ fontSize: 11, color: 'var(--m-text-2)', textAlign: 'center', lineHeight: '16px' }}>{label}</span>
             <input
               type="number" min={0} maxLength={2}
               value={v === 0 ? '' : v} placeholder="0" disabled={!editable}
@@ -316,8 +316,8 @@ export function ManpowerPanel({
                 setV(Number(raw) || 0)
               }}
               style={{
-                ...COUNT_STYLE, flex: 1, minWidth: 0,
-                padding: '6px 6px', fontSize: 14,
+                ...COUNT_STYLE,
+                padding: '5px 2px', fontSize: 15, textAlign: 'center',
                 background: editable ? 'var(--m-surface)' : 'var(--m-surface-2)',
               }}
             />
