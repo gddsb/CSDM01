@@ -6,7 +6,10 @@
 
 | # | 坑 | 根因 | 正确做法 |
 |---|------|------|---------|
-| P1 | **Sequelize timezone:'local'** → `ER_UNKNOWN_TIME_ZONE` | MySQL 不认 'local'，只认 ±HH:MM / 命名时区 | 用 `'+08:00'` |
+| P0 | **沙箱 → prod:22 SSH 直连超时** | 沙箱出口策略硬阻断 22 端口 | 必须走 HTTP CONNECT 代理 127.0.0.1:18080 + paramiko password auth。详见 build-deploy/prod-ssh.md |
+| P0a | **SOCKS5 方式连 prod** | 沙箱 18080 是 HTTP 代理不是 SOCKS5，返回 400 Bad Request | 用 HTTP CONNECT |
+| P0b | **ProxyCommand corkscrew** | 沙箱没装 corkscrew | 用 Python socket + paramiko，不要 corkscrew |
+| P1 | **Sequelize timezone:'local'** | MySQL 不认 'local'，ER_UNKNOWN_TIME_ZONE | 用 `'+08:00'` |
 | P2 | **Sequelize Model.toJSON 吐 UTC ISO → 前端差 -8h** | Date.prototype.toJSON() 强制转 UTC | database.ts 全局 patch Model.prototype.toJSON 成墙时间字符串 |
 | P3 | **RegExp 抠时间字符串遇 UTC ISO 直接偏 -8h** | 正则把 "T04:00:00Z" 的 "04" 当小时 | 统一 `new Date().getHours()` 或 dayjs |
 | P4 | **deploy.sh +1 buildNumber 但 app-updater 用 buildNumber 对比 → 误提示升级** | deploy.sh 只动 H5，build-apk.sh 才动 apkBuild | app-updater 改用 `apkBuild`（build-apk.sh 才更新） |

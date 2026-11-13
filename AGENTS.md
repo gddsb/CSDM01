@@ -42,6 +42,7 @@ DB MySQL 8.0（沙箱已装 milk_can_mes）；包管理器 **pnpm**（前后端�
 
 | 我要做什么 | 读哪份 |
 |-----------|--------|
+| 改完代码要部署到 prod | **先读 docs/build-deploy/prod-ssh.md**（沙箱→prod SSH 必须走 HTTP CONNECT 代理） |
 | 任何任务开始（默认必读） | docs/index.md + docs/build-deploy.md |
 | 改 React/TSX/PC 页面 | docs/frontend/index.md |
 | 改 ant-mobile 移动端 | docs/frontend/index.md + docs/frontend/mobile.md |
@@ -57,6 +58,7 @@ DB MySQL 8.0（沙箱已装 milk_can_mes）；包管理器 **pnpm**（前后端�
 docs/
 ├── index.md                ← 本文件规则扩展（目录结构、权限模型等）
 ├── build-deploy.md         ← 默认必读：构建/运行/部署/沙箱
+│   └── prod-ssh.md         ← 部署前必读：沙箱→prod SSH 必须走 HTTP CONNECT 代理
 ├── common-pitfalls.md      ← 默认必读：已踩坑清单
 ├── frontend/
 │   ├── index.md            ← 默认必读：前端开发规则

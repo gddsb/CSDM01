@@ -46,6 +46,8 @@ pnpm run typecheck
 
 ## 生产部署（prod: 43.138.218.55）
 
+> **先读 prod-ssh.md！** 沙箱到 prod 的 SSH 22 端口被出口策略硬阻断，必须用 HTTP CONNECT 代理。不要直连、不要用 SOCKS5、不要用 corkscrew。
+
 ### 流程红线（AGENTS.md E2/E3）
 
 | 步骤 | 自动/手动 | 说明 |
