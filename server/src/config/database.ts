@@ -77,9 +77,10 @@ if (dialect === 'sqlite') {
       host: process.env.DB_HOST || 'localhost',
       port: Number(process.env.DB_PORT) || 3306,
       dialect: dialect as 'mysql',
-      // timezone:'local' 跟随服务器 TZ（Asia/Shanghai CST+0800）
-      // DATETIME 列在 MySQL 中存墙时间原文不做时区转换，所以 Sequelize 不该再加一层偏移
-      timezone: 'local',
+      // timezone:'+08:00' —— MySQL DATETIME 存墙时间原文，Sequelize 用 +08:00 解析
+      // ⚠ 注意：MySQL 不认 'local'（ER_UNKNOWN_TIME_ZONE），必须用 ±HH:MM 格式
+      // 真正消除时区偏移的是下方 Model.prototype.toJSON patch（把 Date 序列化成墙时间字符串）
+      timezone: '+08:00',
       // 允许多语句执行（migrations/*.sql 和 migrate.ts 中的外键/索引创建需要）
       // 业务代码应继续用 Sequelize ORM 方法，不要拼接原始 SQL
       dialectOptions: { multipleStatements: true },
