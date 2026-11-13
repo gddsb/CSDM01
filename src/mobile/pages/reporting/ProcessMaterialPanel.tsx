@@ -351,34 +351,19 @@ export function ProcessMaterialPanel({
     padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)',
     fontSize: 12, background: 'var(--m-surface)',
   }
-  // 料品选择按钮样式（模拟原生 select 外观）
-  const materialBtnStyle: React.CSSProperties = {
-    flex: 1, minWidth: 0, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)',
-    fontSize: 12, background: 'var(--m-surface)', color: 'var(--m-text)',
-    textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-  }
-
-  /** 表单 JSX（直接内联，不通过局部函数组件 —— 避免受控 input onChange 触发 re-render 时函数引用变化导致 React remount DOM 丢焦点）
-   * 按钮移到 formRow1 右对齐，formRow2 只留输入框 */
+  /** 表单 JSX —— 3 行布局：
+   * Row1: 左 select（投入/退回） | 右 按钮组（保存/取消/删除）
+   * Row2: 可点击多行料品卡片（料号 + 料品名称 + 规格，自动换行/高度）
+   * Row3: 批号 / 包号 / 数量
+   * Row4: 标签图片
+   */
   const formRow1 = (
-    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
       <select value={draft.material_type || '投入'} onChange={(e) => handleTypeChange(e.target.value as any)}
         style={typeSelectStyle}>
         <option value="投入">投入</option>
         <option value="退回">退回</option>
       </select>
-      <Button size="mini" block style={materialBtnStyle} onClick={() => setShowPicker(true)}>
-        <span style={{
-          color: draft.bas_material_id ? 'var(--m-text)' : 'var(--m-text-3)',
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          flex: 1,
-        }}>
-          {draft.bas_material_id
-            ? `${draft.material_code || ''} ${draft.material_name || ''}`.trim()
-            : draft.material_type === '退回' ? '选退回料品（仅当前工序已投入）' : '选料品'}
-        </span>
-        <span style={{ color: 'var(--m-text-3)', fontSize: 12, marginLeft: 4 }}>›</span>
-      </Button>
       <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
         <Button size="mini" color="primary" onClick={handleSave}>保存</Button>
         <Button size="mini" fill="outline" onClick={cancelEdit}>取消</Button>
@@ -388,8 +373,53 @@ export function ProcessMaterialPanel({
       </div>
     </div>
   )
+
+  // 多行料品卡片（点击打开 Popup picker）
   const formRow2 = (
-    <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
+    <div
+      onClick={() => setShowPicker(true)}
+      style={{
+        border: draft.bas_material_id ? '1px solid var(--m-border)' : '1px dashed var(--m-border)',
+        borderRadius: 6, padding: '8px 10px', cursor: 'pointer',
+        background: draft.bas_material_id ? 'var(--m-surface)' : 'var(--m-surface-2)',
+        marginBottom: 6,
+      }}
+    >
+      {draft.bas_material_id ? (
+        <>
+          {draft.material_code && (
+            <div style={{ fontSize: 11, color: 'var(--m-text-3)', lineHeight: 1.3 }}>
+              {draft.material_code}
+            </div>
+          )}
+          <div style={{
+            fontSize: 13, color: 'var(--m-text)', fontWeight: 500,
+            marginTop: 2, lineHeight: 1.4, wordBreak: 'break-all',
+          }}>
+            {draft.material_name}
+          </div>
+          {(draft as any).specification && (
+            <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 3, lineHeight: 1.3 }}>
+              规格：{(draft as any).specification}
+            </div>
+          )}
+          {(draft as any).unit && (
+            <span style={{ fontSize: 11, color: 'var(--m-text-3)', marginLeft: 6 }}>
+              单位：{(draft as any).unit}
+            </span>
+          )}
+        </>
+      ) : (
+        <div style={{ color: 'var(--m-text-3)', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span>{draft.material_type === '退回' ? '点击选退回料品（仅当前工序已投入）' : '点击选料品'}</span>
+          <span style={{ fontSize: 14 }}>›</span>
+        </div>
+      )}
+    </div>
+  )
+
+  const formRow3 = (
+    <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
       <input placeholder="批号"
         value={draft.material_batch ?? ''}
         onChange={(e) => setDraft(d => ({ ...d, material_batch: e.target.value }))}
@@ -408,6 +438,7 @@ export function ProcessMaterialPanel({
         style={{ ...inputStyle, width: 60 }} />
     </div>
   )
+
   const formImage = (
     <div style={{ marginTop: 8 }}>
       <ProcessImageUploader
@@ -429,7 +460,7 @@ export function ProcessMaterialPanel({
       )}
       {expandedId === '__new__' && (
         <div style={{ borderTop: '1px dashed var(--m-border)', paddingTop: 10, marginTop: 6 }}>
-          {formRow1}{formRow2}{formImage}
+          {formRow1}{formRow2}{formRow3}{formImage}
         </div>
       )}
       {expandedId === '__new__' && processMaterials.length > 0 && (
@@ -446,7 +477,7 @@ export function ProcessMaterialPanel({
         if (isExpanded) {
           return (
             <div key={rowKey} style={{ borderTop: '1px solid var(--m-border)', paddingTop: 10, marginTop: 6 }}>
-              {formRow1}{formRow2}{formImage}
+              {formRow1}{formRow2}{formRow3}{formImage}
             </div>
           )
         }
