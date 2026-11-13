@@ -57,9 +57,11 @@ export function ProcessDefectPanel({
     () => allDefects
       .filter(d => String(d.process_id) === String(activeProcessId))
       .sort((a, b) => {
-        // 优先 createdAt 倒序，无 createdAt 时用 defect_id 倒序
-        const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0
-        const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0
+        // 优先 createdAt 倒序（ProcessDefect 模型用 record_time 作 createdAt 列），无时间时用 defect_id 倒序
+        const at = (a as any).createdAt || (a as any).record_time
+        const bt = (b as any).createdAt || (b as any).record_time
+        const ta = at ? new Date(at).getTime() : 0
+        const tb = bt ? new Date(bt).getTime() : 0
         if (ta !== tb) return tb - ta
         const idA = Number(a.defect_id ?? a.id ?? 0)
         const idB = Number(b.defect_id ?? b.id ?? 0)

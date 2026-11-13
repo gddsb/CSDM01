@@ -26,11 +26,16 @@ interface Props {
   onDirtyChange?: (dirty: boolean) => void
 }
 
-/** 按 createdAt 倒序（无则用 scrap_id/id） */
+/** ProcessDefect 模型用 record_time 作为 createdAt 列（Sequelize 别名） */
+function getTime(row: any): string | undefined {
+  return row.createdAt || row.record_time || row.created_at
+}
+
+/** 按时间倒序（无则用 scrap_id/id） */
 function sortDesc(list: ScrapRow[]): ScrapRow[] {
   return [...list].sort((a, b) => {
-    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0
-    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0
+    const ta = getTime(a) ? new Date(getTime(a)!).getTime() : 0
+    const tb = getTime(b) ? new Date(getTime(b)!).getTime() : 0
     if (ta !== tb) return tb - ta
     const ia = Number(a.scrap_id ?? a.id ?? 0)
     const ib = Number(b.scrap_id ?? b.id ?? 0)
@@ -109,7 +114,7 @@ export function ScrapPanel({
         defect_type: '检验报废',
         quantity: Number(saved.quantity),
         unit: saved.unit || draft.unit || '',
-        createdAt: saved.createdAt || new Date().toISOString(),
+        createdAt: getTime(saved) || new Date().toISOString(),
       }
       setRows(prev => sortDesc([...prev, newRow]))
       Toast.show({ content: '已添加', icon: 'success' })
@@ -146,9 +151,9 @@ export function ScrapPanel({
                 {row.defect_code && <span style={{ color: 'var(--m-text-3)', fontSize: 11, marginRight: 4 }}>{row.defect_code}</span>}
                 {row.defect_name || '—'}
               </span>
-              {row.createdAt && (
+              {getTime(row) && (
                 <span style={{ fontSize: 11, color: 'var(--m-text-3)', marginLeft: 'auto' }}>
-                  {fmtTime(row.createdAt)}
+                  {fmtTime(getTime(row))}
                 </span>
               )}
             </div>
