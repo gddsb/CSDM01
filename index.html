@@ -15,6 +15,87 @@
   <link rel="manifest" href="/manifest.webmanifest" />
 </head>
 <body>
+  <!-- ============ 开屏 Loader（纯 HTML+CSS+inline script，React 之前渲染） ============ -->
+  <!-- 时序：原生 Splash (3s) → WebView 加载远程 HTML → 浏览器立即渲染这个 loader →
+       JS 下载+编译+React 启动 → main.tsx 计算 elapsed：
+         < 3s 则 setTimeout(remove, 3000 - elapsed)；≥ 3s 立即 remove -->
+  <div id="app-loader" aria-hidden="false" style="
+    position: fixed; inset: 0; z-index: 99999;
+    background: linear-gradient(180deg, #2196F3 0%, #1565C0 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    color: #fff;
+  ">
+    <!-- 企业 Logo：淡入 + 轻微缩放 -->
+    <img id="app-loader-logo" src="/assets/logo-square.png" alt="Daman 大满" style="
+      width: 96px; height: 96px; object-fit: contain;
+      opacity: 0; transform: scale(0.8);
+      border-radius: 14px; background: #fff; padding: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      animation: splashLogoFade 1.1s ease-out 0.1s forwards;
+    " />
+
+    <!-- 欢迎词 第 1 行：大家满意（品牌蓝调） -->
+    <div id="app-loader-text1" style="
+      margin-top: 28px; font-size: 30px; font-weight: 700; letter-spacing: 6px;
+      opacity: 0; transform: translateY(12px);
+      color: #fff;
+      animation: splashTextIn 0.9s ease-out 0.6s forwards;
+    ">大家满意</div>
+
+    <!-- 欢迎词 第 2 行：共创未来（红调） -->
+    <div id="app-loader-text2" style="
+      margin-top: 6px; font-size: 30px; font-weight: 700; letter-spacing: 6px;
+      opacity: 0; transform: translateY(12px);
+      color: #FFCDD2;
+      animation: splashTextIn 0.9s ease-out 0.9s forwards;
+    ">共创未来</div>
+
+    <!-- Loading 指示器 -->
+    <div id="app-loader-loading" style="
+      margin-top: 48px; display: flex; align-items: center; gap: 10px;
+      font-size: 13px; color: rgba(255,255,255,0.85);
+      opacity: 0; animation: splashTextIn 0.6s ease-out 1.4s forwards;
+    ">
+      <div style="
+        width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.35);
+        border-top-color: #fff; border-radius: 50%;
+        animation: splashSpin 0.9s linear infinite;
+      "></div>
+      <span>加载中…</span>
+    </div>
+
+    <!-- 底部版本号（可选） -->
+    <div style="
+      position: absolute; bottom: 24px; left: 0; right: 0; text-align: center;
+      font-size: 11px; color: rgba(255,255,255,0.5);
+    ">奶粉罐生产管理系统</div>
+  </div>
+
+  <!-- 开屏 Loader CSS 动画（与 React 无关，纯 CSS keyframes） -->
+  <style>
+    @keyframes splashLogoFade {
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes splashTextIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes splashSpin {
+      to { transform: rotate(360deg); }
+    }
+    /* React 挂载后的退场动画 */
+    @keyframes splashFadeOut {
+      to { opacity: 0; transform: scale(1.03); }
+    }
+    #app-loader.splash-fade-out {
+      animation: splashFadeOut 0.35s ease-in forwards;
+      pointer-events: none;
+    }
+  </style>
+
+  <!-- 记录 loader 挂载时间戳，供 main.tsx 计算最小展示时间 -->
+  <script>window.__SPLASH_START_AT__ = Date.now();</script>
+
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
 </body>

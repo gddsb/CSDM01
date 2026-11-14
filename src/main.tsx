@@ -1,3 +1,24 @@
+// ========== 移除开屏 Loader（最小 3s 展示 + React 挂载后淡出） ==========
+// index.html 里有 <div id="app-loader"> 全屏遮罩，React 启动时根据 window.__SPLASH_START_AT__
+// 计算 elapsed：若 < 3000ms 则 setTimeout 等到 3s；否则立即移除。
+void (function removeSplashLoader() {
+  const MIN_SHOW_MS = 3000
+  const el = document.getElementById('app-loader')
+  if (!el) return
+  const startAt = Number((globalThis as any).__SPLASH_START_AT__ || 0)
+  const elapsed = startAt ? Date.now() - startAt : MIN_SHOW_MS
+  const doRemove = () => {
+    // 先淡出 350ms 再从 DOM 移除
+    el.classList.add('splash-fade-out')
+    setTimeout(() => el.remove(), 360)
+  }
+  if (elapsed >= MIN_SHOW_MS) {
+    doRemove()
+  } else {
+    setTimeout(doRemove, MIN_SHOW_MS - elapsed)
+  }
+})()
+
 import React, { useEffect, Suspense, lazy } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
