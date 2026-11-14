@@ -99,6 +99,7 @@ export function ProcessDefectPanel({
   // ========== 新增 / 编辑（state 必须在 useMemo 之前声明，避免 TDZ 崩溃）==========
   const [expandedId, setExpandedId] = useState<number | string | null>(null) // 哪一行在编辑
   const [draft, setDraft] = useState<DefectRow>({ quantity: 0 })
+  const isEditMode = expandedId !== '__new__' && expandedId !== null
 
   // ========== antd-mobile Picker columns（顶层 useMemo，columns 不能在 IIFE/Hook 内嵌套）==========
   const defectTypeColumns = useMemo(() => [
@@ -240,7 +241,7 @@ export function ProcessDefectPanel({
         <div style={{ borderTop: '1px dashed var(--m-border)', paddingTop: 10, marginTop: 6 }}>
           {/* 紧凑一行：类型 + 单位 + 数量 ... 保存/取消（按钮组右对齐）*/}
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-            {/* 不良类型 Picker */}
+            {/* 不良类型 Picker（新增可改 / 编辑只读） */}
             {(() => {
               const currentType = filteredTypes.find(t => t.defect_id === Number(draft.defect_type_id))
               return (
@@ -255,11 +256,15 @@ export function ProcessDefectPanel({
                   }}
                 >
                   {(_items, { open }) => (
-                    <div onClick={open} role="button" tabIndex={0} style={{
-                      flex: 2, minWidth: 110, padding: '7px 8px', borderRadius: 6,
-                      border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)',
-                      textAlign: 'center', minHeight: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    <div onClick={() => !isEditMode && open()} role="button" tabIndex={0} style={{
+                      flex: '1 1 auto', minWidth: 0, padding: '7px 8px', borderRadius: 6,
+                      border: isEditMode ? '1px dashed var(--m-border)' : '1px solid var(--m-border)',
+                      fontSize: 12,
+                      background: isEditMode ? 'transparent' : 'var(--m-surface)',
+                      textAlign: 'left', minHeight: 32, lineHeight: '18px',
                       color: currentType ? 'var(--m-text)' : 'var(--m-text-3)',
+                      cursor: isEditMode ? 'default' : 'pointer',
+                      whiteSpace: 'normal', wordBreak: 'break-all',
                     }}>
                       {currentType ? `${currentType.defect_code || ''} ${currentType.defect_name}`.trim() : '不良类型'}
                     </div>
@@ -299,7 +304,7 @@ export function ProcessDefectPanel({
               style={{ width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
             />
             <div style={{ flex: 1 }} />
-            <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: 12, flexShrink: 0 }}>
               <Button size="mini" color="primary" onClick={handleSave}>保存</Button>
               <Button size="mini" fill="outline" onClick={cancelEdit}>取消</Button>
             </div>
@@ -328,7 +333,7 @@ export function ProcessDefectPanel({
             <div key={rowKey} style={{ borderTop: '1px solid var(--m-border)', paddingTop: 10, marginTop: 6 }}>
               {/* 紧凑一行：类型 + 单位 + 数量 ... 保存/取消/删除（按钮组右对齐）*/}
               <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                {/* 不良类型 Picker（编辑模式：保留已有单位 d.unit || defaultUnit） */}
+                {/* 不良类型 Picker（新增可改 / 编辑只读） */}
                 {(() => {
                   const currentType = filteredTypes.find(t => t.defect_id === Number(draft.defect_type_id))
                   return (
@@ -343,11 +348,15 @@ export function ProcessDefectPanel({
                       }}
                     >
                       {(_items, { open }) => (
-                        <div onClick={open} role="button" tabIndex={0} style={{
-                          flex: 2, minWidth: 110, padding: '7px 8px', borderRadius: 6,
-                          border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)',
-                          textAlign: 'center', minHeight: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        <div onClick={() => !isEditMode && open()} role="button" tabIndex={0} style={{
+                          flex: '1 1 auto', minWidth: 0, padding: '7px 8px', borderRadius: 6,
+                          border: isEditMode ? '1px dashed var(--m-border)' : '1px solid var(--m-border)',
+                          fontSize: 12,
+                          background: isEditMode ? 'transparent' : 'var(--m-surface)',
+                          textAlign: 'left', minHeight: 32, lineHeight: '18px',
                           color: currentType ? 'var(--m-text)' : 'var(--m-text-3)',
+                          cursor: isEditMode ? 'default' : 'pointer',
+                          whiteSpace: 'normal', wordBreak: 'break-all',
                         }}>
                           {currentType ? `${currentType.defect_code || ''} ${currentType.defect_name}`.trim() : '不良类型'}
                         </div>
@@ -387,7 +396,7 @@ export function ProcessDefectPanel({
                   style={{ width: 70, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
                 />
                 <div style={{ flex: 1 }} />
-                <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                <div style={{ display: 'flex', gap: 12, flexShrink: 0 }}>
                   <Button size="mini" color="primary" onClick={handleSave}>保存</Button>
                   <Button size="mini" fill="outline" onClick={cancelEdit}>取消</Button>
                   {draft.defect_id && (

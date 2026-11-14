@@ -343,14 +343,15 @@ export default function MobileProcessReporting() {
               background: 'var(--m-surface)', borderRadius: 10, padding: 12, margin: '0 2px 10px',
               border: '1px solid var(--m-border)',
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 600 }}>{o.order_no}</div>
-                  <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 3 }}>{o.material_code} · {o.material_name}</div>
+                  <div style={{ fontSize: 15, fontWeight: 600 }}>工单编号 {o.order_no}</div>
+                  <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>({o.order_no})</div>
+                  <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginTop: 3 }}>{o.material_code} · {o.material_name}</div>
                 </div>
-                <Badge content={`${fmtInt(o.finished_qty)}/${fmtInt(o.planned_qty)}`} style={{ '--right': '-4px', '--top': '-4px' }} />
+                <Badge content={`${fmtInt(o.finished_qty)}/${fmtInt(o.planned_qty)}`} style={{ '--right': '-4px', '--top': '-4px', flexShrink: 0 }} />
               </div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
                 <Button size="mini" color="primary" onClick={() => handleStartNew(o)}>▶ 开工报工</Button>
               </div>
             </div>
