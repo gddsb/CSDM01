@@ -458,82 +458,24 @@ export default function ProcessReporting() {
     return Number(total.toFixed(2))
   }, [])
 
-  // 获取整个报工单的统计数据（不按工序过滤）
-  const fetchReportStats = useCallback(async (reportOrderId) => {
-    if (!reportOrderId) return
+  // 获取整个报工单的统计数据（直接读后端持久化字段，recalc 钩子已保证与子表聚合一致）
+  const fetchReportStats = useCallback(() => {
+    if (!selectedReport) return
     try {
-      const [defectRes, scrapRes, exceptionRes, materialRes, manpowerRes] = await Promise.all([
-        api.get('/production/process-defects', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } }),
-        api.get('/production/scrap-defects', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } }),
-        api.get('/production/process-exceptions', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } }),
-        api.get('/production/process-materials', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } }),
-        api.get('/production/manpower-records', { params: { report_order_id: reportOrderId, page: 1, pageSize: 1000 } }),
-      ])
-      const allDefects = defectRes.data || []
-      const allScraps = scrapRes.data || []
-      const allExceptions = exceptionRes.data || []
-      const allMaterials = materialRes.data || []
-      const allManpowers = manpowerRes.data || []
-
-      // 来料不良
-      const defectMaterial = allDefects
-        .filter(d => d.defect_type === '来料不良')
-        .reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
-      // 制程不良
-      const defectProcess = allDefects
-        .filter(d => d.defect_type === '制程不良')
-        .reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
-      // 检验报废
-      const defectScrapTotal = allScraps
-        .filter(d => d.defect_type === '检验报废')
-        .reduce((sum, d) => sum + (Number(d.quantity) || 0), 0)
-      // 异常工时
-      const exceptionHours = allExceptions.reduce((sum, e) => sum + (Number(e.duration) || 0), 0)
-      // 人工工时（与移动端相同逻辑：开工状态结束时间取当前时间，完工状态取finish_time）
-      let manpowerHours = 0
-      const reportStart = selectedReport?.report_time
-      if (reportStart && allManpowers.length > 0) {
-        const start = dayjs(reportStart)
-        const end = selectedReport?.status === '完工' && selectedReport?.finish_time
-          ? dayjs(selectedReport.finish_time)
-          : dayjs()
-        const diffMs = end.valueOf() - start.valueOf()
-        const hours = diffMs > 0 ? Number((diffMs / 3600000).toFixed(2)) : 0
-        manpowerHours = allManpowers.reduce((sum, m) => {
-          const sk = Number(m.skilled_count) || 0
-          const gn = Number(m.general_count) || 0
-          const lb = Number(m.labor_count) || 0
-          const ot = Number(m.other_count) || 0
-          const total_people = sk + gn + lb + ot
-          return sum + Number((hours * total_people).toFixed(2))
-        }, 0)
-      }
-      // 投入数量 = 第一道工序的投入-退回
-      let inputQty = 0
-      if (lineProcesses.length > 0) {
-        const firstProcessId = lineProcesses[0].process_id
-        const firstProcessMaterials = allMaterials.filter(m => m.process_id === firstProcessId)
-        const investQty = firstProcessMaterials.filter(m => m.material_type === '投入').reduce((sum, m) => sum + (Number(m.quantity) || 0), 0)
-        const returnQty = firstProcessMaterials.filter(m => m.material_type === '退回').reduce((sum, m) => sum + (Number(m.quantity) || 0), 0)
-        inputQty = investQty - returnQty
-      }
-
-      const expectedOutput = inputQty - defectMaterial - defectProcess - defectScrapTotal
-
       setStats({
-        inputQty: Number(inputQty.toFixed(2)),
-        outputQty: Number(selectedReport?.report_qty || 0),
-        defectMaterial: Number(defectMaterial.toFixed(2)),
-        defectProcess: Number(defectProcess.toFixed(2)),
-        defectScrap: Number(defectScrapTotal.toFixed(2)),
-        exceptionHours: Number(exceptionHours.toFixed(2)),
-        manpowerHours: Number(manpowerHours.toFixed(2)),
-        expectedOutput: Number(expectedOutput.toFixed(2)),
+        inputQty: Number(selectedReport.total_input_qty ?? 0),
+        outputQty: Number(selectedReport.report_qty || 0),
+        defectMaterial: Number(selectedReport.total_defect_material ?? 0),
+        defectProcess: Number(selectedReport.total_defect_process ?? 0),
+        defectScrap: Number(selectedReport.total_defect_scrap ?? 0),
+        exceptionHours: Number(selectedReport.total_exception_hours ?? 0),
+        manpowerHours: Number(selectedReport.total_manpower_hours ?? 0),
+        expectedOutput: Number(selectedReport.expected_output ?? 0),
       })
     } catch {
       // 静默失败
     }
-  }, [selectedReport, lineProcesses])
+  }, [selectedReport])
 
   const fetchMaterials = useCallback(async () => {
     try {
@@ -571,8 +513,8 @@ export default function ProcessReporting() {
       setStats({ inputQty: 0, outputQty: 0, defectMaterial: 0, defectProcess: 0, defectScrap: 0, exceptionHours: 0, manpowerHours: 0, expectedOutput: 0 })
       return
     }
-    fetchReportStats(selectedReport.report_order_id)
-  }, [selectedReport, lineProcesses, fetchReportStats])
+    fetchReportStats()
+  }, [selectedReport, fetchReportStats])
 
   // 当前工序列表数据
   useEffect(() => {
