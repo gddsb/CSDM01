@@ -137,10 +137,12 @@ export function ManpowerPanel({
     return () => { onDirtyChange?.(false) }
   }, [manpowerDirty, breakDirty, onDirtyChange])
 
-  // ========== 保存人员配置 ==========
-  const handleSaveManpower = useCallback(async () => {
+  // ========== 输入即保存（debounce 800ms） ==========
+  const [savingManpower, setSavingManpower] = useState(false)
+  const saveManpowerOnce = useCallback(async () => {
+    if (savingManpower) return
     const total = skilled + general + labor + other
-    if (total <= 0) { Toast.show({ content: '请填至少一项人数', icon: 'fail' }); return }
+    if (total <= 0) return
     const payload = {
       report_order_id: report.report_order_id,
       skilled_count: skilled,
@@ -148,6 +150,7 @@ export function ManpowerPanel({
       labor_count: labor,
       other_count: other,
     }
+    setSavingManpower(true)
     try {
       let r: any
       if (manpower?.record_id) {
@@ -157,11 +160,17 @@ export function ManpowerPanel({
       }
       const data = (r as any).data || manpower || payload
       setManpower(() => ({ ...data, record_id: data.record_id }))
-      Toast.show({ content: '已保存人员配置', icon: 'success' })
-    } catch (e: any) {
-      Toast.show({ content: e?.message || '保存失败', icon: 'fail' })
-    }
-  }, [skilled, general, labor, other, report.report_order_id, manpower, setManpower])
+    } catch { /* 静默，失败留给用户手动重试 */ }
+    finally { setSavingManpower(false) }
+  }, [skilled, general, labor, other, report.report_order_id, manpower, setManpower, savingManpower])
+
+  // manpowerDirty 变 true 后 debounce 自动保存
+  useEffect(() => {
+    if (!manpowerDirty) return
+    if (!editable) return
+    const t = setTimeout(() => { saveManpowerOnce() }, 800)
+    return () => clearTimeout(t)
+  }, [manpowerDirty, editable, saveManpowerOnce])
 
   // ========== 休息时间操作 ==========
 
@@ -344,16 +353,6 @@ export function ManpowerPanel({
           </div>
         ))}
       </div>
-      {editable && (
-        <Button color="primary" size="small" block onClick={handleSaveManpower} disabled={!manpowerDirty} style={{ marginTop: 12 }}>
-          💾 保存人员配置
-        </Button>
-      )}
-      {!editable && (
-        <div style={{ fontSize: 11, color: 'var(--m-text-3)', textAlign: 'center', marginTop: 8 }}>
-          报工单已完工 · 只读
-        </div>
-      )}
 
       {/* ===== 分割线 ===== */}
       <div style={{

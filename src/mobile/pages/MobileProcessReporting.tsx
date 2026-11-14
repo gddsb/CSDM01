@@ -563,15 +563,18 @@ function Header({ report, onBack, onFinish }: { report: ReportOrder; onBack: () 
       padding: '12px 14px',
     }}>
       {/* 行1：编号 + 状态 + 完工按钮 同一行（返回按钮已移除，由系统返回手势替代） */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontSize: 16, fontWeight: 700 }}>📝 {report.report_no}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ fontSize: 15, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flexShrink: 1 }}>📝 {report.report_no}</span>
         <span style={{
-          fontSize: 11, padding: '2px 8px', borderRadius: 10, flexShrink: 0,
+          fontSize: 11, padding: '2px 8px', borderRadius: 10, flexShrink: 0, whiteSpace: 'nowrap',
           background: isDone ? 'var(--m-status-done)' : statusText === '生产中' ? 'var(--m-status-pending)' : 'rgba(255,255,255,.25)',
         }}>{statusText}</span>
-        <div style={{ flex: 1 }} />
+        <div style={{ flex: 1, minWidth: 0 }} />
         {!isDone && (
-          <Button size="mini" color="danger" onClick={onFinish} style={{ background: '#ff4d4f' }}>工单完结</Button>
+          <Button size="mini" color="danger" onClick={onFinish} style={{
+            background: '#ff4d4f', padding: '2px 10px', height: 24, fontSize: 11,
+            borderRadius: 12, whiteSpace: 'nowrap', flexShrink: 0,
+          }}>工单完结</Button>
         )}
       </div>
       {/* 行2：订单 + 产线 */}
@@ -601,19 +604,19 @@ function StatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportSta
       background: 'var(--m-surface)', margin: '10px 0 0', borderRadius: 10, padding: '10px 12px',
       boxShadow: '0 1px 4px rgba(0,0,0,.04)',
     }}>
-      {/* 标题行：左标题 + 右平衡产出/投入比值（右对齐） */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-        <div style={{ fontSize: 11, color: 'var(--m-text-3)', fontWeight: 600 }}>📊 报工单汇总</div>
-        <div style={{ fontSize: 16, fontWeight: 700 }}>
+      {/* 标题行：全部靠左对齐，平衡产出/投入紧跟标签 */}
+      <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 11, color: 'var(--m-text-3)', fontWeight: 600, whiteSpace: 'nowrap' }}>📊 报工单汇总</div>
+        <div style={{ fontSize: 15, fontWeight: 700, whiteSpace: 'nowrap' }}>
           <span style={{ color: '#52c41a' }}>{qualifiedInt}</span>
           <span style={{ color: 'var(--m-text-3)', margin: '0 2px' }}>/</span>
           <span style={{ color: 'var(--brand-color)' }}>{inputInt}</span>
         </div>
       </div>
-      {/* 数据行：4 项 flex 平分 */}
-      <div style={{ display: 'flex', gap: 4, alignItems: 'stretch' }}>
+      {/* 数据行：左对齐排列，每项按内容宽度，空间留给右侧 */}
+      <div style={{ display: 'flex', gap: 12, alignItems: 'stretch', justifyContent: 'flex-start', flexWrap: 'wrap' }}>
         {items.map(it => (
-          <div key={it.label} style={{ flex: 1, textAlign: 'center', minWidth: 0 }}>
+          <div key={it.label} style={{ textAlign: 'left', whiteSpace: 'nowrap' }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: it.color, whiteSpace: 'nowrap' }}>{it.value}</div>
             <div style={{ fontSize: 10, color: 'var(--m-text-3)', marginTop: 2, whiteSpace: 'nowrap' }}>{it.label}</div>
           </div>

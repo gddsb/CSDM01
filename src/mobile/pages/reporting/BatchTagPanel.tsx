@@ -84,7 +84,15 @@ export function BatchTagPanel({ report, editable, onSaved }: Props) {
           onChange={(v) => setBatch(v)}
           disabled={!editable}
           maxLength={100}
-          style={{ fontSize: 14 }}
+          style={{
+            fontSize: 15,
+            padding: '10px 12px',
+            height: 44,
+            border: '1.5px solid var(--brand-color)',
+            borderRadius: 8,
+            background: 'var(--m-surface)',
+            fontWeight: 500,
+          }}
         />
       </div>
 
