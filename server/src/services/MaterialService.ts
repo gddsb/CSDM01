@@ -25,7 +25,8 @@ export const MaterialService = {
       if (dateStart) where.created_at[Op.gte] = new Date(dateStart)
       if (dateEnd) where.created_at[Op.lte] = new Date(dateEnd + ' 23:59:59')
     }
-    const limit = Math.min(Number(pageSize), MAX_PAGE_SIZE)
+    // 料品档案需要全量加载（移动端自动匹配 + 下拉选择），上限放大到 2000
+    const limit = Math.min(Number(pageSize), 2000)
     const offset = (Number(page) - 1) * limit
     return await Material.findAndCountAll({ where, limit, offset, order: [['created_at', 'DESC']] })
   },
