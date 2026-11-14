@@ -10,7 +10,7 @@
  */
 import { useEffect, useMemo, useState, useCallback, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Dialog, Toast, Button, Tabs, Badge } from 'antd-mobile'
+import { Dialog, Toast, Button, Tabs, Badge, Picker } from 'antd-mobile'
 import api from '../../utils/api'
 import { calcReportStats } from '../../pages/production/reportStats'
 import { useKeyboardInset } from '../hooks/useKeyboardInset'
@@ -634,7 +634,8 @@ function PanelSubTabs({
 }
 
 /**
- * 工序选择器 — 必报工序 option 带前缀 "*"，选中后右侧显示红色 [必报] 徽章
+ * 工序选择器 — antd-mobile Picker 底部滚轮，必报工序 option 红色加粗
+ * 选中后右侧显示红色 [必报] 徽章
  */
 function ProcessSelector({
   processes, activeProcId, onChange,
@@ -644,26 +645,49 @@ function ProcessSelector({
   onChange: (id: number | null) => void
 }) {
   const current = processes.find(p => p.process_id === activeProcId)
+  const columns = [processes.map(p => ({
+    label: (
+      <span style={{
+        color: p.must_report ? '#f44336' : 'inherit',
+        fontWeight: p.must_report ? 600 : 400,
+      }}>
+        {p.must_report ? '🔴 ' : ''}{p.sort_order}. {p.process_name}
+      </span>
+    ),
+    value: p.process_id,
+  }))]
+
   return (
     <div style={{
       padding: '8px 12px', borderBottom: '1px solid var(--m-border)', background: 'var(--m-surface-2)',
       display: 'flex', alignItems: 'center', gap: 8,
     }}>
       <span style={{ fontSize: 12, color: 'var(--m-text-3)', flexShrink: 0 }}>工序</span>
-      <select
-        value={activeProcId || ''}
-        onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}
-        style={{
-          flex: 1, padding: '7px 10px', borderRadius: 6,
-          border: '1px solid var(--m-border)', fontSize: 13, background: 'var(--m-surface)',
-        }}
+      <Picker
+        columns={columns}
+        value={activeProcId ? [activeProcId] : []}
+        onConfirm={(v) => onChange(Number(v[0]) || null)}
       >
-        {processes.map(p => (
-          <option key={p.process_id} value={p.process_id}>
-            {p.must_report ? '* ' : ''}{p.sort_order}. {p.process_name}
-          </option>
-        ))}
-      </select>
+        {(items) => (
+          <div style={{
+            flex: 1, padding: '7px 10px', borderRadius: 6,
+            border: '1px solid var(--m-border)', fontSize: 13, background: 'var(--m-surface)',
+            textAlign: 'left', display: 'flex', alignItems: 'center', minHeight: 32,
+          }}>
+            {current ? (
+              <span style={{
+                color: current.must_report ? '#f44336' : 'inherit',
+                fontWeight: current.must_report ? 600 : 400,
+              }}>
+                {current.must_report ? '* ' : ''}{current.sort_order}. {current.process_name}
+              </span>
+            ) : (
+              <span style={{ color: 'var(--m-text-3)' }}>请选择工序</span>
+            )}
+            <span style={{ marginLeft: 'auto', color: 'var(--m-text-3)', fontSize: 11 }}>▾</span>
+          </div>
+        )}
+      </Picker>
       {current?.must_report && (
         <span style={{
           fontSize: 10, padding: '1px 6px', borderRadius: 10,

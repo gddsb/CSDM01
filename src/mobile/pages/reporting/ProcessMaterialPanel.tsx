@@ -456,7 +456,7 @@ export function ProcessMaterialPanel({
     <div>
       {/* ===== 顶部：新增按钮 + 新增表单 ===== */}
       {editable && activeProcessId && expandedId !== '__new__' && (
-        <Button size="mini" color="primary" block onClick={startAdd}>
+        <Button size="mini" color="primary" block style={{ height: 48, fontSize: 15 }} onClick={startAdd}>
           ➕ 新增投料
         </Button>
       )}

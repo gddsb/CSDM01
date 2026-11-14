@@ -15,7 +15,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import React from 'react'
-import { Button, Toast } from 'antd-mobile'
+import { Button, Toast, Picker } from 'antd-mobile'
 import { fmtLocalDateTime } from '../../../utils/localTime'
 import api from '../../../utils/api'
 import type { BreakTimeRow, ManpowerRow, ReportOrder } from './types'
@@ -120,6 +120,16 @@ export function ManpowerPanel({
 
   // ---- 休息时间状态（独立 dirty） ----
   const [breakDirty, setBreakDirty] = useState(false)
+
+  // 时分 Picker 列（常驻，避免每次渲染重建）
+  const timeColumns = useMemo(() => [
+    Array.from({ length: 24 }, (_, i) => ({
+      label: String(i).padStart(2, '0'), value: String(i).padStart(2, '0'),
+    })),
+    Array.from({ length: 60 }, (_, i) => ({
+      label: String(i).padStart(2, '0'), value: String(i).padStart(2, '0'),
+    })),
+  ], [])
 
   // 合并 dirty 上报（任一 dirty 即 dirty）
   useEffect(() => {
@@ -388,33 +398,55 @@ export function ManpowerPanel({
                   border: '1px solid var(--m-border)',
                   background: 'var(--m-surface-2)',
                 }}>
-                  {/* 开始时间 */}
-                  <input
-                    type="time"
-                    value={startHHmm}
-                    disabled={!editable}
-                    onChange={(e) => updateBreak(idx, 'start_time', e.target.value)}
-                    style={{
-                      flex: 1, minWidth: 0, padding: '6px 4px',
+                  {/* 开始时间 Picker */}
+                  {editable ? (
+                    <Picker
+                      columns={timeColumns}
+                      value={startHHmm.split(':')}
+                      onConfirm={(v) => updateBreak(idx, 'start_time', `${v[0]}:${v[1]}`)}
+                    >
+                      {(items) => (
+                        <div style={{
+                          flex: 1, minWidth: 0, padding: '6px 8px',
+                          borderRadius: 6, border: '1px solid var(--m-border)',
+                          fontSize: 14, background: 'var(--m-surface)',
+                          textAlign: 'center', color: 'var(--brand-color)', fontWeight: 600,
+                        }}>{startHHmm}</div>
+                      )}
+                    </Picker>
+                  ) : (
+                    <div style={{
+                      flex: 1, minWidth: 0, padding: '6px 8px',
                       borderRadius: 6, border: '1px solid var(--m-border)',
-                      fontSize: 14, background: editable ? 'var(--m-surface)' : 'var(--m-surface-2)',
-                      color: 'var(--m-text)',
-                    }}
-                  />
+                      fontSize: 14, background: 'var(--m-surface-2)',
+                      textAlign: 'center', color: 'var(--m-text)',
+                    }}>{startHHmm}</div>
+                  )}
                   <span style={{ fontSize: 14, color: 'var(--m-text-3)' }}>→</span>
-                  {/* 结束时间 */}
-                  <input
-                    type="time"
-                    value={endHHmm}
-                    disabled={!editable}
-                    onChange={(e) => updateBreak(idx, 'end_time', e.target.value)}
-                    style={{
-                      flex: 1, minWidth: 0, padding: '6px 4px',
+                  {/* 结束时间 Picker */}
+                  {editable ? (
+                    <Picker
+                      columns={timeColumns}
+                      value={endHHmm.split(':')}
+                      onConfirm={(v) => updateBreak(idx, 'end_time', `${v[0]}:${v[1]}`)}
+                    >
+                      {(items) => (
+                        <div style={{
+                          flex: 1, minWidth: 0, padding: '6px 8px',
+                          borderRadius: 6, border: '1px solid var(--m-border)',
+                          fontSize: 14, background: 'var(--m-surface)',
+                          textAlign: 'center', color: 'var(--brand-color)', fontWeight: 600,
+                        }}>{endHHmm}</div>
+                      )}
+                    </Picker>
+                  ) : (
+                    <div style={{
+                      flex: 1, minWidth: 0, padding: '6px 8px',
                       borderRadius: 6, border: '1px solid var(--m-border)',
-                      fontSize: 14, background: editable ? 'var(--m-surface)' : 'var(--m-surface-2)',
-                      color: 'var(--m-text)',
-                    }}
-                  />
+                      fontSize: 14, background: 'var(--m-surface-2)',
+                      textAlign: 'center', color: 'var(--m-text)',
+                    }}>{endHHmm}</div>
+                  )}
                   {/* 分钟显示 */}
                   <span style={{
                     fontSize: 12, color: mins > 0 ? 'var(--brand-color)' : '#ff4d4f',

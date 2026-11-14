@@ -142,7 +142,7 @@ export function ScrapPanel({
       {/* 添加按钮（独立 block 全宽，未展开时显示——移到最顶部） */}
       {editable && !expanded && (
         <div style={{ marginBottom: 8 }}>
-          <Button size="mini" color="primary" block onClick={startAdd}>
+          <Button size="mini" color="primary" block style={{ height: 48, fontSize: 15 }} onClick={startAdd}>
             ➕ 添加检验报废
           </Button>
         </div>
