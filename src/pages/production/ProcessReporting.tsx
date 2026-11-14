@@ -24,6 +24,7 @@ import BatchTagPanel from './sections/BatchTagPanel'
 import { calcReportStats as calcReportOrderStats, calcProcessStats as calcPersonSummary } from './reportStats'
 import { useReportDetailRecords } from './hooks/useReportDetailRecords'
 import type { DefectRecord, ExceptionRecord, ManpowerRecord, MaterialRecord } from './types'
+import { getProcessMaterialRule, isMaterialAllowed, sortMaterialsByRule } from '../../utils/processMaterialRules'
 
 export default function ProcessReporting() {
   // 顶部下拉框数据：仅开工状态(status=0)的报工单
@@ -970,16 +971,21 @@ export default function ProcessReporting() {
   // 当前工序统计数据
 
   const getFilteredMaterialOptions = (record) => {
-    if (!isFirstProcess) return materialOptions
     if (record.material_type === '退回') {
       const enteredMaterials = materialList
         .filter(m => m.material_id && m.material_code && m.material_batch && m.package_no)
         .map(m => String(m.bas_material_id))
       return materialOptions.filter(m => enteredMaterials.includes(String(m.value)))
     }
-    return materialOptions.filter(m =>
-      m.material_code.startsWith('Y2') || m.material_code.startsWith('T1')
+    // 投入场景：根据当前工序 process_code 查规则过滤+排序
+    const proc = lineProcesses.find(p => Number(p.process_id) === Number(materialProcessId))
+    const rule = getProcessMaterialRule(proc?.process_code)
+    if (!rule) return materialOptions // 无规则 → 全量
+    let filtered = materialOptions.filter(m =>
+      isMaterialAllowed(m.material_code, rule, selectedReport?.material_code)
     )
+    filtered = sortMaterialsByRule(filtered, rule)
+    return filtered
   }
 
   const materialColumns = buildMaterialColumns({
