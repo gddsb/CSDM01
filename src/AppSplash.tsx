@@ -36,7 +36,7 @@ export default function AppSplash({ fading = false }: Props) {
         alt="Daman 大满"
         style={{
           display: 'inline-block',
-          width: 200,
+          width: 140, // 200 × 0.7 = 少 30%；height:auto 保持原始宽高比自动计算高度
           height: 'auto',
           maxWidth: '80vw',
           objectFit: 'contain',
