@@ -93,7 +93,6 @@ export default function MobileDailyCard() {
   const loadDateMarkers = useCallback(async (year: number, month: number) => {
     const cacheKey = `${year}-${String(month).padStart(2, '0')}`
     if (loadedMonthsRef.current.has(cacheKey)) return
-    loadedMonthsRef.current.add(cacheKey)
     try {
       const r = await api.get('/daily-report/dates', { params: { year, month } })
       const arr: string[] = r.data?.data || r.data || []
@@ -108,7 +107,10 @@ export default function MobileDailyCard() {
       })
       // forceRenderTick → renderDate 重建 → CalendarPickerView 重算所有 cells → 新圆点出来
       setForceRenderTick(n => n + 1)
-    } catch { /* 静默 */ }
+      loadedMonthsRef.current.add(cacheKey)   // ✅ 成功后才标记已加载 — 失败可重试
+    } catch (e) {
+      console.warn('[DailyCard] loadDateMarkers failed:', cacheKey, e)  // ✅ 不再静默
+    }
   }, [])
 
   // 初始化：加载前后各 3 个月
@@ -138,13 +140,14 @@ export default function MobileDailyCard() {
     const key = `${cacheKey}-${String(d.getDate()).padStart(2, '0')}`
     const hasMark = allMarkerDatesRef.current.has(key)
     return (
-      <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {d.getDate()}
+      <div style={{ position: 'relative', width: '100%', height: '100%',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+        <span style={{ lineHeight: 1 }}>{d.getDate()}</span>
         {hasMark && (
           <span style={{
-            position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)',
-            width: 5, height: 5, borderRadius: '50%',
+            width: 4, height: 4, borderRadius: '50%',
             background: 'var(--brand-color, #2196F3)',
+            display: 'inline-block',
           }} />
         )}
       </div>
