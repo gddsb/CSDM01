@@ -6,6 +6,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { Modal, Tree, Row, Col, Tag, Typography, Checkbox, Button, Space, Popconfirm, Tooltip } from 'antd'
 import { InfoCircleOutlined, SaveOutlined, CloseCircleOutlined } from '@ant-design/icons'
 import api from '../../utils/api'
+import { logger } from '../../utils/logger'
 
 const { Text } = Typography
 
@@ -131,7 +132,7 @@ export default function UserExtPermissionModal({ open, user, onClose, onSaved }:
       setCheckedAdd(new Set(data?.addPermIds || []))
       setCheckedDeny(new Set(data?.denyPermIds || []))
     } catch (err) {
-      console.error('加载失败', err)
+      logger.error('加载失败', err)
     } finally {
       setLoading(false)
     }

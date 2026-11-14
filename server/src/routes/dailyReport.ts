@@ -8,6 +8,7 @@ import { asyncHandler } from '../middleware/security.js'
 import { authRequired, permissionRequired } from '../middleware/auth.js'
 import { getDailyReport } from '../services/DailyReportService.js'
 import { todayStr } from '../utils/date.js'
+import { logger } from '../utils/logger.js'
 import ReportOrder from '../models/ReportOrder.js'
 
 const router = Router()
@@ -39,7 +40,7 @@ router.get('/dates', permissionRequired('report:daily'), asyncHandler(async (req
     }
     return res.json({ success: true, data: Array.from(dateSet).sort() })
   } catch (err: any) {
-    console.error('[DailyReport/dates] ERR', err?.message || err)
+    logger.error(`[DailyReport/dates] ERR: ${err?.message || err}`)
     return res.status(500).json({ success: false, message: err?.message || '日期标记加载失败' })
   }
 }))
@@ -52,7 +53,7 @@ router.get('/', permissionRequired('report:daily'), asyncHandler(async (req: any
     const data = await getDailyReport(date, line, shift)
     return res.json({ success: true, data })
   } catch (err: any) {
-    console.error('[DailyReport] ERR', err?.message || err)
+    logger.error(`[DailyReport] ERR: ${err?.message || err}`)
     return res.status(500).json({ success: false, message: err?.message || '日报数据加载失败' })
   }
 }))

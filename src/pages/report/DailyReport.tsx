@@ -10,6 +10,7 @@ import { ReloadOutlined, PrinterOutlined, FullscreenOutlined } from '@ant-design
 import dayjs from 'dayjs'
 import api from '../../utils/api'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
+import { logger } from '../../utils/logger'
 
 const { RangePicker } = DatePicker
 
@@ -146,7 +147,7 @@ export default function DailyReport() {
       const r = await api.get('/daily-report', { params: { date } })
       setData(r.data?.data || r.data || null)
     } catch (e) {
-      console.error('[DailyReport] load err', e)
+      logger.error('[DailyReport] load err', e)
     } finally {
       setLoading(false)
     }

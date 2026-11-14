@@ -13,6 +13,7 @@ import dayjs, { Dayjs } from 'dayjs'
 import api from '../../utils/api'
 import ThreeSectionPage from '../../components/ThreeSectionPage'
 import type { StatItem } from '../../components/ThreeSectionPage'
+import { logger } from '../../utils/logger'
 
 const { Title, Text } = Typography
 
@@ -192,7 +193,7 @@ export default function DeviceMaintenanceMatrix() {
       load()
     } catch (err: any) {
       // 幂等/权限不足等情况静默忽略
-      console.warn('confirm-inspect failed', recordId, err?.message || err)
+      logger.warn('confirm-inspect failed', recordId, err?.message || err)
     } finally {
       setConfirmingIds(prev => {
         const n = new Set(prev); n.delete(recordId); return n

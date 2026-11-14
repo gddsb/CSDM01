@@ -18,6 +18,7 @@ import React, { createContext, useCallback, useEffect, useMemo, useState } from 
 import type { DeviceConfig, DeviceInfo, DeviceMode, DeviceType } from './types'
 import { DEVICE_CAPABILITY, DEVICE_CONFIG_KEY } from './types'
 import { detectDeviceType } from './deviceDetector'
+import { logger } from '../utils/logger'
 
 interface DeviceContextValue {
   /** 当前生效的设备类型（final，经过 mode + override 解析） */
@@ -64,7 +65,7 @@ function loadFromStorage(): DeviceConfig {
 
     // 版本号落后 → 强制 reset（结构/漂移规则变了）
     if ((stored._v ?? 0) < CONFIG_VERSION) {
-      console.warn('[Device] 缓存版本落后，重置', { storedV: stored._v, current: CONFIG_VERSION })
+      logger.warn('[Device] 缓存版本落后，重置', { storedV: stored._v, current: CONFIG_VERSION })
       return defaultCfg
     }
 
@@ -75,7 +76,7 @@ function loadFromStorage(): DeviceConfig {
       const isManualMobile = stored.manualOverride === 'phone' || stored.manualOverride === 'pda' || stored.manualOverride === 'tablet'
       const detectPc = detected.platform === 'web'
       if (isManualMobile && detectPc) {
-        console.warn('[Device] 平台漂移：缓存是手动移动端，但检测到 PC Web → reset auto', {
+        logger.warn('[Device] 平台漂移：缓存是手动移动端，但检测到 PC Web → reset auto', {
           cached: stored.manualOverride,
           detected: detected.type,
           platform: detected.platform,
@@ -92,7 +93,7 @@ function loadFromStorage(): DeviceConfig {
     // manual 模式且不是冲突场景：原样返回（保留用户手动选择）
     return { type: stored.type, mode: stored.mode, manualOverride: stored.manualOverride }
   } catch {
-    console.warn('[Device] localStorage 解析失败，使用默认配置')
+    logger.warn('[Device] localStorage 解析失败，使用默认配置')
     return defaultCfg
   }
 }
@@ -118,7 +119,7 @@ export const DeviceProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // 启动日志 —— 真机/浏览器控制台可见，方便排查
   useEffect(() => {
     const finalType = resolveType(detected, config)
-    console.log('[Device] init', {
+    logger.info('[Device] init', {
       finalType,
       detected: detected.type,
       platform: detected.platform,
