@@ -405,13 +405,13 @@ export function ManpowerPanel({
                       value={startHHmm.split(':')}
                       onConfirm={(v) => updateBreak(idx, 'start_time', `${v[0]}:${v[1]}`)}
                     >
-                      {(items) => (
+                      {(_items, { open }) => (
                         <div style={{
                           flex: 1, minWidth: 0, padding: '6px 8px',
                           borderRadius: 6, border: '1px solid var(--m-border)',
                           fontSize: 14, background: 'var(--m-surface)',
                           textAlign: 'center', color: 'var(--brand-color)', fontWeight: 600,
-                        }}>{startHHmm}</div>
+                        }} onClick={open} role="button" tabIndex={0}>{startHHmm}</div>
                       )}
                     </Picker>
                   ) : (
@@ -430,13 +430,13 @@ export function ManpowerPanel({
                       value={endHHmm.split(':')}
                       onConfirm={(v) => updateBreak(idx, 'end_time', `${v[0]}:${v[1]}`)}
                     >
-                      {(items) => (
+                      {(_items, { open }) => (
                         <div style={{
                           flex: 1, minWidth: 0, padding: '6px 8px',
                           borderRadius: 6, border: '1px solid var(--m-border)',
                           fontSize: 14, background: 'var(--m-surface)',
                           textAlign: 'center', color: 'var(--brand-color)', fontWeight: 600,
-                        }}>{endHHmm}</div>
+                        }} onClick={open} role="button" tabIndex={0}>{endHHmm}</div>
                       )}
                     </Picker>
                   ) : (

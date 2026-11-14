@@ -668,12 +668,12 @@ function ProcessSelector({
         value={activeProcId ? [activeProcId] : []}
         onConfirm={(v) => onChange(Number(v[0]) || null)}
       >
-        {(items) => (
+        {(_items, { open }) => (
           <div style={{
             flex: 1, padding: '7px 10px', borderRadius: 6,
             border: '1px solid var(--m-border)', fontSize: 13, background: 'var(--m-surface)',
             textAlign: 'left', display: 'flex', alignItems: 'center', minHeight: 32,
-          }}>
+          }} onClick={open} role="button" tabIndex={0}>
             {current ? (
               <span style={{
                 color: current.must_report ? '#f44336' : 'inherit',
