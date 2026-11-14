@@ -186,8 +186,9 @@ export default function MobileDashboard() {
 
   // ========== 渲染 ==========
   return (
-    <div style={{ minHeight: '100vh' }}>
-    {/* 注意：不用 mobile-page-scrollable 的 12px 14px padding，Dashboard 内部自己掌控间距 */}
+    <div>
+    {/* 注意：不用 mobile-page-scrollable 的 12px 14px padding，Dashboard 内部自己掌控间距
+        也不用 minHeight:100vh — 让自然内容高度决定容器大小，避免"内容没超出但出现滚动条" */}
     <PullToRefresh onRefresh={onRefresh}>
       {/* 【UI 重构 2026-11-07】顶部淡蓝渐变（浅/深由 CSS 变量驱动） */}
       <div style={{
