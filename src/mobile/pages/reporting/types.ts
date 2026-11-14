@@ -42,11 +42,15 @@ export interface ReportOrder {
 export interface OrderRow {
   order_id: number
   order_no: string
+  /** 报工单号（从 /production/report-orders 数据源来才有） */
+  report_no?: string
   status: string
   material_code: string
   material_name: string
   planned_qty: number
   finished_qty: number
+  /** 投入数量（后端汇总） */
+  input_qty?: number
   line_id?: number
   line_name?: string
 }
