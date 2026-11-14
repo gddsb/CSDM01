@@ -884,33 +884,25 @@ export default function MobileDeviceMaintenance() {
             }
             return null
           })()}
-          {/* 📦 设备卡片（独立） */}
+          {/* 📦 设备卡片：编号 · 名称 靠左，保养周期靠右 — 同一行 */}
           <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginBottom: 12, border: '1px solid var(--m-border)' }}>
             <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginBottom: 6 }}>📦 设备</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--m-text)' }}>
-                  {selectedDevice?.device_name || '—'}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 2 }}>
-                  {selectedDevice?.device_code || '—'}
-                </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 600, color: 'var(--m-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {selectedDevice?.device_code ? (
+                  <span style={{ color: 'var(--m-text-3)', fontWeight: 400, fontSize: 12 }}>{selectedDevice.device_code}</span>
+                ) : null}
+                {selectedDevice?.device_code && selectedDevice?.device_name ? (
+                  <span style={{ color: 'var(--m-text-3)', margin: '0 6px' }}>·</span>
+                ) : null}
+                <span>{selectedDevice?.device_name || '—'}</span>
               </div>
-              <span style={{
-                fontSize: 11, padding: '2px 8px', borderRadius: 8, flexShrink: 0,
-                background: 'var(--brand-color)22', color: 'var(--brand-color)',
-              }}>{selectedRecord.trigger_mode || ''}</span>
-            </div>
-          </div>
-
-          {/* 🛠️ 保养项标题（单独卡片） */}
-          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 12, marginBottom: 12, border: '1px solid var(--m-border)' }}>
-            <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginBottom: 6 }}>🛠️ 保养项</div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--m-text)' }}>
-              {selectedRecord.standard?.maintenance_method || selectedRecord.standard?.maintenance_content?.slice?.(0, 30) || '保养项'}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 4 }}>
-              {selectedRecord.period_key || selectedRecord.plan_date || '—'}
+              {selectedRecord.trigger_mode && (
+                <span style={{
+                  fontSize: 11, padding: '2px 8px', borderRadius: 8, flexShrink: 0,
+                  background: 'var(--brand-color)22', color: 'var(--brand-color)',
+                }}>{selectedRecord.trigger_mode}</span>
+              )}
             </div>
           </div>
 
@@ -918,6 +910,8 @@ export default function MobileDeviceMaintenance() {
           {(() => {
             const s = selectedRecord.standard
             if (!s) return null
+            const itemTitle = s.maintenance_method || s.maintenance_content?.slice?.(0, 30) || '保养项'
+            const periodText = selectedRecord.period_key || selectedRecord.plan_date || ''
             // 第一段：机构 + 部件 + 部位（全部为空则整段不显示）
             const mechanismParts = [s.mechanism, s.component, s.location].filter((v) => v && v.trim())
             const hasMechanismPart = mechanismParts.length > 0
@@ -930,11 +924,19 @@ export default function MobileDeviceMaintenance() {
                 background: 'var(--m-surface)', borderRadius: 10, padding: 14,
                 border: '1px solid var(--m-border)', marginBottom: 12,
               }}>
-                <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 10 }}>🛠️ 保养标准</div>
-                {/* 第一段：机构部位 */}
+                {/* 标题栏：保养项名称 + 周期（一行） */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <div style={{ fontSize: 13, color: 'var(--m-text-2)', fontWeight: 500 }}>
+                    🛠️ 保养标准 · <span style={{ color: 'var(--m-text)', fontWeight: 600 }}>{itemTitle}</span>
+                  </div>
+                  {periodText && (
+                    <span style={{ fontSize: 11, color: 'var(--m-text-3)', flexShrink: 0 }}>{periodText}</span>
+                  )}
+                </div>
+                {/* 第一段：机构部位（内容缩进 2em） */}
                 {hasMechanismPart && (
-                  <div style={{ marginBottom: hasContent ? 10 : 0 }}>
-                    <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginBottom: 4 }}>🔧 机构部位</div>
+                  <div style={{ marginBottom: hasContent ? 8 : 0, paddingLeft: '2em' }}>
+                    <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginBottom: 3 }}>🔧 机构部位</div>
                     <div style={{
                       fontSize: 13, color: 'var(--m-text-2)',
                       padding: '8px 10px', borderRadius: 8,
@@ -949,10 +951,10 @@ export default function MobileDeviceMaintenance() {
                     </div>
                   </div>
                 )}
-                {/* 第二段：保养内容（自动高度） */}
+                {/* 第二段：保养内容（内容缩进 2em） */}
                 {hasContent && (
-                  <div>
-                    <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginBottom: 4 }}>📝 保养内容</div>
+                  <div style={{ paddingLeft: '2em' }}>
+                    <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginBottom: 3 }}>📝 保养内容</div>
                     <div style={{
                       fontSize: 13, color: 'var(--m-text)', lineHeight: 1.6, whiteSpace: 'pre-wrap',
                       padding: '8px 10px', borderRadius: 8,
@@ -1012,7 +1014,8 @@ export default function MobileDeviceMaintenance() {
           <Card title="备注（可选）">
             {selectedRecord.status === '已完成'
               ? <div style={{ fontSize: 13, color: 'var(--m-text-2)', whiteSpace: 'pre-wrap' }}>{remarks || selectedRecord.remarks || '—'}</div>
-              : <TextArea value={remarks} onChange={setRemarks} rows={2}
+              : <TextArea value={remarks} onChange={setRemarks}
+                  autoSize={{ minRows: 1, maxRows: 8 }}
                   placeholder="备注" style={{ background: 'var(--m-surface-2)', borderRadius: 8, padding: 8 }} />
             }
           </Card>
