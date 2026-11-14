@@ -144,7 +144,7 @@ export function GenericRecordTab<T extends { id: string | number }>({
         </Col>
         <Col span={12} style={{ textAlign: 'right' }}>
           <Space>
-            {editable && !hint && !rightExtra ? null : (editable ? <Tag color="blue">{disableAdd ? '⚠️ 存在未结束工时，先点"结束"再新增' : hint}</Tag> : <Tag color="default">{readOnlyHint}</Tag>)}
+            {!rightExtra && (editable ? <Tag color="blue">{disableAdd ? '⚠️ 存在未结束工时，先点"结束"再新增' : hint}</Tag> : <Tag color="default">{readOnlyHint}</Tag>)}
             {rightExtra}
           </Space>
         </Col>

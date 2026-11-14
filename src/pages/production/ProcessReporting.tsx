@@ -1399,6 +1399,20 @@ export default function ProcessReporting() {
 
         return (
           <div>
+            {/* 统计行 — 休息时间卡片上方靠右 */}
+            {selectedReport && (
+              <Row style={{ marginBottom: 8 }} justify="end">
+                <Col>
+                  <Space size="middle" wrap>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>统计：</span>
+                    <span>总人数 <b style={{ color: 'var(--color-primary)' }}>{manpowerTabStats.totalPeople}</b></span>
+                    <span>总时间 <b style={{ color: '#13c2c2' }}>{manpowerTabStats.grossHours}H</b></span>
+                    <span>休息时间 <b style={{ color: 'var(--text-secondary)' }}>{manpowerTabStats.breakHours}H</b></span>
+                    <span>净工时 <b style={{ color: 'var(--color-success)' }}>{manpowerTabStats.netHours}H</b></span>
+                  </Space>
+                </Col>
+              </Row>
+            )}
             {/* 休息时间区块 */}
             <Card
               size="small"
@@ -1433,19 +1447,10 @@ export default function ProcessReporting() {
               hint=""
               scrollX={800}
               rightExtra={
-                selectedReport ? (
-                  <Space size="middle" wrap>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>统计：</span>
-                    <span>总人数 <b style={{ color: 'var(--color-primary)' }}>{manpowerTabStats.totalPeople}</b></span>
-                    <span>总时间 <b style={{ color: '#13c2c2' }}>{manpowerTabStats.grossHours}H</b></span>
-                    <span>休息时间 <b style={{ color: 'var(--text-secondary)' }}>{manpowerTabStats.breakHours}H</b></span>
-                    <span>净工时 <b style={{ color: 'var(--color-success)' }}>{manpowerTabStats.netHours}H</b></span>
-                    {isEditable && (
-                      <>
-                        <Button type="primary" icon={<SaveOutlined />} onClick={async () => { await handleCombinedSave(); await refreshAfterSave() }}>保存</Button>
-                        <Button size="small" icon={<ReloadOutlined />} onClick={async () => { await handleBreakTimeRefresh(); await refreshAfterSave() }} loading={breakTimesSaving}>刷新休息</Button>
-                      </>
-                    )}
+                isEditable ? (
+                  <Space>
+                    <Button type="primary" icon={<SaveOutlined />} onClick={async () => { await handleCombinedSave(); await refreshAfterSave() }}>保存</Button>
+                    <Button size="small" icon={<ReloadOutlined />} onClick={async () => { await handleBreakTimeRefresh(); await refreshAfterSave() }} loading={breakTimesSaving}>刷新休息</Button>
                   </Space>
                 ) : null
               }
