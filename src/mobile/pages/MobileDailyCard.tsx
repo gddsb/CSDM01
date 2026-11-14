@@ -254,28 +254,36 @@ function DailyCardContent({ data }: { data: DailyReportData }) {
         </div>
       </Section>
 
-      {/* ② 质量概览 —— 4 格 + 总不良率 */}
+      {/* ② 质量概览 —— 4 格 + 各不良率 */}
       <Section title="🔍 质量概览">
         <div style={grid2Style}>
-          <Metric label="来料不良" value={fmt(totalIncomingDefect, 0)} unit="件" color="#fa8c16" />
-          <Metric label="制程不良" value={fmt(totalProcessDefect, 0)} unit="件" color="#ff4d4f" />
-          <Metric label="检验废品" value={fmt(totalInspectionDefect, 0)} unit="件" color="#fa8c16" />
+          <Metric
+            label="来料不良"
+            value={fmt(totalIncomingDefect, 0)}
+            unit="件"
+            color="#fa8c16"
+            extra={defectExtra(totalIncomingDefect, totalOutput)}
+          />
+          <Metric
+            label="制程不良"
+            value={fmt(totalProcessDefect, 0)}
+            unit="件"
+            color="#ff4d4f"
+            extra={defectExtra(totalProcessDefect, totalOutput)}
+          />
+          <Metric
+            label="检验废品"
+            value={fmt(totalInspectionDefect, 0)}
+            unit="件"
+            color="#fa8c16"
+            extra={defectExtra(totalInspectionDefect, totalOutput)}
+          />
           <Metric
             label="总不良"
             value={fmt(totalDefect, 0)}
             unit="件"
             color="#ff4d4f"
-            extra={
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 11, color: 'var(--m-text-3)' }}>不良率</div>
-                <div style={{
-                  fontSize: 20, fontWeight: 700, lineHeight: 1.1,
-                  color: totalDefect > totalOutput * 0.05 ? '#ff4d4f' : '#52c41a',
-                }}>
-                  {fmt(totalOutput > 0 ? (totalDefect / totalOutput * 100) : 0, 2)}%
-                </div>
-              </div>
-            }
+            extra={defectExtra(totalDefect, totalOutput)}
           />
         </div>
       </Section>
@@ -376,6 +384,22 @@ function Metric({ label, value, unit, color, extra }: { label: string; value: st
         </div>
       </div>
       {extra && <div style={{ minWidth: 60 }}>{extra}</div>}
+    </div>
+  )
+}
+
+// 不良率：单种不良 / 总产出，>5% 红色，否则绿色
+function defectExtra(defect: number, output: number) {
+  const pct = output > 0 ? (defect / output * 100) : 0
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <div style={{ fontSize: 11, color: 'var(--m-text-3)' }}>占比</div>
+      <div style={{
+        fontSize: 20, fontWeight: 700, lineHeight: 1.1,
+        color: defect > output * 0.05 ? '#ff4d4f' : '#52c41a',
+      }}>
+        {fmt(pct, 2)}%
+      </div>
     </div>
   )
 }
