@@ -583,7 +583,7 @@ export default function ProcessReporting() {
   const defectTabStats = useMemo(() => {
     const list = prodDefectList.filter(r => r.process_id === defectProcessId && !(r as any)._deleting)
     const sumQty = (pred: (r: any) => boolean) =>
-      list.filter(pred).reduce((s, r) => s + (Number(r.quantity || r.defect_quantity) || 0), 0)
+      list.filter(pred).reduce((s, r) => s + (Number(r.quantity) || 0), 0)
     // unit 优先用 DefectType 字典的 defect_unit（"片"/"罐"），ProcessDefect.unit 可能是 "个"
     const materialPcs = sumQty(r => r.defect_type === '来料不良' && (r.defect_unit || r.unit) === '片')
     const materialCans = sumQty(r => r.defect_type === '来料不良' && (r.defect_unit || r.unit) === '罐')
@@ -606,7 +606,7 @@ export default function ProcessReporting() {
   // ③ 质量检验（工序级）：报废数量
   const scrapTabStats = useMemo(() => {
     const list = scrapDefectList.filter(r => r.process_id === scrapProcessId && !(r as any)._deleting)
-    return { scrapQty: list.reduce((s, r) => s + (Number(r.quantity || r.defect_quantity) || 0), 0) }
+    return { scrapQty: list.reduce((s, r) => s + (Number(r.quantity) || 0), 0) }
   }, [scrapDefectList, scrapProcessId])
 
   // ④ 停机停线（工单级）：异常次数 + 异常工时（净时长，已扣休息）

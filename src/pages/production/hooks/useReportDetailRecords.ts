@@ -63,7 +63,7 @@ export function useReportDetailRecords(opts: Options) {
     if (!isEditable) { msg.warning('请先开工报工单'); return }
     if (!defectProcessId) { msg.warning('请选择工序'); return }
     const row: DefectRecord = {
-      id: genId('pd'), defect_name: '', defect_quantity: 0, defect_unit: 'PCS',
+      id: genId('pd'), defect_name: '', quantity: 0, defect_unit: 'PCS',
       status: 'pending', _dirty: true, process_id: defectProcessId,
       process_step_id: lineProcesses.find(p => p.process_id === defectProcessId)?.process_id,
       report_order_id: selectedReport?.report_order_id,
@@ -86,7 +86,7 @@ export function useReportDetailRecords(opts: Options) {
   const saveProdDefectItem = useCallback(async (item: DefectRecord) => {
     const { _deleting, _dirty, id, ...payload } = item as any
     if (!payload.defect_type_id) { msg.error('请选择不良类型'); throw new Error('missing defect type') }
-    if (!payload.defect_quantity || Number(payload.defect_quantity) <= 0) { msg.error('不良数量必须大于0'); throw new Error('qty') }
+    if (!payload.quantity || Number(payload.quantity) <= 0) { msg.error('不良数量必须大于0'); throw new Error('qty') }
     if (String(id).startsWith('tmp_')) {
       const res = await api.post('/production/process-defects', payload)
       setProdDefectList(prev => prev.map(r => r.id === id ? { ...res.data, _dirty: false } : r))
@@ -111,7 +111,7 @@ export function useReportDetailRecords(opts: Options) {
     if (!isEditable) { msg.warning('请先开工报工单'); return }
     if (!scrapProcessId) { msg.warning('请选择工序'); return }
     const row: DefectRecord = {
-      id: genId('sc'), defect_name: '', defect_quantity: 0, defect_unit: 'PCS',
+      id: genId('sc'), defect_name: '', quantity: 0, defect_unit: 'PCS',
       status: 'pending', _dirty: true, process_id: scrapProcessId,
       process_step_id: lineProcesses.find(p => p.process_id === scrapProcessId)?.process_id,
       report_order_id: selectedReport?.report_order_id,
@@ -134,7 +134,7 @@ export function useReportDetailRecords(opts: Options) {
   const saveScrapDefectItem = useCallback(async (item: DefectRecord) => {
     const { _deleting, _dirty, id, ...payload } = item as any
     if (!payload.defect_type_id) { msg.error('请选择不良类型'); throw new Error('missing') }
-    if (!payload.defect_quantity || Number(payload.defect_quantity) <= 0) { msg.error('报废数量必须大于0'); throw new Error('qty') }
+    if (!payload.quantity || Number(payload.quantity) <= 0) { msg.error('报废数量必须大于0'); throw new Error('qty') }
     payload.scrap_flag = 1
     if (String(id).startsWith('tmp_')) {
       const res = await api.post('/production/process-defects', payload)
@@ -414,10 +414,10 @@ export function useReportDetailRecords(opts: Options) {
   const processStats = useMemo(() => {
     const processDefectQty = prodDefectList
       .filter(r => r.process_id === defectProcessId && !(r as any)._deleting)
-      .reduce((sum, r) => sum + (Number(r.defect_quantity) || 0), 0)
+      .reduce((sum, r) => sum + (Number(r.quantity) || 0), 0)
     const materialDefectQty = materialList
       .filter(r => r.process_id === materialProcessId && !(r as any)._deleting)
-      .reduce((sum, r) => sum + (Number(r.defect_quantity) || 0), 0)
+      .reduce((sum, r) => sum + (Number(r.quantity) || 0), 0)
     return { inputQty: 0, qualifiedQty: 0, processDefectQty, materialDefectQty }
   }, [defectProcessId, materialProcessId, prodDefectList, materialList])
 
