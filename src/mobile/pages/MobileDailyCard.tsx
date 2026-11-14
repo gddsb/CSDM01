@@ -156,7 +156,10 @@ export default function MobileDailyCard() {
         {loading && <span style={{ fontSize: 11, color: '#1890ff', marginLeft: 4 }}>加载中…</span>}
       </div>
 
-      {/* 日历弹窗 —— min/max/value 全部 useMemo 稳定引用，杜绝受控失效 */}
+      {/* 日历弹窗 */}
+      {/* 核心修复：用 onChange 替代 onConfirm —— onChange 在用户点击日期格子时即时触发，
+          onConfirm 只在用户点底部"确定"按钮时触发。绑定 onChange 后，
+          点击任意日期 → 立即选中 + 关闭弹窗，无需再点确定。 */}
       <CalendarPicker
         visible={pickerVisible}
         selectionMode="single"
@@ -165,9 +168,14 @@ export default function MobileDailyCard() {
         max={maxDate}
         renderDate={renderDate}
         onClose={() => setPickerVisible(false)}
+        onChange={(val) => {
+          if (!val) return
+          const formatted = dayjs(val).format('YYYY-MM-DD')
+          setDate(formatted)
+          setPickerVisible(false)
+        }}
         onConfirm={(val) => {
           if (!val) return
-          // 只 setDate，pickerValue 自动从 date 派生（useMemo）
           const formatted = dayjs(val).format('YYYY-MM-DD')
           setDate(formatted)
           setPickerVisible(false)
