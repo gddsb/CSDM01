@@ -26,15 +26,19 @@ const RECALC_SQL = `
     FROM production_process_material GROUP BY report_order_id
   ) pm ON pm.report_order_id = ro.report_order_id
   LEFT JOIN (
-    SELECT report_order_id,
-           COALESCE(SUM(CASE WHEN pd.defect_type='来料不良' THEN pd.quantity ELSE 0 END),0) AS defect_material,
-           COALESCE(SUM(CASE WHEN pd.defect_type='制程不良' THEN pd.quantity ELSE 0 END),0) AS defect_process
-    FROM production_process_defect pd GROUP BY report_order_id
+    SELECT pd.report_order_id,
+           COALESCE(SUM(CASE WHEN dt.defect_type='来料不良' THEN pd.quantity ELSE 0 END),0) AS defect_material,
+           COALESCE(SUM(CASE WHEN dt.defect_type='制程不良' THEN pd.quantity ELSE 0 END),0) AS defect_process
+    FROM production_process_defect pd
+    LEFT JOIN master_defect_type dt ON dt.defect_id = pd.defect_type_id
+    GROUP BY pd.report_order_id
   ) d ON d.report_order_id = ro.report_order_id
   LEFT JOIN (
-    SELECT report_order_id,
-           COALESCE(SUM(quantity),0) AS defect_scrap
-    FROM production_process_defect WHERE defect_type='检验报废' GROUP BY report_order_id
+    SELECT pd.report_order_id,
+           COALESCE(SUM(pd.quantity),0) AS defect_scrap
+    FROM production_process_defect pd
+    LEFT JOIN master_defect_type dt ON dt.defect_id = pd.defect_type_id
+    WHERE dt.defect_type='检验报废' GROUP BY pd.report_order_id
   ) sc ON sc.report_order_id = ro.report_order_id
   LEFT JOIN (
     SELECT report_order_id,
