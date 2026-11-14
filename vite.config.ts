@@ -77,9 +77,16 @@ export default defineConfig({
       workbox: {
         // 允许大文件（antd chunk 超 2MB）预缓存
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        // ⚠️ 关键：新 SW 下载后立即激活，不等用户关标签页
+        // 之前 10 次 AppSplash 改动 PC 端都看不到效果的根因：
+        // vite-plugin-pwa registerType:'autoUpdate' 实际上不会自动让新 SW 接管
+        // → 旧 SW controller 继续 serve 旧 precache 里的旧 HTML/JS
+        // → 用户刷新也拿不到新代码
+        skipWaiting: true,
+        clientsClaim: true,
         // ⚠️ 关键：禁用 navigateFallback
         // vite-plugin-pwa 默认值是 "index.html"，会把 index.html 加入 precache 并注册 NavigationRoute，
-        // 导致旧 SW 锁死旧 HTML → 服务器更新后用户浏览器仍加载旧 JS（PC 误判 bug 永远不生效）。
+        // 导致旧 SW 锁死旧 HTML → 服务器更新后用户浏览器仍加载旧 JS。
         // 我们自己在 runtimeCaching 里用 NetworkFirst 处理 HTML（见下），保证每次拿最新版本。
         navigateFallback: null,
         // JS/CSS/图片走 precache；HTML 不在此列表（由 runtimeCaching 处理）

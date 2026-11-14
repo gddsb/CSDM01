@@ -1,4 +1,4 @@
-import React, { useEffect, Suspense, lazy } from 'react'
+import React, { useEffect, useState, Suspense, lazy } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { ConfigProvider, Spin, theme as antdTheme, App as AntdApp } from 'antd'
@@ -17,6 +17,7 @@ import MainLayout from './layouts/MainLayout'
 import ErrorBoundary from './components/ErrorBoundary'
 import PermissionGate from './components/PermissionGate'
 import { DeviceProvider, useDevice, isRouteAllowed, isInNativeShell } from './adapter'
+import AppSplash from './AppSplash'
 
 // 首屏关键页面同步加载（避免白屏）
 import Login from './pages/Login'
@@ -395,12 +396,47 @@ function AppUpdateLoader() {
   return null
 }
 
+/**
+ * SplashRoot — 顶层开屏遮罩控制器
+ *
+ * 关键设计：
+ *  - isMobileShell 判断：只有在 Capacitor 原生壳内（移动端 APK）才显示 AppSplash
+ *    PC 浏览器 / TV 大屏不显示，避免每次刷新都被蓝色遮罩挡 3 秒
+ *  - MIN_SHOW_MS = 3000：至少展示 3 秒。不管 React 初始化多快，都等够时间。
+ *  - fadeOut 阶段加 350ms 淡出动画（由 AppSplash 内部 transition 完成）
+ */
+function SplashRoot({ children }: { children: React.ReactNode }) {
+  // PC 端不显示 splash（避免网页刷新被挡）
+  const showSplash = typeof window !== 'undefined' && isInNativeShell()
+  const [fadeOut, setFadeOut] = useState(false)
+  const [hidden, setHidden] = useState(false)
+
+  useEffect(() => {
+    if (!showSplash) { setHidden(true); return }
+    const timer = setTimeout(() => setFadeOut(true), 3000)
+    const cleanup = setTimeout(() => setHidden(true), 3350) // 3s 显示 + 350ms 淡出
+    return () => { clearTimeout(timer); clearTimeout(cleanup) }
+  }, [showSplash])
+
+  if (hidden) return <>{children}</>
+  return (
+    <>
+      {children}
+      {showSplash && (
+        <AppSplash fading={fadeOut} />
+      )}
+    </>
+  )
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <AppProvider>
         <DeviceProvider>
-          <App />
+          <SplashRoot>
+            <App />
+          </SplashRoot>
         </DeviceProvider>
       </AppProvider>
     </QueryClientProvider>
