@@ -42,7 +42,13 @@ interface DefectTabProps {
   data: DefectRecord[]
   onSave: () => void
   onAdd: () => void
-  stats: { inputQty: number; qualifiedQty: number; processDefectQty: number; materialDefectQty: number }
+  stats: {
+    totalDefect: number
+    materialPcs: number
+    materialCans: number
+    processPcs: number
+    processCans: number
+  }
   scrollX?: number
 }
 
@@ -50,7 +56,7 @@ export function ProcessDefectTab({ selectedProcessId, processes, onSelectProcess
   return (
     <div>
       <Row style={{ marginBottom: 16 }} align="middle">
-        <Col span={12}>
+        <Col span={10}>
           <Space>
             <span>选择工序：</span>
             <Select value={selectedProcessId} onChange={onSelectProcess} options={processes.map(p => ({ label: p.process_name, value: p.process_id }))} style={{ width: 200 }} placeholder="请选择工序" popupClassName="mes-select-dropdown" />
@@ -62,14 +68,15 @@ export function ProcessDefectTab({ selectedProcessId, processes, onSelectProcess
             )}
           </Space>
         </Col>
-        <Col span={12} style={{ textAlign: 'right' }}>
+        <Col span={14} style={{ textAlign: 'right' }}>
           {selectedProcessId && (
-            <Space size="large">
-              <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>当前工序统计：</span>
-              <span>投入数量：<b style={{ color: 'var(--color-primary)' }}>{stats.inputQty}</b></span>
-              <span>合格数：<b style={{ color: 'var(--color-success)' }}>{stats.qualifiedQty}</b></span>
-              <span>制程不良：<b style={{ color: 'var(--color-warning)' }}>{stats.processDefectQty}</b></span>
-              <span>来料不良：<b style={{ color: 'var(--color-warning)' }}>{stats.materialDefectQty}</b></span>
+            <Space size="middle" wrap>
+              <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>工序统计：</span>
+              <span>总不良 <b style={{ color: 'var(--color-error)' }}>{stats.totalDefect}</b></span>
+              <span>来料不良(片) <b style={{ color: 'var(--color-warning)' }}>{stats.materialPcs}</b></span>
+              <span>来料不良(罐) <b style={{ color: 'var(--color-warning)' }}>{stats.materialCans}</b></span>
+              <span>制程不良(片) <b style={{ color: 'var(--color-warning)' }}>{stats.processPcs}</b></span>
+              <span>制程不良(罐) <b style={{ color: 'var(--color-warning)' }}>{stats.processCans}</b></span>
             </Space>
           )}
         </Col>

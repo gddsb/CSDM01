@@ -555,6 +555,89 @@ export default function ProcessReporting() {
     materials,
   })
 
+  // ========== 5 个 Tab 级本地统计（useMemo 即时重算） ==========
+
+  // ① 报废记录（工序级）：总不良 / 来料不良(片/罐) / 制程不良(片/罐)
+  const defectTabStats = useMemo(() => {
+    const list = prodDefectList.filter(r => r.process_id === defectProcessId && !(r as any)._deleting)
+    const sumQty = (pred: (r: any) => boolean) =>
+      list.filter(pred).reduce((s, r) => s + (Number(r.defect_quantity) || 0), 0)
+    const materialPcs = sumQty(r => r.defect_type === '来料不良' && (r.unit || r.defect_unit) === '片')
+    const materialCans = sumQty(r => r.defect_type === '来料不良' && (r.unit || r.defect_unit) === '罐')
+    const processPcs = sumQty(r => r.defect_type === '制程不良' && (r.unit || r.defect_unit) === '片')
+    const processCans = sumQty(r => r.defect_type === '制程不良' && (r.unit || r.defect_unit) === '罐')
+    return {
+      materialPcs, materialCans, processPcs, processCans,
+      totalDefect: materialPcs + materialCans + processPcs + processCans,
+    }
+  }, [prodDefectList, defectProcessId])
+
+  // ② 物料使用（工序级）：投入 / 退回 / 净用量
+  const materialTabStats = useMemo(() => {
+    const list = materialList.filter(r => r.process_id === materialProcessId && !(r as any)._deleting)
+    const invest = list.filter(r => r.material_type === '投入').reduce((s, r) => s + (Number(r.quantity) || 0), 0)
+    const ret = list.filter(r => r.material_type === '退回').reduce((s, r) => s + (Number(r.quantity) || 0), 0)
+    return { invest, returnQty: ret, net: invest - ret }
+  }, [materialList, materialProcessId])
+
+  // ③ 质量检验（工序级）：报废数量
+  const scrapTabStats = useMemo(() => {
+    const list = scrapDefectList.filter(r => r.process_id === scrapProcessId && !(r as any)._deleting)
+    return { scrapQty: list.reduce((s, r) => s + (Number(r.defect_quantity) || 0), 0) }
+  }, [scrapDefectList, scrapProcessId])
+
+  // ④ 停机停线（工单级）：异常次数 + 异常工时（净时长，已扣休息）
+  const exceptionTabStats = useMemo(() => {
+    const list = exceptionList.filter((r: any) => !(r as any)._deleting)
+    const hours = list.reduce((s: number, r: any) => s + Number(r.net_duration ?? r.duration ?? 0), 0)
+    return { count: list.length, hours: Number(hours.toFixed(2)) }
+  }, [exceptionList])
+
+  // ⑤ 人员工时（工单级）：总人数 / 净工时 / 休息时间 / 总时间
+  const manpowerTabStats = useMemo(() => {
+    const list = manpowerList.filter((r: any) => !(r as any)._deleting)
+    const totalPeople = list.reduce((s: number, r: any) => s + Number(r.total_people || 0), 0)
+    const netHours = list.reduce((s: number, r: any) => s + Number(r.net_hours ?? 0), 0)
+    const grossHours = list.reduce((s: number, r: any) => s + Number(r.man_hours ?? 0), 0)
+    // 休息时间：从 overlappingBreaks 计算（与 renderTabContent manpower 分支逻辑一致）
+    let breakHours = 0
+    if (selectedReport) {
+      const rs = dayjs(selectedReport.report_time)
+      const re = selectedReport.finish_time ? dayjs(selectedReport.finish_time) : dayjs()
+      breakHours = breakTimes.reduce((s: number, b: any) => {
+        const bs = dayjs(b.start_time)
+        const be = dayjs(b.end_time)
+        const overlapMs = Math.max(0, Math.min(re.valueOf(), be.valueOf()) - Math.max(rs.valueOf(), bs.valueOf()))
+        return s + overlapMs / 3600000
+      }, 0)
+    }
+    return {
+      totalPeople,
+      netHours: Number(netHours.toFixed(2)),
+      breakHours: Number(breakHours.toFixed(2)),
+      grossHours: Number(grossHours.toFixed(2)),
+    }
+  }, [manpowerList, breakTimes, selectedReport])
+
+  // ========== save 后全链路刷新 ==========
+  const refreshAfterSave = useCallback(async () => {
+    if (!selectedReport) return
+    const roId = selectedReport.report_order_id
+    try {
+      // ① 重拉报工单主数据 → 触发顶部 stats useEffect 重算持久化字段
+      const res = await api.get(`/production/report-orders/${roId}`)
+      if (res.data) {
+        setSelectedReport(res.data as any)
+      }
+    } catch {
+      // 静默：即使主数据重拉失败，子表重拉也已完成
+    }
+    // ② 重拉所有子表明细（fetchAllData 依赖已在 useEffect 中，report_order_id 未变不会循环触发）
+    await fetchAllData(roId)
+    // ③ 清空脏标记
+    setDirtyIds(new Set())
+  }, [selectedReport, fetchAllData])
+
   // 判断当前选中报工单所属的生产订单是否有未完工的报工单
   const hasUnfinishedReportOfOrder = useMemo(() => {
     if (!selectedReport?.order_id) return false
@@ -977,9 +1060,9 @@ export default function ProcessReporting() {
     exceptionList,
     reportTime: selectedReport?.report_time,
     onChange: handleExceptionChange,
-    onDelete: ((record: any) => handleDeleteException(record.id)),
-    onStart: (record: any) => handleStartException(record),
-    onFinish: (record: any) => handleFinishException(record),
+    onDelete: async (record: any) => { await handleDeleteException(record.id); await refreshAfterSave() },
+    onStart: async (record: any) => { await handleStartException(record); await refreshAfterSave() },
+    onFinish: async (record: any) => { await handleFinishException(record); await refreshAfterSave() },
     openImageDrawer,
   })
 
@@ -1201,9 +1284,9 @@ export default function ProcessReporting() {
             editable={isEditable}
             columns={prodDefectColumns as any}
             data={prodDefectDisplayList}
-            onSave={handleSaveAllProdDefects}
+            onSave={async () => { await handleSaveAllProdDefects(); await refreshAfterSave() }}
             onAdd={handleAddProdDefectRow}
-            stats={hookProcessStats}
+            stats={defectTabStats}
           />
         )
       case 'production-material':
@@ -1214,14 +1297,21 @@ export default function ProcessReporting() {
             editable={isEditable}
             columns={materialColumns as any}
             data={materialDisplayList}
-            onSave={handleSaveAllMaterials}
+            onSave={async () => { await handleSaveAllMaterials(); await refreshAfterSave() }}
             onAdd={handleAddMaterialRow}
             scrollX={1000}
-            // 工序选择器
             showProcessSelector
             selectedProcessId={materialProcessId}
             processes={lineProcesses}
             onSelectProcess={setMaterialProcessId}
+            rightExtra={selectedReport && (
+              <Space size="middle">
+                <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>工序统计：</span>
+                <span>投入 <b style={{ color: 'var(--color-primary)' }}>{materialTabStats.invest}</b></span>
+                <span>退回 <b style={{ color: 'var(--color-warning)' }}>{materialTabStats.returnQty}</b></span>
+                <span>净用量 <b style={{ color: 'var(--color-success)' }}>{materialTabStats.net}</b></span>
+              </Space>
+            )}
           />
         )
       case 'scrap-defect':
@@ -1232,14 +1322,19 @@ export default function ProcessReporting() {
             editable={isEditable}
             columns={scrapDefectColumns as any}
             data={scrapDefectDisplayList}
-            onSave={handleSaveAllScrapDefects}
+            onSave={async () => { await handleSaveAllScrapDefects(); await refreshAfterSave() }}
             onAdd={handleAddScrapDefectRow}
             scrollX={800}
-            // 工序选择器
             showProcessSelector
             selectedProcessId={scrapProcessId}
             processes={lineProcesses}
             onSelectProcess={setScrapProcessId}
+            rightExtra={selectedReport && (
+              <Space size="middle">
+                <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>工序统计：</span>
+                <span>报废数量 <b style={{ color: 'var(--color-error)' }}>{scrapTabStats.scrapQty}</b></span>
+              </Space>
+            )}
           />
         )
       case 'exception':
@@ -1250,10 +1345,17 @@ export default function ProcessReporting() {
             editable={isEditable}
             columns={exceptionColumns as any}
             data={exceptionDisplayList}
-            onSave={handleSaveAllExceptions}
+            onSave={async () => { await handleSaveAllExceptions(); await refreshAfterSave() }}
             onAdd={handleAddExceptionRow}
             disableAdd={hasUnfinishedException}
             scrollX={900}
+            rightExtra={selectedReport && (
+              <Space size="middle">
+                <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>统计：</span>
+                <span>异常次数 <b style={{ color: 'var(--color-error)' }}>{exceptionTabStats.count}</b></span>
+                <span>异常工时 <b style={{ color: '#eb2f96' }}>{exceptionTabStats.hours}H</b></span>
+              </Space>
+            )}
           />
         )
       case 'manpower': {
@@ -1324,17 +1426,26 @@ export default function ProcessReporting() {
               editable={isEditable}
               columns={manpowerColumns as any}
               data={manpowerDisplayList}
-              onSave={handleCombinedSave}
+              onSave={async () => { await handleCombinedSave(); await refreshAfterSave() }}
               onAdd={() => {}}
               hideAdd
               hideDefaultActions
               hint=""
               scrollX={800}
               rightExtra={
-                isEditable ? (
-                  <Space>
-                    <Button type="primary" icon={<SaveOutlined />} onClick={handleCombinedSave}>保存</Button>
-                    <Button size="small" icon={<ReloadOutlined />} onClick={handleBreakTimeRefresh} loading={breakTimesSaving}>刷新默认休息时间</Button>
+                selectedReport ? (
+                  <Space size="middle" wrap>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>统计：</span>
+                    <span>总人数 <b style={{ color: 'var(--color-primary)' }}>{manpowerTabStats.totalPeople}</b></span>
+                    <span>总时间 <b style={{ color: '#13c2c2' }}>{manpowerTabStats.grossHours}H</b></span>
+                    <span>休息时间 <b style={{ color: 'var(--text-secondary)' }}>{manpowerTabStats.breakHours}H</b></span>
+                    <span>净工时 <b style={{ color: 'var(--color-success)' }}>{manpowerTabStats.netHours}H</b></span>
+                    {isEditable && (
+                      <>
+                        <Button type="primary" icon={<SaveOutlined />} onClick={async () => { await handleCombinedSave(); await refreshAfterSave() }}>保存</Button>
+                        <Button size="small" icon={<ReloadOutlined />} onClick={async () => { await handleBreakTimeRefresh(); await refreshAfterSave() }} loading={breakTimesSaving}>刷新休息</Button>
+                      </>
+                    )}
                   </Space>
                 ) : null
               }
