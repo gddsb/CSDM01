@@ -29,9 +29,83 @@ import { ProcessImageUploader } from './ProcessImageUploader'
 import { fmtInt } from '../../utils/format'
 import type { MaterialMaster, MaterialRow, ReportOrder } from './types'
 
+// ========== 工序物料规则（前端硬编码，后续可迁移到后端配置表）==========
+type MaterialRule =
+  | { type: 'prefix_map'; autoPrefix: string; allowedPrefixes: string[] }
+  | { type: 'prefix'; allowedPrefixes: string[] }
+  | { type: 'exact'; allowedCodes: string[] }
+  | { type: 'dynamic_prefix'; basePrefixes: string[] }
+
+const PROCESS_MATERIAL_RULES: Record<string, MaterialRule> = {
+  // 裁剪下料：自动匹配前缀→T1；候选 T1/T9/D1/Y20 开头，排序同
+  'P-01': { type: 'prefix_map', autoPrefix: 'T1', allowedPrefixes: ['T1', 'T9', 'D1', 'Y20'] },
+  // 成圆焊接：自动匹配前缀→D1；候选 D1 开头
+  'P-03': { type: 'prefix_map', autoPrefix: 'D1', allowedPrefixes: ['D1'] },
+  // 补涂烘干：仅两个固定料号
+  'P-04': { type: 'exact', allowedCodes: ['H32-000-001', 'F40-000-076'] },
+  // 翻边封口：候选前缀 = basePrefixes + 报工单料号第3位
+  'P-06': { type: 'dynamic_prefix', basePrefixes: ['P0', 'P2', 'P3', 'P4'] },
+  // 码垛包装：B 开头
+  'P-10': { type: 'prefix', allowedPrefixes: ['B'] },
+}
+
+/** 候选是否在规则允许范围内 */
+function isAllowed(code: string, rule: MaterialRule, reportCode: string): boolean {
+  switch (rule.type) {
+    case 'prefix_map':
+    case 'prefix':
+      return rule.allowedPrefixes.some(p => code.startsWith(p))
+    case 'exact':
+      return rule.allowedCodes.some(c => code === c || code.startsWith(c))
+    case 'dynamic_prefix': {
+      if (!reportCode || reportCode.length < 3) return true // 报工单料号异常时放行
+      const third = reportCode[2] // 第3位（0-indexed: 2）
+      return rule.basePrefixes.some(p => code.startsWith(p + third))
+    }
+  }
+}
+
+/** 候选排序（按 allowedPrefixes 顺序，不在列表里放最后） */
+function sortByRule(list: MaterialMaster[], rule: MaterialRule): MaterialMaster[] {
+  if (rule.type === 'prefix_map' || rule.type === 'prefix') {
+    const order = rule.allowedPrefixes
+    return [...list].sort((a, b) => {
+      const ia = order.findIndex(p => a.material_code.startsWith(p))
+      const ib = order.findIndex(p => b.material_code.startsWith(p))
+      if (ia !== ib) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib)
+      return a.material_code.localeCompare(b.material_code)
+    })
+  }
+  return [...list].sort((a, b) => a.material_code.localeCompare(b.material_code))
+}
+
+/** 自动匹配料号：把报工单料号前缀替换为 autoPrefix */
+function buildAutoMatchCode(reportCode: string, autoPrefix: string): string | null {
+  if (!reportCode || reportCode.length < 2) return null
+  return autoPrefix + reportCode.substring(2)
+}
+
+/** 规则描述（Popup 顶部提示用） */
+function ruleSummary(rule: MaterialRule, reportCode: string): string {
+  switch (rule.type) {
+    case 'prefix_map':
+    case 'prefix':
+      return rule.allowedPrefixes.join('/') + ' 开头'
+    case 'exact':
+      return rule.allowedCodes.join('、')
+    case 'dynamic_prefix': {
+      if (!reportCode || reportCode.length < 3) return 'P0/P2/P3/P4 第三位匹配'
+      const third = reportCode[2]
+      return ['P0', 'P2', 'P3', 'P4'].map(p => p + third).join('/') + ' 开头'
+    }
+  }
+}
+
 interface Props {
   report: ReportOrder
   activeProcessId: number | null
+  /** 工序编码（如 P-01），用于匹配物料筛选规则 */
+  processCode?: string
   editable: boolean
   /** 料品主数据列表（主文件 preload） */
   materials: MaterialMaster[]
@@ -63,8 +137,13 @@ interface ReturnableInfo {
 }
 
 export function ProcessMaterialPanel({
-  report, activeProcessId, editable, materials, allMaterials, setAllMaterials, onDirtyChange,
+  report, activeProcessId, processCode, editable, materials, allMaterials, setAllMaterials, onDirtyChange,
 }: Props) {
+  // 当前工序的物料筛选规则（如果有）
+  const rule = useMemo(
+    () => processCode ? PROCESS_MATERIAL_RULES[processCode] : undefined,
+    [processCode],
+  )
   const processMaterials = useMemo(
     () => allMaterials
       .filter(m => String(m.process_id) === String(activeProcessId))
@@ -144,9 +223,14 @@ export function ProcessMaterialPanel({
         specification: r.specification,
       }))
     }
-    // 投入：全量主数据
-    return materials
-  }, [draft.material_type, returnableMap, materials])
+    // 投入：按工序规则过滤（如果有），没有规则则全量
+    let list = materials
+    if (rule) {
+      list = materials.filter(m => isAllowed(m.material_code, rule, report.material_code))
+      list = sortByRule(list, rule)
+    }
+    return list
+  }, [draft.material_type, returnableMap, materials, rule, report.material_code])
 
   // ========== 搜索过滤 ==========
   const filteredList = useMemo(() => {
@@ -233,12 +317,34 @@ export function ProcessMaterialPanel({
 
   // ========== 动作 ==========
   const startAdd = () => {
-    setDraft({
+    const baseDraft: MaterialRow = {
       report_order_id: report.report_order_id,
       process_id: activeProcessId || undefined,
       material_type: '投入',
       quantity: 0,
-    })
+    }
+    // 自动匹配（仅 prefix_map 规则，有报工单料号时）
+    let autoMatched = false
+    if (rule && rule.type === 'prefix_map' && report.material_code) {
+      const target = buildAutoMatchCode(report.material_code, rule.autoPrefix)
+      if (target) {
+        // 精确匹配优先，其次候选列表里前缀匹配
+        const matched = materials.find(m => m.material_code === target)
+          || materials.find(m => m.material_code.startsWith(target))
+          || materials.find(m => target.startsWith(m.material_code))
+        if (matched) {
+          baseDraft.bas_material_id = matched.bas_material_id
+          baseDraft.material_code = matched.material_code
+          baseDraft.material_name = matched.material_name
+          baseDraft.specification = matched.specification
+          autoMatched = true
+          Toast.show({ content: `已自动匹配 ${matched.material_code}`, position: 'bottom' })
+        } else {
+          Toast.show({ content: `未找到 ${target}，请手动选择`, position: 'bottom' })
+        }
+      }
+    }
+    setDraft(baseDraft)
     setExpandedId('__new__')
   }
   const startEdit = (row: MaterialRow) => {
@@ -553,6 +659,11 @@ export function ProcessMaterialPanel({
             style={{ fontSize: 20, color: 'var(--m-text-3)', padding: '0 8px', cursor: 'pointer' }}
           >✕</div>
         </div>
+        {rule && draft.material_type === '投入' && (
+          <div style={{ padding: '4px 12px 0', fontSize: 11, color: 'var(--brand-color)', background: 'var(--m-surface-2, #f5f5f5)' }}>
+            🔒 工序限定：{ruleSummary(rule, report.material_code)}
+          </div>
+        )}
         <div style={{ padding: '8px 12px' }}>
           <Input
             placeholder="🔍 搜索料号/名称/规格"

@@ -336,44 +336,45 @@ export default function MobileProcessReporting() {
               — 暂无开工订单 —
             </div>
           )}
-          {orders.map((o) => {
-            const rq = Number((o as any).report_qty ?? o.finished_qty ?? 0)
-            const iq = Number((o as any).input_qty ?? o.planned_qty ?? 0)
-            const statusText = { '开工': '生产中', '完工': '已完工', '关闭': '已关闭' }[String(o.status)] || String(o.status)
-            const isDone = String(o.status) === '完工' || String(o.status) === '已完工' || String(o.status) === '1'
-            return (
+          {orders.map((o) => (
             <div key={o.order_id} style={{
               background: 'var(--m-surface)', borderRadius: 10, padding: 12, margin: '0 2px 10px',
               border: '1px solid var(--m-border)',
             }}>
-              {/* 行1：报工单号 + 状态 Badge 左对齐 | 投入/报工 数字右对齐 */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600 }}>{o.report_no || o.order_no}</span>
-                  <span style={{
-                    fontSize: 10, padding: '1px 6px', borderRadius: 8, flexShrink: 0,
-                    background: isDone ? 'var(--m-status-done-bg)' : 'var(--m-status-pending-bg)',
-                    color: isDone ? 'var(--m-status-done)' : 'var(--m-status-pending)',
-                  }}>{statusText}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {/* 报工单号 + 括号订单号 */}
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>
+                    {o.report_no || o.order_no}
+                    {o.report_no && o.report_no !== o.order_no && (
+                      <span style={{ fontSize: 11, color: 'var(--m-text-3)', marginLeft: 6, fontWeight: 400 }}>({o.order_no})</span>
+                    )}
+                  </div>
+                  {/* 料品信息（增大字号 12→14 + 加深颜色 text-2→text） */}
+                  <div style={{ fontSize: 14, color: 'var(--m-text)', marginTop: 4 }}>{o.material_code} · {o.material_name}</div>
                 </div>
-                {/* 投入/报工 数字（无文字标签） */}
-                <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--m-text-2)', flexShrink: 0, marginLeft: 6 }}>
-                  <span style={{ color: 'var(--m-primary)', fontSize: 15, fontWeight: 700 }}>{fmtInt(iq)}</span>
-                  <span style={{ margin: '0 2px', color: 'var(--m-text-3)' }}>/</span>
-                  <span>{fmtInt(rq)}</span>
-                </span>
+                {/* Badge：报工数量 / 投入数量 */}
+                <div style={{ flexShrink: 0, marginLeft: 8 }}>
+                  {(() => {
+                    const rq = Number((o as any).report_qty ?? o.finished_qty ?? 0)
+                    const iq = Number((o as any).input_qty ?? o.planned_qty ?? 0)
+                    return (
+                      <span style={{
+                        fontSize: 11, padding: '2px 8px', borderRadius: 10,
+                        background: 'var(--m-primary-bg)', color: 'var(--m-primary)',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        报工 {fmtInt(rq)} / 投入 {fmtInt(iq)}
+                      </span>
+                    )
+                  })()}
+                </div>
               </div>
-              {/* 行2：订单号（括号，小字灰） */}
-              <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>({o.order_no})</div>
-              {/* 行3：料品信息 */}
-              <div style={{ fontSize: 14, color: 'var(--m-text)', marginTop: 6 }}>{o.material_code} · {o.material_name}</div>
-              {/* 行4：开工报工按钮（单独一行靠右） */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
                 <Button size="mini" color="primary" onClick={() => handleStartNew(o)}>▶ 开工报工</Button>
               </div>
             </div>
-            )
-          })}
+          ))}
         </div>
       </div>
     )
@@ -455,6 +456,7 @@ export default function MobileProcessReporting() {
                 <ProcessMaterialPanel
                   report={current}
                   activeProcessId={materialProcId}
+                  processCode={processes.find(p => p.process_id === materialProcId)?.process_code}
                   editable={!!editable}
                   materials={materialsMaster}
                   allMaterials={materials}
