@@ -10,7 +10,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import React from 'react'
-import { Button, Dialog, Toast } from 'antd-mobile'
+import { Button, Dialog, Picker, Toast } from 'antd-mobile'
 import api from '../../../utils/api'
 import { fmtInt } from '../../utils/format'
 import type { DefectType, ReportOrder, ScrapRow, ProcessRow } from './types'
@@ -77,6 +77,14 @@ export function ScrapPanel({
 
   const resolvedProcessId = activeProcessId ?? processes[0]?.process_id ?? null
   const sortedRows = useMemo(() => sortDesc(rows), [rows])
+
+  // 报废类型 Picker columns（顶层 useMemo）
+  const scrapTypeColumns = useMemo(() => [
+    scrapTypes.map(t => ({
+      label: `${t.defect_code || ''} ${t.defect_name || ''}`.trim(),
+      value: String(t.defect_id),
+    })),
+  ], [scrapTypes])
 
   const startAdd = () => {
     setDraft({ quantity: 0 })
@@ -152,16 +160,23 @@ export function ScrapPanel({
       {expanded && (
         <div style={{ borderTop: '1px dashed var(--m-border)', paddingTop: 10, marginBottom: 8 }}>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-            <select
-              value={draft.defect_type_id || ''}
-              onChange={(e) => setDraft(d => ({ ...d, defect_type_id: e.target.value ? Number(e.target.value) : null }))}
-              style={selStyle}
-            >
-              <option value="">报废项目</option>
-              {scrapTypes.map(t => (
-                <option key={t.defect_id} value={t.defect_id}>{t.defect_code} {t.defect_name}</option>
-              ))}
-            </select>
+            {/* 报废类型 Picker */}
+            {(() => {
+              const current = scrapTypes.find(t => t.defect_id === Number(draft.defect_type_id))
+              return (
+                <Picker
+                  columns={scrapTypeColumns}
+                  value={draft.defect_type_id ? [String(draft.defect_type_id)] : []}
+                  onConfirm={(v) => setDraft(d => ({ ...d, defect_type_id: Number(v[0]) || null }))}
+                >
+                  {(_items, { open }) => (
+                    <div onClick={open} role="button" tabIndex={0} style={{ ...selStyle, color: current ? 'var(--m-text)' : 'var(--m-text-3)' }}>
+                      {current ? `${current.defect_code || ''} ${current.defect_name}`.trim() : '报废项目'}
+                    </div>
+                  )}
+                </Picker>
+              )
+            })()}
             <input
               type="number" min={0} value={draft.quantity || ''}
               onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}

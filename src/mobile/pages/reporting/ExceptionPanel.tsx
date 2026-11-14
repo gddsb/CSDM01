@@ -18,7 +18,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import React from 'react'
-import { Button, Dialog, Toast } from 'antd-mobile'
+import { Button, Dialog, Picker, Toast } from 'antd-mobile'
 import api from '../../../utils/api'
 import { fmtLocalDateTime, nowLocalStr } from '../../../utils/localTime'
 import type { ExceptionRow, ReportOrder } from './types'
@@ -57,6 +57,11 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
   const [devices, setDevices] = useState<DeviceOption[]>([])
   const [deviceKw, setDeviceKw] = useState('')
   const [deviceOpen, setDeviceOpen] = useState(false)
+
+  // 异常类型 Picker columns（顶层 useMemo，不能在 IIFE/Hook 里嵌套调用）
+  const excColumns = useMemo(() => [
+    EXCEPTION_TYPES.map(t => ({ label: t, value: t })),
+  ], [])
 
   // 预拉设备列表（搜索 + 设备故障必填 共用）
   useEffect(() => {
@@ -181,20 +186,27 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
         <div style={{ borderTop: '1px dashed var(--m-border)', paddingTop: 10, marginTop: 2, marginBottom: 8 }}>
           <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--m-text)', marginBottom: 8 }}>添加停机停线记录</div>
 
-          {/* 异常类型 */}
-          <select
-            value={draft.exception_type || ''}
-            onChange={(e) => {
-              const val = e.target.value
-              setDraft(d => ({ ...d, exception_type: val }))
-              // 切换非设备故障 → 清空已选设备
-              if (val !== '设备故障') setDraft(d => ({ ...d, device_id: undefined, device_code: undefined, device_name: undefined }))
-            }}
-            style={selStyle}
-          >
-            <option value="">请选择异常类型</option>
-            {EXCEPTION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
+          {/* 异常类型 Picker（联动：选非设备故障 → 清空设备） */}
+          {(() => {
+            return (
+              <Picker
+                columns={excColumns}
+                value={draft.exception_type ? [draft.exception_type] : []}
+                onConfirm={(v) => {
+                  const val = v[0] || ''
+                  setDraft(d => ({ ...d, exception_type: val }))
+                  // 切换非设备故障 → 清空已选设备
+                  if (val !== '设备故障') setDraft(d => ({ ...d, device_id: undefined, device_code: undefined, device_name: undefined }))
+                }}
+              >
+                {(_items, { open }) => (
+                  <div onClick={open} role="button" tabIndex={0} style={selStyle}>
+                    {draft.exception_type || '请选择异常类型'}
+                  </div>
+                )}
+              </Picker>
+            )
+          })()}
 
           {/* 设备故障 → 设备选择（搜索 + 下拉 + 箭头） */}
           {draft.exception_type === '设备故障' && (

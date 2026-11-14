@@ -12,7 +12,7 @@
  *   POST   /basic/device-spare-parts                  新建备件
  */
 import { useEffect, useState } from 'react'
-import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh, Input, Radio, Space , TextArea} from 'antd-mobile'
+import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh, Input, Picker, Radio, Space , TextArea} from 'antd-mobile'
 import api from '../../utils/api'
 import { useApp } from '../../contexts/AppContext'
 import { offlinePost, offlineDelete } from '../offline/offlineApi'
@@ -306,9 +306,24 @@ export default function MobileSparePart() {
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>分类</div>
-                <select value={createForm.category} onChange={(e) => setCreateForm({ ...createForm, category: e.target.value })} style={selStyle}>
-                  {['机械', '电气', '液压', '气动', '电子', '其他'].map((c) => <option key={c}>{c}</option>)}
-                </select>
+                {/* 分类 Picker（硬编码选项，内联 columns） */}
+                {(() => {
+                  const catOptions = ['机械', '电气', '液压', '气动', '电子', '其他']
+                  const catColumns = [catOptions.map(c => ({ label: c, value: c }))]
+                  return (
+                    <Picker
+                      columns={catColumns}
+                      value={createForm.category ? [createForm.category] : []}
+                      onConfirm={(v) => setCreateForm({ ...createForm, category: v[0] || '' })}
+                    >
+                      {(_items, { open }) => (
+                        <div onClick={open} role="button" tabIndex={0} style={{ ...selStyle, color: createForm.category ? 'var(--m-text)' : 'var(--m-text-3)' }}>
+                          {createForm.category || '请选择分类'}
+                        </div>
+                      )}
+                    </Picker>
+                  )
+                })()}
               </div>
             </div>
             <div style={{ display: 'flex', gap: 6 }}>

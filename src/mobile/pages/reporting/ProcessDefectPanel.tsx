@@ -19,7 +19,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import React from 'react'
-import { Button, Dialog, Image as AntdImage, Toast } from 'antd-mobile'
+import { Button, Dialog, Image as AntdImage, Picker, Toast } from 'antd-mobile'
 import api from '../../../utils/api'
 import { resolveUploadUrl } from '../../../utils/resolveUploadUrl'
 import { fmtInt } from '../../utils/format'
@@ -95,6 +95,20 @@ export function ProcessDefectPanel({
     if (t.defect_unit) return [t.defect_unit]
     return []
   }, [defectTypes])
+
+  // ========== antd-mobile Picker columns ==========
+  const defectTypeColumns = useMemo(() => [
+    filteredTypes.map(t => ({
+      label: `${t.defect_code || ''} ${t.defect_name || ''}`.trim(),
+      value: String(t.defect_id),
+    })),
+  ], [filteredTypes])
+
+  const unitColumns = useMemo(() => [
+    (draft.defect_type_id ? getUnitOptions(draft.defect_type_id) : []).map(u => ({
+      label: u, value: u,
+    })),
+  ], [draft.defect_type_id, getUnitOptions])
 
   // ========== 新增 / 编辑 ==========
   const [expandedId, setExpandedId] = useState<number | string | null>(null) // 哪一行在编辑
@@ -223,29 +237,59 @@ export function ProcessDefectPanel({
         <div style={{ borderTop: '1px dashed var(--m-border)', paddingTop: 10, marginTop: 6 }}>
           {/* 紧凑一行：类型 + 单位 + 数量 ... 保存/取消（按钮组右对齐）*/}
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-            <select
-              value={draft.defect_type_id || ''}
-              onChange={(e) => {
-                const id = e.target.value ? Number(e.target.value) : null
-                const t = filteredTypes.find(x => x.defect_id === id)
-                const defaultUnit = (t?.available_units && t.available_units[0]) || t?.defect_unit || ''
-                setDraft(d => ({ ...d, defect_type_id: id, unit: defaultUnit }))
-              }}
-              style={{ flex: 2, minWidth: 110, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
-            >
-              <option value="">不良类型</option>
-              {filteredTypes.map(t => (
-                <option key={t.defect_id} value={t.defect_id}>{t.defect_code} {t.defect_name}</option>
-              ))}
-            </select>
-            <select
-              value={draft.unit || ''}
-              onChange={(e) => setDraft(d => ({ ...d, unit: e.target.value }))}
-              style={{ flex: 1, minWidth: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
-            >
-              <option value="">单位</option>
-              {getUnitOptions(draft.defect_type_id).map(u => <option key={u} value={u}>{u}</option>)}
-            </select>
+            {/* 不良类型 Picker */}
+            {(() => {
+              const currentType = filteredTypes.find(t => t.defect_id === Number(draft.defect_type_id))
+              return (
+                <Picker
+                  columns={defectTypeColumns}
+                  value={draft.defect_type_id ? [String(draft.defect_type_id)] : []}
+                  onConfirm={(v) => {
+                    const id = Number(v[0]) || null
+                    const t = filteredTypes.find(x => x.defect_id === id)
+                    const defaultUnit = (t?.available_units && t.available_units[0]) || t?.defect_unit || ''
+                    setDraft(d => ({ ...d, defect_type_id: id, unit: defaultUnit }))
+                  }}
+                >
+                  {(_items, { open }) => (
+                    <div onClick={open} role="button" tabIndex={0} style={{
+                      flex: 2, minWidth: 110, padding: '7px 8px', borderRadius: 6,
+                      border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)',
+                      textAlign: 'center', minHeight: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: currentType ? 'var(--m-text)' : 'var(--m-text-3)',
+                    }}>
+                      {currentType ? `${currentType.defect_code || ''} ${currentType.defect_name}`.trim() : '不良类型'}
+                    </div>
+                  )}
+                </Picker>
+              )
+            })()}
+            {/* 单位 Picker（动态：依赖已选不良类型） */}
+            {(() => {
+              const unitOptions = draft.defect_type_id ? getUnitOptions(draft.defect_type_id) : []
+              const disabled = unitOptions.length === 0
+              return (
+                <Picker
+                  columns={unitColumns}
+                  value={draft.unit ? [draft.unit] : []}
+                  onConfirm={(v) => setDraft(d => ({ ...d, unit: v[0] || '' }))}
+                  disabled={disabled}
+                >
+                  {(_items, { open }) => (
+                    <div onClick={open} role="button" tabIndex={0} aria-disabled={disabled} style={{
+                      flex: 1, minWidth: 60, padding: '7px 8px', borderRadius: 6,
+                      border: disabled ? '1px dashed var(--m-border)' : '1px solid var(--m-border)',
+                      fontSize: 12, background: disabled ? 'transparent' : 'var(--m-surface)',
+                      textAlign: 'center', minHeight: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: draft.unit ? 'var(--m-text)' : 'var(--m-text-3)',
+                      opacity: disabled ? 0.5 : 1,
+                    }}>
+                      {disabled ? '单位' : (draft.unit || '单位')}
+                    </div>
+                  )}
+                </Picker>
+              )
+            })()}
             <input
               type="number" min={0} value={draft.quantity || ''}
               onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
@@ -282,29 +326,59 @@ export function ProcessDefectPanel({
             <div key={rowKey} style={{ borderTop: '1px solid var(--m-border)', paddingTop: 10, marginTop: 6 }}>
               {/* 紧凑一行：类型 + 单位 + 数量 ... 保存/取消/删除（按钮组右对齐）*/}
               <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                <select
-                  value={draft.defect_type_id || ''}
-                  onChange={(e) => {
-                    const id = e.target.value ? Number(e.target.value) : null
-                    const t = filteredTypes.find(x => x.defect_id === id)
-                    const defaultUnit = (t?.available_units && t.available_units[0]) || t?.defect_unit || ''
-                    setDraft(d => ({ ...d, defect_type_id: id, unit: d.unit || defaultUnit }))
-                  }}
-                  style={{ flex: 2, minWidth: 110, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
-                >
-                  <option value="">不良类型</option>
-                  {filteredTypes.map(t => (
-                    <option key={t.defect_id} value={t.defect_id}>{t.defect_code} {t.defect_name}</option>
-                  ))}
-                </select>
-                <select
-                  value={draft.unit || ''}
-                  onChange={(e) => setDraft(d => ({ ...d, unit: e.target.value }))}
-                  style={{ flex: 1, minWidth: 60, padding: '7px 8px', borderRadius: 6, border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)' }}
-                >
-                  <option value="">单位</option>
-                  {getUnitOptions(draft.defect_type_id).map(u => <option key={u} value={u}>{u}</option>)}
-                </select>
+                {/* 不良类型 Picker（编辑模式：保留已有单位 d.unit || defaultUnit） */}
+                {(() => {
+                  const currentType = filteredTypes.find(t => t.defect_id === Number(draft.defect_type_id))
+                  return (
+                    <Picker
+                      columns={defectTypeColumns}
+                      value={draft.defect_type_id ? [String(draft.defect_type_id)] : []}
+                      onConfirm={(v) => {
+                        const id = Number(v[0]) || null
+                        const t = filteredTypes.find(x => x.defect_id === id)
+                        const defaultUnit = (t?.available_units && t.available_units[0]) || t?.defect_unit || ''
+                        setDraft(d => ({ ...d, defect_type_id: id, unit: d.unit || defaultUnit }))
+                      }}
+                    >
+                      {(_items, { open }) => (
+                        <div onClick={open} role="button" tabIndex={0} style={{
+                          flex: 2, minWidth: 110, padding: '7px 8px', borderRadius: 6,
+                          border: '1px solid var(--m-border)', fontSize: 12, background: 'var(--m-surface)',
+                          textAlign: 'center', minHeight: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: currentType ? 'var(--m-text)' : 'var(--m-text-3)',
+                        }}>
+                          {currentType ? `${currentType.defect_code || ''} ${currentType.defect_name}`.trim() : '不良类型'}
+                        </div>
+                      )}
+                    </Picker>
+                  )
+                })()}
+                {/* 单位 Picker（动态：依赖已选不良类型） */}
+                {(() => {
+                  const unitOptions = draft.defect_type_id ? getUnitOptions(draft.defect_type_id) : []
+                  const disabled = unitOptions.length === 0
+                  return (
+                    <Picker
+                      columns={unitColumns}
+                      value={draft.unit ? [draft.unit] : []}
+                      onConfirm={(v) => setDraft(d => ({ ...d, unit: v[0] || '' }))}
+                      disabled={disabled}
+                    >
+                      {(_items, { open }) => (
+                        <div onClick={open} role="button" tabIndex={0} aria-disabled={disabled} style={{
+                          flex: 1, minWidth: 60, padding: '7px 8px', borderRadius: 6,
+                          border: disabled ? '1px dashed var(--m-border)' : '1px solid var(--m-border)',
+                          fontSize: 12, background: disabled ? 'transparent' : 'var(--m-surface)',
+                          textAlign: 'center', minHeight: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: draft.unit ? 'var(--m-text)' : 'var(--m-text-3)',
+                          opacity: disabled ? 0.5 : 1,
+                        }}>
+                          {disabled ? '单位' : (draft.unit || '单位')}
+                        </div>
+                      )}
+                    </Picker>
+                  )
+                })()}
                 <input
                   type="number" min={0} value={draft.quantity || ''}
                   onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}

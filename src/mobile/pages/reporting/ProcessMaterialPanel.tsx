@@ -23,7 +23,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import React from 'react'
-import { Button, Dialog, Input, Popup, Toast } from 'antd-mobile'
+import { Button, Dialog, Input, Picker, Popup, Toast } from 'antd-mobile'
 import api from '../../../utils/api'
 import { ProcessImageUploader } from './ProcessImageUploader'
 import { fmtInt } from '../../utils/format'
@@ -359,13 +359,26 @@ export function ProcessMaterialPanel({
    * Row3: 批号 / 包号 / 数量
    * Row4: 标签图片
    */
+  // 投入/退回类型 Picker columns（顶层 useMemo）
+  const typeColumns = useMemo(() => [[
+    { label: '投入', value: '投入' },
+    { label: '退回', value: '退回' },
+  ]], [])
+
   const formRow1 = (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-      <select value={draft.material_type || '投入'} onChange={(e) => handleTypeChange(e.target.value as any)}
-        style={typeSelectStyle}>
-        <option value="投入">投入</option>
-        <option value="退回">退回</option>
-      </select>
+      {/* 投入/退回类型 Picker（onConfirm 复用 handleTypeChange 的业务校验） */}
+      <Picker
+        columns={typeColumns}
+        value={[draft.material_type || '投入']}
+        onConfirm={(v) => handleTypeChange(v[0] as any)}
+      >
+        {(_items, { open }) => (
+          <div onClick={open} role="button" tabIndex={0} style={typeSelectStyle}>
+            {draft.material_type || '投入'}
+          </div>
+        )}
+      </Picker>
       <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
         <Button size="mini" color="primary" onClick={handleSave}>保存</Button>
         <Button size="mini" fill="outline" onClick={cancelEdit}>取消</Button>

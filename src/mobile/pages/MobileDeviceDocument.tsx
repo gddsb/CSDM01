@@ -10,7 +10,7 @@
  * 移动下载策略：fetch → blob → objectUrl → a.click() 触发下载
  */
 import { useEffect, useState } from 'react'
-import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh, Input } from 'antd-mobile'
+import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh, Input, Picker } from 'antd-mobile'
 import api from '../../utils/api'
 import { useApp } from '../../contexts/AppContext'
 import { useBarcode } from '../hooks/useBarcode'
@@ -277,9 +277,23 @@ export default function MobileDeviceDocument() {
             </div>
 
             <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '10px 0 4px' }}>文档类型</div>
-            <select value={form.doc_type} onChange={(e) => setForm({ ...form, doc_type: e.target.value })} style={selStyle}>
-              {Object.entries(DOC_TYPE_MAP).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
+            {/* 文档类型 Picker（数据源 DOC_TYPE_MAP） */}
+            {(() => {
+              const docTypeColumns = [Object.entries(DOC_TYPE_MAP).map(([k, v]) => ({ label: v, value: k }))]
+              return (
+                <Picker
+                  columns={docTypeColumns}
+                  value={form.doc_type ? [form.doc_type] : []}
+                  onConfirm={(v) => setForm({ ...form, doc_type: v[0] || '' })}
+                >
+                  {(_items, { open }) => (
+                    <div onClick={open} role="button" tabIndex={0} style={{ ...selStyle, color: form.doc_type ? 'var(--m-text)' : 'var(--m-text-3)' }}>
+                      {DOC_TYPE_MAP[form.doc_type] || '请选择文档类型'}
+                    </div>
+                  )}
+                </Picker>
+              )
+            })()}
 
             <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '10px 0 4px' }}>文档名称 *</div>
             <Input value={form.doc_name} onChange={(v) => setForm({ ...form, doc_name: v })} placeholder="如：使用说明书、合格证" />

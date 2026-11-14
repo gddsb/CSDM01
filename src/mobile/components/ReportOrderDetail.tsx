@@ -13,8 +13,8 @@
  *
  * 作为独立组件：可在 MobileProcessReporting 历史列表和 MobileOrderManagement 下属报工单中复用
  */
-import { useCallback, useEffect, useState } from 'react'
-import { Button, Tabs, Toast, Dialog, Input, TextArea, List } from 'antd-mobile'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Button, Tabs, Toast, Dialog, Input, Picker, TextArea, List } from 'antd-mobile'
 import api from '../../utils/api'
 import { offlinePost, offlinePut } from '../offline/offlineApi'
 import { ProcessImageUploader } from '../pages/reporting/ProcessImageUploader'
@@ -64,6 +64,18 @@ export function ReportOrderDetail({ meta, onClose }: Props) {
       setDefectTypes(list)
     }).catch(() => {})
   }, [meta.report_order_id])
+
+  // Picker columns（顶层 useMemo）
+  const processColumns = useMemo(() => [
+    processes.map((p) => ({ label: p.process_name, value: String(p.process_id) })),
+  ], [processes])
+  const defectTypeColumns = useMemo(() => [
+    defectTypes.map((t) => {
+      const id = String(t.id ?? t.defect_type_id ?? '')
+      const name = t.defect_name || t.name || t.type_name || ''
+      return { label: name, value: id }
+    }),
+  ], [defectTypes])
 
   const [defectList, setDefectList] = useState<any[]>([])
   const [scrapList, setScrapList] = useState<any[]>([])
@@ -217,28 +229,50 @@ function DefectPanel({ reportId, processes, defectTypes, list, onChange, disable
       {!disabled && (
         <>
           <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginBottom: 4 }}>工序</div>
-          <select value={form.process_id} onChange={(e) => {
-            const pid = Number(e.target.value)
-            const proc = processes.find((p) => p.process_id === pid)
-            setForm({ ...form, process_id: pid, process_name: proc?.process_name || '' })
-          }} style={selStyle}>
-            <option value={0}>选择工序</option>
-            {processes.map((p) => <option key={p.process_id} value={p.process_id}>{p.process_name}</option>)}
-          </select>
+          {/* 工序 Picker（联动 set process_name） */}
+          {(() => {
+            const currentProc = processes.find(p => p.process_id === form.process_id)
+            return (
+              <Picker
+                columns={processColumns}
+                value={form.process_id ? [String(form.process_id)] : []}
+                onConfirm={(v) => {
+                  const pid = Number(v[0]) || 0
+                  const proc = processes.find((p) => p.process_id === pid)
+                  setForm({ ...form, process_id: pid, process_name: proc?.process_name || '' })
+                }}
+              >
+                {(_items, { open }) => (
+                  <div onClick={open} role="button" tabIndex={0} style={{ ...selStyle, color: currentProc ? 'var(--m-text)' : 'var(--m-text-3)' }}>
+                    {currentProc?.process_name || '选择工序'}
+                  </div>
+                )}
+              </Picker>
+            )
+          })()}
 
           <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 6, marginBottom: 4 }}>不良类型</div>
-          <select value={form.defect_type_id || ''} onChange={(e) => {
-            const id = e.target.value ? Number(e.target.value) : null
-            const t = defectTypes.find((x) => (x.id ?? x.defect_type_id) === id)
-            setForm({ ...form, defect_type_id: id, defect_type_name: t?.defect_name || t?.name || '' })
-          }} style={selStyle}>
-            <option value="">选择不良类型</option>
-            {defectTypes.map((t) => (
-              <option key={t.id || t.defect_type_id} value={t.id || t.defect_type_id}>
-                {t.defect_name || t.name || t.type_name}
-              </option>
-            ))}
-          </select>
+          {/* 不良类型 Picker（联动 set defect_type_name） */}
+          {(() => {
+            const currentType = defectTypes.find(x => (x.id ?? x.defect_type_id) === Number(form.defect_type_id))
+            return (
+              <Picker
+                columns={defectTypeColumns}
+                value={form.defect_type_id ? [String(form.defect_type_id)] : []}
+                onConfirm={(v) => {
+                  const id = v[0] ? Number(v[0]) : null
+                  const t = defectTypes.find((x) => (x.id ?? x.defect_type_id) === id)
+                  setForm({ ...form, defect_type_id: id, defect_type_name: t?.defect_name || t?.name || '' })
+                }}
+              >
+                {(_items, { open }) => (
+                  <div onClick={open} role="button" tabIndex={0} style={{ ...selStyle, color: currentType ? 'var(--m-text)' : 'var(--m-text-3)' }}>
+                    {currentType?.defect_name || currentType?.name || '选择不良类型'}
+                  </div>
+                )}
+              </Picker>
+            )
+          })()}
 
           <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
             <Input type="number" value={String(form.quantity)} onChange={(v) => setForm({ ...form, quantity: Number(v) || 0 })} placeholder="数量" style={{ flex: 1 }} />
@@ -278,10 +312,23 @@ function ScrapPanel({ reportId, processes, list, onChange, disabled }: {
       {!disabled && (
         <>
           <div style={{ display: 'flex', gap: 6 }}>
-            <select value={f.process_id || ''} onChange={(e) => setF({ ...f, process_id: e.target.value ? Number(e.target.value) : null })} style={selStyle}>
-              <option value="">工序(可选)</option>
-              {processes.map((p) => <option key={p.process_id} value={p.process_id}>{p.process_name}</option>)}
-            </select>
+            {/* 工序 Picker（报废表单） */}
+            {(() => {
+              const cur = processes.find(p => p.process_id === Number(f.process_id))
+              return (
+                <Picker
+                  columns={processColumns}
+                  value={f.process_id ? [String(f.process_id)] : []}
+                  onConfirm={(v) => setF({ ...f, process_id: v[0] ? Number(v[0]) : null })}
+                >
+                  {(_items, { open }) => (
+                    <div onClick={open} role="button" tabIndex={0} style={{ ...selStyle, color: cur ? 'var(--m-text)' : 'var(--m-text-3)' }}>
+                      {cur?.process_name || '工序(可选)'}
+                    </div>
+                  )}
+                </Picker>
+              )
+            })()}
             <Input type="number" value={String(f.quantity)} onChange={(v) => setF({ ...f, quantity: Number(v) || 0 })} placeholder="数量" style={{ flex: 1 }} />
           </div>
           <div style={{ marginTop: 6 }}>
@@ -316,10 +363,23 @@ function ExceptionPanel({ reportId, processes, list, onChange, disabled }: {
       {!disabled && (
         <>
           <div style={{ display: 'flex', gap: 6 }}>
-            <select value={f.process_id || ''} onChange={(e) => setF({ ...f, process_id: e.target.value ? Number(e.target.value) : null })} style={selStyle}>
-              <option value="">工序(可选)</option>
-              {processes.map((p) => <option key={p.process_id} value={p.process_id}>{p.process_name}</option>)}
-            </select>
+            {/* 工序 Picker（异常表单） */}
+            {(() => {
+              const cur = processes.find(p => p.process_id === Number(f.process_id))
+              return (
+                <Picker
+                  columns={processColumns}
+                  value={f.process_id ? [String(f.process_id)] : []}
+                  onConfirm={(v) => setF({ ...f, process_id: v[0] ? Number(v[0]) : null })}
+                >
+                  {(_items, { open }) => (
+                    <div onClick={open} role="button" tabIndex={0} style={{ ...selStyle, color: cur ? 'var(--m-text)' : 'var(--m-text-3)' }}>
+                      {cur?.process_name || '工序(可选)'}
+                    </div>
+                  )}
+                </Picker>
+              )
+            })()}
             <Input value={f.exception_type} onChange={(v) => setF({ ...f, exception_type: v })} placeholder="类型" style={{ flex: 1 }} />
           </div>
           <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
@@ -389,10 +449,23 @@ function MaterialPanel({ reportId, processes, list, onChange, disabled }: {
       {!disabled && (
         <>
           <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginBottom: 4 }}>工序</div>
-          <select value={f.process_id || ''} onChange={(e) => setF({ ...f, process_id: e.target.value ? Number(e.target.value) : null })} style={selStyle}>
-            <option value="">选择工序</option>
-            {processes.map((p) => <option key={p.process_id} value={p.process_id}>{p.process_name}</option>)}
-          </select>
+          {/* 工序 Picker（物料表单） */}
+          {(() => {
+            const cur = processes.find(p => p.process_id === Number(f.process_id))
+            return (
+              <Picker
+                columns={processColumns}
+                value={f.process_id ? [String(f.process_id)] : []}
+                onConfirm={(v) => setF({ ...f, process_id: v[0] ? Number(v[0]) : null })}
+              >
+                {(_items, { open }) => (
+                  <div onClick={open} role="button" tabIndex={0} style={{ ...selStyle, color: cur ? 'var(--m-text)' : 'var(--m-text-3)' }}>
+                    {cur?.process_name || '选择工序'}
+                  </div>
+                )}
+              </Picker>
+            )
+          })()}
           <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 6, marginBottom: 4 }}>物料 ID</div>
           <Input type="number" value={String(f.material_id || '')} onChange={(v) => setF({ ...f, material_id: v ? Number(v) : null })} placeholder="物料 ID" />
           <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 6, marginBottom: 4 }}>数量</div>
