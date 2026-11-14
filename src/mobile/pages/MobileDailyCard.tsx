@@ -120,10 +120,18 @@ export default function MobileDailyCard() {
   // 当前选中日期是否有开工记录
   const currentHasMark = allMarkerDates.has(date)
 
-  // 自定义日期渲染：用 useCallback 确保引用稳定
+  // 自定义日期渲染：滑动月份时自动加载新月份的标记
+  // 利用 renderDate 每次渲染 cells 都会被调用的特性，检测到新月份就触发加载
+  // 依赖 loadDateMarkers（useCallback([]) 稳定）+ loadedMonthsRef（防重入），不会造成闭包循环
   const renderDate = useCallback((d: Date) => {
     const y = d.getFullYear(), m = d.getMonth() + 1
-    const key = `${y}-${String(m).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    const cacheKey = `${y}-${String(m).padStart(2, '0')}`
+    // 检测到未加载过的月份 → 异步触发 API（ref 防重入，已加载过立即 return）
+    if (!loadedMonthsRef.current.has(cacheKey)) {
+      loadedMonthsRef.current.add(cacheKey)
+      loadDateMarkers(y, m)
+    }
+    const key = `${cacheKey}-${String(d.getDate()).padStart(2, '0')}`
     const hasMark = allMarkerDates.has(key)
     return (
       <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -137,7 +145,7 @@ export default function MobileDailyCard() {
         )}
       </div>
     )
-  }, [allMarkerDates])
+  }, [allMarkerDates, loadDateMarkers])
 
   return (
     <div style={{ padding: 12 }}>
