@@ -186,7 +186,8 @@ export default function MobileDashboard() {
 
   // ========== 渲染 ==========
   return (
-    <div className="mobile-page-scrollable">
+    <div style={{ minHeight: '100vh' }}>
+    {/* 注意：不用 mobile-page-scrollable 的 12px 14px padding，Dashboard 内部自己掌控间距 */}
     <PullToRefresh onRefresh={onRefresh}>
       {/* 【UI 重构 2026-11-07】顶部淡蓝渐变（浅/深由 CSS 变量驱动） */}
       <div style={{
