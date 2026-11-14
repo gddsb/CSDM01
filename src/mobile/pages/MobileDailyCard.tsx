@@ -4,8 +4,8 @@
  * 数据源：GET /api/daily-report?date=
  * 日期选择 onConfirm → 自动触发重新加载，无刷新按钮
  */
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
-import { Button, CalendarPicker, PullToRefresh } from 'antd-mobile'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { Button, PullToRefresh, Picker } from 'antd-mobile'
 import type { ReactNode } from 'react'
 import api from '../../utils/api'
 import dayjs from 'dayjs'
@@ -53,25 +53,21 @@ function fmt(n: number | null | undefined, d = 0): string {
 
 export default function MobileDailyCard() {
   const [date, setDate] = useState(dayjs().format('YYYY-MM-DD'))
-  const [pickerVisible, setPickerVisible] = useState(false)
+  const [showCalendar, setShowCalendar] = useState(false)
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<DailyReportData | null>(null)
   const loadingRef = useRef(false)
 
-  // 日期标记缓存: Map<"2026-11", Set<"YYYY-MM-DD">>
-  const [dateMarkers, setDateMarkers] = useState<Record<string, Set<string>>>({})
-  const loadedMonthsRef = useRef<Set<string>>(new Set())
-  // 关键：用 ref 持有合并后的标记 Set，renderDate 只读 ref 不读 state
-  // 这样 renderDate 可以完全无依赖（useCallback([])），永远不重建
-  const allMarkerDatesRef = useRef<Set<string>>(new Set())
-  // markers 更新后 forceRender 让 renderDate 重建 → CalendarPickerView 重新计算所有 cells
-  const [forceRenderTick, setForceRenderTick] = useState(0)
+  // 日历视图年月（用户正在看的月份，可不同于选中日期所在月）
+  const [viewYear, setViewYear] = useState(() => dayjs().year())
+  const [viewMonth, setViewMonth] = useState(() => dayjs().month() + 1)
+  const [ymPickerVisible, setYMPickerVisible] = useState(false)
 
-  // 稳定的 min/max —— 只在首次 mount 时计算一次，避免 CalendarPicker 受控失效
-  const minDate = useMemo(() => new Date(2024, 0, 1), [])
-  const maxDate = useMemo(() => new Date(), [])
-  // 从 date 字符串派生 Date 对象，传给 CalendarPicker value
-  const pickerValue = useMemo(() => new Date(date + 'T00:00:00'), [date])
+  // 开工日期标记缓存
+  const markerDatesRef = useRef<Set<string>>(new Set())
+  const loadedMonthsRef = useRef<Set<string>>(new Set())
+  // 触发日历 grid 重渲染的 tick（标记更新 → tick++ → 日历重绘 → 新圆点出来）
+  const [, setRenderTick] = useState(0)
 
   const load = useCallback(async (targetDate: string) => {
     if (loadingRef.current) return
@@ -97,21 +93,18 @@ export default function MobileDailyCard() {
     try {
       const r = await api.get('/daily-report/dates', { params: { year, month } })
       const arr: string[] = r.data?.data || r.data || []
-      setDateMarkers(prev => {
-        if (prev[cacheKey]) return prev
-        const next = { ...prev, [cacheKey]: new Set(arr) }
-        // 同步更新合并 ref —— renderDate 只读这个 ref
-        const merged = new Set<string>()
-        for (const s of Object.values(next)) for (const d of s) merged.add(d)
-        allMarkerDatesRef.current = merged
-        return next
-      })
-      // forceRenderTick → renderDate 重建 → CalendarPickerView 重算所有 cells → 新圆点出来
-      setForceRenderTick(n => n + 1)
+      for (const d of arr) markerDatesRef.current.add(d)
+      setRenderTick(n => n + 1) // 触发日历重绘
     } catch { /* 静默 */ }
   }, [])
 
-  // 初始化：加载前后各 3 个月
+  // 切换月份时预加载前后各 1 个月
+  useEffect(() => {
+    loadDateMarkers(viewYear, viewMonth)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewYear, viewMonth])
+
+  // 初始化：加载选中日期所在月前后各 3 个月
   useEffect(() => {
     const now = new Date()
     const y = now.getFullYear(), m = now.getMonth() + 1
@@ -122,77 +115,129 @@ export default function MobileDailyCard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // 当前选中日期是否有开工记录
-  const currentHasMark = allMarkerDatesRef.current.has(date)
+  const currentHasMark = markerDatesRef.current.has(date)
 
-  // renderDate 依赖 forceRenderTick —— markers 更新 → tick++ → renderDate 重建
-  // → CalendarPickerView 重渲染所有 cells（用 ref 里最新的标记数据）
-  // 关键：依赖里不带 allMarkerDates 等 state（防止 Swiper 重建）
-  const renderDate = useCallback((d: Date) => {
-    const y = d.getFullYear(), m = d.getMonth() + 1
-    const cacheKey = `${y}-${String(m).padStart(2, '0')}`
-    // 检测到未加载过的月份 → 触发 API（让 loadDateMarkers 自己管理 loadedMonthsRef）
-    if (!loadedMonthsRef.current.has(cacheKey)) {
-      loadDateMarkers(y, m)
-    }
-    const key = `${cacheKey}-${String(d.getDate()).padStart(2, '0')}`
-    const hasMark = allMarkerDatesRef.current.has(key)
-    return (
-      <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {d.getDate()}
-        {hasMark && (
-          <span style={{
-            position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)',
-            width: 5, height: 5, borderRadius: '50%',
-            background: 'var(--brand-color)',
-          }} />
-        )}
-      </div>
-    )
-  }, [forceRenderTick, loadDateMarkers])
+  const openCalendar = () => {
+    // 打开日历时跳到选中日期所在月
+    const d = dayjs(date)
+    setViewYear(d.year())
+    setViewMonth(d.month() + 1)
+    setShowCalendar(true)
+  }
+
+  const onPickDate = (y: number, m: number, day: number) => {
+    const fmt = `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    setDate(fmt)
+    setShowCalendar(false)
+  }
 
   return (
     <div style={{ padding: 12 }}>
-      {/* 筛选 —— 点击日期按钮弹出 CalendarPicker */}
+      {/* 日期按钮 */}
       <div style={{
         display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12,
         background: 'var(--m-surface)', padding: 10, borderRadius: 10,
       }}>
-        <Button
-          size="mini"
-          onClick={() => setPickerVisible(true)}
-          style={{ padding: '0 10px' }}
-        >
+        <Button size="mini" onClick={openCalendar} style={{ padding: '0 10px' }}>
           📅 {date}{currentHasMark ? ' 📌' : ''}
         </Button>
         {loading && <span style={{ fontSize: 11, color: '#1890ff', marginLeft: 4 }}>加载中…</span>}
       </div>
 
-      {/* 日历弹窗 */}
-      {/* 核心修复：用 onChange 替代 onConfirm —— onChange 在用户点击日期格子时即时触发，
-          onConfirm 只在用户点底部"确定"按钮时触发。绑定 onChange 后，
-          点击任意日期 → 立即选中 + 关闭弹窗，无需再点确定。 */}
-      <CalendarPicker
-        visible={pickerVisible}
-        selectionMode="single"
-        value={pickerValue}
-        min={minDate}
-        max={maxDate}
-        renderDate={renderDate}
-        onClose={() => setPickerVisible(false)}
-        onChange={(val) => {
-          if (!val) return
-          const formatted = dayjs(val).format('YYYY-MM-DD')
-          setDate(formatted)
-          setPickerVisible(false)
-        }}
-        onConfirm={(val) => {
-          if (!val) return
-          const formatted = dayjs(val).format('YYYY-MM-DD')
-          setDate(formatted)
-          setPickerVisible(false)
-        }}
-      />
+      {/* 手写日历弹窗 */}
+      {showCalendar && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.5)', zIndex: 1000,
+          }}
+          onClick={() => setShowCalendar(false)}
+        >
+          <div
+            style={{
+              position: 'absolute', left: 0, right: 0, bottom: 0,
+              background: '#fff', borderTopLeftRadius: 16, borderTopRightRadius: 16,
+              maxHeight: '85vh', overflow: 'hidden',
+              display: 'flex', flexDirection: 'column',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* 日历头部：月份导航 + 关闭 */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '12px 16px', borderBottom: '1px solid #f0f0f0',
+            }}>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button onClick={() => {
+                  let m = viewMonth - 1, y = viewYear
+                  if (m < 1) { m = 12; y-- }
+                  setViewYear(y); setViewMonth(m)
+                }} style={navBtn}>←</button>
+                <button onClick={() => setYMPickerVisible(true)} style={{ fontSize: 16, fontWeight: 700, background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px 12px' }}>
+                  {viewYear}年 {viewMonth}月 ▾
+                </button>
+                <button onClick={() => {
+                  let m = viewMonth + 1, y = viewYear
+                  if (m > 12) { m = 1; y++ }
+                  setViewYear(y); setViewMonth(m)
+                }} style={navBtn}>→</button>
+              </div>
+              <button onClick={() => setShowCalendar(false)} style={{ background: 'transparent', border: 'none', fontSize: 20, color: '#999', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            {/* 年月选择 Picker（用 visible 控制，不用 trigger prop） */}
+            <Picker
+              visible={ymPickerVisible}
+              columns={[years, months]}
+              value={[String(viewYear), String(viewMonth)]}
+              onClose={() => setYMPickerVisible(false)}
+              onConfirm={(v) => { setViewYear(Number(v[0])); setViewMonth(Number(v[1])); setYMPickerVisible(false) }}
+            />
+
+            {/* 星期表头 */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', padding: '8px 0', textAlign: 'center', fontSize: 12, color: '#999' }}>
+              {['日', '一', '二', '三', '四', '五', '六'].map(d => <div key={d}>{d}</div>)}
+            </div>
+
+            {/* 日历 grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', padding: '4px 12px 16px', gap: 4 }}>
+              {buildMonthCells(viewYear, viewMonth).map((cell, idx) => {
+                if (!cell) return <div key={idx} />
+                const fmtKey = `${viewYear}-${String(viewMonth).padStart(2, '0')}-${String(cell.day).padStart(2, '0')}`
+                const hasMark = markerDatesRef.current.has(fmtKey)
+                const isSelected = fmtKey === date
+                const isToday = fmtKey === dayjs().format('YYYY-MM-DD')
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => cell.selectable && onPickDate(viewYear, viewMonth, cell.day)}
+                    style={{
+                      position: 'relative',
+                      height: 40,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 15,
+                      cursor: cell.selectable ? 'pointer' : 'default',
+                      background: isSelected ? 'var(--brand-color)' : 'transparent',
+                      color: isSelected ? '#fff' : (cell.selectable ? (isToday ? 'var(--brand-color)' : '#333') : '#ccc'),
+                      borderRadius: 8,
+                      fontWeight: isSelected || isToday ? 600 : 400,
+                    }}
+                  >
+                    {cell.day}
+                    {hasMark && (
+                      <span style={{
+                        position: 'absolute', bottom: 3, left: '50%', transform: 'translateX(-50%)',
+                        width: 5, height: 5, borderRadius: '50%',
+                        background: isSelected ? '#fff' : 'var(--brand-color)',
+                      }} />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: 60, color: 'var(--m-text-3)' }}>加载中…</div>
@@ -205,6 +250,36 @@ export default function MobileDailyCard() {
       )}
     </div>
   )
+}
+
+const navBtn: React.CSSProperties = {
+  background: 'transparent', border: 'none', cursor: 'pointer',
+  fontSize: 18, padding: '4px 10px', color: '#666',
+}
+
+// 年月 Picker 列
+const years = Array.from({ length: 6 }, (_, i) => ({ label: `${2024 + i}年`, value: `${2024 + i}` }))
+const months = Array.from({ length: 12 }, (_, i) => ({ label: `${i + 1}月`, value: `${i + 1}` }))
+
+// 构建月历 cell 数组（6周 × 7天 = 42 格）
+interface CalendarCell { day: number; selectable: boolean }
+function buildMonthCells(year: number, month: number): (CalendarCell | null)[] {
+  const first = new Date(year, month - 1, 1)
+  const firstWeekday = first.getDay() // 0=Sun
+  const daysInMonth = new Date(year, month, 0).getDate()
+  const cells: (CalendarCell | null)[] = []
+  // 前置空白
+  for (let i = 0; i < firstWeekday; i++) cells.push(null)
+  // 当月天数
+  const today = new Date()
+  for (let d = 1; d <= daysInMonth; d++) {
+    const cellDate = new Date(year, month - 1, d)
+    const selectable = cellDate <= today // 今天及以前可点
+    cells.push({ day: d, selectable })
+  }
+  // 补齐到 42 格
+  while (cells.length < 42) cells.push(null)
+  return cells
 }
 
 function DailyCardContent({ data }: { data: DailyReportData }) {
