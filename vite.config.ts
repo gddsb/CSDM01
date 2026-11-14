@@ -77,13 +77,10 @@ export default defineConfig({
       workbox: {
         // 允许大文件（antd chunk 超 2MB）预缓存
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
-        // ⚠️ 关键：跳过等待立即激活 — 修复旧 SW 锁死旧 HTML 的问题
-        // 之前 registerType:'autoUpdate' 在 vite-plugin-pwa v1 下不生效（registerSW.js 没加 updatefound 监听），
-        // 导致新 sw.js 下载后一直处于 waiting 状态，旧 SW controller 继续返回缓存的旧 index.html。
-        // 这是 logo 改了 N 轮 CSS 用户都看不到效果的根因！
-        skipWaiting: true,
-        clientsClaim: true,
         // ⚠️ 关键：禁用 navigateFallback
+        // vite-plugin-pwa 默认值是 "index.html"，会把 index.html 加入 precache 并注册 NavigationRoute，
+        // 导致旧 SW 锁死旧 HTML → 服务器更新后用户浏览器仍加载旧 JS（PC 误判 bug 永远不生效）。
+        // 我们自己在 runtimeCaching 里用 NetworkFirst 处理 HTML（见下），保证每次拿最新版本。
         navigateFallback: null,
         // JS/CSS/图片走 precache；HTML 不在此列表（由 runtimeCaching 处理）
         globPatterns: ['**/*.{js,css,png,svg,ico,webp,jpg,jpeg,woff2,ttf,json}'],
