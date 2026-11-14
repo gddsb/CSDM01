@@ -68,7 +68,10 @@ export default function ThreeSectionPage({
 }: ThreeSectionPageProps) {
   const { currentUser } = useApp()
   const userId = currentUser?.user_id
-  const collapsedStorageKey = storageKey ? `daman_mes_section_collapsed_${userId ?? 'anon'}_${storageKey}` : null
+  // storageKey 优先用传入的；不传则自动用当前页面 pathname（每个页面隔离持久化）
+  const autoKey = typeof window !== 'undefined' ? window.location.pathname : ''
+  const effectiveKey = storageKey || autoKey
+  const collapsedStorageKey = effectiveKey ? `daman_mes_section_collapsed_${userId ?? 'anon'}_${effectiveKey}` : null
   const [collapsed, setCollapsed] = useState(() => {
     if (!collapsedStorageKey) return false
     return localStorage.getItem(collapsedStorageKey) === '1'
