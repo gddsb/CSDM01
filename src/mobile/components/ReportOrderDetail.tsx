@@ -102,8 +102,14 @@ export function ReportOrderDetail({ meta, onClose }: Props) {
 
   const isClosed = /完工|关闭|closed|finished/i.test(meta.status || '')
 
+  // Tab → 锚点滚动（替代原来的条件切换，大报工单多工序时可同时浏览所有区块）
+  const scrollTo = (key: TabKey) => {
+    const el = document.getElementById(`sec-${key}`)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   return (
-    <div style={{ maxHeight: '75vh', overflow: 'auto', padding: '6px 2px' }}>
+    <div style={{ maxHeight: '80vh', overflow: 'auto', padding: '6px 2px' }}>
       {/* 头 */}
       <div style={{ padding: 10, background: 'var(--m-info-bg)', borderRadius: 8, marginBottom: 10 }}>
         <div style={{ fontSize: 14, fontWeight: 600 }}>{meta.report_no}</div>
@@ -120,28 +126,53 @@ export function ReportOrderDetail({ meta, onClose }: Props) {
         </div>
       </div>
 
-      <Tabs activeKey={tab} onChange={(k) => setTab(k as TabKey)} style={{ marginBottom: 10 }}>
-        <Tabs.Tab title={`工序(${processes.length})`} key="process" />
-        <Tabs.Tab title={`不良(${defectList.length})`} key="defect" />
-        <Tabs.Tab title={`报废(${scrapList.length})`} key="scrap" />
-        <Tabs.Tab title={`异常(${exceptionList.length})`} key="exception" />
-        <Tabs.Tab title={`人工(${manpowerList.length})`} key="manpower" />
-        <Tabs.Tab title={`投料(${materialList.length})`} key="material" />
-        <Tabs.Tab title="图片" key="image" />
-      </Tabs>
+      {/* Sticky 锚点导航 — 点击平滑滚到对应区块 */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--m-surface)', padding: '2px 0 8px', borderBottom: '1px solid var(--m-border)' }}>
+        <Tabs onChange={(k) => scrollTo(k as TabKey)} activeKey={tab} style={{ marginBottom: 0 }}>
+          <Tabs.Tab title={`工序(${processes.length})`} key="process" />
+          <Tabs.Tab title={`不良(${defectList.length})`} key="defect" />
+          <Tabs.Tab title={`报废(${scrapList.length})`} key="scrap" />
+          <Tabs.Tab title={`异常(${exceptionList.length})`} key="exception" />
+          <Tabs.Tab title={`人工(${manpowerList.length})`} key="manpower" />
+          <Tabs.Tab title={`投料(${materialList.length})`} key="material" />
+          <Tabs.Tab title="图片" key="image" />
+        </Tabs>
+      </div>
 
-      {tab === 'process' && <ProcessPanel processes={processes} />}
-      {tab === 'defect' && <DefectPanel reportId={meta.report_order_id} processes={processes}
-        defectTypes={defectTypes} list={defectList} onChange={refreshAll} disabled={isClosed} />}
-      {tab === 'scrap' && <ScrapPanel reportId={meta.report_order_id} processes={processes}
-        list={scrapList} onChange={refreshAll} disabled={isClosed} />}
-      {tab === 'exception' && <ExceptionPanel reportId={meta.report_order_id} processes={processes}
-        list={exceptionList} onChange={refreshAll} disabled={isClosed} />}
-      {tab === 'manpower' && <ManpowerPanel reportId={meta.report_order_id}
-        list={manpowerList} onChange={refreshAll} disabled={isClosed} />}
-      {tab === 'material' && <MaterialPanel reportId={meta.report_order_id} processes={processes}
-        list={materialList} onChange={refreshAll} disabled={isClosed} />}
-      {tab === 'image' && <ImagePanel reportNo={meta.report_no!} images={imageList} onChangeImages={setImageList} />}
+      {/* 全部区块同时渲染，各自锚点 */}
+      <div id="sec-process" style={{ paddingTop: 10 }}>
+        <SectionHeader title="🔧 工序" count={processes.length} />
+        <ProcessPanel processes={processes} />
+      </div>
+      <div id="sec-defect">
+        <SectionHeader title="🔴 不良" count={defectList.length} />
+        <DefectPanel reportId={meta.report_order_id} processes={processes}
+          defectTypes={defectTypes} list={defectList} onChange={refreshAll} disabled={isClosed} />
+      </div>
+      <div id="sec-scrap">
+        <SectionHeader title="🗑️ 报废" count={scrapList.length} />
+        <ScrapPanel reportId={meta.report_order_id} processes={processes}
+          list={scrapList} onChange={refreshAll} disabled={isClosed} />
+      </div>
+      <div id="sec-exception">
+        <SectionHeader title="⚠️ 异常" count={exceptionList.length} />
+        <ExceptionPanel reportId={meta.report_order_id} processes={processes}
+          list={exceptionList} onChange={refreshAll} disabled={isClosed} />
+      </div>
+      <div id="sec-manpower">
+        <SectionHeader title="👷 人工" count={manpowerList.length} />
+        <ManpowerPanel reportId={meta.report_order_id}
+          list={manpowerList} onChange={refreshAll} disabled={isClosed} />
+      </div>
+      <div id="sec-material">
+        <SectionHeader title="📦 投料" count={materialList.length} />
+        <MaterialPanel reportId={meta.report_order_id} processes={processes}
+          list={materialList} onChange={refreshAll} disabled={isClosed} />
+      </div>
+      <div id="sec-image">
+        <SectionHeader title="📷 图片" count={imageList.length} />
+        <ImagePanel reportNo={meta.report_no!} images={imageList} onChangeImages={setImageList} />
+      </div>
 
       <Button block fill="outline" style={{ marginTop: 10 }} onClick={onClose}>返回</Button>
     </div>
@@ -514,6 +545,18 @@ function Panel({ children }: { children: any }) {
       background: 'var(--m-surface)', borderRadius: 10, padding: 10,
       border: '1px solid var(--m-border)', marginBottom: 10,
     }}>{children}</div>
+  )
+}
+
+function SectionHeader({ title, count }: { title: string; count: number }) {
+  return (
+    <div style={{
+      fontSize: 13, fontWeight: 600, padding: '8px 4px 4px',
+      color: 'var(--m-text)', display: 'flex', alignItems: 'center', gap: 6,
+    }}>
+      {title}
+      <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--m-text-3)' }}>({count})</span>
+    </div>
   )
 }
 
