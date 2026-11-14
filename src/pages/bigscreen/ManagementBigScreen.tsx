@@ -257,7 +257,7 @@ export default function ManagementBigScreen() {
   const kpiData = [
     { label: '活跃订单', value: activeOrders, unit: '', color: '#00d4ff', icon: '📋' },
     { label: '生效工单', value: activeWorkOrders, unit: '', color: '#3FB950', icon: '🔧' },
-    { label: '生产良率', value: yieldRate, unit: '%', color: '#3FB950', icon: '✓' },
+    { label: '良品率', value: yieldRate, unit: '%', color: '#3FB950', icon: '✓' },
     { label: '来料合格率', value: incomingPass + incomingFail > 0 ? (incomingPass / (incomingPass + incomingFail) * 100).toFixed(1) : '0', unit: '%', color: '#00d4ff', icon: '🔬' },
     { label: '设备利用率', value: deviceUtilization, unit: '%', color: '#F0883E', icon: '⚙' },
     { label: '活跃客诉', value: activeComplaints, unit: '', color: '#F85149', icon: '⚠' },

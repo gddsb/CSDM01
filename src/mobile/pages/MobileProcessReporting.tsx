@@ -587,7 +587,7 @@ function Header({ report, onBack, onFinish }: { report: ReportOrder; onBack: () 
 }
 
 function StatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportStats>; reportQty: number }) {
-  // 合格数量/投入数量 上移到标题行右侧（右对齐），下方只保留 4 项不良/工时
+  // 平衡产出数量/投入数量 上移到标题行右侧（右对齐），下方只保留 4 项不良/工时
   const inputInt = fmtInt(stats.inputQty)
   const qualifiedInt = fmtInt(stats.expectedOutput > 0 ? stats.expectedOutput : 0)
   const items: Array<{ label: string; value: React.ReactNode; color?: string }> = [
@@ -601,7 +601,7 @@ function StatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportSta
       background: 'var(--m-surface)', margin: '10px 0 0', borderRadius: 10, padding: '10px 12px',
       boxShadow: '0 1px 4px rgba(0,0,0,.04)',
     }}>
-      {/* 标题行：左标题 + 右合格/投入比值（右对齐） */}
+      {/* 标题行：左标题 + 右平衡产出/投入比值（右对齐） */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
         <div style={{ fontSize: 11, color: 'var(--m-text-3)', fontWeight: 600 }}>📊 报工单汇总</div>
         <div style={{ fontSize: 16, fontWeight: 700 }}>

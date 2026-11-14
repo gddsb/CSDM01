@@ -1625,7 +1625,7 @@ export default function ProcessReporting() {
         <Card>
     <ReportStatsBar items={reportStatItems} rightSlot={
       <span style={{ fontSize: 13 }}>
-        <span style={{ color: 'var(--color-success)' }}>合格 <b>{stats.expectedOutput > 0 ? stats.expectedOutput : 0}</b></span>
+        <span style={{ color: 'var(--color-success)' }}>平衡产出 <b>{stats.expectedOutput > 0 ? stats.expectedOutput : 0}</b></span>
         <span style={{ color: 'var(--text-secondary)', margin: '0 4px' }}>/</span>
         <span style={{ color: 'var(--color-primary)' }}>投入 <b>{stats.inputQty || 0}</b></span>
       </span>

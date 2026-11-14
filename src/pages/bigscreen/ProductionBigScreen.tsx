@@ -230,7 +230,7 @@ export default function ProductionBigScreen() {
     { label: '今日开工', value: todayStartQty, unit: '罐', color: '#3FB950' },
     { label: '今日投入', value: totalInput, unit: '罐', color: '#F0883E' },
     { label: '当前产出', value: currentOutput, unit: '罐', color: '#a78bfa' },
-    { label: '良率', value: yieldRate, unit: '%', color: '#3FB950' },
+    { label: '良品率', value: yieldRate, unit: '%', color: '#3FB950' },
     { label: '运行产线', value: runningLines.length, unit: '条', color: '#00d4ff' },
   ]
 
