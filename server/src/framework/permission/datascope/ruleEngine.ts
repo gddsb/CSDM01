@@ -147,33 +147,26 @@ async function loadUserScopeRules(userId: number, roleId: number | null): Promis
 export async function buildDataScopeWhere(input: BuildDataScopeWhereInput): Promise<Record<string, any>> {
   const { userId, roleId, roleCode, businessObj, username, requestPermCode } = input
 
-  console.log(`[DataScope DEBUG] buildDataScopeWhere userId=${userId} roleId=${roleId} roleCode=${roleCode} obj=${businessObj} username=${username}`)
-
   // 4a. 超级管理员短路（从 auth middleware 直接传过来的 roleCode，避免重复查 DB）
   if (roleCode && SHORT_CIRCUIT_ROLES.includes(roleCode.toLowerCase())) {
-    console.log(`[DataScope DEBUG] SHORT CIRCUIT for role_code=${roleCode}`)
     return {}
   }
 
   // 4b. 加载规则 + 维度字典（各自带 try-catch 容错）
   const [rules, dimDict] = await Promise.all([loadUserScopeRules(userId, roleId), loadDimDict()])
-  console.log(`[DataScope DEBUG] rules loaded=${rules.length}, dimDict keys=${Array.from(dimDict.keys())}`)
 
   // 4c. user_id 独立规则覆盖 role_id（同一 obj_code）
   const userRules = rules.filter(r => r.user_id === userId && r.obj_code === businessObj)
   const roleRules  = rules.filter(r => r.role_id === roleId && r.user_id === null && r.obj_code === businessObj)
-  console.log(`[DataScope DEBUG] obj=${businessObj}: userRules=${userRules.length}, roleRules=${roleRules.length}`)
 
   let objRules = userRules.length > 0 ? userRules : roleRules
 
   if (objRules.length === 0) {
-    console.log(`[DataScope DEBUG] NO RULES for obj=${businessObj} → empty where (default all)`)
     return {}
   }
 
   // 4d. scope_type=all 直接跳过（全量）
   if (objRules.some(r => r.scope_type === 'all')) {
-    console.log(`[DataScope DEBUG] scope_type=all → empty where`)
     return {}
   }
 
@@ -182,7 +175,6 @@ export async function buildDataScopeWhere(input: BuildDataScopeWhereInput): Prom
     const precise = objRules.filter(r => r.perm_code === requestPermCode)
     if (precise.length > 0) {
       objRules = precise
-      console.log(`[DataScope DEBUG] filtered by requestPermCode=${requestPermCode} → ${objRules.length} rules`)
     }
   }
 
@@ -191,26 +183,21 @@ export async function buildDataScopeWhere(input: BuildDataScopeWhereInput): Prom
   for (const rule of objRules) {
     try {
       const frag = translateRule(rule, dimDict, businessObj, username)
-      console.log(`[DataScope DEBUG] rule=${JSON.stringify(rule).slice(0, 120)} → frag=${JSON.stringify(frag)}`)
       if (frag) whereFragments.push(frag)
     } catch (err: any) {
-      console.error(`[DataScope DEBUG] translateRule FAIL: ${err?.message || err}`)
       logger.error(`[DataScope] translateRule FAIL obj=${businessObj}: ${err?.message || err}`)
     }
   }
 
   if (whereFragments.length === 0) {
-    console.log(`[DataScope DEBUG] ALL FRAGMENTS NULL → empty where`)
     return {}
   }
   if (whereFragments.length === 1) {
-    console.log(`[DataScope DEBUG] SINGLE FRAGMENT → ${JSON.stringify(whereFragments[0])}`)
     return whereFragments[0]
   }
 
   // 多规则 AND 组合
   const result = { [Op.and]: whereFragments }
-  console.log(`[DataScope DEBUG] AND COMBINED → ${JSON.stringify(result).slice(0, 200)}`)
   return result
 }
 
@@ -226,7 +213,6 @@ function translateRule(
 ): Record<string, any> | null {
   // 防御：scope_type 为空或未知
   if (!rule.scope_type) {
-    console.log(`[DataScope DEBUG] rule has empty scope_type, skip`)
     return null
   }
 
@@ -247,7 +233,6 @@ function translateRule(
           col = dim.target_column
         }
       }
-      console.log(`[DataScope DEBUG] self → col=${col}, username=${username}`)
       return { [col]: username }
     }
 
@@ -278,7 +263,6 @@ function translateRule(
     }
 
     default:
-      console.log(`[DataScope DEBUG] unknown scope_type=${rule.scope_type}, skip`)
       return null
   }
 }
