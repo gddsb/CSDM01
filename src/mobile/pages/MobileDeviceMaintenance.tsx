@@ -491,10 +491,11 @@ export default function MobileDeviceMaintenance() {
       if (!r.success) { Toast.show({ content: r.message || '提交失败', position: 'bottom' }); return }
       // 3) 图片（必须在线直接 upload，不走 offline 队列）
       Toast.show({
-        content: '提交成功',
+        content: '提交成功，进入下一项',
         icon: 'success', position: 'bottom',
       })
-      setStep(3)
+      // 直接跳下一条待执行（不再停留 Step 3 完成页）
+      await goNextPending()
     } catch (e: any) {
       Toast.show({ content: e?.message || '提交失败', position: 'bottom' })
     } finally { setSubmitting(false) }
@@ -883,42 +884,85 @@ export default function MobileDeviceMaintenance() {
             }
             return null
           })()}
-          {/* 保养项标题 + 设备信息 */}
+          {/* 📦 设备卡片（独立） */}
           <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 14, marginBottom: 12, border: '1px solid var(--m-border)' }}>
-            <div style={{ fontSize: 15, fontWeight: 600 }}>
-              {selectedRecord.standard?.maintenance_method || selectedRecord.standard?.maintenance_content?.slice?.(0, 20) || '保养项'}
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>
-              {selectedDevice?.device_name} · {selectedRecord.trigger_mode || ''} · {selectedRecord.period_key || selectedRecord.plan_date || '—'}
+            <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginBottom: 6 }}>📦 设备</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--m-text)' }}>
+                  {selectedDevice?.device_name || '—'}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 2 }}>
+                  {selectedDevice?.device_code || '—'}
+                </div>
+              </div>
+              <span style={{
+                fontSize: 11, padding: '2px 8px', borderRadius: 8, flexShrink: 0,
+                background: 'var(--brand-color)22', color: 'var(--brand-color)',
+              }}>{selectedRecord.trigger_mode || ''}</span>
             </div>
           </div>
 
-          {/* 保养标准详情（只读，来自后端 JOIN DeviceMaintenanceStandard） */}
+          {/* 🛠️ 保养项标题（单独卡片） */}
+          <div style={{ background: 'var(--m-surface)', borderRadius: 10, padding: 12, marginBottom: 12, border: '1px solid var(--m-border)' }}>
+            <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginBottom: 6 }}>🛠️ 保养项</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--m-text)' }}>
+              {selectedRecord.standard?.maintenance_method || selectedRecord.standard?.maintenance_content?.slice?.(0, 30) || '保养项'}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 4 }}>
+              {selectedRecord.period_key || selectedRecord.plan_date || '—'}
+            </div>
+          </div>
+
+          {/* 🛠️ 保养标准卡片（两段式：机构部位 + 保养内容） */}
           {(() => {
             const s = selectedRecord.standard
             if (!s) return null
-            const rows: Array<[string, string | undefined]> = [
-              ['机构', s.mechanism],
-              ['部件', s.component],
-              ['部位', s.location],
-              ['保养方法', s.maintenance_method],
-              ['保养内容', s.maintenance_content],
-              ['判定类型', s.judge_type],
-              ['判定基准', s.standard_value ? `${s.standard_value}${s.unit || ''}` : undefined],
-            ]
-            const visible = rows.filter(([, v]) => v && v.trim())
-            if (visible.length === 0) return null
+            // 第一段：机构 + 部件 + 部位（全部为空则整段不显示）
+            const mechanismParts = [s.mechanism, s.component, s.location].filter((v) => v && v.trim())
+            const hasMechanismPart = mechanismParts.length > 0
+            // 第二段：保养内容（自动高度）
+            const hasContent = !!(s.maintenance_content && s.maintenance_content.trim())
+            // 两个都空 → 整个卡片不显示
+            if (!hasMechanismPart && !hasContent) return null
             return (
-              <Card title="保养标准">
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {visible.map(([k, v]) => (
-                    <div key={k} style={{ display: 'flex', fontSize: 13 }}>
-                      <span style={{ color: 'var(--m-text-3)', width: 80, flexShrink: 0 }}>{k}</span>
-                      <span style={{ color: 'var(--m-text-2)', flex: 1 }}>{v}</span>
+              <div style={{
+                background: 'var(--m-surface)', borderRadius: 10, padding: 14,
+                border: '1px solid var(--m-border)', marginBottom: 12,
+              }}>
+                <div style={{ fontSize: 13, color: 'var(--m-text-2)', marginBottom: 10 }}>🛠️ 保养标准</div>
+                {/* 第一段：机构部位 */}
+                {hasMechanismPart && (
+                  <div style={{ marginBottom: hasContent ? 10 : 0 }}>
+                    <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginBottom: 4 }}>🔧 机构部位</div>
+                    <div style={{
+                      fontSize: 13, color: 'var(--m-text-2)',
+                      padding: '8px 10px', borderRadius: 8,
+                      background: 'var(--m-surface-2)',
+                    }}>
+                      {mechanismParts.map((p, i) => (
+                        <span key={i}>
+                          {i > 0 && <span style={{ color: 'var(--m-text-3)', margin: '0 6px' }}>·</span>}
+                          {p}
+                        </span>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </Card>
+                  </div>
+                )}
+                {/* 第二段：保养内容（自动高度） */}
+                {hasContent && (
+                  <div>
+                    <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginBottom: 4 }}>📝 保养内容</div>
+                    <div style={{
+                      fontSize: 13, color: 'var(--m-text)', lineHeight: 1.6, whiteSpace: 'pre-wrap',
+                      padding: '8px 10px', borderRadius: 8,
+                      background: 'var(--m-surface-2)',
+                    }}>
+                      {s.maintenance_content}
+                    </div>
+                  </div>
+                )}
+              </div>
             )
           })()}
 
@@ -987,11 +1031,11 @@ export default function MobileDeviceMaintenance() {
 
           <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
             {selectedRecord.status === '已完成'
-              ? <Button block color="primary" onClick={() => { setStep(1); setSelectedRecord(null) }}>返回列表</Button>
+              ? <Button block color="primary" onClick={() => { setStep(1); setSelectedRecord(null) }}>返回保养项目</Button>
               : <>
-                  <Button block fill="outline" onClick={() => setStep(1)}>上一步</Button>
+                  <Button block fill="outline" onClick={() => setStep(1)}>返回保养项目</Button>
                   {hasPermission('mobile:device:maintenance:submit') && (
-                    <Button block color="primary" loading={submitting} onClick={onSubmit}>提交保养</Button>
+                    <Button block color="primary" loading={submitting} onClick={onSubmit}>完成进入下一项</Button>
                   )}
                 </>
             }
