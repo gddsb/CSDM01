@@ -51,7 +51,6 @@ function fmt(n: number | null | undefined, d = 0): string {
 
 export default function MobileDailyCard() {
   const [date, setDate] = useState(dayjs().format('YYYY-MM-DD'))
-  const [pickerValue, setPickerValue] = useState<Date>(new Date())
   const [pickerVisible, setPickerVisible] = useState(false)
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState<DailyReportData | null>(null)
@@ -60,6 +59,12 @@ export default function MobileDailyCard() {
   // 日期标记缓存: Map<"2026-11", Set<"YYYY-MM-DD">>
   const [dateMarkers, setDateMarkers] = useState<Record<string, Set<string>>>({})
   const loadedMonthsRef = useRef<Set<string>>(new Set())
+
+  // 稳定的 min/max —— 只在首次 mount 时计算一次，避免 CalendarPicker 受控失效
+  const minDate = useMemo(() => new Date(2024, 0, 1), [])
+  const maxDate = useMemo(() => new Date(), [])
+  // 从 date 字符串派生 Date 对象，传给 CalendarPicker value
+  const pickerValue = useMemo(() => new Date(date + 'T00:00:00'), [date])
 
   const load = useCallback(async (targetDate: string) => {
     if (loadingRef.current) return
@@ -77,7 +82,7 @@ export default function MobileDailyCard() {
 
   useEffect(() => { load(date) }, [date, load])
 
-  // 加载某月的开工日期标记（用 ref 缓存防止重复加载，避免每次 setDateMarkers 重建依赖）
+  // 加载某月的开工日期标记（用 ref 缓存防止重复加载）
   const loadDateMarkers = useCallback(async (year: number, month: number) => {
     const cacheKey = `${year}-${String(month).padStart(2, '0')}`
     if (loadedMonthsRef.current.has(cacheKey)) return
@@ -86,18 +91,16 @@ export default function MobileDailyCard() {
       const r = await api.get('/daily-report/dates', { params: { year, month } })
       const arr: string[] = r.data?.data || r.data || []
       setDateMarkers(prev => {
-        // 如果已经有这个 key，不更新
         if (prev[cacheKey]) return prev
         return { ...prev, [cacheKey]: new Set(arr) }
       })
     } catch { /* 静默 */ }
   }, [])
 
-  // 初始化：加载前后各 3 个月（覆盖 99% 使用场景），不做 renderDate 内的懒加载
+  // 初始化：加载前后各 3 个月
   useEffect(() => {
     const now = new Date()
     const y = now.getFullYear(), m = now.getMonth() + 1
-    // 当前月 + 上 3 个月 + 下 3 个月 = 7 个月
     for (let offset = -3; offset <= 3; offset++) {
       const d = new Date(y, m - 1 + offset, 1)
       loadDateMarkers(d.getFullYear(), d.getMonth() + 1)
@@ -114,14 +117,17 @@ export default function MobileDailyCard() {
     return s
   }, [dateMarkers])
 
-  // 自定义日期渲染：只负责渲染，不触发任何异步（防止闭包循环）
-  const renderDate = (date: Date) => {
-    const y = date.getFullYear(), m = date.getMonth() + 1
-    const key = `${y}-${String(m).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+  // 当前选中日期是否有开工记录
+  const currentHasMark = allMarkerDates.has(date)
+
+  // 自定义日期渲染：用 useCallback 确保引用稳定
+  const renderDate = useCallback((d: Date) => {
+    const y = d.getFullYear(), m = d.getMonth() + 1
+    const key = `${y}-${String(m).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
     const hasMark = allMarkerDates.has(key)
     return (
       <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {date.getDate()}
+        {d.getDate()}
         {hasMark && (
           <span style={{
             position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)',
@@ -131,7 +137,7 @@ export default function MobileDailyCard() {
         )}
       </div>
     )
-  }
+  }, [allMarkerDates])
 
   return (
     <div style={{ padding: 12 }}>
@@ -145,23 +151,23 @@ export default function MobileDailyCard() {
           onClick={() => setPickerVisible(true)}
           style={{ padding: '0 10px' }}
         >
-          📅 {date}
+          📅 {date}{currentHasMark ? ' 📌' : ''}
         </Button>
         {loading && <span style={{ fontSize: 11, color: '#1890ff', marginLeft: 4 }}>加载中…</span>}
       </div>
 
-      {/* 日历弹窗 */}
+      {/* 日历弹窗 —— min/max/value 全部 useMemo 稳定引用，杜绝受控失效 */}
       <CalendarPicker
         visible={pickerVisible}
         selectionMode="single"
         value={pickerValue}
-        min={new Date(2024, 0, 1)}
-        max={new Date()}
+        min={minDate}
+        max={maxDate}
         renderDate={renderDate}
         onClose={() => setPickerVisible(false)}
         onConfirm={(val) => {
           if (!val) return
-          setPickerValue(val)
+          // 只 setDate，pickerValue 自动从 date 派生（useMemo）
           const formatted = dayjs(val).format('YYYY-MM-DD')
           setDate(formatted)
           setPickerVisible(false)

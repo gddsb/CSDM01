@@ -229,10 +229,24 @@ export function ManpowerPanel({
   const saveBreaks = useCallback(async () => {
     // 校验：每段 end 必须 > start
     const validRecords = breakTimes.filter(b => calcMinutes(b.start_time, b.end_time) > 0)
-    // 按 start_time 排序
-    validRecords.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+    // 按 start_time 排序（稳定排序，同 start 按 end）
+    validRecords.sort((a, b) => {
+      const d = new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+      if (d !== 0) return d
+      return new Date(a.end_time).getTime() - new Date(b.end_time).getTime()
+    })
 
-    // 检查有没有冲突的时间段
+    // 检查完全重复（同 start + 同 end）
+    for (let i = 0; i < validRecords.length - 1; i++) {
+      const a = validRecords[i], b = validRecords[i + 1]
+      if (new Date(a.start_time).getTime() === new Date(b.start_time).getTime() &&
+          new Date(a.end_time).getTime() === new Date(b.end_time).getTime()) {
+        Toast.show({ content: `存在完全相同的休息时间段：${extractHHmm(a.start_time)}→${extractHHmm(a.end_time)}`, icon: 'fail' })
+        return
+      }
+    }
+
+    // 检查重叠（prev.end > next.start，已覆盖大部分相邻重叠）
     for (let i = 0; i < validRecords.length - 1; i++) {
       if (new Date(validRecords[i].end_time).getTime() > new Date(validRecords[i + 1].start_time).getTime()) {
         Toast.show({ content: '休息时间段有重叠，请检查', icon: 'fail' })

@@ -33,25 +33,45 @@ export async function batchSave(req: Request, res: Response) {
   const order = await ReportOrder.findByPk(report_order_id)
   if (!order) return fail(res, '报工单不存在', 404)
 
+  // ===== 校验所有 records：每段有效 + N² 无重叠 + 无完全重复 =====
+  const parsed: Array<{ st: number; et: number; start_time: string; end_time: string; remark?: string }> = []
+  for (const r of records || []) {
+    if (!r.start_time || !r.end_time) continue
+    const st = new Date(r.start_time).getTime()
+    const et = new Date(r.end_time).getTime()
+    if (isNaN(st) || isNaN(et) || et <= st) continue
+    parsed.push({ st, et, start_time: r.start_time, end_time: r.end_time, remark: r.remark })
+  }
+  // 完全重复 & 重叠校验（N²）
+  for (let i = 0; i < parsed.length; i++) {
+    for (let j = i + 1; j < parsed.length; j++) {
+      const a = parsed[i], b = parsed[j]
+      // 完全相同
+      if (a.st === b.st && a.et === b.et) {
+        return fail(res, `休息时间段完全重复：${new Date(a.st).toISOString()}`, 400)
+      }
+      // 有重叠：a.st < b.et 且 b.st < a.et
+      if (a.st < b.et && b.st < a.et) {
+        return fail(res, `休息时间段有重叠，请调整后再保存`, 400)
+      }
+    }
+  }
+
   // 先删旧记录
   await ProductionBreakTime.destroy({ where: { report_order_id } })
 
   // 批量写新记录
   const now = new Date()
   let totalMinutes = 0
-  for (const r of records || []) {
-    if (!r.start_time || !r.end_time) continue
-    const st = new Date(r.start_time)
-    const et = new Date(r.end_time)
-    if (isNaN(st.getTime()) || isNaN(et.getTime()) || et.getTime() <= st.getTime()) continue
-    const minutes = Math.round((et.getTime() - st.getTime()) / 60000)
+  for (const p of parsed) {
+    const minutes = Math.round((p.et - p.st) / 60000)
     totalMinutes += minutes
     await ProductionBreakTime.create({
       break_time_id: randomUUID(),
       report_order_id,
-      start_time: st,
-      end_time: et,
-      remark: r.remark || null,
+      start_time: new Date(p.start_time),
+      end_time: new Date(p.end_time),
+      remark: p.remark || null,
       created_at: now,
       updated_at: now,
     })
@@ -63,7 +83,7 @@ export async function batchSave(req: Request, res: Response) {
     { where: { report_order_id } },
   )
 
-  return success(res, { saved: (records || []).length, total_minutes: totalMinutes })
+  return success(res, { saved: parsed.length, total_minutes: totalMinutes })
 }
 
 /** 新增单条 */

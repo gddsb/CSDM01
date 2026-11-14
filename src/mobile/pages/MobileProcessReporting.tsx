@@ -590,9 +590,7 @@ function Header({ report, onBack, onFinish }: { report: ReportOrder; onBack: () 
 }
 
 function StatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportStats>; reportQty: number }) {
-  // 平衡产出数量/投入数量 上移到标题行右侧（右对齐），下方只保留 4 项不良/工时
   const inputInt = fmtInt(stats.inputQty)
-  const qualifiedInt = fmtInt(stats.expectedOutput > 0 ? stats.expectedOutput : 0)
   const items: Array<{ label: string; value: React.ReactNode; color?: string }> = [
     { label: '来料不良', value: fmtInt(stats.defectMaterial), color: '#faad14' },
     { label: '制程不良', value: fmtInt(stats.defectProcess), color: '#fa8c16' },
@@ -604,16 +602,15 @@ function StatsBar({ stats, reportQty }: { stats: ReturnType<typeof calcReportSta
       background: 'var(--m-surface)', margin: '10px 0 0', borderRadius: 10, padding: '10px 12px',
       boxShadow: '0 1px 4px rgba(0,0,0,.04)',
     }}>
-      {/* 标题行：全部靠左对齐，平衡产出/投入紧跟标签 */}
-      <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
+      {/* 标题行：报工单汇总靠左，投入数量靠右 */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
         <div style={{ fontSize: 11, color: 'var(--m-text-3)', fontWeight: 600, whiteSpace: 'nowrap' }}>📊 报工单汇总</div>
-        <div style={{ fontSize: 15, fontWeight: 700, whiteSpace: 'nowrap' }}>
-          <span style={{ color: '#52c41a' }}>{qualifiedInt}</span>
-          <span style={{ color: 'var(--m-text-3)', margin: '0 2px' }}>/</span>
-          <span style={{ color: 'var(--brand-color)' }}>{inputInt}</span>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
+          <span style={{ fontSize: 10, color: 'var(--m-text-3)' }}>投入数量</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--brand-color)' }}>{inputInt}</span>
         </div>
       </div>
-      {/* 数据行：左对齐排列，每项按内容宽度，空间留给右侧 */}
+      {/* 数据行：左对齐排列 */}
       <div style={{ display: 'flex', gap: 12, alignItems: 'stretch', justifyContent: 'flex-start', flexWrap: 'wrap' }}>
         {items.map(it => (
           <div key={it.label} style={{ textAlign: 'left', whiteSpace: 'nowrap' }}>
