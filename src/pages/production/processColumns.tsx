@@ -3,6 +3,7 @@ import React from 'react'
 import { Button, Input, InputNumber, Popconfirm, Select, Table } from 'antd'
 import { PictureOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
+import { isDecimalUnit } from '../../utils/processMaterialRules'
 
 type RecordAny = Record<string, any>
 
@@ -25,6 +26,8 @@ interface MaterialColumnHandlers extends CommonHandlers {
   onChange: (recordId: any, field: string, value: any) => void
   onDelete: (record: any) => void
   getFilteredOptions: (record: any) => any[]
+  /** 当前工序编码 —— 包号仅 P-01 第一道工序显示 */
+  processCode?: string
 }
 
 export function buildDefectColumns(handlers: DefectColumnHandlers): ColumnsType<RecordAny> {
@@ -93,9 +96,14 @@ export function buildDefectColumns(handlers: DefectColumnHandlers): ColumnsType<
 }
 
 export function buildMaterialColumns(handlers: MaterialColumnHandlers): ColumnsType<RecordAny> {
-  const { isEditable, options, onChange, onDelete, getFilteredOptions, openImageDrawer } = handlers
+  const { isEditable, options, onChange, onDelete, getFilteredOptions, openImageDrawer, processCode } = handlers
   const SelectAny = Select as any
-  return [
+
+  // 判断当前工序是否第一道（裁剪下料 P-01）—— 只有第一道显示包号列
+  const isFirstProcess = processCode === 'P-01'
+
+  // 构建列数组（包号条件插入）
+  const cols: ColumnsType<RecordAny> = [
     {
       title: '物料类型', dataIndex: 'material_type', key: 'material_type', width: 100,
       render: (val, record) => isEditable ? (
@@ -136,11 +144,37 @@ export function buildMaterialColumns(handlers: MaterialColumnHandlers): ColumnsT
       title: <span><span style={{ color: 'var(--color-error)' }}>*</span> 批号</span>, dataIndex: 'material_batch', key: 'material_batch', width: 120,
       render: (val, record) => isEditable ? <Input placeholder="批号" value={val} onChange={(e) => onChange(record.id, 'material_batch', (e as React.ChangeEvent<HTMLInputElement>).target.value)} size="small" status={!val || !String(val).trim() ? 'error' : undefined} /> : val || '-',
     },
-    { title: '包号', dataIndex: 'package_no', key: 'package_no', width: 120, render: (val, record) => isEditable ? <Input placeholder="包号" value={val} onChange={(e) => onChange(record.id, 'package_no', (e as React.ChangeEvent<HTMLInputElement>).target.value)} size="small" /> : val || '-' },
-    {
-      title: <span><span style={{ color: 'var(--color-error)' }}>*</span> 数量</span>, dataIndex: 'quantity', key: 'quantity', width: 100,
-      render: (val, record) => isEditable ? <InputNumber min={1} step={1} precision={0} value={val} onChange={(v) => onChange(record.id, 'quantity', v || 0)} style={{ width: '100%' }} size="small" controls={false} status={!val || val <= 0 ? 'error' : undefined} /> : val,
+  ]
+
+  // 包号列：仅 P-01 第一道工序显示
+  if (isFirstProcess) {
+    cols.push({ title: '包号', dataIndex: 'package_no', key: 'package_no', width: 120, render: (val, record) => isEditable ? <Input placeholder="包号" value={val} onChange={(e) => onChange(record.id, 'package_no', (e as React.ChangeEvent<HTMLInputElement>).target.value)} size="small" /> : val || '-' })
+  }
+
+  // 数量列：precision/step 按选中料品的单位动态化
+  cols.push({
+    title: <span><span style={{ color: 'var(--color-error)' }}>*</span> 数量</span>, dataIndex: 'quantity', key: 'quantity', width: 100,
+    render: (val, record) => {
+      if (!isEditable) return val
+      const opt = options.find((o: any) => String(o.value) === String(record.bas_material_id))
+      const allowDecimal = isDecimalUnit(opt?.unit_name)
+      return (
+        <InputNumber
+          min={allowDecimal ? 0 : 1}
+          step={allowDecimal ? 0.01 : 1}
+          precision={allowDecimal ? 2 : 0}
+          value={val}
+          onChange={(v) => onChange(record.id, 'quantity', v || 0)}
+          style={{ width: '100%' }}
+          size="small"
+          controls={false}
+          status={!val || val <= 0 ? 'error' : undefined}
+        />
+      )
     },
+  })
+
+  cols.push(
     {
       title: '标签图片', dataIndex: 'label_images', key: 'label_images', width: 120,
       render: (val, record) => <Button type="link" size="small" icon={<PictureOutlined />} onClick={() => openImageDrawer?.('标签图片', val || [], { listType: 'material', recordId: record.id, field: 'label_images', category: 'label' })}>{(val || []).length} 张</Button>,
@@ -149,7 +183,9 @@ export function buildMaterialColumns(handlers: MaterialColumnHandlers): ColumnsT
       title: '操作', key: 'action',
       render: (_, record) => isEditable ? <Popconfirm title="确认删除？" onConfirm={() => onDelete(record)}><Button type="link" size="small" danger>删除</Button></Popconfirm> : null,
     },
-  ]
+  )
+
+  return cols
 }
 
 // 让 Table 的 columns 类型在 antd 5 中更宽松，避免使用时被 ColumnsType 严格校验阻塞

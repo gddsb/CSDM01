@@ -27,21 +27,8 @@ import { Button, Dialog, Input, Picker, Popup, Toast } from 'antd-mobile'
 import api from '../../../utils/api'
 import { ProcessImageUploader } from './ProcessImageUploader'
 import { fmtInt } from '../../utils/format'
-import { getProcessMaterialRule, isMaterialAllowed, sortMaterialsByRule, buildAutoMatchCode, ruleSummary } from '../../../utils/processMaterialRules'
+import { getProcessMaterialRule, isMaterialAllowed, sortMaterialsByRule, buildAutoMatchCode, ruleSummary, isDecimalUnit } from '../../../utils/processMaterialRules'
 import type { MaterialMaster, MaterialRow, ReportOrder } from './types'
-
-/**
- * 允许小数的计量单位白名单
- * —— 不在名单内的单位（张/片/罐/pcs/套/个等离散单位）只能输入整数
- * 注意：将来新增单位时如果是重量/体积等可分割单位，记得加到这里
- */
-const DECIMAL_UNITS = ['克', '千克', 'kg', 'KG', '吨', 'g', 'G', 'mg', '毫升', '升', 'L', 'm³', '立方']
-
-/** 判断某料品单位是否允许小数 */
-function isDecimalUnit(unitName?: string): boolean {
-  if (!unitName) return false
-  return DECIMAL_UNITS.some(u => unitName!.includes(u))
-}
 
 interface Props {
   report: ReportOrder

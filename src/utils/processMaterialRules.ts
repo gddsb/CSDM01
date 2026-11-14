@@ -81,3 +81,18 @@ export function ruleSummary(rule: MaterialRule, reportCode?: string): string {
     }
   }
 }
+
+// ========== 物料单位小数限制（PC 端 InputNumber precision + 移动端数量输入 共用）==========
+
+/**
+ * 允许小数的计量单位白名单
+ * —— 不在名单内的单位（张/片/罐/pcs/套/个等离散单位）只能输入整数
+ * 注意：将来新增单位时如果是重量/体积等可分割单位，记得加到这里
+ */
+export const DECIMAL_UNITS = ['克', '千克', 'kg', 'KG', '吨', 'g', 'G', 'mg', '毫升', '升', 'L', 'm³', '立方']
+
+/** 判断某料品单位是否允许小数输入 */
+export function isDecimalUnit(unitName?: string): boolean {
+  if (!unitName) return false
+  return DECIMAL_UNITS.some(u => unitName!.includes(u))
+}

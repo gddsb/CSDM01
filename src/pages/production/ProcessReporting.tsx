@@ -265,6 +265,7 @@ export default function ProcessReporting() {
       material_code: m.material_code,
       material_name: m.material_name,
       specification: m.specification || '',
+      unit_name: m.unit_name || '',
     }))
   }, [materials])
 
@@ -995,6 +996,7 @@ export default function ProcessReporting() {
     onDelete: handleDeleteMaterial,
     getFilteredOptions: getFilteredMaterialOptions,
     openImageDrawer,
+    processCode: lineProcesses.find((p: any) => Number(p.process_id) === Number(materialProcessId))?.process_code,
   })
 
   // 校验单条异常工时记录
