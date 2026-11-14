@@ -456,6 +456,7 @@ export default function MobileProcessReporting() {
                 <ProcessMaterialPanel
                   report={current}
                   activeProcessId={materialProcId}
+                  processCode={processes.find(p => p.process_id === materialProcId)?.process_code}
                   editable={!!editable}
                   materials={materialsMaster}
                   allMaterials={materials}
