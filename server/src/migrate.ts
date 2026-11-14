@@ -215,6 +215,14 @@ const migrations = [
     columns: [
       ['order_no', 'VARCHAR(50)'],
       ['line_id', 'INTEGER'],
+      // —— 统计持久化字段（写时计算，前端读时零开销）——
+      ['total_input_qty', 'DECIMAL(12,2) DEFAULT 0 COMMENT \'投入数量（首工序投入-退回）\''],
+      ['total_defect_material', 'DECIMAL(12,2) DEFAULT 0 COMMENT \'来料不良数量\''],
+      ['total_defect_process', 'DECIMAL(12,2) DEFAULT 0 COMMENT \'制程不良数量\''],
+      ['total_defect_scrap', 'DECIMAL(12,2) DEFAULT 0 COMMENT \'检验报废数量\''],
+      ['total_exception_hours', 'DECIMAL(10,2) DEFAULT 0 COMMENT \'异常工时（h，扣休息）\''],
+      ['total_manpower_hours', 'DECIMAL(10,2) DEFAULT 0 COMMENT \'总工时（h，扣休息）\''],
+      ['expected_output', 'DECIMAL(12,2) DEFAULT 0 COMMENT \'理论产出=投入-不良-报废\''],
       ['line_name', 'VARCHAR(100)'],
       ['material_id', 'VARCHAR(36)'],
       ['material_code', 'VARCHAR(50)'],
@@ -496,6 +504,9 @@ export async function runMigrations() {
 
   // 6. 检验数据统一存储改造（回填阶段）：从检验标准同步配置到 qc_inspection_item
   await backfillQcItemConfig()
+
+  // 7. 报工单统计字段（存量回填）：计算并写入 7 个持久化列
+  await backfillReportOrderStats()
 }
 
 // 判断约束是否已存在
@@ -907,6 +918,66 @@ async function backfillQcItemConfig(): Promise<void> {
     } catch (err: any) {
       logger.warn(`  ⚠️ ${q.name} failed:`, err?.message)
     }
+  }
+}
+
+// ============================================================
+// 报工单统计持久化（存量回填）
+// 一次性把所有已存在的 ReportOrder 的 7 个统计列算好写回。
+// 幂等：重复执行没问题（用 = 覆盖）。
+// ============================================================
+async function backfillReportOrderStats(): Promise<void> {
+  if (sequelize.getDialect() !== 'mysql') return
+  if (!(await tableExists('production_report_order'))) return
+
+  const sql = `
+    UPDATE production_report_order ro
+    LEFT JOIN (
+      SELECT report_order_id,
+             COALESCE(SUM(CASE WHEN material_type='投入' THEN quantity ELSE 0 END),0)
+           - COALESCE(SUM(CASE WHEN material_type='退回' THEN quantity ELSE 0 END),0) AS input_qty
+      FROM production_process_material GROUP BY report_order_id
+    ) pm ON pm.report_order_id = ro.report_order_id
+    LEFT JOIN (
+      SELECT report_order_id,
+             COALESCE(SUM(CASE WHEN pd.defect_type='来料不良' THEN pd.quantity ELSE 0 END),0) AS defect_material,
+             COALESCE(SUM(CASE WHEN pd.defect_type='制程不良' THEN pd.quantity ELSE 0 END),0) AS defect_process
+      FROM production_process_defect pd GROUP BY report_order_id
+    ) d ON d.report_order_id = ro.report_order_id
+    LEFT JOIN (
+      SELECT report_order_id,
+             COALESCE(SUM(quantity),0) AS defect_scrap
+      FROM production_process_defect WHERE defect_type='检验报废' GROUP BY report_order_id
+    ) sc ON sc.report_order_id = ro.report_order_id
+    LEFT JOIN (
+      SELECT report_order_id,
+             COALESCE(SUM(COALESCE(net_duration, duration)),0) AS exc_hours
+      FROM production_process_exception GROUP BY report_order_id
+    ) ex ON ex.report_order_id = ro.report_order_id
+    LEFT JOIN (
+      SELECT report_order_id,
+             COALESCE(SUM(COALESCE(net_hours, 0)),0) AS mp_hours
+      FROM production_manpower_record GROUP BY report_order_id
+    ) mp2 ON mp2.report_order_id = ro.report_order_id
+    SET
+      ro.total_input_qty = COALESCE(pm.input_qty, 0),
+      ro.total_defect_material = COALESCE(d.defect_material, 0),
+      ro.total_defect_process = COALESCE(d.defect_process, 0),
+      ro.total_defect_scrap = COALESCE(sc.defect_scrap, 0),
+      ro.total_exception_hours = ROUND(COALESCE(ex.exc_hours, 0), 2),
+      ro.total_manpower_hours = ROUND(COALESCE(mp2.mp_hours, 0), 2),
+      ro.expected_output = ROUND(
+        COALESCE(pm.input_qty, 0)
+        - COALESCE(d.defect_material, 0)
+        - COALESCE(d.defect_process, 0)
+        - COALESCE(sc.defect_scrap, 0), 2)
+  `
+  try {
+    const [r] = await sequelize.query(sql) as any
+    const affected = (r as any)?.affectedRows || 0
+    logger.info(`  ✅ 报工单统计回填: ${affected} rows`)
+  } catch (err: any) {
+    logger.warn(`  ⚠️ 报工单统计回填失败: ${err?.message}`)
   }
 }
 

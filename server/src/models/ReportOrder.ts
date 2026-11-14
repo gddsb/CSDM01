@@ -134,6 +134,42 @@ const ReportOrder = sequelize.define('ReportOrder', {
     defaultValue: 0,
     comment: '休息总分钟数（后端从 production_break_time 汇总写入）',
   },
+  // —— 统计持久化字段（写时计算，读时零开销）——
+  total_input_qty: {
+    type: DataTypes.DECIMAL(12, 2),
+    defaultValue: 0,
+    comment: '投入数量（首工序投入-退回）',
+  },
+  total_defect_material: {
+    type: DataTypes.DECIMAL(12, 2),
+    defaultValue: 0,
+    comment: '来料不良数量',
+  },
+  total_defect_process: {
+    type: DataTypes.DECIMAL(12, 2),
+    defaultValue: 0,
+    comment: '制程不良数量',
+  },
+  total_defect_scrap: {
+    type: DataTypes.DECIMAL(12, 2),
+    defaultValue: 0,
+    comment: '检验报废数量',
+  },
+  total_exception_hours: {
+    type: DataTypes.DECIMAL(10, 2),
+    defaultValue: 0,
+    comment: '异常工时（h，扣休息）',
+  },
+  total_manpower_hours: {
+    type: DataTypes.DECIMAL(10, 2),
+    defaultValue: 0,
+    comment: '总工时（h，扣休息）',
+  },
+  expected_output: {
+    type: DataTypes.DECIMAL(12, 2),
+    defaultValue: 0,
+    comment: '理论产出=投入-不良-报废',
+  },
 }, {
   tableName: 'production_report_order',
   timestamps: true,
