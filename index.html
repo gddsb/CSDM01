@@ -13,6 +13,23 @@
   <link rel="icon" type="image/png" href="/assets/logo-square.png" />
   <link rel="apple-touch-icon" href="/assets/logo-square.png" />
   <link rel="manifest" href="/manifest.webmanifest" />
+  <!-- ⚠️ 强制升级：清掉锁死旧 index.html 的旧 Service Worker（只执行一次） -->
+  <script>
+  (function(){
+    if(!('serviceWorker' in navigator)) return;
+    if(localStorage.getItem('__mes_sw_upgraded_v1')) return;
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.getRegistrations().then(function(regs){
+        if(regs.length){
+          regs.forEach(function(r){r.unregister()});
+          if('caches' in window){caches.keys().then(function(n){n.forEach(function(k){caches.delete(k)})})}
+          localStorage.setItem('__mes_sw_upgraded_v1','1');
+          setTimeout(function(){location.reload()},100);
+        }
+      });
+    });
+  })();
+  </script>
 </head>
 <body>
   <!-- ============ 开屏 Loader（纯 HTML+CSS+inline script，React 之前渲染） ============ -->
