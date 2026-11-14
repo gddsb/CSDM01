@@ -64,8 +64,8 @@ export default function MobileDailyCard() {
   // 关键：用 ref 持有合并后的标记 Set，renderDate 只读 ref 不读 state
   // 这样 renderDate 可以完全无依赖（useCallback([])），永远不重建
   const allMarkerDatesRef = useRef<Set<string>>(new Set())
-  // markers 更新后 forceRender 让 CalendarPicker 重渲染 cells（圆点显示）
-  const [, forceRenderMarkers] = useState(0)
+  // markers 更新后 forceRender 让 renderDate 重建 → CalendarPickerView 重新计算所有 cells
+  const [forceRenderTick, setForceRenderTick] = useState(0)
 
   // 稳定的 min/max —— 只在首次 mount 时计算一次，避免 CalendarPicker 受控失效
   const minDate = useMemo(() => new Date(2024, 0, 1), [])
@@ -106,8 +106,8 @@ export default function MobileDailyCard() {
         allMarkerDatesRef.current = merged
         return next
       })
-      // forceRender 让 CalendarPicker 用最新 ref 重渲染 cells
-      forceRenderMarkers(n => n + 1)
+      // forceRenderTick → renderDate 重建 → CalendarPickerView 重算所有 cells → 新圆点出来
+      setForceRenderTick(n => n + 1)
     } catch { /* 静默 */ }
   }, [])
 
@@ -125,9 +125,9 @@ export default function MobileDailyCard() {
   // 当前选中日期是否有开工记录
   const currentHasMark = allMarkerDatesRef.current.has(date)
 
-  // renderDate 完全稳定：useCallback 依赖只有 loadDateMarkers（已稳定）
-  // 只从 ref 读 marker 数据，不依赖 state → Swiper 状态永不丢失
-  // 关键：懒加载新月份时不碰 loadedMonthsRef（竞态条件会让 loadDateMarkers 立即 return）
+  // renderDate 依赖 forceRenderTick —— markers 更新 → tick++ → renderDate 重建
+  // → CalendarPickerView 重渲染所有 cells（用 ref 里最新的标记数据）
+  // 关键：依赖里不带 allMarkerDates 等 state（防止 Swiper 重建）
   const renderDate = useCallback((d: Date) => {
     const y = d.getFullYear(), m = d.getMonth() + 1
     const cacheKey = `${y}-${String(m).padStart(2, '0')}`
@@ -149,7 +149,7 @@ export default function MobileDailyCard() {
         )}
       </div>
     )
-  }, [loadDateMarkers])
+  }, [forceRenderTick, loadDateMarkers])
 
   return (
     <div style={{ padding: 12 }}>
