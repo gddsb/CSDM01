@@ -13,7 +13,7 @@
  */
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh } from 'antd-mobile'
+import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh, Popup } from 'antd-mobile'
 import api from '../../utils/api'
 import { offlinePost } from '../offline/offlineApi'
 import { useDebounceEffect } from '../hooks/useDebounceEffect'
@@ -551,86 +551,90 @@ export default function MobileOrderManagement() {
       )}
       </div>
 
-      {/* ===== 订单详情（订单信息 + 下属报工单）===== */}
+      {/* ===== 订单详情 Popup（底部抽屉）===== */}
       {selected && activeReportId === null && (
-        <Dialog
-          visible
-          content={
-            <div style={{ maxHeight: '70vh', overflow: 'auto', padding: '10px 6px' }}>
-              {/* 订单基础信息卡片 */}
-              <div style={{
-                padding: 12, background: 'var(--m-surface-2)', borderRadius: 10,
-                marginBottom: 12, border: '1px solid var(--m-border)',
-              }}>
-                <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>
-                  {selected.order_no}
-                  <span style={{
-                    marginLeft: 8, padding: '1px 8px', borderRadius: 10,
-                    fontSize: 11, fontWeight: 600,
-                    background: STATUS_COLOR[selected.status || ''] + '15',
-                    color: STATUS_COLOR[selected.status || ''] || '#666',
-                    border: `1px solid ${(STATUS_COLOR[selected.status || ''] || '#666')}44`,
-                  }}>{selected.status}</span>
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--m-text-2)', lineHeight: 1.8 }}>
-                  <div><span style={{ color: 'var(--m-text-3)' }}>料品：</span>
-                    <b>{selected.material_code}</b> · {selected.material_name}
-                  </div>
-                  {selected.specification && (
-                    <div><span style={{ color: 'var(--m-text-3)' }}>规格：</span>{selected.specification}</div>
-                  )}
-                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                    <span><span style={{ color: 'var(--m-text-3)' }}>计划：</span>{fmtInt(selected.planned_qty)}</span>
-                    <span><span style={{ color: 'var(--m-text-3)' }}>已完工：</span>{fmtInt(selected.finished_qty)}</span>
-                  </div>
-                  <div><span style={{ color: 'var(--m-text-3)' }}>产线：</span>{selected.line_name || '—'}</div>
-                  {(selected.release_time || selected.plan_start_time) && (
-                    <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 4 }}>
-                      {selected.release_time && <>下发 {String(selected.release_time).slice(0, 16).replace("T", " ")} &nbsp; </>}
-                      {selected.plan_start_time && <>计划 {String(selected.plan_start_time).slice(0, 10)}{selected.plan_end_time ? ` ~ ${String(selected.plan_end_time).slice(0, 10)}` : ''}</>}
-                    </div>
-                  )}
-                </div>
+        <Popup
+          visible={true}
+          position="bottom"
+          onMaskClick={() => setSelected(null)}
+          bodyStyle={{ borderRadius: '12px 12px 0 0', maxHeight: '88vh', overflow: 'auto' }}
+        >
+          <div style={{ padding: '14px 16px 20px' }}>
+            {/* 订单基础信息卡片 */}
+            <div style={{
+              padding: 12, background: 'var(--m-surface-2)', borderRadius: 10,
+              marginBottom: 12, border: '1px solid var(--m-border)',
+            }}>
+              <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>
+                {selected.order_no}
+                <span style={{
+                  marginLeft: 8, padding: '1px 8px', borderRadius: 10,
+                  fontSize: 11, fontWeight: 600,
+                  background: STATUS_COLOR[selected.status || ''] + '15',
+                  color: STATUS_COLOR[selected.status || ''] || '#666',
+                  border: `1px solid ${(STATUS_COLOR[selected.status || ''] || '#666')}44`,
+                }}>{selected.status}</span>
               </div>
-
-              <div style={{ fontWeight: 600, marginBottom: 10, fontSize: 15 }}>
-                下属报工单
-                <span style={{ fontSize: 12, color: 'var(--m-text-3)', fontWeight: 400, marginLeft: 8 }}>
-                  （{reports.length} 条）
-                </span>
-              </div>
-              {reports.length === 0 ? (
-                <div style={{ fontSize: 12, color: 'var(--m-text-3)', padding: 30, textAlign: 'center' }}>
-                  暂无报工单 · 请先在 PC 端下发或在移动报工录入
+              <div style={{ fontSize: 12, color: 'var(--m-text-2)', lineHeight: 1.8 }}>
+                <div><span style={{ color: 'var(--m-text-3)' }}>料品：</span>
+                  <b>{selected.material_code}</b> · {selected.material_name}
                 </div>
-              ) : (
-                reports.map((r) => (
-                  <div
-                    key={r.report_order_id}
-                    onClick={() => setActiveReportId(r.report_order_id)}
-                    style={{
-                      padding: 12, borderBottom: '1px solid #f5f5f5', cursor: 'pointer',
-                      background: 'var(--m-surface-2)', borderRadius: 8, marginBottom: 6,
-                    }}
-                  >
-                    <div style={{ fontWeight: 600, fontSize: 13.5 }}>{r.report_no}</div>
-                    <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 3, display: 'flex', gap: 10 }}>
-                      <span>🏭 {r.line_name}</span>
-                      <span>📦 ×{fmtInt(r.report_qty)}</span>
-                      <span style={{
-                        padding: '1px 6px', borderRadius: 4,
-                        background: r.status === '完工' ? '#4CAF5015' : '#2196F315',
-                        color: r.status === '完工' ? 'var(--brand-color-success)' : 'var(--brand-color)',
-                        fontSize: 10, fontWeight: 600,
-                      }}>{r.status}</span>
-                    </div>
+                {selected.specification && (
+                  <div><span style={{ color: 'var(--m-text-3)' }}>规格：</span>{selected.specification}</div>
+                )}
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                  <span><span style={{ color: 'var(--m-text-3)' }}>计划：</span>{fmtInt(selected.planned_qty)}</span>
+                  <span><span style={{ color: 'var(--m-text-3)' }}>已完工：</span>{fmtInt(selected.finished_qty)}</span>
+                </div>
+                <div><span style={{ color: 'var(--m-text-3)' }}>产线：</span>{selected.line_name || '—'}</div>
+                {(selected.release_time || selected.plan_start_time) && (
+                  <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 4 }}>
+                    {selected.release_time && <>下发 {String(selected.release_time).slice(0, 16).replace("T", " ")} &nbsp; </>}
+                    {selected.plan_start_time && <>计划 {String(selected.plan_start_time).slice(0, 10)}{selected.plan_end_time ? ` ~ ${String(selected.plan_end_time).slice(0, 10)}` : ''}</>}
                   </div>
-                ))
-              )}
+                )}
+              </div>
             </div>
-          }
-          actions={[{ key: 'close', text: '返回列表', onClick: () => setSelected(null) }]}
-        />
+
+            <div style={{ fontWeight: 600, marginBottom: 10, fontSize: 15 }}>
+              下属报工单
+              <span style={{ fontSize: 12, color: 'var(--m-text-3)', fontWeight: 400, marginLeft: 8 }}>
+                （{reports.length} 条）
+              </span>
+            </div>
+            {reports.length === 0 ? (
+              <div style={{ fontSize: 12, color: 'var(--m-text-3)', padding: 30, textAlign: 'center' }}>
+                暂无报工单 · 请先在 PC 端下发或在移动报工录入
+              </div>
+            ) : (
+              reports.map((r) => (
+                <div
+                  key={r.report_order_id}
+                  onClick={() => setActiveReportId(r.report_order_id)}
+                  style={{
+                    padding: 12, borderBottom: '1px solid #f5f5f5', cursor: 'pointer',
+                    background: 'var(--m-surface-2)', borderRadius: 8, marginBottom: 6,
+                  }}
+                >
+                  <div style={{ fontWeight: 600, fontSize: 13.5 }}>{r.report_no}</div>
+                  <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 3, display: 'flex', gap: 10 }}>
+                    <span>🏭 {r.line_name}</span>
+                    <span>📦 ×{fmtInt(r.report_qty)}</span>
+                    <span style={{
+                      padding: '1px 6px', borderRadius: 4,
+                      background: r.status === '完工' ? '#4CAF5015' : '#2196F315',
+                      color: r.status === '完工' ? 'var(--brand-color-success)' : 'var(--brand-color)',
+                      fontSize: 10, fontWeight: 600,
+                    }}>{r.status}</span>
+                  </div>
+                </div>
+              ))
+            )}
+            <div style={{ marginTop: 18 }}>
+              <Button block fill="outline" onClick={() => setSelected(null)}>返回列表</Button>
+            </div>
+          </div>
+        </Popup>
       )}
     </div>
   )

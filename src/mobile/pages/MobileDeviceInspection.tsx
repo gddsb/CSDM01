@@ -8,7 +8,7 @@
  */
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button, List, SearchBar, Stepper, Toast, Dialog, Checkbox } from 'antd-mobile'
+import { Button, List, SearchBar, Stepper, Toast, Dialog, Checkbox, PullToRefresh } from 'antd-mobile'
 import api from '../../utils/api'
 import { useApp } from '../../contexts/AppContext'
 import { useBarcode } from '../hooks/useBarcode'
@@ -152,18 +152,20 @@ export default function MobileDeviceInspection() {
           {loading ? <EmptyHint text="加载中..." /> : devices.length === 0 ? (
             <EmptyHint text="暂无设备" sub="请先在 PC 端创建设备档案" />
           ) : (
-            <List>
-              {devices.map((d) => (
-                <List.Item
-                  key={d.device_id}
-                  onClick={() => loadRecords(d)}
-                  arrow
-                  description={<div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>{d.device_code}</div>}
-                >
-                  <div style={{ fontWeight: 500 }}>{d.device_name}</div>
-                </List.Item>
-              ))}
-            </List>
+            <PullToRefresh onRefresh={() => loadDevices(keyword.trim() || undefined)}>
+              <List>
+                {devices.map((d) => (
+                  <List.Item
+                    key={d.device_id}
+                    onClick={() => loadRecords(d)}
+                    arrow
+                    description={<div style={{ fontSize: 12, color: 'var(--m-text-3)', marginTop: 4 }}>{d.device_code}</div>}
+                  >
+                    <div style={{ fontWeight: 500 }}>{d.device_name}</div>
+                  </List.Item>
+                ))}
+              </List>
+            </PullToRefresh>
           )}
         </div>
       </div>

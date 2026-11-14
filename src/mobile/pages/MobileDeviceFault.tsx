@@ -16,7 +16,7 @@
 import { useEffect, useState } from 'react'
 import {
   Button, List, SearchBar, Toast, Dialog, TextArea, Radio, Tabs,
-  PullToRefresh, Space,
+  PullToRefresh, Space, Popup,
 } from 'antd-mobile'
 import api from '../../utils/api'
 import { useApp } from '../../contexts/AppContext'
@@ -420,11 +420,16 @@ export default function MobileDeviceFault() {
         )}
       </div>
 
-      {/* ======= 新建抽屉 ======= */}
+      {/* ======= 上报故障 Popup（底部抽屉） ======= */}
       {showCreate && (
-        <Dialog visible content={
-          <div style={{ maxHeight: '70vh', overflow: 'auto', padding: '10px 6px' }}>
-            <div style={{ fontWeight: 600, marginBottom: 10 }}>上报故障</div>
+        <Popup
+          visible={true}
+          position="bottom"
+          onMaskClick={() => setShowCreate(false)}
+          bodyStyle={{ borderRadius: '12px 12px 0 0', maxHeight: '88vh', overflow: 'auto' }}
+        >
+          <div style={{ padding: '14px 16px 8px' }}>
+            <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--m-border)' }}>🔧 上报故障</div>
             {/* 设备选择：扫码快速上报时已自动填充，无需手动选 */}
             <div style={{ marginBottom: 8 }}>
               <div
@@ -462,13 +467,12 @@ export default function MobileDeviceFault() {
               watermark={{ username: getCurrentUsername(), timestamp: true }}
               onFilesReady={setPendingFiles}
             />
+            <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+              <Button block fill="outline" onClick={() => setShowCreate(false)}>取消</Button>
+              <Button block color="primary" onClick={onCreateSubmit}>上报</Button>
+            </div>
           </div>
-        }
-          actions={[
-            { key: 'cancel', text: '取消', onClick: () => setShowCreate(false) },
-            { key: 'ok', text: '上报', bold: true, onClick: onCreateSubmit },
-          ]}
-        />
+        </Popup>
       )}
 
       {/* ======= 设备搜索选择弹层 ======= */}

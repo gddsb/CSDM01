@@ -10,7 +10,7 @@
  * 移动下载策略：fetch → blob → objectUrl → a.click() 触发下载
  */
 import { useEffect, useState } from 'react'
-import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh, Input, Picker } from 'antd-mobile'
+import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh, Input, Picker, Popup } from 'antd-mobile'
 import api from '../../utils/api'
 import { useApp } from '../../contexts/AppContext'
 import { useBarcode } from '../hooks/useBarcode'
@@ -266,11 +266,16 @@ export default function MobileDeviceDocument() {
         </PullToRefresh>
       )}
 
-      {/* ===== 上传 Dialog ===== */}
+      {/* ===== 上传 Popup（底部抽屉） ===== */}
       {showUpload && (
-        <Dialog visible content={
-          <div style={{ maxHeight: '70vh', overflow: 'auto', padding: '6px 2px' }}>
-            <div style={{ fontWeight: 600, marginBottom: 10 }}>⬆️ 上传电子档案</div>
+        <Popup
+          visible={true}
+          position="bottom"
+          onMaskClick={() => setShowUpload(false)}
+          bodyStyle={{ borderRadius: '12px 12px 0 0', maxHeight: '88vh', overflow: 'auto' }}
+        >
+          <div style={{ padding: '14px 16px 8px' }}>
+            <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--m-border)' }}>⬆️ 上传电子档案</div>
             <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginBottom: 4 }}>设备</div>
             <div style={{ padding: 6, background: 'var(--m-info-bg)', borderRadius: 6, fontSize: 12 }}>
               {selectedDevice.device_name} ({selectedDevice.device_code})
@@ -321,13 +326,14 @@ export default function MobileDeviceDocument() {
                 {fileList.map((f) => <div key={f.name}>· {f.name} ({(f.size / 1024).toFixed(1)} KB)</div>)}
               </div>
             )}
+            <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+              <Button block fill="outline" onClick={() => setShowUpload(false)}>取消</Button>
+              <Button block color="primary" loading={uploading} disabled={uploading} onClick={submitUpload}>
+                {uploading ? '上传中...' : '确认上传'}
+              </Button>
+            </div>
           </div>
-        }
-          actions={[
-            { key: 'cancel', text: '取消', onClick: () => setShowUpload(false) },
-            { key: 'ok', text: uploading ? '上传中...' : '确认上传', bold: true, onClick: submitUpload },
-          ]}
-        />
+        </Popup>
       )}
     </div>
   )

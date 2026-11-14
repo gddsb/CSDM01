@@ -5,7 +5,7 @@
  * 日期选择 onConfirm → 自动触发重新加载，无刷新按钮
  */
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
-import { Button, CalendarPicker } from 'antd-mobile'
+import { Button, CalendarPicker, PullToRefresh } from 'antd-mobile'
 import type { ReactNode } from 'react'
 import api from '../../utils/api'
 import dayjs from 'dayjs'
@@ -178,7 +178,9 @@ export default function MobileDailyCard() {
       ) : !data ? (
         <div style={{ textAlign: 'center', padding: 60, color: 'var(--m-text-3)' }}>暂无日报数据</div>
       ) : (
-        <DailyCardContent data={data} />
+        <PullToRefresh onRefresh={() => load(date)}>
+          <DailyCardContent data={data} />
+        </PullToRefresh>
       )}
     </div>
   )

@@ -12,7 +12,7 @@
  *   POST   /basic/device-spare-parts                  新建备件
  */
 import { useEffect, useState } from 'react'
-import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh, Input, Picker, Radio, Space , TextArea} from 'antd-mobile'
+import { Button, List, SearchBar, Toast, Dialog, Tabs, PullToRefresh, Input, Picker, Radio, Space, TextArea, Popup } from 'antd-mobile'
 import api from '../../utils/api'
 import { useApp } from '../../contexts/AppContext'
 import { offlinePost, offlineDelete } from '../offline/offlineApi'
@@ -235,116 +235,132 @@ export default function MobileSparePart() {
         )}
       </div>
 
-      {/* ======= 表单 Dialog ======= */}
+      {/* ======= 表单 Popup（底部抽屉，录入友好） ======= */}
       {formType && formType !== 'create' && selected && (
-        <Dialog visible content={
-          <FormPanel title={
-            formType === 'in' ? `📥 入库 · ${selected.part_name}`
-              : formType === 'out' ? `📤 出库 · ${selected.part_name}`
-                : `📝 盘点调整 · ${selected.part_name}`
-          }>
-            {formType !== 'adjust' && (
-              <>
-                <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginBottom: 4 }}>数量 *</div>
-                <Input type="number" value={qty} onChange={setQty} />
-                <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>单价（元，可选）</div>
-                <Input type="number" value={unitPrice} onChange={setUnitPrice} />
-              </>
-            )}
-            {formType === 'adjust' && (
-              <>
-                <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginBottom: 4 }}>当前系统库存: {selected.current_stock ?? 0}</div>
-                <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>实际库存 *</div>
-                <Input type="number" value={actualStock} onChange={setActualStock} />
-              </>
-            )}
-            {formType === 'in' && (
-              <>
-                <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>采购单号</div>
-                <Input value={purchaseNo} onChange={setPurchaseNo} />
-                <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>供应商</div>
-                <Input value={supplier} onChange={setSupplier} />
-              </>
-            )}
-            {formType === 'out' && (
-              <>
-                <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>关联工单（维护/维修）</div>
-                <Input value={relatedOrder} onChange={setRelatedOrder} placeholder="维护工单或维修单号" />
-              </>
-            )}
-            {(formType === 'in' || formType === 'adjust') && (
-              <>
-                <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>关联工单（可选）</div>
-                <Input value={relatedOrder} onChange={setRelatedOrder} />
-              </>
-            )}
-            <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>备注{formType === 'out' ? '（用途必填）' : '（可选）'}</div>
-            <TextArea  rows={2} value={remarks} onChange={setRemarks} placeholder={formType === 'out' ? '请填用途，如：5#空压机保养领用' : ''} />
-          </FormPanel>
-        }
-          actions={[
-            { key: 'cancel', text: '取消', onClick: () => { setFormType(null); setSelected(null) } },
-            { key: 'ok', text: formType === 'in' ? '确认入库' : formType === 'out' ? '确认出库' : '确认调整', bold: true, onClick: submitForm },
-          ]}
-        />
+        <Popup
+          visible={true}
+          position="bottom"
+          onMaskClick={() => { setFormType(null); setSelected(null) }}
+          bodyStyle={{ borderRadius: '12px 12px 0 0', maxHeight: '88vh', overflow: 'auto' }}
+        >
+          <div style={{ padding: '14px 16px 8px' }}>
+            <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--m-border)' }}>
+              {formType === 'in' ? `📥 入库 · ${selected.part_name}`
+                : formType === 'out' ? `📤 出库 · ${selected.part_name}`
+                  : `📝 盘点调整 · ${selected.part_name}`}
+            </div>
+            <FormPanel title="">
+              {formType !== 'adjust' && (
+                <>
+                  <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginBottom: 4 }}>数量 *</div>
+                  <Input type="number" value={qty} onChange={setQty} />
+                  <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>单价（元，可选）</div>
+                  <Input type="number" value={unitPrice} onChange={setUnitPrice} />
+                </>
+              )}
+              {formType === 'adjust' && (
+                <>
+                  <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginBottom: 4 }}>当前系统库存: {selected.current_stock ?? 0}</div>
+                  <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>实际库存 *</div>
+                  <Input type="number" value={actualStock} onChange={setActualStock} />
+                </>
+              )}
+              {formType === 'in' && (
+                <>
+                  <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>采购单号</div>
+                  <Input value={purchaseNo} onChange={setPurchaseNo} />
+                  <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>供应商</div>
+                  <Input value={supplier} onChange={setSupplier} />
+                </>
+              )}
+              {formType === 'out' && (
+                <>
+                  <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>关联工单（维护/维修）</div>
+                  <Input value={relatedOrder} onChange={setRelatedOrder} placeholder="维护工单或维修单号" />
+                </>
+              )}
+              {(formType === 'in' || formType === 'adjust') && (
+                <>
+                  <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>关联工单（可选）</div>
+                  <Input value={relatedOrder} onChange={setRelatedOrder} />
+                </>
+              )}
+              <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>备注{formType === 'out' ? '（用途必填）' : '（可选）'}</div>
+              <TextArea  rows={2} value={remarks} onChange={setRemarks} placeholder={formType === 'out' ? '请填用途，如：5#空压机保养领用' : ''} />
+            </FormPanel>
+            <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+              <Button block fill="outline" onClick={() => { setFormType(null); setSelected(null) }}>取消</Button>
+              <Button block color="primary" onClick={submitForm}>
+                {formType === 'in' ? '确认入库' : formType === 'out' ? '确认出库' : '确认调整'}
+              </Button>
+            </div>
+          </div>
+        </Popup>
       )}
 
-      {/* ======= 新建 Dialog ======= */}
+      {/* ======= 新建 Popup（底部抽屉） ======= */}
       {formType === 'create' && (
-        <Dialog visible content={
-          <FormPanel title="➕ 新建备件">
-            <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginBottom: 4 }}>备件编号</div>
-            <Input value={createForm.part_code} onChange={(v) => setCreateForm({ ...createForm, part_code: v })} />
-            <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>备件名称 *</div>
-            <Input value={createForm.part_name} onChange={(v) => setCreateForm({ ...createForm, part_name: v })} />
-            <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>规格型号</div>
-            <Input value={createForm.specification} onChange={(v) => setCreateForm({ ...createForm, specification: v })} />
-            <div style={{ display: 'flex', gap: 6 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>单位</div>
-                <Input value={createForm.unit} onChange={(v) => setCreateForm({ ...createForm, unit: v })} />
+        <Popup
+          visible={true}
+          position="bottom"
+          onMaskClick={() => setFormType(null)}
+          bodyStyle={{ borderRadius: '12px 12px 0 0', maxHeight: '88vh', overflow: 'auto' }}
+        >
+          <div style={{ padding: '14px 16px 8px' }}>
+            <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 14, paddingBottom: 10, borderBottom: '1px solid var(--m-border)' }}>➕ 新建备件</div>
+            <FormPanel title="">
+              <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginBottom: 4 }}>备件编号</div>
+              <Input value={createForm.part_code} onChange={(v) => setCreateForm({ ...createForm, part_code: v })} />
+              <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>备件名称 *</div>
+              <Input value={createForm.part_name} onChange={(v) => setCreateForm({ ...createForm, part_name: v })} />
+              <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>规格型号</div>
+              <Input value={createForm.specification} onChange={(v) => setCreateForm({ ...createForm, specification: v })} />
+              <div style={{ display: 'flex', gap: 6 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>单位</div>
+                  <Input value={createForm.unit} onChange={(v) => setCreateForm({ ...createForm, unit: v })} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>分类</div>
+                  {/* 分类 Picker（硬编码选项，内联 columns） */}
+                  {(() => {
+                    const catOptions = ['机械', '电气', '液压', '气动', '电子', '其他']
+                    const catColumns = [catOptions.map(c => ({ label: c, value: c }))]
+                    return (
+                      <Picker
+                        columns={catColumns}
+                        value={createForm.category ? [createForm.category] : []}
+                        onConfirm={(v) => setCreateForm({ ...createForm, category: String(v[0] ?? '') })}
+                      >
+                        {(_items, { open }) => (
+                          <div onClick={open} role="button" tabIndex={0} style={{ ...selStyle, color: createForm.category ? 'var(--m-text)' : 'var(--m-text-3)' }}>
+                            {createForm.category || '请选择分类'}
+                          </div>
+                        )}
+                      </Picker>
+                    )
+                  })()}
+                </div>
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>分类</div>
-                {/* 分类 Picker（硬编码选项，内联 columns） */}
-                {(() => {
-                  const catOptions = ['机械', '电气', '液压', '气动', '电子', '其他']
-                  const catColumns = [catOptions.map(c => ({ label: c, value: c }))]
-                  return (
-                    <Picker
-                      columns={catColumns}
-                      value={createForm.category ? [createForm.category] : []}
-                      onConfirm={(v) => setCreateForm({ ...createForm, category: String(v[0] ?? '') })}
-                    >
-                      {(_items, { open }) => (
-                        <div onClick={open} role="button" tabIndex={0} style={{ ...selStyle, color: createForm.category ? 'var(--m-text)' : 'var(--m-text-3)' }}>
-                          {createForm.category || '请选择分类'}
-                        </div>
-                      )}
-                    </Picker>
-                  )
-                })()}
+              <div style={{ display: 'flex', gap: 6 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>当前库存</div>
+                  <Input type="number" value={String(createForm.current_stock)} onChange={(v) => setCreateForm({ ...createForm, current_stock: Number(v) || 0 })} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>安全下限</div>
+                  <Input type="number" value={String(createForm.safety_stock_min)} onChange={(v) => setCreateForm({ ...createForm, safety_stock_min: Number(v) || 0 })} />
+                </div>
               </div>
+              <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>单价（元）</div>
+              <Input type="number" value={String(createForm.unit_price)} onChange={(v) => setCreateForm({ ...createForm, unit_price: Number(v) || 0 })} />
+            </FormPanel>
+            <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+              <Button block fill="outline" onClick={() => setFormType(null)}>取消</Button>
+              <Button block color="primary" onClick={submitCreate}>创建</Button>
             </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>当前库存</div>
-                <Input type="number" value={String(createForm.current_stock)} onChange={(v) => setCreateForm({ ...createForm, current_stock: Number(v) || 0 })} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>安全下限</div>
-                <Input type="number" value={String(createForm.safety_stock_min)} onChange={(v) => setCreateForm({ ...createForm, safety_stock_min: Number(v) || 0 })} />
-              </div>
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--m-text-3)', margin: '8px 0 4px' }}>单价（元）</div>
-            <Input type="number" value={String(createForm.unit_price)} onChange={(v) => setCreateForm({ ...createForm, unit_price: Number(v) || 0 })} />
-          </FormPanel>
-        }
-          actions={[
-            { key: 'cancel', text: '取消', onClick: () => setFormType(null) },
-            { key: 'ok', text: '创建', bold: true, onClick: submitCreate },
-          ]}
-        />
+          </div>
+        </Popup>
       )}
     </div>
   )
