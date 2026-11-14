@@ -223,7 +223,7 @@ export default function ProductionReport() {
       const totalDefect = totalDefectMaterial + totalDefectProcess + totalDefectScrap
       if (!detail) totalInput = totalOutput + totalDefect
 
-      const yieldRate = totalInput > 0 ? ((totalOutput / totalInput) * 100).toFixed(1) : '0.0'
+      const yieldRate = totalInput > 0 ? (((totalOutput - totalDefect) / totalInput) * 100).toFixed(1) : '0.0'
       const completionRate = wo.target_qty > 0 ? ((totalOutput / wo.target_qty) * 100).toFixed(1) : '0.0'
 
       return {
@@ -258,7 +258,7 @@ export default function ProductionReport() {
     { label: '目标产量', value: totalTarget.toLocaleString(), icon: <RiseOutlined />, color: 'var(--color-success)' },
     { label: '实际产出', value: totalOutput.toLocaleString(), icon: <CheckCircleOutlined />, color: '#00BCD4' },
     { label: '不良总数', value: totalDefect.toLocaleString(), icon: <WarningOutlined />, color: 'var(--color-warning)' },
-    { label: '平均良率', value: `${avgYield}%`, icon: <FallOutlined />, color: '#9C27B0' },
+    { label: '平均良品率', value: `${avgYield}%`, icon: <FallOutlined />, color: '#9C27B0' },
   ]
 
   const handleRowDoubleClick = (record: any) => {
@@ -288,7 +288,7 @@ export default function ProductionReport() {
       '制程不良': r.defect_process,
       '报废数': r.defect_scrap,
       '不良合计': r.total_defect,
-      '良率(%)': r.yield_rate,
+      '良品率(%)': r.yield_rate,
       '完成率(%)': r.completion_rate,
       '报工工序数': r.process_count,
       '工单状态': r.status,
@@ -317,7 +317,7 @@ export default function ProductionReport() {
     { title: '报废数', dataIndex: 'defect_scrap', key: 'defect_scrap', width: 80, render: v => v > 0 ? <span style={{ color: '#9E9E9E' }}>{v}</span> : '-' },
     { title: '不良合计', dataIndex: 'total_defect', key: 'total_defect', width: 90, render: v => <strong style={{ color: v > 0 ? 'var(--color-error)' : 'var(--text-secondary)' }}>{v}</strong> },
     {
-      title: '良率', dataIndex: 'yield_rate', key: 'yield_rate', width: 120,
+      title: '良品率', dataIndex: 'yield_rate', key: 'yield_rate', width: 120,
       render: v => <Progress percent={v} size="small" strokeColor={v >= 95 ? 'var(--color-success)' : v >= 90 ? 'var(--color-warning)' : 'var(--color-error)'} format={p => `${p}%`} />
     },
     {
@@ -566,7 +566,7 @@ export default function ProductionReport() {
                       <Table.Summary.Cell index={9}>{filtered.reduce((s, r) => s + r.defect_scrap, 0)}</Table.Summary.Cell>
                       <Table.Summary.Cell index={10}>{totalDefect}</Table.Summary.Cell>
                       <Table.Summary.Cell index={11} colSpan={6}>
-                        <span style={{ color: 'var(--text-secondary)' }}>平均良率：{avgYield}%</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>平均良品率：{avgYield}%</span>
                       </Table.Summary.Cell>
                     </Table.Summary.Row>
                   </Table.Summary>
