@@ -198,6 +198,9 @@ export const ProcessExceptionService = {
 
     await record.update(updateData)
 
+    // reload 一次 —— MySQL STORED GENERATED 列 duration 在 update 后需重 SELECT 才能拿到新值
+    await record.reload()
+
     // 修改后重算 net_duration
     try {
       const recalcStart = new Date((record as any).start_time)
