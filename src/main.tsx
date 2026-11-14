@@ -2,7 +2,7 @@
 // index.html 里有 <div id="app-loader"> 全屏遮罩，React 启动时根据 window.__SPLASH_START_AT__
 // 计算 elapsed：若 < 3000ms 则 setTimeout 等到 3s；否则立即移除。
 void (function removeSplashLoader() {
-  const MIN_SHOW_MS = 3000
+  const MIN_SHOW_MS = 10000  // TODO: 验证完成后改回 3000
   const el = document.getElementById('app-loader')
   if (!el) return
   const startAt = Number((globalThis as any).__SPLASH_START_AT__ || 0)
