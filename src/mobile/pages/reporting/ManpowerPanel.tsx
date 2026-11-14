@@ -316,20 +316,29 @@ export function ManpowerPanel({
     { label: '其他', v: other, setV: setOther },
   ]
   const totalPeople = skilled + general + labor + other
-  // 总工时（完工后算完净工时）
-  const grossMinutes = report.report_time && report.finish_time ? calcMinutes(report.report_time, report.finish_time) : 0
+  // 总工时（完工后算完净工时）；未完工则取当前时间
+  const nowStr = new Date().toISOString()
+  const grossMinutes = report.report_time
+    ? calcMinutes(report.report_time, report.finish_time || nowStr)
+    : 0
   const netMinutes = grossMinutes > 0 ? grossMinutes - breakTotalMinutes : 0
   const grossStr = grossMinutes > 0 ? `${Math.floor(grossMinutes / 60)}h${grossMinutes % 60}m` : '—'
   const netStr = grossMinutes > 0 ? `${Math.max(0, Math.floor(netMinutes / 60))}h${Math.max(0, netMinutes) % 60}m` : '—'
+  const breakStr = breakTotalMinutes > 0 ? `${Math.floor(breakTotalMinutes / 60)}h${breakTotalMinutes % 60}m` : '—'
 
   return (
     <div style={{ boxSizing: 'border-box', overflow: 'hidden' }}>
-      {/* ===== 顶部：开工时间 + 完工时间 + 总人数 + 总工时 + 净工时 ===== */}
-      <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginBottom: 8, display: 'flex', flexWrap: 'wrap', gap: '4px 10px', alignItems: 'center' }}>
+      {/* ===== 第一行：开工时间 + 完工时间 ===== */}
+      <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginBottom: 4, display: 'flex', flexWrap: 'wrap', gap: '4px 14px', alignItems: 'center' }}>
         <span>🕐 开工: <b style={{ color: 'var(--m-text)' }}>{report.report_time ? fmtLocalDateTime(report.report_time).slice(0, 16).replace("T", " ") : '—'}</b></span>
         {report.finish_time && <span>完工: <b style={{ color: 'var(--m-text)' }}>{fmtLocalDateTime(report.finish_time).slice(0, 16).replace("T", " ")}</b></span>}
-        <span style={{ color: 'var(--brand-color)' }}>总人数: <b>{totalPeople}</b></span>
+      </div>
+
+      {/* ===== 第二行：总人数 + 总工时 + 休息时间 + 净工时 ===== */}
+      <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginBottom: 8, display: 'flex', flexWrap: 'wrap', gap: '4px 14px', alignItems: 'center' }}>
+        <span>总人数: <b style={{ color: 'var(--brand-color)' }}>{totalPeople}</b></span>
         <span>总工时: <b style={{ color: 'var(--m-text)' }}>{grossStr}</b></span>
+        <span>休息时间: <b style={{ color: 'var(--m-text-2)' }}>{breakStr}</b></span>
         <span>净工时: <b style={{ color: netMinutes < 0 ? '#ff4d4f' : 'var(--brand-color)' }}>{netStr}</b></span>
       </div>
 
