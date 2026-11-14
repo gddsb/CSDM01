@@ -336,9 +336,18 @@ export function ManpowerPanel({
     ? calcMinutes(report.report_time, report.finish_time || nowStr)
     : 0
   const netMinutes = grossMinutes > 0 ? grossMinutes - breakTotalMinutes : 0
-  const grossStr = grossMinutes > 0 ? `${Math.floor(grossMinutes / 60)}h${grossMinutes % 60}m` : '—'
-  const netStr = grossMinutes > 0 ? `${Math.max(0, Math.floor(netMinutes / 60))}h${Math.max(0, netMinutes) % 60}m` : '—'
-  const breakStr = breakTotalMinutes > 0 ? `${Math.floor(breakTotalMinutes / 60)}h${breakTotalMinutes % 60}m` : '—'
+
+  /** 统一格式化: ≤60min → "30分钟"，>60min → "1.5H" */
+  function fmtMinutes(totalMin: number): string {
+    if (!totalMin || totalMin <= 0) return '—'
+    if (totalMin <= 60) return `${totalMin}分钟`
+    const hours = totalMin / 60
+    // 整小时不保留小数，否则保留1位
+    return Number.isInteger(hours) ? `${hours}H` : `${hours.toFixed(1)}H`
+  }
+  const grossStr = fmtMinutes(grossMinutes)
+  const breakStr = fmtMinutes(breakTotalMinutes)
+  const netStr = fmtMinutes(Math.max(0, netMinutes))
 
   return (
     <div style={{ boxSizing: 'border-box', overflow: 'hidden' }}>
@@ -348,11 +357,11 @@ export function ManpowerPanel({
         {report.finish_time && <span>完工: <b style={{ color: 'var(--m-text)' }}>{fmtLocalDateTime(report.finish_time).slice(0, 16).replace("T", " ")}</b></span>}
       </div>
 
-      {/* ===== 第二行：总人数 + 总工时 + 休息时间 + 净工时 ===== */}
+      {/* ===== 第二行：总人数 + 总工时 + 休息 + 净工时 ===== */}
       <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginBottom: 8, display: 'flex', flexWrap: 'wrap', gap: '4px 14px', alignItems: 'center' }}>
         <span>总人数: <b style={{ color: 'var(--brand-color)' }}>{totalPeople}</b></span>
         <span>总工时: <b style={{ color: 'var(--m-text)' }}>{grossStr}</b></span>
-        <span>休息时间: <b style={{ color: 'var(--m-text-2)' }}>{breakStr}</b></span>
+        <span>休息: <b style={{ color: 'var(--m-text-2)' }}>{breakStr}</b></span>
         <span>净工时: <b style={{ color: netMinutes < 0 ? '#ff4d4f' : 'var(--brand-color)' }}>{netStr}</b></span>
       </div>
 
