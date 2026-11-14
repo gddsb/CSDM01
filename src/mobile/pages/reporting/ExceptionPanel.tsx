@@ -57,6 +57,8 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
   const [devices, setDevices] = useState<DeviceOption[]>([])
   const [deviceKw, setDeviceKw] = useState('')
   const [deviceOpen, setDeviceOpen] = useState(false)
+  // 控制新增区展开/收起（默认收起，大按钮在顶部）
+  const [addExpanded, setAddExpanded] = useState(false)
 
   // 异常类型 Picker columns（顶层 useMemo，不能在 IIFE/Hook 里嵌套调用）
   const excColumns = useMemo(() => [
@@ -127,6 +129,7 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
       Toast.show({ content: '已添加', icon: 'success' })
       setDraft({})
       setDeviceKw('')
+      setAddExpanded(false)   // 保存成功后自动收起
       onDirtyChange?.(false)
     } catch (e: any) {
       Toast.show({ content: e?.message || '保存失败', icon: 'fail' })

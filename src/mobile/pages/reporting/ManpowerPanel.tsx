@@ -354,6 +354,16 @@ export function ManpowerPanel({
         ))}
       </div>
 
+      {/* ===== 保存休息时间（移到开工时间下方，独立行，按钮高两倍） ===== */}
+      {editable && (
+        <Button
+          color="primary" size="small" block
+          onClick={saveBreaks}
+          disabled={!breakDirty}
+          style={{ marginTop: 10, height: 48, fontSize: 15, borderRadius: 8 }}
+        >💾 保存休息时间</Button>
+      )}
+
       {/* ===== 分割线 ===== */}
       <div style={{
         height: 1, background: 'var(--m-border)',
@@ -365,7 +375,7 @@ export function ManpowerPanel({
         {/* 标题行 */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          marginBottom: 10,
+          marginBottom: 8,
         }}>
           <span style={{ fontSize: 14, fontWeight: 600 }}>🌙 休息时间</span>
           {editable && (
@@ -376,16 +386,16 @@ export function ManpowerPanel({
           )}
         </div>
 
-        {/* 时间段列表 */}
+        {/* 时间段列表（缩行间距） */}
         {breakTimes.length === 0 ? (
           <div style={{
             fontSize: 12, color: 'var(--m-text-3)', textAlign: 'center',
-            padding: '16px 0', border: '1px dashed var(--m-border)', borderRadius: 8,
+            padding: '12px 0', border: '1px dashed var(--m-border)', borderRadius: 8,
           }}>
             暂无休息时间段
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {breakTimes.map((b, idx) => {
               const startHHmm = extractHHmm(b.start_time)
               const endHHmm = extractHHmm(b.end_time)
@@ -393,7 +403,7 @@ export function ManpowerPanel({
               return (
                 <div key={b.break_time_id || idx} style={{
                   display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '8px 10px', borderRadius: 8,
+                  padding: '6px 8px', borderRadius: 6,
                   border: '1px solid var(--m-border)',
                   background: 'var(--m-surface-2)',
                 }}>
@@ -469,45 +479,14 @@ export function ManpowerPanel({
           </div>
         )}
 
-        {/* 添加按钮 + 统计 + 保存 */}
+        {/* 添加按钮 */}
         {editable && (
-          <>
-            {/* ➕ 添加休息时间段 */}
-            <Button
-              size="small" fill="outline" block
-              onClick={addBreak}
-              style={{ marginTop: 10 }}
-            >➕ 添加休息时间段
-            </Button>
-
-            {/* 休息合计 */}
-            <div style={{
-              fontSize: 12, color: 'var(--m-text-3)',
-              marginTop: 10, textAlign: 'center',
-            }}>
-              休息合计: <b style={{ color: 'var(--brand-color)', fontSize: 14 }}>{breakTotalMinutes}</b> 分钟
-              {report.report_time && report.finish_time && (() => {
-                const gross = calcMinutes(report.report_time, report.finish_time)
-                const net = gross > 0 ? gross - breakTotalMinutes : 0
-                const h = Math.floor(net / 60)
-                const m = net % 60
-                return (
-                  <span style={{ marginLeft: 8 }}>
-                    实际工时: <b style={{ color: 'var(--m-text)', fontSize: 14 }}>{h}h{m}m</b>
-                  </span>
-                )
-              })()}
-            </div>
-
-            {/* 保存休息时间 */}
-            <Button
-              color="primary" size="small" block
-              onClick={saveBreaks}
-              disabled={!breakDirty}
-              style={{ marginTop: 8 }}
-            >💾 保存休息时间
-            </Button>
-          </>
+          <Button
+            size="small" fill="outline" block
+            onClick={addBreak}
+            style={{ marginTop: 8 }}
+          >➕ 添加休息时间段
+          </Button>
         )}
       </div>
     </div>
