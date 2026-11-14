@@ -27,6 +27,9 @@ DB MySQL 8.0（沙箱已装 milk_can_mes）；包管理器 **pnpm**（前后端�
 | V5 | 涉及生产环境数据变更 | 列出变更 SQL/接口、影响的表/行、回滚方案 |
 | V6 | 需要超时 / 超预算运行命令 | 预估耗时、资源消耗、原因 |
 | V7 | 发现已有代码违反规则 | 指出具体文件和行、建议修复方式（但不自动改） |
+| V8 | **deploy.sh 执行后必须立即冒烟测试核心业务 API** | 不能只看 health check。至少测 3 个核心端点：① production/report-orders ② basic/devices ③ quality/incoming-inspections，用 admin token GET 看是否返回 200 + 非 success:false。**如果某个返回 500，立即停手排查，不要继续其他任务。** |
+| V9 | **新增数据库列/SQL 变更后必须手动验证 prod 表结构** | deploy.sh 跑完后 SSH 到 prod 执行 `SHOW COLUMNS FROM [表];` 确认新列真的存在。migrate.ts 的 DDL 虽然幂等但不代表"一定执行到了 prod"（git pull 可能漏文件、deploy.sh 可能跳过某些步骤）。**验证失败 = 立即停止，先手动 ALTER TABLE 补列。** |
+| V10 | **写 JOIN 关联表 SQL 前先确认 prod 真实字段名** | 沙箱和 prod 表结构可能不同（例如沙箱用 `defect_type VARCHAR`，prod 用 `defect_type_id INT FK`）。写任何 backfill/recalc SQL 前，先在 prod SSH 执行 `DESC [表名]` 确认字段名、类型、是否有 FK 关联。**想当然写字段名 = 必炸。** |
 
 **告知模板**：
 ```

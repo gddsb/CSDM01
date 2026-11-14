@@ -68,11 +68,45 @@ bash build-apk.sh
 # build-apk.sh 回填 apkBuild + apkSize + checksum，不 +1 buildNumber
 ```
 
-### 部署完成后验证（deploy.sh 后自动做）
-- 生产服务器拉代码到最新
-- vite build 产物拷贝到 dist/
-- PM2 restart 后端
-- 手机浏览器/APK 打开，确认 JS bundle 已更新
+### 部署完成后验证（deploy.sh 后 **必须立即执行**）
+
+> ⚠️ 以下是 2026-11-14 事故后补充的强制冒烟流程。之前只测 health check 导致 prod 7 个新字段缺失、production API 全部 500，用户才能反馈。
+
+**Step 1：PM2 状态确认**
+```bash
+# 在 prod 执行（或 paramiko SSH）
+pm2 list | grep milk-can-mes-server
+# 必须是 online，uptime 重置 ≈ 刚刚（3-30s）
+```
+
+**Step 2：核心 API 冒烟（admin token）**
+```bash
+TOKEN=$(curl -s http://43.138.218.55/api/auth/login \
+  -X POST -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"123456"}' \
+  | python3 -c "import sys,json;d=json.load(sys.stdin)['data'];print(d.get('token',''))")
+
+# 必测 3 个核心端点（AGENTS.md V8）
+curl -s -w "HTTP:%{http_code}\n" "http://43.138.218.55/api/production/report-orders?page=1&pageSize=3" -H "Authorization: Bearer $TOKEN"
+curl -s -w "HTTP:%{http_code}\n" "http://43.138.218.55/api/basic/devices?pageSize=3" -H "Authorization: Bearer $TOKEN"
+curl -s -w "HTTP:%{http_code}\n" "http://43.138.218.55/api/quality/incoming-inspections?page=1&pageSize=3" -H "Authorization: Bearer $TOKEN"
+
+# 额外可选（如果本次改了对应模块）
+curl -s -w "HTTP:%{http_code}\n" "http://43.138.218.55/api/production/orders?page=1&pageSize=3" -H "Authorization: Bearer $TOKEN"
+curl -s -w "HTTP:%{http_code}\n" "http://43.138.218.55/api/daily-report" -H "Authorization: Bearer $TOKEN"
+```
+**通过标准**：全部返回 `HTTP:200` + JSON 里 `success:true`。**任何一个 500 → 立即停手排查，不要继续其他任务。**
+
+**Step 3（有 DDL 变更时）：验证 prod 表结构**
+```bash
+# SSH 到 prod 后执行（AGENTS.md V9）
+mysql -u milk_can_mes -pmilk_can_mes milk_can_mes -e "SHOW COLUMNS FROM [表名];"
+# 确认新列真的存在。不存在 = 手动 ALTER TABLE 补列。
+```
+
+**Step 4：手机浏览器验证**
+- 打开 H5（http://43.138.218.55/），确认 JS bundle 已更新（buildNumber 变化）
+- 至少点进 1 个 PC 页面 + 1 个移动端页面，确认无白屏/内部错误弹窗
 
 ### APK 编译后验证（build-apk.sh 后自动做）
 - APK 产物上传到 prod download/ 目录
