@@ -21,7 +21,7 @@
     "rule_id": 2,
     "rule_name": "工单号",
     "rule_code": "WORK_ORDER",
-    "prefix": "WO",
+    "prefix": "WO-16",
     "date_format": "YYMMDD",
     "separator": "",
     "seq_width": 3,
