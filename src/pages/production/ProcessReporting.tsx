@@ -395,8 +395,20 @@ export default function ProcessReporting() {
       const [defectRes, scrapRes, exceptionRes, manpowerRes, materialRes, breakRes] = await Promise.all(fetches)
 
       setProdDefectList((defectRes.data || []).map(d => {
-        let enriched: any = { ...d, id: d.defect_id, defect_images: parseImages(d.defect_images) }
-        if ((!enriched.defect_code || !enriched.defect_type) && enriched.defect_type_id) {
+        const nestedDT = d.defect_type && typeof d.defect_type === 'object' ? d.defect_type : null
+        let enriched: any = {
+          ...d,
+          id: d.defect_id,
+          defect_images: parseImages(d.defect_images),
+          // 拍平：Sequelize 嵌套 defect_type 关联对象 → 扁平字符串
+          defect_type: nestedDT?.defect_type ?? d.defect_type,
+          defect_code: nestedDT?.defect_code ?? d.defect_code,
+          defect_name: nestedDT?.defect_name ?? d.defect_name,
+          defect_unit: nestedDT?.defect_unit ?? d.defect_unit,
+          unit: d.unit ?? nestedDT?.defect_unit,
+        }
+        // 兜底：API 关联没返回时用本地字典选项补
+        if (!enriched.defect_code || !enriched.defect_type) {
           const opt = defectTypeOptions.find(o => String(o.value) === String(enriched.defect_type_id))
           if (opt) {
             if (!enriched.defect_code) enriched.defect_code = opt.defect_code
@@ -407,9 +419,19 @@ export default function ProcessReporting() {
         return enriched
       }))
       // 报废：从 /process-defects 结果里过滤 defect_type === '检验报废'
-      setScrapDefectList((scrapRes.data || []).filter((d: any) => d.defect_type === '检验报废').map((d: any) => {
-        let enriched: any = { ...d, id: d.defect_id ?? d.scrap_id, defect_images: parseImages(d.defect_images) }
-        if ((!enriched.defect_code || !enriched.defect_type) && enriched.defect_type_id) {
+      setScrapDefectList((scrapRes.data || []).map(d => {
+        const nestedDT = d.defect_type && typeof d.defect_type === 'object' ? d.defect_type : null
+        let enriched: any = {
+          ...d,
+          id: d.defect_id ?? d.scrap_id,
+          defect_images: parseImages(d.defect_images),
+          defect_type: nestedDT?.defect_type ?? d.defect_type,
+          defect_code: nestedDT?.defect_code ?? d.defect_code,
+          defect_name: nestedDT?.defect_name ?? d.defect_name,
+          defect_unit: nestedDT?.defect_unit ?? d.defect_unit,
+          unit: d.unit ?? nestedDT?.defect_unit,
+        }
+        if (!enriched.defect_code || !enriched.defect_type) {
           const opt = scrapTypeOptions.find(o => String(o.value) === String(enriched.defect_type_id))
           if (opt) {
             if (!enriched.defect_code) enriched.defect_code = opt.defect_code
@@ -418,7 +440,7 @@ export default function ProcessReporting() {
           }
         }
         return enriched
-      }))
+      }).filter((d: any) => d.defect_type === '检验报废'))
       setExceptionList((exceptionRes.data || []).map((e: any) => ({ ...e, id: e.exception_id, exception_images: parseImages(e.exception_images) })))
       setManpowerList((manpowerRes.data || []).map((m: any) => ({ ...m, id: m.record_id })))
       setMaterialList((materialRes.data || []).map((m: any) => {
@@ -562,10 +584,11 @@ export default function ProcessReporting() {
     const list = prodDefectList.filter(r => r.process_id === defectProcessId && !(r as any)._deleting)
     const sumQty = (pred: (r: any) => boolean) =>
       list.filter(pred).reduce((s, r) => s + (Number(r.quantity || r.defect_quantity) || 0), 0)
-    const materialPcs = sumQty(r => r.defect_type === '来料不良' && (r.unit || r.defect_unit) === '片')
-    const materialCans = sumQty(r => r.defect_type === '来料不良' && (r.unit || r.defect_unit) === '罐')
-    const processPcs = sumQty(r => r.defect_type === '制程不良' && (r.unit || r.defect_unit) === '片')
-    const processCans = sumQty(r => r.defect_type === '制程不良' && (r.unit || r.defect_unit) === '罐')
+    // unit 优先用 DefectType 字典的 defect_unit（"片"/"罐"），ProcessDefect.unit 可能是 "个"
+    const materialPcs = sumQty(r => r.defect_type === '来料不良' && (r.defect_unit || r.unit) === '片')
+    const materialCans = sumQty(r => r.defect_type === '来料不良' && (r.defect_unit || r.unit) === '罐')
+    const processPcs = sumQty(r => r.defect_type === '制程不良' && (r.defect_unit || r.unit) === '片')
+    const processCans = sumQty(r => r.defect_type === '制程不良' && (r.defect_unit || r.unit) === '罐')
     return {
       materialPcs, materialCans, processPcs, processCans,
       totalDefect: materialPcs + materialCans + processPcs + processCans,
