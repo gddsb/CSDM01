@@ -316,15 +316,38 @@ export function ManpowerPanel({
     { label: '其他', v: other, setV: setOther },
   ]
   const totalPeople = skilled + general + labor + other
+  // 总工时（完工后算完净工时）
+  const grossMinutes = report.report_time && report.finish_time ? calcMinutes(report.report_time, report.finish_time) : 0
+  const netMinutes = grossMinutes > 0 ? grossMinutes - breakTotalMinutes : 0
+  const grossStr = grossMinutes > 0 ? `${Math.floor(grossMinutes / 60)}h${grossMinutes % 60}m` : '—'
+  const netStr = grossMinutes > 0 ? `${Math.max(0, Math.floor(netMinutes / 60))}h${Math.max(0, netMinutes) % 60}m` : '—'
 
   return (
     <div style={{ boxSizing: 'border-box', overflow: 'hidden' }}>
-      {/* ===== 顶部：开工时间 + 人员配置 ===== */}
-      <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginBottom: 10 }}>
-        🕐 开工时间: <b style={{ color: 'var(--m-text)' }}>{report.report_time ? fmtLocalDateTime(report.report_time).slice(0, 16).replace("T", " ") : '—'}</b>
-        {report.finish_time && <span style={{ marginLeft: 8 }}>完工: <b style={{ color: 'var(--m-text)' }}>{fmtLocalDateTime(report.finish_time).slice(0, 16).replace("T", " ")}</b></span>}
-        <span style={{ marginLeft: 10, color: 'var(--brand-color)' }}>总人数: <b>{totalPeople}</b></span>
+      {/* ===== 顶部：开工时间 + 完工时间 + 总人数 + 总工时 + 净工时 ===== */}
+      <div style={{ fontSize: 12, color: 'var(--m-text-3)', marginBottom: 8, display: 'flex', flexWrap: 'wrap', gap: '4px 10px', alignItems: 'center' }}>
+        <span>🕐 开工: <b style={{ color: 'var(--m-text)' }}>{report.report_time ? fmtLocalDateTime(report.report_time).slice(0, 16).replace("T", " ") : '—'}</b></span>
+        {report.finish_time && <span>完工: <b style={{ color: 'var(--m-text)' }}>{fmtLocalDateTime(report.finish_time).slice(0, 16).replace("T", " ")}</b></span>}
+        <span style={{ color: 'var(--brand-color)' }}>总人数: <b>{totalPeople}</b></span>
+        <span>总工时: <b style={{ color: 'var(--m-text)' }}>{grossStr}</b></span>
+        <span>净工时: <b style={{ color: netMinutes < 0 ? '#ff4d4f' : 'var(--brand-color)' }}>{netStr}</b></span>
       </div>
+
+      {/* ===== 添加/保存休息时间（在人员配置上方，独立行，高两倍） ===== */}
+      {editable && (
+        <Button
+          color="primary" size="small" block
+          onClick={breakDirty ? saveBreaks : addBreak}
+          style={{ marginBottom: 8, height: 48, fontSize: 15, borderRadius: 8 }}
+        >
+          {breakDirty
+            ? `💾 保存休息时间 (${breakTimes.length}段)`
+            : breakTimes.length === 0
+              ? '➕ 添加休息时间段'
+              : `✓ 已保存 ${breakTimes.length} 段 · 点击添加新段`}
+        </Button>
+      )}
+
       {/* 固定 4 列单行 —— box-sizing:border-box 确保 padding+border 不撑破 1fr */}
       <div style={{
         display: 'grid',
@@ -353,16 +376,6 @@ export function ManpowerPanel({
           </div>
         ))}
       </div>
-
-      {/* ===== 保存休息时间（移到开工时间下方，独立行，按钮高两倍） ===== */}
-      {editable && (
-        <Button
-          color="primary" size="small" block
-          onClick={saveBreaks}
-          disabled={!breakDirty}
-          style={{ marginTop: 10, height: 48, fontSize: 15, borderRadius: 8 }}
-        >💾 保存休息时间</Button>
-      )}
 
       {/* ===== 分割线 ===== */}
       <div style={{
@@ -477,16 +490,6 @@ export function ManpowerPanel({
               )
             })}
           </div>
-        )}
-
-        {/* 添加按钮 */}
-        {editable && (
-          <Button
-            size="small" fill="outline" block
-            onClick={addBreak}
-            style={{ marginTop: 8 }}
-          >➕ 添加休息时间段
-          </Button>
         )}
       </div>
     </div>

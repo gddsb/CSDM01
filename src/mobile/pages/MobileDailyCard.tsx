@@ -59,6 +59,7 @@ export default function MobileDailyCard() {
 
   // 日期标记缓存: Map<"2026-11", Set<"YYYY-MM-DD">>
   const [dateMarkers, setDateMarkers] = useState<Record<string, Set<string>>>({})
+  const loadedMonthsRef = useRef<Set<string>>(new Set())
 
   const load = useCallback(async (targetDate: string) => {
     if (loadingRef.current) return
@@ -76,26 +77,31 @@ export default function MobileDailyCard() {
 
   useEffect(() => { load(date) }, [date, load])
 
-  // 加载某月的开工日期标记
+  // 加载某月的开工日期标记（用 ref 缓存防止重复加载，避免每次 setDateMarkers 重建依赖）
   const loadDateMarkers = useCallback(async (year: number, month: number) => {
     const cacheKey = `${year}-${String(month).padStart(2, '0')}`
-    if (dateMarkers[cacheKey]) return
+    if (loadedMonthsRef.current.has(cacheKey)) return
+    loadedMonthsRef.current.add(cacheKey)
     try {
       const r = await api.get('/daily-report/dates', { params: { year, month } })
       const arr: string[] = r.data?.data || r.data || []
-      setDateMarkers(prev => ({ ...prev, [cacheKey]: new Set(arr) }))
+      setDateMarkers(prev => {
+        // 如果已经有这个 key，不更新
+        if (prev[cacheKey]) return prev
+        return { ...prev, [cacheKey]: new Set(arr) }
+      })
     } catch { /* 静默 */ }
-  }, [dateMarkers])
+  }, [])
 
-  // 初始化：加载当前月 + 上一个月 + 下一个月的标记
+  // 初始化：加载前后各 3 个月（覆盖 99% 使用场景），不做 renderDate 内的懒加载
   useEffect(() => {
     const now = new Date()
     const y = now.getFullYear(), m = now.getMonth() + 1
-    loadDateMarkers(y, m)
-    const prev = new Date(y, m - 2, 1)
-    loadDateMarkers(prev.getFullYear(), prev.getMonth() + 1)
-    const next = new Date(y, m, 1)
-    loadDateMarkers(next.getFullYear(), next.getMonth() + 1)
+    // 当前月 + 上 3 个月 + 下 3 个月 = 7 个月
+    for (let offset = -3; offset <= 3; offset++) {
+      const d = new Date(y, m - 1 + offset, 1)
+      loadDateMarkers(d.getFullYear(), d.getMonth() + 1)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -108,20 +114,9 @@ export default function MobileDailyCard() {
     return s
   }, [dateMarkers])
 
-  // 月份切换时懒加载对应标记（CalendarPicker 没有 onPageChange prop，在 renderDate 里按需触发）
-  const handlePageChange = useCallback((year: number, month: number) => {
-    loadDateMarkers(year, month)
-  }, [loadDateMarkers])
-
-  // 自定义日期渲染：如果是标记日期，底部加小圆点
-  // 同时按需触发未缓存月份的标记加载
+  // 自定义日期渲染：只负责渲染，不触发任何异步（防止闭包循环）
   const renderDate = (date: Date) => {
     const y = date.getFullYear(), m = date.getMonth() + 1
-    const cacheKey = `${y}-${String(m).padStart(2, '0')}`
-    if (!dateMarkers[cacheKey]) {
-      // 异步加载，不阻塞渲染
-      setTimeout(() => handlePageChange(y, m), 0)
-    }
     const key = `${y}-${String(m).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
     const hasMark = allMarkerDates.has(key)
     return (
