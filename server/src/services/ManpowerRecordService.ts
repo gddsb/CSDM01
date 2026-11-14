@@ -15,6 +15,7 @@ import { AppError } from '../utils/error.js'
 import { nowBeijingDate, parseDateTime } from '../utils/date.js'
 import ProductionBreakTime from '../models/ProductionBreakTime.js'
 import { calcOverlapMinutes } from '../utils/breakTime.js'
+import { recalcReportStats } from '../utils/reportOrderStats.js'
 
 export const calcHours = (start: any, end: any): number => {
   if (!start || !end) return 0
@@ -115,6 +116,7 @@ export const ManpowerRecordService = {
     if (!record) throw new AppError('记录不存在', 10002, 404)
     const data = await this.buildRecordData(body, record)
     await record.update(data)
+    await recalcReportStats((record as any).report_order_id)
     return record
   },
 

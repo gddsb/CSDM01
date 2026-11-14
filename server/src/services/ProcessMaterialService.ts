@@ -10,6 +10,7 @@ import { Op } from 'sequelize'
 import { ProcessMaterial, Material } from '../models/index.js'
 import { MAX_PAGE_SIZE } from '../utils/response.js'
 import { AppError } from '../utils/error.js'
+import { recalcReportStats } from '../utils/reportOrderStats.js'
 
 /** 按 (report_order_id, process_id, bas_material_id) 算投入/退回合计，排除 excludeId */
 async function calcMaterialTotals(
@@ -115,6 +116,7 @@ export async function create(body: any) {
     label_images: imgData ? JSON.stringify(imgData) : null,
   })
   const json = (material as any).toJSON()
+  await recalcReportStats(report_order_id)
   return { ...json, images: json.label_images ? JSON.parse(json.label_images) : [] }
 }
 
@@ -159,13 +161,16 @@ export async function update(id: number | string, body: any) {
 
   await material.save()
   const json = (material as any).toJSON()
+  await recalcReportStats(oldReportId)
   return { ...json, images: json.label_images ? JSON.parse(json.label_images) : [] }
 }
 
 export async function remove(id: number | string) {
   const material = await ProcessMaterial.findOne({ where: { material_id: id } })
   if (!material) throw new AppError('记录不存在', 10002, 404)
+  const oldReportId = Number((material as any).report_order_id || 0)
   await material.destroy()
+  await recalcReportStats(oldReportId)
 }
 
 export default { list, create, update, remove }

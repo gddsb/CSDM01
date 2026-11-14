@@ -11,6 +11,7 @@ import { Op } from 'sequelize'
 import { ProcessException, Device } from '../models/index.js'
 import { parseDateTime, nowBeijingDate } from '../utils/date.js'
 import { MAX_PAGE_SIZE } from '../utils/response.js'
+import { recalcReportStats } from '../utils/reportOrderStats.js'
 import { AppError } from '../utils/error.js'
 import ProductionBreakTime from '../models/ProductionBreakTime.js'
 import { calcOverlapMinutes } from '../utils/breakTime.js'
@@ -162,13 +163,17 @@ export const ProcessExceptionService = {
       } catch { /* ignore */ }
     }
 
+    await recalcReportStats(body.report_order_id)
+
     return created
   },
 
-  /** 修改异常工时（自动重算 duration） */
+  /** 修改异常工时（自动重算 duration + net_duration） */
   async update(id: number | string, body: any, actor?: any) {
     const record = await ProcessException.findOne({ where: { exception_id: Number(id) } })
     if (!record) throw new AppError('异常工时记录不存在', 10002, 404)
+
+    const reportOrderId = (record as any).report_order_id
 
     const start = body.start_time !== undefined ? body.start_time : (record as any).start_time
     const end = body.end_time !== undefined ? body.end_time : (record as any).end_time
@@ -223,6 +228,8 @@ export const ProcessExceptionService = {
       await record.update({ net_duration: nd < 0 ? 0 : nd })
     } catch { /* ignore */ }
 
+    await recalcReportStats(reportOrderId)
+
     return record
   },
 
@@ -230,7 +237,11 @@ export const ProcessExceptionService = {
   async remove(id: number | string) {
     const record = await ProcessException.findOne({ where: { exception_id: Number(id) } })
     if (!record) throw new AppError('异常工时记录不存在', 10002, 404)
+
+    const reportOrderId = (record as any).report_order_id
     await record.destroy()
+
+    await recalcReportStats(reportOrderId)
     return true
   },
 }

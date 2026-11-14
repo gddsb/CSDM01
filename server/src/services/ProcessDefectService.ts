@@ -20,6 +20,7 @@ import { ProcessDefect, DefectType, ReportProcess, ReportOrder, ReportImage } fr
 import { MAX_PAGE_SIZE } from '../utils/response.js'
 import { AppError } from '../utils/error.js'
 import { logger } from '../utils/logger.js'
+import { recalcReportStats } from '../utils/reportOrderStats.js'
 
 // ---------- 纯函数 ----------
 
@@ -158,12 +159,16 @@ export const ProcessDefectService = {
       unit: body.unit || defectType?.getDataValue('defect_unit') || '',
       defect_images: body.defect_images ? JSON.stringify(body.defect_images) : null,
     } as any)
+
+    await recalcReportStats(body.report_order_id)
   },
 
   /** 修改不良记录 — 自动 diff 删除被移除的图片 */
   async update(id: number | string, body: any) {
     const defect = await ProcessDefect.findOne({ where: { defect_id: Number(id) } })
     if (!defect) throw new AppError('记录不存在', 10002, 404)
+
+    const reportOrderId = (defect as any).report_order_id
 
     // 图片 diff：旧 URL 集合 vs 新 URL 集合 — 差集为要清理的图片
     let toCleanupUrls: string[] = []
@@ -212,6 +217,8 @@ export const ProcessDefectService = {
       cleanupImageFiles(toCleanupUrls).catch(() => { /* 已内部容错 */ })
     }
 
+    await recalcReportStats(reportOrderId)
+
     return {
       ...(defect as any).toJSON(),
       defect_qty: (defect as any).quantity,
@@ -219,12 +226,11 @@ export const ProcessDefectService = {
       images: (defect as any).defect_images ? JSON.parse((defect as any).defect_images) : [],
     }
   },
-
-  /** 删除不良记录 — 级联清理关联图片（ReportImage + fs 物理文件） */
   async remove(id: number | string) {
     const defect = await ProcessDefect.findOne({ where: { defect_id: Number(id) } })
     if (!defect) throw new AppError('记录不存在', 10002, 404)
 
+    const reportOrderId = (defect as any).report_order_id
     const imageUrls = parseImageUrls((defect as any).defect_images)
     await defect.destroy()
 
@@ -232,6 +238,8 @@ export const ProcessDefectService = {
       logger.info('[ProcessDefect] REMOVE_IMAGE_CLEANUP', { defect_id: id, urls: imageUrls })
       cleanupImageFiles(imageUrls).catch(() => { /* 已内部容错 */ })
     }
+
+    await recalcReportStats(reportOrderId)
     return true
   },
 
@@ -302,6 +310,8 @@ export const ProcessDefectService = {
     } catch (err) {
       if (t && !(t as any).finished) { try { await t.rollback() } catch (_) { /* ignore */ } }
       throw err
+    } finally {
+      await recalcReportStats(body.report_order_id)
     }
   },
 
