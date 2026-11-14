@@ -108,19 +108,20 @@ async function buildProductionRow(ro: any) {
   // 不良汇总：来料不良(小张=片,带盖=罐)、制程不良、检验废品
   const defects = await ProcessDefect.findAll({
     where: { report_order_id: reportOrderId },
-    include: [{ model: DefectType, required: true, attributes: ['category_name', 'defect_unit'] }],
+    include: [{ model: DefectType, required: true, attributes: ['defect_type', 'defect_unit'] }],
   })
   let incomingSmall = 0, incomingCap = 0, processDefect = 0, inspectionDefect = 0
   for (const d of defects as any[]) {
-    const cat = d.DefectType?.category_name || ''
+    // ✅ 用 defect_type 分类，不是 category_name（prod category_name 全表都是"制程检验类型"）
+    const defectType = d.DefectType?.defect_type || ''
     const unit = d.DefectType?.defect_unit || ''
     const qty = Number(d.quantity || 0)
-    if (cat === '来料不良') {
+    if (defectType === '来料不良') {
       if (unit === '片') incomingSmall += qty
       else incomingCap += qty
-    } else if (cat === '制程不良') {
+    } else if (defectType === '制程不良') {
       processDefect += qty
-    } else if (cat === '检验报废') {
+    } else if (defectType === '检验报废') {
       inspectionDefect += qty
     }
   }
@@ -222,9 +223,9 @@ async function buildDefectMatrix(
   reportIds: number[],
   categoryName: string,
 ) {
-  // 1. 取该分类所有不良类型
+  // 1. 取该分类所有不良类型 — ✅ 用 defect_type 过滤（prod category_name 全表都是"制程检验类型"）
   const defectTypes = await DefectType.findAll({
-    where: { category_name: categoryName, status: 1 },
+    where: { defect_type: categoryName, status: 1 },
     attributes: ['defect_id', 'defect_name', 'sort_order'],
     order: [['sort_order', 'ASC']],
   }) as any[]
