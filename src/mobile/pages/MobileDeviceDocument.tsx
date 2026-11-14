@@ -284,7 +284,7 @@ export default function MobileDeviceDocument() {
                 <Picker
                   columns={docTypeColumns}
                   value={form.doc_type ? [form.doc_type] : []}
-                  onConfirm={(v) => setForm({ ...form, doc_type: v[0] || '' })}
+                  onConfirm={(v) => setForm({ ...form, doc_type: String(v[0] ?? '') })}
                 >
                   {(_items, { open }) => (
                     <div onClick={open} role="button" tabIndex={0} style={{ ...selStyle, color: form.doc_type ? 'var(--m-text)' : 'var(--m-text-3)' }}>

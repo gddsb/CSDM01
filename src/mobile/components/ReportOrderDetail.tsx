@@ -65,18 +65,6 @@ export function ReportOrderDetail({ meta, onClose }: Props) {
     }).catch(() => {})
   }, [meta.report_order_id])
 
-  // Picker columns（顶层 useMemo）
-  const processColumns = useMemo(() => [
-    processes.map((p) => ({ label: p.process_name, value: String(p.process_id) })),
-  ], [processes])
-  const defectTypeColumns = useMemo(() => [
-    defectTypes.map((t) => {
-      const id = String(t.id ?? t.defect_type_id ?? '')
-      const name = t.defect_name || t.name || t.type_name || ''
-      return { label: name, value: id }
-    }),
-  ], [defectTypes])
-
   const [defectList, setDefectList] = useState<any[]>([])
   const [scrapList, setScrapList] = useState<any[]>([])
   const [exceptionList, setExceptionList] = useState<any[]>([])
@@ -184,6 +172,19 @@ function DefectPanel({ reportId, processes, defectTypes, list, onChange, disable
     defect_type_id: null, defect_type_name: '',
     quantity: 0, unit: '件', defect_desc: '',
   })
+
+  // 子组件内部自己算 columns（闭包拿不到主组件顶层变量）
+  const processColumns = useMemo(() => [
+    processes.map((p) => ({ label: p.process_name, value: String(p.process_id) })),
+  ], [processes])
+  const defectTypeColumns = useMemo(() => [
+    defectTypes.map((t) => {
+      const id = String(t.id ?? t.defect_type_id ?? '')
+      const name = t.defect_name || t.name || t.type_name || ''
+      return { label: name, value: id }
+    }),
+  ], [defectTypes])
+
   useEffect(() => {
     if (processes.length > 0 && !form.process_id) {
       setForm((f) => ({ ...f, process_id: processes[0].process_id, process_name: processes[0].process_name || '' }))
@@ -292,6 +293,9 @@ function ScrapPanel({ reportId, processes, list, onChange, disabled }: {
   reportId: number; processes: ProcessRow[]; list: any[]; onChange: () => void; disabled?: boolean
 }) {
   const [f, setF] = useState<ScrapForm>({ process_id: processes[0]?.process_id || null, quantity: 0, reason: '' })
+  const processColumns = useMemo(() => [
+    processes.map((p) => ({ label: p.process_name, value: String(p.process_id) })),
+  ], [processes])
   useEffect(() => { if (processes.length > 0 && !f.process_id) setF({ ...f, process_id: processes[0].process_id }) }, [processes])
   const add = async () => {
     if (f.quantity <= 0) { Toast.show({ content: '数量必须 > 0', position: 'bottom' }); return }
@@ -345,6 +349,9 @@ function ExceptionPanel({ reportId, processes, list, onChange, disabled }: {
   reportId: number; processes: ProcessRow[]; list: any[]; onChange: () => void; disabled?: boolean
 }) {
   const [f, setF] = useState<ExceptionForm>({ process_id: processes[0]?.process_id || null, exception_type: '设备故障', duration_hours: 1, reason: '' })
+  const processColumns = useMemo(() => [
+    processes.map((p) => ({ label: p.process_name, value: String(p.process_id) })),
+  ], [processes])
   useEffect(() => { if (processes.length > 0 && !f.process_id) setF({ ...f, process_id: processes[0].process_id }) }, [processes])
   const add = async () => {
     try {
@@ -430,6 +437,9 @@ function MaterialPanel({ reportId, processes, list, onChange, disabled }: {
   reportId: number; processes: ProcessRow[]; list: any[]; onChange: () => void; disabled?: boolean
 }) {
   const [f, setF] = useState<MaterialForm>({ material_id: null, material_name: '', process_id: null, quantity: 0 })
+  const processColumns = useMemo(() => [
+    processes.map((p) => ({ label: p.process_name, value: String(p.process_id) })),
+  ], [processes])
   const add = async () => {
     if (!f.material_id || f.quantity <= 0) { Toast.show({ content: '请选物料并填数量', position: 'bottom' }); return }
     try {

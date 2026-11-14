@@ -96,7 +96,11 @@ export function ProcessDefectPanel({
     return []
   }, [defectTypes])
 
-  // ========== antd-mobile Picker columns ==========
+  // ========== 新增 / 编辑（state 必须在 useMemo 之前声明，避免 TDZ 崩溃）==========
+  const [expandedId, setExpandedId] = useState<number | string | null>(null) // 哪一行在编辑
+  const [draft, setDraft] = useState<DefectRow>({ quantity: 0 })
+
+  // ========== antd-mobile Picker columns（顶层 useMemo，columns 不能在 IIFE/Hook 内嵌套）==========
   const defectTypeColumns = useMemo(() => [
     filteredTypes.map(t => ({
       label: `${t.defect_code || ''} ${t.defect_name || ''}`.trim(),
@@ -104,15 +108,14 @@ export function ProcessDefectPanel({
     })),
   ], [filteredTypes])
 
+  // 单位 options（依赖当前已选不良类型）— 顶层 useMemo，不能引用 IIFE 内的局部变量
+  const unitOptions = useMemo(
+    () => draft.defect_type_id ? getUnitOptions(draft.defect_type_id) : [],
+    [draft.defect_type_id, getUnitOptions],
+  )
   const unitColumns = useMemo(() => [
-    (draft.defect_type_id ? getUnitOptions(draft.defect_type_id) : []).map(u => ({
-      label: u, value: u,
-    })),
-  ], [draft.defect_type_id, getUnitOptions])
-
-  // ========== 新增 / 编辑 ==========
-  const [expandedId, setExpandedId] = useState<number | string | null>(null) // 哪一行在编辑
-  const [draft, setDraft] = useState<DefectRow>({ quantity: 0 })
+    unitOptions.map(u => ({ label: u, value: u })),
+  ], [unitOptions])
 
   // dirty 上报：正在编辑（expandedId 非空）即为 dirty；unmount 时清掉
   useEffect(() => {
@@ -264,25 +267,24 @@ export function ProcessDefectPanel({
                 </Picker>
               )
             })()}
-            {/* 单位 Picker（动态：依赖已选不良类型） */}
+            {/* 单位 Picker（动态：依赖已选不良类型；无类型时禁用——在 trigger 上守卫 open()） */}
             {(() => {
-              const unitOptions = draft.defect_type_id ? getUnitOptions(draft.defect_type_id) : []
               const disabled = unitOptions.length === 0
               return (
                 <Picker
                   columns={unitColumns}
                   value={draft.unit ? [draft.unit] : []}
-                  onConfirm={(v) => setDraft(d => ({ ...d, unit: v[0] || '' }))}
-                  disabled={disabled}
+                  onConfirm={(v) => setDraft(d => ({ ...d, unit: String(v[0] ?? '') }))}
                 >
                   {(_items, { open }) => (
-                    <div onClick={open} role="button" tabIndex={0} aria-disabled={disabled} style={{
+                    <div onClick={() => !disabled && open()} role="button" tabIndex={0} aria-disabled={disabled} style={{
                       flex: 1, minWidth: 60, padding: '7px 8px', borderRadius: 6,
                       border: disabled ? '1px dashed var(--m-border)' : '1px solid var(--m-border)',
                       fontSize: 12, background: disabled ? 'transparent' : 'var(--m-surface)',
                       textAlign: 'center', minHeight: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
                       color: draft.unit ? 'var(--m-text)' : 'var(--m-text-3)',
                       opacity: disabled ? 0.5 : 1,
+                      cursor: disabled ? 'not-allowed' : 'pointer',
                     }}>
                       {disabled ? '单位' : (draft.unit || '单位')}
                     </div>
@@ -353,25 +355,24 @@ export function ProcessDefectPanel({
                     </Picker>
                   )
                 })()}
-                {/* 单位 Picker（动态：依赖已选不良类型） */}
+                {/* 单位 Picker（动态：依赖已选不良类型；无类型时禁用——在 trigger 上守卫 open()） */}
                 {(() => {
-                  const unitOptions = draft.defect_type_id ? getUnitOptions(draft.defect_type_id) : []
                   const disabled = unitOptions.length === 0
                   return (
                     <Picker
                       columns={unitColumns}
                       value={draft.unit ? [draft.unit] : []}
-                      onConfirm={(v) => setDraft(d => ({ ...d, unit: v[0] || '' }))}
-                      disabled={disabled}
+                      onConfirm={(v) => setDraft(d => ({ ...d, unit: String(v[0] ?? '') }))}
                     >
                       {(_items, { open }) => (
-                        <div onClick={open} role="button" tabIndex={0} aria-disabled={disabled} style={{
+                        <div onClick={() => !disabled && open()} role="button" tabIndex={0} aria-disabled={disabled} style={{
                           flex: 1, minWidth: 60, padding: '7px 8px', borderRadius: 6,
                           border: disabled ? '1px dashed var(--m-border)' : '1px solid var(--m-border)',
                           fontSize: 12, background: disabled ? 'transparent' : 'var(--m-surface)',
                           textAlign: 'center', minHeight: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
                           color: draft.unit ? 'var(--m-text)' : 'var(--m-text-3)',
                           opacity: disabled ? 0.5 : 1,
+                          cursor: disabled ? 'not-allowed' : 'pointer',
                         }}>
                           {disabled ? '单位' : (draft.unit || '单位')}
                         </div>

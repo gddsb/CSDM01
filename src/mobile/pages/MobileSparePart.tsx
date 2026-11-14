@@ -314,7 +314,7 @@ export default function MobileSparePart() {
                     <Picker
                       columns={catColumns}
                       value={createForm.category ? [createForm.category] : []}
-                      onConfirm={(v) => setCreateForm({ ...createForm, category: v[0] || '' })}
+                      onConfirm={(v) => setCreateForm({ ...createForm, category: String(v[0] ?? '') })}
                     >
                       {(_items, { open }) => (
                         <div onClick={open} role="button" tabIndex={0} style={{ ...selStyle, color: createForm.category ? 'var(--m-text)' : 'var(--m-text-3)' }}>

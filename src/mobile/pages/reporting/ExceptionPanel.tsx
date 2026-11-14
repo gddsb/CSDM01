@@ -193,7 +193,7 @@ export function ExceptionPanel({ report, editable, rows, setRows, onDirtyChange 
                 columns={excColumns}
                 value={draft.exception_type ? [draft.exception_type] : []}
                 onConfirm={(v) => {
-                  const val = v[0] || ''
+                  const val = String(v[0] ?? '')
                   setDraft(d => ({ ...d, exception_type: val }))
                   // 切换非设备故障 → 清空已选设备
                   if (val !== '设备故障') setDraft(d => ({ ...d, device_id: undefined, device_code: undefined, device_name: undefined }))
