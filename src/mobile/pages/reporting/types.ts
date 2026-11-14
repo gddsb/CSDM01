@@ -77,6 +77,8 @@ export interface MaterialMaster {
   material_code: string
   material_name: string
   specification?: string
+  /** 计量单位名称（如 张/片/罐/pcs/克），后端 Material 模型字段 */
+  unit_name?: string
 }
 
 // ========== 子记录类型 ==========

@@ -49,6 +49,19 @@ const PROCESS_MATERIAL_RULES: Record<string, MaterialRule> = {
   'P-10': { type: 'prefix', allowedPrefixes: ['B'] },
 }
 
+/**
+ * 允许小数的计量单位白名单
+ * —— 不在名单内的单位（张/片/罐/pcs/套/个等离散单位）只能输入整数
+ * 注意：将来新增单位时如果是重量/体积等可分割单位，记得加到这里
+ */
+const DECIMAL_UNITS = ['克', '千克', 'kg', 'KG', '吨', 'g', 'G', 'mg', '毫升', '升', 'L', 'm³', '立方']
+
+/** 判断某料品单位是否允许小数 */
+function isDecimalUnit(unitName?: string): boolean {
+  if (!unitName) return false
+  return DECIMAL_UNITS.some(u => unitName!.includes(u))
+}
+
 /** 候选是否在规则允许范围内 */
 function isAllowed(code: string, rule: MaterialRule, reportCode: string): boolean {
   switch (rule.type) {
@@ -144,6 +157,10 @@ export function ProcessMaterialPanel({
     () => processCode ? PROCESS_MATERIAL_RULES[processCode] : undefined,
     [processCode],
   )
+
+  // 是否第一道工序（硬编码 P-01 裁剪下料）
+  const isFirstProcess = processCode === 'P-01'
+
   const processMaterials = useMemo(
     () => allMaterials
       .filter(m => String(m.process_id) === String(activeProcessId))
@@ -166,7 +183,21 @@ export function ProcessMaterialPanel({
     material_type: '投入',
     quantity: 0,
   })
-  // 批号/包号/数量：受控 input（value={draft.xxx} + onChange → setDraft）— 与 state 直接绑定，无需 ref+useEffect 同步
+  // 数量输入框的显示字符串：空串 = 未输入（placeholder 显示），避免默认 0 看起来怪异
+  const [qtyStr, setQtyStr] = useState('')
+
+  // 当前选中料品的主数据（用于取 unit_name 判断小数限制）
+  const selectedMaterial = useMemo(
+    () => draft.bas_material_id
+      ? materials.find(m => m.bas_material_id === draft.bas_material_id)
+      : undefined,
+    [draft.bas_material_id, materials],
+  )
+  // 当前选中料品的单位是否允许小数
+  const qtyAllowDecimal = useMemo(
+    () => isDecimalUnit(selectedMaterial?.unit_name),
+    [selectedMaterial?.unit_name],
+  )
 
   // 料品选择器 Popup
   const [showPicker, setShowPicker] = useState(false)
@@ -303,6 +334,7 @@ export function ProcessMaterialPanel({
         quantity: rinfo?.netAvailableQty || draft.quantity || 0,
       }
       setDraft(nextDraft)
+      setQtyStr(nextDraft.quantity > 0 ? String(nextDraft.quantity) : '')
       Toast.show({ content: '已带出原投入批次信息', position: 'bottom' })
     } else {
       setDraft(d => ({
@@ -345,6 +377,7 @@ export function ProcessMaterialPanel({
       }
     }
     setDraft(baseDraft)
+    setQtyStr('')
     setExpandedId('__new__')
   }
   const startEdit = (row: MaterialRow) => {
@@ -355,11 +388,13 @@ export function ProcessMaterialPanel({
       return
     }
     setDraft({ ...row, label_images: parseImages(row.label_images) })
+    setQtyStr(row.quantity > 0 ? String(row.quantity) : '')
     setExpandedId(row.id || row.material_id! || '__unknown__')
   }
   const cancelEdit = () => {
     setExpandedId(null)
     setDraft({ material_type: '投入', quantity: 0 })
+    setQtyStr('')
   }
 
   // 切换物料类型时，清空料品选择（投入/退回候选互斥）
@@ -382,6 +417,7 @@ export function ProcessMaterialPanel({
       quantity: 0,
     }
     setDraft(nextDraft)
+    setQtyStr('')
     // 注意：expandedId 不是 '__new__'/null 时 useEffect 会自动 sync
     // 如果当前是新增态（expandedId='__new__'），保持 input 空即可，不需要手动 sync
   }
@@ -539,6 +575,27 @@ export function ProcessMaterialPanel({
     </div>
   )
 
+  /** 数量输入框 onChange —— 按单位白名单过滤小数 */
+  const handleQtyStrChange = (v: string) => {
+    let filtered = v
+    if (!qtyAllowDecimal) {
+      // 非小数单位：只允许整数数字
+      filtered = v.replace(/[^\d]/g, '')
+    } else {
+      // 小数单位：允许数字 + 一个小数点
+      const cleaned = v.replace(/[^\d.]/g, '')
+      const firstDot = cleaned.indexOf('.')
+      if (firstDot === -1) {
+        filtered = cleaned
+      } else {
+        // 保留第一个小数点，丢弃后面的
+        filtered = cleaned.slice(0, firstDot + 1) + cleaned.slice(firstDot + 1).replace(/\./g, '')
+      }
+    }
+    setQtyStr(filtered)
+    setDraft(d => ({ ...d, quantity: filtered === '' ? 0 : Number(filtered) }))
+  }
+
   const formRow3 = (
     <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
       <input placeholder="批号"
@@ -546,17 +603,27 @@ export function ProcessMaterialPanel({
         onChange={(e) => setDraft(d => ({ ...d, material_batch: e.target.value }))}
         disabled={draft.material_type === '退回'}
         style={{ ...inputStyle, flex: 2, minWidth: 70, cursor: draft.material_type === '退回' ? 'not-allowed' : 'text', opacity: draft.material_type === '退回' ? 0.65 : 1 }} />
-      <input placeholder="包号"
-        value={draft.package_no ?? ''}
-        onChange={(e) => setDraft(d => ({ ...d, package_no: e.target.value }))}
-        disabled={draft.material_type === '退回'}
-        style={{ ...inputStyle, flex: 2, minWidth: 70, cursor: draft.material_type === '退回' ? 'not-allowed' : 'text', opacity: draft.material_type === '退回' ? 0.65 : 1 }} />
-      <input type="number" min={0}
-        value={draft.quantity ?? ''}
-        onChange={(e) => setDraft(d => ({ ...d, quantity: Number(e.target.value) || 0 }))}
-        max={currentReturnLimit > 0 ? currentReturnLimit : undefined}
+      {isFirstProcess && (
+        <input placeholder="包号"
+          value={draft.package_no ?? ''}
+          onChange={(e) => setDraft(d => ({ ...d, package_no: e.target.value }))}
+          disabled={draft.material_type === '退回'}
+          style={{ ...inputStyle, flex: 2, minWidth: 70, cursor: draft.material_type === '退回' ? 'not-allowed' : 'text', opacity: draft.material_type === '退回' ? 0.65 : 1 }} />
+      )}
+      <Input
+        type="text"
+        inputMode={qtyAllowDecimal ? 'decimal' : 'numeric'}
+        value={qtyStr}
+        onChange={handleQtyStrChange}
         placeholder={draft.material_type === '退回' ? `≤${fmtInt(currentReturnLimit || 0)}` : '数量'}
-        style={{ ...inputStyle, width: 60 }} />
+        style={{ flex: 1, minWidth: 80 }}
+        disabled={!draft.bas_material_id}
+      />
+      {selectedMaterial?.unit_name && (
+        <span style={{ fontSize: 11, color: 'var(--m-text-3)', flexShrink: 0, marginRight: 2 }}>
+          {selectedMaterial.unit_name}
+        </span>
+      )}
     </div>
   )
 
