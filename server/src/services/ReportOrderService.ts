@@ -211,8 +211,19 @@ export const ReportOrderService = {
     const limit = Math.min(Number(query.pageSize) || 20, MAX_PAGE_SIZE)
     const offset = ((Number(query.page) || 1) - 1) * limit
 
-    return await ReportOrder.findAndCountAll({
+    // 投入数量子查询（与前端 calcReportStats 口径一致：投入-退回）
+    const literalInputQty = sequelize.literal(`(
+      SELECT COALESCE(SUM(CASE WHEN pm.material_type = '投入' THEN pm.quantity ELSE 0 END), 0)
+           - COALESCE(SUM(CASE WHEN pm.material_type = '退回' THEN pm.quantity ELSE 0 END), 0)
+      FROM production_process_material pm
+      WHERE pm.report_order_id = ReportOrder.report_order_id
+    )`)
+
+    const { rows, count } = await ReportOrder.findAndCountAll({
       where,
+      attributes: {
+        include: [[literalInputQty, 'input_qty']],
+      },
       include: [
         {
           model: Order.sequelize ? Order : (Order as any),
@@ -225,6 +236,17 @@ export const ReportOrderService = {
       offset,
       order: [['report_no', 'DESC']],
     })
+
+    return {
+      rows: rows.map(r => {
+        const plain: any = r.get({ plain: true })
+        return {
+          ...plain,
+          input_qty: Number(plain.input_qty) || 0,
+        }
+      }),
+      count,
+    }
   },
 
   /** 报工单详情（含全部子表） */

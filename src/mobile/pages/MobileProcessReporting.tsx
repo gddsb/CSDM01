@@ -128,10 +128,8 @@ export default function MobileProcessReporting() {
     if (phase !== 'select') return
     ;(async () => {
       try {
-        // 只查 status=2（开工）— 报工选择页只应显示已开工订单
-        // MobileOrderManagement 的开工按钮会先 POST 创建报工单（syncOrderStatus 同步推订单到开工），
-        // 然后才 navigate 带 orderId 过来，所以此时订单必然已是 status=2
-        const res: any = await api.get('/production/orders', { params: { status: 2, pageSize: 100 } })
+        // 只查 status=开工 的报工单（报工选择页只应显示已开工报工单）
+        const res: any = await api.get('/production/report-orders', { params: { status: '开工', pageSize: 100 } })
         const list = (res?.data?.items || res?.data?.list || res?.data || []) as OrderRow[]
         setOrders(list)
 
@@ -344,12 +342,33 @@ export default function MobileProcessReporting() {
               border: '1px solid var(--m-border)',
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <div style={{ fontSize: 15, fontWeight: 600 }}>工单编号 {o.order_no}</div>
-                  <div style={{ fontSize: 11, color: 'var(--m-text-3)', marginTop: 2 }}>({o.order_no})</div>
-                  <div style={{ fontSize: 12, color: 'var(--m-text-2)', marginTop: 3 }}>{o.material_code} · {o.material_name}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {/* 报工单号 + 括号订单号 */}
+                  <div style={{ fontSize: 13, fontWeight: 500 }}>
+                    {o.report_no || o.order_no}
+                    {o.report_no && o.report_no !== o.order_no && (
+                      <span style={{ fontSize: 11, color: 'var(--m-text-3)', marginLeft: 6, fontWeight: 400 }}>({o.order_no})</span>
+                    )}
+                  </div>
+                  {/* 料品信息（增大字号 12→14 + 加深颜色 text-2→text） */}
+                  <div style={{ fontSize: 14, color: 'var(--m-text)', marginTop: 4 }}>{o.material_code} · {o.material_name}</div>
                 </div>
-                <Badge content={`${fmtInt(o.finished_qty)}/${fmtInt(o.planned_qty)}`} style={{ '--right': '-4px', '--top': '-4px', flexShrink: 0 }} />
+                {/* Badge：报工数量 / 投入数量 */}
+                <div style={{ flexShrink: 0, marginLeft: 8 }}>
+                  {(() => {
+                    const rq = Number((o as any).report_qty ?? o.finished_qty ?? 0)
+                    const iq = Number((o as any).input_qty ?? o.planned_qty ?? 0)
+                    return (
+                      <span style={{
+                        fontSize: 11, padding: '2px 8px', borderRadius: 10,
+                        background: 'var(--m-primary-bg)', color: 'var(--m-primary)',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        报工 {fmtInt(rq)} / 投入 {fmtInt(iq)}
+                      </span>
+                    )
+                  })()}
+                </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
                 <Button size="mini" color="primary" onClick={() => handleStartNew(o)}>▶ 开工报工</Button>
