@@ -59,6 +59,11 @@ export default function MobileDailyCard() {
   // 日期标记缓存: Map<"2026-11", Set<"YYYY-MM-DD">>
   const [dateMarkers, setDateMarkers] = useState<Record<string, Set<string>>>({})
   const loadedMonthsRef = useRef<Set<string>>(new Set())
+  // 关键：用 ref 持有合并后的标记 Set，renderDate 只读 ref 不读 state
+  // 这样 renderDate 可以完全无依赖（useCallback([])），永远不重建
+  const allMarkerDatesRef = useRef<Set<string>>(new Set())
+  // markers 更新后 forceRender 让 CalendarPicker 重渲染 cells（圆点显示）
+  const [, forceRenderMarkers] = useState(0)
 
   // 稳定的 min/max —— 只在首次 mount 时计算一次，避免 CalendarPicker 受控失效
   const minDate = useMemo(() => new Date(2024, 0, 1), [])
@@ -82,7 +87,7 @@ export default function MobileDailyCard() {
 
   useEffect(() => { load(date) }, [date, load])
 
-  // 加载某月的开工日期标记（用 ref 缓存防止重复加载）
+  // 加载某月的开工日期标记
   const loadDateMarkers = useCallback(async (year: number, month: number) => {
     const cacheKey = `${year}-${String(month).padStart(2, '0')}`
     if (loadedMonthsRef.current.has(cacheKey)) return
@@ -92,8 +97,15 @@ export default function MobileDailyCard() {
       const arr: string[] = r.data?.data || r.data || []
       setDateMarkers(prev => {
         if (prev[cacheKey]) return prev
-        return { ...prev, [cacheKey]: new Set(arr) }
+        const next = { ...prev, [cacheKey]: new Set(arr) }
+        // 同步更新合并 ref —— renderDate 只读这个 ref
+        const merged = new Set<string>()
+        for (const s of Object.values(next)) for (const d of s) merged.add(d)
+        allMarkerDatesRef.current = merged
+        return next
       })
+      // forceRender 让 CalendarPicker 用最新 ref 重渲染 cells
+      forceRenderMarkers(n => n + 1)
     } catch { /* 静默 */ }
   }, [])
 
@@ -108,31 +120,22 @@ export default function MobileDailyCard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // 合并所有标记为一个 Set
-  const allMarkerDates = useMemo(() => {
-    const s = new Set<string>()
-    for (const set of Object.values(dateMarkers)) {
-      for (const d of set) s.add(d)
-    }
-    return s
-  }, [dateMarkers])
-
   // 当前选中日期是否有开工记录
-  const currentHasMark = allMarkerDates.has(date)
+  const currentHasMark = allMarkerDatesRef.current.has(date)
 
-  // 自定义日期渲染：滑动月份时自动加载新月份的标记
-  // 利用 renderDate 每次渲染 cells 都会被调用的特性，检测到新月份就触发加载
-  // 依赖 loadDateMarkers（useCallback([]) 稳定）+ loadedMonthsRef（防重入），不会造成闭包循环
+  // renderDate 完全无依赖！只从 ref 读 marker 数据
+  // 配合 loadedMonthsRef 双重防重入，滑动月份时懒加载新月份
+  // 关键：useCallback([]) 永不重建 → CalendarPickerView 的 Swiper 状态不丢失
   const renderDate = useCallback((d: Date) => {
     const y = d.getFullYear(), m = d.getMonth() + 1
     const cacheKey = `${y}-${String(m).padStart(2, '0')}`
-    // 检测到未加载过的月份 → 异步触发 API（ref 防重入，已加载过立即 return）
+    // 检测到未加载过的月份 → 异步触发 API
     if (!loadedMonthsRef.current.has(cacheKey)) {
       loadedMonthsRef.current.add(cacheKey)
       loadDateMarkers(y, m)
     }
     const key = `${cacheKey}-${String(d.getDate()).padStart(2, '0')}`
-    const hasMark = allMarkerDates.has(key)
+    const hasMark = allMarkerDatesRef.current.has(key)
     return (
       <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {d.getDate()}
@@ -145,7 +148,7 @@ export default function MobileDailyCard() {
         )}
       </div>
     )
-  }, [allMarkerDates, loadDateMarkers])
+  }, [loadDateMarkers])
 
   return (
     <div style={{ padding: 12 }}>
