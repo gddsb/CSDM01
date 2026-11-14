@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import api from '../../../utils/api'
 import { DefectRecord, MaterialRecord, ExceptionRecord, ManpowerRecord } from '../types'
+import { getProcessMaterialRule, buildAutoMatchCode } from '../../../utils/processMaterialRules'
 
 function genId(prefix: string) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`
@@ -12,6 +13,8 @@ interface SelectedReportLike {
   report_time: string
   finish_time?: string
   order_id?: number
+  /** 报工单料号 —— 用于自动匹配物料 */
+  material_code?: string
   [key: string]: unknown
 }
 
@@ -21,9 +24,11 @@ interface Options {
   defectProcessId: number | null
   materialProcessId: number | null
   scrapProcessId: number | null
-  lineProcesses: Array<{ process_id: number; process_name: string }>
+  lineProcesses: Array<{ process_id: number; process_name: string; process_code?: string }>
   openImageDrawer: (label: string, images: any[], context: any) => void
   message: { success: (m: string) => void; error: (m: string) => void; warning: (m: string) => void }
+  /** 料品主数据列表（用于自动匹配） */
+  materials: Array<{ material_id: string | number; material_code: string; material_name?: string; specification?: string; unit_name?: string; [k: string]: any }>
 }
 
 /**
@@ -35,6 +40,7 @@ export function useReportDetailRecords(opts: Options) {
     selectedReport, isEditable,
     defectProcessId, materialProcessId, scrapProcessId,
     lineProcesses, openImageDrawer, message: msg,
+    materials,
   } = opts
 
   const [prodDefectList, setProdDefectList] = useState<DefectRecord[]>([])
@@ -151,14 +157,42 @@ export function useReportDetailRecords(opts: Options) {
   const handleAddMaterialRow = useCallback(() => {
     if (!isEditable) { msg.warning('请先开工报工单'); return }
     if (!materialProcessId) { msg.warning('请选择工序'); return }
+
+    // 获取当前工序编码 → 查规则 → 自动匹配料品
+    const procCode = lineProcesses.find(p => p.process_id === materialProcessId)?.process_code
+    const rule = getProcessMaterialRule(procCode)
+    const reportMatCode = selectedReport?.material_code
+
     const row: MaterialRecord = {
       id: genId('ma'), material_name: '', quantity: 0, unit: 'PCS',
       _dirty: true, process_id: materialProcessId,
       process_step_id: lineProcesses.find(p => p.process_id === materialProcessId)?.process_id,
       report_order_id: selectedReport?.report_order_id,
     }
+
+    // 自动匹配（仅 prefix_map 规则，有报工单料号时）
+    if (rule && rule.type === 'prefix_map' && reportMatCode) {
+      const target = buildAutoMatchCode(reportMatCode, rule.autoPrefix)
+      if (target) {
+        const matched = materials.find((m: any) => m.material_code === target)
+          || materials.find((m: any) => m.material_code.startsWith(target))
+          || materials.find((m: any) => target.startsWith(m.material_code))
+        if (matched) {
+          row.material_code = matched.material_code
+          row.material_name = matched.material_name || ''
+          row.specification = matched.specification || ''
+          row.unit_name = matched.unit_name || ''
+          row.unit = matched.unit_name || 'PCS'
+          row.bas_material_id = String(matched.material_id)
+          msg.success(`已自动匹配 ${matched.material_code}`)
+        } else {
+          // 没找到目标料号，静默让用户手动选择即可
+        }
+      }
+    }
+
     setMaterialList(prev => [row, ...prev])
-  }, [isEditable, materialProcessId, lineProcesses, selectedReport, msg])
+  }, [isEditable, materialProcessId, lineProcesses, selectedReport, materials, msg])
 
   const handleDeleteMaterial = useCallback(async (id: string | number) => {
     if (!String(id).startsWith('tmp_')) {

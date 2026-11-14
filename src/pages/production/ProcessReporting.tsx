@@ -610,6 +610,7 @@ export default function ProcessReporting() {
     lineProcesses: lineProcesses as any,
     openImageDrawer: openImageDrawer as any,
     message,
+    materials,
   })
 
   // 判断当前选中报工单所属的生产订单是否有未完工的报工单
