@@ -17,6 +17,8 @@ interface ProductionRow {
   specification: string | null
   inputQty: number
   outputQty: number
+  incomingDefectSmall?: number
+  incomingDefectCap?: number
   processDefect: number
   inspectionDefect: number
   edgeWeightKg: number | null
@@ -123,15 +125,14 @@ export default function MobileDailyCard() {
   // 当前选中日期是否有开工记录
   const currentHasMark = allMarkerDatesRef.current.has(date)
 
-  // renderDate 完全无依赖！只从 ref 读 marker 数据
-  // 配合 loadedMonthsRef 双重防重入，滑动月份时懒加载新月份
-  // 关键：useCallback([]) 永不重建 → CalendarPickerView 的 Swiper 状态不丢失
+  // renderDate 完全稳定：useCallback 依赖只有 loadDateMarkers（已稳定）
+  // 只从 ref 读 marker 数据，不依赖 state → Swiper 状态永不丢失
+  // 关键：懒加载新月份时不碰 loadedMonthsRef（竞态条件会让 loadDateMarkers 立即 return）
   const renderDate = useCallback((d: Date) => {
     const y = d.getFullYear(), m = d.getMonth() + 1
     const cacheKey = `${y}-${String(m).padStart(2, '0')}`
-    // 检测到未加载过的月份 → 异步触发 API
+    // 检测到未加载过的月份 → 触发 API（让 loadDateMarkers 自己管理 loadedMonthsRef）
     if (!loadedMonthsRef.current.has(cacheKey)) {
-      loadedMonthsRef.current.add(cacheKey)
       loadDateMarkers(y, m)
     }
     const key = `${cacheKey}-${String(d.getDate()).padStart(2, '0')}`
@@ -211,8 +212,10 @@ function DailyCardContent({ data }: { data: DailyReportData }) {
 
   const totalInput = productionRows.reduce((s, r) => s + r.inputQty, 0)
   const totalOutput = productionRows.reduce((s, r) => s + r.outputQty, 0)
+  const totalIncomingDefect = productionRows.reduce((s, r) => s + (r.incomingDefectSmall || 0) + (r.incomingDefectCap || 0), 0)
   const totalProcessDefect = productionRows.reduce((s, r) => s + r.processDefect, 0)
   const totalInspectionDefect = productionRows.reduce((s, r) => s + r.inspectionDefect, 0)
+  const totalDefect = totalIncomingDefect + totalProcessDefect + totalInspectionDefect
   const totalEdge = productionRows.reduce((s, r) => s + (r.edgeWeightKg || 0), 0)
   const totalSkilled = productionRows.reduce((s, r) => s + r.skilledCount, 0)
   const totalGeneral = productionRows.reduce((s, r) => s + r.generalCount, 0)
@@ -251,23 +254,30 @@ function DailyCardContent({ data }: { data: DailyReportData }) {
         </div>
       </Section>
 
-      {/* ② 质量概览 */}
+      {/* ② 质量概览 —— 4 格 + 总不良率 */}
       <Section title="🔍 质量概览">
         <div style={grid2Style}>
+          <Metric label="来料不良" value={fmt(totalIncomingDefect, 0)} unit="件" color="#fa8c16" />
           <Metric label="制程不良" value={fmt(totalProcessDefect, 0)} unit="件" color="#ff4d4f" />
           <Metric label="检验废品" value={fmt(totalInspectionDefect, 0)} unit="件" color="#fa8c16" />
+          <Metric
+            label="总不良"
+            value={fmt(totalDefect, 0)}
+            unit="件"
+            color="#ff4d4f"
+            extra={
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 11, color: 'var(--m-text-3)' }}>不良率</div>
+                <div style={{
+                  fontSize: 20, fontWeight: 700, lineHeight: 1.1,
+                  color: totalDefect > totalOutput * 0.05 ? '#ff4d4f' : '#52c41a',
+                }}>
+                  {fmt(totalOutput > 0 ? (totalDefect / totalOutput * 100) : 0, 2)}%
+                </div>
+              </div>
+            }
+          />
         </div>
-        {productionRows.length > 0 && (
-          <div style={{
-            marginTop: 10, padding: 10, borderRadius: 8, background: 'var(--m-surface-2)',
-            fontSize: 12, color: 'var(--m-text-2)',
-          }}>
-            不良率：
-            <span style={{ fontWeight: 600, color: totalProcessDefect + totalInspectionDefect > totalOutput * 0.05 ? '#ff4d4f' : '#52c41a' }}>
-              {fmt(totalOutput > 0 ? ((totalProcessDefect + totalInspectionDefect) / totalOutput * 100) : 0, 2)}%
-            </span>
-          </div>
-        )}
       </Section>
 
       {/* ③ 人员概览 */}
@@ -352,17 +362,20 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-function Metric({ label, value, unit, color }: { label: string; value: string; unit: string; color: string }) {
+function Metric({ label, value, unit, color, extra }: { label: string; value: string; unit: string; color: string; extra?: React.ReactNode }) {
   return (
     <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '8px 10px',
-      borderRadius: 8, background: 'var(--m-surface-2)',
+      display: 'flex', alignItems: 'center', padding: '8px 10px',
+      borderRadius: 8, background: 'var(--m-surface-2)', gap: 10,
     }}>
-      <div style={{ fontSize: 11, color: 'var(--m-text-3)' }}>{label}</div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, marginTop: 2 }}>
-        <span style={{ fontSize: 20, fontWeight: 700, color }}>{value}</span>
-        <span style={{ fontSize: 11, color: 'var(--m-text-3)' }}>{unit}</span>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+        <div style={{ fontSize: 11, color: 'var(--m-text-3)' }}>{label}</div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, marginTop: 2 }}>
+          <span style={{ fontSize: 20, fontWeight: 700, color }}>{value}</span>
+          <span style={{ fontSize: 11, color: 'var(--m-text-3)' }}>{unit}</span>
+        </div>
       </div>
+      {extra && <div style={{ minWidth: 60 }}>{extra}</div>}
     </div>
   )
 }
