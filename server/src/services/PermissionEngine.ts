@@ -15,6 +15,7 @@
 import sequelize from '../config/database.js'
 import { Permission, RolePermission, Role, User } from '../models/index.js'
 import { getCache, setCache, TTL } from '../framework/permission/cache/permissionCache.js'
+import { logger } from '../utils/logger.js'
 
 /**
  * L1 内存缓存 — 三层结构：
@@ -244,9 +245,15 @@ export class PermissionEngine {
    * 那个会清 Layer 1 入口缓存；这里 Layer 2 helper 缓存同步清掉，保持两层一致
    */
   static invalidateAll(): void {
+    const sizes = {
+      sa: _saCache.size,
+      rolePerm: _rolePermCache.size,
+      rolePermByRoleId: _rolePermByRoleIdCache.size,
+    }
     _saCache.clear()
     _allPermsCache = null
     _rolePermCache.clear()
     _rolePermByRoleIdCache.clear()
+    logger.info(`[PermissionEngine] Layer2 invalidated — sa=${sizes.sa}, rolePerm=${sizes.rolePerm}, rolePermByRoleId=${sizes.rolePermByRoleId}`)
   }
 }
