@@ -152,7 +152,7 @@ echo "=== 3. 写入 releases.json ==="
 mkdir -p server/data
 _NOTES_TMP=$(mktemp)
 printf '%s' "$UPDATE_NOTES" > "$_NOTES_TMP"
-python3 << 'PYEOF'
+python3 << PYEOF
 import json, os, subprocess, datetime
 
 with open('$_NOTES_TMP','r',encoding='utf-8') as f: _notes = f.read().strip()
