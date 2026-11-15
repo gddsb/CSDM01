@@ -41,7 +41,9 @@ export function fail(res: Response, message: string = '操作失败', errorCode:
   return res.status(status).json(result)
 }
 
-export const MAX_PAGE_SIZE = 200
+// 1000：匹配前端字典类（devices/materials/defect_types/processes）全量拉取需求
+// 业务数据类（report-orders 上万条）应改用翻页，这部分 P2 处理
+export const MAX_PAGE_SIZE = 1000
 
 export function paginate(res: Response, data: any, total: number, pageNum: number, pageSize: number, message: string = '获取成功') {
   const safePageSize = Math.min(Number(pageSize), MAX_PAGE_SIZE)

@@ -84,6 +84,14 @@ if (dialect === 'sqlite') {
       // 允许多语句执行（migrations/*.sql 和 migrate.ts 中的外键/索引创建需要）
       // 业务代码应继续用 Sequelize ORM 方法，不要拼接原始 SQL
       dialectOptions: { multipleStatements: true },
+      // 连接池：默认 max=5，Dashboard Todos 6 个 Promise.all COUNT 会瞬间占满
+      // MySQL 默认 max_connections=151，20 很安全；min=2 保持预热避免首次抖动
+      pool: {
+        max: 20,
+        min: 2,
+        acquire: 30000,
+        idle: 10000,
+      },
       ...baseOptions,
     }
   )
