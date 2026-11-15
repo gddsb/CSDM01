@@ -6,8 +6,13 @@
  * 状态流转委托 ReportWorkflowService（通过 ReportOrderService 中转）
  */
 import { ReportOrderService, type ReportOrderCreateInput, type ReportOrderUpdateInput } from '../services/ReportOrderService.js'
+import { ProcessDefectService } from '../services/ProcessDefectService.js'
+import { ProcessExceptionService } from '../services/ProcessExceptionService.js'
+import { ManpowerRecordService } from '../services/ManpowerRecordService.js'
+import ProcessMaterialService from '../services/ProcessMaterialService.js'
 import { success } from '../utils/response.js'
 import { asyncHandler } from '../middleware/security.js'
+import { logger } from '../utils/logger.js'
 import type { Request, Response } from 'express'
 
 export const list = asyncHandler(async (req: Request, res: Response) => {
@@ -64,6 +69,42 @@ export const close = asyncHandler(async (req: Request, res: Response) => {
 export const preCheck = asyncHandler(async (req: Request, res: Response) => {
   const result = await ReportOrderService.preCheck(Number(req.params.id))
   return success(res, result)
+})
+
+/**
+ * 移动端详情页聚合接口 —— 5 表并发查询一次返回，省 4 次 HTTP RTT + 4 次权限校验
+ * 替代移动端 ReportOrderDetail 里 5 个独立 Promise.all 并发请求
+ */
+export const aggregate = asyncHandler(async (req: Request, res: Response) => {
+  const reportOrderId = Number(req.params.id)
+  if (!reportOrderId) return success(res, null, '参数错误')
+
+  // dataScope middleware 已在路由层挂好，Sequelize query hook 自动注入 scopeWhere
+  const queries: any[] = [
+    ProcessDefectService.list({ report_order_id: reportOrderId, pageSize: 1000 }),
+    ProcessDefectService.scrapList(reportOrderId),
+    ProcessExceptionService.list({ report_order_id: reportOrderId, pageSize: 1000 }),
+    ManpowerRecordService.list({ report_order_id: reportOrderId, pageSize: 1000 }),
+    ProcessMaterialService.list({ report_order_id: reportOrderId, pageSize: 1000 }),
+  ]
+
+  const [defectRes, scrapRes, exceptionRes, manpowerRes, materialRes] = await Promise.all(
+    queries.map(q => q.then(r => r ?? []).catch(err => {
+      logger.warn('[ReportOrder.aggregate] sub-query failed:', err?.message)
+      return []
+    }))
+  )
+
+  // 统一 list 输出（Service.list 可能返回 rows 对象也可能直接数组，兼容两种）
+  const toList = (r: any) => Array.isArray(r) ? r : (r?.rows ?? r?.list ?? [])
+
+  return success(res, {
+    defects: toList(defectRes),
+    scraps: toList(scrapRes),
+    exceptions: toList(exceptionRes),
+    manpower: toList(manpowerRes),
+    materials: toList(materialRes),
+  })
 })
 
 /** 兼容导出：报工单与订单状态联动（历史内部调用入口） */

@@ -74,14 +74,26 @@ export function ReportOrderDetail({ meta, onClose }: Props) {
 
   const refreshAll = useCallback(async () => {
     const r = meta.report_order_id
-    const [defects, scraps, exceptions, manpower, materials] = await Promise.all([
-      api.get('/production/process-defects', { params: { report_order_id: r, page: 1, pageSize: 1000 } }).then((x: any) => x.success ? (x.data?.list || x.data || []) : []).catch(() => []),
-      api.get('/production/scrap-defects', { params: { report_order_id: r, page: 1, pageSize: 1000 } }).then((x: any) => x.success ? (x.data?.list || x.data || []) : []).catch(() => []),
-      api.get('/production/process-exceptions', { params: { report_order_id: r, page: 1, pageSize: 1000 } }).then((x: any) => x.success ? (x.data?.list || x.data || []) : []).catch(() => []),
-      api.get('/production/manpower-records', { params: { report_order_id: r, page: 1, pageSize: 1000 } }).then((x: any) => x.success ? (x.data?.list || x.data || []) : []).catch(() => []),
-      api.get('/production/process-materials', { params: { report_order_id: r, page: 1, pageSize: 1000 } }).then((x: any) => x.success ? (x.data?.list || x.data || []) : []).catch(() => []),
-    ])
-    setDefectList(defects); setScrapList(scraps); setExceptionList(exceptions); setManpowerList(manpower); setMaterialList(materials)
+    try {
+      // P3-3: 一次 aggregate 请求拿齐 5 张子表数据，省 4 次 HTTP RTT + 4 次权限校验
+      const res: any = await api.get(`/production/report-orders/${r}/aggregate`)
+      const data = res.success ? (res.data || {}) : {}
+      setDefectList(data.defects || [])
+      setScrapList(data.scraps || [])
+      setExceptionList(data.exceptions || [])
+      setManpowerList(data.manpower || [])
+      setMaterialList(data.materials || [])
+    } catch {
+      // 兼容降级：新 aggregate 接口挂了 → 回退 5 路并发（移动端 WebView 里不会有，但开发调试期安全）
+      const [defects, scraps, exceptions, manpower, materials] = await Promise.all([
+        api.get('/production/process-defects', { params: { report_order_id: r, page: 1, pageSize: 1000 } }).then((x: any) => x.success ? (x.data?.list || x.data || []) : []).catch(() => []),
+        api.get('/production/scrap-defects', { params: { report_order_id: r, page: 1, pageSize: 1000 } }).then((x: any) => x.success ? (x.data?.list || x.data || []) : []).catch(() => []),
+        api.get('/production/process-exceptions', { params: { report_order_id: r, page: 1, pageSize: 1000 } }).then((x: any) => x.success ? (x.data?.list || x.data || []) : []).catch(() => []),
+        api.get('/production/manpower-records', { params: { report_order_id: r, page: 1, pageSize: 1000 } }).then((x: any) => x.success ? (x.data?.list || x.data || []) : []).catch(() => []),
+        api.get('/production/process-materials', { params: { report_order_id: r, page: 1, pageSize: 1000 } }).then((x: any) => x.success ? (x.data?.list || x.data || []) : []).catch(() => []),
+      ])
+      setDefectList(defects); setScrapList(scraps); setExceptionList(exceptions); setManpowerList(manpower); setMaterialList(materials)
+    }
   }, [meta.report_order_id])
 
   useEffect(() => { refreshAll() }, [refreshAll])

@@ -1,16 +1,11 @@
 import { Request, Response, NextFunction } from 'express'
 import { verifyToken } from '../utils/jwt.js'
 import { fail, ErrorCode } from '../utils/response.js'
-import { OperationLog, Role, Permission } from '../models/index.js'
-import sequelize from '../config/database.js'
+import { OperationLog, Role } from '../models/index.js'
 import { PermissionEngine } from '../services/PermissionEngine.js'
 import { logger } from '../utils/logger.js'
 
 const SENSITIVE_KEYS = ['password', 'token', 'secret', 'authorization', 'pwd', 'access_token', 'refresh_token']
-
-const PERM_CACHE_TTL = 60_000
-// Phase 2: cache key 从 roleId 升级为 roleId_terminal（不同终端权限独立缓存）
-const permCache: Record<string, { codes: Set<string>; roleCode: string | null; roleName: string | null; ts: number }> = {}
 
 /** 超级管理员通配符：角色在 role_permission 里手动配了 '*' 就拥有全部权限 */
 export const WILDCARD_PERM = '*'
@@ -37,62 +32,13 @@ function isActionLike(permCode: string): boolean {
 }
 
 /**
- * 加载某角色在指定终端下的权限码集合（带 60s LRU 缓存）
- * Phase 2: 加 terminal 终端维度，cache key = roleId_terminal
- * —— 用 raw SQL 避开 Sequelize belongsToMany through.where 不生效的陷阱
+ * 清除权限缓存 —— auth.ts 原有的 permCache / loadRolePermissionCodes 已废弃，
+ * authRequired 现在走 PermissionEngine.computeFinalPerms（双层缓存）。
+ * 此函数保留 export 签名以兼容 RoleService / UserExtPermissionService 的调用，
+ * 内部调 PermissionEngine.invalidateAll() 清两层缓存 + 失效钩子自动串联。
  */
-async function loadRolePermissionCodes(roleId: number, terminal: number = 1): Promise<{ codes: Set<string>; roleCode: string | null; roleName: string | null }> {
-  const now = Date.now()
-  const cacheKey = `${roleId}_${terminal}`
-  const cached = permCache[cacheKey]
-  if (cached && now - cached.ts < PERM_CACHE_TTL) {
-    return { codes: cached.codes, roleCode: cached.roleCode, roleName: cached.roleName }
-  }
-
-  // Phase 2: 先拿 role 基础信息
-  const role = await Role.findOne({
-    where: { role_id: roleId },
-    attributes: ['role_id', 'role_code', 'role_name'],
-  })
-  const roleCode = role ? String((role as any).role_code ?? '') : null
-  const roleName = role ? String((role as any).role_name ?? '') : null
-
-  // Phase 2: 用 raw SQL 直接 JOIN sys_role_permission 按 terminal 过滤
-  const [rows]: any = await sequelize.query(
-    `SELECT p.perm_code FROM sys_permission p
-     INNER JOIN sys_role_permission rp ON rp.perm_id = p.perm_id
-     WHERE rp.role_id = :roleId AND rp.terminal = :terminal
-     ORDER BY p.perm_code`,
-    { replacements: { roleId, terminal } }
-  )
-  const codes = new Set<string>()
-  for (const row of rows) {
-    if (row?.perm_code) codes.add(row.perm_code)
-  }
-
-  permCache[cacheKey] = { codes, roleCode, roleName, ts: now }
-  return { codes, roleCode, roleName }
-}
-
-/**
- * 清除权限缓存
- * Phase 2: 加 terminal 参数
- *   - 只传 roleId: 清除该角色所有终端的缓存
- *   - 传 roleId + terminal: 只清除该角色该终端的缓存（推荐，范围最小）
- *   - 不传参数: 清除全部缓存
- */
-export function clearPermissionCache(roleId?: number, terminal?: number): void {
-  if (roleId !== undefined && terminal !== undefined) {
-    const key = `${roleId}_${terminal}`
-    delete permCache[key]
-  } else if (roleId !== undefined) {
-    // 清除该角色所有终端的缓存
-    for (const key of Object.keys(permCache)) {
-      if (key.startsWith(`${roleId}_`)) delete permCache[key]
-    }
-  } else {
-    for (const key of Object.keys(permCache)) delete permCache[key]
-  }
+export function clearPermissionCache(_roleId?: number, _terminal?: number): void {
+  PermissionEngine.invalidateAll()
 }
 
 function maskSensitive(obj: any, depth: number = 0): any {

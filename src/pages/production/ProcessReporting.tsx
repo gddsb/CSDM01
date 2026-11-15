@@ -205,12 +205,10 @@ export default function ProcessReporting() {
   const fetchReportOrders = useCallback(async () => {
     setLoading(true)
     try {
-      const [activeRes, allRes] = await Promise.all([
-        api.get('/production/report-orders', { params: { page: 1, pageSize: 1000, status: 0 } }),
-        api.get('/production/report-orders', { params: { page: 1, pageSize: 1000 } }),
-      ])
-      const list = activeRes.data || []
+      // 只发一个全量请求，前端 filter 出开工列表 —— 省掉一次完整 API 往返 + 权限校验
+      const allRes = await api.get('/production/report-orders', { params: { page: 1, pageSize: 1000 } })
       const allList = allRes.data || []
+      const list = allList.filter((r: any) => r.status === 0)  // 开工状态
       setReportOrders(list)
       setAllReportOrders(allList)
       // 默认选中最近一条开工报工单（后端已按 created_at DESC 排序，第一条即最新）

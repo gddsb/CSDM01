@@ -25,6 +25,7 @@ import {
   close as roClose,
   preCheck as roPreCheck,
   getProcesses as roGetProcesses,
+  aggregate as roAggregate,
 } from '../controllers/ReportOrderController.js'
 import {
   list as manpowerList,
@@ -143,6 +144,8 @@ router.post('/report-orders/:id/finish', permissionRequired('production:reportin
 router.post('/report-orders/:id/close', permissionRequired('production:reporting:close'), asyncHandler(roClose))
 router.get('/report-orders/:id/pre-check', permissionRequired('production:reporting'), asyncHandler(roPreCheck))
 router.get('/report-orders/:id/processes', permissionRequired('production:reporting'), asyncHandler(roGetProcesses))
+// 报工单详情聚合接口 —— 移动端一次拿齐 5 张子表数据
+router.get('/report-orders/:id/aggregate', permissionRequired('production:reporting'), dataScope({ businessObj: 'production_report_order' }), asyncHandler(roAggregate))
 
 // 人员记录
 router.get('/manpower-records', permissionRequired('production:reporting'), asyncHandler(manpowerList))
