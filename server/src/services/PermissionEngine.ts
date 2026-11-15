@@ -14,6 +14,18 @@
  */
 import sequelize from '../config/database.js'
 import { Permission, RolePermission, Role, User } from '../models/index.js'
+import { getCache, setCache, TTL } from '../framework/permission/cache/permissionCache.js'
+
+/**
+ * authRequired 每请求都调 computeFinalPerms（→ PermissionEngine），
+ * 没有任何缓存时每请求 4~6 次 SQL。这里给结果加一层 60s 内存缓存，
+ * key = permCodes:{userId}_{terminal}（terminal 区分 PC/mobile）。
+ * 失效钩子由 permissionCache.ts 统一管理：
+ *   - onRolePermissionChange → 清所有 permCodes:*
+ *   - onUserScopeChange      → 清指定用户 permCodes
+ *   - onDataScopeChange      → 清指定用户 permCodes
+ * 业务代码（RoleService/UserExtPermissionService）CRUD 时已经在调这些钩子了。
+ */
 
 export class PermissionEngine {
 
@@ -28,6 +40,20 @@ export class PermissionEngine {
    * 5. final = rolePerms ∪ addPerms − denyPerms
    */
   static async computeFinalPerms(userId: number, terminal: number = 1): Promise<string[]> {
+    // L1: 内存缓存命中 → 直接返回（60s TTL）
+    const cacheKey = `permCodes:${userId}_${terminal}`
+    const cached = getCache<string[]>(cacheKey)
+    if (cached) return cached
+
+    const result = await PermissionEngine._computeFinalPermsRaw(userId, terminal)
+
+    // L1: 写入缓存（失效钩子由 permissionCache.ts 统一管理）
+    try { setCache(cacheKey, result, TTL.permCodes) } catch { /* ignore */ }
+    return result
+  }
+
+  /** 原始计算逻辑（无缓存，真实 SQL 计算） */
+  private static async _computeFinalPermsRaw(userId: number, terminal: number): Promise<string[]> {
     // 1. 超级管理员短路：返回全量权限池 + 注入通配符 '*'
     //    通配符是 has('*') / includes('*') 等业务代码的核心判断标志
     if (await PermissionEngine.isSuperAdmin(userId)) {

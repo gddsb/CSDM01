@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
+import compression from 'compression'
 import pinoHttp from 'pino-http'
 import dotenv from 'dotenv'
 import path from 'path'
@@ -144,6 +145,7 @@ app.use(
 )
 
 // 中间件
+app.use(compression({ level: 6, threshold: 1024 }))
 app.use(cors(corsOptions()))
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ extended: true, limit: '50mb', parameterLimit: 100000 }))
