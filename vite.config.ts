@@ -75,7 +75,7 @@ export default defineConfig({
         categories: ['business', 'productivity'],
       },
       workbox: {
-        // 允许大文件（antd chunk 超 2MB）预缓存
+        // 允许大文件（antd chunk 超 2MB）
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         // ⚠️ 关键：新 SW 下载后立即激活，不等用户关标签页
         // 之前 10 次 AppSplash 改动 PC 端都看不到效果的根因：
@@ -89,8 +89,23 @@ export default defineConfig({
         // 导致旧 SW 锁死旧 HTML → 服务器更新后用户浏览器仍加载旧 JS。
         // 我们自己在 runtimeCaching 里用 NetworkFirst 处理 HTML（见下），保证每次拿最新版本。
         navigateFallback: null,
-        // JS/CSS/图片走 precache；HTML 不在此列表（由 runtimeCaching 处理）
-        globPatterns: ['**/*.{js,css,png,svg,ico,webp,jpg,jpeg,woff2,ttf,json}'],
+        // —— P2 优化：大幅缩小 precache 体积 ——
+        // 原方案 globPatterns='**/*.{js,css,png,svg,ico,webp,...}' 把整个 dist 都 precache（5.8MB），
+        // 每次版本更新用户都要完整下载一遍。现在只 precache 核心骨架：
+        //   CSS（样式首屏必须秒开）+ logo/favicon/svg（小资源）+ HTML（入口）
+        // JS chunk + 大图片全部走 runtimeCaching StaleWhileRevalidate（7天），
+        // 首次访问某个页面才下载对应 chunk，之后命中缓存。
+        globPatterns: [
+          '**/*.css',
+          '**/*.html',
+          'assets/logo*',
+          '**/*.svg',
+        ],
+        globIgnores: [
+          // 大 chunk 走 runtimeCaching，不进 precache
+          'assets/*page-*.js',
+          'assets/*-vendor*.js',
+        ],
         // API / uploads / HTML 分别处理
         runtimeCaching: [
           {
@@ -118,6 +133,33 @@ export default defineConfig({
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'uploads-swr',
+              expiration: {
+                maxEntries: 500,
+                maxAgeSeconds: 7 * 24 * 60 * 60,
+              },
+            },
+          },
+          // —— P2 新增：JS chunk 改为 runtime caching ——
+          // 不再 precache（省 ~3.5MB），首次访问后 StaleWhileRevalidate 缓存 7 天
+          // + 过期自动网络更新，兼顾首屏速度和版本新鲜度
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith('/assets/') && url.pathname.endsWith('.js'),
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'js-chunks-swr',
+              expiration: {
+                maxEntries: 300,
+                maxAgeSeconds: 7 * 24 * 60 * 60,
+              },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          // —— P2 新增：图片也走 runtime caching（不再 precache）——
+          {
+            urlPattern: ({ url }) => /\.(png|jpe?g|webp|gif)$/.test(url.pathname),
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'images-swr',
               expiration: {
                 maxEntries: 500,
                 maxAgeSeconds: 7 * 24 * 60 * 60,

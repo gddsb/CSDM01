@@ -26,6 +26,21 @@ export default function Login() {
         localStorage.removeItem('mes_last_username')
       }
       message.success('登录成功')
+
+      // —— P2 优化：登录成功后后台预取常用分包 ——
+      // 用户看到"登录成功"提示的 300ms 内，浏览器空闲时把 Dashboard 依赖的
+      // antd/echarts chunk + 常用业务页面 chunk 缓存下来，跳转后秒开不白屏
+      // 全部是 void import()，不 await、不阻塞登录流程
+      try {
+        // 首屏必备（Dashboard 同步加载，但依赖 chunk 可能还没）
+        void import('../layouts/MainLayout')
+        // 高频业务页面（ProcessReporting = 生产报工，最常用）
+        void import('../pages/production/ProcessReporting')
+        void import('../pages/production/OrderManagement')
+        void import('../pages/basic/DeviceManagement')
+        void import('../pages/quality/IncomingInspection')
+      } catch { /* 静默：预取失败不影响主流程 */ }
+
       const targetPath = result.isViewer ? '/bigscreen/production' : '/dashboard'
       navigate(targetPath)
     } else {
