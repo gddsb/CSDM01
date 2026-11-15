@@ -152,18 +152,45 @@ echo "=== 3. 写入 releases.json ==="
 mkdir -p server/data
 _NOTES_TMP=$(mktemp)
 printf '%s' "$UPDATE_NOTES" > "$_NOTES_TMP"
-python3 -c "
-import json
+python3 << 'PYEOF'
+import json, os, subprocess, datetime
+
 with open('$_NOTES_TMP','r',encoding='utf-8') as f: _notes = f.read().strip()
-# 保留现有 apkSize/checksum/downloadUrl（可能是上一个 APK 的值）
+
+# 保留现有 apkSize/checksum/downloadUrl/buildHistory
 try:
   with open('server/data/releases.json','r',encoding='utf-8') as f:
     old = json.load(f)
 except: old = {}
+
+# buildHistory：保留历史 + append 本次条目
+history = old.get('buildHistory', [])
+# 如果最后一条的 buildNumber 和本次一样，先去掉（deploy.sh 幂等重跑时避免重复）
+if history and history[-1].get('buildNumber') == ${BUILD}:
+  history = history[:-1]
+# 本次 commit 的短标题（git log -1）
+try:
+  _short = subprocess.check_output(
+    ['git', 'log', '-1', '--format=%s'], text=True, stderr=subprocess.DEVNULL
+  ).strip()
+except:
+  _short = _notes.split('\n')[0] if _notes else '常规重建'
+
+new_entry = {
+  'buildNumber': ${BUILD},
+  'gitSha': '${SHORT_SHA}',
+  'title': _short[:120],
+  'date': '$(date -u +%Y-%m-%dT%H:%M:%SZ)'
+}
+history.append(new_entry)
+# 最多保留最近 30 条（APK 不需要 30 个月前的历史）
+if len(history) > 30:
+  history = history[-30:]
+
 d = {
   'version': '${VERSION}',
   'buildNumber': ${BUILD},
-  'apkBuild': old.get('apkBuild', old.get('buildNumber', 0)),  # APK 实际编译版本（build-apk.sh 才会更新）
+  'apkBuild': old.get('apkBuild', old.get('buildNumber', 0)),
   'forceUpdate': False,
   'downloadUrl': old.get('downloadUrl', '${APK_DOWNLOAD_URL}'),
   'downloadUrlIos': '',
@@ -174,11 +201,12 @@ d = {
   'bundleId': 'com.daman.milkcanmes',
   'updateNotes': _notes,
   'publishedAt': '$(date -u +%Y-%m-%dT%H:%M:%SZ)',
-  'gitSha': '${SHORT_SHA}'
+  'gitSha': '${SHORT_SHA}',
+  'buildHistory': history
 }
 with open('server/data/releases.json', 'w', encoding='utf-8') as f:
   json.dump(d, f, ensure_ascii=False, indent=2)
-"
+PYEOF
 rm -f "$_NOTES_TMP"
 echo "  $(head -3 server/data/releases.json)"
 

@@ -55,14 +55,52 @@ function getFallback(): ReleaseInfo {
   }
 }
 
-router.get('/', (_req, res) => {
-  const info = existsSync(RELEASES_FILE)
+/** buildHistory 单条记录 */
+interface BuildHistoryEntry {
+  buildNumber: number
+  gitSha: string
+  title: string
+  date: string
+}
+
+/** 注入到响应里的增强版数据 */
+interface VersionResponse extends ReleaseInfo {
+  buildHistory?: BuildHistoryEntry[]
+  updatesSinceCurrent?: BuildHistoryEntry[]
+}
+
+router.get('/', (req, res) => {
+  const base = existsSync(RELEASES_FILE)
     ? (() => {
         try { return JSON.parse(readFileSync(RELEASES_FILE, 'utf-8')) as ReleaseInfo }
         catch { return getFallback() }
       })()
     : getFallback()
-  res.json({ success: true, data: info })
+
+  const data: VersionResponse = { ...base }
+
+  // buildHistory：deploy.sh 自动维护的历史，或从 git log 临时推断
+  let history: BuildHistoryEntry[] = []
+  if (existsSync(RELEASES_FILE)) {
+    try {
+      const raw = JSON.parse(readFileSync(RELEASES_FILE, 'utf-8'))
+      if (Array.isArray(raw.buildHistory)) history = raw.buildHistory
+    } catch { /* 忽略 */ }
+  }
+  data.buildHistory = history
+
+  // ?currentBuild=N → 返回 build > N 的更新列表（移动端传入 APK 编译期 buildNumber）
+  const currentBuildParam = req.query.currentBuild
+  if (currentBuildParam !== undefined) {
+    const currentBuild = Number(currentBuildParam)
+    if (!isNaN(currentBuild) && currentBuild > 0) {
+      data.updatesSinceCurrent = history
+        .filter((h) => h.buildNumber > currentBuild)
+        .reverse()  // 最新的排前面
+    }
+  }
+
+  res.json({ success: true, data })
 })
 
 export default router

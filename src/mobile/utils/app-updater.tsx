@@ -12,6 +12,7 @@
  *   5. 失败降级：window.open(_system/_blank) → location.href → 手动复制链接
  */
 
+import React from 'react'
 import { Dialog, Toast } from 'antd-mobile'
 
 const API_BASE: string =
@@ -29,6 +30,13 @@ const RELEASE_CACHE_TTL = 10 * 60 * 1000
 const SKIP_KEY = 'mes_update_skipped'
 const PROMPT_DATE_KEY = 'mes_update_prompted_date'
 
+export interface BuildHistoryEntry {
+  buildNumber: number
+  gitSha: string
+  title: string
+  date: string
+}
+
 export interface ServerRelease {
   version: string
   build: number
@@ -44,6 +52,8 @@ export interface ServerRelease {
   gitSha?: string
   /** 发布时间（ISO 字符串，UTC） */
   publishedAt?: string
+  /** 完整发布历史（deploy.sh 自动维护） */
+  buildHistory?: BuildHistoryEntry[]
 }
 
 let releaseCache: { at: number; data: ServerRelease } | null = null
@@ -138,6 +148,14 @@ async function fetchRelease(forceRefresh = false): Promise<ServerRelease | null>
         updateNotes: String(data.updateNotes || ''),
         gitSha: data.gitSha ? String(data.gitSha) : undefined,
         publishedAt: data.publishedAt ? String(data.publishedAt) : undefined,
+        buildHistory: Array.isArray(data.buildHistory)
+          ? data.buildHistory.map((h: any) => ({
+              buildNumber: Number(h.buildNumber) || 0,
+              gitSha: String(h.gitSha || ''),
+              title: String(h.title || ''),
+              date: String(h.date || ''),
+            }))
+          : undefined,
       }
       releaseCache = { at: Date.now(), data: release }
 
@@ -342,46 +360,84 @@ function formatPublishedDate(iso?: string): string {
 }
 
 /**
- * 格式化弹窗内容：
- *   - 版本对比
- *   - 发布时间（如有）
- *   - 更新说明（按行拆，每行前加 •）
- *   - git 短哈希（如有）
+ * 格式化弹窗内容（JSX）：
+ *   - 固定头部：版本对比 + APK 大小 + 发布时间
+ *   - 滚动区：commit 卡片列表（buildHistory 里 build > LOCAL_BUILD 的）
+ *   - 兜底：没有 buildHistory 时退回旧的纯文本 updateNotes
  */
-function buildDialogContent(release: ServerRelease): string {
-  const lines: string[] = []
-
-  // 版本对比
-  lines.push(
-    `当前版本: v${LOCAL_VERSION} · build${LOCAL_BUILD}`,
-    `最新版本: v${release.version} · build${release.build}`,
-  )
-
-  // 发布时间
+function buildDialogContent(release: ServerRelease): React.ReactNode {
+  const effectiveBuild = release.apkBuild ?? release.build
   const pubDate = formatPublishedDate(release.publishedAt)
-  if (pubDate) lines.push(`发布时间: ${pubDate}`)
+  const sizeMB = release.apkSize > 0 ? (release.apkSize / 1024 / 1024).toFixed(1) + ' MB' : ''
 
-  // 更新说明（按行拆，每行前加 •）
-  if (release.updateNotes) {
-    lines.push('', '📋 更新说明')
-    // 支持 \n 换行，也支持 \r\n
-    const noteLines = release.updateNotes
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter(Boolean)
-    if (noteLines.length > 0) {
-      for (const nl of noteLines) {
-        lines.push(`• ${nl}`)
-      }
-    }
-  }
+  // 从 buildHistory 里挑出"比本地新"的 commit，倒序（最新在前）
+  const newer = (release.buildHistory || [])
+    .filter((h) => h.buildNumber > LOCAL_BUILD)
+    .reverse()
 
-  // git 短哈希
-  if (release.gitSha) {
-    lines.push('', `Commit: ${release.gitSha}`)
-  }
+  // 兜底：没有 buildHistory 但有 updateNotes，用旧逻辑按行拆
+  const fallbackNotes = !release.buildHistory && release.updateNotes
+    ? release.updateNotes.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
+    : []
 
-  return lines.join('\n')
+  return (
+    <div style={{ fontSize: 14, lineHeight: 1.6 }}>
+      {/* 固定头部：版本对比卡片 */}
+      <div
+        style={{
+          background: 'var(--adm-color-box, #f7f8fa)',
+          padding: 10,
+          borderRadius: 8,
+          marginBottom: 10,
+        }}
+      >
+        <div>当前版本：V{LOCAL_VERSION} build{LOCAL_BUILD}</div>
+        <div>最新版本：V{release.version} build{effectiveBuild}</div>
+        {sizeMB && <div>大小：{sizeMB}</div>}
+        {pubDate && <div>发布：{pubDate}</div>}
+      </div>
+
+      {/* 更新内容标题 */}
+      <div style={{ fontWeight: 600, marginBottom: 6 }}>
+        📋 更新内容 ({newer.length || fallbackNotes.length})
+      </div>
+
+      {/* 滚动区 */}
+      <div
+        style={{
+          maxHeight: 200,
+          overflowY: 'auto',
+          border: '1px solid var(--adm-color-border, #eee)',
+          borderRadius: 8,
+          padding: '4px 0',
+        }}
+      >
+        {newer.length > 0 ? (
+          newer.map((h) => (
+            <div
+              key={h.buildNumber}
+              style={{ padding: '6px 10px', borderBottom: '1px solid #f0f0f0' }}
+            >
+              <div style={{ fontSize: 12, color: '#888' }}>
+                🔹 build{h.buildNumber} · {h.gitSha.slice(0, 7)}
+              </div>
+              <div>{h.title}</div>
+            </div>
+          ))
+        ) : fallbackNotes.length > 0 ? (
+          fallbackNotes.map((nl, i) => (
+            <div key={i} style={{ padding: '6px 10px', borderBottom: '1px solid #f0f0f0' }}>
+              <div>• {nl}</div>
+            </div>
+          ))
+        ) : (
+          <div style={{ padding: 10, color: '#999', textAlign: 'center' }}>
+            无详细说明
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
 
 /**

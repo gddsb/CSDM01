@@ -68,10 +68,11 @@ export default function MainLayout() {
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [mobileDownloadOpen, setMobileDownloadOpen] = useState(false)
   const [mobileVersion, setMobileVersion] = useState<{
-    version?: string; buildNumber?: number; forceUpdate?: boolean;
+    version?: string; buildNumber?: number; apkBuild?: number; forceUpdate?: boolean;
     downloadUrl?: string; downloadUrlIos?: string;
     apkSize?: number; ipaSize?: number;
     updateNotes?: string; publishedAt?: string; gitSha?: string;
+    buildHistory?: { buildNumber: number; gitSha: string; title: string; date: string }[];
   } | null>(null)
   const [profileForm] = Form.useForm()
   const [pwdForm] = Form.useForm()
@@ -453,7 +454,23 @@ export default function MainLayout() {
     setMobileDownloadOpen(true)
     try {
       const res: any = await api.get('/version')
-      if (res.success && res.data) setMobileVersion(res.data)
+      if (res.success && res.data) {
+        const d = res.data
+        setMobileVersion({
+          version: d.version,
+          buildNumber: d.buildNumber,
+          apkBuild: d.apkBuild,
+          forceUpdate: d.forceUpdate,
+          downloadUrl: d.downloadUrl,
+          downloadUrlIos: d.downloadUrlIos,
+          apkSize: d.apkSize,
+          ipaSize: d.ipaSize,
+          updateNotes: d.updateNotes,
+          publishedAt: d.publishedAt,
+          gitSha: d.gitSha,
+          buildHistory: Array.isArray(d.buildHistory) ? d.buildHistory : undefined,
+        })
+      }
     } catch {}
   }
 
@@ -726,53 +743,118 @@ export default function MainLayout() {
         </Form>
       </Modal>
 
-      {/* 移动端下载弹窗（自然紧凑排版，无 transform 缩放） */}
+      {/* 移动端下载弹窗：三分区 + 固定尺寸 + 滚动 */}
       <Modal
-        title={`📱 大满 MES 移动端下载  ${mobileVersion?.version ? `v${mobileVersion.version} · build ${mobileVersion.buildNumber}` : ''}`}
+        title={`📱 大满 MES 移动端下载`}
         open={mobileDownloadOpen}
         onCancel={() => setMobileDownloadOpen(false)}
         footer={null}
-        width={460}
+        width={560}
         destroyOnHidden
-        styles={{ body: { fontSize: 12 } }}
+        styles={{ body: { padding: 16, fontSize: 13 } }}
       >
-        {/* 更新说明 */}
-        {mobileVersion?.updateNotes && (
+        {/* ======== 分区 1：版本对比卡片（固定，不滚动） ======== */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
           <div style={{
-            background: '#fafafa', borderRadius: 6, padding: '6px 10px',
-            fontSize: 11, color: '#555', marginBottom: 10, borderLeft: '3px solid #2196F3',
-            maxHeight: 52, overflow: 'auto',
+            flex: 1, padding: 12, background: '#f6f8fa', borderRadius: 8,
+            border: '1px solid #eef0f3',
           }}>
-            {mobileVersion.updateNotes}
+            <div style={{ color: '#888', fontSize: 12, marginBottom: 4 }}>📱 最新版本</div>
+            <div style={{ fontSize: 18, fontWeight: 600, color: '#262626' }}>
+              V{mobileVersion?.version || '—'}
+            </div>
+            <div style={{ color: '#888', fontSize: 12 }}>
+              build {mobileVersion?.apkBuild ?? mobileVersion?.buildNumber ?? '—'}
+            </div>
+            {mobileVersion?.apkSize ? (
+              <div style={{ color: '#1677ff', fontSize: 11, marginTop: 4 }}>
+                {(mobileVersion.apkSize / 1024 / 1024).toFixed(1)} MB
+              </div>
+            ) : null}
           </div>
-        )}
+          {mobileVersion?.publishedAt && (
+            <div style={{
+              flex: 1, padding: 12, background: '#f9f0ff', borderRadius: 8,
+              border: '1px solid #efdbff', display: 'flex', flexDirection: 'column', justifyContent: 'center',
+            }}>
+              <div style={{ color: '#888', fontSize: 12, marginBottom: 4 }}>🕐 发布时间</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: '#722ed1' }}>
+                {mobileVersion.publishedAt.slice(0, 10)}
+              </div>
+              <div style={{ color: '#888', fontSize: 11, marginTop: 4 }}>
+                {mobileVersion.gitSha ? `commit ${mobileVersion.gitSha.slice(0, 7)}` : ''}
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* 强制更新标记 */}
         {mobileVersion?.forceUpdate && (
-          <div style={{ marginBottom: 10, fontSize: 11, color: '#ff4d4f', textAlign: 'center', fontWeight: 500 }}>
+          <div style={{ marginBottom: 10, fontSize: 12, color: '#ff4d4f', textAlign: 'center', fontWeight: 500 }}>
             ⚠️ 强制更新（旧版本已停用）
           </div>
         )}
 
-        {mobileVersion?.downloadUrl ? (
-          /* 双列紧凑布局 */
-          <div style={{ display: 'flex', gap: 10 }}>
+        {/* ======== 分区 2：更新内容（滚动区） ======== */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontWeight: 600, marginBottom: 6, fontSize: 13 }}>
+            📋 更新内容
+            {mobileVersion?.buildHistory && mobileVersion.buildHistory.length > 0 && (
+              <span style={{ color: '#888', fontWeight: 400, fontSize: 12, marginLeft: 6 }}>
+                ({mobileVersion.buildHistory.length} 条)
+              </span>
+            )}
+          </div>
+          <div style={{
+            maxHeight: 200, overflowY: 'auto',
+            border: '1px solid #e8ecf0', borderRadius: 8, background: '#fff',
+          }}>
+            {mobileVersion?.buildHistory && mobileVersion.buildHistory.length > 0 ? (
+              // buildHistory 倒序显示（最新在前）
+              [...mobileVersion.buildHistory].reverse().map((h) => (
+                <div
+                  key={h.buildNumber}
+                  style={{
+                    padding: '8px 12px', borderBottom: '1px solid #f5f5f5',
+                  }}
+                >
+                  <div style={{ fontSize: 12, color: '#888', marginBottom: 2 }}>
+                    🔹 build{h.buildNumber} · {h.gitSha.slice(0, 7)}
+                  </div>
+                  <div style={{ color: '#262626' }}>{h.title}</div>
+                </div>
+              ))
+            ) : mobileVersion?.updateNotes ? (
+              // 兜底：没有 buildHistory 用 updateNotes 按行拆
+              mobileVersion.updateNotes.split(/\r?\n/).map((l, i) => l.trim() && (
+                <div key={i} style={{ padding: '6px 12px', borderBottom: '1px solid #f5f5f5' }}>
+                  • {l}
+                </div>
+              ))
+            ) : (
+              <div style={{ padding: 12, color: '#bbb', textAlign: 'center', fontSize: 12 }}>
+                暂无更新说明
+              </div>
+            )}
+          </div>
+        </div>
 
-            {/* ============== Android 卡片 ============== */}
+        {/* ======== 分区 3：下载方式（固定，不滚动） ======== */}
+        {mobileVersion?.downloadUrl ? (
+          <div style={{ display: 'flex', gap: 10 }}>
+            {/* Android 卡片 */}
             <div style={{
               flex: 1, background: '#f8fafb', borderRadius: 8, padding: 10,
               border: '1px solid #e8ecf0', display: 'flex', flexDirection: 'column', alignItems: 'center',
             }}>
               <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>🤖 Android</div>
               {mobileVersion?.apkSize ? (
-                <div style={{ fontSize: 10, color: '#888', marginBottom: 6 }}>
+                <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>
                   {(mobileVersion.apkSize / 1024 / 1024).toFixed(1)}MB · 8.0+
                 </div>
               ) : (
-                <div style={{ fontSize: 10, color: '#aaa', marginBottom: 6 }}>—</div>
+                <div style={{ fontSize: 11, color: '#aaa', marginBottom: 6 }}>—</div>
               )}
-
-              {/* 二维码（88px，比原来 140 缩小 ~37%） */}
               <div style={{
                 background: '#fff', padding: 6, borderRadius: 6,
                 border: '1px solid #eee', marginBottom: 6,
@@ -781,7 +863,6 @@ export default function MainLayout() {
                   includeMargin={false} bgColor="#ffffff" fgColor="#1a1a1a" />
               </div>
               <div style={{ fontSize: 10, color: '#aaa', marginBottom: 6 }}>📷 扫码下载</div>
-
               <a href={mobileVersion.downloadUrl} target="_blank" rel="noopener noreferrer"
                 style={{ width: '100%', textDecoration: 'none' }}>
                 <Button type="primary" block style={{ height: 32, fontSize: 12, borderRadius: 6 }}>
@@ -790,7 +871,7 @@ export default function MainLayout() {
               </a>
             </div>
 
-            {/* ============== iOS 卡片 ============== */}
+            {/* iOS 卡片 */}
             <div style={{
               flex: 1, background: '#f8fafb', borderRadius: 8, padding: 10,
               border: '1px solid #e8ecf0', display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -798,14 +879,12 @@ export default function MainLayout() {
             }}>
               <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>🍎 iOS</div>
               {mobileVersion?.downloadUrlIos && mobileVersion?.ipaSize && mobileVersion.ipaSize > 0 ? (
-                <div style={{ fontSize: 10, color: '#888', marginBottom: 6 }}>
+                <div style={{ fontSize: 11, color: '#888', marginBottom: 6 }}>
                   {(mobileVersion.ipaSize / 1024 / 1024).toFixed(1)}MB · 13.0+
                 </div>
               ) : (
-                <div style={{ fontSize: 10, color: '#bbb', marginBottom: 6 }}>暂无 IPA</div>
+                <div style={{ fontSize: 11, color: '#bbb', marginBottom: 6 }}>暂无 IPA</div>
               )}
-
-              {/* 二维码 */}
               <div style={{
                 background: '#fff', padding: 6, borderRadius: 6,
                 border: '1px solid #eee', marginBottom: 6,
@@ -821,7 +900,6 @@ export default function MainLayout() {
                 )}
               </div>
               <div style={{ fontSize: 10, color: '#aaa', marginBottom: 6 }}>📷 扫码下载</div>
-
               {mobileVersion?.downloadUrlIos && mobileVersion?.ipaSize && mobileVersion.ipaSize > 0 ? (
                 <a href={mobileVersion.downloadUrlIos} target="_blank" rel="noopener noreferrer"
                   style={{ width: '100%', textDecoration: 'none' }}>
@@ -842,9 +920,8 @@ export default function MainLayout() {
           </div>
         )}
 
-        {/* 底部：commit 信息 + 提示 合并 */}
-        <div style={{ marginTop: 10, fontSize: 10, color: '#bbb', textAlign: 'center', lineHeight: 1.5 }}>
-          {mobileVersion?.gitSha && <span>commit {mobileVersion.gitSha}{mobileVersion?.publishedAt ? ` · ${mobileVersion.publishedAt.slice(0, 10)}` : ''}{mobileVersion?.downloadUrl || mobileVersion?.downloadUrlIos ? ' · ' : ''}</span>}
+        {/* 底部提示 */}
+        <div style={{ marginTop: 10, fontSize: 10, color: '#bbb', textAlign: 'center' }}>
           提示：扫码需手机能访问本服务器
         </div>
       </Modal>
