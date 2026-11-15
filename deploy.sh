@@ -107,10 +107,20 @@ elif [[ -n "$EXISTING_VERSION" ]]; then
   VERSION="$EXISTING_VERSION"
   if [[ -n "$FORCE_BUILD" ]]; then
     BUILD="$FORCE_BUILD"
+    BUILD_UNCHANGED=false
   elif [[ -n "$EXISTING_BUILD" ]] && [[ "$EXISTING_BUILD" =~ ^[0-9]+$ ]]; then
-    BUILD=$((EXISTING_BUILD + 1))
+    # 同 commit 纯重跑 → 保持 buildNumber 不变，避免噪声
+    if [[ -n "$EXISTING_GITSHA" ]] && [[ "$EXISTING_GITSHA" == "$SHORT_SHA" ]]; then
+      BUILD="$EXISTING_BUILD"
+      BUILD_UNCHANGED=true
+      echo "  ℹ  gitSha 未变化 (${SHORT_SHA})，保持 buildNumber=${BUILD}，不递增"
+    else
+      BUILD=$((EXISTING_BUILD + 1))
+      BUILD_UNCHANGED=false
+    fi
   else
     BUILD=1
+    BUILD_UNCHANGED=false
   fi
 else
   VERSION="$PKG_VERSION"; BUILD="${FORCE_BUILD:-1}"
@@ -163,29 +173,32 @@ try:
     old = json.load(f)
 except: old = {}
 
-# buildHistory：保留历史 + append 本次条目
+# buildHistory：只在 gitSha 变化时 append，同 commit 纯重跑跳过
 history = old.get('buildHistory', [])
-# 如果最后一条的 buildNumber 和本次一样，先去掉（deploy.sh 幂等重跑时避免重复）
-if history and history[-1].get('buildNumber') == ${BUILD}:
-  history = history[:-1]
-# 本次 commit 的短标题（git log -1）
-try:
-  _short = subprocess.check_output(
-    ['git', 'log', '-1', '--format=%s'], text=True, stderr=subprocess.DEVNULL
-  ).strip()
-except:
-  _short = _notes.split('\n')[0] if _notes else '常规重建'
+last = history[-1] if history else None
+same_commit = last and last.get('gitSha') == '${SHORT_SHA}'
+if same_commit:
+  print(f"  ⏭ buildHistory 跳过：同 commit ${SHORT_SHA}，不追加噪声条目")
+else:
+  # 本次 commit 的短标题（git log -1）
+  try:
+    _short = subprocess.check_output(
+      ['git', 'log', '-1', '--format=%s'], text=True, stderr=subprocess.DEVNULL
+    ).strip()
+  except:
+    _short = _notes.split('\n')[0] if _notes else '常规重建'
 
-new_entry = {
-  'buildNumber': ${BUILD},
-  'gitSha': '${SHORT_SHA}',
-  'title': _short[:120],
-  'date': '$(date -u +%Y-%m-%dT%H:%M:%SZ)'
-}
-history.append(new_entry)
-# 最多保留最近 30 条（APK 不需要 30 个月前的历史）
-if len(history) > 30:
-  history = history[-30:]
+  new_entry = {
+    'buildNumber': ${BUILD},
+    'gitSha': '${SHORT_SHA}',
+    'title': _short[:120],
+    'date': '$(date -u +%Y-%m-%dT%H:%M:%SZ)'
+  }
+  history.append(new_entry)
+  # 最多保留最近 30 条（APK 不需要 30 个月前的历史）
+  if len(history) > 30:
+    history = history[-30:]
+  print(f"  ✓ buildHistory append: build{BUILD} · ${SHORT_SHA}")
 
 d = {
   'version': '${VERSION}',

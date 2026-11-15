@@ -5,13 +5,12 @@ import { useNavigate } from 'react-router-dom'
 import { Button, Dialog, Toast, Switch } from 'antd-mobile'
 import { useApp } from '../../contexts/AppContext'
 import { useMobileThemeContext } from '../theme'
-import { getAppVersion, formatAppVersion, refreshAppVersion } from '../utils/app-version'
-import { checkAndPromptUpdate, getNativeBuildNumber } from '../utils/app-updater'
+import { refreshAppVersion } from '../utils/app-version'
+import { checkAndPromptUpdate, getNativeBuildNumber, getLocalVersion } from '../utils/app-updater'
 
 export function MobileProfile() {
   const { currentUser, logout } = useApp()
   const navigate = useNavigate()
-  const appVer = getAppVersion()
   const { isDark, toggleTheme } = useMobileThemeContext()
 
   const handleCheckUpdate = async () => {
@@ -56,7 +55,7 @@ export function MobileProfile() {
     )
   }
 
-  const versionLabel = `V${appVer.version} build${getNativeBuildNumber()}${__APP_GIT_SHA__ ? ` · ${__APP_GIT_SHA__}` : ''}`
+  const versionLabel = `V${getLocalVersion()} build${getNativeBuildNumber()}${__APP_GIT_SHA__ ? ` · ${__APP_GIT_SHA__}` : ''}`
 
   return (
     <div className="mobile-page mobile-page-scrollable" style={{ paddingTop: 20 }}>
@@ -149,7 +148,7 @@ export function MobileProfile() {
         marginTop: 28, paddingTop: 16,
         borderTop: '1px solid var(--m-border-2)',
       }}>
-        奶粉罐MES · {formatAppVersion(appVer)}
+        奶粉罐MES · V{getLocalVersion()} build{getNativeBuildNumber()}
       </div>
     </div>
   )
