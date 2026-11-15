@@ -52,9 +52,13 @@ export const UserExtPermissionService = {
     permStates: ExtPermState[]
     summary: ExtPermSummary
   }> {
-    // 并行查询
-    const [roleCodes, addRows, denyRows, finalCodes] = await Promise.all([
-      PermissionEngine.getRolePermCodes(userId, terminal),
+    // —— 修复：让 PermissionEngine 成为唯一入口 ——
+    // 之前并行调 getRolePermCodes（裸调）+ computeFinalPerms，同一次请求
+    // getRolePermCodes 会被打两次（computeFinalPerms 内部也会调一次）。
+    // 现在 computeFinalPerms 是唯一入口，Layer 1 (60s) + Layer 2 (helper 60s)
+    // 双缓存会自动命中，helper 在同一请求内最多 SQL 一次。
+    const [finalCodes, addRows, denyRows] = await Promise.all([
+      PermissionEngine.computeFinalPerms(userId, terminal),
       UserExtPermission.findAll({
         where: { user_id: userId, terminal, ext_type: 1, status: 1 },
         attributes: ['perm_id'],
@@ -63,8 +67,12 @@ export const UserExtPermissionService = {
         where: { user_id: userId, terminal, ext_type: 2, status: 1 },
         attributes: ['perm_id'],
       }),
-      PermissionEngine.computeFinalPerms(userId, terminal),
     ])
+
+    // rolePermCodes 无法从 finalCodes 反推（finalCodes 已扣掉 deny 并合并 add），
+    // 所以需要单独获取一次 — 但走 PermissionEngine.getRolePermCodes 让它的 Layer 2 缓存生效。
+    // 这行是本函数唯一的 helper 裸调，下一次请求就会命中 60s 缓存
+    const roleCodes = await PermissionEngine.getRolePermCodes(userId, terminal)
 
     const roleSet = new Set(roleCodes)
 
@@ -79,36 +87,38 @@ export const UserExtPermissionService = {
     const addSet = new Set(addCodes)
     const denySet = new Set(denyCodes)
 
-    // 组装三种状态 — 遍历全部权限池
-    const allPerms: any[] = await sequelize.query(
+    // 组装三种状态 — 遍历完整权限字典（不走 getAllPermCodes，
+    // 因为还需要 perm_id/perm_name；这里一次 SQL 取完，比 getAllPermCodes 多 perm_id）
+    const allPermsDict: any[] = await sequelize.query(
       'SELECT perm_id, perm_code, perm_name FROM sys_permission WHERE status = 1 ORDER BY sort_order ASC, perm_id ASC',
       { type: 'SELECT' as any }
     )
-    const permStates: ExtPermState[] = allPerms.map((p: any) => {
+    const permStates: ExtPermState[] = allPermsDict.map((p: any) => {
       let source: ExtPermState['source'] = 'none'
-      // deny 优先级最高
       if (denySet.has(p.perm_code)) source = 'deny'
       else if (roleSet.has(p.perm_code)) source = 'role'
       else if (addSet.has(p.perm_code)) source = 'add'
       return { perm_id: p.perm_id, perm_code: p.perm_code, perm_name: p.perm_name, source }
     })
 
-    // 超级管理员标记 — 不参与 add/deny
+    // 超级管理员标记 — isSuperAdmin 走 PermissionEngine Layer 2 60s 缓存
     const isSuper = await PermissionEngine.isSuperAdmin(userId)
 
+    // finalPermCodes: 超级管理员返回全量权限池（getAllPermCodes 走 120s Layer 2 缓存）
+    const allCodes = await PermissionEngine.getAllPermCodes()
     return {
       rolePermCodes: roleCodes,
       addPermIds: addDetail.map(r => r.perm_id),
       addPermCodes: addCodes,
       denyPermIds: denyDetail.map(r => r.perm_id),
       denyPermCodes: denyCodes,
-      finalPermCodes: isSuper ? await PermissionEngine.getAllPermCodes() : finalCodes,
+      finalPermCodes: isSuper ? allCodes : finalCodes,
       permStates,
       summary: {
         rolePermCount: roleCodes.length,
         addCount: addCodes.length,
         denyCount: denyCodes.length,
-        finalCount: (isSuper ? await PermissionEngine.getAllPermCodes() : finalCodes).length,
+        finalCount: (isSuper ? allCodes : finalCodes).length,
       },
     }
   },

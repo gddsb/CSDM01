@@ -62,6 +62,18 @@ function deleteCache(key: string): void {
 // 统一失效 API — 业务代码只调这些，不直接操作底层 store
 // ============================================================================
 
+/** 同步清除 PermissionEngine Layer 2 helper 缓存 */
+function _invalidateEngineHelpers(): void {
+  try {
+    // dynamic import 避免顶层循环依赖（PermissionEngine 也 import permissionCache）
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { PermissionEngine } = require('../../../services/PermissionEngine.js')
+    if (typeof PermissionEngine.invalidateAll === 'function') {
+      PermissionEngine.invalidateAll()
+    }
+  } catch { /* 循环依赖保护：运行时如果 PermissionEngine 未就绪就跳过 */ }
+}
+
 /**
  * 角色权限变更后调用：清除该角色下所有用户的权限码 + 角色映射
  * （因为角色绑定了新权限 → 所有关联用户的权限码全集变了）
@@ -74,6 +86,7 @@ export function onRolePermissionChange(roleId: number): void {
   for (const k of MEMORY_STORE.keys()) {
     if (k.startsWith('permCodes:')) deleteCache(k)
   }
+  _invalidateEngineHelpers()
   logger.info(`[PermissionCache] cleared for role_permission change roleId=${roleId}`)
 }
 
@@ -83,6 +96,7 @@ export function onRolePermissionChange(roleId: number): void {
 export function onUserScopeChange(userId: number): void {
   deleteCache(CACHE_KEYS.userScope(userId))
   deleteCache(CACHE_KEYS.permCodes(userId))
+  _invalidateEngineHelpers()
   logger.info(`[PermissionCache] cleared for user scope change userId=${userId}`)
 }
 
@@ -127,6 +141,7 @@ export function onDataScopeChange(userId?: number, roleId?: number): void {
   for (const k of MEMORY_STORE.keys()) {
     if (k.startsWith('userScope:')) deleteCache(k)
   }
+  _invalidateEngineHelpers()
   logger.info(`[PermissionCache] cleared data_scope ${userId ?? ''}/${roleId ?? ''}`)
 }
 

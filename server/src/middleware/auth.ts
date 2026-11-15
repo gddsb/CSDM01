@@ -225,10 +225,9 @@ export function authRequired(req: Request, res: Response, next: NextFunction): a
           Role.findOne({ where: { role_id: user.roleId }, attributes: ['role_code', 'role_name'] }),
         ])
         user.permCodes = new Set(finalCodes)
-        // 防御性：PermissionEngine 短路时 '*' 已在 finalCodes 里；
-        // 若未来短路逻辑变了，这里确保 super_admin 仍有通配符
-        const isSA = finalCodes.includes(WILDCARD_PERM) || PermissionEngine.isSuperAdmin(user.userId)
-        if (isSA) user.permCodes.add(WILDCARD_PERM)
+        // computeFinalPerms 内部已短路超级管理员并注入 '*' 通配符，
+        // 这里只查 finalCodes 即可，无需再调一次 isSuperAdmin 跑 SQL
+        const isSA = finalCodes.includes(WILDCARD_PERM)
         user.roleCode = String((roleInfo as any)?.role_code ?? '')
         user.roleName = String((roleInfo as any)?.role_name ?? '')
         user.isSuperAdmin = isSA
